@@ -8,19 +8,23 @@ project:
 
 website:
   title: "$ALTDOC_PACKAGE_NAME"
-  code-links: true
+  # code-links: true
   navbar:
     search: true
+    left:
+      - text: Get started
+        href: vignettes/get_started.qmd
     right:
       - icon: github
         href: $ALTDOC_PACKAGE_URL_GITHUB
         aria-label: $ALTDOC_PACKAGE_NAME GitHub
   sidebar:
-    collapse-level: 1
+    collapse-level: 2
     contents:
-      - text: Home
-        file: index.md
-      - section: $ALTDOC_VIGNETTE_BLOCK
+      # - text: Home
+        # file: index.md
+      - vignettes/get_started.qmd
+      # - section: $ALTDOC_VIGNETTE_BLOCK
       - section: $ALTDOC_MAN_BLOCK
       - text: News
         file: $ALTDOC_NEWS
