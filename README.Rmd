@@ -23,19 +23,23 @@ knitr::opts_chunk$set(
 <a href = "https://sayuks.github.io/withmargins/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a>
 <!-- badges: end -->
 
-The goal of withmargins is to ...
+The `withmargins` is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports 'tidyverse' workflows for analysis and visualization.
 
 ## Installation
 
-You can install the development version of withmargins from [GitHub](https://github.com/) with:
+You can install `withmargins` from CRAN:
+
+``` r
+install.packages("withmargins")
+```
+You can install the development version of `withmargins` from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
 pak::pak("sayuks/withmargins")
 ```
 
-## Example
-
+## Examples
 
 ## Code of Conduct
 

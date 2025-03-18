@@ -13,11 +13,19 @@ coverage](https://codecov.io/gh/sayuks/withmargins/graph/badge.svg)](https://app
 <a href = "https://sayuks.github.io/withmargins/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a>
 <!-- badges: end -->
 
-The goal of withmargins is to …
+The `withmargins` is an R package that summarize data with margins
+(totals) and expand data by treating margins as category levels.
+Supports ‘tidyverse’ workflows for analysis and visualization.
 
 ## Installation
 
-You can install the development version of withmargins from
+You can install `withmargins` from CRAN:
+
+``` r
+install.packages("withmargins")
+```
+
+You can install the development version of `withmargins` from
 [GitHub](https://github.com/) with:
 
 ``` r
@@ -25,10 +33,11 @@ You can install the development version of withmargins from
 pak::pak("sayuks/withmargins")
 ```
 
-## Example
+## Examples
 
 ## Code of Conduct
 
-Please note that the withmargins project is released with a [Contributor Code of
+Please note that the withmargins project is released with a [Contributor
+Code of
 Conduct](https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html).
 By contributing to this project, you agree to abide by its terms.
