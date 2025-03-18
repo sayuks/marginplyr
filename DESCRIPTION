@@ -1,0 +1,33 @@
+Package: withmargins
+Title: Grouped Operations with Margins
+Version: 0.1.0
+Authors@R: 
+    person("Yusuke", "Sasaki", , "sayuks.dev@gmail.com", role = c("aut", "cre"))
+Description: What the package does (one paragraph).
+License: MIT + file LICENSE
+URL: https://sayuks.github.io/withmargins/, https://github.com/sayuks/withmargins
+BugReports: https://github.com/sayuks/withmargins/issues
+Imports: 
+    dplyr (>= 1.1.1),
+    purrr,
+    rlang,
+    tidyr,
+    tidyselect,
+    utils
+Suggests: 
+    altdoc,
+    DBI,
+    dbplyr,
+    duckdb,
+    ggplot2,
+    quarto,
+    sessioninfo,
+    spelling,
+    stringr,
+    testthat (>= 3.0.0),
+    tibble
+Config/testthat/edition: 3
+Encoding: UTF-8
+Language: en-US
+Roxygen: list(markdown = TRUE)
+RoxygenNote: 7.3.2

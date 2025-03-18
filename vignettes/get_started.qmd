@@ -1,0 +1,468 @@
+---
+title: Get started
+format:
+  html:
+    code-tools: true
+    toc: true
+    toc-expand: true
+    number-sections: true
+date: last-modified
+---
+
+This article introduces the following functions 
+that make grouped operations with margins easier.
+
+- `summarise_with_margins()`
+
+- `union_all_with_margins()`
+
+- `nest_with_margins()`
+
+- `nest_by_with_margins()`
+
+First, load the required libraries.
+
+```{r setup}
+library(withmargins)
+library(dplyr)
+library(ggplot2)
+library(tibble)
+library(purrr)
+```
+
+Prepare dummy data.
+
+```{r}
+df1 <- tribble(
+  ~year, ~cat, ~subcat,       ~g1,         ~g2,           ~id, ~value,
+  2020,  "A",  "a1",          1L,          "y",           "1", 5,
+  2020,  "A",  "a2",          2L,          "x",           "2", NA_real_,
+  2020,  "B",  NA_character_, 2L,          "x",           "3", 1,
+  2020,  "B",  "b2",          1L,          "x",           "4", 8,
+  2021,  "A",  "a1",          NA_integer_, "x",           "1", 4,
+  2021,  "A",  "a2",          1L,          "y",           "2", 7,
+  2021,  "B",  "b1",          1L,          NA_character_, "3", 3,
+  2021,  "B",  "b2",          2L,          "y",           "4", 9,
+) |> 
+  mutate(
+    cat = factor(cat),
+    subcat = factor(subcat, ordered = TRUE),
+    g2 = factor(g2, exclude = NULL)
+  )
+
+df1
+```
+
+1. **year**: An integer column representing the year, 
+including data from 2020 and 2021.
+
+2. **cat**: A factor column denoting categories, 
+taking values of either "A" or "B".
+
+3. **subcat**: A factor column representing sub-categories, with values 
+including "a1", "a2", "b1", and "b2". This column is defined
+as an ordered factor with `ordered = TRUE`.
+
+:::{.callout-note}
+cat, subcat has a hierarchical structure. 
+For example, A contains a1, a2 and b is not contained in A.
+:::
+
+4. **g1**: An integer column representing Group 1.
+
+5. **g2**: A factor column representing Group 2, with values "x" or "y", 
+including NA values. This column is defined as a factor with `exclude = NULL`. 
+This means that NA is included in the level.
+
+6. **id**: A character column representing unique identifiers by years.
+
+7. **value**: A numeric column representing values, including NA values.
+
+Check the level of the factors and whether they are ordered.
+
+```{r}
+df1_factors <- select(df1, where(is.factor))
+
+lapply(df1_factors, levels)
+
+lapply(df1_factors, is.ordered)
+```
+
+Note that NA is included in g2 level.
+
+subcat is an order factor.
+
+Count each cat, subcat and find the average of the values.
+
+```{r}
+df1 |>
+  summarise(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .by = c(cat, subcat)
+  )
+```
+
+But what if you want to calculate the cat total, subcat total together?
+`summarise_with_margins()` is useful in this case.
+
+## `summarise_with_margins()`
+
+:::{.callout-note}
+## Lazy tables are available
+`summarise_with_margins()` and `union_all_with_margins()` 
+works with a local data frame or lazy table.
+:::
+
+### `.margins`
+
+If you want to include the respective totals hierarchically
+in cat, subcat, include them in `.margins`.
+Variables can be specified by 
+[`tidy-select`](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html).
+
+```{r}
+res1 <- df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = c(cat, subcat)
+  )
+
+res1
+```
+
+(all) was created; cat and subcat remained (ordered) factor.
+
+See factor levels.
+
+```{r}
+lapply(res1, levels)
+```
+
+(all) was added to the beginning of the factor level.
+
+### `.without_all`
+
+In the example above, all the years were combined. 
+Let's assume here that we aggregate by year 
+and do not want multi-year totals.
+In that case, use `.without_all`.
+Variables can be specified by 
+[`tidy-select`](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html).
+
+```{r}
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = c(cat, subcat),
+    .without_all = year
+  )
+```
+
+Each margin has been calculated for each group in year. 
+
+### `.with_all`
+
+Furthermore, we want to add g1 to the group variables.
+We want to also include a total of g1.
+However, unlike cat and subcat, g1 does not have a hierarchical structure.
+In such cases, use `.with_all`.
+Variables can be specified by 
+[`tidy-select`](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html).
+
+```{r}
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = c(cat, subcat),
+    .without_all = year,
+    .with_all = g1
+  ) |> 
+  print(n = Inf)
+```
+
+For all combinations of year, cat and subcat, 
+all combinations including (all) in g1 were aggregated.
+
+g1 was of type integer, but is now of type string. 
+This is due to the addition of (all).
+
+If you want to add g2 as well, you can do so as follows.
+
+```{r}
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = c(cat, subcat),
+    .without_all = year,
+    .with_all = c(g1, g2)
+  ) |> 
+  print(n = Inf)
+```
+
+For all combinations of year, cat, subcat and g1, 
+all combinations including (all) in g2 were aggregated.
+
+### `.sort`
+
+If `.sort = TRUE`, sort the result by the column order specified in `.without_all` and `.margins` and `.with_all` to make the results easier to see.
+The default is `is.data.frame(.data)`.
+This is because pipelines using lazy tables 
+should perform the SQL `ORDER BY` as last as possible
+(See [`arrange()` documentation of {dbplyr}](https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html) for details).
+
+In the above examples, the results were sorted
+because the data is a local data frame.
+If `.sort = FALSE`, the result is as follows.
+
+```{r}
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = c(cat, subcat),
+    .without_all = year,
+    .with_all = c(g1, g2),
+    .sort = FALSE
+  ) |> 
+  print(n = Inf)
+```
+
+### `.margin_name`
+
+By default "(all)" is used for the name of the margin, 
+but this can be changed with the `.margin_name` argument.
+
+```{r}
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = c(cat, subcat),
+    .margin_name = "Total"
+  )
+```
+
+The `.margin_name` cannot be one already used in `.margins` or `.with_all`, 
+where the new total category is to be created.
+
+```{r}
+#| error: true
+
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = c(cat, subcat),
+    .margin_name = "A"
+  )
+```
+
+`NA_character_` can be used for `.margin_name`, 
+but it is similarly checked if it is already in use.
+
+```{r}
+#| error: true
+
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins =  c(cat, subcat),
+    .margin_name = NA_character_
+  )
+```
+
+Error occurred. Because there are NAs in subcat. 
+On the other hand, there is no NA in cat, so the following example works.
+
+```{r}
+res2 <- df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .margins = cat,
+    .margin_name = NA_character_
+  )
+
+res2
+```
+
+NA was used instead of (all).
+
+If `.margin_name` is `NA_character_`, what is the level of factor in cat?
+
+```{r}
+levels(res2$cat)
+```
+
+__NA is not included in the factor level__. 
+This is the same behaviour as the default `base::factor()`.
+
+:::{.callout-warning}
+__If `.margin_name` is `NA_character_`, NA must not be included
+in the level of factors specified in `.margins` or `.with_all`.__
+
+g2 includes NA in the level of factor. 
+Try setting `.margin_name` to `NA_character_` and using g2.
+
+```{r}
+#| error: true
+
+df1 |>
+  summarise_with_margins(
+    n = n(),
+    value = mean(value, na.rm = TRUE),
+    .with_all = g2,
+    .margin_name = NA_character_
+  )
+```
+
+The reasons for the errors are as follows:
+
+A value whose level is NA is not itself NA.
+
+```{r}
+x <- factor(NA, exclude = NULL)
+
+x
+
+is.na(x)
+```
+
+However, if `NA_character_` is specified as `.margin_name`, 
+this is because when `NA_character_` is converted to factor, 
+it will be the same as the value where the level of the original data is 
+NA and they cannot be distinguished.
+:::
+
+## `union_all_with_margins()`
+
+### Usage
+
+`union_all_with_margins()` considers each margin as a new category,
+duplicate the rows and merge them vertically (like `UNION ALL` in SQL).
+
+:::{.callout-warning}
+## The number of rows in the result of `union_all_with_margins()` can be huge.
+Be aware that this may increase memory occupancy and overload the server.
+:::
+
+```{r}
+df1 |>
+  union_all_with_margins(
+    .margins = c(cat, subcat)
+  ) |> 
+  print(n = Inf)
+```
+
+The following margins were considered as a new category 
+and merged vertically three times.
+
+- cat and subcat margins
+
+- subcat margins
+
+- Without margins
+
+The original df1 has `r nrow(df1)` rows.
+Thus the number of rows became `r nrow(df1)` * 3 = `r nrow(df1) * 3` rows.
+
+## `nest_with_margins()` and `nest_by_with_margins()`
+
+:::{.callout-warning}
+## Only works with a local data frame
+`nest_with_margins()` and `nest_by_with_margins()` 
+only works with a local data frame,
+as most lazy tables do not support nest operations.
+:::
+
+### Usage
+
+`nest_with_magins()` and `nest_by_with_magins()` have similar behaviour.
+Each function nests for each group.
+
+- `nest_with_magins()` returns an ungrouped data frame, like `tidyr::nest()`.
+
+- `nest_by_with_magins()` returns a row-wise data frame, 
+like `dplyr::nest_by()`.
+
+```{r}
+df1 |>
+  nest_with_margins(
+    .margins = c(cat, subcat)
+  )
+```
+
+```{r}
+df1 |>
+  nest_by_with_margins(
+    .margins = c(cat, subcat)
+  )
+```
+
+The data contained in each group is nested in the data column.
+This allows the same operation to be performed on each nested group at a time.
+See the followings for more information.
+
+- [Nested data - `{tidyr}` vignette](https://tidyr.tidyverse.org/articles/nest.html)
+
+- [broom and dplyr - `{broom}` vignette](https://broom.tidymodels.org/articles/broom_and_dplyr.html)
+
+- [Row-wise operations - `{dplyr}` vignette](https://dplyr.tidyverse.org/articles/rowwise.html)
+
+<!-- ### Example -->
+
+<!-- Here, using `quartabs::render_tabset()` together, -->
+<!-- create figures for each group and -->
+<!-- show them using the nested tabset panels. -->
+<!-- `render_tabset()` works with quarto documents (.qmd files). -->
+<!-- You need to specify `#| results: asis` in the chunk option. -->
+
+<!-- :::{.callout-tip} -->
+<!-- For details on `render_tabset()`, -->
+<!-- see [Get started](https://sayuks.github.io/quartabs/vignettes/get_started.html). -->
+<!-- ::: -->
+
+<!-- ```{r} -->
+<!-- #| results: asis -->
+
+<!-- df1 |> -->
+<!--   nest_by_with_margins( -->
+<!--     .margins = c(cat, subcat), -->
+<!--     .with_all = c(g1, g2) -->
+<!--   ) |> -->
+<!--   mutate( -->
+<!--     fig = list( -->
+<!--       data |> -->
+<!--         ggplot(aes(factor(year), value, fill = id)) + -->
+<!--         geom_col() + -->
+<!--         labs( -->
+<!--           title = paste(cat, subcat, g1, g2, sep = " | ") -->
+<!--         ) -->
+<!--     ) -->
+<!--   ) |> -->
+<!--   render_tabset(c(cat, subcat, g1, g2), fig) -->
+<!-- ``` -->
+
+## Session Info
+
+```{r}
+#| warning: false
+# save the session info as an object
+sess <- sessioninfo::session_info(pkgs = "attached")
+
+# inject the Quarto info
+sess$platform$quarto <- paste(
+  quarto::quarto_version(),
+  "@",
+  normalizePath(quarto::quarto_path())
+)
+
+# print it out
+sess
+```

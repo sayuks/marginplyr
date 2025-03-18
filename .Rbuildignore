@@ -1,0 +1,11 @@
+^withmargins\.Rproj$
+^\.Rproj\.user$
+^LICENSE\.md$
+^CODE_OF_CONDUCT\.md$
+^README\.Rmd$
+^dev$
+^\.github$
+^vignettes$
+^docs$
+^altdoc$
+^_quarto$
