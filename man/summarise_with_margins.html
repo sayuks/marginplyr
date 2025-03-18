@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>summarise_with_margins – withmargins</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-831a6e13d34e89ab8943621a9b1bffba.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">withmargins</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/sayuks/withmargins"> <i class="bi bi-github" role="img" aria-label="withmargins GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/summarise_with_margins.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/summarise_with_margins.html">summarise_with_margins</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
+ <span class="menu-text">Articles</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../vignettes/get_started.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Get started</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/summarise_with_margins.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">summarise_with_margins</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../NEWS.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">News</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../LICENSE.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">License</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../CODE_OF_CONDUCT.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Code of conduct</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../CITATION.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Citation</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        
+    <div class="quarto-code-links"><h2>Code Links</h2><ul><li><a href="undefined"><i class="bi bi-link-45deg"></i></a></li></ul></div></div>
+<!-- main -->
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/summarise_with_margins.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/summarise_with_margins.html">summarise_with_margins</a></li></ol></nav></header>
+
+
+
+
+<section id="grouped-operations-with-margins" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="grouped-operations-with-margins">Grouped operations with margins</h2>
+<section id="description" class="level3">
+<h3 class="anchored" data-anchor-id="description">Description</h3>
+<p>See below for more details</p>
+<ul>
+<li>
+<p><a href="https://sayuks.github.io/withmargins/">https://sayuks.github.io/withmargins/</a></p>
+</li>
+</ul>
+</section>
+<section id="usage" class="level3">
+<h3 class="anchored" data-anchor-id="usage">Usage</h3>
+<pre><code class="language-R">summarise_with_margins(
+  .data,
+  ...,
+  .margins = NULL,
+  .without_all = NULL,
+  .with_all = NULL,
+  .margin_name = "(all)",
+  .sort = is.data.frame(.data)
+)
+
+union_all_with_margins(
+  .data,
+  .margins = NULL,
+  .without_all = NULL,
+  .with_all = NULL,
+  .margin_name = "(all)",
+  .sort = FALSE
+)
+
+nest_with_margins(
+  .data,
+  .margins = NULL,
+  .without_all = NULL,
+  .with_all = NULL,
+  .margin_name = "(all)",
+  .sort = TRUE,
+  .key = NULL,
+  .names_sep = NULL
+)
+
+nest_by_with_margins(
+  .data,
+  .margins = NULL,
+  .without_all = NULL,
+  .with_all = NULL,
+  .margin_name = "(all)",
+  .sort = TRUE,
+  .key = "data",
+  .keep = FALSE
+)
+</code></pre>
+</section>
+<section id="arguments" class="level3">
+<h3 class="anchored" data-anchor-id="arguments">Arguments</h3>
+<table>
+<tbody><tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".data">.data</code>
+</td>
+<td>
+<ul>
+<li>
+<p>For <code>summarise_with_margins()</code> and <code>union_all_with_margins()</code> : a data frame or lazy table.</p>
+<ul>
+<li>
+<p>Lazy tables created by <code>{arrow}</code> does not work. If you want to work with it, it is an easy way to convert to a duckdb back-end using <code>arrow::to_duckdb()</code> in advance.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>For <code>nest_with_margins()</code> and <code>nest_by_with_margins()</code>: a data frame (not lazy table).</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id="...">…</code>
+</td>
+<td>
+Name-value pairs as used in <code>dplyr::summarise()</code>.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".margins">.margins</code>
+</td>
+<td>
+&lt;<code>tidy-select</code>&gt; Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".without_all">.without_all</code>
+</td>
+<td>
+&lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will <em>NOT</em> be added.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".with_all">.with_all</code>
+</td>
+<td>
+&lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will be added.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".margin_name">.margin_name</code>
+</td>
+<td>
+A string representing margin name (Defaults to <code>“(all)”</code>). <code>NA_character_</code> is also allowed.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".sort">.sort</code>
+</td>
+<td>
+<p>A Logical. If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>.</p>
+<ul>
+<li>
+<p><code>summarise_with_margins()</code> defaults to <code>is.data.frame(.data)</code>, <code>union_all_with_margins()</code> defaults to <code>FALSE</code>.</p>
+<ul>
+<li>
+<p>This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible.</p>
+</li>
+<li>
+<p>As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R.</p>
+</li>
+<li>
+<p>See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.</p>
+</li>
+</ul>
+</li>
+<li>
+<p><code>nest_with_margins()</code> and <code>nest_by_with_margins()</code> default to <code>TRUE</code>.</p>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".key">.key</code>
+</td>
+<td>
+<p>The name of the resulting nested column.</p>
+<ul>
+<li>
+<p>For <code>nest_with_margins()</code>, passed to <code>.key</code> argument of <code>tidyr::nest()</code></p>
+</li>
+<li>
+<p>For <code>nest_by_with_margins()</code>, passed to <code>.key</code> argument of <code>dplyr::nest_by()</code></p>
+</li>
+</ul>
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".names_sep">.names_sep</code>
+</td>
+<td>
+Passed to <code>.names_sep</code> argument of <code>tidyr::nest()</code>.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".keep">.keep</code>
+</td>
+<td>
+Should the grouping columns be kept in the list column. Passed to <code>.keep</code> argument of <code>dplyr::nest_by()</code>.
+</td>
+</tr>
+</tbody></table>
+</section>
+<section id="details" class="level3">
+<h3 class="anchored" data-anchor-id="details">Details</h3>
+<p><strong><code>summarise_with_margins()</code></strong></p>
+<ul>
+<li>
+<p>This is similar to <code>dplyr::summarise()</code> but creates an additional <code>.margin_name</code> category for each grouping variable. It assumes a hierarchy of groups and the higher level groups should be provided first.</p>
+</li>
+<li>
+<p>Regular groups, not used for totals/subtotals can be provided through the <code>.without_all</code> argument and will be used as parent groups.</p>
+</li>
+<li>
+<p>If you want to create its own total margin (such as <code>“(all)”</code>) for a variable that is a regular group and has no hierarchy, specify it with <code>.with_all</code>. If there is more than one <code>.with_all</code>, all combinations of them are generated.</p>
+</li>
+</ul>
+<p><strong><code>union_all_with_margins()</code></strong></p>
+<ul>
+<li>
+<p>Consider each margin as a new category, duplicate the rows and merge them vertically (like <code style="white-space: pre;">UNION ALL</code> in SQL).</p>
+</li>
+<li>
+<p>The use of arguments in common with <code>summarise_with_margins()</code> is the same as for it.</p>
+</li>
+<li>
+<p><strong>Be aware that the number of rows can be huge.</strong></p>
+</li>
+</ul>
+<p><strong><code>nest_with_margins()</code></strong></p>
+<ul>
+<li>
+<p>Run like <code style="white-space: pre;">tidyr::nest(&lt;data&gt;, .by = c({{ .without_all }} , {{ .margins }} , {{ .with_all }}))</code> on the result of <code>union_all_with_margins()</code>.</p>
+</li>
+<li>
+<p>Only works for a local data frame.</p>
+</li>
+</ul>
+<p><strong><code>nest_by_with_margins()</code></strong></p>
+<ul>
+<li>
+<p>Run like <code style="white-space: pre;">dplyr::nest_by(&lt;data&gt;, dplyr::pick({{ .without_all }} , {{ .margins }} , {{ .with_all }})</code> on the result of <code>union_all_with_margins()</code>. The result is a row-wise data frame grouped by row.</p>
+</li>
+<li>
+<p>Only works for a local data frame.</p>
+</li>
+</ul>
+</section>
+<section id="value" class="level3">
+<h3 class="anchored" data-anchor-id="value">Value</h3>
+<p>A data frame. If <code>.data</code> is a lazy table, the output is also a lazy table.</p>
+<ul>
+<li>
+<p>Missing values are kept as missing.</p>
+</li>
+<li>
+<p>The order of the columns is as follows from left to right: <code>.without_all</code>, <code>.margins</code>, <code>.with_all</code> and the remaining columns.</p>
+</li>
+<li>
+<p>Column types specified with <code>.margins</code> or <code>.with_all</code>:</p>
+<ul>
+<li>
+<p>Columns that are not originally factor or character (e.g.&nbsp;numeric, integer, logical) are converted to characters. This is required to add the <code>.margin_name</code> category.</p>
+</li>
+<li>
+<p>Originally the factor column (assuming a local data frame):</p>
+<ul>
+<li>
+<p>Remains as factor. (If ordered, remains as ordered).</p>
+</li>
+<li>
+<p>The level of the factor depends on the case:</p>
+<ul>
+<li>
+<p>If <code>.margin_name</code> is <em><strong>NOT</strong></em> a <code>NA_character</code> (such as <code>“(all)”</code>):</p>
+<ul>
+<li>
+<p><code>.margin_name</code> is added to the beginning of the level of the factor.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>If <code>.margin_name</code> is a <code>NA_character</code>:</p>
+<ul>
+<li>
+<p>If the column has <code style="white-space: pre;">&lt;NA&gt;</code> in the level:</p>
+<ul>
+<li>
+<p>Error occurs. Because, although the values with level <code style="white-space: pre;">&lt;NA&gt;</code> are not equal to <code>NA_character_</code>, they will be identical and indistinguishable when merging <code>NA_character_</code> as a new category.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>If the column does not have <code style="white-space: pre;">&lt;NA&gt;</code> in the level:</p>
+<ul>
+<li>
+<p>Just keeps the original level of factor. <code style="white-space: pre;">&lt;NA&gt;</code> is not included in the level. This is consistent with the default <code>base::factor()</code> behavior (<code>exclude = NA</code>).</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="references" class="level3">
+<h3 class="anchored" data-anchor-id="references">References</h3>
+<ul>
+<li>
+<p>Main idea is borrowed from <a href="https://gist.github.com/moodymudskipper/6347418d82fea2160178422aa574dec2">here</a>.</p>
+</li>
+</ul>
+</section>
+<section id="examples" class="level3">
+<h3 class="anchored" data-anchor-id="examples">Examples</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"withmargins"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Make a hierarchical margin for `cyl`, `vs`.</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_with_margins</span>(</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    cyl    vs  n      mpg
+1 (all) (all) 32 20.09062
+2     4 (all) 11 26.66364
+3     4     0  1 26.00000
+4     4     1 10 26.73000
+5     6 (all)  7 19.74286
+6     6     0  3 20.56667
+7     6     1  4 19.12500
+8     8 (all) 14 15.10000
+9     8     0 14 15.10000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># `am` does not create a hierarchy, but is an overall group variable.</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_with_margins</span>(</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   am   cyl    vs  n      mpg
+1   0 (all) (all) 19 17.14737
+2   0     4 (all)  3 22.90000
+3   0     4     1  3 22.90000
+4   0     6 (all)  4 19.12500
+5   0     6     1  4 19.12500
+6   0     8 (all) 12 15.05000
+7   0     8     0 12 15.05000
+8   1 (all) (all) 13 24.39231
+9   1     4 (all)  8 28.07500
+10  1     4     0  1 26.00000
+11  1     4     1  7 28.37143
+12  1     6 (all)  3 20.56667
+13  1     6     0  3 20.56667
+14  1     8 (all)  2 15.40000
+15  1     8     0  2 15.40000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># `gear` creates "(all)" margins on itself.</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_with_margins</span>(</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>   am   cyl    vs  gear  n      mpg
+1   0 (all) (all) (all) 19 17.14737
+2   0 (all) (all)     3 15 16.10667
+3   0 (all) (all)     4  4 21.05000
+4   0     4 (all) (all)  3 22.90000
+5   0     4 (all)     3  1 21.50000
+6   0     4 (all)     4  2 23.60000
+7   0     4     1 (all)  3 22.90000
+8   0     4     1     3  1 21.50000
+9   0     4     1     4  2 23.60000
+10  0     6 (all) (all)  4 19.12500
+11  0     6 (all)     3  2 19.75000
+12  0     6 (all)     4  2 18.50000
+13  0     6     1 (all)  4 19.12500
+14  0     6     1     3  2 19.75000
+15  0     6     1     4  2 18.50000
+16  0     8 (all) (all) 12 15.05000
+17  0     8 (all)     3 12 15.05000
+18  0     8     0 (all) 12 15.05000
+19  0     8     0     3 12 15.05000
+20  1 (all) (all) (all) 13 24.39231
+21  1 (all) (all)     4  8 26.27500
+22  1 (all) (all)     5  5 21.38000
+23  1     4 (all) (all)  8 28.07500
+24  1     4 (all)     4  6 28.03333
+25  1     4 (all)     5  2 28.20000
+26  1     4     0 (all)  1 26.00000
+27  1     4     0     5  1 26.00000
+28  1     4     1 (all)  7 28.37143
+29  1     4     1     4  6 28.03333
+30  1     4     1     5  1 30.40000
+31  1     6 (all) (all)  3 20.56667
+32  1     6 (all)     4  2 21.00000
+33  1     6 (all)     5  1 19.70000
+34  1     6     0 (all)  3 20.56667
+35  1     6     0     4  2 21.00000
+36  1     6     0     5  1 19.70000
+37  1     8 (all) (all)  2 15.40000
+38  1     8 (all)     5  2 15.40000
+39  1     8     0 (all)  2 15.40000
+40  1     8     0     5  2 15.40000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># If `.with_all` has multiple columns, all combinations are generated.</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summarise_with_margins</span>(</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> <span class="fu">c</span>(gear, carb)</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>    am   cyl    vs  gear  carb  n      mpg
+1    0 (all) (all) (all) (all) 19 17.14737
+2    0 (all) (all) (all)     1  3 20.33333
+3    0 (all) (all) (all)     2  6 19.30000
+4    0 (all) (all) (all)     3  3 16.30000
+5    0 (all) (all) (all)     4  7 14.30000
+6    0 (all) (all)     3 (all) 15 16.10667
+7    0 (all) (all)     3     1  3 20.33333
+8    0 (all) (all)     3     2  4 17.15000
+9    0 (all) (all)     3     3  3 16.30000
+10   0 (all) (all)     3     4  5 12.62000
+11   0 (all) (all)     4 (all)  4 21.05000
+12   0 (all) (all)     4     2  2 23.60000
+13   0 (all) (all)     4     4  2 18.50000
+14   0     4 (all) (all) (all)  3 22.90000
+15   0     4 (all) (all)     1  1 21.50000
+16   0     4 (all) (all)     2  2 23.60000
+17   0     4 (all)     3 (all)  1 21.50000
+18   0     4 (all)     3     1  1 21.50000
+19   0     4 (all)     4 (all)  2 23.60000
+20   0     4 (all)     4     2  2 23.60000
+21   0     4     1 (all) (all)  3 22.90000
+22   0     4     1 (all)     1  1 21.50000
+23   0     4     1 (all)     2  2 23.60000
+24   0     4     1     3 (all)  1 21.50000
+25   0     4     1     3     1  1 21.50000
+26   0     4     1     4 (all)  2 23.60000
+27   0     4     1     4     2  2 23.60000
+28   0     6 (all) (all) (all)  4 19.12500
+29   0     6 (all) (all)     1  2 19.75000
+30   0     6 (all) (all)     4  2 18.50000
+31   0     6 (all)     3 (all)  2 19.75000
+32   0     6 (all)     3     1  2 19.75000
+33   0     6 (all)     4 (all)  2 18.50000
+34   0     6 (all)     4     4  2 18.50000
+35   0     6     1 (all) (all)  4 19.12500
+36   0     6     1 (all)     1  2 19.75000
+37   0     6     1 (all)     4  2 18.50000
+38   0     6     1     3 (all)  2 19.75000
+39   0     6     1     3     1  2 19.75000
+40   0     6     1     4 (all)  2 18.50000
+41   0     6     1     4     4  2 18.50000
+42   0     8 (all) (all) (all) 12 15.05000
+43   0     8 (all) (all)     2  4 17.15000
+44   0     8 (all) (all)     3  3 16.30000
+45   0     8 (all) (all)     4  5 12.62000
+46   0     8 (all)     3 (all) 12 15.05000
+47   0     8 (all)     3     2  4 17.15000
+48   0     8 (all)     3     3  3 16.30000
+49   0     8 (all)     3     4  5 12.62000
+50   0     8     0 (all) (all) 12 15.05000
+51   0     8     0 (all)     2  4 17.15000
+52   0     8     0 (all)     3  3 16.30000
+53   0     8     0 (all)     4  5 12.62000
+54   0     8     0     3 (all) 12 15.05000
+55   0     8     0     3     2  4 17.15000
+56   0     8     0     3     3  3 16.30000
+57   0     8     0     3     4  5 12.62000
+58   1 (all) (all) (all) (all) 13 24.39231
+59   1 (all) (all) (all)     1  4 29.10000
+60   1 (all) (all) (all)     2  4 27.05000
+61   1 (all) (all) (all)     4  3 19.26667
+62   1 (all) (all) (all)     6  1 19.70000
+63   1 (all) (all) (all)     8  1 15.00000
+64   1 (all) (all)     4 (all)  8 26.27500
+65   1 (all) (all)     4     1  4 29.10000
+66   1 (all) (all)     4     2  2 25.90000
+67   1 (all) (all)     4     4  2 21.00000
+68   1 (all) (all)     5 (all)  5 21.38000
+69   1 (all) (all)     5     2  2 28.20000
+70   1 (all) (all)     5     4  1 15.80000
+71   1 (all) (all)     5     6  1 19.70000
+72   1 (all) (all)     5     8  1 15.00000
+73   1     4 (all) (all) (all)  8 28.07500
+74   1     4 (all) (all)     1  4 29.10000
+75   1     4 (all) (all)     2  4 27.05000
+76   1     4 (all)     4 (all)  6 28.03333
+77   1     4 (all)     4     1  4 29.10000
+78   1     4 (all)     4     2  2 25.90000
+79   1     4 (all)     5 (all)  2 28.20000
+80   1     4 (all)     5     2  2 28.20000
+81   1     4     0 (all) (all)  1 26.00000
+82   1     4     0 (all)     2  1 26.00000
+83   1     4     0     5 (all)  1 26.00000
+84   1     4     0     5     2  1 26.00000
+85   1     4     1 (all) (all)  7 28.37143
+86   1     4     1 (all)     1  4 29.10000
+87   1     4     1 (all)     2  3 27.40000
+88   1     4     1     4 (all)  6 28.03333
+89   1     4     1     4     1  4 29.10000
+90   1     4     1     4     2  2 25.90000
+91   1     4     1     5 (all)  1 30.40000
+92   1     4     1     5     2  1 30.40000
+93   1     6 (all) (all) (all)  3 20.56667
+94   1     6 (all) (all)     4  2 21.00000
+95   1     6 (all) (all)     6  1 19.70000
+96   1     6 (all)     4 (all)  2 21.00000
+97   1     6 (all)     4     4  2 21.00000
+98   1     6 (all)     5 (all)  1 19.70000
+99   1     6 (all)     5     6  1 19.70000
+100  1     6     0 (all) (all)  3 20.56667
+101  1     6     0 (all)     4  2 21.00000
+102  1     6     0 (all)     6  1 19.70000
+103  1     6     0     4 (all)  2 21.00000
+104  1     6     0     4     4  2 21.00000
+105  1     6     0     5 (all)  1 19.70000
+106  1     6     0     5     6  1 19.70000
+107  1     8 (all) (all) (all)  2 15.40000
+108  1     8 (all) (all)     4  1 15.80000
+109  1     8 (all) (all)     8  1 15.00000
+110  1     8 (all)     5 (all)  2 15.40000
+111  1     8 (all)     5     4  1 15.80000
+112  1     8 (all)     5     8  1 15.00000
+113  1     8     0 (all) (all)  2 15.40000
+114  1     8     0 (all)     4  1 15.80000
+115  1     8     0 (all)     8  1 15.00000
+116  1     8     0     5 (all)  2 15.40000
+117  1     8     0     5     4  1 15.80000
+118  1     8     0     5     8  1 15.00000</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># union_all_with_margins()</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">union_all_with_margins</span>(</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                          am   cyl    vs  gear  mpg  disp  hp drat    wt  qsec
+Mazda RX4...1              1 (all) (all) (all) 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...2          1 (all) (all) (all) 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...3             1 (all) (all) (all) 22.8 108.0  93 3.85 2.320 18.61
+Hornet 4 Drive...4         0 (all) (all) (all) 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...5      0 (all) (all) (all) 18.7 360.0 175 3.15 3.440 17.02
+Valiant...6                0 (all) (all) (all) 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...7             0 (all) (all) (all) 14.3 360.0 245 3.21 3.570 15.84
+Merc 240D...8              0 (all) (all) (all) 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...9               0 (all) (all) (all) 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...10              0 (all) (all) (all) 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...11             0 (all) (all) (all) 17.8 167.6 123 3.92 3.440 18.90
+Merc 450SE...12            0 (all) (all) (all) 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...13            0 (all) (all) (all) 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...14           0 (all) (all) (all) 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...15    0 (all) (all) (all) 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...16   0 (all) (all) (all) 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...17     0 (all) (all) (all) 14.7 440.0 230 3.23 5.345 17.42
+Fiat 128...18              1 (all) (all) (all) 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...19           1 (all) (all) (all) 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...20        1 (all) (all) (all) 33.9  71.1  65 4.22 1.835 19.90
+Toyota Corona...21         0 (all) (all) (all) 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...22      0 (all) (all) (all) 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...23           0 (all) (all) (all) 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...24            0 (all) (all) (all) 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...25      0 (all) (all) (all) 19.2 400.0 175 3.08 3.845 17.05
+Fiat X1-9...26             1 (all) (all) (all) 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...27         1 (all) (all) (all) 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...28          1 (all) (all) (all) 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...29        1 (all) (all) (all) 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...30          1 (all) (all) (all) 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...31         1 (all) (all) (all) 15.0 301.0 335 3.54 3.570 14.60
+Volvo 142E...32            1 (all) (all) (all) 21.4 121.0 109 4.11 2.780 18.60
+Mazda RX4...33             1 (all) (all)     4 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...34         1 (all) (all)     4 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...35            1 (all) (all)     4 22.8 108.0  93 3.85 2.320 18.61
+Hornet 4 Drive...36        0 (all) (all)     3 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...37     0 (all) (all)     3 18.7 360.0 175 3.15 3.440 17.02
+Valiant...38               0 (all) (all)     3 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...39            0 (all) (all)     3 14.3 360.0 245 3.21 3.570 15.84
+Merc 240D...40             0 (all) (all)     4 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...41              0 (all) (all)     4 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...42              0 (all) (all)     4 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...43             0 (all) (all)     4 17.8 167.6 123 3.92 3.440 18.90
+Merc 450SE...44            0 (all) (all)     3 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...45            0 (all) (all)     3 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...46           0 (all) (all)     3 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...47    0 (all) (all)     3 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...48   0 (all) (all)     3 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...49     0 (all) (all)     3 14.7 440.0 230 3.23 5.345 17.42
+Fiat 128...50              1 (all) (all)     4 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...51           1 (all) (all)     4 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...52        1 (all) (all)     4 33.9  71.1  65 4.22 1.835 19.90
+Toyota Corona...53         0 (all) (all)     3 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...54      0 (all) (all)     3 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...55           0 (all) (all)     3 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...56            0 (all) (all)     3 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...57      0 (all) (all)     3 19.2 400.0 175 3.08 3.845 17.05
+Fiat X1-9...58             1 (all) (all)     4 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...59         1 (all) (all)     5 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...60          1 (all) (all)     5 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...61        1 (all) (all)     5 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...62          1 (all) (all)     5 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...63         1 (all) (all)     5 15.0 301.0 335 3.54 3.570 14.60
+Volvo 142E...64            1 (all) (all)     4 21.4 121.0 109 4.11 2.780 18.60
+Mazda RX4...65             1     6 (all) (all) 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...66         1     6 (all) (all) 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...67            1     4 (all) (all) 22.8 108.0  93 3.85 2.320 18.61
+Hornet 4 Drive...68        0     6 (all) (all) 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...69     0     8 (all) (all) 18.7 360.0 175 3.15 3.440 17.02
+Valiant...70               0     6 (all) (all) 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...71            0     8 (all) (all) 14.3 360.0 245 3.21 3.570 15.84
+Merc 240D...72             0     4 (all) (all) 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...73              0     4 (all) (all) 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...74              0     6 (all) (all) 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...75             0     6 (all) (all) 17.8 167.6 123 3.92 3.440 18.90
+Merc 450SE...76            0     8 (all) (all) 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...77            0     8 (all) (all) 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...78           0     8 (all) (all) 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...79    0     8 (all) (all) 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...80   0     8 (all) (all) 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...81     0     8 (all) (all) 14.7 440.0 230 3.23 5.345 17.42
+Fiat 128...82              1     4 (all) (all) 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...83           1     4 (all) (all) 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...84        1     4 (all) (all) 33.9  71.1  65 4.22 1.835 19.90
+Toyota Corona...85         0     4 (all) (all) 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...86      0     8 (all) (all) 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...87           0     8 (all) (all) 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...88            0     8 (all) (all) 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...89      0     8 (all) (all) 19.2 400.0 175 3.08 3.845 17.05
+Fiat X1-9...90             1     4 (all) (all) 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...91         1     4 (all) (all) 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...92          1     4 (all) (all) 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...93        1     8 (all) (all) 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...94          1     6 (all) (all) 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...95         1     8 (all) (all) 15.0 301.0 335 3.54 3.570 14.60
+Volvo 142E...96            1     4 (all) (all) 21.4 121.0 109 4.11 2.780 18.60
+Mazda RX4...97             1     6 (all)     4 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...98         1     6 (all)     4 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...99            1     4 (all)     4 22.8 108.0  93 3.85 2.320 18.61
+Hornet 4 Drive...100       0     6 (all)     3 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...101    0     8 (all)     3 18.7 360.0 175 3.15 3.440 17.02
+Valiant...102              0     6 (all)     3 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...103           0     8 (all)     3 14.3 360.0 245 3.21 3.570 15.84
+Merc 240D...104            0     4 (all)     4 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...105             0     4 (all)     4 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...106             0     6 (all)     4 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...107            0     6 (all)     4 17.8 167.6 123 3.92 3.440 18.90
+Merc 450SE...108           0     8 (all)     3 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...109           0     8 (all)     3 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...110          0     8 (all)     3 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...111   0     8 (all)     3 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...112  0     8 (all)     3 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...113    0     8 (all)     3 14.7 440.0 230 3.23 5.345 17.42
+Fiat 128...114             1     4 (all)     4 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...115          1     4 (all)     4 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...116       1     4 (all)     4 33.9  71.1  65 4.22 1.835 19.90
+Toyota Corona...117        0     4 (all)     3 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...118     0     8 (all)     3 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...119          0     8 (all)     3 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...120           0     8 (all)     3 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...121     0     8 (all)     3 19.2 400.0 175 3.08 3.845 17.05
+Fiat X1-9...122            1     4 (all)     4 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...123        1     4 (all)     5 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...124         1     4 (all)     5 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...125       1     8 (all)     5 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...126         1     6 (all)     5 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...127        1     8 (all)     5 15.0 301.0 335 3.54 3.570 14.60
+Volvo 142E...128           1     4 (all)     4 21.4 121.0 109 4.11 2.780 18.60
+Mazda RX4...129            1     6     0 (all) 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...130        1     6     0 (all) 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...131           1     4     1 (all) 22.8 108.0  93 3.85 2.320 18.61
+Hornet 4 Drive...132       0     6     1 (all) 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...133    0     8     0 (all) 18.7 360.0 175 3.15 3.440 17.02
+Valiant...134              0     6     1 (all) 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...135           0     8     0 (all) 14.3 360.0 245 3.21 3.570 15.84
+Merc 240D...136            0     4     1 (all) 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...137             0     4     1 (all) 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...138             0     6     1 (all) 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...139            0     6     1 (all) 17.8 167.6 123 3.92 3.440 18.90
+Merc 450SE...140           0     8     0 (all) 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...141           0     8     0 (all) 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...142          0     8     0 (all) 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...143   0     8     0 (all) 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...144  0     8     0 (all) 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...145    0     8     0 (all) 14.7 440.0 230 3.23 5.345 17.42
+Fiat 128...146             1     4     1 (all) 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...147          1     4     1 (all) 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...148       1     4     1 (all) 33.9  71.1  65 4.22 1.835 19.90
+Toyota Corona...149        0     4     1 (all) 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...150     0     8     0 (all) 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...151          0     8     0 (all) 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...152           0     8     0 (all) 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...153     0     8     0 (all) 19.2 400.0 175 3.08 3.845 17.05
+Fiat X1-9...154            1     4     1 (all) 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...155        1     4     0 (all) 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...156         1     4     1 (all) 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...157       1     8     0 (all) 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...158         1     6     0 (all) 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...159        1     8     0 (all) 15.0 301.0 335 3.54 3.570 14.60
+Volvo 142E...160           1     4     1 (all) 21.4 121.0 109 4.11 2.780 18.60
+Mazda RX4...161            1     6     0     4 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...162        1     6     0     4 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...163           1     4     1     4 22.8 108.0  93 3.85 2.320 18.61
+Hornet 4 Drive...164       0     6     1     3 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...165    0     8     0     3 18.7 360.0 175 3.15 3.440 17.02
+Valiant...166              0     6     1     3 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...167           0     8     0     3 14.3 360.0 245 3.21 3.570 15.84
+Merc 240D...168            0     4     1     4 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...169             0     4     1     4 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...170             0     6     1     4 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...171            0     6     1     4 17.8 167.6 123 3.92 3.440 18.90
+Merc 450SE...172           0     8     0     3 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...173           0     8     0     3 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...174          0     8     0     3 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...175   0     8     0     3 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...176  0     8     0     3 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...177    0     8     0     3 14.7 440.0 230 3.23 5.345 17.42
+Fiat 128...178             1     4     1     4 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...179          1     4     1     4 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...180       1     4     1     4 33.9  71.1  65 4.22 1.835 19.90
+Toyota Corona...181        0     4     1     3 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...182     0     8     0     3 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...183          0     8     0     3 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...184           0     8     0     3 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...185     0     8     0     3 19.2 400.0 175 3.08 3.845 17.05
+Fiat X1-9...186            1     4     1     4 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...187        1     4     0     5 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...188         1     4     1     5 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...189       1     8     0     5 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...190         1     6     0     5 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...191        1     8     0     5 15.0 301.0 335 3.54 3.570 14.60
+Volvo 142E...192           1     4     1     4 21.4 121.0 109 4.11 2.780 18.60
+                          carb
+Mazda RX4...1                4
+Mazda RX4 Wag...2            4
+Datsun 710...3               1
+Hornet 4 Drive...4           1
+Hornet Sportabout...5        2
+Valiant...6                  1
+Duster 360...7               4
+Merc 240D...8                2
+Merc 230...9                 2
+Merc 280...10                4
+Merc 280C...11               4
+Merc 450SE...12              3
+Merc 450SL...13              3
+Merc 450SLC...14             3
+Cadillac Fleetwood...15      4
+Lincoln Continental...16     4
+Chrysler Imperial...17       4
+Fiat 128...18                1
+Honda Civic...19             2
+Toyota Corolla...20          1
+Toyota Corona...21           1
+Dodge Challenger...22        2
+AMC Javelin...23             2
+Camaro Z28...24              4
+Pontiac Firebird...25        2
+Fiat X1-9...26               1
+Porsche 914-2...27           2
+Lotus Europa...28            2
+Ford Pantera L...29          4
+Ferrari Dino...30            6
+Maserati Bora...31           8
+Volvo 142E...32              2
+Mazda RX4...33               4
+Mazda RX4 Wag...34           4
+Datsun 710...35              1
+Hornet 4 Drive...36          1
+Hornet Sportabout...37       2
+Valiant...38                 1
+Duster 360...39              4
+Merc 240D...40               2
+Merc 230...41                2
+Merc 280...42                4
+Merc 280C...43               4
+Merc 450SE...44              3
+Merc 450SL...45              3
+Merc 450SLC...46             3
+Cadillac Fleetwood...47      4
+Lincoln Continental...48     4
+Chrysler Imperial...49       4
+Fiat 128...50                1
+Honda Civic...51             2
+Toyota Corolla...52          1
+Toyota Corona...53           1
+Dodge Challenger...54        2
+AMC Javelin...55             2
+Camaro Z28...56              4
+Pontiac Firebird...57        2
+Fiat X1-9...58               1
+Porsche 914-2...59           2
+Lotus Europa...60            2
+Ford Pantera L...61          4
+Ferrari Dino...62            6
+Maserati Bora...63           8
+Volvo 142E...64              2
+Mazda RX4...65               4
+Mazda RX4 Wag...66           4
+Datsun 710...67              1
+Hornet 4 Drive...68          1
+Hornet Sportabout...69       2
+Valiant...70                 1
+Duster 360...71              4
+Merc 240D...72               2
+Merc 230...73                2
+Merc 280...74                4
+Merc 280C...75               4
+Merc 450SE...76              3
+Merc 450SL...77              3
+Merc 450SLC...78             3
+Cadillac Fleetwood...79      4
+Lincoln Continental...80     4
+Chrysler Imperial...81       4
+Fiat 128...82                1
+Honda Civic...83             2
+Toyota Corolla...84          1
+Toyota Corona...85           1
+Dodge Challenger...86        2
+AMC Javelin...87             2
+Camaro Z28...88              4
+Pontiac Firebird...89        2
+Fiat X1-9...90               1
+Porsche 914-2...91           2
+Lotus Europa...92            2
+Ford Pantera L...93          4
+Ferrari Dino...94            6
+Maserati Bora...95           8
+Volvo 142E...96              2
+Mazda RX4...97               4
+Mazda RX4 Wag...98           4
+Datsun 710...99              1
+Hornet 4 Drive...100         1
+Hornet Sportabout...101      2
+Valiant...102                1
+Duster 360...103             4
+Merc 240D...104              2
+Merc 230...105               2
+Merc 280...106               4
+Merc 280C...107              4
+Merc 450SE...108             3
+Merc 450SL...109             3
+Merc 450SLC...110            3
+Cadillac Fleetwood...111     4
+Lincoln Continental...112    4
+Chrysler Imperial...113      4
+Fiat 128...114               1
+Honda Civic...115            2
+Toyota Corolla...116         1
+Toyota Corona...117          1
+Dodge Challenger...118       2
+AMC Javelin...119            2
+Camaro Z28...120             4
+Pontiac Firebird...121       2
+Fiat X1-9...122              1
+Porsche 914-2...123          2
+Lotus Europa...124           2
+Ford Pantera L...125         4
+Ferrari Dino...126           6
+Maserati Bora...127          8
+Volvo 142E...128             2
+Mazda RX4...129              4
+Mazda RX4 Wag...130          4
+Datsun 710...131             1
+Hornet 4 Drive...132         1
+Hornet Sportabout...133      2
+Valiant...134                1
+Duster 360...135             4
+Merc 240D...136              2
+Merc 230...137               2
+Merc 280...138               4
+Merc 280C...139              4
+Merc 450SE...140             3
+Merc 450SL...141             3
+Merc 450SLC...142            3
+Cadillac Fleetwood...143     4
+Lincoln Continental...144    4
+Chrysler Imperial...145      4
+Fiat 128...146               1
+Honda Civic...147            2
+Toyota Corolla...148         1
+Toyota Corona...149          1
+Dodge Challenger...150       2
+AMC Javelin...151            2
+Camaro Z28...152             4
+Pontiac Firebird...153       2
+Fiat X1-9...154              1
+Porsche 914-2...155          2
+Lotus Europa...156           2
+Ford Pantera L...157         4
+Ferrari Dino...158           6
+Maserati Bora...159          8
+Volvo 142E...160             2
+Mazda RX4...161              4
+Mazda RX4 Wag...162          4
+Datsun 710...163             1
+Hornet 4 Drive...164         1
+Hornet Sportabout...165      2
+Valiant...166                1
+Duster 360...167             4
+Merc 240D...168              2
+Merc 230...169               2
+Merc 280...170               4
+Merc 280C...171              4
+Merc 450SE...172             3
+Merc 450SL...173             3
+Merc 450SLC...174            3
+Cadillac Fleetwood...175     4
+Lincoln Continental...176    4
+Chrysler Imperial...177      4
+Fiat 128...178               1
+Honda Civic...179            2
+Toyota Corolla...180         1
+Toyota Corona...181          1
+Dodge Challenger...182       2
+AMC Javelin...183            2
+Camaro Z28...184             4
+Pontiac Firebird...185       2
+Fiat X1-9...186              1
+Porsche 914-2...187          2
+Lotus Europa...188           2
+Ford Pantera L...189         4
+Ferrari Dino...190           6
+Maserati Bora...191          8
+Volvo 142E...192             2</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># nest_with_margins()</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nest_with_margins</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 40 × 5
+      am cyl   vs    gear  data             
+   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;list&gt;           
+ 1     0 (all) (all) (all) &lt;tibble [19 × 7]&gt;
+ 2     0 (all) (all) 3     &lt;tibble [15 × 7]&gt;
+ 3     0 (all) (all) 4     &lt;tibble [4 × 7]&gt; 
+ 4     0 4     (all) (all) &lt;tibble [3 × 7]&gt; 
+ 5     0 4     (all) 3     &lt;tibble [1 × 7]&gt; 
+ 6     0 4     (all) 4     &lt;tibble [2 × 7]&gt; 
+ 7     0 4     1     (all) &lt;tibble [3 × 7]&gt; 
+ 8     0 4     1     3     &lt;tibble [1 × 7]&gt; 
+ 9     0 4     1     4     &lt;tibble [2 × 7]&gt; 
+10     0 6     (all) (all) &lt;tibble [4 × 7]&gt; 
+# ℹ 30 more rows</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#' nest_by_with_margins()</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="fu">nest_by_with_margins</span>(</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 40 × 5
+# Rowwise:  am, cyl, vs, gear
+      am cyl   vs    gear                data
+   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;list&lt;tibble[,7]&gt;&gt;
+ 1     0 (all) (all) (all)           [19 × 7]
+ 2     0 (all) (all) 3               [15 × 7]
+ 3     0 (all) (all) 4                [4 × 7]
+ 4     0 4     (all) (all)            [3 × 7]
+ 5     0 4     (all) 3                [1 × 7]
+ 6     0 4     (all) 4                [2 × 7]
+ 7     0 4     1     (all)            [3 × 7]
+ 8     0 4     1     3                [1 × 7]
+ 9     0 4     1     4                [2 × 7]
+10     0 6     (all) (all)            [4 × 7]
+# ℹ 30 more rows</code></pre>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

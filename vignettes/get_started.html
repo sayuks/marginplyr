@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.6.42">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2025-03-18">
+
+<title>Get started – withmargins</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-831a6e13d34e89ab8943621a9b1bffba.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+</head>
+
+<body class="nav-sidebar floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">withmargins</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/sayuks/withmargins"> <i class="bi bi-github" role="img" aria-label="withmargins GitHub">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+            <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../vignettes/get_started.html">Articles</a></li><li class="breadcrumb-item"><a href="../vignettes/get_started.html">Get started</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Home</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">Articles</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../vignettes/get_started.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Get started</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false">
+ <span class="menu-text">Reference</span></a>
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="false" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 ">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/summarise_with_margins.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">summarise_with_margins</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../NEWS.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">News</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../LICENSE.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">License</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../CODE_OF_CONDUCT.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Code of conduct</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../CITATION.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Citation</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active" data-toc-expanded="99">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#summarise_with_margins" id="toc-summarise_with_margins" class="nav-link active" data-scroll-target="#summarise_with_margins"><span class="header-section-number">1</span> <code>summarise_with_margins()</code></a>
+  <ul class="collapse">
+  <li><a href="#margins" id="toc-margins" class="nav-link" data-scroll-target="#margins"><span class="header-section-number">1.1</span> <code>.margins</code></a></li>
+  <li><a href="#without_all" id="toc-without_all" class="nav-link" data-scroll-target="#without_all"><span class="header-section-number">1.2</span> <code>.without_all</code></a></li>
+  <li><a href="#with_all" id="toc-with_all" class="nav-link" data-scroll-target="#with_all"><span class="header-section-number">1.3</span> <code>.with_all</code></a></li>
+  <li><a href="#sort" id="toc-sort" class="nav-link" data-scroll-target="#sort"><span class="header-section-number">1.4</span> <code>.sort</code></a></li>
+  <li><a href="#margin_name" id="toc-margin_name" class="nav-link" data-scroll-target="#margin_name"><span class="header-section-number">1.5</span> <code>.margin_name</code></a></li>
+  </ul></li>
+  <li><a href="#union_all_with_margins" id="toc-union_all_with_margins" class="nav-link" data-scroll-target="#union_all_with_margins"><span class="header-section-number">2</span> <code>union_all_with_margins()</code></a>
+  <ul class="collapse">
+  <li><a href="#usage" id="toc-usage" class="nav-link" data-scroll-target="#usage"><span class="header-section-number">2.1</span> Usage</a></li>
+  </ul></li>
+  <li><a href="#nest_with_margins-and-nest_by_with_margins" id="toc-nest_with_margins-and-nest_by_with_margins" class="nav-link" data-scroll-target="#nest_with_margins-and-nest_by_with_margins"><span class="header-section-number">3</span> <code>nest_with_margins()</code> and <code>nest_by_with_margins()</code></a>
+  <ul class="collapse">
+  <li><a href="#usage-1" id="toc-usage-1" class="nav-link" data-scroll-target="#usage-1"><span class="header-section-number">3.1</span> Usage</a></li>
+  </ul></li>
+  <li><a href="#session-info" id="toc-session-info" class="nav-link" data-scroll-target="#session-info"><span class="header-section-number">4</span> Session Info</a></li>
+  </ul>
+<div class="quarto-code-links"><h2>Code Links</h2><ul><li><a href="undefined"><i class="bi bi-link-45deg"></i></a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../vignettes/get_started.html">Articles</a></li><li class="breadcrumb-item"><a href="../vignettes/get_started.html">Get started</a></li></ol></nav>
+<div class="quarto-title">
+<div class="quarto-title-block"><div><h1 class="title">Get started</h1><button type="button" class="btn code-tools-button" id="quarto-code-tools-source"><i class="bi"></i> Code</button></div></div>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">March 18, 2025</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This article introduces the following functions that make grouped operations with margins easier.</p>
+<ul>
+<li><p><code>summarise_with_margins()</code></p></li>
+<li><p><code>union_all_with_margins()</code></p></li>
+<li><p><code>nest_with_margins()</code></p></li>
+<li><p><code>nest_by_with_margins()</code></p></li>
+</ul>
+<p>First, load the required libraries.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(withmargins)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(dplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'dplyr'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:stats':
+
+    filter, lag</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    intersect, setdiff, setequal, union</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tibble)</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(purrr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Prepare dummy data.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="ot">&lt;-</span> <span class="fu">tribble</span>(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span>year, <span class="sc">~</span>cat, <span class="sc">~</span>subcat,       <span class="sc">~</span>g1,         <span class="sc">~</span>g2,           <span class="sc">~</span>id, <span class="sc">~</span>value,</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"A"</span>,  <span class="st">"a1"</span>,          <span class="dv">1</span>L,          <span class="st">"y"</span>,           <span class="st">"1"</span>, <span class="dv">5</span>,</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"A"</span>,  <span class="st">"a2"</span>,          <span class="dv">2</span>L,          <span class="st">"x"</span>,           <span class="st">"2"</span>, <span class="cn">NA_real_</span>,</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"B"</span>,  <span class="cn">NA_character_</span>, <span class="dv">2</span>L,          <span class="st">"x"</span>,           <span class="st">"3"</span>, <span class="dv">1</span>,</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"B"</span>,  <span class="st">"b2"</span>,          <span class="dv">1</span>L,          <span class="st">"x"</span>,           <span class="st">"4"</span>, <span class="dv">8</span>,</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"A"</span>,  <span class="st">"a1"</span>,          <span class="cn">NA_integer_</span>, <span class="st">"x"</span>,           <span class="st">"1"</span>, <span class="dv">4</span>,</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"A"</span>,  <span class="st">"a2"</span>,          <span class="dv">1</span>L,          <span class="st">"y"</span>,           <span class="st">"2"</span>, <span class="dv">7</span>,</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"B"</span>,  <span class="st">"b1"</span>,          <span class="dv">1</span>L,          <span class="cn">NA_character_</span>, <span class="st">"3"</span>, <span class="dv">3</span>,</span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"B"</span>,  <span class="st">"b2"</span>,          <span class="dv">2</span>L,          <span class="st">"y"</span>,           <span class="st">"4"</span>, <span class="dv">9</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span> </span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    <span class="at">cat =</span> <span class="fu">factor</span>(cat),</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    <span class="at">subcat =</span> <span class="fu">factor</span>(subcat, <span class="at">ordered =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>    <span class="at">g2 =</span> <span class="fu">factor</span>(g2, <span class="at">exclude =</span> <span class="cn">NULL</span>)</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>df1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 7
+   year cat   subcat    g1 g2    id    value
+  &lt;dbl&gt; &lt;fct&gt; &lt;ord&gt;  &lt;int&gt; &lt;fct&gt; &lt;chr&gt; &lt;dbl&gt;
+1  2020 A     a1         1 y     1         5
+2  2020 A     a2         2 x     2        NA
+3  2020 B     &lt;NA&gt;       2 x     3         1
+4  2020 B     b2         1 x     4         8
+5  2021 A     a1        NA x     1         4
+6  2021 A     a2         1 y     2         7
+7  2021 B     b1         1 &lt;NA&gt;  3         3
+8  2021 B     b2         2 y     4         9</code></pre>
+</div>
+</div>
+<ol type="1">
+<li><p><strong>year</strong>: An integer column representing the year, including data from 2020 and 2021.</p></li>
+<li><p><strong>cat</strong>: A factor column denoting categories, taking values of either “A” or “B”.</p></li>
+<li><p><strong>subcat</strong>: A factor column representing sub-categories, with values including “a1”, “a2”, “b1”, and “b2”. This column is defined as an ordered factor with <code>ordered = TRUE</code>.</p></li>
+</ol>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>cat, subcat has a hierarchical structure. For example, A contains a1, a2 and b is not contained in A.</p>
+</div>
+</div>
+<ol start="4" type="1">
+<li><p><strong>g1</strong>: An integer column representing Group 1.</p></li>
+<li><p><strong>g2</strong>: A factor column representing Group 2, with values “x” or “y”, including NA values. This column is defined as a factor with <code>exclude = NULL</code>. This means that NA is included in the level.</p></li>
+<li><p><strong>id</strong>: A character column representing unique identifiers by years.</p></li>
+<li><p><strong>value</strong>: A numeric column representing values, including NA values.</p></li>
+</ol>
+<p>Check the level of the factors and whether they are ordered.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>df1_factors <span class="ot">&lt;-</span> <span class="fu">select</span>(df1, <span class="fu">where</span>(is.factor))</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(df1_factors, levels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$cat
+[1] "A" "B"
+
+$subcat
+[1] "a1" "a2" "b1" "b2"
+
+$g2
+[1] "x" "y" NA </code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(df1_factors, is.ordered)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$cat
+[1] FALSE
+
+$subcat
+[1] TRUE
+
+$g2
+[1] FALSE</code></pre>
+</div>
+</div>
+<p>Note that NA is included in g2 level.</p>
+<p>subcat is an order factor.</p>
+<p>Count each cat, subcat and find the average of the values.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.by =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 5 × 4
+  cat   subcat     n value
+  &lt;fct&gt; &lt;ord&gt;  &lt;int&gt; &lt;dbl&gt;
+1 A     a1         2   4.5
+2 A     a2         2   7  
+3 B     &lt;NA&gt;       1   1  
+4 B     b2         2   8.5
+5 B     b1         1   3  </code></pre>
+</div>
+</div>
+<p>But what if you want to calculate the cat total, subcat total together? <code>summarise_with_margins()</code> is useful in this case.</p>
+<section id="summarise_with_margins" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="summarise_with_margins"><span class="header-section-number">1</span> <code>summarise_with_margins()</code></h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Lazy tables are available
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>summarise_with_margins()</code> and <code>union_all_with_margins()</code> works with a local data frame or lazy table.</p>
+</div>
+</div>
+<section id="margins" class="level3" data-number="1.1">
+<h3 data-number="1.1" class="anchored" data-anchor-id="margins"><span class="header-section-number">1.1</span> <code>.margins</code></h3>
+<p>If you want to include the respective totals hierarchically in cat, subcat, include them in <code>.margins</code>. Variables can be specified by <a href="https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html"><code>tidy-select</code></a>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>res1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 4
+  cat   subcat     n value
+  &lt;fct&gt; &lt;ord&gt;  &lt;int&gt; &lt;dbl&gt;
+1 (all) (all)      8  5.29
+2 A     (all)      4  5.33
+3 A     a1         2  4.5 
+4 A     a2         2  7   
+5 B     (all)      4  5.25
+6 B     b1         1  3   
+7 B     b2         2  8.5 
+8 B     &lt;NA&gt;       1  1   </code></pre>
+</div>
+</div>
+<p>(all) was created; cat and subcat remained (ordered) factor.</p>
+<p>See factor levels.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(res1, levels)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>$cat
+[1] "(all)" "A"     "B"    
+
+$subcat
+[1] "(all)" "a1"    "a2"    "b1"    "b2"   
+
+$n
+NULL
+
+$value
+NULL</code></pre>
+</div>
+</div>
+<p>(all) was added to the beginning of the factor level.</p>
+</section>
+<section id="without_all" class="level3" data-number="1.2">
+<h3 data-number="1.2" class="anchored" data-anchor-id="without_all"><span class="header-section-number">1.2</span> <code>.without_all</code></h3>
+<p>In the example above, all the years were combined. Let’s assume here that we aggregate by year and do not want multi-year totals. In that case, use <code>.without_all</code>. Variables can be specified by <a href="https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html"><code>tidy-select</code></a>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 14 × 5
+    year cat   subcat     n  value
+   &lt;dbl&gt; &lt;fct&gt; &lt;ord&gt;  &lt;int&gt;  &lt;dbl&gt;
+ 1  2020 (all) (all)      4   4.67
+ 2  2020 A     (all)      2   5   
+ 3  2020 A     a1         1   5   
+ 4  2020 A     a2         1 NaN   
+ 5  2020 B     (all)      2   4.5 
+ 6  2020 B     b2         1   8   
+ 7  2020 B     &lt;NA&gt;       1   1   
+ 8  2021 (all) (all)      4   5.75
+ 9  2021 A     (all)      2   5.5 
+10  2021 A     a1         1   4   
+11  2021 A     a2         1   7   
+12  2021 B     (all)      2   6   
+13  2021 B     b1         1   3   
+14  2021 B     b2         1   9   </code></pre>
+</div>
+</div>
+<p>Each margin has been calculated for each group in year.</p>
+</section>
+<section id="with_all" class="level3" data-number="1.3">
+<h3 data-number="1.3" class="anchored" data-anchor-id="with_all"><span class="header-section-number">1.3</span> <code>.with_all</code></h3>
+<p>Furthermore, we want to add g1 to the group variables. We want to also include a total of g1. However, unlike cat and subcat, g1 does not have a hierarchical structure. In such cases, use <code>.with_all</code>. Variables can be specified by <a href="https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html"><code>tidy-select</code></a>.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year,</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> g1</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 35 × 6
+    year cat   subcat g1        n  value
+   &lt;dbl&gt; &lt;fct&gt; &lt;ord&gt;  &lt;chr&gt; &lt;int&gt;  &lt;dbl&gt;
+ 1  2020 (all) (all)  (all)     4   4.67
+ 2  2020 (all) (all)  1         2   6.5 
+ 3  2020 (all) (all)  2         2   1   
+ 4  2020 A     (all)  (all)     2   5   
+ 5  2020 A     (all)  1         1   5   
+ 6  2020 A     (all)  2         1 NaN   
+ 7  2020 A     a1     (all)     1   5   
+ 8  2020 A     a1     1         1   5   
+ 9  2020 A     a2     (all)     1 NaN   
+10  2020 A     a2     2         1 NaN   
+11  2020 B     (all)  (all)     2   4.5 
+12  2020 B     (all)  1         1   8   
+13  2020 B     (all)  2         1   1   
+14  2020 B     b2     (all)     1   8   
+15  2020 B     b2     1         1   8   
+16  2020 B     &lt;NA&gt;   (all)     1   1   
+17  2020 B     &lt;NA&gt;   2         1   1   
+18  2021 (all) (all)  (all)     4   5.75
+19  2021 (all) (all)  1         2   5   
+20  2021 (all) (all)  2         1   9   
+21  2021 (all) (all)  &lt;NA&gt;      1   4   
+22  2021 A     (all)  (all)     2   5.5 
+23  2021 A     (all)  1         1   7   
+24  2021 A     (all)  &lt;NA&gt;      1   4   
+25  2021 A     a1     (all)     1   4   
+26  2021 A     a1     &lt;NA&gt;      1   4   
+27  2021 A     a2     (all)     1   7   
+28  2021 A     a2     1         1   7   
+29  2021 B     (all)  (all)     2   6   
+30  2021 B     (all)  1         1   3   
+31  2021 B     (all)  2         1   9   
+32  2021 B     b1     (all)     1   3   
+33  2021 B     b1     1         1   3   
+34  2021 B     b2     (all)     1   9   
+35  2021 B     b2     2         1   9   </code></pre>
+</div>
+</div>
+<p>For all combinations of year, cat and subcat, all combinations including (all) in g1 were aggregated.</p>
+<p>g1 was of type integer, but is now of type string. This is due to the addition of (all).</p>
+<p>If you want to add g2 as well, you can do so as follows.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year,</span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> <span class="fu">c</span>(g1, g2)</span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 78 × 7
+    year cat   subcat g1    g2        n  value
+   &lt;dbl&gt; &lt;fct&gt; &lt;ord&gt;  &lt;chr&gt; &lt;fct&gt; &lt;int&gt;  &lt;dbl&gt;
+ 1  2020 (all) (all)  (all) (all)     4   4.67
+ 2  2020 (all) (all)  (all) x         3   4.5 
+ 3  2020 (all) (all)  (all) y         1   5   
+ 4  2020 (all) (all)  1     (all)     2   6.5 
+ 5  2020 (all) (all)  1     x         1   8   
+ 6  2020 (all) (all)  1     y         1   5   
+ 7  2020 (all) (all)  2     (all)     2   1   
+ 8  2020 (all) (all)  2     x         2   1   
+ 9  2020 A     (all)  (all) (all)     2   5   
+10  2020 A     (all)  (all) x         1 NaN   
+11  2020 A     (all)  (all) y         1   5   
+12  2020 A     (all)  1     (all)     1   5   
+13  2020 A     (all)  1     y         1   5   
+14  2020 A     (all)  2     (all)     1 NaN   
+15  2020 A     (all)  2     x         1 NaN   
+16  2020 A     a1     (all) (all)     1   5   
+17  2020 A     a1     (all) y         1   5   
+18  2020 A     a1     1     (all)     1   5   
+19  2020 A     a1     1     y         1   5   
+20  2020 A     a2     (all) (all)     1 NaN   
+21  2020 A     a2     (all) x         1 NaN   
+22  2020 A     a2     2     (all)     1 NaN   
+23  2020 A     a2     2     x         1 NaN   
+24  2020 B     (all)  (all) (all)     2   4.5 
+25  2020 B     (all)  (all) x         2   4.5 
+26  2020 B     (all)  1     (all)     1   8   
+27  2020 B     (all)  1     x         1   8   
+28  2020 B     (all)  2     (all)     1   1   
+29  2020 B     (all)  2     x         1   1   
+30  2020 B     b2     (all) (all)     1   8   
+31  2020 B     b2     (all) x         1   8   
+32  2020 B     b2     1     (all)     1   8   
+33  2020 B     b2     1     x         1   8   
+34  2020 B     &lt;NA&gt;   (all) (all)     1   1   
+35  2020 B     &lt;NA&gt;   (all) x         1   1   
+36  2020 B     &lt;NA&gt;   2     (all)     1   1   
+37  2020 B     &lt;NA&gt;   2     x         1   1   
+38  2021 (all) (all)  (all) (all)     4   5.75
+39  2021 (all) (all)  (all) x         1   4   
+40  2021 (all) (all)  (all) y         2   8   
+41  2021 (all) (all)  (all) &lt;NA&gt;      1   3   
+42  2021 (all) (all)  1     (all)     2   5   
+43  2021 (all) (all)  1     y         1   7   
+44  2021 (all) (all)  1     &lt;NA&gt;      1   3   
+45  2021 (all) (all)  2     (all)     1   9   
+46  2021 (all) (all)  2     y         1   9   
+47  2021 (all) (all)  &lt;NA&gt;  (all)     1   4   
+48  2021 (all) (all)  &lt;NA&gt;  x         1   4   
+49  2021 A     (all)  (all) (all)     2   5.5 
+50  2021 A     (all)  (all) x         1   4   
+51  2021 A     (all)  (all) y         1   7   
+52  2021 A     (all)  1     (all)     1   7   
+53  2021 A     (all)  1     y         1   7   
+54  2021 A     (all)  &lt;NA&gt;  (all)     1   4   
+55  2021 A     (all)  &lt;NA&gt;  x         1   4   
+56  2021 A     a1     (all) (all)     1   4   
+57  2021 A     a1     (all) x         1   4   
+58  2021 A     a1     &lt;NA&gt;  (all)     1   4   
+59  2021 A     a1     &lt;NA&gt;  x         1   4   
+60  2021 A     a2     (all) (all)     1   7   
+61  2021 A     a2     (all) y         1   7   
+62  2021 A     a2     1     (all)     1   7   
+63  2021 A     a2     1     y         1   7   
+64  2021 B     (all)  (all) (all)     2   6   
+65  2021 B     (all)  (all) y         1   9   
+66  2021 B     (all)  (all) &lt;NA&gt;      1   3   
+67  2021 B     (all)  1     (all)     1   3   
+68  2021 B     (all)  1     &lt;NA&gt;      1   3   
+69  2021 B     (all)  2     (all)     1   9   
+70  2021 B     (all)  2     y         1   9   
+71  2021 B     b1     (all) (all)     1   3   
+72  2021 B     b1     (all) &lt;NA&gt;      1   3   
+73  2021 B     b1     1     (all)     1   3   
+74  2021 B     b1     1     &lt;NA&gt;      1   3   
+75  2021 B     b2     (all) (all)     1   9   
+76  2021 B     b2     (all) y         1   9   
+77  2021 B     b2     2     (all)     1   9   
+78  2021 B     b2     2     y         1   9   </code></pre>
+</div>
+</div>
+<p>For all combinations of year, cat, subcat and g1, all combinations including (all) in g2 were aggregated.</p>
+</section>
+<section id="sort" class="level3" data-number="1.4">
+<h3 data-number="1.4" class="anchored" data-anchor-id="sort"><span class="header-section-number">1.4</span> <code>.sort</code></h3>
+<p>If <code>.sort = TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code> to make the results easier to see. The default is <code>is.data.frame(.data)</code>. This is because pipelines using lazy tables should perform the SQL <code>ORDER BY</code> as last as possible (See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of {dbplyr}</a> for details).</p>
+<p>In the above examples, the results were sorted because the data is a local data frame. If <code>.sort = FALSE</code>, the result is as follows.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year,</span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> <span class="fu">c</span>(g1, g2),</span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">.sort =</span> <span class="cn">FALSE</span></span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 78 × 7
+    year cat   subcat g1    g2        n  value
+   &lt;dbl&gt; &lt;fct&gt; &lt;ord&gt;  &lt;chr&gt; &lt;fct&gt; &lt;int&gt;  &lt;dbl&gt;
+ 1  2020 (all) (all)  (all) (all)     4   4.67
+ 2  2021 (all) (all)  (all) (all)     4   5.75
+ 3  2020 (all) (all)  (all) y         1   5   
+ 4  2020 (all) (all)  (all) x         3   4.5 
+ 5  2021 (all) (all)  (all) x         1   4   
+ 6  2021 (all) (all)  (all) y         2   8   
+ 7  2021 (all) (all)  (all) &lt;NA&gt;      1   3   
+ 8  2020 (all) (all)  1     (all)     2   6.5 
+ 9  2020 (all) (all)  2     (all)     2   1   
+10  2021 (all) (all)  &lt;NA&gt;  (all)     1   4   
+11  2021 (all) (all)  1     (all)     2   5   
+12  2021 (all) (all)  2     (all)     1   9   
+13  2020 (all) (all)  1     y         1   5   
+14  2020 (all) (all)  2     x         2   1   
+15  2020 (all) (all)  1     x         1   8   
+16  2021 (all) (all)  &lt;NA&gt;  x         1   4   
+17  2021 (all) (all)  1     y         1   7   
+18  2021 (all) (all)  1     &lt;NA&gt;      1   3   
+19  2021 (all) (all)  2     y         1   9   
+20  2020 A     (all)  (all) (all)     2   5   
+21  2020 B     (all)  (all) (all)     2   4.5 
+22  2021 A     (all)  (all) (all)     2   5.5 
+23  2021 B     (all)  (all) (all)     2   6   
+24  2020 A     (all)  (all) y         1   5   
+25  2020 A     (all)  (all) x         1 NaN   
+26  2020 B     (all)  (all) x         2   4.5 
+27  2021 A     (all)  (all) x         1   4   
+28  2021 A     (all)  (all) y         1   7   
+29  2021 B     (all)  (all) &lt;NA&gt;      1   3   
+30  2021 B     (all)  (all) y         1   9   
+31  2020 A     (all)  1     (all)     1   5   
+32  2020 A     (all)  2     (all)     1 NaN   
+33  2020 B     (all)  2     (all)     1   1   
+34  2020 B     (all)  1     (all)     1   8   
+35  2021 A     (all)  &lt;NA&gt;  (all)     1   4   
+36  2021 A     (all)  1     (all)     1   7   
+37  2021 B     (all)  1     (all)     1   3   
+38  2021 B     (all)  2     (all)     1   9   
+39  2020 A     (all)  1     y         1   5   
+40  2020 A     (all)  2     x         1 NaN   
+41  2020 B     (all)  2     x         1   1   
+42  2020 B     (all)  1     x         1   8   
+43  2021 A     (all)  &lt;NA&gt;  x         1   4   
+44  2021 A     (all)  1     y         1   7   
+45  2021 B     (all)  1     &lt;NA&gt;      1   3   
+46  2021 B     (all)  2     y         1   9   
+47  2020 A     a1     (all) (all)     1   5   
+48  2020 A     a2     (all) (all)     1 NaN   
+49  2020 B     &lt;NA&gt;   (all) (all)     1   1   
+50  2020 B     b2     (all) (all)     1   8   
+51  2021 A     a1     (all) (all)     1   4   
+52  2021 A     a2     (all) (all)     1   7   
+53  2021 B     b1     (all) (all)     1   3   
+54  2021 B     b2     (all) (all)     1   9   
+55  2020 A     a1     (all) y         1   5   
+56  2020 A     a2     (all) x         1 NaN   
+57  2020 B     &lt;NA&gt;   (all) x         1   1   
+58  2020 B     b2     (all) x         1   8   
+59  2021 A     a1     (all) x         1   4   
+60  2021 A     a2     (all) y         1   7   
+61  2021 B     b1     (all) &lt;NA&gt;      1   3   
+62  2021 B     b2     (all) y         1   9   
+63  2020 A     a1     1     (all)     1   5   
+64  2020 A     a2     2     (all)     1 NaN   
+65  2020 B     &lt;NA&gt;   2     (all)     1   1   
+66  2020 B     b2     1     (all)     1   8   
+67  2021 A     a1     &lt;NA&gt;  (all)     1   4   
+68  2021 A     a2     1     (all)     1   7   
+69  2021 B     b1     1     (all)     1   3   
+70  2021 B     b2     2     (all)     1   9   
+71  2020 A     a1     1     y         1   5   
+72  2020 A     a2     2     x         1 NaN   
+73  2020 B     &lt;NA&gt;   2     x         1   1   
+74  2020 B     b2     1     x         1   8   
+75  2021 A     a1     &lt;NA&gt;  x         1   4   
+76  2021 A     a2     1     y         1   7   
+77  2021 B     b1     1     &lt;NA&gt;      1   3   
+78  2021 B     b2     2     y         1   9   </code></pre>
+</div>
+</div>
+</section>
+<section id="margin_name" class="level3" data-number="1.5">
+<h3 data-number="1.5" class="anchored" data-anchor-id="margin_name"><span class="header-section-number">1.5</span> <code>.margin_name</code></h3>
+<p>By default “(all)” is used for the name of the margin, but this can be changed with the <code>.margin_name</code> argument.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="st">"Total"</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 4
+  cat   subcat     n value
+  &lt;fct&gt; &lt;ord&gt;  &lt;int&gt; &lt;dbl&gt;
+1 Total Total      8  5.29
+2 A     Total      4  5.33
+3 A     a1         2  4.5 
+4 A     a2         2  7   
+5 B     Total      4  5.25
+6 B     b1         1  3   
+7 B     b2         2  8.5 
+8 B     &lt;NA&gt;       1  1   </code></pre>
+</div>
+</div>
+<p>The <code>.margin_name</code> cannot be one already used in <code>.margins</code> or <code>.with_all</code>, where the new total category is to be created.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="st">"A"</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in assert_margin_name(dplyr::select(.data, tidyselect::all_of(margin_vars_all)), : "A" is not allowed as a margin name because it is already contained in the following columns: `cat`</code></pre>
+</div>
+</div>
+<p><code>NA_character_</code> can be used for <code>.margin_name</code>, but it is similarly checked if it is already in use.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span>  <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in assert_margin_name(dplyr::select(.data, tidyselect::all_of(margin_vars_all)), : NA is not allowed as a margin name because it is already contained in the following columns: `subcat`</code></pre>
+</div>
+</div>
+<p>Error occurred. Because there are NAs in subcat. On the other hand, there is no NA in cat, so the following example works.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> cat,</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>res2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 3 × 3
+  cat       n value
+  &lt;fct&gt; &lt;int&gt; &lt;dbl&gt;
+1 A         4  5.33
+2 B         4  5.25
+3 &lt;NA&gt;      8  5.29</code></pre>
+</div>
+</div>
+<p>NA was used instead of (all).</p>
+<p>If <code>.margin_name</code> is <code>NA_character_</code>, what is the level of factor in cat?</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(res2<span class="sc">$</span>cat)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] "A" "B"</code></pre>
+</div>
+</div>
+<p><strong>NA is not included in the factor level</strong>. This is the same behaviour as the default <code>base::factor()</code>.</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Warning
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><strong>If <code>.margin_name</code> is <code>NA_character_</code>, NA must not be included in the level of factors specified in <code>.margins</code> or <code>.with_all</code>.</strong></p>
+<p>g2 includes NA in the level of factor. Try setting <code>.margin_name</code> to <code>NA_character_</code> and using g2.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> g2,</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in with_margins(.data = .data, ..., .margins = {: If `.margin_name` is a `NA_character_`, the following factor columns specified in `.margins` or `.with_all` must not contain &lt;NA&gt; in the level: `g2`</code></pre>
+</div>
+</div>
+<p>The reasons for the errors are as follows:</p>
+<p>A value whose level is NA is not itself NA.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb38"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="cn">NA</span>, <span class="at">exclude =</span> <span class="cn">NULL</span>)</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>x</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] &lt;NA&gt;
+Levels: &lt;NA&gt;</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb40"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<p>However, if <code>NA_character_</code> is specified as <code>.margin_name</code>, this is because when <code>NA_character_</code> is converted to factor, it will be the same as the value where the level of the original data is NA and they cannot be distinguished.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="union_all_with_margins" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="union_all_with_margins"><span class="header-section-number">2</span> <code>union_all_with_margins()</code></h2>
+<section id="usage" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="usage"><span class="header-section-number">2.1</span> Usage</h3>
+<p><code>union_all_with_margins()</code> considers each margin as a new category, duplicate the rows and merge them vertically (like <code>UNION ALL</code> in SQL).</p>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+The number of rows in the result of <code>union_all_with_margins()</code> can be huge.
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>Be aware that this may increase memory occupancy and overload the server.</p>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb42"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">union_all_with_margins</span>(</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 24 × 7
+   cat   subcat  year    g1 g2    id    value
+   &lt;fct&gt; &lt;ord&gt;  &lt;dbl&gt; &lt;int&gt; &lt;fct&gt; &lt;chr&gt; &lt;dbl&gt;
+ 1 (all) (all)   2020     1 y     1         5
+ 2 (all) (all)   2020     2 x     2        NA
+ 3 (all) (all)   2020     2 x     3         1
+ 4 (all) (all)   2020     1 x     4         8
+ 5 (all) (all)   2021    NA x     1         4
+ 6 (all) (all)   2021     1 y     2         7
+ 7 (all) (all)   2021     1 &lt;NA&gt;  3         3
+ 8 (all) (all)   2021     2 y     4         9
+ 9 A     (all)   2020     1 y     1         5
+10 A     (all)   2020     2 x     2        NA
+11 B     (all)   2020     2 x     3         1
+12 B     (all)   2020     1 x     4         8
+13 A     (all)   2021    NA x     1         4
+14 A     (all)   2021     1 y     2         7
+15 B     (all)   2021     1 &lt;NA&gt;  3         3
+16 B     (all)   2021     2 y     4         9
+17 A     a1      2020     1 y     1         5
+18 A     a2      2020     2 x     2        NA
+19 B     &lt;NA&gt;    2020     2 x     3         1
+20 B     b2      2020     1 x     4         8
+21 A     a1      2021    NA x     1         4
+22 A     a2      2021     1 y     2         7
+23 B     b1      2021     1 &lt;NA&gt;  3         3
+24 B     b2      2021     2 y     4         9</code></pre>
+</div>
+</div>
+<p>The following margins were considered as a new category and merged vertically three times.</p>
+<ul>
+<li><p>cat and subcat margins</p></li>
+<li><p>subcat margins</p></li>
+<li><p>Without margins</p></li>
+</ul>
+<p>The original df1 has 8 rows. Thus the number of rows became 8 * 3 = 24 rows.</p>
+</section>
+</section>
+<section id="nest_with_margins-and-nest_by_with_margins" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="nest_with_margins-and-nest_by_with_margins"><span class="header-section-number">3</span> <code>nest_with_margins()</code> and <code>nest_by_with_margins()</code></h2>
+<div class="callout callout-style-default callout-warning callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Only works with a local data frame
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p><code>nest_with_margins()</code> and <code>nest_by_with_margins()</code> only works with a local data frame, as most lazy tables do not support nest operations.</p>
+</div>
+</div>
+<section id="usage-1" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="usage-1"><span class="header-section-number">3.1</span> Usage</h3>
+<p><code>nest_with_magins()</code> and <code>nest_by_with_magins()</code> have similar behaviour. Each function nests for each group.</p>
+<ul>
+<li><p><code>nest_with_magins()</code> returns an ungrouped data frame, like <code>tidyr::nest()</code>.</p></li>
+<li><p><code>nest_by_with_magins()</code> returns a row-wise data frame, like <code>dplyr::nest_by()</code>.</p></li>
+</ul>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb44"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nest_with_margins</span>(</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 3
+  cat   subcat data            
+  &lt;fct&gt; &lt;ord&gt;  &lt;list&gt;          
+1 (all) (all)  &lt;tibble [8 × 5]&gt;
+2 A     (all)  &lt;tibble [4 × 5]&gt;
+3 A     a1     &lt;tibble [2 × 5]&gt;
+4 A     a2     &lt;tibble [2 × 5]&gt;
+5 B     (all)  &lt;tibble [4 × 5]&gt;
+6 B     b1     &lt;tibble [1 × 5]&gt;
+7 B     b2     &lt;tibble [2 × 5]&gt;
+8 B     &lt;NA&gt;   &lt;tibble [1 × 5]&gt;</code></pre>
+</div>
+</div>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb46"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb46-2"><a href="#cb46-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nest_by_with_margins</span>(</span>
+<span id="cb46-3"><a href="#cb46-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb46-4"><a href="#cb46-4" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 8 × 3
+# Rowwise:  cat, subcat
+  cat   subcat               data
+  &lt;fct&gt; &lt;ord&gt;  &lt;list&lt;tibble[,5]&gt;&gt;
+1 (all) (all)             [8 × 5]
+2 A     (all)             [4 × 5]
+3 A     a1                [2 × 5]
+4 A     a2                [2 × 5]
+5 B     (all)             [4 × 5]
+6 B     b1                [1 × 5]
+7 B     b2                [2 × 5]
+8 B     &lt;NA&gt;              [1 × 5]</code></pre>
+</div>
+</div>
+<p>The data contained in each group is nested in the data column. This allows the same operation to be performed on each nested group at a time. See the followings for more information.</p>
+<ul>
+<li><p><a href="https://tidyr.tidyverse.org/articles/nest.html">Nested data - <code>{tidyr}</code> vignette</a></p></li>
+<li><p><a href="https://broom.tidymodels.org/articles/broom_and_dplyr.html">broom and dplyr - <code>{broom}</code> vignette</a></p></li>
+<li><p><a href="https://dplyr.tidyverse.org/articles/rowwise.html">Row-wise operations - <code>{dplyr}</code> vignette</a></p></li>
+</ul>
+<!-- ### Example -->
+<!-- Here, using `quartabs::render_tabset()` together, -->
+<!-- create figures for each group and -->
+<!-- show them using the nested tabset panels. -->
+<!-- `render_tabset()` works with quarto documents (.qmd files). -->
+<!-- You need to specify `#| results: asis` in the chunk option. -->
+<!-- :::{.callout-tip} -->
+<!-- For details on `render_tabset()`, -->
+<!-- see [Get started](https://sayuks.github.io/quartabs/vignettes/get_started.html). -->
+<!-- ::: -->
+<!-- ```{r} -->
+<!-- #| results: asis -->
+<!-- df1 |> -->
+<!--   nest_by_with_margins( -->
+<!--     .margins = c(cat, subcat), -->
+<!--     .with_all = c(g1, g2) -->
+<!--   ) |> -->
+<!--   mutate( -->
+<!--     fig = list( -->
+<!--       data |> -->
+<!--         ggplot(aes(factor(year), value, fill = id)) + -->
+<!--         geom_col() + -->
+<!--         labs( -->
+<!--           title = paste(cat, subcat, g1, g2, sep = " | ") -->
+<!--         ) -->
+<!--     ) -->
+<!--   ) |> -->
+<!--   render_tabset(c(cat, subcat, g1, g2), fig) -->
+<!-- ``` -->
+</section>
+</section>
+<section id="session-info" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="session-info"><span class="header-section-number">4</span> Session Info</h2>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb48"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="co"># save the session info as an object</span></span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>sess <span class="ot">&lt;-</span> sessioninfo<span class="sc">::</span><span class="fu">session_info</span>(<span class="at">pkgs =</span> <span class="st">"attached"</span>)</span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a><span class="co"># inject the Quarto info</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>sess<span class="sc">$</span>platform<span class="sc">$</span>quarto <span class="ot">&lt;-</span> <span class="fu">paste</span>(</span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>  quarto<span class="sc">::</span><span class="fu">quarto_version</span>(),</span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"@"</span>,</span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">normalizePath</span>(quarto<span class="sc">::</span><span class="fu">quarto_path</span>())</span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a><span class="co"># print it out</span></span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>sess</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>─ Session info ───────────────────────────────────────────────────────────────
+ setting  value
+ version  R version 4.4.3 (2025-02-28)
+ os       Ubuntu 24.04.2 LTS
+ system   x86_64, linux-gnu
+ ui       X11
+ language (EN)
+ collate  C.UTF-8
+ ctype    C.UTF-8
+ tz       Etc/UTC
+ date     2025-03-18
+ pandoc   3.4 @ /opt/quarto/bin/tools/ (via rmarkdown)
+ quarto   1.6.42 @ /opt/quarto/bin/quarto
+
+─ Packages ───────────────────────────────────────────────────────────────────
+ package     * version date (UTC) lib source
+ dplyr       * 1.1.4   2023-11-17 [2] RSPM (R 4.4.0)
+ ggplot2     * 3.5.1   2024-04-23 [2] RSPM (R 4.4.0)
+ purrr       * 1.0.4   2025-02-05 [2] RSPM (R 4.4.0)
+ tibble      * 3.2.1   2023-03-20 [2] RSPM (R 4.4.2)
+ withmargins * 0.1.0   2025-03-18 [1] local
+
+ [1] /usr/local/lib/R/site-library
+ [2] /usr/lib/R/site-library
+ [3] /usr/lib/R/library
+ * ── Packages attached to the search path.
+
+──────────────────────────────────────────────────────────────────────────────</code></pre>
+</div>
+</div>
+
+
+<!-- -->
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const onCopySuccess = function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
+  });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
+  const viewSource = window.document.getElementById('quarto-view-source') ||
+                     window.document.getElementById('quarto-code-tools-source');
+  if (viewSource) {
+    const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+    viewSource.addEventListener("click", function(e) {
+      if (sourceUrl) {
+        // rstudio viewer pane
+        if (/\bcapabilities=\b/.test(window.location)) {
+          window.open(sourceUrl);
+        } else {
+          window.location.href = sourceUrl;
+        }
+      } else {
+        const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+        modal.show();
+      }
+      return false;
+    });
+  }
+  function toggleCodeHandler(show) {
+    return function(e) {
+      const detailsSrc = window.document.querySelectorAll(".cell > details > .sourceCode");
+      for (let i=0; i<detailsSrc.length; i++) {
+        const details = detailsSrc[i].parentElement;
+        if (show) {
+          details.open = true;
+        } else {
+          details.removeAttribute("open");
+        }
+      }
+      const cellCodeDivs = window.document.querySelectorAll(".cell > .sourceCode");
+      const fromCls = show ? "hidden" : "unhidden";
+      const toCls = show ? "unhidden" : "hidden";
+      for (let i=0; i<cellCodeDivs.length; i++) {
+        const codeDiv = cellCodeDivs[i];
+        if (codeDiv.classList.contains(fromCls)) {
+          codeDiv.classList.remove(fromCls);
+          codeDiv.classList.add(toCls);
+        } 
+      }
+      return false;
+    }
+  }
+  const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+  if (hideAllCode) {
+    hideAllCode.addEventListener("click", toggleCodeHandler(false));
+  }
+  const showAllCode = window.document.getElementById("quarto-show-all-code");
+  if (showAllCode) {
+    showAllCode.addEventListener("click", toggleCodeHandler(true));
+  }
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp('/' + window.location.host + '/');
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script><div class="modal fade" id="quarto-embedded-source-code-modal" tabindex="-1" aria-labelledby="quarto-embedded-source-code-modal-label" aria-hidden="true"><div class="modal-dialog modal-dialog-scrollable"><div class="modal-content"><div class="modal-header"><h5 class="modal-title" id="quarto-embedded-source-code-modal-label">Source Code</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body"><div class="">
+<div class="sourceCode" id="cb50" data-shortcodes="false"><pre class="sourceCode markdown code-with-copy"><code class="sourceCode markdown"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a><span class="an">title:</span><span class="co"> Get started</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a><span class="an">format:</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a><span class="co">  html:</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a><span class="co">    code-tools: true</span></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a><span class="co">    toc: true</span></span>
+<span id="cb50-7"><a href="#cb50-7" aria-hidden="true" tabindex="-1"></a><span class="co">    toc-expand: true</span></span>
+<span id="cb50-8"><a href="#cb50-8" aria-hidden="true" tabindex="-1"></a><span class="co">    number-sections: true</span></span>
+<span id="cb50-9"><a href="#cb50-9" aria-hidden="true" tabindex="-1"></a><span class="an">date:</span><span class="co"> last-modified</span></span>
+<span id="cb50-10"><a href="#cb50-10" aria-hidden="true" tabindex="-1"></a><span class="co">---</span></span>
+<span id="cb50-11"><a href="#cb50-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>This article introduces the following functions </span>
+<span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a>that make grouped operations with margins easier.</span>
+<span id="cb50-14"><a href="#cb50-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`summarise_with_margins()`</span></span>
+<span id="cb50-16"><a href="#cb50-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-17"><a href="#cb50-17" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`union_all_with_margins()`</span></span>
+<span id="cb50-18"><a href="#cb50-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-19"><a href="#cb50-19" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`nest_with_margins()`</span></span>
+<span id="cb50-20"><a href="#cb50-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-21"><a href="#cb50-21" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`nest_by_with_margins()`</span></span>
+<span id="cb50-22"><a href="#cb50-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-23"><a href="#cb50-23" aria-hidden="true" tabindex="-1"></a>First, load the required libraries.</span>
+<span id="cb50-24"><a href="#cb50-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-25"><a href="#cb50-25" aria-hidden="true" tabindex="-1"></a><span class="in">```{r setup}</span></span>
+<span id="cb50-26"><a href="#cb50-26" aria-hidden="true" tabindex="-1"></a><span class="in">library(withmargins)</span></span>
+<span id="cb50-27"><a href="#cb50-27" aria-hidden="true" tabindex="-1"></a><span class="in">library(dplyr)</span></span>
+<span id="cb50-28"><a href="#cb50-28" aria-hidden="true" tabindex="-1"></a><span class="in">library(ggplot2)</span></span>
+<span id="cb50-29"><a href="#cb50-29" aria-hidden="true" tabindex="-1"></a><span class="in">library(tibble)</span></span>
+<span id="cb50-30"><a href="#cb50-30" aria-hidden="true" tabindex="-1"></a><span class="in">library(purrr)</span></span>
+<span id="cb50-31"><a href="#cb50-31" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-32"><a href="#cb50-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-33"><a href="#cb50-33" aria-hidden="true" tabindex="-1"></a>Prepare dummy data.</span>
+<span id="cb50-34"><a href="#cb50-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-37"><a href="#cb50-37" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-38"><a href="#cb50-38" aria-hidden="true" tabindex="-1"></a>df1 <span class="ot">&lt;-</span> <span class="fu">tribble</span>(</span>
+<span id="cb50-39"><a href="#cb50-39" aria-hidden="true" tabindex="-1"></a>  <span class="sc">~</span>year, <span class="sc">~</span>cat, <span class="sc">~</span>subcat,       <span class="sc">~</span>g1,         <span class="sc">~</span>g2,           <span class="sc">~</span>id, <span class="sc">~</span>value,</span>
+<span id="cb50-40"><a href="#cb50-40" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"A"</span>,  <span class="st">"a1"</span>,          <span class="dv">1</span>L,          <span class="st">"y"</span>,           <span class="st">"1"</span>, <span class="dv">5</span>,</span>
+<span id="cb50-41"><a href="#cb50-41" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"A"</span>,  <span class="st">"a2"</span>,          <span class="dv">2</span>L,          <span class="st">"x"</span>,           <span class="st">"2"</span>, <span class="cn">NA_real_</span>,</span>
+<span id="cb50-42"><a href="#cb50-42" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"B"</span>,  <span class="cn">NA_character_</span>, <span class="dv">2</span>L,          <span class="st">"x"</span>,           <span class="st">"3"</span>, <span class="dv">1</span>,</span>
+<span id="cb50-43"><a href="#cb50-43" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2020</span>,  <span class="st">"B"</span>,  <span class="st">"b2"</span>,          <span class="dv">1</span>L,          <span class="st">"x"</span>,           <span class="st">"4"</span>, <span class="dv">8</span>,</span>
+<span id="cb50-44"><a href="#cb50-44" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"A"</span>,  <span class="st">"a1"</span>,          <span class="cn">NA_integer_</span>, <span class="st">"x"</span>,           <span class="st">"1"</span>, <span class="dv">4</span>,</span>
+<span id="cb50-45"><a href="#cb50-45" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"A"</span>,  <span class="st">"a2"</span>,          <span class="dv">1</span>L,          <span class="st">"y"</span>,           <span class="st">"2"</span>, <span class="dv">7</span>,</span>
+<span id="cb50-46"><a href="#cb50-46" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"B"</span>,  <span class="st">"b1"</span>,          <span class="dv">1</span>L,          <span class="cn">NA_character_</span>, <span class="st">"3"</span>, <span class="dv">3</span>,</span>
+<span id="cb50-47"><a href="#cb50-47" aria-hidden="true" tabindex="-1"></a>  <span class="dv">2021</span>,  <span class="st">"B"</span>,  <span class="st">"b2"</span>,          <span class="dv">2</span>L,          <span class="st">"y"</span>,           <span class="st">"4"</span>, <span class="dv">9</span>,</span>
+<span id="cb50-48"><a href="#cb50-48" aria-hidden="true" tabindex="-1"></a>) <span class="sc">|&gt;</span> </span>
+<span id="cb50-49"><a href="#cb50-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb50-50"><a href="#cb50-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">cat =</span> <span class="fu">factor</span>(cat),</span>
+<span id="cb50-51"><a href="#cb50-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">subcat =</span> <span class="fu">factor</span>(subcat, <span class="at">ordered =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-52"><a href="#cb50-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">g2 =</span> <span class="fu">factor</span>(g2, <span class="at">exclude =</span> <span class="cn">NULL</span>)</span>
+<span id="cb50-53"><a href="#cb50-53" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-54"><a href="#cb50-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-55"><a href="#cb50-55" aria-hidden="true" tabindex="-1"></a>df1</span>
+<span id="cb50-56"><a href="#cb50-56" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-57"><a href="#cb50-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-58"><a href="#cb50-58" aria-hidden="true" tabindex="-1"></a><span class="ss">1. </span>**year**: An integer column representing the year, </span>
+<span id="cb50-59"><a href="#cb50-59" aria-hidden="true" tabindex="-1"></a>including data from 2020 and 2021.</span>
+<span id="cb50-60"><a href="#cb50-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-61"><a href="#cb50-61" aria-hidden="true" tabindex="-1"></a><span class="ss">2. </span>**cat**: A factor column denoting categories, </span>
+<span id="cb50-62"><a href="#cb50-62" aria-hidden="true" tabindex="-1"></a>taking values of either "A" or "B".</span>
+<span id="cb50-63"><a href="#cb50-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-64"><a href="#cb50-64" aria-hidden="true" tabindex="-1"></a><span class="ss">3. </span>**subcat**: A factor column representing sub-categories, with values </span>
+<span id="cb50-65"><a href="#cb50-65" aria-hidden="true" tabindex="-1"></a>including "a1", "a2", "b1", and "b2". This column is defined</span>
+<span id="cb50-66"><a href="#cb50-66" aria-hidden="true" tabindex="-1"></a>as an ordered factor with <span class="in">`ordered = TRUE`</span>.</span>
+<span id="cb50-67"><a href="#cb50-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-68"><a href="#cb50-68" aria-hidden="true" tabindex="-1"></a>:::{.callout-note}</span>
+<span id="cb50-69"><a href="#cb50-69" aria-hidden="true" tabindex="-1"></a>cat, subcat has a hierarchical structure. </span>
+<span id="cb50-70"><a href="#cb50-70" aria-hidden="true" tabindex="-1"></a>For example, A contains a1, a2 and b is not contained in A.</span>
+<span id="cb50-71"><a href="#cb50-71" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb50-72"><a href="#cb50-72" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-73"><a href="#cb50-73" aria-hidden="true" tabindex="-1"></a><span class="ss">4. </span>**g1**: An integer column representing Group 1.</span>
+<span id="cb50-74"><a href="#cb50-74" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-75"><a href="#cb50-75" aria-hidden="true" tabindex="-1"></a><span class="ss">5. </span>**g2**: A factor column representing Group 2, with values "x" or "y", </span>
+<span id="cb50-76"><a href="#cb50-76" aria-hidden="true" tabindex="-1"></a>including NA values. This column is defined as a factor with <span class="in">`exclude = NULL`</span>. </span>
+<span id="cb50-77"><a href="#cb50-77" aria-hidden="true" tabindex="-1"></a>This means that NA is included in the level.</span>
+<span id="cb50-78"><a href="#cb50-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-79"><a href="#cb50-79" aria-hidden="true" tabindex="-1"></a><span class="ss">6. </span>**id**: A character column representing unique identifiers by years.</span>
+<span id="cb50-80"><a href="#cb50-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-81"><a href="#cb50-81" aria-hidden="true" tabindex="-1"></a><span class="ss">7. </span>**value**: A numeric column representing values, including NA values.</span>
+<span id="cb50-82"><a href="#cb50-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-83"><a href="#cb50-83" aria-hidden="true" tabindex="-1"></a>Check the level of the factors and whether they are ordered.</span>
+<span id="cb50-84"><a href="#cb50-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-87"><a href="#cb50-87" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-88"><a href="#cb50-88" aria-hidden="true" tabindex="-1"></a>df1_factors <span class="ot">&lt;-</span> <span class="fu">select</span>(df1, <span class="fu">where</span>(is.factor))</span>
+<span id="cb50-89"><a href="#cb50-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-90"><a href="#cb50-90" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(df1_factors, levels)</span>
+<span id="cb50-91"><a href="#cb50-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-92"><a href="#cb50-92" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(df1_factors, is.ordered)</span>
+<span id="cb50-93"><a href="#cb50-93" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-94"><a href="#cb50-94" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-95"><a href="#cb50-95" aria-hidden="true" tabindex="-1"></a>Note that NA is included in g2 level.</span>
+<span id="cb50-96"><a href="#cb50-96" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-97"><a href="#cb50-97" aria-hidden="true" tabindex="-1"></a>subcat is an order factor.</span>
+<span id="cb50-98"><a href="#cb50-98" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-99"><a href="#cb50-99" aria-hidden="true" tabindex="-1"></a>Count each cat, subcat and find the average of the values.</span>
+<span id="cb50-100"><a href="#cb50-100" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-103"><a href="#cb50-103" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-104"><a href="#cb50-104" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-105"><a href="#cb50-105" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb50-106"><a href="#cb50-106" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-107"><a href="#cb50-107" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-108"><a href="#cb50-108" aria-hidden="true" tabindex="-1"></a>    <span class="at">.by =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb50-109"><a href="#cb50-109" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-110"><a href="#cb50-110" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-111"><a href="#cb50-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-112"><a href="#cb50-112" aria-hidden="true" tabindex="-1"></a>But what if you want to calculate the cat total, subcat total together?</span>
+<span id="cb50-113"><a href="#cb50-113" aria-hidden="true" tabindex="-1"></a><span class="in">`summarise_with_margins()`</span> is useful in this case.</span>
+<span id="cb50-114"><a href="#cb50-114" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-115"><a href="#cb50-115" aria-hidden="true" tabindex="-1"></a><span class="fu">## `summarise_with_margins()`</span></span>
+<span id="cb50-116"><a href="#cb50-116" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-117"><a href="#cb50-117" aria-hidden="true" tabindex="-1"></a>:::{.callout-note}</span>
+<span id="cb50-118"><a href="#cb50-118" aria-hidden="true" tabindex="-1"></a><span class="fu">## Lazy tables are available</span></span>
+<span id="cb50-119"><a href="#cb50-119" aria-hidden="true" tabindex="-1"></a><span class="in">`summarise_with_margins()`</span> and <span class="in">`union_all_with_margins()`</span> </span>
+<span id="cb50-120"><a href="#cb50-120" aria-hidden="true" tabindex="-1"></a>works with a local data frame or lazy table.</span>
+<span id="cb50-121"><a href="#cb50-121" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb50-122"><a href="#cb50-122" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-123"><a href="#cb50-123" aria-hidden="true" tabindex="-1"></a><span class="fu">### `.margins`</span></span>
+<span id="cb50-124"><a href="#cb50-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-125"><a href="#cb50-125" aria-hidden="true" tabindex="-1"></a>If you want to include the respective totals hierarchically</span>
+<span id="cb50-126"><a href="#cb50-126" aria-hidden="true" tabindex="-1"></a>in cat, subcat, include them in <span class="in">`.margins`</span>.</span>
+<span id="cb50-127"><a href="#cb50-127" aria-hidden="true" tabindex="-1"></a>Variables can be specified by </span>
+<span id="cb50-128"><a href="#cb50-128" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">`tidy-select`</span><span class="co">](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html)</span>.</span>
+<span id="cb50-129"><a href="#cb50-129" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-132"><a href="#cb50-132" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-133"><a href="#cb50-133" aria-hidden="true" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-134"><a href="#cb50-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-135"><a href="#cb50-135" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-136"><a href="#cb50-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-137"><a href="#cb50-137" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb50-138"><a href="#cb50-138" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-139"><a href="#cb50-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-140"><a href="#cb50-140" aria-hidden="true" tabindex="-1"></a>res1</span>
+<span id="cb50-141"><a href="#cb50-141" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-142"><a href="#cb50-142" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-143"><a href="#cb50-143" aria-hidden="true" tabindex="-1"></a>(all) was created; cat and subcat remained (ordered) factor.</span>
+<span id="cb50-144"><a href="#cb50-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-145"><a href="#cb50-145" aria-hidden="true" tabindex="-1"></a>See factor levels.</span>
+<span id="cb50-146"><a href="#cb50-146" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-149"><a href="#cb50-149" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-150"><a href="#cb50-150" aria-hidden="true" tabindex="-1"></a><span class="fu">lapply</span>(res1, levels)</span>
+<span id="cb50-151"><a href="#cb50-151" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-152"><a href="#cb50-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-153"><a href="#cb50-153" aria-hidden="true" tabindex="-1"></a>(all) was added to the beginning of the factor level.</span>
+<span id="cb50-154"><a href="#cb50-154" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-155"><a href="#cb50-155" aria-hidden="true" tabindex="-1"></a><span class="fu">### `.without_all`</span></span>
+<span id="cb50-156"><a href="#cb50-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-157"><a href="#cb50-157" aria-hidden="true" tabindex="-1"></a>In the example above, all the years were combined. </span>
+<span id="cb50-158"><a href="#cb50-158" aria-hidden="true" tabindex="-1"></a>Let's assume here that we aggregate by year </span>
+<span id="cb50-159"><a href="#cb50-159" aria-hidden="true" tabindex="-1"></a>and do not want multi-year totals.</span>
+<span id="cb50-160"><a href="#cb50-160" aria-hidden="true" tabindex="-1"></a>In that case, use <span class="in">`.without_all`</span>.</span>
+<span id="cb50-161"><a href="#cb50-161" aria-hidden="true" tabindex="-1"></a>Variables can be specified by </span>
+<span id="cb50-162"><a href="#cb50-162" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">`tidy-select`</span><span class="co">](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html)</span>.</span>
+<span id="cb50-163"><a href="#cb50-163" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-166"><a href="#cb50-166" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-167"><a href="#cb50-167" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-168"><a href="#cb50-168" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-169"><a href="#cb50-169" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-170"><a href="#cb50-170" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-171"><a href="#cb50-171" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb50-172"><a href="#cb50-172" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year</span>
+<span id="cb50-173"><a href="#cb50-173" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-174"><a href="#cb50-174" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-175"><a href="#cb50-175" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-176"><a href="#cb50-176" aria-hidden="true" tabindex="-1"></a>Each margin has been calculated for each group in year. </span>
+<span id="cb50-177"><a href="#cb50-177" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-178"><a href="#cb50-178" aria-hidden="true" tabindex="-1"></a><span class="fu">### `.with_all`</span></span>
+<span id="cb50-179"><a href="#cb50-179" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-180"><a href="#cb50-180" aria-hidden="true" tabindex="-1"></a>Furthermore, we want to add g1 to the group variables.</span>
+<span id="cb50-181"><a href="#cb50-181" aria-hidden="true" tabindex="-1"></a>We want to also include a total of g1.</span>
+<span id="cb50-182"><a href="#cb50-182" aria-hidden="true" tabindex="-1"></a>However, unlike cat and subcat, g1 does not have a hierarchical structure.</span>
+<span id="cb50-183"><a href="#cb50-183" aria-hidden="true" tabindex="-1"></a>In such cases, use <span class="in">`.with_all`</span>.</span>
+<span id="cb50-184"><a href="#cb50-184" aria-hidden="true" tabindex="-1"></a>Variables can be specified by </span>
+<span id="cb50-185"><a href="#cb50-185" aria-hidden="true" tabindex="-1"></a><span class="co">[</span><span class="ot">`tidy-select`</span><span class="co">](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html)</span>.</span>
+<span id="cb50-186"><a href="#cb50-186" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-189"><a href="#cb50-189" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-190"><a href="#cb50-190" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-191"><a href="#cb50-191" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-192"><a href="#cb50-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-193"><a href="#cb50-193" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-194"><a href="#cb50-194" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb50-195"><a href="#cb50-195" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year,</span>
+<span id="cb50-196"><a href="#cb50-196" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> g1</span>
+<span id="cb50-197"><a href="#cb50-197" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb50-198"><a href="#cb50-198" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span>
+<span id="cb50-199"><a href="#cb50-199" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-200"><a href="#cb50-200" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-201"><a href="#cb50-201" aria-hidden="true" tabindex="-1"></a>For all combinations of year, cat and subcat, </span>
+<span id="cb50-202"><a href="#cb50-202" aria-hidden="true" tabindex="-1"></a>all combinations including (all) in g1 were aggregated.</span>
+<span id="cb50-203"><a href="#cb50-203" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-204"><a href="#cb50-204" aria-hidden="true" tabindex="-1"></a>g1 was of type integer, but is now of type string. </span>
+<span id="cb50-205"><a href="#cb50-205" aria-hidden="true" tabindex="-1"></a>This is due to the addition of (all).</span>
+<span id="cb50-206"><a href="#cb50-206" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-207"><a href="#cb50-207" aria-hidden="true" tabindex="-1"></a>If you want to add g2 as well, you can do so as follows.</span>
+<span id="cb50-208"><a href="#cb50-208" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-211"><a href="#cb50-211" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-212"><a href="#cb50-212" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-213"><a href="#cb50-213" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-214"><a href="#cb50-214" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-215"><a href="#cb50-215" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-216"><a href="#cb50-216" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb50-217"><a href="#cb50-217" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year,</span>
+<span id="cb50-218"><a href="#cb50-218" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> <span class="fu">c</span>(g1, g2)</span>
+<span id="cb50-219"><a href="#cb50-219" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb50-220"><a href="#cb50-220" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span>
+<span id="cb50-221"><a href="#cb50-221" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-222"><a href="#cb50-222" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-223"><a href="#cb50-223" aria-hidden="true" tabindex="-1"></a>For all combinations of year, cat, subcat and g1, </span>
+<span id="cb50-224"><a href="#cb50-224" aria-hidden="true" tabindex="-1"></a>all combinations including (all) in g2 were aggregated.</span>
+<span id="cb50-225"><a href="#cb50-225" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-226"><a href="#cb50-226" aria-hidden="true" tabindex="-1"></a><span class="fu">### `.sort`</span></span>
+<span id="cb50-227"><a href="#cb50-227" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-228"><a href="#cb50-228" aria-hidden="true" tabindex="-1"></a>If <span class="in">`.sort = TRUE`</span>, sort the result by the column order specified in <span class="in">`.without_all`</span> and <span class="in">`.margins`</span> and <span class="in">`.with_all`</span> to make the results easier to see.</span>
+<span id="cb50-229"><a href="#cb50-229" aria-hidden="true" tabindex="-1"></a>The default is <span class="in">`is.data.frame(.data)`</span>.</span>
+<span id="cb50-230"><a href="#cb50-230" aria-hidden="true" tabindex="-1"></a>This is because pipelines using lazy tables </span>
+<span id="cb50-231"><a href="#cb50-231" aria-hidden="true" tabindex="-1"></a>should perform the SQL <span class="in">`ORDER BY`</span> as last as possible</span>
+<span id="cb50-232"><a href="#cb50-232" aria-hidden="true" tabindex="-1"></a>(See <span class="co">[</span><span class="ot">`arrange()` documentation of {dbplyr}</span><span class="co">](https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html)</span> for details).</span>
+<span id="cb50-233"><a href="#cb50-233" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-234"><a href="#cb50-234" aria-hidden="true" tabindex="-1"></a>In the above examples, the results were sorted</span>
+<span id="cb50-235"><a href="#cb50-235" aria-hidden="true" tabindex="-1"></a>because the data is a local data frame.</span>
+<span id="cb50-236"><a href="#cb50-236" aria-hidden="true" tabindex="-1"></a>If <span class="in">`.sort = FALSE`</span>, the result is as follows.</span>
+<span id="cb50-237"><a href="#cb50-237" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-240"><a href="#cb50-240" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-241"><a href="#cb50-241" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-242"><a href="#cb50-242" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-243"><a href="#cb50-243" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-244"><a href="#cb50-244" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-245"><a href="#cb50-245" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb50-246"><a href="#cb50-246" aria-hidden="true" tabindex="-1"></a>    <span class="at">.without_all =</span> year,</span>
+<span id="cb50-247"><a href="#cb50-247" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> <span class="fu">c</span>(g1, g2),</span>
+<span id="cb50-248"><a href="#cb50-248" aria-hidden="true" tabindex="-1"></a>    <span class="at">.sort =</span> <span class="cn">FALSE</span></span>
+<span id="cb50-249"><a href="#cb50-249" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb50-250"><a href="#cb50-250" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span>
+<span id="cb50-251"><a href="#cb50-251" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-252"><a href="#cb50-252" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-253"><a href="#cb50-253" aria-hidden="true" tabindex="-1"></a><span class="fu">### `.margin_name`</span></span>
+<span id="cb50-254"><a href="#cb50-254" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-255"><a href="#cb50-255" aria-hidden="true" tabindex="-1"></a>By default "(all)" is used for the name of the margin, </span>
+<span id="cb50-256"><a href="#cb50-256" aria-hidden="true" tabindex="-1"></a>but this can be changed with the <span class="in">`.margin_name`</span> argument.</span>
+<span id="cb50-257"><a href="#cb50-257" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-260"><a href="#cb50-260" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-261"><a href="#cb50-261" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-262"><a href="#cb50-262" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-263"><a href="#cb50-263" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-264"><a href="#cb50-264" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-265"><a href="#cb50-265" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb50-266"><a href="#cb50-266" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="st">"Total"</span></span>
+<span id="cb50-267"><a href="#cb50-267" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-268"><a href="#cb50-268" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-269"><a href="#cb50-269" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-270"><a href="#cb50-270" aria-hidden="true" tabindex="-1"></a>The <span class="in">`.margin_name`</span> cannot be one already used in <span class="in">`.margins`</span> or <span class="in">`.with_all`</span>, </span>
+<span id="cb50-271"><a href="#cb50-271" aria-hidden="true" tabindex="-1"></a>where the new total category is to be created.</span>
+<span id="cb50-272"><a href="#cb50-272" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-275"><a href="#cb50-275" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-276"><a href="#cb50-276" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb50-277"><a href="#cb50-277" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-278"><a href="#cb50-278" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-279"><a href="#cb50-279" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-280"><a href="#cb50-280" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-281"><a href="#cb50-281" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-282"><a href="#cb50-282" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb50-283"><a href="#cb50-283" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="st">"A"</span></span>
+<span id="cb50-284"><a href="#cb50-284" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-285"><a href="#cb50-285" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-286"><a href="#cb50-286" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-287"><a href="#cb50-287" aria-hidden="true" tabindex="-1"></a><span class="in">`NA_character_`</span> can be used for <span class="in">`.margin_name`</span>, </span>
+<span id="cb50-288"><a href="#cb50-288" aria-hidden="true" tabindex="-1"></a>but it is similarly checked if it is already in use.</span>
+<span id="cb50-289"><a href="#cb50-289" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-292"><a href="#cb50-292" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-293"><a href="#cb50-293" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb50-294"><a href="#cb50-294" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-295"><a href="#cb50-295" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-296"><a href="#cb50-296" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-297"><a href="#cb50-297" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-298"><a href="#cb50-298" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-299"><a href="#cb50-299" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span>  <span class="fu">c</span>(cat, subcat),</span>
+<span id="cb50-300"><a href="#cb50-300" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
+<span id="cb50-301"><a href="#cb50-301" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-302"><a href="#cb50-302" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-303"><a href="#cb50-303" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-304"><a href="#cb50-304" aria-hidden="true" tabindex="-1"></a>Error occurred. Because there are NAs in subcat. </span>
+<span id="cb50-305"><a href="#cb50-305" aria-hidden="true" tabindex="-1"></a>On the other hand, there is no NA in cat, so the following example works.</span>
+<span id="cb50-306"><a href="#cb50-306" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-309"><a href="#cb50-309" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-310"><a href="#cb50-310" aria-hidden="true" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-311"><a href="#cb50-311" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-312"><a href="#cb50-312" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-313"><a href="#cb50-313" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-314"><a href="#cb50-314" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> cat,</span>
+<span id="cb50-315"><a href="#cb50-315" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
+<span id="cb50-316"><a href="#cb50-316" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-317"><a href="#cb50-317" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-318"><a href="#cb50-318" aria-hidden="true" tabindex="-1"></a>res2</span>
+<span id="cb50-319"><a href="#cb50-319" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-320"><a href="#cb50-320" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-321"><a href="#cb50-321" aria-hidden="true" tabindex="-1"></a>NA was used instead of (all).</span>
+<span id="cb50-322"><a href="#cb50-322" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-323"><a href="#cb50-323" aria-hidden="true" tabindex="-1"></a>If <span class="in">`.margin_name`</span> is <span class="in">`NA_character_`</span>, what is the level of factor in cat?</span>
+<span id="cb50-324"><a href="#cb50-324" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-327"><a href="#cb50-327" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-328"><a href="#cb50-328" aria-hidden="true" tabindex="-1"></a><span class="fu">levels</span>(res2<span class="sc">$</span>cat)</span>
+<span id="cb50-329"><a href="#cb50-329" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-330"><a href="#cb50-330" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-331"><a href="#cb50-331" aria-hidden="true" tabindex="-1"></a>__NA is not included in the factor level__. </span>
+<span id="cb50-332"><a href="#cb50-332" aria-hidden="true" tabindex="-1"></a>This is the same behaviour as the default <span class="in">`base::factor()`</span>.</span>
+<span id="cb50-333"><a href="#cb50-333" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-334"><a href="#cb50-334" aria-hidden="true" tabindex="-1"></a>:::{.callout-warning}</span>
+<span id="cb50-335"><a href="#cb50-335" aria-hidden="true" tabindex="-1"></a>__If `.margin_name` is `NA_character_`, NA must not be included</span>
+<span id="cb50-336"><a href="#cb50-336" aria-hidden="true" tabindex="-1"></a>in the level of factors specified in <span class="in">`.margins`</span> or <span class="in">`.with_all`</span>.__</span>
+<span id="cb50-337"><a href="#cb50-337" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-338"><a href="#cb50-338" aria-hidden="true" tabindex="-1"></a>g2 includes NA in the level of factor. </span>
+<span id="cb50-339"><a href="#cb50-339" aria-hidden="true" tabindex="-1"></a>Try setting <span class="in">`.margin_name`</span> to <span class="in">`NA_character_`</span> and using g2.</span>
+<span id="cb50-340"><a href="#cb50-340" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-343"><a href="#cb50-343" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-344"><a href="#cb50-344" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
+<span id="cb50-345"><a href="#cb50-345" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-346"><a href="#cb50-346" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-347"><a href="#cb50-347" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-348"><a href="#cb50-348" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
+<span id="cb50-349"><a href="#cb50-349" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb50-350"><a href="#cb50-350" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> g2,</span>
+<span id="cb50-351"><a href="#cb50-351" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
+<span id="cb50-352"><a href="#cb50-352" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-353"><a href="#cb50-353" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-354"><a href="#cb50-354" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-355"><a href="#cb50-355" aria-hidden="true" tabindex="-1"></a>The reasons for the errors are as follows:</span>
+<span id="cb50-356"><a href="#cb50-356" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-357"><a href="#cb50-357" aria-hidden="true" tabindex="-1"></a>A value whose level is NA is not itself NA.</span>
+<span id="cb50-358"><a href="#cb50-358" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-361"><a href="#cb50-361" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-362"><a href="#cb50-362" aria-hidden="true" tabindex="-1"></a>x <span class="ot">&lt;-</span> <span class="fu">factor</span>(<span class="cn">NA</span>, <span class="at">exclude =</span> <span class="cn">NULL</span>)</span>
+<span id="cb50-363"><a href="#cb50-363" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-364"><a href="#cb50-364" aria-hidden="true" tabindex="-1"></a>x</span>
+<span id="cb50-365"><a href="#cb50-365" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-366"><a href="#cb50-366" aria-hidden="true" tabindex="-1"></a><span class="fu">is.na</span>(x)</span>
+<span id="cb50-367"><a href="#cb50-367" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-368"><a href="#cb50-368" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-369"><a href="#cb50-369" aria-hidden="true" tabindex="-1"></a>However, if <span class="in">`NA_character_`</span> is specified as <span class="in">`.margin_name`</span>, </span>
+<span id="cb50-370"><a href="#cb50-370" aria-hidden="true" tabindex="-1"></a>this is because when <span class="in">`NA_character_`</span> is converted to factor, </span>
+<span id="cb50-371"><a href="#cb50-371" aria-hidden="true" tabindex="-1"></a>it will be the same as the value where the level of the original data is </span>
+<span id="cb50-372"><a href="#cb50-372" aria-hidden="true" tabindex="-1"></a>NA and they cannot be distinguished.</span>
+<span id="cb50-373"><a href="#cb50-373" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb50-374"><a href="#cb50-374" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-375"><a href="#cb50-375" aria-hidden="true" tabindex="-1"></a><span class="fu">## `union_all_with_margins()`</span></span>
+<span id="cb50-376"><a href="#cb50-376" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-377"><a href="#cb50-377" aria-hidden="true" tabindex="-1"></a><span class="fu">### Usage</span></span>
+<span id="cb50-378"><a href="#cb50-378" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-379"><a href="#cb50-379" aria-hidden="true" tabindex="-1"></a><span class="in">`union_all_with_margins()`</span> considers each margin as a new category,</span>
+<span id="cb50-380"><a href="#cb50-380" aria-hidden="true" tabindex="-1"></a>duplicate the rows and merge them vertically (like <span class="in">`UNION ALL`</span> in SQL).</span>
+<span id="cb50-381"><a href="#cb50-381" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-382"><a href="#cb50-382" aria-hidden="true" tabindex="-1"></a>:::{.callout-warning}</span>
+<span id="cb50-383"><a href="#cb50-383" aria-hidden="true" tabindex="-1"></a><span class="fu">## The number of rows in the result of `union_all_with_margins()` can be huge.</span></span>
+<span id="cb50-384"><a href="#cb50-384" aria-hidden="true" tabindex="-1"></a>Be aware that this may increase memory occupancy and overload the server.</span>
+<span id="cb50-385"><a href="#cb50-385" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb50-386"><a href="#cb50-386" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-389"><a href="#cb50-389" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-390"><a href="#cb50-390" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-391"><a href="#cb50-391" aria-hidden="true" tabindex="-1"></a>  <span class="fu">union_all_with_margins</span>(</span>
+<span id="cb50-392"><a href="#cb50-392" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb50-393"><a href="#cb50-393" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">|&gt;</span> </span>
+<span id="cb50-394"><a href="#cb50-394" aria-hidden="true" tabindex="-1"></a>  <span class="fu">print</span>(<span class="at">n =</span> <span class="cn">Inf</span>)</span>
+<span id="cb50-395"><a href="#cb50-395" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-396"><a href="#cb50-396" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-397"><a href="#cb50-397" aria-hidden="true" tabindex="-1"></a>The following margins were considered as a new category </span>
+<span id="cb50-398"><a href="#cb50-398" aria-hidden="true" tabindex="-1"></a>and merged vertically three times.</span>
+<span id="cb50-399"><a href="#cb50-399" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-400"><a href="#cb50-400" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>cat and subcat margins</span>
+<span id="cb50-401"><a href="#cb50-401" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-402"><a href="#cb50-402" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>subcat margins</span>
+<span id="cb50-403"><a href="#cb50-403" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-404"><a href="#cb50-404" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span>Without margins</span>
+<span id="cb50-405"><a href="#cb50-405" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-406"><a href="#cb50-406" aria-hidden="true" tabindex="-1"></a>The original df1 has <span class="in">`r nrow(df1)`</span> rows.</span>
+<span id="cb50-407"><a href="#cb50-407" aria-hidden="true" tabindex="-1"></a>Thus the number of rows became <span class="in">`r nrow(df1)`</span> * 3 = <span class="in">`r nrow(df1) * 3`</span> rows.</span>
+<span id="cb50-408"><a href="#cb50-408" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-409"><a href="#cb50-409" aria-hidden="true" tabindex="-1"></a><span class="fu">## `nest_with_margins()` and `nest_by_with_margins()`</span></span>
+<span id="cb50-410"><a href="#cb50-410" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-411"><a href="#cb50-411" aria-hidden="true" tabindex="-1"></a>:::{.callout-warning}</span>
+<span id="cb50-412"><a href="#cb50-412" aria-hidden="true" tabindex="-1"></a><span class="fu">## Only works with a local data frame</span></span>
+<span id="cb50-413"><a href="#cb50-413" aria-hidden="true" tabindex="-1"></a><span class="in">`nest_with_margins()`</span> and <span class="in">`nest_by_with_margins()`</span> </span>
+<span id="cb50-414"><a href="#cb50-414" aria-hidden="true" tabindex="-1"></a>only works with a local data frame,</span>
+<span id="cb50-415"><a href="#cb50-415" aria-hidden="true" tabindex="-1"></a>as most lazy tables do not support nest operations.</span>
+<span id="cb50-416"><a href="#cb50-416" aria-hidden="true" tabindex="-1"></a>:::</span>
+<span id="cb50-417"><a href="#cb50-417" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-418"><a href="#cb50-418" aria-hidden="true" tabindex="-1"></a><span class="fu">### Usage</span></span>
+<span id="cb50-419"><a href="#cb50-419" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-420"><a href="#cb50-420" aria-hidden="true" tabindex="-1"></a><span class="in">`nest_with_magins()`</span> and <span class="in">`nest_by_with_magins()`</span> have similar behaviour.</span>
+<span id="cb50-421"><a href="#cb50-421" aria-hidden="true" tabindex="-1"></a>Each function nests for each group.</span>
+<span id="cb50-422"><a href="#cb50-422" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-423"><a href="#cb50-423" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`nest_with_magins()`</span> returns an ungrouped data frame, like <span class="in">`tidyr::nest()`</span>.</span>
+<span id="cb50-424"><a href="#cb50-424" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-425"><a href="#cb50-425" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`nest_by_with_magins()`</span> returns a row-wise data frame, </span>
+<span id="cb50-426"><a href="#cb50-426" aria-hidden="true" tabindex="-1"></a>like <span class="in">`dplyr::nest_by()`</span>.</span>
+<span id="cb50-427"><a href="#cb50-427" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-430"><a href="#cb50-430" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-431"><a href="#cb50-431" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-432"><a href="#cb50-432" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nest_with_margins</span>(</span>
+<span id="cb50-433"><a href="#cb50-433" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb50-434"><a href="#cb50-434" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-435"><a href="#cb50-435" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-436"><a href="#cb50-436" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-439"><a href="#cb50-439" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-440"><a href="#cb50-440" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
+<span id="cb50-441"><a href="#cb50-441" aria-hidden="true" tabindex="-1"></a>  <span class="fu">nest_by_with_margins</span>(</span>
+<span id="cb50-442"><a href="#cb50-442" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
+<span id="cb50-443"><a href="#cb50-443" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb50-444"><a href="#cb50-444" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+<span id="cb50-445"><a href="#cb50-445" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-446"><a href="#cb50-446" aria-hidden="true" tabindex="-1"></a>The data contained in each group is nested in the data column.</span>
+<span id="cb50-447"><a href="#cb50-447" aria-hidden="true" tabindex="-1"></a>This allows the same operation to be performed on each nested group at a time.</span>
+<span id="cb50-448"><a href="#cb50-448" aria-hidden="true" tabindex="-1"></a>See the followings for more information.</span>
+<span id="cb50-449"><a href="#cb50-449" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-450"><a href="#cb50-450" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">Nested data - `{tidyr}` vignette</span><span class="co">](https://tidyr.tidyverse.org/articles/nest.html)</span></span>
+<span id="cb50-451"><a href="#cb50-451" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-452"><a href="#cb50-452" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">broom and dplyr - `{broom}` vignette</span><span class="co">](https://broom.tidymodels.org/articles/broom_and_dplyr.html)</span></span>
+<span id="cb50-453"><a href="#cb50-453" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-454"><a href="#cb50-454" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="co">[</span><span class="ot">Row-wise operations - `{dplyr}` vignette</span><span class="co">](https://dplyr.tidyverse.org/articles/rowwise.html)</span></span>
+<span id="cb50-455"><a href="#cb50-455" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-456"><a href="#cb50-456" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- </span><span class="al">###</span><span class="co"> Example --&gt;</span></span>
+<span id="cb50-457"><a href="#cb50-457" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-458"><a href="#cb50-458" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- Here, using `quartabs::render_tabset()` together, --&gt;</span></span>
+<span id="cb50-459"><a href="#cb50-459" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- create figures for each group and --&gt;</span></span>
+<span id="cb50-460"><a href="#cb50-460" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- show them using the nested tabset panels. --&gt;</span></span>
+<span id="cb50-461"><a href="#cb50-461" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- `render_tabset()` works with quarto documents (.qmd files). --&gt;</span></span>
+<span id="cb50-462"><a href="#cb50-462" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- You need to specify `#| results: asis` in the chunk option. --&gt;</span></span>
+<span id="cb50-463"><a href="#cb50-463" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-464"><a href="#cb50-464" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- :::{.callout-tip} --&gt;</span></span>
+<span id="cb50-465"><a href="#cb50-465" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- For details on `render_tabset()`, --&gt;</span></span>
+<span id="cb50-466"><a href="#cb50-466" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- see [Get started](https://sayuks.github.io/quartabs/vignettes/get_started.html). --&gt;</span></span>
+<span id="cb50-467"><a href="#cb50-467" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- ::: --&gt;</span></span>
+<span id="cb50-468"><a href="#cb50-468" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-469"><a href="#cb50-469" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- ```{r} --&gt;</span></span>
+<span id="cb50-470"><a href="#cb50-470" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- #| results: asis --&gt;</span></span>
+<span id="cb50-471"><a href="#cb50-471" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-472"><a href="#cb50-472" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- df1 |&gt; --&gt;</span></span>
+<span id="cb50-473"><a href="#cb50-473" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--   nest_by_with_margins( --&gt;</span></span>
+<span id="cb50-474"><a href="#cb50-474" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--     .margins = c(cat, subcat), --&gt;</span></span>
+<span id="cb50-475"><a href="#cb50-475" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--     .with_all = c(g1, g2) --&gt;</span></span>
+<span id="cb50-476"><a href="#cb50-476" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--   ) |&gt; --&gt;</span></span>
+<span id="cb50-477"><a href="#cb50-477" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--   mutate( --&gt;</span></span>
+<span id="cb50-478"><a href="#cb50-478" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--     fig = list( --&gt;</span></span>
+<span id="cb50-479"><a href="#cb50-479" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--       data |&gt; --&gt;</span></span>
+<span id="cb50-480"><a href="#cb50-480" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--         ggplot(aes(factor(year), value, fill = id)) + --&gt;</span></span>
+<span id="cb50-481"><a href="#cb50-481" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--         geom_col() + --&gt;</span></span>
+<span id="cb50-482"><a href="#cb50-482" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--         labs( --&gt;</span></span>
+<span id="cb50-483"><a href="#cb50-483" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--           title = paste(cat, subcat, g1, g2, sep = " | ") --&gt;</span></span>
+<span id="cb50-484"><a href="#cb50-484" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--         ) --&gt;</span></span>
+<span id="cb50-485"><a href="#cb50-485" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--     ) --&gt;</span></span>
+<span id="cb50-486"><a href="#cb50-486" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--   ) |&gt; --&gt;</span></span>
+<span id="cb50-487"><a href="#cb50-487" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!--   render_tabset(c(cat, subcat, g1, g2), fig) --&gt;</span></span>
+<span id="cb50-488"><a href="#cb50-488" aria-hidden="true" tabindex="-1"></a><span class="co">&lt;!-- ``` --&gt;</span></span>
+<span id="cb50-489"><a href="#cb50-489" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-490"><a href="#cb50-490" aria-hidden="true" tabindex="-1"></a><span class="fu">## Session Info</span></span>
+<span id="cb50-491"><a href="#cb50-491" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-494"><a href="#cb50-494" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
+<span id="cb50-495"><a href="#cb50-495" aria-hidden="true" tabindex="-1"></a><span class="co">#| warning: false</span></span>
+<span id="cb50-496"><a href="#cb50-496" aria-hidden="true" tabindex="-1"></a><span class="co"># save the session info as an object</span></span>
+<span id="cb50-497"><a href="#cb50-497" aria-hidden="true" tabindex="-1"></a>sess <span class="ot">&lt;-</span> sessioninfo<span class="sc">::</span><span class="fu">session_info</span>(<span class="at">pkgs =</span> <span class="st">"attached"</span>)</span>
+<span id="cb50-498"><a href="#cb50-498" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-499"><a href="#cb50-499" aria-hidden="true" tabindex="-1"></a><span class="co"># inject the Quarto info</span></span>
+<span id="cb50-500"><a href="#cb50-500" aria-hidden="true" tabindex="-1"></a>sess<span class="sc">$</span>platform<span class="sc">$</span>quarto <span class="ot">&lt;-</span> <span class="fu">paste</span>(</span>
+<span id="cb50-501"><a href="#cb50-501" aria-hidden="true" tabindex="-1"></a>  quarto<span class="sc">::</span><span class="fu">quarto_version</span>(),</span>
+<span id="cb50-502"><a href="#cb50-502" aria-hidden="true" tabindex="-1"></a>  <span class="st">"@"</span>,</span>
+<span id="cb50-503"><a href="#cb50-503" aria-hidden="true" tabindex="-1"></a>  <span class="fu">normalizePath</span>(quarto<span class="sc">::</span><span class="fu">quarto_path</span>())</span>
+<span id="cb50-504"><a href="#cb50-504" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb50-505"><a href="#cb50-505" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb50-506"><a href="#cb50-506" aria-hidden="true" tabindex="-1"></a><span class="co"># print it out</span></span>
+<span id="cb50-507"><a href="#cb50-507" aria-hidden="true" tabindex="-1"></a>sess</span>
+<span id="cb50-508"><a href="#cb50-508" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
+</code><button title="Copy to Clipboard" class="code-copy-button" data-in-quarto-modal=""><i class="bi"></i></button></pre></div>
+</div></div></div></div></div>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
