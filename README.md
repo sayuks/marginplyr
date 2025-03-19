@@ -13,9 +13,9 @@ coverage](https://codecov.io/gh/sayuks/withmargins/graph/badge.svg)](https://app
 <a href = "https://sayuks.github.io/withmargins/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a>
 <!-- badges: end -->
 
-The `withmargins` is an R package that summarize data with margins
-(totals) and expand data by treating margins as category levels.
-Supports ‘tidyverse’ workflows for analysis and visualization.
+`withmargins` is an R package that summarize data with margins (totals)
+and expand data by treating margins as category levels. Supports
+‘tidyverse’ workflows for analysis and visualization.
 
 ## Installation
 
