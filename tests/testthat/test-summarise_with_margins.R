@@ -28,7 +28,7 @@ test_that(".margin works correctly with local data frame and lazy table", {
       data <- dplyr::tbl(con, "data")
     }
 
-    actual <- summarise_with_margins(
+    actual <- summarize_with_margins(
       data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
@@ -36,7 +36,7 @@ test_that(".margin works correctly with local data frame and lazy table", {
     )
 
     expected <- list(
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         n = dplyr::n(),
         mean = mean(value, na.rm = TRUE),
@@ -44,7 +44,7 @@ test_that(".margin works correctly with local data frame and lazy table", {
         g2 = "(all)",
         g3 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = g1,
         n = dplyr::n(),
@@ -52,14 +52,14 @@ test_that(".margin works correctly with local data frame and lazy table", {
         g2 = "(all)",
         g3 = "(all)",
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(g1, g2),
         n = dplyr::n(),
         mean = mean(value, na.rm = TRUE),
         g3 = "(all)",
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(g1, g2, g3),
         n = dplyr::n(),
@@ -99,7 +99,7 @@ test_that(".without_all works correctly with local data frame and lazy table", {
       data <- dplyr::tbl(con, "data")
     }
 
-    actual <- summarise_with_margins(
+    actual <- summarize_with_margins(
       data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
@@ -108,7 +108,7 @@ test_that(".without_all works correctly with local data frame and lazy table", {
     )
 
     expected <- list(
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = year,
         n = dplyr::n(),
@@ -117,7 +117,7 @@ test_that(".without_all works correctly with local data frame and lazy table", {
         g2 = "(all)",
         g3 = "(all)",
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1),
         n = dplyr::n(),
@@ -125,14 +125,14 @@ test_that(".without_all works correctly with local data frame and lazy table", {
         g2 = "(all)",
         g3 = "(all)",
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2),
         n = dplyr::n(),
         mean = mean(value, na.rm = TRUE),
         g3 = "(all)",
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, g3),
         n = dplyr::n(),
@@ -174,7 +174,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
       data <- dplyr::tbl(con, "data")
     }
 
-    actual <- summarise_with_margins(
+    actual <- summarize_with_margins(
       data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
@@ -185,7 +185,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
 
     expected <- list(
       # all g1, g2, g3
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = year,
         n = dplyr::n(),
@@ -196,7 +196,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         h1 = "(all)",
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, k1),
         n = dplyr::n(),
@@ -206,7 +206,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)",
         h1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, h1),
         n = dplyr::n(),
@@ -216,7 +216,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)",
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, h1, k1),
         n = dplyr::n(),
@@ -226,7 +226,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)"
       ),
       # by g1, all g2, g3
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1),
         n = dplyr::n(),
@@ -236,7 +236,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         h1 = "(all)",
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, k1),
         n = dplyr::n(),
@@ -245,7 +245,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)",
         h1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, h1),
         n = dplyr::n(),
@@ -254,7 +254,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)",
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, h1, k1),
         n = dplyr::n(),
@@ -263,7 +263,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)"
       ),
       # by g1, g2, all g3
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2),
         n = dplyr::n(),
@@ -272,7 +272,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         h1 = "(all)",
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, k1),
         n = dplyr::n(),
@@ -280,7 +280,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)",
         h1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, h1),
         n = dplyr::n(),
@@ -288,7 +288,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)",
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, h1, k1),
         n = dplyr::n(),
@@ -296,7 +296,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         g3 = "(all)"
       ),
       # by g1, g2, g3
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, g3),
         n = dplyr::n(),
@@ -304,21 +304,21 @@ test_that(".with_all works correctly with local data frame and lazy table", {
         h1 = "(all)",
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, g3, k1),
         n = dplyr::n(),
         mean = mean(value, na.rm = TRUE),
         h1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, g3, h1),
         n = dplyr::n(),
         mean = mean(value, na.rm = TRUE),
         k1 = "(all)"
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = c(year, g1, g2, g3, h1, k1),
         n = dplyr::n(),
@@ -360,7 +360,7 @@ test_that(".margin_name works correctly with local data frame and lazy table", {
       data <- dplyr::tbl(con, "data")
     }
 
-    actual <- summarise_with_margins(
+    actual <- summarize_with_margins(
       data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
@@ -369,13 +369,13 @@ test_that(".margin_name works correctly with local data frame and lazy table", {
     )
 
     expected <- list(
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         n = dplyr::n(),
         mean = mean(value, na.rm = TRUE),
         "{{ margin_var }}" := margine_name
       ),
-      dplyr::summarise(
+      dplyr::summarize(
         .data = data,
         .by = {{ margin_var }},
         n = dplyr::n(),
@@ -441,7 +441,7 @@ test_that(
         data <- dplyr::tbl(con, "data")
       }
 
-      actual <- summarise_with_margins(
+      actual <- summarize_with_margins(
         data,
         ...,
         .margins = c(g2, g3),
@@ -451,7 +451,7 @@ test_that(
 
       expected <- list(
         # all g2, g3
-        dplyr::summarise(
+        dplyr::summarize(
           .data = data,
           .by = year,
           ...,
@@ -459,7 +459,7 @@ test_that(
           g3 = "(all)",
           h1 = "(all)"
         ),
-        dplyr::summarise(
+        dplyr::summarize(
           .data = data,
           .by = c(year, h1),
           ...,
@@ -467,27 +467,27 @@ test_that(
           g3 = "(all)"
         ),
         # all g3
-        dplyr::summarise(
+        dplyr::summarize(
           .data = data,
           .by = c(year, g2),
           ...,
           g3 = "(all)",
           h1 = "(all)"
         ),
-        dplyr::summarise(
+        dplyr::summarize(
           .data = data,
           .by = c(year, g2, h1),
           ...,
           g3 = "(all)"
         ),
         # by g2, g3
-        dplyr::summarise(
+        dplyr::summarize(
           .data = data,
           .by = c(year, g2, g3),
           ...,
           h1 = "(all)"
         ),
-        dplyr::summarise(
+        dplyr::summarize(
           .data = data,
           .by = c(year, g2, g3, h1),
           ...

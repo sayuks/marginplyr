@@ -2,7 +2,7 @@
 
 export(nest_by_with_margins)
 export(nest_with_margins)
-export(summarise_with_margins)
+export(summarize_with_margins)
 export(union_all_with_margins)
 importFrom(rlang,":=")
 importFrom(rlang,.data)

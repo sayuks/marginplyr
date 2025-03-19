@@ -12,7 +12,7 @@ date: last-modified
 This article introduces the following functions 
 that make grouped operations with margins easier.
 
-- `summarise_with_margins()`
+- `summarize_with_margins()`
 
 - `union_all_with_margins()`
 
@@ -96,7 +96,7 @@ Count each cat, subcat and find the average of the values.
 
 ```{r}
 df1 |>
-  summarise(
+  summarize(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .by = c(cat, subcat)
@@ -104,13 +104,13 @@ df1 |>
 ```
 
 But what if you want to calculate the cat total, subcat total together?
-`summarise_with_margins()` is useful in this case.
+`summarize_with_margins()` is useful in this case.
 
-## `summarise_with_margins()`
+## `summarize_with_margins()`
 
 :::{.callout-note}
 ## Lazy tables are available
-`summarise_with_margins()` and `union_all_with_margins()` 
+`summarize_with_margins()` and `union_all_with_margins()` 
 works with a local data frame or lazy table.
 :::
 
@@ -123,7 +123,7 @@ Variables can be specified by
 
 ```{r}
 res1 <- df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = c(cat, subcat)
@@ -153,7 +153,7 @@ Variables can be specified by
 
 ```{r}
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = c(cat, subcat),
@@ -174,7 +174,7 @@ Variables can be specified by
 
 ```{r}
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = c(cat, subcat),
@@ -194,7 +194,7 @@ If you want to add g2 as well, you can do so as follows.
 
 ```{r}
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = c(cat, subcat),
@@ -221,7 +221,7 @@ If `.sort = FALSE`, the result is as follows.
 
 ```{r}
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = c(cat, subcat),
@@ -239,7 +239,7 @@ but this can be changed with the `.margin_name` argument.
 
 ```{r}
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = c(cat, subcat),
@@ -254,7 +254,7 @@ where the new total category is to be created.
 #| error: true
 
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = c(cat, subcat),
@@ -269,7 +269,7 @@ but it is similarly checked if it is already in use.
 #| error: true
 
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins =  c(cat, subcat),
@@ -282,7 +282,7 @@ On the other hand, there is no NA in cat, so the following example works.
 
 ```{r}
 res2 <- df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .margins = cat,
@@ -314,7 +314,7 @@ Try setting `.margin_name` to `NA_character_` and using g2.
 #| error: true
 
 df1 |>
-  summarise_with_margins(
+  summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
     .with_all = g2,
