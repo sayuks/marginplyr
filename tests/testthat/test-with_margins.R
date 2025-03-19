@@ -57,7 +57,7 @@ test_that("assert_column_intersect() works correctly", {
   )
 })
 
-test_that("assert_margin_name() works correctly with local data frame and lazy table", {
+test_that("assert_margin_name() works correctly with local and lazy data", {
   run_test <- function(lazy) {
     d <- data.frame(
       x = c(NA_character_, "a"),
@@ -151,126 +151,129 @@ test_that("with_margins() can also not create margins", {
   )
 })
 
-test_that("with_margins() can reconstruct factors as expexted in a local data frame", {
-    data <- get_data_dummy(factor = TRUE)
+test_that("with_margins() can reconstruct factors as expexted in local", {
+  data <- get_data_dummy(factor = TRUE)
 
-    # just make margins
-    .f <- function(.data, ..., .margin_pairs, .by) {
-      dplyr::mutate(.data, !!!.margin_pairs)
-    }
+  # just make margins
+  .f <- function(.data, ..., .margin_pairs, .by) {
+    dplyr::mutate(.data, !!!.margin_pairs)
+  }
 
-    # Case 1: .margin_name is not a NA_character_ ----
-    res1 <- with_margins(
+  # Case 1: .margin_name is not a NA_character_ ----
+  res1 <- with_margins(
+    data,
+    .margins = c(g1, g2, g3),
+    .without_all = year,
+    .with_all = c(h1, k1),
+    .f = .f,
+    .margin_name = "(all)",
+    .sort = TRUE
+  )
+
+  # factor levels as expected (including NA in levels)
+  expect_identical(
+    res1 %>%
+      dplyr::select(tidyselect::where(is.factor)) %>%
+      lapply(levels),
+    list(
+      # .margin_name "(all)" comes at the beginning of level.
+      # If .margin_name is not NA, it causes no error
+      # even if the levels contain NA.
+      g1 = c("(all)", "A", "B", "APL", "SSD", NA),
+      g2 = c("(all)", "Q", "E", "C", "D", "S", "APL", "SSD"),
+      # originally h1 contained level "(all)" at the end,
+      # but now comes at the beginning.
+      h1 = c("(all)", "JBB", "SIO", "KLS", "YZU", "YAL", "CKE"),
+      k1 = c("(all)", "WQ1", "WQ2", "WQ3", "WQ4", "WQ5", "WQ6",
+             "HU1", "HU2", "HU3", "CK1", "CK2", "CK3", NA)
+    )
+  )
+
+  # ordered or not as expected (remains unchanged)
+  expect_identical(
+    res1 %>%
+      dplyr::select(tidyselect::where(is.factor)) %>%
+      lapply(is.ordered),
+    list(
+      g1 = FALSE,
+      g2 = TRUE,
+      h1 = FALSE,
+      k1 = TRUE
+    )
+  )
+
+  # Case 2: .margin_name is a NA_character_ ----
+  # g1 has <NA> level but does not have values with level <NA>.
+  # school_name has <NA> level and has values with level <NA>.
+  # Both are detected in error.
+  expect_error(
+    with_margins(
       data,
-      .margins = c(g1, g2, g3),
-      .without_all = year,
-      .with_all = c(h1, k1),
+      .margins = g1,
+      .with_all = k1,
       .f = .f,
-      .margin_name = "(all)",
+      .margin_name = NA_character_,
+      .sort = TRUE
+    ),
+    paste(
+      "If `\\.margin_name` is a `NA_character_`, the following",
+      "factor columns specified in `\\.margins` or `\\.with_all`",
+      "must not contain <NA> in the level: `g1`, `k1`"
+    )
+  )
+
+  res2 <- data %>%
+    # Since NA_character_ is used for .margin_name, the rows containing NA
+    # must be deleted.
+    tidyr::drop_na(g2, g3, h1) %>%
+    with_margins(
+      .margins = c(g2, g3),
+      .without_all = year,
+      .with_all = h1,
+      .f = .f,
+      .margin_name = NA_character_,
       .sort = TRUE
     )
 
-    # factor levels as expected (including NA in levels)
-    expect_identical(
-      res1 %>%
-        dplyr::select(tidyselect::where(is.factor)) %>%
-        lapply(levels),
-      list(
-        # .margin_name "(all)" comes at the beginning of level.
-        # If .margin_name is not NA, it causes no error
-        # even if the levels contain NA.
-        g1 = c("(all)", "A", "B", "APL", "SSD", NA),
-        g2 = c("(all)", "Q", "E", "C", "D", "S", "APL", "SSD"),
-        # originally h1 contained level "(all)" at the end,
-        # but now comes at the beginning.
-        h1 = c("(all)", "JBB", "SIO", "KLS", "YZU", "YAL", "CKE"),
-        k1 = c("(all)", "WQ1", "WQ2", "WQ3", "WQ4", "WQ5", "WQ6",
-                        "HU1", "HU2", "HU3","CK1", "CK2", "CK3", NA)
+  # factor levels as expected
+  expect_identical(
+    res2 %>%
+      dplyr::select(tidyselect::where(is.factor)) %>%
+      lapply(levels),
+    list(
+      # originally, g2 and h1 did not include NA in the level.
+      # If .margin_name is a NA_character_, level does not include NA.
+      # This is consistent with the default base::factor().
+      g2 = c("Q", "E", "C", "D", "S", "APL", "SSD"),
+      h1 = c("JBB", "SIO", "KLS", "YZU", "YAL", "CKE", "(all)"),
+      # g1, k1 was not used with_margins().
+      # These factors remain as they are.
+      g1 = c("A", "B", "APL", "SSD", NA),
+      k1 = c(
+        "WQ1", "WQ2", "WQ3", "WQ4", "WQ5", "WQ6", "HU1", "HU2", "HU3", "CK1",
+        "CK2", "CK3", NA
       )
     )
+  )
 
-    # ordered or not as expected (remains unchanged)
-    expect_identical(
-      res1 %>%
-        dplyr::select(tidyselect::where(is.factor)) %>%
-        lapply(is.ordered),
-      list(
-        g1 = FALSE,
-        g2 = TRUE,
-        h1 = FALSE,
-        k1 = TRUE
-      )
+  # ordered or not as expected (remains unchanged)
+  expect_identical(
+    res2 %>%
+      dplyr::select(tidyselect::where(is.factor)) %>%
+      lapply(is.ordered),
+    list(
+      g2 = TRUE,
+      h1 = FALSE,
+      g1 = FALSE,
+      k1 = TRUE
     )
-
-    # Case 2: .margin_name is a NA_character_ ----
-    # g1 has <NA> level but does not have values with level <NA>.
-    # school_name has <NA> level and has values with level <NA>.
-    # Both are detected in error.
-    expect_error(
-      with_margins(
-        data,
-        .margins = g1,
-        .with_all = k1,
-        .f = .f,
-        .margin_name = NA_character_,
-        .sort = TRUE
-      ),
-      paste(
-        "If `\\.margin_name` is a `NA_character_`, the following",
-        "factor columns specified in `\\.margins` or `\\.with_all`",
-        "must not contain <NA> in the level: `g1`, `k1`"
-      )
-    )
-
-    res2 <- data %>%
-      # Since NA_character_ is used for .margin_name, the rows containing NA
-      # must be deleted.
-      tidyr::drop_na(g2, g3, h1) %>%
-      with_margins(
-        .margins = c(g2, g3),
-        .without_all = year,
-        .with_all = h1,
-        .f = .f,
-        .margin_name = NA_character_,
-        .sort = TRUE
-      )
-
-    # factor levels as expected
-    expect_identical(
-      res2 %>%
-        dplyr::select(tidyselect::where(is.factor)) %>%
-        lapply(levels),
-      list(
-        # originally, g2 and h1 did not include NA in the level.
-        # If .margin_name is a NA_character_, level does not include NA.
-        # This is consistent with the default base::factor().
-        g2 = c("Q", "E", "C", "D", "S", "APL", "SSD"),
-        h1 = c("JBB", "SIO", "KLS", "YZU", "YAL", "CKE", "(all)"),
-        # g1, k1 was not used with_margins().
-        # These factors remain as they are.
-        g1 = c("A", "B", "APL", "SSD", NA),
-        k1 = c(
-          "WQ1", "WQ2", "WQ3", "WQ4", "WQ5", "WQ6", "HU1", "HU2", "HU3", "CK1",
-          "CK2", "CK3", NA
-        )
-      )
-    )
-
-    # ordered or not as expected (remains unchanged)
-    expect_identical(
-      res2 %>%
-        dplyr::select(tidyselect::where(is.factor)) %>%
-        lapply(is.ordered),
-      list(
-        g2 = TRUE,
-        h1 = FALSE,
-        g1 = FALSE,
-        k1 = TRUE
-      )
-    )
+  )
 })
 
-test_that("row order is as expected when factor is specified in `.with_all` and `.margins` in local data frame", {
+
+test_that("row order is as expected when factor is specified", {
+  # row order is as expected when factor is specified in`.with_all` and
+  # `.margins` in local data frame
   x <- c(2, 10, 1, NA)
 
   data <- data.frame(
@@ -282,7 +285,7 @@ test_that("row order is as expected when factor is specified in `.with_all` and 
     dplyr::mutate(.data, !!!.margin_pairs)
   }
 
-  # .sort = TRUE (default)
+  # test .sort = TRUE (default)
   # sorted by x using factor levels
   actual <- withmargins:::with_margins(
     data,
@@ -311,7 +314,7 @@ test_that("row order is as expected when factor is specified in `.with_all` and 
 
   expect_identical(actual, expected)
 
-  # .sort = FALSE
+  # test .sort = FALSE
   # With the exception of the leading (all),
   # the row order of the inputs remains the same.
   actual <- withmargins:::with_margins(

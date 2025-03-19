@@ -1,53 +1,72 @@
+# nolint start: line_length_linter
 #' Grouped operations with margins
 #'
 #' See below for more details
 #' - \url{https://sayuks.github.io/withmargins/}
 #'
 #' @param .data
-#' * For `summarise_with_margins()` and `union_all_with_margins()` : a data frame or lazy table.
+#' * For `summarise_with_margins()` and `union_all_with_margins()` :
+#'   a data frame or lazy table.
 #'    * Lazy tables created by `{arrow}` does not work.
-#'    If you want to work with it, it is an easy way to convert to a duckdb back-end using `arrow::to_duckdb()` in advance.
-#' * For `nest_with_margins()` and `nest_by_with_margins()`: a data frame (not lazy table).
+#'    If you want to work with it, it is an easy way to convert to
+#'    a duckdb back-end using `arrow::to_duckdb()` in advance.
+#' * For `nest_with_margins()` and `nest_by_with_margins()`:
+#'   a data frame (not lazy table).
 #' @param ... Name-value pairs as used in [dplyr::summarise()].
-#' @param .margins <[`tidy-select`][dplyr_tidy_select]> Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.
-#' @param .without_all <[`tidy-select`][dplyr_tidy_select]> Additional group variables without hierarchy to which `.margin_name` will _NOT_ be added.
-#' @param .with_all <[`tidy-select`][dplyr_tidy_select]> Additional group variables without hierarchy to which `.margin_name` will be added.
-#' @param .margin_name A string representing margin name (Defaults to `"(all)"`). `NA_character_` is also allowed.
-#' @param .sort A Logical. If `TRUE`, sort the result by the column order specified in `.without_all` and `.margins` and `.with_all`.
-#' * `summarise_with_margins()` defaults to `is.data.frame(.data)`, `union_all_with_margins()` defaults to `FALSE`.
-#'    * This is because pipelines using lazy tables should perform the SQL `ORDER BY` as last as possible.
-#'    * As a result of sorting, in the case of lazy tables, `NA` may come first, unlike R.
-#'    * See \href{https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html}{`arrange()` documentation of `{dbplyr}`} for details.
-#' * `nest_with_margins()` and `nest_by_with_margins()` default to `TRUE`.
+#' @param .margins <[`tidy-select`][dplyr_tidy_select]> Grouping columns which
+#'   margins are calculated, starting from the highest parent of the hierarchy.
+#' @param .without_all <[`tidy-select`][dplyr_tidy_select]> Additional group
+#'   variables without hierarchy to which `.margin_name` will _NOT_ be added.
+#' @param .with_all <[`tidy-select`][dplyr_tidy_select]> Additional group
+#'   variables without hierarchy to which `.margin_name` will be added.
+#' @param .margin_name A string representing margin name
+#'   (Defaults to `"(all)"`). `NA_character_` is also allowed.
+#' @param .sort A Logical. If `TRUE`, sort the result by the column order
+#'   specified in `.without_all` and `.margins` and `.with_all`.
+#'   * `summarise_with_margins()` defaults to `is.data.frame(.data)`,
+#'     `union_all_with_margins()` defaults to `FALSE`.
+#'     * This is because pipelines using lazy tables should perform the
+#'       SQL `ORDER BY` as last as possible.
+#'     * As a result of sorting, in the case of lazy tables,
+#'       `NA` may come first, unlike R.
+#'     * See \href{https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html}{`arrange()` documentation of `{dbplyr}`}
+#'       for details.
+#'   * `nest_with_margins()` and `nest_by_with_margins()` default to `TRUE`.
 #' @param .key The name of the resulting nested column.
-#' * For `nest_with_margins()`, passed to `.key` argument of [tidyr::nest()]
-#' * For `nest_by_with_margins()`, passed to `.key` argument of [dplyr::nest_by()]
+#'   * For `nest_with_margins()`, passed to `.key` argument of [tidyr::nest()]
+#'   * For `nest_by_with_margins()`, passed to `.key` argument
+#'     of [dplyr::nest_by()]
 #' @param .names_sep Passed to `.names_sep` argument of [tidyr::nest()].
-#' @param .keep Should the grouping columns be kept in the list column. Passed to `.keep` argument of [dplyr::nest_by()].
-#'
+#' @param .keep Should the grouping columns be kept in the list column.
+#'   Passed to `.keep` argument of [dplyr::nest_by()].
 #' @details
 #' __`summarise_with_margins()`__
-#'  * This is similar to [dplyr::summarise()] but creates an additional
-#'  `.margin_name` category for each grouping variable. It assumes a hierarchy of groups
-#'   and the higher level groups should be provided first.
-#'  * Regular groups, not used for totals/subtotals can be provided through the `.without_all` argument
-#'   and will be used as parent groups.
-#'  * If you want to create its own total margin (such as `"(all)"`)
-#'   for a variable that is a regular group and has no hierarchy, specify it with `.with_all`.
-#'   If there is more than one `.with_all`, all combinations of them are generated.
+#' * This is similar to [dplyr::summarise()] but creates an additional
+#'   `.margin_name` category for each grouping variable. It assumes a hierarchy
+#'   of groups and the higher level groups should be provided first.
+#' * Regular groups, not used for totals/subtotals can be provided through
+#'   the `.without_all` argument and will be used as parent groups.
+#' * If you want to create its own total margin (such as `"(all)"`)
+#'   for a variable that is a regular group and has no hierarchy,
+#'   specify it with `.with_all`. If there is more than one `.with_all`,
+#'   all combinations of them are generated.
 #'
 #' __`union_all_with_margins()`__
-#' * Consider each margin as a new category, duplicate the rows and merge them vertically (like `UNION ALL` in SQL).
-#' * The use of arguments in common with `summarise_with_margins()` is the same as for it.
+#' * Consider each margin as a new category, duplicate the rows and merge them
+#'   vertically (like `UNION ALL` in SQL).
+#' * The use of arguments in common with `summarise_with_margins()` is the same
+#'   as for it.
 #' * __Be aware that the number of rows can be huge.__
 #'
 #' __`nest_with_margins()`__
-#' * Run like `tidyr::nest(<data>, .by = c({{ .without_all }} , {{ .margins }} , {{ .with_all }}))` on the result of `union_all_with_margins()`.
+#' * Run like `tidyr::nest(<data>, .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))`
+#’   on the result of `union_all_with_margins()`.
 #' * Only works for a local data frame.
 #'
 #' __`nest_by_with_margins()`__
-#' * Run like `dplyr::nest_by(<data>, dplyr::pick({{ .without_all }} , {{ .margins }} , {{ .with_all }})` on the result of `union_all_with_margins()`.
-#' The result is a row-wise data frame grouped by row.
+#' * Run like `dplyr::nest_by(<data>, dplyr::pick({{ .without_all }} , {{ .margins }} , {{ .with_all }})`
+#'   on the result of `union_all_with_margins()`. The result is a row-wise
+#'   data frame grouped by row.
 #' * Only works for a local data frame.
 #'
 #' @return A data frame. If `.data` is a lazy table,
@@ -141,6 +160,7 @@
 #'   .without_all = am,
 #'   .with_all = gear
 #' )
+# nolint end
 summarise_with_margins <- function(.data,
                                    ...,
                                    .margins = NULL,
@@ -149,7 +169,12 @@ summarise_with_margins <- function(.data,
                                    .margin_name = "(all)",
                                    .sort = is.data.frame(.data)) {
   .f <- function(.data, ..., .margin_pairs, .by) {
-    dplyr::summarise(.data, ..., !!!.margin_pairs, .by = tidyselect::all_of(.by))
+    dplyr::summarise(
+      .data = .data,
+      ...,
+      !!!.margin_pairs,
+      .by = tidyselect::all_of(.by)
+    )
   }
 
   with_margins(
@@ -173,7 +198,7 @@ union_all_with_margins <- function(.data,
                                    .margin_name = "(all)",
                                    .sort = FALSE) {
   .f <- function(.data, ..., .margin_pairs, .by) {
-    dplyr::mutate(.data, !!!.margin_pairs)
+    dplyr::mutate(.data = .data, !!!.margin_pairs)
   }
 
   with_margins(
@@ -217,14 +242,17 @@ nest_with_margins <- function(.data,
   )
 
   .data <- tidyr::nest(
-    .data,
+    .data = .data,
     .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}),
     .key = .key,
     .names_sep = .names_sep
   )
 
   if (.sort) {
-    .data <- dplyr::arrange(.data, dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }})))
+    .data <- dplyr::arrange(
+      .data,
+      dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
+    )
   }
 
   .data
@@ -269,14 +297,17 @@ nest_by_with_margins <- function(.data,
   )
 
   .data <- dplyr::nest_by(
-    .data,
+    .data = .data,
     dplyr::pick({{ .without_all }}, {{ .margins }}, {{ .with_all }}),
     .key = .key,
     .keep = .keep
   )
 
   if (.sort) {
-    .data <- dplyr::arrange(.data, dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }})))
+    .data <- dplyr::arrange(
+      .data = .data,
+      dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
+    )
   }
 
   .data
@@ -343,7 +374,8 @@ assert_column_intersect <- function(lst) {
 
 #' Assert whether margin_name is included in each column element
 #' @param data A data frame (lazy or not)
-#' @param margin_name A character vector of length 1. `NA_character_` is allowed.
+#' @param margin_name A character vector of length 1.
+#'   `NA_character_` is allowed.
 #' @importFrom rlang .data
 #' @noRd
 #' @examples
@@ -362,11 +394,13 @@ assert_margin_name <- function(data, margin_name) {
       elements <- dplyr::distinct(data, dplyr::pick(tidyselect::all_of(x)))
 
       # %in% may ignore NA_character_ for lazy table, so separate the cases
+      # nolint start: object_usage_lintr
       if (is.na(margin_name)) {
         elements <- dplyr::filter(elements, is.na(.data[[x]]))
       } else {
         elements <- dplyr::filter(elements, .data[[x]] == margin_name)
       }
+      # nolint end
 
       elements <- dplyr::pull(elements)
 
@@ -408,7 +442,8 @@ get_col_names <- function(data, ...) {
 
 #' Get all subsets
 #'
-#' Generate 2^n subsets from the input vector of length n. Containing an empty set.
+#' Generate 2^n subsets from the input vector of length n.
+#' Containing an empty set.
 #'
 #' @param x A input vector.
 #' @param rev A logical. Whether to reverse the order of subset
@@ -467,7 +502,8 @@ get_hierarchy <- function(x) {
 #' @importFrom rlang :=
 #' @param .f A function that returns data. Arguments are as follows:
 #'    * `.data`: input data
-#'    * `...`: Name-value pairs. Used with verbs such as `dplyr::summarise()` etc.
+#'    * `...`: Name-value pairs. Used with verbs such as
+#'      `dplyr::summarise()` etc.
 #'    * `.margin_pairs`: Name-value pairs defining margin values.
 #'    * `.by`: grouping variables.
 #' @noRd
@@ -513,13 +549,16 @@ with_margins <- function(.data,
   # if local data frame, get column names of factor in margin_vars_all
   # (lazy tables often do not support factor and tidyselect::where())
   if (is.data.frame(.data)) {
-    factor_cols <- get_col_names(.data, tidyselect::all_of(margin_vars_all) & tidyselect::where(is.factor))
+    factor_cols <- get_col_names(
+      .data,
+      tidyselect::all_of(margin_vars_all) & tidyselect::where(is.factor)
+    )
   }
 
   if (length(factor_cols) > 0) {
     # get factor column information in margin_vars_all as a named list
     factor_info <- lapply(
-      dplyr::select(.data, tidyselect::all_of(factor_cols)),
+      dplyr::select(.data = .data, tidyselect::all_of(factor_cols)),
       function(x) {
         list(
           levels = levels(x),
@@ -549,11 +588,14 @@ with_margins <- function(.data,
   }
 
   # .margin_name to be added, so convert to string
-  .data <- dplyr::mutate(.data, dplyr::across(tidyselect::all_of(margin_vars_all), as.character))
+  .data <- dplyr::mutate(
+    .data = .data,
+    dplyr::across(tidyselect::all_of(margin_vars_all), as.character)
+  )
 
   # .margin_name must not be included in columns where the margin is calculated
   assert_margin_name(
-    dplyr::select(.data, tidyselect::all_of(margin_vars_all)),
+    dplyr::select(.data = .data, tidyselect::all_of(margin_vars_all)),
     .margin_name
   )
 
@@ -562,7 +604,10 @@ with_margins <- function(.data,
   l_with_all <- get_all_subsets(l$.with_all, rev = TRUE)
 
   # append all combinations of two lists
-  l_group_vars <- lapply(l_margins, function(x) lapply(l_with_all, function(y) c(x, y)))
+  l_group_vars <- lapply(
+    l_margins,
+    function(x) lapply(l_with_all, function(y) c(x, y))
+  )
 
   # flatten nested list to single list
   l_group_vars <- unlist(l_group_vars, recursive = FALSE)
@@ -592,8 +637,8 @@ with_margins <- function(.data,
       factor_info,
       function(data, col, info) {
         dplyr::mutate(
-          data,
-          "{col}" := factor(
+          .data = data,
+          "{col}" := factor( # nolint object_usage_linter
             .data[[col]],
             # force .margin_name to the beginning of the level
             levels = union(.margin_name, info$levels),
@@ -615,11 +660,17 @@ with_margins <- function(.data,
   }
 
   # relocate group columns to the left
-  .data <- dplyr::relocate(.data, c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
+  .data <- dplyr::relocate(
+    .data = .data,
+    c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+  )
 
   # for ease of viewing
   if (.sort) {
-    .data <- dplyr::arrange(.data, dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }})))
+    .data <- dplyr::arrange(
+      .data = .data,
+      dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
+    )
   }
 
   .data

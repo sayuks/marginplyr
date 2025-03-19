@@ -43,7 +43,7 @@ df1 <- tribble(
   2021,  "A",  "a2",          1L,          "y",           "2", 7,
   2021,  "B",  "b1",          1L,          NA_character_, "3", 3,
   2021,  "B",  "b2",          2L,          "y",           "4", 9,
-) |> 
+) |>
   mutate(
     cat = factor(cat),
     subcat = factor(subcat, ordered = TRUE),
@@ -180,7 +180,7 @@ df1 |>
     .margins = c(cat, subcat),
     .without_all = year,
     .with_all = g1
-  ) |> 
+  ) |>
   print(n = Inf)
 ```
 
@@ -200,7 +200,7 @@ df1 |>
     .margins = c(cat, subcat),
     .without_all = year,
     .with_all = c(g1, g2)
-  ) |> 
+  ) |>
   print(n = Inf)
 ```
 
@@ -228,7 +228,7 @@ df1 |>
     .without_all = year,
     .with_all = c(g1, g2),
     .sort = FALSE
-  ) |> 
+  ) |>
   print(n = Inf)
 ```
 
@@ -356,7 +356,7 @@ Be aware that this may increase memory occupancy and overload the server.
 df1 |>
   union_all_with_margins(
     .margins = c(cat, subcat)
-  ) |> 
+  ) |>
   print(n = Inf)
 ```
 

@@ -44,42 +44,41 @@ get_data_dummy <- function(factor = FALSE) {
   # nolint end
 
   if (factor) {
-
-    data <- data %>%
-      dplyr::mutate(
-        # g1 does not have NAs in its values, but can contain NA in the level
-        g1 = factor(g1, c("A", "B", "APL", "SSD", NA), exclude = NULL),
-        # g2 has no NAs, but ordered in this example.
-        g2 = factor(
-          g2,
-          c("Q", "E", "C", "D", "S", "APL", "SSD"),
-          ordered = TRUE
-        ),
-        # add level "(all)" to the last
-        h1 = factor(h1, c("JBB", "SIO", "KLS", "YZU", "YAL", "CKE", "(all)")),
-        # include NA in the level (k1 has NAs in its values)
-        # k1 is a ordered factor
-        k1 = factor(
-          k1,
-          c(
-            "WQ1",
-            "WQ2",
-            "WQ3",
-            "WQ4",
-            "WQ5",
-            "WQ6",
-            "HU1",
-            "HU2",
-            "HU3",
-            "CK1",
-            "CK2",
-            "CK3",
-            NA
-          ),
-          exclude = NULL,
-          ordered = TRUE
-        ),
-      )
+    # g1 does not have NAs in its values, but can contain NA in the level
+    data$g1 <- factor(data$g1, c("A", "B", "APL", "SSD", NA), exclude = NULL)
+    # g2 has no NAs, but ordered in this example
+    data$g2 <- factor(
+      data$g2,
+      c("Q", "E", "C", "D", "S", "APL", "SSD"),
+      ordered = TRUE
+    )
+    # add level "(all)" to the last
+    data$h1 <- factor(
+      data$h1,
+      c("JBB", "SIO", "KLS", "YZU", "YAL", "CKE", "(all)")
+    )
+    # include NA in the level (k1 has NAs in its values)
+    # k1 is a ordered factor
+    data$k1 <- factor(
+      data$k1,
+      c(
+        "WQ1",
+        "WQ2",
+        "WQ3",
+        "WQ4",
+        "WQ5",
+        "WQ6",
+        "HU1",
+        "HU2",
+        "HU3",
+        "CK1",
+        "CK2",
+        "CK3",
+        NA
+      ),
+      exclude = NULL,
+      ordered = TRUE
+    )
   }
 
   data

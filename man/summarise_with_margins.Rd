@@ -50,31 +50,43 @@ nest_by_with_margins(
 }
 \arguments{
 \item{.data}{\itemize{
-\item For \code{summarise_with_margins()} and \code{union_all_with_margins()} : a data frame or lazy table.
+\item For \code{summarise_with_margins()} and \code{union_all_with_margins()} :
+a data frame or lazy table.
 \itemize{
 \item Lazy tables created by \code{{arrow}} does not work.
-If you want to work with it, it is an easy way to convert to a duckdb back-end using \code{arrow::to_duckdb()} in advance.
+If you want to work with it, it is an easy way to convert to
+a duckdb back-end using \code{arrow::to_duckdb()} in advance.
 }
-\item For \code{nest_with_margins()} and \code{nest_by_with_margins()}: a data frame (not lazy table).
+\item For \code{nest_with_margins()} and \code{nest_by_with_margins()}:
+a data frame (not lazy table).
 }}
 
 \item{...}{Name-value pairs as used in \code{\link[dplyr:summarise]{dplyr::summarise()}}.}
 
-\item{.margins}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.}
+\item{.margins}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Grouping columns which
+margins are calculated, starting from the highest parent of the hierarchy.}
 
-\item{.without_all}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group variables without hierarchy to which \code{.margin_name} will \emph{NOT} be added.}
+\item{.without_all}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
+variables without hierarchy to which \code{.margin_name} will \emph{NOT} be added.}
 
-\item{.with_all}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group variables without hierarchy to which \code{.margin_name} will be added.}
+\item{.with_all}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
+variables without hierarchy to which \code{.margin_name} will be added.}
 
-\item{.margin_name}{A string representing margin name (Defaults to \code{"(all)"}). \code{NA_character_} is also allowed.}
+\item{.margin_name}{A string representing margin name
+(Defaults to \code{"(all)"}). \code{NA_character_} is also allowed.}
 
-\item{.sort}{A Logical. If \code{TRUE}, sort the result by the column order specified in \code{.without_all} and \code{.margins} and \code{.with_all}.
+\item{.sort}{A Logical. If \code{TRUE}, sort the result by the column order
+specified in \code{.without_all} and \code{.margins} and \code{.with_all}.
 \itemize{
-\item \code{summarise_with_margins()} defaults to \code{is.data.frame(.data)}, \code{union_all_with_margins()} defaults to \code{FALSE}.
+\item \code{summarise_with_margins()} defaults to \code{is.data.frame(.data)},
+\code{union_all_with_margins()} defaults to \code{FALSE}.
 \itemize{
-\item This is because pipelines using lazy tables should perform the SQL \verb{ORDER BY} as last as possible.
-\item As a result of sorting, in the case of lazy tables, \code{NA} may come first, unlike R.
-\item See \href{https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html}{\code{arrange()} documentation of \code{{dbplyr}}} for details.
+\item This is because pipelines using lazy tables should perform the
+SQL \verb{ORDER BY} as last as possible.
+\item As a result of sorting, in the case of lazy tables,
+\code{NA} may come first, unlike R.
+\item See \href{https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html}{\code{arrange()} documentation of \code{{dbplyr}}}
+for details.
 }
 \item \code{nest_with_margins()} and \code{nest_by_with_margins()} default to \code{TRUE}.
 }}
@@ -82,12 +94,14 @@ If you want to work with it, it is an easy way to convert to a duckdb back-end u
 \item{.key}{The name of the resulting nested column.
 \itemize{
 \item For \code{nest_with_margins()}, passed to \code{.key} argument of \code{\link[tidyr:nest]{tidyr::nest()}}
-\item For \code{nest_by_with_margins()}, passed to \code{.key} argument of \code{\link[dplyr:nest_by]{dplyr::nest_by()}}
+\item For \code{nest_by_with_margins()}, passed to \code{.key} argument
+of \code{\link[dplyr:nest_by]{dplyr::nest_by()}}
 }}
 
 \item{.names_sep}{Passed to \code{.names_sep} argument of \code{\link[tidyr:nest]{tidyr::nest()}}.}
 
-\item{.keep}{Should the grouping columns be kept in the list column. Passed to \code{.keep} argument of \code{\link[dplyr:nest_by]{dplyr::nest_by()}}.}
+\item{.keep}{Should the grouping columns be kept in the list column.
+Passed to \code{.keep} argument of \code{\link[dplyr:nest_by]{dplyr::nest_by()}}.}
 }
 \value{
 A data frame. If \code{.data} is a lazy table,
@@ -143,32 +157,36 @@ See below for more details
 \strong{\code{summarise_with_margins()}}
 \itemize{
 \item This is similar to \code{\link[dplyr:summarise]{dplyr::summarise()}} but creates an additional
-\code{.margin_name} category for each grouping variable. It assumes a hierarchy of groups
-and the higher level groups should be provided first.
-\item Regular groups, not used for totals/subtotals can be provided through the \code{.without_all} argument
-and will be used as parent groups.
+\code{.margin_name} category for each grouping variable. It assumes a hierarchy
+of groups and the higher level groups should be provided first.
+\item Regular groups, not used for totals/subtotals can be provided through
+the \code{.without_all} argument and will be used as parent groups.
 \item If you want to create its own total margin (such as \code{"(all)"})
-for a variable that is a regular group and has no hierarchy, specify it with \code{.with_all}.
-If there is more than one \code{.with_all}, all combinations of them are generated.
+for a variable that is a regular group and has no hierarchy,
+specify it with \code{.with_all}. If there is more than one \code{.with_all},
+all combinations of them are generated.
 }
 
 \strong{\code{union_all_with_margins()}}
 \itemize{
-\item Consider each margin as a new category, duplicate the rows and merge them vertically (like \verb{UNION ALL} in SQL).
-\item The use of arguments in common with \code{summarise_with_margins()} is the same as for it.
+\item Consider each margin as a new category, duplicate the rows and merge them
+vertically (like \verb{UNION ALL} in SQL).
+\item The use of arguments in common with \code{summarise_with_margins()} is the same
+as for it.
 \item \strong{Be aware that the number of rows can be huge.}
 }
 
 \strong{\code{nest_with_margins()}}
 \itemize{
-\item Run like \verb{tidyr::nest(<data>, .by = c(\{\{ .without_all \}\} , \{\{ .margins \}\} , \{\{ .with_all \}\}))} on the result of \code{union_all_with_margins()}.
+\item Run like \verb{tidyr::nest(<data>, .by = c(\{\{ .without_all \}\}, \{\{ .margins \}\}, \{\{ .with_all \}\}))}
 \item Only works for a local data frame.
 }
 
 \strong{\code{nest_by_with_margins()}}
 \itemize{
-\item Run like \verb{dplyr::nest_by(<data>, dplyr::pick(\{\{ .without_all \}\} , \{\{ .margins \}\} , \{\{ .with_all \}\})} on the result of \code{union_all_with_margins()}.
-The result is a row-wise data frame grouped by row.
+\item Run like \verb{dplyr::nest_by(<data>, dplyr::pick(\{\{ .without_all \}\} , \{\{ .margins \}\} , \{\{ .with_all \}\})}
+on the result of \code{union_all_with_margins()}. The result is a row-wise
+data frame grouped by row.
 \item Only works for a local data frame.
 }
 }
