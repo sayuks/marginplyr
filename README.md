@@ -15,7 +15,8 @@ coverage](https://codecov.io/gh/sayuks/withmargins/graph/badge.svg)](https://app
 
 `withmargins` is an R package that summarize data with margins (totals)
 and expand data by treating margins as category levels. Supports
-‘tidyverse’ workflows for analysis and visualization.
+[tidyverse](https://www.tidyverse.org/) workflows for analysis and
+visualization.
 
 ## Installation
 
@@ -39,7 +40,7 @@ pak::pak("sayuks/withmargins")
 library(withmargins)
 ```
 
-### Make a hierarchical margin for `cyl`, `vs`.
+### Summarize with hierarchical margins for `cyl` and `vs`.
 
 ``` r
 summarize_with_margins(

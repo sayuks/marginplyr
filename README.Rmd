@@ -23,7 +23,7 @@ knitr::opts_chunk$set(
 <a href = "https://sayuks.github.io/withmargins/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a>
 <!-- badges: end -->
 
-`withmargins` is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports 'tidyverse' workflows for analysis and visualization.
+`withmargins` is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports [tidyverse](https://www.tidyverse.org/) workflows for analysis and visualization.
 
 ## Installation
 
@@ -45,7 +45,7 @@ pak::pak("sayuks/withmargins")
 library(withmargins)
 ```
 
-### Make a hierarchical margin for `cyl`, `vs`.
+### Summarize with hierarchical margins for `cyl` and `vs`.
 
 ```{r}
 summarize_with_margins(
