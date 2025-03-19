@@ -164,7 +164,7 @@
     "href": "index.html",
     "title": "withmargins",
     "section": "",
-    "text": "The withmargins is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports ‘tidyverse’ workflows for analysis and visualization.\n\n\nYou can install withmargins from CRAN:\ninstall.packages(\"withmargins\")\nYou can install the development version of withmargins from GitHub with:\n# install.packages(\"pak\")\npak::pak(\"sayuks/withmargins\")\n\n\n\n\n\n\nPlease note that the withmargins project is released with a Contributor Code of Conduct. By contributing to this project, you agree to abide by its terms."
+    "text": "withmargins is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports ‘tidyverse’ workflows for analysis and visualization.\n\n\nYou can install withmargins from CRAN:\ninstall.packages(\"withmargins\")\nYou can install the development version of withmargins from GitHub with:\n# install.packages(\"pak\")\npak::pak(\"sayuks/withmargins\")\n\n\n\n\n\n\nPlease note that the withmargins project is released with a Contributor Code of Conduct. By contributing to this project, you agree to abide by its terms."
   },
   {
     "objectID": "index.html#installation",
