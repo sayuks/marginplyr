@@ -238,7 +238,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- badges: start -->
 <!-- <a href = "https://cran.r-project.org/web/packages/withmargins/index.html" target = "_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a> -->
 <p><a href="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml/badge.svg" class="img-fluid" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/sayuks/withmargins"><img src="https://codecov.io/gh/sayuks/withmargins/graph/badge.svg" class="img-fluid" alt="Codecov test coverage"></a> <a href="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml/badge.svg" class="img-fluid" alt="lint.yaml"></a> <a href="https://sayuks.github.io/withmargins/" target="_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a> <!-- badges: end --></p>
-<p><code>withmargins</code> is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports ‘tidyverse’ workflows for analysis and visualization.</p>
+<p><code>withmargins</code> is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports <a href="https://www.tidyverse.org/">tidyverse</a> workflows for analysis and visualization.</p>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
 <p>You can install <code>withmargins</code> from CRAN:</p>
@@ -250,8 +250,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(withmargins)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<section id="make-a-hierarchical-margin-for-cyl-vs." class="level3">
-<h3 class="anchored" data-anchor-id="make-a-hierarchical-margin-for-cyl-vs.">Make a hierarchical margin for <code>cyl</code>, <code>vs</code>.</h3>
+<section id="summarize-with-hierarchical-margins-for-cyl-and-vs." class="level3">
+<h3 class="anchored" data-anchor-id="summarize-with-hierarchical-margins-for-cyl-and-vs.">Summarize with hierarchical margins for <code>cyl</code> and <code>vs</code>.</h3>
 <div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
