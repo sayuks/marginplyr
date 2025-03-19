@@ -33,7 +33,36 @@ You can install the development version of `withmargins` from
 pak::pak("sayuks/withmargins")
 ```
 
-## Examples
+## Example
+
+``` r
+library(withmargins)
+```
+
+### Make a hierarchical margin for `cyl`, `vs`.
+
+``` r
+summarize_with_margins(
+  mtcars,
+  n = dplyr::n(),
+  mpg = mean(mpg, na.rm = TRUE),
+  .margins = c(cyl, vs),
+)
+#>     cyl    vs  n      mpg
+#> 1 (all) (all) 32 20.09062
+#> 2     4 (all) 11 26.66364
+#> 3     4     0  1 26.00000
+#> 4     4     1 10 26.73000
+#> 5     6 (all)  7 19.74286
+#> 6     6     0  3 20.56667
+#> 7     6     1  4 19.12500
+#> 8     8 (all) 14 15.10000
+#> 9     8     0 14 15.10000
+```
+
+See [Get
+started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
+for more details.
 
 ## Code of Conduct
 
