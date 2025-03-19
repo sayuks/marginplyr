@@ -173,8 +173,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="../man/summarise_with_margins.html" class="sidebar-item-text sidebar-link">
- <span class="menu-text">summarise_with_margins</span></a>
+  <a href="../man/nest_by_with_margins.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">nest_by_with_margins</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/nest_with_margins.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">nest_with_margins</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/summarize_with_margins.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">summarize_with_margins</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/union_all_with_margins.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">union_all_with_margins</span></a>
   </div>
 </li>
       </ul>
@@ -213,7 +231,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#summarise_with_margins" id="toc-summarise_with_margins" class="nav-link active" data-scroll-target="#summarise_with_margins"><span class="header-section-number">1</span> <code>summarise_with_margins()</code></a>
+  <li><a href="#summarize_with_margins" id="toc-summarize_with_margins" class="nav-link active" data-scroll-target="#summarize_with_margins"><span class="header-section-number">1</span> <code>summarize_with_margins()</code></a>
   <ul class="collapse">
   <li><a href="#margins" id="toc-margins" class="nav-link" data-scroll-target="#margins"><span class="header-section-number">1.1</span> <code>.margins</code></a></li>
   <li><a href="#without_all" id="toc-without_all" class="nav-link" data-scroll-target="#without_all"><span class="header-section-number">1.2</span> <code>.without_all</code></a></li>
@@ -263,7 +281,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <p>This article introduces the following functions that make grouped operations with margins easier.</p>
 <ul>
-<li><p><code>summarise_with_margins()</code></p></li>
+<li><p><code>summarize_with_margins()</code></p></li>
 <li><p><code>union_all_with_margins()</code></p></li>
 <li><p><code>nest_with_margins()</code></p></li>
 <li><p><code>nest_by_with_margins()</code></p></li>
@@ -380,7 +398,7 @@ $g2
 <p>Count each cat, subcat and find the average of the values.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.by =</span> <span class="fu">c</span>(cat, subcat)</span>
@@ -396,9 +414,9 @@ $g2
 5 B     b1         1   3  </code></pre>
 </div>
 </div>
-<p>But what if you want to calculate the cat total, subcat total together? <code>summarise_with_margins()</code> is useful in this case.</p>
-<section id="summarise_with_margins" class="level2" data-number="1">
-<h2 data-number="1" class="anchored" data-anchor-id="summarise_with_margins"><span class="header-section-number">1</span> <code>summarise_with_margins()</code></h2>
+<p>But what if you want to calculate the cat total, subcat total together? <code>summarize_with_margins()</code> is useful in this case.</p>
+<section id="summarize_with_margins" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="summarize_with_margins"><span class="header-section-number">1</span> <code>summarize_with_margins()</code></h2>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -409,7 +427,7 @@ Lazy tables are available
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p><code>summarise_with_margins()</code> and <code>union_all_with_margins()</code> works with a local data frame or lazy table.</p>
+<p><code>summarize_with_margins()</code> and <code>union_all_with_margins()</code> works with a local data frame or lazy table.</p>
 </div>
 </div>
 <section id="margins" class="level3" data-number="1.1">
@@ -417,7 +435,7 @@ Lazy tables are available
 <p>If you want to include the respective totals hierarchically in cat, subcat, include them in <code>.margins</code>. Variables can be specified by <a href="https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html"><code>tidy-select</code></a>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
@@ -463,7 +481,7 @@ NULL</code></pre>
 <p>In the example above, all the years were combined. Let’s assume here that we aggregate by year and do not want multi-year totals. In that case, use <code>.without_all</code>. Variables can be specified by <a href="https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html"><code>tidy-select</code></a>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -496,7 +514,7 @@ NULL</code></pre>
 <p>Furthermore, we want to add g1 to the group variables. We want to also include a total of g1. However, unlike cat and subcat, g1 does not have a hierarchical structure. In such cases, use <code>.with_all</code>. Variables can be specified by <a href="https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html"><code>tidy-select</code></a>.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -550,7 +568,7 @@ NULL</code></pre>
 <p>If you want to add g2 as well, you can do so as follows.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -650,7 +668,7 @@ NULL</code></pre>
 <p>In the above examples, the results were sorted because the data is a local data frame. If <code>.sort = FALSE</code>, the result is as follows.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -749,7 +767,7 @@ NULL</code></pre>
 <p>By default “(all)” is used for the name of the margin, but this can be changed with the <code>.margin_name</code> argument.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -772,7 +790,7 @@ NULL</code></pre>
 <p>The <code>.margin_name</code> cannot be one already used in <code>.margins</code> or <code>.with_all</code>, where the new total category is to be created.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -785,7 +803,7 @@ NULL</code></pre>
 <p><code>NA_character_</code> can be used for <code>.margin_name</code>, but it is similarly checked if it is already in use.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb30"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span>  <span class="fu">c</span>(cat, subcat),</span>
@@ -798,7 +816,7 @@ NULL</code></pre>
 <p>Error occurred. Because there are NAs in subcat. On the other hand, there is no NA in cat, so the following example works.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
-<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> cat,</span>
@@ -838,7 +856,7 @@ Warning
 <p>g2 includes NA in the level of factor. Try setting <code>.margin_name</code> to <code>NA_character_</code> and using g2.</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> g2,</span>
@@ -1564,7 +1582,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-12"><a href="#cb50-12" aria-hidden="true" tabindex="-1"></a>This article introduces the following functions </span>
 <span id="cb50-13"><a href="#cb50-13" aria-hidden="true" tabindex="-1"></a>that make grouped operations with margins easier.</span>
 <span id="cb50-14"><a href="#cb50-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`summarise_with_margins()`</span></span>
+<span id="cb50-15"><a href="#cb50-15" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`summarize_with_margins()`</span></span>
 <span id="cb50-16"><a href="#cb50-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-17"><a href="#cb50-17" aria-hidden="true" tabindex="-1"></a><span class="ss">- </span><span class="in">`union_all_with_margins()`</span></span>
 <span id="cb50-18"><a href="#cb50-18" aria-hidden="true" tabindex="-1"></a></span>
@@ -1648,7 +1666,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-100"><a href="#cb50-100" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-103"><a href="#cb50-103" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-104"><a href="#cb50-104" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-105"><a href="#cb50-105" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>(</span>
+<span id="cb50-105"><a href="#cb50-105" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize</span>(</span>
 <span id="cb50-106"><a href="#cb50-106" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-107"><a href="#cb50-107" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-108"><a href="#cb50-108" aria-hidden="true" tabindex="-1"></a>    <span class="at">.by =</span> <span class="fu">c</span>(cat, subcat)</span>
@@ -1656,13 +1674,13 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-110"><a href="#cb50-110" aria-hidden="true" tabindex="-1"></a><span class="in">```</span></span>
 <span id="cb50-111"><a href="#cb50-111" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-112"><a href="#cb50-112" aria-hidden="true" tabindex="-1"></a>But what if you want to calculate the cat total, subcat total together?</span>
-<span id="cb50-113"><a href="#cb50-113" aria-hidden="true" tabindex="-1"></a><span class="in">`summarise_with_margins()`</span> is useful in this case.</span>
+<span id="cb50-113"><a href="#cb50-113" aria-hidden="true" tabindex="-1"></a><span class="in">`summarize_with_margins()`</span> is useful in this case.</span>
 <span id="cb50-114"><a href="#cb50-114" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb50-115"><a href="#cb50-115" aria-hidden="true" tabindex="-1"></a><span class="fu">## `summarise_with_margins()`</span></span>
+<span id="cb50-115"><a href="#cb50-115" aria-hidden="true" tabindex="-1"></a><span class="fu">## `summarize_with_margins()`</span></span>
 <span id="cb50-116"><a href="#cb50-116" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-117"><a href="#cb50-117" aria-hidden="true" tabindex="-1"></a>:::{.callout-note}</span>
 <span id="cb50-118"><a href="#cb50-118" aria-hidden="true" tabindex="-1"></a><span class="fu">## Lazy tables are available</span></span>
-<span id="cb50-119"><a href="#cb50-119" aria-hidden="true" tabindex="-1"></a><span class="in">`summarise_with_margins()`</span> and <span class="in">`union_all_with_margins()`</span> </span>
+<span id="cb50-119"><a href="#cb50-119" aria-hidden="true" tabindex="-1"></a><span class="in">`summarize_with_margins()`</span> and <span class="in">`union_all_with_margins()`</span> </span>
 <span id="cb50-120"><a href="#cb50-120" aria-hidden="true" tabindex="-1"></a>works with a local data frame or lazy table.</span>
 <span id="cb50-121"><a href="#cb50-121" aria-hidden="true" tabindex="-1"></a>:::</span>
 <span id="cb50-122"><a href="#cb50-122" aria-hidden="true" tabindex="-1"></a></span>
@@ -1675,7 +1693,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-129"><a href="#cb50-129" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-132"><a href="#cb50-132" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-133"><a href="#cb50-133" aria-hidden="true" tabindex="-1"></a>res1 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-134"><a href="#cb50-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-134"><a href="#cb50-134" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-135"><a href="#cb50-135" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-136"><a href="#cb50-136" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-137"><a href="#cb50-137" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat)</span>
@@ -1705,7 +1723,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-163"><a href="#cb50-163" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-166"><a href="#cb50-166" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-167"><a href="#cb50-167" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-168"><a href="#cb50-168" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-168"><a href="#cb50-168" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-169"><a href="#cb50-169" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-170"><a href="#cb50-170" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-171"><a href="#cb50-171" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -1726,7 +1744,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-186"><a href="#cb50-186" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-189"><a href="#cb50-189" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-190"><a href="#cb50-190" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-191"><a href="#cb50-191" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-191"><a href="#cb50-191" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-192"><a href="#cb50-192" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-193"><a href="#cb50-193" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-194"><a href="#cb50-194" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -1746,7 +1764,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-208"><a href="#cb50-208" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-211"><a href="#cb50-211" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-212"><a href="#cb50-212" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-213"><a href="#cb50-213" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-213"><a href="#cb50-213" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-214"><a href="#cb50-214" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-215"><a href="#cb50-215" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-216"><a href="#cb50-216" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -1773,7 +1791,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-237"><a href="#cb50-237" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-240"><a href="#cb50-240" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-241"><a href="#cb50-241" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-242"><a href="#cb50-242" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-242"><a href="#cb50-242" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-243"><a href="#cb50-243" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-244"><a href="#cb50-244" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-245"><a href="#cb50-245" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -1791,7 +1809,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-257"><a href="#cb50-257" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-260"><a href="#cb50-260" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-261"><a href="#cb50-261" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-262"><a href="#cb50-262" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-262"><a href="#cb50-262" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-263"><a href="#cb50-263" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-264"><a href="#cb50-264" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-265"><a href="#cb50-265" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -1806,7 +1824,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-276"><a href="#cb50-276" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
 <span id="cb50-277"><a href="#cb50-277" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-278"><a href="#cb50-278" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-279"><a href="#cb50-279" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-279"><a href="#cb50-279" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-280"><a href="#cb50-280" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-281"><a href="#cb50-281" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-282"><a href="#cb50-282" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> <span class="fu">c</span>(cat, subcat),</span>
@@ -1821,7 +1839,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-293"><a href="#cb50-293" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
 <span id="cb50-294"><a href="#cb50-294" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-295"><a href="#cb50-295" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-296"><a href="#cb50-296" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-296"><a href="#cb50-296" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-297"><a href="#cb50-297" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-298"><a href="#cb50-298" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-299"><a href="#cb50-299" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span>  <span class="fu">c</span>(cat, subcat),</span>
@@ -1834,7 +1852,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-306"><a href="#cb50-306" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-309"><a href="#cb50-309" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb50-310"><a href="#cb50-310" aria-hidden="true" tabindex="-1"></a>res2 <span class="ot">&lt;-</span> df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-311"><a href="#cb50-311" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-311"><a href="#cb50-311" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-312"><a href="#cb50-312" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-313"><a href="#cb50-313" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-314"><a href="#cb50-314" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margins =</span> cat,</span>
@@ -1866,7 +1884,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 <span id="cb50-344"><a href="#cb50-344" aria-hidden="true" tabindex="-1"></a><span class="co">#| error: true</span></span>
 <span id="cb50-345"><a href="#cb50-345" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb50-346"><a href="#cb50-346" aria-hidden="true" tabindex="-1"></a>df1 <span class="sc">|&gt;</span></span>
-<span id="cb50-347"><a href="#cb50-347" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise_with_margins</span>(</span>
+<span id="cb50-347"><a href="#cb50-347" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarize_with_margins</span>(</span>
 <span id="cb50-348"><a href="#cb50-348" aria-hidden="true" tabindex="-1"></a>    <span class="at">n =</span> <span class="fu">n</span>(),</span>
 <span id="cb50-349"><a href="#cb50-349" aria-hidden="true" tabindex="-1"></a>    <span class="at">value =</span> <span class="fu">mean</span>(value, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
 <span id="cb50-350"><a href="#cb50-350" aria-hidden="true" tabindex="-1"></a>    <span class="at">.with_all =</span> g2,</span>

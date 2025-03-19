@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>news – withmargins</title>
+<title>nest_with_margins – withmargins</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -20,25 +20,59 @@ ul.task-list li input[type="checkbox"] {
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
 </style>
 
 
-<script src="site_libs/quarto-nav/quarto-nav.js"></script>
-<script src="site_libs/quarto-nav/headroom.min.js"></script>
-<script src="site_libs/clipboard/clipboard.min.js"></script>
-<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
-<script src="site_libs/quarto-search/fuse.min.js"></script>
-<script src="site_libs/quarto-search/quarto-search.js"></script>
-<meta name="quarto:offset" content="./">
-<script src="site_libs/quarto-html/quarto.js"></script>
-<script src="site_libs/quarto-html/popper.min.js"></script>
-<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
-<script src="site_libs/quarto-html/anchor.min.js"></script>
-<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
-<script src="site_libs/bootstrap/bootstrap.min.js"></script>
-<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-831a6e13d34e89ab8943621a9b1bffba.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-2f5df379a58b258e96c21c0638c20c03.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap-831a6e13d34e89ab8943621a9b1bffba.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -77,7 +111,7 @@ ul.task-list li input[type="checkbox"] {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
-    <a class="navbar-brand" href="./index.html">
+    <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">withmargins</span>
     </a>
   </div>
@@ -88,7 +122,7 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll me-auto">
   <li class="nav-item">
-    <a class="nav-link active" href="./vignettes/get_started.html" aria-current="page"> 
+    <a class="nav-link active" href="../vignettes/get_started.html" aria-current="page"> 
 <span class="menu-text">Get started</span></a>
   </li>  
 </ul>
@@ -109,7 +143,7 @@ ul.task-list li input[type="checkbox"] {
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./NEWS.html">News</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/nest_by_with_margins.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/nest_with_margins.html">nest_with_margins</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -123,7 +157,7 @@ ul.task-list li input[type="checkbox"] {
     <ul class="list-unstyled mt-1">
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./vignettes/get_started.html" class="sidebar-item-text sidebar-link">
+  <a href="../vignettes/get_started.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Get started</span></a>
   </div>
 </li>
@@ -138,25 +172,25 @@ ul.task-list li input[type="checkbox"] {
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./man/nest_by_with_margins.html" class="sidebar-item-text sidebar-link">
+  <a href="../man/nest_by_with_margins.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">nest_by_with_margins</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./man/nest_with_margins.html" class="sidebar-item-text sidebar-link">
+  <a href="../man/nest_with_margins.html" class="sidebar-item-text sidebar-link active">
  <span class="menu-text">nest_with_margins</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./man/summarize_with_margins.html" class="sidebar-item-text sidebar-link">
+  <a href="../man/summarize_with_margins.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">summarize_with_margins</span></a>
   </div>
 </li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./man/union_all_with_margins.html" class="sidebar-item-text sidebar-link">
+  <a href="../man/union_all_with_margins.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">union_all_with_margins</span></a>
   </div>
 </li>
@@ -164,25 +198,25 @@ ul.task-list li input[type="checkbox"] {
   </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./NEWS.html" class="sidebar-item-text sidebar-link active">
+  <a href="../NEWS.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">News</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./LICENSE.html" class="sidebar-item-text sidebar-link">
+  <a href="../LICENSE.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">License</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./CODE_OF_CONDUCT.html" class="sidebar-item-text sidebar-link">
+  <a href="../CODE_OF_CONDUCT.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Code of conduct</span></a>
   </div>
 </li>
         <li class="sidebar-item">
   <div class="sidebar-item-container"> 
-  <a href="./CITATION.html" class="sidebar-item-text sidebar-link">
+  <a href="../CITATION.html" class="sidebar-item-text sidebar-link">
  <span class="menu-text">Citation</span></a>
   </div>
 </li>
@@ -193,18 +227,219 @@ ul.task-list li input[type="checkbox"] {
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/nest_by_with_margins.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/nest_with_margins.html">nest_with_margins</a></li></ol></nav></header>
 
 
 
 
-<section id="withmargins-0.1.0" class="level1">
-<h1>withmargins 0.1.0</h1>
+<section id="works-like-tidyrnest-with-margins" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="works-like-tidyrnest-with-margins">Works like <code>tidyr::nest()</code> with margins</h2>
+<section id="description" class="level3">
+<h3 class="anchored" data-anchor-id="description">Description</h3>
+<p>This function considers each margin (such as total) as a new category, works like <code>tidyr::nest()</code>. See <a href="https://sayuks.github.io/withmargins/vignettes/get_started.html">Get started</a> for more details.</p>
+</section>
+<section id="usage" class="level3">
+<h3 class="anchored" data-anchor-id="usage">Usage</h3>
+<pre><code class="language-R">nest_with_margins(
+  .data,
+  .margins = NULL,
+  .without_all = NULL,
+  .with_all = NULL,
+  .margin_name = "(all)",
+  .sort = TRUE,
+  .key = NULL,
+  .names_sep = NULL
+)
+</code></pre>
+</section>
+<section id="arguments" class="level3">
+<h3 class="anchored" data-anchor-id="arguments">Arguments</h3>
+<table>
+<tbody><tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".data">.data</code>
+</td>
+<td>
+A data frame.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".margins">.margins</code>
+</td>
+<td>
+&lt;<code>tidy-select</code>&gt; Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".without_all">.without_all</code>
+</td>
+<td>
+&lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will <em>NOT</em> be added.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".with_all">.with_all</code>
+</td>
+<td>
+&lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will be added.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".margin_name">.margin_name</code>
+</td>
+<td>
+A string representing margin name (Defaults to <code>“(all)”</code>). <code>NA_character_</code> is also allowed.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".sort">.sort</code>
+</td>
+<td>
+A Logical (default to <code>TRUE</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".key">.key</code>
+</td>
+<td>
+A string. The name of the resulting nested column. Passed to the <code>.key</code> argument of <code>tidyr::nest()</code>
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".names_sep">.names_sep</code>
+</td>
+<td>
+If <code>NULL</code>, the default, the inner names will come from the former outer names. If a string, the new inner names will use the outer names with <code>names_sep</code> automatically stripped. This makes <code>names_sep</code> roughly symmetric between nesting and unnesting.
+</td>
+</tr>
+</tbody></table>
+</section>
+<section id="details" class="level3">
+<h3 class="anchored" data-anchor-id="details">Details</h3>
 <ul>
-<li>Initial CRAN submission.</li>
+<li>
+<p>Works like <code style="white-space: pre;">tidyr::nest(&lt;data&gt;, .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))</code> on the result of <code>union_all_with_margins()</code>.</p>
+</li>
+<li>
+<p>Only works for a local data frame.</p>
+</li>
 </ul>
+</section>
+<section id="value" class="level3">
+<h3 class="anchored" data-anchor-id="value">Value</h3>
+<p>A data frame.</p>
+</section>
+<section id="about-returned-data" class="level3">
+<h3 class="anchored" data-anchor-id="about-returned-data">About returned data</h3>
+<ul>
+<li>
+<p>Missing values are kept as missing.</p>
+</li>
+<li>
+<p>The order of the columns is as follows from left to right: <code>.without_all</code>, <code>.margins</code>, <code>.with_all</code> and the remaining columns.</p>
+</li>
+<li>
+<p>Column types specified with <code>.margins</code> or <code>.with_all</code>:</p>
+<ul>
+<li>
+<p>Columns that are not originally factor or character (e.g.&nbsp;numeric, integer, logical, .etc) are converted to characters. This is required to add the <code>.margin_name</code> category.</p>
+</li>
+<li>
+<p>Originally the factor column (assuming a local data frame):</p>
+<ul>
+<li>
+<p>Remains as factor. (If ordered, remains as ordered).</p>
+</li>
+<li>
+<p>The level of the factor depends on the case:</p>
+<ul>
+<li>
+<p>If <code>.margin_name</code> is <em><strong>NOT</strong></em> a <code>NA_character</code> (such as <code>“(all)”</code>):</p>
+<ul>
+<li>
+<p><code>.margin_name</code> is added to the beginning of the level of the factor.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>If <code>.margin_name</code> is a <code>NA_character</code>:</p>
+<ul>
+<li>
+<p>If the column has <code style="white-space: pre;">&lt;NA&gt;</code> in the level:</p>
+<ul>
+<li>
+<p>Error occurs. Because, although the values with level <code style="white-space: pre;">&lt;NA&gt;</code> are not equal to <code>NA_character_</code>, they will be identical and indistinguishable when merging <code>NA_character_</code> as a new category.</p>
+</li>
+</ul>
+</li>
+<li>
+<p>If the column does not have <code style="white-space: pre;">&lt;NA&gt;</code> in the level:</p>
+<ul>
+<li>
+<p>Just keeps the original level of factor. <code style="white-space: pre;">&lt;NA&gt;</code> is not included in the level. This is consistent with the default <code>factor()</code> behavior (<code>exclude = NA</code>).</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="references" class="level3">
+<h3 class="anchored" data-anchor-id="references">References</h3>
+<ul>
+<li>
+<p>Online documentation: <a href="https://sayuks.github.io/withmargins/vignettes/get_started.html">Get started</a></p>
+</li>
+</ul>
+</section>
+<section id="see-also" class="level3">
+<h3 class="anchored" data-anchor-id="see-also">See Also</h3>
+<p>Other summarize and expand data with margins: <code>nest_by_with_margins()</code>, <code>summarize_with_margins()</code>, <code>union_all_with_margins()</code></p>
+</section>
+<section id="examples" class="level3">
+<h3 class="anchored" data-anchor-id="examples">Examples</h3>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"withmargins"</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">nest_with_margins</span>(</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code># A tibble: 40 × 5
+      am cyl   vs    gear  data             
+   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;list&gt;           
+ 1     0 (all) (all) (all) &lt;tibble [19 × 7]&gt;
+ 2     0 (all) (all) 3     &lt;tibble [15 × 7]&gt;
+ 3     0 (all) (all) 4     &lt;tibble [4 × 7]&gt; 
+ 4     0 4     (all) (all) &lt;tibble [3 × 7]&gt; 
+ 5     0 4     (all) 3     &lt;tibble [1 × 7]&gt; 
+ 6     0 4     (all) 4     &lt;tibble [2 × 7]&gt; 
+ 7     0 4     1     (all) &lt;tibble [3 × 7]&gt; 
+ 8     0 4     1     3     &lt;tibble [1 × 7]&gt; 
+ 9     0 4     1     4     &lt;tibble [2 × 7]&gt; 
+10     0 6     (all) (all) &lt;tibble [4 × 7]&gt; 
+# ℹ 30 more rows</code></pre>
+</div>
+</div>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->
