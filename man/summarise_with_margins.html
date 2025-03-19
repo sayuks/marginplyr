@@ -422,7 +422,7 @@ Should the grouping columns be kept in the list column. Passed to <code>.keep</c
 <p><strong><code>nest_with_margins()</code></strong></p>
 <ul>
 <li>
-<p>Run like <code style="white-space: pre;">tidyr::nest(&lt;data&gt;, .by = c({{ .without_all }} , {{ .margins }} , {{ .with_all }}))</code> on the result of <code>union_all_with_margins()</code>.</p>
+<p>Run like <code style="white-space: pre;">tidyr::nest(&lt;data&gt;, .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))</code></p>
 </li>
 <li>
 <p>Only works for a local data frame.</p>
