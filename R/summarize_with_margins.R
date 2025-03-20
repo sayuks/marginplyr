@@ -220,13 +220,11 @@ assert_margin_name <- function(data, margin_name) {
       elements <- dplyr::distinct(data, dplyr::pick(tidyselect::all_of(x)))
 
       # %in% may ignore NA_character_ for lazy table, so separate the cases
-      # nolint start: object_usage_lintr
       if (is.na(margin_name)) {
         elements <- dplyr::filter(elements, is.na(.data[[x]]))
       } else {
         elements <- dplyr::filter(elements, .data[[x]] == margin_name)
       }
-      # nolint end
 
       elements <- dplyr::pull(elements)
 
@@ -457,7 +455,7 @@ with_margins <- function(.data,
       function(data, col, info) {
         dplyr::mutate(
           .data = data,
-          "{col}" := factor( # nolint object_usage_linter
+          "{col}" := factor(
             .data[[col]],
             # force .margin_name to the beginning of the level
             levels = union(.margin_name, info$levels),

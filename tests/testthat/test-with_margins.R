@@ -122,7 +122,7 @@ test_that("with_margins() can also not create margins", {
     }
 
     actual <- with_margins(
-      data,
+      .data = data,
       .margins = c(g1, g2, g3),
       .f = .f,
       .sort = FALSE
@@ -156,12 +156,12 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
 
   # just make margins
   .f <- function(.data, ..., .margin_pairs, .by) {
-    dplyr::mutate(.data, !!!.margin_pairs)
+    dplyr::mutate(.data = .data, !!!.margin_pairs)
   }
 
   # Case 1: .margin_name is not a NA_character_ ----
   res1 <- with_margins(
-    data,
+    .data = data,
     .margins = c(g1, g2, g3),
     .without_all = year,
     .with_all = c(h1, k1),
@@ -193,7 +193,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   # ordered or not as expected (remains unchanged)
   expect_identical(
     lapply(
-      dplyr::select(.data = res1 ,tidyselect::where(is.factor)),
+      dplyr::select(.data = res1, tidyselect::where(is.factor)),
       is.ordered
     ),
     list(
@@ -210,7 +210,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   # Both are detected in error.
   expect_error(
     with_margins(
-      data,
+      .data = data,
       .margins = g1,
       .with_all = k1,
       .f = .f,
@@ -285,13 +285,13 @@ test_that("row order is as expected when factor is specified", {
 
   # just make margins
   f <- function(.data, ..., .margin_pairs, .by) {
-    dplyr::mutate(.data, !!!.margin_pairs)
+    dplyr::mutate(.data = .data, !!!.margin_pairs)
   }
 
   # test .sort = TRUE (default)
   # sorted by x using factor levels
-  actual <- withmargins:::with_margins(
-    data,
+  actual <- with_margins(
+    .data = data,
     .with_all = x,
     .f = f,
     .sort = TRUE
@@ -308,8 +308,8 @@ test_that("row order is as expected when factor is specified", {
 
   # If only one is specified in `.margins`, it is the same as the result of
   # `.with_all`.
-  actual <- withmargins:::with_margins(
-    data,
+  actual <- with_margins(
+    .data = data,
     .margins = x,
     .f = f,
     .sort = TRUE
@@ -320,8 +320,8 @@ test_that("row order is as expected when factor is specified", {
   # test .sort = FALSE
   # With the exception of the leading (all),
   # the row order of the inputs remains the same.
-  actual <- withmargins:::with_margins(
-    data,
+  actual <- with_margins(
+    .data = data,
     .with_all = x,
     .f = f,
     .sort = FALSE

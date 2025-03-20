@@ -92,6 +92,6 @@ get_data_dummy <- function(factor = FALSE) {
 # to which this function is applied are equal, it means that the two data before
 # this function is applied are equal, ignoring row order.
 arrange_then_collect <- function(data) {
-  data <- dplyr::arrange(data, dplyr::pick(tidyselect::everything()))
-  dplyr::collect(data)
+  data <- dplyr::arrange(.data = data, dplyr::pick(tidyselect::everything()))
+  dplyr::collect(x = data)
 }

@@ -65,7 +65,7 @@ nest_with_margins <- function(.data,
 
   if (.sort) {
     .data <- dplyr::arrange(
-      .data,
+      .data = .data,
       dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
     )
   }

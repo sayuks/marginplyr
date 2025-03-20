@@ -2,7 +2,7 @@ test_that("nest_by_with_margins() works correctly with local data", {
   data <- get_data_dummy()
 
   actual <- nest_by_with_margins(
-    data,
+    .data = data,
     .margins = c(g2, g3),
     .without_all = year,
     .with_all = h1,
@@ -11,7 +11,7 @@ test_that("nest_by_with_margins() works correctly with local data", {
   )
 
   expected <- union_all_with_margins(
-    data,
+    .data = data,
     .margins = c(g2, g3),
     .without_all = year,
     .with_all = h1

@@ -29,7 +29,7 @@ test_that(".margin works correctly with local data frame and lazy table", {
     }
 
     actual <- summarize_with_margins(
-      data,
+      .data = data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
       .margins = c(g1, g2, g3)
@@ -100,7 +100,7 @@ test_that(".without_all works correctly with local data frame and lazy table", {
     }
 
     actual <- summarize_with_margins(
-      data,
+      .data = data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
       .margins = c(g1, g2, g3),
@@ -175,7 +175,7 @@ test_that(".with_all works correctly with local data frame and lazy table", {
     }
 
     actual <- summarize_with_margins(
-      data,
+      .data = data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
       .margins = c(g1, g2, g3),
@@ -361,7 +361,7 @@ test_that(".margin_name works correctly with local data frame and lazy table", {
     }
 
     actual <- summarize_with_margins(
-      data,
+      .data = data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
       .margins = {{ margin_var }},
@@ -441,7 +441,7 @@ test_that(
       }
 
       actual <- summarize_with_margins(
-        data,
+        .data = data,
         ...,
         .margins = c(g2, g3),
         .without_all = year,
