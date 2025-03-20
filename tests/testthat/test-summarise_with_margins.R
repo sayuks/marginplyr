@@ -428,9 +428,8 @@ test_that(
   ),
   {
     run_test <- function(lazy, ...) {
-      data <- get_data_dummy() %>%
-        # for easier debugging, extract the sample that has more than one row
-        dplyr::filter(id == "108")
+      # for easier debugging, extract the sample that has more than one row
+      data <- dplyr::filter(get_data_dummy(), id == "108")
 
       if (lazy) {
         con <- DBI::dbConnect(duckdb::duckdb())

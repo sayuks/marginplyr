@@ -20,37 +20,36 @@ test_that("union_all_with_margins() works with local data and lazy tables", {
 
     expected <- list(
       # all g2, g3
-      data %>%
         dplyr::mutate(
+          .data = data,
           g2 = "(all)",
           g3 = "(all)",
           h1 = "(all)"
         ),
-      data %>%
         dplyr::mutate(
+          .data = data,
           g2 = "(all)",
           g3 = "(all)"
         ),
       # all g3
-      data %>%
         dplyr::mutate(
+          .data = data,
           g3 = "(all)",
           h1 = "(all)"
         ),
-      data %>%
         dplyr::mutate(
+          .data = data,
           g3 = "(all)"
         ),
       # by g2, g3
-      data %>%
         dplyr::mutate(
+          .data = data,
           h1 = "(all)"
         ),
       data
-    ) %>%
-      Reduce(dplyr::union_all, .) %>%
-      dplyr::relocate(year, g2, g3, h1)
-
+    )
+    expected <- Reduce(dplyr::union_all, expected)
+    expected <- dplyr::relocate(.data = expected, year, g2, g3, h1)
 
     if (lazy) {
       actual <- arrange_then_collect(actual)

@@ -133,9 +133,9 @@ test_that("with_margins() can also not create margins", {
       data,
       data,
       data
-    ) %>%
-      Reduce(dplyr::union_all, .) %>%
-      dplyr::relocate(c(g1, g2, g3))
+    )
+    expected <- Reduce(dplyr::union_all, expected)
+    expected <- dplyr::relocate(.data = expected, g1, g2, g3)
 
     if (lazy) {
       actual <- dplyr::collect(actual)
@@ -172,9 +172,10 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
 
   # factor levels as expected (including NA in levels)
   expect_identical(
-    res1 %>%
-      dplyr::select(tidyselect::where(is.factor)) %>%
-      lapply(levels),
+    lapply(
+      dplyr::select(.data = res1, tidyselect::where(is.factor)),
+      levels
+    ),
     list(
       # .margin_name "(all)" comes at the beginning of level.
       # If .margin_name is not NA, it causes no error
@@ -191,9 +192,10 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
 
   # ordered or not as expected (remains unchanged)
   expect_identical(
-    res1 %>%
-      dplyr::select(tidyselect::where(is.factor)) %>%
-      lapply(is.ordered),
+    lapply(
+      dplyr::select(.data = res1 ,tidyselect::where(is.factor)),
+      is.ordered
+    ),
     list(
       g1 = FALSE,
       g2 = TRUE,
@@ -222,24 +224,24 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
     )
   )
 
-  res2 <- data %>%
+  res2 <- with_margins(
     # Since NA_character_ is used for .margin_name, the rows containing NA
     # must be deleted.
-    tidyr::drop_na(g2, g3, h1) %>%
-    with_margins(
-      .margins = c(g2, g3),
-      .without_all = year,
-      .with_all = h1,
-      .f = .f,
-      .margin_name = NA_character_,
-      .sort = TRUE
-    )
+    .data = tidyr::drop_na(data = data, g2, g3, h1),
+    .margins = c(g2, g3),
+    .without_all = year,
+    .with_all = h1,
+    .f = .f,
+    .margin_name = NA_character_,
+    .sort = TRUE
+  )
 
   # factor levels as expected
   expect_identical(
-    res2 %>%
-      dplyr::select(tidyselect::where(is.factor)) %>%
-      lapply(levels),
+    lapply(
+      dplyr::select(.data = res2, tidyselect::where(is.factor)),
+      levels
+    ),
     list(
       # originally, g2 and h1 did not include NA in the level.
       # If .margin_name is a NA_character_, level does not include NA.
@@ -258,9 +260,10 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
 
   # ordered or not as expected (remains unchanged)
   expect_identical(
-    res2 %>%
-      dplyr::select(tidyselect::where(is.factor)) %>%
-      lapply(is.ordered),
+    lapply(
+      dplyr::select(.data = res2, tidyselect::where(is.factor)),
+      is.ordered
+    ),
     list(
       g2 = TRUE,
       h1 = FALSE,
