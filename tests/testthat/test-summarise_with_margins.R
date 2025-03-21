@@ -32,7 +32,8 @@ test_that(".margin works correctly with local data frame and lazy table", {
       .data = data,
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
-      .margins = c(g1, g2, g3)
+      .margins = c(g1, g2, g3),
+      .check_margin_name = TRUE
     )
 
     expected <- list(
@@ -104,7 +105,8 @@ test_that(".without_all works correctly with local data frame and lazy table", {
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
       .margins = c(g1, g2, g3),
-      .without_all = year
+      .without_all = year,
+      .check_margin_name = TRUE
     )
 
     expected <- list(
@@ -180,7 +182,8 @@ test_that(".with_all works correctly with local data frame and lazy table", {
       mean = mean(value, na.rm = TRUE),
       .margins = c(g1, g2, g3),
       .without_all = year,
-      .with_all = c(h1, k1)
+      .with_all = c(h1, k1),
+      .check_margin_name = TRUE
     )
 
     expected <- list(
@@ -365,7 +368,8 @@ test_that(".margin_name works correctly with local data frame and lazy table", {
       n = dplyr::n(),
       mean = mean(value, na.rm = TRUE),
       .margins = {{ margin_var }},
-      .margin_name = margine_name
+      .margin_name = margine_name,
+      .check_margin_name = TRUE
     )
 
     expected <- list(
@@ -445,7 +449,8 @@ test_that(
         ...,
         .margins = c(g2, g3),
         .without_all = year,
-        .with_all = h1
+        .with_all = h1,
+        .check_margin_name = TRUE
       )
 
       expected <- list(

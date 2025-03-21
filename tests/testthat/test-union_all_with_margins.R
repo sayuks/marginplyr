@@ -15,7 +15,8 @@ test_that("union_all_with_margins() works with local data and lazy tables", {
       .data = data,
       .margins = c(g2, g3),
       .without_all = year,
-      .with_all = h1
+      .with_all = h1,
+      .check_margin_name = TRUE
     )
 
     expected <- list(

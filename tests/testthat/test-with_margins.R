@@ -125,6 +125,7 @@ test_that("with_margins() can also not create margins", {
       .data = data,
       .margins = c(g1, g2, g3),
       .f = .f,
+      .check_margin_name = TRUE,
       .sort = FALSE
     )
 
@@ -167,6 +168,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
     .with_all = c(h1, k1),
     .f = .f,
     .margin_name = "(all)",
+    .check_margin_name = TRUE,
     .sort = TRUE
   )
 
@@ -215,6 +217,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
       .with_all = k1,
       .f = .f,
       .margin_name = NA_character_,
+      .check_margin_name = TRUE,
       .sort = TRUE
     ),
     paste(
@@ -233,6 +236,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
     .with_all = h1,
     .f = .f,
     .margin_name = NA_character_,
+    .check_margin_name = TRUE,
     .sort = TRUE
   )
 
@@ -294,6 +298,7 @@ test_that("row order is as expected when factor is specified", {
     .data = data,
     .with_all = x,
     .f = f,
+    .check_margin_name = TRUE,
     .sort = TRUE
   )
 
@@ -312,6 +317,7 @@ test_that("row order is as expected when factor is specified", {
     .data = data,
     .margins = x,
     .f = f,
+    .check_margin_name = TRUE,
     .sort = TRUE
   )
 
@@ -324,6 +330,7 @@ test_that("row order is as expected when factor is specified", {
     .data = data,
     .with_all = x,
     .f = f,
+    .check_margin_name = TRUE,
     .sort = FALSE
   )
 
