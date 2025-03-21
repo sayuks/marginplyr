@@ -236,38 +236,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="withmargins" class="level1">
 <h1>withmargins</h1>
 <!-- badges: start -->
-<!-- <a href = "https://cran.r-project.org/web/packages/withmargins/index.html" target = "_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a> -->
-<p><a href="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml/badge.svg" class="img-fluid" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/sayuks/withmargins"><img src="https://codecov.io/gh/sayuks/withmargins/graph/badge.svg" class="img-fluid" alt="Codecov test coverage"></a> <a href="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml/badge.svg" class="img-fluid" alt="lint.yaml"></a> <a href="https://sayuks.github.io/withmargins/" target="_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a> <!-- badges: end --></p>
+<p><a href="https://CRAN.R-project.org/package=withmargins" target="_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a> <a href="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml/badge.svg" class="img-fluid" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/sayuks/withmargins"><img src="https://codecov.io/gh/sayuks/withmargins/graph/badge.svg" class="img-fluid" alt="Codecov test coverage"></a> <a href="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml/badge.svg" class="img-fluid" alt="lint.yaml"></a> <a href="https://sayuks.github.io/withmargins/" target="_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a> <!-- badges: end --></p>
 <p><code>withmargins</code> is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports <a href="https://www.tidyverse.org/">tidyverse</a> workflows for analysis.</p>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<p>You can install <code>withmargins</code> from CRAN:</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"withmargins"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<!-- You can install `withmargins` from CRAN: -->
+<!-- ``` r -->
+<!-- install.packages("withmargins") -->
+<!-- ``` -->
 <p>You can install the development version of <code>withmargins</code> from <a href="https://github.com/">GitHub</a> with:</p>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("pak")</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"sayuks/withmargins"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("pak")</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"sayuks/withmargins"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(withmargins)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(withmargins)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <section id="summarize-with-hierarchical-margins-for-cyl-and-vs." class="level3">
 <h3 class="anchored" data-anchor-id="summarize-with-hierarchical-margins-for-cyl-and-vs.">Summarize with hierarchical margins for <code>cyl</code> and <code>vs</code>.</h3>
-<div class="sourceCode" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
-<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     cyl    vs  n      mpg</span></span>
-<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 (all) (all) 32 20.09062</span></span>
-<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2     4 (all) 11 26.66364</span></span>
-<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3     4     0  1 26.00000</span></span>
-<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4     4     1 10 26.73000</span></span>
-<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5     6 (all)  7 19.74286</span></span>
-<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6     6     0  3 20.56667</span></span>
-<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7     6     1  4 19.12500</span></span>
-<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8     8 (all) 14 15.10000</span></span>
-<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9     8     0 14 15.10000</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt;     cyl    vs  n      mpg</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 1 (all) (all) 32 20.09062</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 2     4 (all) 11 26.66364</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 3     4     0  1 26.00000</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 4     4     1 10 26.73000</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 5     6 (all)  7 19.74286</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 6     6     0  3 20.56667</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7     6     1  4 19.12500</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8     8 (all) 14 15.10000</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9     8     0 14 15.10000</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>See <a href="https://sayuks.github.io/withmargins/vignettes/get_started.html">Get started</a> for more details.</p>
 </section>
 </section>
