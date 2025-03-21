@@ -6,6 +6,7 @@ dir.t: tests
 extra.suggests:
   - altdoc
   - dbplyr
+  - RSQLite
 pkg_ignore:
   - knitr
   - rmarkdown
