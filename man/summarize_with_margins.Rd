@@ -11,6 +11,7 @@ summarize_with_margins(
   .without_all = NULL,
   .with_all = NULL,
   .margin_name = "(all)",
+  .check_margin_name = is.data.frame(.data),
   .sort = is.data.frame(.data)
 )
 }
@@ -36,14 +37,18 @@ variables without hierarchy to which \code{.margin_name} will be added.}
 \item{.margin_name}{A string representing margin name
 (Defaults to \code{"(all)"}). \code{NA_character_} is also allowed.}
 
-\item{.sort}{A Logical (defaults to \code{is.data.frame(.data)}).
+\item{.check_margin_name}{A logical (defaults to \code{is.data.frame(.data)}).
+If \code{TRUE}, checks whether the string in \verb{.margin_name' already exists in the column specified by }.margins\code{or}.with_all` and returns an error
+if it already exists.}
+
+\item{.sort}{A logical (defaults to \code{is.data.frame(.data)}).
 If \code{TRUE}, sort the result by the column order
 specified in \code{.without_all} and \code{.margins} and \code{.with_all}.
-* This is because pipelines using lazy tables should perform the
+This is because pipelines using lazy tables should perform the
 SQL \verb{ORDER BY} as last as possible.
-* As a result of sorting, in the case of lazy tables,
+As a result of sorting, in the case of lazy tables,
 \code{NA} may come first, unlike R.
-* See \href{https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html}{\code{arrange()} documentation of \code{{dbplyr}}}
+See \href{https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html}{\code{arrange()} documentation of \code{{dbplyr}}}
 for details.}
 }
 \value{

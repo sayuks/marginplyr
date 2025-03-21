@@ -50,6 +50,7 @@ test_that("union_all_with_margins() works with local data and lazy tables", {
     )
     expected <- Reduce(dplyr::union_all, expected)
     expected <- dplyr::relocate(.data = expected, year, g2, g3, h1)
+    expected <- dplyr::arrange(.data = expected, year, g2, g3, h1)
 
     if (lazy) {
       actual <- arrange_then_collect(actual)

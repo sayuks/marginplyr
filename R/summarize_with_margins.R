@@ -19,15 +19,19 @@
 #'   variables without hierarchy to which `.margin_name` will be added.
 #' @param .margin_name A string representing margin name
 #'   (Defaults to `"(all)"`). `NA_character_` is also allowed.
-#' @param .sort A Logical (defaults to `is.data.frame(.data)`).
+#' @param .check_margin_name A logical (defaults to `is.data.frame(.data)`).
+#'   If `TRUE`, checks whether the string in `.margin_name' already exists
+#'   in the column specified by `.margins` or `.with_all` and returns an error
+#'   if it already exists.
+#' @param .sort A logical (defaults to `is.data.frame(.data)`).
 #'   If `TRUE`, sort the result by the column order
 #'   specified in `.without_all` and `.margins` and `.with_all`.
-#'     * This is because pipelines using lazy tables should perform the
-#'       SQL `ORDER BY` as last as possible.
-#'     * As a result of sorting, in the case of lazy tables,
-#'       `NA` may come first, unlike R.
-#'     * See [`arrange()` documentation of `{dbplyr}`](https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html)
-#'       for details.
+#'   This is because pipelines using lazy tables should perform the
+#'   SQL `ORDER BY` as last as possible.
+#'   As a result of sorting, in the case of lazy tables,
+#'   `NA` may come first, unlike R.
+#'   See [`arrange()` documentation of `{dbplyr}`](https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html)
+#'   for details.
 #' @details
 #' * This is similar to [dplyr::summarize()] but creates an additional
 #'   `.margin_name` category for each grouping variable. It assumes a hierarchy
@@ -116,6 +120,7 @@ summarize_with_margins <- function(.data,
                                    .without_all = NULL,
                                    .with_all = NULL,
                                    .margin_name = "(all)",
+                                   .check_margin_name = is.data.frame(.data),
                                    .sort = is.data.frame(.data)) {
   .f <- function(.data, ..., .margin_pairs, .by) {
     dplyr::summarize(
@@ -133,6 +138,7 @@ summarize_with_margins <- function(.data,
     .without_all = {{ .without_all }},
     .with_all = {{ .with_all }},
     .margin_name = .margin_name,
+    .check_margin_name = .check_margin_name,
     .f = .f,
     .sort = .sort
   )
@@ -335,9 +341,11 @@ with_margins <- function(.data,
                          .without_all = NULL,
                          .with_all = NULL,
                          .margin_name = "(all)",
+                         .check_margin_name,
                          .f,
                          .sort) {
   assert_string_scalar(.margin_name)
+  assert_logical_scalar(.check_margin_name)
   assert_logical_scalar(.sort)
   stopifnot("`.f` must be a function." = is.function(.f))
 
@@ -411,10 +419,12 @@ with_margins <- function(.data,
   )
 
   # .margin_name must not be included in columns where the margin is calculated
-  assert_margin_name(
-    dplyr::select(.data = .data, tidyselect::all_of(margin_vars_all)),
-    .margin_name
-  )
+  if (.check_margin_name) {
+    assert_margin_name(
+      dplyr::select(.data = .data, tidyselect::all_of(margin_vars_all)),
+      .margin_name
+    )
+  }
 
   l_margins <- get_hierarchy(l$.margins)
 
