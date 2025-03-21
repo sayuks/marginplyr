@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 # withmargins
 
 <!-- badges: start -->
-<!-- <a href = "https://cran.r-project.org/web/packages/withmargins/index.html" target = "_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a> -->
+<a href = "https://CRAN.R-project.org/package=withmargins" target = "_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a>
 [![R-CMD-check](https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml)
 [![Codecov test coverage](https://codecov.io/gh/sayuks/withmargins/graph/badge.svg)](https://app.codecov.io/gh/sayuks/withmargins)
 [![lint.yaml](https://github.com/sayuks/withmargins/actions/workflows/lint.yaml/badge.svg)](https://github.com/sayuks/withmargins/actions/workflows/lint.yaml)
@@ -27,11 +27,11 @@ knitr::opts_chunk$set(
 
 ## Installation
 
-You can install `withmargins` from CRAN:
+<!-- You can install `withmargins` from CRAN: -->
 
-``` r
-install.packages("withmargins")
-```
+<!-- ``` r -->
+<!-- install.packages("withmargins") -->
+<!-- ``` -->
 You can install the development version of `withmargins` from [GitHub](https://github.com/) with:
 
 ``` r

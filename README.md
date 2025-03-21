@@ -4,8 +4,8 @@
 # withmargins
 
 <!-- badges: start -->
-<!-- <a href = "https://cran.r-project.org/web/packages/withmargins/index.html" target = "_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a> -->
 
+<a href = "https://CRAN.R-project.org/package=withmargins" target = "_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a>
 [![R-CMD-check](https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/sayuks/withmargins/graph/badge.svg)](https://app.codecov.io/gh/sayuks/withmargins)
@@ -19,11 +19,10 @@ and expand data by treating margins as category levels. Supports
 
 ## Installation
 
-You can install `withmargins` from CRAN:
-
-``` r
-install.packages("withmargins")
-```
+<!-- You can install `withmargins` from CRAN: -->
+<!-- ``` r -->
+<!-- install.packages("withmargins") -->
+<!-- ``` -->
 
 You can install the development version of `withmargins` from
 [GitHub](https://github.com/) with:
