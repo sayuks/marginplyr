@@ -247,6 +247,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   .without_all = NULL,
   .with_all = NULL,
   .margin_name = "(all)",
+  .check_margin_name = is.data.frame(.data),
   .sort = is.data.frame(.data)
 )
 </code></pre>
@@ -309,10 +310,18 @@ A string representing margin name (Defaults to <code>“(all)”</code>). <code>
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".check_margin_name">.check_margin_name</code>
+</td>
+<td>
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.margins<code>or</code>.with_all’ and returns an error if it already exists.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
 <code id=".sort">.sort</code>
 </td>
 <td>
-A Logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>. * This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. * As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. * See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>. This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
 </td>
 </tr>
 </tbody></table>

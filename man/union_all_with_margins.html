@@ -246,7 +246,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   .without_all = NULL,
   .with_all = NULL,
   .margin_name = "(all)",
-  .sort = FALSE
+  .check_margin_name = is.data.frame(.data),
+  .sort = is.data.frame(.data)
 )
 </code></pre>
 </section>
@@ -300,10 +301,18 @@ A string representing margin name (Defaults to <code>“(all)”</code>). <code>
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<code id=".check_margin_name">.check_margin_name</code>
+</td>
+<td>
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.margins<code>or</code>.with_all’ and returns an error if it already exists.
+</td>
+</tr>
+<tr>
+<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
 <code id=".sort">.sort</code>
 </td>
 <td>
-A Logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>. * This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. * As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. * See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>. This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
 </td>
 </tr>
 </tbody></table>
@@ -412,391 +421,391 @@ A Logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                          am   cyl    vs  gear  mpg  disp  hp drat    wt  qsec
-Mazda RX4...1              1 (all) (all) (all) 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...2          1 (all) (all) (all) 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...3             1 (all) (all) (all) 22.8 108.0  93 3.85 2.320 18.61
-Hornet 4 Drive...4         0 (all) (all) (all) 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...5      0 (all) (all) (all) 18.7 360.0 175 3.15 3.440 17.02
-Valiant...6                0 (all) (all) (all) 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...7             0 (all) (all) (all) 14.3 360.0 245 3.21 3.570 15.84
-Merc 240D...8              0 (all) (all) (all) 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...9               0 (all) (all) (all) 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...10              0 (all) (all) (all) 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...11             0 (all) (all) (all) 17.8 167.6 123 3.92 3.440 18.90
-Merc 450SE...12            0 (all) (all) (all) 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...13            0 (all) (all) (all) 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...14           0 (all) (all) (all) 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...15    0 (all) (all) (all) 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...16   0 (all) (all) (all) 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...17     0 (all) (all) (all) 14.7 440.0 230 3.23 5.345 17.42
-Fiat 128...18              1 (all) (all) (all) 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...19           1 (all) (all) (all) 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...20        1 (all) (all) (all) 33.9  71.1  65 4.22 1.835 19.90
-Toyota Corona...21         0 (all) (all) (all) 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...22      0 (all) (all) (all) 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...23           0 (all) (all) (all) 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...24            0 (all) (all) (all) 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...25      0 (all) (all) (all) 19.2 400.0 175 3.08 3.845 17.05
-Fiat X1-9...26             1 (all) (all) (all) 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...27         1 (all) (all) (all) 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...28          1 (all) (all) (all) 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...29        1 (all) (all) (all) 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...30          1 (all) (all) (all) 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...31         1 (all) (all) (all) 15.0 301.0 335 3.54 3.570 14.60
-Volvo 142E...32            1 (all) (all) (all) 21.4 121.0 109 4.11 2.780 18.60
-Mazda RX4...33             1 (all) (all)     4 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...34         1 (all) (all)     4 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...35            1 (all) (all)     4 22.8 108.0  93 3.85 2.320 18.61
-Hornet 4 Drive...36        0 (all) (all)     3 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...37     0 (all) (all)     3 18.7 360.0 175 3.15 3.440 17.02
-Valiant...38               0 (all) (all)     3 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...39            0 (all) (all)     3 14.3 360.0 245 3.21 3.570 15.84
-Merc 240D...40             0 (all) (all)     4 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...41              0 (all) (all)     4 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...42              0 (all) (all)     4 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...43             0 (all) (all)     4 17.8 167.6 123 3.92 3.440 18.90
-Merc 450SE...44            0 (all) (all)     3 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...45            0 (all) (all)     3 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...46           0 (all) (all)     3 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...47    0 (all) (all)     3 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...48   0 (all) (all)     3 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...49     0 (all) (all)     3 14.7 440.0 230 3.23 5.345 17.42
-Fiat 128...50              1 (all) (all)     4 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...51           1 (all) (all)     4 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...52        1 (all) (all)     4 33.9  71.1  65 4.22 1.835 19.90
-Toyota Corona...53         0 (all) (all)     3 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...54      0 (all) (all)     3 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...55           0 (all) (all)     3 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...56            0 (all) (all)     3 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...57      0 (all) (all)     3 19.2 400.0 175 3.08 3.845 17.05
-Fiat X1-9...58             1 (all) (all)     4 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...59         1 (all) (all)     5 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...60          1 (all) (all)     5 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...61        1 (all) (all)     5 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...62          1 (all) (all)     5 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...63         1 (all) (all)     5 15.0 301.0 335 3.54 3.570 14.60
-Volvo 142E...64            1 (all) (all)     4 21.4 121.0 109 4.11 2.780 18.60
-Mazda RX4...65             1     6 (all) (all) 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...66         1     6 (all) (all) 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...67            1     4 (all) (all) 22.8 108.0  93 3.85 2.320 18.61
-Hornet 4 Drive...68        0     6 (all) (all) 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...69     0     8 (all) (all) 18.7 360.0 175 3.15 3.440 17.02
-Valiant...70               0     6 (all) (all) 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...71            0     8 (all) (all) 14.3 360.0 245 3.21 3.570 15.84
-Merc 240D...72             0     4 (all) (all) 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...73              0     4 (all) (all) 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...74              0     6 (all) (all) 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...75             0     6 (all) (all) 17.8 167.6 123 3.92 3.440 18.90
-Merc 450SE...76            0     8 (all) (all) 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...77            0     8 (all) (all) 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...78           0     8 (all) (all) 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...79    0     8 (all) (all) 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...80   0     8 (all) (all) 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...81     0     8 (all) (all) 14.7 440.0 230 3.23 5.345 17.42
-Fiat 128...82              1     4 (all) (all) 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...83           1     4 (all) (all) 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...84        1     4 (all) (all) 33.9  71.1  65 4.22 1.835 19.90
-Toyota Corona...85         0     4 (all) (all) 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...86      0     8 (all) (all) 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...87           0     8 (all) (all) 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...88            0     8 (all) (all) 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...89      0     8 (all) (all) 19.2 400.0 175 3.08 3.845 17.05
-Fiat X1-9...90             1     4 (all) (all) 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...91         1     4 (all) (all) 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...92          1     4 (all) (all) 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...93        1     8 (all) (all) 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...94          1     6 (all) (all) 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...95         1     8 (all) (all) 15.0 301.0 335 3.54 3.570 14.60
-Volvo 142E...96            1     4 (all) (all) 21.4 121.0 109 4.11 2.780 18.60
-Mazda RX4...97             1     6 (all)     4 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...98         1     6 (all)     4 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...99            1     4 (all)     4 22.8 108.0  93 3.85 2.320 18.61
-Hornet 4 Drive...100       0     6 (all)     3 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...101    0     8 (all)     3 18.7 360.0 175 3.15 3.440 17.02
-Valiant...102              0     6 (all)     3 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...103           0     8 (all)     3 14.3 360.0 245 3.21 3.570 15.84
-Merc 240D...104            0     4 (all)     4 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...105             0     4 (all)     4 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...106             0     6 (all)     4 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...107            0     6 (all)     4 17.8 167.6 123 3.92 3.440 18.90
-Merc 450SE...108           0     8 (all)     3 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...109           0     8 (all)     3 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...110          0     8 (all)     3 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...111   0     8 (all)     3 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...112  0     8 (all)     3 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...113    0     8 (all)     3 14.7 440.0 230 3.23 5.345 17.42
-Fiat 128...114             1     4 (all)     4 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...115          1     4 (all)     4 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...116       1     4 (all)     4 33.9  71.1  65 4.22 1.835 19.90
-Toyota Corona...117        0     4 (all)     3 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...118     0     8 (all)     3 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...119          0     8 (all)     3 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...120           0     8 (all)     3 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...121     0     8 (all)     3 19.2 400.0 175 3.08 3.845 17.05
-Fiat X1-9...122            1     4 (all)     4 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...123        1     4 (all)     5 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...124         1     4 (all)     5 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...125       1     8 (all)     5 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...126         1     6 (all)     5 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...127        1     8 (all)     5 15.0 301.0 335 3.54 3.570 14.60
-Volvo 142E...128           1     4 (all)     4 21.4 121.0 109 4.11 2.780 18.60
-Mazda RX4...129            1     6     0 (all) 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...130        1     6     0 (all) 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...131           1     4     1 (all) 22.8 108.0  93 3.85 2.320 18.61
-Hornet 4 Drive...132       0     6     1 (all) 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...133    0     8     0 (all) 18.7 360.0 175 3.15 3.440 17.02
-Valiant...134              0     6     1 (all) 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...135           0     8     0 (all) 14.3 360.0 245 3.21 3.570 15.84
-Merc 240D...136            0     4     1 (all) 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...137             0     4     1 (all) 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...138             0     6     1 (all) 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...139            0     6     1 (all) 17.8 167.6 123 3.92 3.440 18.90
-Merc 450SE...140           0     8     0 (all) 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...141           0     8     0 (all) 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...142          0     8     0 (all) 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...143   0     8     0 (all) 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...144  0     8     0 (all) 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...145    0     8     0 (all) 14.7 440.0 230 3.23 5.345 17.42
-Fiat 128...146             1     4     1 (all) 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...147          1     4     1 (all) 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...148       1     4     1 (all) 33.9  71.1  65 4.22 1.835 19.90
-Toyota Corona...149        0     4     1 (all) 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...150     0     8     0 (all) 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...151          0     8     0 (all) 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...152           0     8     0 (all) 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...153     0     8     0 (all) 19.2 400.0 175 3.08 3.845 17.05
-Fiat X1-9...154            1     4     1 (all) 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...155        1     4     0 (all) 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...156         1     4     1 (all) 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...157       1     8     0 (all) 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...158         1     6     0 (all) 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...159        1     8     0 (all) 15.0 301.0 335 3.54 3.570 14.60
-Volvo 142E...160           1     4     1 (all) 21.4 121.0 109 4.11 2.780 18.60
-Mazda RX4...161            1     6     0     4 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...162        1     6     0     4 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...163           1     4     1     4 22.8 108.0  93 3.85 2.320 18.61
-Hornet 4 Drive...164       0     6     1     3 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...165    0     8     0     3 18.7 360.0 175 3.15 3.440 17.02
-Valiant...166              0     6     1     3 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...167           0     8     0     3 14.3 360.0 245 3.21 3.570 15.84
-Merc 240D...168            0     4     1     4 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...169             0     4     1     4 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...170             0     6     1     4 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...171            0     6     1     4 17.8 167.6 123 3.92 3.440 18.90
-Merc 450SE...172           0     8     0     3 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...173           0     8     0     3 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...174          0     8     0     3 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...175   0     8     0     3 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...176  0     8     0     3 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...177    0     8     0     3 14.7 440.0 230 3.23 5.345 17.42
-Fiat 128...178             1     4     1     4 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...179          1     4     1     4 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...180       1     4     1     4 33.9  71.1  65 4.22 1.835 19.90
-Toyota Corona...181        0     4     1     3 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...182     0     8     0     3 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...183          0     8     0     3 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...184           0     8     0     3 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...185     0     8     0     3 19.2 400.0 175 3.08 3.845 17.05
-Fiat X1-9...186            1     4     1     4 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...187        1     4     0     5 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...188         1     4     1     5 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...189       1     8     0     5 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...190         1     6     0     5 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...191        1     8     0     5 15.0 301.0 335 3.54 3.570 14.60
-Volvo 142E...192           1     4     1     4 21.4 121.0 109 4.11 2.780 18.60
+Hornet 4 Drive...1         0 (all) (all) (all) 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...2      0 (all) (all) (all) 18.7 360.0 175 3.15 3.440 17.02
+Valiant...3                0 (all) (all) (all) 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...4             0 (all) (all) (all) 14.3 360.0 245 3.21 3.570 15.84
+Merc 240D...5              0 (all) (all) (all) 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...6               0 (all) (all) (all) 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...7               0 (all) (all) (all) 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...8              0 (all) (all) (all) 17.8 167.6 123 3.92 3.440 18.90
+Merc 450SE...9             0 (all) (all) (all) 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...10            0 (all) (all) (all) 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...11           0 (all) (all) (all) 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...12    0 (all) (all) (all) 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...13   0 (all) (all) (all) 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...14     0 (all) (all) (all) 14.7 440.0 230 3.23 5.345 17.42
+Toyota Corona...15         0 (all) (all) (all) 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...16      0 (all) (all) (all) 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...17           0 (all) (all) (all) 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...18            0 (all) (all) (all) 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...19      0 (all) (all) (all) 19.2 400.0 175 3.08 3.845 17.05
+Hornet 4 Drive...20        0 (all) (all)     3 21.4 258.0 110 3.08 3.215 19.44
+Hornet Sportabout...21     0 (all) (all)     3 18.7 360.0 175 3.15 3.440 17.02
+Valiant...22               0 (all) (all)     3 18.1 225.0 105 2.76 3.460 20.22
+Duster 360...23            0 (all) (all)     3 14.3 360.0 245 3.21 3.570 15.84
+Merc 450SE...24            0 (all) (all)     3 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...25            0 (all) (all)     3 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...26           0 (all) (all)     3 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...27    0 (all) (all)     3 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...28   0 (all) (all)     3 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...29     0 (all) (all)     3 14.7 440.0 230 3.23 5.345 17.42
+Toyota Corona...30         0 (all) (all)     3 21.5 120.1  97 3.70 2.465 20.01
+Dodge Challenger...31      0 (all) (all)     3 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...32           0 (all) (all)     3 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...33            0 (all) (all)     3 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...34      0 (all) (all)     3 19.2 400.0 175 3.08 3.845 17.05
+Merc 240D...35             0 (all) (all)     4 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...36              0 (all) (all)     4 22.8 140.8  95 3.92 3.150 22.90
+Merc 280...37              0 (all) (all)     4 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...38             0 (all) (all)     4 17.8 167.6 123 3.92 3.440 18.90
+Merc 240D...39             0     4 (all) (all) 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...40              0     4 (all) (all) 22.8 140.8  95 3.92 3.150 22.90
+Toyota Corona...41         0     4 (all) (all) 21.5 120.1  97 3.70 2.465 20.01
+Toyota Corona...42         0     4 (all)     3 21.5 120.1  97 3.70 2.465 20.01
+Merc 240D...43             0     4 (all)     4 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...44              0     4 (all)     4 22.8 140.8  95 3.92 3.150 22.90
+Merc 240D...45             0     4     1 (all) 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...46              0     4     1 (all) 22.8 140.8  95 3.92 3.150 22.90
+Toyota Corona...47         0     4     1 (all) 21.5 120.1  97 3.70 2.465 20.01
+Toyota Corona...48         0     4     1     3 21.5 120.1  97 3.70 2.465 20.01
+Merc 240D...49             0     4     1     4 24.4 146.7  62 3.69 3.190 20.00
+Merc 230...50              0     4     1     4 22.8 140.8  95 3.92 3.150 22.90
+Hornet 4 Drive...51        0     6 (all) (all) 21.4 258.0 110 3.08 3.215 19.44
+Valiant...52               0     6 (all) (all) 18.1 225.0 105 2.76 3.460 20.22
+Merc 280...53              0     6 (all) (all) 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...54             0     6 (all) (all) 17.8 167.6 123 3.92 3.440 18.90
+Hornet 4 Drive...55        0     6 (all)     3 21.4 258.0 110 3.08 3.215 19.44
+Valiant...56               0     6 (all)     3 18.1 225.0 105 2.76 3.460 20.22
+Merc 280...57              0     6 (all)     4 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...58             0     6 (all)     4 17.8 167.6 123 3.92 3.440 18.90
+Hornet 4 Drive...59        0     6     1 (all) 21.4 258.0 110 3.08 3.215 19.44
+Valiant...60               0     6     1 (all) 18.1 225.0 105 2.76 3.460 20.22
+Merc 280...61              0     6     1 (all) 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...62             0     6     1 (all) 17.8 167.6 123 3.92 3.440 18.90
+Hornet 4 Drive...63        0     6     1     3 21.4 258.0 110 3.08 3.215 19.44
+Valiant...64               0     6     1     3 18.1 225.0 105 2.76 3.460 20.22
+Merc 280...65              0     6     1     4 19.2 167.6 123 3.92 3.440 18.30
+Merc 280C...66             0     6     1     4 17.8 167.6 123 3.92 3.440 18.90
+Hornet Sportabout...67     0     8 (all) (all) 18.7 360.0 175 3.15 3.440 17.02
+Duster 360...68            0     8 (all) (all) 14.3 360.0 245 3.21 3.570 15.84
+Merc 450SE...69            0     8 (all) (all) 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...70            0     8 (all) (all) 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...71           0     8 (all) (all) 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...72    0     8 (all) (all) 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...73   0     8 (all) (all) 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...74     0     8 (all) (all) 14.7 440.0 230 3.23 5.345 17.42
+Dodge Challenger...75      0     8 (all) (all) 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...76           0     8 (all) (all) 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...77            0     8 (all) (all) 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...78      0     8 (all) (all) 19.2 400.0 175 3.08 3.845 17.05
+Hornet Sportabout...79     0     8 (all)     3 18.7 360.0 175 3.15 3.440 17.02
+Duster 360...80            0     8 (all)     3 14.3 360.0 245 3.21 3.570 15.84
+Merc 450SE...81            0     8 (all)     3 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...82            0     8 (all)     3 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...83           0     8 (all)     3 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...84    0     8 (all)     3 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...85   0     8 (all)     3 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...86     0     8 (all)     3 14.7 440.0 230 3.23 5.345 17.42
+Dodge Challenger...87      0     8 (all)     3 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...88           0     8 (all)     3 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...89            0     8 (all)     3 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...90      0     8 (all)     3 19.2 400.0 175 3.08 3.845 17.05
+Hornet Sportabout...91     0     8     0 (all) 18.7 360.0 175 3.15 3.440 17.02
+Duster 360...92            0     8     0 (all) 14.3 360.0 245 3.21 3.570 15.84
+Merc 450SE...93            0     8     0 (all) 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...94            0     8     0 (all) 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...95           0     8     0 (all) 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...96    0     8     0 (all) 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...97   0     8     0 (all) 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...98     0     8     0 (all) 14.7 440.0 230 3.23 5.345 17.42
+Dodge Challenger...99      0     8     0 (all) 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...100          0     8     0 (all) 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...101           0     8     0 (all) 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...102     0     8     0 (all) 19.2 400.0 175 3.08 3.845 17.05
+Hornet Sportabout...103    0     8     0     3 18.7 360.0 175 3.15 3.440 17.02
+Duster 360...104           0     8     0     3 14.3 360.0 245 3.21 3.570 15.84
+Merc 450SE...105           0     8     0     3 16.4 275.8 180 3.07 4.070 17.40
+Merc 450SL...106           0     8     0     3 17.3 275.8 180 3.07 3.730 17.60
+Merc 450SLC...107          0     8     0     3 15.2 275.8 180 3.07 3.780 18.00
+Cadillac Fleetwood...108   0     8     0     3 10.4 472.0 205 2.93 5.250 17.98
+Lincoln Continental...109  0     8     0     3 10.4 460.0 215 3.00 5.424 17.82
+Chrysler Imperial...110    0     8     0     3 14.7 440.0 230 3.23 5.345 17.42
+Dodge Challenger...111     0     8     0     3 15.5 318.0 150 2.76 3.520 16.87
+AMC Javelin...112          0     8     0     3 15.2 304.0 150 3.15 3.435 17.30
+Camaro Z28...113           0     8     0     3 13.3 350.0 245 3.73 3.840 15.41
+Pontiac Firebird...114     0     8     0     3 19.2 400.0 175 3.08 3.845 17.05
+Mazda RX4...115            1 (all) (all) (all) 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...116        1 (all) (all) (all) 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...117           1 (all) (all) (all) 22.8 108.0  93 3.85 2.320 18.61
+Fiat 128...118             1 (all) (all) (all) 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...119          1 (all) (all) (all) 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...120       1 (all) (all) (all) 33.9  71.1  65 4.22 1.835 19.90
+Fiat X1-9...121            1 (all) (all) (all) 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...122        1 (all) (all) (all) 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...123         1 (all) (all) (all) 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...124       1 (all) (all) (all) 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...125         1 (all) (all) (all) 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...126        1 (all) (all) (all) 15.0 301.0 335 3.54 3.570 14.60
+Volvo 142E...127           1 (all) (all) (all) 21.4 121.0 109 4.11 2.780 18.60
+Mazda RX4...128            1 (all) (all)     4 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...129        1 (all) (all)     4 21.0 160.0 110 3.90 2.875 17.02
+Datsun 710...130           1 (all) (all)     4 22.8 108.0  93 3.85 2.320 18.61
+Fiat 128...131             1 (all) (all)     4 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...132          1 (all) (all)     4 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...133       1 (all) (all)     4 33.9  71.1  65 4.22 1.835 19.90
+Fiat X1-9...134            1 (all) (all)     4 27.3  79.0  66 4.08 1.935 18.90
+Volvo 142E...135           1 (all) (all)     4 21.4 121.0 109 4.11 2.780 18.60
+Porsche 914-2...136        1 (all) (all)     5 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...137         1 (all) (all)     5 30.4  95.1 113 3.77 1.513 16.90
+Ford Pantera L...138       1 (all) (all)     5 15.8 351.0 264 4.22 3.170 14.50
+Ferrari Dino...139         1 (all) (all)     5 19.7 145.0 175 3.62 2.770 15.50
+Maserati Bora...140        1 (all) (all)     5 15.0 301.0 335 3.54 3.570 14.60
+Datsun 710...141           1     4 (all) (all) 22.8 108.0  93 3.85 2.320 18.61
+Fiat 128...142             1     4 (all) (all) 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...143          1     4 (all) (all) 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...144       1     4 (all) (all) 33.9  71.1  65 4.22 1.835 19.90
+Fiat X1-9...145            1     4 (all) (all) 27.3  79.0  66 4.08 1.935 18.90
+Porsche 914-2...146        1     4 (all) (all) 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...147         1     4 (all) (all) 30.4  95.1 113 3.77 1.513 16.90
+Volvo 142E...148           1     4 (all) (all) 21.4 121.0 109 4.11 2.780 18.60
+Datsun 710...149           1     4 (all)     4 22.8 108.0  93 3.85 2.320 18.61
+Fiat 128...150             1     4 (all)     4 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...151          1     4 (all)     4 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...152       1     4 (all)     4 33.9  71.1  65 4.22 1.835 19.90
+Fiat X1-9...153            1     4 (all)     4 27.3  79.0  66 4.08 1.935 18.90
+Volvo 142E...154           1     4 (all)     4 21.4 121.0 109 4.11 2.780 18.60
+Porsche 914-2...155        1     4 (all)     5 26.0 120.3  91 4.43 2.140 16.70
+Lotus Europa...156         1     4 (all)     5 30.4  95.1 113 3.77 1.513 16.90
+Porsche 914-2...157        1     4     0 (all) 26.0 120.3  91 4.43 2.140 16.70
+Porsche 914-2...158        1     4     0     5 26.0 120.3  91 4.43 2.140 16.70
+Datsun 710...159           1     4     1 (all) 22.8 108.0  93 3.85 2.320 18.61
+Fiat 128...160             1     4     1 (all) 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...161          1     4     1 (all) 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...162       1     4     1 (all) 33.9  71.1  65 4.22 1.835 19.90
+Fiat X1-9...163            1     4     1 (all) 27.3  79.0  66 4.08 1.935 18.90
+Lotus Europa...164         1     4     1 (all) 30.4  95.1 113 3.77 1.513 16.90
+Volvo 142E...165           1     4     1 (all) 21.4 121.0 109 4.11 2.780 18.60
+Datsun 710...166           1     4     1     4 22.8 108.0  93 3.85 2.320 18.61
+Fiat 128...167             1     4     1     4 32.4  78.7  66 4.08 2.200 19.47
+Honda Civic...168          1     4     1     4 30.4  75.7  52 4.93 1.615 18.52
+Toyota Corolla...169       1     4     1     4 33.9  71.1  65 4.22 1.835 19.90
+Fiat X1-9...170            1     4     1     4 27.3  79.0  66 4.08 1.935 18.90
+Volvo 142E...171           1     4     1     4 21.4 121.0 109 4.11 2.780 18.60
+Lotus Europa...172         1     4     1     5 30.4  95.1 113 3.77 1.513 16.90
+Mazda RX4...173            1     6 (all) (all) 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...174        1     6 (all) (all) 21.0 160.0 110 3.90 2.875 17.02
+Ferrari Dino...175         1     6 (all) (all) 19.7 145.0 175 3.62 2.770 15.50
+Mazda RX4...176            1     6 (all)     4 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...177        1     6 (all)     4 21.0 160.0 110 3.90 2.875 17.02
+Ferrari Dino...178         1     6 (all)     5 19.7 145.0 175 3.62 2.770 15.50
+Mazda RX4...179            1     6     0 (all) 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...180        1     6     0 (all) 21.0 160.0 110 3.90 2.875 17.02
+Ferrari Dino...181         1     6     0 (all) 19.7 145.0 175 3.62 2.770 15.50
+Mazda RX4...182            1     6     0     4 21.0 160.0 110 3.90 2.620 16.46
+Mazda RX4 Wag...183        1     6     0     4 21.0 160.0 110 3.90 2.875 17.02
+Ferrari Dino...184         1     6     0     5 19.7 145.0 175 3.62 2.770 15.50
+Ford Pantera L...185       1     8 (all) (all) 15.8 351.0 264 4.22 3.170 14.50
+Maserati Bora...186        1     8 (all) (all) 15.0 301.0 335 3.54 3.570 14.60
+Ford Pantera L...187       1     8 (all)     5 15.8 351.0 264 4.22 3.170 14.50
+Maserati Bora...188        1     8 (all)     5 15.0 301.0 335 3.54 3.570 14.60
+Ford Pantera L...189       1     8     0 (all) 15.8 351.0 264 4.22 3.170 14.50
+Maserati Bora...190        1     8     0 (all) 15.0 301.0 335 3.54 3.570 14.60
+Ford Pantera L...191       1     8     0     5 15.8 351.0 264 4.22 3.170 14.50
+Maserati Bora...192        1     8     0     5 15.0 301.0 335 3.54 3.570 14.60
                           carb
-Mazda RX4...1                4
-Mazda RX4 Wag...2            4
-Datsun 710...3               1
-Hornet 4 Drive...4           1
-Hornet Sportabout...5        2
-Valiant...6                  1
-Duster 360...7               4
-Merc 240D...8                2
-Merc 230...9                 2
-Merc 280...10                4
-Merc 280C...11               4
-Merc 450SE...12              3
-Merc 450SL...13              3
-Merc 450SLC...14             3
-Cadillac Fleetwood...15      4
-Lincoln Continental...16     4
-Chrysler Imperial...17       4
-Fiat 128...18                1
-Honda Civic...19             2
-Toyota Corolla...20          1
-Toyota Corona...21           1
-Dodge Challenger...22        2
-AMC Javelin...23             2
-Camaro Z28...24              4
-Pontiac Firebird...25        2
-Fiat X1-9...26               1
-Porsche 914-2...27           2
-Lotus Europa...28            2
-Ford Pantera L...29          4
-Ferrari Dino...30            6
-Maserati Bora...31           8
-Volvo 142E...32              2
-Mazda RX4...33               4
-Mazda RX4 Wag...34           4
-Datsun 710...35              1
-Hornet 4 Drive...36          1
-Hornet Sportabout...37       2
-Valiant...38                 1
-Duster 360...39              4
-Merc 240D...40               2
-Merc 230...41                2
-Merc 280...42                4
-Merc 280C...43               4
-Merc 450SE...44              3
-Merc 450SL...45              3
-Merc 450SLC...46             3
-Cadillac Fleetwood...47      4
-Lincoln Continental...48     4
-Chrysler Imperial...49       4
-Fiat 128...50                1
-Honda Civic...51             2
-Toyota Corolla...52          1
-Toyota Corona...53           1
-Dodge Challenger...54        2
-AMC Javelin...55             2
-Camaro Z28...56              4
-Pontiac Firebird...57        2
-Fiat X1-9...58               1
-Porsche 914-2...59           2
-Lotus Europa...60            2
-Ford Pantera L...61          4
-Ferrari Dino...62            6
-Maserati Bora...63           8
-Volvo 142E...64              2
-Mazda RX4...65               4
-Mazda RX4 Wag...66           4
-Datsun 710...67              1
-Hornet 4 Drive...68          1
-Hornet Sportabout...69       2
-Valiant...70                 1
-Duster 360...71              4
-Merc 240D...72               2
-Merc 230...73                2
-Merc 280...74                4
-Merc 280C...75               4
-Merc 450SE...76              3
-Merc 450SL...77              3
-Merc 450SLC...78             3
-Cadillac Fleetwood...79      4
-Lincoln Continental...80     4
-Chrysler Imperial...81       4
-Fiat 128...82                1
-Honda Civic...83             2
-Toyota Corolla...84          1
-Toyota Corona...85           1
-Dodge Challenger...86        2
-AMC Javelin...87             2
-Camaro Z28...88              4
-Pontiac Firebird...89        2
-Fiat X1-9...90               1
-Porsche 914-2...91           2
-Lotus Europa...92            2
-Ford Pantera L...93          4
-Ferrari Dino...94            6
-Maserati Bora...95           8
-Volvo 142E...96              2
-Mazda RX4...97               4
-Mazda RX4 Wag...98           4
-Datsun 710...99              1
-Hornet 4 Drive...100         1
-Hornet Sportabout...101      2
-Valiant...102                1
-Duster 360...103             4
-Merc 240D...104              2
-Merc 230...105               2
-Merc 280...106               4
-Merc 280C...107              4
-Merc 450SE...108             3
-Merc 450SL...109             3
-Merc 450SLC...110            3
-Cadillac Fleetwood...111     4
-Lincoln Continental...112    4
-Chrysler Imperial...113      4
-Fiat 128...114               1
-Honda Civic...115            2
-Toyota Corolla...116         1
-Toyota Corona...117          1
-Dodge Challenger...118       2
-AMC Javelin...119            2
-Camaro Z28...120             4
-Pontiac Firebird...121       2
-Fiat X1-9...122              1
-Porsche 914-2...123          2
-Lotus Europa...124           2
-Ford Pantera L...125         4
-Ferrari Dino...126           6
-Maserati Bora...127          8
-Volvo 142E...128             2
-Mazda RX4...129              4
-Mazda RX4 Wag...130          4
-Datsun 710...131             1
-Hornet 4 Drive...132         1
-Hornet Sportabout...133      2
-Valiant...134                1
-Duster 360...135             4
-Merc 240D...136              2
-Merc 230...137               2
-Merc 280...138               4
-Merc 280C...139              4
-Merc 450SE...140             3
-Merc 450SL...141             3
-Merc 450SLC...142            3
-Cadillac Fleetwood...143     4
-Lincoln Continental...144    4
-Chrysler Imperial...145      4
-Fiat 128...146               1
-Honda Civic...147            2
-Toyota Corolla...148         1
-Toyota Corona...149          1
-Dodge Challenger...150       2
-AMC Javelin...151            2
-Camaro Z28...152             4
-Pontiac Firebird...153       2
-Fiat X1-9...154              1
+Hornet 4 Drive...1           1
+Hornet Sportabout...2        2
+Valiant...3                  1
+Duster 360...4               4
+Merc 240D...5                2
+Merc 230...6                 2
+Merc 280...7                 4
+Merc 280C...8                4
+Merc 450SE...9               3
+Merc 450SL...10              3
+Merc 450SLC...11             3
+Cadillac Fleetwood...12      4
+Lincoln Continental...13     4
+Chrysler Imperial...14       4
+Toyota Corona...15           1
+Dodge Challenger...16        2
+AMC Javelin...17             2
+Camaro Z28...18              4
+Pontiac Firebird...19        2
+Hornet 4 Drive...20          1
+Hornet Sportabout...21       2
+Valiant...22                 1
+Duster 360...23              4
+Merc 450SE...24              3
+Merc 450SL...25              3
+Merc 450SLC...26             3
+Cadillac Fleetwood...27      4
+Lincoln Continental...28     4
+Chrysler Imperial...29       4
+Toyota Corona...30           1
+Dodge Challenger...31        2
+AMC Javelin...32             2
+Camaro Z28...33              4
+Pontiac Firebird...34        2
+Merc 240D...35               2
+Merc 230...36                2
+Merc 280...37                4
+Merc 280C...38               4
+Merc 240D...39               2
+Merc 230...40                2
+Toyota Corona...41           1
+Toyota Corona...42           1
+Merc 240D...43               2
+Merc 230...44                2
+Merc 240D...45               2
+Merc 230...46                2
+Toyota Corona...47           1
+Toyota Corona...48           1
+Merc 240D...49               2
+Merc 230...50                2
+Hornet 4 Drive...51          1
+Valiant...52                 1
+Merc 280...53                4
+Merc 280C...54               4
+Hornet 4 Drive...55          1
+Valiant...56                 1
+Merc 280...57                4
+Merc 280C...58               4
+Hornet 4 Drive...59          1
+Valiant...60                 1
+Merc 280...61                4
+Merc 280C...62               4
+Hornet 4 Drive...63          1
+Valiant...64                 1
+Merc 280...65                4
+Merc 280C...66               4
+Hornet Sportabout...67       2
+Duster 360...68              4
+Merc 450SE...69              3
+Merc 450SL...70              3
+Merc 450SLC...71             3
+Cadillac Fleetwood...72      4
+Lincoln Continental...73     4
+Chrysler Imperial...74       4
+Dodge Challenger...75        2
+AMC Javelin...76             2
+Camaro Z28...77              4
+Pontiac Firebird...78        2
+Hornet Sportabout...79       2
+Duster 360...80              4
+Merc 450SE...81              3
+Merc 450SL...82              3
+Merc 450SLC...83             3
+Cadillac Fleetwood...84      4
+Lincoln Continental...85     4
+Chrysler Imperial...86       4
+Dodge Challenger...87        2
+AMC Javelin...88             2
+Camaro Z28...89              4
+Pontiac Firebird...90        2
+Hornet Sportabout...91       2
+Duster 360...92              4
+Merc 450SE...93              3
+Merc 450SL...94              3
+Merc 450SLC...95             3
+Cadillac Fleetwood...96      4
+Lincoln Continental...97     4
+Chrysler Imperial...98       4
+Dodge Challenger...99        2
+AMC Javelin...100            2
+Camaro Z28...101             4
+Pontiac Firebird...102       2
+Hornet Sportabout...103      2
+Duster 360...104             4
+Merc 450SE...105             3
+Merc 450SL...106             3
+Merc 450SLC...107            3
+Cadillac Fleetwood...108     4
+Lincoln Continental...109    4
+Chrysler Imperial...110      4
+Dodge Challenger...111       2
+AMC Javelin...112            2
+Camaro Z28...113             4
+Pontiac Firebird...114       2
+Mazda RX4...115              4
+Mazda RX4 Wag...116          4
+Datsun 710...117             1
+Fiat 128...118               1
+Honda Civic...119            2
+Toyota Corolla...120         1
+Fiat X1-9...121              1
+Porsche 914-2...122          2
+Lotus Europa...123           2
+Ford Pantera L...124         4
+Ferrari Dino...125           6
+Maserati Bora...126          8
+Volvo 142E...127             2
+Mazda RX4...128              4
+Mazda RX4 Wag...129          4
+Datsun 710...130             1
+Fiat 128...131               1
+Honda Civic...132            2
+Toyota Corolla...133         1
+Fiat X1-9...134              1
+Volvo 142E...135             2
+Porsche 914-2...136          2
+Lotus Europa...137           2
+Ford Pantera L...138         4
+Ferrari Dino...139           6
+Maserati Bora...140          8
+Datsun 710...141             1
+Fiat 128...142               1
+Honda Civic...143            2
+Toyota Corolla...144         1
+Fiat X1-9...145              1
+Porsche 914-2...146          2
+Lotus Europa...147           2
+Volvo 142E...148             2
+Datsun 710...149             1
+Fiat 128...150               1
+Honda Civic...151            2
+Toyota Corolla...152         1
+Fiat X1-9...153              1
+Volvo 142E...154             2
 Porsche 914-2...155          2
 Lotus Europa...156           2
-Ford Pantera L...157         4
-Ferrari Dino...158           6
-Maserati Bora...159          8
-Volvo 142E...160             2
-Mazda RX4...161              4
-Mazda RX4 Wag...162          4
-Datsun 710...163             1
-Hornet 4 Drive...164         1
-Hornet Sportabout...165      2
-Valiant...166                1
-Duster 360...167             4
-Merc 240D...168              2
-Merc 230...169               2
-Merc 280...170               4
-Merc 280C...171              4
-Merc 450SE...172             3
-Merc 450SL...173             3
-Merc 450SLC...174            3
-Cadillac Fleetwood...175     4
-Lincoln Continental...176    4
-Chrysler Imperial...177      4
-Fiat 128...178               1
-Honda Civic...179            2
-Toyota Corolla...180         1
-Toyota Corona...181          1
-Dodge Challenger...182       2
-AMC Javelin...183            2
-Camaro Z28...184             4
-Pontiac Firebird...185       2
-Fiat X1-9...186              1
-Porsche 914-2...187          2
-Lotus Europa...188           2
+Porsche 914-2...157          2
+Porsche 914-2...158          2
+Datsun 710...159             1
+Fiat 128...160               1
+Honda Civic...161            2
+Toyota Corolla...162         1
+Fiat X1-9...163              1
+Lotus Europa...164           2
+Volvo 142E...165             2
+Datsun 710...166             1
+Fiat 128...167               1
+Honda Civic...168            2
+Toyota Corolla...169         1
+Fiat X1-9...170              1
+Volvo 142E...171             2
+Lotus Europa...172           2
+Mazda RX4...173              4
+Mazda RX4 Wag...174          4
+Ferrari Dino...175           6
+Mazda RX4...176              4
+Mazda RX4 Wag...177          4
+Ferrari Dino...178           6
+Mazda RX4...179              4
+Mazda RX4 Wag...180          4
+Ferrari Dino...181           6
+Mazda RX4...182              4
+Mazda RX4 Wag...183          4
+Ferrari Dino...184           6
+Ford Pantera L...185         4
+Maserati Bora...186          8
+Ford Pantera L...187         4
+Maserati Bora...188          8
 Ford Pantera L...189         4
-Ferrari Dino...190           6
-Maserati Bora...191          8
-Volvo 142E...192             2</code></pre>
+Maserati Bora...190          8
+Ford Pantera L...191         4
+Maserati Bora...192          8</code></pre>
 </div>
 </div>
 

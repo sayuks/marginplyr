@@ -164,13 +164,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </li>
         <li class="sidebar-item sidebar-item-section">
       <div class="sidebar-item-container"> 
-            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+            <a class="sidebar-item-text sidebar-link text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false">
  <span class="menu-text">Reference</span></a>
-          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+          <a class="sidebar-item-toggle text-start collapsed" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="false" aria-label="Toggle section">
             <i class="bi bi-chevron-right ms-2"></i>
           </a> 
       </div>
-      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 ">  
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../man/nest_by_with_margins.html" class="sidebar-item-text sidebar-link">
@@ -924,20 +924,20 @@ The number of rows in the result of <code>union_all_with_margins()</code> can be
  8 (all) (all)   2021     2 y     4         9
  9 A     (all)   2020     1 y     1         5
 10 A     (all)   2020     2 x     2        NA
-11 B     (all)   2020     2 x     3         1
-12 B     (all)   2020     1 x     4         8
-13 A     (all)   2021    NA x     1         4
-14 A     (all)   2021     1 y     2         7
-15 B     (all)   2021     1 &lt;NA&gt;  3         3
-16 B     (all)   2021     2 y     4         9
-17 A     a1      2020     1 y     1         5
-18 A     a2      2020     2 x     2        NA
-19 B     &lt;NA&gt;    2020     2 x     3         1
-20 B     b2      2020     1 x     4         8
-21 A     a1      2021    NA x     1         4
-22 A     a2      2021     1 y     2         7
-23 B     b1      2021     1 &lt;NA&gt;  3         3
-24 B     b2      2021     2 y     4         9</code></pre>
+11 A     (all)   2021    NA x     1         4
+12 A     (all)   2021     1 y     2         7
+13 A     a1      2020     1 y     1         5
+14 A     a1      2021    NA x     1         4
+15 A     a2      2020     2 x     2        NA
+16 A     a2      2021     1 y     2         7
+17 B     (all)   2020     2 x     3         1
+18 B     (all)   2020     1 x     4         8
+19 B     (all)   2021     1 &lt;NA&gt;  3         3
+20 B     (all)   2021     2 y     4         9
+21 B     b1      2021     1 &lt;NA&gt;  3         3
+22 B     b2      2020     1 x     4         8
+23 B     b2      2021     2 y     4         9
+24 B     &lt;NA&gt;    2020     2 x     3         1</code></pre>
 </div>
 </div>
 <p>The following margins were considered as a new category and merged vertically three times.</p>
