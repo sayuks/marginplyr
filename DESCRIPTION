@@ -21,7 +21,7 @@ Suggests:
     duckdb,
     ggplot2,
     quarto,
-		RSQLite,
+	RSQLite,
     sessioninfo,
     spelling,
     stringr,
