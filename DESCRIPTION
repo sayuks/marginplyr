@@ -9,10 +9,7 @@ URL: https://sayuks.github.io/withmargins/, https://github.com/sayuks/withmargin
 BugReports: https://github.com/sayuks/withmargins/issues
 Imports: 
     dplyr (>= 1.1.1),
-    purrr,
-    rlang,
     tidyr,
-    tidyselect,
     utils
 Suggests: 
     altdoc,
@@ -20,13 +17,13 @@ Suggests:
     dbplyr,
     duckdb,
     ggplot2,
+    purrr,
     quarto,
     RSQLite,
     sessioninfo,
     spelling,
     stringr,
-    testthat (>= 3.0.0),
-    tibble
+    testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US

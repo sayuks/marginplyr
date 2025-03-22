@@ -1,7 +1,7 @@
 # create dummy data data for using in testthat context
 get_data_dummy <- function(factor = FALSE) {
   # nolint start: line_length_linter
-  data <- tibble::tribble(
+  data <- dplyr::tribble(
     ~year,       ~id,   ~g1, ~g2, ~g3,           ~h1,           ~k1,           ~value,
     2022L,       "101", "B", "C", "RD220",       "JBB",         "WQ6",         NA_integer_,
     2022L,       "102", "B", "C", "RD220",       "SIO",         NA_character_, 69L,
@@ -92,6 +92,6 @@ get_data_dummy <- function(factor = FALSE) {
 # to which this function is applied are equal, it means that the two data before
 # this function is applied are equal, ignoring row order.
 arrange_then_collect <- function(data) {
-  data <- dplyr::arrange(.data = data, dplyr::pick(tidyselect::everything()))
+  data <- dplyr::arrange(.data = data, dplyr::pick(dplyr::everything()))
   dplyr::collect(x = data)
 }

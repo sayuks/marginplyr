@@ -175,7 +175,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   # factor levels as expected (including NA in levels)
   expect_identical(
     lapply(
-      dplyr::select(.data = res1, tidyselect::where(is.factor)),
+      dplyr::select(.data = res1, dplyr::where(is.factor)),
       levels
     ),
     list(
@@ -195,7 +195,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   # ordered or not as expected (remains unchanged)
   expect_identical(
     lapply(
-      dplyr::select(.data = res1, tidyselect::where(is.factor)),
+      dplyr::select(.data = res1, dplyr::where(is.factor)),
       is.ordered
     ),
     list(
@@ -208,7 +208,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
 
   # Case 2: .margin_name is a NA_character_ ----
   # g1 has <NA> level but does not have values with level <NA>.
-  # school_name has <NA> level and has values with level <NA>.
+  # k1 has <NA> level and has values with level <NA>.
   # Both are detected in error.
   expect_error(
     with_margins(
@@ -243,7 +243,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   # factor levels as expected
   expect_identical(
     lapply(
-      dplyr::select(.data = res2, tidyselect::where(is.factor)),
+      dplyr::select(.data = res2, dplyr::where(is.factor)),
       levels
     ),
     list(
@@ -265,7 +265,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   # ordered or not as expected (remains unchanged)
   expect_identical(
     lapply(
-      dplyr::select(.data = res2, tidyselect::where(is.factor)),
+      dplyr::select(.data = res2, dplyr::where(is.factor)),
       is.ordered
     ),
     list(

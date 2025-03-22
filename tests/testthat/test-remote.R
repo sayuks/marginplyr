@@ -16,7 +16,7 @@ dbs <- list(
   teradata   = dbplyr::simulate_teradata()
 )
 
-df <- tibble::tribble(
+df <- dplyr::tribble(
   ~year, ~region, ~store, ~product, ~sales,
   2020, "East", "E1", "X", 200,
   2020, "East", "E2", "Y", 500,

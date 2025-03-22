@@ -127,7 +127,7 @@ summarize_with_margins <- function(.data,
       .data = .data,
       ...,
       !!!.margin_pairs,
-      .by = tidyselect::all_of(.by)
+      .by = dplyr::all_of(.by)
     )
   }
 
@@ -207,7 +207,6 @@ assert_column_intersect <- function(lst) {
 #' @param data A data frame (lazy or not)
 #' @param margin_name A character vector of length 1.
 #'   `NA_character_` is allowed.
-#' @importFrom rlang .data
 #' @noRd
 #' @examples
 #' d <- data.frame(
@@ -223,7 +222,7 @@ assert_margin_name <- function(data, margin_name) {
   res <- sapply(
     colnames(data),
     function(x) {
-      elements <- dplyr::distinct(data, dplyr::pick(tidyselect::all_of(x)))
+      elements <- dplyr::distinct(data, dplyr::pick(dplyr::all_of(x)))
 
       # %in% may ignore NA_character_ for lazy table, so separate the cases
       if (is.na(margin_name)) {
@@ -265,9 +264,7 @@ assert_margin_name <- function(data, margin_name) {
 #' * \url{https://tidyselect.r-lib.org/articles/syntax.html}
 #' * \url{https://rlang.r-lib.org/reference/expr.html}
 get_col_names <- function(data, ...) {
-  x <- tidyselect::eval_select(rlang::expr(c(...)), data)
-
-  names(x)
+  colnames(dplyr::select(.data = data, ...))
 }
 
 #' Get all subsets
@@ -326,8 +323,7 @@ get_hierarchy <- function(x) {
   lapply(0:length(x), function(i) x[0:i])
 }
 
-#' @inheritParams summarize_with_margin
-#' @importFrom rlang :=
+#' @inheritParams summarize_with_margins
 #' @param .f A function that returns data. Arguments are as follows:
 #'    * `.data`: input data
 #'    * `...`: Name-value pairs. Used with verbs such as
@@ -369,25 +365,29 @@ with_margins <- function(.data,
   # columns where the margin is calculated
   margin_vars_all <- c(l$.margins, l$.with_all)
 
-  factor_cols <- character()
-
   # if local data frame, get column names of factor in margin_vars_all
-  # (lazy tables often do not support factor and tidyselect::where())
-  if (is.data.frame(.data)) {
+  # (lazy tables often do not support factor and dplyr::where())
+  factor_cols <- if (is.data.frame(.data)) {
     factor_cols <- get_col_names(
       .data,
-      tidyselect::all_of(margin_vars_all) & tidyselect::where(is.factor)
+      dplyr::all_of(margin_vars_all) & dplyr::where(is.factor)
     )
+  } else {
+    character()
   }
 
   if (length(factor_cols) > 0) {
     # get factor column information in margin_vars_all as a named list
     factor_info <- lapply(
-      dplyr::select(.data = .data, tidyselect::all_of(factor_cols)),
-      function(x) {
+      factor_cols,
+      function(col) {
+        x <- .data[[col]]
+        lvl <- levels(x)
         list(
-          levels = levels(x),
-          ordered = is.ordered(x)
+          col = col,
+          levels = lvl,
+          ordered = is.ordered(x),
+          has_na_in_level = anyNA(lvl)
         )
       }
     )
@@ -399,7 +399,8 @@ with_margins <- function(.data,
     # but to avoid complications, make an error in all cases where .margin_name
     # is NA and the level of the factor has NA.
     if (is.na(.margin_name)) {
-      na_level_cols <- names(Filter(function(x) anyNA(x$levels), factor_info))
+      na_level_cols <- Filter(function(x) x$has_na_in_level, factor_info)
+      na_level_cols <- vapply(na_level_cols, function(x) x$col, character(1))
 
       if (length(na_level_cols) > 0) {
         stop(
@@ -415,13 +416,13 @@ with_margins <- function(.data,
   # .margin_name to be added, so convert to string
   .data <- dplyr::mutate(
     .data = .data,
-    dplyr::across(tidyselect::all_of(margin_vars_all), as.character)
+    dplyr::across(dplyr::all_of(margin_vars_all), as.character)
   )
 
   # .margin_name must not be included in columns where the margin is calculated
   if (.check_margin_name) {
     assert_margin_name(
-      dplyr::select(.data = .data, tidyselect::all_of(margin_vars_all)),
+      dplyr::select(.data = .data, dplyr::all_of(margin_vars_all)),
       .margin_name
     )
   }
@@ -442,7 +443,7 @@ with_margins <- function(.data,
   # append .without_all at the beginning
   l_group_vars <- lapply(l_group_vars, function(x) c(l$.without_all, x))
 
-  .data <- purrr::map(
+  .data <- lapply(
     l_group_vars,
     function(group_vars) {
       margins <- setdiff(margin_vars_all, group_vars)
@@ -459,30 +460,27 @@ with_margins <- function(.data,
 
   # reconstruct factors
   if (length(factor_cols) > 0) {
-    .data <- purrr::reduce2(
-      factor_cols,
-      factor_info,
-      function(data, col, info) {
-        dplyr::mutate(
-          .data = data,
-          "{col}" := factor(
-            .data[[col]],
-            # force .margin_name to the beginning of the level
-            levels = union(.margin_name, info$levels),
-            # If .margin_name is not NA and there is NA in the original level,
-            # keep it (set exclude = NULL).
-            # The case where .margin_name is NA and level contains NA is
-            # not present here, as it is an error in the prior step.
-            # This means that if .margin_name is NA,
-            # anyNA(info$levels) always returns FALSE, so exclude = NA.
-            # This excludes NA from the level.
-            # This is consistent with the default base::factor().
-            exclude = if (anyNA(info$levels)) NULL else NA,
-            ordered = info$ordered
-          )
+    .data <- Reduce(
+      function(data, info) {
+        data[info$col] <- factor(
+          data[[info$col]],
+          # force .margin_name to the beginning of the level
+          levels = union(.margin_name, info$levels),
+          # If .margin_name is not NA and there is NA in the original level,
+          # keep it (set exclude = NULL).
+          # The case where .margin_name is NA and level contains NA is
+          # not present here, as it is an error in the prior step.
+          # This means that if .margin_name is NA,
+          # info$has_na_in_level always returns FALSE, so exclude = NA.
+          # This excludes NA from the level.
+          # This is consistent with the default base::factor().
+          exclude = if (info$has_na_in_level) NULL else NA,
+          ordered = info$ordered
         )
+        data
       },
-      .init = .data
+      x = factor_info,
+      init = .data
     )
   }
 
@@ -502,3 +500,5 @@ with_margins <- function(.data,
 
   .data
 }
+
+utils::globalVariables(c(".data"))
