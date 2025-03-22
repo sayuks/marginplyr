@@ -54,3 +54,4 @@ _quarto/*
 .Rdata
 .DS_Store
 .quarto
+sandbox/
