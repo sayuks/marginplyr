@@ -11,8 +11,7 @@ nest_by_with_margins(
   .with_all = NULL,
   .margin_name = "(all)",
   .sort = TRUE,
-  .key = "data",
-  .keep = FALSE
+  .key = "data"
 )
 }
 \arguments{
@@ -34,12 +33,11 @@ variables without hierarchy to which \code{.margin_name} will be added.}
 by the column order specified in \code{.without_all} and \code{.margins} and
 \code{.with_all}.}
 
-\item{.key}{Name of the list column}
-
-\item{.keep}{Should the grouping columns be kept in the list column.}
+\item{.key}{A string. The name of the resulting nested column.}
 }
 \value{
-A data frame.
+A row-wise data frame grouped by \code{without_all}, \code{.margins}
+and \code{.with_all}.
 }
 \description{
 This function considers each margin (such as total) as a new category,
@@ -50,8 +48,7 @@ for more details.
 \details{
 \itemize{
 \item Works like \verb{dplyr::nest_by(<data>, dplyr::pick(\{\{ .without_all \}\} , \{\{ .margins \}\} , \{\{ .with_all \}\})}
-on the result of \code{union_all_with_margins()}. The result is a row-wise
-data frame grouped by row.
+with margins.
 \item Only works for a local data frame.
 }
 }

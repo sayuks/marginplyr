@@ -11,8 +11,7 @@ nest_with_margins(
   .with_all = NULL,
   .margin_name = "(all)",
   .sort = TRUE,
-  .key = NULL,
-  .names_sep = NULL
+  .key = "data"
 )
 }
 \arguments{
@@ -34,13 +33,7 @@ variables without hierarchy to which \code{.margin_name} will be added.}
 by the column order specified in \code{.without_all} and \code{.margins} and
 \code{.with_all}.}
 
-\item{.key}{A string. The name of the resulting nested column.
-Passed to the \code{.key} argument of \code{\link[tidyr:nest]{tidyr::nest()}}}
-
-\item{.names_sep}{If \code{NULL}, the default, the inner names will come from
-the former outer names. If a string, the  new inner names will use the
-outer names with \code{names_sep} automatically stripped. This makes
-\code{names_sep} roughly symmetric between nesting and unnesting.}
+\item{.key}{A string. The name of the resulting nested column.}
 }
 \value{
 A data frame.
@@ -54,7 +47,7 @@ for more details.
 \details{
 \itemize{
 \item Works like \verb{tidyr::nest(<data>, .by = c(\{\{ .without_all \}\}, \{\{ .margins \}\}, \{\{ .with_all \}\}))}
-on the result of \code{\link[=union_all_with_margins]{union_all_with_margins()}}.
+with margins.
 \item Only works for a local data frame.
 }
 }

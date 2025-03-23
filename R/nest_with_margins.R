@@ -13,10 +13,9 @@
 #'   by the column order specified in `.without_all` and `.margins` and
 #'   `.with_all`.
 #' @param .key A string. The name of the resulting nested column.
-#'   Passed to the `.key` argument of [tidyr::nest()]
 #' @details
 #' * Works like `tidyr::nest(<data>, .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))`
-#'   on the result of [union_all_with_margins()].
+#'   with margins.
 #' * Only works for a local data frame.
 #' @return A data frame.
 #' @family summarize and expand data with margins
@@ -35,40 +34,35 @@ nest_with_margins <- function(.data,
                               .with_all = NULL,
                               .margin_name = "(all)",
                               .sort = TRUE,
-                              .key = NULL,
-                              .names_sep = NULL) {
+                              .key = "data") {
   assert_logical_scalar(.sort)
+  assert_string_scalar(.margin_name)
+  assert_string_scalar(.key)
   stopifnot(
     # As of the end of 2023, lazy tables often do not support tidyr::nest()
     ".data must be a data frame (not lazy)" =
       is.data.frame(.data)
   )
 
-  .data <- union_all_with_margins(
+  .f <- function(.data, ..., .margin_pairs, .by) {
+    dplyr::summarize(
+      .data = .data,
+      "{.key}" := list(dplyr::pick(!dplyr::any_of(names(.margin_pairs)))),
+      !!!.margin_pairs,
+      .by = dplyr::all_of(.by)
+    )
+  }
+
+  with_margins(
     .data = .data,
     .margins = {{ .margins }},
     .without_all = {{ .without_all }},
     .with_all = {{ .with_all }},
     .margin_name = .margin_name,
-    # Not sort here;
-    # it would be faster to sort after nest,
-    # as there are fewer rows.
-    .sort = FALSE
+    .check_margin_name = TRUE,
+    .f = .f,
+    .sort = .sort
   )
-
-  .data <- tidyr::nest(
-    .data = .data,
-    .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}),
-    .key = .key,
-    .names_sep = .names_sep
-  )
-
-  if (.sort) {
-    .data <- dplyr::arrange(
-      .data = .data,
-      dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
-    )
-  }
-
-  .data
 }
+
+utils::globalVariables(":=")

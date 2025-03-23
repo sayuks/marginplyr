@@ -6,18 +6,13 @@
 #' See [Get started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
 #' for more details.
 #'
-#' @inherit union_all_with_margins
-#' @inheritParams dplyr::nest_by
-#' @param .data A data frame.
-#' @param .sort A Logical (default to `TRUE`). If `TRUE`, sort the result
-#'   by the column order specified in `.without_all` and `.margins` and
-#'   `.with_all`.
+#' @inherit nest_with_margins
 #' @details
 #' * Works like `dplyr::nest_by(<data>, dplyr::pick({{ .without_all }} , {{ .margins }} , {{ .with_all }})`
-#'   on the result of `union_all_with_margins()`. The result is a row-wise
-#'   data frame grouped by row.
+#'   with margins.
 #' * Only works for a local data frame.
-#' @return A data frame.
+#' @return A row-wise data frame grouped by `without_all`, `.margins`
+#' and `.with_all`.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -34,49 +29,32 @@ nest_by_with_margins <- function(.data,
                                  .with_all = NULL,
                                  .margin_name = "(all)",
                                  .sort = TRUE,
-                                 .key = "data",
-                                 .keep = FALSE) {
+                                 .key = "data") {
   assert_string_scalar(.margin_name)
   # Allow `NA_character_`
   # since the `.key` argument in dplyr::nest_by()
   # seems to work with `NA_character_`.
   assert_string_scalar(.key)
   assert_logical_scalar(.sort)
-  # In the `.keep` argument of dplyr::nest_by(),
-  # it seems that it is not an error even if it is not logical,
-  # but only logical is allowed for safety.
-  assert_logical_scalar(.keep)
   stopifnot(
     # As of the end of 2023, lazy tables often do not support tidyr::nest()
     ".data must be a data frame (not lazy)" =
       is.data.frame(.data)
   )
 
-  .data <- union_all_with_margins(
+  .data <- nest_with_margins(
     .data = .data,
     .margins = {{ .margins }},
     .without_all = {{ .without_all }},
     .with_all = {{ .with_all }},
     .margin_name = .margin_name,
-    # Not sort here;
-    # it would be faster to sort after nest,
-    # as there are fewer rows.
-    .sort = FALSE
+    .sort = .sort,
+    .key = .key
   )
 
-  .data <- dplyr::nest_by(
-    .data = .data,
-    dplyr::pick({{ .without_all }}, {{ .margins }}, {{ .with_all }}),
-    .key = .key,
-    .keep = .keep
+  dplyr::rowwise(
+    data = .data,
+    c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
   )
 
-  if (.sort) {
-    .data <- dplyr::arrange(
-      .data = .data,
-      dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
-    )
-  }
-
-  .data
 }

@@ -6,8 +6,7 @@ test_that("nest_by_with_margins() works correctly with local data", {
     .margins = c(g2, g3),
     .without_all = year,
     .with_all = h1,
-    .key = "nested",
-    .keep = TRUE
+    .key = "nested"
   )
 
   expected <- union_all_with_margins(
@@ -21,8 +20,15 @@ test_that("nest_by_with_margins() works correctly with local data", {
     .data = expected,
     year, g2, g3, h1,
     .key = "nested",
-    .keep = TRUE
+    .keep = FALSE
   )
+
+  # remove "S3 object of class <vctrs_list_of/vctrs_vctr/list>"
+  class(expected$nested) <- "list"
+  # remove attribute
+  # original attr(expected$nested, 'ptype')` is
+  # an S3 object of class <tbl_df/tbl/data.frame>
+  attr(expected$nested, "ptype") <- NULL
 
   expected <- dplyr::arrange(.data = expected, year, g2, g3, h1)
 
