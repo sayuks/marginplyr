@@ -13,6 +13,8 @@
 #'   by the column order specified in `.without_all` and `.margins` and
 #'   `.with_all`.
 #' @param .key A string. The name of the resulting nested column.
+#' @param .keep A logical. Should the grouping columns be kept in the list
+#'   column.
 #' @details
 #' * Works like `tidyr::nest(<data>, .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))`
 #'   with margins.
@@ -34,8 +36,10 @@ nest_with_margins <- function(.data,
                               .with_all = NULL,
                               .margin_name = "(all)",
                               .sort = TRUE,
-                              .key = "data") {
+                              .key = "data",
+                              .keep = FALSE) {
   assert_logical_scalar(.sort)
+  assert_logical_scalar(.keep)
   assert_string_scalar(.margin_name)
   assert_string_scalar(.key)
   stopifnot(
@@ -44,16 +48,41 @@ nest_with_margins <- function(.data,
       is.data.frame(.data)
   )
 
-  .f <- function(.data, ..., .margin_pairs, .by) {
+  .f_base <- function(.data, .margin_pairs, .by) {
     dplyr::summarize(
       .data = .data,
-      "{.key}" := list(dplyr::pick(!dplyr::any_of(names(.margin_pairs)))),
+      "{.key}" := list(dplyr::pick(!dplyr::all_of(names(.margin_pairs)))),
       !!!.margin_pairs,
       .by = dplyr::all_of(.by)
     )
   }
 
-  with_margins(
+  .f <- if (.keep) {
+    function(.data,  .margin_pairs, .by) {
+      res <- .f_base(.data = .data, .margin_pairs = .margin_pairs, .by = .by)
+
+      res <- dplyr::mutate(
+        .data = dplyr::rowwise(res),
+        "{.key}" := list({
+          d <- dplyr::mutate(
+            .data =  dplyr::pick(dplyr::all_of(.key))[[1]],
+            dplyr::pick(!dplyr::all_of(.key))
+          )
+
+          dplyr::relocate(
+            .data = d,
+            c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+          )
+        })
+      )
+
+      dplyr::ungroup(res)
+    }
+  } else {
+    .f_base
+  }
+
+  .data <- with_margins(
     .data = .data,
     .margins = {{ .margins }},
     .without_all = {{ .without_all }},
@@ -63,6 +92,9 @@ nest_with_margins <- function(.data,
     .f = .f,
     .sort = .sort
   )
+
+  .data
+
 }
 
 utils::globalVariables(":=")

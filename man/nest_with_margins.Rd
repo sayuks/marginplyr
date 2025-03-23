@@ -11,7 +11,8 @@ nest_with_margins(
   .with_all = NULL,
   .margin_name = "(all)",
   .sort = TRUE,
-  .key = "data"
+  .key = "data",
+  .keep = FALSE
 )
 }
 \arguments{
@@ -34,6 +35,9 @@ by the column order specified in \code{.without_all} and \code{.margins} and
 \code{.with_all}.}
 
 \item{.key}{A string. The name of the resulting nested column.}
+
+\item{.keep}{A logical. Should the grouping columns be kept in the list
+column.}
 }
 \value{
 A data frame.
