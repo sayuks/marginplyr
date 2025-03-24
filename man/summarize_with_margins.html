@@ -433,16 +433,18 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>    cyl    vs  n      mpg
-1 (all) (all) 32 20.09062
-2     4 (all) 11 26.66364
-3     4     0  1 26.00000
-4     4     1 10 26.73000
-5     6 (all)  7 19.74286
-6     6     0  3 20.56667
-7     6     1  4 19.12500
-8     8 (all) 14 15.10000
-9     8     0 14 15.10000</code></pre>
+<pre><code># A tibble: 9 × 4
+  cyl   vs        n   mpg
+  &lt;chr&gt; &lt;chr&gt; &lt;int&gt; &lt;dbl&gt;
+1 (all) (all)    32  20.1
+2 4     (all)    11  26.7
+3 4     0         1  26  
+4 4     1        10  26.7
+5 6     (all)     7  19.7
+6 6     0         3  20.6
+7 6     1         4  19.1
+8 8     (all)    14  15.1
+9 8     0        14  15.1</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># `am` does not create a hierarchy, but is an overall group variable.</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
@@ -453,22 +455,24 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   am   cyl    vs  n      mpg
-1   0 (all) (all) 19 17.14737
-2   0     4 (all)  3 22.90000
-3   0     4     1  3 22.90000
-4   0     6 (all)  4 19.12500
-5   0     6     1  4 19.12500
-6   0     8 (all) 12 15.05000
-7   0     8     0 12 15.05000
-8   1 (all) (all) 13 24.39231
-9   1     4 (all)  8 28.07500
-10  1     4     0  1 26.00000
-11  1     4     1  7 28.37143
-12  1     6 (all)  3 20.56667
-13  1     6     0  3 20.56667
-14  1     8 (all)  2 15.40000
-15  1     8     0  2 15.40000</code></pre>
+<pre><code># A tibble: 15 × 5
+      am cyl   vs        n   mpg
+   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;int&gt; &lt;dbl&gt;
+ 1     0 (all) (all)    19  17.1
+ 2     0 4     (all)     3  22.9
+ 3     0 4     1         3  22.9
+ 4     0 6     (all)     4  19.1
+ 5     0 6     1         4  19.1
+ 6     0 8     (all)    12  15.0
+ 7     0 8     0        12  15.0
+ 8     1 (all) (all)    13  24.4
+ 9     1 4     (all)     8  28.1
+10     1 4     0         1  26  
+11     1 4     1         7  28.4
+12     1 6     (all)     3  20.6
+13     1 6     0         3  20.6
+14     1 8     (all)     2  15.4
+15     1 8     0         2  15.4</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># `gear` creates "(all)" margins on itself.</span></span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
@@ -480,47 +484,20 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>   am   cyl    vs  gear  n      mpg
-1   0 (all) (all) (all) 19 17.14737
-2   0 (all) (all)     3 15 16.10667
-3   0 (all) (all)     4  4 21.05000
-4   0     4 (all) (all)  3 22.90000
-5   0     4 (all)     3  1 21.50000
-6   0     4 (all)     4  2 23.60000
-7   0     4     1 (all)  3 22.90000
-8   0     4     1     3  1 21.50000
-9   0     4     1     4  2 23.60000
-10  0     6 (all) (all)  4 19.12500
-11  0     6 (all)     3  2 19.75000
-12  0     6 (all)     4  2 18.50000
-13  0     6     1 (all)  4 19.12500
-14  0     6     1     3  2 19.75000
-15  0     6     1     4  2 18.50000
-16  0     8 (all) (all) 12 15.05000
-17  0     8 (all)     3 12 15.05000
-18  0     8     0 (all) 12 15.05000
-19  0     8     0     3 12 15.05000
-20  1 (all) (all) (all) 13 24.39231
-21  1 (all) (all)     4  8 26.27500
-22  1 (all) (all)     5  5 21.38000
-23  1     4 (all) (all)  8 28.07500
-24  1     4 (all)     4  6 28.03333
-25  1     4 (all)     5  2 28.20000
-26  1     4     0 (all)  1 26.00000
-27  1     4     0     5  1 26.00000
-28  1     4     1 (all)  7 28.37143
-29  1     4     1     4  6 28.03333
-30  1     4     1     5  1 30.40000
-31  1     6 (all) (all)  3 20.56667
-32  1     6 (all)     4  2 21.00000
-33  1     6 (all)     5  1 19.70000
-34  1     6     0 (all)  3 20.56667
-35  1     6     0     4  2 21.00000
-36  1     6     0     5  1 19.70000
-37  1     8 (all) (all)  2 15.40000
-38  1     8 (all)     5  2 15.40000
-39  1     8     0 (all)  2 15.40000
-40  1     8     0     5  2 15.40000</code></pre>
+<pre><code># A tibble: 40 × 6
+      am cyl   vs    gear      n   mpg
+   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;int&gt; &lt;dbl&gt;
+ 1     0 (all) (all) (all)    19  17.1
+ 2     0 (all) (all) 3        15  16.1
+ 3     0 (all) (all) 4         4  21.0
+ 4     0 4     (all) (all)     3  22.9
+ 5     0 4     (all) 3         1  21.5
+ 6     0 4     (all) 4         2  23.6
+ 7     0 4     1     (all)     3  22.9
+ 8     0 4     1     3         1  21.5
+ 9     0 4     1     4         2  23.6
+10     0 6     (all) (all)     4  19.1
+# ℹ 30 more rows</code></pre>
 </div>
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># If `.with_all` has multiple columns, all combinations are generated.</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
@@ -532,125 +509,20 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> <span class="fu">c</span>(gear, carb)</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>    am   cyl    vs  gear  carb  n      mpg
-1    0 (all) (all) (all) (all) 19 17.14737
-2    0 (all) (all) (all)     1  3 20.33333
-3    0 (all) (all) (all)     2  6 19.30000
-4    0 (all) (all) (all)     3  3 16.30000
-5    0 (all) (all) (all)     4  7 14.30000
-6    0 (all) (all)     3 (all) 15 16.10667
-7    0 (all) (all)     3     1  3 20.33333
-8    0 (all) (all)     3     2  4 17.15000
-9    0 (all) (all)     3     3  3 16.30000
-10   0 (all) (all)     3     4  5 12.62000
-11   0 (all) (all)     4 (all)  4 21.05000
-12   0 (all) (all)     4     2  2 23.60000
-13   0 (all) (all)     4     4  2 18.50000
-14   0     4 (all) (all) (all)  3 22.90000
-15   0     4 (all) (all)     1  1 21.50000
-16   0     4 (all) (all)     2  2 23.60000
-17   0     4 (all)     3 (all)  1 21.50000
-18   0     4 (all)     3     1  1 21.50000
-19   0     4 (all)     4 (all)  2 23.60000
-20   0     4 (all)     4     2  2 23.60000
-21   0     4     1 (all) (all)  3 22.90000
-22   0     4     1 (all)     1  1 21.50000
-23   0     4     1 (all)     2  2 23.60000
-24   0     4     1     3 (all)  1 21.50000
-25   0     4     1     3     1  1 21.50000
-26   0     4     1     4 (all)  2 23.60000
-27   0     4     1     4     2  2 23.60000
-28   0     6 (all) (all) (all)  4 19.12500
-29   0     6 (all) (all)     1  2 19.75000
-30   0     6 (all) (all)     4  2 18.50000
-31   0     6 (all)     3 (all)  2 19.75000
-32   0     6 (all)     3     1  2 19.75000
-33   0     6 (all)     4 (all)  2 18.50000
-34   0     6 (all)     4     4  2 18.50000
-35   0     6     1 (all) (all)  4 19.12500
-36   0     6     1 (all)     1  2 19.75000
-37   0     6     1 (all)     4  2 18.50000
-38   0     6     1     3 (all)  2 19.75000
-39   0     6     1     3     1  2 19.75000
-40   0     6     1     4 (all)  2 18.50000
-41   0     6     1     4     4  2 18.50000
-42   0     8 (all) (all) (all) 12 15.05000
-43   0     8 (all) (all)     2  4 17.15000
-44   0     8 (all) (all)     3  3 16.30000
-45   0     8 (all) (all)     4  5 12.62000
-46   0     8 (all)     3 (all) 12 15.05000
-47   0     8 (all)     3     2  4 17.15000
-48   0     8 (all)     3     3  3 16.30000
-49   0     8 (all)     3     4  5 12.62000
-50   0     8     0 (all) (all) 12 15.05000
-51   0     8     0 (all)     2  4 17.15000
-52   0     8     0 (all)     3  3 16.30000
-53   0     8     0 (all)     4  5 12.62000
-54   0     8     0     3 (all) 12 15.05000
-55   0     8     0     3     2  4 17.15000
-56   0     8     0     3     3  3 16.30000
-57   0     8     0     3     4  5 12.62000
-58   1 (all) (all) (all) (all) 13 24.39231
-59   1 (all) (all) (all)     1  4 29.10000
-60   1 (all) (all) (all)     2  4 27.05000
-61   1 (all) (all) (all)     4  3 19.26667
-62   1 (all) (all) (all)     6  1 19.70000
-63   1 (all) (all) (all)     8  1 15.00000
-64   1 (all) (all)     4 (all)  8 26.27500
-65   1 (all) (all)     4     1  4 29.10000
-66   1 (all) (all)     4     2  2 25.90000
-67   1 (all) (all)     4     4  2 21.00000
-68   1 (all) (all)     5 (all)  5 21.38000
-69   1 (all) (all)     5     2  2 28.20000
-70   1 (all) (all)     5     4  1 15.80000
-71   1 (all) (all)     5     6  1 19.70000
-72   1 (all) (all)     5     8  1 15.00000
-73   1     4 (all) (all) (all)  8 28.07500
-74   1     4 (all) (all)     1  4 29.10000
-75   1     4 (all) (all)     2  4 27.05000
-76   1     4 (all)     4 (all)  6 28.03333
-77   1     4 (all)     4     1  4 29.10000
-78   1     4 (all)     4     2  2 25.90000
-79   1     4 (all)     5 (all)  2 28.20000
-80   1     4 (all)     5     2  2 28.20000
-81   1     4     0 (all) (all)  1 26.00000
-82   1     4     0 (all)     2  1 26.00000
-83   1     4     0     5 (all)  1 26.00000
-84   1     4     0     5     2  1 26.00000
-85   1     4     1 (all) (all)  7 28.37143
-86   1     4     1 (all)     1  4 29.10000
-87   1     4     1 (all)     2  3 27.40000
-88   1     4     1     4 (all)  6 28.03333
-89   1     4     1     4     1  4 29.10000
-90   1     4     1     4     2  2 25.90000
-91   1     4     1     5 (all)  1 30.40000
-92   1     4     1     5     2  1 30.40000
-93   1     6 (all) (all) (all)  3 20.56667
-94   1     6 (all) (all)     4  2 21.00000
-95   1     6 (all) (all)     6  1 19.70000
-96   1     6 (all)     4 (all)  2 21.00000
-97   1     6 (all)     4     4  2 21.00000
-98   1     6 (all)     5 (all)  1 19.70000
-99   1     6 (all)     5     6  1 19.70000
-100  1     6     0 (all) (all)  3 20.56667
-101  1     6     0 (all)     4  2 21.00000
-102  1     6     0 (all)     6  1 19.70000
-103  1     6     0     4 (all)  2 21.00000
-104  1     6     0     4     4  2 21.00000
-105  1     6     0     5 (all)  1 19.70000
-106  1     6     0     5     6  1 19.70000
-107  1     8 (all) (all) (all)  2 15.40000
-108  1     8 (all) (all)     4  1 15.80000
-109  1     8 (all) (all)     8  1 15.00000
-110  1     8 (all)     5 (all)  2 15.40000
-111  1     8 (all)     5     4  1 15.80000
-112  1     8 (all)     5     8  1 15.00000
-113  1     8     0 (all) (all)  2 15.40000
-114  1     8     0 (all)     4  1 15.80000
-115  1     8     0 (all)     8  1 15.00000
-116  1     8     0     5 (all)  2 15.40000
-117  1     8     0     5     4  1 15.80000
-118  1     8     0     5     8  1 15.00000</code></pre>
+<pre><code># A tibble: 118 × 7
+      am cyl   vs    gear  carb      n   mpg
+   &lt;dbl&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;chr&gt; &lt;int&gt; &lt;dbl&gt;
+ 1     0 (all) (all) (all) (all)    19  17.1
+ 2     0 (all) (all) (all) 1         3  20.3
+ 3     0 (all) (all) (all) 2         6  19.3
+ 4     0 (all) (all) (all) 3         3  16.3
+ 5     0 (all) (all) (all) 4         7  14.3
+ 6     0 (all) (all) 3     (all)    15  16.1
+ 7     0 (all) (all) 3     1         3  20.3
+ 8     0 (all) (all) 3     2         4  17.2
+ 9     0 (all) (all) 3     3         3  16.3
+10     0 (all) (all) 3     4         5  12.6
+# ℹ 108 more rows</code></pre>
 </div>
 </div>
 
