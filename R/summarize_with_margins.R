@@ -226,18 +226,21 @@ assert_margin_name <- function(data, margin_name) {
   res <- sapply(
     colnames(data),
     function(x) {
-      elements <- dplyr::distinct(data, dplyr::pick(dplyr::all_of(x)))
 
       # %in% may ignore NA_character_ for lazy table, so separate the cases
-      if (is.na(margin_name)) {
-        elements <- dplyr::filter(elements, is.na(.data[[x]]))
+      elements <- if (is.na(margin_name)) {
+        dplyr::filter(data, is.na(.data[[x]]))
       } else {
-        elements <- dplyr::filter(elements, .data[[x]] == margin_name)
+        dplyr::filter(data, .data[[x]] == margin_name)
       }
 
-      elements <- dplyr::pull(elements)
+      elements <- dplyr::summarize(
+        .data = elements,
+        n = dplyr::n()
+      )
 
-      length(elements) > 0
+      elements <- dplyr::collect(elements)
+      elements$n[[1]] > 0
     }
   )
 
