@@ -32,13 +32,12 @@ union_all_with_margins <- function(.data,
                                    .margin_name = "(all)",
                                    .check_margin_name = is.data.frame(.data),
                                    .sort = is.data.frame(.data)) {
-  .f <- function(.data, ..., .margin_pairs, .by) {
+  .f <- function(.data, .margin_pairs, .by) {
     dplyr::mutate(.data = .data, !!!.margin_pairs)
   }
 
   with_margins(
     .data = .data,
-    ... = NULL,
     .margins = {{ .margins }},
     .without_all = {{ .without_all }},
     .with_all = {{ .with_all }},
