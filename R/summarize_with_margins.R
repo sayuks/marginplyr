@@ -473,7 +473,7 @@ with_margins <- function(.data,
         dplyr::mutate(
           .data = data,
           "{col}" := factor(
-            dplyr::pick(dplyr::all_of(col))[[1]],
+            dplyr::pull(dplyr::pick(dplyr::all_of(col))),
             # force .margin_name to the beginning of the level
             levels = union(.margin_name, info$levels),
             # If .margin_name is not NA and there is NA in the original level,
@@ -511,4 +511,4 @@ with_margins <- function(.data,
   .data
 }
 
-utils::globalVariables(c(".data"))
+utils::globalVariables(c(".data", ":="))
