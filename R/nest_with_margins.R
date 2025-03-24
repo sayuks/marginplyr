@@ -56,7 +56,7 @@ nest_with_margins <- function(.data,
   }
 
   .f <- if (.keep) {
-    function(.data,  .margin_pairs, .by) {
+    function(.data, .margin_pairs, .by) {
       res <- .f_base(.data = .data, .margin_pairs = .margin_pairs, .by = .by)
 
       res <- dplyr::mutate(
