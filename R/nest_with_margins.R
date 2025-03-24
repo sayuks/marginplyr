@@ -65,7 +65,7 @@ nest_with_margins <- function(.data,
         .data = dplyr::rowwise(res),
         "{.key}" := list({
           d <- dplyr::mutate(
-            .data =  dplyr::pick(dplyr::all_of(.key))[[1]],
+            .data = dplyr::pick(dplyr::all_of(.key))[[1]],
             dplyr::pick(!dplyr::all_of(.key))
           )
 
