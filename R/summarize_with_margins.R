@@ -469,22 +469,25 @@ with_margins <- function(.data,
   if (length(factor_cols) > 0) {
     .data <- Reduce(
       function(data, info) {
-        data[info$col] <- factor(
-          data[[info$col]],
-          # force .margin_name to the beginning of the level
-          levels = union(.margin_name, info$levels),
-          # If .margin_name is not NA and there is NA in the original level,
-          # keep it (set exclude = NULL).
-          # The case where .margin_name is NA and level contains NA is
-          # not present here, as it is an error in the prior step.
-          # This means that if .margin_name is NA,
-          # info$has_na_in_level always returns FALSE, so exclude = NA.
-          # This excludes NA from the level.
-          # This is consistent with the default base::factor().
-          exclude = if (info$has_na_in_level) NULL else NA,
-          ordered = info$ordered
+        col <- info$col
+        dplyr::mutate(
+          .data = data,
+          "{col}" := factor(
+            dplyr::pick(dplyr::all_of(col))[[1]],
+            # force .margin_name to the beginning of the level
+            levels = union(.margin_name, info$levels),
+            # If .margin_name is not NA and there is NA in the original level,
+            # keep it (set exclude = NULL).
+            # The case where .margin_name is NA and level contains NA is
+            # not present here, as it is an error in the prior step.
+            # This means that if .margin_name is NA,
+            # info$has_na_in_level always returns FALSE, so exclude = NA.
+            # This excludes NA from the level.
+            # This is consistent with the default base::factor().
+            exclude = if (info$has_na_in_level) NULL else NA,
+            ordered = info$ordered
+          )
         )
-        data
       },
       x = factor_info,
       init = .data
