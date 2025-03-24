@@ -10,6 +10,7 @@ nest_with_margins(
   .without_all = NULL,
   .with_all = NULL,
   .margin_name = "(all)",
+  .check_margin_name = TRUE,
   .sort = TRUE,
   .key = "data",
   .keep = FALSE
@@ -29,6 +30,10 @@ variables without hierarchy to which \code{.margin_name} will be added.}
 
 \item{.margin_name}{A string representing margin name
 (Defaults to \code{"(all)"}). \code{NA_character_} is also allowed.}
+
+\item{.check_margin_name}{A logical (defaults to \code{is.data.frame(.data)}).
+If \code{TRUE}, checks whether the string in \verb{.margin_name' already exists in the column specified by }.margins\code{or}.with_all` and returns an error
+if it already exists.}
 
 \item{.sort}{A Logical (default to \code{TRUE}). If \code{TRUE}, sort the result
 by the column order specified in \code{.without_all} and \code{.margins} and

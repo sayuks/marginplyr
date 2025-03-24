@@ -28,21 +28,16 @@ nest_by_with_margins <- function(.data,
                                  .without_all = NULL,
                                  .with_all = NULL,
                                  .margin_name = "(all)",
+                                 .check_margin_name = TRUE,
                                  .sort = TRUE,
                                  .key = "data",
                                  .keep = FALSE) {
-  assert_string_scalar(.margin_name)
-  # Allow `NA_character_`
-  # since the `.key` argument in dplyr::nest_by()
-  # seems to work with `NA_character_`.
-  assert_string_scalar(.key)
+  assert_data_frame(.data)
+  assert_logical_scalar(.check_margin_name)
   assert_logical_scalar(.sort)
   assert_logical_scalar(.keep)
-  stopifnot(
-    # As of the end of 2023, lazy tables often do not support tidyr::nest()
-    ".data must be a data frame (not lazy)" =
-      is.data.frame(.data)
-  )
+  assert_string_scalar(.margin_name)
+  assert_string_scalar(.key)
 
   .data <- nest_with_margins(
     .data = .data,
@@ -50,6 +45,7 @@ nest_by_with_margins <- function(.data,
     .without_all = {{ .without_all }},
     .with_all = {{ .with_all }},
     .margin_name = .margin_name,
+    .check_margin_name = .check_margin_name,
     .sort = .sort,
     .key = .key,
     .keep = .keep

@@ -35,26 +35,24 @@ nest_with_margins <- function(.data,
                               .without_all = NULL,
                               .with_all = NULL,
                               .margin_name = "(all)",
+                              .check_margin_name = TRUE,
                               .sort = TRUE,
                               .key = "data",
                               .keep = FALSE) {
+  assert_data_frame(.data)
+  assert_logical_scalar(.check_margin_name)
   assert_logical_scalar(.sort)
   assert_logical_scalar(.keep)
   assert_string_scalar(.margin_name)
   assert_string_scalar(.key)
-  stopifnot(
-    # As of the end of 2023, lazy tables often do not support tidyr::nest()
-    ".data must be a data frame (not lazy)" =
-      is.data.frame(.data)
-  )
 
   .f_base <- function(.data, .margin_pairs, .by) {
-    dplyr::summarize(
-      .data = .data,
+    res <- dplyr::summarize(
+      .data =  dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
       "{.key}" := list(dplyr::pick(!dplyr::all_of(names(.margin_pairs)))),
-      !!!.margin_pairs,
-      .by = dplyr::all_of(.by)
+      !!!.margin_pairs
     )
+    dplyr::ungroup(res)
   }
 
   .f <- if (.keep) {
@@ -82,19 +80,16 @@ nest_with_margins <- function(.data,
     .f_base
   }
 
-  .data <- with_margins(
+  with_margins(
     .data = .data,
     .margins = {{ .margins }},
     .without_all = {{ .without_all }},
     .with_all = {{ .with_all }},
     .margin_name = .margin_name,
-    .check_margin_name = TRUE,
+    .check_margin_name = .check_margin_name,
     .f = .f,
     .sort = .sort
   )
-
-  .data
-
 }
 
 utils::globalVariables(":=")

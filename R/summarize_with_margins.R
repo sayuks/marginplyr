@@ -122,13 +122,17 @@ summarize_with_margins <- function(.data,
                                    .margin_name = "(all)",
                                    .check_margin_name = is.data.frame(.data),
                                    .sort = is.data.frame(.data)) {
+  assert_logical_scalar(.check_margin_name)
+  assert_logical_scalar(.sort)
+  assert_string_scalar(.margin_name)
+
   .f <- function(.data, ..., .margin_pairs, .by) {
-    dplyr::summarize(
-      .data = .data,
+    res <- dplyr::summarize(
+      .data = dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
       ...,
       !!!.margin_pairs,
-      .by = dplyr::all_of(.by)
     )
+    dplyr::ungroup(res)
   }
 
   with_margins(

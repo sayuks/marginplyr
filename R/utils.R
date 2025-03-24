@@ -16,3 +16,12 @@ assert_string_scalar <- function(x) {
     )
   }
 }
+
+assert_data_frame <- function(x) {
+  nm <- deparse(substitute(x))
+  if (!is.data.frame(x)) {
+    stop(
+      sprintf("`%s` must be a data frame (not lazy table)", nm)
+    )
+  }
+}

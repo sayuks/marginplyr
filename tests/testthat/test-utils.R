@@ -24,3 +24,14 @@ test_that("assert_sring_scalar() works", {
   expect_error(assert_string_scalar(NULL))
   expect_error(assert_string_scalar(new.env()))
 })
+
+test_that("assert_data_frame() works", {
+  expect_no_error(assert_data_frame(data.frame()))
+  expect_error(assert_data_frame())
+  expect_error(assert_data_frame(character()))
+  expect_error(assert_data_frame(list(data.frame())))
+  expect_error(assert_data_frame(1))
+  expect_error(assert_data_frame(TRUE))
+  expect_error(assert_data_frame(NULL))
+  expect_error(assert_data_frame(new.env()))
+})
