@@ -127,12 +127,17 @@ summarize_with_margins <- function(.data,
   assert_string_scalar(.margin_name)
 
   .f <- function(.data, ..., .margin_pairs, .by) {
+    # Do not use `.by` because it is experimental
     res <- dplyr::summarize(
-      .data = dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
+      # dplyr::pick() doesn't support arrow tables
+      .data = dplyr::group_by(.data, dplyr::across(dplyr::all_of(.by))),
+      # .data = .data,
       ...,
       !!!.margin_pairs,
     )
-    dplyr::ungroup(res)
+    # res <- dplyr::ungroup(res)
+
+    res
   }
 
   with_margins(
@@ -271,7 +276,18 @@ assert_margin_name <- function(data, margin_name) {
 #' * \url{https://tidyselect.r-lib.org/articles/syntax.html}
 #' * \url{https://rlang.r-lib.org/reference/expr.html}
 get_col_names <- function(data, ...) {
-  colnames(dplyr::select(.data = data, ...))
+  data <- dplyr::select(.data = data, ...)
+  # see ?dplyr::compute()
+  arrow_classes <- c(
+    "arrow_dplyr_query",
+    "ArrowTabular",
+    "Dataset",
+    "RecordBatchReader"
+  )
+  if (inherits(data, arrow_classes)) {
+    data <- dplyr::compute(data)
+  }
+  colnames(data)
 }
 
 #' Get all subsets
@@ -462,7 +478,7 @@ with_margins <- function(.data,
     }
   )
 
-  # dplyr::bind_rows doesn't support lazy tables
+  # dplyr::bind_rows() doesn't support lazy tables
   .data <- Reduce(dplyr::union_all, .data)
 
   # reconstruct factors
@@ -495,16 +511,18 @@ with_margins <- function(.data,
   }
 
   # relocate group columns to the left
-  .data <- dplyr::relocate(
+  # dplyr::relocate() doesn't work well with arrow tables
+  .data <- dplyr::select(
     .data = .data,
-    c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+    {{ .without_all }}, {{ .margins }}, {{ .with_all }}, dplyr::everything()
   )
 
   # for ease of viewing
   if (.sort) {
     .data <- dplyr::arrange(
       .data = .data,
-      dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
+      # dplyr::pick() doesn't support arrow tables
+      dplyr::across(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
     )
   }
 
