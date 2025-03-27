@@ -126,15 +126,6 @@ summarize_with_margins <- function(.data,
   assert_logical_scalar(.sort)
   assert_string_scalar(.margin_name)
 
-  .f <- function(.data, ..., .margin_pairs, .by) {
-    res <- dplyr::summarize(
-      .data = dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
-      ...,
-      !!!.margin_pairs,
-    )
-    dplyr::ungroup(res)
-  }
-
   with_margins(
     .data = .data,
     ...,
@@ -143,10 +134,49 @@ summarize_with_margins <- function(.data,
     .with_all = {{ .with_all }},
     .margin_name = .margin_name,
     .check_margin_name = .check_margin_name,
-    .f = .f,
+    .f = summarize_impl,
     .sort = .sort
   )
 }
+
+summarize_impl <- function(.data,
+                           ...,
+                           .margin_pairs,
+                           .by) {
+  UseMethod("summarize_impl")
+}
+
+#' @method summarize_impl default
+summarize_impl.default <- function(.data,
+                                   ...,
+                                   .margin_pairs,
+                                   .by) {
+  # Do not use `.by` because it is experimental
+  res <- dplyr::summarize(
+    .data = dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
+    ...,
+    !!!.margin_pairs,
+  )
+  dplyr::ungroup(res)
+}
+
+#' @method summarize_impl arrow_dplyr_query
+summarize_impl.arrow_dplyr_query <- function(.data,
+                                             ...,
+                                             .margin_pairs,
+                                             .by) {
+  res <- dplyr::summarize(
+    # dplyr::pick() doesn't support arrow tables
+    .data = dplyr::group_by(.data, dplyr::across(dplyr::all_of(.by))),
+    ...,
+    !!!.margin_pairs,
+  )
+  dplyr::ungroup(res)
+}
+
+summarize_impl.ArrowTabular <- summarize_impl.arrow_dplyr_query
+summarize_impl.Dataset <- summarize_impl.arrow_dplyr_query
+summarize_impl.RecordBatchReader <- summarize_impl.arrow_dplyr_query
 
 #' Assert whether columns are duplicated in each set
 #' @param lst A named list.
@@ -221,10 +251,14 @@ assert_column_intersect <- function(lst) {
 #' assert_margin_name(d, "all")
 #' try(assert_margin_name(d, "a"))
 #' try(assert_margin_name(d, NA_character_))
-assert_margin_name <- function(data, margin_name) {
+assert_margin_name <- function(data, col_names, margin_name) {
   assert_string_scalar(margin_name)
+  stopifnot(
+    is.character(col_names) && !anyNA(col_names)
+  )
+  data <- dplyr::select(.data = data, dplyr::all_of(col_names))
   res <- sapply(
-    colnames(data),
+    col_names,
     function(x) {
 
       # %in% may ignore NA_character_ for lazy table, so separate the cases
@@ -271,8 +305,25 @@ assert_margin_name <- function(data, margin_name) {
 #' * \url{https://tidyselect.r-lib.org/articles/syntax.html}
 #' * \url{https://rlang.r-lib.org/reference/expr.html}
 get_col_names <- function(data, ...) {
+  UseMethod("get_col_names")
+}
+
+#' @method get_col_names default
+get_col_names.default <- function(data, ...) {
   colnames(dplyr::select(.data = data, ...))
 }
+
+# see ?dplyr::compute() for details.
+#' @method get_col_names arrow_dplyr_query
+get_col_names.arrow_dplyr_query <- function(data, ...) {
+  data <- dplyr::select(.data = data, ...)
+  data <- dplyr::compute(data)
+  colnames(data)
+}
+
+get_col_names.ArrowTabular <- get_col_names.arrow_dplyr_query
+get_col_names.Dataset <- get_col_names.arrow_dplyr_query
+get_col_names.RecordBatchReader <- get_col_names.arrow_dplyr_query
 
 #' Get all subsets
 #'
@@ -360,17 +411,21 @@ with_margins <- function(.data,
     .with_all = get_col_names(.data, {{ .with_all }})
   )
 
+  margin_cols <- l$.margins
+  without_all_cols <- l$.without_all
+  with_all_cols <- l$.with_all
+
   # early stop if there are no columns for which margins are calculated
   stopifnot(
     "At least one column must be specified in `.margins` or `.with_all`" =
-      length(l$.margins) > 0 || length(l$.with_all) > 0
+      length(margin_cols) > 0 || length(with_all_cols) > 0
   )
 
   # .margins, .without_all and .with_all must not contain common variables
   assert_column_intersect(l)
 
   # columns where the margin is calculated
-  margin_vars_all <- c(l$.margins, l$.with_all)
+  margin_vars_all <- c(margin_cols, with_all_cols)
 
   # if local data frame, get column names of factor in margin_vars_all
   # (lazy tables often do not support factor and dplyr::where())
@@ -429,14 +484,15 @@ with_margins <- function(.data,
   # .margin_name must not be included in columns where the margin is calculated
   if (.check_margin_name) {
     assert_margin_name(
-      dplyr::select(.data = .data, dplyr::all_of(margin_vars_all)),
+      .data,
+      margin_vars_all,
       .margin_name
     )
   }
 
-  l_margins <- get_hierarchy(l$.margins)
+  l_margins <- get_hierarchy(margin_cols)
 
-  l_with_all <- get_all_subsets(l$.with_all, rev = TRUE)
+  l_with_all <- get_all_subsets(with_all_cols, rev = TRUE)
 
   # append all combinations of two lists
   l_group_vars <- lapply(
@@ -448,7 +504,7 @@ with_margins <- function(.data,
   l_group_vars <- unlist(l_group_vars, recursive = FALSE)
 
   # append .without_all at the beginning
-  l_group_vars <- lapply(l_group_vars, function(x) c(l$.without_all, x))
+  l_group_vars <- lapply(l_group_vars, function(x) c(without_all_cols, x))
 
   .data <- lapply(
     l_group_vars,
@@ -458,11 +514,21 @@ with_margins <- function(.data,
       names(margin_pairs) <- margins
 
       # apply the specific function
-      .f(.data = .data, ..., .margin_pairs = margin_pairs, .by = group_vars)
+      res <- .f(
+        .data = .data,
+        ...,
+        .margin_pairs = margin_pairs,
+        .by = group_vars
+      )
+
+      relocate_before_union_all(
+        res,
+        c(without_all_cols, margin_cols, with_all_cols)
+      )
     }
   )
 
-  # dplyr::bind_rows doesn't support lazy tables
+  # dplyr::bind_rows() doesn't support lazy tables
   .data <- Reduce(dplyr::union_all, .data)
 
   # reconstruct factors
@@ -495,20 +561,103 @@ with_margins <- function(.data,
   }
 
   # relocate group columns to the left
-  .data <- dplyr::relocate(
-    .data = .data,
-    c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+  # dplyr::relocate() doesn't work well with arrow tables
+  .data <- relocate_post_proc(
+    .data,
+    {{ .without_all }}, {{ .margins }}, {{ .with_all }}
   )
 
   # for ease of viewing
   if (.sort) {
-    .data <- dplyr::arrange(
-      .data = .data,
-      dplyr::pick(c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))
+    .data <- arrange_impl(
+      .data,
+      {{ .without_all }},
+      {{ .margins }},
+      {{ .with_all }}
     )
   }
 
   .data
 }
+
+relocate_before_union_all <- function(.data, cols_first) {
+  UseMethod("relocate_before_union_all")
+}
+
+# return as is
+#' @method relocate_before_union_all default
+relocate_before_union_all.default <- function(.data, cols_first) {
+  .data
+}
+
+#' @method relocate_before_union_all arrow_dplyr_query
+relocate_before_union_all.arrow_dplyr_query <- function(data, cols_first) {
+  # Relocate group columns to the left.
+  # Arrow tables causes an error in dplyr::union_all()
+  # if the columns are not in the same order.
+  # dplyr::relocate() doesn't work well with arrow tables.
+  dplyr::select(
+    .data = data,
+    dplyr::all_of(cols_first),
+    dplyr::everything()
+  )
+}
+
+# nolint start: line_length_linter
+relocate_before_union_all.ArrowTabular <- relocate_before_union_all.arrow_dplyr_query
+relocate_before_union_all.Dataset <- relocate_before_union_all.arrow_dplyr_query
+relocate_before_union_all.RecordBatchReader <- relocate_before_union_all.arrow_dplyr_query
+# nolint end
+
+relocate_post_proc <- function(.data, ...) {
+  UseMethod("relocate_post_proc")
+}
+
+#' @method relocate_post_proc default
+relocate_post_proc.default <- function(.data, ...) {
+  dplyr::relocate(
+    .data = .data,
+    ...
+  )
+}
+
+# return data as is
+#' @method relocate_post_proc arrow_dplyr_query
+relocate_post_proc.arrow_dplyr_query <- function(.data, ...) {
+  .data
+}
+
+relocate_post_proc.ArrowTabular <- relocate_post_proc.arrow_dplyr_query
+relocate_post_proc.Dataset <- relocate_post_proc.arrow_dplyr_query
+relocate_post_proc.RecordBatchReader <- relocate_post_proc.arrow_dplyr_query
+
+arrange_impl <- function(.data, ...) {
+  UseMethod("arrange_impl")
+}
+
+#' @method arrange_impl default
+arrange_impl.default <- function(.data, ...) {
+  dplyr::arrange(
+    .data = .data,
+    # dplyr::pick() doesn't support arrow tables
+    dplyr::pick(...)
+  )
+
+}
+
+#' @method arrange_impl arrow_dplyr_query
+arrange_impl.arrow_dplyr_query <- function(.data, ...) {
+  dplyr::arrange(
+    .data = .data,
+    # It seems that dplyr::pick() doesn't support arrow tables
+    dplyr::across(c(...))
+  )
+}
+
+arrange_impl.ArrowTabular <- arrange_impl.arrow_dplyr_query
+arrange_impl.Dataset <- arrange_impl.arrow_dplyr_query
+arrange_impl.RecordBatchReader <- arrange_impl.arrow_dplyr_query
+
+
 
 utils::globalVariables(c(".data", ":="))
