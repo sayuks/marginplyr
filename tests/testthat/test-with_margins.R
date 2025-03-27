@@ -60,6 +60,7 @@ test_that("assert_column_intersect() works correctly", {
 test_that("assert_margin_name() works correctly with local and lazy data", {
   run_test <- function(lazy) {
     d <- data.frame(
+      w = 1:2,
       x = c(NA_character_, "a"),
       y = c("b", NA_character_),
       z = c("a", "b")
@@ -76,23 +77,23 @@ test_that("assert_margin_name() works correctly with local and lazy data", {
 
     # basic success
     expect_no_error(
-      assert_margin_name(d, "all")
+      assert_margin_name(d, c("x", "y", "z"), "all")
     )
 
     # basic error
     expect_error(
-      assert_margin_name(d, "a"),
+      assert_margin_name(d, c("x", "y", "z"), "a"),
       "not allowed as a margin name"
     )
 
     # NA_character_ can be used as margin_name
     expect_no_error(
-      assert_margin_name(dplyr::select(d, z), NA_character_)
+      assert_margin_name(d, "z", NA_character_)
     )
 
     # NA_character_ is also error-checked
     expect_error(
-      assert_margin_name(d, NA_character_),
+      assert_margin_name(d, c("x", "y", "z"), NA_character_),
       "not allowed as a margin name"
     )
   }
