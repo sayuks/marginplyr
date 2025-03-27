@@ -6,7 +6,7 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2025-03-24">
+<meta name="dcterms.date" content="2025-03-27">
 
 <title>Get started – withmargins</title>
 <style>
@@ -267,7 +267,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">March 24, 2025</p>
+      <p class="date">March 27, 2025</p>
     </div>
   </div>
   
@@ -797,7 +797,7 @@ NULL</code></pre>
 <span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="st">"A"</span></span>
 <span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-error">
-<pre><code>Error in assert_margin_name(dplyr::select(.data = .data, dplyr::all_of(margin_vars_all)), : "A" is not allowed as a margin name because it is already contained in the following columns: `cat`</code></pre>
+<pre><code>Error in assert_margin_name(.data, margin_vars_all, .margin_name): "A" is not allowed as a margin name because it is already contained in the following columns: `cat`</code></pre>
 </div>
 </div>
 <p><code>NA_character_</code> can be used for <code>.margin_name</code>, but it is similarly checked if it is already in use.</p>
@@ -810,7 +810,7 @@ NULL</code></pre>
 <span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
 <span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-error">
-<pre><code>Error in assert_margin_name(dplyr::select(.data = .data, dplyr::all_of(margin_vars_all)), : NA is not allowed as a margin name because it is already contained in the following columns: `subcat`</code></pre>
+<pre><code>Error in assert_margin_name(.data, margin_vars_all, .margin_name): NA is not allowed as a margin name because it is already contained in the following columns: `subcat`</code></pre>
 </div>
 </div>
 <p>Error occurred. Because there are NAs in subcat. On the other hand, there is no NA in cat, so the following example works.</p>
@@ -1073,7 +1073,7 @@ Only works with a local data frame
  collate  C.UTF-8
  ctype    C.UTF-8
  tz       Etc/UTC
- date     2025-03-24
+ date     2025-03-27
  pandoc   3.4 @ /opt/quarto/bin/tools/ (via rmarkdown)
  quarto   1.6.42 @ /opt/quarto/bin/quarto
 
@@ -1083,7 +1083,7 @@ Only works with a local data frame
  ggplot2     * 3.5.1   2024-04-23 [2] RSPM (R 4.4.0)
  purrr       * 1.0.4   2025-02-05 [2] RSPM (R 4.4.0)
  tibble      * 3.2.1   2023-03-20 [2] RSPM (R 4.4.2)
- withmargins * 0.1.0   2025-03-24 [1] local
+ withmargins * 0.1.0   2025-03-27 [1] local
 
  [1] /usr/local/lib/R/site-library
  [2] /usr/lib/R/site-library
