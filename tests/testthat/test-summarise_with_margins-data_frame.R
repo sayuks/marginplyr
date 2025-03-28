@@ -1,4 +1,10 @@
 test_that(".margins works", {
+  old <- options(dplyr.summarise.inform = FALSE)
+  on.exit(
+    options(dplyr.summarise.inform = old$dplyr.summarise.inform),
+    add = TRUE
+  )
+
   data <- get_data_dummy()
 
   actual <- summarize_with_margins(
@@ -10,34 +16,39 @@ test_that(".margins works", {
   )
 
   expected <- list(
-    dplyr::summarize(
-      .data = data,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g1 = "(all)",
-      g2 = "(all)",
-      g3 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = data,
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g1 = "(all)",
+        g2 = "(all)",
+        g3 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = g1,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g2 = "(all)",
-      g3 = "(all)",
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, g1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g2 = "(all)",
+        g3 = "(all)",
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(g1, g2),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g3 = "(all)",
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, g1, g2),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g3 = "(all)",
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(g1, g2, g3),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, g1, g2, g3),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+      )
     )
   )
   expected <- Reduce(dplyr::union_all, expected)
@@ -48,6 +59,12 @@ test_that(".margins works", {
 })
 
 test_that(".without_all works", {
+  old <- options(dplyr.summarise.inform = FALSE)
+  on.exit(
+    options(dplyr.summarise.inform = old$dplyr.summarise.inform),
+    add = TRUE
+  )
+
   data <- get_data_dummy()
 
   actual <- summarize_with_margins(
@@ -60,35 +77,39 @@ test_that(".without_all works", {
   )
 
   expected <- list(
-    dplyr::summarize(
-      .data = data,
-      .by = year,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g1 = "(all)",
-      g2 = "(all)",
-      g3 = "(all)",
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g1 = "(all)",
+        g2 = "(all)",
+        g3 = "(all)",
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g2 = "(all)",
-      g3 = "(all)",
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g2 = "(all)",
+        g3 = "(all)",
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g3 = "(all)",
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g3 = "(all)",
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, g3),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE)
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, g3),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE)
+      )
     )
   )
   expected <- Reduce(dplyr::union_all, expected)
@@ -99,6 +120,12 @@ test_that(".without_all works", {
 })
 
 test_that(".with_all works", {
+  old <- options(dplyr.summarise.inform = FALSE)
+  on.exit(
+    options(dplyr.summarise.inform = old$dplyr.summarise.inform),
+    add = TRUE
+  )
+
   data <- get_data_dummy()
 
   actual <- summarize_with_margins(
@@ -113,144 +140,160 @@ test_that(".with_all works", {
 
   expected <- list(
     # all g1, g2, g3
-    dplyr::summarize(
-      .data = data,
-      .by = year,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g1 = "(all)",
-      g2 = "(all)",
-      g3 = "(all)",
-      h1 = "(all)",
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g1 = "(all)",
+        g2 = "(all)",
+        g3 = "(all)",
+        h1 = "(all)",
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g1 = "(all)",
-      g2 = "(all)",
-      g3 = "(all)",
-      h1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g1 = "(all)",
+        g2 = "(all)",
+        g3 = "(all)",
+        h1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, h1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g1 = "(all)",
-      g2 = "(all)",
-      g3 = "(all)",
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, h1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g1 = "(all)",
+        g2 = "(all)",
+        g3 = "(all)",
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, h1, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g1 = "(all)",
-      g2 = "(all)",
-      g3 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, h1, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g1 = "(all)",
+        g2 = "(all)",
+        g3 = "(all)"
+      )
     ),
     # by g1, all g2, g3
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g2 = "(all)",
-      g3 = "(all)",
-      h1 = "(all)",
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g2 = "(all)",
+        g3 = "(all)",
+        h1 = "(all)",
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g2 = "(all)",
-      g3 = "(all)",
-      h1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g2 = "(all)",
+        g3 = "(all)",
+        h1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, h1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g2 = "(all)",
-      g3 = "(all)",
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, h1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g2 = "(all)",
+        g3 = "(all)",
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, h1, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g2 = "(all)",
-      g3 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, h1, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g2 = "(all)",
+        g3 = "(all)"
+      )
     ),
     # by g1, g2, all g3
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g3 = "(all)",
-      h1 = "(all)",
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g3 = "(all)",
+        h1 = "(all)",
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g3 = "(all)",
-      h1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g3 = "(all)",
+        h1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, h1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g3 = "(all)",
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, h1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g3 = "(all)",
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, h1, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g3 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, h1, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g3 = "(all)"
+      )
     ),
     # by g1, g2, g3
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, g3),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      h1 = "(all)",
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, g3),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        h1 = "(all)",
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, g3, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      h1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, g3, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        h1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, g3, h1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      k1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, g3, h1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        k1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g1, g2, g3, h1, k1),
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE)
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, year, g1, g2, g3, h1, k1),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE)
+      )
     )
   )
   expected <- Reduce(dplyr::union_all, expected)
@@ -261,6 +304,12 @@ test_that(".with_all works", {
 })
 
 test_that(".margin_name basic (non-NA)", {
+  old <- options(dplyr.summarise.inform = FALSE)
+  on.exit(
+    options(dplyr.summarise.inform = old$dplyr.summarise.inform),
+    add = TRUE
+  )
+
   data <- get_data_dummy()
 
   actual <- summarize_with_margins(
@@ -273,17 +322,20 @@ test_that(".margin_name basic (non-NA)", {
   )
 
   expected <- list(
-    dplyr::summarize(
-      .data = data,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g3 = "total"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = data,
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g3 = "total"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = g3,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE)
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, g3),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE)
+      )
     )
   )
   expected <- Reduce(dplyr::union_all, expected)
@@ -294,6 +346,12 @@ test_that(".margin_name basic (non-NA)", {
 })
 
 test_that(".margin_name basic (NA)", {
+  old <- options(dplyr.summarise.inform = FALSE)
+  on.exit(
+    options(dplyr.summarise.inform = old$dplyr.summarise.inform),
+    add = TRUE
+  )
+
   data <- get_data_dummy()
 
   actual <- summarize_with_margins(
@@ -306,17 +364,20 @@ test_that(".margin_name basic (NA)", {
   )
 
   expected <- list(
-    dplyr::summarize(
-      .data = data,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE),
-      g2 = NA_character_
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = data,
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE),
+        g2 = NA_character_
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = g2,
-      n = dplyr::n(),
-      mean = mean(value, na.rm = TRUE)
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(data, g2),
+        n = dplyr::n(),
+        mean = mean(value, na.rm = TRUE)
+      )
     )
   )
   expected <- Reduce(dplyr::union_all, expected)
@@ -353,6 +414,12 @@ test_that(".margin_name conflict error", {
 })
 
 test_that("Can use the margin variable before calculating", {
+  old <- options(dplyr.summarise.inform = FALSE)
+  on.exit(
+    options(dplyr.summarise.inform = old$dplyr.summarise.inform),
+    add = TRUE
+  )
+
   # for easier debugging, extract the sample that has more than one row
   data <- dplyr::filter(get_data_dummy(), id == "108")
 
@@ -368,52 +435,58 @@ test_that("Can use the margin variable before calculating", {
 
   expected <- list(
     # all g2, g3
-    dplyr::summarize(
-      .data = data,
-      .by = year,
-      n = dplyr::n(),
-      g3s = stringr::str_flatten(g3, collapse = "/"),
-      g2 = "(all)",
-      g3 = "(all)",
-      h1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(.data = data, year),
+        n = dplyr::n(),
+        g3s = stringr::str_flatten(g3, collapse = "/"),
+        g2 = "(all)",
+        g3 = "(all)",
+        h1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, h1),
-      n = dplyr::n(),
-      g3s = stringr::str_flatten(g3, collapse = "/"),
-      g2 = "(all)",
-      g3 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(.data = data, year, h1),
+        n = dplyr::n(),
+        g3s = stringr::str_flatten(g3, collapse = "/"),
+        g2 = "(all)",
+        g3 = "(all)"
+      )
     ),
     # all g3
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g2),
-      n = dplyr::n(),
-      g3s = stringr::str_flatten(g3, collapse = "/"),
-      g3 = "(all)",
-      h1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(.data = data, year, g2),
+        n = dplyr::n(),
+        g3s = stringr::str_flatten(g3, collapse = "/"),
+        g3 = "(all)",
+        h1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g2, h1),
-      n = dplyr::n(),
-      g3s = stringr::str_flatten(g3, collapse = "/"),
-      g3 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(.data = data, year, g2, h1),
+        n = dplyr::n(),
+        g3s = stringr::str_flatten(g3, collapse = "/"),
+        g3 = "(all)"
+      )
     ),
     # by g2, g3
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g2, g3),
-      n = dplyr::n(),
-      g3s = stringr::str_flatten(g3, collapse = "/"),
-      h1 = "(all)"
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(.data = data, year, g2, g3),
+        n = dplyr::n(),
+        g3s = stringr::str_flatten(g3, collapse = "/"),
+        h1 = "(all)"
+      )
     ),
-    dplyr::summarize(
-      .data = data,
-      .by = c(year, g2, g3, h1),
-      n = dplyr::n(),
-      g3s = stringr::str_flatten(g3, collapse = "/"),
+    dplyr::ungroup(
+      dplyr::summarize(
+        .data = dplyr::group_by(.data = data, year, g2, g3, h1),
+        n = dplyr::n(),
+        g3s = stringr::str_flatten(g3, collapse = "/"),
+      )
     )
   )
   expected <- Reduce(dplyr::union_all, expected)
@@ -421,5 +494,4 @@ test_that("Can use the margin variable before calculating", {
   expected <- dplyr::arrange(.data = expected, year, g2, g3, h1)
 
   expect_identical(actual, expected)
-}
-)
+})

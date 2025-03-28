@@ -53,7 +53,6 @@ test_that(".margin works", {
       )
     )
   )
-
   expected <- lapply(
     expected,
     function(df) {
