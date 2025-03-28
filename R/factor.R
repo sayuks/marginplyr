@@ -2,6 +2,7 @@ reconstruct_factor <- function(data, info, .margin_name) {
   UseMethod("reconstruct_factor")
 }
 
+#' @method reconstruct_factor data.frame
 reconstruct_factor.data.frame <- function(data, info, .margin_name) {
   col <- info$col
   # force .margin_name to the beginning of the level
@@ -26,6 +27,7 @@ reconstruct_factor.data.frame <- function(data, info, .margin_name) {
 }
 
 # https://github.com/duckdb/duckdb-r/issues/188#issuecomment-2294095426
+#' @method reconstruct_factor tbl_duckdb_connection
 reconstruct_factor.tbl_duckdb_connection <- function(data,
                                                      info,
                                                      .margin_name) {
