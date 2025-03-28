@@ -12,6 +12,7 @@ Imports:
     utils
 Suggests: 
     altdoc,
+    arrow,
     DBI,
     dbplyr,
     duckdb,

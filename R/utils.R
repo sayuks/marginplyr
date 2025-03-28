@@ -25,3 +25,17 @@ assert_data_frame <- function(x) {
     )
   }
 }
+
+assert_lazy_table <- function(x) {
+  nm <- deparse(substitute(x))
+  invalid_lazy_table_names <- c("RecordBatchReader", NULL)
+  if (inherits(x, invalid_lazy_table_names)) {
+    stop(
+      sprintf(
+        "`%s` must not be an object of the following classes: %s",
+        nm,
+        toString(invalid_lazy_table_names)
+      )
+    )
+  }
+}

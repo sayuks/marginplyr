@@ -278,6 +278,82 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   )
 })
 
+test_that("with_margins() can reconstruct factors as expexted with duckdb", {
+  data <- get_data_dummy(factor = TRUE)
+
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  DBI::dbWriteTable(con, "data", data)
+
+  data <- dplyr::tbl(con, "data")
+
+  # just make margins
+  .f <- function(.data, ..., .margin_pairs, .by) {
+    dplyr::mutate(.data = .data, !!!.margin_pairs)
+  }
+
+  # Case 1: .margin_name is not a NA_character_ ----
+  res1 <- with_margins(
+    .data = data,
+    .margins = c(g1, g2, g3),
+    .without_all = year,
+    .with_all = c(h1, k1),
+    .f = .f,
+    .margin_name = "(all)",
+    .check_margin_name = TRUE,
+    .sort = TRUE
+  )
+
+  # factor levels as expected (including NA in levels)
+  expect_identical(
+    lapply(
+      dplyr::select(.data = dplyr::collect(res1), dplyr::where(is.factor)),
+      levels
+    ),
+    list(
+      # .margin_name "(all)" comes at the beginning of level.
+      # duckdb does not allow NAs to be registered at the level of factor.
+      # ordered is ignored.
+      g1 = c("(all)", "A", "B", "APL", "SSD"),
+      g2 = c("(all)", "Q", "E", "C", "D", "S", "APL", "SSD"),
+      # originally h1 contained level "(all)" at the end,
+      # but now comes at the beginning.
+      h1 = c("(all)", "JBB", "SIO", "KLS", "YZU", "YAL", "CKE"),
+      k1 = c("(all)", "WQ1", "WQ2", "WQ3", "WQ4", "WQ5", "WQ6",
+             "HU1", "HU2", "HU3", "CK1", "CK2", "CK3")
+    )
+  )
+
+  # ordered is ignored
+  expect_identical(
+    lapply(
+      dplyr::select(.data = dplyr::collect(res1), dplyr::where(is.factor)),
+      is.ordered
+    ),
+    list(
+      g1 = FALSE,
+      g2 = FALSE,
+      h1 = FALSE,
+      k1 = FALSE
+    )
+  )
+
+  # Case 2: .margin_name is a NA_character_ ----
+  expect_error(
+    with_margins(
+      .data = data,
+      .margins = g1,
+      .with_all = k1,
+      .f = .f,
+      .margin_name = NA_character_,
+      .check_margin_name = TRUE,
+      .sort = TRUE
+    ),
+    "duckdb does not allow NAs to be registered at the level of factor"
+  )
+})
+
 
 test_that("row order is as expected when factor is specified", {
   # row order is as expected when factor is specified in`.with_all` and

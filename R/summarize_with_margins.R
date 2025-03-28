@@ -122,6 +122,7 @@ summarize_with_margins <- function(.data,
                                    .margin_name = "(all)",
                                    .check_margin_name = is.data.frame(.data),
                                    .sort = is.data.frame(.data)) {
+  assert_lazy_table(.data)
   assert_logical_scalar(.check_margin_name)
   assert_logical_scalar(.sort)
   assert_string_scalar(.margin_name)
@@ -176,7 +177,6 @@ summarize_impl.arrow_dplyr_query <- function(.data,
 
 summarize_impl.ArrowTabular <- summarize_impl.arrow_dplyr_query
 summarize_impl.Dataset <- summarize_impl.arrow_dplyr_query
-summarize_impl.RecordBatchReader <- summarize_impl.arrow_dplyr_query
 
 #' Assert whether columns are duplicated in each set
 #' @param lst A named list.
@@ -272,7 +272,6 @@ assert_margin_name <- function(data, col_names, margin_name) {
         .data = elements,
         n = dplyr::n()
       )
-
       elements <- dplyr::collect(elements)
       elements$n[[1]] > 0
     }
@@ -323,7 +322,6 @@ get_col_names.arrow_dplyr_query <- function(data, ...) {
 
 get_col_names.ArrowTabular <- get_col_names.arrow_dplyr_query
 get_col_names.Dataset <- get_col_names.arrow_dplyr_query
-get_col_names.RecordBatchReader <- get_col_names.arrow_dplyr_query
 
 #' Get all subsets
 #'
@@ -429,13 +427,36 @@ with_margins <- function(.data,
 
   # if local data frame, get column names of factor in margin_vars_all
   # (lazy tables often do not support factor and dplyr::where())
-  factor_cols <- if (is.data.frame(.data)) {
-    factor_cols <- get_col_names(
-      .data,
-      dplyr::all_of(margin_vars_all) & dplyr::where(is.factor)
+  factor_cols <-
+    if (inherits(.data, c("data.frame", "tbl_duckdb_connection"))) {
+      tmp_df <- if (inherits(.data, "tbl_duckdb_connection")) {
+        dplyr::collect(utils::head(.data, n = 0))
+      } else {
+        .data
+      }
+      get_col_names(
+        tmp_df,
+        dplyr::all_of(margin_vars_all) & dplyr::where(is.factor)
+      )
+    } else {
+      character()
+    }
+
+  if (inherits(.data, "tbl_duckdb_connection") &&
+        is.na(.margin_name) &&
+        length(factor_cols) > 0) {
+    stop(
+      paste0(
+        "If `.data` is a tbl_duckdb_connection class object and ",
+        "the columns that specified in `.margins` or `.with_all` contains ",
+        "column(s) of type factor",
+        sprintf("(%s), ", toString(factor_cols)),
+        "`.margin_name` must not be a missing value. ",
+        "The reason is that duckdb does not allow NAs to be registered ",
+        "at the level of factor."
+      )
+
     )
-  } else {
-    character()
   }
 
   if (length(factor_cols) > 0) {
@@ -443,7 +464,7 @@ with_margins <- function(.data,
     factor_info <- lapply(
       factor_cols,
       function(col) {
-        x <- .data[[col]]
+        x <- tmp_df[[col]]
         lvl <- levels(x)
         list(
           col = col,
@@ -535,25 +556,7 @@ with_margins <- function(.data,
   if (length(factor_cols) > 0) {
     .data <- Reduce(
       function(data, info) {
-        col <- info$col
-        dplyr::mutate(
-          .data = data,
-          "{col}" := factor(
-            dplyr::pull(dplyr::pick(dplyr::all_of(col))),
-            # force .margin_name to the beginning of the level
-            levels = union(.margin_name, info$levels),
-            # If .margin_name is not NA and there is NA in the original level,
-            # keep it (set exclude = NULL).
-            # The case where .margin_name is NA and level contains NA is
-            # not present here, as it is an error in the prior step.
-            # This means that if .margin_name is NA,
-            # info$has_na_in_level always returns FALSE, so exclude = NA.
-            # This excludes NA from the level.
-            # This is consistent with the default base::factor().
-            exclude = if (info$has_na_in_level) NULL else NA,
-            ordered = info$ordered
-          )
-        )
+        reconstruct_factor(data, info, .margin_name)
       },
       x = factor_info,
       init = .data
@@ -606,7 +609,6 @@ relocate_before_union_all.arrow_dplyr_query <- function(data, cols_first) {
 # nolint start: line_length_linter
 relocate_before_union_all.ArrowTabular <- relocate_before_union_all.arrow_dplyr_query
 relocate_before_union_all.Dataset <- relocate_before_union_all.arrow_dplyr_query
-relocate_before_union_all.RecordBatchReader <- relocate_before_union_all.arrow_dplyr_query
 # nolint end
 
 relocate_post_proc <- function(.data, ...) {
@@ -629,7 +631,6 @@ relocate_post_proc.arrow_dplyr_query <- function(.data, ...) {
 
 relocate_post_proc.ArrowTabular <- relocate_post_proc.arrow_dplyr_query
 relocate_post_proc.Dataset <- relocate_post_proc.arrow_dplyr_query
-relocate_post_proc.RecordBatchReader <- relocate_post_proc.arrow_dplyr_query
 
 arrange_impl <- function(.data, ...) {
   UseMethod("arrange_impl")
@@ -656,8 +657,5 @@ arrange_impl.arrow_dplyr_query <- function(.data, ...) {
 
 arrange_impl.ArrowTabular <- arrange_impl.arrow_dplyr_query
 arrange_impl.Dataset <- arrange_impl.arrow_dplyr_query
-arrange_impl.RecordBatchReader <- arrange_impl.arrow_dplyr_query
-
-
 
 utils::globalVariables(c(".data", ":="))

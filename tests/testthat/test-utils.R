@@ -35,3 +35,30 @@ test_that("assert_data_frame() works", {
   expect_error(assert_data_frame(NULL))
   expect_error(assert_data_frame(new.env()))
 })
+
+test_that("assert_lazy_table() works", {
+  expect_error(
+    assert_lazy_table(
+      arrow::as_record_batch_reader(data.frame()),
+      "must not be an object of the following class"
+    )
+  )
+  expect_no_error(assert_lazy_table(data.frame()))
+  expect_no_error(assert_lazy_table(arrow::arrow_table(x = 1)))
+  expect_no_error(assert_lazy_table(arrow::record_batch(x = 1)))
+
+  # arrow "Dataset" class
+  tmp <- tempfile("test", fileext = ".parquet")
+  on.exit(unlink(tmp, recursive = TRUE, force = TRUE))
+
+  arrow::write_parquet(
+    x = data.frame(),
+    sink = tmp
+  )
+
+  expect_no_error(
+    assert_lazy_table(
+      arrow::open_dataset(tmp)
+    )
+  )
+})

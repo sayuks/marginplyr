@@ -32,6 +32,7 @@ union_all_with_margins <- function(.data,
                                    .margin_name = "(all)",
                                    .check_margin_name = is.data.frame(.data),
                                    .sort = is.data.frame(.data)) {
+  assert_lazy_table(.data)
   assert_logical_scalar(.check_margin_name)
   assert_logical_scalar(.sort)
   assert_string_scalar(.margin_name)
