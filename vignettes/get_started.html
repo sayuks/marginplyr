@@ -797,7 +797,7 @@ NULL</code></pre>
 <span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="st">"A"</span></span>
 <span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-error">
-<pre><code>Error in assert_margin_name(dplyr::select(.data = .data, dplyr::all_of(margin_vars_all)), : "A" is not allowed as a margin name because it is already contained in the following columns: `cat`</code></pre>
+<pre><code>Error in assert_margin_name(.data, margin_vars_all, .margin_name): "A" is not allowed as a margin name because it is already contained in the following columns: `cat`</code></pre>
 </div>
 </div>
 <p><code>NA_character_</code> can be used for <code>.margin_name</code>, but it is similarly checked if it is already in use.</p>
@@ -810,7 +810,7 @@ NULL</code></pre>
 <span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">.margin_name =</span> <span class="cn">NA_character_</span></span>
 <span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>  )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-error">
-<pre><code>Error in assert_margin_name(dplyr::select(.data = .data, dplyr::all_of(margin_vars_all)), : NA is not allowed as a margin name because it is already contained in the following columns: `subcat`</code></pre>
+<pre><code>Error in assert_margin_name(.data, margin_vars_all, .margin_name): NA is not allowed as a margin name because it is already contained in the following columns: `subcat`</code></pre>
 </div>
 </div>
 <p>Error occurred. Because there are NAs in subcat. On the other hand, there is no NA in cat, so the following example works.</p>
