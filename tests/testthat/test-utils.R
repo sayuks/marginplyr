@@ -39,9 +39,9 @@ test_that("assert_data_frame() works", {
 test_that("assert_lazy_table() works", {
   expect_error(
     assert_lazy_table(
-      arrow::as_record_batch_reader(data.frame()),
-      "must not be an object of the following class"
-    )
+      arrow::as_record_batch_reader(data.frame())
+    ),
+    "must not be an object of the following class"
   )
   expect_no_error(assert_lazy_table(data.frame()))
   expect_no_error(assert_lazy_table(arrow::arrow_table(x = 1)))
