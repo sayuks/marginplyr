@@ -320,7 +320,7 @@ get_col_names.arrow_dplyr_query <- function(data, ...) {
   # It would be less expensive  to collect the data with zero rows.
   # dplyr::filter(.data = data, FALSE) will occur an error:
   # filter expressions must be either an expression or a list of expressions
-  data <- dplyr::filter(.data = data, 1 == 0)
+  data <- utils::head(x = data, n = 0)
   data <- dplyr::collect(data)
   colnames(data)
 }
@@ -434,7 +434,7 @@ with_margins <- function(.data,
   # (lazy tables often do not support factor and dplyr::where())
   factor_cols <-
     if (inherits(.data, c("data.frame", "tbl_duckdb_connection"))) {
-      tmp_df <- dplyr::collect(dplyr::filter(.data = .data, FALSE))
+      tmp_df <- dplyr::collect(utils::head(x = data, n = 0))
       get_col_names(
         tmp_df,
         dplyr::all_of(margin_vars_all) & dplyr::where(is.factor)
