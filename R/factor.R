@@ -7,10 +7,13 @@ reconstruct_factor.data.frame <- function(data, info, .margin_name) {
   col <- info$col
   # force .margin_name to the beginning of the level
   new_levels <- union(.margin_name, info$levels)
+  ord <- info$ordered
+  exc <- if (info$has_na_in_level) NULL else NA
   dplyr::mutate(
     .data = data,
     "{col}" := factor(
-      dplyr::pull(dplyr::pick(dplyr::all_of(col))),
+      x = .data[[col]],
+      # x,
       levels = new_levels,
       # If .margin_name is not NA and there is NA in the original level,
       # keep it (set exclude = NULL).
@@ -20,11 +23,13 @@ reconstruct_factor.data.frame <- function(data, info, .margin_name) {
       # info$has_na_in_level always returns FALSE, so exclude = NA.
       # This excludes NA from the level.
       # This is consistent with the default base::factor().
-      exclude = if (info$has_na_in_level) NULL else NA,
-      ordered = info$ordered
+      exclude = exc,
+      ordered = ord
     )
   )
 }
+
+reconstruct_factor.dtplyr_step <- reconstruct_factor.data.frame
 
 # https://github.com/duckdb/duckdb-r/issues/188#issuecomment-2294095426
 #' @method reconstruct_factor tbl_duckdb_connection

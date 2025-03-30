@@ -13,8 +13,10 @@ Imports:
 Suggests: 
     altdoc,
     arrow,
+    data.table,
     DBI,
     dbplyr,
+    dtplyr,
     duckdb,
     ggplot2,
     purrr,

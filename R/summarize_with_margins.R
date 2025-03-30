@@ -273,6 +273,9 @@ assert_margin_name <- function(data, col_names, margin_name) {
         n = dplyr::n()
       )
       elements <- dplyr::collect(elements)
+      if (nrow(elements) == 0) {
+        return(FALSE)
+      }
       elements$n[[1]] > 0
     }
   )
@@ -327,6 +330,7 @@ get_col_names.arrow_dplyr_query <- function(data, ...) {
 
 get_col_names.ArrowTabular <- get_col_names.arrow_dplyr_query
 get_col_names.Dataset <- get_col_names.arrow_dplyr_query
+get_col_names.dtplyr_step <- get_col_names.arrow_dplyr_query
 
 #' Get all subsets
 #'
@@ -433,8 +437,15 @@ with_margins <- function(.data,
   # if local data frame, get column names of factor in margin_vars_all
   # (lazy tables often do not support factor and dplyr::where())
   factor_cols <-
-    if (inherits(.data, c("data.frame", "tbl_duckdb_connection"))) {
-      tmp_df <- dplyr::collect(utils::head(x = data, n = 0))
+    if (inherits(
+      .data,
+      c(
+        "data.frame",
+        "tbl_duckdb_connection",
+        "dtplyr_step"
+      )
+    )) {
+      tmp_df <- dplyr::collect(utils::head(x = .data, n = 0))
       get_col_names(
         tmp_df,
         dplyr::all_of(margin_vars_all) & dplyr::where(is.factor)
@@ -612,6 +623,14 @@ relocate_before_union_all.ArrowTabular <- relocate_before_union_all.arrow_dplyr_
 relocate_before_union_all.Dataset <- relocate_before_union_all.arrow_dplyr_query
 # nolint end
 
+#' @method relocate_before_union_all dtplyr_step
+relocate_before_union_all.dtplyr_step <- function(data, cols_first) {
+  dplyr::relocate(
+    .data = data,
+    dplyr::all_of(cols_first)
+  )
+}
+
 relocate_post_proc <- function(.data, ...) {
   UseMethod("relocate_post_proc")
 }
@@ -659,4 +678,5 @@ arrange_impl.arrow_dplyr_query <- function(.data, ...) {
 arrange_impl.ArrowTabular <- arrange_impl.arrow_dplyr_query
 arrange_impl.Dataset <- arrange_impl.arrow_dplyr_query
 
+.datatable.aware <- TRUE # nolint object_name_linter
 utils::globalVariables(c(".data", ":="))
