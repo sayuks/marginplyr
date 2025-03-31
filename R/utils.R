@@ -17,11 +17,16 @@ assert_string_scalar <- function(x) {
   }
 }
 
-assert_data_frame <- function(x) {
+assert_nest_possible <- function(x) {
   nm <- deparse(substitute(x))
-  if (!is.data.frame(x)) {
+  valid_classes <- c("data.frame", "dtplyr_step", NULL)
+  if (!inherits(x, valid_classes)) {
     stop(
-      sprintf("`%s` must be a data frame (not lazy table)", nm)
+      sprintf(
+        "`%s` must be one of the following classes, whitch can be nested: %s",
+        nm,
+        toString(valid_classes)
+      )
     )
   }
 }

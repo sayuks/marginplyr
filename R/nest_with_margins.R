@@ -39,7 +39,7 @@ nest_with_margins <- function(.data,
                               .sort = TRUE,
                               .key = "data",
                               .keep = FALSE) {
-  assert_data_frame(.data)
+  assert_nest_possible(.data)
   assert_logical_scalar(.check_margin_name)
   assert_logical_scalar(.sort)
   assert_logical_scalar(.keep)
@@ -59,20 +59,44 @@ nest_with_margins <- function(.data,
     function(.data, .margin_pairs, .by) {
       res <- .f_base(.data = .data, .margin_pairs = .margin_pairs, .by = .by)
 
-      res <- dplyr::mutate(
-        .data = dplyr::rowwise(res),
-        "{.key}" := list({
-          d <- dplyr::mutate(
-            .data = .data[[.key]],
-            dplyr::pick(!dplyr::all_of(.key))
-          )
+      if (is.data.frame(.data)) {
+        res <- dplyr::mutate(
+          .data = dplyr::rowwise(res),
+          "{.key}" := list({
+            d <- dplyr::mutate(
+              .data = .data[[.key]],
+              dplyr::pick(!dplyr::all_of(.key))
+            )
 
-          dplyr::relocate(
-            .data = d,
-            c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
-          )
-        })
-      )
+            dplyr::relocate(
+              .data = d,
+              c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+            )
+          })
+        )
+      } else if (inherits(.data, "dtplyr_step")) {
+        tmp_col <- "tmp_id_dtplyr_step__"
+        res <- dplyr::mutate(.data = res, "{tmp_col}" := dplyr::row_number())
+
+        res <- dplyr::mutate(
+          .data = dplyr::group_by(res, dplyr::pick(dplyr::all_of(tmp_col))),
+          "{.key}" := list({
+            d <- dplyr::mutate(
+              .data = .data[[.key]][[1]],
+              dplyr::pick(!dplyr::all_of(.key))
+            )
+
+            dplyr::relocate(
+              .data = d,
+              c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+            )
+          })
+        )
+
+        res <- dplyr::ungroup(res)
+        res <- dplyr::select(.data = res, !dplyr::all_of(tmp_col))
+        res
+      }
 
       dplyr::ungroup(res)
     }

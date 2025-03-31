@@ -32,7 +32,7 @@ nest_by_with_margins <- function(.data,
                                  .sort = TRUE,
                                  .key = "data",
                                  .keep = FALSE) {
-  assert_data_frame(.data)
+  assert_nest_possible(.data)
   assert_logical_scalar(.check_margin_name)
   assert_logical_scalar(.sort)
   assert_logical_scalar(.keep)
