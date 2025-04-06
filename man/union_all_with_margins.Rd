@@ -55,7 +55,7 @@ the output is also a lazy table.
 \description{
 This function considers each margin (such as total) as a new category,
 duplicate the rows and merge them vertically (like \verb{UNION ALL} in SQL).
-See \href{https://sayuks.github.io/withmargins/vignettes/get_started.html}{Get started}
+See \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
 for more details.
 }
 \details{
@@ -122,7 +122,7 @@ union_all_with_margins(
 }
 \references{
 \itemize{
-\item Online documentation: \href{https://sayuks.github.io/withmargins/vignettes/get_started.html}{Get started}
+\item Online documentation: \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
 }
 }
 \seealso{

@@ -51,7 +51,7 @@ and \code{.with_all}.
 \description{
 This function considers each margin (such as total) as a new category,
 works like \code{\link[dplyr:nest_by]{dplyr::nest_by()}}.
-See \href{https://sayuks.github.io/withmargins/vignettes/get_started.html}{Get started}
+See \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
 for more details.
 }
 \details{
@@ -116,7 +116,7 @@ nest_by_with_margins(
 }
 \references{
 \itemize{
-\item Online documentation: \href{https://sayuks.github.io/withmargins/vignettes/get_started.html}{Get started}
+\item Online documentation: \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
 }
 }
 \seealso{

@@ -1,41 +1,41 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# withmargins
+# marginplyr
 
 <!-- badges: start -->
 
-<a href = "https://CRAN.R-project.org/package=withmargins" target = "_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a>
-[![R-CMD-check](https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml)
+<a href = "https://CRAN.R-project.org/package=marginplyr" target = "_blank"><img src="https://www.r-pkg.org/badges/version/marginplyr"></a>
+[![R-CMD-check](https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml)
 [![Codecov test
-coverage](https://codecov.io/gh/sayuks/withmargins/graph/badge.svg)](https://app.codecov.io/gh/sayuks/withmargins)
-[![lint.yaml](https://github.com/sayuks/withmargins/actions/workflows/lint.yaml/badge.svg)](https://github.com/sayuks/withmargins/actions/workflows/lint.yaml)
-<a href = "https://sayuks.github.io/withmargins/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a>
+coverage](https://codecov.io/gh/sayuks/marginplyr/graph/badge.svg)](https://app.codecov.io/gh/sayuks/marginplyr)
+[![lint.yaml](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml)
+<a href = "https://sayuks.github.io/marginplyr/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/marginplyr"></a>
 <!-- badges: end -->
 
-`withmargins` is an R package that summarize data with margins (totals)
+`marginplyr` is an R package that summarize data with margins (totals)
 and expand data by treating margins as category levels. Supports
 [tidyverse](https://www.tidyverse.org/) workflows for analysis.
 
 ## Installation
 
-<!-- You can install `withmargins` from CRAN: -->
+<!-- You can install `marginplyr` from CRAN: -->
 <!-- ``` r -->
-<!-- install.packages("withmargins") -->
+<!-- install.packages("marginplyr") -->
 <!-- ``` -->
 
-You can install the development version of `withmargins` from
+You can install the development version of `marginplyr` from
 [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("pak")
-pak::pak("sayuks/withmargins")
+pak::pak("sayuks/marginplyr")
 ```
 
 ## Example
 
 ``` r
-library(withmargins)
+library(marginplyr)
 ```
 
 ### Summarize with hierarchical margins for `cyl` and `vs`.
@@ -60,12 +60,12 @@ summarize_with_margins(
 ```
 
 See [Get
-started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 for more details.
 
 ## Code of Conduct
 
-Please note that the withmargins project is released with a [Contributor
+Please note that the marginplyr project is released with a [Contributor
 Code of
 Conduct](https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html).
 By contributing to this project, you agree to abide by its terms.

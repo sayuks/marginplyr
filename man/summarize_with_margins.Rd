@@ -58,7 +58,7 @@ the output is also a lazy table.
 \description{
 This function considers each margin (such as total) as a new category,
 works like \code{\link[dplyr:summarise]{dplyr::summarize()}}.
-See \href{https://sayuks.github.io/withmargins/vignettes/get_started.html}{Get started}
+See \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
 for more details.
 }
 \details{
@@ -159,7 +159,7 @@ summarize_with_margins(
 }
 \references{
 \itemize{
-\item Online documentation: \href{https://sayuks.github.io/withmargins/vignettes/get_started.html}{Get started}
+\item Online documentation: \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
 \item Main idea is borrowed from \href{https://gist.github.com/moodymudskipper/6347418d82fea2160178422aa574dec2}{this gist}.
 }
 }

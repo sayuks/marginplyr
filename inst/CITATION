@@ -1,6 +1,6 @@
 bibentry(
   bibtype = "Manual",
-  title = "withmargins: Summarize and Expand Data with Margins",
+  title = "marginplyr: Summarize and Expand Data with Margins",
   author = person("Yusuke", "Sasaki", email = "sayuks.dev@gmail.com", role = c("aut", "cre")),
   year = 2025
 )

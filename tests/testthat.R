@@ -7,6 +7,6 @@
 # * https://testthat.r-lib.org/articles/special-files.html
 
 library(testthat)
-library(withmargins)
+library(marginplyr)
 
-test_check("withmargins")
+test_check("marginplyr")

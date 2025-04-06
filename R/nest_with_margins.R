@@ -3,7 +3,7 @@
 #'
 #' This function considers each margin (such as total) as a new category,
 #' works like [tidyr::nest()].
-#' See [Get started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
+#' See [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 #' for more details.
 #'
 #' @inherit union_all_with_margins

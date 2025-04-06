@@ -3,7 +3,7 @@
 #'
 #' This function considers each margin (such as total) as a new category,
 #' duplicate the rows and merge them vertically (like `UNION ALL` in SQL).
-#' See [Get started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
+#' See [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 #' for more details.
 #'
 #' @inherit summarize_with_margins
@@ -14,7 +14,7 @@
 #'   as for it.
 #' * __Be aware that the number of rows can be huge.__
 #' @references
-#'  * Online documentation: [Get started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
+#'  * Online documentation: [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 #' @family summarize and expand data with margins
 #' @export
 #' @examples

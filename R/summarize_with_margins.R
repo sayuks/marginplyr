@@ -3,7 +3,7 @@
 #'
 #' This function considers each margin (such as total) as a new category,
 #' works like [dplyr::summarize()].
-#' See [Get started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
+#' See [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 #' for more details.
 #'
 #' @param .data A data frame or lazy table.
@@ -72,7 +72,7 @@
 #'                This is consistent with the default
 #'                [factor()] behavior (`exclude = NA`).
 #' @references
-#'  * Online documentation: [Get started](https://sayuks.github.io/withmargins/vignettes/get_started.html)
+#'  * Online documentation: [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 #'  * Main idea is borrowed from [this gist](https://gist.github.com/moodymudskipper/6347418d82fea2160178422aa574dec2).
 #' @family summarize and expand data with margins
 #' @export

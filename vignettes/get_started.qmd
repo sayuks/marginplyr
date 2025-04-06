@@ -23,7 +23,7 @@ that make grouped operations with margins easier.
 First, load the required libraries.
 
 ```{r setup}
-library(withmargins)
+library(marginplyr)
 library(dplyr)
 library(ggplot2)
 library(tibble)
