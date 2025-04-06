@@ -6,7 +6,7 @@ test_that(".margin works", {
   )
   data <- get_data_dummy()
 
-  data <- dtplyr::lazy_dt(data)
+  data <- duckplyr::as_duckdb_tibble(data, prudence = "lavish")
 
   actual <- summarize_with_margins(
     .data = data,
