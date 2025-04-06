@@ -45,63 +45,98 @@ nest_with_margins <- function(.data,
   assert_logical_scalar(.keep)
   assert_string_scalar(.margin_name)
   assert_string_scalar(.key)
+  stopifnot(!is.na(.key))
 
-  .f_base <- function(.data, .margin_pairs, .by) {
-    res <- dplyr::summarize(
-      .data =  dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
-      "{.key}" := list(dplyr::pick(!dplyr::all_of(names(.margin_pairs)))),
-      !!!.margin_pairs
+  l <- list(
+    .margins = get_col_names(.data, {{ .margins }}),
+    .without_all = get_col_names(.data, {{ .without_all }}),
+    .with_all = get_col_names(.data, {{ .with_all }})
+  )
+
+  margin_cols <- l$.margins
+  without_all_cols <- l$.without_all
+  with_all_cols <- l$.with_all
+
+  # early stop if there are no columns for which margins are calculated
+  stopifnot(
+    "At least one column must be specified in `.margins` or `.with_all`" =
+      length(margin_cols) > 0 || length(with_all_cols) > 0
+  )
+
+  # .margins, .without_all and .with_all must not contain common variables
+  assert_column_intersect(l)
+
+  group_cols <- c(margin_cols, without_all_cols, with_all_cols)
+
+  if (.key %in% group_cols) {
+    stop(
+      sprintf("`.key` (%s) ", .key),
+      "must not be the same as the column name specified in ",
+      "`.margins`, `.with_all`, or `.without_all`."
     )
-    dplyr::ungroup(res)
   }
 
-  .f <- if (.keep) {
-    function(.data, .margin_pairs, .by) {
-      res <- .f_base(.data = .data, .margin_pairs = .margin_pairs, .by = .by)
+  if (.keep) {
+    all_cols <- get_col_names(.data, dplyr::everything())
 
-      if (is.data.frame(.data)) {
-        res <- dplyr::mutate(
-          .data = dplyr::rowwise(res),
-          "{.key}" := list({
-            d <- dplyr::mutate(
-              .data = .data[[.key]],
-              dplyr::pick(!dplyr::all_of(.key))
-            )
+    tmp_cols <- paste0(group_cols, "_COPY__TMP_")
 
-            dplyr::relocate(
-              .data = d,
-              c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
-            )
-          })
-        )
-      } else if (inherits(.data, "dtplyr_step")) {
-        tmp_col <- "tmp_id_dtplyr_step__"
-        res <- dplyr::mutate(.data = res, "{tmp_col}" := dplyr::row_number())
+    dup <- tmp_cols[tmp_cols %in% all_cols]
 
-        res <- dplyr::mutate(
-          .data = dplyr::group_by(res, dplyr::pick(dplyr::all_of(tmp_col))),
-          "{.key}" := list({
-            d <- dplyr::mutate(
-              .data = .data[[.key]][[1]],
-              dplyr::pick(!dplyr::all_of(.key))
-            )
+    if (length(dup) > 0) {
+      stop(
+        sprintf("If `.keep = TRUE`, column name(s) %s ", toString(dup)),
+        "will duplicate the column name with temporary column(s) ",
+        "created by an internal process. Consider renaming the column(s)."
+      )
+    }
 
-            dplyr::relocate(
-              .data = d,
-              c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
-            )
-          })
-        )
+    .data <- dplyr::mutate(
+      .data = .data,
+      dplyr::across(
+        .cols = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}),
+        .fns = identity,
+        .names = "{.col}_COPY__TMP_"
+      )
+    )
 
-        res <- dplyr::ungroup(res)
-        res <- dplyr::select(.data = res, !dplyr::all_of(tmp_col))
-        res
-      }
+    .f <- function(.data, .margin_pairs, .by) {
+      mp <- names(.margin_pairs)
+      v1 <- c(.by, mp)
+      v2 <- paste0(v1, "_COPY__TMP_")
+      names(v2) <- v1
 
+      res <- dplyr::summarize(
+        .data =  dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
+        "{.key}" := list({
+          d <- dplyr::rename(
+            .data = dplyr::pick(!dplyr::all_of(mp)),
+            dplyr::all_of(v2)
+          )
+
+          d <- dplyr::relocate(
+            .data = d,
+            c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+          )
+
+          dplyr::mutate(
+            .data = d,
+            !!!.margin_pairs
+          )
+        }),
+        !!!.margin_pairs
+      )
       dplyr::ungroup(res)
     }
   } else {
-    .f_base
+    .f <- function(.data, .margin_pairs, .by) {
+      res <- dplyr::summarize(
+        .data =  dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
+        "{.key}" := list(dplyr::pick(!dplyr::all_of(names(.margin_pairs)))),
+        !!!.margin_pairs
+      )
+      dplyr::ungroup(res)
+    }
   }
 
   with_margins(
