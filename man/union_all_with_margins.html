@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>union_all_with_margins – withmargins</title>
+<title>union_all_with_margins – marginplyr</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -112,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="../index.html">
-    <span class="navbar-title">withmargins</span>
+    <span class="navbar-title">marginplyr</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -128,7 +128,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/sayuks/withmargins"> <i class="bi bi-github" role="img" aria-label="withmargins GitHub">
+    <a class="nav-link" href="https://github.com/sayuks/marginplyr"> <i class="bi bi-github" role="img" aria-label="marginplyr GitHub">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -236,7 +236,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h2 class="unnumbered anchored" data-anchor-id="union-all-with-margins"><code style="white-space: pre;">UNION ALL</code> with margins</h2>
 <section id="description" class="level3">
 <h3 class="anchored" data-anchor-id="description">Description</h3>
-<p>This function considers each margin (such as total) as a new category, duplicate the rows and merge them vertically (like <code style="white-space: pre;">UNION ALL</code> in SQL). See <a href="https://sayuks.github.io/withmargins/vignettes/get_started.html">Get started</a> for more details.</p>
+<p>This function considers each margin (such as total) as a new category, duplicate the rows and merge them vertically (like <code style="white-space: pre;">UNION ALL</code> in SQL). See <a href="https://sayuks.github.io/marginplyr/vignettes/get_started.html">Get started</a> for more details.</p>
 </section>
 <section id="usage" class="level3">
 <h3 class="anchored" data-anchor-id="usage">Usage</h3>
@@ -400,7 +400,7 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <h3 class="anchored" data-anchor-id="references">References</h3>
 <ul>
 <li>
-<p>Online documentation: <a href="https://sayuks.github.io/withmargins/vignettes/get_started.html">Get started</a></p>
+<p>Online documentation: <a href="https://sayuks.github.io/marginplyr/vignettes/get_started.html">Get started</a></p>
 </li>
 </ul>
 </section>
@@ -411,7 +411,7 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <section id="examples" class="level3">
 <h3 class="anchored" data-anchor-id="examples">Examples</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"withmargins"</span>)</span>
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"marginplyr"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">union_all_with_margins</span>(</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>

@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
-<title>withmargins</title>
+<title>marginplyr</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -112,7 +112,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="./index.html">
-    <span class="navbar-title">withmargins</span>
+    <span class="navbar-title">marginplyr</span>
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
@@ -128,7 +128,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </ul>
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/sayuks/withmargins"> <i class="bi bi-github" role="img" aria-label="withmargins GitHub">
+    <a class="nav-link" href="https://github.com/sayuks/marginplyr"> <i class="bi bi-github" role="img" aria-label="marginplyr GitHub">
 </i> 
 <span class="menu-text"></span></a>
   </li>  
@@ -233,24 +233,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<section id="withmargins" class="level1">
-<h1>withmargins</h1>
+<section id="marginplyr" class="level1">
+<h1>marginplyr</h1>
 <!-- badges: start -->
-<p><a href="https://CRAN.R-project.org/package=withmargins" target="_blank"><img src="https://www.r-pkg.org/badges/version/withmargins"></a> <a href="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/R-CMD-check.yaml/badge.svg" class="img-fluid" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/sayuks/withmargins"><img src="https://codecov.io/gh/sayuks/withmargins/graph/badge.svg" class="img-fluid" alt="Codecov test coverage"></a> <a href="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml"><img src="https://github.com/sayuks/withmargins/actions/workflows/lint.yaml/badge.svg" class="img-fluid" alt="lint.yaml"></a> <a href="https://sayuks.github.io/withmargins/" target="_blank"><img src="https://cranlogs.r-pkg.org/badges/withmargins"></a> <!-- badges: end --></p>
-<p><code>withmargins</code> is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports <a href="https://www.tidyverse.org/">tidyverse</a> workflows for analysis.</p>
+<p><a href="https://CRAN.R-project.org/package=marginplyr" target="_blank"><img src="https://www.r-pkg.org/badges/version/marginplyr"></a> <a href="https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml"><img src="https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml/badge.svg" class="img-fluid" alt="R-CMD-check"></a> <a href="https://app.codecov.io/gh/sayuks/marginplyr"><img src="https://codecov.io/gh/sayuks/marginplyr/graph/badge.svg" class="img-fluid" alt="Codecov test coverage"></a> <a href="https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml"><img src="https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml/badge.svg" class="img-fluid" alt="lint.yaml"></a> <a href="https://sayuks.github.io/marginplyr/" target="_blank"><img src="https://cranlogs.r-pkg.org/badges/marginplyr"></a> <!-- badges: end --></p>
+<p><code>marginplyr</code> is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports <a href="https://www.tidyverse.org/">tidyverse</a> workflows for analysis.</p>
 <section id="installation" class="level2">
 <h2 class="anchored" data-anchor-id="installation">Installation</h2>
-<!-- You can install `withmargins` from CRAN: -->
+<!-- You can install `marginplyr` from CRAN: -->
 <!-- ``` r -->
-<!-- install.packages("withmargins") -->
+<!-- install.packages("marginplyr") -->
 <!-- ``` -->
-<p>You can install the development version of <code>withmargins</code> from <a href="https://github.com/">GitHub</a> with:</p>
+<p>You can install the development version of <code>marginplyr</code> from <a href="https://github.com/">GitHub</a> with:</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># install.packages("pak")</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"sayuks/withmargins"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>pak<span class="sc">::</span><span class="fu">pak</span>(<span class="st">"sayuks/marginplyr"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
 <section id="example" class="level2">
 <h2 class="anchored" data-anchor-id="example">Example</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(withmargins)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(marginplyr)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <section id="summarize-with-hierarchical-margins-for-cyl-and-vs." class="level3">
 <h3 class="anchored" data-anchor-id="summarize-with-hierarchical-margins-for-cyl-and-vs.">Summarize with hierarchical margins for <code>cyl</code> and <code>vs</code>.</h3>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
@@ -269,12 +269,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 7     6     1  4 19.12500</span></span>
 <span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 8     8 (all) 14 15.10000</span></span>
 <span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#&gt; 9     8     0 14 15.10000</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>See <a href="https://sayuks.github.io/withmargins/vignettes/get_started.html">Get started</a> for more details.</p>
+<p>See <a href="https://sayuks.github.io/marginplyr/vignettes/get_started.html">Get started</a> for more details.</p>
 </section>
 </section>
 <section id="code-of-conduct" class="level2">
 <h2 class="anchored" data-anchor-id="code-of-conduct">Code of Conduct</h2>
-<p>Please note that the withmargins project is released with a <a href="https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html">Contributor Code of Conduct</a>. By contributing to this project, you agree to abide by its terms.</p>
+<p>Please note that the marginplyr project is released with a <a href="https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html">Contributor Code of Conduct</a>. By contributing to this project, you agree to abide by its terms.</p>
 
 
 </section>
