@@ -243,9 +243,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <pre><code class="language-R">summarize_with_margins(
   .data,
   ...,
-  .margins = NULL,
-  .without_all = NULL,
-  .with_all = NULL,
+  .rollup = NULL,
+  .by = NULL,
+  .cube = NULL,
   .margin_name = "(all)",
   .check_margin_name = is.data.frame(.data),
   .sort = is.data.frame(.data)
@@ -278,7 +278,7 @@ Name-value pairs as used in <code>dplyr::summarize()</code>.
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".margins">.margins</code>
+<code id=".rollup">.rollup</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.
@@ -286,7 +286,7 @@ Name-value pairs as used in <code>dplyr::summarize()</code>.
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".without_all">.without_all</code>
+<code id=".by">.by</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will <em>NOT</em> be added.
@@ -294,7 +294,7 @@ Name-value pairs as used in <code>dplyr::summarize()</code>.
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".with_all">.with_all</code>
+<code id=".cube">.cube</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will be added.
@@ -313,7 +313,7 @@ A string representing margin name (Defaults to <code>“(all)”</code>). <code>
 <code id=".check_margin_name">.check_margin_name</code>
 </td>
 <td>
-A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.margins<code>or</code>.with_all’ and returns an error if it already exists.
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.rollup<code>or</code>.cube’ and returns an error if it already exists.
 </td>
 </tr>
 <tr>
@@ -321,7 +321,7 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <code id=".sort">.sort</code>
 </td>
 <td>
-A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>. This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.by</code> and <code>.rollup</code> and <code>.cube</code>. This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
 </td>
 </tr>
 </tbody></table>
@@ -333,10 +333,10 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <p>This is similar to <code>dplyr::summarize()</code> but creates an additional <code>.margin_name</code> category for each grouping variable. It assumes a hierarchy of groups and the higher level groups should be provided first.</p>
 </li>
 <li>
-<p>Regular groups, not used for totals/subtotals can be provided through the <code>.without_all</code> argument and will be used as parent groups.</p>
+<p>Regular groups, not used for totals/subtotals can be provided through the <code>.by</code> argument and will be used as parent groups.</p>
 </li>
 <li>
-<p>If you want to create its own total margin (such as <code>“(all)”</code>) for a variable that is a regular group and has no hierarchy, specify it with <code>.with_all</code>. If there is more than one <code>.with_all</code>, all combinations of them are generated.</p>
+<p>If you want to create its own total margin (such as <code>“(all)”</code>) for a variable that is a regular group and has no hierarchy, specify it with <code>.cube</code>. If there is more than one <code>.cube</code>, all combinations of them are generated.</p>
 </li>
 </ul>
 </section>
@@ -351,10 +351,10 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <p>Missing values are kept as missing.</p>
 </li>
 <li>
-<p>The order of the columns is as follows from left to right: <code>.without_all</code>, <code>.margins</code>, <code>.with_all</code> and the remaining columns.</p>
+<p>The order of the columns is as follows from left to right: <code>.by</code>, <code>.rollup</code>, <code>.cube</code> and the remaining columns.</p>
 </li>
 <li>
-<p>Column types specified with <code>.margins</code> or <code>.with_all</code>:</p>
+<p>Column types specified with <code>.rollup</code> or <code>.cube</code>:</p>
 <ul>
 <li>
 <p>Columns that are not originally factor or character (e.g.&nbsp;numeric, integer, logical, .etc) are converted to characters. This is required to add the <code>.margin_name</code> category.</p>
@@ -430,7 +430,7 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
 <span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
 <span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.rollup =</span> <span class="fu">c</span>(cyl, vs),</span>
 <span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 9 × 4
@@ -451,8 +451,8 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.rollup =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.by =</span> am</span>
 <span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 15 × 5
@@ -479,9 +479,9 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
 <span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
 <span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.rollup =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.by =</span> am,</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.cube =</span> gear</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 40 × 6
@@ -499,14 +499,14 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 10     0 6     (all) (all)     4  19.1
 # ℹ 30 more rows</code></pre>
 </div>
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># If `.with_all` has multiple columns, all combinations are generated.</span></span>
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># If `.cube` has multiple columns, all combinations are generated.</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">summarize_with_margins</span>(</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">n =</span> dplyr<span class="sc">::</span><span class="fu">n</span>(),</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">mpg =</span> <span class="fu">mean</span>(mpg, <span class="at">na.rm =</span> <span class="cn">TRUE</span>),</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> <span class="fu">c</span>(gear, carb)</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.rollup =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.by =</span> am,</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">.cube =</span> <span class="fu">c</span>(gear, carb)</span>
 <span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 118 × 7

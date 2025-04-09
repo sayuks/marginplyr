@@ -242,9 +242,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="usage">Usage</h3>
 <pre><code class="language-R">nest_with_margins(
   .data,
-  .margins = NULL,
-  .without_all = NULL,
-  .with_all = NULL,
+  .rollup = NULL,
+  .by = NULL,
+  .cube = NULL,
   .margin_name = "(all)",
   .check_margin_name = TRUE,
   .sort = TRUE,
@@ -266,7 +266,7 @@ A data frame.
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".margins">.margins</code>
+<code id=".rollup">.rollup</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.
@@ -274,7 +274,7 @@ A data frame.
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".without_all">.without_all</code>
+<code id=".by">.by</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will <em>NOT</em> be added.
@@ -282,7 +282,7 @@ A data frame.
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".with_all">.with_all</code>
+<code id=".cube">.cube</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will be added.
@@ -301,7 +301,7 @@ A string representing margin name (Defaults to <code>“(all)”</code>). <code>
 <code id=".check_margin_name">.check_margin_name</code>
 </td>
 <td>
-A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.margins<code>or</code>.with_all’ and returns an error if it already exists.
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.rollup<code>or</code>.cube’ and returns an error if it already exists.
 </td>
 </tr>
 <tr>
@@ -309,7 +309,7 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <code id=".sort">.sort</code>
 </td>
 <td>
-A Logical (default to <code>TRUE</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>.
+A Logical (default to <code>TRUE</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.by</code> and <code>.rollup</code> and <code>.cube</code>.
 </td>
 </tr>
 <tr>
@@ -334,7 +334,7 @@ A logical. Should the grouping columns be kept in the list column.
 <h3 class="anchored" data-anchor-id="details">Details</h3>
 <ul>
 <li>
-<p>Works like <code style="white-space: pre;">tidyr::nest(&lt;data&gt;, .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))</code> with margins.</p>
+<p>Works like <code style="white-space: pre;">tidyr::nest(&lt;data&gt;, .by = c({{ .by }}, {{ .rollup }}, {{ .cube }}))</code> with margins.</p>
 </li>
 <li>
 <p>Only works for a local data frame.</p>
@@ -352,10 +352,10 @@ A logical. Should the grouping columns be kept in the list column.
 <p>Missing values are kept as missing.</p>
 </li>
 <li>
-<p>The order of the columns is as follows from left to right: <code>.without_all</code>, <code>.margins</code>, <code>.with_all</code> and the remaining columns.</p>
+<p>The order of the columns is as follows from left to right: <code>.by</code>, <code>.rollup</code>, <code>.cube</code> and the remaining columns.</p>
 </li>
 <li>
-<p>Column types specified with <code>.margins</code> or <code>.with_all</code>:</p>
+<p>Column types specified with <code>.rollup</code> or <code>.cube</code>:</p>
 <ul>
 <li>
 <p>Columns that are not originally factor or character (e.g.&nbsp;numeric, integer, logical, .etc) are converted to characters. This is required to add the <code>.margin_name</code> category.</p>
@@ -425,9 +425,9 @@ A logical. Should the grouping columns be kept in the list column.
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">nest_with_margins</span>(</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.rollup =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.by =</span> am,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.cube =</span> gear</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 40 × 5

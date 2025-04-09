@@ -242,9 +242,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <h3 class="anchored" data-anchor-id="usage">Usage</h3>
 <pre><code class="language-R">union_all_with_margins(
   .data,
-  .margins = NULL,
-  .without_all = NULL,
-  .with_all = NULL,
+  .rollup = NULL,
+  .by = NULL,
+  .cube = NULL,
   .margin_name = "(all)",
   .check_margin_name = is.data.frame(.data),
   .sort = is.data.frame(.data)
@@ -269,7 +269,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".margins">.margins</code>
+<code id=".rollup">.rollup</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.
@@ -277,7 +277,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".without_all">.without_all</code>
+<code id=".by">.by</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will <em>NOT</em> be added.
@@ -285,7 +285,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tr>
 <tr>
 <td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".with_all">.with_all</code>
+<code id=".cube">.cube</code>
 </td>
 <td>
 &lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will be added.
@@ -304,7 +304,7 @@ A string representing margin name (Defaults to <code>“(all)”</code>). <code>
 <code id=".check_margin_name">.check_margin_name</code>
 </td>
 <td>
-A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.margins<code>or</code>.with_all’ and returns an error if it already exists.
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.rollup<code>or</code>.cube’ and returns an error if it already exists.
 </td>
 </tr>
 <tr>
@@ -312,7 +312,7 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <code id=".sort">.sort</code>
 </td>
 <td>
-A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.without_all</code> and <code>.margins</code> and <code>.with_all</code>. This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
+A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.by</code> and <code>.rollup</code> and <code>.cube</code>. This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
 </td>
 </tr>
 </tbody></table>
@@ -342,10 +342,10 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <p>Missing values are kept as missing.</p>
 </li>
 <li>
-<p>The order of the columns is as follows from left to right: <code>.without_all</code>, <code>.margins</code>, <code>.with_all</code> and the remaining columns.</p>
+<p>The order of the columns is as follows from left to right: <code>.by</code>, <code>.rollup</code>, <code>.cube</code> and the remaining columns.</p>
 </li>
 <li>
-<p>Column types specified with <code>.margins</code> or <code>.with_all</code>:</p>
+<p>Column types specified with <code>.rollup</code> or <code>.cube</code>:</p>
 <ul>
 <li>
 <p>Columns that are not originally factor or character (e.g.&nbsp;numeric, integer, logical, .etc) are converted to characters. This is required to add the <code>.margin_name</code> category.</p>
@@ -415,9 +415,9 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">union_all_with_margins</span>(</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.margins =</span> <span class="fu">c</span>(cyl, vs),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.without_all =</span> am,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.with_all =</span> gear</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.rollup =</span> <span class="fu">c</span>(cyl, vs),</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.by =</span> am,</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.cube =</span> gear</span>
 <span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                          am   cyl    vs  gear  mpg  disp  hp drat    wt  qsec
