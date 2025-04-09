@@ -35,9 +35,9 @@ test_that("summarize_with_margins works across all remote backends", {
     result <- summarize_with_margins(
       remote_tbl,
       total_sales = sum(sales, na.rm = TRUE),
-      .margins = c(region, store),
-      .with_all = product,
-      .without_all = year
+      .rollup = c(region, store),
+      .cube = product,
+      .by = year
     )
 
     sql <- dbplyr::sql_render(result)
@@ -71,9 +71,9 @@ test_that("union_all_with_margins works across all remote backends", {
 
     result <- union_all_with_margins(
       remote_tbl,
-      .margins = c(region, store),
-      .with_all = product,
-      .without_all = year
+      .rollup = c(region, store),
+      .cube = product,
+      .by = year
     )
 
     sql <- dbplyr::sql_render(result)

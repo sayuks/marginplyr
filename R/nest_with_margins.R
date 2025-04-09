@@ -10,13 +10,13 @@
 #' @inheritParams tidyr::nest
 #' @param .data A data frame.
 #' @param .sort A Logical (default to `TRUE`). If `TRUE`, sort the result
-#'   by the column order specified in `.without_all` and `.margins` and
-#'   `.with_all`.
+#'   by the column order specified in `.by` and `.rollup` and
+#'   `.cube`.
 #' @param .key A string. The name of the resulting nested column.
 #' @param .keep A logical. Should the grouping columns be kept in the list
 #'   column.
 #' @details
-#' * Works like `tidyr::nest(<data>, .by = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}))`
+#' * Works like `tidyr::nest(<data>, .by = c({{ .by }}, {{ .rollup }}, {{ .cube }}))`
 #'   with margins.
 #' * Only works for a local data frame.
 #' @return A data frame.
@@ -25,15 +25,15 @@
 #' @examples
 #' nest_with_margins(
 #'   mtcars,
-#'   .margins = c(cyl, vs),
-#'   .without_all = am,
-#'   .with_all = gear
+#'   .rollup = c(cyl, vs),
+#'   .by = am,
+#'   .cube = gear
 #' )
 # nolint end
 nest_with_margins <- function(.data,
-                              .margins = NULL,
-                              .without_all = NULL,
-                              .with_all = NULL,
+                              .rollup = NULL,
+                              .by = NULL,
+                              .cube = NULL,
                               .margin_name = "(all)",
                               .check_margin_name = TRUE,
                               .sort = TRUE,
@@ -48,22 +48,22 @@ nest_with_margins <- function(.data,
   stopifnot(!is.na(.key))
 
   l <- list(
-    .margins = get_col_names(.data, {{ .margins }}),
-    .without_all = get_col_names(.data, {{ .without_all }}),
-    .with_all = get_col_names(.data, {{ .with_all }})
+    .rollup = get_col_names(.data, {{ .rollup }}),
+    .by = get_col_names(.data, {{ .by }}),
+    .cube = get_col_names(.data, {{ .cube }})
   )
 
-  margin_cols <- l$.margins
-  without_all_cols <- l$.without_all
-  with_all_cols <- l$.with_all
+  margin_cols <- l$.rollup
+  without_all_cols <- l$.by
+  with_all_cols <- l$.cube
 
   # early stop if there are no columns for which margins are calculated
   stopifnot(
-    "At least one column must be specified in `.margins` or `.with_all`" =
+    "At least one column must be specified in `.rollup` or `.cube`" =
       length(margin_cols) > 0 || length(with_all_cols) > 0
   )
 
-  # .margins, .without_all and .with_all must not contain common variables
+  # .rollup, .by and .cube must not contain common variables
   assert_column_intersect(l)
 
   group_cols <- c(margin_cols, without_all_cols, with_all_cols)
@@ -72,7 +72,7 @@ nest_with_margins <- function(.data,
     stop(
       sprintf("`.key` (%s) ", .key),
       "must not be the same as the column name specified in ",
-      "`.margins`, `.with_all`, or `.without_all`."
+      "`.rollup`, `.cube`, or `.by`."
     )
   }
 
@@ -94,7 +94,7 @@ nest_with_margins <- function(.data,
     .data <- dplyr::mutate(
       .data = .data,
       dplyr::across(
-        .cols = c({{ .without_all }}, {{ .margins }}, {{ .with_all }}),
+        .cols = c({{ .by }}, {{ .rollup }}, {{ .cube }}),
         .fns = identity,
         .names = "{.col}_COPY__TMP_"
       )
@@ -116,7 +116,11 @@ nest_with_margins <- function(.data,
 
           d <- dplyr::relocate(
             .data = d,
-            c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+            c(
+              dplyr::all_of(without_all_cols),
+              dplyr::all_of(margin_cols),
+              dplyr::all_of(with_all_cols)
+            )
           )
 
           dplyr::mutate(
@@ -141,9 +145,9 @@ nest_with_margins <- function(.data,
 
   with_margins(
     .data = .data,
-    .margins = {{ .margins }},
-    .without_all = {{ .without_all }},
-    .with_all = {{ .with_all }},
+    .rollup = {{ .rollup }},
+    .by = {{ .by }},
+    .cube = {{ .cube }},
     .margin_name = .margin_name,
     .check_margin_name = .check_margin_name,
     .f = .f,

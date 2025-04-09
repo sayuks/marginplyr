@@ -11,21 +11,21 @@
 #'     If you want to work with it, it is an easy way to convert to
 #'     a duckdb back-end using `arrow::to_duckdb()` in advance.
 #' @param ... Name-value pairs as used in [dplyr::summarize()].
-#' @param .margins <[`tidy-select`][dplyr_tidy_select]> Grouping columns which
+#' @param .rollup <[`tidy-select`][dplyr_tidy_select]> Grouping columns which
 #'   margins are calculated, starting from the highest parent of the hierarchy.
-#' @param .without_all <[`tidy-select`][dplyr_tidy_select]> Additional group
+#' @param .by <[`tidy-select`][dplyr_tidy_select]> Additional group
 #'   variables without hierarchy to which `.margin_name` will _NOT_ be added.
-#' @param .with_all <[`tidy-select`][dplyr_tidy_select]> Additional group
+#' @param .cube <[`tidy-select`][dplyr_tidy_select]> Additional group
 #'   variables without hierarchy to which `.margin_name` will be added.
 #' @param .margin_name A string representing margin name
 #'   (Defaults to `"(all)"`). `NA_character_` is also allowed.
 #' @param .check_margin_name A logical (defaults to `is.data.frame(.data)`).
 #'   If `TRUE`, checks whether the string in `.margin_name' already exists
-#'   in the column specified by `.margins` or `.with_all` and returns an error
+#'   in the column specified by `.rollup` or `.cube` and returns an error
 #'   if it already exists.
 #' @param .sort A logical (defaults to `is.data.frame(.data)`).
 #'   If `TRUE`, sort the result by the column order
-#'   specified in `.without_all` and `.margins` and `.with_all`.
+#'   specified in `.by` and `.rollup` and `.cube`.
 #'   This is because pipelines using lazy tables should perform the
 #'   SQL `ORDER BY` as last as possible.
 #'   As a result of sorting, in the case of lazy tables,
@@ -37,10 +37,10 @@
 #'   `.margin_name` category for each grouping variable. It assumes a hierarchy
 #'   of groups and the higher level groups should be provided first.
 #' * Regular groups, not used for totals/subtotals can be provided through
-#'   the `.without_all` argument and will be used as parent groups.
+#'   the `.by` argument and will be used as parent groups.
 #' * If you want to create its own total margin (such as `"(all)"`)
 #'   for a variable that is a regular group and has no hierarchy,
-#'   specify it with `.with_all`. If there is more than one `.with_all`,
+#'   specify it with `.cube`. If there is more than one `.cube`,
 #'   all combinations of them are generated.
 #'
 #' @return A data frame. If `.data` is a lazy table,
@@ -48,8 +48,8 @@
 #' @section About returned data:
 #'   * Missing values are kept as missing.
 #'   * The order of the columns is as follows from left to right:
-#'   `.without_all`, `.margins`, `.with_all` and the remaining columns.
-#'   * Column types specified with `.margins` or `.with_all`:
+#'   `.by`, `.rollup`, `.cube` and the remaining columns.
+#'   * Column types specified with `.rollup` or `.cube`:
 #'      * Columns that are not originally factor or character
 #'       (e.g. numeric, integer, logical, .etc) are converted to characters.
 #'      This is required to add the `.margin_name` category.
@@ -82,7 +82,7 @@
 #'   mtcars,
 #'   n = dplyr::n(),
 #'   mpg = mean(mpg, na.rm = TRUE),
-#'   .margins = c(cyl, vs),
+#'   .rollup = c(cyl, vs),
 #' )
 #'
 #' # `am` does not create a hierarchy, but is an overall group variable.
@@ -90,8 +90,8 @@
 #'   mtcars,
 #'   n = dplyr::n(),
 #'   mpg = mean(mpg, na.rm = TRUE),
-#'   .margins = c(cyl, vs),
-#'   .without_all = am
+#'   .rollup = c(cyl, vs),
+#'   .by = am
 #' )
 #'
 #' # `gear` creates "(all)" margins on itself.
@@ -99,26 +99,26 @@
 #'   mtcars,
 #'   n = dplyr::n(),
 #'   mpg = mean(mpg, na.rm = TRUE),
-#'   .margins = c(cyl, vs),
-#'   .without_all = am,
-#'   .with_all = gear
+#'   .rollup = c(cyl, vs),
+#'   .by = am,
+#'   .cube = gear
 #' )
 #'
-#' # If `.with_all` has multiple columns, all combinations are generated.
+#' # If `.cube` has multiple columns, all combinations are generated.
 #' summarize_with_margins(
 #'   mtcars,
 #'   n = dplyr::n(),
 #'   mpg = mean(mpg, na.rm = TRUE),
-#'   .margins = c(cyl, vs),
-#'   .without_all = am,
-#'   .with_all = c(gear, carb)
+#'   .rollup = c(cyl, vs),
+#'   .by = am,
+#'   .cube = c(gear, carb)
 #' )
 # nolint end
 summarize_with_margins <- function(.data,
                                    ...,
-                                   .margins = NULL,
-                                   .without_all = NULL,
-                                   .with_all = NULL,
+                                   .rollup = NULL,
+                                   .by = NULL,
+                                   .cube = NULL,
                                    .margin_name = "(all)",
                                    .check_margin_name = is.data.frame(.data),
                                    .sort = is.data.frame(.data)) {
@@ -130,9 +130,9 @@ summarize_with_margins <- function(.data,
   with_margins(
     .data = .data,
     ...,
-    .margins = {{ .margins }},
-    .without_all = {{ .without_all }},
-    .with_all = {{ .with_all }},
+    .rollup = {{ .rollup }},
+    .by = {{ .by }},
+    .cube = {{ .cube }},
     .margin_name = .margin_name,
     .check_margin_name = .check_margin_name,
     .f = summarize_impl,
@@ -398,9 +398,9 @@ get_hierarchy <- function(x) {
 #' @noRd
 with_margins <- function(.data,
                          ...,
-                         .margins = NULL,
-                         .without_all = NULL,
-                         .with_all = NULL,
+                         .rollup = NULL,
+                         .by = NULL,
+                         .cube = NULL,
                          .margin_name = "(all)",
                          .check_margin_name,
                          .f,
@@ -413,22 +413,22 @@ with_margins <- function(.data,
   .data <- dplyr::ungroup(.data)
 
   l <- list(
-    .margins = get_col_names(.data, {{ .margins }}),
-    .without_all = get_col_names(.data, {{ .without_all }}),
-    .with_all = get_col_names(.data, {{ .with_all }})
+    .rollup = get_col_names(.data, {{ .rollup }}),
+    .by = get_col_names(.data, {{ .by }}),
+    .cube = get_col_names(.data, {{ .cube }})
   )
 
-  margin_cols <- l$.margins
-  without_all_cols <- l$.without_all
-  with_all_cols <- l$.with_all
+  margin_cols <- l$.rollup
+  without_all_cols <- l$.by
+  with_all_cols <- l$.cube
 
   # early stop if there are no columns for which margins are calculated
   stopifnot(
-    "At least one column must be specified in `.margins` or `.with_all`" =
+    "At least one column must be specified in `.rollup` or `.cube`" =
       length(margin_cols) > 0 || length(with_all_cols) > 0
   )
 
-  # .margins, .without_all and .with_all must not contain common variables
+  # .rollup, .by and .cube must not contain common variables
   assert_column_intersect(l)
 
   # columns where the margin is calculated
@@ -460,7 +460,7 @@ with_margins <- function(.data,
     stop(
       paste0(
         "If `.data` is a tbl_duckdb_connection class object and ",
-        "the columns that specified in `.margins` or `.with_all` contains ",
+        "the columns that specified in `.rollup` or `.cube` contains ",
         "column(s) of type factor",
         sprintf("(%s), ", toString(factor_cols)),
         "`.margin_name` must not be a missing value. ",
@@ -501,7 +501,7 @@ with_margins <- function(.data,
         stop(
           "If `.margin_name` is a `NA_character_`, ",
           "the following factor columns specified in ",
-          "`.margins` or `.with_all` must not contain <NA> in the level: ",
+          "`.rollup` or `.cube` must not contain <NA> in the level: ",
           paste0("`", na_level_cols, "`", collapse = ", ")
         )
       }
@@ -536,7 +536,7 @@ with_margins <- function(.data,
   # flatten nested list to single list
   l_group_vars <- unlist(l_group_vars, recursive = FALSE)
 
-  # append .without_all at the beginning
+  # append .by at the beginning
   l_group_vars <- lapply(l_group_vars, function(x) c(without_all_cols, x))
 
   .data <- lapply(
@@ -579,16 +579,16 @@ with_margins <- function(.data,
   # dplyr::relocate() doesn't work well with arrow tables
   .data <- relocate_post_proc(
     .data,
-    {{ .without_all }}, {{ .margins }}, {{ .with_all }}
+    {{ .by }}, {{ .rollup }}, {{ .cube }}
   )
 
   # for ease of viewing
   if (.sort) {
     .data <- arrange_impl(
       .data,
-      {{ .without_all }},
-      {{ .margins }},
-      {{ .with_all }}
+      {{ .by }},
+      {{ .rollup }},
+      {{ .cube }}
     )
   }
 

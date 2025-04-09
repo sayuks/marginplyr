@@ -20,15 +20,15 @@
 #' @examples
 #' union_all_with_margins(
 #'   mtcars,
-#'   .margins = c(cyl, vs),
-#'   .without_all = am,
-#'   .with_all = gear
+#'   .rollup = c(cyl, vs),
+#'   .by = am,
+#'   .cube = gear
 #' )
 # nolint end
 union_all_with_margins <- function(.data,
-                                   .margins = NULL,
-                                   .without_all = NULL,
-                                   .with_all = NULL,
+                                   .rollup = NULL,
+                                   .by = NULL,
+                                   .cube = NULL,
                                    .margin_name = "(all)",
                                    .check_margin_name = is.data.frame(.data),
                                    .sort = is.data.frame(.data)) {
@@ -43,9 +43,9 @@ union_all_with_margins <- function(.data,
 
   with_margins(
     .data = .data,
-    .margins = {{ .margins }},
-    .without_all = {{ .without_all }},
-    .with_all = {{ .with_all }},
+    .rollup = {{ .rollup }},
+    .by = {{ .by }},
+    .cube = {{ .cube }},
     .margin_name = .margin_name,
     .check_margin_name = .check_margin_name,
     .f = .f,

@@ -114,10 +114,10 @@ But what if you want to calculate the cat total, subcat total together?
 works with a local data frame or lazy table.
 :::
 
-### `.margins`
+### `.rollup`
 
 If you want to include the respective totals hierarchically
-in cat, subcat, include them in `.margins`.
+in cat, subcat, include them in `.rollup`.
 Variables can be specified by 
 [`tidy-select`](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html).
 
@@ -126,7 +126,7 @@ res1 <- df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = c(cat, subcat)
+    .rollup = c(cat, subcat)
   )
 
 res1
@@ -142,12 +142,12 @@ lapply(res1, levels)
 
 (all) was added to the beginning of the factor level.
 
-### `.without_all`
+### `.by`
 
 In the example above, all the years were combined. 
 Let's assume here that we aggregate by year 
 and do not want multi-year totals.
-In that case, use `.without_all`.
+In that case, use `.by`.
 Variables can be specified by 
 [`tidy-select`](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html).
 
@@ -156,19 +156,19 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = c(cat, subcat),
-    .without_all = year
+    .rollup = c(cat, subcat),
+    .by = year
   )
 ```
 
 Each margin has been calculated for each group in year. 
 
-### `.with_all`
+### `.cube`
 
 Furthermore, we want to add g1 to the group variables.
 We want to also include a total of g1.
 However, unlike cat and subcat, g1 does not have a hierarchical structure.
-In such cases, use `.with_all`.
+In such cases, use `.cube`.
 Variables can be specified by 
 [`tidy-select`](https://dplyr.tidyverse.org/reference/dplyr_tidy_select.html).
 
@@ -177,9 +177,9 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = c(cat, subcat),
-    .without_all = year,
-    .with_all = g1
+    .rollup = c(cat, subcat),
+    .by = year,
+    .cube = g1
   ) |>
   print(n = Inf)
 ```
@@ -197,9 +197,9 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = c(cat, subcat),
-    .without_all = year,
-    .with_all = c(g1, g2)
+    .rollup = c(cat, subcat),
+    .by = year,
+    .cube = c(g1, g2)
   ) |>
   print(n = Inf)
 ```
@@ -209,7 +209,7 @@ all combinations including (all) in g2 were aggregated.
 
 ### `.sort`
 
-If `.sort = TRUE`, sort the result by the column order specified in `.without_all` and `.margins` and `.with_all` to make the results easier to see.
+If `.sort = TRUE`, sort the result by the column order specified in `.by` and `.rollup` and `.cube` to make the results easier to see.
 The default is `is.data.frame(.data)`.
 This is because pipelines using lazy tables 
 should perform the SQL `ORDER BY` as last as possible
@@ -224,9 +224,9 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = c(cat, subcat),
-    .without_all = year,
-    .with_all = c(g1, g2),
+    .rollup = c(cat, subcat),
+    .by = year,
+    .cube = c(g1, g2),
     .sort = FALSE
   ) |>
   print(n = Inf)
@@ -242,12 +242,12 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = c(cat, subcat),
+    .rollup = c(cat, subcat),
     .margin_name = "Total"
   )
 ```
 
-The `.margin_name` cannot be one already used in `.margins` or `.with_all`, 
+The `.margin_name` cannot be one already used in `.rollup` or `.cube`, 
 where the new total category is to be created.
 
 ```{r}
@@ -257,7 +257,7 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = c(cat, subcat),
+    .rollup = c(cat, subcat),
     .margin_name = "A"
   )
 ```
@@ -272,7 +272,7 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins =  c(cat, subcat),
+    .rollup =  c(cat, subcat),
     .margin_name = NA_character_
   )
 ```
@@ -285,7 +285,7 @@ res2 <- df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .margins = cat,
+    .rollup = cat,
     .margin_name = NA_character_
   )
 
@@ -305,7 +305,7 @@ This is the same behaviour as the default `base::factor()`.
 
 :::{.callout-warning}
 __If `.margin_name` is `NA_character_`, NA must not be included
-in the level of factors specified in `.margins` or `.with_all`.__
+in the level of factors specified in `.rollup` or `.cube`.__
 
 g2 includes NA in the level of factor. 
 Try setting `.margin_name` to `NA_character_` and using g2.
@@ -317,7 +317,7 @@ df1 |>
   summarize_with_margins(
     n = n(),
     value = mean(value, na.rm = TRUE),
-    .with_all = g2,
+    .cube = g2,
     .margin_name = NA_character_
   )
 ```
@@ -355,7 +355,7 @@ Be aware that this may increase memory occupancy and overload the server.
 ```{r}
 df1 |>
   union_all_with_margins(
-    .margins = c(cat, subcat)
+    .rollup = c(cat, subcat)
   ) |>
   print(n = Inf)
 ```
@@ -394,14 +394,14 @@ like `dplyr::nest_by()`.
 ```{r}
 df1 |>
   nest_with_margins(
-    .margins = c(cat, subcat)
+    .rollup = c(cat, subcat)
   )
 ```
 
 ```{r}
 df1 |>
   nest_by_with_margins(
-    .margins = c(cat, subcat)
+    .rollup = c(cat, subcat)
   )
 ```
 
@@ -433,8 +433,8 @@ See the followings for more information.
 
 <!-- df1 |> -->
 <!--   nest_by_with_margins( -->
-<!--     .margins = c(cat, subcat), -->
-<!--     .with_all = c(g1, g2) -->
+<!--     .rollup = c(cat, subcat), -->
+<!--     .cube = c(g1, g2) -->
 <!--   ) |> -->
 <!--   mutate( -->
 <!--     fig = list( -->

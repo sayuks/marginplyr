@@ -13,9 +13,9 @@ test_that("union_all_with_margins() works with local data and lazy tables", {
 
     actual <- union_all_with_margins(
       .data = data,
-      .margins = c(g2, g3),
-      .without_all = year,
-      .with_all = h1,
+      .rollup = c(g2, g3),
+      .by = year,
+      .cube = h1,
       .check_margin_name = TRUE
     )
 

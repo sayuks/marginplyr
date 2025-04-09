@@ -5,9 +5,9 @@ test_that("nest_with_margins() works correctly with dtplyr_step", {
 
   actual <- nest_with_margins(
     .data = data_dt,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .key = "nested"
   )
 
@@ -16,9 +16,9 @@ test_that("nest_with_margins() works correctly with dtplyr_step", {
   # compare with data.frame input
   expected <- nest_with_margins(
     .data = data,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .key = "nested"
   )
 
@@ -37,9 +37,9 @@ test_that(".keep works", {
 
   actual <- nest_with_margins(
     .data = data_dt,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .key = "nested",
     .keep = TRUE
   )
@@ -49,9 +49,9 @@ test_that(".keep works", {
   # compare with data.frame input
   expected <- nest_with_margins(
     .data = data,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .key = "nested",
     .keep = TRUE
   )

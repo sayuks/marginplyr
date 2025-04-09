@@ -8,25 +8,25 @@
 #'
 #' @inherit nest_with_margins
 #' @details
-#' * Works like `dplyr::nest_by(<data>, dplyr::pick({{ .without_all }} , {{ .margins }} , {{ .with_all }})`
+#' * Works like `dplyr::nest_by(<data>, dplyr::pick({{ .by }} , {{ .rollup }} , {{ .cube }})`
 #'   with margins.
 #' * Only works for a local data frame.
-#' @return A row-wise data frame grouped by `without_all`, `.margins`
-#' and `.with_all`.
+#' @return A row-wise data frame grouped by `without_all`, `.rollup`
+#' and `.cube`.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
 #' nest_by_with_margins(
 #'   mtcars,
-#'   .margins = c(cyl, vs),
-#'   .without_all = am,
-#'   .with_all = gear
+#'   .rollup = c(cyl, vs),
+#'   .by = am,
+#'   .cube = gear
 #' )
 # nolint end
 nest_by_with_margins <- function(.data,
-                                 .margins = NULL,
-                                 .without_all = NULL,
-                                 .with_all = NULL,
+                                 .rollup = NULL,
+                                 .by = NULL,
+                                 .cube = NULL,
                                  .margin_name = "(all)",
                                  .check_margin_name = TRUE,
                                  .sort = TRUE,
@@ -41,9 +41,9 @@ nest_by_with_margins <- function(.data,
 
   .data <- nest_with_margins(
     .data = .data,
-    .margins = {{ .margins }},
-    .without_all = {{ .without_all }},
-    .with_all = {{ .with_all }},
+    .rollup = {{ .rollup }},
+    .by = {{ .by }},
+    .cube = {{ .cube }},
     .margin_name = .margin_name,
     .check_margin_name = .check_margin_name,
     .sort = .sort,
@@ -53,6 +53,6 @@ nest_by_with_margins <- function(.data,
 
   dplyr::rowwise(
     data = .data,
-    c({{ .without_all }}, {{ .margins }}, {{ .with_all }})
+    c({{ .by }}, {{ .rollup }}, {{ .cube }})
   )
 }

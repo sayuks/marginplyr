@@ -124,7 +124,7 @@ test_that("with_margins() can also not create margins", {
 
     actual <- with_margins(
       .data = data,
-      .margins = c(g1, g2, g3),
+      .rollup = c(g1, g2, g3),
       .f = .f,
       .check_margin_name = TRUE,
       .sort = FALSE
@@ -164,9 +164,9 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   # Case 1: .margin_name is not a NA_character_ ----
   res1 <- with_margins(
     .data = data,
-    .margins = c(g1, g2, g3),
-    .without_all = year,
-    .with_all = c(h1, k1),
+    .rollup = c(g1, g2, g3),
+    .by = year,
+    .cube = c(h1, k1),
     .f = .f,
     .margin_name = "(all)",
     .check_margin_name = TRUE,
@@ -214,8 +214,8 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
   expect_error(
     with_margins(
       .data = data,
-      .margins = g1,
-      .with_all = k1,
+      .rollup = g1,
+      .cube = k1,
       .f = .f,
       .margin_name = NA_character_,
       .check_margin_name = TRUE,
@@ -223,7 +223,7 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
     ),
     paste(
       "If `\\.margin_name` is a `NA_character_`, the following",
-      "factor columns specified in `\\.margins` or `\\.with_all`",
+      "factor columns specified in `\\.rollup` or `\\.cube`",
       "must not contain <NA> in the level: `g1`, `k1`"
     )
   )
@@ -232,9 +232,9 @@ test_that("with_margins() can reconstruct factors as expexted in local", {
     # Since NA_character_ is used for .margin_name, the rows containing NA
     # must be deleted.
     .data = tidyr::drop_na(data = data, g2, g3, h1),
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .f = .f,
     .margin_name = NA_character_,
     .check_margin_name = TRUE,
@@ -296,9 +296,9 @@ test_that("with_margins() can reconstruct factors as expexted with duckdb", {
   # Case 1: .margin_name is not a NA_character_ ----
   res1 <- with_margins(
     .data = data,
-    .margins = c(g1, g2, g3),
-    .without_all = year,
-    .with_all = c(h1, k1),
+    .rollup = c(g1, g2, g3),
+    .by = year,
+    .cube = c(h1, k1),
     .f = .f,
     .margin_name = "(all)",
     .check_margin_name = TRUE,
@@ -343,8 +343,8 @@ test_that("with_margins() can reconstruct factors as expexted with duckdb", {
   expect_error(
     with_margins(
       .data = data,
-      .margins = g1,
-      .with_all = k1,
+      .rollup = g1,
+      .cube = k1,
       .f = .f,
       .margin_name = NA_character_,
       .check_margin_name = TRUE,
@@ -356,8 +356,8 @@ test_that("with_margins() can reconstruct factors as expexted with duckdb", {
 
 
 test_that("row order is as expected when factor is specified", {
-  # row order is as expected when factor is specified in`.with_all` and
-  # `.margins` in local data frame
+  # row order is as expected when factor is specified in`.cube` and
+  # `.rollup` in local data frame
   x <- c(2, 10, 1, NA)
 
   data <- data.frame(
@@ -373,7 +373,7 @@ test_that("row order is as expected when factor is specified", {
   # sorted by x using factor levels
   actual <- with_margins(
     .data = data,
-    .with_all = x,
+    .cube = x,
     .f = f,
     .check_margin_name = TRUE,
     .sort = TRUE
@@ -388,11 +388,11 @@ test_that("row order is as expected when factor is specified", {
 
   expect_identical(actual, expected)
 
-  # If only one is specified in `.margins`, it is the same as the result of
-  # `.with_all`.
+  # If only one is specified in `.rollup`, it is the same as the result of
+  # `.cube`.
   actual <- with_margins(
     .data = data,
-    .margins = x,
+    .rollup = x,
     .f = f,
     .check_margin_name = TRUE,
     .sort = TRUE
@@ -405,7 +405,7 @@ test_that("row order is as expected when factor is specified", {
   # the row order of the inputs remains the same.
   actual <- with_margins(
     .data = data,
-    .with_all = x,
+    .cube = x,
     .f = f,
     .check_margin_name = TRUE,
     .sort = FALSE

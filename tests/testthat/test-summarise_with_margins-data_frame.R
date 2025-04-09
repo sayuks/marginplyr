@@ -1,4 +1,4 @@
-test_that(".margins works", {
+test_that(".rollup works", {
   old <- options(dplyr.summarise.inform = FALSE)
   on.exit(
     options(dplyr.summarise.inform = old$dplyr.summarise.inform),
@@ -11,7 +11,7 @@ test_that(".margins works", {
     .data = data,
     n = dplyr::n(),
     mean = mean(value, na.rm = TRUE),
-    .margins = c(g1, g2, g3),
+    .rollup = c(g1, g2, g3),
     .check_margin_name = TRUE
   )
 
@@ -58,7 +58,7 @@ test_that(".margins works", {
   expect_identical(actual, expected)
 })
 
-test_that(".without_all works", {
+test_that(".by works", {
   old <- options(dplyr.summarise.inform = FALSE)
   on.exit(
     options(dplyr.summarise.inform = old$dplyr.summarise.inform),
@@ -71,8 +71,8 @@ test_that(".without_all works", {
     .data = data,
     n = dplyr::n(),
     mean = mean(value, na.rm = TRUE),
-    .margins = c(g1, g2, g3),
-    .without_all = year,
+    .rollup = c(g1, g2, g3),
+    .by = year,
     .check_margin_name = TRUE
   )
 
@@ -119,7 +119,7 @@ test_that(".without_all works", {
   expect_identical(actual, expected)
 })
 
-test_that(".with_all works", {
+test_that(".cube works", {
   old <- options(dplyr.summarise.inform = FALSE)
   on.exit(
     options(dplyr.summarise.inform = old$dplyr.summarise.inform),
@@ -132,9 +132,9 @@ test_that(".with_all works", {
     .data = data,
     n = dplyr::n(),
     mean = mean(value, na.rm = TRUE),
-    .margins = c(g1, g2, g3),
-    .without_all = year,
-    .with_all = c(h1, k1),
+    .rollup = c(g1, g2, g3),
+    .by = year,
+    .cube = c(h1, k1),
     .check_margin_name = TRUE
   )
 
@@ -316,7 +316,7 @@ test_that(".margin_name basic (non-NA)", {
     .data = data,
     n = dplyr::n(),
     mean = mean(value, na.rm = TRUE),
-    .margins = g3,
+    .rollup = g3,
     .margin_name = "total",
     .check_margin_name = TRUE
   )
@@ -358,7 +358,7 @@ test_that(".margin_name basic (NA)", {
     .data = data,
     n = dplyr::n(),
     mean = mean(value, na.rm = TRUE),
-    .margins = g2,
+    .rollup = g2,
     .margin_name = NA_character_,
     .check_margin_name = TRUE
   )
@@ -393,7 +393,7 @@ test_that(".margin_name conflict error", {
   expect_error(
     summarize_with_margins(
       .data = data,
-      .margins = g3,
+      .rollup = g3,
       .margin_name = "RD360",
       .check_margin_name = TRUE
     ),
@@ -405,7 +405,7 @@ test_that(".margin_name conflict error", {
   expect_error(
     summarize_with_margins(
       .data = data,
-      .margins = g3,
+      .rollup = g3,
       .margin_name = NA_character_,
       .check_margin_name = TRUE
     ),
@@ -427,9 +427,9 @@ test_that("Can use the margin variable before calculating", {
     .data = data,
     n = dplyr::n(),
     g3s = stringr::str_flatten(g3, collapse = "/"),
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .check_margin_name = TRUE
   )
 

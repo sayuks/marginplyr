@@ -45,7 +45,7 @@ summarize_with_margins(
   mtcars,
   n = dplyr::n(),
   mpg = mean(mpg, na.rm = TRUE),
-  .margins = c(cyl, vs),
+  .rollup = c(cyl, vs),
 )
 #>     cyl    vs  n      mpg
 #> 1 (all) (all) 32 20.09062

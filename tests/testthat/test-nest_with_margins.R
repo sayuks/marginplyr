@@ -3,17 +3,17 @@ test_that("nest_with_margins() works correctly with local data", {
 
   actual <- nest_with_margins(
     .data = data,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .key = "nested"
   )
 
   expected <- union_all_with_margins(
     .data = data,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1
   )
 
   expected <- tidyr::nest(
@@ -32,18 +32,18 @@ test_that(".keep works", {
 
   actual <- nest_with_margins(
     .data = data,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1,
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1,
     .key = "nested",
     .keep = TRUE
   )
 
   expected <- union_all_with_margins(
     .data = data,
-    .margins = c(g2, g3),
-    .without_all = year,
-    .with_all = h1
+    .rollup = c(g2, g3),
+    .by = year,
+    .cube = h1
   )
 
   expected <- tidyr::nest(

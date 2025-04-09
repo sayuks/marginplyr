@@ -7,9 +7,9 @@
 summarize_with_margins(
   .data,
   ...,
-  .margins = NULL,
-  .without_all = NULL,
-  .with_all = NULL,
+  .rollup = NULL,
+  .by = NULL,
+  .cube = NULL,
   .margin_name = "(all)",
   .check_margin_name = is.data.frame(.data),
   .sort = is.data.frame(.data)
@@ -25,25 +25,25 @@ a duckdb back-end using \code{arrow::to_duckdb()} in advance.
 
 \item{...}{Name-value pairs as used in \code{\link[dplyr:summarise]{dplyr::summarize()}}.}
 
-\item{.margins}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Grouping columns which
+\item{.rollup}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Grouping columns which
 margins are calculated, starting from the highest parent of the hierarchy.}
 
-\item{.without_all}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
+\item{.by}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
 variables without hierarchy to which \code{.margin_name} will \emph{NOT} be added.}
 
-\item{.with_all}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
+\item{.cube}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
 variables without hierarchy to which \code{.margin_name} will be added.}
 
 \item{.margin_name}{A string representing margin name
 (Defaults to \code{"(all)"}). \code{NA_character_} is also allowed.}
 
 \item{.check_margin_name}{A logical (defaults to \code{is.data.frame(.data)}).
-If \code{TRUE}, checks whether the string in \verb{.margin_name' already exists in the column specified by }.margins\code{or}.with_all` and returns an error
+If \code{TRUE}, checks whether the string in \verb{.margin_name' already exists in the column specified by }.rollup\code{or}.cube` and returns an error
 if it already exists.}
 
 \item{.sort}{A logical (defaults to \code{is.data.frame(.data)}).
 If \code{TRUE}, sort the result by the column order
-specified in \code{.without_all} and \code{.margins} and \code{.with_all}.
+specified in \code{.by} and \code{.rollup} and \code{.cube}.
 This is because pipelines using lazy tables should perform the
 SQL \verb{ORDER BY} as last as possible.
 As a result of sorting, in the case of lazy tables,
@@ -67,10 +67,10 @@ for more details.
 \code{.margin_name} category for each grouping variable. It assumes a hierarchy
 of groups and the higher level groups should be provided first.
 \item Regular groups, not used for totals/subtotals can be provided through
-the \code{.without_all} argument and will be used as parent groups.
+the \code{.by} argument and will be used as parent groups.
 \item If you want to create its own total margin (such as \code{"(all)"})
 for a variable that is a regular group and has no hierarchy,
-specify it with \code{.with_all}. If there is more than one \code{.with_all},
+specify it with \code{.cube}. If there is more than one \code{.cube},
 all combinations of them are generated.
 }
 }
@@ -79,8 +79,8 @@ all combinations of them are generated.
 \itemize{
 \item Missing values are kept as missing.
 \item The order of the columns is as follows from left to right:
-\code{.without_all}, \code{.margins}, \code{.with_all} and the remaining columns.
-\item Column types specified with \code{.margins} or \code{.with_all}:
+\code{.by}, \code{.rollup}, \code{.cube} and the remaining columns.
+\item Column types specified with \code{.rollup} or \code{.cube}:
 \itemize{
 \item Columns that are not originally factor or character
 (e.g. numeric, integer, logical, .etc) are converted to characters.
@@ -125,7 +125,7 @@ summarize_with_margins(
   mtcars,
   n = dplyr::n(),
   mpg = mean(mpg, na.rm = TRUE),
-  .margins = c(cyl, vs),
+  .rollup = c(cyl, vs),
 )
 
 # `am` does not create a hierarchy, but is an overall group variable.
@@ -133,8 +133,8 @@ summarize_with_margins(
   mtcars,
   n = dplyr::n(),
   mpg = mean(mpg, na.rm = TRUE),
-  .margins = c(cyl, vs),
-  .without_all = am
+  .rollup = c(cyl, vs),
+  .by = am
 )
 
 # `gear` creates "(all)" margins on itself.
@@ -142,19 +142,19 @@ summarize_with_margins(
   mtcars,
   n = dplyr::n(),
   mpg = mean(mpg, na.rm = TRUE),
-  .margins = c(cyl, vs),
-  .without_all = am,
-  .with_all = gear
+  .rollup = c(cyl, vs),
+  .by = am,
+  .cube = gear
 )
 
-# If `.with_all` has multiple columns, all combinations are generated.
+# If `.cube` has multiple columns, all combinations are generated.
 summarize_with_margins(
   mtcars,
   n = dplyr::n(),
   mpg = mean(mpg, na.rm = TRUE),
-  .margins = c(cyl, vs),
-  .without_all = am,
-  .with_all = c(gear, carb)
+  .rollup = c(cyl, vs),
+  .by = am,
+  .cube = c(gear, carb)
 )
 }
 \references{
