@@ -44,3 +44,8 @@ assert_lazy_table <- function(x) {
     )
   }
 }
+
+# Required when dtplyr/data.table are optional Suggests rather than Imports.
+.datatable.aware <- TRUE # nolint: object_name_linter
+
+utils::globalVariables(".data")

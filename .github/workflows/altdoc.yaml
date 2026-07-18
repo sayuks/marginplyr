@@ -11,12 +11,13 @@ on:
 
 name: altdoc
 
+concurrency:
+  group: altdoc-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   altdoc:
     runs-on: ubuntu-latest
-    # Only restrict concurrency for non-PR jobs
-    concurrency:
-      group: altdoc-${{ github.event_name != 'pull_request' || github.run_id }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     permissions:
@@ -41,18 +42,18 @@ jobs:
           # future::plan(future::multicore)
           install.packages(".", repos = NULL, type = "source")
           install.packages("pkgload")
-          # ---- bug #314 ----
-          install.packages("remotes")
-          remotes::install_github("etiennebacher/altdoc", ref = "61b9ab762990815e73c7217f9480f474f330755f")
-          # ------------------
           pkgload::load_all()
           altdoc::render_docs(parallel = FALSE, freeze = FALSE)
         shell: Rscript {0}
 
+      - name: Verify site output
+        run: |
+          Rscript -e 'required <- c("docs/index.html", "docs/vignettes/get_started.html", "docs/man/grouping.html", "docs/man/grouping_set.html", "docs/.nojekyll"); missing <- required[!file.exists(required)]; if (length(missing)) stop("Missing site output: ", paste(missing, collapse = ", ")); article <- paste(readLines("docs/vignettes/get_started.html", warn = FALSE), collapse = "\n"); markers <- c("panel-tabset", "Quarto tabset reports with quartabs", "Total"); absent <- markers[!vapply(markers, grepl, logical(1), x = article, fixed = TRUE)]; if (length(absent)) stop("Missing rendered markers: ", paste(absent, collapse = ", "))'
+
       - name: Deploy to GitHub pages 🚀
         if: github.event_name != 'pull_request'
-        uses: JamesIves/github-pages-deploy-action@v4
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
         with:
-          clean: false
+          clean: true
           branch: gh-pages
           folder: docs

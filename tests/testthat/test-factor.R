@@ -60,6 +60,9 @@ test_that("reconstruct_factor() works with data.frame", {
 })
 
 test_that("reconstruct_factor() works with duckdb", {
+  skip_if_not_installed("DBI")
+  skip_if_not_installed("duckdb")
+
   x <- c("a", "b", "c", NA_character_)
   data <- data.frame(
     x1 = factor(x),
@@ -119,6 +122,8 @@ test_that("reconstruct_factor() works with duckdb", {
 })
 
 test_that("reconstruct_factor() works with dtplyr_step", {
+  skip_if_not_installed("dtplyr")
+
   x <- c("a", "b", "c", NA_character_)
   data <- data.frame(
     x1 = factor(x),

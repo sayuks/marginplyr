@@ -3,32 +3,41 @@ Title: Summarize and Expand Data with Margins
 Version: 0.1.0
 Authors@R: 
     person("Yusuke", "Sasaki", , "sayuks.dev@gmail.com", role = c("aut", "cre"))
-Description: Summarize data with margins (totals) and expand data by treating margins as category levels.
+Description: Provides 'dplyr'-compatible tools for SQL-style 'GROUPING SETS',
+    'ROLLUP', and 'CUBE' summaries, including arbitrary grouping sets, totals,
+    subtotals, and grouping identifiers. Confirmed database backends use native
+    grouping sets; other lazy backends use a 'UNION ALL' fallback. Local data
+    frames and lazy tables are supported.
 License: MIT + file LICENSE
 URL: https://sayuks.github.io/marginplyr/, https://github.com/sayuks/marginplyr
 BugReports: https://github.com/sayuks/marginplyr/issues
 Imports: 
+    dbplyr (>= 2.6.0),
     dplyr (>= 1.1.1),
+    rlang (>= 1.1.0),
+    tidyselect (>= 1.2.0),
     utils
 Suggests: 
-    altdoc,
+    altdoc (>= 0.7.3),
     arrow,
     data.table,
     DBI,
-    dbplyr,
     dtplyr,
     duckdb,
     ggplot2,
+    knitr,
     purrr,
+    quartabs (>= 0.1.1),
     quarto,
     RSQLite,
     sessioninfo,
     spelling,
     stringr,
     testthat (>= 3.0.0),
+    tibble,
     tidyr,
 Config/testthat/edition: 3
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.2
+Config/roxygen2/version: 8.0.0

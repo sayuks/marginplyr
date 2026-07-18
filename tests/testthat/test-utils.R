@@ -26,6 +26,8 @@ test_that("assert_sring_scalar() works", {
 })
 
 test_that("assert_nest_possible() works", {
+  skip_if_not_installed("dtplyr")
+
   expect_no_error(assert_nest_possible(data.frame()))
   expect_no_error(assert_nest_possible(dtplyr::lazy_dt(data.frame())))
   expect_error(assert_nest_possible())
@@ -38,6 +40,8 @@ test_that("assert_nest_possible() works", {
 })
 
 test_that("assert_lazy_table() works", {
+  skip_if_not_installed("arrow")
+
   expect_error(
     assert_lazy_table(
       arrow::as_record_batch_reader(data.frame())
