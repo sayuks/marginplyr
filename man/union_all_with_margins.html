@@ -2,13 +2,16 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.6.43">
+<meta name="generator" content="quarto-1.9.38">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 
 <title>union_all_with_margins – marginplyr</title>
 <style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
 div.columns{display: flex; gap: min(4vw, 1.5em);}
@@ -21,8 +24,9 @@ ul.task-list li input[type="checkbox"] {
   vertical-align: middle;
 }
 /* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -33,7 +37,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -64,15 +68,16 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <script src="../site_libs/quarto-search/fuse.min.js"></script>
 <script src="../site_libs/quarto-search/quarto-search.js"></script>
 <meta name="quarto:offset" content="../">
-<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
 <script src="../site_libs/quarto-html/popper.min.js"></script>
 <script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../site_libs/quarto-html/quarto-syntax-highlighting-d4d76bf8491c20bad77d141916dc28e1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting-15634bcf2e68342d4ad2dfa704d543f6.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../site_libs/bootstrap/bootstrap-831a6e13d34e89ab8943621a9b1bffba.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="../site_libs/bootstrap/bootstrap-7db87aff3d14028862e8d47add95a991.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -104,7 +109,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 </head>
 
-<body class="nav-sidebar floating nav-fixed fullcontent">
+<body class="nav-sidebar floating nav-fixed fullcontent quarto-light">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
@@ -143,7 +148,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
         <i class="bi bi-layout-text-sidebar-reverse"></i>
       </button>
-        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/nest_by_with_margins.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/union_all_with_margins.html">union_all_with_margins</a></li></ol></nav>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/grouping_set.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/union_all_with_margins.html">union_all_with_margins</a></li></ol></nav>
         <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
         </a>
     </div>
@@ -170,6 +175,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           </a> 
       </div>
       <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/grouping_set.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">grouping_set</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="../man/grouping.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">grouping</span></a>
+  </div>
+</li>
           <li class="sidebar-item">
   <div class="sidebar-item-container"> 
   <a href="../man/nest_by_with_margins.html" class="sidebar-item-text sidebar-link">
@@ -227,182 +244,94 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <!-- margin-sidebar -->
     
 <!-- main -->
-<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/nest_by_with_margins.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/union_all_with_margins.html">union_all_with_margins</a></li></ol></nav></header>
+<main class="content" id="quarto-document-content"><header id="title-block-header" class="quarto-title-block"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="../man/grouping_set.html">Reference</a></li><li class="breadcrumb-item"><a href="../man/union_all_with_margins.html">union_all_with_margins</a></li></ol></nav></header>
 
 
 
 
-<section id="union-all-with-margins" class="level2 unnumbered">
-<h2 class="unnumbered anchored" data-anchor-id="union-all-with-margins"><code style="white-space: pre;">UNION ALL</code> with margins</h2>
+<section id="expand-rows-with-sql-style-grouping-margins" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="expand-rows-with-sql-style-grouping-margins">Expand rows with SQL-style grouping margins</h2>
 <section id="description" class="level3">
 <h3 class="anchored" data-anchor-id="description">Description</h3>
-<p>This function considers each margin (such as total) as a new category, duplicate the rows and merge them vertically (like <code style="white-space: pre;">UNION ALL</code> in SQL). See <a href="https://sayuks.github.io/marginplyr/vignettes/get_started.html">Get started</a> for more details.</p>
+<p><code>union_all_with_margins()</code> emits one copy of each input row for every grouping set, replacing omitted grouping dimensions with <code>.margin_label</code>. This is analogous to vertically combining the grouping branches with SQL <code style="white-space: pre;">UNION ALL</code>.</p>
 </section>
 <section id="usage" class="level3">
 <h3 class="anchored" data-anchor-id="usage">Usage</h3>
 <pre><code class="language-R">union_all_with_margins(
   .data,
-  .rollup = NULL,
   .by = NULL,
-  .cube = NULL,
-  .margin_name = "(all)",
-  .check_margin_name = is.data.frame(.data),
+  .grouping = NULL,
+  .margin_label = "Total",
+  .check_margin_label = is.data.frame(.data),
+  .duplicates = c("error", "drop", "keep"),
   .sort = is.data.frame(.data)
 )
 </code></pre>
 </section>
 <section id="arguments" class="level3">
 <h3 class="anchored" data-anchor-id="arguments">Arguments</h3>
-<table>
+<table role="presentation">
 <tbody><tr>
-<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
 <code id=".data">.data</code>
 </td>
 <td>
-<p>A data frame or lazy table.</p>
-<ul>
-<li>
-<p>Lazy tables created by <code>{arrow}</code> does not work. If you want to work with it, it is an easy way to convert to a duckdb back-end using <code>arrow::to_duckdb()</code> in advance.</p>
-</li>
-</ul>
+A data frame or lazy table.
 </td>
 </tr>
 <tr>
-<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".rollup">.rollup</code>
-</td>
-<td>
-&lt;<code>tidy-select</code>&gt; Grouping columns which margins are calculated, starting from the highest parent of the hierarchy.
-</td>
-</tr>
-<tr>
-<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
 <code id=".by">.by</code>
 </td>
 <td>
-&lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will <em>NOT</em> be added.
+&lt;<code>tidy-select</code>&gt; Columns included in every grouping set. These columns never receive <code>.margin_label</code>.
 </td>
 </tr>
 <tr>
-<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".cube">.cube</code>
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
+<code id=".grouping">.grouping</code>
 </td>
 <td>
-&lt;<code>tidy-select</code>&gt; Additional group variables without hierarchy to which <code>.margin_name</code> will be added.
+A grouping specification made with <code>grouping_set()</code>, <code>grouping_sets()</code>, <code>rollup()</code>, <code>cube()</code>, or <code>grouping_spec()</code>. <code>NULL</code> represents one empty grouping set.
 </td>
 </tr>
 <tr>
-<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".margin_name">.margin_name</code>
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
+<code id=".margin_label">.margin_label</code>
 </td>
 <td>
-A string representing margin name (Defaults to <code>“(all)”</code>). <code>NA_character_</code> is also allowed.
+A character scalar used to display columns omitted from a grouping set. The default is <code>“Total”</code>. Use <code>NULL</code> to keep typed missing values instead of inserting a display label.
 </td>
 </tr>
 <tr>
-<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
-<code id=".check_margin_name">.check_margin_name</code>
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
+<code id=".check_margin_label">.check_margin_label</code>
 </td>
 <td>
-A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, checks whether the string in <code style="white-space: pre;">.margin_name’ already exists in the column specified by </code>.rollup<code>or</code>.cube’ and returns an error if it already exists.
+A logical scalar. If <code>TRUE</code>, check whether the display label already occurs in a grouping column.
 </td>
 </tr>
 <tr>
-<td style="white-space: nowrap; font-family: monospace; vertical-align: top">
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
+<code id=".duplicates">.duplicates</code>
+</td>
+<td>
+One of <code>“error”</code>, <code>“drop”</code>, or <code>“keep”</code>, controlling duplicate grouping sets after expansion.
+</td>
+</tr>
+<tr>
+<td style="white-space: collapse; font-family: monospace; vertical-align: top">
 <code id=".sort">.sort</code>
 </td>
 <td>
-A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>, sort the result by the column order specified in <code>.by</code> and <code>.rollup</code> and <code>.cube</code>. This is because pipelines using lazy tables should perform the SQL <code style="white-space: pre;">ORDER BY</code> as last as possible. As a result of sorting, in the case of lazy tables, <code>NA</code> may come first, unlike R. See <a href="https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html"><code>arrange()</code> documentation of <code>{dbplyr}</code></a> for details.
+A logical scalar. If <code>TRUE</code>, sort by <code>.by</code> followed by grouping dimensions. It defaults to <code>TRUE</code> for local data frames and <code>FALSE</code> for lazy tables.
 </td>
 </tr>
 </tbody></table>
 </section>
-<section id="details" class="level3">
-<h3 class="anchored" data-anchor-id="details">Details</h3>
-<ul>
-<li>
-<p>Consider each margin as a new category, duplicate the rows and merge them vertically (like <code style="white-space: pre;">UNION ALL</code> in SQL).</p>
-</li>
-<li>
-<p>The use of arguments in common with <code>summarize_with_margins()</code> is the same as for it.</p>
-</li>
-<li>
-<p><strong>Be aware that the number of rows can be huge.</strong></p>
-</li>
-</ul>
-</section>
 <section id="value" class="level3">
 <h3 class="anchored" data-anchor-id="value">Value</h3>
-<p>A data frame. If <code>.data</code> is a lazy table, the output is also a lazy table.</p>
-</section>
-<section id="about-returned-data" class="level3">
-<h3 class="anchored" data-anchor-id="about-returned-data">About returned data</h3>
-<ul>
-<li>
-<p>Missing values are kept as missing.</p>
-</li>
-<li>
-<p>The order of the columns is as follows from left to right: <code>.by</code>, <code>.rollup</code>, <code>.cube</code> and the remaining columns.</p>
-</li>
-<li>
-<p>Column types specified with <code>.rollup</code> or <code>.cube</code>:</p>
-<ul>
-<li>
-<p>Columns that are not originally factor or character (e.g.&nbsp;numeric, integer, logical, .etc) are converted to characters. This is required to add the <code>.margin_name</code> category.</p>
-</li>
-<li>
-<p>Originally the factor column (assuming a local data frame):</p>
-<ul>
-<li>
-<p>Remains as factor. (If ordered, remains as ordered).</p>
-</li>
-<li>
-<p>The level of the factor depends on the case:</p>
-<ul>
-<li>
-<p>If <code>.margin_name</code> is <em><strong>NOT</strong></em> a <code>NA_character</code> (such as <code>“(all)”</code>):</p>
-<ul>
-<li>
-<p><code>.margin_name</code> is added to the beginning of the level of the factor.</p>
-</li>
-</ul>
-</li>
-<li>
-<p>If <code>.margin_name</code> is a <code>NA_character</code>:</p>
-<ul>
-<li>
-<p>If the column has <code style="white-space: pre;">&lt;NA&gt;</code> in the level:</p>
-<ul>
-<li>
-<p>Error occurs. Because, although the values with level <code style="white-space: pre;">&lt;NA&gt;</code> are not equal to <code>NA_character_</code>, they will be identical and indistinguishable when merging <code>NA_character_</code> as a new category.</p>
-</li>
-</ul>
-</li>
-<li>
-<p>If the column does not have <code style="white-space: pre;">&lt;NA&gt;</code> in the level:</p>
-<ul>
-<li>
-<p>Just keeps the original level of factor. <code style="white-space: pre;">&lt;NA&gt;</code> is not included in the level. This is consistent with the default <code>factor()</code> behavior (<code>exclude = NA</code>).</p>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</li>
-</ul>
-</section>
-<section id="references" class="level3">
-<h3 class="anchored" data-anchor-id="references">References</h3>
-<ul>
-<li>
-<p>Online documentation: <a href="https://sayuks.github.io/marginplyr/vignettes/get_started.html">Get started</a></p>
-</li>
-</ul>
+<p>An ungrouped data frame, or a lazy table when <code>.data</code> is lazy.</p>
 </section>
 <section id="see-also" class="level3">
 <h3 class="anchored" data-anchor-id="see-also">See Also</h3>
@@ -411,401 +340,208 @@ A logical (defaults to <code>is.data.frame(.data)</code>). If <code>TRUE</code>,
 <section id="examples" class="level3">
 <h3 class="anchored" data-anchor-id="examples">Examples</h3>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"marginplyr"</span>)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(<span class="st">"marginplyr"</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">union_all_with_margins</span>(</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  mtcars,</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.rollup =</span> <span class="fu">c</span>(cyl, vs),</span>
-<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.by =</span> am,</span>
-<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">.cube =</span> gear</span>
-<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">.by =</span> am,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">.grouping =</span> <span class="fu">rollup</span>(cyl, vs)</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>                          am   cyl    vs  gear  mpg  disp  hp drat    wt  qsec
-Hornet 4 Drive...1         0 (all) (all) (all) 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...2      0 (all) (all) (all) 18.7 360.0 175 3.15 3.440 17.02
-Valiant...3                0 (all) (all) (all) 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...4             0 (all) (all) (all) 14.3 360.0 245 3.21 3.570 15.84
-Merc 240D...5              0 (all) (all) (all) 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...6               0 (all) (all) (all) 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...7               0 (all) (all) (all) 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...8              0 (all) (all) (all) 17.8 167.6 123 3.92 3.440 18.90
-Merc 450SE...9             0 (all) (all) (all) 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...10            0 (all) (all) (all) 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...11           0 (all) (all) (all) 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...12    0 (all) (all) (all) 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...13   0 (all) (all) (all) 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...14     0 (all) (all) (all) 14.7 440.0 230 3.23 5.345 17.42
-Toyota Corona...15         0 (all) (all) (all) 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...16      0 (all) (all) (all) 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...17           0 (all) (all) (all) 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...18            0 (all) (all) (all) 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...19      0 (all) (all) (all) 19.2 400.0 175 3.08 3.845 17.05
-Hornet 4 Drive...20        0 (all) (all)     3 21.4 258.0 110 3.08 3.215 19.44
-Hornet Sportabout...21     0 (all) (all)     3 18.7 360.0 175 3.15 3.440 17.02
-Valiant...22               0 (all) (all)     3 18.1 225.0 105 2.76 3.460 20.22
-Duster 360...23            0 (all) (all)     3 14.3 360.0 245 3.21 3.570 15.84
-Merc 450SE...24            0 (all) (all)     3 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...25            0 (all) (all)     3 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...26           0 (all) (all)     3 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...27    0 (all) (all)     3 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...28   0 (all) (all)     3 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...29     0 (all) (all)     3 14.7 440.0 230 3.23 5.345 17.42
-Toyota Corona...30         0 (all) (all)     3 21.5 120.1  97 3.70 2.465 20.01
-Dodge Challenger...31      0 (all) (all)     3 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...32           0 (all) (all)     3 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...33            0 (all) (all)     3 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...34      0 (all) (all)     3 19.2 400.0 175 3.08 3.845 17.05
-Merc 240D...35             0 (all) (all)     4 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...36              0 (all) (all)     4 22.8 140.8  95 3.92 3.150 22.90
-Merc 280...37              0 (all) (all)     4 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...38             0 (all) (all)     4 17.8 167.6 123 3.92 3.440 18.90
-Merc 240D...39             0     4 (all) (all) 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...40              0     4 (all) (all) 22.8 140.8  95 3.92 3.150 22.90
-Toyota Corona...41         0     4 (all) (all) 21.5 120.1  97 3.70 2.465 20.01
-Toyota Corona...42         0     4 (all)     3 21.5 120.1  97 3.70 2.465 20.01
-Merc 240D...43             0     4 (all)     4 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...44              0     4 (all)     4 22.8 140.8  95 3.92 3.150 22.90
-Merc 240D...45             0     4     1 (all) 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...46              0     4     1 (all) 22.8 140.8  95 3.92 3.150 22.90
-Toyota Corona...47         0     4     1 (all) 21.5 120.1  97 3.70 2.465 20.01
-Toyota Corona...48         0     4     1     3 21.5 120.1  97 3.70 2.465 20.01
-Merc 240D...49             0     4     1     4 24.4 146.7  62 3.69 3.190 20.00
-Merc 230...50              0     4     1     4 22.8 140.8  95 3.92 3.150 22.90
-Hornet 4 Drive...51        0     6 (all) (all) 21.4 258.0 110 3.08 3.215 19.44
-Valiant...52               0     6 (all) (all) 18.1 225.0 105 2.76 3.460 20.22
-Merc 280...53              0     6 (all) (all) 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...54             0     6 (all) (all) 17.8 167.6 123 3.92 3.440 18.90
-Hornet 4 Drive...55        0     6 (all)     3 21.4 258.0 110 3.08 3.215 19.44
-Valiant...56               0     6 (all)     3 18.1 225.0 105 2.76 3.460 20.22
-Merc 280...57              0     6 (all)     4 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...58             0     6 (all)     4 17.8 167.6 123 3.92 3.440 18.90
-Hornet 4 Drive...59        0     6     1 (all) 21.4 258.0 110 3.08 3.215 19.44
-Valiant...60               0     6     1 (all) 18.1 225.0 105 2.76 3.460 20.22
-Merc 280...61              0     6     1 (all) 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...62             0     6     1 (all) 17.8 167.6 123 3.92 3.440 18.90
-Hornet 4 Drive...63        0     6     1     3 21.4 258.0 110 3.08 3.215 19.44
-Valiant...64               0     6     1     3 18.1 225.0 105 2.76 3.460 20.22
-Merc 280...65              0     6     1     4 19.2 167.6 123 3.92 3.440 18.30
-Merc 280C...66             0     6     1     4 17.8 167.6 123 3.92 3.440 18.90
-Hornet Sportabout...67     0     8 (all) (all) 18.7 360.0 175 3.15 3.440 17.02
-Duster 360...68            0     8 (all) (all) 14.3 360.0 245 3.21 3.570 15.84
-Merc 450SE...69            0     8 (all) (all) 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...70            0     8 (all) (all) 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...71           0     8 (all) (all) 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...72    0     8 (all) (all) 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...73   0     8 (all) (all) 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...74     0     8 (all) (all) 14.7 440.0 230 3.23 5.345 17.42
-Dodge Challenger...75      0     8 (all) (all) 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...76           0     8 (all) (all) 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...77            0     8 (all) (all) 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...78      0     8 (all) (all) 19.2 400.0 175 3.08 3.845 17.05
-Hornet Sportabout...79     0     8 (all)     3 18.7 360.0 175 3.15 3.440 17.02
-Duster 360...80            0     8 (all)     3 14.3 360.0 245 3.21 3.570 15.84
-Merc 450SE...81            0     8 (all)     3 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...82            0     8 (all)     3 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...83           0     8 (all)     3 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...84    0     8 (all)     3 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...85   0     8 (all)     3 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...86     0     8 (all)     3 14.7 440.0 230 3.23 5.345 17.42
-Dodge Challenger...87      0     8 (all)     3 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...88           0     8 (all)     3 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...89            0     8 (all)     3 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...90      0     8 (all)     3 19.2 400.0 175 3.08 3.845 17.05
-Hornet Sportabout...91     0     8     0 (all) 18.7 360.0 175 3.15 3.440 17.02
-Duster 360...92            0     8     0 (all) 14.3 360.0 245 3.21 3.570 15.84
-Merc 450SE...93            0     8     0 (all) 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...94            0     8     0 (all) 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...95           0     8     0 (all) 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...96    0     8     0 (all) 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...97   0     8     0 (all) 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...98     0     8     0 (all) 14.7 440.0 230 3.23 5.345 17.42
-Dodge Challenger...99      0     8     0 (all) 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...100          0     8     0 (all) 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...101           0     8     0 (all) 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...102     0     8     0 (all) 19.2 400.0 175 3.08 3.845 17.05
-Hornet Sportabout...103    0     8     0     3 18.7 360.0 175 3.15 3.440 17.02
-Duster 360...104           0     8     0     3 14.3 360.0 245 3.21 3.570 15.84
-Merc 450SE...105           0     8     0     3 16.4 275.8 180 3.07 4.070 17.40
-Merc 450SL...106           0     8     0     3 17.3 275.8 180 3.07 3.730 17.60
-Merc 450SLC...107          0     8     0     3 15.2 275.8 180 3.07 3.780 18.00
-Cadillac Fleetwood...108   0     8     0     3 10.4 472.0 205 2.93 5.250 17.98
-Lincoln Continental...109  0     8     0     3 10.4 460.0 215 3.00 5.424 17.82
-Chrysler Imperial...110    0     8     0     3 14.7 440.0 230 3.23 5.345 17.42
-Dodge Challenger...111     0     8     0     3 15.5 318.0 150 2.76 3.520 16.87
-AMC Javelin...112          0     8     0     3 15.2 304.0 150 3.15 3.435 17.30
-Camaro Z28...113           0     8     0     3 13.3 350.0 245 3.73 3.840 15.41
-Pontiac Firebird...114     0     8     0     3 19.2 400.0 175 3.08 3.845 17.05
-Mazda RX4...115            1 (all) (all) (all) 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...116        1 (all) (all) (all) 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...117           1 (all) (all) (all) 22.8 108.0  93 3.85 2.320 18.61
-Fiat 128...118             1 (all) (all) (all) 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...119          1 (all) (all) (all) 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...120       1 (all) (all) (all) 33.9  71.1  65 4.22 1.835 19.90
-Fiat X1-9...121            1 (all) (all) (all) 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...122        1 (all) (all) (all) 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...123         1 (all) (all) (all) 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...124       1 (all) (all) (all) 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...125         1 (all) (all) (all) 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...126        1 (all) (all) (all) 15.0 301.0 335 3.54 3.570 14.60
-Volvo 142E...127           1 (all) (all) (all) 21.4 121.0 109 4.11 2.780 18.60
-Mazda RX4...128            1 (all) (all)     4 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...129        1 (all) (all)     4 21.0 160.0 110 3.90 2.875 17.02
-Datsun 710...130           1 (all) (all)     4 22.8 108.0  93 3.85 2.320 18.61
-Fiat 128...131             1 (all) (all)     4 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...132          1 (all) (all)     4 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...133       1 (all) (all)     4 33.9  71.1  65 4.22 1.835 19.90
-Fiat X1-9...134            1 (all) (all)     4 27.3  79.0  66 4.08 1.935 18.90
-Volvo 142E...135           1 (all) (all)     4 21.4 121.0 109 4.11 2.780 18.60
-Porsche 914-2...136        1 (all) (all)     5 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...137         1 (all) (all)     5 30.4  95.1 113 3.77 1.513 16.90
-Ford Pantera L...138       1 (all) (all)     5 15.8 351.0 264 4.22 3.170 14.50
-Ferrari Dino...139         1 (all) (all)     5 19.7 145.0 175 3.62 2.770 15.50
-Maserati Bora...140        1 (all) (all)     5 15.0 301.0 335 3.54 3.570 14.60
-Datsun 710...141           1     4 (all) (all) 22.8 108.0  93 3.85 2.320 18.61
-Fiat 128...142             1     4 (all) (all) 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...143          1     4 (all) (all) 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...144       1     4 (all) (all) 33.9  71.1  65 4.22 1.835 19.90
-Fiat X1-9...145            1     4 (all) (all) 27.3  79.0  66 4.08 1.935 18.90
-Porsche 914-2...146        1     4 (all) (all) 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...147         1     4 (all) (all) 30.4  95.1 113 3.77 1.513 16.90
-Volvo 142E...148           1     4 (all) (all) 21.4 121.0 109 4.11 2.780 18.60
-Datsun 710...149           1     4 (all)     4 22.8 108.0  93 3.85 2.320 18.61
-Fiat 128...150             1     4 (all)     4 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...151          1     4 (all)     4 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...152       1     4 (all)     4 33.9  71.1  65 4.22 1.835 19.90
-Fiat X1-9...153            1     4 (all)     4 27.3  79.0  66 4.08 1.935 18.90
-Volvo 142E...154           1     4 (all)     4 21.4 121.0 109 4.11 2.780 18.60
-Porsche 914-2...155        1     4 (all)     5 26.0 120.3  91 4.43 2.140 16.70
-Lotus Europa...156         1     4 (all)     5 30.4  95.1 113 3.77 1.513 16.90
-Porsche 914-2...157        1     4     0 (all) 26.0 120.3  91 4.43 2.140 16.70
-Porsche 914-2...158        1     4     0     5 26.0 120.3  91 4.43 2.140 16.70
-Datsun 710...159           1     4     1 (all) 22.8 108.0  93 3.85 2.320 18.61
-Fiat 128...160             1     4     1 (all) 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...161          1     4     1 (all) 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...162       1     4     1 (all) 33.9  71.1  65 4.22 1.835 19.90
-Fiat X1-9...163            1     4     1 (all) 27.3  79.0  66 4.08 1.935 18.90
-Lotus Europa...164         1     4     1 (all) 30.4  95.1 113 3.77 1.513 16.90
-Volvo 142E...165           1     4     1 (all) 21.4 121.0 109 4.11 2.780 18.60
-Datsun 710...166           1     4     1     4 22.8 108.0  93 3.85 2.320 18.61
-Fiat 128...167             1     4     1     4 32.4  78.7  66 4.08 2.200 19.47
-Honda Civic...168          1     4     1     4 30.4  75.7  52 4.93 1.615 18.52
-Toyota Corolla...169       1     4     1     4 33.9  71.1  65 4.22 1.835 19.90
-Fiat X1-9...170            1     4     1     4 27.3  79.0  66 4.08 1.935 18.90
-Volvo 142E...171           1     4     1     4 21.4 121.0 109 4.11 2.780 18.60
-Lotus Europa...172         1     4     1     5 30.4  95.1 113 3.77 1.513 16.90
-Mazda RX4...173            1     6 (all) (all) 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...174        1     6 (all) (all) 21.0 160.0 110 3.90 2.875 17.02
-Ferrari Dino...175         1     6 (all) (all) 19.7 145.0 175 3.62 2.770 15.50
-Mazda RX4...176            1     6 (all)     4 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...177        1     6 (all)     4 21.0 160.0 110 3.90 2.875 17.02
-Ferrari Dino...178         1     6 (all)     5 19.7 145.0 175 3.62 2.770 15.50
-Mazda RX4...179            1     6     0 (all) 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...180        1     6     0 (all) 21.0 160.0 110 3.90 2.875 17.02
-Ferrari Dino...181         1     6     0 (all) 19.7 145.0 175 3.62 2.770 15.50
-Mazda RX4...182            1     6     0     4 21.0 160.0 110 3.90 2.620 16.46
-Mazda RX4 Wag...183        1     6     0     4 21.0 160.0 110 3.90 2.875 17.02
-Ferrari Dino...184         1     6     0     5 19.7 145.0 175 3.62 2.770 15.50
-Ford Pantera L...185       1     8 (all) (all) 15.8 351.0 264 4.22 3.170 14.50
-Maserati Bora...186        1     8 (all) (all) 15.0 301.0 335 3.54 3.570 14.60
-Ford Pantera L...187       1     8 (all)     5 15.8 351.0 264 4.22 3.170 14.50
-Maserati Bora...188        1     8 (all)     5 15.0 301.0 335 3.54 3.570 14.60
-Ford Pantera L...189       1     8     0 (all) 15.8 351.0 264 4.22 3.170 14.50
-Maserati Bora...190        1     8     0 (all) 15.0 301.0 335 3.54 3.570 14.60
-Ford Pantera L...191       1     8     0     5 15.8 351.0 264 4.22 3.170 14.50
-Maserati Bora...192        1     8     0     5 15.0 301.0 335 3.54 3.570 14.60
-                          carb
-Hornet 4 Drive...1           1
-Hornet Sportabout...2        2
-Valiant...3                  1
-Duster 360...4               4
-Merc 240D...5                2
-Merc 230...6                 2
-Merc 280...7                 4
-Merc 280C...8                4
-Merc 450SE...9               3
-Merc 450SL...10              3
-Merc 450SLC...11             3
-Cadillac Fleetwood...12      4
-Lincoln Continental...13     4
-Chrysler Imperial...14       4
-Toyota Corona...15           1
-Dodge Challenger...16        2
-AMC Javelin...17             2
-Camaro Z28...18              4
-Pontiac Firebird...19        2
-Hornet 4 Drive...20          1
-Hornet Sportabout...21       2
-Valiant...22                 1
-Duster 360...23              4
-Merc 450SE...24              3
-Merc 450SL...25              3
-Merc 450SLC...26             3
-Cadillac Fleetwood...27      4
-Lincoln Continental...28     4
-Chrysler Imperial...29       4
-Toyota Corona...30           1
-Dodge Challenger...31        2
-AMC Javelin...32             2
-Camaro Z28...33              4
-Pontiac Firebird...34        2
-Merc 240D...35               2
-Merc 230...36                2
-Merc 280...37                4
-Merc 280C...38               4
-Merc 240D...39               2
-Merc 230...40                2
-Toyota Corona...41           1
-Toyota Corona...42           1
-Merc 240D...43               2
-Merc 230...44                2
-Merc 240D...45               2
-Merc 230...46                2
-Toyota Corona...47           1
-Toyota Corona...48           1
-Merc 240D...49               2
-Merc 230...50                2
-Hornet 4 Drive...51          1
-Valiant...52                 1
-Merc 280...53                4
-Merc 280C...54               4
-Hornet 4 Drive...55          1
-Valiant...56                 1
-Merc 280...57                4
-Merc 280C...58               4
-Hornet 4 Drive...59          1
-Valiant...60                 1
-Merc 280...61                4
-Merc 280C...62               4
-Hornet 4 Drive...63          1
-Valiant...64                 1
-Merc 280...65                4
-Merc 280C...66               4
-Hornet Sportabout...67       2
-Duster 360...68              4
-Merc 450SE...69              3
-Merc 450SL...70              3
-Merc 450SLC...71             3
-Cadillac Fleetwood...72      4
-Lincoln Continental...73     4
-Chrysler Imperial...74       4
-Dodge Challenger...75        2
-AMC Javelin...76             2
-Camaro Z28...77              4
-Pontiac Firebird...78        2
-Hornet Sportabout...79       2
-Duster 360...80              4
-Merc 450SE...81              3
-Merc 450SL...82              3
-Merc 450SLC...83             3
-Cadillac Fleetwood...84      4
-Lincoln Continental...85     4
-Chrysler Imperial...86       4
-Dodge Challenger...87        2
-AMC Javelin...88             2
-Camaro Z28...89              4
-Pontiac Firebird...90        2
-Hornet Sportabout...91       2
-Duster 360...92              4
-Merc 450SE...93              3
-Merc 450SL...94              3
-Merc 450SLC...95             3
-Cadillac Fleetwood...96      4
-Lincoln Continental...97     4
-Chrysler Imperial...98       4
-Dodge Challenger...99        2
-AMC Javelin...100            2
-Camaro Z28...101             4
-Pontiac Firebird...102       2
-Hornet Sportabout...103      2
-Duster 360...104             4
-Merc 450SE...105             3
-Merc 450SL...106             3
-Merc 450SLC...107            3
-Cadillac Fleetwood...108     4
-Lincoln Continental...109    4
-Chrysler Imperial...110      4
-Dodge Challenger...111       2
-AMC Javelin...112            2
-Camaro Z28...113             4
-Pontiac Firebird...114       2
-Mazda RX4...115              4
-Mazda RX4 Wag...116          4
-Datsun 710...117             1
-Fiat 128...118               1
-Honda Civic...119            2
-Toyota Corolla...120         1
-Fiat X1-9...121              1
-Porsche 914-2...122          2
-Lotus Europa...123           2
-Ford Pantera L...124         4
-Ferrari Dino...125           6
-Maserati Bora...126          8
-Volvo 142E...127             2
-Mazda RX4...128              4
-Mazda RX4 Wag...129          4
-Datsun 710...130             1
-Fiat 128...131               1
-Honda Civic...132            2
-Toyota Corolla...133         1
-Fiat X1-9...134              1
-Volvo 142E...135             2
-Porsche 914-2...136          2
-Lotus Europa...137           2
-Ford Pantera L...138         4
-Ferrari Dino...139           6
-Maserati Bora...140          8
-Datsun 710...141             1
-Fiat 128...142               1
-Honda Civic...143            2
-Toyota Corolla...144         1
-Fiat X1-9...145              1
-Porsche 914-2...146          2
-Lotus Europa...147           2
-Volvo 142E...148             2
-Datsun 710...149             1
-Fiat 128...150               1
-Honda Civic...151            2
-Toyota Corolla...152         1
-Fiat X1-9...153              1
-Volvo 142E...154             2
-Porsche 914-2...155          2
-Lotus Europa...156           2
-Porsche 914-2...157          2
-Porsche 914-2...158          2
-Datsun 710...159             1
-Fiat 128...160               1
-Honda Civic...161            2
-Toyota Corolla...162         1
-Fiat X1-9...163              1
-Lotus Europa...164           2
-Volvo 142E...165             2
-Datsun 710...166             1
-Fiat 128...167               1
-Honda Civic...168            2
-Toyota Corolla...169         1
-Fiat X1-9...170              1
-Volvo 142E...171             2
-Lotus Europa...172           2
-Mazda RX4...173              4
-Mazda RX4 Wag...174          4
-Ferrari Dino...175           6
-Mazda RX4...176              4
-Mazda RX4 Wag...177          4
-Ferrari Dino...178           6
-Mazda RX4...179              4
-Mazda RX4 Wag...180          4
-Ferrari Dino...181           6
-Mazda RX4...182              4
-Mazda RX4 Wag...183          4
-Ferrari Dino...184           6
-Ford Pantera L...185         4
-Maserati Bora...186          8
-Ford Pantera L...187         4
-Maserati Bora...188          8
-Ford Pantera L...189         4
-Maserati Bora...190          8
-Ford Pantera L...191         4
-Maserati Bora...192          8</code></pre>
+<pre><code>                         am   cyl    vs  mpg  disp  hp drat    wt  qsec gear
+Merc 240D...1             0     4     1 24.4 146.7  62 3.69 3.190 20.00    4
+Merc 230...2              0     4     1 22.8 140.8  95 3.92 3.150 22.90    4
+Toyota Corona...3         0     4     1 21.5 120.1  97 3.70 2.465 20.01    3
+Merc 240D...4             0     4 Total 24.4 146.7  62 3.69 3.190 20.00    4
+Merc 230...5              0     4 Total 22.8 140.8  95 3.92 3.150 22.90    4
+Toyota Corona...6         0     4 Total 21.5 120.1  97 3.70 2.465 20.01    3
+Hornet 4 Drive...7        0     6     1 21.4 258.0 110 3.08 3.215 19.44    3
+Valiant...8               0     6     1 18.1 225.0 105 2.76 3.460 20.22    3
+Merc 280...9              0     6     1 19.2 167.6 123 3.92 3.440 18.30    4
+Merc 280C...10            0     6     1 17.8 167.6 123 3.92 3.440 18.90    4
+Hornet 4 Drive...11       0     6 Total 21.4 258.0 110 3.08 3.215 19.44    3
+Valiant...12              0     6 Total 18.1 225.0 105 2.76 3.460 20.22    3
+Merc 280...13             0     6 Total 19.2 167.6 123 3.92 3.440 18.30    4
+Merc 280C...14            0     6 Total 17.8 167.6 123 3.92 3.440 18.90    4
+Hornet Sportabout...15    0     8     0 18.7 360.0 175 3.15 3.440 17.02    3
+Duster 360...16           0     8     0 14.3 360.0 245 3.21 3.570 15.84    3
+Merc 450SE...17           0     8     0 16.4 275.8 180 3.07 4.070 17.40    3
+Merc 450SL...18           0     8     0 17.3 275.8 180 3.07 3.730 17.60    3
+Merc 450SLC...19          0     8     0 15.2 275.8 180 3.07 3.780 18.00    3
+Cadillac Fleetwood...20   0     8     0 10.4 472.0 205 2.93 5.250 17.98    3
+Lincoln Continental...21  0     8     0 10.4 460.0 215 3.00 5.424 17.82    3
+Chrysler Imperial...22    0     8     0 14.7 440.0 230 3.23 5.345 17.42    3
+Dodge Challenger...23     0     8     0 15.5 318.0 150 2.76 3.520 16.87    3
+AMC Javelin...24          0     8     0 15.2 304.0 150 3.15 3.435 17.30    3
+Camaro Z28...25           0     8     0 13.3 350.0 245 3.73 3.840 15.41    3
+Pontiac Firebird...26     0     8     0 19.2 400.0 175 3.08 3.845 17.05    3
+Hornet Sportabout...27    0     8 Total 18.7 360.0 175 3.15 3.440 17.02    3
+Duster 360...28           0     8 Total 14.3 360.0 245 3.21 3.570 15.84    3
+Merc 450SE...29           0     8 Total 16.4 275.8 180 3.07 4.070 17.40    3
+Merc 450SL...30           0     8 Total 17.3 275.8 180 3.07 3.730 17.60    3
+Merc 450SLC...31          0     8 Total 15.2 275.8 180 3.07 3.780 18.00    3
+Cadillac Fleetwood...32   0     8 Total 10.4 472.0 205 2.93 5.250 17.98    3
+Lincoln Continental...33  0     8 Total 10.4 460.0 215 3.00 5.424 17.82    3
+Chrysler Imperial...34    0     8 Total 14.7 440.0 230 3.23 5.345 17.42    3
+Dodge Challenger...35     0     8 Total 15.5 318.0 150 2.76 3.520 16.87    3
+AMC Javelin...36          0     8 Total 15.2 304.0 150 3.15 3.435 17.30    3
+Camaro Z28...37           0     8 Total 13.3 350.0 245 3.73 3.840 15.41    3
+Pontiac Firebird...38     0     8 Total 19.2 400.0 175 3.08 3.845 17.05    3
+Hornet 4 Drive...39       0 Total Total 21.4 258.0 110 3.08 3.215 19.44    3
+Hornet Sportabout...40    0 Total Total 18.7 360.0 175 3.15 3.440 17.02    3
+Valiant...41              0 Total Total 18.1 225.0 105 2.76 3.460 20.22    3
+Duster 360...42           0 Total Total 14.3 360.0 245 3.21 3.570 15.84    3
+Merc 240D...43            0 Total Total 24.4 146.7  62 3.69 3.190 20.00    4
+Merc 230...44             0 Total Total 22.8 140.8  95 3.92 3.150 22.90    4
+Merc 280...45             0 Total Total 19.2 167.6 123 3.92 3.440 18.30    4
+Merc 280C...46            0 Total Total 17.8 167.6 123 3.92 3.440 18.90    4
+Merc 450SE...47           0 Total Total 16.4 275.8 180 3.07 4.070 17.40    3
+Merc 450SL...48           0 Total Total 17.3 275.8 180 3.07 3.730 17.60    3
+Merc 450SLC...49          0 Total Total 15.2 275.8 180 3.07 3.780 18.00    3
+Cadillac Fleetwood...50   0 Total Total 10.4 472.0 205 2.93 5.250 17.98    3
+Lincoln Continental...51  0 Total Total 10.4 460.0 215 3.00 5.424 17.82    3
+Chrysler Imperial...52    0 Total Total 14.7 440.0 230 3.23 5.345 17.42    3
+Toyota Corona...53        0 Total Total 21.5 120.1  97 3.70 2.465 20.01    3
+Dodge Challenger...54     0 Total Total 15.5 318.0 150 2.76 3.520 16.87    3
+AMC Javelin...55          0 Total Total 15.2 304.0 150 3.15 3.435 17.30    3
+Camaro Z28...56           0 Total Total 13.3 350.0 245 3.73 3.840 15.41    3
+Pontiac Firebird...57     0 Total Total 19.2 400.0 175 3.08 3.845 17.05    3
+Porsche 914-2...58        1     4     0 26.0 120.3  91 4.43 2.140 16.70    5
+Datsun 710...59           1     4     1 22.8 108.0  93 3.85 2.320 18.61    4
+Fiat 128...60             1     4     1 32.4  78.7  66 4.08 2.200 19.47    4
+Honda Civic...61          1     4     1 30.4  75.7  52 4.93 1.615 18.52    4
+Toyota Corolla...62       1     4     1 33.9  71.1  65 4.22 1.835 19.90    4
+Fiat X1-9...63            1     4     1 27.3  79.0  66 4.08 1.935 18.90    4
+Lotus Europa...64         1     4     1 30.4  95.1 113 3.77 1.513 16.90    5
+Volvo 142E...65           1     4     1 21.4 121.0 109 4.11 2.780 18.60    4
+Datsun 710...66           1     4 Total 22.8 108.0  93 3.85 2.320 18.61    4
+Fiat 128...67             1     4 Total 32.4  78.7  66 4.08 2.200 19.47    4
+Honda Civic...68          1     4 Total 30.4  75.7  52 4.93 1.615 18.52    4
+Toyota Corolla...69       1     4 Total 33.9  71.1  65 4.22 1.835 19.90    4
+Fiat X1-9...70            1     4 Total 27.3  79.0  66 4.08 1.935 18.90    4
+Porsche 914-2...71        1     4 Total 26.0 120.3  91 4.43 2.140 16.70    5
+Lotus Europa...72         1     4 Total 30.4  95.1 113 3.77 1.513 16.90    5
+Volvo 142E...73           1     4 Total 21.4 121.0 109 4.11 2.780 18.60    4
+Mazda RX4...74            1     6     0 21.0 160.0 110 3.90 2.620 16.46    4
+Mazda RX4 Wag...75        1     6     0 21.0 160.0 110 3.90 2.875 17.02    4
+Ferrari Dino...76         1     6     0 19.7 145.0 175 3.62 2.770 15.50    5
+Mazda RX4...77            1     6 Total 21.0 160.0 110 3.90 2.620 16.46    4
+Mazda RX4 Wag...78        1     6 Total 21.0 160.0 110 3.90 2.875 17.02    4
+Ferrari Dino...79         1     6 Total 19.7 145.0 175 3.62 2.770 15.50    5
+Ford Pantera L...80       1     8     0 15.8 351.0 264 4.22 3.170 14.50    5
+Maserati Bora...81        1     8     0 15.0 301.0 335 3.54 3.570 14.60    5
+Ford Pantera L...82       1     8 Total 15.8 351.0 264 4.22 3.170 14.50    5
+Maserati Bora...83        1     8 Total 15.0 301.0 335 3.54 3.570 14.60    5
+Mazda RX4...84            1 Total Total 21.0 160.0 110 3.90 2.620 16.46    4
+Mazda RX4 Wag...85        1 Total Total 21.0 160.0 110 3.90 2.875 17.02    4
+Datsun 710...86           1 Total Total 22.8 108.0  93 3.85 2.320 18.61    4
+Fiat 128...87             1 Total Total 32.4  78.7  66 4.08 2.200 19.47    4
+Honda Civic...88          1 Total Total 30.4  75.7  52 4.93 1.615 18.52    4
+Toyota Corolla...89       1 Total Total 33.9  71.1  65 4.22 1.835 19.90    4
+Fiat X1-9...90            1 Total Total 27.3  79.0  66 4.08 1.935 18.90    4
+Porsche 914-2...91        1 Total Total 26.0 120.3  91 4.43 2.140 16.70    5
+Lotus Europa...92         1 Total Total 30.4  95.1 113 3.77 1.513 16.90    5
+Ford Pantera L...93       1 Total Total 15.8 351.0 264 4.22 3.170 14.50    5
+Ferrari Dino...94         1 Total Total 19.7 145.0 175 3.62 2.770 15.50    5
+Maserati Bora...95        1 Total Total 15.0 301.0 335 3.54 3.570 14.60    5
+Volvo 142E...96           1 Total Total 21.4 121.0 109 4.11 2.780 18.60    4
+                         carb
+Merc 240D...1               2
+Merc 230...2                2
+Toyota Corona...3           1
+Merc 240D...4               2
+Merc 230...5                2
+Toyota Corona...6           1
+Hornet 4 Drive...7          1
+Valiant...8                 1
+Merc 280...9                4
+Merc 280C...10              4
+Hornet 4 Drive...11         1
+Valiant...12                1
+Merc 280...13               4
+Merc 280C...14              4
+Hornet Sportabout...15      2
+Duster 360...16             4
+Merc 450SE...17             3
+Merc 450SL...18             3
+Merc 450SLC...19            3
+Cadillac Fleetwood...20     4
+Lincoln Continental...21    4
+Chrysler Imperial...22      4
+Dodge Challenger...23       2
+AMC Javelin...24            2
+Camaro Z28...25             4
+Pontiac Firebird...26       2
+Hornet Sportabout...27      2
+Duster 360...28             4
+Merc 450SE...29             3
+Merc 450SL...30             3
+Merc 450SLC...31            3
+Cadillac Fleetwood...32     4
+Lincoln Continental...33    4
+Chrysler Imperial...34      4
+Dodge Challenger...35       2
+AMC Javelin...36            2
+Camaro Z28...37             4
+Pontiac Firebird...38       2
+Hornet 4 Drive...39         1
+Hornet Sportabout...40      2
+Valiant...41                1
+Duster 360...42             4
+Merc 240D...43              2
+Merc 230...44               2
+Merc 280...45               4
+Merc 280C...46              4
+Merc 450SE...47             3
+Merc 450SL...48             3
+Merc 450SLC...49            3
+Cadillac Fleetwood...50     4
+Lincoln Continental...51    4
+Chrysler Imperial...52      4
+Toyota Corona...53          1
+Dodge Challenger...54       2
+AMC Javelin...55            2
+Camaro Z28...56             4
+Pontiac Firebird...57       2
+Porsche 914-2...58          2
+Datsun 710...59             1
+Fiat 128...60               1
+Honda Civic...61            2
+Toyota Corolla...62         1
+Fiat X1-9...63              1
+Lotus Europa...64           2
+Volvo 142E...65             2
+Datsun 710...66             1
+Fiat 128...67               1
+Honda Civic...68            2
+Toyota Corolla...69         1
+Fiat X1-9...70              1
+Porsche 914-2...71          2
+Lotus Europa...72           2
+Volvo 142E...73             2
+Mazda RX4...74              4
+Mazda RX4 Wag...75          4
+Ferrari Dino...76           6
+Mazda RX4...77              4
+Mazda RX4 Wag...78          4
+Ferrari Dino...79           6
+Ford Pantera L...80         4
+Maserati Bora...81          8
+Ford Pantera L...82         4
+Maserati Bora...83          8
+Mazda RX4...84              4
+Mazda RX4 Wag...85          4
+Datsun 710...86             1
+Fiat 128...87               1
+Honda Civic...88            2
+Toyota Corolla...89         1
+Fiat X1-9...90              1
+Porsche 914-2...91          2
+Lotus Europa...92           2
+Ford Pantera L...93         4
+Ferrari Dino...94           6
+Maserati Bora...95          8
+Volvo 142E...96             2</code></pre>
 </div>
 </div>
 
@@ -815,236 +551,243 @@ Maserati Bora...192          8</code></pre>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
-window.document.addEventListener("DOMContentLoaded", function (event) {
-  const toggleBodyColorMode = (bsSheetEl) => {
-    const mode = bsSheetEl.getAttribute("data-mode");
-    const bodyEl = window.document.querySelector("body");
-    if (mode === "dark") {
-      bodyEl.classList.add("quarto-dark");
-      bodyEl.classList.remove("quarto-light");
-    } else {
-      bodyEl.classList.add("quarto-light");
-      bodyEl.classList.remove("quarto-dark");
-    }
-  }
-  const toggleBodyColorPrimary = () => {
-    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
-    if (bsSheetEl) {
-      toggleBodyColorMode(bsSheetEl);
-    }
-  }
-  toggleBodyColorPrimary();  
-  const icon = "";
-  const anchorJS = new window.AnchorJS();
-  anchorJS.options = {
-    placement: 'right',
-    icon: icon
-  };
-  anchorJS.add('.anchored');
-  const isCodeAnnotation = (el) => {
-    for (const clz of el.classList) {
-      if (clz.startsWith('code-annotation-')) {                     
-        return true;
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
       }
+      return false;
     }
-    return false;
-  }
-  const onCopySuccess = function(e) {
-    // button target
-    const button = e.trigger;
-    // don't keep focus
-    button.blur();
-    // flash "checked"
-    button.classList.add('code-copy-button-checked');
-    var currentTitle = button.getAttribute("title");
-    button.setAttribute("title", "Copied!");
-    let tooltip;
-    if (window.bootstrap) {
-      button.setAttribute("data-bs-toggle", "tooltip");
-      button.setAttribute("data-bs-placement", "left");
-      button.setAttribute("data-bs-title", "Copied!");
-      tooltip = new bootstrap.Tooltip(button, 
-        { trigger: "manual", 
-          customClass: "code-copy-button-tooltip",
-          offset: [0, -8]});
-      tooltip.show();    
-    }
-    setTimeout(function() {
-      if (tooltip) {
-        tooltip.hide();
-        button.removeAttribute("data-bs-title");
-        button.removeAttribute("data-bs-toggle");
-        button.removeAttribute("data-bs-placement");
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
       }
-      button.setAttribute("title", currentTitle);
-      button.classList.remove('code-copy-button-checked');
-    }, 1000);
-    // clear code selection
-    e.clearSelection();
-  }
-  const getTextToCopy = function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
       for (const childEl of codeEl.children) {
         if (isCodeAnnotation(childEl)) {
           childEl.remove();
         }
       }
       return codeEl.innerText;
-  }
-  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
-    text: getTextToCopy
-  });
-  clipboard.on('success', onCopySuccess);
-  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
-    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
-      text: getTextToCopy,
-      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
     });
-    clipboardModal.on('success', onCopySuccess);
-  }
-    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
-    var mailtoRegex = new RegExp(/^mailto:/);
-      var filterRegex = new RegExp('/' + window.location.host + '/');
-    var isInternal = (href) => {
-        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
     }
-    // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
-    for (var i=0; i<links.length; i++) {
-      const link = links[i];
-      if (!isInternal(link.href)) {
-        // undo the damage that might have been done by quarto-nav.js in the case of
-        // links that we want to consider external
-        if (link.dataset.originalHref !== undefined) {
-          link.href = link.dataset.originalHref;
-        }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
       }
-    }
-  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
-    const config = {
-      allowHTML: true,
-      maxWidth: 500,
-      delay: 100,
-      arrow: false,
-      appendTo: function(el) {
-          return el.parentElement;
-      },
-      interactive: true,
-      interactiveBorder: 10,
-      theme: 'quarto',
-      placement: 'bottom-start',
-    };
-    if (contentFn) {
-      config.content = contentFn;
-    }
-    if (onTriggerFn) {
-      config.onTrigger = onTriggerFn;
-    }
-    if (onUntriggerFn) {
-      config.onUntrigger = onUntriggerFn;
-    }
-    window.tippy(el, config); 
-  }
-  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
-  for (var i=0; i<noterefs.length; i++) {
-    const ref = noterefs[i];
-    tippyHover(ref, function() {
-      // use id or data attribute instead here
-      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
-      try { href = new URL(href).hash; } catch {}
-      const id = href.replace(/^#\/?/, "");
-      const note = window.document.getElementById(id);
-      if (note) {
-        return note.innerHTML;
-      } else {
-        return "";
-      }
-    });
-  }
-  const xrefs = window.document.querySelectorAll('a.quarto-xref');
-  const processXRef = (id, note) => {
-    // Strip column container classes
-    const stripColumnClz = (el) => {
-      el.classList.remove("page-full", "page-columns");
-      if (el.children) {
-        for (const child of el.children) {
-          stripColumnClz(child);
-        }
-      }
-    }
-    stripColumnClz(note)
-    if (id === null || id.startsWith('sec-')) {
-      // Special case sections, only their first couple elements
-      const container = document.createElement("div");
-      if (note.children && note.children.length > 2) {
-        container.appendChild(note.children[0].cloneNode(true));
-        for (let i = 1; i < note.children.length; i++) {
-          const child = note.children[i];
-          if (child.tagName === "P" && child.innerText === "") {
-            continue;
-          } else {
-            container.appendChild(child.cloneNode(true));
-            break;
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
           }
         }
-        if (window.Quarto?.typesetMath) {
-          window.Quarto.typesetMath(container);
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
         }
-        return container.innerHTML
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
       } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
         if (window.Quarto?.typesetMath) {
           window.Quarto.typesetMath(note);
         }
-        return note.innerHTML;
-      }
-    } else {
-      // Remove any anchor links if they are present
-      const anchorLink = note.querySelector('a.anchorjs-link');
-      if (anchorLink) {
-        anchorLink.remove();
-      }
-      if (window.Quarto?.typesetMath) {
-        window.Quarto.typesetMath(note);
-      }
-      if (note.classList.contains("callout")) {
-        return note.outerHTML;
-      } else {
-        return note.innerHTML;
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
       }
     }
-  }
-  for (var i=0; i<xrefs.length; i++) {
-    const xref = xrefs[i];
-    tippyHover(xref, undefined, function(instance) {
-      instance.disable();
-      let url = xref.getAttribute('href');
-      let hash = undefined; 
-      if (url.startsWith('#')) {
-        hash = url;
-      } else {
-        try { hash = new URL(url).hash; } catch {}
-      }
-      if (hash) {
-        const id = hash.replace(/^#\/?/, "");
-        const note = window.document.getElementById(id);
-        if (note !== null) {
-          try {
-            const html = processXRef(id, note.cloneNode(true));
-            instance.setContent(html);
-          } finally {
-            instance.enable();
-            instance.show();
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
           }
         } else {
-          // See if we can fetch this
-          fetch(url.split('#')[0])
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
           .then(res => res.text())
           .then(html => {
             const parser = new DOMParser();
             const htmlDoc = parser.parseFromString(html, "text/html");
-            const note = htmlDoc.getElementById(id);
+            const note = htmlDoc.querySelector('main.content');
             if (note !== null) {
-              const html = processXRef(id, note);
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
               instance.setContent(html);
             } 
           }).finally(() => {
@@ -1052,185 +795,161 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             instance.show();
           });
         }
-      } else {
-        // See if we can fetch a full url (with no hash to target)
-        // This is a special case and we should probably do some content thinning / targeting
-        fetch(url)
-        .then(res => res.text())
-        .then(html => {
-          const parser = new DOMParser();
-          const htmlDoc = parser.parseFromString(html, "text/html");
-          const note = htmlDoc.querySelector('main.content');
-          if (note !== null) {
-            // This should only happen for chapter cross references
-            // (since there is no id in the URL)
-            // remove the first header
-            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
-              note.children[0].remove();
-            }
-            const html = processXRef(null, note);
-            instance.setContent(html);
-          } 
-        }).finally(() => {
-          instance.enable();
-          instance.show();
-        });
-      }
-    }, function(instance) {
-    });
-  }
-      let selectedAnnoteEl;
-      const selectorForAnnotation = ( cell, annotation) => {
-        let cellAttr = 'data-code-cell="' + cell + '"';
-        let lineAttr = 'data-code-annotation="' +  annotation + '"';
-        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
-        return selector;
-      }
-      const selectCodeLines = (annoteEl) => {
-        const doc = window.document;
-        const targetCell = annoteEl.getAttribute("data-target-cell");
-        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
-        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
-        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
-        const lineIds = lines.map((line) => {
-          return targetCell + "-" + line;
-        })
-        let top = null;
-        let height = null;
-        let parent = null;
-        if (lineIds.length > 0) {
-            //compute the position of the single el (top and bottom and make a div)
-            const el = window.document.getElementById(lineIds[0]);
-            top = el.offsetTop;
-            height = el.offsetHeight;
-            parent = el.parentElement.parentElement;
-          if (lineIds.length > 1) {
-            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
-            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
-            height = bottom - top;
-          }
-          if (top !== null && height !== null && parent !== null) {
-            // cook up a div (if necessary) and position it 
-            let div = window.document.getElementById("code-annotation-line-highlight");
-            if (div === null) {
-              div = window.document.createElement("div");
-              div.setAttribute("id", "code-annotation-line-highlight");
-              div.style.position = 'absolute';
-              parent.appendChild(div);
-            }
-            div.style.top = top - 2 + "px";
-            div.style.height = height + 4 + "px";
-            div.style.left = 0;
-            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
-            if (gutterDiv === null) {
-              gutterDiv = window.document.createElement("div");
-              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
-              gutterDiv.style.position = 'absolute';
-              const codeCell = window.document.getElementById(targetCell);
-              const gutter = codeCell.querySelector('.code-annotation-gutter');
-              gutter.appendChild(gutterDiv);
-            }
-            gutterDiv.style.top = top - 2 + "px";
-            gutterDiv.style.height = height + 4 + "px";
-          }
-          selectedAnnoteEl = annoteEl;
-        }
-      };
-      const unselectCodeLines = () => {
-        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
-        elementsIds.forEach((elId) => {
-          const div = window.document.getElementById(elId);
-          if (div) {
-            div.remove();
-          }
-        });
-        selectedAnnoteEl = undefined;
-      };
-        // Handle positioning of the toggle
-    window.addEventListener(
-      "resize",
-      throttle(() => {
-        elRect = undefined;
-        if (selectedAnnoteEl) {
-          selectCodeLines(selectedAnnoteEl);
-        }
-      }, 10)
-    );
-    function throttle(fn, ms) {
-    let throttle = false;
-    let timer;
-      return (...args) => {
-        if(!throttle) { // first call gets through
-            fn.apply(this, args);
-            throttle = true;
-        } else { // all the others get throttled
-            if(timer) clearTimeout(timer); // cancel #2
-            timer = setTimeout(() => {
-              fn.apply(this, args);
-              timer = throttle = false;
-            }, ms);
-        }
-      };
-    }
-      // Attach click handler to the DT
-      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
-      for (const annoteDlNode of annoteDls) {
-        annoteDlNode.addEventListener('click', (event) => {
-          const clickedEl = event.target;
-          if (clickedEl !== selectedAnnoteEl) {
-            unselectCodeLines();
-            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
-            if (activeEl) {
-              activeEl.classList.remove('code-annotation-active');
-            }
-            selectCodeLines(clickedEl);
-            clickedEl.classList.add('code-annotation-active');
-          } else {
-            // Unselect the line
-            unselectCodeLines();
-            clickedEl.classList.remove('code-annotation-active');
-          }
-        });
-      }
-  const findCites = (el) => {
-    const parentEl = el.parentElement;
-    if (parentEl) {
-      const cites = parentEl.dataset.cites;
-      if (cites) {
-        return {
-          el,
-          cites: cites.split(' ')
-        };
-      } else {
-        return findCites(el.parentElement)
-      }
-    } else {
-      return undefined;
-    }
-  };
-  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
-  for (var i=0; i<bibliorefs.length; i++) {
-    const ref = bibliorefs[i];
-    const citeInfo = findCites(ref);
-    if (citeInfo) {
-      tippyHover(citeInfo.el, function() {
-        var popup = window.document.createElement('div');
-        citeInfo.cites.forEach(function(cite) {
-          var citeDiv = window.document.createElement('div');
-          citeDiv.classList.add('hanging-indent');
-          citeDiv.classList.add('csl-entry');
-          var biblioDiv = window.document.getElementById('ref-' + cite);
-          if (biblioDiv) {
-            citeDiv.innerHTML = biblioDiv.innerHTML;
-          }
-          popup.appendChild(citeDiv);
-        });
-        return popup.innerHTML;
+      }, function(instance) {
       });
     }
-  }
-});
-</script>
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
 </div> <!-- /content -->
 
 
