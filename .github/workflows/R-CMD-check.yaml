@@ -57,17 +57,16 @@ jobs:
           if (is.na(release) || !grepl("^[0-9]+[.][0-9]+$", release)) {
             stop("Could not derive the release R series from: ", user_agent)
           }
-          p3m <- sprintf(
-            paste0(
-              "https://packagemanager.posit.co/cran/latest/bin/linux/",
-              "noble-x86_64/%s"
-            ),
-            release
-          )
+          # setup-r selects the P3M repository for the runner's Linux
+          # distribution and architecture (for example noble or resolute).
+          p3m <- Sys.getenv("RSPM")
+          p3m_prefix <- "https://packagemanager.posit.co/cran/__linux__/"
+          if (!nzchar(p3m) || !startsWith(p3m, p3m_prefix)) {
+            stop("setup-r did not configure a supported P3M repository: ", p3m)
+          }
           variables <- c(
             PKG_R_VERSIONS = release,
             PKG_CRAN_MIRROR = p3m,
-            RSPM = p3m,
             RENV_CONFIG_REPOS_OVERRIDE = p3m
           )
           write(
