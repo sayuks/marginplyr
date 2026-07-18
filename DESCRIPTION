@@ -37,6 +37,11 @@ Suggests:
     tibble,
     tidyr,
 Config/testthat/edition: 3
+Config/Needs/website:
+    altdoc,
+    knitr,
+    quartabs,
+    tibble
 Encoding: UTF-8
 Language: en-US
 Roxygen: list(markdown = TRUE)

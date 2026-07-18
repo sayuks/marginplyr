@@ -10,4 +10,5 @@
 ^altdoc$
 ^_quarto$
 ^sandbox$
+^investigation$
 ^cran-comments\.md$
