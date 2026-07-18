@@ -45,11 +45,10 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
 
-      # P3M does not publish binaries for the development R series. Point pak at
-      # P3M's explicit Linux binary repository for the compatible release series.
-      # setup-r's release user agent lets us derive that series without hard-coding
-      # an R version that would become stale.
-      - name: Select P3M binary repository for R-devel
+      # P3M does not publish binaries for the development R series. Base R can
+      # install P3M's Linux binaries directly, after which pak keeps the already
+      # installed versions while resolving the rest of the check dependencies.
+      - name: Install P3M binary backends for R-devel
         if: matrix.config.r == 'devel'
         run: |
           user_agent <- getOption("HTTPUserAgent")
@@ -77,6 +76,25 @@ jobs:
             append = TRUE
           )
           message("Using P3M binary repository: ", p3m)
+
+          install.packages(
+            c("arrow", "duckdb"),
+            repos = p3m,
+            dependencies = NA
+          )
+
+          packages <- c("arrow", "duckdb")
+          built <- vapply(
+            packages,
+            packageDescription,
+            FUN.VALUE = character(1),
+            fields = "Built"
+          )
+          print(data.frame(package = packages, built = unname(built)))
+          expected <- paste0("R ", release, ".")
+          if (!all(startsWith(built, expected))) {
+            stop("P3M did not serve release binaries for Arrow and DuckDB")
+          }
         shell: Rscript {0}
 
       - name: Install full dependencies
@@ -84,6 +102,7 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
+          cache-version: 2
 
       - name: Verify P3M binary backends on R-devel
         if: matrix.config.r == 'devel'
