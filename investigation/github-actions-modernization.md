@@ -45,9 +45,10 @@ An actual hosted-runner check showed that the full `Suggests` set took more
 than 55 minutes to compile on R-devel and was still building `arrow` when the
 job was stopped. This package's release jobs continue to install and test all
 suggested backends, including Arrow and DuckDB. The R-devel job now installs
-only hard dependencies plus `rcmdcheck` and `testthat`, skips vignette builds,
-and focuses on compatibility with the next R version. This uses the supported
-`dependencies` and `install-quarto` inputs documented by
+only hard dependencies plus `rcmdcheck`, `testthat`, and the lightweight
+`RSQLite` test backend, skips vignette builds, and focuses on compatibility
+with the next R version. This uses the supported `dependencies` and
+`install-quarto` inputs documented by
 [`setup-r-dependencies`](https://github.com/r-lib/actions/blob/v2/setup-r-dependencies/action.yaml).
 
 ## altdoc and GitHub Pages
