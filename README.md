@@ -7,6 +7,7 @@
 
 <a href = "https://CRAN.R-project.org/package=marginplyr" target = "_blank"><img src="https://www.r-pkg.org/badges/version/marginplyr"></a>
 [![R-CMD-check](https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml)
+[![altdoc](https://github.com/sayuks/marginplyr/actions/workflows/altdoc.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/altdoc.yaml)
 [![Codecov test
 coverage](https://codecov.io/gh/sayuks/marginplyr/graph/badge.svg)](https://app.codecov.io/gh/sayuks/marginplyr)
 [![lint.yaml](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml)
@@ -130,6 +131,37 @@ summarize_with_margins(
 #> 11 4     1     4     2     Total     4
 #> 12 4     1     5     2     1         1
 ```
+
+### Quarto tabset reports
+
+`nest_by_with_margins()` creates detail, subtotal, and grand-total
+groups that can be rendered directly as nested Quarto tabs with
+[`quartabs`](https://sayuks.github.io/quartabs/):
+
+``` r
+# In a Quarto R chunk with: #| results: asis
+mtcars |>
+  nest_by_with_margins(.grouping = rollup(cyl, vs)) |>
+  dplyr::mutate(
+    report = list(
+      data |>
+        dplyr::summarize(
+          rows = dplyr::n(),
+          mean_mpg = mean(mpg)
+        ) |>
+        knitr::kable()
+    )
+  ) |>
+  dplyr::ungroup() |>
+  quartabs::render_tabset(
+    tabset_vars = c(cyl, vs),
+    output_vars = report
+  )
+```
+
+The [Get started
+guide](https://sayuks.github.io/marginplyr/vignettes/get_started.html#quarto-tabset-reports-with-quartabs)
+contains a live, executable tabset.
 
 DuckDB and PostgreSQL use one native `GROUP BY GROUPING SETS` query.
 Other lazy backends use a portable `UNION ALL` adapter with the same

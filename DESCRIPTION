@@ -18,20 +18,23 @@ Imports:
     tidyselect (>= 1.2.0),
     utils
 Suggests: 
-    altdoc,
+    altdoc (>= 0.7.3),
     arrow,
     data.table,
     DBI,
     dtplyr,
     duckdb,
     ggplot2,
+    knitr,
     purrr,
+    quartabs (>= 0.1.1),
     quarto,
     RSQLite,
     sessioninfo,
     spelling,
     stringr,
     testthat (>= 3.0.0),
+    tibble,
     tidyr,
 Config/testthat/edition: 3
 Encoding: UTF-8

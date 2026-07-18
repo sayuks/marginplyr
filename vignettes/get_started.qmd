@@ -13,6 +13,17 @@ date: last-modified
 grouping specification can be executed locally, translated to native SQL, or
 expanded to a portable `UNION ALL` query.
 
+## Installation
+
+Install the development version from GitHub:
+
+```{r}
+#| eval: false
+
+# install.packages("pak")
+pak::pak("sayuks/marginplyr")
+```
+
 ```{r setup}
 library(marginplyr)
 library(dplyr)
@@ -249,6 +260,47 @@ sales |>
 `union_all_with_margins()` emits one input-row copy per grouping set.
 `nest_with_margins()` returns an ordinary nested result, while
 `nest_by_with_margins()` returns its row-wise counterpart.
+
+## Quarto tabset reports with quartabs
+
+[`quartabs`](https://sayuks.github.io/quartabs/) turns columns of a data frame
+into nested Quarto tabsets. It pairs naturally with
+`nest_by_with_margins()`: detail groups, subtotals, and the grand total become
+tabs backed by the corresponding rows of the original data.
+
+The chunk option `results: asis` is required because `render_tabset()` emits
+Quarto tabset markup. The rendered tabs below are generated when this page is
+built; they are not a static screenshot.
+
+```{r}
+#| results: asis
+
+tabbed_report <- sales |>
+  nest_by_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    report = list(
+      data |>
+        summarize(
+          rows = n(),
+          amount = sum(amount)
+        ) |>
+        knitr::kable(col.names = c("Rows", "Amount"))
+    )
+  ) |>
+  ungroup()
+
+tabbed_report |>
+  quartabs::render_tabset(
+    tabset_vars = c(region, store),
+    output_vars = report
+  )
+```
+
+Tabs labelled `"Total"` are subtotal or grand-total levels created by the
+grouping plan. `quartabs` sorts tab labels, so their visual position follows
+the label ordering rather than the SQL grouping-set order.
 
 ## Database execution
 
