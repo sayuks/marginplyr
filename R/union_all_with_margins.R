@@ -1,54 +1,68 @@
-# nolint start: line_length_linter
-#' `UNION ALL` with margins
+#' Expand rows with SQL-style grouping margins
 #'
-#' This function considers each margin (such as total) as a new category,
-#' duplicate the rows and merge them vertically (like `UNION ALL` in SQL).
-#' See [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
-#' for more details.
+#' `union_all_with_margins()` emits one copy of each input row for every
+#' grouping set, replacing omitted grouping dimensions with `.margin_label`.
+#' This is analogous to vertically combining the grouping branches with SQL
+#' `UNION ALL`.
 #'
-#' @inherit summarize_with_margins
-#' @details
-#' * Consider each margin as a new category, duplicate the rows and merge them
-#'   vertically (like `UNION ALL` in SQL).
-#' * The use of arguments in common with `summarize_with_margins()` is the same
-#'   as for it.
-#' * __Be aware that the number of rows can be huge.__
-#' @references
-#'  * Online documentation: [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+#' @inheritParams summarize_with_margins
+#' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
 #' union_all_with_margins(
 #'   mtcars,
-#'   .rollup = c(cyl, vs),
 #'   .by = am,
-#'   .cube = gear
+#'   .grouping = rollup(cyl, vs)
 #' )
-# nolint end
 union_all_with_margins <- function(.data,
-                                   .rollup = NULL,
                                    .by = NULL,
-                                   .cube = NULL,
-                                   .margin_name = "(all)",
-                                   .check_margin_name = is.data.frame(.data),
+                                   .grouping = NULL,
+                                   .margin_label = "Total",
+                                   .check_margin_label = is.data.frame(.data),
+                                   .duplicates = c("error", "drop", "keep"),
                                    .sort = is.data.frame(.data)) {
   assert_lazy_table(.data)
-  assert_logical_scalar(.check_margin_name)
+  assert_logical_scalar(.check_margin_label)
   assert_logical_scalar(.sort)
-  assert_string_scalar(.margin_name)
+  .margin_label <- normalize_margin_label(.margin_label)
+  .duplicates <- match.arg(.duplicates)
 
-  .f <- function(.data, .margin_pairs, .by) {
-    dplyr::mutate(.data = .data, !!!.margin_pairs)
-  }
+  grouping_quo <- rlang::enquo(.grouping)
+  grouping_spec <- rlang::eval_tidy(grouping_quo)
+  .data <- dplyr::ungroup(.data)
+  by <- get_col_names(.data, {{ .by }})
+  data_vars <- get_col_names(.data, dplyr::everything())
+  data_proxy <- grouping_selection_proxy(.data)
+  plan <- compile_grouping_spec(
+    grouping_spec,
+    data_vars = data_vars,
+    data_proxy = data_proxy,
+    .by = by,
+    .duplicates = .duplicates
+  )
 
-  with_margins(
-    .data = .data,
-    .rollup = {{ .rollup }},
-    .by = {{ .by }},
-    .cube = {{ .cube }},
-    .margin_name = .margin_name,
-    .check_margin_name = .check_margin_name,
-    .f = .f,
+  column_info <- margin_column_info(.data, plan$dimensions)
+  validate_margin_label(
+    .data,
+    dimensions = plan$dimensions,
+    .margin_label = .margin_label,
+    .check_margin_label = .check_margin_label,
+    column_info = column_info
+  )
+
+  result <- expand_margin_union(
+    .data,
+    plan = plan,
+    .margin_label = .margin_label,
+    column_info = column_info
+  )
+
+  finish_margin_result(
+    result,
+    plan = plan,
+    factor_info = column_info$factors,
+    .margin_label = .margin_label,
     .sort = .sort
   )
 }

@@ -23,7 +23,9 @@ knitr::opts_chunk$set(
 <a href = "https://sayuks.github.io/marginplyr/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/marginplyr"></a>
 <!-- badges: end -->
 
-`marginplyr` is an R package that summarize data with margins (totals) and expand data by treating margins as category levels. Supports [tidyverse](https://www.tidyverse.org/) workflows for analysis.
+`marginplyr` brings SQL-style `GROUPING SETS`, `ROLLUP`, and `CUBE` to
+`dplyr`. The same grouping specification works with local data frames and
+lazy database tables, with `"Total"` as the default display label.
 
 ## Installation
 
@@ -45,16 +47,51 @@ pak::pak("sayuks/marginplyr")
 library(marginplyr)
 ```
 
-### Summarize with hierarchical margins for `cyl` and `vs`.
+### Hierarchical totals with `rollup()`
 
 ```{r}
 summarize_with_margins(
   mtcars,
   n = dplyr::n(),
-  mpg = mean(mpg, na.rm = TRUE),
-  .rollup = c(cyl, vs),
+  mean_mpg = mean(mpg, na.rm = TRUE),
+  level = grouping_id(cyl, vs),
+  .grouping = rollup(cyl, vs)
 )
 ```
+
+### Arbitrary grouping sets, including the grand total
+
+```{r}
+summarize_with_margins(
+  mtcars,
+  n = dplyr::n(),
+  .grouping = grouping_sets(
+    grouping_set(cyl, vs),
+    grouping_set(cyl, gear),
+    grouping_set()
+  )
+)
+```
+
+`grouping_spec()` combines grouping families by Cartesian product. Composite
+dimensions stay together inside a rollup or cube:
+
+```{r}
+summarize_with_margins(
+  mtcars,
+  n = dplyr::n(),
+  .grouping = grouping_spec(
+    rollup(cyl, vs),
+    cube(grouping_set(gear, carb), am)
+  )
+) |>
+  dplyr::slice_head(n = 12)
+```
+
+DuckDB and PostgreSQL use one native `GROUP BY GROUPING SETS` query. Other
+lazy backends use a portable `UNION ALL` adapter with the same result
+semantics. `grouping()` and `grouping_id()` distinguish source missing values
+from rows produced by aggregation.
 
 See [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) for more details.
 

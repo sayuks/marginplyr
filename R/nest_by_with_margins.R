@@ -1,58 +1,45 @@
-# nolint start: line_length_linter
-#' Works like `dplyr::nest_by()` with margins
+#' Nest by SQL-style grouping margins
 #'
-#' This function considers each margin (such as total) as a new category,
-#' works like [dplyr::nest_by()].
-#' See [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
-#' for more details.
+#' This is the row-wise counterpart of [nest_with_margins()].
 #'
-#' @inherit nest_with_margins
-#' @details
-#' * Works like `dplyr::nest_by(<data>, dplyr::pick({{ .by }} , {{ .rollup }} , {{ .cube }})`
-#'   with margins.
-#' * Only works for a local data frame.
-#' @return A row-wise data frame grouped by `without_all`, `.rollup`
-#' and `.cube`.
+#' @inheritParams nest_with_margins
+#' @return A row-wise data frame grouped by the visible grouping columns.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
 #' nest_by_with_margins(
 #'   mtcars,
-#'   .rollup = c(cyl, vs),
-#'   .by = am,
-#'   .cube = gear
+#'   .grouping = rollup(cyl, vs)
 #' )
-# nolint end
 nest_by_with_margins <- function(.data,
-                                 .rollup = NULL,
                                  .by = NULL,
-                                 .cube = NULL,
-                                 .margin_name = "(all)",
-                                 .check_margin_name = TRUE,
+                                 .grouping = NULL,
+                                 .margin_label = "Total",
+                                 .check_margin_label = TRUE,
+                                 .duplicates = c("error", "drop", "keep"),
                                  .sort = TRUE,
                                  .key = "data",
                                  .keep = FALSE) {
-  assert_nest_possible(.data)
-  assert_logical_scalar(.check_margin_name)
-  assert_logical_scalar(.sort)
-  assert_logical_scalar(.keep)
-  assert_string_scalar(.margin_name)
-  assert_string_scalar(.key)
+  grouping_quo <- rlang::enquo(.grouping)
+  by_quo <- rlang::enquo(.by)
 
-  .data <- nest_with_margins(
-    .data = .data,
-    .rollup = {{ .rollup }},
-    .by = {{ .by }},
-    .cube = {{ .cube }},
-    .margin_name = .margin_name,
-    .check_margin_name = .check_margin_name,
-    .sort = .sort,
-    .key = .key,
-    .keep = .keep
+  result <- rlang::inject(
+    nest_with_margins(
+      .data = .data,
+      .by = !!by_quo,
+      .grouping = !!grouping_quo,
+      .margin_label = .margin_label,
+      .check_margin_label = .check_margin_label,
+      .duplicates = .duplicates,
+      .sort = .sort,
+      .key = .key,
+      .keep = .keep
+    )
   )
 
-  dplyr::rowwise(
-    data = .data,
-    c({{ .by }}, {{ .rollup }}, {{ .cube }})
-  )
+  if (inherits(result, "dtplyr_step")) {
+    result <- dplyr::collect(result)
+  }
+  group_cols <- setdiff(colnames(result), .key)
+  dplyr::rowwise(result, dplyr::all_of(group_cols))
 }

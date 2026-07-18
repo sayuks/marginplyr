@@ -1,158 +1,168 @@
-# nolint start: line_length_linter
-#' Works like `tidyr::nest()` with margins
+#' Nest data with SQL-style grouping margins
 #'
-#' This function considers each margin (such as total) as a new category,
-#' works like [tidyr::nest()].
-#' See [Get started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
-#' for more details.
+#' `nest_with_margins()` creates one nested data frame for every group in every
+#' grouping set. It works with local data frames and `dtplyr` steps.
 #'
-#' @inherit union_all_with_margins
-#' @inheritParams tidyr::nest
-#' @param .data A data frame.
-#' @param .sort A Logical (default to `TRUE`). If `TRUE`, sort the result
-#'   by the column order specified in `.by` and `.rollup` and
-#'   `.cube`.
-#' @param .key A string. The name of the resulting nested column.
-#' @param .keep A logical. Should the grouping columns be kept in the list
-#'   column.
-#' @details
-#' * Works like `tidyr::nest(<data>, .by = c({{ .by }}, {{ .rollup }}, {{ .cube }}))`
-#'   with margins.
-#' * Only works for a local data frame.
-#' @return A data frame.
+#' @inheritParams summarize_with_margins
+#' @param .key A non-missing string naming the list column.
+#' @param .keep Should grouping columns also be kept inside each nested data
+#'   frame?
+#'
+#' @return An ungrouped data frame with one list column.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
 #' nest_with_margins(
 #'   mtcars,
-#'   .rollup = c(cyl, vs),
-#'   .by = am,
-#'   .cube = gear
+#'   .grouping = rollup(cyl, vs)
 #' )
-# nolint end
 nest_with_margins <- function(.data,
-                              .rollup = NULL,
                               .by = NULL,
-                              .cube = NULL,
-                              .margin_name = "(all)",
-                              .check_margin_name = TRUE,
+                              .grouping = NULL,
+                              .margin_label = "Total",
+                              .check_margin_label = TRUE,
+                              .duplicates = c("error", "drop", "keep"),
                               .sort = TRUE,
                               .key = "data",
                               .keep = FALSE) {
   assert_nest_possible(.data)
-  assert_logical_scalar(.check_margin_name)
+  assert_logical_scalar(.check_margin_label)
   assert_logical_scalar(.sort)
   assert_logical_scalar(.keep)
-  assert_string_scalar(.margin_name)
   assert_string_scalar(.key)
-  stopifnot(!is.na(.key))
+  if (is.na(.key)) {
+    stop("`.key` must not be missing.", call. = FALSE)
+  }
+  if (!nzchar(.key)) {
+    stop("`.key` must not be empty.", call. = FALSE)
+  }
+  if (identical(.key, ".marginplyr_set_id")) {
+    stop(
+      "`.key` must not use the reserved name `.marginplyr_set_id`.",
+      call. = FALSE
+    )
+  }
 
-  l <- list(
-    .rollup = get_col_names(.data, {{ .rollup }}),
-    .by = get_col_names(.data, {{ .by }}),
-    .cube = get_col_names(.data, {{ .cube }})
+  .margin_label <- normalize_margin_label(.margin_label)
+  .duplicates <- match.arg(.duplicates)
+  grouping_quo <- rlang::enquo(.grouping)
+  grouping_spec <- rlang::eval_tidy(grouping_quo)
+
+  .data <- dplyr::ungroup(.data)
+  by <- get_col_names(.data, {{ .by }})
+  data_vars <- get_col_names(.data, dplyr::everything())
+  data_proxy <- grouping_selection_proxy(.data)
+  plan <- compile_grouping_spec(
+    grouping_spec,
+    data_vars = data_vars,
+    data_proxy = data_proxy,
+    .by = by,
+    .duplicates = .duplicates
   )
-
-  margin_cols <- l$.rollup
-  without_all_cols <- l$.by
-  with_all_cols <- l$.cube
-
-  # early stop if there are no columns for which margins are calculated
-  stopifnot(
-    "At least one column must be specified in `.rollup` or `.cube`" =
-      length(margin_cols) > 0 || length(with_all_cols) > 0
-  )
-
-  # .rollup, .by and .cube must not contain common variables
-  assert_column_intersect(l)
-
-  group_cols <- c(margin_cols, without_all_cols, with_all_cols)
+  group_cols <- c(plan$by, plan$dimensions)
 
   if (.key %in% group_cols) {
     stop(
-      sprintf("`.key` (%s) ", .key),
-      "must not be the same as the column name specified in ",
-      "`.rollup`, `.cube`, or `.by`."
+      sprintf("`.key` (`%s`) must not be a grouping column.", .key),
+      call. = FALSE
+    )
+  }
+  if (".marginplyr_set_id" %in% data_vars) {
+    stop(
+      "Input column `.marginplyr_set_id` conflicts with an internal column.",
+      call. = FALSE
     )
   }
 
-  if (.keep) {
-    all_cols <- get_col_names(.data, dplyr::everything())
+  column_info <- margin_column_info(.data, plan$dimensions)
+  validate_margin_label(
+    .data,
+    dimensions = plan$dimensions,
+    .margin_label = .margin_label,
+    .check_margin_label = .check_margin_label,
+    column_info = column_info
+  )
 
-    tmp_cols <- paste0(group_cols, "_COPY__TMP_")
+  expanded <- expand_margin_union(
+    .data,
+    plan = plan,
+    .margin_label = .margin_label,
+    column_info = column_info,
+    include_set_id = TRUE
+  )
 
-    dup <- tmp_cols[tmp_cols %in% all_cols]
+  nested <- nest_expanded_margins(
+    expanded,
+    group_cols = group_cols,
+    .key = .key,
+    .keep = .keep,
+    data_vars = data_vars
+  )
 
-    if (length(dup) > 0) {
-      stop(
-        sprintf("If `.keep = TRUE`, column name(s) %s ", toString(dup)),
-        "will duplicate the column name with temporary column(s) ",
-        "created by an internal process. Consider renaming the column(s)."
-      )
-    }
-
-    .data <- dplyr::mutate(
-      .data = .data,
-      dplyr::across(
-        .cols = c({{ .by }}, {{ .rollup }}, {{ .cube }}),
-        .fns = identity,
-        .names = "{.col}_COPY__TMP_"
-      )
-    )
-
-    .f <- function(.data, .margin_pairs, .by) {
-      mp <- names(.margin_pairs)
-      v1 <- c(.by, mp)
-      v2 <- paste0(v1, "_COPY__TMP_")
-      names(v2) <- v1
-
-      res <- dplyr::summarize(
-        .data =  dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
-        "{.key}" := list({
-          d <- dplyr::rename(
-            .data = dplyr::pick(!dplyr::all_of(mp)),
-            dplyr::all_of(v2)
-          )
-
-          d <- dplyr::relocate(
-            .data = d,
-            c(
-              dplyr::all_of(without_all_cols),
-              dplyr::all_of(margin_cols),
-              dplyr::all_of(with_all_cols)
-            )
-          )
-
-          dplyr::mutate(
-            .data = d,
-            !!!.margin_pairs
-          )
-        }),
-        !!!.margin_pairs
-      )
-      dplyr::ungroup(res)
-    }
-  } else {
-    .f <- function(.data, .margin_pairs, .by) {
-      res <- dplyr::summarize(
-        .data =  dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
-        "{.key}" := list(dplyr::pick(!dplyr::all_of(names(.margin_pairs)))),
-        !!!.margin_pairs
-      )
-      dplyr::ungroup(res)
-    }
-  }
-
-  with_margins(
-    .data = .data,
-    .rollup = {{ .rollup }},
-    .by = {{ .by }},
-    .cube = {{ .cube }},
-    .margin_name = .margin_name,
-    .check_margin_name = .check_margin_name,
-    .f = .f,
+  finish_margin_result(
+    nested,
+    plan = plan,
+    factor_info = column_info$factors,
+    .margin_label = .margin_label,
     .sort = .sort
   )
+}
+
+nest_expanded_margins <- function(.data,
+                                  group_cols,
+                                  .key,
+                                  .keep,
+                                  data_vars) {
+  set_col <- ".marginplyr_set_id"
+  temp_cols <- paste0(group_cols, "_COPY__MARGINPLYR_")
+
+  conflicts <- intersect(temp_cols, data_vars)
+  if (.keep && length(conflicts) > 0L) {
+    stop(
+      "`.keep = TRUE` requires temporary column names that conflict with: ",
+      paste0("`", conflicts, "`", collapse = ", "),
+      call. = FALSE
+    )
+  }
+
+  if (.keep && length(group_cols) > 0L) {
+    .data <- dplyr::mutate(
+      .data,
+      dplyr::across(
+        dplyr::all_of(group_cols),
+        identity,
+        .names = "{.col}_COPY__MARGINPLYR_"
+      )
+    )
+  }
+
+  grouped <- dplyr::group_by(
+    .data,
+    dplyr::pick(dplyr::all_of(c(group_cols, set_col)))
+  )
+
+  if (.keep && length(group_cols) > 0L) {
+    rename_map <- stats::setNames(temp_cols, group_cols)
+    result <- dplyr::summarize(
+      grouped,
+      "{.key}" := list({
+        nested <- dplyr::rename(
+          dplyr::pick(dplyr::everything()),
+          dplyr::all_of(rename_map)
+        )
+        dplyr::relocate(nested, dplyr::all_of(group_cols))
+      }),
+      .groups = "drop"
+    )
+  } else {
+    result <- dplyr::summarize(
+      grouped,
+      "{.key}" := list(dplyr::pick(dplyr::everything())),
+      .groups = "drop"
+    )
+  }
+
+  dplyr::select(result, -dplyr::all_of(set_col))
 }
 
 utils::globalVariables(":=")

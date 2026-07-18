@@ -2,127 +2,65 @@
 % Please edit documentation in R/nest_by_with_margins.R
 \name{nest_by_with_margins}
 \alias{nest_by_with_margins}
-\title{Works like \code{dplyr::nest_by()} with margins}
+\title{Nest by SQL-style grouping margins}
 \usage{
 nest_by_with_margins(
   .data,
-  .rollup = NULL,
   .by = NULL,
-  .cube = NULL,
-  .margin_name = "(all)",
-  .check_margin_name = TRUE,
+  .grouping = NULL,
+  .margin_label = "Total",
+  .check_margin_label = TRUE,
+  .duplicates = c("error", "drop", "keep"),
   .sort = TRUE,
   .key = "data",
   .keep = FALSE
 )
 }
 \arguments{
-\item{.data}{A data frame.}
+\item{.data}{A data frame or lazy table.}
 
-\item{.rollup}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Grouping columns which
-margins are calculated, starting from the highest parent of the hierarchy.}
+\item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
+every grouping set. These columns never receive \code{.margin_label}.}
 
-\item{.by}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
-variables without hierarchy to which \code{.margin_name} will \emph{NOT} be added.}
+\item{.grouping}{A grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
+\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
+represents one empty grouping set.}
 
-\item{.cube}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
-variables without hierarchy to which \code{.margin_name} will be added.}
+\item{.margin_label}{A character scalar used to display columns omitted from
+a grouping set. The default is \code{"Total"}. Use \code{NULL} to keep typed missing
+values instead of inserting a display label.}
 
-\item{.margin_name}{A string representing margin name
-(Defaults to \code{"(all)"}). \code{NA_character_} is also allowed.}
+\item{.check_margin_label}{A logical scalar. If \code{TRUE}, check whether the
+display label already occurs in a grouping column.}
 
-\item{.check_margin_name}{A logical (defaults to \code{is.data.frame(.data)}).
-If \code{TRUE}, checks whether the string in \verb{.margin_name' already exists in the column specified by }.rollup\code{or}.cube` and returns an error
-if it already exists.}
+\item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
+duplicate grouping sets after expansion.}
 
-\item{.sort}{A Logical (default to \code{TRUE}). If \code{TRUE}, sort the result
-by the column order specified in \code{.by} and \code{.rollup} and
-\code{.cube}.}
+\item{.sort}{A logical scalar. If \code{TRUE}, sort by \code{.by} followed by grouping
+dimensions. It defaults to \code{TRUE} for local data frames and \code{FALSE} for
+lazy tables.}
 
-\item{.key}{A string. The name of the resulting nested column.}
+\item{.key}{A non-missing string naming the list column.}
 
-\item{.keep}{A logical. Should the grouping columns be kept in the list
-column.}
+\item{.keep}{Should grouping columns also be kept inside each nested data
+frame?}
 }
 \value{
-A row-wise data frame grouped by \code{without_all}, \code{.rollup}
-and \code{.cube}.
+A row-wise data frame grouped by the visible grouping columns.
 }
 \description{
-This function considers each margin (such as total) as a new category,
-works like \code{\link[dplyr:nest_by]{dplyr::nest_by()}}.
-See \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
-for more details.
+This is the row-wise counterpart of \code{\link[=nest_with_margins]{nest_with_margins()}}.
 }
-\details{
-\itemize{
-\item Works like \verb{dplyr::nest_by(<data>, dplyr::pick(\{\{ .by \}\} , \{\{ .rollup \}\} , \{\{ .cube \}\})}
-with margins.
-\item Only works for a local data frame.
-}
-}
-\section{About returned data}{
-
-\itemize{
-\item Missing values are kept as missing.
-\item The order of the columns is as follows from left to right:
-\code{.by}, \code{.rollup}, \code{.cube} and the remaining columns.
-\item Column types specified with \code{.rollup} or \code{.cube}:
-\itemize{
-\item Columns that are not originally factor or character
-(e.g. numeric, integer, logical, .etc) are converted to characters.
-This is required to add the \code{.margin_name} category.
-\item Originally the factor column (assuming a local data frame):
-\itemize{
-\item Remains as factor. (If ordered, remains as ordered).
-\item The level of the factor depends on the case:
-\itemize{
-\item If \code{.margin_name} is \emph{\strong{NOT}} a \code{NA_character}
-(such as \code{"(all)"}):
-\itemize{
-\item \code{.margin_name} is added to the
-beginning of the level of the factor.
-}
-\item If \code{.margin_name} is a \code{NA_character}:
-\itemize{
-\item If the column has \verb{<NA>} in the level:
-\itemize{
-\item Error occurs. Because, although the values with level
-\verb{<NA>} are not equal to \code{NA_character_}, they will be
-identical and indistinguishable when merging
-\code{NA_character_} as a new category.
-}
-\item If the column does not have \verb{<NA>} in the level:
-\itemize{
-\item Just keeps the original level of factor.
-\verb{<NA>} is not included in the level.
-This is consistent with the default
-\code{\link[=factor]{factor()}} behavior (\code{exclude = NA}).
-}
-}
-}
-}
-}
-}
-}
-
 \examples{
 nest_by_with_margins(
   mtcars,
-  .rollup = c(cyl, vs),
-  .by = am,
-  .cube = gear
+  .grouping = rollup(cyl, vs)
 )
 }
-\references{
-\itemize{
-\item Online documentation: \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
-}
-}
 \seealso{
-Other summarize and expand data with margins: 
-\code{\link{nest_with_margins}()},
-\code{\link{summarize_with_margins}()},
-\code{\link{union_all_with_margins}()}
+Other summarize and expand data with margins:
+\code{\link[=nest_with_margins]{nest_with_margins()}},
+\code{\link[=summarize_with_margins]{summarize_with_margins()}},
+\code{\link[=union_all_with_margins]{union_all_with_margins()}}
 }
 \concept{summarize and expand data with margins}

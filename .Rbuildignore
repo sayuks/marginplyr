@@ -10,3 +10,4 @@
 ^altdoc$
 ^_quarto$
 ^sandbox$
+^cran-comments\.md$

@@ -2,171 +2,95 @@
 % Please edit documentation in R/summarize_with_margins.R
 \name{summarize_with_margins}
 \alias{summarize_with_margins}
-\title{Works like \code{dplyr::summarize()} with margins}
+\title{Summarize data with SQL-style grouping operations}
 \usage{
 summarize_with_margins(
   .data,
   ...,
-  .rollup = NULL,
   .by = NULL,
-  .cube = NULL,
-  .margin_name = "(all)",
-  .check_margin_name = is.data.frame(.data),
+  .grouping = NULL,
+  .margin_label = "Total",
+  .check_margin_label = is.data.frame(.data),
+  .duplicates = c("error", "drop", "keep"),
   .sort = is.data.frame(.data)
 )
 }
 \arguments{
-\item{.data}{A data frame or lazy table.
-\itemize{
-\item Lazy tables created by \code{{arrow}} does not work.
-If you want to work with it, it is an easy way to convert to
-a duckdb back-end using \code{arrow::to_duckdb()} in advance.
-}}
+\item{.data}{A data frame or lazy table.}
 
-\item{...}{Name-value pairs as used in \code{\link[dplyr:summarise]{dplyr::summarize()}}.}
+\item{...}{Name-value pairs as used in \code{\link[dplyr:summarize]{dplyr::summarize()}}. Contextual
+helpers \code{\link[=grouping]{grouping()}} and \code{\link[=grouping_id]{grouping_id()}} can also be used here.}
 
-\item{.rollup}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Grouping columns which
-margins are calculated, starting from the highest parent of the hierarchy.}
+\item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
+every grouping set. These columns never receive \code{.margin_label}.}
 
-\item{.by}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
-variables without hierarchy to which \code{.margin_name} will \emph{NOT} be added.}
+\item{.grouping}{A grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
+\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
+represents one empty grouping set.}
 
-\item{.cube}{<\code{\link[=dplyr_tidy_select]{tidy-select}}> Additional group
-variables without hierarchy to which \code{.margin_name} will be added.}
+\item{.margin_label}{A character scalar used to display columns omitted from
+a grouping set. The default is \code{"Total"}. Use \code{NULL} to keep typed missing
+values instead of inserting a display label.}
 
-\item{.margin_name}{A string representing margin name
-(Defaults to \code{"(all)"}). \code{NA_character_} is also allowed.}
+\item{.check_margin_label}{A logical scalar. If \code{TRUE}, check whether the
+display label already occurs in a grouping column.}
 
-\item{.check_margin_name}{A logical (defaults to \code{is.data.frame(.data)}).
-If \code{TRUE}, checks whether the string in \verb{.margin_name' already exists in the column specified by }.rollup\code{or}.cube` and returns an error
-if it already exists.}
+\item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
+duplicate grouping sets after expansion.}
 
-\item{.sort}{A logical (defaults to \code{is.data.frame(.data)}).
-If \code{TRUE}, sort the result by the column order
-specified in \code{.by} and \code{.rollup} and \code{.cube}.
-This is because pipelines using lazy tables should perform the
-SQL \verb{ORDER BY} as last as possible.
-As a result of sorting, in the case of lazy tables,
-\code{NA} may come first, unlike R.
-See \href{https://dbplyr.tidyverse.org/reference/arrange.tbl_lazy.html}{\code{arrange()} documentation of \code{{dbplyr}}}
-for details.}
+\item{.sort}{A logical scalar. If \code{TRUE}, sort by \code{.by} followed by grouping
+dimensions. It defaults to \code{TRUE} for local data frames and \code{FALSE} for
+lazy tables.}
 }
 \value{
-A data frame. If \code{.data} is a lazy table,
-the output is also a lazy table.
+An ungrouped data frame, or a lazy table when \code{.data} is lazy.
 }
 \description{
-This function considers each margin (such as total) as a new category,
-works like \code{\link[dplyr:summarise]{dplyr::summarize()}}.
-See \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
-for more details.
+\code{summarize_with_margins()} extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with grouping sets,
+rollups, cubes, totals, and subtotals. The same interface works with local
+data frames and lazy tables.
 }
 \details{
-\itemize{
-\item This is similar to \code{\link[dplyr:summarise]{dplyr::summarize()}} but creates an additional
-\code{.margin_name} category for each grouping variable. It assumes a hierarchy
-of groups and the higher level groups should be provided first.
-\item Regular groups, not used for totals/subtotals can be provided through
-the \code{.by} argument and will be used as parent groups.
-\item If you want to create its own total margin (such as \code{"(all)"})
-for a variable that is a regular group and has no hierarchy,
-specify it with \code{.cube}. If there is more than one \code{.cube},
-all combinations of them are generated.
-}
-}
-\section{About returned data}{
+\code{grouping_sets()} forms a union of grouping families. \code{grouping_spec()}
+combines its arguments by Cartesian product, matching comma-separated SQL
+\verb{GROUP BY} items. \code{grouping_set()} is also used to keep multiple columns
+together as one composite dimension inside \code{rollup()} or \code{cube()}.
 
-\itemize{
-\item Missing values are kept as missing.
-\item The order of the columns is as follows from left to right:
-\code{.by}, \code{.rollup}, \code{.cube} and the remaining columns.
-\item Column types specified with \code{.rollup} or \code{.cube}:
-\itemize{
-\item Columns that are not originally factor or character
-(e.g. numeric, integer, logical, .etc) are converted to characters.
-This is required to add the \code{.margin_name} category.
-\item Originally the factor column (assuming a local data frame):
-\itemize{
-\item Remains as factor. (If ordered, remains as ordered).
-\item The level of the factor depends on the case:
-\itemize{
-\item If \code{.margin_name} is \emph{\strong{NOT}} a \code{NA_character}
-(such as \code{"(all)"}):
-\itemize{
-\item \code{.margin_name} is added to the
-beginning of the level of the factor.
-}
-\item If \code{.margin_name} is a \code{NA_character}:
-\itemize{
-\item If the column has \verb{<NA>} in the level:
-\itemize{
-\item Error occurs. Because, although the values with level
-\verb{<NA>} are not equal to \code{NA_character_}, they will be
-identical and indistinguishable when merging
-\code{NA_character_} as a new category.
-}
-\item If the column does not have \verb{<NA>} in the level:
-\itemize{
-\item Just keeps the original level of factor.
-\verb{<NA>} is not included in the level.
-This is consistent with the default
-\code{\link[=factor]{factor()}} behavior (\code{exclude = NA}).
-}
-}
-}
-}
-}
-}
-}
+Grouping specifications accept column selections, not arbitrary SQL
+expressions. Create computed grouping columns with \code{\link[dplyr:mutate]{dplyr::mutate()}} first.
 
+Confirmed SQL backends use one \verb{GROUP BY GROUPING SETS} query. Other lazy
+backends use a portable \verb{UNION ALL} adapter with the same semantics.
+}
 \examples{
-# Make a hierarchical margin for `cyl`, `vs`.
 summarize_with_margins(
   mtcars,
   n = dplyr::n(),
-  mpg = mean(mpg, na.rm = TRUE),
-  .rollup = c(cyl, vs),
+  mean_mpg = mean(mpg),
+  .grouping = rollup(cyl, vs)
 )
 
-# `am` does not create a hierarchy, but is an overall group variable.
 summarize_with_margins(
   mtcars,
   n = dplyr::n(),
-  mpg = mean(mpg, na.rm = TRUE),
-  .rollup = c(cyl, vs),
-  .by = am
+  level = grouping_id(cyl, vs, gear),
+  .grouping = grouping_spec(rollup(cyl, vs), cube(gear))
 )
 
-# `gear` creates "(all)" margins on itself.
 summarize_with_margins(
   mtcars,
   n = dplyr::n(),
-  mpg = mean(mpg, na.rm = TRUE),
-  .rollup = c(cyl, vs),
-  .by = am,
-  .cube = gear
+  .grouping = grouping_sets(
+    grouping_set(cyl, vs),
+    grouping_set(cyl, gear),
+    grouping_set()
+  )
 )
-
-# If `.cube` has multiple columns, all combinations are generated.
-summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
-  mpg = mean(mpg, na.rm = TRUE),
-  .rollup = c(cyl, vs),
-  .by = am,
-  .cube = c(gear, carb)
-)
-}
-\references{
-\itemize{
-\item Online documentation: \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
-\item Main idea is borrowed from \href{https://gist.github.com/moodymudskipper/6347418d82fea2160178422aa574dec2}{this gist}.
-}
 }
 \seealso{
-Other summarize and expand data with margins: 
-\code{\link{nest_by_with_margins}()},
-\code{\link{nest_with_margins}()},
-\code{\link{union_all_with_margins}()}
+Other summarize and expand data with margins:
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
+\code{\link[=nest_with_margins]{nest_with_margins()}},
+\code{\link[=union_all_with_margins]{union_all_with_margins()}}
 }
 \concept{summarize and expand data with margins}
