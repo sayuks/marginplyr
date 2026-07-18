@@ -12,3 +12,4 @@
 ^sandbox$
 ^investigation$
 ^cran-comments\.md$
+^codecov\.yml$
