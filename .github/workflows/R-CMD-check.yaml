@@ -45,10 +45,11 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
 
-      # pak defaults to the development R series, for which P3M does not publish
-      # binaries. setup-r's release user agent tells us which compatible release
-      # series to request instead, without hard-coding it.
-      - name: Select P3M release binaries for R-devel
+      # P3M does not publish binaries for the development R series. Point pak at
+      # P3M's explicit Linux binary repository for the compatible release series.
+      # setup-r's release user agent lets us derive that series without hard-coding
+      # an R version that would become stale.
+      - name: Select P3M binary repository for R-devel
         if: matrix.config.r == 'devel'
         run: |
           user_agent <- getOption("HTTPUserAgent")
@@ -57,13 +58,25 @@ jobs:
           if (is.na(release) || !grepl("^[0-9]+[.][0-9]+$", release)) {
             stop("Could not derive the release R series from: ", user_agent)
           }
-          cat(
-            "PKG_R_VERSIONS=", release, "\n",
+          p3m <- sprintf(
+            paste0(
+              "https://packagemanager.posit.co/cran/latest/bin/linux/",
+              "noble-x86_64/%s"
+            ),
+            release
+          )
+          variables <- c(
+            PKG_R_VERSIONS = release,
+            PKG_CRAN_MIRROR = p3m,
+            RSPM = p3m,
+            RENV_CONFIG_REPOS_OVERRIDE = p3m
+          )
+          write(
+            paste(names(variables), variables, sep = "="),
             file = Sys.getenv("GITHUB_ENV"),
-            sep = "",
             append = TRUE
           )
-          message("Using P3M binaries built for R ", release)
+          message("Using P3M binary repository: ", p3m)
         shell: Rscript {0}
 
       - name: Install full dependencies
