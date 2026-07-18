@@ -4,11 +4,16 @@
 #' grouping set. It works with local data frames and `dtplyr` steps.
 #'
 #' @inheritParams summarize_with_margins
+#' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
+#'   not supported because nesting creates list columns.
+#' @param .sort A logical scalar. If `TRUE` (the default), sort by `.by`
+#'   followed by grouping dimensions.
 #' @param .key A non-missing string naming the list column.
 #' @param .keep Should grouping columns also be kept inside each nested data
 #'   frame?
 #'
-#' @return An ungrouped data frame with one list column.
+#' @return For a local input, an ungrouped data frame with one list column. A
+#'   `dtplyr` input returns a lazy `dtplyr` step until collected.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples

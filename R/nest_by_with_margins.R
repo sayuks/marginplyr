@@ -3,6 +3,8 @@
 #' This is the row-wise counterpart of [nest_with_margins()].
 #'
 #' @inheritParams nest_with_margins
+#' @details A `dtplyr` result is collected before it is made row-wise because
+#'   row-wise data frames are local objects.
 #' @return A row-wise data frame grouped by the visible grouping columns.
 #' @family summarize and expand data with margins
 #' @export

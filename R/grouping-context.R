@@ -9,6 +9,10 @@
 #' argument is the least-significant bit. It accepts between 1 and 31 distinct
 #' grouping columns.
 #'
+#' Columns fixed by `.by` may also be passed to these helpers. Because a `.by`
+#' column belongs to every grouping set, `grouping()` is always `0L` for it and
+#' it contributes a zero bit to `grouping_id()`.
+#'
 #' @param x A bare grouping column.
 #' @param ... Bare grouping columns.
 #'

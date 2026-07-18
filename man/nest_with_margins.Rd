@@ -17,7 +17,8 @@ nest_with_margins(
 )
 }
 \arguments{
-\item{.data}{A data frame or lazy table.}
+\item{.data}{A local data frame or a \code{dtplyr} step. Other lazy tables are
+not supported because nesting creates list columns.}
 
 \item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
 every grouping set. These columns never receive \code{.margin_label}.}
@@ -36,9 +37,8 @@ display label already occurs in a grouping column.}
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}
 
-\item{.sort}{A logical scalar. If \code{TRUE}, sort by \code{.by} followed by grouping
-dimensions. It defaults to \code{TRUE} for local data frames and \code{FALSE} for
-lazy tables.}
+\item{.sort}{A logical scalar. If \code{TRUE} (the default), sort by \code{.by}
+followed by grouping dimensions.}
 
 \item{.key}{A non-missing string naming the list column.}
 
@@ -46,7 +46,8 @@ lazy tables.}
 frame?}
 }
 \value{
-An ungrouped data frame with one list column.
+For a local input, an ungrouped data frame with one list column. A
+\code{dtplyr} input returns a lazy \code{dtplyr} step until collected.
 }
 \description{
 \code{nest_with_margins()} creates one nested data frame for every group in every

@@ -29,6 +29,10 @@ grouping set from ordinary missing values in the source data.
 otherwise. \code{grouping_id(...)} combines those flags as a bit mask; its last
 argument is the least-significant bit. It accepts between 1 and 31 distinct
 grouping columns.
+
+Columns fixed by \code{.by} may also be passed to these helpers. Because a \code{.by}
+column belongs to every grouping set, \code{grouping()} is always \code{0L} for it and
+it contributes a zero bit to \code{grouping_id()}.
 }
 \examples{
 summarize_with_margins(

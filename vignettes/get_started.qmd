@@ -22,6 +22,9 @@ Install the development version from GitHub:
 
 # install.packages("pak")
 pak::pak("sayuks/marginplyr")
+
+# Optional packages used by this guide and its Quarto tabset example
+install.packages(c("knitr", "quartabs", "tibble"))
 ```
 
 ```{r setup}
@@ -196,6 +199,8 @@ sales |>
 
 This also distinguishes source missing values from grouping rows. A source
 `NA` has a grouping bit of 0; an `NA` produced by aggregation has a bit of 1.
+Columns fixed with `.by` can also be passed to these helpers; because they are
+present in every grouping set, their grouping flag and bit are always 0.
 
 ## Labels and column types
 
@@ -260,6 +265,9 @@ sales |>
 `union_all_with_margins()` emits one input-row copy per grouping set.
 `nest_with_margins()` returns an ordinary nested result, while
 `nest_by_with_margins()` returns its row-wise counterpart.
+The summarize and union verbs support local and lazy tables; the two nesting
+verbs support local data frames and `dtplyr` steps because their results
+contain list columns.
 
 ## Quarto tabset reports with quartabs
 

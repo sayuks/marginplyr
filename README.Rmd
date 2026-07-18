@@ -96,6 +96,10 @@ can be rendered directly as nested Quarto tabs with
 [`quartabs`](https://sayuks.github.io/quartabs/):
 
 ``` r
+install.packages(c("knitr", "quartabs"))
+```
+
+``` r
 # In a Quarto R chunk with: #| results: asis
 mtcars |>
   nest_by_with_margins(.grouping = rollup(cyl, vs)) |>
