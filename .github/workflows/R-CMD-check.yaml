@@ -46,9 +46,9 @@ jobs:
           http-user-agent: ${{ matrix.config.http-user-agent }}
 
       # P3M does not publish binaries for the development R series. Base R can
-      # install P3M's Linux binaries directly, after which pak keeps the already
-      # installed versions while resolving the rest of the check dependencies.
-      - name: Install P3M binary backends for R-devel
+      # install binaries for the compatible release series directly. Preinstall
+      # all check dependencies so pak does not rebuild them for R-devel.
+      - name: Install P3M binary dependencies for R-devel
         if: matrix.config.r == 'devel'
         run: |
           user_agent <- getOption("HTTPUserAgent")
@@ -77,11 +77,26 @@ jobs:
           )
           message("Using P3M binary repository: ", p3m)
 
-          install.packages(
-            c("arrow", "duckdb"),
-            repos = p3m,
-            dependencies = NA
+          description <- read.dcf("DESCRIPTION")
+          fields <- intersect(
+            c("Depends", "Imports", "Suggests", "LinkingTo"),
+            colnames(description)
           )
+          references <- unlist(strsplit(
+            paste(description[1, fields], collapse = ","),
+            ",",
+            fixed = TRUE
+          ))
+          dependencies <- trimws(sub(" *[(].*[)] *$", "", references))
+          bundled <- rownames(installed.packages(
+            priority = c("base", "recommended")
+          ))
+          dependencies <- sort(unique(setdiff(
+            c(dependencies, "rcmdcheck"),
+            c("", "R", bundled)
+          )))
+          message("Installing P3M binaries: ", paste(dependencies, collapse = ", "))
+          install.packages(dependencies, repos = p3m, dependencies = NA)
 
           packages <- c("arrow", "duckdb")
           built <- vapply(
@@ -102,7 +117,7 @@ jobs:
         with:
           extra-packages: any::rcmdcheck
           needs: check
-          cache-version: 2
+          cache-version: 3
 
       - name: Verify P3M binary backends on R-devel
         if: matrix.config.r == 'devel'
