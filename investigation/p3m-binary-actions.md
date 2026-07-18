@@ -4,9 +4,9 @@ Investigated on 2026-07-19 for `marginplyr`.
 
 ## Findings
 
-- Posit Package Manager (P3M) supports Linux binaries for Ubuntu 24.04
-  (Noble), x86_64. Its explicit repository URL includes the distribution,
-  architecture, and R release series, for example:
+- Posit Package Manager (P3M) supports Linux binaries for multiple Ubuntu
+  releases and architectures. Its explicit repository URL includes the
+  distribution, architecture, and R release series, for example:
   `https://packagemanager.posit.co/cran/latest/bin/linux/noble-x86_64/4.6`.
 - P3M currently serves Arrow and DuckDB from that repository as binaries. HEAD
   requests for Arrow 25.0.0 and DuckDB 1.5.4.3 returned
@@ -15,8 +15,10 @@ Investigated on 2026-07-19 for `marginplyr`.
   binaries from R's HTTP user agent. P3M documents both this mechanism and the
   explicit environment URL.
 - `r-lib/actions/setup-r@v2` uses public P3M by default on supported x86_64
-  Linux runners. Its `http-user-agent: release` input is useful for an R-devel
-  job because P3M publishes binaries for release R series, not R-devel.
+  Linux runners and exports an `RSPM` URL selected for the runner's
+  distribution. Its `http-user-agent: release` input is useful for an R-devel
+  job because P3M publishes binaries for release R series, not R-devel. Using
+  this URL avoids hard-coding Ubuntu's release codename or architecture.
 - pak still resolves CRAN packages against the running R-devel series. Setting
   `PKG_R_VERSIONS` or only replacing the repository URL did not stop pak from
   selecting source builds in the observed workflow. Base R's
@@ -34,7 +36,8 @@ For the Ubuntu R-devel matrix job:
 1. Keep `http-user-agent: release` in `setup-r`.
 2. Derive the current release minor version from that user agent, avoiding a
    hard-coded R version.
-3. Construct the explicit Noble x86_64 P3M repository URL.
+3. Use the P3M `RSPM` URL selected by `setup-r` for the runner's current Linux
+   distribution and architecture.
 4. Preinstall the package's check dependencies from P3M with base R
    `install.packages()`.
 5. Run `setup-r-dependencies` for system requirements and any missing package.
