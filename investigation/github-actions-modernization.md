@@ -39,6 +39,17 @@ The lintr command itself is current: `lintr::lint_package()` with
 `LINTR_ERROR_ON_LINT=true` matches the
 [lintr CI guide](https://lintr.r-lib.org/articles/continuous-integration.html).
 
+## R-devel dependency scope
+
+An actual hosted-runner check showed that the full `Suggests` set took more
+than 55 minutes to compile on R-devel and was still building `arrow` when the
+job was stopped. This package's release jobs continue to install and test all
+suggested backends, including Arrow and DuckDB. The R-devel job now installs
+only hard dependencies plus `rcmdcheck` and `testthat`, skips vignette builds,
+and focuses on compatibility with the next R version. This uses the supported
+`dependencies` and `install-quarto` inputs documented by
+[`setup-r-dependencies`](https://github.com/r-lib/actions/blob/v2/setup-r-dependencies/action.yaml).
+
 ## altdoc and GitHub Pages
 
 The previous altdoc workflow downloaded and executed a remote `run.sh`, then

@@ -45,12 +45,34 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
 
-      - uses: r-lib/actions/setup-r-dependencies@v2
+      # Release jobs exercise every suggested backend. On R-devel, compiled
+      # Suggests such as arrow and duckdb are built from source and can consume
+      # the entire job timeout, so keep that job focused on core compatibility.
+      - name: Install full dependencies
+        if: matrix.config.r != 'devel'
+        uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
           needs: check
 
-      - uses: r-lib/actions/check-r-package@v2
+      - name: Install core dependencies for R-devel
+        if: matrix.config.r == 'devel'
+        uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: any::rcmdcheck, any::testthat
+          dependencies: '"hard"'
+          install-quarto: false
+
+      - name: Check package
+        if: matrix.config.r != 'devel'
+        uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+
+      - name: Check package on R-devel
+        if: matrix.config.r == 'devel'
+        uses: r-lib/actions/check-r-package@v2
+        with:
+          upload-snapshots: true
+          build_args: 'c("--no-manual","--no-build-vignettes")'
