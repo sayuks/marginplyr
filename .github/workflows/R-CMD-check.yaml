@@ -45,34 +45,99 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
 
-      # Release jobs exercise every suggested backend. On R-devel, compiled
-      # Suggests such as arrow and duckdb are built from source and can consume
-      # the entire job timeout, so keep that job focused on core compatibility.
+      # P3M does not publish binaries for the development R series. Base R can
+      # install binaries for the compatible release series directly. Preinstall
+      # all check dependencies so pak does not rebuild them for R-devel.
+      - name: Install P3M binary dependencies for R-devel
+        if: matrix.config.r == 'devel'
+        run: |
+          user_agent <- getOption("HTTPUserAgent")
+          match <- regexec("R [(]([0-9]+[.][0-9]+)[.]", user_agent)
+          release <- regmatches(user_agent, match)[[1]][2]
+          if (is.na(release) || !grepl("^[0-9]+[.][0-9]+$", release)) {
+            stop("Could not derive the release R series from: ", user_agent)
+          }
+          p3m <- sprintf(
+            paste0(
+              "https://packagemanager.posit.co/cran/latest/bin/linux/",
+              "noble-x86_64/%s"
+            ),
+            release
+          )
+          variables <- c(
+            PKG_R_VERSIONS = release,
+            PKG_CRAN_MIRROR = p3m,
+            RSPM = p3m,
+            RENV_CONFIG_REPOS_OVERRIDE = p3m
+          )
+          write(
+            paste(names(variables), variables, sep = "="),
+            file = Sys.getenv("GITHUB_ENV"),
+            append = TRUE
+          )
+          message("Using P3M binary repository: ", p3m)
+
+          description <- read.dcf("DESCRIPTION")
+          fields <- intersect(
+            c("Depends", "Imports", "Suggests", "LinkingTo"),
+            colnames(description)
+          )
+          references <- unlist(strsplit(
+            paste(description[1, fields], collapse = ","),
+            ",",
+            fixed = TRUE
+          ))
+          dependencies <- trimws(sub(" *[(].*[)] *$", "", references))
+          bundled <- rownames(installed.packages(
+            priority = c("base", "recommended")
+          ))
+          dependencies <- sort(unique(setdiff(
+            c(dependencies, "rcmdcheck"),
+            c("", "R", bundled)
+          )))
+          message("Installing P3M binaries: ", paste(dependencies, collapse = ", "))
+          install.packages(dependencies, repos = p3m, dependencies = NA)
+
+          packages <- c("arrow", "duckdb")
+          built <- vapply(
+            packages,
+            packageDescription,
+            FUN.VALUE = character(1),
+            fields = "Built"
+          )
+          print(data.frame(package = packages, built = unname(built)))
+          expected <- paste0("R ", release, ".")
+          if (!all(startsWith(built, expected))) {
+            stop("P3M did not serve release binaries for Arrow and DuckDB")
+          }
+        shell: Rscript {0}
+
       - name: Install full dependencies
-        if: matrix.config.r != 'devel'
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::rcmdcheck
           needs: check
+          cache-version: 3
 
-      - name: Install core dependencies for R-devel
+      - name: Verify P3M binary backends on R-devel
         if: matrix.config.r == 'devel'
-        uses: r-lib/actions/setup-r-dependencies@v2
-        with:
-          extra-packages: any::rcmdcheck, any::testthat, any::RSQLite
-          dependencies: '"hard"'
-          install-quarto: false
+        run: |
+          packages <- c("arrow", "duckdb")
+          built <- vapply(
+            packages,
+            packageDescription,
+            FUN.VALUE = character(1),
+            fields = "Built"
+          )
+          print(data.frame(package = packages, built = unname(built)))
+          expected <- paste0("R ", Sys.getenv("PKG_R_VERSIONS"), ".")
+          if (!all(startsWith(built, expected))) {
+            stop("Arrow and DuckDB were not installed from P3M release binaries")
+          }
+        shell: Rscript {0}
 
       - name: Check package
-        if: matrix.config.r != 'devel'
         uses: r-lib/actions/check-r-package@v2
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
-
-      - name: Check package on R-devel
-        if: matrix.config.r == 'devel'
-        uses: r-lib/actions/check-r-package@v2
-        with:
-          upload-snapshots: true
-          build_args: 'c("--no-manual","--no-build-vignettes")'
