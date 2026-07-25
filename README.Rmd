@@ -155,8 +155,13 @@ the store dimension was removed.
 
 Local data frames and lazy database tables use the same interface. DuckDB and
 PostgreSQL translate the request to one native `GROUP BY GROUPING SETS` query.
+Install the optional backend packages before running this example:
 
-```{r duckdb, eval = requireNamespace("DBI", quietly = TRUE) && requireNamespace("duckdb", quietly = TRUE)}
+``` r
+install.packages(c("DBI", "duckdb"))
+```
+
+```{r duckdb}
 con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
 
 sales_db <- dplyr::copy_to(
@@ -208,38 +213,11 @@ The function reference contains executable examples for composite dimensions,
 tidy-select expressions, duplicate grouping sets, Cartesian products,
 simulated SQL dialects, and dtplyr.
 
-### Optional Quarto tabsets
-
-As a small reporting extension, the nested result can be passed to
-[`quartabs`](https://sayuks.github.io/quartabs/) so regions and totals become
-Quarto tabs:
-
-``` r
-# In a Quarto chunk with: #| results: asis
-retail_sales |>
-  dplyr::filter(year == 2026L, month == "Jan") |>
-  nest_by_with_margins(.grouping = rollup(region)) |>
-  dplyr::mutate(
-    report = list(
-      dplyr::summarize(
-        data,
-        records = dplyr::n(),
-        revenue = sum(revenue)
-      ) |>
-        knitr::kable()
-    )
-  ) |>
-  dplyr::ungroup() |>
-  quartabs::render_tabset(
-    tabset_vars = region,
-    output_vars = report
-  )
-```
-
 The [Get started
 guide](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 develops the complete story, including the difference between the union made
-by `grouping_sets()` and the Cartesian product made by `grouping_spec()`.
+by `grouping_sets()` and the Cartesian product made by `grouping_spec()`, plus
+a small [`quartabs`](https://sayuks.github.io/quartabs/) reporting example.
 
 ## Code of Conduct
 

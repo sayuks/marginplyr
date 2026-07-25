@@ -388,35 +388,30 @@ DuckDB supports native grouping sets. The following example copies the small
 data set into an in-memory database, displays the SQL, and executes it:
 
 ```{r}
-if (
-  requireNamespace("DBI", quietly = TRUE) &&
-  requireNamespace("duckdb", quietly = TRUE)
-) {
-  local({
-    con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
-    on.exit(DBI::dbDisconnect(con), add = TRUE)
+local({
+  con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
 
-    sales_db <- copy_to(
-      con,
-      retail_sales,
-      name = "retail_sales",
-      temporary = TRUE,
-      overwrite = TRUE
+  sales_db <- copy_to(
+    con,
+    retail_sales,
+    name = "retail_sales",
+    temporary = TRUE,
+    overwrite = TRUE
+  )
+
+  duckdb_query <- sales_db |>
+    filter(year == 2026L, month == "Jan") |>
+    summarize_with_margins(
+      revenue = sum(revenue, na.rm = TRUE),
+      level = grouping_id(region, store),
+      .grouping = rollup(region, store),
+      .sort = TRUE
     )
 
-    duckdb_query <- sales_db |>
-      filter(year == 2026L, month == "Jan") |>
-      summarize_with_margins(
-        revenue = sum(revenue, na.rm = TRUE),
-        level = grouping_id(region, store),
-        .grouping = rollup(region, store),
-        .sort = TRUE
-      )
-
-    show_query(duckdb_query)
-    collect(duckdb_query)
-  })
-}
+  show_query(duckdb_query)
+  collect(duckdb_query)
+})
 ```
 
 The result stays lazy until `collect()` or another execution verb is called.
@@ -470,14 +465,12 @@ january_sales |>
 A dtplyr input performs the expansion and nesting lazily until `collect()`:
 
 ```{r}
-if (requireNamespace("dtplyr", quietly = TRUE)) {
-  january_sales |>
-    dtplyr::lazy_dt() |>
-    nest_with_margins(
-      .grouping = rollup(region, store)
-    ) |>
-    collect()
-}
+january_sales |>
+  dtplyr::lazy_dt() |>
+  nest_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  collect()
 ```
 
 `nest_by_with_margins()` returns a row-wise data frame, making one calculation
@@ -499,18 +492,16 @@ january_sales |>
 The row-wise result is local even when the input is a dtplyr step:
 
 ```{r}
-if (requireNamespace("dtplyr", quietly = TRUE)) {
-  january_sales |>
-    dtplyr::lazy_dt() |>
-    nest_by_with_margins(
-      .grouping = rollup(region, store)
-    ) |>
-    mutate(
-      records = nrow(data),
-      revenue = sum(data$revenue)
-    ) |>
-    select(-data)
-}
+january_sales |>
+  dtplyr::lazy_dt() |>
+  nest_by_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    records = nrow(data),
+    revenue = sum(data$revenue)
+  ) |>
+  select(-data)
 ```
 
 List columns are why the two nesting verbs support local data frames and
@@ -533,6 +524,7 @@ tabbed_report <- january_sales |>
     .grouping = rollup(region)
   ) |>
   mutate(
+    region = factor(region, levels = c("Total", "East", "West")),
     report = list(
       data |>
         summarize(
@@ -552,5 +544,6 @@ tabbed_report |>
   )
 ```
 
-The `"Total"` tab is created by the grouping plan. `quartabs` only handles
-presentation; marginplyr defines which source rows belong to that total.
+The `"Total"` tab is created by the grouping plan. The ordered factor makes it
+the first tab; `quartabs` only handles presentation, while marginplyr defines
+which source rows belong to that total.
