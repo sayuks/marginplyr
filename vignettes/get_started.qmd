@@ -1,5 +1,9 @@
 ---
 title: Get started
+vignette: >
+  %\VignetteIndexEntry{Get started}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
 format:
   html:
     code-tools: true
@@ -462,15 +466,18 @@ january_sales |>
   )
 ```
 
-A dtplyr input performs the expansion and nesting lazily until `collect()`:
+A dtplyr input performs the expansion and nesting lazily until `collect()`.
+`show_query()` displays the generated data.table expression:
 
 ```{r}
-january_sales |>
+nested_dt <- january_sales |>
   dtplyr::lazy_dt() |>
   nest_with_margins(
     .grouping = rollup(region, store)
-  ) |>
-  collect()
+  )
+
+show_query(nested_dt)
+collect(nested_dt)
 ```
 
 `nest_by_with_margins()` returns a row-wise data frame, making one calculation
@@ -512,6 +519,12 @@ dtplyr steps rather than SQL database tables.
 [`quartabs`](https://sayuks.github.io/quartabs/) can turn the nested report
 sections into Quarto tabs. This compact example creates one tab per region
 plus a company-total tab.
+
+When this guide is opened as an installed package vignette, Quarto's
+lightweight vignette format does not provide interactive tabsets. The same
+content is displayed sequentially instead. View the
+[package-site version of this guide](https://sayuks.github.io/marginplyr/vignettes/get_started.html#optional-quarto-tabsets-with-quartabs)
+to use the interactive tabs.
 
 The chunk option `results: asis` is required because `render_tabset()` emits
 Quarto tabset markup.

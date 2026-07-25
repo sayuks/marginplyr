@@ -37,6 +37,25 @@
 #' Confirmed SQL backends use one `GROUP BY GROUPING SETS` query. Other lazy
 #' backends use a portable `UNION ALL` adapter with the same semantics.
 #'
+#' @section Fixed columns and grouping dimensions:
+#' `.by` marks columns that are present in every grouping set, while
+#' `.grouping` describes dimensions that can be omitted to form margins.
+#' Columns in `.by` retain their input types, never receive `.margin_label`,
+#' and return `0` from [grouping()].
+#'
+#' At the grouping-set level, `.grouping` alone can reproduce structures that
+#' use `.by`. For example, `.by = year` is structurally equivalent to
+#' `.grouping = grouping_set(year)`. Similarly, `.by = year` together with
+#' `.grouping = rollup(region, store)` produces the same grouping sets as
+#' `.grouping = grouping_spec(grouping_set(year), rollup(region, store))`.
+#'
+#' These forms are not completely interchangeable in the current
+#' implementation. A column supplied through `.grouping` is treated as a
+#' margin dimension even when every expanded grouping set contains it.
+#' Consequently, it participates in `.margin_label` type conversion and
+#' collision checks. Use `.by` for columns that must always remain fixed, and
+#' use `.grouping` for dimensions that may become totals.
+#'
 #' @family summarize and expand data with margins
 #' @export
 #' @examples

@@ -6,7 +6,6 @@
 ^dev$
 ^data-raw$
 ^\.github$
-^vignettes$
 ^docs$
 ^altdoc$
 ^_quarto$

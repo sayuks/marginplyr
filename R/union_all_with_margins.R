@@ -6,6 +6,7 @@
 #' `UNION ALL`.
 #'
 #' @inheritParams summarize_with_margins
+#' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
 #' @family summarize and expand data with margins
 #' @export

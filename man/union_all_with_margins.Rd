@@ -47,6 +47,27 @@ grouping set, replacing omitted grouping dimensions with \code{.margin_label}.
 This is analogous to vertically combining the grouping branches with SQL
 \verb{UNION ALL}.
 }
+\section{Fixed columns and grouping dimensions}{
+
+\code{.by} marks columns that are present in every grouping set, while
+\code{.grouping} describes dimensions that can be omitted to form margins.
+Columns in \code{.by} retain their input types, never receive \code{.margin_label},
+and return \code{0} from \code{\link[=grouping]{grouping()}}.
+
+At the grouping-set level, \code{.grouping} alone can reproduce structures that
+use \code{.by}. For example, \code{.by = year} is structurally equivalent to
+\code{.grouping = grouping_set(year)}. Similarly, \code{.by = year} together with
+\code{.grouping = rollup(region, store)} produces the same grouping sets as
+\code{.grouping = grouping_spec(grouping_set(year), rollup(region, store))}.
+
+These forms are not completely interchangeable in the current
+implementation. A column supplied through \code{.grouping} is treated as a
+margin dimension even when every expanded grouping set contains it.
+Consequently, it participates in \code{.margin_label} type conversion and
+collision checks. Use \code{.by} for columns that must always remain fixed, and
+use \code{.grouping} for dimensions that may become totals.
+}
+
 \examples{
 # Expand a single month's source rows into store, region, and company
 # branches. Summarizing the expanded rows later reproduces the margins.

@@ -4,6 +4,7 @@
 #' grouping set. It works with local data frames and `dtplyr` steps.
 #'
 #' @inheritParams summarize_with_margins
+#' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
 #'   not supported because nesting creates list columns.
 #' @param .sort A logical scalar. If `TRUE` (the default), sort by `.by`
@@ -32,12 +33,13 @@
 #'
 #' # The same operation stays lazy for a dtplyr input until collect().
 #' if (requireNamespace("dtplyr", quietly = TRUE)) {
-#'   january_sales |>
+#'   nested_dt <- january_sales |>
 #'     dtplyr::lazy_dt() |>
 #'     nest_with_margins(
 #'       .grouping = rollup(region, store)
-#'     ) |>
-#'     dplyr::collect()
+#'     )
+#'   dplyr::show_query(nested_dt)
+#'   dplyr::collect(nested_dt)
 #' }
 nest_with_margins <- function(.data,
                               .by = NULL,

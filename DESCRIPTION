@@ -30,7 +30,7 @@ Suggests:
     knitr,
     purrr,
     quartabs (>= 0.1.1),
-    quarto,
+    quarto (>= 1.4),
     RSQLite,
     sessioninfo,
     spelling,
@@ -39,6 +39,9 @@ Suggests:
     tibble,
     tidyr,
 Config/testthat/edition: 3
+VignetteBuilder:
+    quarto
+SystemRequirements: Quarto command line tool
 Config/Needs/website:
     altdoc,
     data.table,
