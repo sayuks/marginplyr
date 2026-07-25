@@ -1,6 +1,6 @@
 #' Nest data with SQL-style grouping margins
 #'
-#' `nest_with_margins()` creates one nested data frame for every group in every
+#' [nest_with_margins()] creates one nested data frame for every group in every
 #' grouping set. It works with local data frames and `dtplyr` steps.
 #'
 #' @inheritParams summarize_with_margins

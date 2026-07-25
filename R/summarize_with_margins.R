@@ -1,12 +1,12 @@
 #' Summarize data with SQL-style grouping operations
 #'
-#' `summarize_with_margins()` extends [dplyr::summarize()] with grouping sets,
+#' [summarize_with_margins()] extends [dplyr::summarize()] with grouping sets,
 #' rollups, cubes, totals, and subtotals. The same interface works with local
 #' data frames and lazy tables.
 #'
 #' @param .data A data frame or lazy table.
 #' @param ... Name-value pairs as used in [dplyr::summarize()]. Contextual
-#'   helpers [grouping()] and [grouping_id()] can also be used here.
+#'   helpers [grouping_bit()] and [grouping_id()] can also be used here.
 #' @param .by <[`tidy-select`][dplyr::dplyr_tidy_select]> Columns included in
 #'   every grouping set. These columns never receive `.margin_label`.
 #' @param .grouping A grouping specification made with [grouping_set()],
@@ -26,10 +26,10 @@
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
 #'
 #' @details
-#' `grouping_sets()` forms a union of grouping families. `grouping_spec()`
+#' [grouping_sets()] forms a union of grouping families. [grouping_spec()]
 #' combines its arguments by Cartesian product, matching comma-separated SQL
-#' `GROUP BY` items. `grouping_set()` is also used to keep multiple columns
-#' together as one composite dimension inside `rollup()` or `cube()`.
+#' `GROUP BY` items. [grouping_set()] is also used to keep multiple columns
+#' together as one composite dimension inside [rollup()] or [cube()].
 #'
 #' Grouping specifications accept column selections, not arbitrary SQL
 #' expressions. Create computed grouping columns with [dplyr::mutate()] first.
@@ -41,7 +41,7 @@
 #' `.by` marks columns that are present in every grouping set, while
 #' `.grouping` describes dimensions that can be omitted to form margins.
 #' Columns in `.by` retain their input types, never receive `.margin_label`,
-#' and return `0` from [grouping()].
+#' and return `0` from [grouping_bit()].
 #'
 #' At the grouping-set level, `.grouping` alone can reproduce structures that
 #' use `.by`. For example, `.by = year` is structurally equivalent to
@@ -55,6 +55,20 @@
 #' Consequently, it participates in `.margin_label` type conversion and
 #' collision checks. Use `.by` for columns that must always remain fixed, and
 #' use `.grouping` for dimensions that may become totals.
+#'
+#' @section Database backend coverage:
+#' DuckDB and PostgreSQL use native `GROUP BY GROUPING SETS` SQL. Automated
+#' tests execute DuckDB queries against a live in-memory database and verify
+#' PostgreSQL SQL with dbplyr's simulator.
+#'
+#' The portable `UNION ALL` SQL path is verified with dbplyr simulators for
+#' Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL,
+#' Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus
+#' generic DBI and ODBC connections. Simulator coverage verifies SQL
+#' generation, not execution against every database server.
+#'
+#' Arrow and dtplyr are also tested lazy backends, but they are not SQL
+#' database connections.
 #'
 #' @family summarize and expand data with margins
 #' @export
@@ -98,7 +112,7 @@
 #' summarize_with_margins(
 #'   retail_sales,
 #'   revenue = sum(revenue),
-#'   year_is_total = grouping(year),
+#'   year_is_total = grouping_bit(year),
 #'   .grouping = rollup(year),
 #'   .margin_label = NULL
 #' )
@@ -109,29 +123,28 @@
 #'   requireNamespace("DBI", quietly = TRUE) &&
 #'   requireNamespace("duckdb", quietly = TRUE)
 #' ) {
-#'   local({
-#'     con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
-#'     on.exit(DBI::dbDisconnect(con), add = TRUE)
+#'   con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
 #'
-#'     sales_db <- dplyr::copy_to(
-#'       con,
-#'       retail_sales,
-#'       name = "retail_sales",
-#'       temporary = TRUE,
-#'       overwrite = TRUE
-#'     )
-#'     query <- summarize_with_margins(
-#'       sales_db,
-#'       revenue = sum(revenue, na.rm = TRUE),
-#'       level = grouping_id(region, store),
-#'       .by = c(year, month),
-#'       .grouping = rollup(region, store),
-#'       .sort = TRUE
-#'     )
+#'   sales_db <- dplyr::copy_to(
+#'     con,
+#'     retail_sales,
+#'     name = "retail_sales",
+#'     temporary = TRUE,
+#'     overwrite = TRUE
+#'   )
+#'   query <- summarize_with_margins(
+#'     sales_db,
+#'     revenue = sum(revenue, na.rm = TRUE),
+#'     level = grouping_id(region, store),
+#'     .by = c(year, month),
+#'     .grouping = rollup(region, store),
+#'     .sort = TRUE
+#'   )
 #'
-#'     dplyr::show_query(query)
-#'     dplyr::collect(query)
-#'   })
+#'   dplyr::show_query(query)
+#'   result <- dplyr::collect(query)
+#'   DBI::dbDisconnect(con)
+#'   result
 #' }
 summarize_with_margins <- function(.data,
                                    ...,

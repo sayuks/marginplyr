@@ -19,7 +19,7 @@ summarize_with_margins(
 \item{.data}{A data frame or lazy table.}
 
 \item{...}{Name-value pairs as used in \code{\link[dplyr:summarize]{dplyr::summarize()}}. Contextual
-helpers \code{\link[=grouping]{grouping()}} and \code{\link[=grouping_id]{grouping_id()}} can also be used here.}
+helpers \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} can also be used here.}
 
 \item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
 every grouping set. These columns never receive \code{.margin_label}.}
@@ -46,15 +46,15 @@ lazy tables.}
 An ungrouped data frame, or a lazy table when \code{.data} is lazy.
 }
 \description{
-\code{summarize_with_margins()} extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with grouping sets,
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with grouping sets,
 rollups, cubes, totals, and subtotals. The same interface works with local
 data frames and lazy tables.
 }
 \details{
-\code{grouping_sets()} forms a union of grouping families. \code{grouping_spec()}
+\code{\link[=grouping_sets]{grouping_sets()}} forms a union of grouping families. \code{\link[=grouping_spec]{grouping_spec()}}
 combines its arguments by Cartesian product, matching comma-separated SQL
-\verb{GROUP BY} items. \code{grouping_set()} is also used to keep multiple columns
-together as one composite dimension inside \code{rollup()} or \code{cube()}.
+\verb{GROUP BY} items. \code{\link[=grouping_set]{grouping_set()}} is also used to keep multiple columns
+together as one composite dimension inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}}.
 
 Grouping specifications accept column selections, not arbitrary SQL
 expressions. Create computed grouping columns with \code{\link[dplyr:mutate]{dplyr::mutate()}} first.
@@ -67,7 +67,7 @@ backends use a portable \verb{UNION ALL} adapter with the same semantics.
 \code{.by} marks columns that are present in every grouping set, while
 \code{.grouping} describes dimensions that can be omitted to form margins.
 Columns in \code{.by} retain their input types, never receive \code{.margin_label},
-and return \code{0} from \code{\link[=grouping]{grouping()}}.
+and return \code{0} from \code{\link[=grouping_bit]{grouping_bit()}}.
 
 At the grouping-set level, \code{.grouping} alone can reproduce structures that
 use \code{.by}. For example, \code{.by = year} is structurally equivalent to
@@ -81,6 +81,22 @@ margin dimension even when every expanded grouping set contains it.
 Consequently, it participates in \code{.margin_label} type conversion and
 collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
+}
+
+\section{Database backend coverage}{
+
+DuckDB and PostgreSQL use native \verb{GROUP BY GROUPING SETS} SQL. Automated
+tests execute DuckDB queries against a live in-memory database and verify
+PostgreSQL SQL with dbplyr's simulator.
+
+The portable \verb{UNION ALL} SQL path is verified with dbplyr simulators for
+Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL,
+Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus
+generic DBI and ODBC connections. Simulator coverage verifies SQL
+generation, not execution against every database server.
+
+Arrow and dtplyr are also tested lazy backends, but they are not SQL
+database connections.
 }
 
 \examples{
@@ -123,7 +139,7 @@ summarize_with_margins(
 summarize_with_margins(
   retail_sales,
   revenue = sum(revenue),
-  year_is_total = grouping(year),
+  year_is_total = grouping_bit(year),
   .grouping = rollup(year),
   .margin_label = NULL
 )
@@ -134,29 +150,28 @@ if (
   requireNamespace("DBI", quietly = TRUE) &&
   requireNamespace("duckdb", quietly = TRUE)
 ) {
-  local({
-    con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
-    on.exit(DBI::dbDisconnect(con), add = TRUE)
+  con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
 
-    sales_db <- dplyr::copy_to(
-      con,
-      retail_sales,
-      name = "retail_sales",
-      temporary = TRUE,
-      overwrite = TRUE
-    )
-    query <- summarize_with_margins(
-      sales_db,
-      revenue = sum(revenue, na.rm = TRUE),
-      level = grouping_id(region, store),
-      .by = c(year, month),
-      .grouping = rollup(region, store),
-      .sort = TRUE
-    )
+  sales_db <- dplyr::copy_to(
+    con,
+    retail_sales,
+    name = "retail_sales",
+    temporary = TRUE,
+    overwrite = TRUE
+  )
+  query <- summarize_with_margins(
+    sales_db,
+    revenue = sum(revenue, na.rm = TRUE),
+    level = grouping_id(region, store),
+    .by = c(year, month),
+    .grouping = rollup(region, store),
+    .sort = TRUE
+  )
 
-    dplyr::show_query(query)
-    dplyr::collect(query)
-  })
+  dplyr::show_query(query)
+  result <- dplyr::collect(query)
+  DBI::dbDisconnect(con)
+  result
 }
 }
 \seealso{

@@ -142,7 +142,7 @@ retail_sales |>
   ) |>
   summarize_with_margins(
     revenue = sum(revenue),
-    store_is_total = grouping(store),
+    store_is_total = grouping_bit(store),
     level = grouping_id(region, store),
     .grouping = rollup(region, store)
   )
@@ -150,6 +150,20 @@ retail_sales |>
 
 `store_is_total` is `0` for the source `NA` row and `1` for a subtotal where
 the store dimension was removed.
+
+### Backend support
+
+marginplyr separates native grouping-set support from its portable
+`UNION ALL` fallback:
+
+| Execution path | Backends | Automated verification |
+|---|---|---|
+| Native `GROUP BY GROUPING SETS` | DuckDB, PostgreSQL | Live DuckDB execution; PostgreSQL SQL simulation |
+| Portable `UNION ALL` | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections | SQL generation with dbplyr simulators |
+
+Arrow and dtplyr are also tested lazy backends, but they are not SQL database
+connections. Simulated coverage verifies generated SQL; it does not claim
+live execution against every listed database server.
 
 ### Run the same report in DuckDB
 

@@ -1,12 +1,13 @@
 #' Expand rows with SQL-style grouping margins
 #'
-#' `union_all_with_margins()` emits one copy of each input row for every
+#' [union_all_with_margins()] emits one copy of each input row for every
 #' grouping set, replacing omitted grouping dimensions with `.margin_label`.
 #' This is analogous to vertically combining the grouping branches with SQL
 #' `UNION ALL`.
 #'
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
+#' @inheritSection summarize_with_margins Database backend coverage
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
 #' @family summarize and expand data with margins
 #' @export

@@ -1,17 +1,22 @@
 #' Identify rows produced by a grouping operation
 #'
-#' `grouping()` and `grouping_id()` are contextual summary helpers for
+#' [grouping_bit()] and [grouping_id()] are contextual summary helpers for
 #' [summarize_with_margins()]. They distinguish values that are absent from a
 #' grouping set from ordinary missing values in the source data.
 #'
-#' `grouping(x)` returns `1L` when `x` is absent from the grouping set and `0L`
-#' otherwise. `grouping_id(...)` combines those flags as a bit mask; its last
-#' argument is the least-significant bit. It accepts between 1 and 31 distinct
-#' grouping columns.
+#' [grouping_bit()] corresponds to SQL `GROUPING(x)`: it returns `1L` when
+#' `x` is absent from the grouping set and `0L` otherwise.
+#' [grouping_id()] combines those flags as a bit mask; its last argument is
+#' the least-significant bit. It accepts between 1 and 31 distinct grouping
+#' columns.
+#'
+#' The `_bit` suffix emphasizes the `0`/`1` result and deliberately avoids
+#' masking [base::grouping()], an unrelated function that returns a permutation
+#' for placing equal values next to one another.
 #'
 #' Columns fixed by `.by` may also be passed to these helpers. Because a `.by`
-#' column belongs to every grouping set, `grouping()` is always `0L` for it and
-#' it contributes a zero bit to `grouping_id()`.
+#' column belongs to every grouping set, [grouping_bit()] is always `0L` for it
+#' and it contributes a zero bit to [grouping_id()].
 #'
 #' @param x A bare grouping column.
 #' @param ... Bare grouping columns.
@@ -21,13 +26,13 @@
 #'   result types follow the backend.
 #' @export
 #' @examples
-#' # Online-direct sales have a source NA store. grouping(store) is 0 for that
-#' # detail row but 1 when ROLLUP removes store to create a subtotal.
+#' # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
+#' # that detail row but 1 when ROLLUP removes store to create a subtotal.
 #' summarize_with_margins(
 #'   dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
-#'   year_is_fixed = grouping(year),
-#'   store_is_total = grouping(store),
+#'   year_is_fixed = grouping_bit(year),
+#'   store_is_total = grouping_bit(store),
 #'   level = grouping_id(region, store),
 #'   .by = year,
 #'   .grouping = rollup(region, store)
@@ -38,19 +43,19 @@
 #' summarize_with_margins(
 #'   dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
-#'   store_is_total = grouping(store),
+#'   store_is_total = grouping_bit(store),
 #'   level = grouping_id(region, store),
 #'   .grouping = rollup(region, store),
 #'   .margin_label = NULL
 #' )
-grouping <- function(x) {
+grouping_bit <- function(x) {
   stop(
-    "`grouping()` can only be used inside `summarize_with_margins()`.",
+    "`grouping_bit()` can only be used inside `summarize_with_margins()`.",
     call. = FALSE
   )
 }
 
-#' @rdname grouping
+#' @rdname grouping_bit
 #' @export
 grouping_id <- function(...) {
   stop(
@@ -98,7 +103,7 @@ rewrite_grouping_expr <- function(expr,
     args <- as.list(expr)[-1]
     vars <- grouping_helper_vars(args, helper, plan)
 
-    if (identical(helper, "grouping")) {
+    if (identical(helper, "grouping_bit")) {
       if (sql) {
         return(grouping_sql_expr(vars[[1]], con))
       }
@@ -131,7 +136,7 @@ grouping_helper_name <- function(expr) {
 
   if (is.symbol(fn)) {
     name <- as.character(fn)
-    if (name %in% c("grouping", "grouping_id")) {
+    if (name %in% c("grouping_bit", "grouping_id")) {
       return(name)
     }
     return(NULL)
@@ -143,7 +148,7 @@ grouping_helper_name <- function(expr) {
       identical(as.character(fn[[2]]), "marginplyr")
   ) {
     name <- as.character(fn[[3]])
-    if (name %in% c("grouping", "grouping_id")) {
+    if (name %in% c("grouping_bit", "grouping_id")) {
       return(name)
     }
   }
@@ -152,8 +157,8 @@ grouping_helper_name <- function(expr) {
 }
 
 grouping_helper_vars <- function(args, helper, plan) {
-  if (identical(helper, "grouping") && length(args) != 1L) {
-    stop("`grouping()` requires exactly one column.", call. = FALSE)
+  if (identical(helper, "grouping_bit") && length(args) != 1L) {
+    stop("`grouping_bit()` requires exactly one column.", call. = FALSE)
   }
   if (identical(helper, "grouping_id") && length(args) == 0L) {
     stop("`grouping_id()` requires at least one column.", call. = FALSE)

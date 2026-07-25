@@ -27,8 +27,13 @@ Install the development version from GitHub:
 # install.packages("pak")
 pak::pak("sayuks/marginplyr")
 
-# Optional packages used in the backend and reporting sections
-install.packages(c("DBI", "duckdb", "dtplyr", "knitr", "quartabs"))
+# Install only packages that are missing from the backend and reporting
+# sections below.
+guide_packages <- c("DBI", "duckdb", "dtplyr", "knitr", "quartabs")
+missing_packages <- setdiff(guide_packages, rownames(installed.packages()))
+if (length(missing_packages) > 0L) {
+  install.packages(missing_packages)
+}
 ```
 
 ```{r setup}
@@ -266,9 +271,13 @@ This two-step form works consistently for local and lazy tables.
 
 ## Identify totals without guessing from labels
 
-`grouping(x)` returns `1` when `x` was removed from the current grouping set
-and `0` when it remains part of the group. It does not test whether the
-visible value is missing.
+`grouping_bit(x)` corresponds to SQL `GROUPING(x)`: it returns `1` when `x`
+was removed from the current grouping set and `0` when it remains part of the
+group. It does not test whether the visible value is missing.
+
+The `_bit` suffix describes this `0`/`1` result and avoids masking the
+unrelated `base::grouping()` function, which returns a permutation for placing
+equal values next to one another.
 
 ```{r}
 retail_sales |>
@@ -279,7 +288,7 @@ retail_sales |>
   ) |>
   summarize_with_margins(
     revenue = sum(revenue),
-    store_is_total = grouping(store),
+    store_is_total = grouping_bit(store),
     level = grouping_id(region, store),
     .grouping = rollup(region, store)
   )
@@ -320,7 +329,7 @@ Use `.margin_label = NULL` to preserve the grouping column's input type:
 retail_sales |>
   summarize_with_margins(
     revenue = sum(revenue),
-    year_is_total = grouping(year),
+    year_is_total = grouping_bit(year),
     .grouping = rollup(year),
     .margin_label = NULL
   )
@@ -328,12 +337,26 @@ retail_sales |>
 
 With a display label, grouping dimensions become character columns. With
 `NULL`, both source and generated missing values remain typed missing values,
-so retain `grouping()` or `grouping_id()` when the distinction matters.
+so retain `grouping_bit()` or `grouping_id()` when the distinction matters.
 
 For local data, `.check_margin_label = TRUE` prevents an existing value such
 as `"Total"` from becoming visually ambiguous. `.sort` controls the optional
 local result ordering; lazy tables remain unordered unless explicitly
 arranged.
+
+## Backend support
+
+marginplyr uses two SQL execution paths:
+
+| Execution path | Backends | Automated verification |
+|---|---|---|
+| Native `GROUP BY GROUPING SETS` | DuckDB, PostgreSQL | Live DuckDB execution; PostgreSQL SQL simulation |
+| Portable `UNION ALL` | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections | SQL generation with dbplyr simulators |
+
+Arrow and dtplyr are also tested lazy backends, but they are not SQL database
+connections. SQL simulation confirms that marginplyr can render each listed
+dialect; only DuckDB is currently exercised against a live database in the
+automated test suite.
 
 ## Inspect the generated SQL
 
@@ -392,30 +415,29 @@ DuckDB supports native grouping sets. The following example copies the small
 data set into an in-memory database, displays the SQL, and executes it:
 
 ```{r}
-local({
-  con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
-  on.exit(DBI::dbDisconnect(con), add = TRUE)
+con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
 
-  sales_db <- copy_to(
-    con,
-    retail_sales,
-    name = "retail_sales",
-    temporary = TRUE,
-    overwrite = TRUE
+sales_db <- copy_to(
+  con,
+  retail_sales,
+  name = "retail_sales",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+
+duckdb_query <- sales_db |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .sort = TRUE
   )
 
-  duckdb_query <- sales_db |>
-    filter(year == 2026L, month == "Jan") |>
-    summarize_with_margins(
-      revenue = sum(revenue, na.rm = TRUE),
-      level = grouping_id(region, store),
-      .grouping = rollup(region, store),
-      .sort = TRUE
-    )
-
-  show_query(duckdb_query)
-  collect(duckdb_query)
-})
+show_query(duckdb_query)
+duckdb_result <- collect(duckdb_query)
+DBI::dbDisconnect(con)
+duckdb_result
 ```
 
 The result stays lazy until `collect()` or another execution verb is called.
@@ -537,6 +559,7 @@ tabbed_report <- january_sales |>
     .grouping = rollup(region)
   ) |>
   mutate(
+    # Order the company total before regional tabs in the rendered report.
     region = factor(region, levels = c("Total", "East", "West")),
     report = list(
       data |>

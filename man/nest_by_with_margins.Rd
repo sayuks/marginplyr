@@ -60,7 +60,7 @@ row-wise data frames are local objects.
 \code{.by} marks columns that are present in every grouping set, while
 \code{.grouping} describes dimensions that can be omitted to form margins.
 Columns in \code{.by} retain their input types, never receive \code{.margin_label},
-and return \code{0} from \code{\link[=grouping]{grouping()}}.
+and return \code{0} from \code{\link[=grouping_bit]{grouping_bit()}}.
 
 At the grouping-set level, \code{.grouping} alone can reproduce structures that
 use \code{.by}. For example, \code{.by = year} is structurally equivalent to

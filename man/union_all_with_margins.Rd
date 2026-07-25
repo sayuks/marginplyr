@@ -42,7 +42,7 @@ lazy tables.}
 An ungrouped data frame, or a lazy table when \code{.data} is lazy.
 }
 \description{
-\code{union_all_with_margins()} emits one copy of each input row for every
+\code{\link[=union_all_with_margins]{union_all_with_margins()}} emits one copy of each input row for every
 grouping set, replacing omitted grouping dimensions with \code{.margin_label}.
 This is analogous to vertically combining the grouping branches with SQL
 \verb{UNION ALL}.
@@ -52,7 +52,7 @@ This is analogous to vertically combining the grouping branches with SQL
 \code{.by} marks columns that are present in every grouping set, while
 \code{.grouping} describes dimensions that can be omitted to form margins.
 Columns in \code{.by} retain their input types, never receive \code{.margin_label},
-and return \code{0} from \code{\link[=grouping]{grouping()}}.
+and return \code{0} from \code{\link[=grouping_bit]{grouping_bit()}}.
 
 At the grouping-set level, \code{.grouping} alone can reproduce structures that
 use \code{.by}. For example, \code{.by = year} is structurally equivalent to
@@ -66,6 +66,22 @@ margin dimension even when every expanded grouping set contains it.
 Consequently, it participates in \code{.margin_label} type conversion and
 collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
+}
+
+\section{Database backend coverage}{
+
+DuckDB and PostgreSQL use native \verb{GROUP BY GROUPING SETS} SQL. Automated
+tests execute DuckDB queries against a live in-memory database and verify
+PostgreSQL SQL with dbplyr's simulator.
+
+The portable \verb{UNION ALL} SQL path is verified with dbplyr simulators for
+Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL,
+Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus
+generic DBI and ODBC connections. Simulator coverage verifies SQL
+generation, not execution against every database server.
+
+Arrow and dtplyr are also tested lazy backends, but they are not SQL
+database connections.
 }
 
 \examples{

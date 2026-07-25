@@ -31,16 +31,16 @@ These constructors describe SQL-style grouping operations for the
 }
 \details{
 \itemize{
-\item \code{grouping_set()} creates one grouping set. With no columns it represents
+\item \code{\link[=grouping_set]{grouping_set()}} creates one grouping set. With no columns it represents
 the empty set \verb{()}.
-\item \code{grouping_sets()} forms the union of its arguments.
-\item \code{rollup()} creates hierarchical prefixes.
-\item \code{cube()} creates every subset of its dimensions.
-\item \code{grouping_spec()} forms the Cartesian product of its arguments, like
+\item \code{\link[=grouping_sets]{grouping_sets()}} forms the union of its arguments.
+\item \code{\link[=rollup]{rollup()}} creates hierarchical prefixes.
+\item \code{\link[=cube]{cube()}} creates every subset of its dimensions.
+\item \code{\link[=grouping_spec]{grouping_spec()}} forms the Cartesian product of its arguments, like
 comma-separated SQL \verb{GROUP BY} items.
 }
 
-A \code{grouping_set()} nested directly inside \code{rollup()} or \code{cube()} is a
+A \code{\link[=grouping_set]{grouping_set()}} nested directly inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} is a
 composite dimension. Its columns are added or removed together.
 }
 \examples{

@@ -4,7 +4,7 @@
 * Added `grouping_set()`, `grouping_sets()`, `rollup()`, `cube()`, and
   `grouping_spec()` for arbitrary SQL-style grouping plans, including empty
   sets, nesting, Cartesian products, and composite dimensions.
-* Added contextual `grouping()` and `grouping_id()` summary helpers.
+* Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
 * Added explicit duplicate-set policies: `"error"`, `"drop"`, and `"keep"`.
 * Changed the default display label to `"Total"`; `.margin_label = NULL`
   preserves grouping-column types and typed missing values.

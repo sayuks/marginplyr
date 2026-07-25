@@ -50,7 +50,7 @@ For a local input, an ungrouped data frame with one list column. A
 \code{dtplyr} input returns a lazy \code{dtplyr} step until collected.
 }
 \description{
-\code{nest_with_margins()} creates one nested data frame for every group in every
+\code{\link[=nest_with_margins]{nest_with_margins()}} creates one nested data frame for every group in every
 grouping set. It works with local data frames and \code{dtplyr} steps.
 }
 \section{Fixed columns and grouping dimensions}{
@@ -58,7 +58,7 @@ grouping set. It works with local data frames and \code{dtplyr} steps.
 \code{.by} marks columns that are present in every grouping set, while
 \code{.grouping} describes dimensions that can be omitted to form margins.
 Columns in \code{.by} retain their input types, never receive \code{.margin_label},
-and return \code{0} from \code{\link[=grouping]{grouping()}}.
+and return \code{0} from \code{\link[=grouping_bit]{grouping_bit()}}.
 
 At the grouping-set level, \code{.grouping} alone can reproduce structures that
 use \code{.by}. For example, \code{.by = year} is structurally equivalent to

@@ -9,8 +9,8 @@ test_that("rollup uses Total and exposes SQL-compatible grouping bits", {
     result <- summarize_with_margins(
       data,
       n = dplyr::n(),
-      ga = grouping(a),
-      gb = grouping(b),
+      ga = grouping_bit(a),
+      gb = grouping_bit(b),
       gid = grouping_id(a, b),
       .grouping = rollup(a, b),
       .sort = FALSE
@@ -101,7 +101,7 @@ test_that("fixed .by columns are never replaced", {
   result <- summarize_with_margins(
     data,
     n = dplyr::n(),
-    gy = grouping(year),
+    gy = grouping_bit(year),
     gid = grouping_id(year, region),
     .by = year,
     .grouping = rollup(region)
@@ -163,7 +163,7 @@ test_that("margin labels are display-only and can be disabled", {
   labelled <- summarize_with_margins(
     collision,
     n = dplyr::n(),
-    g = grouping(a),
+    g = grouping_bit(a),
     .grouping = rollup(a),
     .check_margin_label = FALSE
   )
@@ -212,14 +212,14 @@ test_that("factor and ordered factor columns are reconstructed", {
 })
 
 test_that("grouping helpers validate their context and columns", {
-  expect_error(grouping(a), "only be used inside")
+  expect_error(grouping_bit(a), "only be used inside")
   expect_error(grouping_id(a), "only be used inside")
 
   data <- data.frame(a = 1, b = 1)
   expect_error(
     summarize_with_margins(
       data,
-      bad = grouping(b),
+      bad = grouping_bit(b),
       .grouping = rollup(a)
     ),
     "not part of"

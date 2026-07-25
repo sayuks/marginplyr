@@ -57,7 +57,7 @@ test_that("PostgreSQL renders native SQL under strict translation", {
     query <- summarize_with_margins(
       remote,
       n = dplyr::n(),
-      ga = grouping(a),
+      ga = marginplyr::grouping_bit(a),
       gid = grouping_id(a, b),
       .grouping = grouping_sets(
         grouping_set(a, b),
@@ -88,6 +88,45 @@ test_that("unconfirmed SQL dialects use UNION ALL", {
     sql <- dbplyr::sql_render(query)
     expect_match(sql, "UNION ALL", fixed = TRUE)
     expect_false(grepl("GROUPING SETS", sql, fixed = TRUE))
+  }
+})
+
+test_that("documented fallback dialects render portable UNION ALL SQL", {
+  skip_if_not_installed("dbplyr")
+  data <- data.frame(a = "x", b = "u", value = 1)
+  simulators <- c(
+    "simulate_access",
+    "simulate_dbi",
+    "simulate_hana",
+    "simulate_hive",
+    "simulate_impala",
+    "simulate_mariadb",
+    "simulate_mssql",
+    "simulate_mysql",
+    "simulate_odbc",
+    "simulate_oracle",
+    "simulate_redshift",
+    "simulate_snowflake",
+    "simulate_spark_sql",
+    "simulate_sqlite",
+    "simulate_teradata"
+  )
+
+  for (simulator in simulators) {
+    con <- getExportedValue("dbplyr", simulator)()
+    remote <- dbplyr::tbl_lazy(data, con = con)
+    query <- summarize_with_margins(
+      remote,
+      n = dplyr::n(),
+      gid = grouping_id(a, b),
+      .grouping = rollup(a, b)
+    )
+    sql <- dbplyr::sql_render(query)
+    expect_match(sql, "UNION ALL", fixed = TRUE, info = simulator)
+    expect_false(
+      grepl("GROUPING SETS", sql, fixed = TRUE),
+      info = simulator
+    )
   }
 })
 
@@ -123,7 +162,7 @@ test_that("DuckDB executes native grouping sets with unambiguous bits", {
   result <- summarize_with_margins(
     remote,
     n = dplyr::n(),
-    ga = grouping(a),
+    ga = grouping_bit(a),
     gid = grouping_id(a, b),
     .grouping = rollup(a, b),
     .check_margin_label = FALSE

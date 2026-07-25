@@ -3,15 +3,15 @@
 #' These constructors describe SQL-style grouping operations for the
 #' `.grouping` argument of [summarize_with_margins()] and related verbs.
 #'
-#' - `grouping_set()` creates one grouping set. With no columns it represents
+#' - [grouping_set()] creates one grouping set. With no columns it represents
 #'   the empty set `()`.
-#' - `grouping_sets()` forms the union of its arguments.
-#' - `rollup()` creates hierarchical prefixes.
-#' - `cube()` creates every subset of its dimensions.
-#' - `grouping_spec()` forms the Cartesian product of its arguments, like
+#' - [grouping_sets()] forms the union of its arguments.
+#' - [rollup()] creates hierarchical prefixes.
+#' - [cube()] creates every subset of its dimensions.
+#' - [grouping_spec()] forms the Cartesian product of its arguments, like
 #'   comma-separated SQL `GROUP BY` items.
 #'
-#' A `grouping_set()` nested directly inside `rollup()` or `cube()` is a
+#' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
 #' composite dimension. Its columns are added or removed together.
 #'
 #' @param ... Bare columns, tidy-select expressions, or nested grouping
