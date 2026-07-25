@@ -4,6 +4,7 @@
 ^CODE_OF_CONDUCT\.md$
 ^README\.Rmd$
 ^dev$
+^data-raw$
 ^\.github$
 ^vignettes$
 ^docs$

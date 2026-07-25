@@ -48,11 +48,29 @@ This is analogous to vertically combining the grouping branches with SQL
 \verb{UNION ALL}.
 }
 \examples{
-union_all_with_margins(
-  mtcars,
-  .by = am,
-  .grouping = rollup(cyl, vs)
+# Expand a single month's source rows into store, region, and company
+# branches. Summarizing the expanded rows later reproduces the margins.
+january_sales <- dplyr::filter(
+  retail_sales,
+  year == 2026L,
+  month == "Jan"
 )
+union_all_with_margins(
+  january_sales,
+  .grouping = rollup(region, store)
+)
+
+# SQLite has no native GROUPING SETS support in marginplyr, so a simulated
+# lazy table makes the portable UNION ALL translation visible.
+sqlite_sales <- dbplyr::tbl_lazy(
+  january_sales,
+  con = dbplyr::simulate_sqlite()
+)
+sqlite_sales |>
+  union_all_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  dplyr::show_query()
 }
 \seealso{
 Other summarize and expand data with margins:

@@ -35,11 +35,26 @@ column belongs to every grouping set, \code{grouping()} is always \code{0L} for 
 it contributes a zero bit to \code{grouping_id()}.
 }
 \examples{
+# Online-direct sales have a source NA store. grouping(store) is 0 for that
+# detail row but 1 when ROLLUP removes store to create a subtotal.
 summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
-  is_cyl_total = grouping(cyl),
-  level = grouping_id(cyl, vs),
-  .grouping = rollup(cyl, vs)
+  dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
+  revenue = sum(revenue),
+  year_is_fixed = grouping(year),
+  store_is_total = grouping(store),
+  level = grouping_id(region, store),
+  .by = year,
+  .grouping = rollup(region, store)
+)
+
+# Keeping typed missing values makes the grouping bits essential: source
+# missing values and generated totals are both displayed as NA.
+summarize_with_margins(
+  dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
+  revenue = sum(revenue),
+  store_is_total = grouping(store),
+  level = grouping_id(region, store),
+  .grouping = rollup(region, store),
+  .margin_label = NULL
 )
 }

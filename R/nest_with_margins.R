@@ -17,10 +17,28 @@
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
-#' nest_with_margins(
-#'   mtcars,
-#'   .grouping = rollup(cyl, vs)
+#' # Keep the source rows behind each store, region subtotal, and company
+#' # total so they can feed separate report sections.
+#' january_sales <- dplyr::filter(
+#'   retail_sales,
+#'   year == 2026L,
+#'   month == "Jan"
 #' )
+#' nested <- nest_with_margins(
+#'   january_sales,
+#'   .grouping = rollup(region, store)
+#' )
+#' nested
+#'
+#' # The same operation stays lazy for a dtplyr input until collect().
+#' if (requireNamespace("dtplyr", quietly = TRUE)) {
+#'   january_sales |>
+#'     dtplyr::lazy_dt() |>
+#'     nest_with_margins(
+#'       .grouping = rollup(region, store)
+#'     ) |>
+#'     dplyr::collect()
+#' }
 nest_with_margins <- function(.data,
                               .by = NULL,
                               .grouping = NULL,

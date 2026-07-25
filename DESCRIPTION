@@ -11,6 +11,8 @@ Description: Provides 'dplyr'-compatible tools for SQL-style 'GROUPING SETS',
 License: MIT + file LICENSE
 URL: https://sayuks.github.io/marginplyr/, https://github.com/sayuks/marginplyr
 BugReports: https://github.com/sayuks/marginplyr/issues
+Depends:
+    R (>= 4.1.0)
 Imports: 
     dbplyr (>= 2.6.0),
     dplyr (>= 1.1.1),
@@ -39,10 +41,15 @@ Suggests:
 Config/testthat/edition: 3
 Config/Needs/website:
     altdoc,
+    data.table,
+    DBI,
+    dtplyr,
+    duckdb,
     knitr,
     quartabs,
     tibble
 Encoding: UTF-8
 Language: en-US
+LazyData: true
 Roxygen: list(markdown = TRUE)
 Config/roxygen2/version: 8.0.0

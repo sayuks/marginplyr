@@ -44,19 +44,99 @@ A \code{grouping_set()} nested directly inside \code{rollup()} or \code{cube()} 
 composite dimension. Its columns are added or removed together.
 }
 \examples{
-rollup(region, store)
-cube(product, channel)
-
-grouping_sets(
-  grouping_set(region, store),
-  grouping_set(region, product),
-  grouping_set()
+# The operations team needs store, region, and company totals for each
+# reporting month. Columns in `.by` remain in every grouping set.
+summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .by = c(year, month),
+  .grouping = rollup(region, store)
 )
 
-grouping_spec(
-  rollup(region, store),
-  cube(product, channel)
+# Finance instead needs a few specific views, including the all-period
+# grand total represented by an empty grouping set.
+summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .grouping = grouping_sets(
+    grouping_set(year, month),
+    grouping_set(region, product),
+    grouping_set()
+  )
 )
 
-cube(grouping_set(country, state), year)
+# A cube gives merchandising every combination of product and channel.
+summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .by = c(year, month),
+  .grouping = cube(product, channel)
+)
+
+# grouping_sets() unions two independent hierarchies. Both rollups contain
+# the empty set, so duplicate grouping sets are dropped explicitly.
+independent_totals <- summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .grouping = grouping_sets(
+    rollup(year, month),
+    rollup(region, store)
+  ),
+  .duplicates = "drop"
+)
+
+# Keeping duplicates intentionally returns the grand total once per
+# occurrence of the empty set.
+repeated_grand_totals <- summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .grouping = grouping_sets(
+    rollup(year, month),
+    rollup(region, store)
+  ),
+  .duplicates = "keep"
+)
+dplyr::filter(
+  repeated_grand_totals,
+  year == "Total",
+  region == "Total"
+)
+
+# grouping_spec() takes their Cartesian product, producing combinations
+# such as (year, month, region, store) and (year, region).
+combined_totals <- summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .grouping = grouping_spec(
+    rollup(year, month),
+    rollup(region, store)
+  )
+)
+
+# A nested grouping_set() is a composite dimension: region and store are
+# included or removed together. Tidy-select expressions are also accepted.
+summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .grouping = cube(
+    grouping_set(region, store),
+    dplyr::all_of(c("product", "channel"))
+  )
+)
+
+# A simulated PostgreSQL table shows the native GROUPING SETS translation
+# without requiring a database server.
+postgres_sales <- dbplyr::tbl_lazy(
+  retail_sales,
+  con = dbplyr::simulate_postgres()
+)
+postgres_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = grouping_spec(
+      rollup(year, month),
+      rollup(region, store)
+    )
+  ) |>
+  dplyr::show_query()
 }

@@ -36,145 +36,306 @@ You can install the development version of `marginplyr` from
 pak::pak("sayuks/marginplyr")
 ```
 
-## Example
+## From a monthly report to a database query
 
 ``` r
-library(marginplyr)
-#>
-#> Attaching package: 'marginplyr'
-#> The following object is masked from 'package:base':
-#>
-#>     grouping
+suppressPackageStartupMessages(library(marginplyr))
 ```
 
-### Hierarchical totals with `rollup()`
+Imagine an analyst preparing a management report for a retail chain.
+Each row of `retail_sales` records sales for one product, channel, and
+store combination. Online-direct sales have no physical store, so
+`store` is genuinely missing in some source rows.
 
 ``` r
-summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
-  mean_mpg = mean(mpg, na.rm = TRUE),
-  level = grouping_id(cyl, vs),
-  .grouping = rollup(cyl, vs)
+dplyr::slice_head(retail_sales, n = 6)
+#>   year month region         store    product channel units revenue
+#> 1 2025   Jan   East        Boston     Laptop   Store     3    3600
+#> 2 2025   Jan   East      New York    Monitor   Store     8    2400
+#> 3 2025   Jan   East          <NA> Headphones  Online    15    1500
+#> 4 2025   Jan   West San Francisco     Laptop   Store     4    4800
+#> 5 2025   Jan   West       Seattle    Monitor  Online     6    1800
+#> 6 2025   Jan   West       Seattle Headphones   Store    11    1100
+```
+
+### Store, region, and company totals
+
+The first request is one independent report per month. `year` and
+`month` belong to every result level, while `rollup(region, store)`
+creates store detail, region subtotals, and a company total.
+
+``` r
+monthly_report <- summarize_with_margins(
+  retail_sales,
+  units = sum(units),
+  revenue = sum(revenue),
+  .by = c(year, month),
+  .grouping = rollup(region, store)
 )
-#> # A tibble: 9 × 5
-#>   cyl   vs        n mean_mpg level
-#>   <chr> <chr> <int>    <dbl> <int>
-#> 1 4     0         1     26       0
-#> 2 4     1        10     26.7     0
-#> 3 4     Total    11     26.7     1
-#> 4 6     0         3     20.6     0
-#> 5 6     1         4     19.1     0
-#> 6 6     Total     7     19.7     1
-#> 7 8     0        14     15.1     0
-#> 8 8     Total    14     15.1     1
-#> 9 Total Total    32     20.1     3
+
+monthly_report |>
+  dplyr::filter(year == 2026L, month == "Jan")
+#> # A tibble: 8 × 6
+#>    year month region store         units revenue
+#>   <int> <chr> <chr>  <chr>         <int>   <dbl>
+#> 1  2026 Jan   East   Boston            5    6000
+#> 2  2026 Jan   East   New York         10    3000
+#> 3  2026 Jan   East   Total            37   11200
+#> 4  2026 Jan   East   <NA>             22    2200
+#> 5  2026 Jan   Total  Total            70   23300
+#> 6  2026 Jan   West   San Francisco     6    7200
+#> 7  2026 Jan   West   Seattle          27    4900
+#> 8  2026 Jan   West   Total            33   12100
 ```
 
-### Arbitrary grouping sets, including the grand total
+`"Total"` means that a dimension was aggregated away. A source `NA` is
+left as `NA`; it still represents an online-direct record with no
+physical store.
+
+Moving the period columns into the rollup changes the report hierarchy:
+
+``` r
+all_levels <- summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  level = grouping_id(year, month, region, store),
+  .grouping = rollup(year, month, region, store)
+)
+
+all_levels |>
+  dplyr::filter(month == "Total")
+#> # A tibble: 3 × 6
+#>   year  month region store revenue level
+#>   <chr> <chr> <chr>  <chr>   <dbl> <int>
+#> 1 2025  Total Total  Total   33900     7
+#> 2 2026  Total Total  Total   53500     7
+#> 3 Total Total Total  Total   87400    15
+```
+
+This rollup includes store detail, region-month subtotals, company-month
+totals, company-year totals, and the all-period total.
+
+### Ask for exactly the totals you need
+
+Finance does not always want a hierarchy. `grouping_sets()` selects
+arbitrary views, and an empty `grouping_set()` requests the grand total.
 
 ``` r
 summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
+  retail_sales,
+  revenue = sum(revenue),
   .grouping = grouping_sets(
-    grouping_set(cyl, vs),
-    grouping_set(cyl, gear),
+    grouping_set(year, month),
+    grouping_set(region, product),
     grouping_set()
   )
 )
-#> # A tibble: 14 × 4
-#>    cyl   vs    gear      n
-#>    <chr> <chr> <chr> <int>
-#>  1 4     0     Total     1
-#>  2 4     1     Total    10
-#>  3 4     Total 3         1
-#>  4 4     Total 4         8
-#>  5 4     Total 5         2
-#>  6 6     0     Total     3
-#>  7 6     1     Total     4
-#>  8 6     Total 3         2
-#>  9 6     Total 4         4
-#> 10 6     Total 5         1
-#> 11 8     0     Total    14
-#> 12 8     Total 3        12
-#> 13 8     Total 5         2
-#> 14 Total Total Total    32
+#> # A tibble: 11 × 5
+#>    year  month region product    revenue
+#>    <chr> <chr> <chr>  <chr>        <dbl>
+#>  1 2025  Feb   Total  Total        18700
+#>  2 2025  Jan   Total  Total        15200
+#>  3 2026  Feb   Total  Total        30200
+#>  4 2026  Jan   Total  Total        23300
+#>  5 Total Total East   Headphones    8000
+#>  6 Total Total East   Laptop       22800
+#>  7 Total Total East   Monitor      11100
+#>  8 Total Total Total  Total        87400
+#>  9 Total Total West   Headphones    5900
+#> 10 Total Total West   Laptop       27600
+#> 11 Total Total West   Monitor      12000
 ```
 
-`grouping_spec()` combines grouping families by Cartesian product.
-Composite dimensions stay together inside a rollup or cube:
+Merchandising can instead explore every combination of product and sales
+channel with `cube()`:
 
 ``` r
-summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
-  .grouping = grouping_spec(
-    rollup(cyl, vs),
-    cube(grouping_set(gear, carb), am)
+retail_sales |>
+  dplyr::filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = cube(product, channel)
   )
-) |>
-  dplyr::slice_head(n = 12)
-#> # A tibble: 12 × 6
-#>    cyl   vs    gear  carb  am        n
-#>    <chr> <chr> <chr> <chr> <chr> <int>
-#>  1 4     0     5     2     1         1
-#>  2 4     0     5     2     Total     1
-#>  3 4     0     Total Total 1         1
-#>  4 4     0     Total Total Total     1
-#>  5 4     1     3     1     0         1
-#>  6 4     1     3     1     Total     1
-#>  7 4     1     4     1     1         4
-#>  8 4     1     4     1     Total     4
-#>  9 4     1     4     2     0         2
-#> 10 4     1     4     2     1         2
-#> 11 4     1     4     2     Total     4
-#> 12 4     1     5     2     1         1
+#> # A tibble: 10 × 3
+#>    product    channel revenue
+#>    <chr>      <chr>     <dbl>
+#>  1 Headphones Online     2200
+#>  2 Headphones Store      1600
+#>  3 Headphones Total      3800
+#>  4 Laptop     Store     13200
+#>  5 Laptop     Total     13200
+#>  6 Monitor    Online     6300
+#>  7 Monitor    Total      6300
+#>  8 Total      Online     8500
+#>  9 Total      Store     14800
+#> 10 Total      Total     23300
 ```
 
-### Quarto tabset reports
+### Tell source missing values from totals
 
-`nest_by_with_margins()` creates detail, subtotal, and grand-total
-groups that can be rendered directly as nested Quarto tabs with
-[`quartabs`](https://sayuks.github.io/quartabs/):
+SQL uses `GROUPING()` because both a source missing value and an
+aggregated dimension would otherwise appear as `NULL`. The marginplyr
+helpers expose the same distinction:
 
 ``` r
-install.packages(c("knitr", "quartabs"))
+retail_sales |>
+  dplyr::filter(
+    year == 2026L,
+    month == "Jan",
+    region == "East"
+  ) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    store_is_total = grouping(store),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store)
+  )
+#> # A tibble: 5 × 5
+#>   region store    revenue store_is_total level
+#>   <chr>  <chr>      <dbl>          <int> <int>
+#> 1 East   Boston      6000              0     0
+#> 2 East   New York    3000              0     0
+#> 3 East   Total      11200              1     1
+#> 4 East   <NA>        2200              0     0
+#> 5 Total  Total      11200              1     3
 ```
 
+`store_is_total` is `0` for the source `NA` row and `1` for a subtotal
+where the store dimension was removed.
+
+### Run the same report in DuckDB
+
+Local data frames and lazy database tables use the same interface.
+DuckDB and PostgreSQL translate the request to one native
+`GROUP BY GROUPING SETS` query.
+
 ``` r
-# In a Quarto R chunk with: #| results: asis
-mtcars |>
-  nest_by_with_margins(.grouping = rollup(cyl, vs)) |>
+con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
+
+sales_db <- dplyr::copy_to(
+  con,
+  retail_sales,
+  name = "retail_sales",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+
+query <- sales_db |>
+  dplyr::filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .sort = TRUE
+  )
+
+dplyr::show_query(query)
+#> <SQL>
+#> SELECT
+#>   CASE WHEN ("..marginplyr_grouping_1" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_1" = 1) THEN (TRY_CAST(region AS TEXT)) END AS region,
+#>   CASE WHEN ("..marginplyr_grouping_2" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_2" = 1) THEN (TRY_CAST(store AS TEXT)) END AS store,
+#>   revenue,
+#>   "level"
+#> FROM (
+#>   SELECT
+#>     region,
+#>     store,
+#>     SUM(revenue) AS revenue,
+#>     GROUPING(region) * 2.0 + GROUPING(store) AS "level",
+#>     GROUPING(region) AS "..marginplyr_grouping_1",
+#>     GROUPING(store) AS "..marginplyr_grouping_2"
+#>   FROM retail_sales
+#>   WHERE ("year" = 2026) AND ("month" = 'Jan')
+#>   GROUP BY GROUPING SETS ((region, store), (region), ())
+#> ) AS q01
+#> ORDER BY region, store
+dplyr::collect(query)
+#> # A tibble: 8 × 4
+#>   region store         revenue level
+#>   <chr>  <chr>           <dbl> <dbl>
+#> 1 East   Boston           6000     0
+#> 2 East   New York         3000     0
+#> 3 East   Total           11200     1
+#> 4 East   <NA>             2200     0
+#> 5 Total  Total           23300     3
+#> 6 West   San Francisco    7200     0
+#> 7 West   Seattle          4900     0
+#> 8 West   Total           12100     1
+
+DBI::dbDisconnect(con)
+```
+
+Backends without confirmed native support use a portable `UNION ALL`
+translation with the same grouping semantics.
+
+### Keep the rows behind each total
+
+`union_all_with_margins()` expands source rows across grouping levels.
+`nest_by_with_margins()` goes one step further and keeps a row-wise
+detail table behind every visible group:
+
+``` r
+retail_sales |>
+  dplyr::filter(year == 2026L, month == "Jan") |>
+  nest_by_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  dplyr::mutate(
+    records = nrow(data),
+    revenue = sum(data$revenue)
+  ) |>
+  dplyr::select(-data)
+#> # A tibble: 8 × 4
+#> # Rowwise:  region, store
+#>   region store         records revenue
+#>   <chr>  <chr>           <int>   <dbl>
+#> 1 East   Boston              1    6000
+#> 2 East   New York            1    3000
+#> 3 East   Total               3   11200
+#> 4 East   <NA>                1    2200
+#> 5 Total  Total               6   23300
+#> 6 West   San Francisco       1    7200
+#> 7 West   Seattle             2    4900
+#> 8 West   Total               3   12100
+```
+
+The function reference contains executable examples for composite
+dimensions, tidy-select expressions, duplicate grouping sets, Cartesian
+products, simulated SQL dialects, and dtplyr.
+
+### Optional Quarto tabsets
+
+As a small reporting extension, the nested result can be passed to
+[`quartabs`](https://sayuks.github.io/quartabs/) so regions and totals
+become Quarto tabs:
+
+``` r
+# In a Quarto chunk with: #| results: asis
+retail_sales |>
+  dplyr::filter(year == 2026L, month == "Jan") |>
+  nest_by_with_margins(.grouping = rollup(region)) |>
   dplyr::mutate(
     report = list(
-      data |>
-        dplyr::summarize(
-          rows = dplyr::n(),
-          mean_mpg = mean(mpg)
-        ) |>
+      dplyr::summarize(
+        data,
+        records = dplyr::n(),
+        revenue = sum(revenue)
+      ) |>
         knitr::kable()
     )
   ) |>
   dplyr::ungroup() |>
   quartabs::render_tabset(
-    tabset_vars = c(cyl, vs),
+    tabset_vars = region,
     output_vars = report
   )
 ```
 
 The [Get started
-guide](https://sayuks.github.io/marginplyr/vignettes/get_started.html#quarto-tabset-reports-with-quartabs)
-contains a live, executable tabset.
-
-DuckDB and PostgreSQL use one native `GROUP BY GROUPING SETS` query.
-Other lazy backends use a portable `UNION ALL` adapter with the same
-result semantics. `grouping()` and `grouping_id()` distinguish source
-missing values from rows produced by aggregation.
-
-See [Get
-started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
-for more details.
+guide](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+develops the complete story, including the difference between the union
+made by `grouping_sets()` and the Cartesian product made by
+`grouping_spec()`.
 
 ## Code of Conduct
 

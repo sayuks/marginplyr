@@ -63,29 +63,80 @@ Confirmed SQL backends use one \verb{GROUP BY GROUPING SETS} query. Other lazy
 backends use a portable \verb{UNION ALL} adapter with the same semantics.
 }
 \examples{
+# Build one monthly management report with store detail, region subtotals,
+# and a company total.
 summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
-  mean_mpg = mean(mpg),
-  .grouping = rollup(cyl, vs)
+  retail_sales,
+  units = sum(units),
+  revenue = sum(revenue),
+  .by = c(year, month),
+  .grouping = rollup(region, store)
 )
 
+# Moving year and month into the rollup extends the hierarchy from store
+# detail through monthly, annual, and all-period totals.
 summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
-  level = grouping_id(cyl, vs, gear),
-  .grouping = grouping_spec(rollup(cyl, vs), cube(gear))
+  retail_sales,
+  revenue = sum(revenue),
+  level = grouping_id(year, month, region, store),
+  .grouping = rollup(year, month, region, store)
 )
 
+# Grouping expressions are created with mutate() before summarizing.
 summarize_with_margins(
-  mtcars,
-  n = dplyr::n(),
-  .grouping = grouping_sets(
-    grouping_set(cyl, vs),
-    grouping_set(cyl, gear),
-    grouping_set()
-  )
+  dplyr::mutate(
+    retail_sales,
+    period = paste(year, month, sep = "-")
+  ),
+  revenue = sum(revenue),
+  .grouping = rollup(period, region)
 )
+
+# Change the display label, or use NULL to retain the input column types.
+summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .grouping = rollup(year),
+  .margin_label = "All years"
+)
+summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  year_is_total = grouping(year),
+  .grouping = rollup(year),
+  .margin_label = NULL
+)
+
+# DuckDB executes a native GROUP BY GROUPING SETS query. The optional
+# dependency guard keeps this example runnable without DuckDB installed.
+if (
+  requireNamespace("DBI", quietly = TRUE) &&
+  requireNamespace("duckdb", quietly = TRUE)
+) {
+  local({
+    con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
+    on.exit(DBI::dbDisconnect(con), add = TRUE)
+
+    sales_db <- dplyr::copy_to(
+      con,
+      retail_sales,
+      name = "retail_sales",
+      temporary = TRUE,
+      overwrite = TRUE
+    )
+    query <- summarize_with_margins(
+      sales_db,
+      revenue = sum(revenue, na.rm = TRUE),
+      level = grouping_id(region, store),
+      .by = c(year, month),
+      .grouping = rollup(region, store),
+      .sort = TRUE
+    )
+
+    dplyr::show_query(query)
+    dplyr::collect(query)
+  })
+}
 }
 \seealso{
 Other summarize and expand data with margins:

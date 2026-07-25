@@ -56,10 +56,39 @@ A \code{dtplyr} result is collected before it is made row-wise because
 row-wise data frames are local objects.
 }
 \examples{
-nest_by_with_margins(
-  mtcars,
-  .grouping = rollup(cyl, vs)
+january_sales <- dplyr::filter(
+  retail_sales,
+  year == 2026L,
+  month == "Jan"
 )
+
+# A row-wise result makes it natural to calculate one report summary from
+# every nested detail table.
+january_sales |>
+  nest_by_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  dplyr::mutate(
+    records = nrow(data),
+    units = sum(data$units),
+    revenue = sum(data$revenue)
+  ) |>
+  dplyr::select(-data)
+
+# dtplyr performs the expansion and nesting before the result becomes a
+# local row-wise data frame.
+if (requireNamespace("dtplyr", quietly = TRUE)) {
+  january_sales |>
+    dtplyr::lazy_dt() |>
+    nest_by_with_margins(
+      .grouping = rollup(region, store)
+    ) |>
+    dplyr::mutate(
+      records = nrow(data),
+      revenue = sum(data$revenue)
+    ) |>
+    dplyr::select(-data)
+}
 }
 \seealso{
 Other summarize and expand data with margins:

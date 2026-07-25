@@ -9,9 +9,9 @@ format:
 date: last-modified
 ---
 
-`marginplyr` brings SQL-style grouping sets to `dplyr` workflows. A single
-grouping specification can be executed locally, translated to native SQL, or
-expanded to a portable `UNION ALL` query.
+`marginplyr` brings SQL-style `GROUPING SETS`, `ROLLUP`, and `CUBE` to
+`dplyr`. This guide follows one retail reporting task from a local data frame
+to generated SQL.
 
 ## Installation
 
@@ -23,65 +23,48 @@ Install the development version from GitHub:
 # install.packages("pak")
 pak::pak("sayuks/marginplyr")
 
-# Optional packages used by this guide and its Quarto tabset example
-install.packages(c("knitr", "quartabs", "tibble"))
+# Optional packages used in the backend and reporting sections
+install.packages(c("DBI", "duckdb", "dtplyr", "knitr", "quartabs"))
 ```
 
 ```{r setup}
 library(marginplyr)
 library(dplyr)
-library(tibble)
 ```
 
+## The sales report
+
+`retail_sales` contains two years of monthly sales for a fictional retail
+chain. Each row records one product, channel, and store combination.
+
 ```{r}
-sales <- tribble(
-  ~year, ~region, ~store, ~product, ~channel, ~amount,
-  2024L, "East", "E1", "A", "Online", 10,
-  2024L, "East", "E2", "B", "Store", 20,
-  2024L, "West", "W1", "A", "Online", 15,
-  2025L, "East", "E1", "A", "Store", 12,
-  2025L, "West", "W1", NA_character_, "Online", 18
-)
+retail_sales
 ```
 
-## The interface
+Online-direct sales do not belong to a physical store, so some source rows
+have `store = NA`. This intentional missing value becomes important when
+identifying subtotal rows.
 
-`.by` contains fixed groups that occur in every result level. `.grouping`
-describes the dimensions that can be aggregated.
+### One independent report per month
+
+The operations team first wants store detail, region subtotals, and a company
+total for every month:
 
 ```{r}
-sales |>
+monthly_report <- retail_sales |>
   summarize_with_margins(
-    total = sum(amount),
-    .by = year,
+    units = sum(units),
+    revenue = sum(revenue),
+    .by = c(year, month),
     .grouping = rollup(region, store)
   )
+
+monthly_report |>
+  filter(year == 2026L, month == "Jan")
 ```
 
-`"Total"` is a display label. Internally, grouping rows are identified from
-the grouping plan or SQL `GROUPING()` result, never by comparing this string.
-
-## Arbitrary grouping sets
-
-`grouping_sets()` forms the union of explicitly requested sets.
-`grouping_set()` with no columns is the empty grouping set and produces a
-grand total (or one total per fixed `.by` group).
-
-```{r}
-sales |>
-  summarize_with_margins(
-    total = sum(amount),
-    .grouping = grouping_sets(
-      grouping_set(region, store),
-      grouping_set(region, product),
-      grouping_set()
-    )
-  )
-```
-
-## ROLLUP
-
-`rollup(region, store)` expands to the following sets:
+Columns in `.by` belong to every grouping set. They retain their input types
+and never receive the margin label. Here, `rollup(region, store)` expands to:
 
 ```text
 (region, store)
@@ -89,17 +72,65 @@ sales |>
 ()
 ```
 
+The empty set still includes the fixed `.by` columns, so it produces one
+company total per year and month.
+
+### Extend the hierarchy through time
+
+The annual review also needs monthly, annual, and all-period totals. Moving
+the period columns from `.by` into `rollup()` creates one longer hierarchy:
+
 ```{r}
-sales |>
+all_levels <- retail_sales |>
   summarize_with_margins(
-    total = sum(amount),
-    .grouping = rollup(region, store)
+    revenue = sum(revenue),
+    level = grouping_id(year, month, region, store),
+    .grouping = rollup(year, month, region, store)
+  )
+
+all_levels |>
+  filter(month == "Total")
+```
+
+The rollup expands to:
+
+```text
+(year, month, region, store)  store detail
+(year, month, region)         monthly region subtotal
+(year, month)                 monthly company total
+(year)                        annual company total
+()                            all-period company total
+```
+
+Argument order defines the hierarchy. This rollup does not create an annual
+total for each region; arbitrary grouping sets can request that separately.
+
+## Choose the grouping operation
+
+### Arbitrary grouping sets
+
+Finance needs monthly company totals, region-product totals, and the overall
+grand total—but no other combinations. `grouping_sets()` forms the union of
+exactly those requests:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = grouping_sets(
+      grouping_set(year, month),
+      grouping_set(region, product),
+      grouping_set()
+    )
   )
 ```
 
-## CUBE
+An empty `grouping_set()` represents `()` and produces the grand total.
 
-`cube(product, channel)` expands to every subset:
+### CUBE
+
+Merchandising wants every subtotal across product and sales channel.
+`cube(product, channel)` expands to all four subsets:
 
 ```text
 (product, channel)
@@ -109,211 +140,417 @@ sales |>
 ```
 
 ```{r}
-sales |>
+retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
   summarize_with_margins(
-    total = sum(amount),
+    revenue = sum(revenue),
     .grouping = cube(product, channel)
   )
 ```
 
-## Cartesian products
+### Union versus Cartesian product
 
-SQL combines comma-separated grouping items by Cartesian product.
-`grouping_spec()` provides the same operation in R.
-
-```{r}
-sales |>
-  summarize_with_margins(
-    total = sum(amount),
-    .by = year,
-    .grouping = grouping_spec(
-      rollup(region, store),
-      cube(product, channel)
-    )
-  )
-```
-
-The compiler expands the product to concrete grouping sets before choosing a
-local or SQL execution adapter.
-
-## Nested specifications
-
-Grouping families can be nested in `grouping_sets()`.
+Two rollups inside `grouping_sets()` remain independent:
 
 ```{r}
-sales |>
+independent_totals <- retail_sales |>
   summarize_with_margins(
-    total = sum(amount),
+    revenue = sum(revenue),
     .grouping = grouping_sets(
-      rollup(region, store),
-      cube(product, channel)
+      rollup(year, month),
+      rollup(region, store)
     ),
     .duplicates = "drop"
   )
+
+independent_totals
 ```
 
-Both families contain the empty set. The default `.duplicates = "error"`
-detects this; `"drop"` keeps the first occurrence and `"keep"` preserves every
-occurrence.
+This is a union of:
 
-## Composite dimensions
+```text
+(year, month), (year), (), (region, store), (region)
+```
 
-A nested `grouping_set()` inside `rollup()` or `cube()` is one indivisible
-dimension.
+Both rollups contain `()`. The default `.duplicates = "error"` catches this
+overlap. `"drop"` retains one copy; `"keep"` retains both copies when repeated
+totals are intentionally meaningful:
 
 ```{r}
-locations <- tibble(
-  country = c("JP", "JP", "US"),
-  state = c("Tokyo", "Osaka", "CA"),
-  year = c(2024L, 2025L, 2024L),
-  amount = c(10, 20, 30)
-)
-
-locations |>
+retail_sales |>
   summarize_with_margins(
-    total = sum(amount),
-    .grouping = cube(grouping_set(country, state), year)
+    revenue = sum(revenue),
+    .grouping = grouping_sets(
+      rollup(year, month),
+      rollup(region, store)
+    ),
+    .duplicates = "keep"
+  ) |>
+  filter(
+    year == "Total",
+    region == "Total"
   )
 ```
 
-`country` and `state` are always included or aggregated together.
-
-## Inspecting aggregation levels
-
-`grouping(x)` returns 1 when `x` was aggregated away and 0 when it belongs to
-the active grouping set. `grouping_id()` combines those flags as a bit mask;
-the last argument is the least-significant bit.
+SQL combines comma-separated grouping items by Cartesian product.
+`grouping_spec()` provides that operation:
 
 ```{r}
-sales |>
+combined_totals <- retail_sales |>
   summarize_with_margins(
-    total = sum(amount),
-    region_grouped = grouping(region),
-    level = grouping_id(region, store, product),
+    revenue = sum(revenue),
     .grouping = grouping_spec(
-      rollup(region, store),
-      cube(product)
+      rollup(year, month),
+      rollup(region, store)
     )
   )
+
+combined_totals |>
+  slice_head(n = 12)
 ```
 
-This also distinguishes source missing values from grouping rows. A source
-`NA` has a grouping bit of 0; an `NA` produced by aggregation has a bit of 1.
-Columns fixed with `.by` can also be passed to these helpers; because they are
-present in every grouping set, their grouping flag and bit are always 0.
+The two families each contain three sets, so their Cartesian product contains
+nine sets:
 
-## Labels and column types
+```text
+(year, month, region, store)
+(year, month, region)
+(year, month)
+(year, region, store)
+(year, region)
+(year)
+(region, store)
+(region)
+()
+```
 
-Change the report label with `.margin_label`:
+### Composite dimensions and tidy-select
+
+A `grouping_set()` nested directly inside `rollup()` or `cube()` is one
+indivisible dimension. The following cube includes or removes `region` and
+`store` together:
 
 ```{r}
-sales |>
+retail_sales |>
   summarize_with_margins(
-    total = sum(amount),
-    .grouping = rollup(region, store),
-    .margin_label = "All"
+    revenue = sum(revenue),
+    .grouping = cube(
+      grouping_set(region, store),
+      all_of(c("product", "channel"))
+    )
+  ) |>
+  slice_head(n = 12)
+```
+
+Grouping specifications accept tidy-select expressions. They select existing
+columns; they do not evaluate arbitrary SQL expressions.
+
+### Computed grouping columns
+
+Create a computed dimension with `mutate()` before summarizing:
+
+```{r}
+retail_sales |>
+  mutate(period = paste(year, month, sep = "-")) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(period, region)
   )
 ```
 
-When a character label is used, grouping dimensions are returned as character
-columns; local factors are reconstructed with the label as their first level.
-Use `.margin_label = NULL` to keep original column types and typed missing
-values. In that mode, use `grouping()` or `grouping_id()` to tell source and
-aggregation missing values apart.
+This two-step form works consistently for local and lazy tables.
+
+## Identify totals without guessing from labels
+
+`grouping(x)` returns `1` when `x` was removed from the current grouping set
+and `0` when it remains part of the group. It does not test whether the
+visible value is missing.
+
+```{r}
+retail_sales |>
+  filter(
+    year == 2026L,
+    month == "Jan",
+    region == "East"
+  ) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    store_is_total = grouping(store),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store)
+  )
+```
+
+The source `NA` store has `store_is_total = 0`. The region subtotal has
+`store_is_total = 1`, because `store` was removed by the rollup.
+
+`grouping_id()` combines the flags as a bit mask. Its last argument is the
+least-significant bit:
+
+```text
+region  store  bits  grouping_id
+kept    kept    00       0
+kept    total   01       1
+total   total   11       3
+```
+
+Columns fixed in `.by` can also be passed to these helpers. Their flag is
+always zero because they occur in every grouping set.
+
+### Labels and column types
+
+Change the label used for dimensions removed by aggregation:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(year),
+    .margin_label = "All years"
+  )
+```
+
+Use `.margin_label = NULL` to preserve the grouping column's input type:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    year_is_total = grouping(year),
+    .grouping = rollup(year),
+    .margin_label = NULL
+  )
+```
+
+With a display label, grouping dimensions become character columns. With
+`NULL`, both source and generated missing values remain typed missing values,
+so retain `grouping()` or `grouping_id()` when the distinction matters.
 
 For local data, `.check_margin_label = TRUE` prevents an existing value such
-as `"Total"` from becoming visually ambiguous. Disable the check only when the
-grouping bits are also retained.
+as `"Total"` from becoming visually ambiguous. `.sort` controls the optional
+local result ordering; lazy tables remain unordered unless explicitly
+arranged.
 
-## Computed grouping columns
+## Inspect the generated SQL
 
-Grouping constructors accept column selections rather than arbitrary SQL
-expressions. Create an expression result first with `mutate()`.
+### PostgreSQL without a server
+
+dbplyr's simulated backends show generated SQL without a live database. A
+PostgreSQL simulation uses marginplyr's native translation:
 
 ```{r}
-sales |>
-  mutate(region_product = paste(region, product, sep = ":")) |>
+postgres_sales <- dbplyr::tbl_lazy(
+  retail_sales,
+  con = dbplyr::simulate_postgres()
+)
+
+postgres_query <- postgres_sales |>
   summarize_with_margins(
-    total = sum(amount),
-    .grouping = rollup(region_product)
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = grouping_spec(
+      rollup(year, month),
+      rollup(region, store)
+    )
   )
+
+show_query(postgres_query)
 ```
 
-This form also translates predictably for lazy database tables.
+The inner query contains one `GROUP BY GROUPING SETS` clause. Hidden
+`GROUPING()` flags let the outer query label only generated subtotal values.
 
-## Other verbs
+### A portable fallback
 
-The same plan is shared by all margin verbs.
+For dialects without confirmed native support, marginplyr emits one branch per
+grouping set and combines them with `UNION ALL`:
 
 ```{r}
-sales |>
+sqlite_sales <- dbplyr::tbl_lazy(
+  retail_sales,
+  con = dbplyr::simulate_sqlite()
+)
+
+sqlite_query <- sqlite_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region, store)
+  )
+
+show_query(sqlite_query)
+```
+
+This conservative fallback favors consistent result semantics over assuming
+that an unconfirmed backend implements grouping sets.
+
+### Execute the query in DuckDB
+
+DuckDB supports native grouping sets. The following example copies the small
+data set into an in-memory database, displays the SQL, and executes it:
+
+```{r}
+if (
+  requireNamespace("DBI", quietly = TRUE) &&
+  requireNamespace("duckdb", quietly = TRUE)
+) {
+  local({
+    con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
+    on.exit(DBI::dbDisconnect(con), add = TRUE)
+
+    sales_db <- copy_to(
+      con,
+      retail_sales,
+      name = "retail_sales",
+      temporary = TRUE,
+      overwrite = TRUE
+    )
+
+    duckdb_query <- sales_db |>
+      filter(year == 2026L, month == "Jan") |>
+      summarize_with_margins(
+        revenue = sum(revenue, na.rm = TRUE),
+        level = grouping_id(region, store),
+        .grouping = rollup(region, store),
+        .sort = TRUE
+      )
+
+    show_query(duckdb_query)
+    collect(duckdb_query)
+  })
+}
+```
+
+The result stays lazy until `collect()` or another execution verb is called.
+
+## Keep the detail rows
+
+### Expand rows with `union_all_with_margins()`
+
+`union_all_with_margins()` emits one copy of each source row for every
+grouping set. It is useful when downstream work needs the rows rather than an
+immediate summary:
+
+```{r}
+january_sales <- retail_sales |>
+  filter(year == 2026L, month == "Jan")
+
+expanded <- january_sales |>
   union_all_with_margins(
     .grouping = rollup(region, store)
   )
 
-sales |>
-  nest_with_margins(
-    .grouping = rollup(region, store)
-  )
+expanded |>
+  count(region, store, name = "records")
+```
 
-sales |>
-  nest_by_with_margins(
+The same verb stays lazy for database tables. Its SQLite SQL makes the
+row-expansion branches explicit:
+
+```{r}
+dbplyr::tbl_lazy(
+  january_sales,
+  con = dbplyr::simulate_sqlite()
+) |>
+  union_all_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  show_query()
+```
+
+### Nest locally or with dtplyr
+
+`nest_with_margins()` keeps one detail table for each visible group:
+
+```{r}
+january_sales |>
+  nest_with_margins(
     .grouping = rollup(region, store)
   )
 ```
 
-`union_all_with_margins()` emits one input-row copy per grouping set.
-`nest_with_margins()` returns an ordinary nested result, while
-`nest_by_with_margins()` returns its row-wise counterpart.
-The summarize and union verbs support local and lazy tables; the two nesting
-verbs support local data frames and `dtplyr` steps because their results
-contain list columns.
+A dtplyr input performs the expansion and nesting lazily until `collect()`:
 
-## Quarto tabset reports with quartabs
+```{r}
+if (requireNamespace("dtplyr", quietly = TRUE)) {
+  january_sales |>
+    dtplyr::lazy_dt() |>
+    nest_with_margins(
+      .grouping = rollup(region, store)
+    ) |>
+    collect()
+}
+```
 
-[`quartabs`](https://sayuks.github.io/quartabs/) turns columns of a data frame
-into nested Quarto tabsets. It pairs naturally with
-`nest_by_with_margins()`: detail groups, subtotals, and the grand total become
-tabs backed by the corresponding rows of the original data.
+`nest_by_with_margins()` returns a row-wise data frame, making one calculation
+per nested report section straightforward:
+
+```{r}
+january_sales |>
+  nest_by_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    records = nrow(data),
+    units = sum(data$units),
+    revenue = sum(data$revenue)
+  ) |>
+  select(-data)
+```
+
+The row-wise result is local even when the input is a dtplyr step:
+
+```{r}
+if (requireNamespace("dtplyr", quietly = TRUE)) {
+  january_sales |>
+    dtplyr::lazy_dt() |>
+    nest_by_with_margins(
+      .grouping = rollup(region, store)
+    ) |>
+    mutate(
+      records = nrow(data),
+      revenue = sum(data$revenue)
+    ) |>
+    select(-data)
+}
+```
+
+List columns are why the two nesting verbs support local data frames and
+dtplyr steps rather than SQL database tables.
+
+## Optional Quarto tabsets with quartabs
+
+[`quartabs`](https://sayuks.github.io/quartabs/) can turn the nested report
+sections into Quarto tabs. This compact example creates one tab per region
+plus a company-total tab.
 
 The chunk option `results: asis` is required because `render_tabset()` emits
-Quarto tabset markup. The rendered tabs below are generated when this page is
-built; they are not a static screenshot.
+Quarto tabset markup.
 
 ```{r}
 #| results: asis
 
-tabbed_report <- sales |>
+tabbed_report <- january_sales |>
   nest_by_with_margins(
-    .grouping = rollup(region, store)
+    .grouping = rollup(region)
   ) |>
   mutate(
     report = list(
       data |>
         summarize(
-          rows = n(),
-          amount = sum(amount)
+          records = n(),
+          units = sum(units),
+          revenue = sum(revenue)
         ) |>
-        knitr::kable(col.names = c("Rows", "Amount"))
+        knitr::kable()
     )
   ) |>
   ungroup()
 
 tabbed_report |>
   quartabs::render_tabset(
-    tabset_vars = c(region, store),
+    tabset_vars = region,
     output_vars = report
   )
 ```
 
-Tabs labelled `"Total"` are subtotal or grand-total levels created by the
-grouping plan. `quartabs` sorts tab labels, so their visual position follows
-the label ordering rather than the SQL grouping-set order.
-
-## Database execution
-
-DuckDB and PostgreSQL currently use native `GROUP BY GROUPING SETS`. Native
-queries use hidden `GROUPING()` flags and apply the display label in an outer
-query, preserving the input type seen by summary expressions. Other or
-unconfirmed SQL dialects use the `UNION ALL` adapter. This conservative
-capability policy favors equal results over assuming dialect support.
+The `"Total"` tab is created by the grouping plan. `quartabs` only handles
+presentation; marginplyr defines which source rows belong to that total.
