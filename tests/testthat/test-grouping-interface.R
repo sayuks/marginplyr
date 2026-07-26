@@ -248,6 +248,22 @@ test_that("expand and nest verbs consume the same grouping plan", {
   expect_equal(names(nested), c("a", "b", "data"))
   expect_equal(names(nested$data[[1]]), "x")
 
+  nested_keep <- nest_with_margins(
+    data,
+    .grouping = rollup(a, b),
+    .keep = TRUE
+  )
+  expect_equal(names(nested_keep$data[[1]]), c("a", "b", "x"))
+  subtotal <- nested_keep[nested_keep$a == "x" & nested_keep$b == "Total", ]
+  expect_equal(subtotal$data[[1]]$a, c("x", "x"))
+  expect_equal(subtotal$data[[1]]$b, c("u", "v"))
+
+  grand_total <- nested_keep[
+    nested_keep$a == "Total" & nested_keep$b == "Total",
+  ]
+  expect_equal(grand_total$data[[1]]$a, c("x", "x", "y"))
+  expect_equal(grand_total$data[[1]]$b, c("u", "v", "u"))
+
   nested_keep <- nest_by_with_margins(
     data,
     .grouping = rollup(a, b),
@@ -269,8 +285,8 @@ test_that("expand and nest verbs consume the same grouping plan", {
   expect_s3_class(rowwise, "rowwise_df")
 })
 
-test_that("only the row-wise nesting interface exposes .keep", {
-  expect_false(".keep" %in% names(formals(nest_with_margins)))
+test_that("both nesting interfaces expose .keep", {
+  expect_true(".keep" %in% names(formals(nest_with_margins)))
   expect_true(".keep" %in% names(formals(nest_by_with_margins)))
 })
 

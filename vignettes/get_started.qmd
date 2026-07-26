@@ -24,10 +24,10 @@ Install the development version from GitHub:
 ```{r}
 #| eval: false
 
-if (!"remotes" %in% rownames(installed.packages())) {
-  install.packages("remotes")
+if (!"pak" %in% rownames(installed.packages())) {
+  install.packages("pak")
 }
-remotes::install_github("sayuks/marginplyr")
+pak::pkg_install("sayuks/marginplyr")
 
 # Install only packages that are missing from the backend and reporting
 # sections below.
@@ -596,6 +596,24 @@ nested_sections |>
 nested_sections$data[[1]]
 ```
 
+Use `.keep = TRUE` when the grouping keys are also needed inside each detail
+table. The nested copies preserve their original values even when the
+corresponding outer key is a margin label:
+
+```{r}
+nested_with_keys <- january_sales |>
+  nest_with_margins(
+    .grouping = rollup(region, store),
+    .keep = TRUE
+  )
+
+company_total <- nested_with_keys |>
+  filter(region == "Total", store == "Total")
+
+company_total$data[[1]] |>
+  distinct(region, store)
+```
+
 A dtplyr input performs the expansion and nesting lazily until `collect()`.
 `show_query()` displays the generated data.table expression:
 
@@ -656,7 +674,7 @@ The margin-aware verbs deliberately share the main result shapes of
 
 | Function | Official reference | Shared behavior | Deliberate differences |
 |---|---|---|---|
-| `nest_with_margins()` | `tidyr::nest()` | `NULL` `.key` becomes `"data"`; returns one list column | Uses `.by` plus `.grouping`; always nests all non-key columns; does not implement `...`, multiple list columns, `.names_sep`, or `.keep`; always returns ungrouped output |
+| `nest_with_margins()` | `tidyr::nest()` | `NULL` `.key` becomes `"data"`; returns one list column; grouping keys can also be retained inside | Uses `.by` plus `.grouping` and a logical `.keep`; always nests all non-key columns; does not implement `...`, multiple list columns, or `.names_sep`; always returns ungrouped output |
 | `nest_by_with_margins()` | `dplyr::nest_by()` | Requires a string `.key`; supports `.keep`; returns a row-wise data frame | Uses `.by` plus `.grouping` instead of data-masking `...`; collects a dtplyr result before making it row-wise |
 
 The shared features in this table do not amount to complete upstream
@@ -668,12 +686,16 @@ does not preserve that grouping metadata on its output. Both nesting functions
 sort keys by default through `.sort = TRUE`, whereas
 `tidyr::nest(.by = ...)` preserves first-appearance order.
 
-Only `nest_by_with_margins()` has `.keep`, matching `dplyr::nest_by()`. With
-`.keep = TRUE`, nested tables retain the original pre-margin key values. For
-example, the outer key of an `East / Total` subtotal displays `"Total"`, while
-the rows inside contain their original store names. This preserves the
+Both functions support `.keep`. With `.keep = TRUE`, nested tables retain the
+original pre-margin key values. For example, the outer key of an
+`East / Total` subtotal displays `"Total"`, while the rows inside contain
+their original store names. For `nest_by_with_margins()`, this preserves the
 meaning of dplyr's “keep the grouping columns” rule after a dimension has been
-rolled up.
+rolled up. For `nest_with_margins()`, it corresponds to explicitly selecting
+grouping keys with `tidyr::nest(data = everything(), .by = ...)`. marginplyr
+uses a logical argument instead of the full `...` interface because its
+grouping dimensions must remain visible outside to distinguish detail,
+subtotal, and total rows.
 
 Nesting accepts `.duplicates = "error"` or `"drop"`, but rejects `"keep"`.
 Unlike a summary or row expansion, two duplicate nested groups have no

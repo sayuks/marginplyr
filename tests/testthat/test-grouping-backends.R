@@ -119,6 +119,16 @@ test_that("dtplyr nesting retains original keys and empty rowwise behavior", {
     value = 1:3
   )
 
+  kept_lazy <- nest_with_margins(
+    dtplyr::lazy_dt(data),
+    .grouping = rollup(group),
+    .keep = TRUE
+  )
+  expect_s3_class(kept_lazy, "dtplyr_step")
+  kept_nested <- dplyr::collect(kept_lazy)
+  total_nested <- kept_nested[kept_nested$group == "Total", ]
+  expect_equal(total_nested$data[[1]]$group, c("a", "a", "b"))
+
   kept <- nest_by_with_margins(
     dtplyr::lazy_dt(data),
     .grouping = rollup(group),

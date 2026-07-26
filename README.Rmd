@@ -39,16 +39,16 @@ lazy database tables, with `"Total"` as the default display label.
 You can install the development version of `marginplyr` from [GitHub](https://github.com/) with:
 
 ``` r
-if (!"remotes" %in% rownames(installed.packages())) {
-  install.packages("remotes")
+if (!"pak" %in% rownames(installed.packages())) {
+  install.packages("pak")
 }
-remotes::install_github("sayuks/marginplyr")
+pak::pkg_install("sayuks/marginplyr")
 ```
 
 ## From a monthly report to a database query
 
 ```{r}
-suppressPackageStartupMessages(library(marginplyr))
+library(marginplyr)
 ```
 
 Imagine an analyst preparing a management report for a retail chain. Each row
@@ -266,6 +266,28 @@ nested_sections |>
   dplyr::select(-data)
 ```
 
+Set `.keep = TRUE` when each nested table should also retain the original
+grouping keys. The outer keys still identify the margin level, so a company
+total displays `"Total"` outside while its source rows keep their real region
+and store values:
+
+```{r}
+nested_with_keys <- retail_sales |>
+  dplyr::filter(year == 2026L, month == "Jan") |>
+  nest_with_margins(
+    .grouping = rollup(region, store),
+    .keep = TRUE
+  )
+
+company_total_data <- nested_with_keys |>
+  dplyr::filter(region == "Total", store == "Total") |>
+  dplyr::pull(data)
+
+company_total_data[[1L]] |>
+  dplyr::distinct(region, store) |>
+  as.data.frame()
+```
+
 Use `nest_by_with_margins()` when the next calculation should run separately
 against each nested detail table:
 
@@ -284,13 +306,14 @@ retail_sales |>
 
 These are margin-aware counterparts rather than drop-in replacements.
 `nest_with_margins()` uses `.by` and `.grouping` instead of the full
-`tidyr::nest()` column-selection interface; only `nest_by_with_margins()` has
-`.keep`, matching `dplyr::nest_by()`. When `.keep = TRUE`, original
-pre-margin keys are retained inside each nested table, while the outer keys
-display `"Total"`. Nesting rejects `.duplicates = "keep"` because duplicate
-sets would have indistinguishable visible keys. The Get started guide gives
-the complete comparison, including `.key`, empty-input, list-column, and
-grouping contracts.
+`tidyr::nest()` column-selection interface. Both nesting functions support
+`.keep`; for `nest_with_margins()` this provides the key-retention effect of
+`tidyr::nest(data = everything(), .by = ...)`, while preserving the outer
+margin keys. Original pre-margin keys are retained inside each nested table,
+while the outer keys display `"Total"`. Nesting rejects
+`.duplicates = "keep"` because duplicate sets would have indistinguishable
+visible keys. The Get started guide gives the complete comparison, including
+`.key`, empty-input, list-column, and grouping contracts.
 
 The function reference contains executable examples for composite dimensions,
 tidy-select expressions, duplicate grouping sets, Cartesian products,

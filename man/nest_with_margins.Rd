@@ -12,7 +12,8 @@ nest_with_margins(
   .check_margin_label = TRUE,
   .duplicates = c("error", "drop"),
   .sort = TRUE,
-  .key = "data"
+  .key = "data",
+  .keep = FALSE
 )
 }
 \arguments{
@@ -44,6 +45,10 @@ followed by grouping dimensions.}
 
 \item{.key}{A string naming the list column. As in \code{\link[tidyr:nest]{tidyr::nest()}},
 \code{NULL} uses \code{"data"}.}
+
+\item{.keep}{Should fixed \code{.by} columns and grouping dimensions also be kept
+inside each nested data frame? If \code{TRUE}, the nested columns contain their
+original, pre-margin values rather than \code{.margin_label}.}
 }
 \value{
 For a local input, an ungrouped data frame with one list column. A
@@ -58,12 +63,19 @@ grouping set. It works with local data frames and \code{dtplyr} steps.
 These functions are margin-aware counterparts, not drop-in replacements,
 and do not implement every upstream feature. \code{\link[=nest_with_margins]{nest_with_margins()}} resembles
 \code{\link[tidyr:nest]{tidyr::nest()}} with \code{.by}: it supports \code{.key}, returns an ungrouped data
-frame, and puts all non-key columns into one list column. It does not
-implement the \code{...} column specification, multiple list columns, or
-\code{.names_sep}. Existing grouping columns become implicit fixed keys, as they
-do for \code{\link[tidyr:nest]{tidyr::nest()}}, but \code{\link[=nest_with_margins]{nest_with_margins()}} returns an ungrouped result
-instead of preserving the input grouping. With the default \code{.sort = TRUE},
-keys are sorted rather than kept in first-appearance order.
+frame, and puts all non-key columns into one list column. Setting
+\code{.keep = TRUE} also puts the original grouping keys in that inner data
+frame. This corresponds to selecting those keys in \code{\link[tidyr:nest]{tidyr::nest()}} (for
+example, \code{nest(data = everything(), .by = region)}), but uses a logical
+argument because margin dimensions must remain visible outside to identify
+detail, subtotal, and total rows.
+
+\code{\link[=nest_with_margins]{nest_with_margins()}} does not implement the full \code{...} column
+specification, multiple list columns, or \code{.names_sep}. Existing grouping
+columns become implicit fixed keys, as they do for \code{\link[tidyr:nest]{tidyr::nest()}}, but
+\code{\link[=nest_with_margins]{nest_with_margins()}} returns an ungrouped result instead of preserving the
+input grouping. With the default \code{.sort = TRUE}, keys are sorted rather than
+kept in first-appearance order.
 
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} resembles \code{\link[dplyr:nest_by]{dplyr::nest_by()}} and, like it, provides
 \code{.key} and \code{.keep}, but selects fixed keys with \code{.by} rather than \code{...}.
@@ -163,6 +175,21 @@ dplyr::select(
   -data
 )
 nested$data[[1]]
+
+# Keep original region and store values inside each nested table as well.
+# The outer columns still identify the margin level.
+nested_with_keys <- nest_with_margins(
+  january_sales,
+  .grouping = rollup(region, store),
+  .keep = TRUE
+)
+names(nested_with_keys$data[[1]])
+total <- dplyr::filter(
+  nested_with_keys,
+  region == "Total",
+  store == "Total"
+)
+unique(total$data[[1]][c("region", "store")])
 
 # NULL uses the same default list-column name as tidyr::nest().
 names(nest_with_margins(january_sales, .by = region, .key = NULL))

@@ -7,10 +7,6 @@
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Backend extension design
 #' @inheritSection nest_with_margins Relationship to tidyr and dplyr
-#' @param .keep Should fixed `.by` columns and grouping dimensions also be kept
-#'   inside each nested data frame? This mirrors [dplyr::nest_by()]. Rolled-up
-#'   dimensions retain their original pre-margin values inside the nested
-#'   data.
 #' @param .key A non-missing string naming the list column. Unlike
 #'   [nest_with_margins()] and [tidyr::nest()], `NULL` is not converted to
 #'   `"data"`; this follows [dplyr::nest_by()].

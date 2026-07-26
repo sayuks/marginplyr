@@ -13,6 +13,9 @@
 #'   followed by grouping dimensions.
 #' @param .key A string naming the list column. As in [tidyr::nest()],
 #'   `NULL` uses `"data"`.
+#' @param .keep Should fixed `.by` columns and grouping dimensions also be kept
+#'   inside each nested data frame? If `TRUE`, the nested columns contain their
+#'   original, pre-margin values rather than `.margin_label`.
 #' @param .duplicates `"error"` or `"drop"`. The `"keep"` policy available in
 #'   [summarize_with_margins()] and [expand_with_margins()] is rejected because
 #'   duplicate grouping sets would create indistinguishable outer keys.
@@ -21,12 +24,19 @@
 #' These functions are margin-aware counterparts, not drop-in replacements,
 #' and do not implement every upstream feature. [nest_with_margins()] resembles
 #' [tidyr::nest()] with `.by`: it supports `.key`, returns an ungrouped data
-#' frame, and puts all non-key columns into one list column. It does not
-#' implement the `...` column specification, multiple list columns, or
-#' `.names_sep`. Existing grouping columns become implicit fixed keys, as they
-#' do for [tidyr::nest()], but [nest_with_margins()] returns an ungrouped result
-#' instead of preserving the input grouping. With the default `.sort = TRUE`,
-#' keys are sorted rather than kept in first-appearance order.
+#' frame, and puts all non-key columns into one list column. Setting
+#' `.keep = TRUE` also puts the original grouping keys in that inner data
+#' frame. This corresponds to selecting those keys in [tidyr::nest()] (for
+#' example, `nest(data = everything(), .by = region)`), but uses a logical
+#' argument because margin dimensions must remain visible outside to identify
+#' detail, subtotal, and total rows.
+#'
+#' [nest_with_margins()] does not implement the full `...` column
+#' specification, multiple list columns, or `.names_sep`. Existing grouping
+#' columns become implicit fixed keys, as they do for [tidyr::nest()], but
+#' [nest_with_margins()] returns an ungrouped result instead of preserving the
+#' input grouping. With the default `.sort = TRUE`, keys are sorted rather than
+#' kept in first-appearance order.
 #'
 #' [nest_by_with_margins()] resembles [dplyr::nest_by()] and, like it, provides
 #' `.key` and `.keep`, but selects fixed keys with `.by` rather than `...`.
@@ -71,6 +81,21 @@
 #' )
 #' nested$data[[1]]
 #'
+#' # Keep original region and store values inside each nested table as well.
+#' # The outer columns still identify the margin level.
+#' nested_with_keys <- nest_with_margins(
+#'   january_sales,
+#'   .grouping = rollup(region, store),
+#'   .keep = TRUE
+#' )
+#' names(nested_with_keys$data[[1]])
+#' total <- dplyr::filter(
+#'   nested_with_keys,
+#'   region == "Total",
+#'   store == "Total"
+#' )
+#' unique(total$data[[1]][c("region", "store")])
+#'
 #' # NULL uses the same default list-column name as tidyr::nest().
 #' names(nest_with_margins(january_sales, .by = region, .key = NULL))
 #'
@@ -100,7 +125,8 @@ nest_with_margins <- function(.data,
                               .check_margin_label = TRUE,
                               .duplicates = c("error", "drop"),
                               .sort = TRUE,
-                              .key = "data") {
+                              .key = "data",
+                              .keep = FALSE) {
   if (is.null(.key)) {
     .key <- "data"
   }
@@ -117,7 +143,7 @@ nest_with_margins <- function(.data,
       .duplicates = .duplicates,
       .sort = .sort,
       .key = .key,
-      .keep = FALSE
+      .keep = .keep
     )
   )
 }
