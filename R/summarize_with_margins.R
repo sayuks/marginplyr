@@ -437,32 +437,10 @@ assert_margin_name <- function(data, col_names, margin_name) {
 }
 
 get_col_names <- function(data, ...) {
-  UseMethod("get_col_names")
+  selected <- dplyr::select(.data = data, ...)
+  # Drop the grouping metadata attached to dplyr's variable-name vector.
+  as.character(dplyr::tbl_vars(selected))
 }
-
-#' @exportS3Method
-#' @noRd
-get_col_names.default <- function(data, ...) {
-  colnames(dplyr::select(.data = data, ...))
-}
-
-#' @exportS3Method
-#' @noRd
-get_col_names.arrow_dplyr_query <- function(data, ...) {
-  data <- dplyr::select(.data = data, ...)
-  data <- dplyr::collect(utils::head(x = data, n = 0L))
-  colnames(data)
-}
-
-#' @exportS3Method
-#' @noRd
-get_col_names.ArrowTabular <- get_col_names.arrow_dplyr_query
-#' @exportS3Method
-#' @noRd
-get_col_names.Dataset <- get_col_names.arrow_dplyr_query
-#' @exportS3Method
-#' @noRd
-get_col_names.dtplyr_step <- get_col_names.arrow_dplyr_query
 
 relocate_before_union_all <- function(.data, cols_first) {
   UseMethod("relocate_before_union_all")

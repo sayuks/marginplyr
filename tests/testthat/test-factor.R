@@ -136,7 +136,7 @@ test_that("reconstruct_factor() works with dtplyr_step", {
   tmp_df <- dplyr::collect(utils::head(x = data, n = 0))
 
   l_info <- lapply(
-    get_col_names.dtplyr_step(data = data, dplyr::everything()),
+    get_col_names(data = data, dplyr::everything()),
     \(col) {
       list(
         col = col,
