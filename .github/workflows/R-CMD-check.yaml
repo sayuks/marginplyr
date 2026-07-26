@@ -116,7 +116,10 @@ jobs:
       - name: Install full dependencies
         uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::rcmdcheck
+          # Quarto renders vignettes in a child R process. On Windows, that
+          # process cannot see R CMD build's temporary package installation,
+          # so install the package itself first, as quarto-r's CI does.
+          extra-packages: any::rcmdcheck, local::.
           needs: check
           cache-version: 3
 
