@@ -37,6 +37,19 @@ assert_markers <- function(text, markers, page) {
   }
 }
 
+home <- read_page("docs/index.html")
+assert_markers(
+  home,
+  c(
+    'install.packages</span>(<span class="st">"pak"</span>)',
+    "pak",
+    "pkg_install",
+    "DBI",
+    "duckdb"
+  ),
+  "README"
+)
+
 article <- read_page("docs/vignettes/get_started.html")
 assert_markers(
   article,
@@ -55,6 +68,12 @@ assert_markers(
   ),
   "Get started"
 )
+if (
+  grepl("installed.packages", home, fixed = TRUE) ||
+    grepl("installed.packages", article, fixed = TRUE)
+) {
+  stop("Rendered installation documentation contains a package-presence check")
+}
 
 summary_reference <- read_page("docs/man/summarize_with_margins.html")
 assert_markers(

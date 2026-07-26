@@ -24,18 +24,11 @@ Install the development version from GitHub:
 ```{r}
 #| eval: false
 
-if (!"pak" %in% rownames(installed.packages())) {
-  install.packages("pak")
-}
+install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
 
-# Install only packages that are missing from the backend and reporting
-# sections below.
-guide_packages <- c("DBI", "duckdb", "dtplyr", "knitr", "quartabs")
-missing_packages <- setdiff(guide_packages, rownames(installed.packages()))
-if (length(missing_packages) > 0L) {
-  install.packages(missing_packages)
-}
+# Optional packages used in the backend and reporting sections below.
+install.packages(c("DBI", "duckdb", "dtplyr", "knitr", "quartabs"))
 ```
 
 ```{r setup}

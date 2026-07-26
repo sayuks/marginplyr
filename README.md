@@ -31,9 +31,7 @@ You can install the development version of `marginplyr` from
 [GitHub](https://github.com/) with:
 
 ``` r
-if (!"pak" %in% rownames(installed.packages())) {
-  install.packages("pak")
-}
+install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
 ```
 
@@ -253,14 +251,7 @@ DuckDB and PostgreSQL translate the request to one native
 before running this example:
 
 ``` r
-backend_packages <- c("DBI", "duckdb")
-missing_packages <- setdiff(
-  backend_packages,
-  rownames(installed.packages())
-)
-if (length(missing_packages) > 0L) {
-  install.packages(missing_packages)
-}
+install.packages(c("DBI", "duckdb"))
 ```
 
 ``` r
