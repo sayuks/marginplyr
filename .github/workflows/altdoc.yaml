@@ -42,8 +42,7 @@ jobs:
         shell: Rscript {0}
 
       - name: Verify site output
-        run: |
-          Rscript -e 'required <- c("docs/index.html", "docs/vignettes/get_started.html", "docs/man/grouping_bit.html", "docs/man/grouping_set.html", "docs/man/retail_sales.html", "docs/.nojekyll"); missing <- required[!file.exists(required)]; if (length(missing)) stop("Missing site output: ", paste(missing, collapse = ", ")); article <- paste(readLines("docs/vignettes/get_started.html", warn = FALSE), collapse = "\n"); markers <- c("panel-tabset", "Optional Quarto tabsets with quartabs", "Union versus Cartesian product", "GROUP BY GROUPING SETS", "grouping_bit", "Microsoft SQL Server", "Total"); absent <- markers[!vapply(markers, grepl, logical(1), x = article, fixed = TRUE)]; if (length(absent)) stop("Missing rendered markers: ", paste(absent, collapse = ", ")); first_tabset <- strsplit(article, "<div class=\"panel-tabset\">", fixed = TRUE)[[1]][2]; if (is.na(first_tabset) || !grepl("<a class=\"nav-link active\"[^>]*>Total</a>", first_tabset)) stop("Total tab is not first"); if (grepl("Rtmp", article, fixed = TRUE)) stop("Rendered site contains a local temporary path")'
+        run: Rscript .github/scripts/verify-site.R
 
       - name: Configure GitHub Pages
         if: github.ref == 'refs/heads/main'

@@ -31,8 +31,10 @@ You can install the development version of `marginplyr` from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("pak")
-pak::pak("sayuks/marginplyr")
+if (!"remotes" %in% rownames(installed.packages())) {
+  install.packages("remotes")
+}
+remotes::install_github("sayuks/marginplyr")
 ```
 
 ## From a monthly report to a database query
@@ -74,18 +76,53 @@ monthly_report <- summarize_with_margins(
 
 monthly_report |>
   dplyr::filter(year == 2026L, month == "Jan")
-#> # A tibble: 8 × 6
-#>    year month region store         units revenue
-#>   <int> <chr> <chr>  <chr>         <int>   <dbl>
-#> 1  2026 Jan   East   Boston            5    6000
-#> 2  2026 Jan   East   New York         10    3000
-#> 3  2026 Jan   East   Total            37   11200
-#> 4  2026 Jan   East   <NA>             22    2200
-#> 5  2026 Jan   Total  Total            70   23300
-#> 6  2026 Jan   West   San Francisco     6    7200
-#> 7  2026 Jan   West   Seattle          27    4900
-#> 8  2026 Jan   West   Total            33   12100
+#>   year month region         store units revenue
+#> 1 2026   Jan   East        Boston     5    6000
+#> 2 2026   Jan   East      New York    10    3000
+#> 3 2026   Jan   East         Total    37   11200
+#> 4 2026   Jan   East          <NA>    22    2200
+#> 5 2026   Jan  Total         Total    70   23300
+#> 6 2026   Jan   West San Francisco     6    7200
+#> 7 2026   Jan   West       Seattle    27    4900
+#> 8 2026   Jan   West         Total    33   12100
 ```
+
+Persistent dplyr groups can provide the same fixed keys when `.by` is
+omitted:
+
+``` r
+grouped_monthly_report <- retail_sales |>
+  dplyr::group_by(year, month) |>
+  summarize_with_margins(
+    units = sum(units),
+    revenue = sum(revenue),
+    .grouping = rollup(region, store)
+  )
+
+# Input groups affect the calculation, but margin summaries are ungrouped.
+dplyr::group_vars(grouped_monthly_report)
+#> character(0)
+```
+
+As in `dplyr::summarize()` and `tidyr::nest()`, grouped input cannot
+also supply `.by`. Unlike grouped `dplyr::summarize()`, margin summaries
+always return ungrouped results because arbitrary grouping sets have no
+single `drop_last` level.
+
+This leads to a few intentional differences from the official summary
+API:
+
+| Contract | `dplyr::summarize()` | `summarize_with_margins()` |
+|----|----|----|
+| Output groups | Controlled by `.groups` | Always ungrouped; `.groups` is limited to `NULL` or `"drop"` |
+| Reusing a grouping name | Possible on the local backend | Rejected so a summary cannot destroy grouping-set identity |
+| `across()` and `pick()` | Exclude the current grouping columns | Exclude every fixed key and dimension in the complete grouping plan |
+| `cur_group*()` and deprecated `cur_data*()` context | Describes the current dplyr group or data mask | Rejected because branch-local IDs, rows, and columns have no global meaning across grouping sets; use `grouping_bit()` or `grouping_id()` for levels |
+| Backend methods | Public S3 generic | One public function plus a private backend-adapter layer, keeping plan validation and labels shared |
+
+`summarise_with_margins()` is an exact spelling synonym. With
+`.sort = FALSE`, local keys retain first-appearance order; lazy tables
+have no guaranteed order unless an explicit sort is requested.
 
 `"Total"` means that a dimension was aggregated away. A source `NA` is
 left as `NA`; it still represents an online-direct record with no
@@ -103,12 +140,10 @@ all_levels <- summarize_with_margins(
 
 all_levels |>
   dplyr::filter(month == "Total")
-#> # A tibble: 3 × 6
-#>   year  month region store revenue level
-#>   <chr> <chr> <chr>  <chr>   <dbl> <int>
-#> 1 2025  Total Total  Total   33900     7
-#> 2 2026  Total Total  Total   53500     7
-#> 3 Total Total Total  Total   87400    15
+#>    year month region store revenue level
+#> 1  2025 Total  Total Total   33900     7
+#> 2  2026 Total  Total Total   53500     7
+#> 3 Total Total  Total Total   87400    15
 ```
 
 This rollup includes store detail, region-month subtotals, company-month
@@ -129,20 +164,18 @@ summarize_with_margins(
     grouping_set()
   )
 )
-#> # A tibble: 11 × 5
-#>    year  month region product    revenue
-#>    <chr> <chr> <chr>  <chr>        <dbl>
-#>  1 2025  Feb   Total  Total        18700
-#>  2 2025  Jan   Total  Total        15200
-#>  3 2026  Feb   Total  Total        30200
-#>  4 2026  Jan   Total  Total        23300
-#>  5 Total Total East   Headphones    8000
-#>  6 Total Total East   Laptop       22800
-#>  7 Total Total East   Monitor      11100
-#>  8 Total Total Total  Total        87400
-#>  9 Total Total West   Headphones    5900
-#> 10 Total Total West   Laptop       27600
-#> 11 Total Total West   Monitor      12000
+#>     year month region    product revenue
+#> 1   2025   Feb  Total      Total   18700
+#> 2   2025   Jan  Total      Total   15200
+#> 3   2026   Feb  Total      Total   30200
+#> 4   2026   Jan  Total      Total   23300
+#> 5  Total Total   East Headphones    8000
+#> 6  Total Total   East     Laptop   22800
+#> 7  Total Total   East    Monitor   11100
+#> 8  Total Total  Total      Total   87400
+#> 9  Total Total   West Headphones    5900
+#> 10 Total Total   West     Laptop   27600
+#> 11 Total Total   West    Monitor   12000
 ```
 
 Merchandising can instead explore every combination of product and sales
@@ -155,19 +188,17 @@ retail_sales |>
     revenue = sum(revenue),
     .grouping = cube(product, channel)
   )
-#> # A tibble: 10 × 3
-#>    product    channel revenue
-#>    <chr>      <chr>     <dbl>
-#>  1 Headphones Online     2200
-#>  2 Headphones Store      1600
-#>  3 Headphones Total      3800
-#>  4 Laptop     Store     13200
-#>  5 Laptop     Total     13200
-#>  6 Monitor    Online     6300
-#>  7 Monitor    Total      6300
-#>  8 Total      Online     8500
-#>  9 Total      Store     14800
-#> 10 Total      Total     23300
+#>       product channel revenue
+#> 1  Headphones  Online    2200
+#> 2  Headphones   Store    1600
+#> 3  Headphones   Total    3800
+#> 4      Laptop   Store   13200
+#> 5      Laptop   Total   13200
+#> 6     Monitor  Online    6300
+#> 7     Monitor   Total    6300
+#> 8       Total  Online    8500
+#> 9       Total   Store   14800
+#> 10      Total   Total   23300
 ```
 
 ### Tell source missing values from totals
@@ -189,14 +220,12 @@ retail_sales |>
     level = grouping_id(region, store),
     .grouping = rollup(region, store)
   )
-#> # A tibble: 5 × 5
-#>   region store    revenue store_is_total level
-#>   <chr>  <chr>      <dbl>          <int> <int>
-#> 1 East   Boston      6000              0     0
-#> 2 East   New York    3000              0     0
-#> 3 East   Total      11200              1     1
-#> 4 East   <NA>        2200              0     0
-#> 5 Total  Total      11200              1     3
+#>   region    store revenue store_is_total level
+#> 1   East   Boston    6000              0     0
+#> 2   East New York    3000              0     0
+#> 3   East    Total   11200              1     1
+#> 4   East     <NA>    2200              0     0
+#> 5  Total    Total   11200              1     3
 ```
 
 `store_is_total` is `0` for the source `NA` row and `1` for a subtotal
@@ -224,7 +253,14 @@ DuckDB and PostgreSQL translate the request to one native
 before running this example:
 
 ``` r
-install.packages(c("DBI", "duckdb"))
+backend_packages <- c("DBI", "duckdb")
+missing_packages <- setdiff(
+  backend_packages,
+  rownames(installed.packages())
+)
+if (length(missing_packages) > 0L) {
+  install.packages(missing_packages)
+}
 ```
 
 ``` r
@@ -288,9 +324,35 @@ translation with the same grouping semantics.
 
 ### Keep the rows behind each total
 
-`union_all_with_margins()` expands source rows across grouping levels.
-`nest_by_with_margins()` goes one step further and keeps a row-wise
-detail table behind every visible group:
+`expand_with_margins()` expands source rows across grouping levels.
+`nest_with_margins()` keeps those source rows as a list column,
+producing one reusable detail table for every visible group:
+
+``` r
+nested_sections <- retail_sales |>
+  dplyr::filter(year == 2026L, month == "Jan") |>
+  nest_with_margins(
+    .grouping = rollup(region, store)
+  )
+
+nested_sections |>
+  dplyr::mutate(
+    records = vapply(data, nrow, integer(1))
+  ) |>
+  dplyr::select(-data)
+#>   region         store records
+#> 1   East        Boston       1
+#> 2   East      New York       1
+#> 3   East         Total       3
+#> 4   East          <NA>       1
+#> 5  Total         Total       6
+#> 6   West San Francisco       1
+#> 7   West       Seattle       2
+#> 8   West         Total       3
+```
+
+Use `nest_by_with_margins()` when the next calculation should run
+separately against each nested detail table:
 
 ``` r
 retail_sales |>
@@ -316,6 +378,17 @@ retail_sales |>
 #> 7 West   Seattle             2    4900
 #> 8 West   Total               3   12100
 ```
+
+These are margin-aware counterparts rather than drop-in replacements.
+`nest_with_margins()` uses `.by` and `.grouping` instead of the full
+`tidyr::nest()` column-selection interface; only
+`nest_by_with_margins()` has `.keep`, matching `dplyr::nest_by()`. When
+`.keep = TRUE`, original pre-margin keys are retained inside each nested
+table, while the outer keys display `"Total"`. Nesting rejects
+`.duplicates = "keep"` because duplicate sets would have
+indistinguishable visible keys. The Get started guide gives the complete
+comparison, including `.key`, empty-input, list-column, and grouping
+contracts.
 
 The function reference contains executable examples for composite
 dimensions, tidy-select expressions, duplicate grouping sets, Cartesian

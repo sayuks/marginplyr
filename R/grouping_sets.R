@@ -1,26 +1,3 @@
-supports_grouping_sets <- function(.data, plan = NULL) {
-  if (!inherits(.data, "tbl_lazy")) {
-    return(FALSE)
-  }
-
-  dialect <- tryCatch(
-    dbplyr::sql_dialect(dbplyr::remote_con(.data)),
-    error = function(cnd) NULL
-  )
-  if (is.null(dialect)) {
-    return(FALSE)
-  }
-
-  is_duckdb <- inherits(dialect, c("duckdb_connection", "sql_dialect_duckdb"))
-  is_postgres <- inherits(dialect, "sql_dialect_postgres")
-
-  if (!is.null(plan) && identical(plan$duplicates, "keep") && !is_duckdb) {
-    return(FALSE)
-  }
-
-  is_duckdb || is_postgres
-}
-
 summarize_grouping_sets <- function(.data,
                                     dots,
                                     plan,

@@ -8,10 +8,15 @@
 #' @param ... Name-value pairs as used in [dplyr::summarize()]. Contextual
 #'   helpers [grouping_bit()] and [grouping_id()] can also be used here.
 #' @param .by <[`tidy-select`][dplyr::dplyr_tidy_select]> Columns included in
-#'   every grouping set. These columns never receive `.margin_label`.
+#'   every grouping set. These columns never receive `.margin_label`. When
+#'   `.data` is grouped and `.by` is `NULL`, its grouping columns are used as
+#'   implicit fixed keys.
 #' @param .grouping A grouping specification made with [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
 #'   represents one empty grouping set.
+#' @param .groups `NULL` or `"drop"`. Unlike [dplyr::summarize()], margin
+#'   summaries always drop grouping metadata because a result containing
+#'   multiple grouping sets has no single `drop_last` hierarchy.
 #' @param .margin_label A character scalar used to display columns omitted from
 #'   a grouping set. The default is `"Total"`. Use `NULL` to keep typed missing
 #'   values instead of inserting a display label.
@@ -21,7 +26,8 @@
 #'   duplicate grouping sets after expansion.
 #' @param .sort A logical scalar. If `TRUE`, sort by `.by` followed by grouping
 #'   dimensions. It defaults to `TRUE` for local data frames and `FALSE` for
-#'   lazy tables.
+#'   lazy tables. With `FALSE`, local groups retain first-appearance order;
+#'   lazy result order is unspecified unless an explicit order is requested.
 #'
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
 #'
@@ -36,6 +42,8 @@
 #'
 #' Confirmed SQL backends use one `GROUP BY GROUPING SETS` query. Other lazy
 #' backends use a portable `UNION ALL` adapter with the same semantics.
+#' [summarize_with_margins()] and [summarise_with_margins()] are synonyms,
+#' following [dplyr::summarize()] and [dplyr::summarise()].
 #'
 #' @section Fixed columns and grouping dimensions:
 #' `.by` marks columns that are present in every grouping set, while
@@ -55,6 +63,69 @@
 #' Consequently, it participates in `.margin_label` type conversion and
 #' collision checks. Use `.by` for columns that must always remain fixed, and
 #' use `.grouping` for dimensions that may become totals.
+#'
+#' @section Grouped and row-wise inputs:
+#' When `.data` has been grouped with [dplyr::group_by()] and `.by` is `NULL`,
+#' its grouping columns become implicit fixed keys. For example,
+#' `group_by(year)` followed by `.grouping = rollup(region)` is computationally
+#' equivalent to using `.by = year` on the ungrouped data. This rule is the
+#' same for local data frames and lazy tables.
+#'
+#' As with [dplyr::summarize()] and [tidyr::nest()], a grouped input cannot
+#' also supply `.by`; call [dplyr::ungroup()] first when replacing the existing
+#' groups. A grouping column also cannot appear in `.grouping`, because one
+#' column cannot be both a fixed key and a dimension that can be rolled up.
+#' Grouped local data created with `.drop = FALSE` is rejected because empty
+#' factor groups do not have a consistent equivalent in SQL and other lazy
+#' backends.
+#'
+#' Unlike the default output of [dplyr::summarize()] on grouped data,
+#' [summarize_with_margins()], [expand_with_margins()], and
+#' [nest_with_margins()] always return ungrouped results. For
+#' [summarize_with_margins()], this is why `.groups` only accepts `NULL` and
+#' `"drop"`. Arbitrary grouping sets contain multiple grains, so there is no
+#' single meaningful `drop_last`, `"keep"`, or `"rowwise"` structure.
+#' [nest_by_with_margins()] instead returns a row-wise data frame grouped by
+#' all visible fixed keys and grouping dimensions. Row-wise input is rejected;
+#' call [dplyr::ungroup()] first.
+#'
+#' @section Relationship to dplyr summaries:
+#' The `...` expressions use [dplyr::summarize()] data-masking semantics.
+#' [dplyr::across()] and [dplyr::pick()] cannot select any column named in the
+#' complete grouping plan. This extends dplyr's grouping-column rule across
+#' every branch: a dimension remains excluded even in a grouping set from
+#' which it is omitted.
+#'
+#' Summary results may not overwrite a fixed key or grouping dimension,
+#' including through a data-frame-valued summary. The local dplyr backend can
+#' overwrite an existing variable and reuse a newly created summary in a
+#' later expression, but other backends may not. marginplyr rejects grouping
+#' key overwrites so that grouping identity and behavior stay portable.
+#' Use a new summary name, or rename the grouping column before this call.
+#'
+#' [dplyr::cur_group()], [dplyr::cur_group_id()],
+#' [dplyr::cur_group_rows()], and the deprecated `cur_data*()` helpers are
+#' rejected. They describe one branch-local grouping or data mask, whereas a
+#' margin result combines several grouping sets and their identifiers, row
+#' positions, or columns would not have one global meaning. Use
+#' [grouping_bit()] and [grouping_id()] to identify margin levels.
+#'
+#' @section Display labels and grouping identity:
+#' `.margin_label` is a display value, not the identity of a grouping set.
+#' When the source data can contain the same value, retain [grouping_bit()] or
+#' [grouping_id()] in the result. The eager default
+#' `.check_margin_label = TRUE` detects collisions for local data. Lazy tables
+#' default to `FALSE` because checking would execute an extra query; opt in
+#' when the additional scan is appropriate.
+#'
+#' @section Backend extension design:
+#' Unlike [dplyr::summarize()], the public margin verbs are intentionally not
+#' S3 generics. They first compile and validate one backend-independent
+#' grouping plan so duplicate handling, labels, grouping identifiers, and
+#' output grouping cannot drift between methods. Backend-specific schema and
+#' execution capabilities are isolated behind a non-exported adapter layer.
+#' That adapter is an implementation detail rather than an extension API;
+#' support for a new backend should be added to marginplyr itself.
 #'
 #' @section Database backend coverage:
 #' DuckDB and PostgreSQL use native `GROUP BY GROUPING SETS` SQL. Automated
@@ -82,6 +153,16 @@
 #'   .by = c(year, month),
 #'   .grouping = rollup(region, store)
 #' )
+#'
+#' # Existing dplyr groups are implicit fixed keys. The calculation below is
+#' # equivalent to `.by = c(year, month)`, but its result is still ungrouped.
+#' grouped_report <- retail_sales |>
+#'   dplyr::group_by(year, month) |>
+#'   summarize_with_margins(
+#'     revenue = sum(revenue),
+#'     .grouping = rollup(region, store)
+#'   )
+#' dplyr::group_vars(grouped_report)
 #'
 #' # Moving year and month into the rollup extends the hierarchy from store
 #' # detail through monthly, annual, and all-period totals.
@@ -117,6 +198,25 @@
 #'   .margin_label = NULL
 #' )
 #'
+#' # across() and pick() treat every fixed key and margin dimension as a
+#' # grouping column, including dimensions omitted from a subtotal branch.
+#' summarize_with_margins(
+#'   retail_sales,
+#'   dplyr::across(
+#'     c(units, revenue),
+#'     sum,
+#'     .names = "total_{.col}"
+#'   ),
+#'   measures = paste(
+#'     names(dplyr::pick(c(units, revenue))),
+#'     collapse = ", "
+#'   ),
+#'   .by = year,
+#'   .grouping = rollup(region),
+#'   .groups = "drop",
+#'   .sort = FALSE
+#' )
+#'
 #' # DuckDB executes a native GROUP BY GROUPING SETS query. The optional
 #' # dependency guard keeps this example runnable without DuckDB installed.
 #' if (
@@ -150,24 +250,36 @@ summarize_with_margins <- function(.data,
                                    ...,
                                    .by = NULL,
                                    .grouping = NULL,
+                                   .groups = NULL,
                                    .margin_label = "Total",
                                    .check_margin_label = is.data.frame(.data),
                                    .duplicates = c("error", "drop", "keep"),
                                    .sort = is.data.frame(.data)) {
   assert_lazy_table(.data)
+  if (!is.null(.groups) && !identical(.groups, "drop")) {
+    stop(
+      "`summarize_with_margins()` only supports `.groups = \"drop\"` ",
+      "or `NULL`.",
+      call. = FALSE
+    )
+  }
   assert_logical_scalar(.check_margin_label)
   assert_logical_scalar(.sort)
   .margin_label <- normalize_margin_label(.margin_label)
   .duplicates <- match.arg(.duplicates)
 
   dots <- rlang::enquos(...)
+  check_summary_context_helpers(dots)
   grouping_quo <- rlang::enquo(.grouping)
+  by_quo <- rlang::enquo(.by)
   grouping_spec <- rlang::eval_tidy(grouping_quo)
 
-  .data <- dplyr::ungroup(.data)
-  by <- get_col_names(.data, {{ .by }})
+  input <- prepare_margin_input(.data, by_quo)
+  .data <- input$data
+  by <- input$by
+  backend <- grouping_backend(.data)
   data_vars <- get_col_names(.data, dplyr::everything())
-  data_proxy <- grouping_selection_proxy(.data)
+  data_proxy <- grouping_selection_proxy(.data, backend = backend)
   plan <- compile_grouping_spec(
     grouping_spec,
     data_vars = data_vars,
@@ -175,30 +287,43 @@ summarize_with_margins <- function(.data,
     .by = by,
     .duplicates = .duplicates
   )
-  overwritten_groups <- intersect(
-    names(dots)[nzchar(names(dots))],
-    c(plan$by, plan$dimensions)
+  dots <- resolve_summary_selections(
+    dots,
+    data_proxy = data_proxy,
+    data_vars = data_vars,
+    group_vars = c(plan$by, plan$dimensions),
+    normalize_across_names = identical(backend$kind, "dtplyr")
   )
-  if (length(overwritten_groups) > 0L) {
-    stop(
-      "Summary results cannot overwrite grouping column",
-      if (length(overwritten_groups) == 1L) " " else "s ",
-      paste0("`", overwritten_groups, "`", collapse = ", "),
-      ".",
-      call. = FALSE
-    )
-  }
+  summary_selection_proxy <- dplyr::select(
+    data_proxy,
+    dplyr::all_of(setdiff(
+      data_vars,
+      unique(c(plan$by, plan$dimensions))
+    ))
+  )
+  check_summary_group_overwrite(
+    c(
+      names(dots)[nzchar(names(dots))],
+      known_summary_output_names(dots, summary_selection_proxy)
+    ),
+    group_vars = c(plan$by, plan$dimensions)
+  )
 
-  column_info <- margin_column_info(.data, plan$dimensions)
+  column_info <- margin_column_info(
+    .data,
+    plan$dimensions,
+    backend = backend
+  )
   validate_margin_label(
     .data,
     dimensions = plan$dimensions,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
-    column_info = column_info
+    column_info = column_info,
+    backend = backend
   )
 
-  result <- if (supports_grouping_sets(.data, plan)) {
+  result <- if (supports_grouping_sets(.data, plan, backend = backend)) {
     summarize_grouping_sets(
       .data,
       dots = dots,
@@ -224,6 +349,10 @@ summarize_with_margins <- function(.data,
   )
 }
 
+#' @rdname summarize_with_margins
+#' @export
+summarise_with_margins <- summarize_with_margins
+
 summarize_impl <- function(.data,
                            ...,
                            .margin_pairs,
@@ -238,10 +367,10 @@ summarize_impl.default <- function(.data,
                                    .margin_pairs,
                                    .by) {
   result <- dplyr::summarize(
-    .data = dplyr::group_by(.data, dplyr::pick(dplyr::all_of(.by))),
+    .data = .data,
     ...,
     !!!.margin_pairs,
-    .groups = "drop"
+    .by = dplyr::all_of(.by)
   )
   result
 }

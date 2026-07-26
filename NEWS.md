@@ -10,6 +10,20 @@
   preserves grouping-column types and typed missing values.
 * DuckDB and PostgreSQL use native `GROUPING SETS`; other backends use the
   portable `UNION ALL` adapter.
-* `summarize_with_margins()`, `union_all_with_margins()`,
+* `summarize_with_margins()`, `summarise_with_margins()`,
+  `expand_with_margins()`,
   `nest_with_margins()`, and `nest_by_with_margins()` now share one normalized
   grouping-plan implementation.
+* Existing `dplyr::group_by()` columns act as implicit fixed `.by` keys across
+  local and lazy backends. Grouped input cannot also supply `.by`; margin
+  summaries, row expansions, and regular nests return ungrouped results, while
+  `nest_by_with_margins()` returns a row-wise result.
+* Summary column selection now excludes every fixed key and grouping
+  dimension consistently across grouping-set branches. Summary results cannot
+  overwrite grouping keys, `.groups` is limited to `NULL` or `"drop"`, and
+  branch-local `cur_group*()` helpers are rejected in favor of
+  `grouping_bit()` and `grouping_id()`.
+* `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
+  internal columns. `.keep = TRUE` retains original pre-margin key values,
+  and nesting rejects duplicate sets with `.duplicates = "keep"` because
+  their visible outer keys would be indistinguishable.

@@ -234,10 +234,10 @@ test_that("grouping helpers validate their context and columns", {
   )
 })
 
-test_that("union and nest verbs consume the same grouping plan", {
+test_that("expand and nest verbs consume the same grouping plan", {
   data <- data.frame(a = c("x", "x", "y"), b = c("u", "v", "u"), x = 1:3)
 
-  expanded <- union_all_with_margins(data, .grouping = rollup(a, b))
+  expanded <- expand_with_margins(data, .grouping = rollup(a, b))
   expect_equal(nrow(expanded), 9L)
   expect_equal(sum(expanded$a == "Total"), 3L)
 
@@ -248,30 +248,417 @@ test_that("union and nest verbs consume the same grouping plan", {
   expect_equal(names(nested), c("a", "b", "data"))
   expect_equal(names(nested$data[[1]]), "x")
 
-  nested_keep <- nest_with_margins(
+  nested_keep <- nest_by_with_margins(
     data,
     .grouping = rollup(a, b),
     .keep = TRUE
   )
   expect_equal(names(nested_keep$data[[1]]), c("a", "b", "x"))
+  expect_s3_class(nested_keep, "rowwise_df")
+  subtotal <- nested_keep[nested_keep$a == "x" & nested_keep$b == "Total", ]
+  expect_equal(subtotal$data[[1]]$a, c("x", "x"))
+  expect_equal(subtotal$data[[1]]$b, c("u", "v"))
+
+  grand_total <- nested_keep[
+    nested_keep$a == "Total" & nested_keep$b == "Total",
+  ]
+  expect_equal(grand_total$data[[1]]$a, c("x", "x", "y"))
+  expect_equal(grand_total$data[[1]]$b, c("u", "v", "u"))
 
   rowwise <- nest_by_with_margins(data, .grouping = rollup(a, b))
   expect_s3_class(rowwise, "rowwise_df")
 })
 
-test_that("nest list-column names cannot collide with internal columns", {
-  data <- data.frame(a = c("x", "y"), value = 1:2)
+test_that("only the row-wise nesting interface exposes .keep", {
+  expect_false(".keep" %in% names(formals(nest_with_margins)))
+  expect_true(".keep" %in% names(formals(nest_by_with_margins)))
+})
+
+test_that("nest internals never reserve user-visible column names", {
+  data <- data.frame(
+    a = c("x", "y"),
+    value = 1:2,
+    .marginplyr_set_id = 3:4,
+    a_COPY__MARGINPLYR_ = 5:6
+  )
 
   expect_error(
     nest_with_margins(data, .grouping = rollup(a), .key = ""),
     "must not be empty"
   )
-  expect_error(
-    nest_with_margins(
+  expect_no_error(
+    nested <- nest_with_margins(
       data,
       .grouping = rollup(a),
       .key = ".marginplyr_set_id"
+    )
+  )
+  expect_equal(names(nested), c("a", ".marginplyr_set_id"))
+
+  expect_no_error(
+    nest_by_with_margins(
+      data,
+      .grouping = rollup(a),
+      .keep = TRUE
+    )
+  )
+})
+
+test_that("nest interfaces follow upstream .key and empty-input contracts", {
+  data <- data.frame(group = c("a", "b"), value = 1:2)
+  empty <- data[0, , drop = FALSE]
+
+  default_key <- nest_with_margins(data, .by = group, .key = NULL)
+  expect_equal(names(default_key), c("group", "data"))
+  expect_error(
+    nest_by_with_margins(data, .by = group, .key = NULL),
+    "`.key` must be a character vector of length 1"
+  )
+
+  empty_nested <- nest_with_margins(empty)
+  expect_equal(nrow(empty_nested), 0L)
+
+  empty_rowwise <- nest_by_with_margins(empty)
+  expect_s3_class(empty_rowwise, "rowwise_df")
+  expect_equal(nrow(empty_rowwise), 1L)
+  expect_equal(names(empty_rowwise), "data")
+  expect_equal(names(empty_rowwise$data[[1]]), names(empty))
+  expect_equal(nrow(empty_rowwise$data[[1]]), 0L)
+})
+
+test_that("nesting rejects duplicate grouping sets without visible identity", {
+  data <- data.frame(group = c("a", "b"), value = 1:2)
+  spec <- grouping_sets(grouping_set(group), grouping_set(group))
+
+  expect_error(
+    nest_with_margins(
+      data,
+      .grouping = spec,
+      .duplicates = "keep"
     ),
-    "reserved name"
+    "does not support `.duplicates = \"keep\"`"
+  )
+  expect_error(
+    nest_by_with_margins(
+      data,
+      .grouping = spec,
+      .duplicates = "keep"
+    ),
+    "does not support `.duplicates = \"keep\"`"
+  )
+})
+
+test_that("existing groups become implicit fixed keys", {
+  data <- data.frame(
+    year = c(2025L, 2025L, 2026L, 2026L),
+    region = c("East", "West", "East", "West"),
+    value = c(1, 10, 100, 1000)
+  )
+  grouped <- dplyr::group_by(data, year)
+  ungrouped <- dplyr::ungroup(grouped)
+
+  implicit_summary <- summarize_with_margins(
+    grouped,
+    value = sum(value),
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  explicit_summary <- summarize_with_margins(
+    ungrouped,
+    value = sum(value),
+    .by = year,
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  expect_equal(implicit_summary, explicit_summary)
+  expect_equal(dplyr::group_vars(implicit_summary), character())
+
+  implicit_union <- expand_with_margins(
+    grouped,
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  explicit_union <- expand_with_margins(
+    ungrouped,
+    .by = year,
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  expect_equal(implicit_union, explicit_union)
+  expect_equal(dplyr::group_vars(implicit_union), character())
+
+  implicit_nest <- nest_with_margins(
+    grouped,
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  explicit_nest <- nest_with_margins(
+    ungrouped,
+    .by = year,
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  expect_equal(implicit_nest, explicit_nest)
+  expect_equal(dplyr::group_vars(implicit_nest), character())
+
+  implicit_nest_by <- nest_by_with_margins(
+    grouped,
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  explicit_nest_by <- nest_by_with_margins(
+    ungrouped,
+    .by = year,
+    .grouping = rollup(region),
+    .sort = FALSE
+  )
+  expect_equal(implicit_nest_by, explicit_nest_by)
+  expect_equal(dplyr::group_vars(implicit_nest_by), c("year", "region"))
+})
+
+test_that("grouped inputs reject conflicting grouping instructions", {
+  data <- data.frame(
+    year = c(2025L, 2026L),
+    region = c("East", "West"),
+    value = 1:2
+  )
+  grouped <- dplyr::group_by(data, year)
+
+  expect_error(
+    summarize_with_margins(
+      grouped,
+      value = sum(value),
+      .by = year,
+      .grouping = rollup(region)
+    ),
+    "Can't supply `.by`"
+  )
+  expect_error(
+    expand_with_margins(
+      grouped,
+      .by = year,
+      .grouping = rollup(region)
+    ),
+    "Can't supply `.by`"
+  )
+  expect_error(
+    nest_with_margins(
+      grouped,
+      .by = year,
+      .grouping = rollup(region)
+    ),
+    "Can't supply `.by`"
+  )
+  expect_error(
+    nest_by_with_margins(
+      grouped,
+      .by = year,
+      .grouping = rollup(region)
+    ),
+    "Can't supply `.by`"
+  )
+
+  expect_error(
+    summarize_with_margins(
+      grouped,
+      value = sum(value),
+      .grouping = rollup(year, region)
+    ),
+    "both `.by` and `.grouping`"
+  )
+})
+
+test_that("row-wise inputs require explicit ungrouping", {
+  data <- dplyr::rowwise(
+    data.frame(region = c("East", "West"), value = 1:2)
+  )
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      value = sum(value),
+      .grouping = rollup(region)
+    ),
+    "`rowwise\\(\\)` input is not supported"
+  )
+  expect_error(
+    expand_with_margins(data, .grouping = rollup(region)),
+    "`rowwise\\(\\)` input is not supported"
+  )
+  expect_error(
+    nest_with_margins(data, .grouping = rollup(region)),
+    "`rowwise\\(\\)` input is not supported"
+  )
+  expect_error(
+    nest_by_with_margins(data, .grouping = rollup(region)),
+    "`rowwise\\(\\)` input is not supported"
+  )
+})
+
+test_that("empty persistent groups are rejected instead of silently dropped", {
+  data <- data.frame(
+    year = factor(2025L, levels = c(2025L, 2026L)),
+    value = 1
+  ) |>
+    dplyr::group_by(year, .drop = FALSE)
+
+  expect_error(
+    summarize_with_margins(data, value = sum(value)),
+    "`.drop = FALSE` is not supported"
+  )
+})
+
+test_that("the unsupported .groups argument cannot become a summary column", {
+  data <- data.frame(group = c("b", "a", "b"), value = 1:3)
+
+  expect_no_error(
+    dropped <- summarize_with_margins(
+      data,
+      value = sum(value),
+      .by = group,
+      .groups = "drop"
+    )
+  )
+  expect_equal(dplyr::group_vars(dropped), character())
+  expect_false(".groups" %in% names(dropped))
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      value = sum(value),
+      .by = group,
+      .groups = "keep"
+    ),
+    "only supports.*drop"
+  )
+})
+
+test_that(".sort controls local ordering without changing the input class", {
+  data <- data.frame(group = c("b", "a", "b"), value = 1:3)
+
+  in_input_order <- summarize_with_margins(
+    data,
+    value = sum(value),
+    .by = group,
+    .sort = FALSE
+  )
+  sorted <- summarize_with_margins(
+    data,
+    value = sum(value),
+    .by = group,
+    .sort = TRUE
+  )
+  nested <- nest_with_margins(data, .by = group, .sort = FALSE)
+
+  expect_identical(class(in_input_order), "data.frame")
+  expect_equal(in_input_order$group, c("b", "a"))
+  expect_equal(sorted$group, c("a", "b"))
+  expect_equal(nested$group, c("b", "a"))
+})
+
+test_that("British and American summary spellings are synonyms", {
+  data <- data.frame(group = c("a", "a", "b"), value = 1:3)
+
+  american <- summarize_with_margins(
+    data,
+    value = sum(value),
+    .by = group
+  )
+  british <- summarise_with_margins(
+    data,
+    value = sum(value),
+    .by = group
+  )
+
+  expect_equal(british, american)
+  expect_identical(formals(summarise_with_margins), formals(
+    summarize_with_margins
+  ))
+})
+
+test_that("column-wise summaries exclude all grouping dimensions", {
+  data <- data.frame(
+    year = c(2026L, 2025L, 2026L),
+    value = c(1, 2, 3)
+  )
+
+  across_result <- summarize_with_margins(
+    data,
+    dplyr::across(
+      dplyr::everything(),
+      dplyr::n_distinct,
+      .names = "n_{.col}"
+    ),
+    .grouping = rollup(year),
+    .sort = FALSE
+  )
+  pick_result <- summarize_with_margins(
+    data,
+    picked = paste(names(dplyr::pick(dplyr::everything())), collapse = ","),
+    .grouping = rollup(year),
+    .sort = FALSE
+  )
+
+  expect_equal(names(across_result), c("year", "n_value"))
+  expect_equal(across_result$year, c("2026", "2025", "Total"))
+  expect_equal(across_result$n_value, c(2L, 1L, 3L))
+  expect_equal(pick_result$picked, rep("value", 3L))
+})
+
+test_that("data-frame summaries cannot overwrite grouping columns", {
+  data <- data.frame(group = c("a", "a", "b"), value = 1:3)
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      tibble::tibble(group = dplyr::n()),
+      .by = group
+    ),
+    "cannot overwrite grouping column.*`group`"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(value, mean, .names = "group"),
+      .by = group
+    ),
+    "cannot overwrite grouping column.*`group`"
+  )
+})
+
+test_that("branch-local dplyr group context helpers are rejected", {
+  data <- data.frame(group = c("a", "a", "b"), value = 1:3)
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      key = list(dplyr::cur_group()),
+      .by = group
+    ),
+    "does not support.*cur_group"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      id = dplyr::cur_group_id(),
+      .by = group
+    ),
+    "does not support.*cur_group_id"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      rows = list(dplyr::cur_group_rows()),
+      .by = group
+    ),
+    "does not support.*cur_group_rows"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      current = list(dplyr::cur_data_all()),
+      .by = group
+    ),
+    "does not support.*cur_data_all"
   )
 })

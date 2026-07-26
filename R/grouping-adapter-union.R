@@ -3,6 +3,23 @@ summarize_margin_union <- function(.data,
                                    plan,
                                    .margin_label,
                                    column_info) {
+  group_vars <- unique(c(plan$by, plan$dimensions))
+  key_names <- new_margin_internal_names(
+    length(group_vars),
+    used_names = unique(c(colnames(.data), names(dots))),
+    prefix = "..marginplyr_key_"
+  )
+  names(key_names) <- group_vars
+
+  if (length(group_vars) > 0L) {
+    key_exprs <- lapply(
+      group_vars,
+      function(var) rlang::expr(.data[[!!var]])
+    )
+    names(key_exprs) <- unname(key_names)
+    .data <- dplyr::mutate(.data, !!!key_exprs)
+  }
+
   branches <- lapply(
     plan$sets,
     function(grouping_set) {
@@ -17,8 +34,20 @@ summarize_margin_union <- function(.data,
         .data = .data,
         !!!branch_dots,
         .margin_pairs = list(),
-        .by = grouping_set
+        .by = unname(key_names[grouping_set])
       )
+
+      check_summary_group_overwrite(
+        colnames(result),
+        group_vars = group_vars
+      )
+      if (length(grouping_set) > 0L) {
+        rename_pairs <- rlang::set_names(
+          rlang::syms(unname(key_names[grouping_set])),
+          grouping_set
+        )
+        result <- dplyr::rename(result, !!!rename_pairs)
+      }
 
       label_margin_branch(
         result,
@@ -37,7 +66,7 @@ expand_margin_union <- function(.data,
                                 plan,
                                 .margin_label,
                                 column_info,
-                                include_set_id = FALSE) {
+                                set_id_name = NULL) {
   branches <- Map(
     function(grouping_set, set_id) {
       result <- label_margin_branch(
@@ -48,10 +77,10 @@ expand_margin_union <- function(.data,
         prototypes = column_info$prototypes
       )
 
-      if (include_set_id) {
+      if (!is.null(set_id_name)) {
         result <- dplyr::mutate(
           result,
-          .marginplyr_set_id = as.integer(set_id)
+          "{set_id_name}" := as.integer(set_id)
         )
       }
       result

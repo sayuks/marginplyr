@@ -11,24 +11,14 @@ normalize_margin_label <- function(.margin_label) {
   .margin_label
 }
 
-margin_column_info <- function(.data, dimensions) {
+margin_column_info <- function(.data,
+                               dimensions,
+                               backend = grouping_backend(.data)) {
   if (length(dimensions) == 0L) {
     return(list(factors = list(), prototypes = list()))
   }
 
-  can_read_schema <- inherits(
-    .data,
-    c(
-      "data.frame",
-      "dtplyr_step",
-      "arrow_dplyr_query",
-      "ArrowTabular",
-      "Dataset",
-      "tbl_duckdb_connection"
-    )
-  )
-
-  if (!can_read_schema) {
+  if (!backend$can_read_schema) {
     return(list(factors = list(), prototypes = list()))
   }
 
@@ -36,11 +26,7 @@ margin_column_info <- function(.data, dimensions) {
   schema <- schema[dimensions]
 
   prototypes <- lapply(schema, function(x) x[NA_integer_])
-  can_restore_factors <- inherits(
-    .data,
-    c("data.frame", "dtplyr_step", "tbl_duckdb_connection")
-  )
-  factors <- if (can_restore_factors) {
+  factors <- if (backend$can_restore_factors) {
     lapply(
       names(schema)[vapply(schema, is.factor, logical(1))],
       function(col) {
@@ -64,7 +50,8 @@ validate_margin_label <- function(.data,
                                   dimensions,
                                   .margin_label,
                                   .check_margin_label,
-                                  column_info) {
+                                  column_info,
+                                  backend = grouping_backend(.data)) {
   assert_logical_scalar(.check_margin_label)
 
   if (is.null(.margin_label) || length(dimensions) == 0L) {
@@ -73,7 +60,7 @@ validate_margin_label <- function(.data,
 
   factor_info <- column_info$factors
   if (
-    inherits(.data, "tbl_duckdb_connection") &&
+    backend$is_duckdb &&
       is.na(.margin_label) &&
       length(factor_info) > 0L
   ) {

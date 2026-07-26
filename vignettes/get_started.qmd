@@ -24,8 +24,10 @@ Install the development version from GitHub:
 ```{r}
 #| eval: false
 
-# install.packages("pak")
-pak::pak("sayuks/marginplyr")
+if (!"remotes" %in% rownames(installed.packages())) {
+  install.packages("remotes")
+}
+remotes::install_github("sayuks/marginplyr")
 
 # Install only packages that are missing from the backend and reporting
 # sections below.
@@ -83,6 +85,94 @@ and never receive the margin label. Here, `rollup(region, store)` expands to:
 
 The empty set still includes the fixed `.by` columns, so it produces one
 company total per year and month.
+
+### Persistent groups as fixed keys
+
+Existing `dplyr::group_by()` columns provide the same fixed keys when `.by` is
+not supplied. This is useful when a pipeline has already established its
+report partitions:
+
+```{r}
+grouped_monthly_report <- retail_sales |>
+  group_by(year, month) |>
+  summarize_with_margins(
+    units = sum(units),
+    revenue = sum(revenue),
+    .grouping = rollup(region, store)
+  )
+
+grouped_monthly_report |>
+  filter(year == 2026L, month == "Jan")
+
+group_vars(grouped_monthly_report)
+```
+
+The calculation is equivalent to the earlier `.by = c(year, month)` call.
+Do not combine a grouped input with `.by`; this is an error, matching
+`dplyr::summarize()` and `tidyr::nest()`. A fixed grouping column also cannot
+appear in `.grouping`; call `ungroup()` first if that column should be rolled
+up instead. Row-wise inputs must likewise be ungrouped explicitly. Local
+groups created with `.drop = FALSE` are rejected because empty factor groups
+do not have a consistent SQL or lazy-backend equivalent.
+
+Input groups affect the calculation but, except for the explicitly row-wise
+nesting verb, do not persist on the result:
+
+| Function | Output grouping | Difference from the closest official verb |
+|---|---|---|
+| `summarize_with_margins()` | Ungrouped | `dplyr::summarize()` can retain groups through `.groups`; arbitrary grouping sets have no single `drop_last` level |
+| `expand_with_margins()` | Ungrouped | The expanded branches deliberately discard persistent grouping metadata |
+| `nest_with_margins()` | Ungrouped | `tidyr::nest()` preserves grouped input; this function consumes those groups as fixed keys but does not preserve them |
+| `nest_by_with_margins()` | Row-wise by every visible key | Like `dplyr::nest_by()`, but grouping-set dimensions are also outer row-wise keys |
+
+This invariant is the same for local data frames, dtplyr, Arrow, and SQL lazy
+tables. The two nesting functions support local data frames and dtplyr because
+SQL and Arrow tables cannot contain their list-column result.
+
+### Intentional differences from `dplyr::summarize()`
+
+The summary expressions still use dplyr data masking, but marginplyr narrows a
+few parts of the official API where arbitrary grouping sets do not have one
+portable interpretation:
+
+| Feature | Official dplyr behavior | marginplyr behavior and rationale |
+|---|---|---|
+| Spelling | `summarise()` and `summarize()` are synonyms | `summarise_with_margins()` and `summarize_with_margins()` are synonyms |
+| `.groups` | Can return `"drop_last"`, `"drop"`, `"keep"`, or `"rowwise"` groups | Accepts only `NULL` or `"drop"` and always returns ungrouped output; multiple grains have no single grouping hierarchy |
+| Summary name matches a grouping key | The local backend can overwrite the key | Rejected, including data-frame-valued summaries, so grouping-set identity is not destroyed and backend behavior remains portable |
+| `across()` and `pick()` | Exclude the grouping columns active in the verb | Exclude all fixed keys and margin dimensions in the complete plan, even in a branch where a dimension is rolled up |
+| `cur_group*()` and deprecated `cur_data*()` helpers | Describe the current dplyr group or data mask | Rejected because branch-local identifiers, rows, and columns have no global meaning after grouping sets are combined; use `grouping_bit()` or `grouping_id()` for margin levels |
+| Ordering | `.by` summaries use first-appearance order | `.sort = FALSE` preserves first appearance locally; `.sort = TRUE` explicitly sorts; lazy order is otherwise unspecified |
+| Backend extension | `summarize()` is a public S3 generic | The public verbs are regular functions; a private adapter handles schema and execution capabilities after one common plan is validated |
+
+For example, `everything()` below selects measures but not `year`, `region`,
+or `store`:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    across(
+      everything(),
+      n_distinct,
+      .names = "distinct_{.col}"
+    ),
+    selected_measures = paste(
+      names(pick(everything())),
+      collapse = ", "
+    ),
+    .by = year,
+    .grouping = rollup(region, store),
+    .sort = FALSE
+  ) |>
+  slice_head(n = 6)
+```
+
+A summary may return a one-row data frame as in dplyr, but none of its output
+columns may be named `year`, `region`, or `store` in this example. Use a new
+summary name or rename the input key first. The private adapter is
+deliberately not an extension API: adding a backend to marginplyr keeps
+duplicate handling, labels, grouping flags, and output grouping under the same
+public contract.
 
 ### Extend the hierarchy through time
 
@@ -341,8 +431,10 @@ so retain `grouping_bit()` or `grouping_id()` when the distinction matters.
 
 For local data, `.check_margin_label = TRUE` prevents an existing value such
 as `"Total"` from becoming visually ambiguous. `.sort` controls the optional
-local result ordering; lazy tables remain unordered unless explicitly
-arranged.
+result ordering. Lazy inputs default to `.check_margin_label = FALSE` because
+checking would execute an additional query, and they remain unordered unless
+explicitly arranged. A label is only a display value; retain `grouping_bit()`
+or `grouping_id()` whenever source values can equal the label.
 
 ## Backend support
 
@@ -357,6 +449,13 @@ Arrow and dtplyr are also tested lazy backends, but they are not SQL database
 connections. SQL simulation confirms that marginplyr can render each listed
 dialect; only DuckDB is currently exercised against a live database in the
 automated test suite.
+
+The public verbs are intentionally not backend S3 generics. Each call first
+compiles one backend-independent grouping plan. A non-exported adapter then
+chooses schema handling and either native grouping sets or the portable
+branch expansion. This makes adding a backend a package-level compatibility
+decision rather than allowing third-party methods to silently redefine label,
+duplicate, or grouping semantics.
 
 ## Inspect the generated SQL
 
@@ -444,18 +543,20 @@ The result stays lazy until `collect()` or another execution verb is called.
 
 ## Keep the detail rows
 
-### Expand rows with `union_all_with_margins()`
+### Expand rows with `expand_with_margins()`
 
-`union_all_with_margins()` emits one copy of each source row for every
-grouping set. It is useful when downstream work needs the rows rather than an
-immediate summary:
+`expand_with_margins()` emits one copy of each source row for every grouping
+set. It is useful when downstream work needs the rows rather than an
+immediate summary. The public name describes the result; SQL `UNION ALL` is
+only the portable implementation strategy and this function is unrelated to
+`dplyr::union_all()`:
 
 ```{r}
 january_sales <- retail_sales |>
   filter(year == 2026L, month == "Jan")
 
 expanded <- january_sales |>
-  union_all_with_margins(
+  expand_with_margins(
     .grouping = rollup(region, store)
   )
 
@@ -471,7 +572,7 @@ dbplyr::tbl_lazy(
   january_sales,
   con = dbplyr::simulate_sqlite()
 ) |>
-  union_all_with_margins(
+  expand_with_margins(
     .grouping = rollup(region, store)
   ) |>
   show_query()
@@ -482,10 +583,17 @@ dbplyr::tbl_lazy(
 `nest_with_margins()` keeps one detail table for each visible group:
 
 ```{r}
-january_sales |>
+nested_sections <- january_sales |>
   nest_with_margins(
     .grouping = rollup(region, store)
   )
+
+nested_sections |>
+  mutate(records = vapply(data, nrow, integer(1))) |>
+  select(-data)
+
+# Inspect the source rows behind the first visible group.
+nested_sections$data[[1]]
 ```
 
 A dtplyr input performs the expansion and nesting lazily until `collect()`.
@@ -533,8 +641,57 @@ january_sales |>
   select(-data)
 ```
 
+Because `nest_by_with_margins()` collects before making the result row-wise,
+its return value no longer has a lazy query to display. Use the
+`nest_with_margins()` form immediately above with `show_query()` to inspect the
+same dtplyr expansion and nesting expression before collection.
+
 List columns are why the two nesting verbs support local data frames and
 dtplyr steps rather than SQL database tables.
+
+#### Relationship to tidyr and dplyr
+
+The margin-aware verbs deliberately share the main result shapes of
+`tidyr::nest()` and `dplyr::nest_by()`, but they are not drop-in replacements:
+
+| Function | Official reference | Shared behavior | Deliberate differences |
+|---|---|---|---|
+| `nest_with_margins()` | `tidyr::nest()` | `NULL` `.key` becomes `"data"`; returns one list column | Uses `.by` plus `.grouping`; always nests all non-key columns; does not implement `...`, multiple list columns, `.names_sep`, or `.keep`; always returns ungrouped output |
+| `nest_by_with_margins()` | `dplyr::nest_by()` | Requires a string `.key`; supports `.keep`; returns a row-wise data frame | Uses `.by` plus `.grouping` instead of data-masking `...`; collects a dtplyr result before making it row-wise |
+
+The shared features in this table do not amount to complete upstream
+compatibility; the deliberate differences are part of the margin-aware API.
+
+For grouped input, existing grouping columns become fixed keys as though they
+had been supplied through `.by`. Unlike `tidyr::nest()`, `nest_with_margins()`
+does not preserve that grouping metadata on its output. Both nesting functions
+sort keys by default through `.sort = TRUE`, whereas
+`tidyr::nest(.by = ...)` preserves first-appearance order.
+
+Only `nest_by_with_margins()` has `.keep`, matching `dplyr::nest_by()`. With
+`.keep = TRUE`, nested tables retain the original pre-margin key values. For
+example, the outer key of an `East / Total` subtotal displays `"Total"`, while
+the rows inside contain their original store names. This preserves the
+meaning of dplyr's “keep the grouping columns” rule after a dimension has been
+rolled up.
+
+Nesting accepts `.duplicates = "error"` or `"drop"`, but rejects `"keep"`.
+Unlike a summary or row expansion, two duplicate nested groups have no
+visible set identifier and would therefore be indistinguishable. Internal set
+identifiers and `.keep` copies use collision-free temporary names, so no input
+column name is reserved.
+
+The list column is a regular list of data frames; a
+`vctrs::list_of` subclass is not promised. On an empty ungrouped input,
+`nest_with_margins()` follows `tidyr::nest()` and returns zero outer rows.
+`nest_by_with_margins()` follows `dplyr::nest_by()` and returns one row
+containing the empty data frame when there are no keys.
+
+`dplyr::nest_by()` is currently not a stable upstream API and may eventually
+be deprecated in favor of `tidyr::nest(.by = )`. marginplyr nevertheless
+keeps its row-wise wrapper because per-margin modeling and reporting are
+useful, and implements it through the same nesting core rather than a separate
+semantic path.
 
 ## Optional Quarto tabsets with quartabs
 

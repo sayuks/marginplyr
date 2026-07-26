@@ -311,18 +311,9 @@ resolve_grouping_selection <- function(arg, data_proxy) {
   names(selected)
 }
 
-grouping_selection_proxy <- function(.data) {
-  needs_local_proxy <- inherits(
-    .data,
-    c(
-      "dtplyr_step",
-      "arrow_dplyr_query",
-      "ArrowTabular",
-      "Dataset",
-      "tbl_duckdb_connection"
-    )
-  )
-  if (needs_local_proxy) {
+grouping_selection_proxy <- function(.data,
+                                     backend = grouping_backend(.data)) {
+  if (backend$collect_selection_proxy) {
     return(dplyr::collect(utils::head(.data, n = 0L)))
   }
   .data

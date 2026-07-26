@@ -2,6 +2,7 @@
 % Please edit documentation in R/summarize_with_margins.R
 \name{summarize_with_margins}
 \alias{summarize_with_margins}
+\alias{summarise_with_margins}
 \title{Summarize data with SQL-style grouping operations}
 \usage{
 summarize_with_margins(
@@ -9,6 +10,19 @@ summarize_with_margins(
   ...,
   .by = NULL,
   .grouping = NULL,
+  .groups = NULL,
+  .margin_label = "Total",
+  .check_margin_label = is.data.frame(.data),
+  .duplicates = c("error", "drop", "keep"),
+  .sort = is.data.frame(.data)
+)
+
+summarise_with_margins(
+  .data,
+  ...,
+  .by = NULL,
+  .grouping = NULL,
+  .groups = NULL,
   .margin_label = "Total",
   .check_margin_label = is.data.frame(.data),
   .duplicates = c("error", "drop", "keep"),
@@ -22,11 +36,17 @@ summarize_with_margins(
 helpers \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} can also be used here.}
 
 \item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
-every grouping set. These columns never receive \code{.margin_label}.}
+every grouping set. These columns never receive \code{.margin_label}. When
+\code{.data} is grouped and \code{.by} is \code{NULL}, its grouping columns are used as
+implicit fixed keys.}
 
 \item{.grouping}{A grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
 represents one empty grouping set.}
+
+\item{.groups}{\code{NULL} or \code{"drop"}. Unlike \code{\link[dplyr:summarize]{dplyr::summarize()}}, margin
+summaries always drop grouping metadata because a result containing
+multiple grouping sets has no single \code{drop_last} hierarchy.}
 
 \item{.margin_label}{A character scalar used to display columns omitted from
 a grouping set. The default is \code{"Total"}. Use \code{NULL} to keep typed missing
@@ -40,7 +60,8 @@ duplicate grouping sets after expansion.}
 
 \item{.sort}{A logical scalar. If \code{TRUE}, sort by \code{.by} followed by grouping
 dimensions. It defaults to \code{TRUE} for local data frames and \code{FALSE} for
-lazy tables.}
+lazy tables. With \code{FALSE}, local groups retain first-appearance order;
+lazy result order is unspecified unless an explicit order is requested.}
 }
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy.
@@ -61,6 +82,8 @@ expressions. Create computed grouping columns with \code{\link[dplyr:mutate]{dpl
 
 Confirmed SQL backends use one \verb{GROUP BY GROUPING SETS} query. Other lazy
 backends use a portable \verb{UNION ALL} adapter with the same semantics.
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} and \code{\link[=summarise_with_margins]{summarise_with_margins()}} are synonyms,
+following \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[dplyr:summarise]{dplyr::summarise()}}.
 }
 \section{Fixed columns and grouping dimensions}{
 
@@ -81,6 +104,77 @@ margin dimension even when every expanded grouping set contains it.
 Consequently, it participates in \code{.margin_label} type conversion and
 collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
+}
+
+\section{Grouped and row-wise inputs}{
+
+When \code{.data} has been grouped with \code{\link[dplyr:group_by]{dplyr::group_by()}} and \code{.by} is \code{NULL},
+its grouping columns become implicit fixed keys. For example,
+\code{group_by(year)} followed by \code{.grouping = rollup(region)} is computationally
+equivalent to using \code{.by = year} on the ungrouped data. This rule is the
+same for local data frames and lazy tables.
+
+As with \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[tidyr:nest]{tidyr::nest()}}, a grouped input cannot
+also supply \code{.by}; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first when replacing the existing
+groups. A grouping column also cannot appear in \code{.grouping}, because one
+column cannot be both a fixed key and a dimension that can be rolled up.
+Grouped local data created with \code{.drop = FALSE} is rejected because empty
+factor groups do not have a consistent equivalent in SQL and other lazy
+backends.
+
+Unlike the default output of \code{\link[dplyr:summarize]{dplyr::summarize()}} on grouped data,
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}}, and
+\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. For
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, this is why \code{.groups} only accepts \code{NULL} and
+\code{"drop"}. Arbitrary grouping sets contain multiple grains, so there is no
+single meaningful \code{drop_last}, \code{"keep"}, or \code{"rowwise"} structure.
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
+all visible fixed keys and grouping dimensions. Row-wise input is rejected;
+call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+}
+
+\section{Relationship to dplyr summaries}{
+
+The \code{...} expressions use \code{\link[dplyr:summarize]{dplyr::summarize()}} data-masking semantics.
+\code{\link[dplyr:across]{dplyr::across()}} and \code{\link[dplyr:pick]{dplyr::pick()}} cannot select any column named in the
+complete grouping plan. This extends dplyr's grouping-column rule across
+every branch: a dimension remains excluded even in a grouping set from
+which it is omitted.
+
+Summary results may not overwrite a fixed key or grouping dimension,
+including through a data-frame-valued summary. The local dplyr backend can
+overwrite an existing variable and reuse a newly created summary in a
+later expression, but other backends may not. marginplyr rejects grouping
+key overwrites so that grouping identity and behavior stay portable.
+Use a new summary name, or rename the grouping column before this call.
+
+\code{\link[dplyr:cur_group]{dplyr::cur_group()}}, \code{\link[dplyr:cur_group_id]{dplyr::cur_group_id()}},
+\code{\link[dplyr:cur_group_rows]{dplyr::cur_group_rows()}}, and the deprecated \verb{cur_data*()} helpers are
+rejected. They describe one branch-local grouping or data mask, whereas a
+margin result combines several grouping sets and their identifiers, row
+positions, or columns would not have one global meaning. Use
+\code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} to identify margin levels.
+}
+
+\section{Display labels and grouping identity}{
+
+\code{.margin_label} is a display value, not the identity of a grouping set.
+When the source data can contain the same value, retain \code{\link[=grouping_bit]{grouping_bit()}} or
+\code{\link[=grouping_id]{grouping_id()}} in the result. The eager default
+\code{.check_margin_label = TRUE} detects collisions for local data. Lazy tables
+default to \code{FALSE} because checking would execute an extra query; opt in
+when the additional scan is appropriate.
+}
+
+\section{Backend extension design}{
+
+Unlike \code{\link[dplyr:summarize]{dplyr::summarize()}}, the public margin verbs are intentionally not
+S3 generics. They first compile and validate one backend-independent
+grouping plan so duplicate handling, labels, grouping identifiers, and
+output grouping cannot drift between methods. Backend-specific schema and
+execution capabilities are isolated behind a non-exported adapter layer.
+That adapter is an implementation detail rather than an extension API;
+support for a new backend should be added to marginplyr itself.
 }
 
 \section{Database backend coverage}{
@@ -109,6 +203,16 @@ summarize_with_margins(
   .by = c(year, month),
   .grouping = rollup(region, store)
 )
+
+# Existing dplyr groups are implicit fixed keys. The calculation below is
+# equivalent to `.by = c(year, month)`, but its result is still ungrouped.
+grouped_report <- retail_sales |>
+  dplyr::group_by(year, month) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(region, store)
+  )
+dplyr::group_vars(grouped_report)
 
 # Moving year and month into the rollup extends the hierarchy from store
 # detail through monthly, annual, and all-period totals.
@@ -144,6 +248,25 @@ summarize_with_margins(
   .margin_label = NULL
 )
 
+# across() and pick() treat every fixed key and margin dimension as a
+# grouping column, including dimensions omitted from a subtotal branch.
+summarize_with_margins(
+  retail_sales,
+  dplyr::across(
+    c(units, revenue),
+    sum,
+    .names = "total_{.col}"
+  ),
+  measures = paste(
+    names(dplyr::pick(c(units, revenue))),
+    collapse = ", "
+  ),
+  .by = year,
+  .grouping = rollup(region),
+  .groups = "drop",
+  .sort = FALSE
+)
+
 # DuckDB executes a native GROUP BY GROUPING SETS query. The optional
 # dependency guard keeps this example runnable without DuckDB installed.
 if (
@@ -176,8 +299,8 @@ if (
 }
 \seealso{
 Other summarize and expand data with margins:
+\code{\link[=expand_with_margins]{expand_with_margins()}},
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
-\code{\link[=nest_with_margins]{nest_with_margins()}},
-\code{\link[=union_all_with_margins]{union_all_with_margins()}}
+\code{\link[=nest_with_margins]{nest_with_margins()}}
 }
 \concept{summarize and expand data with margins}

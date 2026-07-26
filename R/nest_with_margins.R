@@ -5,13 +5,46 @@
 #'
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
+#' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Backend extension design
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
 #'   not supported because nesting creates list columns.
 #' @param .sort A logical scalar. If `TRUE` (the default), sort by `.by`
 #'   followed by grouping dimensions.
-#' @param .key A non-missing string naming the list column.
-#' @param .keep Should grouping columns also be kept inside each nested data
-#'   frame?
+#' @param .key A string naming the list column. As in [tidyr::nest()],
+#'   `NULL` uses `"data"`.
+#' @param .duplicates `"error"` or `"drop"`. The `"keep"` policy available in
+#'   [summarize_with_margins()] and [expand_with_margins()] is rejected because
+#'   duplicate grouping sets would create indistinguishable outer keys.
+#'
+#' @section Relationship to tidyr and dplyr:
+#' These functions are margin-aware counterparts, not drop-in replacements,
+#' and do not implement every upstream feature. [nest_with_margins()] resembles
+#' [tidyr::nest()] with `.by`: it supports `.key`, returns an ungrouped data
+#' frame, and puts all non-key columns into one list column. It does not
+#' implement the `...` column specification, multiple list columns, or
+#' `.names_sep`. Existing grouping columns become implicit fixed keys, as they
+#' do for [tidyr::nest()], but [nest_with_margins()] returns an ungrouped result
+#' instead of preserving the input grouping. With the default `.sort = TRUE`,
+#' keys are sorted rather than kept in first-appearance order.
+#'
+#' [nest_by_with_margins()] resembles [dplyr::nest_by()] and, like it, provides
+#' `.key` and `.keep`, but selects fixed keys with `.by` rather than `...`.
+#' With `.keep = TRUE`, the nested data contains the original, pre-margin
+#' values of every outer key. Thus an outer `East / Total` subtotal retains
+#' the original store values inside the nested data instead of replacing them
+#' with `"Total"`. This is the closest margin-aware analogue of dplyr's rule
+#' that `.keep` retains grouping columns.
+#'
+#' The list column is a regular list of data frames; its exact `vctrs_list_of`
+#' subclass is not part of the API. [nest_with_margins()] follows
+#' [tidyr::nest()] for an empty ungrouped input and returns zero outer rows.
+#' [nest_by_with_margins()] follows [dplyr::nest_by()] and returns one row
+#' containing the empty input when there are no grouping keys.
+#'
+#' No input column name is reserved for internal bookkeeping. Temporary
+#' grouping-set and `.keep` columns are generated collision-free and removed
+#' before the result is returned.
 #'
 #' @return For a local input, an ungrouped data frame with one list column. A
 #'   `dtplyr` input returns a lazy `dtplyr` step until collected.
@@ -29,7 +62,26 @@
 #'   january_sales,
 #'   .grouping = rollup(region, store)
 #' )
-#' nested
+#' dplyr::select(
+#'   dplyr::mutate(
+#'     nested,
+#'     records = vapply(data, nrow, integer(1))
+#'   ),
+#'   -data
+#' )
+#' nested$data[[1]]
+#'
+#' # NULL uses the same default list-column name as tidyr::nest().
+#' names(nest_with_margins(january_sales, .by = region, .key = NULL))
+#'
+#' # Existing groups become fixed outer keys, while the result itself is
+#' # ungrouped.
+#' grouped_nested <- retail_sales |>
+#'   dplyr::group_by(year) |>
+#'   nest_with_margins(
+#'     .grouping = rollup(region, store)
+#'   )
+#' dplyr::group_vars(grouped_nested)
 #'
 #' # The same operation stays lazy for a dtplyr input until collect().
 #' if (requireNamespace("dtplyr", quietly = TRUE)) {
@@ -38,7 +90,7 @@
 #'     nest_with_margins(
 #'       .grouping = rollup(region, store)
 #'     )
-#'   dplyr::show_query(nested_dt)
+#'   print(dplyr::show_query(nested_dt))
 #'   dplyr::collect(nested_dt)
 #' }
 nest_with_margins <- function(.data,
@@ -46,10 +98,39 @@ nest_with_margins <- function(.data,
                               .grouping = NULL,
                               .margin_label = "Total",
                               .check_margin_label = TRUE,
-                              .duplicates = c("error", "drop", "keep"),
+                              .duplicates = c("error", "drop"),
                               .sort = TRUE,
-                              .key = "data",
-                              .keep = FALSE) {
+                              .key = "data") {
+  if (is.null(.key)) {
+    .key <- "data"
+  }
+  grouping_quo <- rlang::enquo(.grouping)
+  by_quo <- rlang::enquo(.by)
+
+  rlang::inject(
+    nest_with_margins_impl(
+      .data = .data,
+      .by = !!by_quo,
+      .grouping = !!grouping_quo,
+      .margin_label = .margin_label,
+      .check_margin_label = .check_margin_label,
+      .duplicates = .duplicates,
+      .sort = .sort,
+      .key = .key,
+      .keep = FALSE
+    )
+  )
+}
+
+nest_with_margins_impl <- function(.data,
+                                   .by,
+                                   .grouping,
+                                   .margin_label,
+                                   .check_margin_label,
+                                   .duplicates,
+                                   .sort,
+                                   .key,
+                                   .keep) {
   assert_nest_possible(.data)
   assert_logical_scalar(.check_margin_label)
   assert_logical_scalar(.sort)
@@ -61,22 +142,29 @@ nest_with_margins <- function(.data,
   if (!nzchar(.key)) {
     stop("`.key` must not be empty.", call. = FALSE)
   }
-  if (identical(.key, ".marginplyr_set_id")) {
+  .margin_label <- normalize_margin_label(.margin_label)
+  if (identical(.duplicates, c("error", "drop"))) {
+    .duplicates <- "error"
+  }
+  .duplicates <- match.arg(.duplicates, c("error", "drop", "keep"))
+  if (identical(.duplicates, "keep")) {
     stop(
-      "`.key` must not use the reserved name `.marginplyr_set_id`.",
+      "Nesting does not support `.duplicates = \"keep\"` because duplicate ",
+      "grouping sets have no distinct visible key. Use `\"error\"` or ",
+      "`\"drop\"`.",
       call. = FALSE
     )
   }
-
-  .margin_label <- normalize_margin_label(.margin_label)
-  .duplicates <- match.arg(.duplicates)
   grouping_quo <- rlang::enquo(.grouping)
+  by_quo <- rlang::enquo(.by)
   grouping_spec <- rlang::eval_tidy(grouping_quo)
 
-  .data <- dplyr::ungroup(.data)
-  by <- get_col_names(.data, {{ .by }})
+  input <- prepare_margin_input(.data, by_quo)
+  .data <- input$data
+  by <- input$by
+  backend <- grouping_backend(.data)
   data_vars <- get_col_names(.data, dplyr::everything())
-  data_proxy <- grouping_selection_proxy(.data)
+  data_proxy <- grouping_selection_proxy(.data, backend = backend)
   plan <- compile_grouping_spec(
     grouping_spec,
     data_vars = data_vars,
@@ -92,36 +180,55 @@ nest_with_margins <- function(.data,
       call. = FALSE
     )
   }
-  if (".marginplyr_set_id" %in% data_vars) {
-    stop(
-      "Input column `.marginplyr_set_id` conflicts with an internal column.",
-      call. = FALSE
-    )
-  }
-
-  column_info <- margin_column_info(.data, plan$dimensions)
+  column_info <- margin_column_info(
+    .data,
+    plan$dimensions,
+    backend = backend
+  )
   validate_margin_label(
     .data,
     dimensions = plan$dimensions,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
-    column_info = column_info
+    column_info = column_info,
+    backend = backend
   )
+
+  internal_names <- new_margin_internal_names(
+    1L + if (.keep) length(group_cols) else 0L,
+    used_names = unique(c(data_vars, .key)),
+    prefix = "..marginplyr_nest_"
+  )
+  set_col <- internal_names[[1L]]
+  keep_cols <- if (.keep && length(group_cols) > 0L) {
+    stats::setNames(internal_names[-1L], group_cols)
+  } else {
+    character()
+  }
+  if (length(keep_cols) > 0L) {
+    keep_exprs <- lapply(
+      group_cols,
+      function(var) rlang::expr(.data[[!!var]])
+    )
+    names(keep_exprs) <- unname(keep_cols)
+    .data <- dplyr::mutate(.data, !!!keep_exprs)
+  }
 
   expanded <- expand_margin_union(
     .data,
     plan = plan,
     .margin_label = .margin_label,
     column_info = column_info,
-    include_set_id = TRUE
+    set_id_name = set_col
   )
 
   nested <- nest_expanded_margins(
     expanded,
     group_cols = group_cols,
+    set_col = set_col,
+    keep_cols = keep_cols,
     .key = .key,
-    .keep = .keep,
-    data_vars = data_vars
+    .keep = .keep
   )
 
   finish_margin_result(
@@ -135,55 +242,27 @@ nest_with_margins <- function(.data,
 
 nest_expanded_margins <- function(.data,
                                   group_cols,
+                                  set_col,
+                                  keep_cols,
                                   .key,
-                                  .keep,
-                                  data_vars) {
-  set_col <- ".marginplyr_set_id"
-  temp_cols <- paste0(group_cols, "_COPY__MARGINPLYR_")
-
-  conflicts <- intersect(temp_cols, data_vars)
-  if (.keep && length(conflicts) > 0L) {
-    stop(
-      "`.keep = TRUE` requires temporary column names that conflict with: ",
-      paste0("`", conflicts, "`", collapse = ", "),
-      call. = FALSE
-    )
-  }
-
+                                  .keep) {
   if (.keep && length(group_cols) > 0L) {
-    .data <- dplyr::mutate(
-      .data,
-      dplyr::across(
-        dplyr::all_of(group_cols),
-        identity,
-        .names = "{.col}_COPY__MARGINPLYR_"
-      )
-    )
-  }
-
-  grouped <- dplyr::group_by(
-    .data,
-    dplyr::pick(dplyr::all_of(c(group_cols, set_col)))
-  )
-
-  if (.keep && length(group_cols) > 0L) {
-    rename_map <- stats::setNames(temp_cols, group_cols)
     result <- dplyr::summarize(
-      grouped,
+      .data,
       "{.key}" := list({
         nested <- dplyr::rename(
           dplyr::pick(dplyr::everything()),
-          dplyr::all_of(rename_map)
+          dplyr::all_of(keep_cols)
         )
         dplyr::relocate(nested, dplyr::all_of(group_cols))
       }),
-      .groups = "drop"
+      .by = dplyr::all_of(c(group_cols, set_col))
     )
   } else {
     result <- dplyr::summarize(
-      grouped,
+      .data,
       "{.key}" := list(dplyr::pick(dplyr::everything())),
-      .groups = "drop"
+      .by = dplyr::all_of(c(group_cols, set_col))
     )
   }
 

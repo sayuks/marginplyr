@@ -10,10 +10,9 @@ nest_with_margins(
   .grouping = NULL,
   .margin_label = "Total",
   .check_margin_label = TRUE,
-  .duplicates = c("error", "drop", "keep"),
+  .duplicates = c("error", "drop"),
   .sort = TRUE,
-  .key = "data",
-  .keep = FALSE
+  .key = "data"
 )
 }
 \arguments{
@@ -21,7 +20,9 @@ nest_with_margins(
 not supported because nesting creates list columns.}
 
 \item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
-every grouping set. These columns never receive \code{.margin_label}.}
+every grouping set. These columns never receive \code{.margin_label}. When
+\code{.data} is grouped and \code{.by} is \code{NULL}, its grouping columns are used as
+implicit fixed keys.}
 
 \item{.grouping}{A grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
@@ -34,16 +35,15 @@ values instead of inserting a display label.}
 \item{.check_margin_label}{A logical scalar. If \code{TRUE}, check whether the
 display label already occurs in a grouping column.}
 
-\item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
-duplicate grouping sets after expansion.}
+\item{.duplicates}{\code{"error"} or \code{"drop"}. The \code{"keep"} policy available in
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} and \code{\link[=expand_with_margins]{expand_with_margins()}} is rejected because
+duplicate grouping sets would create indistinguishable outer keys.}
 
 \item{.sort}{A logical scalar. If \code{TRUE} (the default), sort by \code{.by}
 followed by grouping dimensions.}
 
-\item{.key}{A non-missing string naming the list column.}
-
-\item{.keep}{Should grouping columns also be kept inside each nested data
-frame?}
+\item{.key}{A string naming the list column. As in \code{\link[tidyr:nest]{tidyr::nest()}},
+\code{NULL} uses \code{"data"}.}
 }
 \value{
 For a local input, an ungrouped data frame with one list column. A
@@ -53,6 +53,37 @@ For a local input, an ungrouped data frame with one list column. A
 \code{\link[=nest_with_margins]{nest_with_margins()}} creates one nested data frame for every group in every
 grouping set. It works with local data frames and \code{dtplyr} steps.
 }
+\section{Relationship to tidyr and dplyr}{
+
+These functions are margin-aware counterparts, not drop-in replacements,
+and do not implement every upstream feature. \code{\link[=nest_with_margins]{nest_with_margins()}} resembles
+\code{\link[tidyr:nest]{tidyr::nest()}} with \code{.by}: it supports \code{.key}, returns an ungrouped data
+frame, and puts all non-key columns into one list column. It does not
+implement the \code{...} column specification, multiple list columns, or
+\code{.names_sep}. Existing grouping columns become implicit fixed keys, as they
+do for \code{\link[tidyr:nest]{tidyr::nest()}}, but \code{\link[=nest_with_margins]{nest_with_margins()}} returns an ungrouped result
+instead of preserving the input grouping. With the default \code{.sort = TRUE},
+keys are sorted rather than kept in first-appearance order.
+
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} resembles \code{\link[dplyr:nest_by]{dplyr::nest_by()}} and, like it, provides
+\code{.key} and \code{.keep}, but selects fixed keys with \code{.by} rather than \code{...}.
+With \code{.keep = TRUE}, the nested data contains the original, pre-margin
+values of every outer key. Thus an outer \code{East / Total} subtotal retains
+the original store values inside the nested data instead of replacing them
+with \code{"Total"}. This is the closest margin-aware analogue of dplyr's rule
+that \code{.keep} retains grouping columns.
+
+The list column is a regular list of data frames; its exact \code{vctrs_list_of}
+subclass is not part of the API. \code{\link[=nest_with_margins]{nest_with_margins()}} follows
+\code{\link[tidyr:nest]{tidyr::nest()}} for an empty ungrouped input and returns zero outer rows.
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} follows \code{\link[dplyr:nest_by]{dplyr::nest_by()}} and returns one row
+containing the empty input when there are no grouping keys.
+
+No input column name is reserved for internal bookkeeping. Temporary
+grouping-set and \code{.keep} columns are generated collision-free and removed
+before the result is returned.
+}
+
 \section{Fixed columns and grouping dimensions}{
 
 \code{.by} marks columns that are present in every grouping set, while
@@ -74,6 +105,44 @@ collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
 }
 
+\section{Grouped and row-wise inputs}{
+
+When \code{.data} has been grouped with \code{\link[dplyr:group_by]{dplyr::group_by()}} and \code{.by} is \code{NULL},
+its grouping columns become implicit fixed keys. For example,
+\code{group_by(year)} followed by \code{.grouping = rollup(region)} is computationally
+equivalent to using \code{.by = year} on the ungrouped data. This rule is the
+same for local data frames and lazy tables.
+
+As with \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[tidyr:nest]{tidyr::nest()}}, a grouped input cannot
+also supply \code{.by}; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first when replacing the existing
+groups. A grouping column also cannot appear in \code{.grouping}, because one
+column cannot be both a fixed key and a dimension that can be rolled up.
+Grouped local data created with \code{.drop = FALSE} is rejected because empty
+factor groups do not have a consistent equivalent in SQL and other lazy
+backends.
+
+Unlike the default output of \code{\link[dplyr:summarize]{dplyr::summarize()}} on grouped data,
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}}, and
+\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. For
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, this is why \code{.groups} only accepts \code{NULL} and
+\code{"drop"}. Arbitrary grouping sets contain multiple grains, so there is no
+single meaningful \code{drop_last}, \code{"keep"}, or \code{"rowwise"} structure.
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
+all visible fixed keys and grouping dimensions. Row-wise input is rejected;
+call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+}
+
+\section{Backend extension design}{
+
+Unlike \code{\link[dplyr:summarize]{dplyr::summarize()}}, the public margin verbs are intentionally not
+S3 generics. They first compile and validate one backend-independent
+grouping plan so duplicate handling, labels, grouping identifiers, and
+output grouping cannot drift between methods. Backend-specific schema and
+execution capabilities are isolated behind a non-exported adapter layer.
+That adapter is an implementation detail rather than an extension API;
+support for a new backend should be added to marginplyr itself.
+}
+
 \examples{
 # Keep the source rows behind each store, region subtotal, and company
 # total so they can feed separate report sections.
@@ -86,7 +155,26 @@ nested <- nest_with_margins(
   january_sales,
   .grouping = rollup(region, store)
 )
-nested
+dplyr::select(
+  dplyr::mutate(
+    nested,
+    records = vapply(data, nrow, integer(1))
+  ),
+  -data
+)
+nested$data[[1]]
+
+# NULL uses the same default list-column name as tidyr::nest().
+names(nest_with_margins(january_sales, .by = region, .key = NULL))
+
+# Existing groups become fixed outer keys, while the result itself is
+# ungrouped.
+grouped_nested <- retail_sales |>
+  dplyr::group_by(year) |>
+  nest_with_margins(
+    .grouping = rollup(region, store)
+  )
+dplyr::group_vars(grouped_nested)
 
 # The same operation stays lazy for a dtplyr input until collect().
 if (requireNamespace("dtplyr", quietly = TRUE)) {
@@ -95,14 +183,14 @@ if (requireNamespace("dtplyr", quietly = TRUE)) {
     nest_with_margins(
       .grouping = rollup(region, store)
     )
-  dplyr::show_query(nested_dt)
+  print(dplyr::show_query(nested_dt))
   dplyr::collect(nested_dt)
 }
 }
 \seealso{
 Other summarize and expand data with margins:
+\code{\link[=expand_with_margins]{expand_with_margins()}},
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
-\code{\link[=summarize_with_margins]{summarize_with_margins()}},
-\code{\link[=union_all_with_margins]{union_all_with_margins()}}
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}
 }
 \concept{summarize and expand data with margins}
