@@ -27,6 +27,11 @@ on:
         description: 'Unique ID. You can leave this empty.'
         type: string
 
+# Quarto renders vignettes in a child R process. Install the package itself so
+# that process can load marginplyr while R CMD build creates the vignettes.
+env:
+  RHUB_ACTIONS_INSTALL_LOCAL_PACKAGE: true
+
 jobs:
 
   setup:
