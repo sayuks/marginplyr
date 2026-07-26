@@ -23,7 +23,7 @@ assert_nest_possible <- function(x) {
   if (!inherits(x, valid_classes)) {
     stop(
       sprintf(
-        "`%s` must be one of the following classes, whitch can be nested: %s",
+        "`%s` must be one of the following classes, which can be nested: %s",
         nm,
         toString(valid_classes)
       )

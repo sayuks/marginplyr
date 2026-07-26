@@ -55,3 +55,5 @@ _quarto/*
 .DS_Store
 .quarto
 sandbox/
+/doc/
+/Meta/

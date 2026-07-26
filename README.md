@@ -5,7 +5,6 @@
 
 <!-- badges: start -->
 
-<a href = "https://CRAN.R-project.org/package=marginplyr" target = "_blank"><img src="https://www.r-pkg.org/badges/version/marginplyr"></a>
 [![R-CMD-check](https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/R-CMD-check.yaml)
 [![altdoc](https://github.com/sayuks/marginplyr/actions/workflows/altdoc.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/altdoc.yaml)
 [![Codecov test

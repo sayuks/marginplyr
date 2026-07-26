@@ -2,7 +2,8 @@ Package: marginplyr
 Title: Summarize and Expand Data with Margins
 Version: 0.1.0
 Authors@R: 
-    person("Yusuke", "Sasaki", , "sayuks.dev@gmail.com", role = c("aut", "cre"))
+    person("Yusuke", "Sasaki", , "sayuks.dev@gmail.com",
+           role = c("aut", "cre", "cph"))
 Description: Provides 'dplyr'-compatible tools for SQL-style 'GROUPING SETS',
     'ROLLUP', and 'CUBE' summaries, including arbitrary grouping sets, totals,
     subtotals, and grouping identifiers. Confirmed database backends use native
@@ -17,6 +18,7 @@ Imports:
     dbplyr (>= 2.6.0),
     dplyr (>= 1.1.1),
     rlang (>= 1.1.0),
+    stats,
     tidyselect (>= 1.2.0),
     utils
 Suggests: 
