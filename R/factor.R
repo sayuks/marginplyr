@@ -40,8 +40,8 @@ reconstruct_factor.dtplyr_step <- reconstruct_factor.data.frame
 reconstruct_factor.tbl_duckdb_connection <- function(data,
                                                      info,
                                                      .margin_name) {
-  col <- info$col
-  new_levels <- union(.margin_name, info$levels)
+  col <- info$col # nolint: object_usage_linter
+  new_levels <- union(.margin_name, info$levels) # nolint: object_usage_linter
   con <- dbplyr::remote_con(data)
   sql_query <- dbplyr::sql_glue2(
     con,

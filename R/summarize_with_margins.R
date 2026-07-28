@@ -326,7 +326,7 @@ summarize_with_margins <- function(.data,
   )
 
   result <- if (supports_grouping_sets(.data, plan, backend = backend)) {
-    summarize_grouping_sets(
+    summarize_grouping_sets( # nolint: object_usage_linter
       .data,
       dots = dots,
       plan = plan,
@@ -334,7 +334,7 @@ summarize_with_margins <- function(.data,
       reserved_names = reserved_names
     )
   } else {
-    summarize_margin_union(
+    summarize_margin_union( # nolint: object_usage_linter
       .data,
       dots = dots,
       plan = plan,

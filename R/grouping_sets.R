@@ -103,7 +103,7 @@ sql_build.lazy_grouping_sets_query <- function(op,
     }
   )
   set_sql <- vapply(set_sql, as.character, character(1))
-  grouping_sets_sql <- paste(set_sql, collapse = ", ")
+  grouping_sets_sql <- paste(set_sql, collapse = ", ") # nolint: object_usage_linter
 
   query$group_by <- dbplyr::sql_glue2(
     con,
