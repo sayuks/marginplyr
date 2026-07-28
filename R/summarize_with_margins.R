@@ -406,19 +406,25 @@ assert_margin_name <- function(data, col_names, margin_name) {
   stopifnot(is.character(col_names), !anyNA(col_names))
 
   data <- dplyr::select(.data = data, dplyr::all_of(col_names))
+  checks <- lapply(
+    col_names,
+    function(col) {
+      column <- rlang::sym(col)
+      if (is.na(margin_name)) {
+        rlang::expr(any(is.na(!!column), na.rm = TRUE))
+      } else {
+        rlang::expr(
+          any(!!column == !!margin_name, na.rm = TRUE)
+        )
+      }
+    }
+  )
+  names(checks) <- col_names
+  found <- dplyr::collect(dplyr::summarize(data, !!!checks))
   found <- vapply(
     col_names,
     function(col) {
-      rows <- if (is.na(margin_name)) {
-        dplyr::filter(data, is.na(.data[[col]])) # nolint: object_usage_linter
-      } else {
-        dplyr::filter( # nolint: object_usage_linter
-          data,
-          .data[[col]] == margin_name # nolint: object_usage_linter
-        )
-      }
-      count <- dplyr::collect(dplyr::summarize(rows, n = dplyr::n()))
-      nrow(count) > 0L && count$n[[1]] > 0L
+      nrow(found) > 0L && isTRUE(found[[col]][[1L]])
     },
     logical(1)
   )

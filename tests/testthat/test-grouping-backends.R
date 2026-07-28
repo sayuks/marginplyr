@@ -86,6 +86,57 @@ test_that("Arrow schema metadata supports predicates and computed queries", {
   expect_setequal(as.character(factor_result$group), c("x", "y", NA))
 })
 
+test_that("lazy backends check margin labels across all dimensions", {
+  data <- data.frame(
+    first = c("Total", "x"),
+    second = c("y", "Total"),
+    value = 1:2
+  )
+
+  skip_if_not_installed("dtplyr")
+  expect_error(
+    summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      n = dplyr::n(),
+      .grouping = rollup(first, second),
+      .check_margin_label = TRUE
+    ),
+    "grouping columns `first`, `second`"
+  )
+
+  skip_if_not_installed("arrow")
+  expect_error(
+    summarize_with_margins(
+      arrow::Table$create(data),
+      n = dplyr::n(),
+      .grouping = rollup(first, second),
+      .check_margin_label = TRUE
+    ),
+    "grouping columns `first`, `second`"
+  )
+
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "margin_label_checks",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  expect_error(
+    summarize_with_margins(
+      remote,
+      n = dplyr::n(),
+      .grouping = rollup(first, second),
+      .check_margin_label = TRUE
+    ),
+    "grouping columns `first`, `second`"
+  )
+})
+
 test_that("union adapters reserve user columns that look internal", {
   data <- data.frame(
     group = c("x", "x", "y"),

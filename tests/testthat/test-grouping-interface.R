@@ -194,6 +194,46 @@ test_that("margin labels are display-only and can be disabled", {
   expect_true(any(is.na(typed$a) & typed$gid == 15L))
 })
 
+test_that("margin label checks handle missing and non-syntactic columns", {
+  missing <- data.frame(
+    check.names = FALSE,
+    "first group" = c(NA_character_, "x"),
+    "second group" = c("y", NA_character_),
+    value = 1:2
+  )
+  expect_error(
+    summarize_with_margins(
+      missing,
+      n = dplyr::n(),
+      .grouping = rollup(`first group`, `second group`),
+      .margin_label = NA_character_
+    ),
+    "grouping columns `first group`, `second group`"
+  )
+
+  factors <- data.frame(
+    group = factor(c("Total", "x")),
+    value = 1:2
+  )
+  expect_error(
+    summarize_with_margins(
+      factors,
+      n = dplyr::n(),
+      .grouping = rollup(group)
+    ),
+    "already present"
+  )
+
+  empty <- missing[0, , drop = FALSE]
+  expect_no_error(
+    summarize_with_margins(
+      empty,
+      n = dplyr::n(),
+      .grouping = rollup(`first group`, `second group`)
+    )
+  )
+})
+
 test_that("factor and ordered factor columns are reconstructed", {
   data <- data.frame(
     a = ordered(c("x", "y"), levels = c("x", "y")),
