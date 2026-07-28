@@ -533,6 +533,26 @@ test_that("PostgreSQL renders native SQL under strict translation", {
   expect_false(grepl("UNION ALL", sql, fixed = TRUE))
 })
 
+test_that("native SQL omits display flags when labels are disabled", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(a = "x", value = 1),
+    con = dbplyr::simulate_postgres()
+  )
+  query <- summarize_with_margins(
+    remote,
+    n = dplyr::n(),
+    bit = grouping_bit(a),
+    .grouping = rollup(a),
+    .margin_label = NULL
+  )
+  sql <- dbplyr::sql_render(query)
+
+  expect_match(sql, "GROUPING(\"a\")", fixed = TRUE)
+  expect_false(grepl("..marginplyr_grouping_", sql, fixed = TRUE))
+  expect_identical(as.character(dplyr::tbl_vars(query)), c("a", "n", "bit"))
+  expect_identical(dplyr::group_vars(query), character())
+})
+
 test_that("unconfirmed SQL dialects use UNION ALL", {
   skip_if_not_installed("dbplyr")
   data <- data.frame(a = "x", b = "u", value = 1)
@@ -729,9 +749,15 @@ test_that("DuckDB duplicate keep and downstream verbs remain lazy", {
     dplyr::select(a, n) |>
     dplyr::rename(group = a) |>
     dplyr::filter(n > 0) |>
-    dplyr::mutate(n_plus_one = n + 1)
+    dplyr::mutate(n_plus_one = n + 1) |>
+    dplyr::arrange(group)
   expect_s3_class(downstream, "tbl_lazy")
   expect_equal(nrow(dplyr::collect(downstream)), 4L)
+
+  resummarized <- duplicated |>
+    dplyr::summarise(total = sum(n)) |>
+    dplyr::collect()
+  expect_equal(resummarized$total, 4)
 })
 
 test_that("DuckDB safely quotes factor identifiers and labels", {

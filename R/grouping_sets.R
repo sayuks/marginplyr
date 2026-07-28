@@ -12,22 +12,29 @@ summarize_grouping_sets <- function(.data,
   )
   group_vars <- unique(c(plan$by, plan$dimensions))
 
-  flag_names <- new_margin_internal_names(
-    length(plan$dimensions),
-    used_names = reserved_names,
-    prefix = "..marginplyr_grouping_"
-  )
-  flag_quos <- Map(
-    function(var, name) {
-      rlang::new_quosure(
-        grouping_sql_expr(var, con),
-        env = rlang::empty_env()
-      )
-    },
-    plan$dimensions,
-    flag_names
-  )
-  names(flag_quos) <- flag_names
+  needs_display_flags <-
+    !is.null(.margin_label) && length(plan$dimensions) > 0L
+  if (needs_display_flags) {
+    flag_names <- new_margin_internal_names(
+      length(plan$dimensions),
+      used_names = reserved_names,
+      prefix = "..marginplyr_grouping_"
+    )
+    flag_quos <- Map(
+      function(var, name) {
+        rlang::new_quosure(
+          grouping_sql_expr(var, con),
+          env = rlang::empty_env()
+        )
+      },
+      plan$dimensions,
+      flag_names
+    )
+    names(flag_quos) <- flag_names
+  } else {
+    flag_names <- character()
+    flag_quos <- list()
+  }
 
   result <- dplyr::summarize(
     .data = dplyr::group_by(
@@ -39,13 +46,14 @@ summarize_grouping_sets <- function(.data,
     .groups = "drop"
   )
 
-  result$lazy_query$marginplyr_grouping_sets <- plan$sets
-  class(result$lazy_query) <- c(
-    "lazy_grouping_sets_query",
-    class(result$lazy_query)
+  result$lazy_query <- dbplyr::lazy_query(
+    "grouping_sets",
+    x = result$lazy_query,
+    grouping_sets = plan$sets,
+    group_vars = character()
   )
 
-  if (!is.null(.margin_label) && length(plan$dimensions) > 0L) {
+  if (needs_display_flags) {
     labels <- Map(
       function(var, flag) {
         rlang::expr(
@@ -61,9 +69,16 @@ summarize_grouping_sets <- function(.data,
     )
     names(labels) <- plan$dimensions
     result <- dplyr::mutate(result, !!!labels)
+    result <- dplyr::select(result, -dplyr::all_of(flag_names))
   }
 
-  dplyr::select(result, -dplyr::all_of(flag_names))
+  result
+}
+
+#' @export
+#' @importFrom dbplyr op_vars
+op_vars.lazy_grouping_sets_query <- function(op) {
+  dbplyr::op_vars(op$x)
 }
 
 #' @export
@@ -72,12 +87,10 @@ sql_build.lazy_grouping_sets_query <- function(op,
                                                con,
                                                ...,
                                                sql_options = NULL) {
-  grouping_sets <- op$marginplyr_grouping_sets
-  op$marginplyr_grouping_sets <- NULL
-  class(op) <- setdiff(class(op), "lazy_grouping_sets_query")
+  grouping_sets <- op$grouping_sets
 
   query <- dbplyr::sql_build(
-    op,
+    op$x,
     con = con,
     ...,
     sql_options = sql_options
