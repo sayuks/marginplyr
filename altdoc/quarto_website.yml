@@ -14,6 +14,8 @@ website:
     left:
       - text: Get started
         href: vignettes/get_started.qmd
+      - text: Database and lazy backends
+        href: vignettes/database_backends.qmd
     right:
       - icon: github
         href: $ALTDOC_PACKAGE_URL_GITHUB
@@ -24,6 +26,7 @@ website:
       # - text: Home
         # file: index.md
       - vignettes/get_started.qmd
+      - vignettes/database_backends.qmd
       # - section: $ALTDOC_VIGNETTE_BLOCK
       - section: $ALTDOC_MAN_BLOCK
       - text: News

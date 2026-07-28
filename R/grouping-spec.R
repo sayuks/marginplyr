@@ -2,6 +2,9 @@
 #'
 #' These constructors describe SQL-style grouping operations for the
 #' `.grouping` argument of [summarize_with_margins()] and related verbs.
+#' Start with [rollup()] when the report follows a hierarchy such as
+#' store to region to company. Use [grouping_sets()] for an exact selection of
+#' levels, and [cube()] only when every combination is useful.
 #'
 #' - [grouping_set()] creates one grouping set. With no columns it represents
 #'   the empty set `()`.

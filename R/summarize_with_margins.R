@@ -4,6 +4,10 @@
 #' rollups, cubes, totals, and subtotals. The same interface works with local
 #' data frames and lazy tables.
 #'
+#' Use it when one report needs several levels of detail—for example, stores,
+#' region subtotals, and a company total—or when that report should use the
+#' same code locally and through [dbplyr::tbl_lazy()].
+#'
 #' @param .data A data frame or lazy table.
 #' @param ... Name-value pairs as used in [dplyr::summarize()]. Contextual
 #'   helpers [grouping_bit()] and [grouping_id()] can also be used here.

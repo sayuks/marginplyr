@@ -1,5 +1,5 @@
 Package: marginplyr
-Title: Summarize and Expand Data with Margins
+Title: SQL-Style Grouping Sets, Rollups, and Cubes for 'dplyr'
 Version: 0.1.0
 Authors@R: 
     person("Yusuke", "Sasaki", , "sayuks.dev@gmail.com",

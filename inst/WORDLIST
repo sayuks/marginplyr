@@ -10,10 +10,12 @@ dbplyr
 dbplyr's
 df
 dplyr
+dplyr's
 dtplyr
 DuckDB
 duckdb
 marginplyr's
+pre
 quartabs
 rollup
 rollups
@@ -21,6 +23,7 @@ ROLLUP
 subcat
 tabset
 tabsets
+tidyr
 tidyverse
 tidyverse’
 ungrouped

@@ -1,0 +1,273 @@
+---
+title: Database and lazy backends
+vignette: >
+  %\VignetteIndexEntry{Database and lazy backends}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+format:
+  html:
+    code-tools: true
+    toc: true
+    toc-expand: true
+    number-sections: true
+date: last-modified
+---
+
+`marginplyr` applies one grouping plan to local data frames and supported lazy
+tables. With a database table, the plan remains lazy: `show_query()` renders
+the SQL, while `collect()` executes it and brings the result into R.
+
+If grouping sets are new to you, read [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+first. This guide focuses on query shape, execution, and backend support.
+
+## Installation
+
+Install the development version of marginplyr from GitHub:
+
+```{r}
+#| eval: false
+
+install.packages("pak")
+pak::pkg_install("sayuks/marginplyr")
+
+# Used for the live DuckDB example in this guide.
+install.packages(c("DBI", "duckdb"))
+```
+
+```{r setup}
+#| message: false
+
+library(marginplyr)
+library(dplyr)
+```
+
+## One report, two execution locations
+
+The local report uses store detail, region subtotals, and a company total:
+
+```{r}
+january_sales <- retail_sales |>
+  filter(year == 2026L, month == "Jan")
+
+local_result <- january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .sort = TRUE
+  )
+
+local_result
+```
+
+The grouping expression does not change when the input becomes a lazy table:
+
+```{r}
+postgres_sales <- dbplyr::tbl_lazy(
+  january_sales,
+  con = dbplyr::simulate_postgres()
+)
+
+postgres_query <- postgres_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .sort = TRUE
+  )
+
+postgres_query
+```
+
+Printing a lazy table may show a preview, depending on the backend.
+`show_query()` is the deliberate way to inspect the query without collecting
+the result:
+
+```{r}
+show_query(postgres_query)
+```
+
+Use `show_query()` during interactive analysis. Use
+`dbplyr::sql_render()` when code needs the rendered SQL value for logging,
+testing, or another programmatic purpose.
+
+## Native grouping sets
+
+DuckDB and PostgreSQL use marginplyr's native path. The generated query
+contains one `GROUP BY GROUPING SETS` operation. The requested rollup:
+
+```text
+(region, store)
+(region)
+()
+```
+
+becomes the equivalent SQL grouping-set list. Hidden `GROUPING()` flags allow
+the outer query to label only dimensions removed by aggregation. A source
+`NULL` therefore stays different from a generated subtotal even though SQL
+would otherwise display both as missing.
+
+More complex SQL grouping expressions use the same translation. The two
+rollups below are combined by Cartesian product, matching comma-separated SQL
+`GROUP BY` items:
+
+```{r}
+dbplyr::tbl_lazy(
+  retail_sales,
+  con = dbplyr::simulate_postgres()
+) |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = grouping_spec(
+      rollup(year, month),
+      rollup(region, store)
+    )
+  ) |>
+  show_query()
+```
+
+`grouping_sets(rollup(...), rollup(...))` has different semantics: it forms
+the union of two independent hierarchies. See [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html#union-versus-cartesian-product)
+for the complete comparison.
+
+## Execute in DuckDB
+
+The simulator above verifies SQL rendering without a server. DuckDB lets the
+same workflow execute against a live in-memory database:
+
+```{r}
+con <- DBI::dbConnect(duckdb::duckdb())
+
+sales_db <- copy_to(
+  con,
+  retail_sales,
+  name = "retail_sales",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+
+duckdb_query <- sales_db |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .sort = TRUE
+  )
+
+show_query(duckdb_query)
+```
+
+At this point `duckdb_query` is still lazy. `collect()` asks DuckDB to execute
+the grouping sets and transfers only the summarized result:
+
+```{r}
+duckdb_result <- collect(duckdb_query)
+DBI::dbDisconnect(con)
+
+duckdb_result
+```
+
+Use `compute()` instead when the next stage should remain in the database as a
+materialized or temporary remote table.
+
+## Portable fallback SQL
+
+marginplyr does not assume that every SQL dialect supports native grouping
+sets. For an unconfirmed backend, it expands the plan into one query branch
+per grouping set and joins those branches with `UNION ALL`.
+
+```{r}
+sqlite_sales <- dbplyr::tbl_lazy(
+  january_sales,
+  con = dbplyr::simulate_sqlite()
+)
+
+sqlite_query <- sqlite_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    level = grouping_id(region, store),
+    .grouping = rollup(region, store)
+  )
+
+show_query(sqlite_query)
+```
+
+This SQL is longer than the native form, but it preserves the same requested
+grouping levels and margin labels. Native versus fallback translation is
+selected by the backend adapter; analysis code does not need a different
+grouping specification.
+
+`expand_with_margins()` also stays lazy. On a fallback backend, its SQL makes
+the row-expansion branches explicit:
+
+```{r}
+sqlite_sales |>
+  expand_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  show_query()
+```
+
+## Other lazy backends
+
+dtplyr is lazy without being a SQL connection. `show_query()` displays the
+generated data.table expression:
+
+```{r}
+dt_query <- january_sales |>
+  dtplyr::lazy_dt() |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(region, store)
+  )
+
+show_query(dt_query)
+collect(dt_query)
+```
+
+`nest_with_margins()` also supports dtplyr and remains lazy until collection.
+SQL database and Arrow tables cannot use the nesting verbs because their
+result contains a list column.
+
+## Backend verification levels
+
+The status describes what the automated test suite actually verifies. SQL
+simulation is useful evidence about rendering, but it is not the same as
+running a query on a live server.
+
+| Status | Backends | What is verified |
+|---|---|---|
+| Live native execution tested | DuckDB | SQL generation, execution, result values, labels, and grouping identity |
+| Native SQL generation tested | PostgreSQL | SQL rendered with dbplyr's PostgreSQL simulator |
+| Fallback SQL generation tested | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections | Portable branch and `UNION ALL` rendering with dbplyr simulators |
+| Non-SQL lazy backend tested | Arrow, dtplyr | Lazy summary or expansion behavior appropriate to the backend |
+
+Only DuckDB is currently exercised as a live SQL database in automated tests.
+Treat simulator-only backends as SQL-generation support, and report
+server-specific behavior with a minimal query and the backend version.
+
+## Practical rules for remote analysis
+
+- Build the complete lazy pipeline before calling `collect()`.
+
+- Use `show_query()` to confirm native `GROUPING SETS` or fallback
+  `UNION ALL`.
+
+- Use `.by` for columns that remain fixed in every grouping level.
+
+- Keep `grouping_bit()` or `grouping_id()` when source missing values or the
+  literal label `"Total"` can occur in the data.
+
+- Lazy results have no guaranteed order unless the query explicitly requests
+  one. Set `.sort = TRUE` or call `arrange()` when presentation order matters.
+
+- Lazy inputs default to `.check_margin_label = FALSE` because detecting an
+  existing label would require an additional query. Opt in only when that
+  extra scan is appropriate.
+
+- A fallback query may repeat the source relation once per grouping set.
+  Inspect the generated SQL and the database query plan for large workloads;
+  marginplyr does not claim that one translation is universally faster.

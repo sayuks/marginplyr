@@ -28,6 +28,9 @@ A grouping specification for use in \code{.grouping}.
 \description{
 These constructors describe SQL-style grouping operations for the
 \code{.grouping} argument of \code{\link[=summarize_with_margins]{summarize_with_margins()}} and related verbs.
+Start with \code{\link[=rollup]{rollup()}} when the report follows a hierarchy such as
+store to region to company. Use \code{\link[=grouping_sets]{grouping_sets()}} for an exact selection of
+levels, and \code{\link[=cube]{cube()}} only when every combination is useful.
 }
 \details{
 \itemize{

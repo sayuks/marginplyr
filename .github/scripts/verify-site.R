@@ -1,6 +1,7 @@
 required <- c(
   "docs/index.html",
   "docs/vignettes/get_started.html",
+  "docs/vignettes/database_backends.html",
   "docs/man/expand_with_margins.html",
   "docs/man/grouping_bit.html",
   "docs/man/grouping_set.html",
@@ -44,8 +45,10 @@ assert_markers(
     'install.packages</span>(<span class="st">"pak"</span>)',
     "pak",
     "pkg_install",
-    "DBI",
-    "duckdb"
+    "SQL-style grouping sets",
+    "A total is not the same thing as",
+    "Choose the tool for the job",
+    "database_backends.html"
   ),
   "README"
 )
@@ -57,20 +60,40 @@ assert_markers(
     "panel-tabset",
     "Optional Quarto tabsets with quartabs",
     "Union versus Cartesian product",
+    "The manual version",
+    "When marginplyr fits",
     "Intentional differences from",
-    "GROUP BY GROUPING SETS",
     "grouping_bit",
     "expand_with_margins",
-    "Microsoft SQL Server",
     "original pre-margin",
     "setorder(funion",
     "Total"
   ),
   "Get started"
 )
+
+database_article <- read_page("docs/vignettes/database_backends.html")
+assert_markers(
+  database_article,
+  c(
+    "One report, two execution locations",
+    "GROUP BY GROUPING SETS",
+    "Execute in DuckDB",
+    "Portable fallback SQL",
+    "UNION ALL",
+    "show_query",
+    "collect",
+    "Live native execution tested",
+    "Native SQL generation tested",
+    "Fallback SQL generation tested",
+    "Microsoft SQL Server"
+  ),
+  "Database and lazy backends"
+)
 if (
   grepl("installed.packages", home, fixed = TRUE) ||
-    grepl("installed.packages", article, fixed = TRUE)
+    grepl("installed.packages", article, fixed = TRUE) ||
+    grepl("installed.packages", database_article, fixed = TRUE)
 ) {
   stop("Rendered installation documentation contains a package-presence check")
 }

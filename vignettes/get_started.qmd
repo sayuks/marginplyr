@@ -13,9 +13,14 @@ format:
 date: last-modified
 ---
 
-`marginplyr` brings SQL-style `GROUPING SETS`, `ROLLUP`, and `CUBE` to
-`dplyr`. This guide follows one retail reporting task from a local data frame
-to generated SQL.
+Reports often need several grains at once: detail rows, subtotals, and a grand
+total. `marginplyr` creates those levels with one dplyr-style summary. SQL
+calls this idea `GROUPING SETS`; you do not need to know that syntax to begin.
+
+This guide starts with a familiar reporting problem, then introduces
+`rollup()`, `grouping_sets()`, and `cube()`. Database users can continue with
+the [Database and lazy backends
+guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 
 ## Installation
 
@@ -26,17 +31,16 @@ Install the development version from GitHub:
 
 install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
-
-# Optional packages used in the backend and reporting sections below.
-install.packages(c("DBI", "duckdb", "dtplyr", "knitr", "quartabs"))
 ```
 
 ```{r setup}
+#| message: false
+
 library(marginplyr)
 library(dplyr)
 ```
 
-## The sales report
+## Start with the report question
 
 `retail_sales` contains two years of monthly sales for a fictional retail
 chain. Each row records one product, channel, and store combination.
@@ -46,13 +50,68 @@ retail_sales
 ```
 
 Online-direct sales do not belong to a physical store, so some source rows
-have `store = NA`. This intentional missing value becomes important when
-identifying subtotal rows.
+have `store = NA`. This intentional missing value becomes important later:
+it is a real source value, not a subtotal.
+
+### The manual version
+
+For January 2026, the operations team wants store detail, region subtotals,
+and a company total. With ordinary summaries, each level is a separate branch
+that must be aligned and combined:
+
+```{r}
+january_sales <- retail_sales |>
+  filter(year == 2026L, month == "Jan")
+
+manual_report <- bind_rows(
+  january_sales |>
+    summarize(revenue = sum(revenue), .by = c(region, store)),
+  january_sales |>
+    summarize(revenue = sum(revenue), .by = region) |>
+    mutate(store = "Total") |>
+    select(region, store, revenue),
+  january_sales |>
+    summarize(revenue = sum(revenue)) |>
+    mutate(region = "Total", store = "Total") |>
+    select(region, store, revenue)
+)
+
+manual_report
+```
+
+This is valid dplyr code and can be the clearest choice for one small,
+one-off report. It becomes repetitive when the hierarchy grows, the requested
+levels change, or every branch must stay lazy on a remote source.
+
+### One grouping plan
+
+`rollup(region, store)` describes the same three levels directly:
+
+```{r}
+january_report <- january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(region, store)
+  )
+
+january_report
+```
+
+The result is one ordinary data frame. The grouping plan expands to:
+
+```text
+(region, store)  store detail
+(region)         region subtotal
+()               company total
+```
+
+The empty set `()` means that neither dimension remains, so it produces the
+grand total.
 
 ### One independent report per month
 
-The operations team first wants store detail, region subtotals, and a company
-total for every month:
+The same hierarchy can be repeated for every reporting period without
+building more branches:
 
 ```{r}
 monthly_report <- retail_sales |>
@@ -68,104 +127,22 @@ monthly_report |>
 ```
 
 Columns in `.by` belong to every grouping set. They retain their input types
-and never receive the margin label. Here, `rollup(region, store)` expands to:
+and never receive the margin label. The empty set from `rollup()` still
+includes the fixed `.by` columns, so it produces one company total per year
+and month.
 
-```text
-(region, store)
-(region)
-()
-```
+### The three grouping helpers
 
-The empty set still includes the fixed `.by` columns, so it produces one
-company total per year and month.
-
-### Persistent groups as fixed keys
-
-Existing `dplyr::group_by()` columns provide the same fixed keys when `.by` is
-not supplied. This is useful when a pipeline has already established its
-report partitions:
-
-```{r}
-grouped_monthly_report <- retail_sales |>
-  group_by(year, month) |>
-  summarize_with_margins(
-    units = sum(units),
-    revenue = sum(revenue),
-    .grouping = rollup(region, store)
-  )
-
-grouped_monthly_report |>
-  filter(year == 2026L, month == "Jan")
-
-group_vars(grouped_monthly_report)
-```
-
-The calculation is equivalent to the earlier `.by = c(year, month)` call.
-Do not combine a grouped input with `.by`; this is an error, matching
-`dplyr::summarize()` and `tidyr::nest()`. A fixed grouping column also cannot
-appear in `.grouping`; call `ungroup()` first if that column should be rolled
-up instead. Row-wise inputs must likewise be ungrouped explicitly. Local
-groups created with `.drop = FALSE` are rejected because empty factor groups
-do not have a consistent SQL or lazy-backend equivalent.
-
-Input groups affect the calculation but, except for the explicitly row-wise
-nesting verb, do not persist on the result:
-
-| Function | Output grouping | Difference from the closest official verb |
+| Helper | Mental model | Typical question |
 |---|---|---|
-| `summarize_with_margins()` | Ungrouped | `dplyr::summarize()` can retain groups through `.groups`; arbitrary grouping sets have no single `drop_last` level |
-| `expand_with_margins()` | Ungrouped | The expanded branches deliberately discard persistent grouping metadata |
-| `nest_with_margins()` | Ungrouped | `tidyr::nest()` preserves grouped input; this function consumes those groups as fixed keys but does not preserve them |
-| `nest_by_with_margins()` | Row-wise by every visible key | Like `dplyr::nest_by()`, but grouping-set dimensions are also outer row-wise keys |
+| `rollup()` | Ordered hierarchy | “Give me stores, regions, and the company.” |
+| `grouping_sets()` | Exact union of requested levels | “Give me only these views.” |
+| `cube()` | Every subset | “Give me every combination of these dimensions.” |
 
-This invariant is the same for local data frames, dtplyr, Arrow, and SQL lazy
-tables. The two nesting functions support local data frames and dtplyr because
-SQL and Arrow tables cannot contain their list-column result.
-
-### Intentional differences from `dplyr::summarize()`
-
-The summary expressions still use dplyr data masking, but marginplyr narrows a
-few parts of the official API where arbitrary grouping sets do not have one
-portable interpretation:
-
-| Feature | Official dplyr behavior | marginplyr behavior and rationale |
-|---|---|---|
-| Spelling | `summarise()` and `summarize()` are synonyms | `summarise_with_margins()` and `summarize_with_margins()` are synonyms |
-| `.groups` | Can return `"drop_last"`, `"drop"`, `"keep"`, or `"rowwise"` groups | Accepts only `NULL` or `"drop"` and always returns ungrouped output; multiple grains have no single grouping hierarchy |
-| Summary name matches a grouping key | The local backend can overwrite the key | Rejected, including data-frame-valued summaries, so grouping-set identity is not destroyed and backend behavior remains portable |
-| `across()` and `pick()` | Exclude the grouping columns active in the verb | Exclude all fixed keys and margin dimensions in the complete plan, even in a branch where a dimension is rolled up |
-| `cur_group*()` and deprecated `cur_data*()` helpers | Describe the current dplyr group or data mask | Rejected because branch-local identifiers, rows, and columns have no global meaning after grouping sets are combined; use `grouping_bit()` or `grouping_id()` for margin levels |
-| Ordering | `.by` summaries use first-appearance order | `.sort = FALSE` preserves first appearance locally; `.sort = TRUE` explicitly sorts; lazy order is otherwise unspecified |
-| Backend extension | `summarize()` is a public S3 generic | The public verbs are regular functions; a private adapter handles schema and execution capabilities after one common plan is validated |
-
-For example, `everything()` below selects measures but not `year`, `region`,
-or `store`:
-
-```{r}
-retail_sales |>
-  summarize_with_margins(
-    across(
-      everything(),
-      n_distinct,
-      .names = "distinct_{.col}"
-    ),
-    selected_measures = paste(
-      names(pick(everything())),
-      collapse = ", "
-    ),
-    .by = year,
-    .grouping = rollup(region, store),
-    .sort = FALSE
-  ) |>
-  slice_head(n = 6)
-```
-
-A summary may return a one-row data frame as in dplyr, but none of its output
-columns may be named `year`, `region`, or `store` in this example. Use a new
-summary name or rename the input key first. The private adapter is
-deliberately not an extension API: adding a backend to marginplyr keeps
-duplicate handling, labels, grouping flags, and output grouping under the same
-public contract.
+Most reporting tasks should start with `rollup()`. Reach for
+`grouping_sets()` when a hierarchy includes too much or unrelated views must
+share one result. Use `cube()` deliberately: the number of grouping sets
+doubles with every independent dimension.
 
 ### Extend the hierarchy through time
 
@@ -352,6 +329,24 @@ retail_sales |>
 
 This two-step form works consistently for local and lazy tables.
 
+## When marginplyr fits
+
+Several R workflows can produce subtotals. The useful distinction is not
+whether they can calculate a total, but how the grouping levels are expressed
+and where the calculation runs.
+
+| Approach | Prefer it when | Tradeoff |
+|---|---|---|
+| Repeated `summarize()` plus `bind_rows()` | A one-off report has only a few levels and explicit branches are easiest to review | Every grouping level is authored and maintained separately |
+| [`data.table`](https://rdatatable.gitlab.io/data.table/reference/groupingsets.html) | The analysis is a local data.table workflow | It uses the data.table API rather than a dbplyr lazy query |
+| [`rollup`](https://cran.r-project.org/package=rollup) | Its list of grouped data frames is a natural intermediate representation | The workflow differs from marginplyr's single relational result |
+| marginplyr | One grouping plan should work locally and through dbplyr, or grouping identity and margin-aware nesting matter | Its broader semantics add concepts that a single subtotal does not need |
+
+Use the simplest approach that preserves the shape and execution model your
+analysis needs. marginplyr is particularly useful when the report has many
+grains, must stay remote until `collect()`, or needs to distinguish source
+missing values from generated totals.
+
 ## Identify totals without guessing from labels
 
 `grouping_bit(x)` corresponds to SQL `GROUPING(x)`: it returns `1` when `x`
@@ -429,33 +424,96 @@ checking would execute an additional query, and they remain unordered unless
 explicitly arranged. A label is only a display value; retain `grouping_bit()`
 or `grouping_id()` whenever source values can equal the label.
 
-## Backend support
+## Advanced dplyr behavior
 
-marginplyr uses two SQL execution paths:
+### Persistent groups as fixed keys
 
-| Execution path | Backends | Automated verification |
+Existing `dplyr::group_by()` columns provide fixed keys when `.by` is not
+supplied:
+
+```{r}
+grouped_monthly_report <- retail_sales |>
+  group_by(year, month) |>
+  summarize_with_margins(
+    units = sum(units),
+    revenue = sum(revenue),
+    .grouping = rollup(region, store)
+  )
+
+grouped_monthly_report |>
+  filter(year == 2026L, month == "Jan")
+
+group_vars(grouped_monthly_report)
+```
+
+The calculation is equivalent to the earlier `.by = c(year, month)` call.
+Do not combine grouped input with `.by`. A fixed grouping column also cannot
+appear in `.grouping`; call `ungroup()` first if that column should be rolled
+up instead. Row-wise inputs must likewise be ungrouped explicitly. Local
+groups created with `.drop = FALSE` are rejected because empty factor groups
+do not have a consistent SQL or lazy-backend equivalent.
+
+Input groups affect the calculation but, except for the explicitly row-wise
+nesting verb, do not persist on the result:
+
+| Function | Output grouping | Difference from the closest official verb |
 |---|---|---|
-| Native `GROUP BY GROUPING SETS` | DuckDB, PostgreSQL | Live DuckDB execution; PostgreSQL SQL simulation |
-| Portable `UNION ALL` | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections | SQL generation with dbplyr simulators |
+| `summarize_with_margins()` | Ungrouped | `dplyr::summarize()` can retain groups through `.groups`; arbitrary grouping sets have no single `drop_last` level |
+| `expand_with_margins()` | Ungrouped | The expanded branches deliberately discard persistent grouping metadata |
+| `nest_with_margins()` | Ungrouped | `tidyr::nest()` preserves grouped input; this function consumes those groups as fixed keys but does not preserve them |
+| `nest_by_with_margins()` | Row-wise by every visible key | Like `dplyr::nest_by()`, but grouping-set dimensions are also outer row-wise keys |
 
-Arrow and dtplyr are also tested lazy backends, but they are not SQL database
-connections. SQL simulation confirms that marginplyr can render each listed
-dialect; only DuckDB is currently exercised against a live database in the
-automated test suite.
+This invariant is shared by local data frames and supported lazy backends.
+The nesting functions support local data frames and dtplyr because SQL and
+Arrow tables cannot contain their list-column result.
 
-The public verbs are intentionally not backend S3 generics. Each call first
-compiles one backend-independent grouping plan. A non-exported adapter then
-chooses schema handling and either native grouping sets or the portable
-branch expansion. This makes adding a backend a package-level compatibility
-decision rather than allowing third-party methods to silently redefine label,
-duplicate, or grouping semantics.
+### Intentional differences from `dplyr::summarize()`
 
-## Inspect the generated SQL
+Summary expressions use dplyr data masking, but marginplyr narrows a few parts
+of the official API where arbitrary grouping sets have no portable
+interpretation:
 
-### PostgreSQL without a server
+| Feature | Official dplyr behavior | marginplyr behavior and rationale |
+|---|---|---|
+| Spelling | `summarise()` and `summarize()` are synonyms | `summarise_with_margins()` and `summarize_with_margins()` are synonyms |
+| `.groups` | Can return `"drop_last"`, `"drop"`, `"keep"`, or `"rowwise"` groups | Accepts only `NULL` or `"drop"` and always returns ungrouped output; multiple grains have no single grouping hierarchy |
+| Summary name matches a grouping key | The local backend can overwrite the key | Rejected, including data-frame-valued summaries, so grouping-set identity is not destroyed and backend behavior remains portable |
+| `across()` and `pick()` | Exclude the grouping columns active in the verb | Exclude all fixed keys and margin dimensions in the complete plan, even in a branch where a dimension is rolled up |
+| `cur_group*()` and deprecated `cur_data*()` helpers | Describe the current dplyr group or data mask | Rejected because branch-local identifiers, rows, and columns have no global meaning after grouping sets are combined; use `grouping_bit()` or `grouping_id()` for levels |
+| Ordering | `.by` summaries use first-appearance order | `.sort = FALSE` preserves first appearance locally; `.sort = TRUE` explicitly sorts; lazy order is otherwise unspecified |
+| Backend extension | `summarize()` is a public S3 generic | Public margin verbs share one validated plan; a private adapter selects backend execution |
 
-dbplyr's simulated backends show generated SQL without a live database. A
-PostgreSQL simulation uses marginplyr's native translation:
+For example, `everything()` below selects measures but not `year`, `region`,
+or `store`:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    across(
+      everything(),
+      n_distinct,
+      .names = "distinct_{.col}"
+    ),
+    selected_measures = paste(
+      names(pick(everything())),
+      collapse = ", "
+    ),
+    .by = year,
+    .grouping = rollup(region, store),
+    .sort = FALSE
+  ) |>
+  slice_head(n = 6)
+```
+
+A summary may return a one-row data frame as in dplyr, but none of its output
+columns may be named `year`, `region`, or `store` in this example. Use a new
+summary name or rename the input key first.
+
+## Use the same plan with remote data
+
+The grouping plan can be applied to a lazy table without first collecting its
+rows. This PostgreSQL simulation shows the native SQL without requiring a
+server:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -463,76 +521,18 @@ postgres_sales <- dbplyr::tbl_lazy(
   con = dbplyr::simulate_postgres()
 )
 
-postgres_query <- postgres_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    .grouping = grouping_spec(
-      rollup(year, month),
-      rollup(region, store)
-    )
-  )
-
-show_query(postgres_query)
-```
-
-The inner query contains one `GROUP BY GROUPING SETS` clause. Hidden
-`GROUPING()` flags let the outer query label only generated subtotal values.
-
-### A portable fallback
-
-For dialects without confirmed native support, marginplyr emits one branch per
-grouping set and combines them with `UNION ALL`:
-
-```{r}
-sqlite_sales <- dbplyr::tbl_lazy(
-  retail_sales,
-  con = dbplyr::simulate_sqlite()
-)
-
-sqlite_query <- sqlite_sales |>
+postgres_sales |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
     .grouping = rollup(region, store)
-  )
-
-show_query(sqlite_query)
+  ) |>
+  show_query()
 ```
 
-This conservative fallback favors consistent result semantics over assuming
-that an unconfirmed backend implements grouping sets.
-
-### Execute the query in DuckDB
-
-DuckDB supports native grouping sets. The following example copies the small
-data set into an in-memory database, displays the SQL, and executes it:
-
-```{r}
-con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
-
-sales_db <- copy_to(
-  con,
-  retail_sales,
-  name = "retail_sales",
-  temporary = TRUE,
-  overwrite = TRUE
-)
-
-duckdb_query <- sales_db |>
-  filter(year == 2026L, month == "Jan") |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    level = grouping_id(region, store),
-    .grouping = rollup(region, store),
-    .sort = TRUE
-  )
-
-show_query(duckdb_query)
-duckdb_result <- collect(duckdb_query)
-DBI::dbDisconnect(con)
-duckdb_result
-```
-
-The result stays lazy until `collect()` or another execution verb is called.
+The result remains lazy. Continue with [Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+for `collect()`, live DuckDB execution, portable `UNION ALL` SQL, backend
+verification levels, and practical guidance for inspecting a query.
 
 ## Keep the detail rows
 

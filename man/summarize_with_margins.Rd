@@ -72,6 +72,10 @@ rollups, cubes, totals, and subtotals. The same interface works with local
 data frames and lazy tables.
 }
 \details{
+Use it when one report needs several levels of detail—for example, stores,
+region subtotals, and a company total—or when that report should use the
+same code locally and through \code{\link[dbplyr:tbl_lazy]{dbplyr::tbl_lazy()}}.
+
 \code{\link[=grouping_sets]{grouping_sets()}} forms a union of grouping families. \code{\link[=grouping_spec]{grouping_spec()}}
 combines its arguments by Cartesian product, matching comma-separated SQL
 \verb{GROUP BY} items. \code{\link[=grouping_set]{grouping_set()}} is also used to keep multiple columns
