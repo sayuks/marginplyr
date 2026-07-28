@@ -37,21 +37,71 @@ grouping_backend <- function(.data) {
     "other"
   }
 
+  check_backend_version(kind, call = rlang::caller_env())
+  capabilities <- backend_capabilities(kind)
+
   structure(
-    list(
-      kind = kind,
-      dialect = dialect,
-      collect_selection_proxy =
-        is_dtplyr || is_arrow || is_duckdb,
-      can_read_schema =
-        is_local || is_dtplyr || is_arrow || is_duckdb,
-      can_restore_factors =
-        is_local || is_dtplyr || is_duckdb,
-      native_grouping_sets = is_duckdb || is_postgres,
-      native_duplicate_sets = is_duckdb,
-      is_duckdb = is_duckdb
+    c(
+      list(kind = kind, dialect = dialect),
+      capabilities
     ),
     class = "marginplyr_backend"
+  )
+}
+
+backend_capabilities <- function(kind) {
+  capability_names <- c(
+    "collect_selection_proxy",
+    "can_read_schema",
+    "can_restore_factors",
+    "native_grouping_sets",
+    "native_duplicate_sets"
+  )
+  enabled <- list(
+    local = c("can_read_schema", "can_restore_factors"),
+    dtplyr = c(
+      "collect_selection_proxy",
+      "can_read_schema",
+      "can_restore_factors"
+    ),
+    arrow = "can_read_schema",
+    duckdb = capability_names,
+    postgres = "native_grouping_sets",
+    sql = character(),
+    other = character()
+  )
+
+  profile <- enabled[[kind]]
+  if (is.null(profile)) {
+    stop("Unknown marginplyr backend kind: ", kind, call. = FALSE)
+  }
+  stats::setNames(
+    as.list(capability_names %in% profile),
+    capability_names
+  )
+}
+
+check_backend_version <- function(kind, call) {
+  requirement <- switch(
+    kind,
+    arrow = list(package = "arrow", version = "13.0.0"),
+    dtplyr = list(package = "dtplyr", version = "1.3.2"),
+    NULL
+  )
+  if (is.null(requirement)) {
+    return(invisible(NULL))
+  }
+
+  rlang::check_installed(
+    requirement$package,
+    version = requirement$version,
+    compare = ">=",
+    reason = paste0(
+      "to use marginplyr with ",
+      kind,
+      " backends"
+    ),
+    call = call
   )
 }
 

@@ -37,8 +37,23 @@ summarize_margin_union <- function(.data,
         .by = unname(key_names[grouping_set])
       )
 
+      result_names <- get_col_names(result, dplyr::everything())
+      unexpected_internal_names <- intersect(
+        result_names,
+        unname(key_names[setdiff(group_vars, grouping_set)])
+      )
+      if (length(unexpected_internal_names) > 0L) {
+        stop(
+          "Dynamically generated summary output names conflict with internal ",
+          "grouping columns: ",
+          paste0("`", unexpected_internal_names, "`", collapse = ", "),
+          ". Use different summary output names.",
+          call. = FALSE
+        )
+      }
+
       check_summary_group_overwrite(
-        get_col_names(result, dplyr::everything()),
+        result_names,
         group_vars = group_vars
       )
       if (length(grouping_set) > 0L) {

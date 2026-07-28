@@ -376,13 +376,17 @@ assert_margin_name <- function(data, col_names, margin_name) {
     col_names,
     function(col) {
       column <- rlang::sym(col)
-      if (is.na(margin_name)) {
-        rlang::expr(any(is.na(!!column), na.rm = TRUE))
+      condition <- if (is.na(margin_name)) {
+        rlang::expr(is.na(!!column))
       } else {
-        rlang::expr(
-          any(!!column == !!margin_name, na.rm = TRUE)
-        )
+        rlang::expr(!!column == !!margin_name)
       }
+      rlang::expr(
+        sum(
+          dplyr::if_else(!!condition, 1L, 0L, missing = 0L),
+          na.rm = TRUE
+        )
+      )
     }
   )
   names(checks) <- col_names
@@ -390,7 +394,7 @@ assert_margin_name <- function(data, col_names, margin_name) {
   found <- vapply(
     col_names,
     function(col) {
-      nrow(found) > 0L && isTRUE(found[[col]][[1L]])
+      nrow(found) > 0L && isTRUE(found[[col]][[1L]] > 0)
     },
     logical(1)
   )

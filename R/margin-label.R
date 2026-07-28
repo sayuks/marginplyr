@@ -59,7 +59,7 @@ validate_margin_label <- function(.data,
 
   factor_info <- column_info$factors
   if (
-    backend$is_duckdb &&
+    identical(backend$kind, "duckdb") &&
       is.na(.margin_label) &&
       length(factor_info) > 0L
   ) {

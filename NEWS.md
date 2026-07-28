@@ -23,6 +23,13 @@
   overwrite grouping keys, `.groups` is limited to `NULL` or `"drop"`, and
   branch-local `cur_group*()` helpers are rejected in favor of
   `grouping_bit()` and `grouping_id()`.
+* Dynamically named data-frame summaries now reserve collision-free internal
+  grouping names, and opaque collisions fail with a targeted diagnostic.
+  Lazy margin-label checks use portable numeric `CASE` aggregates across
+  supported SQL dialects.
+* Backend detection now validates the documented Arrow and dtplyr minimum
+  versions, centralizes backend capabilities, and reports incompatible dbplyr
+  query representations explicitly.
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns. `.keep = TRUE` retains original pre-margin key values,
   and nesting rejects duplicate sets with `.duplicates = "keep"` because

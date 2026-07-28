@@ -1,3 +1,30 @@
+margin_check_capture <- new.env(parent = emptyenv())
+
+margin_check_collect <- function(con, sql, ...) {
+  margin_check_capture$sql <- as.character(sql)
+  check_names <- attr(con, "check_names", exact = TRUE)
+  result <- as.data.frame(rep(list(FALSE), length(check_names)))
+  names(result) <- check_names
+  result
+}
+
+bad_query_sql_build <- function(op, con, ...) {
+  dbplyr::sql("SELECT 1")
+}
+
+selection_proxy_capture <- new.env(parent = emptyenv())
+
+proxy_counter_head <- function(x, ...) {
+  result <- NextMethod()
+  class(result) <- unique(c("margin_selection_proxy_counter", class(result)))
+  result
+}
+
+proxy_counter_collect <- function(x, ...) {
+  selection_proxy_capture$n <- selection_proxy_capture$n + 1L
+  NextMethod()
+}
+
 test_that("dtplyr and Arrow use the normalized grouping contract", {
   data <- data.frame(
     a = c("x", "x", "y"),
@@ -84,6 +111,172 @@ test_that("Arrow schema metadata supports predicates and computed queries", {
   ) |>
     dplyr::collect()
   expect_setequal(as.character(factor_result$group), c("x", "y", NA))
+
+  numeric_result <- summarize_with_margins(
+    table,
+    n = dplyr::n(),
+    .grouping = rollup(where(is.numeric)),
+    .margin_label = NULL
+  ) |>
+    dplyr::collect()
+  expect_identical(names(numeric_result), c("value", "n"))
+  expect_true(anyNA(numeric_result$value))
+})
+
+test_that("Arrow metadata preserves ordered dictionaries without collecting", {
+  skip_if_not_installed("arrow")
+  registerS3method(
+    "head",
+    "margin_selection_proxy_counter",
+    proxy_counter_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_selection_proxy_counter",
+    proxy_counter_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  ordered_group <- factor(
+    c("b", "a", "b"),
+    levels = c("a", "b"),
+    ordered = TRUE
+  )
+  source <- arrow::Table$create(
+    data.frame(group = ordered_group, value = 1:3)
+  ) |>
+    dplyr::mutate(doubled = value * 2)
+  class(source) <- c("margin_selection_proxy_counter", class(source))
+  selection_proxy_capture$n <- 0L
+
+  query <- summarize_with_margins(
+    source,
+    total = sum(value),
+    .grouping = rollup(where(is.factor)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+
+  expect_identical(selection_proxy_capture$n, 0L)
+  result <- dplyr::collect(query)
+  expect_s3_class(result$group, "ordered")
+  expect_identical(levels(result$group), c("a", "b"))
+  expect_true(anyNA(result$group))
+  expect_setequal(result$total, c(2L, 4L, 6L))
+})
+
+test_that("dtplyr constructs one typed selection proxy for predicates", {
+  skip_if_not_installed("dtplyr")
+  registerS3method(
+    "head",
+    "margin_selection_proxy_counter",
+    proxy_counter_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_selection_proxy_counter",
+    proxy_counter_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  source <- dtplyr::lazy_dt(data.frame(
+    group = c("x", "y"),
+    code = c(1L, 2L),
+    value = c(10, 20)
+  ))
+  class(source) <- c("margin_selection_proxy_counter", class(source))
+  selection_proxy_capture$n <- 0L
+
+  numeric_query <- summarize_with_margins(
+    source,
+    n = dplyr::n(),
+    .grouping = rollup(where(is.numeric)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+
+  expect_identical(selection_proxy_capture$n, 1L)
+  expect_identical(
+    names(dplyr::collect(numeric_query)),
+    c("code", "value", "n")
+  )
+
+  selection_proxy_capture$n <- 0L
+  character_query <- summarize_with_margins(
+    source,
+    n = dplyr::n(),
+    .grouping = rollup(where(is.character)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+  expect_identical(selection_proxy_capture$n, 1L)
+  expect_identical(
+    names(dplyr::collect(character_query)),
+    c("group", "n")
+  )
+})
+
+test_that("DuckDB constructs one typed selection proxy for predicates", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  registerS3method(
+    "head",
+    "margin_selection_proxy_counter",
+    proxy_counter_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_selection_proxy_counter",
+    proxy_counter_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    data.frame(
+      group = c("x", "y"),
+      code = c(1L, 2L),
+      value = c(10, 20)
+    ),
+    "selection_proxy_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  class(source) <- c("margin_selection_proxy_counter", class(source))
+  selection_proxy_capture$n <- 0L
+
+  numeric_query <- summarize_with_margins(
+    source,
+    n = dplyr::n(),
+    .grouping = rollup(where(is.numeric)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+
+  expect_identical(selection_proxy_capture$n, 1L)
+  expect_identical(
+    names(dplyr::collect(numeric_query)),
+    c("code", "value", "n")
+  )
+
+  selection_proxy_capture$n <- 0L
+  character_query <- summarize_with_margins(
+    source,
+    n = dplyr::n(),
+    .grouping = rollup(where(is.character)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+  expect_identical(selection_proxy_capture$n, 1L)
+  expect_identical(
+    names(dplyr::collect(character_query)),
+    c("group", "n")
+  )
 })
 
 test_that("public Arrow table classes are supported", {
@@ -169,6 +362,112 @@ test_that("lazy backends check margin labels across all dimensions", {
     ),
     "grouping columns `first`, `second`"
   )
+})
+
+test_that("lazy margin label checks aggregate portable numeric values", {
+  registerS3method(
+    "db_collect",
+    "margin_check_connection",
+    margin_check_collect,
+    envir = asNamespace("dbplyr")
+  )
+  con <- dbplyr::simulate_oracle()
+  class(con) <- c(
+    "Oracle",
+    "TestConnection",
+    "margin_check_connection",
+    "DBIConnection"
+  )
+  attr(con, "check_names") <- c("first", "second")
+  remote <- dbplyr::tbl_lazy(
+    data.frame(first = "x", second = "y", value = 1),
+    con = con
+  )
+  class(remote) <- c("tbl_Oracle", "tbl_sql", "tbl_lazy", "tbl")
+
+  expect_no_error(
+    summarize_with_margins(
+      remote,
+      n = dplyr::n(),
+      .grouping = rollup(first, second),
+      .check_margin_label = TRUE
+    )
+  )
+
+  expect_match(margin_check_capture$sql, "CASE WHEN", fixed = TRUE)
+  expect_match(margin_check_capture$sql, "THEN 1", fixed = TRUE)
+  expect_false(grepl(
+    "MAX(\"first\" = 'Total')",
+    margin_check_capture$sql,
+    fixed = TRUE
+  ))
+})
+
+test_that("documented SQL dialects use portable margin label checks", {
+  registerS3method(
+    "db_collect",
+    "margin_check_connection",
+    margin_check_collect,
+    envir = asNamespace("dbplyr")
+  )
+  simulators <- c(
+    "simulate_access",
+    "simulate_dbi",
+    "simulate_hana",
+    "simulate_hive",
+    "simulate_impala",
+    "simulate_mariadb",
+    "simulate_mssql",
+    "simulate_mysql",
+    "simulate_odbc",
+    "simulate_oracle",
+    "simulate_postgres",
+    "simulate_redshift",
+    "simulate_snowflake",
+    "simulate_spark_sql",
+    "simulate_sqlite",
+    "simulate_teradata"
+  )
+
+  for (simulator in simulators) {
+    con <- getExportedValue("dbplyr", simulator)()
+    con_classes <- class(con)
+    class(con) <- append(
+      con_classes,
+      "margin_check_connection",
+      after = 1L
+    )
+    attr(con, "check_names") <- "group"
+    remote <- dbplyr::tbl_lazy(
+      data.frame(group = "x", value = 1),
+      con = con
+    )
+    remote_classes <- class(remote)
+    if (!"tbl_sql" %in% remote_classes) {
+      class(remote) <- append(remote_classes, "tbl_sql", after = 1L)
+    }
+
+    margin_check_capture$sql <- NULL
+    summarize_with_margins(
+      remote,
+      n = dplyr::n(),
+      .grouping = rollup(group),
+      .check_margin_label = TRUE
+    )
+
+    expect_match(
+      margin_check_capture$sql,
+      "SUM(CASE WHEN",
+      fixed = TRUE,
+      info = simulator
+    )
+    expect_match(
+      margin_check_capture$sql,
+      "THEN 1 ELSE 0 END)",
+      fixed = TRUE,
+      info = simulator
+    )
+  }
 })
 
 test_that("union adapters reserve user columns that look internal", {
@@ -263,6 +562,51 @@ test_that("union adapters reserve generated summary names", {
     dplyr::collect() |>
     dplyr::arrange(group)
   expect_equal(as.data.frame(arrow_result), expected)
+})
+
+test_that("union adapters reserve dynamically injected summary names", {
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3
+  )
+  summary_name <- "..marginplyr_key_1"
+
+  result <- summarize_with_margins(
+    data,
+    tibble::tibble(!!summary_name := sum(value)),
+    .grouping = rollup(group)
+  )
+
+  expect_equal(
+    dplyr::arrange(result, group),
+    data.frame(
+      group = c("Total", "x", "y"),
+      check.names = FALSE,
+      "..marginplyr_key_1" = c(6L, 3L, 3L)
+    )
+  )
+})
+
+test_that("union adapters diagnose opaque summary name collisions", {
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3
+  )
+  opaque_summary <- function(x) {
+    stats::setNames(
+      data.frame(sum(x)),
+      "..marginplyr_key_1"
+    )
+  }
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      opaque_summary(value),
+      .grouping = rollup(group)
+    ),
+    "summary output names conflict with internal grouping columns"
+  )
 })
 
 test_that("native adapters reserve generated summary names", {
@@ -612,6 +956,7 @@ test_that("native SQL omits display flags when labels are disabled", {
     remote,
     n = dplyr::n(),
     bit = grouping_bit(a),
+    id = grouping_id(a),
     .grouping = rollup(a),
     .margin_label = NULL
   )
@@ -619,8 +964,65 @@ test_that("native SQL omits display flags when labels are disabled", {
 
   expect_match(sql, "GROUPING(\"a\")", fixed = TRUE)
   expect_false(grepl("..marginplyr_grouping_", sql, fixed = TRUE))
-  expect_identical(as.character(dplyr::tbl_vars(query)), c("a", "n", "bit"))
+  expect_identical(
+    as.character(dplyr::tbl_vars(query)),
+    c("a", "n", "bit", "id")
+  )
   expect_identical(dplyr::group_vars(query), character())
+})
+
+test_that("native SQL reports incompatible dbplyr query representations", {
+  registerS3method(
+    "sql_build",
+    "lazy_marginplyr_bad_query",
+    bad_query_sql_build,
+    envir = asNamespace("dbplyr")
+  )
+  bad_query <- structure(
+    list(),
+    class = c("lazy_marginplyr_bad_query", "lazy_query")
+  )
+  grouping_query <- dbplyr::lazy_query(
+    "grouping_sets",
+    x = bad_query,
+    grouping_sets = list(character()),
+    group_vars = character()
+  )
+
+  expect_error(
+    dbplyr::sql_build(
+      grouping_query,
+      con = dbplyr::simulate_postgres()
+    ),
+    "dbplyr query representation has changed"
+  )
+})
+
+test_that("native grouping sets remain a subquery after downstream verbs", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(a = "x", b = "u", value = 1),
+    con = dbplyr::simulate_postgres()
+  )
+  query <- summarize_with_margins(
+    remote,
+    n = dplyr::n(),
+    gid = grouping_id(a, b),
+    .grouping = rollup(a, b),
+    .margin_label = NULL
+  )
+  downstream <- list(
+    select = dplyr::select(query, a, n, gid),
+    mutate = dplyr::mutate(query, n_plus_one = n + 1),
+    filter = dplyr::filter(query, n > 0),
+    arrange = dplyr::arrange(query, a),
+    summarize = dplyr::summarize(query, total = sum(n, na.rm = TRUE))
+  )
+
+  for (verb in names(downstream)) {
+    sql <- dbplyr::sql_render(downstream[[verb]])
+    expect_match(sql, "FROM (", fixed = TRUE, info = verb)
+    expect_match(sql, "GROUP BY GROUPING SETS", fixed = TRUE, info = verb)
+  }
 })
 
 test_that("unconfirmed SQL dialects use UNION ALL", {

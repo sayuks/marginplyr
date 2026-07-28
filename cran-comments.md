@@ -1,15 +1,13 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 1 note
+0 errors | 0 warnings | 2 notes
 
-The remaining note is local to the check environment: HTML validation was
-skipped because the installed HTML Tidy is too old. Package installation,
-examples, tests, Rd cross-references, and the PDF manual all pass.
+* This is a new submission.
+* HTML validation was skipped because the HTML Tidy installed in the local
+  check environment is too old.
 
-The remote CRAN incoming check timed out while downloading `archive.rds`, so
-the final local run used `_R_CHECK_CRAN_INCOMING_REMOTE_=false`. An earlier run
-reached the incoming check and reported only the expected "New submission"
-note.
+The CRAN incoming check completed. Package installation, examples, tests, Rd
+cross-references, vignette rebuilding, and the PDF manual all pass.
 
 ## Test environments
 

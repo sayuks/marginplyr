@@ -46,12 +46,7 @@ summarize_grouping_sets <- function(.data,
     .groups = "drop"
   )
 
-  result$lazy_query <- dbplyr::lazy_query(
-    "grouping_sets",
-    x = result$lazy_query,
-    grouping_sets = plan$sets,
-    group_vars = character()
-  )
+  result <- attach_grouping_sets_query(result, plan$sets)
 
   if (needs_display_flags) {
     labels <- Map(
@@ -75,9 +70,56 @@ summarize_grouping_sets <- function(.data,
   result
 }
 
+attach_grouping_sets_query <- function(result, grouping_sets) {
+  if (!inherits(result, "tbl_lazy") || !is.list(result)) {
+    abort_dbplyr_representation()
+  }
+  lazy_query <- result$lazy_query
+  if (!inherits(lazy_query, "lazy_query")) {
+    abort_dbplyr_representation()
+  }
+
+  grouping_query <- dbplyr::lazy_query(
+    "grouping_sets",
+    x = lazy_query,
+    grouping_sets = grouping_sets,
+    group_vars = character()
+  )
+  validate_grouping_sets_query(grouping_query)
+  result$lazy_query <- grouping_query
+  result
+}
+
+validate_grouping_sets_query <- function(op) {
+  fields <- if (is.list(op)) names(op) else NULL
+  if (
+    is.null(fields) ||
+      !all(c("x", "grouping_sets") %in% fields) ||
+      !inherits(op$x, "lazy_query") ||
+      !is.list(op$grouping_sets) ||
+      length(op$grouping_sets) == 0L ||
+      !all(vapply(op$grouping_sets, is.character, logical(1)))
+  ) {
+    abort_dbplyr_representation()
+  }
+  invisible(op)
+}
+
+abort_dbplyr_representation <- function() {
+  stop(
+    "The dbplyr query representation has changed and is not compatible with ",
+    "this version of marginplyr (dbplyr ",
+    as.character(utils::packageVersion("dbplyr")),
+    "). Please report this at ",
+    "https://github.com/sayuks/marginplyr/issues.",
+    call. = FALSE
+  )
+}
+
 #' @export
 #' @importFrom dbplyr op_vars
 op_vars.lazy_grouping_sets_query <- function(op) {
+  validate_grouping_sets_query(op)
   dbplyr::op_vars(op$x)
 }
 
@@ -87,6 +129,7 @@ sql_build.lazy_grouping_sets_query <- function(op,
                                                con,
                                                ...,
                                                sql_options = NULL) {
+  validate_grouping_sets_query(op)
   grouping_sets <- op$grouping_sets
 
   query <- dbplyr::sql_build(
@@ -95,6 +138,13 @@ sql_build.lazy_grouping_sets_query <- function(op,
     ...,
     sql_options = sql_options
   )
+  if (
+    !is.list(query) ||
+      is.null(names(query)) ||
+      !"group_by" %in% names(query)
+  ) {
+    abort_dbplyr_representation()
+  }
 
   set_sql <- lapply(
     grouping_sets,

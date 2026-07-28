@@ -291,9 +291,17 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     call_args <- as.list(expr)[-1L]
     arg_names <- names(call_args)
     if (is.null(arg_names)) {
-      return(character())
+      arg_names <- rep("", length(call_args))
     }
-    return(setdiff(arg_names[nzchar(arg_names)], ".name_repair"))
+    injected_names <- vapply(
+      call_args[arg_names == ""],
+      known_injected_argument_name,
+      character(1)
+    )
+    return(setdiff(
+      c(arg_names[nzchar(arg_names)], injected_names[nzchar(injected_names)]),
+      ".name_repair"
+    ))
   }
 
   if (
@@ -317,6 +325,21 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   }
 
   character()
+}
+
+known_injected_argument_name <- function(expr) {
+  if (!rlang::is_call(expr, ":=") || length(expr) != 3L) {
+    return("")
+  }
+
+  lhs <- expr[[2L]]
+  if (is.character(lhs) && length(lhs) == 1L && !is.na(lhs)) {
+    return(lhs)
+  }
+  if (rlang::is_symbol(lhs)) {
+    return(rlang::as_name(lhs))
+  }
+  ""
 }
 
 known_across_output_names <- function(expr, env, data_proxy) {
