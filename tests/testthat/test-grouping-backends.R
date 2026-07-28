@@ -46,6 +46,150 @@ test_that("dtplyr and Arrow use the normalized grouping contract", {
   expect_true("Total" %in% factor_result$a)
 })
 
+test_that("union adapters reserve user columns that look internal", {
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3,
+    check.names = FALSE
+  )
+  data[["..marginplyr_key_1"]] <- 10:12
+  expected <- data.frame(
+    group = c("Total", "x", "y"),
+    total = c(6L, 3L, 3L)
+  )
+
+  local <- summarize_with_margins(
+    data,
+    total = sum(value),
+    .grouping = rollup(group)
+  )
+  expect_equal(dplyr::arrange(local, group), expected)
+
+  skip_if_not_installed("dtplyr")
+  dt_result <- summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    total = sum(value),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(group)
+  expect_equal(as.data.frame(dt_result), expected)
+
+  skip_if_not_installed("arrow")
+  arrow_result <- summarize_with_margins(
+    arrow::Table$create(data),
+    total = sum(value),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(group)
+  expect_equal(as.data.frame(arrow_result), expected)
+})
+
+test_that("union adapters reserve generated summary names", {
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3,
+    check.names = FALSE
+  )
+  data[["..marginplyr_key_1"]] <- 10:12
+  data[["..marginplyr_key_1_"]] <- 20:22
+  expected <- data.frame(
+    group = c("Total", "x", "y"),
+    check.names = FALSE
+  )
+  expected[["..marginplyr_key_1__"]] <- c(6L, 3L, 3L)
+
+  local <- summarize_with_margins(
+    data,
+    dplyr::across(
+      value,
+      sum,
+      .names = "..marginplyr_key_1__"
+    ),
+    .grouping = rollup(group)
+  )
+  expect_equal(dplyr::arrange(local, group), expected)
+
+  skip_if_not_installed("dtplyr")
+  dt_result <- summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    dplyr::across(
+      value,
+      sum,
+      .names = "..marginplyr_key_1__"
+    ),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(group)
+  expect_equal(as.data.frame(dt_result), expected)
+
+  skip_if_not_installed("arrow")
+  arrow_result <- summarize_with_margins(
+    arrow::Table$create(data),
+    dplyr::across(
+      value,
+      sum,
+      .names = "..marginplyr_key_1__"
+    ),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(group)
+  expect_equal(as.data.frame(arrow_result), expected)
+})
+
+test_that("native adapters reserve generated summary names", {
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3,
+    check.names = FALSE
+  )
+  data[["..marginplyr_grouping_1_"]] <- 10:12
+
+  postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+  query <- summarize_with_margins(
+    postgres,
+    dplyr::across(
+      value,
+      sum,
+      .names = "..marginplyr_grouping_1"
+    ),
+    .grouping = rollup(group)
+  )
+  sql <- dbplyr::sql_render(query)
+  expect_match(sql, "\"..marginplyr_grouping_1\"", fixed = TRUE)
+  expect_match(sql, "\"..marginplyr_grouping_1__\"", fixed = TRUE)
+
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "internal_summary_names",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  result <- summarize_with_margins(
+    remote,
+    dplyr::across(
+      value,
+      sum,
+      .names = "..marginplyr_grouping_1"
+    ),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(group)
+  expect_equal(
+    result[["..marginplyr_grouping_1"]],
+    c(6, 3, 3)
+  )
+})
+
 test_that("column-wise summaries share one lazy-backend selection", {
   data <- data.frame(
     group = c("b", "a", "b"),
@@ -453,7 +597,8 @@ test_that("DuckDB native and UNION adapters agree", {
     dots = dots,
     plan = plan,
     .margin_label = "Total",
-    column_info = margin_column_info(remote, plan$dimensions)
+    column_info = margin_column_info(remote, plan$dimensions),
+    reserved_names = unique(c(names(data), names(dots)))
   ) |>
     dplyr::collect() |>
     dplyr::arrange(a, b, gid)

@@ -248,7 +248,10 @@ resolve_summary_selection <- function(expr, env, data_proxy) {
 }
 
 summary_all_of_expr <- function(selected, data_proxy) {
-  source_names <- colnames(data_proxy)[unname(selected)]
+  source_names <- get_col_names(
+    data_proxy,
+    dplyr::everything()
+  )[unname(selected)]
   output_names <- names(selected)
   if (!identical(output_names, source_names)) {
     source_names <- stats::setNames(source_names, output_names)

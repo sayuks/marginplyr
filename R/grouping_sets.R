@@ -1,7 +1,8 @@
 summarize_grouping_sets <- function(.data,
                                     dots,
                                     plan,
-                                    .margin_label) {
+                                    .margin_label,
+                                    reserved_names) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
     dots,
@@ -11,8 +12,11 @@ summarize_grouping_sets <- function(.data,
   )
   group_vars <- unique(c(plan$by, plan$dimensions))
 
-  used_names <- unique(c(colnames(.data), names(dots)))
-  flag_names <- make_grouping_flag_names(plan$dimensions, used_names)
+  flag_names <- new_margin_internal_names(
+    length(plan$dimensions),
+    used_names = reserved_names,
+    prefix = "..marginplyr_grouping_"
+  )
   flag_quos <- Map(
     function(var, name) {
       rlang::new_quosure(
@@ -60,21 +64,6 @@ summarize_grouping_sets <- function(.data,
   }
 
   dplyr::select(result, -dplyr::all_of(flag_names))
-}
-
-make_grouping_flag_names <- function(dimensions, used_names) {
-  vapply(
-    seq_along(dimensions),
-    function(i) {
-      candidate <- paste0("..marginplyr_grouping_", i)
-      while (candidate %in% used_names) {
-        candidate <- paste0(candidate, "_")
-      }
-      used_names <<- c(used_names, candidate)
-      candidate
-    },
-    character(1)
-  )
 }
 
 #' @export

@@ -301,13 +301,15 @@ summarize_with_margins <- function(.data,
       unique(c(plan$by, plan$dimensions))
     ))
   )
+  summary_output_names <- unique(c(
+    names(dots)[nzchar(names(dots))],
+    known_summary_output_names(dots, summary_selection_proxy)
+  ))
   check_summary_group_overwrite(
-    c(
-      names(dots)[nzchar(names(dots))],
-      known_summary_output_names(dots, summary_selection_proxy)
-    ),
+    summary_output_names,
     group_vars = c(plan$by, plan$dimensions)
   )
+  reserved_names <- unique(c(data_vars, summary_output_names))
 
   column_info <- margin_column_info(
     .data,
@@ -328,7 +330,8 @@ summarize_with_margins <- function(.data,
       .data,
       dots = dots,
       plan = plan,
-      .margin_label = .margin_label
+      .margin_label = .margin_label,
+      reserved_names = reserved_names
     )
   } else {
     summarize_margin_union(
@@ -336,7 +339,8 @@ summarize_with_margins <- function(.data,
       dots = dots,
       plan = plan,
       .margin_label = .margin_label,
-      column_info = column_info
+      column_info = column_info,
+      reserved_names = reserved_names
     )
   }
 

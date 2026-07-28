@@ -2,11 +2,12 @@ summarize_margin_union <- function(.data,
                                    dots,
                                    plan,
                                    .margin_label,
-                                   column_info) {
+                                   column_info,
+                                   reserved_names) {
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
-    used_names = unique(c(colnames(.data), names(dots))),
+    used_names = reserved_names,
     prefix = "..marginplyr_key_"
   )
   names(key_names) <- group_vars
@@ -38,7 +39,7 @@ summarize_margin_union <- function(.data,
       )
 
       check_summary_group_overwrite(
-        colnames(result),
+        get_col_names(result, dplyr::everything()),
         group_vars = group_vars
       )
       if (length(grouping_set) > 0L) {
