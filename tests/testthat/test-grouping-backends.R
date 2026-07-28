@@ -346,6 +346,42 @@ test_that("column-wise summaries share one lazy-backend selection", {
   )
 })
 
+test_that("union backends sort directly by resolved margin columns", {
+  data <- data.frame(
+    group = c("b", "a", "b"),
+    value = 1:3
+  )
+  expected <- c("Total", "a", "b")
+
+  local <- summarize_with_margins(
+    data,
+    total = sum(value),
+    .grouping = rollup(group),
+    .sort = TRUE
+  )
+  expect_equal(local$group, expected)
+
+  skip_if_not_installed("dtplyr")
+  dt_result <- summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    total = sum(value),
+    .grouping = rollup(group),
+    .sort = TRUE
+  ) |>
+    dplyr::collect()
+  expect_equal(dt_result$group, expected)
+
+  skip_if_not_installed("arrow")
+  arrow_result <- summarize_with_margins(
+    arrow::Table$create(data),
+    total = sum(value),
+    .grouping = rollup(group),
+    .sort = TRUE
+  ) |>
+    dplyr::collect()
+  expect_equal(arrow_result$group, expected)
+})
+
 test_that("dtplyr nesting retains original keys and empty rowwise behavior", {
   skip_if_not_installed("dtplyr")
   data <- data.frame(

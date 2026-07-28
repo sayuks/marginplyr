@@ -34,7 +34,6 @@ summarize_margin_union <- function(.data,
       result <- summarize_impl(
         .data = .data,
         !!!branch_dots,
-        .margin_pairs = list(),
         .by = unname(key_names[grouping_set])
       )
 

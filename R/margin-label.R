@@ -125,7 +125,15 @@ label_margin_branch <- function(.data,
     .data <- dplyr::mutate(.data, !!!values)
   }
 
-  relocate_before_union_all(.data, c(plan$by, plan$dimensions))
+  select_margin_columns_first(.data, c(plan$by, plan$dimensions))
+}
+
+select_margin_columns_first <- function(.data, cols) {
+  dplyr::select(
+    .data,
+    dplyr::all_of(cols),
+    dplyr::everything()
+  )
 }
 
 restore_margin_factors <- function(.data, factor_info, .margin_label) {
@@ -146,16 +154,14 @@ finish_margin_result <- function(.data,
                                  .margin_label,
                                  .sort) {
   .data <- restore_margin_factors(.data, factor_info, .margin_label)
-  .data <- relocate_post_proc(
+  margin_cols <- c(plan$by, plan$dimensions)
+  .data <- select_margin_columns_first(
     .data,
-    dplyr::all_of(c(plan$by, plan$dimensions))
+    margin_cols
   )
 
   if (.sort) {
-    .data <- arrange_impl(
-      .data,
-      dplyr::all_of(c(plan$by, plan$dimensions))
-    )
+    .data <- dplyr::arrange(.data, !!!rlang::syms(margin_cols))
   }
 
   .data

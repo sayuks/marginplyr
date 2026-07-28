@@ -359,47 +359,13 @@ summarise_with_margins <- summarize_with_margins
 
 summarize_impl <- function(.data,
                            ...,
-                           .margin_pairs,
                            .by) {
-  UseMethod("summarize_impl")
-}
-
-#' @exportS3Method
-#' @noRd
-summarize_impl.default <- function(.data,
-                                   ...,
-                                   .margin_pairs,
-                                   .by) {
-  result <- dplyr::summarize(
+  dplyr::summarize(
     .data = .data,
     ...,
-    !!!.margin_pairs,
     .by = dplyr::all_of(.by)
   )
-  result
 }
-
-#' @exportS3Method
-#' @noRd
-summarize_impl.arrow_dplyr_query <- function(.data,
-                                             ...,
-                                             .margin_pairs,
-                                             .by) {
-  result <- dplyr::summarize(
-    .data = dplyr::group_by(.data, dplyr::across(dplyr::all_of(.by))),
-    ...,
-    !!!.margin_pairs,
-    .groups = "drop"
-  )
-  result
-}
-
-#' @exportS3Method
-#' @noRd
-summarize_impl.ArrowTabular <- summarize_impl.arrow_dplyr_query
-#' @exportS3Method
-#' @noRd
-summarize_impl.Dataset <- summarize_impl.arrow_dplyr_query
 
 assert_margin_name <- function(data, col_names, margin_name) {
   assert_string_scalar(margin_name)
@@ -450,74 +416,4 @@ get_col_names <- function(data, ...) {
   selected <- dplyr::select(.data = data, ...)
   # Drop the grouping metadata attached to dplyr's variable-name vector.
   as.character(dplyr::tbl_vars(selected))
-}
-
-relocate_before_union_all <- function(.data, cols_first) {
-  UseMethod("relocate_before_union_all")
-}
-
-#' @exportS3Method
-#' @noRd
-relocate_before_union_all.default <- function(.data, cols_first) {
-  dplyr::relocate(.data, dplyr::all_of(cols_first))
-}
-
-#' @exportS3Method
-#' @noRd
-relocate_before_union_all.arrow_dplyr_query <- function(.data, cols_first) {
-  dplyr::select(
-    .data,
-    dplyr::all_of(cols_first),
-    dplyr::everything()
-  )
-}
-
-#' @exportS3Method
-#' @noRd
-relocate_before_union_all.ArrowTabular <-
-  relocate_before_union_all.arrow_dplyr_query
-#' @exportS3Method
-#' @noRd
-relocate_before_union_all.Dataset <- relocate_before_union_all.arrow_dplyr_query
-
-#' @exportS3Method
-#' @noRd
-relocate_before_union_all.dtplyr_step <- function(.data, cols_first) {
-  dplyr::relocate(.data, dplyr::all_of(cols_first))
-}
-
-relocate_post_proc <- function(.data, ...) {
-  UseMethod("relocate_post_proc")
-}
-
-#' @exportS3Method
-#' @noRd
-relocate_post_proc.default <- function(.data, ...) {
-  dplyr::relocate(.data, ...)
-}
-
-#' @exportS3Method
-#' @noRd
-relocate_post_proc.arrow_dplyr_query <- function(.data, ...) .data
-#' @exportS3Method
-#' @noRd
-relocate_post_proc.ArrowTabular <- relocate_post_proc.arrow_dplyr_query
-#' @exportS3Method
-#' @noRd
-relocate_post_proc.Dataset <- relocate_post_proc.arrow_dplyr_query
-
-arrange_impl <- function(.data, ...) {
-  UseMethod("arrange_impl")
-}
-
-#' @exportS3Method
-#' @noRd
-arrange_impl.default <- function(.data, ...) {
-  dplyr::arrange(.data, dplyr::pick(...))
-}
-
-#' @exportS3Method
-#' @noRd
-arrange_impl.arrow_dplyr_query <- function(.data, ...) {
-  dplyr::arrange(.data, dplyr::across(c(...)))
 }

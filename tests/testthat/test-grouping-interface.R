@@ -661,6 +661,38 @@ test_that("column-wise summaries exclude all grouping dimensions", {
   expect_equal(pick_result$picked, rep("value", 3L))
 })
 
+test_that("column-wise summaries preserve names and unpacked outputs", {
+  data <- data.frame(
+    group = c("a", "a", "b"),
+    x = c(1, 3, 5),
+    y = c(2, 4, 6)
+  )
+
+  named <- summarize_with_margins(
+    data,
+    dplyr::across(
+      c(first = x, y),
+      list(lo = min, hi = max),
+      .names = "{.col}_{.fn}"
+    ),
+    .grouping = rollup(group)
+  )
+  expect_equal(
+    names(named),
+    c("group", "first_lo", "first_hi", "y_lo", "y_hi")
+  )
+
+  range_frame <- function(x) {
+    data.frame(lo = min(x), hi = max(x))
+  }
+  unpacked <- summarize_with_margins(
+    data,
+    dplyr::across(x, range_frame, .unpack = TRUE),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(unpacked), c("group", "x_lo", "x_hi"))
+})
+
 test_that("data-frame summaries cannot overwrite grouping columns", {
   data <- data.frame(group = c("a", "a", "b"), value = 1:3)
 
