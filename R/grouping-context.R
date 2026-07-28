@@ -203,11 +203,7 @@ grouping_sql_expr <- function(var, con) {
   if (is.null(con)) {
     stop("A database connection is required for SQL grouping expressions.")
   }
-  dbplyr::sql_call2(
-    "GROUPING",
-    dbplyr::ident(var),
-    con = con
-  )
+  dbplyr::sql_glue2(con, "GROUPING({.id var})")
 }
 
 grouping_id_sql_expr <- function(vars, con) {
@@ -219,13 +215,18 @@ grouping_id_sql_expr <- function(vars, con) {
       if (weight == 1L) {
         grouping_call
       } else {
-        dbplyr::build_sql(grouping_call, " * ", weight, con = con)
+        dbplyr::sql_glue2(
+          con,
+          "{.sql grouping_call} * {weight}"
+        )
       }
     }
   )
 
   Reduce(
-    function(x, y) dbplyr::build_sql(x, " + ", y, con = con),
+    function(x, y) {
+      dbplyr::sql_glue2(con, "{.sql x} + {.sql y}")
+    },
     terms
   )
 }

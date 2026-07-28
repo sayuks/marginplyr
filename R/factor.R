@@ -43,21 +43,9 @@ reconstruct_factor.tbl_duckdb_connection <- function(data,
   col <- info$col
   new_levels <- union(.margin_name, info$levels)
   con <- dbplyr::remote_con(data)
-  quoted_col <- dbplyr::escape(dbplyr::ident(col), con = con)
-  quoted_levels <- lapply(new_levels, dbplyr::escape, con = con)
-  quoted_levels <- do.call(c, quoted_levels)
-  sql_query <- dbplyr::build_sql(
-    "CAST(",
-    quoted_col,
-    " AS ENUM (",
-    dbplyr::sql_vector(
-      quoted_levels,
-      parens = FALSE,
-      collapse = ", ",
-      con = con
-    ),
-    "))",
-    con = con
+  sql_query <- dbplyr::sql_glue2(
+    con,
+    "CAST({.id col} AS ENUM {new_levels*})"
   )
   dplyr::mutate(
     .data = data,

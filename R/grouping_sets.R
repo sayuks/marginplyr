@@ -86,31 +86,15 @@ sql_build.lazy_grouping_sets_query <- function(op,
   set_sql <- lapply(
     grouping_sets,
     function(vars) {
-      quoted_vars <- dbplyr::escape(dbplyr::ident(vars), con = con)
-      dbplyr::build_sql(
-        "(",
-        dbplyr::sql_vector(
-          quoted_vars,
-          parens = FALSE,
-          collapse = ", ",
-          con = con
-        ),
-        ")",
-        con = con
-      )
+      dbplyr::sql_glue2(con, "{.id vars*}")
     }
   )
+  set_sql <- vapply(set_sql, as.character, character(1))
+  grouping_sets_sql <- paste(set_sql, collapse = ", ")
 
-  query$group_by <- dbplyr::build_sql(
-    "GROUPING SETS (",
-    dbplyr::sql_vector(
-      do.call(c, set_sql),
-      parens = FALSE,
-      collapse = ", ",
-      con = con
-    ),
-    ")",
-    con = con
+  query$group_by <- dbplyr::sql_glue2(
+    con,
+    "GROUPING SETS ({.sql grouping_sets_sql})"
   )
   query
 }
