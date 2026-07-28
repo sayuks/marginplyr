@@ -46,6 +46,46 @@ test_that("dtplyr and Arrow use the normalized grouping contract", {
   expect_true("Total" %in% factor_result$a)
 })
 
+test_that("Arrow schema metadata supports predicates and computed queries", {
+  skip_if_not_installed("arrow")
+
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3
+  )
+  table <- arrow::Table$create(data)
+  sources <- list(
+    table,
+    arrow::InMemoryDataset$create(table),
+    dplyr::mutate(table, doubled = value * 2)
+  )
+
+  for (source in sources) {
+    result <- summarize_with_margins(
+      source,
+      total = sum(value),
+      .grouping = rollup(where(is.character)),
+      .margin_label = NULL
+    ) |>
+      dplyr::collect()
+
+    expect_equal(names(result), c("group", "total"))
+    expect_setequal(result$total, c(3L, 3L, 6L))
+    expect_true(any(is.na(result$group)))
+  }
+
+  factor_result <- summarize_with_margins(
+    arrow::Table$create(
+      data.frame(group = factor(c("x", "y")), value = 1:2)
+    ),
+    total = sum(value),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  ) |>
+    dplyr::collect()
+  expect_setequal(as.character(factor_result$group), c("x", "y", NA))
+})
+
 test_that("union adapters reserve user columns that look internal", {
   data <- data.frame(
     group = c("x", "x", "y"),
@@ -597,7 +637,11 @@ test_that("DuckDB native and UNION adapters agree", {
     dots = dots,
     plan = plan,
     .margin_label = "Total",
-    column_info = margin_column_info(remote, plan$dimensions),
+    column_info = margin_column_info(
+      grouping_selection_proxy(remote),
+      plan$dimensions,
+      backend = grouping_backend(remote)
+    ),
     reserved_names = unique(c(names(data), names(dots)))
   ) |>
     dplyr::collect() |>

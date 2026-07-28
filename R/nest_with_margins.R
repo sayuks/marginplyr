@@ -207,7 +207,7 @@ nest_with_margins_impl <- function(.data,
     )
   }
   column_info <- margin_column_info(
-    .data,
+    data_proxy,
     plan$dimensions,
     backend = backend
   )

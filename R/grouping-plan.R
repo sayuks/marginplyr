@@ -313,6 +313,9 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 
 grouping_selection_proxy <- function(.data,
                                      backend = grouping_backend(.data)) {
+  if (identical(backend$kind, "arrow")) {
+    return(as.data.frame(arrow::schema(.data)))
+  }
   if (backend$collect_selection_proxy) {
     return(dplyr::collect(utils::head(.data, n = 0L)))
   }

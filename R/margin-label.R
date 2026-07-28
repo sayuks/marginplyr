@@ -11,9 +11,9 @@ normalize_margin_label <- function(.margin_label) {
   .margin_label
 }
 
-margin_column_info <- function(.data,
+margin_column_info <- function(data_proxy,
                                dimensions,
-                               backend = grouping_backend(.data)) {
+                               backend) {
   if (length(dimensions) == 0L) {
     return(list(factors = list(), prototypes = list()))
   }
@@ -22,8 +22,7 @@ margin_column_info <- function(.data,
     return(list(factors = list(), prototypes = list()))
   }
 
-  schema <- dplyr::collect(utils::head(x = .data, n = 0L))
-  schema <- schema[dimensions]
+  schema <- data_proxy[dimensions]
 
   prototypes <- lapply(schema, function(x) x[NA_integer_])
   factors <- if (backend$can_restore_factors) {

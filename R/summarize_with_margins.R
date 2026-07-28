@@ -312,7 +312,7 @@ summarize_with_margins <- function(.data,
   reserved_names <- unique(c(data_vars, summary_output_names))
 
   column_info <- margin_column_info(
-    .data,
+    data_proxy,
     plan$dimensions,
     backend = backend
   )
