@@ -272,6 +272,13 @@ test_that("grouping helpers validate their context and columns", {
     ),
     "duplicate columns"
   )
+
+  qualified <- summarize_with_margins(
+    data,
+    bit = marginplyr::grouping_bit(a),
+    .grouping = marginplyr::rollup(a)
+  )
+  expect_setequal(qualified$bit, c(0L, 1L))
 })
 
 test_that("expand and nest verbs consume the same grouping plan", {

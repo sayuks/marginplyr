@@ -86,6 +86,40 @@ test_that("Arrow schema metadata supports predicates and computed queries", {
   expect_setequal(as.character(factor_result$group), c("x", "y", NA))
 })
 
+test_that("public Arrow table classes are supported", {
+  skip_if_not_installed("arrow")
+
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  table <- arrow::Table$create(data)
+  sources <- list(
+    table,
+    arrow::RecordBatch$create(data),
+    arrow::InMemoryDataset$create(table)
+  )
+
+  for (source in sources) {
+    result <- summarize_with_margins(
+      source,
+      n = dplyr::n(),
+      .grouping = rollup(group)
+    ) |>
+      dplyr::collect()
+    expect_setequal(result$n, c(1L, 1L, 2L))
+  }
+
+  reader <- arrow::RecordBatchReader$create(
+    arrow::RecordBatch$create(data)
+  )
+  expect_error(
+    summarize_with_margins(
+      reader,
+      n = dplyr::n(),
+      .grouping = rollup(group)
+    ),
+    "RecordBatchReader"
+  )
+})
+
 test_that("lazy backends check margin labels across all dimensions", {
   data <- data.frame(
     first = c("Total", "x"),

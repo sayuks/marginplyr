@@ -115,9 +115,7 @@ nest_by_with_margins <- function(.data,
     )
   )
 
-  if (inherits(result, "dtplyr_step")) {
-    result <- dplyr::collect(result)
-  }
+  result <- dplyr::collect(result)
   if (
     nrow(result) == 0L &&
       identical(colnames(result), .key)

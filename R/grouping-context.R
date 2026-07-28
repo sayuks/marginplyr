@@ -132,25 +132,14 @@ rewrite_grouping_expr <- function(expr,
 }
 
 grouping_helper_name <- function(expr) {
-  fn <- expr[[1]]
-
-  if (is.symbol(fn)) {
-    name <- as.character(fn)
-    if (name %in% c("grouping_bit", "grouping_id")) {
-      return(name)
-    }
-    return(NULL)
-  }
-
+  name <- rlang::call_name(expr)
+  namespace <- rlang::call_ns(expr)
   if (
-    rlang::is_call(fn, c("::", ":::")) &&
-      length(fn) == 3L &&
-      identical(as.character(fn[[2]]), "marginplyr")
+    !is.null(name) &&
+      name %in% c("grouping_bit", "grouping_id") &&
+      (is.null(namespace) || identical(namespace, "marginplyr"))
   ) {
-    name <- as.character(fn[[3]])
-    if (name %in% c("grouping_bit", "grouping_id")) {
-      return(name)
-    }
+    return(name)
   }
 
   NULL

@@ -8,10 +8,7 @@ prepare_margin_input <- function(.data, by_quo) {
     )
   }
 
-  if (
-    inherits(.data, "grouped_df") &&
-      !dplyr::group_by_drop_default(.data)
-  ) {
+  if (!dplyr::group_by_drop_default(.data)) {
     stop(
       "Grouped input created with `.drop = FALSE` is not supported. ",
       "Call `dplyr::ungroup()` first.",

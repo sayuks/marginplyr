@@ -3,7 +3,7 @@ grouping_backend <- function(.data) {
   is_dtplyr <- inherits(.data, "dtplyr_step")
   is_arrow <- inherits(
     .data,
-    c("arrow_dplyr_query", "ArrowTabular", "Dataset")
+    c("arrow_dplyr_query", "Table", "RecordBatch", "Dataset")
   )
   is_sql <- inherits(.data, "tbl_lazy") && !is_dtplyr && !is_arrow
 

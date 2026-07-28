@@ -266,19 +266,12 @@ grouping_arg_spec <- function(arg, data_vars) {
   constructors <- c(
     "grouping_set", "grouping_sets", "rollup", "cube", "grouping_spec"
   )
-  is_constructor_call <- FALSE
-  if (rlang::is_call(expr)) {
-    fn <- expr[[1]]
-    if (is.symbol(fn)) {
-      is_constructor_call <- as.character(fn) %in% constructors
-    } else if (
-      rlang::is_call(fn, c("::", ":::")) &&
-        length(fn) == 3L &&
-        identical(as.character(fn[[2]]), "marginplyr")
-    ) {
-      is_constructor_call <- as.character(fn[[3]]) %in% constructors
-    }
-  }
+  call_name <- rlang::call_name(expr)
+  call_ns <- rlang::call_ns(expr)
+  is_constructor_call <-
+    !is.null(call_name) &&
+    call_name %in% constructors &&
+    (is.null(call_ns) || identical(call_ns, "marginplyr"))
 
   should_evaluate <-
     is_constructor_call ||
