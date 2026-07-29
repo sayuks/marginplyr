@@ -127,142 +127,141 @@ nest_with_margins <- function(.data,
                               .sort = TRUE,
                               .key = "data",
                               .keep = FALSE) {
+  call <- rlang::current_call()
   if (is.null(.key)) {
     .key <- "data"
   }
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  rlang::inject(
-    nest_with_margins_impl(
-      .data = .data,
-      .by = !!by_quo,
-      .grouping = !!grouping_quo,
-      .margin_label = .margin_label,
-      .check_margin_label = .check_margin_label,
-      .duplicates = .duplicates,
-      .sort = .sort,
-      .key = .key,
-      .keep = .keep
-    )
+  nest_margin_pipeline(
+    .data = .data,
+    by_quo = by_quo,
+    grouping_quo = grouping_quo,
+    .margin_label = .margin_label,
+    .check_margin_label = .check_margin_label,
+    .duplicates = .duplicates,
+    .sort = .sort,
+    .key = .key,
+    .keep = .keep,
+    call = call
   )
 }
 
-nest_with_margins_impl <- function(.data,
-                                   .by,
-                                   .grouping,
-                                   .margin_label,
-                                   .check_margin_label,
-                                   .duplicates,
-                                   .sort,
-                                   .key,
-                                   .keep) {
-  assert_nest_possible(.data)
-  assert_logical_scalar(.check_margin_label)
-  assert_logical_scalar(.sort)
-  assert_logical_scalar(.keep)
-  assert_string_scalar(.key)
-  if (is.na(.key)) {
-    stop("`.key` must not be missing.", call. = FALSE)
-  }
-  if (!nzchar(.key)) {
-    stop("`.key` must not be empty.", call. = FALSE)
-  }
-  .margin_label <- normalize_margin_label(.margin_label)
-  if (identical(.duplicates, c("error", "drop"))) {
-    .duplicates <- "error"
-  }
-  .duplicates <- match.arg(.duplicates, c("error", "drop", "keep"))
-  if (identical(.duplicates, "keep")) {
-    stop(
-      "Nesting does not support `.duplicates = \"keep\"` because duplicate ",
-      "grouping sets have no distinct visible key. Use `\"error\"` or ",
-      "`\"drop\"`.",
-      call. = FALSE
-    )
-  }
-  grouping_quo <- rlang::enquo(.grouping)
-  by_quo <- rlang::enquo(.by)
-  grouping_spec <- rlang::eval_tidy(grouping_quo)
+nest_margin_pipeline <- function(.data,
+                                 by_quo,
+                                 grouping_quo,
+                                 .margin_label,
+                                 .check_margin_label,
+                                 .duplicates,
+                                 .sort,
+                                 .key,
+                                 .keep,
+                                 call) {
+  stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
 
-  input <- prepare_margin_input(.data, by_quo)
-  .data <- input$data
-  by <- input$by
-  backend <- grouping_backend(.data)
-  data_vars <- get_col_names(.data, dplyr::everything())
-  data_proxy <- grouping_selection_proxy(.data, backend = backend)
-  plan <- compile_grouping_spec(
-    grouping_spec,
-    data_vars = data_vars,
-    data_proxy = data_proxy,
-    .by = by,
-    .duplicates = .duplicates
+  with_margin_error_call(
+    {
+      assert_nest_possible(.data)
+      assert_logical_scalar(.check_margin_label)
+      assert_logical_scalar(.sort)
+      assert_logical_scalar(.keep)
+      assert_string_scalar(.key)
+      if (is.na(.key)) {
+        stop("`.key` must not be missing.", call. = FALSE)
+      }
+      if (!nzchar(.key)) {
+        stop("`.key` must not be empty.", call. = FALSE)
+      }
+      .margin_label <- normalize_margin_label(.margin_label)
+      if (identical(.duplicates, c("error", "drop"))) {
+        .duplicates <- "error"
+      }
+      .duplicates <- match.arg(.duplicates, c("error", "drop", "keep"))
+      if (identical(.duplicates, "keep")) {
+        stop(
+          "Nesting does not support `.duplicates = \"keep\"` because ",
+          "duplicate grouping sets have no distinct visible key. Use ",
+          "`\"error\"` or `\"drop\"`.",
+          call. = FALSE
+        )
+      }
+    },
+    call = call
   )
-  group_cols <- c(plan$by, plan$dimensions)
 
-  if (.key %in% group_cols) {
-    stop(
-      sprintf("`.key` (`%s`) must not be a grouping column.", .key),
-      call. = FALSE
-    )
-  }
-  column_info <- margin_column_info(
-    data_proxy,
-    plan$dimensions,
-    backend = backend
-  )
-  validate_margin_label(
+  operation <- prepare_margin_operation(
     .data,
-    dimensions = plan$dimensions,
+    by_quo = by_quo,
+    grouping_quo = grouping_quo,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
-    column_info = column_info,
-    backend = backend
+    .duplicates = .duplicates,
+    .sort = .sort,
+    call = call
   )
-
-  internal_names <- new_margin_internal_names(
-    1L + if (.keep) length(group_cols) else 0L,
-    used_names = unique(c(data_vars, .key)),
-    prefix = "..marginplyr_nest_"
-  )
-  set_col <- internal_names[[1L]]
-  keep_cols <- if (.keep && length(group_cols) > 0L) {
-    stats::setNames(internal_names[-1L], group_cols)
-  } else {
-    character()
-  }
-  if (length(keep_cols) > 0L) {
-    keep_exprs <- lapply(
-      group_cols,
-      function(var) rlang::expr(.data[[!!var]])
-    )
-    names(keep_exprs) <- unname(keep_cols)
-    .data <- dplyr::mutate(.data, !!!keep_exprs)
-  }
-
-  expanded <- expand_margin_union(
-    .data,
-    plan = plan,
-    .margin_label = .margin_label,
-    column_info = column_info,
-    set_id_name = set_col
-  )
-
-  nested <- nest_expanded_margins(
-    expanded,
-    group_cols = group_cols,
-    set_col = set_col,
-    keep_cols = keep_cols,
+  result <- execute_margin_nest(
+    operation,
     .key = .key,
     .keep = .keep
   )
+  finalize_margin_operation(operation, result)
+}
 
-  finish_margin_result(
-    nested,
-    plan = plan,
-    factor_info = column_info$factors,
-    .margin_label = .margin_label,
-    .sort = .sort
+execute_margin_nest <- function(operation, .key, .keep) {
+  check_margin_operation(operation)
+  with_margin_error_call(
+    {
+      plan <- operation$plan
+      group_cols <- c(plan$by, plan$dimensions)
+      if (.key %in% group_cols) {
+        stop(
+          sprintf("`.key` (`%s`) must not be a grouping column.", .key),
+          call. = FALSE
+        )
+      }
+
+      internal_names <- new_margin_internal_names(
+        1L + if (.keep) length(group_cols) else 0L,
+        used_names = unique(c(operation$data_vars, .key)),
+        prefix = "..marginplyr_nest_"
+      )
+      set_col <- internal_names[[1L]]
+      keep_cols <- if (.keep && length(group_cols) > 0L) {
+        stats::setNames(internal_names[-1L], group_cols)
+      } else {
+        character()
+      }
+      data <- operation$data
+      if (length(keep_cols) > 0L) {
+        keep_exprs <- lapply(
+          group_cols,
+          function(var) rlang::expr(.data[[!!var]])
+        )
+        names(keep_exprs) <- unname(keep_cols)
+        data <- dplyr::mutate(data, !!!keep_exprs)
+      }
+
+      validate_margin_operation(operation)
+
+      expanded <- expand_margin_union(
+        data,
+        plan = plan,
+        .margin_label = operation$margin_label,
+        column_info = operation$column_info,
+        set_id_name = set_col
+      )
+
+      nest_expanded_margins(
+        expanded,
+        group_cols = group_cols,
+        set_col = set_col,
+        keep_cols = keep_cols,
+        .key = .key,
+        .keep = .keep
+      )
+    },
+    call = operation$call
   )
 }
 

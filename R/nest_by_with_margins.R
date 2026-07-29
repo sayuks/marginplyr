@@ -16,8 +16,9 @@
 #' [dplyr::nest_by()] is not a stable upstream API and may eventually be
 #' deprecated in favor of [tidyr::nest()]. This margin-aware wrapper remains
 #' intentional because its row-wise return shape is useful for per-margin
-#' models and reports. It is implemented through [nest_with_margins()] so both
-#' interfaces share one grouping plan and nesting contract.
+#' models and reports. Both public nesting interfaces use the same private
+#' margin-operation pipeline, so they share one grouping plan and nesting
+#' contract without invoking each other.
 #' @return A row-wise data frame grouped by the visible grouping columns.
 #' @family summarize and expand data with margins
 #' @export
@@ -98,21 +99,21 @@ nest_by_with_margins <- function(.data,
                                  .sort = TRUE,
                                  .key = "data",
                                  .keep = FALSE) {
+  call <- rlang::current_call()
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  result <- rlang::inject(
-    nest_with_margins_impl(
-      .data = .data,
-      .by = !!by_quo,
-      .grouping = !!grouping_quo,
-      .margin_label = .margin_label,
-      .check_margin_label = .check_margin_label,
-      .duplicates = .duplicates,
-      .sort = .sort,
-      .key = .key,
-      .keep = .keep
-    )
+  result <- nest_margin_pipeline(
+    .data = .data,
+    by_quo = by_quo,
+    grouping_quo = grouping_quo,
+    .margin_label = .margin_label,
+    .check_margin_label = .check_margin_label,
+    .duplicates = .duplicates,
+    .sort = .sort,
+    .key = .key,
+    .keep = .keep,
+    call = call
   )
 
   result <- dplyr::collect(result)

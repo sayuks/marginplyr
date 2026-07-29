@@ -64,8 +64,9 @@ row-wise data frames are local objects.
 \code{\link[dplyr:nest_by]{dplyr::nest_by()}} is not a stable upstream API and may eventually be
 deprecated in favor of \code{\link[tidyr:nest]{tidyr::nest()}}. This margin-aware wrapper remains
 intentional because its row-wise return shape is useful for per-margin
-models and reports. It is implemented through \code{\link[=nest_with_margins]{nest_with_margins()}} so both
-interfaces share one grouping plan and nesting contract.
+models and reports. Both public nesting interfaces use the same private
+margin-operation pipeline, so they share one grouping plan and nesting
+contract without invoking each other.
 }
 \section{Fixed columns and grouping dimensions}{
 
