@@ -23,6 +23,21 @@ check_summary_context_helpers <- function(dots) {
   )
 }
 
+check_summary_group_overwrite <- function(output_names, group_vars) {
+  overwritten_groups <- intersect(output_names, unique(group_vars))
+  if (length(overwritten_groups) == 0L) {
+    return(invisible(NULL))
+  }
+
+  stop(
+    "Summary results cannot overwrite grouping column",
+    if (length(overwritten_groups) == 1L) " " else "s ",
+    paste0("`", overwritten_groups, "`", collapse = ", "),
+    ".",
+    call. = FALSE
+  )
+}
+
 find_summary_context_helpers <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(character())

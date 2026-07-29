@@ -58,6 +58,43 @@ normalize_margin_options <- function(.margin_label,
   )
 }
 
+normalize_margin_input <- function(.data, by_quo) {
+  stopifnot(rlang::is_quosure(by_quo))
+
+  if (inherits(.data, "rowwise_df")) {
+    stop(
+      "`rowwise()` input is not supported. Call `dplyr::ungroup()` first.",
+      call. = FALSE
+    )
+  }
+
+  if (!dplyr::group_by_drop_default(.data)) {
+    stop(
+      "Grouped input created with `.drop = FALSE` is not supported. ",
+      "Call `dplyr::ungroup()` first.",
+      call. = FALSE
+    )
+  }
+
+  input_groups <- dplyr::group_vars(.data)
+  if (length(input_groups) > 0L && !rlang::quo_is_null(by_quo)) {
+    stop(
+      "Can't supply `.by` when `.data` is grouped. ",
+      "Call `dplyr::ungroup()` first.",
+      call. = FALSE
+    )
+  }
+
+  .data <- dplyr::ungroup(.data)
+  by <- if (length(input_groups) > 0L) {
+    input_groups
+  } else {
+    rlang::inject(get_col_names(.data, !!by_quo))
+  }
+
+  list(data = .data, by = by)
+}
+
 prepare_margin_operation <- function(.data,
                                      by_quo,
                                      grouping_quo,
@@ -84,7 +121,7 @@ prepare_margin_operation <- function(.data,
       grouping_spec <- rlang::eval_tidy(grouping_quo)
       validate_grouping_spec_early(grouping_spec)
 
-      input <- prepare_margin_input(.data, by_quo)
+      input <- normalize_margin_input(.data, by_quo)
       data <- input$data
       by <- input$by
       backend <- grouping_backend(data)
@@ -151,11 +188,21 @@ validate_margin_operation <- function(operation) {
 finalize_margin_operation <- function(operation, result) {
   check_margin_operation(operation)
   result <- dplyr::ungroup(result)
-  finish_margin_result(
+  result <- restore_margin_factors(
     result,
-    plan = operation$plan,
     factor_info = operation$column_info$factors,
-    .margin_label = operation$margin_label,
-    .sort = operation$sort
+    .margin_label = operation$margin_label
   )
+  margin_cols <- c(operation$plan$by, operation$plan$dimensions)
+  result <- dplyr::select(
+    result,
+    dplyr::all_of(margin_cols),
+    dplyr::everything()
+  )
+
+  if (operation$sort) {
+    result <- dplyr::arrange(result, !!!rlang::syms(margin_cols))
+  }
+
+  result
 }

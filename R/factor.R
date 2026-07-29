@@ -2,6 +2,18 @@ reconstruct_factor <- function(data, info, .margin_name) {
   UseMethod("reconstruct_factor")
 }
 
+restore_margin_factors <- function(.data, factor_info, .margin_label) {
+  if (is.null(.margin_label) || length(factor_info) == 0L) {
+    return(.data)
+  }
+
+  Reduce(
+    function(data, info) reconstruct_factor(data, info, .margin_label),
+    factor_info,
+    init = .data
+  )
+}
+
 #' @exportS3Method
 #' @noRd
 reconstruct_factor.data.frame <- function(data, info, .margin_name) {

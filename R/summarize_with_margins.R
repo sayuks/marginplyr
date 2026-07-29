@@ -336,7 +336,7 @@ execute_margin_summary <- function(operation, dots) {
         plan,
         backend = operation$backend
       )) {
-        summarize_grouping_sets( # nolint: object_usage_linter
+        summarize_margin_native( # nolint: object_usage_linter
           operation$data,
           dots = dots,
           plan = plan,
@@ -361,68 +361,3 @@ execute_margin_summary <- function(operation, dots) {
 #' @rdname summarize_with_margins
 #' @export
 summarise_with_margins <- summarize_with_margins
-
-summarize_impl <- function(.data,
-                           ...,
-                           .by) {
-  dplyr::summarize(
-    .data = .data,
-    ...,
-    .by = dplyr::all_of(.by)
-  )
-}
-
-assert_margin_name <- function(data, col_names, margin_name) {
-  assert_string_scalar(margin_name)
-  stopifnot(is.character(col_names), !anyNA(col_names))
-
-  data <- dplyr::select(.data = data, dplyr::all_of(col_names))
-  checks <- lapply(
-    col_names,
-    function(col) {
-      column <- rlang::sym(col)
-      condition <- if (is.na(margin_name)) {
-        rlang::expr(is.na(!!column))
-      } else {
-        rlang::expr(!!column == !!margin_name)
-      }
-      rlang::expr(
-        sum(
-          dplyr::if_else(!!condition, 1L, 0L, missing = 0L),
-          na.rm = TRUE
-        )
-      )
-    }
-  )
-  names(checks) <- col_names
-  found <- dplyr::collect(dplyr::summarize(data, !!!checks))
-  found <- vapply(
-    col_names,
-    function(col) {
-      nrow(found) > 0L && isTRUE(found[[col]][[1L]] > 0)
-    },
-    logical(1)
-  )
-
-  if (!any(found)) {
-    return(invisible(NULL))
-  }
-
-  bad_cols <- paste0("`", names(found)[found], "`", collapse = ", ")
-  label <- if (is.na(margin_name)) "NA" else paste0('"', margin_name, '"')
-  stop(
-    label,
-    " is already present in grouping column",
-    if (sum(found) == 1L) " " else "s ",
-    bad_cols,
-    ". Choose another `.margin_label` or set ",
-    "`.check_margin_label = FALSE`.",
-    call. = FALSE
-  )
-}
-
-get_col_names <- function(data, ...) {
-  selected <- dplyr::select(.data = data, ...)
-  # Drop the grouping metadata attached to dplyr's variable-name vector.
-  as.character(dplyr::tbl_vars(selected))
-}

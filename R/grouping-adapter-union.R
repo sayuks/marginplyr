@@ -1,3 +1,13 @@
+summarize_margin_branch <- function(.data,
+                                    ...,
+                                    .by) {
+  dplyr::summarize(
+    .data = .data,
+    ...,
+    .by = dplyr::all_of(.by)
+  )
+}
+
 summarize_margin_union <- function(.data,
                                    dots,
                                    plan,
@@ -31,7 +41,7 @@ summarize_margin_union <- function(.data,
         sql = FALSE
       )
 
-      result <- summarize_impl(
+      result <- summarize_margin_branch(
         .data = .data,
         !!!branch_dots,
         .by = unname(key_names[grouping_set])

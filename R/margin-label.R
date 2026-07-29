@@ -11,40 +11,6 @@ normalize_margin_label <- function(.margin_label) {
   .margin_label
 }
 
-margin_column_info <- function(data_proxy,
-                               dimensions,
-                               backend) {
-  if (length(dimensions) == 0L) {
-    return(list(factors = list(), prototypes = list()))
-  }
-
-  if (!backend$can_read_schema) {
-    return(list(factors = list(), prototypes = list()))
-  }
-
-  schema <- data_proxy[dimensions]
-
-  prototypes <- lapply(schema, function(x) x[NA_integer_])
-  factors <- if (backend$can_restore_factors) {
-    lapply(
-      names(schema)[vapply(schema, is.factor, logical(1))],
-      function(col) {
-        x <- schema[[col]]
-        list(
-          col = col,
-          levels = levels(x),
-          ordered = is.ordered(x),
-          has_na_in_level = anyNA(levels(x))
-        )
-      }
-    )
-  } else {
-    list()
-  }
-
-  list(factors = factors, prototypes = prototypes)
-}
-
 validate_margin_label <- function(.data,
                                   dimensions,
                                   .margin_label,
@@ -91,7 +57,56 @@ validate_margin_label <- function(.data,
     .data,
     dplyr::across(dplyr::all_of(dimensions), as.character)
   )
-  assert_margin_name(check_data, dimensions, .margin_label)
+  check_margin_label_collision(check_data, dimensions, .margin_label)
+}
+
+check_margin_label_collision <- function(data, col_names, margin_label) {
+  assert_string_scalar(margin_label)
+  stopifnot(is.character(col_names), !anyNA(col_names))
+
+  data <- dplyr::select(.data = data, dplyr::all_of(col_names))
+  checks <- lapply(
+    col_names,
+    function(col) {
+      column <- rlang::sym(col)
+      condition <- if (is.na(margin_label)) {
+        rlang::expr(is.na(!!column))
+      } else {
+        rlang::expr(!!column == !!margin_label)
+      }
+      rlang::expr(
+        sum(
+          dplyr::if_else(!!condition, 1L, 0L, missing = 0L),
+          na.rm = TRUE
+        )
+      )
+    }
+  )
+  names(checks) <- col_names
+  found <- dplyr::collect(dplyr::summarize(data, !!!checks))
+  found <- vapply(
+    col_names,
+    function(col) {
+      nrow(found) > 0L && isTRUE(found[[col]][[1L]] > 0)
+    },
+    logical(1)
+  )
+
+  if (!any(found)) {
+    return(invisible(NULL))
+  }
+
+  bad_cols <- paste0("`", names(found)[found], "`", collapse = ", ")
+  label <- if (is.na(margin_label)) "NA" else paste0('"', margin_label, '"')
+  stop(
+    label,
+    " is already present in grouping column",
+    if (sum(found) == 1L) " " else "s ",
+    bad_cols,
+    ". Choose another `.margin_label` or set ",
+    "`.check_margin_label = FALSE`.",
+    call. = FALSE
+  )
 }
 
 label_margin_branch <- function(.data,
@@ -125,44 +140,9 @@ label_margin_branch <- function(.data,
     .data <- dplyr::mutate(.data, !!!values)
   }
 
-  select_margin_columns_first(.data, c(plan$by, plan$dimensions))
-}
-
-select_margin_columns_first <- function(.data, cols) {
   dplyr::select(
     .data,
-    dplyr::all_of(cols),
+    dplyr::all_of(c(plan$by, plan$dimensions)),
     dplyr::everything()
   )
-}
-
-restore_margin_factors <- function(.data, factor_info, .margin_label) {
-  if (is.null(.margin_label) || length(factor_info) == 0L) {
-    return(.data)
-  }
-
-  Reduce(
-    function(data, info) reconstruct_factor(data, info, .margin_label),
-    factor_info,
-    init = .data
-  )
-}
-
-finish_margin_result <- function(.data,
-                                 plan,
-                                 factor_info,
-                                 .margin_label,
-                                 .sort) {
-  .data <- restore_margin_factors(.data, factor_info, .margin_label)
-  margin_cols <- c(plan$by, plan$dimensions)
-  .data <- select_margin_columns_first(
-    .data,
-    margin_cols
-  )
-
-  if (.sort) {
-    .data <- dplyr::arrange(.data, !!!rlang::syms(margin_cols))
-  }
-
-  .data
 }

@@ -1,4 +1,4 @@
-summarize_grouping_sets <- function(.data,
+summarize_margin_native <- function(.data,
                                     dots,
                                     plan,
                                     .margin_label,
