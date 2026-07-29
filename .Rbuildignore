@@ -7,6 +7,7 @@
 ^data-raw$
 ^\.github$
 ^docs$
+^design$
 ^altdoc$
 ^_quarto$
 ^sandbox$
