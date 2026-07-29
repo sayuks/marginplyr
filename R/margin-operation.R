@@ -64,8 +64,9 @@ prepare_margin_operation <- function(.data,
       by <- input$by
       backend <- grouping_backend(data)
       data_vars <- get_col_names(data, dplyr::everything())
-      grouping_spec <- preflight_grouping_spec(grouping_spec, data_vars)
-      plan <- if (is_name_only_grouping_spec(grouping_spec)) {
+      preflight <- preflight_grouping_spec(grouping_spec, data_vars)
+      grouping_spec <- preflight$spec
+      plan <- if (preflight$name_only) {
         compile_grouping_spec_impl(
           grouping_spec,
           data_vars = data_vars,

@@ -28,23 +28,33 @@ validate_grouping_spec_early <- function(grouping_spec) {
     )
   }
   if (type %in% c("rollup", "cube") && length(args) == 0L) {
-    stop(
-      sprintf("`%s()` requires at least one dimension.", type),
-      call. = FALSE
-    )
+    abort_empty_grouping_units(type)
   }
 
   invisible(NULL)
 }
 
-is_name_only_selection <- function(arg, data_vars) {
-  expr <- rlang::quo_get_expr(arg)
+abort_empty_grouping_units <- function(type) {
+  stop(
+    sprintf("`%s()` requires at least one dimension.", type),
+    call. = FALSE
+  )
+}
+
+abort_empty_composite <- function() {
+  stop(
+    "An empty `grouping_set()` cannot be a composite dimension.",
+    call. = FALSE
+  )
+}
+
+is_name_only_expr <- function(expr, env, data_vars) {
   if (is.symbol(expr)) {
     name <- as.character(expr)
     return(
       name %in% data_vars ||
         !rlang::env_has(
-          rlang::quo_get_env(arg),
+          env,
           name,
           inherit = TRUE
         )
@@ -75,31 +85,19 @@ is_name_only_selection <- function(arg, data_vars) {
   args <- rlang::call_args(expr)
   all(vapply(
     args,
-    function(x) {
-      is_name_only_selection(
-        rlang::new_quosure(x, env = rlang::quo_get_env(arg)),
-        data_vars
-      )
-    },
-    logical(1)
+    is_name_only_expr,
+    logical(1),
+    env = env,
+    data_vars = data_vars
   ))
 }
 
-is_name_only_grouping_spec <- function(grouping_spec) {
-  if (is.null(grouping_spec)) {
-    return(TRUE)
-  }
-  all(vapply(
-    grouping_spec$args,
-    function(arg) {
-      expr <- rlang::quo_get_expr(arg)
-      if (inherits(expr, "margin_grouping_spec")) {
-        return(is_name_only_grouping_spec(expr))
-      }
-      rlang::is_call(expr, "all_of", ns = "tidyselect")
-    },
-    logical(1)
-  ))
+is_name_only_selection <- function(arg, data_vars) {
+  is_name_only_expr(
+    rlang::quo_get_expr(arg),
+    env = rlang::quo_get_env(arg),
+    data_vars = data_vars
+  )
 }
 
 grouping_name_proxy <- function(data_vars) {
@@ -110,55 +108,25 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   stopifnot(is.character(data_vars), !anyNA(data_vars))
   validate_grouping_spec_early(grouping_spec)
   if (is.null(grouping_spec)) {
-    return(NULL)
+    return(list(spec = NULL, name_only = TRUE))
   }
 
-  known_dimension_count <- 0L
-  has_unknown_dimension <- FALSE
-  has_nested_dimension <- FALSE
-  grouping_spec$args <- lapply(
-    grouping_spec$args,
-    function(arg) {
-      nested <- grouping_arg_spec(arg, data_vars)
-      if (is.null(nested)) {
-        if (is_name_only_selection(arg, data_vars)) {
-          name_proxy <- grouping_name_proxy(data_vars)
-          selected <- resolve_grouping_selection(arg, name_proxy)
-          known_dimension_count <<-
-            known_dimension_count + length(selected)
-          return(rlang::new_quosure(
-            rlang::expr(tidyselect::all_of(!!selected)),
-            env = rlang::base_env()
-          ))
-        }
-        has_unknown_dimension <<- TRUE
-        return(arg)
-      }
-
-      has_nested_dimension <<- TRUE
-      nested <- preflight_grouping_spec(nested, data_vars)
-      validate_grouping_nesting(
-        parent_type = grouping_spec$type,
-        nested = nested
-      )
-      rlang::new_quosure(nested, env = rlang::quo_get_env(arg))
+  name_only <- TRUE
+  for (arg in grouping_spec$args) {
+    nested <- grouping_arg_spec(arg, data_vars)
+    if (is.null(nested)) {
+      name_only <- name_only && is_name_only_selection(arg, data_vars)
+      next
     }
-  )
-  if (
-    grouping_spec$type %in% c("rollup", "cube") &&
-      !has_unknown_dimension &&
-      !has_nested_dimension &&
-      known_dimension_count == 0L
-  ) {
-    stop(
-      sprintf(
-        "`%s()` requires at least one dimension.",
-        grouping_spec$type
-      ),
-      call. = FALSE
+
+    nested_preflight <- preflight_grouping_spec(nested, data_vars)
+    validate_grouping_nesting(
+      parent_type = grouping_spec$type,
+      nested = nested_preflight$spec
     )
+    name_only <- name_only && nested_preflight$name_only
   }
-  grouping_spec
+  list(spec = grouping_spec, name_only = name_only)
 }
 
 validate_grouping_nesting <- function(parent_type, nested) {
@@ -189,10 +157,7 @@ validate_grouping_nesting <- function(parent_type, nested) {
       identical(nested$type, "set") &&
       length(nested$args) == 0L
   ) {
-    stop(
-      "An empty `grouping_set()` cannot be a composite dimension.",
-      call. = FALSE
-    )
+    abort_empty_composite()
   }
 
   invisible(NULL)
@@ -204,9 +169,9 @@ compile_grouping_spec <- function(.grouping,
                                   .by = character(),
                                   .duplicates = c("error", "drop", "keep")) {
   .duplicates <- match.arg(.duplicates)
-  .grouping <- preflight_grouping_spec(.grouping, data_vars)
+  preflight <- preflight_grouping_spec(.grouping, data_vars)
   compile_grouping_spec_impl(
-    .grouping,
+    preflight$spec,
     data_vars = data_vars,
     data_proxy = data_proxy,
     .by = .by,
@@ -366,10 +331,7 @@ resolve_grouping_units <- function(spec, data_vars, data_proxy) {
         stopifnot(identical(nested$type, "set"))
         cols <- resolve_grouping_set(nested, data_vars, data_proxy)
         if (length(cols) == 0L) {
-          stop(
-            "An empty `grouping_set()` cannot be a composite dimension.",
-            call. = FALSE
-          )
+          abort_empty_composite()
         }
         list(cols)
       }
@@ -378,10 +340,7 @@ resolve_grouping_units <- function(spec, data_vars, data_proxy) {
   )
 
   if (length(units) == 0L) {
-    stop(
-      sprintf("`%s()` requires at least one dimension.", spec$type),
-      call. = FALSE
-    )
+    abort_empty_grouping_units(spec$type)
   }
   units
 }
