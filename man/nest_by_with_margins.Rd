@@ -119,12 +119,14 @@ call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
 \section{Backend extension design}{
 
 Unlike \code{\link[dplyr:summarize]{dplyr::summarize()}}, the public margin verbs are intentionally not
-S3 generics. They first compile and validate one backend-independent
-grouping plan so duplicate handling, labels, grouping identifiers, and
-output grouping cannot drift between methods. Backend-specific schema and
-execution capabilities are isolated behind a non-exported adapter layer.
-That adapter is an implementation detail rather than an extension API;
-support for a new backend should be added to marginplyr itself.
+S3 generics. They prepare one operation around a backend-independent
+grouping plan, pass it to a verb-specific executor, and apply common
+finalization. One typed selection-metadata snapshot is acquired during
+preparation. Native \verb{GROUPING SETS} and portable \verb{UNION ALL} adapters
+consume the prepared plan; they do not own validation or finalization.
+These adapters are implementation details rather than an extension API, so
+support for a new backend should be added to marginplyr itself with
+metadata, result, laziness, and SQL-strategy contract tests.
 }
 
 \section{Relationship to tidyr and dplyr}{
