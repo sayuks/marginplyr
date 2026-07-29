@@ -626,29 +626,37 @@ collect(nested_dt)
 per nested report section straightforward:
 
 ```{r}
-january_sales |>
+nested_by <- january_sales |>
   nest_by_with_margins(
     .grouping = rollup(region, store)
-  ) |>
+  )
+
+nested_by |>
   mutate(
     records = nrow(data),
     units = sum(data$units),
     revenue = sum(data$revenue)
   )
+
+nested_by$data[[1]]
 ```
 
 The row-wise result is local even when the input is a dtplyr step:
 
 ```{r}
-january_sales |>
+nested_by_dt <- january_sales |>
   dtplyr::lazy_dt() |>
   nest_by_with_margins(
     .grouping = rollup(region, store)
-  ) |>
+  )
+
+nested_by_dt |>
   mutate(
     records = nrow(data),
     revenue = sum(data$revenue)
   )
+
+nested_by_dt$data[[1]]
 ```
 
 Because `nest_by_with_margins()` collects before making the result row-wise,

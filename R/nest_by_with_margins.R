@@ -31,15 +31,17 @@
 #'
 #' # A row-wise result makes it natural to calculate one report summary from
 #' # every nested detail table.
-#' january_sales |>
+#' nested_by <- january_sales |>
 #'   nest_by_with_margins(
 #'     .grouping = rollup(region, store)
-#'   ) |>
+#'   )
+#' nested_by |>
 #'   dplyr::mutate(
 #'     records = nrow(data),
 #'     units = sum(data$units),
 #'     revenue = sum(data$revenue)
 #'   )
+#' nested_by$data[[1]]
 #'
 #' # Existing groups become additional fixed row-wise keys.
 #' grouped_rowwise <- retail_sales |>
@@ -78,15 +80,17 @@
 #'   # Inspect the data.table expression before the row-wise collection.
 #'   print(dplyr::show_query(lazy_nested))
 #'
-#'   january_sales |>
+#'   nested_by_dt <- january_sales |>
 #'     dtplyr::lazy_dt() |>
 #'     nest_by_with_margins(
 #'       .grouping = rollup(region, store)
-#'     ) |>
+#'     )
+#'   nested_by_dt |>
 #'     dplyr::mutate(
 #'       records = nrow(data),
 #'       revenue = sum(data$revenue)
 #'     )
+#'   nested_by_dt$data[[1]]
 #' }
 nest_by_with_margins <- function(.data,
                                  .by = NULL,
