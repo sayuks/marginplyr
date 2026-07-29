@@ -65,14 +65,27 @@ prepare_margin_operation <- function(.data,
       backend <- grouping_backend(data)
       data_vars <- get_col_names(data, dplyr::everything())
       grouping_spec <- preflight_grouping_spec(grouping_spec, data_vars)
+      plan <- if (is_name_only_grouping_spec(grouping_spec)) {
+        compile_grouping_spec_impl(
+          grouping_spec,
+          data_vars = data_vars,
+          data_proxy = grouping_name_proxy(data_vars),
+          .by = by,
+          .duplicates = .duplicates
+        )
+      } else {
+        NULL
+      }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
-      plan <- compile_grouping_spec_impl(
-        grouping_spec,
-        data_vars = data_vars,
-        data_proxy = data_proxy,
-        .by = by,
-        .duplicates = .duplicates
-      )
+      if (is.null(plan)) {
+        plan <- compile_grouping_spec_impl(
+          grouping_spec,
+          data_vars = data_vars,
+          data_proxy = data_proxy,
+          .by = by,
+          .duplicates = .duplicates
+        )
+      }
       column_info <- margin_column_info(
         data_proxy,
         plan$dimensions,

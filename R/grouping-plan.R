@@ -37,37 +37,105 @@ validate_grouping_spec_early <- function(grouping_spec) {
   invisible(NULL)
 }
 
+is_name_only_selection <- function(arg, data_vars) {
+  expr <- rlang::quo_get_expr(arg)
+  if (is.symbol(expr)) {
+    name <- as.character(expr)
+    return(
+      name %in% data_vars ||
+        !rlang::env_has(
+          rlang::quo_get_env(arg),
+          name,
+          inherit = TRUE
+        )
+    )
+  }
+  if (!is.language(expr)) {
+    return(is.atomic(expr))
+  }
+  if (!rlang::is_call(expr)) {
+    return(FALSE)
+  }
+
+  call_name <- rlang::call_name(expr)
+  if (is.null(call_name)) {
+    return(FALSE)
+  }
+  leaf_helpers <- c(
+    "all_of", "any_of", "starts_with", "ends_with", "contains",
+    "matches", "num_range", "everything", "last_col"
+  )
+  if (call_name %in% leaf_helpers) {
+    return(TRUE)
+  }
+  if (!call_name %in% c("c", ":", "!", "-", "|", "&", "(")) {
+    return(FALSE)
+  }
+
+  args <- rlang::call_args(expr)
+  all(vapply(
+    args,
+    function(x) {
+      is_name_only_selection(
+        rlang::new_quosure(x, env = rlang::quo_get_env(arg)),
+        data_vars
+      )
+    },
+    logical(1)
+  ))
+}
+
+is_name_only_grouping_spec <- function(grouping_spec) {
+  if (is.null(grouping_spec)) {
+    return(TRUE)
+  }
+  all(vapply(
+    grouping_spec$args,
+    function(arg) {
+      expr <- rlang::quo_get_expr(arg)
+      if (inherits(expr, "margin_grouping_spec")) {
+        return(is_name_only_grouping_spec(expr))
+      }
+      rlang::is_call(expr, "all_of", ns = "tidyselect")
+    },
+    logical(1)
+  ))
+}
+
+grouping_name_proxy <- function(data_vars) {
+  stats::setNames(as.list(seq_along(data_vars)), data_vars)
+}
+
 preflight_grouping_spec <- function(grouping_spec, data_vars) {
+  stopifnot(is.character(data_vars), !anyNA(data_vars))
   validate_grouping_spec_early(grouping_spec)
   if (is.null(grouping_spec)) {
     return(NULL)
   }
 
+  known_dimension_count <- 0L
+  has_unknown_dimension <- FALSE
+  has_nested_dimension <- FALSE
   grouping_spec$args <- lapply(
     grouping_spec$args,
     function(arg) {
       nested <- grouping_arg_spec(arg, data_vars)
       if (is.null(nested)) {
-        expr <- rlang::quo_get_expr(arg)
-        name <- if (is.symbol(expr)) as.character(expr) else NULL
-        is_unknown_name <-
-          !is.null(name) &&
-          !name %in% data_vars &&
-          !rlang::env_has(
-            rlang::quo_get_env(arg),
-            name,
-            inherit = TRUE
-          )
-        if (is_unknown_name) {
-          name_proxy <- stats::setNames(
-            as.list(seq_along(data_vars)),
-            data_vars
-          )
-          resolve_grouping_selection(arg, name_proxy)
+        if (is_name_only_selection(arg, data_vars)) {
+          name_proxy <- grouping_name_proxy(data_vars)
+          selected <- resolve_grouping_selection(arg, name_proxy)
+          known_dimension_count <<-
+            known_dimension_count + length(selected)
+          return(rlang::new_quosure(
+            rlang::expr(tidyselect::all_of(!!selected)),
+            env = rlang::base_env()
+          ))
         }
+        has_unknown_dimension <<- TRUE
         return(arg)
       }
 
+      has_nested_dimension <<- TRUE
       nested <- preflight_grouping_spec(nested, data_vars)
       validate_grouping_nesting(
         parent_type = grouping_spec$type,
@@ -76,6 +144,20 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
       rlang::new_quosure(nested, env = rlang::quo_get_env(arg))
     }
   )
+  if (
+    grouping_spec$type %in% c("rollup", "cube") &&
+      !has_unknown_dimension &&
+      !has_nested_dimension &&
+      known_dimension_count == 0L
+  ) {
+    stop(
+      sprintf(
+        "`%s()` requires at least one dimension.",
+        grouping_spec$type
+      ),
+      call. = FALSE
+    )
+  }
   grouping_spec
 }
 
@@ -122,8 +204,6 @@ compile_grouping_spec <- function(.grouping,
                                   .by = character(),
                                   .duplicates = c("error", "drop", "keep")) {
   .duplicates <- match.arg(.duplicates)
-  stopifnot(is.character(data_vars), !anyNA(data_vars))
-  stopifnot(is.character(.by), !anyNA(.by))
   .grouping <- preflight_grouping_spec(.grouping, data_vars)
   compile_grouping_spec_impl(
     .grouping,
@@ -139,11 +219,10 @@ compile_grouping_spec_impl <- function(.grouping,
                                        data_proxy,
                                        .by,
                                        .duplicates) {
-  stopifnot(is.character(data_vars), !anyNA(data_vars))
   stopifnot(is.character(.by), !anyNA(.by))
   stopifnot(.duplicates %in% c("error", "drop", "keep"))
   if (is.null(data_proxy)) {
-    data_proxy <- stats::setNames(as.list(seq_along(data_vars)), data_vars)
+    data_proxy <- grouping_name_proxy(data_vars)
   }
 
   unknown_by <- setdiff(.by, data_vars)
@@ -286,13 +365,24 @@ resolve_grouping_units <- function(spec, data_vars, data_proxy) {
         }
         stopifnot(identical(nested$type, "set"))
         cols <- resolve_grouping_set(nested, data_vars, data_proxy)
-        stopifnot(length(cols) > 0L)
+        if (length(cols) == 0L) {
+          stop(
+            "An empty `grouping_set()` cannot be a composite dimension.",
+            call. = FALSE
+          )
+        }
         list(cols)
       }
     ),
     recursive = FALSE
   )
 
+  if (length(units) == 0L) {
+    stop(
+      sprintf("`%s()` requires at least one dimension.", spec$type),
+      call. = FALSE
+    )
+  }
   units
 }
 

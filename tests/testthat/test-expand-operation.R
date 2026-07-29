@@ -84,6 +84,50 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     "Column `unknown` doesn't exist"
   )
   expect_identical(expand_proxy_capture$n, 0L)
+
+  expand_proxy_capture$n <- 0L
+  expect_error(
+    expand_with_margins(
+      source,
+      .grouping = rollup(dplyr::all_of("unknown"))
+    ),
+    "Element `unknown` doesn't exist"
+  )
+  expect_identical(expand_proxy_capture$n, 0L)
+
+  expand_proxy_capture$n <- 0L
+  expect_error(
+    expand_with_margins(
+      source,
+      .grouping = rollup(dplyr::any_of("unknown"))
+    ),
+    "requires at least one dimension"
+  )
+  expect_identical(expand_proxy_capture$n, 0L)
+
+  expand_proxy_capture$n <- 0L
+  expect_error(
+    expand_with_margins(
+      source,
+      .by = group,
+      .grouping = rollup(group)
+    ),
+    "both `.by` and `.grouping`"
+  )
+  expect_identical(expand_proxy_capture$n, 0L)
+
+  expand_proxy_capture$n <- 0L
+  expect_error(
+    expand_with_margins(
+      source,
+      .grouping = grouping_sets(
+        grouping_set(group),
+        grouping_set(group)
+      )
+    ),
+    "Duplicate grouping sets"
+  )
+  expect_identical(expand_proxy_capture$n, 0L)
 })
 
 test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
