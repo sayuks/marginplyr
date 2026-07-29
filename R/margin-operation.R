@@ -1,5 +1,7 @@
 new_margin_operation <- function(data,
                                  backend,
+                                 data_vars,
+                                 data_proxy,
                                  plan,
                                  column_info,
                                  margin_label,
@@ -10,6 +12,8 @@ new_margin_operation <- function(data,
     list(
       data = data,
       backend = backend,
+      data_vars = data_vars,
+      data_proxy = data_proxy,
       plan = plan,
       column_info = column_info,
       margin_label = margin_label,
@@ -36,6 +40,24 @@ with_margin_error_call <- function(expr, call) {
   )
 }
 
+normalize_margin_options <- function(.margin_label,
+                                     .check_margin_label,
+                                     .duplicates,
+                                     .sort) {
+  assert_logical_scalar(.check_margin_label)
+  assert_logical_scalar(.sort)
+
+  list(
+    margin_label = normalize_margin_label(.margin_label),
+    check_margin_label = .check_margin_label,
+    duplicates = match.arg(
+      .duplicates,
+      choices = c("error", "drop", "keep")
+    ),
+    sort = .sort
+  )
+}
+
 prepare_margin_operation <- function(.data,
                                      by_quo,
                                      grouping_quo,
@@ -48,13 +70,16 @@ prepare_margin_operation <- function(.data,
 
   with_margin_error_call(
     {
-      assert_logical_scalar(.check_margin_label)
-      assert_logical_scalar(.sort)
-      .margin_label <- normalize_margin_label(.margin_label)
-      .duplicates <- match.arg(
-        .duplicates,
-        choices = c("error", "drop", "keep")
+      options <- normalize_margin_options(
+        .margin_label = .margin_label,
+        .check_margin_label = .check_margin_label,
+        .duplicates = .duplicates,
+        .sort = .sort
       )
+      .margin_label <- options$margin_label
+      .check_margin_label <- options$check_margin_label
+      .duplicates <- options$duplicates
+      .sort <- options$sort
 
       grouping_spec <- rlang::eval_tidy(grouping_quo)
       validate_grouping_spec_early(grouping_spec)
@@ -94,6 +119,8 @@ prepare_margin_operation <- function(.data,
       new_margin_operation(
         data = data,
         backend = backend,
+        data_vars = data_vars,
+        data_proxy = data_proxy,
         plan = plan,
         column_info = column_info,
         margin_label = .margin_label,

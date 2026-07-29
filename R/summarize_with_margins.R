@@ -259,101 +259,102 @@ summarize_with_margins <- function(.data,
                                    .check_margin_label = is.data.frame(.data),
                                    .duplicates = c("error", "drop", "keep"),
                                    .sort = is.data.frame(.data)) {
-  assert_lazy_table(.data)
-  if (!is.null(.groups) && !identical(.groups, "drop")) {
-    stop(
-      "`summarize_with_margins()` only supports `.groups = \"drop\"` ",
-      "or `NULL`.",
-      call. = FALSE
-    )
-  }
-  assert_logical_scalar(.check_margin_label)
-  assert_logical_scalar(.sort)
-  .margin_label <- normalize_margin_label(.margin_label)
-  .duplicates <- match.arg(.duplicates)
-
+  call <- rlang::current_call()
   dots <- rlang::enquos(...)
-  check_summary_context_helpers(dots)
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
-  grouping_spec <- rlang::eval_tidy(grouping_quo)
 
-  input <- prepare_margin_input(.data, by_quo)
-  .data <- input$data
-  by <- input$by
-  backend <- grouping_backend(.data)
-  data_vars <- get_col_names(.data, dplyr::everything())
-  data_proxy <- grouping_selection_proxy(.data, backend = backend)
-  plan <- compile_grouping_spec(
-    grouping_spec,
-    data_vars = data_vars,
-    data_proxy = data_proxy,
-    .by = by,
-    .duplicates = .duplicates
+  with_margin_error_call(
+    {
+      assert_lazy_table(.data)
+      if (!is.null(.groups) && !identical(.groups, "drop")) {
+        stop(
+          "`summarize_with_margins()` only supports `.groups = \"drop\"` ",
+          "or `NULL`.",
+          call. = FALSE
+        )
+      }
+      normalize_margin_options(
+        .margin_label = .margin_label,
+        .check_margin_label = .check_margin_label,
+        .duplicates = .duplicates,
+        .sort = .sort
+      )
+      check_summary_context_helpers(dots)
+    },
+    call = call
   )
-  dots <- resolve_summary_selections(
-    dots,
-    data_proxy = data_proxy,
-    data_vars = data_vars,
-    group_vars = c(plan$by, plan$dimensions),
-    normalize_across_names = identical(backend$kind, "dtplyr")
-  )
-  summary_selection_proxy <- dplyr::select(
-    data_proxy,
-    dplyr::all_of(setdiff(
-      data_vars,
-      unique(c(plan$by, plan$dimensions))
-    ))
-  )
-  summary_output_names <- unique(c(
-    names(dots)[nzchar(names(dots))],
-    known_summary_output_names(dots, summary_selection_proxy)
-  ))
-  check_summary_group_overwrite(
-    summary_output_names,
-    group_vars = c(plan$by, plan$dimensions)
-  )
-  reserved_names <- unique(c(data_vars, summary_output_names))
 
-  column_info <- margin_column_info(
-    data_proxy,
-    plan$dimensions,
-    backend = backend
-  )
-  validate_margin_label(
+  operation <- prepare_margin_operation(
     .data,
-    dimensions = plan$dimensions,
+    by_quo = by_quo,
+    grouping_quo = grouping_quo,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
-    column_info = column_info,
-    backend = backend
+    .duplicates = .duplicates,
+    .sort = .sort,
+    call = call
   )
+  result <- execute_margin_summary(operation, dots)
+  finalize_margin_operation(operation, result)
+}
 
-  result <- if (supports_grouping_sets(.data, plan, backend = backend)) {
-    summarize_grouping_sets( # nolint: object_usage_linter
-      .data,
-      dots = dots,
-      plan = plan,
-      .margin_label = .margin_label,
-      reserved_names = reserved_names
-    )
-  } else {
-    summarize_margin_union( # nolint: object_usage_linter
-      .data,
-      dots = dots,
-      plan = plan,
-      .margin_label = .margin_label,
-      column_info = column_info,
-      reserved_names = reserved_names
-    )
-  }
+execute_margin_summary <- function(operation, dots) {
+  check_margin_operation(operation)
+  with_margin_error_call(
+    {
+      plan <- operation$plan
+      group_vars <- c(plan$by, plan$dimensions)
+      dots <- resolve_summary_selections(
+        dots,
+        data_proxy = operation$data_proxy,
+        data_vars = operation$data_vars,
+        group_vars = group_vars,
+        normalize_across_names = identical(operation$backend$kind, "dtplyr")
+      )
+      summary_selection_proxy <- dplyr::select(
+        operation$data_proxy,
+        dplyr::all_of(setdiff(
+          operation$data_vars,
+          unique(group_vars)
+        ))
+      )
+      summary_output_names <- unique(c(
+        names(dots)[nzchar(names(dots))],
+        known_summary_output_names(dots, summary_selection_proxy)
+      ))
+      check_summary_group_overwrite(
+        summary_output_names,
+        group_vars = group_vars
+      )
+      reserved_names <- unique(c(operation$data_vars, summary_output_names))
 
-  finish_margin_result(
-    result,
-    plan = plan,
-    factor_info = column_info$factors,
-    .margin_label = .margin_label,
-    .sort = .sort
+      validate_margin_operation(operation)
+
+      if (supports_grouping_sets(
+        operation$data,
+        plan,
+        backend = operation$backend
+      )) {
+        summarize_grouping_sets( # nolint: object_usage_linter
+          operation$data,
+          dots = dots,
+          plan = plan,
+          .margin_label = operation$margin_label,
+          reserved_names = reserved_names
+        )
+      } else {
+        summarize_margin_union( # nolint: object_usage_linter
+          operation$data,
+          dots = dots,
+          plan = plan,
+          .margin_label = operation$margin_label,
+          column_info = operation$column_info,
+          reserved_names = reserved_names
+        )
+      }
+    },
+    call = operation$call
   )
 }
 
