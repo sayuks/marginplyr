@@ -34,8 +34,7 @@ expand_proxy_counter_collect <- function(x, ...) {
   NextMethod()
 }
 
-test_that("expand rejects invalid grouping before typed metadata acquisition", {
-  skip_if_not_installed("dtplyr")
+register_expand_proxy_methods <- function() {
   registerS3method(
     "head",
     "margin_expand_proxy_counter",
@@ -48,7 +47,11 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     expand_proxy_counter_collect,
     envir = asNamespace("dplyr")
   )
+}
 
+test_that("expand rejects invalid grouping before typed metadata acquisition", {
+  skip_if_not_installed("dtplyr")
+  register_expand_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
   class(source) <- c("margin_expand_proxy_counter", class(source))
   expand_proxy_capture$n <- 0L
@@ -64,23 +67,28 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     "expand_with_margins",
     fixed = TRUE
   )
+
+  expand_proxy_capture$n <- 0L
+  expect_error(
+    expand_with_margins(
+      source,
+      .grouping = rollup(grouping_sets(grouping_set(group)))
+    ),
+    "only accepts columns or `grouping_set\\(\\)`"
+  )
+  expect_identical(expand_proxy_capture$n, 0L)
+
+  expand_proxy_capture$n <- 0L
+  expect_error(
+    expand_with_margins(source, .grouping = rollup(unknown)),
+    "Column `unknown` doesn't exist"
+  )
+  expect_identical(expand_proxy_capture$n, 0L)
 })
 
 test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
   skip_if_not_installed("dtplyr")
-  registerS3method(
-    "head",
-    "margin_expand_proxy_counter",
-    expand_proxy_counter_head,
-    envir = asNamespace("utils")
-  )
-  registerS3method(
-    "collect",
-    "margin_expand_proxy_counter",
-    expand_proxy_counter_collect,
-    envir = asNamespace("dplyr")
-  )
-
+  register_expand_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
     code = c(1L, 2L),
@@ -105,19 +113,7 @@ test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
 
 test_that("Arrow expansion uses schema metadata without collecting", {
   skip_if_not_installed("arrow")
-  registerS3method(
-    "head",
-    "margin_expand_proxy_counter",
-    expand_proxy_counter_head,
-    envir = asNamespace("utils")
-  )
-  registerS3method(
-    "collect",
-    "margin_expand_proxy_counter",
-    expand_proxy_counter_collect,
-    envir = asNamespace("dplyr")
-  )
-
+  register_expand_proxy_methods()
   source <- arrow::Table$create(data.frame(
     group = c("x", "y"),
     value = c(1L, 2L)
@@ -143,19 +139,7 @@ test_that("Arrow expansion uses schema metadata without collecting", {
 test_that("DuckDB expansion acquires one typed selection proxy", {
   skip_if_not_installed("duckdb")
   skip_if_not_installed("DBI")
-  registerS3method(
-    "head",
-    "margin_expand_proxy_counter",
-    expand_proxy_counter_head,
-    envir = asNamespace("utils")
-  )
-  registerS3method(
-    "collect",
-    "margin_expand_proxy_counter",
-    expand_proxy_counter_collect,
-    envir = asNamespace("dplyr")
-  )
-
+  register_expand_proxy_methods()
   con <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(

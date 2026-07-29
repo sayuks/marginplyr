@@ -1,3 +1,121 @@
+validate_grouping_spec_early <- function(grouping_spec) {
+  if (is.null(grouping_spec)) {
+    return(invisible(NULL))
+  }
+  if (!inherits(grouping_spec, "margin_grouping_spec")) {
+    stop(
+      "`.grouping` must be created with `grouping_set()`, ",
+      "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`.",
+      call. = FALSE
+    )
+  }
+
+  type <- grouping_spec$type
+  args <- grouping_spec$args
+  if (
+    !is.character(type) ||
+      length(type) != 1L ||
+      !type %in% c("set", "sets", "rollup", "cube", "product") ||
+      !is.list(args)
+  ) {
+    stop("Invalid grouping specification.", call. = FALSE)
+  }
+  if (identical(type, "sets") && length(args) == 0L) {
+    stop(
+      "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
+      "for the empty grouping set.",
+      call. = FALSE
+    )
+  }
+  if (type %in% c("rollup", "cube") && length(args) == 0L) {
+    stop(
+      sprintf("`%s()` requires at least one dimension.", type),
+      call. = FALSE
+    )
+  }
+
+  invisible(NULL)
+}
+
+preflight_grouping_spec <- function(grouping_spec, data_vars) {
+  validate_grouping_spec_early(grouping_spec)
+  if (is.null(grouping_spec)) {
+    return(NULL)
+  }
+
+  grouping_spec$args <- lapply(
+    grouping_spec$args,
+    function(arg) {
+      nested <- grouping_arg_spec(arg, data_vars)
+      if (is.null(nested)) {
+        expr <- rlang::quo_get_expr(arg)
+        name <- if (is.symbol(expr)) as.character(expr) else NULL
+        is_unknown_name <-
+          !is.null(name) &&
+          !name %in% data_vars &&
+          !rlang::env_has(
+            rlang::quo_get_env(arg),
+            name,
+            inherit = TRUE
+          )
+        if (is_unknown_name) {
+          name_proxy <- stats::setNames(
+            as.list(seq_along(data_vars)),
+            data_vars
+          )
+          resolve_grouping_selection(arg, name_proxy)
+        }
+        return(arg)
+      }
+
+      nested <- preflight_grouping_spec(nested, data_vars)
+      validate_grouping_nesting(
+        parent_type = grouping_spec$type,
+        nested = nested
+      )
+      rlang::new_quosure(nested, env = rlang::quo_get_env(arg))
+    }
+  )
+  grouping_spec
+}
+
+validate_grouping_nesting <- function(parent_type, nested) {
+  if (identical(parent_type, "set")) {
+    stop(
+      "A `grouping_set()` can contain columns, not another ",
+      "grouping family.",
+      call. = FALSE
+    )
+  }
+  if (
+    parent_type %in% c("rollup", "cube") &&
+      !identical(nested$type, "set")
+  ) {
+    stop(
+      sprintf(
+        paste0(
+          "`%s()` only accepts columns or `grouping_set()` ",
+          "composite dimensions."
+        ),
+        parent_type
+      ),
+      call. = FALSE
+    )
+  }
+  if (
+    parent_type %in% c("rollup", "cube") &&
+      identical(nested$type, "set") &&
+      length(nested$args) == 0L
+  ) {
+    stop(
+      "An empty `grouping_set()` cannot be a composite dimension.",
+      call. = FALSE
+    )
+  }
+
+  invisible(NULL)
+}
+
 compile_grouping_spec <- function(.grouping,
                                   data_vars,
                                   data_proxy = NULL,
@@ -6,6 +124,24 @@ compile_grouping_spec <- function(.grouping,
   .duplicates <- match.arg(.duplicates)
   stopifnot(is.character(data_vars), !anyNA(data_vars))
   stopifnot(is.character(.by), !anyNA(.by))
+  .grouping <- preflight_grouping_spec(.grouping, data_vars)
+  compile_grouping_spec_impl(
+    .grouping,
+    data_vars = data_vars,
+    data_proxy = data_proxy,
+    .by = .by,
+    .duplicates = .duplicates
+  )
+}
+
+compile_grouping_spec_impl <- function(.grouping,
+                                       data_vars,
+                                       data_proxy,
+                                       .by,
+                                       .duplicates) {
+  stopifnot(is.character(data_vars), !anyNA(data_vars))
+  stopifnot(is.character(.by), !anyNA(.by))
+  stopifnot(.duplicates %in% c("error", "drop", "keep"))
   if (is.null(data_proxy)) {
     data_proxy <- stats::setNames(as.list(seq_along(data_vars)), data_vars)
   }
@@ -21,13 +157,6 @@ compile_grouping_spec <- function(.grouping,
 
   if (is.null(.grouping)) {
     .grouping <- new_grouping_spec("set", list())
-  }
-  if (!inherits(.grouping, "margin_grouping_spec")) {
-    stop(
-      "`.grouping` must be created with `grouping_set()`, ",
-      "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`.",
-      call. = FALSE
-    )
   }
 
   expanded <- unname(
@@ -120,13 +249,7 @@ resolve_grouping_set <- function(spec, data_vars, data_proxy) {
       spec$args,
       function(arg) {
         nested <- grouping_arg_spec(arg, data_vars)
-        if (!is.null(nested)) {
-          stop(
-            "A `grouping_set()` can contain columns, not another ",
-            "grouping family.",
-            call. = FALSE
-          )
-        }
+        stopifnot(is.null(nested))
         resolve_grouping_selection(arg, data_proxy)
       }
     ),
@@ -136,14 +259,6 @@ resolve_grouping_set <- function(spec, data_vars, data_proxy) {
 }
 
 expand_grouping_sets <- function(spec, data_vars, data_proxy) {
-  if (length(spec$args) == 0L) {
-    stop(
-      "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
-      "for the empty grouping set.",
-      call. = FALSE
-    )
-  }
-
   unlist(
     lapply(
       spec$args,
@@ -169,37 +284,15 @@ resolve_grouping_units <- function(spec, data_vars, data_proxy) {
           cols <- resolve_grouping_selection(arg, data_proxy)
           return(lapply(cols, function(col) col))
         }
-        if (!identical(nested$type, "set")) {
-          stop(
-            sprintf(
-              paste0(
-                "`%s()` only accepts columns or `grouping_set()` ",
-                "composite dimensions."
-              ),
-              spec$type
-            ),
-            call. = FALSE
-          )
-        }
+        stopifnot(identical(nested$type, "set"))
         cols <- resolve_grouping_set(nested, data_vars, data_proxy)
-        if (length(cols) == 0L) {
-          stop(
-            "An empty `grouping_set()` cannot be a composite dimension.",
-            call. = FALSE
-          )
-        }
+        stopifnot(length(cols) > 0L)
         list(cols)
       }
     ),
     recursive = FALSE
   )
 
-  if (length(units) == 0L) {
-    stop(
-      sprintf("`%s()` requires at least one dimension.", spec$type),
-      call. = FALSE
-    )
-  }
   units
 }
 
@@ -266,8 +359,8 @@ grouping_arg_spec <- function(arg, data_vars) {
   constructors <- c(
     "grouping_set", "grouping_sets", "rollup", "cube", "grouping_spec"
   )
-  call_name <- rlang::call_name(expr)
-  call_ns <- rlang::call_ns(expr)
+  call_name <- if (rlang::is_call(expr)) rlang::call_name(expr) else NULL
+  call_ns <- if (rlang::is_call(expr)) rlang::call_ns(expr) else NULL
   is_constructor_call <-
     !is.null(call_name) &&
     call_name %in% constructors &&
