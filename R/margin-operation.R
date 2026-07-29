@@ -66,7 +66,9 @@ prepare_margin_operation <- function(.data,
       data_vars <- get_col_names(data, dplyr::everything())
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
       grouping_spec <- preflight$spec
-      plan <- if (preflight$name_only) {
+      if (preflight$name_only) {
+        # Reject name-only plan errors before acquiring typed metadata. The
+        # canonical plan is compiled from the typed snapshot below.
         compile_grouping_spec_impl(
           grouping_spec,
           data_vars = data_vars,
@@ -74,19 +76,15 @@ prepare_margin_operation <- function(.data,
           .by = by,
           .duplicates = .duplicates
         )
-      } else {
-        NULL
       }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
-      if (is.null(plan)) {
-        plan <- compile_grouping_spec_impl(
-          grouping_spec,
-          data_vars = data_vars,
-          data_proxy = data_proxy,
-          .by = by,
-          .duplicates = .duplicates
-        )
-      }
+      plan <- compile_grouping_spec_impl(
+        grouping_spec,
+        data_vars = data_vars,
+        data_proxy = data_proxy,
+        .by = by,
+        .duplicates = .duplicates
+      )
       column_info <- margin_column_info(
         data_proxy,
         plan$dimensions,
