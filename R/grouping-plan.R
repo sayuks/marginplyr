@@ -418,38 +418,47 @@ expand_grouping_product <- function(spec, data_vars, data_proxy) {
   product
 }
 
-grouping_kind_rules <- list(
-  set = list(
-    constructor = "grouping_set",
-    validate_empty = allow_empty_grouping,
-    validate_nested = reject_nested_in_set,
-    expand = expand_single_grouping_set
-  ),
-  sets = list(
-    constructor = "grouping_sets",
-    validate_empty = validate_empty_grouping_sets,
-    validate_nested = allow_nested_grouping,
-    expand = expand_grouping_sets
-  ),
-  rollup = list(
-    constructor = "rollup",
-    validate_empty = validate_empty_grouping_units,
-    validate_nested = validate_nested_grouping_units,
-    expand = expand_rollup
-  ),
-  cube = list(
-    constructor = "cube",
-    validate_empty = validate_empty_grouping_units,
-    validate_nested = validate_nested_grouping_units,
-    expand = expand_cube
-  ),
-  product = list(
-    constructor = "grouping_spec",
-    validate_empty = allow_empty_grouping,
-    validate_nested = allow_nested_grouping,
-    expand = expand_grouping_product
-  )
-)
+grouping_kind_rules <- local({
+  rules <- NULL
+
+  function() {
+    if (is.null(rules)) {
+      rules <<- list(
+        set = list(
+          constructor = "grouping_set",
+          validate_empty = allow_empty_grouping,
+          validate_nested = reject_nested_in_set,
+          expand = expand_single_grouping_set
+        ),
+        sets = list(
+          constructor = "grouping_sets",
+          validate_empty = validate_empty_grouping_sets,
+          validate_nested = allow_nested_grouping,
+          expand = expand_grouping_sets
+        ),
+        rollup = list(
+          constructor = "rollup",
+          validate_empty = validate_empty_grouping_units,
+          validate_nested = validate_nested_grouping_units,
+          expand = expand_rollup
+        ),
+        cube = list(
+          constructor = "cube",
+          validate_empty = validate_empty_grouping_units,
+          validate_nested = validate_nested_grouping_units,
+          expand = expand_cube
+        ),
+        product = list(
+          constructor = "grouping_spec",
+          validate_empty = allow_empty_grouping,
+          validate_nested = allow_nested_grouping,
+          expand = expand_grouping_product
+        )
+      )
+    }
+    rules
+  }
+})
 
 find_grouping_kind_rule <- function(kind) {
   if (
@@ -459,12 +468,12 @@ find_grouping_kind_rule <- function(kind) {
   ) {
     return(NULL)
   }
-  grouping_kind_rules[[kind]]
+  grouping_kind_rules()[[kind]]
 }
 
 grouping_constructor_names <- function() {
   unname(vapply(
-    grouping_kind_rules,
+    grouping_kind_rules(),
     function(rule) rule$constructor,
     character(1)
   ))
