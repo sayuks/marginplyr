@@ -39,8 +39,7 @@
 #'     records = nrow(data),
 #'     units = sum(data$units),
 #'     revenue = sum(data$revenue)
-#'   ) |>
-#'   dplyr::select(-data)
+#'   )
 #'
 #' # Existing groups become additional fixed row-wise keys.
 #' grouped_rowwise <- retail_sales |>
@@ -87,8 +86,7 @@
 #'     dplyr::mutate(
 #'       records = nrow(data),
 #'       revenue = sum(data$revenue)
-#'     ) |>
-#'     dplyr::select(-data)
+#'     )
 #' }
 nest_by_with_margins <- function(.data,
                                  .by = NULL,

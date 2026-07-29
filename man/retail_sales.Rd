@@ -4,7 +4,7 @@
 \alias{retail_sales}
 \title{Monthly sales for a fictional retail chain}
 \format{
-A data frame with 24 rows and 8 variables:
+A tibble with 24 rows and 8 variables:
 \describe{
 \item{year}{Calendar year.}
 \item{month}{Three-letter month abbreviation.}

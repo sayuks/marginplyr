@@ -205,9 +205,12 @@ nested_sections <- january_sales |>
     .grouping = rollup(region, store)
   )
 
+# Convert to a tibble so nested data frames print compactly.
 nested_sections |>
-  dplyr::mutate(records = vapply(data, nrow, integer(1))) |>
-  dplyr::select(-data)
+  dplyr::as_tibble() |>
+  head()
+
+nested_sections$data[[1]]
 ```
 
 Use `.keep = TRUE` to retain the original grouping columns inside each nested

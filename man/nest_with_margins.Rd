@@ -169,13 +169,10 @@ nested <- nest_with_margins(
   january_sales,
   .grouping = rollup(region, store)
 )
-dplyr::select(
-  dplyr::mutate(
-    nested,
-    records = vapply(data, nrow, integer(1))
-  ),
-  -data
-)
+# Convert to a tibble so nested data frames print compactly.
+nested |>
+  dplyr::as_tibble() |>
+  head()
 nested$data[[1]]
 
 # Keep original region and store values inside each nested table as well.

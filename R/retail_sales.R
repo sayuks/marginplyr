@@ -6,7 +6,7 @@
 #' distinguish a source missing value from a subtotal produced by a grouping
 #' operation.
 #'
-#' @format A data frame with 24 rows and 8 variables:
+#' @format A tibble with 24 rows and 8 variables:
 #' \describe{
 #'   \item{year}{Calendar year.}
 #'   \item{month}{Three-letter month abbreviation.}

@@ -184,8 +184,7 @@ january_sales |>
     records = nrow(data),
     units = sum(data$units),
     revenue = sum(data$revenue)
-  ) |>
-  dplyr::select(-data)
+  )
 
 # Existing groups become additional fixed row-wise keys.
 grouped_rowwise <- retail_sales |>
@@ -232,8 +231,7 @@ if (requireNamespace("dtplyr", quietly = TRUE)) {
     dplyr::mutate(
       records = nrow(data),
       revenue = sum(data$revenue)
-    ) |>
-    dplyr::select(-data)
+    )
 }
 }
 \seealso{

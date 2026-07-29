@@ -1,10 +1,8 @@
 ## R CMD check results
 
-0 errors | 0 warnings | 2 notes
+0 errors | 0 warnings | 1 note
 
 * This is a new submission.
-* HTML validation was skipped because the HTML Tidy installed in the local
-  check environment is too old.
 
 The final source tarball completed the CRAN incoming check. Package
 installation, examples, tests, Rd cross-references, vignette rebuilding, and

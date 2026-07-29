@@ -32,7 +32,8 @@ retail_sales <- data.frame(
     8400, 3600, 2500, 9600, 4200, 1900
   ),
   stringsAsFactors = FALSE
-)
+) |>
+  dplyr::as_tibble()
 
 dir.create("data", showWarnings = FALSE)
 save(retail_sales, file = "data/retail_sales.rda", compress = "xz")

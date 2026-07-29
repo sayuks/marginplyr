@@ -275,7 +275,7 @@ combined_totals <- retail_sales |>
   )
 
 combined_totals |>
-  slice_head(n = 12)
+  head(n = 12)
 ```
 
 The two families each contain three sets, so their Cartesian product contains
@@ -308,7 +308,7 @@ retail_sales |>
       all_of(c("product", "channel"))
     )
   ) |>
-  slice_head(n = 12)
+  head(n = 12)
 ```
 
 Grouping specifications accept tidy-select expressions. They select existing
@@ -502,7 +502,7 @@ retail_sales |>
     .grouping = rollup(region, store),
     .sort = FALSE
   ) |>
-  slice_head(n = 6)
+  head(n = 6)
 ```
 
 A summary may return a one-row data frame as in dplyr, but none of its output
@@ -581,9 +581,10 @@ nested_sections <- january_sales |>
     .grouping = rollup(region, store)
   )
 
+# Convert to a tibble so nested data frames print compactly.
 nested_sections |>
-  mutate(records = vapply(data, nrow, integer(1))) |>
-  select(-data)
+  dplyr::as_tibble() |>
+  head()
 
 # Inspect the source rows behind the first visible group.
 nested_sections$data[[1]]
@@ -633,8 +634,7 @@ january_sales |>
     records = nrow(data),
     units = sum(data$units),
     revenue = sum(data$revenue)
-  ) |>
-  select(-data)
+  )
 ```
 
 The row-wise result is local even when the input is a dtplyr step:
@@ -648,8 +648,7 @@ january_sales |>
   mutate(
     records = nrow(data),
     revenue = sum(data$revenue)
-  ) |>
-  select(-data)
+  )
 ```
 
 Because `nest_by_with_margins()` collects before making the result row-wise,

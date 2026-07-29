@@ -259,18 +259,25 @@ nested_sections <- january_sales |>
     .grouping = rollup(region, store)
   )
 
+# Convert to a tibble so nested data frames print compactly.
 nested_sections |>
-  dplyr::mutate(records = vapply(data, nrow, integer(1))) |>
-  dplyr::select(-data)
-#>   region         store records
-#> 1   East        Boston       1
-#> 2   East      New York       1
-#> 3   East         Total       3
-#> 4   East          <NA>       1
-#> 5  Total         Total       6
-#> 6   West San Francisco       1
-#> 7   West       Seattle       2
-#> 8   West         Total       3
+  dplyr::as_tibble() |>
+  head()
+#> # A tibble: 6 × 3
+#>   region store         data
+#>   <chr>  <chr>         <list>
+#> 1 East   Boston        <tibble [1 × 6]>
+#> 2 East   New York      <tibble [1 × 6]>
+#> 3 East   Total         <tibble [3 × 6]>
+#> 4 East   <NA>          <tibble [1 × 6]>
+#> 5 Total  Total         <tibble [6 × 6]>
+#> 6 West   San Francisco <tibble [1 × 6]>
+
+nested_sections$data[[1]]
+#> # A tibble: 1 × 6
+#>    year month product channel units revenue
+#>   <int> <chr> <chr>   <chr>   <int>   <dbl>
+#> 1  2026 Jan   Laptop  Store       5    6000
 ```
 
 Use `.keep = TRUE` to retain the original grouping columns inside each
