@@ -4,39 +4,39 @@ validate_grouping_spec_early <- function(grouping_spec) {
   }
   if (!inherits(grouping_spec, "margin_grouping_spec")) {
     stop(
-      "`.grouping` must be created with `grouping_set()`, ",
-      "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`.",
+      "`.grouping` must be created with ",
+      format_grouping_constructors(),
+      ".",
       call. = FALSE
     )
   }
 
-  type <- grouping_spec$type
+  kind <- grouping_spec$type
   args <- grouping_spec$args
   if (
-    !is.character(type) ||
-      length(type) != 1L ||
-      !type %in% c("set", "sets", "rollup", "cube", "product") ||
+    !is.character(kind) ||
+      length(kind) != 1L ||
       !is.list(args)
   ) {
-    stop("Invalid grouping specification.", call. = FALSE)
+    abort_invalid_grouping_spec()
   }
-  if (identical(type, "sets") && length(args) == 0L) {
-    stop(
-      "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
-      "for the empty grouping set.",
-      call. = FALSE
-    )
+
+  rule <- find_grouping_kind_rule(kind)
+  if (is.null(rule)) {
+    abort_invalid_grouping_spec()
   }
-  if (type %in% c("rollup", "cube") && length(args) == 0L) {
-    abort_empty_grouping_units(type)
-  }
+  rule$validate_empty(grouping_spec)
 
   invisible(NULL)
 }
 
-abort_empty_grouping_units <- function(type) {
+abort_invalid_grouping_spec <- function() {
+  stop("Invalid grouping specification.", call. = FALSE)
+}
+
+abort_empty_grouping_units <- function(kind) {
   stop(
-    sprintf("`%s()` requires at least one dimension.", type),
+    sprintf("`%s()` requires at least one dimension.", kind),
     call. = FALSE
   )
 }
@@ -46,6 +46,60 @@ abort_empty_composite <- function() {
     "An empty `grouping_set()` cannot be a composite dimension.",
     call. = FALSE
   )
+}
+
+allow_empty_grouping <- function(spec) {
+  invisible(NULL)
+}
+
+validate_empty_grouping_sets <- function(spec) {
+  if (length(spec$args) == 0L) {
+    stop(
+      "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
+      "for the empty grouping set.",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
+validate_empty_grouping_units <- function(spec) {
+  if (length(spec$args) == 0L) {
+    abort_empty_grouping_units(spec$type)
+  }
+  invisible(NULL)
+}
+
+reject_nested_in_set <- function(parent, nested) {
+  stop(
+    "A `grouping_set()` can contain columns, not another ",
+    "grouping family.",
+    call. = FALSE
+  )
+}
+
+allow_nested_grouping <- function(parent, nested) {
+  invisible(NULL)
+}
+
+validate_nested_grouping_units <- function(parent, nested) {
+  if (!identical(nested$type, "set")) {
+    stop(
+      sprintf(
+        paste0(
+          "`%s()` only accepts columns or `grouping_set()` ",
+          "composite dimensions."
+        ),
+        parent$type
+      ),
+      call. = FALSE
+    )
+  }
+  if (length(nested$args) == 0L) {
+    abort_empty_composite()
+  }
+
+  invisible(NULL)
 }
 
 is_name_only_expr <- function(expr, env, data_vars) {
@@ -111,6 +165,8 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
     return(list(spec = NULL, name_only = TRUE))
   }
 
+  rule <- find_grouping_kind_rule(grouping_spec$type)
+  stopifnot(!is.null(rule))
   name_only <- TRUE
   for (arg in grouping_spec$args) {
     nested <- grouping_arg_spec(arg, data_vars)
@@ -120,47 +176,10 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
     }
 
     nested_preflight <- preflight_grouping_spec(nested, data_vars)
-    validate_grouping_nesting(
-      parent_type = grouping_spec$type,
-      nested = nested_preflight$spec
-    )
+    rule$validate_nested(grouping_spec, nested_preflight$spec)
     name_only <- name_only && nested_preflight$name_only
   }
   list(spec = grouping_spec, name_only = name_only)
-}
-
-validate_grouping_nesting <- function(parent_type, nested) {
-  if (identical(parent_type, "set")) {
-    stop(
-      "A `grouping_set()` can contain columns, not another ",
-      "grouping family.",
-      call. = FALSE
-    )
-  }
-  if (
-    parent_type %in% c("rollup", "cube") &&
-      !identical(nested$type, "set")
-  ) {
-    stop(
-      sprintf(
-        paste0(
-          "`%s()` only accepts columns or `grouping_set()` ",
-          "composite dimensions."
-        ),
-        parent_type
-      ),
-      call. = FALSE
-    )
-  }
-  if (
-    parent_type %in% c("rollup", "cube") &&
-      identical(nested$type, "set") &&
-      length(nested$args) == 0L
-  ) {
-    abort_empty_composite()
-  }
-
-  invisible(NULL)
 }
 
 compile_grouping_spec <- function(.grouping,
@@ -272,15 +291,15 @@ compile_grouping_spec_impl <- function(.grouping,
 }
 
 expand_grouping_family <- function(spec, data_vars, data_proxy) {
-  switch(
-    spec$type,
-    set = list(resolve_grouping_set(spec, data_vars, data_proxy)),
-    sets = expand_grouping_sets(spec, data_vars, data_proxy),
-    rollup = expand_rollup(spec, data_vars, data_proxy),
-    cube = expand_cube(spec, data_vars, data_proxy),
-    product = expand_grouping_product(spec, data_vars, data_proxy),
+  rule <- find_grouping_kind_rule(spec$type)
+  if (is.null(rule)) {
     stop("Unknown grouping specification type.", call. = FALSE)
-  )
+  }
+  rule$expand(spec, data_vars, data_proxy)
+}
+
+expand_single_grouping_set <- function(spec, data_vars, data_proxy) {
+  list(resolve_grouping_set(spec, data_vars, data_proxy))
 }
 
 resolve_grouping_set <- function(spec, data_vars, data_proxy) {
@@ -399,15 +418,75 @@ expand_grouping_product <- function(spec, data_vars, data_proxy) {
   product
 }
 
+grouping_kind_rules <- list(
+  set = list(
+    constructor = "grouping_set",
+    validate_empty = allow_empty_grouping,
+    validate_nested = reject_nested_in_set,
+    expand = expand_single_grouping_set
+  ),
+  sets = list(
+    constructor = "grouping_sets",
+    validate_empty = validate_empty_grouping_sets,
+    validate_nested = allow_nested_grouping,
+    expand = expand_grouping_sets
+  ),
+  rollup = list(
+    constructor = "rollup",
+    validate_empty = validate_empty_grouping_units,
+    validate_nested = validate_nested_grouping_units,
+    expand = expand_rollup
+  ),
+  cube = list(
+    constructor = "cube",
+    validate_empty = validate_empty_grouping_units,
+    validate_nested = validate_nested_grouping_units,
+    expand = expand_cube
+  ),
+  product = list(
+    constructor = "grouping_spec",
+    validate_empty = allow_empty_grouping,
+    validate_nested = allow_nested_grouping,
+    expand = expand_grouping_product
+  )
+)
+
+find_grouping_kind_rule <- function(kind) {
+  if (
+    !is.character(kind) ||
+      length(kind) != 1L ||
+      is.na(kind)
+  ) {
+    return(NULL)
+  }
+  grouping_kind_rules[[kind]]
+}
+
+grouping_constructor_names <- function() {
+  unname(vapply(
+    grouping_kind_rules,
+    function(rule) rule$constructor,
+    character(1)
+  ))
+}
+
+format_grouping_constructors <- function() {
+  constructors <- paste0("`", grouping_constructor_names(), "()`")
+  last <- length(constructors)
+  paste0(
+    paste(constructors[-last], collapse = ", "),
+    ", or ",
+    constructors[[last]]
+  )
+}
+
 grouping_arg_spec <- function(arg, data_vars) {
   expr <- rlang::quo_get_expr(arg)
   if (is.symbol(expr) && as.character(expr) %in% data_vars) {
     return(NULL)
   }
 
-  constructors <- c(
-    "grouping_set", "grouping_sets", "rollup", "cube", "grouping_spec"
-  )
+  constructors <- grouping_constructor_names()
   call_name <- if (rlang::is_call(expr)) rlang::call_name(expr) else NULL
   call_ns <- if (rlang::is_call(expr)) rlang::call_ns(expr) else NULL
   is_constructor_call <-

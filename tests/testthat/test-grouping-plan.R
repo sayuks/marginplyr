@@ -56,6 +56,151 @@ test_that("grouping families support union, nesting, and Cartesian product", {
   )
 })
 
+test_that("grouping specification kinds enforce the nesting grammar", {
+  nested_calls <- list(
+    set = quote(grouping_set(a)),
+    sets = quote(grouping_sets(grouping_set(a))),
+    rollup = quote(rollup(a)),
+    cube = quote(cube(a)),
+    product = quote(grouping_spec(grouping_set(a)))
+  )
+  allowed_nested <- list(
+    set = character(),
+    sets = names(nested_calls),
+    rollup = "set",
+    cube = "set",
+    product = names(nested_calls)
+  )
+  nesting_errors <- c(
+    set = paste0(
+      "A `grouping_set()` can contain columns, not another ",
+      "grouping family."
+    ),
+    rollup = paste0(
+      "`rollup()` only accepts columns or `grouping_set()` ",
+      "composite dimensions."
+    ),
+    cube = paste0(
+      "`cube()` only accepts columns or `grouping_set()` ",
+      "composite dimensions."
+    )
+  )
+  constructors <- c(
+    set = "grouping_set",
+    sets = "grouping_sets",
+    rollup = "rollup",
+    cube = "cube",
+    product = "grouping_spec"
+  )
+
+  compile_nested <- function(parent, child) {
+    spec <- eval(
+      rlang::call2(constructors[[parent]], nested_calls[[child]])
+    )
+    compile_grouping_spec(spec, "a", .duplicates = "keep")
+  }
+
+  for (parent in names(constructors)) {
+    for (child in names(nested_calls)) {
+      if (child %in% allowed_nested[[parent]]) {
+        expect_no_error(compile_nested(parent, child))
+        next
+      }
+
+      error <- expect_error(compile_nested(parent, child))
+      expect_s3_class(error, "simpleError")
+      expect_identical(conditionMessage(error), nesting_errors[[parent]])
+    }
+  }
+
+  for (constructor in constructors) {
+    spec <- eval(rlang::call2(constructor, rlang::sym("a")))
+    expect_no_error(
+      compile_grouping_spec(spec, "a", .duplicates = "keep")
+    )
+  }
+})
+
+test_that("empty grouping rules preserve their phase and error precedence", {
+  expect_equal(
+    compile_grouping_spec(grouping_set(a), "a")$sets,
+    list("a")
+  )
+  expect_equal(
+    compile_grouping_spec(grouping_set(), "a")$sets,
+    list(character())
+  )
+  expect_equal(
+    compile_grouping_spec(grouping_spec(), "a")$sets,
+    list(character())
+  )
+
+  sets_error <- expect_error(
+    compile_grouping_spec(grouping_sets(), "a")
+  )
+  expect_s3_class(sets_error, "simpleError")
+  expect_identical(
+    conditionMessage(sets_error),
+    paste0(
+      "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
+      "for the empty grouping set."
+    )
+  )
+
+  for (constructor in c("rollup", "cube")) {
+    spec <- eval(rlang::call2(constructor))
+    error <- expect_error(compile_grouping_spec(spec, "a"))
+    expect_s3_class(error, "simpleError")
+    expect_identical(
+      conditionMessage(error),
+      sprintf("`%s()` requires at least one dimension.", constructor)
+    )
+  }
+
+  for (constructor in c("rollup", "cube")) {
+    resolved_spec <- eval(rlang::call2(
+      constructor,
+      quote(tidyselect::any_of("missing"))
+    ))
+    resolved_empty <- expect_error(
+      compile_grouping_spec(resolved_spec, "a")
+    )
+    expect_identical(
+      conditionMessage(resolved_empty),
+      sprintf("`%s()` requires at least one dimension.", constructor)
+    )
+
+    composite_spec <- eval(rlang::call2(
+      constructor,
+      quote(grouping_set(tidyselect::any_of("missing")))
+    ))
+    empty_composite <- expect_error(
+      compile_grouping_spec(composite_spec, "a")
+    )
+    expect_identical(
+      conditionMessage(empty_composite),
+      "An empty `grouping_set()` cannot be a composite dimension."
+    )
+  }
+
+  child_error <- expect_error(
+    compile_grouping_spec(rollup(grouping_sets()), "a")
+  )
+  expect_identical(conditionMessage(child_error), conditionMessage(sets_error))
+})
+
+test_that("invalid grouping input lists every supported constructor", {
+  error <- expect_error(compile_grouping_spec(1, "a"))
+  expect_s3_class(error, "simpleError")
+  expect_identical(
+    conditionMessage(error),
+    paste0(
+      "`.grouping` must be created with `grouping_set()`, ",
+      "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`."
+    )
+  )
+})
+
 test_that("selectors and fixed .by columns are resolved once", {
   selected <- c("a", "b")
   plan <- compile_grouping_spec(

@@ -75,6 +75,14 @@ backend-independent Grouping plan: fixed keys, resolved dimensions, expanded
 grouping sets, and the duplicate-set policy. It resolves selections against
 the prepared metadata but does not read a backend or execute a margin.
 
+Grouping specification kinds are governed by one private strategy registry in
+this module. Each kind rule owns empty-argument validation, validation of
+nested specifications, and expansion dispatch. Structural preflight remains
+separate from validation that depends on resolved selections, and nested
+specifications are validated before their parent-child relationship. The
+registry is used only while compiling; neither it nor the source specification
+is retained in the resulting Grouping plan.
+
 ### Margin label (`R/margin-label.R`)
 
 Owns label normalization, factor/backend restrictions, optional collision
@@ -154,7 +162,8 @@ The test suite divides supporting contracts as follows:
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
   factor backend contracts.
 - `test-grouping-plan.R` covers the backend-independent Grouping
-  specification compiler directly.
+  specification compiler directly, including the complete kind-nesting
+  grammar, phase-sensitive empty rules, error precedence, and expansion order.
 
 Backend tests may instrument a backend seam or inspect semantic query shape,
 but should not couple to the Margin operation representation or require

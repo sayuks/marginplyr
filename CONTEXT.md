@@ -10,6 +10,11 @@ A user-declared description of the grouping sets, rollups, cubes, or products
 to be applied.
 _Avoid_: Grouping expression
 
+**Grouping specification kind**:
+The semantic form of one node in a Grouping specification: grouping set,
+grouping-set union, rollup, cube, or Cartesian product.
+_Avoid_: Grouping specification type
+
 **Grouping plan**:
 The backend-independent grouping semantics obtained by fully expanding a
 grouping specification.

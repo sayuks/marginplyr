@@ -92,6 +92,39 @@ test_that("Cartesian products, nesting, and composite dimensions execute", {
   expect_true(nrow(nested) > 0L)
 })
 
+test_that("grouping grammar errors retain each public verb call", {
+  data <- data.frame(a = c("x", "y"), value = 1:2)
+  calls <- list(
+    summarize_with_margins = quote(
+      summarize_with_margins(
+        data,
+        n = dplyr::n(),
+        .grouping = rollup(cube(a))
+      )
+    ),
+    expand_with_margins = quote(
+      expand_with_margins(data, .grouping = rollup(cube(a)))
+    ),
+    nest_with_margins = quote(
+      nest_with_margins(data, .grouping = rollup(cube(a)))
+    ),
+    nest_by_with_margins = quote(
+      nest_by_with_margins(data, .grouping = rollup(cube(a)))
+    )
+  )
+  expected_message <- paste0(
+    "`rollup()` only accepts columns or `grouping_set()` ",
+    "composite dimensions."
+  )
+
+  for (verb in names(calls)) {
+    error <- expect_error(eval(calls[[verb]]))
+    expect_s3_class(error, "simpleError")
+    expect_identical(conditionMessage(error), expected_message)
+    expect_identical(rlang::call_name(conditionCall(error)), verb)
+  }
+})
+
 test_that("fixed .by columns are never replaced", {
   data <- data.frame(
     year = c(2024L, 2024L, 2025L),
