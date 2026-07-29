@@ -72,11 +72,12 @@ backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 
 ## Installation
 
-<!-- You can install `marginplyr` from CRAN: -->
+You can install `marginplyr` from CRAN:
 
-<!-- ``` r -->
-<!-- install.packages("marginplyr") -->
-<!-- ``` -->
+``` r
+install.packages("marginplyr")
+```
+
 You can install the development version from
 [GitHub](https://github.com/sayuks/marginplyr) with:
 
