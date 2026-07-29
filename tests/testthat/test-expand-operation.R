@@ -1,0 +1,244 @@
+test_that("expand preserves fixed keys, types, column order, and sorting", {
+  data <- data.frame(
+    value = 1:3,
+    group = ordered(c("b", "a", "b"), levels = c("a", "b")),
+    fixed = c(2L, 1L, 1L)
+  )
+
+  result <- expand_with_margins(
+    data,
+    .by = fixed,
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_identical(names(result), c("fixed", "group", "value"))
+  expect_identical(dplyr::group_vars(result), character())
+  expect_s3_class(result$group, "ordered")
+  expect_identical(levels(result$group), c("a", "b"))
+  expect_identical(result$fixed, c(1L, 1L, 1L, 1L, 2L, 2L))
+  expect_identical(as.character(result$group), c("a", "b", NA, NA, "b", NA))
+  expect_identical(result$value, c(2L, 3L, 2L, 3L, 1L, 1L))
+})
+
+expand_proxy_capture <- new.env(parent = emptyenv())
+
+expand_proxy_counter_head <- function(x, ...) {
+  result <- NextMethod()
+  class(result) <- unique(c("margin_expand_proxy_counter", class(result)))
+  result
+}
+
+expand_proxy_counter_collect <- function(x, ...) {
+  expand_proxy_capture$n <- expand_proxy_capture$n + 1L
+  NextMethod()
+}
+
+test_that("expand rejects invalid grouping before typed metadata acquisition", {
+  skip_if_not_installed("dtplyr")
+  registerS3method(
+    "head",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
+  class(source) <- c("margin_expand_proxy_counter", class(source))
+  expand_proxy_capture$n <- 0L
+
+  error <- expect_error(
+    expand_with_margins(source, .grouping = 1),
+    "must be created with"
+  )
+
+  expect_identical(expand_proxy_capture$n, 0L)
+  expect_match(
+    deparse1(conditionCall(error)),
+    "expand_with_margins",
+    fixed = TRUE
+  )
+})
+
+test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
+  skip_if_not_installed("dtplyr")
+  registerS3method(
+    "head",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  source <- dtplyr::lazy_dt(data.frame(
+    group = c("x", "y"),
+    code = c(1L, 2L),
+    value = c(10, 20)
+  ))
+  class(source) <- c("margin_expand_proxy_counter", class(source))
+  expand_proxy_capture$n <- 0L
+
+  query <- expand_with_margins(
+    source,
+    .grouping = rollup(where(is.numeric)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(expand_proxy_capture$n, 1L)
+  result <- dplyr::collect(query)
+  expect_identical(names(result), c("code", "value", "group"))
+  expect_identical(nrow(result), 6L)
+})
+
+test_that("Arrow expansion uses schema metadata without collecting", {
+  skip_if_not_installed("arrow")
+  registerS3method(
+    "head",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  source <- arrow::Table$create(data.frame(
+    group = c("x", "y"),
+    value = c(1L, 2L)
+  )) |>
+    dplyr::mutate(doubled = value * 2L)
+  class(source) <- c("margin_expand_proxy_counter", class(source))
+  expand_proxy_capture$n <- 0L
+
+  query <- expand_with_margins(
+    source,
+    .grouping = rollup(where(is.character)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+
+  expect_identical(expand_proxy_capture$n, 0L)
+  result <- dplyr::collect(query)
+  expect_identical(nrow(result), 4L)
+  expect_true(anyNA(result$group))
+  expect_identical(result$doubled, c(2L, 4L, 2L, 4L))
+})
+
+test_that("DuckDB expansion acquires one typed selection proxy", {
+  skip_if_not_installed("duckdb")
+  skip_if_not_installed("DBI")
+  registerS3method(
+    "head",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_expand_proxy_counter",
+    expand_proxy_counter_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    data.frame(
+      group = c("x", "y"),
+      code = c(1L, 2L),
+      value = c(10, 20)
+    ),
+    "expand_proxy_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  class(source) <- c("margin_expand_proxy_counter", class(source))
+  expand_proxy_capture$n <- 0L
+
+  query <- expand_with_margins(
+    source,
+    .grouping = rollup(where(is.numeric)),
+    .margin_label = NULL,
+    .sort = FALSE
+  )
+
+  expect_s3_class(query, "tbl_lazy")
+  expect_identical(expand_proxy_capture$n, 1L)
+  result <- dplyr::collect(query)
+  expect_identical(names(result), c("code", "value", "group"))
+  expect_identical(nrow(result), 6L)
+})
+
+test_that("portable SQL expansion stays lazy and uses UNION ALL", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(
+      check.names = FALSE,
+      "fixed key" = c(1L, 1L),
+      "group name" = c("x", "y"),
+      value = 1:2,
+      ..marginplyr_key_1 = 3:4
+    ),
+    con = dbplyr::simulate_sqlite()
+  )
+
+  query <- expand_with_margins(
+    remote,
+    .by = `fixed key`,
+    .grouping = rollup(`group name`),
+    .margin_label = "Director's total",
+    .sort = TRUE
+  )
+  sql <- dbplyr::sql_render(query)
+
+  expect_s3_class(query, "tbl_lazy")
+  expect_match(sql, "UNION ALL", fixed = TRUE)
+  expect_match(sql, "`fixed key`", fixed = TRUE)
+  expect_match(sql, "`group name`", fixed = TRUE)
+  expect_match(sql, "'Director''s total'", fixed = TRUE)
+  expect_match(sql, "ORDER BY", fixed = TRUE)
+  expect_identical(
+    as.character(dplyr::tbl_vars(query)),
+    c("fixed key", "group name", "value", "..marginplyr_key_1")
+  )
+})
+
+test_that("expand preserves duplicate grouping-set policies", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  spec <- grouping_sets(grouping_set(group), grouping_set(group))
+
+  expect_error(
+    expand_with_margins(data, .grouping = spec),
+    "Duplicate grouping sets"
+  )
+  dropped <- expand_with_margins(
+    data,
+    .grouping = spec,
+    .duplicates = "drop"
+  )
+  kept <- expand_with_margins(
+    data,
+    .grouping = spec,
+    .duplicates = "keep"
+  )
+
+  expect_identical(nrow(dropped), 2L)
+  expect_identical(nrow(kept), 4L)
+  expect_identical(names(kept), names(data))
+})

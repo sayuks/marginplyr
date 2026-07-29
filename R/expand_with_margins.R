@@ -60,55 +60,32 @@ expand_with_margins <- function(.data,
                                 .check_margin_label = is.data.frame(.data),
                                 .duplicates = c("error", "drop", "keep"),
                                 .sort = is.data.frame(.data)) {
-  assert_lazy_table(.data)
-  assert_logical_scalar(.check_margin_label)
-  assert_logical_scalar(.sort)
-  .margin_label <- normalize_margin_label(.margin_label)
-  .duplicates <- match.arg(.duplicates)
-
+  call <- rlang::current_call()
+  with_margin_error_call(assert_lazy_table(.data), call = call)
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
-  grouping_spec <- rlang::eval_tidy(grouping_quo)
-  input <- prepare_margin_input(.data, by_quo)
-  .data <- input$data
-  by <- input$by
-  backend <- grouping_backend(.data)
-  data_vars <- get_col_names(.data, dplyr::everything())
-  data_proxy <- grouping_selection_proxy(.data, backend = backend)
-  plan <- compile_grouping_spec(
-    grouping_spec,
-    data_vars = data_vars,
-    data_proxy = data_proxy,
-    .by = by,
-    .duplicates = .duplicates
-  )
 
-  column_info <- margin_column_info(
-    data_proxy,
-    plan$dimensions,
-    backend = backend
-  )
-  validate_margin_label(
+  operation <- prepare_margin_operation(
     .data,
-    dimensions = plan$dimensions,
+    by_quo = by_quo,
+    grouping_quo = grouping_quo,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
-    column_info = column_info,
-    backend = backend
+    .duplicates = .duplicates,
+    .sort = .sort,
+    call = call
   )
+  result <- execute_margin_expand(operation)
+  finalize_margin_operation(operation, result)
+}
 
-  result <- expand_margin_union(
-    .data,
-    plan = plan,
-    .margin_label = .margin_label,
-    column_info = column_info
-  )
-
-  finish_margin_result(
-    result,
-    plan = plan,
-    factor_info = column_info$factors,
-    .margin_label = .margin_label,
-    .sort = .sort
+execute_margin_expand <- function(operation) {
+  check_margin_operation(operation)
+  validate_margin_operation(operation)
+  expand_margin_union(
+    operation$data,
+    plan = operation$plan,
+    .margin_label = operation$margin_label,
+    column_info = operation$column_info
   )
 }
