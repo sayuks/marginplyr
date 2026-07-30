@@ -33,7 +33,8 @@ summarise_with_margins(
 \item{.data}{A data frame or lazy table.}
 
 \item{...}{Name-value pairs as used in \code{\link[dplyr:summarize]{dplyr::summarize()}}. Contextual
-helpers \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} can also be used here.}
+helpers \code{\link[=grouping_bit]{grouping_bit()}}, \code{\link[=grouping_id]{grouping_id()}}, and \code{\link[=share_of_parent]{share_of_parent()}} can
+also be used here.}
 
 \item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
 every grouping set. These columns never receive \code{.margin_label}. When
@@ -195,6 +196,26 @@ rejected. They describe one branch-local grouping or data mask, whereas a
 margin result combines several grouping sets and their identifiers, row
 positions, or columns would not have one global meaning. Use
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} to identify margin levels.
+}
+
+\section{Parent shares}{
+
+On local data, \code{\link[=share_of_parent]{share_of_parent()}} calculates a preceding named numeric
+scalar summary's ratio to its immediate less detailed \code{\link[=rollup]{rollup()}} parent.
+It supports direct named expressions and a constrained \code{\link[dplyr:across]{dplyr::across()}}
+form for multiple preceding summaries. Fixed \code{.by} keys partition the
+calculation, composite dimensions move together, and duplicate occurrences
+skip identical sets when choosing a parent.
+
+Root rows receive \code{1.0}. Missing numerators or denominators and zero
+denominators receive \code{NA_real_}; other finite ratios are not clamped.
+Parent matching is structural, so \code{.id}, missing grouping values, and
+displayed Margin labels do not determine the parent.
+
+Parent shares require one pure \code{\link[=rollup]{rollup()}} and currently execute only for
+local data frames. The source must be a unique, preceding, self-contained
+integer or double scalar summary. See \code{\link[=share_of_parent]{share_of_parent()}} for the complete
+direct-expression, source, ordering, and \code{across()} contracts.
 }
 
 \section{Display labels and grouping identity}{

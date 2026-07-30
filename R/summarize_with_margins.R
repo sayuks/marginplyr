@@ -10,7 +10,8 @@
 #'
 #' @param .data A data frame or lazy table.
 #' @param ... Name-value pairs as used in [dplyr::summarize()]. Contextual
-#'   helpers [grouping_bit()] and [grouping_id()] can also be used here.
+#'   helpers [grouping_bit()], [grouping_id()], and [share_of_parent()] can
+#'   also be used here.
 #' @param .by <[`tidy-select`][dplyr::dplyr_tidy_select]> Columns included in
 #'   every grouping set. These columns never receive `.margin_label`. When
 #'   `.data` is grouped and `.by` is `NULL`, its grouping columns are used as
@@ -148,6 +149,24 @@
 #' margin result combines several grouping sets and their identifiers, row
 #' positions, or columns would not have one global meaning. Use
 #' [grouping_bit()] and [grouping_id()] to identify margin levels.
+#'
+#' @section Parent shares:
+#' On local data, [share_of_parent()] calculates a preceding named numeric
+#' scalar summary's ratio to its immediate less detailed [rollup()] parent.
+#' It supports direct named expressions and a constrained [dplyr::across()]
+#' form for multiple preceding summaries. Fixed `.by` keys partition the
+#' calculation, composite dimensions move together, and duplicate occurrences
+#' skip identical sets when choosing a parent.
+#'
+#' Root rows receive `1.0`. Missing numerators or denominators and zero
+#' denominators receive `NA_real_`; other finite ratios are not clamped.
+#' Parent matching is structural, so `.id`, missing grouping values, and
+#' displayed Margin labels do not determine the parent.
+#'
+#' Parent shares require one pure [rollup()] and currently execute only for
+#' local data frames. The source must be a unique, preceding, self-contained
+#' integer or double scalar summary. See [share_of_parent()] for the complete
+#' direct-expression, source, ordering, and `across()` contracts.
 #'
 #' @section Display labels and grouping identity:
 #' `.margin_label` is a display value, not the identity of a grouping set. An
@@ -342,7 +361,7 @@ summarize_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  with_margin_error_call(
+  admission <- with_margin_error_call(
     {
       assert_lazy_table(.data)
       normalize_margin_options(
@@ -354,9 +373,39 @@ summarize_with_margins <- function(.data,
       )
       check_removed_groups_argument(dots)
       check_summary_context_helpers(dots)
+      has_parent_shares <- preflight_parent_shares( # nolint: object_usage_linter
+        dots
+      )
+      grouping_spec <- NULL
+      if (has_parent_shares) {
+        grouping_spec <- rlang::eval_tidy(grouping_quo)
+        validate_grouping_spec_early( # nolint: object_usage_linter
+          grouping_spec
+        )
+        validate_parent_share_grouping( # nolint: object_usage_linter
+          grouping_spec
+        )
+        if (!is.data.frame(.data)) {
+          stop(
+            "`share_of_parent()` currently executes only for local data ",
+            "frames.",
+            call. = FALSE
+          )
+        }
+      }
+      list(
+        has_parent_shares = has_parent_shares,
+        grouping_spec = grouping_spec
+      )
     },
     call = call
   )
+  if (admission$has_parent_shares) {
+    grouping_quo <- rlang::new_quosure(
+      admission$grouping_spec,
+      env = rlang::empty_env()
+    )
+  }
 
   operation <- prepare_margin_operation(
     .data,
@@ -379,13 +428,15 @@ execute_margin_summary <- function(operation, dots) {
     {
       plan <- operation$plan
       group_vars <- c(plan$by, plan$dimensions)
-      dots <- resolve_summary_selections(
+      summary_plan <- plan_summary_expressions( # nolint: object_usage_linter
         dots,
         data_proxy = operation$data_proxy,
         data_vars = operation$data_vars,
-        group_vars = group_vars,
-        normalize_across_names = identical(operation$backend$kind, "dtplyr")
+        plan = plan,
+        backend_kind = operation$backend$kind,
+        set_id_name = operation$set_id_name
       )
+      dots <- summary_plan$dots
       summary_selection_proxy <- dplyr::select(
         operation$data_proxy,
         dplyr::all_of(setdiff(
@@ -411,36 +462,93 @@ execute_margin_summary <- function(operation, dots) {
         summary_output_names,
         operation$set_id_name
       ))
+      has_parent_shares <- length(summary_plan$requests) > 0L
+      if (has_parent_shares) {
+        parent_set_id_name <- new_margin_internal_names(
+          1L,
+          used_names = reserved_names,
+          prefix = "..marginplyr_parent_set_"
+        )
+        reserved_names <- c(reserved_names, parent_set_id_name)
+        adapter_set_id_name <- parent_set_id_name
+      } else {
+        parent_set_id_name <- NULL
+        adapter_set_id_name <- operation$set_id_name
+      }
 
       validate_margin_operation(operation)
 
-      if (supports_grouping_sets(
-        operation$data,
-        plan,
-        backend = operation$backend
-      ) && !(
-        !is.null(operation$set_id_name) &&
-          identical(plan$duplicates, "keep")
-      )) {
-        summarize_margin_native( # nolint: object_usage_linter
-          operation$data,
-          dots = dots,
+      result <- tryCatch(
+        {
+          if (supports_grouping_sets(
+            operation$data,
+            plan,
+            backend = operation$backend
+          ) && !(
+            !is.null(operation$set_id_name) &&
+              identical(plan$duplicates, "keep")
+          )) {
+            summarize_margin_native( # nolint: object_usage_linter
+              operation$data,
+              dots = dots,
+              plan = plan,
+              margin_labels = operation$margin_labels,
+              reserved_names = reserved_names,
+              set_id_name = adapter_set_id_name
+            )
+          } else {
+            summarize_margin_union( # nolint: object_usage_linter
+              operation$data,
+              dots = dots,
+              plan = plan,
+              margin_labels = operation$margin_labels,
+              column_info = operation$column_info,
+              reserved_names = reserved_names,
+              set_id_name = adapter_set_id_name
+            )
+          }
+        },
+        error = function(cnd) {
+          if (
+            has_parent_shares &&
+              grepl(
+                "must be size|Can't recycle",
+                conditionMessage(cnd)
+              )
+          ) {
+            message <- conditionMessage(cnd)
+            request <- parent_cardinality_request( # nolint: object_usage_linter
+              summary_plan$requests,
+              message
+            )
+            stop(
+              "Parent share `", request$output,
+              "` requires source summary `", request$source,
+              "`, which must return exactly one value per grouping row.",
+              call. = FALSE
+            )
+          }
+          stop(cnd)
+        }
+      )
+
+      if (has_parent_shares) {
+        result <- apply_parent_shares( # nolint: object_usage_linter
+          result,
+          requests = summary_plan$requests,
+          data = operation$data,
           plan = plan,
-          margin_labels = operation$margin_labels,
-          reserved_names = reserved_names,
-          set_id_name = operation$set_id_name
+          set_id_name = parent_set_id_name
         )
-      } else {
-        summarize_margin_union( # nolint: object_usage_linter
-          operation$data,
-          dots = dots,
-          plan = plan,
-          margin_labels = operation$margin_labels,
-          column_info = operation$column_info,
-          reserved_names = reserved_names,
-          set_id_name = operation$set_id_name
+        if (!is.null(operation$set_id_name)) {
+          result[[operation$set_id_name]] <- result[[parent_set_id_name]]
+        }
+        result <- dplyr::select(
+          result,
+          -dplyr::all_of(parent_set_id_name)
         )
       }
+      result
     },
     call = operation$call
   )

@@ -17,6 +17,7 @@ Depends:
 Imports: 
     dbplyr (>= 2.6.0),
     dplyr (>= 1.1.1),
+    glue,
     rlang (>= 1.1.0),
     stats,
     tidyselect (>= 1.2.0),

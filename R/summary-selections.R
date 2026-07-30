@@ -50,6 +50,37 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
   )
 }
 
+plan_summary_expressions <- function(dots,
+                                     data_proxy,
+                                     data_vars,
+                                     plan,
+                                     backend_kind,
+                                     set_id_name) {
+  stopifnot(inherits(plan, "margin_grouping_plan"))
+  group_vars <- c(plan$by, plan$dimensions)
+  selection_proxy <- dplyr::select(
+    data_proxy,
+    dplyr::all_of(setdiff(
+      data_vars,
+      unique(group_vars)
+    ))
+  )
+  summary_plan <- plan_parent_share_expressions( # nolint: object_usage_linter
+    dots,
+    selection_proxy = selection_proxy,
+    plan = plan,
+    set_id_name = set_id_name
+  )
+  summary_plan$dots <- resolve_summary_selections(
+    summary_plan$dots,
+    data_proxy = data_proxy,
+    data_vars = data_vars,
+    group_vars = group_vars,
+    normalize_across_names = identical(backend_kind, "dtplyr")
+  )
+  summary_plan
+}
+
 find_summary_context_helpers <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(character())
@@ -390,6 +421,31 @@ known_across_output_names <- function(expr, env, data_proxy) {
 
   names_index <- match(".names", arg_names, nomatch = 0L)
   if (names_index == 0L) {
+    fns_index <- across_function_index(
+      arg_names,
+      unnamed,
+      cols_index
+    )
+    if (
+      fns_index > 0L &&
+        rlang::is_call(call_args[[fns_index]], "list")
+    ) {
+      function_names <- known_across_function_names(
+        call_args,
+        arg_names,
+        unnamed,
+        cols_index
+      )
+      return(unlist(
+        lapply(
+          column_names,
+          paste,
+          function_names,
+          sep = "_"
+        ),
+        use.names = FALSE
+      ))
+    }
     return(column_names)
   }
   names_template <- tryCatch(
@@ -402,16 +458,6 @@ known_across_output_names <- function(expr, env, data_proxy) {
       is.na(names_template)
   ) {
     return(character())
-  }
-
-  if (!grepl("{.fn}", names_template, fixed = TRUE)) {
-    return(vapply(
-      column_names,
-      function(column) {
-        sub("{.col}", column, names_template, fixed = TRUE)
-      },
-      character(1)
-    ))
   }
 
   function_names <- known_across_function_names(
@@ -431,8 +477,7 @@ known_across_output_names <- function(expr, env, data_proxy) {
         vapply(
           function_names,
           function(fn) {
-            output <- sub("{.col}", column, names_template, fixed = TRUE)
-            sub("{.fn}", fn, output, fixed = TRUE)
+            expand_across_name(names_template, column, fn, env)
           },
           character(1)
         )
@@ -440,6 +485,34 @@ known_across_output_names <- function(expr, env, data_proxy) {
     ),
     use.names = FALSE
   )
+}
+
+expand_across_name <- function(template, column, function_name, env) {
+  as.character(glue::glue_data(
+    list(.col = column, .fn = function_name),
+    template,
+    .envir = env
+  ))
+}
+
+known_across_source_names <- function(expr, env, data_proxy) {
+  call_args <- as.list(expr)[-1L]
+  arg_names <- names(call_args)
+  if (is.null(arg_names)) {
+    arg_names <- rep("", length(call_args))
+  }
+  cols_index <- match(".cols", arg_names, nomatch = 0L)
+  unnamed <- which(arg_names == "")
+  if (cols_index == 0L && length(unnamed) > 0L) {
+    cols_index <- unnamed[[1L]]
+  }
+  cols_expr <- if (cols_index == 0L) {
+    rlang::expr(dplyr::everything())
+  } else {
+    call_args[[cols_index]]
+  }
+  selected <- resolve_summary_selection(cols_expr, env, data_proxy)
+  get_col_names(data_proxy, dplyr::everything())[unname(selected)]
 }
 
 known_across_function_names <- function(call_args,

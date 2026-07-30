@@ -377,6 +377,7 @@ compile_grouping_spec_impl <- function(.grouping,
 
   structure(
     list(
+      kind = .grouping$type,
       by = unique(.by),
       dimensions = dimensions,
       sets = normalized,
