@@ -1,13 +1,17 @@
 required <- c(
   "docs/index.html",
   "docs/vignettes/get_started.html",
+  "docs/vignettes/grouping_identity.html",
+  "docs/vignettes/completing_keys.html",
   "docs/vignettes/database_backends.html",
   "docs/man/expand_with_margins.html",
   "docs/man/grouping_bit.html",
   "docs/man/grouping_set.html",
+  "docs/man/inspect_grouping.html",
   "docs/man/nest_by_with_margins.html",
   "docs/man/nest_with_margins.html",
   "docs/man/retail_sales.html",
+  "docs/man/share_of_parent.html",
   "docs/man/summarize_with_margins.html",
   "docs/.nojekyll"
 )
@@ -38,6 +42,10 @@ assert_markers <- function(text, markers, page) {
   }
 }
 
+assert_page_markers <- function(path, markers, page) {
+  assert_markers(read_page(path), markers, page)
+}
+
 home <- read_page("docs/index.html")
 assert_markers(
   home,
@@ -48,6 +56,8 @@ assert_markers(
     "SQL-style grouping sets",
     "A total is not the same thing as",
     "Choose the tool for the job",
+    "grouping_identity.html",
+    "completing_keys.html",
     "database_backends.html"
   ),
   "README"
@@ -65,11 +75,39 @@ assert_markers(
     "Intentional differences from",
     "grouping_bit",
     "expand_with_margins",
+    "For several measures, use two ordered",
     "original pre-margin",
-    "setorder(funion",
+    "funion(funion(",
     "Total"
   ),
   "Get started"
+)
+
+assert_page_markers(
+  "docs/vignettes/grouping_identity.html",
+  c(
+    "Four related values",
+    "Why a rollup skips Grouping identifier 2",
+    "A cube includes every mask",
+    "Occurrence does not promise row order",
+    "Three kinds of apparent missingness",
+    "Parent lookup is structural"
+  ),
+  "Grouping identity"
+)
+
+assert_page_markers(
+  "docs/vignettes/completing_keys.html",
+  c(
+    "Why completion is a separate operation",
+    "tidyr::complete",
+    "fact_id",
+    "Union an explicit scaffold",
+    "copy_inline",
+    "copy_to",
+    "never copies, collects, uploads, downloads"
+  ),
+  "Complete absent keys before margins"
 )
 
 database_article <- read_page("docs/vignettes/database_backends.html")
@@ -83,6 +121,8 @@ assert_markers(
     "UNION ALL",
     "show_query",
     "collect",
+    "Parent shares use a staged lazy query",
+    "Completion stays in the lazy input pipeline",
     "Live native execution tested",
     "Native SQL generation tested",
     "Fallback SQL generation tested",
@@ -105,20 +145,50 @@ assert_markers(
     "summarise_with_margins",
     "Relationship to dplyr summaries",
     "Display labels and grouping identity",
+    "Parent shares",
+    "Empty inputs follow this Parent-share contract",
     "Backend extension design",
+    "NA is already a factor level",
     "cannot select any column named in the complete grouping plan",
     "cur_group_id"
   ),
   "summarize_with_margins reference"
 )
 
-nest_reference <- read_page("docs/man/nest_with_margins.html")
-assert_markers(
-  nest_reference,
+assert_page_markers(
+  "docs/man/inspect_grouping.html",
+  c(
+    "Formats and ordinary tibble behavior",
+    "Positron",
+    "31 variable dimensions",
+    "separate from a SQL execution plan"
+  ),
+  "inspect_grouping reference"
+)
+
+assert_page_markers(
+  "docs/man/share_of_parent.html",
+  c(
+    "Direct Parent shares",
+    "Eligible source summaries",
+    "Column-wise Parent shares",
+    "Rejected forms and supported rewrites",
+    "Lazy execution boundaries",
+    "revenue_quantile",
+    "Missing fixed and included keys",
+    "where(is.numeric)",
+    ".unpack = TRUE",
+    "runtime-only incompatibilities"
+  ),
+  "share_of_parent reference"
+)
+
+assert_page_markers(
+  "docs/man/nest_with_margins.html",
   c(
     "Relationship to tidyr and dplyr",
     "original, pre-margin values",
-    "indistinguishable outer keys",
+    "Nesting does not support",
     "No input column name is reserved"
   ),
   "nest_with_margins reference"

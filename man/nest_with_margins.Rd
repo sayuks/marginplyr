@@ -45,16 +45,19 @@ ordered-factor levels. It does not sort result rows and has no effect for
 \item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
 dimension independently for a value or factor level that collides with its
 display label. \code{NULL} bypasses collision checks. See \emph{Display labels and
-grouping identity} for the factor missing-value contract.}
+grouping identity} for the factor missing-value contract. Every Margin
+verb uses the same default: \code{TRUE} for local data frames and \code{FALSE} for
+lazy inputs, where checking would require an additional query.}
 
 \item{.duplicates}{\code{"error"} or \code{"drop"}. Nesting does not support the
 \code{"keep"} policy available in \code{\link[=summarize_with_margins]{summarize_with_margins()}} and
 \code{\link[=expand_with_margins]{expand_with_margins()}}.}
 
 \item{.id}{\code{NULL}, or one non-missing, non-empty character string naming an
-integer output column of one-based Grouping set occurrence identifiers.
-The name must not collide with source columns, grouping keys, summary
-outputs, or a nesting \code{.key}.}
+integer output column of one-based Grouping set identifiers. Each value
+identifies one occurrence in the resolved Grouping plan. The name must not
+collide with source columns, grouping keys, summary outputs, or a nesting
+\code{.key}.}
 
 \item{.key}{A string naming the list column. As in \code{\link[tidyr:nest]{tidyr::nest()}},
 \code{NULL} uses \code{"data"}.}
@@ -157,7 +160,7 @@ all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
 Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
 }
 
-\section{Grouping set occurrence identifiers}{
+\section{Grouping set identifiers}{
 
 When \code{.id} names an output column, each result row receives the one-based
 position of its Grouping set occurrence after applying \code{.duplicates}.
@@ -209,7 +212,7 @@ january_sales <- dplyr::filter(
   month == "Jan"
 )
 nested <- nest_with_margins(
-  january_sales,
+  .data = january_sales,
   .grouping = rollup(region, store)
 )
 # Convert to a tibble so nested data frames print compactly.
@@ -221,7 +224,7 @@ nested$data[[1]]
 # Keep original region and store values inside each nested table as well.
 # The outer columns still identify the margin level.
 nested_with_keys <- nest_with_margins(
-  january_sales,
+  .data = january_sales,
   .grouping = rollup(region, store),
   .keep = TRUE
 )
@@ -234,7 +237,11 @@ total <- dplyr::filter(
 unique(total$data[[1]][c("region", "store")])
 
 # NULL uses the same default list-column name as tidyr::nest().
-names(nest_with_margins(january_sales, .by = region, .key = NULL))
+names(nest_with_margins(
+  .data = january_sales,
+  .by = region,
+  .key = NULL
+))
 
 # Existing groups become fixed outer keys, while the result itself is
 # ungrouped.

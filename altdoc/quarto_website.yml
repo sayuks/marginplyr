@@ -14,6 +14,10 @@ website:
     left:
       - text: Get started
         href: vignettes/get_started.qmd
+      - text: Grouping identity
+        href: vignettes/grouping_identity.qmd
+      - text: Complete absent keys
+        href: vignettes/completing_keys.qmd
       - text: Database and lazy backends
         href: vignettes/database_backends.qmd
     right:
@@ -26,6 +30,8 @@ website:
       # - text: Home
         # file: index.md
       - vignettes/get_started.qmd
+      - vignettes/grouping_identity.qmd
+      - vignettes/completing_keys.qmd
       - vignettes/database_backends.qmd
       # - section: $ALTDOC_VIGNETTE_BLOCK
       - section: $ALTDOC_MAN_BLOCK

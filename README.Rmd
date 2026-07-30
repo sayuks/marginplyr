@@ -63,10 +63,19 @@ and combine yourself.
 
 - Distinguishes a source `NA` from a dimension removed to create a total.
 
+- Exposes Grouping set identifiers and SQL-compatible absence masks without
+  relying on display labels.
+
+- Calculates each scalar summary's share of its immediate rollup parent.
+
 - Can expand or nest the source rows behind every subtotal.
 
 New to the idea? Start with [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html).
+Need to compare `.id`, Grouping bits, and Grouping identifiers? See [Grouping
+identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html).
+Need absent dimension keys? See [Complete absent keys before
+margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
 Already working with remote data? See [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 

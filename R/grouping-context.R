@@ -18,6 +18,18 @@
 #' column belongs to every grouping set, [grouping_bit()] is always `0L` for it
 #' and it contributes a zero bit to [grouping_id()].
 #'
+#' | Value | Meaning | Duplicate Grouping-set occurrences |
+#' |---|---|---|
+#' | `.id` | One-based position in the resolved Grouping plan | Distinct with `.duplicates = "keep"` |
+#' | [inspect_grouping()] `$set_id` | The same position before execution | Distinct with `.duplicates = "keep"` |
+#' | [grouping_bit()] | Whether one chosen dimension is absent | The same for identical absence patterns |
+#' | [grouping_id()] | Bit mask for chosen absent dimensions | The same for identical absence patterns |
+#'
+#' See the
+#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+#' for the comparison with `.id` and [inspect_grouping()], rollup and cube
+#' masks, physical row order, Margin labels, and factor missingness.
+#'
 #' @param x A bare grouping column.
 #' @param ... Bare grouping columns.
 #'
@@ -29,7 +41,7 @@
 #' # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 #' # that detail row but 1 when ROLLUP removes store to create a subtotal.
 #' summarize_with_margins(
-#'   dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
+#'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
 #'   year_is_fixed = grouping_bit(year),
 #'   store_is_total = grouping_bit(store),
@@ -42,7 +54,7 @@
 #' # missing values, factor NA levels, and generated margins may all print as
 #' # NA even though their structural identities differ.
 #' summarize_with_margins(
-#'   dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
+#'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
 #'   store_is_total = grouping_bit(store),
 #'   level = grouping_id(region, store),

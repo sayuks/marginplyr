@@ -60,15 +60,18 @@ ordered-factor levels. It does not sort result rows and has no effect for
 \item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
 dimension independently for a value or factor level that collides with its
 display label. \code{NULL} bypasses collision checks. See \emph{Display labels and
-grouping identity} for the factor missing-value contract.}
+grouping identity} for the factor missing-value contract. Every Margin
+verb uses the same default: \code{TRUE} for local data frames and \code{FALSE} for
+lazy inputs, where checking would require an additional query.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}
 
 \item{.id}{\code{NULL}, or one non-missing, non-empty character string naming an
-integer output column of one-based Grouping set occurrence identifiers.
-The name must not collide with source columns, grouping keys, summary
-outputs, or a nesting \code{.key}.}
+integer output column of one-based Grouping set identifiers. Each value
+identifies one occurrence in the resolved Grouping plan. The name must not
+collide with source columns, grouping keys, summary outputs, or a nesting
+\code{.key}.}
 }
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy.
@@ -145,7 +148,7 @@ all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
 Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
 }
 
-\section{Grouping set occurrence identifiers}{
+\section{Grouping set identifiers}{
 
 When \code{.id} names an output column, each result row receives the one-based
 position of its Grouping set occurrence after applying \code{.duplicates}.
@@ -225,6 +228,12 @@ errors remain targeted before execution; an incompatible lazy expression may
 instead fail with its database error at \code{\link[dplyr:collect]{dplyr::collect()}}. See
 \code{\link[=share_of_parent]{share_of_parent()}} for the complete direct-expression, source, ordering,
 value, and \code{across()} contracts.
+
+Empty inputs follow this Parent-share contract:\tabular{lrl}{
+   Input \tab Result rows \tab Parent-share column \cr
+   Empty, without \code{.by} \tab One root row \tab \code{1.0}, double \cr
+   Empty, with \code{.by} \tab Zero rows \tab Empty double vector \cr
+}
 }
 
 \section{Display labels and grouping identity}{
@@ -256,9 +265,9 @@ With \code{.check_margin_label = TRUE}, factor columns follow this contract:\tab
    \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr
    \code{NA_character_} \tab no \tab yes \tab Error: the label collides with a value \cr
    \code{NA_character_} \tab no \tab no \tab Allowed; use typed missing \cr
-   \code{NULL} \tab yes \tab yes \tab Allowed; use typed missing \cr
+   \code{NULL} \tab yes \tab yes \tab Allowed; source missing values and margins require structural identity \cr
    \code{NULL} \tab yes \tab no \tab Allowed; preserve the NA level and use typed missing \cr
-   \code{NULL} \tab no \tab yes \tab Allowed; use typed missing \cr
+   \code{NULL} \tab no \tab yes \tab Allowed; source missing values and margins require structural identity \cr
    \code{NULL} \tab no \tab no \tab Allowed; use typed missing \cr
 }
 
@@ -305,7 +314,7 @@ database connections.
 # Build one monthly management report with store detail, region subtotals,
 # and a company total.
 summarize_with_margins(
-  retail_sales,
+  .data = retail_sales,
   units = sum(units),
   revenue = sum(revenue),
   .by = c(year, month),
@@ -326,7 +335,7 @@ dplyr::group_vars(grouped_report)
 # Moving year and month into the rollup extends the hierarchy from store
 # detail through monthly, annual, and all-period totals.
 summarize_with_margins(
-  retail_sales,
+  .data = retail_sales,
   revenue = sum(revenue),
   level = grouping_id(year, month, region, store),
   .grouping = rollup(year, month, region, store)
@@ -334,7 +343,7 @@ summarize_with_margins(
 
 # Grouping expressions are created with mutate() before summarizing.
 summarize_with_margins(
-  dplyr::mutate(
+  .data = dplyr::mutate(
     retail_sales,
     period = paste(year, month, sep = "-")
   ),
@@ -344,29 +353,100 @@ summarize_with_margins(
 
 # Change the display label, or use NULL to retain the input column types.
 summarize_with_margins(
-  retail_sales,
+  .data = retail_sales,
   revenue = sum(revenue),
   .grouping = rollup(year),
   .margin_label = "All years"
 )
 summarize_with_margins(
-  retail_sales,
+  .data = retail_sales,
   revenue = sum(revenue),
   .grouping = rollup(region, store),
   .margin_label = c(region = "All regions", store = "All stores")
 )
 summarize_with_margins(
-  retail_sales,
+  .data = retail_sales,
   revenue = sum(revenue),
   year_is_total = grouping_bit(year),
   .grouping = rollup(year),
   .margin_label = NULL
 )
 
+# Ordered factors remain ordered. A disabled collision check can reuse an
+# unused level and move it to the requested position.
+priority_data <- data.frame(
+  priority = ordered(
+    c("standard", "premium"),
+    levels = c("standard", "premium", "unused")
+  ),
+  value = c(1, 2)
+)
+try(summarize_with_margins(
+  .data = priority_data,
+  total = sum(value),
+  .grouping = rollup(priority),
+  .margin_label = "unused"
+))
+priority_result <- summarize_with_margins(
+  .data = priority_data,
+  total = sum(value),
+  .grouping = rollup(priority),
+  .margin_label = "unused",
+  .margin_label_position = "first",
+  .check_margin_label = FALSE
+)
+is.ordered(priority_result$priority)
+levels(priority_result$priority)
+
+# A direct Parent share, multiple measures through two ordered across()
+# expressions, and a post-summary calculation.
+direct_parent <- summarize_with_margins(
+  .data = retail_sales,
+  revenue = sum(revenue),
+  revenue_share = share_of_parent(revenue),
+  .grouping = rollup(region, store)
+)
+multiple_parents <- summarize_with_margins(
+  .data = retail_sales,
+  dplyr::across(c(units, revenue), sum),
+  dplyr::across(
+    c(units, revenue),
+    share_of_parent,
+    .names = "{.col}_share"
+  ),
+  .grouping = rollup(region, store)
+)
+dplyr::mutate(
+  .data = direct_parent,
+  revenue_percent = 100 * revenue_share
+)
+
+# Empty unpartitioned input has one root share; fixed `.by` input has no
+# partitions. Both retain a double Parent-share column.
+empty_sales <- retail_sales[0, ]
+empty_root <- summarize_with_margins(
+  .data = empty_sales,
+  revenue = sum(revenue),
+  revenue_share = share_of_parent(revenue),
+  .grouping = rollup(region)
+)
+c(rows = nrow(empty_root), type = typeof(empty_root$revenue_share))
+empty_partitions <- summarize_with_margins(
+  .data = empty_sales,
+  revenue = sum(revenue),
+  revenue_share = share_of_parent(revenue),
+  .by = year,
+  .grouping = rollup(region)
+)
+c(
+  rows = nrow(empty_partitions),
+  type = typeof(empty_partitions$revenue_share)
+)
+
 # across() and pick() treat every fixed key and margin dimension as a
 # grouping column, including dimensions omitted from a subtotal branch.
 summarize_with_margins(
-  retail_sales,
+  .data = retail_sales,
   dplyr::across(
     c(units, revenue),
     sum,
@@ -397,7 +477,7 @@ if (
     overwrite = TRUE
   )
   query <- summarize_with_margins(
-    sales_db,
+    .data = sales_db,
     revenue = sum(revenue, na.rm = TRUE),
     level = grouping_id(region, store),
     .by = c(year, month),

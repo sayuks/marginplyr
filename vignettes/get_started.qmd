@@ -375,6 +375,10 @@ retail_sales |>
 The source `NA` store has `store_is_total = 0`. The region subtotal has
 `store_is_total = 1`, because `store` was removed by the rollup.
 
+For the complete comparison of `.id`, `inspect_grouping()$set_id`,
+`grouping_bit()`, and `grouping_id()`, continue with the [Grouping identity
+guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html).
+
 `grouping_id()` combines the flags as a bit mask. Its last argument is the
 least-significant bit:
 
@@ -566,6 +570,73 @@ retail_sales |>
 A summary may return a one-row data frame as in dplyr, but none of its output
 columns may be named `year`, `region`, or `store` in this example. Use a new
 summary name or rename the input key first.
+
+## Compare a summary with its rollup parent
+
+`share_of_parent()` divides one preceding named numeric scalar summary by its
+corresponding value in the immediately less detailed rollup level:
+
+```{r}
+parent_report <- retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    .grouping = rollup(region, store)
+  )
+
+parent_report |>
+  arrange(region, store)
+```
+
+The root share is one. Missing numerators or denominators and zero
+denominators produce a missing double value. The helper requires a rollup and
+uses internal Grouping identity, so displayed Margin labels and source missing
+keys do not determine the parent. For multiple measures, complete source
+rules, and the supported `across()` form, see the
+[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html).
+
+For several measures, use two ordered `across()` expressions: the first
+creates ordinary summaries and the second selects those summaries for Parent
+shares.
+
+```{r}
+retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    across(c(units, revenue), sum),
+    across(
+      c(units, revenue),
+      share_of_parent,
+      .names = "{.col}_share"
+    ),
+    .grouping = rollup(region, store)
+  ) |>
+  arrange(region, store)
+```
+
+Scale, round, format, or otherwise derive from a Parent share after the Margin
+summary:
+
+```{r}
+parent_report |>
+  mutate(revenue_percent = 100 * revenue_share)
+```
+
+## Complete absent keys before summarizing
+
+Grouping specifications choose reporting grains; they do not create
+unobserved dimension values. marginplyr therefore has no `.complete`, `.fill`,
+`.empty`, or `complete_with_margins()` interface. Complete input facts with
+ordinary tidyr, dplyr, or dbplyr operations when synthetic facts should
+participate in totals, or replace values after the summary when the change is
+display-only.
+
+The [Complete absent keys before margins
+guide](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
+shows local `tidyr::complete()` with `nesting()`, explicit key scaffolds,
+fact markers for counts and means, same-connection dimension tables,
+`dbplyr::copy_inline()`, and explicit `dplyr::copy_to()`.
 
 ## Use the same plan with remote data
 

@@ -28,6 +28,29 @@
 #' that absence pattern as a bit mask. `grouping_id` is `NA_integer_` beyond
 #' 31 variable dimensions, while `grouping_bits` remains complete.
 #'
+#' @section Formats and ordinary tibble behavior:
+#' The default `.format = "text"` represents column collections as `()`,
+#' `(region)`, or `(region, store)`, and Grouping bits as text such as
+#' `region=0, store=1`. This compact display is the default because IDE table
+#' viewers, including Positron, commonly hide list-column contents.
+#'
+#' `.format = "list"` returns exact character vectors for `fixed`, `included`,
+#' and `omitted`, plus named integer vectors for `grouping_bits`. Use it for
+#' programmatic inspection and for names containing separators. The text
+#' format is display-only and is not a serialization format.
+#'
+#' The result has only the ordinary `tbl_df`, `tbl`, and `data.frame` classes,
+#' has no custom printer, and works with normal dplyr, export, and
+#' snapshot-testing workflows. Its rows are always in Grouping-plan order.
+#' That inspection guarantee does not imply physical result order for a Margin
+#' operation.
+#'
+#' A lazy `.data` still returns a local tibble without reading source rows:
+#' inspection uses captured column metadata and the backend-independent
+#' Grouping plan. It is deliberately separate from a SQL execution plan. Use
+#' [dplyr::show_query()] for generated SQL and backend-native tools for an
+#' optimizer plan.
+#'
 #' See the
 #' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
 #' for the full comparison.
@@ -35,25 +58,25 @@
 #' @export
 #' @examples
 #' inspect_grouping(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   .by = c(year, month),
 #'   .grouping = rollup(region, store)
 #' )
 #'
 #' inspect_grouping(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   .grouping = cube(product, channel),
 #'   .format = "list"
 #' )
 #'
 #' # A composite dimension adds or removes region and store together.
 #' inspect_grouping(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   .grouping = cube(grouping_set(region, store), channel)
 #' )
 #'
 #' inspect_grouping(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   .grouping = grouping_sets(
 #'     grouping_set(region, store),
 #'     grouping_set(region),
@@ -62,9 +85,10 @@
 #' )
 #'
 #' # Existing groups become fixed keys when `.by` is not supplied.
-#' retail_sales |>
-#'   dplyr::group_by(year, month) |>
-#'   inspect_grouping(.grouping = rollup(region, store))
+#' inspect_grouping(
+#'   .data = dplyr::group_by(retail_sales, year, month),
+#'   .grouping = rollup(region, store)
+#' )
 #'
 #' # Duplicate occurrences error by default, or can be dropped or retained.
 #' duplicate_specification <- grouping_sets(
@@ -72,16 +96,16 @@
 #'   grouping_set()
 #' )
 #' try(inspect_grouping(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   .grouping = duplicate_specification
 #' ))
 #' inspect_grouping(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   .grouping = duplicate_specification,
 #'   .duplicates = "drop"
 #' )
 #' inspect_grouping(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   .grouping = duplicate_specification,
 #'   .duplicates = "keep"
 #' )

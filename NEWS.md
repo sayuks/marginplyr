@@ -8,6 +8,9 @@
 * Added `.id` to every Margin verb for one-based Grouping set occurrence
   identifiers, including duplicate-aware local, lazy, expansion, and nesting
   paths.
+* Added guides for Grouping identity and explicit key completion, expanded
+  Parent-share and Margin-label references, and documented Grouping-plan
+  inspection as an ordinary tibble.
 * Added explicit duplicate-set policies: `"error"`, `"drop"`, and `"keep"`.
 * Changed the default display label to `"Total"`; `.margin_label = NULL`
   preserves grouping-column types and typed missing values.

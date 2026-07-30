@@ -1,0 +1,275 @@
+---
+title: Complete absent keys before margins
+vignette: >
+  %\VignetteIndexEntry{Complete absent keys before margins}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+format:
+  html:
+    code-tools: true
+    toc: true
+    toc-expand: true
+    number-sections: true
+date: last-modified
+---
+
+marginplyr creates the Grouping sets requested by a Grouping specification; it
+does not create unobserved values within those sets. Complete absent keys
+before a Margin operation when synthetic facts should participate in detail,
+subtotal, and grand-total summaries. Replace values after a summary when the
+change is only for display.
+
+```{r setup}
+#| message: false
+
+library(marginplyr)
+library(dplyr)
+```
+
+## Why completion is a separate operation
+
+marginplyr does not provide `.complete`, `.fill`, or `.empty` arguments, and it
+does not provide `complete_with_margins()`.
+
+Input completion and result completion answer different questions:
+
+- **Pre-summary synthetic facts** participate in every requested Grouping set.
+  They can change counts, means, distinct counts, and user-defined summaries.
+- **Post-summary display replacement** changes how an existing result is
+  shown. It does not recalculate subtotals or the grand total.
+
+Sums can often be reconstructed from child sums, but arbitrary summaries
+cannot. A mean needs weights, distinct counts can overlap, and medians cannot
+generally be combined from child medians. Keeping completion outside the
+Margin operation makes the chosen semantics visible in ordinary data
+manipulation code.
+
+Completion also does not belong in a Grouping specification. A Grouping
+specification declares which Grouping sets exist; it does not declare the
+valid value domain of each dimension or invent fact values.
+
+## Complete local facts with `tidyr::complete()`
+
+This small fact table does not contain every product for every observed
+region-store relationship:
+
+```{r}
+facts <- tibble::tibble(
+  fact_id = 1:3,
+  region = c("East", "East", "West"),
+  store = c("A", "B", "C"),
+  product = c("Laptop", "Monitor", "Laptop"),
+  units = c(2L, 3L, 4L),
+  revenue = c(200, 300, 400)
+)
+
+product_domain <- c("Laptop", "Monitor")
+facts
+```
+
+`tidyr::nesting(region, store)` preserves only observed region-store
+relationships while crossing each relationship with the product domain:
+
+```{r}
+completed_facts <- facts |>
+  mutate(is_fact = TRUE) |>
+  tidyr::complete(
+    tidyr::nesting(region, store),
+    product = product_domain,
+    fill = list(
+      is_fact = FALSE,
+      units = 0L,
+      revenue = 0
+    )
+  )
+
+completed_facts
+```
+
+The inserted zeros now participate in every level of the rollup:
+
+```{r}
+completed_facts |>
+  summarize_with_margins(
+    rows = dplyr::n(),
+    observed_facts = sum(is_fact),
+    units = sum(units),
+    mean_per_completed_key = mean(revenue),
+    mean_per_observed_fact = mean(revenue[is_fact]),
+    .grouping = rollup(region, store, product),
+    .id = "occurrence"
+  ) |>
+  arrange(occurrence, region, store, product)
+```
+
+`rows` counts completed keys, while `observed_facts` counts only source facts.
+The retained `fact_id` and `is_fact` marker make that distinction explicit.
+The two means show that filling synthetic facts before a summary is a
+substantive modeling choice.
+
+If the intended change is only presentational, summarize the observed facts
+first and replace the finished display value afterwards:
+
+```{r}
+observed_summary <- facts |>
+  summarize_with_margins(
+    mean_revenue = mean(revenue),
+    .grouping = rollup(region, store, product)
+  )
+
+observed_summary |>
+  mutate(display_mean = dplyr::coalesce(mean_revenue, 0))
+```
+
+That `mutate()` does not add fact rows or alter any existing aggregate.
+
+## Union an explicit scaffold with observed keys
+
+Sometimes the requested domain is an explicit relation rather than a regular
+cross product. Union it with observed keys before joining so facts outside the
+scaffold are not accidentally discarded:
+
+```{r}
+requested_keys <- tibble::tribble(
+  ~region, ~store, ~product,
+  "East", "A", "Laptop",
+  "East", "A", "Monitor",
+  "West", "C", "Laptop",
+  "West", "C", "Monitor"
+)
+
+all_keys <- requested_keys |>
+  union(distinct(facts, region, store, product))
+
+scaffolded_facts <- all_keys |>
+  left_join(facts, by = c("region", "store", "product")) |>
+  mutate(
+    is_fact = !is.na(fact_id),
+    units = dplyr::coalesce(units, 0L),
+    revenue = dplyr::coalesce(revenue, 0)
+  )
+
+scaffolded_facts
+```
+
+The `left_join()` makes one synthetic fact for every scaffold key without an
+observed fact. Keep a fact identifier or marker whenever counts, means, or
+other summaries must distinguish those rows.
+
+## Complete keys on a database connection
+
+Use ordinary lazy relations on the same connection. An existing dimension
+table is the natural source of a reusable key domain:
+
+```{r}
+#| message: false
+
+if (
+  requireNamespace("DBI", quietly = TRUE) &&
+  requireNamespace("RSQLite", quietly = TRUE)
+) {
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+
+  facts_db <- copy_to(
+    con,
+    facts,
+    name = "facts",
+    temporary = TRUE,
+    overwrite = TRUE
+  )
+  dimension_db <- copy_to(
+    con,
+    requested_keys,
+    name = "store_product_dimension",
+    temporary = TRUE,
+    overwrite = TRUE
+  )
+
+  observed_keys_db <- facts_db |>
+    distinct(region, store, product)
+  all_keys_db <- dimension_db |>
+    select(region, store, product) |>
+    union(observed_keys_db)
+
+  completed_db <- all_keys_db |>
+    left_join(
+      facts_db,
+      by = c("region", "store", "product")
+    ) |>
+    mutate(
+      is_fact = !is.na(fact_id),
+      units = dplyr::coalesce(units, 0L),
+      revenue = dplyr::coalesce(revenue, 0)
+    )
+
+  completed_query <- completed_db |>
+    summarize_with_margins(
+      observed_facts = sum(is_fact),
+      revenue = sum(revenue),
+      .grouping = rollup(region, store, product)
+    )
+
+  show_query(completed_query)
+  DBI::dbDisconnect(con)
+}
+```
+
+The union, join, completion expressions, and Margin summary remain lazy.
+`show_query()` renders the staged SQL without executing the finished report.
+
+## Move local keys only when you ask to
+
+For a small local key table, `dbplyr::copy_inline()` embeds the rows in the
+lazy SQL with `VALUES`. This avoids creating a persistent table but makes the
+query text grow with the number of keys:
+
+```{r}
+#| message: false
+
+if (
+  requireNamespace("DBI", quietly = TRUE) &&
+  requireNamespace("RSQLite", quietly = TRUE)
+) {
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  facts_db <- copy_to(
+    con,
+    facts,
+    name = "facts",
+    temporary = TRUE,
+    overwrite = TRUE
+  )
+
+  inline_keys <- dbplyr::copy_inline(con, requested_keys)
+  inline_query <- inline_keys |>
+    union(distinct(facts_db, region, store, product)) |>
+    left_join(
+      facts_db,
+      by = c("region", "store", "product")
+    )
+  show_query(inline_query)
+
+  reusable_keys <- copy_to(
+    con,
+    requested_keys,
+    name = "requested_keys",
+    temporary = TRUE,
+    overwrite = TRUE
+  )
+  reusable_query <- reusable_keys |>
+    union(distinct(facts_db, region, store, product)) |>
+    left_join(
+      facts_db,
+      by = c("region", "store", "product")
+    )
+  show_query(reusable_query)
+
+  DBI::dbDisconnect(con)
+}
+```
+
+Use explicit `dplyr::copy_to()` for a larger or reusable local key relation.
+It performs data movement at the line where the caller requested it.
+
+marginplyr never copies, collects, uploads, downloads, or otherwise moves
+completion data implicitly. Connection choice, data movement, and execution
+remain ordinary dplyr and dbplyr operations owned by the caller.

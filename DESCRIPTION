@@ -53,7 +53,9 @@ Config/Needs/website:
     duckdb,
     knitr,
     quartabs,
-    tibble
+    RSQLite,
+    tibble,
+    tidyr
 Encoding: UTF-8
 Language: en-US
 LazyData: true

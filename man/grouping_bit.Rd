@@ -37,13 +37,25 @@ for placing equal values next to one another.
 
 Columns fixed by \code{.by} may also be passed to these helpers. Because a \code{.by}
 column belongs to every grouping set, \code{\link[=grouping_bit]{grouping_bit()}} is always \code{0L} for it
-and it contributes a zero bit to \code{\link[=grouping_id]{grouping_id()}}.
+and it contributes a zero bit to \code{\link[=grouping_id]{grouping_id()}}.\tabular{lll}{
+   Value \tab Meaning \tab Duplicate Grouping-set occurrences \cr
+   \code{.id} \tab One-based position in the resolved Grouping plan \tab Distinct with \code{.duplicates = "keep"} \cr
+   \code{\link[=inspect_grouping]{inspect_grouping()}} \verb{$set_id} \tab The same position before execution \tab Distinct with \code{.duplicates = "keep"} \cr
+   \code{\link[=grouping_bit]{grouping_bit()}} \tab Whether one chosen dimension is absent \tab The same for identical absence patterns \cr
+   \code{\link[=grouping_id]{grouping_id()}} \tab Bit mask for chosen absent dimensions \tab The same for identical absence patterns \cr
+}
+
+
+See the
+\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide}
+for the comparison with \code{.id} and \code{\link[=inspect_grouping]{inspect_grouping()}}, rollup and cube
+masks, physical row order, Margin labels, and factor missingness.
 }
 \examples{
 # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 # that detail row but 1 when ROLLUP removes store to create a subtotal.
 summarize_with_margins(
-  dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
+  .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
   revenue = sum(revenue),
   year_is_fixed = grouping_bit(year),
   store_is_total = grouping_bit(store),
@@ -56,7 +68,7 @@ summarize_with_margins(
 # missing values, factor NA levels, and generated margins may all print as
 # NA even though their structural identities differ.
 summarize_with_margins(
-  dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
+  .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
   revenue = sum(revenue),
   store_is_total = grouping_bit(store),
   level = grouping_id(region, store),

@@ -42,15 +42,18 @@ ordered-factor levels. It does not sort result rows and has no effect for
 \item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
 dimension independently for a value or factor level that collides with its
 display label. \code{NULL} bypasses collision checks. See \emph{Display labels and
-grouping identity} for the factor missing-value contract.}
+grouping identity} for the factor missing-value contract. Every Margin
+verb uses the same default: \code{TRUE} for local data frames and \code{FALSE} for
+lazy inputs, where checking would require an additional query.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}
 
 \item{.id}{\code{NULL}, or one non-missing, non-empty character string naming an
-integer output column of one-based Grouping set occurrence identifiers.
-The name must not collide with source columns, grouping keys, summary
-outputs, or a nesting \code{.key}.}
+integer output column of one-based Grouping set identifiers. Each value
+identifies one occurrence in the resolved Grouping plan. The name must not
+collide with source columns, grouping keys, summary outputs, or a nesting
+\code{.key}.}
 }
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy.
@@ -119,7 +122,7 @@ all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
 Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
 }
 
-\section{Grouping set occurrence identifiers}{
+\section{Grouping set identifiers}{
 
 When \code{.id} names an output column, each result row receives the one-based
 position of its Grouping set occurrence after applying \code{.duplicates}.
@@ -187,7 +190,7 @@ january_sales <- dplyr::filter(
   month == "Jan"
 )
 expand_with_margins(
-  january_sales,
+  .data = january_sales,
   .grouping = rollup(region, store)
 )
 

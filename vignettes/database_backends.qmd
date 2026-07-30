@@ -217,6 +217,54 @@ sqlite_sales |>
   show_query()
 ```
 
+## Parent shares use a staged lazy query
+
+`share_of_parent()` needs a denominator from another Grouping-set row, so it
+cannot be translated as one ordinary aggregate expression. marginplyr first
+forms the ordinary Margin summaries, then builds one Parent mapping shared by
+every requested measure:
+
+```{r}
+parent_query <- postgres_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    revenue_share = share_of_parent(revenue),
+    .grouping = rollup(region, store)
+  )
+
+show_query(parent_query)
+```
+
+This is still one lazy query. `show_query()` renders it without execution;
+only an explicit operation such as `collect()` or `compute()` asks the backend
+to run it. Native and portable grouping adapters both feed the same staged
+Parent-share contract. Parent matching uses internal Grouping identity and
+missing-safe keys rather than displayed Margin labels.
+
+Syntax, source-name, written-order, and `across()` errors are validated before
+execution. General dbplyr backends do not expose every arbitrary aggregate's
+result type or cardinality from metadata, and marginplyr does not run an extra
+schema query or collect the result to discover them. A runtime-only type or
+cardinality incompatibility can therefore surface from the database when the
+staged query executes.
+
+The portable value contract covers finite numbers, missing values, and zero
+denominators. Backend-specific non-finite representations are outside that
+contract. See the
+[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+for supported sources, immediate-parent and root rules, `across()` forms,
+empty inputs, and post-summary `mutate()` guidance.
+
+## Completion stays in the lazy input pipeline
+
+marginplyr does not create absent dimension keys or move completion data
+between R and a database. Use a same-connection dimension relation, or move a
+local relation explicitly before the Margin operation. The [Complete absent
+keys before margins
+guide](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
+shows a lazy dimension-table union and join, `dbplyr::copy_inline()` for small
+local keys, and explicit `dplyr::copy_to()` for larger or reusable keys.
+
 ## Other lazy backends
 
 dtplyr is lazy without being a SQL connection. `show_query()` displays the

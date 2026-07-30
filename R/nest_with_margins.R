@@ -6,7 +6,7 @@
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
-#' @inheritSection summarize_with_margins Grouping set occurrence identifiers
+#' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Backend extension design
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
 #'   not supported because nesting creates list columns.
@@ -69,7 +69,7 @@
 #'   month == "Jan"
 #' )
 #' nested <- nest_with_margins(
-#'   january_sales,
+#'   .data = january_sales,
 #'   .grouping = rollup(region, store)
 #' )
 #' # Convert to a tibble so nested data frames print compactly.
@@ -81,7 +81,7 @@
 #' # Keep original region and store values inside each nested table as well.
 #' # The outer columns still identify the margin level.
 #' nested_with_keys <- nest_with_margins(
-#'   january_sales,
+#'   .data = january_sales,
 #'   .grouping = rollup(region, store),
 #'   .keep = TRUE
 #' )
@@ -94,7 +94,11 @@
 #' unique(total$data[[1]][c("region", "store")])
 #'
 #' # NULL uses the same default list-column name as tidyr::nest().
-#' names(nest_with_margins(january_sales, .by = region, .key = NULL))
+#' names(nest_with_margins(
+#'   .data = january_sales,
+#'   .by = region,
+#'   .key = NULL
+#' ))
 #'
 #' # Existing groups become fixed outer keys, while the result itself is
 #' # ungrouped.

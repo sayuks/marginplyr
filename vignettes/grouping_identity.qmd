@@ -1,0 +1,305 @@
+---
+title: Grouping identity
+vignette: >
+  %\VignetteIndexEntry{Grouping identity}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+format:
+  html:
+    code-tools: true
+    toc: true
+    toc-expand: true
+    number-sections: true
+date: last-modified
+---
+
+A Margin result combines rows from several Grouping sets. Visible values such
+as `"Total"` are useful for display, but they do not identify which Grouping
+set produced a row. marginplyr provides Grouping set identifiers and
+structural Grouping identifiers for that purpose.
+
+Read [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) first
+if Grouping specifications are new to you. This article focuses on the
+difference between plan position, absence patterns, and displayed values.
+
+```{r setup}
+#| message: false
+
+library(marginplyr)
+library(dplyr)
+```
+
+## Four related values
+
+| Interface | Meaning | Values | Duplicate Grouping sets |
+|---|---|---|---|
+| `.id = "name"` | One-based position of a Grouping-set occurrence in the resolved Grouping plan | `1L`, `2L`, ... | Distinct when `.duplicates = "keep"` |
+| `inspect_grouping()$set_id` | The same occurrence position, inspected before a Margin operation | `1L`, `2L`, ... | Distinct when `.duplicates = "keep"` |
+| `grouping_bit(x)` | Whether one chosen grouping dimension is absent | `0L` when included, `1L` when absent | The same for identical absence patterns |
+| `grouping_id(...)` | Bit mask formed from the chosen Grouping bits | A non-negative integer through 31 chosen dimensions | The same for identical absence patterns |
+
+The first two values describe *where an occurrence appears in one ordered
+Grouping plan*. The last two describe *which dimensions are absent from a
+row*. A Grouping set identifier can therefore distinguish repeated identical
+sets; a Grouping identifier deliberately cannot.
+
+The correspondence between `.id` and `set_id` holds for the same resolved
+`.by`, `.grouping`, and `.duplicates` arguments. Reordering or deduplicating a
+Grouping specification can change both Grouping set identifiers.
+
+## Why a rollup skips Grouping identifier 2
+
+Inspect a two-dimension rollup:
+
+```{r}
+rollup_plan <- inspect_grouping(
+  .data = retail_sales,
+  .grouping = rollup(region, store)
+)
+
+rollup_plan
+```
+
+The last argument to `grouping_id(region, store)` is the least-significant
+bit:
+
+| Grouping set | `region` bit | `store` bit | Binary mask | Grouping identifier |
+|---|---:|---:|---:|---:|
+| `(region, store)` | 0 | 0 | `00` | 0 |
+| `(region)` | 0 | 1 | `01` | 1 |
+| `()` | 1 | 1 | `11` | 3 |
+
+Identifier `2` would be binary `10`: `region` absent while `store` remains.
+That is not part of the hierarchy declared by `rollup(region, store)`, so the
+identifier is absent. Grouping identifiers encode absence; they are not
+required to be consecutive.
+
+The Grouping set identifiers are a different sequence:
+
+```{r}
+rollup_result <- retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    region_bit = grouping_bit(region),
+    store_bit = grouping_bit(store),
+    absence = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .id = "occurrence"
+  )
+
+rollup_result |>
+  distinct(occurrence, region_bit, store_bit, absence) |>
+  arrange(occurrence)
+```
+
+Here `.id` is `1L`, `2L`, and `3L`, while `absence` is `0L`, `1L`, and `3L`.
+
+## A cube includes every mask
+
+`cube(region, store)` contains every subset, including `(store)`:
+
+```{r}
+cube_plan <- inspect_grouping(
+  .data = retail_sales,
+  .grouping = cube(region, store)
+)
+
+cube_plan
+```
+
+Its absence masks are `00`, `01`, `10`, and `11`, so its Grouping identifiers
+are `0`, `1`, `2`, and `3`.
+
+## Occurrence does not promise row order
+
+`inspect_grouping()` returns rows in Grouping-plan order, but Margin-operation
+results have no implicit physical order. `.id` records which occurrence
+produced a row; it does not request an `ORDER BY` or sort rows within an
+occurrence.
+
+Use `arrange()` explicitly whenever presentation order matters:
+
+```{r}
+rollup_result |>
+  arrange(occurrence, region, store)
+```
+
+Do not use `.id` as a durable business key between results made from
+differently ordered or deduplicated Grouping specifications.
+
+## Inspect a Grouping plan as data
+
+`inspect_grouping()` returns an ordinary local, ungrouped tibble. It does not
+aggregate source rows, even when `.data` is a lazy table. This makes the plan
+easy to view in an IDE, transform with dplyr, export, or snapshot-test:
+
+```{r}
+class(rollup_plan)
+group_vars(rollup_plan)
+
+rollup_plan |>
+  filter(grouping_id != 0L) |>
+  select(set_id, included, omitted, grouping_id)
+```
+
+The default `.format = "text"` avoids opaque list-column cells in IDE table
+viewers. Use `.format = "list"` when exact names or programmable vectors
+matter:
+
+```{r}
+rollup_list <- inspect_grouping(
+  .data = retail_sales,
+  .grouping = rollup(region, store),
+  .format = "list"
+)
+
+rollup_list$omitted
+rollup_list$grouping_bits
+```
+
+The list format stores `fixed`, `included`, and `omitted` as character
+list-columns and `grouping_bits` as a named integer-vector list-column. The
+text form is for display, not serialization.
+
+`grouping_id` uses an R integer and is available through 31 variable
+dimensions. Beyond that limit it is `NA_integer_`; `grouping_bits` remains
+complete:
+
+```{r}
+wide_data <- as.data.frame(
+  stats::setNames(rep(list(1), 32L), sprintf("x%02d", 1:32))
+)
+wide_plan <- inspect_grouping(
+  .data = wide_data,
+  .grouping = rollup(everything()),
+  .format = "list"
+)
+
+wide_plan |>
+  slice(1L) |>
+  transmute(
+    number_of_bits = lengths(grouping_bits),
+    grouping_id
+  )
+```
+
+This is a backend-independent Grouping plan, not a database execution plan.
+Use `show_query()` for generated SQL and database-native tooling for optimizer
+plans:
+
+```{r}
+dbplyr::tbl_lazy(
+  retail_sales,
+  con = dbplyr::simulate_postgres()
+) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(region, store)
+  ) |>
+  show_query()
+```
+
+## Margin labels are display values
+
+A Margin label replaces an omitted dimension for display. Changing the label
+does not change `.id`, Grouping bits, or a Grouping identifier:
+
+```{r}
+labeled_result <- retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    absence = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .margin_label = c(
+      region = "All regions",
+      store = "All stores"
+    ),
+    .id = "occurrence"
+  )
+
+labeled_result |>
+  arrange(occurrence, region, store)
+```
+
+If a source value can equal a display label, retain `.id`, `grouping_bit()`,
+or `grouping_id()` instead of guessing from the visible value.
+
+## Three kinds of apparent missingness
+
+Factors make three distinct situations visible:
+
+1. An **NA factor level** belongs to the factor domain and can be used by an
+   observation whose factor code is not missing.
+2. A **source missing value** has a missing factor code.
+3. A **typed-missing Margin value** marks a dimension omitted from a Grouping
+   set when `.margin_label = NULL` or `NA_character_`.
+
+The first two can both print as `<NA>`:
+
+```{r}
+status <- structure(
+  c(1L, 2L, NA_integer_),
+  levels = c("kept", NA_character_),
+  class = "factor"
+)
+
+levels(status)
+is.na(status)
+```
+
+`NULL` preserves the NA level and uses a missing factor code for the Margin
+row:
+
+```{r}
+factor_result <- data.frame(status, value = 1:3) |>
+  summarize_with_margins(
+    records = dplyr::n(),
+    status_is_margin = grouping_bit(status),
+    .grouping = rollup(status),
+    .margin_label = NULL
+  )
+
+levels(factor_result$status)
+is.na(factor_result$status)
+factor_result |>
+  arrange(status_is_margin, status)
+```
+
+The structural flag, rather than the printed value, distinguishes a source
+missing value from the typed-missing Margin value. See the
+[`summarize_with_margins()` reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#display-labels-and-grouping-identity)
+for the complete eight-case `NA_character_`/`NULL` factor table, ordered-factor
+preservation, unused-level checks, and label positioning.
+
+## Parent lookup is structural
+
+`share_of_parent()` matches a row to its immediate less detailed rollup parent
+with internal Grouping identity and missing-safe key identity. It does not join
+on displayed Margin labels, and it does not use `.id` as a parent key:
+
+```{r}
+parent_result <- data.frame(
+  region = c("East", "East"),
+  store = c("A", NA_character_),
+  revenue = c(80, 20)
+) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    absence = grouping_id(region, store),
+    .grouping = rollup(region, store),
+    .margin_label = NULL
+  )
+
+parent_result |>
+  arrange(absence, region, store)
+```
+
+The included source `NA` store and the subtotal's omitted `store` may display
+the same value, but their Grouping identities differ and Parent lookup remains
+unambiguous. See the
+[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+for its value, source-summary, ordering, and `across()` rules.

@@ -5,7 +5,7 @@
 #' @inheritParams nest_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
-#' @inheritSection summarize_with_margins Grouping set occurrence identifiers
+#' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Backend extension design
 #' @inheritSection nest_with_margins Relationship to tidyr and dplyr
 #' @param .key A non-missing string naming the list column. Unlike
@@ -57,7 +57,7 @@
 #'
 #' # .keep = TRUE retains original key values inside each detail table.
 #' kept_keys <- nest_by_with_margins(
-#'   january_sales,
+#'   .data = january_sales,
 #'   .grouping = rollup(region, store),
 #'   .keep = TRUE
 #' )
@@ -70,7 +70,7 @@
 #'
 #' # With no grouping keys, nest_by semantics retain one empty nested table.
 #' empty_sales <- january_sales[0, ]
-#' nrow(nest_by_with_margins(empty_sales))
+#' nrow(nest_by_with_margins(.data = empty_sales))
 #'
 #' # dtplyr performs the expansion and nesting lazily, then
 #' # nest_by_with_margins() collects it to create a local row-wise data frame.

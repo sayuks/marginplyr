@@ -45,16 +45,19 @@ ordered-factor levels. It does not sort result rows and has no effect for
 \item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
 dimension independently for a value or factor level that collides with its
 display label. \code{NULL} bypasses collision checks. See \emph{Display labels and
-grouping identity} for the factor missing-value contract.}
+grouping identity} for the factor missing-value contract. Every Margin
+verb uses the same default: \code{TRUE} for local data frames and \code{FALSE} for
+lazy inputs, where checking would require an additional query.}
 
 \item{.duplicates}{\code{"error"} or \code{"drop"}. Nesting does not support the
 \code{"keep"} policy available in \code{\link[=summarize_with_margins]{summarize_with_margins()}} and
 \code{\link[=expand_with_margins]{expand_with_margins()}}.}
 
 \item{.id}{\code{NULL}, or one non-missing, non-empty character string naming an
-integer output column of one-based Grouping set occurrence identifiers.
-The name must not collide with source columns, grouping keys, summary
-outputs, or a nesting \code{.key}.}
+integer output column of one-based Grouping set identifiers. Each value
+identifies one occurrence in the resolved Grouping plan. The name must not
+collide with source columns, grouping keys, summary outputs, or a nesting
+\code{.key}.}
 
 \item{.key}{A non-missing string naming the list column. Unlike
 \code{\link[=nest_with_margins]{nest_with_margins()}} and \code{\link[tidyr:nest]{tidyr::nest()}}, \code{NULL} is not converted to
@@ -131,7 +134,7 @@ all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
 Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
 }
 
-\section{Grouping set occurrence identifiers}{
+\section{Grouping set identifiers}{
 
 When \code{.id} names an output column, each result row receives the one-based
 position of its Grouping set occurrence after applying \code{.duplicates}.
@@ -242,7 +245,7 @@ dplyr::group_vars(grouped_rowwise)
 
 # .keep = TRUE retains original key values inside each detail table.
 kept_keys <- nest_by_with_margins(
-  january_sales,
+  .data = january_sales,
   .grouping = rollup(region, store),
   .keep = TRUE
 )
@@ -255,7 +258,7 @@ east_total$data[[1]][c("region", "store")]
 
 # With no grouping keys, nest_by semantics retain one empty nested table.
 empty_sales <- january_sales[0, ]
-nrow(nest_by_with_margins(empty_sales))
+nrow(nest_by_with_margins(.data = empty_sales))
 
 # dtplyr performs the expansion and nesting lazily, then
 # nest_by_with_margins() collects it to create a local row-wise data frame.

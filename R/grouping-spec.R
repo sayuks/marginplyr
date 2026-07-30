@@ -17,6 +17,11 @@
 #' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
 #' composite dimension. Its columns are added or removed together.
 #'
+#' See the
+#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+#' for how a resolved Grouping plan relates to `.id`, [inspect_grouping()],
+#' [grouping_bit()], and [grouping_id()].
+#'
 #' @param ... Bare columns, tidy-select expressions, or nested grouping
 #'   specifications as appropriate for the constructor.
 #'
@@ -26,7 +31,7 @@
 #' # The operations team needs store, region, and company totals for each
 #' # reporting month. Columns in `.by` remain in every grouping set.
 #' summarize_with_margins(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   .by = c(year, month),
 #'   .grouping = rollup(region, store)
@@ -35,7 +40,7 @@
 #' # Finance instead needs a few specific views, including the all-period
 #' # grand total represented by an empty grouping set.
 #' summarize_with_margins(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   .grouping = grouping_sets(
 #'     grouping_set(year, month),
@@ -46,7 +51,7 @@
 #'
 #' # A cube gives merchandising every combination of product and channel.
 #' summarize_with_margins(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   .by = c(year, month),
 #'   .grouping = cube(product, channel)
@@ -55,7 +60,7 @@
 #' # grouping_sets() unions two independent hierarchies. Both rollups contain
 #' # the empty set, so duplicate grouping sets are dropped explicitly.
 #' independent_totals <- summarize_with_margins(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   .grouping = grouping_sets(
 #'     rollup(year, month),
@@ -67,7 +72,7 @@
 #' # Keeping duplicates intentionally returns the grand total once per
 #' # occurrence of the empty set.
 #' repeated_grand_totals <- summarize_with_margins(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   .grouping = grouping_sets(
 #'     rollup(year, month),
@@ -84,7 +89,7 @@
 #' # grouping_spec() takes their Cartesian product, producing combinations
 #' # such as (year, month, region, store) and (year, region).
 #' combined_totals <- summarize_with_margins(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   .grouping = grouping_spec(
 #'     rollup(year, month),
@@ -95,7 +100,7 @@
 #' # A nested grouping_set() is a composite dimension: region and store are
 #' # included or removed together. Tidy-select expressions are also accepted.
 #' summarize_with_margins(
-#'   retail_sales,
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   .grouping = cube(
 #'     grouping_set(region, store),
