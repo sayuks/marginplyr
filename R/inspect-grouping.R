@@ -52,7 +52,7 @@
 #' optimizer plan.
 #'
 #' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
 #' for the full comparison.
 #'
 #' @export
@@ -118,11 +118,11 @@ inspect_grouping <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  with_margin_error_call(
+  with_margin_error_call( # nolint: object_usage_linter
     {
       assert_lazy_table(.data)
       .format <- match.arg(.format)
-      grouping <- prepare_grouping_plan(
+      grouping <- prepare_grouping_plan( # nolint: object_usage_linter
         .data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,

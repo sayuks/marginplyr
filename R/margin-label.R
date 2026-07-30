@@ -259,12 +259,12 @@ label_margin_branch <- function(.data,
       encoded_factors,
       function(info) {
         col <- info$col
-        missing_sentinel <- factor_missing_sentinel(
+        missing_sentinel <- factor_missing_sentinel( # nolint: object_usage_linter
           info,
           margin_labels[[col]]
         )
         rlang::expr(
-          encode_factor_for_margin(
+          encode_factor_for_margin( # nolint: object_usage_linter
             .data[[!!col]],
             missing_sentinel = !!missing_sentinel,
             preserve_missing_value = TRUE

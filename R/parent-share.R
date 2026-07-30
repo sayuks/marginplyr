@@ -1145,8 +1145,10 @@ apply_lazy_parent_shares <- function(result,
 
 lazy_parent_sql_on <- function(con, left_names, right_names) {
   stopifnot(length(left_names) == length(right_names))
+  # nolint start: object_usage_linter
   left_alias <- "LHS"
   right_alias <- "RHS"
+  # nolint end
   terms <- Map(
     function(left_name, right_name) {
       dbplyr::sql_glue2(

@@ -38,6 +38,7 @@ reconstruct_factor_vector <- function(x,
 }
 
 margin_factor_levels <- function(info, .margin_name, position) {
+  # nolint start: object_usage_linter
   other_levels <- info$levels[vapply(
     info$levels,
     function(level) !identical(level, .margin_name),
@@ -48,6 +49,7 @@ margin_factor_levels <- function(info, .margin_name, position) {
   } else {
     c(other_levels, .margin_name)
   }
+  # nolint end
 }
 
 restore_margin_factors <- function(.data,
@@ -61,7 +63,7 @@ restore_margin_factors <- function(.data,
   Reduce(
     function(data, info) {
       label <- margin_labels[[info$col]]
-      if (is_missing_margin_label(label)) {
+      if (is_missing_margin_label(label)) { # nolint: object_usage_linter
         return(data)
       }
       reconstruct_factor(data, info, label, position = position)
@@ -78,7 +80,7 @@ reconstruct_factor.data.frame <- function(data,
                                           .margin_name,
                                           position = "last") {
   col <- info$col
-  new_levels <- margin_factor_levels(info, .margin_name, position)
+  new_levels <- margin_factor_levels(info, .margin_name, position) # nolint: object_usage_linter
   ord <- info$ordered
   missing_sentinel <- factor_missing_sentinel(info, .margin_name)
   dplyr::mutate(
@@ -104,7 +106,9 @@ reconstruct_factor.tbl_duckdb_connection <- function(data,
                                                      .margin_name,
                                                      position = "last") {
   col <- info$col # nolint: object_usage_linter
+  # nolint start: object_usage_linter
   new_levels <- margin_factor_levels(info, .margin_name, position)
+  # nolint end
   con <- dbplyr::remote_con(data)
   sql_query <- dbplyr::sql_glue2(
     con,

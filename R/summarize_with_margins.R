@@ -119,7 +119,7 @@
 #' | Value | Meaning | Duplicate occurrences |
 #' |---|---|---|
 #' | `.id` | Position in this ordered Grouping plan | Distinct with `"keep"` |
-#' | [inspect_grouping()] `set_id` | The same position before execution | Distinct with `"keep"` |
+#' | [inspect_grouping()] `set_id` | The same position before execution | Distinct with `"keep"` | # nolint: line_length_linter
 #' | [grouping_bit()] | Whether one dimension is omitted (`0L` or `1L`) | Same |
 #' | [grouping_id()] | Bit mask of omitted dimensions | Same |
 #'
@@ -129,7 +129,7 @@
 #' deduplicated. It records plan occurrence, not physical result order; use
 #' [dplyr::arrange()] when order matters.
 #' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
 #' for the complete comparison.
 #'
 #' @section Relationship to dplyr summaries:
@@ -217,9 +217,9 @@
 #' | `NA_character_` | yes | no | Error: NA is already a factor level |
 #' | `NA_character_` | no | yes | Error: the label collides with a value |
 #' | `NA_character_` | no | no | Allowed; use typed missing |
-#' | `NULL` | yes | yes | Allowed; source missing values and margins require structural identity |
+#' | `NULL` | yes | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
 #' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
-#' | `NULL` | no | yes | Allowed; source missing values and margins require structural identity |
+#' | `NULL` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
 #' | `NULL` | no | no | Allowed; use typed missing |
 #'
 #' A factor observation that uses an NA level can print as `<NA>` while
@@ -451,17 +451,17 @@ summarize_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  admission <- with_margin_error_call(
+  admission <- with_margin_error_call( # nolint: object_usage_linter
     {
       assert_lazy_table(.data)
-      normalize_margin_options(
+      normalize_margin_options( # nolint: object_usage_linter
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
         .id = .id
       )
-      check_removed_groups_argument(dots)
+      check_removed_groups_argument(dots) # nolint: object_usage_linter
       check_summary_context_helpers(dots)
       has_parent_shares <- preflight_parent_shares( # nolint: object_usage_linter
         dots
@@ -490,7 +490,7 @@ summarize_with_margins <- function(.data,
     )
   }
 
-  operation <- prepare_margin_operation(
+  operation <- prepare_margin_operation( # nolint: object_usage_linter
     .data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
@@ -502,12 +502,12 @@ summarize_with_margins <- function(.data,
     call = call
   )
   result <- execute_margin_summary(operation, dots)
-  finalize_margin_operation(operation, result)
+  finalize_margin_operation(operation, result) # nolint: object_usage_linter
 }
 
 execute_margin_summary <- function(operation, dots) {
-  check_margin_operation(operation)
-  with_margin_error_call(
+  check_margin_operation(operation) # nolint: object_usage_linter
+  with_margin_error_call( # nolint: object_usage_linter
     {
       plan <- operation$plan
       group_vars <- c(plan$by, plan$dimensions)
@@ -535,7 +535,7 @@ execute_margin_summary <- function(operation, dots) {
         summary_output_names,
         group_vars = group_vars
       )
-      check_margin_id_collision(
+      check_margin_id_collision( # nolint: object_usage_linter
         operation$set_id_name,
         summary_output_names,
         "a summary output"
@@ -559,7 +559,7 @@ execute_margin_summary <- function(operation, dots) {
         adapter_set_id_name <- operation$set_id_name
       }
 
-      validate_margin_operation(operation)
+      validate_margin_operation(operation) # nolint: object_usage_linter
 
       result <- tryCatch(
         {

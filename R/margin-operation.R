@@ -121,7 +121,7 @@ prepare_margin_operation <- function(.data,
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
 
-      grouping <- prepare_grouping_plan(
+      grouping <- prepare_grouping_plan( # nolint: object_usage_linter
         .data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,
@@ -145,7 +145,7 @@ prepare_margin_operation <- function(.data,
         plan$dimensions,
         backend = backend
       )
-      margin_labels <- resolve_margin_labels(
+      margin_labels <- resolve_margin_labels( # nolint: object_usage_linter
         .margin_label,
         dimensions = plan$dimensions,
         by = plan$by
@@ -172,7 +172,7 @@ prepare_margin_operation <- function(.data,
 
 validate_margin_operation <- function(operation) {
   check_margin_operation(operation)
-  with_margin_error_call(
+  with_margin_error_call( # nolint: object_usage_linter
     validate_margin_label(
       operation$data,
       dimensions = operation$plan$dimensions,
@@ -189,7 +189,7 @@ validate_margin_operation <- function(operation) {
 finalize_margin_operation <- function(operation, result) {
   check_margin_operation(operation)
   result <- dplyr::ungroup(result)
-  result <- restore_margin_factors(
+  result <- restore_margin_factors( # nolint: object_usage_linter
     result,
     factor_info = operation$column_info$factors,
     margin_labels = operation$margin_labels,

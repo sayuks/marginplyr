@@ -36,7 +36,7 @@ factor_contract_data <- function(has_na_level, has_missing_value) {
   )
 }
 
-test_that("factor NA levels and missing values follow the eight-case contract", {
+test_that("factor NA levels and missing values follow the eight-case contract", { # nolint: line_length_linter
   cases <- data.frame(
     label = c(rep("NA", 4L), rep("NULL", 4L)),
     na_level = rep(c(TRUE, TRUE, FALSE, FALSE), 2L),
@@ -76,7 +76,7 @@ test_that("factor NA levels and missing values follow the eight-case contract", 
   }
 })
 
-test_that("NA factor levels stay structural when collision checks are disabled", {
+test_that("NA factor levels stay structural when collision checks are disabled", { # nolint: line_length_linter
   with_na_level <- factor_contract_data(
     has_na_level = TRUE,
     has_missing_value = FALSE
@@ -190,7 +190,7 @@ test_that("named Margin labels require exact dimension coverage", {
   )
 })
 
-test_that("factor collisions include unused levels and remain column-specific", {
+test_that("factor collisions include unused levels and remain column-specific", { # nolint: line_length_linter
   data <- data.frame(
     first = factor(c("a", "b"), levels = c("a", "b", "All first")),
     second = factor(c("x", "y"), levels = c("x", "y", "All second")),

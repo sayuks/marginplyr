@@ -252,7 +252,7 @@ register_inspect_proxy_methods <- function() {
   )
 }
 
-test_that("lazy inspection reads typed metadata once without executing margins", {
+test_that("lazy inspection reads typed metadata once without executing margins", { # nolint: line_length_linter
   skip_if_not_installed("dtplyr")
   register_inspect_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(

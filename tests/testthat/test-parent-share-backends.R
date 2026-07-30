@@ -61,7 +61,7 @@ parent_lazy_probe_collect <- function(con, sql, ...) {
   stop("Parent-share planning must not execute a schema probe.", call. = FALSE)
 }
 
-test_that("PostgreSQL renders one staged Parent-share mapping for all measures", {
+test_that("PostgreSQL renders one staged Parent-share mapping for all measures", { # nolint: line_length_linter
   data <- data.frame(
     region = "East",
     store = "A",
@@ -184,7 +184,7 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
   }
 })
 
-test_that("DuckDB Parent shares agree across native, portable, and local paths", {
+test_that("DuckDB Parent shares agree across native, portable, and local paths", { # nolint: line_length_linter
   skip_if_not_installed("duckdb")
   skip_if_not_installed("DBI")
   con <- DBI::dbConnect(duckdb::duckdb())
@@ -279,7 +279,7 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
   )
 })
 
-test_that("lazy Parent shares preserve empty-input root and partition behavior", {
+test_that("lazy Parent shares preserve empty-input root and partition behavior", { # nolint: line_length_linter
   empty <- data.frame(group = character(), value = double())
   sources <- list()
 

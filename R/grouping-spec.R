@@ -18,7 +18,7 @@
 #' composite dimension. Its columns are added or removed together.
 #'
 #' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
 #' for how a resolved Grouping plan relates to `.id`, [inspect_grouping()],
 #' [grouping_bit()], and [grouping_id()].
 #'

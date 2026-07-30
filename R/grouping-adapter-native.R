@@ -23,7 +23,7 @@ summarize_margin_native <- function(.data,
   }
 
   labelled_dimensions <- names(Filter(
-    function(label) !is_missing_margin_label(label),
+    function(label) !is_missing_margin_label(label), # nolint: object_usage_linter
     margin_labels
   ))
   needs_display_flags <- length(labelled_dimensions) > 0L

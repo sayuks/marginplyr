@@ -164,7 +164,7 @@ nest_margin_pipeline <- function(.data,
                                  call) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
 
-  with_margin_error_call(
+  with_margin_error_call( # nolint: object_usage_linter
     {
       assert_nest_possible(.data)
       assert_logical_scalar(.keep)
@@ -178,7 +178,7 @@ nest_margin_pipeline <- function(.data,
       if (identical(.duplicates, c("error", "drop"))) {
         .duplicates <- "error"
       }
-      options <- normalize_margin_options(
+      options <- normalize_margin_options( # nolint: object_usage_linter
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
@@ -190,7 +190,7 @@ nest_margin_pipeline <- function(.data,
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
-      check_margin_id_collision(set_id_name, .key, "nesting `.key`")
+      check_margin_id_collision(set_id_name, .key, "nesting `.key`") # nolint: object_usage_linter
       if (identical(.duplicates, "keep")) {
         stop(
           "Nesting does not support `.duplicates = \"keep\"`. Use ",
@@ -202,7 +202,7 @@ nest_margin_pipeline <- function(.data,
     call = call
   )
 
-  operation <- prepare_margin_operation(
+  operation <- prepare_margin_operation( # nolint: object_usage_linter
     .data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
@@ -218,12 +218,12 @@ nest_margin_pipeline <- function(.data,
     .key = .key,
     .keep = .keep
   )
-  finalize_margin_operation(operation, result)
+  finalize_margin_operation(operation, result) # nolint: object_usage_linter
 }
 
 execute_margin_nest <- function(operation, .key, .keep) {
-  check_margin_operation(operation)
-  with_margin_error_call(
+  check_margin_operation(operation) # nolint: object_usage_linter
+  with_margin_error_call( # nolint: object_usage_linter
     {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
@@ -267,9 +267,9 @@ execute_margin_nest <- function(operation, .key, .keep) {
         data <- dplyr::mutate(data, !!!keep_exprs)
       }
 
-      validate_margin_operation(operation)
+      validate_margin_operation(operation) # nolint: object_usage_linter
 
-      expanded <- expand_margin_union(
+      expanded <- expand_margin_union( # nolint: object_usage_linter
         data,
         plan = plan,
         margin_labels = operation$margin_labels,

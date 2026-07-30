@@ -80,7 +80,7 @@ prepare_grouping_plan <- function(.data,
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
   stopifnot(is.null(validate_names) || is.function(validate_names))
 
-  with_margin_error_call(
+  with_margin_error_call( # nolint: object_usage_linter
     {
       .duplicates <- match.arg(
         .duplicates,

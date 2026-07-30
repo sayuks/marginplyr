@@ -20,13 +20,13 @@
 #'
 #' | Value | Meaning | Duplicate Grouping-set occurrences |
 #' |---|---|---|
-#' | `.id` | One-based position in the resolved Grouping plan | Distinct with `.duplicates = "keep"` |
-#' | [inspect_grouping()] `$set_id` | The same position before execution | Distinct with `.duplicates = "keep"` |
-#' | [grouping_bit()] | Whether one chosen dimension is absent | The same for identical absence patterns |
-#' | [grouping_id()] | Bit mask for chosen absent dimensions | The same for identical absence patterns |
+#' | `.id` | One-based position in the resolved Grouping plan | Distinct with `.duplicates = "keep"` | # nolint: line_length_linter
+#' | [inspect_grouping()] `$set_id` | The same position before execution | Distinct with `.duplicates = "keep"` | # nolint: line_length_linter
+#' | [grouping_bit()] | Whether one chosen dimension is absent | The same for identical absence patterns | # nolint: line_length_linter
+#' | [grouping_id()] | Bit mask for chosen absent dimensions | The same for identical absence patterns | # nolint: line_length_linter
 #'
 #' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
 #' for the comparison with `.id` and [inspect_grouping()], rollup and cube
 #' masks, physical row order, Margin labels, and factor missingness.
 #'

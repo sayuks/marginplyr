@@ -65,11 +65,11 @@ expand_with_margins <- function(.data,
                                 .duplicates = c("error", "drop", "keep"),
                                 .id = NULL) {
   call <- rlang::current_call()
-  with_margin_error_call(assert_lazy_table(.data), call = call)
+  with_margin_error_call(assert_lazy_table(.data), call = call) # nolint: object_usage_linter
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  operation <- prepare_margin_operation(
+  operation <- prepare_margin_operation( # nolint: object_usage_linter
     .data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
@@ -81,13 +81,13 @@ expand_with_margins <- function(.data,
     call = call
   )
   result <- execute_margin_expand(operation)
-  finalize_margin_operation(operation, result)
+  finalize_margin_operation(operation, result) # nolint: object_usage_linter
 }
 
 execute_margin_expand <- function(operation) {
-  check_margin_operation(operation)
-  validate_margin_operation(operation)
-  expand_margin_union(
+  check_margin_operation(operation) # nolint: object_usage_linter
+  validate_margin_operation(operation) # nolint: object_usage_linter
+  expand_margin_union( # nolint: object_usage_linter
     operation$data,
     plan = operation$plan,
     margin_labels = operation$margin_labels,

@@ -76,7 +76,7 @@ summarize_margin_union <- function(.data,
         result_names,
         group_vars = group_vars
       )
-      check_margin_id_collision(
+      check_margin_id_collision( # nolint: object_usage_linter
         set_id_name,
         result_names,
         "a summary output"
@@ -89,7 +89,7 @@ summarize_margin_union <- function(.data,
         result <- dplyr::rename(result, !!!rename_pairs)
       }
 
-      result <- label_margin_branch(
+      result <- label_margin_branch( # nolint: object_usage_linter
         result,
         plan = plan,
         grouping_set = grouping_set,
@@ -114,7 +114,7 @@ expand_margin_union <- function(.data,
                                 set_id_name = NULL) {
   branches <- Map(
     function(grouping_set, set_id) {
-      result <- label_margin_branch(
+      result <- label_margin_branch( # nolint: object_usage_linter
         .data,
         plan = plan,
         grouping_set = grouping_set,
