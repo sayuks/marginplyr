@@ -16,5 +16,6 @@
 ^investigation$
 ^cran-comments\.md$
 ^codecov\.yml$
+^\.lintr$
 ^doc$
 ^Meta$

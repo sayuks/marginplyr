@@ -164,10 +164,7 @@ table is the natural source of a reusable key domain:
 ```{r}
 #| message: false
 
-if (
-  requireNamespace("DBI", quietly = TRUE) &&
-  requireNamespace("RSQLite", quietly = TRUE)
-) {
+if (requireNamespace("DBI", quietly = TRUE) && requireNamespace("RSQLite", quietly = TRUE)) {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
 
   facts_db <- copy_to(
@@ -226,10 +223,7 @@ query text grow with the number of keys:
 ```{r}
 #| message: false
 
-if (
-  requireNamespace("DBI", quietly = TRUE) &&
-  requireNamespace("RSQLite", quietly = TRUE)
-) {
+if (requireNamespace("DBI", quietly = TRUE) && requireNamespace("RSQLite", quietly = TRUE)) {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   facts_db <- copy_to(
     con,
