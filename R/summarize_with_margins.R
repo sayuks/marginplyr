@@ -151,22 +151,31 @@
 #' [grouping_bit()] and [grouping_id()] to identify margin levels.
 #'
 #' @section Parent shares:
-#' On local data, [share_of_parent()] calculates a preceding named numeric
-#' scalar summary's ratio to its immediate less detailed [rollup()] parent.
-#' It supports direct named expressions and a constrained [dplyr::across()]
-#' form for multiple preceding summaries. Fixed `.by` keys partition the
-#' calculation, composite dimensions move together, and duplicate occurrences
-#' skip identical sets when choosing a parent.
+#' [share_of_parent()] calculates a preceding named numeric scalar summary's
+#' ratio to its immediate less detailed [rollup()] parent for local data and
+#' supported lazy dbplyr, Arrow, and dtplyr inputs. It supports direct named
+#' expressions and a constrained [dplyr::across()] form for multiple preceding
+#' summaries. Fixed `.by` keys partition the calculation, composite dimensions
+#' move together, and duplicate occurrences skip identical sets when choosing
+#' a parent.
 #'
 #' Root rows receive `1.0`. Missing numerators or denominators and zero
 #' denominators receive `NA_real_`; other finite ratios are not clamped.
 #' Parent matching is structural, so `.id`, missing grouping values, and
 #' displayed Margin labels do not determine the parent.
 #'
-#' Parent shares require one pure [rollup()] and currently execute only for
-#' local data frames. The source must be a unique, preceding, self-contained
-#' integer or double scalar summary. See [share_of_parent()] for the complete
-#' direct-expression, source, ordering, and `across()` contracts.
+#' Parent shares require one pure [rollup()]. The source must be a unique,
+#' preceding, self-contained integer or double scalar summary. Lazy execution
+#' preserves collision-safe Grouping set metadata through ordinary aggregation,
+#' calculates all requested shares through one shared Parent mapping, and then
+#' removes the metadata before returning the requested column order.
+#'
+#' General dbplyr backends are not executed or probed solely to validate an
+#' arbitrary summary result's type or cardinality. Statically detectable helper
+#' errors remain targeted before execution; an incompatible lazy expression may
+#' instead fail with its database error at [dplyr::collect()]. See
+#' [share_of_parent()] for the complete direct-expression, source, ordering,
+#' value, and `across()` contracts.
 #'
 #' @section Display labels and grouping identity:
 #' `.margin_label` is a display value, not the identity of a grouping set. An
@@ -385,13 +394,6 @@ summarize_with_margins <- function(.data,
         validate_parent_share_grouping( # nolint: object_usage_linter
           grouping_spec
         )
-        if (!is.data.frame(.data)) {
-          stop(
-            "`share_of_parent()` currently executes only for local data ",
-            "frames.",
-            call. = FALSE
-          )
-        }
       }
       list(
         has_parent_shares = has_parent_shares,
@@ -541,7 +543,10 @@ execute_margin_summary <- function(operation, dots) {
           set_id_name = parent_set_id_name
         )
         if (!is.null(operation$set_id_name)) {
-          result[[operation$set_id_name]] <- result[[parent_set_id_name]]
+          result <- dplyr::mutate(
+            result,
+            "{operation$set_id_name}" := .data[[parent_set_id_name]]
+          )
         }
         result <- dplyr::select(
           result,

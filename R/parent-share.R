@@ -51,9 +51,17 @@
 #' matching uses internal Grouping set metadata rather than `.id` or displayed
 #' Margin labels, and it never adds missing rows.
 #'
-#' Parent-share execution currently supports local data frames and one pure
-#' [rollup()], including composite dimensions. Other grouping specification
-#' kinds and lazy inputs produce an error before ordinary aggregation.
+#' Parent-share execution supports local data frames and lazy dbplyr, Arrow,
+#' and dtplyr inputs for one pure [rollup()], including composite dimensions.
+#' Lazy results remain lazy: ordinary summaries are followed by one
+#' Parent-share mapping and join shared by every requested measure.
+#'
+#' General dbplyr backends are not queried solely to discover an arbitrary
+#' summary result's type or cardinality. Statically detectable syntax and
+#' dependency errors remain local, while an incompatible lazy summary may
+#' report its backend error when [dplyr::collect()] executes the staged query.
+#' The portable value guarantee covers finite numbers, missing values, and
+#' zero denominators; backend-specific non-finite values are outside it.
 #'
 #' @param x The bare name of one preceding eligible ordinary summary.
 #'
@@ -213,10 +221,7 @@ plan_parent_share_expressions <- function(dots,
         planned_dots[i] <- list(NULL)
         next
       }
-      planned_dots[[i]] <- rlang::new_quosure(
-        parent_share_placeholder(request$outputs),
-        env = rlang::base_env()
-      )
+      planned_dots[[i]] <- parent_share_placeholder(request$outputs)
       requests <- c(requests, list(request))
       preceding_parent_names <- c(
         preceding_parent_names,
@@ -254,7 +259,20 @@ plan_parent_share_expressions <- function(dots,
   }
 
   keep <- !vapply(planned_dots, is.null, logical(1))
-  list(dots = planned_dots[keep], requests = requests)
+  planned_dots <- unlist(
+    lapply(
+      planned_dots[keep],
+      function(dot) {
+        if (inherits(dot, "marginplyr_parent_placeholders")) {
+          unclass(dot)
+        } else {
+          list(dot)
+        }
+      }
+    ),
+    recursive = FALSE
+  )
+  list(dots = planned_dots, requests = requests)
 }
 
 analyze_ordinary_summaries <- function(dots, selection_proxy) {
@@ -608,6 +626,14 @@ apply_parent_shares <- function(result,
   if (length(requests) == 0L) {
     return(result)
   }
+  if (!is.data.frame(result)) {
+    return(apply_lazy_parent_shares(
+      result,
+      requests = requests,
+      plan = plan,
+      set_id_name = set_id_name
+    ))
+  }
   check_parent_share_cardinality(
     result,
     data = data,
@@ -629,6 +655,260 @@ apply_parent_shares <- function(result,
     }
   }
   result
+}
+
+apply_lazy_parent_shares <- function(result,
+                                     requests,
+                                     plan,
+                                     set_id_name) {
+  parent_ids <- parent_set_ids(plan)
+  root_ids <- plan$set_ids[is.na(parent_ids)]
+  pairs <- parent_share_pairs(requests)
+  sources <- unique(vapply(pairs, `[[`, character(1), "source"))
+  result_names <- get_col_names(result, dplyr::everything())
+  denominator_names <- new_margin_internal_names(
+    length(sources),
+    used_names = result_names,
+    prefix = "..marginplyr_parent_value_"
+  )
+  names(denominator_names) <- sources
+
+  child_ids <- plan$set_ids[!is.na(parent_ids)]
+  if (length(child_ids) > 0L) {
+    mapping <- build_lazy_parent_mapping(
+      result,
+      child_ids = child_ids,
+      parent_ids = parent_ids,
+      sources = sources,
+      denominator_names = denominator_names,
+      plan = plan,
+      set_id_name = set_id_name
+    )
+    join_key_names <- new_margin_internal_names(
+      length(plan$dimensions),
+      used_names = c(result_names, denominator_names),
+      prefix = "..marginplyr_parent_key_"
+    )
+    names(join_key_names) <- plan$dimensions
+    result <- add_lazy_parent_join_keys(
+      result,
+      plan = plan,
+      parent_ids = parent_ids,
+      set_id_name = set_id_name,
+      join_key_names = join_key_names
+    )
+    mapping <- add_lazy_parent_join_keys(
+      mapping,
+      plan = plan,
+      parent_ids = parent_ids,
+      set_id_name = set_id_name,
+      join_key_names = join_key_names
+    )
+    mapping <- dplyr::select(
+      mapping,
+      dplyr::all_of(c(
+        set_id_name,
+        plan$by,
+        unname(join_key_names),
+        unname(denominator_names)
+      ))
+    )
+    join_names <- c(set_id_name, plan$by, unname(join_key_names))
+    if (inherits(result, "tbl_lazy")) {
+      right_join_names <- new_margin_internal_names(
+        length(join_names),
+        used_names = c(
+          result_names,
+          denominator_names,
+          join_key_names
+        ),
+        prefix = "..marginplyr_parent_match_"
+      )
+      rename_pairs <- rlang::set_names(
+        rlang::syms(join_names),
+        right_join_names
+      )
+      mapping <- dplyr::rename(mapping, !!!rename_pairs)
+      result <- dplyr::left_join(
+        result,
+        mapping,
+        sql_on = lazy_parent_sql_on(
+          con = dbplyr::remote_con(result),
+          left_names = join_names,
+          right_names = right_join_names
+        ),
+        x_as = "LHS",
+        y_as = "RHS"
+      )
+    } else {
+      right_join_names <- character()
+      result <- dplyr::left_join(
+        result,
+        mapping,
+        by = join_names,
+        na_matches = "na"
+      )
+    }
+  }
+
+  share_exprs <- lapply(
+    pairs,
+    function(pair) {
+      source <- pair$source
+      denominator <- denominator_names[[source]]
+      if (length(child_ids) == 0L) {
+        return(rlang::expr(1.0))
+      }
+      rlang::expr(
+        dplyr::if_else(
+          .data[[!!set_id_name]] %in% !!root_ids,
+          1.0,
+          dplyr::if_else(
+            is.na(.data[[!!source]]) |
+              is.na(.data[[!!denominator]]) |
+              .data[[!!denominator]] == 0,
+            NA_real_,
+            as.double(.data[[!!source]]) /
+              as.double(.data[[!!denominator]])
+          )
+        )
+      )
+    }
+  )
+  names(share_exprs) <- vapply(pairs, `[[`, character(1), "output")
+  result <- dplyr::mutate(result, !!!share_exprs)
+
+  internal_names <- c(
+    unname(denominator_names),
+    if (exists("right_join_names", inherits = FALSE)) {
+      right_join_names
+    } else {
+      character()
+    },
+    if (exists("join_key_names", inherits = FALSE)) {
+      unname(join_key_names)
+    } else {
+      character()
+    }
+  )
+  if (length(internal_names) > 0L) {
+    result <- dplyr::select(result, -dplyr::all_of(internal_names))
+  }
+  result
+}
+
+lazy_parent_sql_on <- function(con, left_names, right_names) {
+  stopifnot(length(left_names) == length(right_names))
+  left_alias <- "LHS"
+  right_alias <- "RHS"
+  terms <- Map(
+    function(left_name, right_name) {
+      dbplyr::sql_glue2(
+        con,
+        paste0(
+          "(({.id left_alias}.{.id left_name} = ",
+          "{.id right_alias}.{.id right_name}) OR ",
+          "({.id left_alias}.{.id left_name} IS NULL AND ",
+          "{.id right_alias}.{.id right_name} IS NULL))"
+        )
+      )
+    },
+    left_names,
+    right_names
+  )
+  dbplyr::sql(paste(
+    vapply(terms, as.character, character(1)),
+    collapse = " AND "
+  ))
+}
+
+parent_share_pairs <- function(requests) {
+  unlist(
+    lapply(
+      requests,
+      function(request) {
+        Map(
+          function(output, source) {
+            list(output = output, source = source)
+          },
+          request$outputs,
+          request$sources
+        )
+      }
+    ),
+    recursive = FALSE
+  )
+}
+
+build_lazy_parent_mapping <- function(result,
+                                      child_ids,
+                                      parent_ids,
+                                      sources,
+                                      denominator_names,
+                                      plan,
+                                      set_id_name) {
+  group_vars <- unique(c(plan$by, plan$dimensions))
+  key_exprs <- lapply(
+    group_vars,
+    function(var) rlang::expr(.data[[!!var]])
+  )
+  names(key_exprs) <- group_vars
+  denominator_exprs <- lapply(
+    sources,
+    function(source) rlang::expr(.data[[!!source]])
+  )
+  names(denominator_exprs) <- unname(denominator_names[sources])
+
+  mappings <- lapply(
+    child_ids,
+    function(child_id) {
+      parent_id <- parent_ids[[child_id]]
+      parent_rows <- dplyr::filter(
+        result,
+        .data[[set_id_name]] == !!parent_id
+      )
+      child_id_expr <- stats::setNames(
+        list(rlang::expr(as.integer(!!child_id))),
+        set_id_name
+      )
+      dplyr::transmute(
+        parent_rows,
+        !!!key_exprs,
+        !!!child_id_expr,
+        !!!denominator_exprs
+      )
+    }
+  )
+  Reduce(dplyr::union_all, mappings)
+}
+
+add_lazy_parent_join_keys <- function(result,
+                                      plan,
+                                      parent_ids,
+                                      set_id_name,
+                                      join_key_names) {
+  join_key_exprs <- lapply(
+    plan$dimensions,
+    function(dimension) {
+      matching_child_ids <- plan$set_ids[vapply(
+        plan$set_ids,
+        function(set_id) {
+          parent_id <- parent_ids[[set_id]]
+          !is.na(parent_id) && dimension %in% plan$sets[[parent_id]]
+        },
+        logical(1)
+      )]
+      rlang::expr(
+        dplyr::if_else(
+          .data[[!!set_id_name]] %in% !!matching_child_ids,
+          .data[[!!dimension]],
+          NA
+        )
+      )
+    }
+  )
+  names(join_key_exprs) <- unname(join_key_names[plan$dimensions])
+  dplyr::mutate(result, !!!join_key_exprs)
 }
 
 calculate_parent_share <- function(result,
@@ -797,14 +1077,14 @@ parent_cardinality_request <- function(requests, message) {
 }
 
 parent_share_placeholder <- function(outputs) {
-  values <- rep(list(NA_real_), length(outputs))
-  names(values) <- outputs
-  rlang::call2(
-    "data.frame",
-    !!!values,
-    check.names = FALSE,
-    .ns = "base"
+  placeholders <- lapply(
+    outputs,
+    function(output) {
+      rlang::new_quosure(NA_real_, env = rlang::empty_env())
+    }
   )
+  names(placeholders) <- outputs
+  structure(placeholders, class = "marginplyr_parent_placeholders")
 }
 
 is_parent_share_call <- function(expr) {

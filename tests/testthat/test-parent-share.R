@@ -1037,14 +1037,15 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
   )
   expect_identical(parent_preflight_capture$n, 0L)
 
-  expect_error(
-    summarize_with_margins(
-      source,
-      total = sum(value),
-      share = share_of_parent(total),
-      .grouping = rollup(group)
-    ),
-    "only for local data frames"
+  query <- summarize_with_margins(
+    source,
+    total = sum(value),
+    share = share_of_parent(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
   )
-  expect_identical(parent_preflight_capture$n, 0L)
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(parent_preflight_capture$n, 1L)
+  result <- dplyr::collect(query)
+  expect_setequal(result$share, c(1, 1))
 })

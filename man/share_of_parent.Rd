@@ -70,9 +70,17 @@ doubles, so negative values and values above one are retained. Parent
 matching uses internal Grouping set metadata rather than \code{.id} or displayed
 Margin labels, and it never adds missing rows.
 
-Parent-share execution currently supports local data frames and one pure
-\code{\link[=rollup]{rollup()}}, including composite dimensions. Other grouping specification
-kinds and lazy inputs produce an error before ordinary aggregation.
+Parent-share execution supports local data frames and lazy dbplyr, Arrow,
+and dtplyr inputs for one pure \code{\link[=rollup]{rollup()}}, including composite dimensions.
+Lazy results remain lazy: ordinary summaries are followed by one
+Parent-share mapping and join shared by every requested measure.
+
+General dbplyr backends are not queried solely to discover an arbitrary
+summary result's type or cardinality. Statically detectable syntax and
+dependency errors remain local, while an incompatible lazy summary may
+report its backend error when \code{\link[dplyr:collect]{dplyr::collect()}} executes the staged query.
+The portable value guarantee covers finite numbers, missing values, and
+zero denominators; backend-specific non-finite values are outside it.
 }
 
 \examples{

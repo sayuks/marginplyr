@@ -200,22 +200,31 @@ positions, or columns would not have one global meaning. Use
 
 \section{Parent shares}{
 
-On local data, \code{\link[=share_of_parent]{share_of_parent()}} calculates a preceding named numeric
-scalar summary's ratio to its immediate less detailed \code{\link[=rollup]{rollup()}} parent.
-It supports direct named expressions and a constrained \code{\link[dplyr:across]{dplyr::across()}}
-form for multiple preceding summaries. Fixed \code{.by} keys partition the
-calculation, composite dimensions move together, and duplicate occurrences
-skip identical sets when choosing a parent.
+\code{\link[=share_of_parent]{share_of_parent()}} calculates a preceding named numeric scalar summary's
+ratio to its immediate less detailed \code{\link[=rollup]{rollup()}} parent for local data and
+supported lazy dbplyr, Arrow, and dtplyr inputs. It supports direct named
+expressions and a constrained \code{\link[dplyr:across]{dplyr::across()}} form for multiple preceding
+summaries. Fixed \code{.by} keys partition the calculation, composite dimensions
+move together, and duplicate occurrences skip identical sets when choosing
+a parent.
 
 Root rows receive \code{1.0}. Missing numerators or denominators and zero
 denominators receive \code{NA_real_}; other finite ratios are not clamped.
 Parent matching is structural, so \code{.id}, missing grouping values, and
 displayed Margin labels do not determine the parent.
 
-Parent shares require one pure \code{\link[=rollup]{rollup()}} and currently execute only for
-local data frames. The source must be a unique, preceding, self-contained
-integer or double scalar summary. See \code{\link[=share_of_parent]{share_of_parent()}} for the complete
-direct-expression, source, ordering, and \code{across()} contracts.
+Parent shares require one pure \code{\link[=rollup]{rollup()}}. The source must be a unique,
+preceding, self-contained integer or double scalar summary. Lazy execution
+preserves collision-safe Grouping set metadata through ordinary aggregation,
+calculates all requested shares through one shared Parent mapping, and then
+removes the metadata before returning the requested column order.
+
+General dbplyr backends are not executed or probed solely to validate an
+arbitrary summary result's type or cardinality. Statically detectable helper
+errors remain targeted before execution; an incompatible lazy expression may
+instead fail with its database error at \code{\link[dplyr:collect]{dplyr::collect()}}. See
+\code{\link[=share_of_parent]{share_of_parent()}} for the complete direct-expression, source, ordering,
+value, and \code{across()} contracts.
 }
 
 \section{Display labels and grouping identity}{
