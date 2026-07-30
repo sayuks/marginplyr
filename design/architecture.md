@@ -157,6 +157,9 @@ The test suite divides supporting contracts as follows:
 - `test-grouping-interface.R` covers shared local behavior through the public
   verbs, including grouping plans, labels, factors, duplicate policies,
   persistent groups, result grouping, summary selections, and nesting.
+- `test-margin-id.R` covers Grouping set occurrence identifiers across all
+  public verbs, including local, native, portable, duplicate, nesting,
+  collision, missing-value, and laziness semantics.
 - `test-summarize-operation.R`, `test-expand-operation.R`, and
   `test-nest-operation.R` cover lifecycle ordering and the single typed
   metadata snapshot through public calls.

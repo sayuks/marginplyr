@@ -300,6 +300,43 @@ known_summary_output_names <- function(dots, data_proxy) {
   )
 }
 
+check_margin_id_summary_names_known <- function(set_id_name,
+                                                dots,
+                                                data_proxy) {
+  if (is.null(set_id_name)) {
+    return(invisible(NULL))
+  }
+
+  dot_names <- names(dots)
+  unknown <- vapply(
+    seq_along(dots),
+    function(i) {
+      !nzchar(dot_names[[i]]) &&
+        length(known_data_frame_output_names(
+          rlang::quo_get_expr(dots[[i]]),
+          rlang::quo_get_env(dots[[i]]),
+          data_proxy
+        )) == 0L
+    },
+    logical(1)
+  )
+  if (any(unknown)) {
+    stop(
+      sprintf(
+        paste0(
+          "`.id` (`%s`) cannot be checked against a summary whose output ",
+          "names cannot be determined before execution. Name the summary ",
+          "output explicitly."
+        ),
+        set_id_name
+      ),
+      call. = FALSE
+    )
+  }
+
+  invisible(NULL)
+}
+
 known_data_frame_output_names <- function(expr, env, data_proxy) {
   if (!rlang::is_call(expr)) {
     return(character())

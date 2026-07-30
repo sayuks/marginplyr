@@ -4,7 +4,7 @@ new_margin_operation <- function(data,
                                  data_proxy,
                                  plan,
                                  column_info,
-                                 id,
+                                 set_id_name,
                                  margin_label,
                                  margin_labels,
                                  margin_label_position,
@@ -18,7 +18,7 @@ new_margin_operation <- function(data,
       data_proxy = data_proxy,
       plan = plan,
       column_info = column_info,
-      id = id,
+      set_id_name = set_id_name,
       margin_label = margin_label,
       margin_labels = margin_labels,
       margin_label_position = margin_label_position,
@@ -53,7 +53,7 @@ normalize_margin_options <- function(.margin_label,
   .id <- normalize_margin_id(.id)
 
   list(
-    id = .id,
+    set_id_name = .id,
     margin_label = normalize_margin_label(.margin_label),
     margin_label_position = match.arg(
       .margin_label_position,
@@ -152,7 +152,7 @@ prepare_margin_operation <- function(.data,
         .duplicates = .duplicates,
         .id = .id
       )
-      .id <- options$id
+      set_id_name <- options$set_id_name
       .margin_label <- options$margin_label
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
@@ -166,7 +166,7 @@ prepare_margin_operation <- function(.data,
       by <- input$by
       backend <- grouping_backend(data)
       data_vars <- get_col_names(data, dplyr::everything())
-      check_margin_id_collision(.id, data_vars, "a source column")
+      check_margin_id_collision(set_id_name, data_vars, "a source column")
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
       grouping_spec <- preflight$spec
       if (preflight$name_only) {
@@ -206,7 +206,7 @@ prepare_margin_operation <- function(.data,
         data_proxy = data_proxy,
         plan = plan,
         column_info = column_info,
-        id = .id,
+        set_id_name = set_id_name,
         margin_label = .margin_label,
         margin_labels = margin_labels,
         margin_label_position = .margin_label_position,
@@ -246,7 +246,7 @@ finalize_margin_operation <- function(operation, result) {
   margin_cols <- c(
     operation$plan$by,
     operation$plan$dimensions,
-    operation$id
+    operation$set_id_name
   )
   result <- dplyr::select(
     result,

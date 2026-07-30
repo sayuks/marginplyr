@@ -181,12 +181,12 @@ nest_margin_pipeline <- function(.data,
         .duplicates = .duplicates,
         .id = .id
       )
-      .id <- options$id
+      set_id_name <- options$set_id_name
       .margin_label <- options$margin_label
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
-      check_margin_id_collision(.id, .key, "nesting `.key`")
+      check_margin_id_collision(set_id_name, .key, "nesting `.key`")
       if (identical(.duplicates, "keep")) {
         stop(
           "Nesting does not support `.duplicates = \"keep\"`. Use ",
@@ -231,15 +231,19 @@ execute_margin_nest <- function(operation, .key, .keep) {
       }
 
       internal_names <- new_margin_internal_names(
-        as.integer(is.null(operation$id)) +
+        as.integer(is.null(operation$set_id_name)) +
           if (.keep) length(group_cols) else 0L,
-        used_names = unique(c(operation$data_vars, operation$id, .key)),
+        used_names = unique(c(
+          operation$data_vars,
+          operation$set_id_name,
+          .key
+        )),
         prefix = "..marginplyr_nest_"
       )
-      set_col <- if (is.null(operation$id)) {
+      set_col <- if (is.null(operation$set_id_name)) {
         internal_names[[1L]]
       } else {
-        operation$id
+        operation$set_id_name
       }
       keep_cols <- if (.keep && length(group_cols) > 0L) {
         stats::setNames(
@@ -276,7 +280,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
         keep_cols = keep_cols,
         .key = .key,
         .keep = .keep,
-        set_id_name = operation$id
+        set_id_name = operation$set_id_name
       )
     },
     call = operation$call

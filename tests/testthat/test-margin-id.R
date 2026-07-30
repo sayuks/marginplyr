@@ -188,6 +188,25 @@ test_that(".id rejects output-name collisions", {
   )
 })
 
+test_that(".id rejects opaque summary names before local execution", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  calls <- 0L
+  opaque_summary <- function(x) {
+    calls <<- calls + 1L
+    data.frame(set = sum(x))
+  }
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      opaque_summary(value),
+      .id = "set"
+    ),
+    "`\\.id` \\(`set`\\).*output names cannot be determined"
+  )
+  expect_identical(calls, 0L)
+})
+
 test_that("native summaries derive .id from structural grouping metadata", {
   remote <- dbplyr::tbl_lazy(
     data.frame(a = "x", b = "u", value = 1),

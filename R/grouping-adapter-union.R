@@ -8,6 +8,16 @@ summarize_margin_branch <- function(.data,
   )
 }
 
+add_grouping_set_id <- function(result, set_id_name, set_id) {
+  if (is.null(set_id_name)) {
+    return(result)
+  }
+  dplyr::mutate(
+    result,
+    "{set_id_name}" := as.integer(set_id)
+  )
+}
+
 summarize_margin_union <- function(.data,
                                    dots,
                                    plan,
@@ -88,13 +98,7 @@ summarize_margin_union <- function(.data,
         factor_info = column_info$factors
       )
 
-      if (!is.null(set_id_name)) {
-        result <- dplyr::mutate(
-          result,
-          "{set_id_name}" := as.integer(set_id)
-        )
-      }
-      result
+      add_grouping_set_id(result, set_id_name, set_id)
     },
     plan$sets,
     plan$set_ids
@@ -119,13 +123,7 @@ expand_margin_union <- function(.data,
         factor_info = column_info$factors
       )
 
-      if (!is.null(set_id_name)) {
-        result <- dplyr::mutate(
-          result,
-          "{set_id_name}" := as.integer(set_id)
-        )
-      }
-      result
+      add_grouping_set_id(result, set_id_name, set_id)
     },
     plan$sets,
     plan$set_ids

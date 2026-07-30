@@ -111,6 +111,9 @@
 #' ordinary output columns. For [nest_with_margins()], `.id` is an outer key
 #' and is not included inside the nested data. For
 #' [nest_by_with_margins()], it is also a row-wise grouping key.
+#' Summary output names must be known before execution so collisions can be
+#' rejected eagerly; explicitly name an opaque custom summary when using
+#' `.id`.
 #'
 #' | Value | Meaning | Duplicate occurrences |
 #' |---|---|---|
@@ -389,6 +392,11 @@ execute_margin_summary <- function(operation, dots) {
           unique(group_vars)
         ))
       )
+      check_margin_id_summary_names_known(
+        operation$set_id_name,
+        dots,
+        summary_selection_proxy
+      )
       summary_output_names <- unique(c(
         names(dots)[nzchar(names(dots))],
         known_summary_output_names(dots, summary_selection_proxy)
@@ -398,14 +406,14 @@ execute_margin_summary <- function(operation, dots) {
         group_vars = group_vars
       )
       check_margin_id_collision(
-        operation$id,
+        operation$set_id_name,
         summary_output_names,
         "a summary output"
       )
       reserved_names <- unique(c(
         operation$data_vars,
         summary_output_names,
-        operation$id
+        operation$set_id_name
       ))
 
       validate_margin_operation(operation)
@@ -415,7 +423,7 @@ execute_margin_summary <- function(operation, dots) {
         plan,
         backend = operation$backend
       ) && !(
-        !is.null(operation$id) &&
+        !is.null(operation$set_id_name) &&
           identical(plan$duplicates, "keep")
       )) {
         summarize_margin_native( # nolint: object_usage_linter
@@ -424,7 +432,7 @@ execute_margin_summary <- function(operation, dots) {
           plan = plan,
           margin_labels = operation$margin_labels,
           reserved_names = reserved_names,
-          set_id_name = operation$id
+          set_id_name = operation$set_id_name
         )
       } else {
         summarize_margin_union( # nolint: object_usage_linter
@@ -434,7 +442,7 @@ execute_margin_summary <- function(operation, dots) {
           margin_labels = operation$margin_labels,
           column_info = operation$column_info,
           reserved_names = reserved_names,
-          set_id_name = operation$id
+          set_id_name = operation$set_id_name
         )
       }
     },
