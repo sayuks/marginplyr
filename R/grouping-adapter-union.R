@@ -13,7 +13,8 @@ summarize_margin_union <- function(.data,
                                    plan,
                                    margin_labels,
                                    column_info,
-                                   reserved_names) {
+                                   reserved_names,
+                                   set_id_name = NULL) {
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -31,9 +32,8 @@ summarize_margin_union <- function(.data,
     .data <- dplyr::mutate(.data, !!!key_exprs)
   }
 
-  branches <- lapply(
-    plan$sets,
-    function(grouping_set) {
+  branches <- Map(
+    function(grouping_set, set_id) {
       branch_dots <- rewrite_grouping_dots(
         dots,
         plan = plan,
@@ -66,6 +66,11 @@ summarize_margin_union <- function(.data,
         result_names,
         group_vars = group_vars
       )
+      check_margin_id_collision(
+        set_id_name,
+        result_names,
+        "a summary output"
+      )
       if (length(grouping_set) > 0L) {
         rename_pairs <- rlang::set_names(
           rlang::syms(unname(key_names[grouping_set])),
@@ -74,7 +79,7 @@ summarize_margin_union <- function(.data,
         result <- dplyr::rename(result, !!!rename_pairs)
       }
 
-      label_margin_branch(
+      result <- label_margin_branch(
         result,
         plan = plan,
         grouping_set = grouping_set,
@@ -82,7 +87,17 @@ summarize_margin_union <- function(.data,
         prototypes = column_info$prototypes,
         factor_info = column_info$factors
       )
-    }
+
+      if (!is.null(set_id_name)) {
+        result <- dplyr::mutate(
+          result,
+          "{set_id_name}" := as.integer(set_id)
+        )
+      }
+      result
+    },
+    plan$sets,
+    plan$set_ids
   )
 
   Reduce(dplyr::union_all, branches)
@@ -113,7 +128,7 @@ expand_margin_union <- function(.data,
       result
     },
     plan$sets,
-    seq_along(plan$sets)
+    plan$set_ids
   )
 
   Reduce(dplyr::union_all, branches)

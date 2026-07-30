@@ -5,6 +5,9 @@
   `grouping_spec()` for arbitrary SQL-style grouping plans, including empty
   sets, nesting, Cartesian products, and composite dimensions.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
+* Added `.id` to every Margin verb for one-based Grouping set occurrence
+  identifiers, including duplicate-aware local, lazy, expansion, and nesting
+  paths.
 * Added explicit duplicate-set policies: `"error"`, `"drop"`, and `"keep"`.
 * Changed the default display label to `"Total"`; `.margin_label = NULL`
   preserves grouping-column types and typed missing values.

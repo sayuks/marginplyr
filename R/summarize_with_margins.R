@@ -34,6 +34,10 @@
 #'   grouping identity* for the factor missing-value contract.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping sets after expansion.
+#' @param .id `NULL`, or one non-missing, non-empty character string naming an
+#'   integer output column of one-based Grouping set occurrence identifiers.
+#'   The name must not collide with source columns, grouping keys, summary
+#'   outputs, or a nesting `.key`.
 #'
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
 #'   Result row order is unspecified; use [dplyr::arrange()] when presentation
@@ -93,8 +97,32 @@
 #' sets contain multiple grains, so there is no single meaningful grouping
 #' hierarchy to retain.
 #' [nest_by_with_margins()] instead returns a row-wise data frame grouped by
-#' all visible fixed keys and grouping dimensions. Row-wise input is rejected;
-#' call [dplyr::ungroup()] first.
+#' all visible fixed keys, grouping dimensions, and `.id` when supplied.
+#' Row-wise input is rejected; call [dplyr::ungroup()] first.
+#'
+#' @section Grouping set occurrence identifiers:
+#' When `.id` names an output column, each result row receives the one-based
+#' position of its Grouping set occurrence after applying `.duplicates`.
+#' `"drop"` renumbers retained occurrences, while supported `"keep"` paths give
+#' identical duplicate sets distinct identifiers. One Grouping set has
+#' identifier `1L`, and a zero-row result retains an integer `.id` column.
+#'
+#' Output columns are ordered as fixed keys, variable dimensions, `.id`, then
+#' ordinary output columns. For [nest_with_margins()], `.id` is an outer key
+#' and is not included inside the nested data. For
+#' [nest_by_with_margins()], it is also a row-wise grouping key.
+#'
+#' | Value | Meaning | Duplicate occurrences |
+#' |---|---|---|
+#' | `.id` | Position in this ordered Grouping plan | Distinct with `"keep"` |
+#' | [grouping_bit()] | Whether one dimension is omitted (`0L` or `1L`) | Same |
+#' | [grouping_id()] | Bit mask of omitted dimensions | Same |
+#'
+#' Thus a two-dimension rollup has `.id` values `1L`, `2L`, and `3L`, while
+#' its [grouping_id()] values are `0L`, `1L`, and `3L`. `.id` is not a
+#' durable business key and can change when the Grouping plan is reordered or
+#' deduplicated. It records plan occurrence, not physical result order; use
+#' [dplyr::arrange()] when order matters.
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
@@ -195,7 +223,8 @@
 #'   units = sum(units),
 #'   revenue = sum(revenue),
 #'   .by = c(year, month),
-#'   .grouping = rollup(region, store)
+#'   .grouping = rollup(region, store),
+#'   .id = "set"
 #' )
 #'
 #' # Existing dplyr groups are implicit fixed keys. The calculation below is
@@ -302,7 +331,8 @@ summarize_with_margins <- function(.data,
                                    .margin_label = "Total",
                                    .margin_label_position = c("last", "first"),
                                    .check_margin_label = is.data.frame(.data),
-                                   .duplicates = c("error", "drop", "keep")) {
+                                   .duplicates = c("error", "drop", "keep"),
+                                   .id = NULL) {
   call <- rlang::current_call()
   dots <- rlang::enquos(...)
   grouping_quo <- rlang::enquo(.grouping)
@@ -315,7 +345,8 @@ summarize_with_margins <- function(.data,
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
-        .duplicates = .duplicates
+        .duplicates = .duplicates,
+        .id = .id
       )
       check_removed_groups_argument(dots)
       check_summary_context_helpers(dots)
@@ -331,6 +362,7 @@ summarize_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .id = .id,
     call = call
   )
   result <- execute_margin_summary(operation, dots)
@@ -365,7 +397,16 @@ execute_margin_summary <- function(operation, dots) {
         summary_output_names,
         group_vars = group_vars
       )
-      reserved_names <- unique(c(operation$data_vars, summary_output_names))
+      check_margin_id_collision(
+        operation$id,
+        summary_output_names,
+        "a summary output"
+      )
+      reserved_names <- unique(c(
+        operation$data_vars,
+        summary_output_names,
+        operation$id
+      ))
 
       validate_margin_operation(operation)
 
@@ -373,13 +414,17 @@ execute_margin_summary <- function(operation, dots) {
         operation$data,
         plan,
         backend = operation$backend
+      ) && !(
+        !is.null(operation$id) &&
+          identical(plan$duplicates, "keep")
       )) {
         summarize_margin_native( # nolint: object_usage_linter
           operation$data,
           dots = dots,
           plan = plan,
           margin_labels = operation$margin_labels,
-          reserved_names = reserved_names
+          reserved_names = reserved_names,
+          set_id_name = operation$id
         )
       } else {
         summarize_margin_union( # nolint: object_usage_linter
@@ -388,7 +433,8 @@ execute_margin_summary <- function(operation, dots) {
           plan = plan,
           margin_labels = operation$margin_labels,
           column_info = operation$column_info,
-          reserved_names = reserved_names
+          reserved_names = reserved_names,
+          set_id_name = operation$id
         )
       }
     },

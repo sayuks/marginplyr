@@ -15,6 +15,7 @@
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Grouping set occurrence identifiers
 #' @inheritSection summarize_with_margins Database backend coverage
 #' @inheritSection summarize_with_margins Backend extension design
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
@@ -61,7 +62,8 @@ expand_with_margins <- function(.data,
                                 .margin_label = "Total",
                                 .margin_label_position = c("last", "first"),
                                 .check_margin_label = is.data.frame(.data),
-                                .duplicates = c("error", "drop", "keep")) {
+                                .duplicates = c("error", "drop", "keep"),
+                                .id = NULL) {
   call <- rlang::current_call()
   with_margin_error_call(assert_lazy_table(.data), call = call)
   grouping_quo <- rlang::enquo(.grouping)
@@ -75,6 +77,7 @@ expand_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .id = .id,
     call = call
   )
   result <- execute_margin_expand(operation)
@@ -88,6 +91,7 @@ execute_margin_expand <- function(operation) {
     operation$data,
     plan = operation$plan,
     margin_labels = operation$margin_labels,
-    column_info = operation$column_info
+    column_info = operation$column_info,
+    set_id_name = operation$id
   )
 }

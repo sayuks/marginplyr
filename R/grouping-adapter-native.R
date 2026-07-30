@@ -2,7 +2,8 @@ summarize_margin_native <- function(.data,
                                     dots,
                                     plan,
                                     margin_labels,
-                                    reserved_names) {
+                                    reserved_names,
+                                    set_id_name = NULL) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
     dots,
@@ -11,6 +12,15 @@ summarize_margin_native <- function(.data,
     con = con
   )
   group_vars <- unique(c(plan$by, plan$dimensions))
+  if (!is.null(set_id_name)) {
+    set_id_quo <- rlang::new_quosure(
+      grouping_set_id_sql_expr(plan, con),
+      env = rlang::empty_env()
+    )
+    set_id_quos <- stats::setNames(list(set_id_quo), set_id_name)
+  } else {
+    set_id_quos <- list()
+  }
 
   labelled_dimensions <- names(Filter(
     function(label) !is_missing_margin_label(label),
@@ -45,6 +55,7 @@ summarize_margin_native <- function(.data,
       dplyr::pick(dplyr::all_of(group_vars))
     ),
     !!!dots,
+    !!!set_id_quos,
     !!!flag_quos,
     .groups = "drop"
   )
@@ -72,6 +83,48 @@ summarize_margin_native <- function(.data,
   }
 
   result
+}
+
+grouping_set_id_sql_expr <- function(plan, con) {
+  stopifnot(inherits(plan, "margin_grouping_plan"))
+  if (length(plan$dimensions) == 0L) {
+    set_id <- plan$set_ids[[1L]] # nolint: object_usage_linter
+    return(dbplyr::sql_glue2(con, "{set_id}"))
+  }
+
+  clauses <- Map(
+    function(mask, set_id) {
+      terms <- Map(
+        function(var, bit) {
+          grouping_call <- grouping_sql_expr( # nolint: object_usage_linter
+            var,
+            con
+          )
+          dbplyr::sql_glue2(
+            con,
+            "{.sql grouping_call} = {bit}"
+          )
+        },
+        plan$dimensions,
+        as.integer(mask)
+      )
+      condition <- Reduce( # nolint: object_usage_linter
+        function(x, y) dbplyr::sql_glue2(con, "{.sql x} AND {.sql y}"),
+        terms
+      )
+      dbplyr::sql_glue2(
+        con,
+        "WHEN {.sql condition} THEN {set_id}"
+      )
+    },
+    split(plan$grouping_masks, row(plan$grouping_masks)),
+    plan$set_ids
+  )
+  clauses <- dbplyr::sql(paste(
+    vapply(clauses, as.character, character(1)),
+    collapse = " "
+  ))
+  dbplyr::sql_glue2(con, "CASE {.sql clauses} END")
 }
 
 attach_grouping_sets_query <- function(result, grouping_sets) {

@@ -4,6 +4,7 @@ new_margin_operation <- function(data,
                                  data_proxy,
                                  plan,
                                  column_info,
+                                 id,
                                  margin_label,
                                  margin_labels,
                                  margin_label_position,
@@ -17,6 +18,7 @@ new_margin_operation <- function(data,
       data_proxy = data_proxy,
       plan = plan,
       column_info = column_info,
+      id = id,
       margin_label = margin_label,
       margin_labels = margin_labels,
       margin_label_position = margin_label_position,
@@ -45,10 +47,13 @@ with_margin_error_call <- function(expr, call) {
 normalize_margin_options <- function(.margin_label,
                                      .margin_label_position,
                                      .check_margin_label,
-                                     .duplicates) {
+                                     .duplicates,
+                                     .id = NULL) {
   assert_logical_scalar(.check_margin_label)
+  .id <- normalize_margin_id(.id)
 
   list(
+    id = .id,
     margin_label = normalize_margin_label(.margin_label),
     margin_label_position = match.arg(
       .margin_label_position,
@@ -60,6 +65,34 @@ normalize_margin_options <- function(.margin_label,
       choices = c("error", "drop", "keep")
     )
   )
+}
+
+normalize_margin_id <- function(.id) {
+  if (is.null(.id)) {
+    return(NULL)
+  }
+  if (
+    !is.character(.id) ||
+      length(.id) != 1L ||
+      is.na(.id) ||
+      !nzchar(.id)
+  ) {
+    stop(
+      "`.id` must be `NULL` or one non-missing, non-empty character string.",
+      call. = FALSE
+    )
+  }
+  .id
+}
+
+check_margin_id_collision <- function(.id, names, where) {
+  if (!is.null(.id) && .id %in% names) {
+    stop(
+      sprintf("`.id` (`%s`) conflicts with %s.", .id, where),
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
 }
 
 normalize_margin_input <- function(.data, by_quo) {
@@ -106,6 +139,7 @@ prepare_margin_operation <- function(.data,
                                      .margin_label_position,
                                      .check_margin_label,
                                      .duplicates,
+                                     .id = NULL,
                                      call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
 
@@ -115,8 +149,10 @@ prepare_margin_operation <- function(.data,
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
-        .duplicates = .duplicates
+        .duplicates = .duplicates,
+        .id = .id
       )
+      .id <- options$id
       .margin_label <- options$margin_label
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
@@ -130,6 +166,7 @@ prepare_margin_operation <- function(.data,
       by <- input$by
       backend <- grouping_backend(data)
       data_vars <- get_col_names(data, dplyr::everything())
+      check_margin_id_collision(.id, data_vars, "a source column")
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
       grouping_spec <- preflight$spec
       if (preflight$name_only) {
@@ -169,6 +206,7 @@ prepare_margin_operation <- function(.data,
         data_proxy = data_proxy,
         plan = plan,
         column_info = column_info,
+        id = .id,
         margin_label = .margin_label,
         margin_labels = margin_labels,
         margin_label_position = .margin_label_position,
@@ -205,7 +243,11 @@ finalize_margin_operation <- function(operation, result) {
     margin_labels = operation$margin_labels,
     position = operation$margin_label_position
   )
-  margin_cols <- c(operation$plan$by, operation$plan$dimensions)
+  margin_cols <- c(
+    operation$plan$by,
+    operation$plan$dimensions,
+    operation$id
+  )
   result <- dplyr::select(
     result,
     dplyr::all_of(margin_cols),

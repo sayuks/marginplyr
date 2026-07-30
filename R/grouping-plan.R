@@ -283,6 +283,7 @@ compile_grouping_spec_impl <- function(.grouping,
       by = unique(.by),
       dimensions = dimensions,
       sets = normalized,
+      set_ids = seq_along(normalized),
       grouping_masks = masks,
       duplicates = .duplicates
     ),

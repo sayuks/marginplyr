@@ -7,6 +7,7 @@ test_that("rollup and cube compile to concrete grouping sets", {
     rollup_plan$sets,
     list(c("a", "b", "c"), c("a", "b"), "a", character())
   )
+  expect_identical(rollup_plan$set_ids, 1:4)
   expect_equal(
     unname(rollup_plan$grouping_masks),
     matrix(c(0L, 0L, 0L, 0L, 0L, 1L, 0L, 1L, 1L, 1L, 1L, 1L),
@@ -224,14 +225,12 @@ test_that("duplicate grouping sets have explicit policies", {
     compile_grouping_spec(spec, "a"),
     "Duplicate grouping sets"
   )
-  expect_equal(
-    compile_grouping_spec(spec, "a", .duplicates = "drop")$sets,
-    list("a")
-  )
-  expect_equal(
-    compile_grouping_spec(spec, "a", .duplicates = "keep")$sets,
-    list("a", "a")
-  )
+  dropped <- compile_grouping_spec(spec, "a", .duplicates = "drop")
+  kept <- compile_grouping_spec(spec, "a", .duplicates = "keep")
+  expect_equal(dropped$sets, list("a"))
+  expect_identical(dropped$set_ids, 1L)
+  expect_equal(kept$sets, list("a", "a"))
+  expect_identical(kept$set_ids, 1:2)
 })
 
 test_that("invalid or ambiguous specifications fail early", {

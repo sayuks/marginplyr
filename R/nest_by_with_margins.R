@@ -5,6 +5,7 @@
 #' @inheritParams nest_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Grouping set occurrence identifiers
 #' @inheritSection summarize_with_margins Backend extension design
 #' @inheritSection nest_with_margins Relationship to tidyr and dplyr
 #' @param .key A non-missing string naming the list column. Unlike
@@ -19,7 +20,8 @@
 #' models and reports. Both public nesting interfaces use the same private
 #' margin-operation pipeline, so they share one grouping plan and nesting
 #' contract without invoking each other.
-#' @return A row-wise data frame grouped by the visible grouping columns.
+#' @return A row-wise data frame grouped by the visible grouping columns and
+#'   `.id` when supplied.
 #'   Result row order is unspecified; use [dplyr::arrange()] when presentation
 #'   order matters.
 #' @family summarize and expand data with margins
@@ -101,6 +103,7 @@ nest_by_with_margins <- function(.data,
                                  .margin_label_position = c("last", "first"),
                                  .check_margin_label = is.data.frame(.data),
                                  .duplicates = c("error", "drop"),
+                                 .id = NULL,
                                  .key = "data",
                                  .keep = FALSE) {
   call <- rlang::current_call()
@@ -115,15 +118,17 @@ nest_by_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .id = .id,
     .key = .key,
     .keep = .keep,
     call = call
   )
 
   result <- dplyr::collect(result)
+  empty_outer_names <- c(.id, .key)
   if (
     nrow(result) == 0L &&
-      identical(colnames(result), .key)
+      identical(colnames(result), empty_outer_names)
   ) {
     empty_data <- dplyr::collect(
       utils::head(dplyr::ungroup(.data), n = 0L)
@@ -132,6 +137,14 @@ nest_by_with_margins <- function(.data,
       empty_data,
       "{.key}" := list(dplyr::pick(dplyr::everything()))
     )
+    if (!is.null(.id)) {
+      result <- dplyr::mutate(result, "{.id}" := 1L)
+      result <- dplyr::select(
+        result,
+        dplyr::all_of(.id),
+        dplyr::everything()
+      )
+    }
   }
   group_cols <- setdiff(colnames(result), .key)
   dplyr::rowwise(result, dplyr::all_of(group_cols))

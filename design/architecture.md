@@ -13,10 +13,11 @@ Every exported margin verb follows the same explicit lifecycle:
    invalid verb-specific options before preparing an operation.
 2. **Prepare.** `prepare_margin_operation()` validates common options,
    interprets persistent input groups as fixed keys, ungroups the input,
-   discovers the backend and column names, acquires one typed metadata
-   snapshot, compiles the Grouping specification into a Grouping plan, and
-   derives margin-column metadata. Locally detectable errors are rejected
-   before the typed metadata read.
+   discovers the backend and column names, validates an optional output
+   Grouping set identifier name, acquires one typed metadata snapshot,
+   compiles the Grouping specification into a Grouping plan, and derives
+   margin-column metadata. Locally detectable errors are rejected before the
+   typed metadata read.
 3. **Execute.** The verb passes the prepared Margin operation to exactly one
    of `execute_margin_summary()`, `execute_margin_expand()`, or
    `execute_margin_nest()`. The executor performs its schema-aware preflight,
@@ -24,7 +25,8 @@ Every exported margin verb follows the same explicit lifecycle:
    selects or invokes the appropriate adapter.
 4. **Finalize.** `finalize_margin_operation()` starts from an ungrouped
    result, restores factor margin columns, places fixed keys and grouping
-   dimensions first, and leaves row ordering unspecified.
+   dimensions followed by the optional Grouping set identifier first, and
+   leaves row ordering unspecified.
 
 `nest_with_margins()` returns the common ungrouped result.
 `nest_by_with_margins()` collects that result when necessary, preserves its
@@ -72,8 +74,9 @@ Margin operation lifecycle.
 
 Owns validation and compilation of a Grouping specification into the
 backend-independent Grouping plan: fixed keys, resolved dimensions, expanded
-grouping sets, and the duplicate-set policy. It resolves selections against
-the prepared metadata but does not read a backend or execute a margin.
+grouping sets, their one-based occurrence identifiers, and the duplicate-set
+policy. It resolves selections against the prepared metadata but does not read
+a backend or execute a margin.
 
 Grouping specification kinds are governed by one private strategy registry in
 this module. Each kind rule owns empty-argument validation, validation of

@@ -12,6 +12,7 @@ nest_with_margins(
   .margin_label_position = c("last", "first"),
   .check_margin_label = is.data.frame(.data),
   .duplicates = c("error", "drop"),
+  .id = NULL,
   .key = "data",
   .keep = FALSE
 )
@@ -46,9 +47,14 @@ dimension independently for a value or factor level that collides with its
 display label. \code{NULL} bypasses collision checks. See \emph{Display labels and
 grouping identity} for the factor missing-value contract.}
 
-\item{.duplicates}{\code{"error"} or \code{"drop"}. The \code{"keep"} policy available in
-\code{\link[=summarize_with_margins]{summarize_with_margins()}} and \code{\link[=expand_with_margins]{expand_with_margins()}} is rejected because
-duplicate grouping sets would create indistinguishable outer keys.}
+\item{.duplicates}{\code{"error"} or \code{"drop"}. Nesting does not support the
+\code{"keep"} policy available in \code{\link[=summarize_with_margins]{summarize_with_margins()}} and
+\code{\link[=expand_with_margins]{expand_with_margins()}}.}
+
+\item{.id}{\code{NULL}, or one non-missing, non-empty character string naming an
+integer output column of one-based Grouping set occurrence identifiers.
+The name must not collide with source columns, grouping keys, summary
+outputs, or a nesting \code{.key}.}
 
 \item{.key}{A string naming the list column. As in \code{\link[tidyr:nest]{tidyr::nest()}},
 \code{NULL} uses \code{"data"}.}
@@ -147,8 +153,34 @@ Unlike the default output of \code{\link[dplyr:summarize]{dplyr::summarize()}} o
 sets contain multiple grains, so there is no single meaningful grouping
 hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
-all visible fixed keys and grouping dimensions. Row-wise input is rejected;
-call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
+Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+}
+
+\section{Grouping set occurrence identifiers}{
+
+When \code{.id} names an output column, each result row receives the one-based
+position of its Grouping set occurrence after applying \code{.duplicates}.
+\code{"drop"} renumbers retained occurrences, while supported \code{"keep"} paths give
+identical duplicate sets distinct identifiers. One Grouping set has
+identifier \code{1L}, and a zero-row result retains an integer \code{.id} column.
+
+Output columns are ordered as fixed keys, variable dimensions, \code{.id}, then
+ordinary output columns. For \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{.id} is an outer key
+and is not included inside the nested data. For
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.\tabular{lll}{
+   Value \tab Meaning \tab Duplicate occurrences \cr
+   \code{.id} \tab Position in this ordered Grouping plan \tab Distinct with \code{"keep"} \cr
+   \code{\link[=grouping_bit]{grouping_bit()}} \tab Whether one dimension is omitted (\code{0L} or \code{1L}) \tab Same \cr
+   \code{\link[=grouping_id]{grouping_id()}} \tab Bit mask of omitted dimensions \tab Same \cr
+}
+
+
+Thus a two-dimension rollup has \code{.id} values \code{1L}, \code{2L}, and \code{3L}, while
+its \code{\link[=grouping_id]{grouping_id()}} values are \code{0L}, \code{1L}, and \code{3L}. \code{.id} is not a
+durable business key and can change when the Grouping plan is reordered or
+deduplicated. It records plan occurrence, not physical result order; use
+\code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
 }
 
 \section{Backend extension design}{

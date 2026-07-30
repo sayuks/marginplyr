@@ -6,6 +6,7 @@
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Grouping set occurrence identifiers
 #' @inheritSection summarize_with_margins Backend extension design
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
 #'   not supported because nesting creates list columns.
@@ -14,9 +15,9 @@
 #' @param .keep Should fixed `.by` columns and grouping dimensions also be kept
 #'   inside each nested data frame? If `TRUE`, the nested columns contain their
 #'   original, pre-margin values rather than `.margin_label`.
-#' @param .duplicates `"error"` or `"drop"`. The `"keep"` policy available in
-#'   [summarize_with_margins()] and [expand_with_margins()] is rejected because
-#'   duplicate grouping sets would create indistinguishable outer keys.
+#' @param .duplicates `"error"` or `"drop"`. Nesting does not support the
+#'   `"keep"` policy available in [summarize_with_margins()] and
+#'   [expand_with_margins()].
 #'
 #' @section Relationship to tidyr and dplyr:
 #' These functions are margin-aware counterparts, not drop-in replacements,
@@ -121,6 +122,7 @@ nest_with_margins <- function(.data,
                               .margin_label_position = c("last", "first"),
                               .check_margin_label = is.data.frame(.data),
                               .duplicates = c("error", "drop"),
+                              .id = NULL,
                               .key = "data",
                               .keep = FALSE) {
   call <- rlang::current_call()
@@ -138,6 +140,7 @@ nest_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .id = .id,
     .key = .key,
     .keep = .keep,
     call = call
@@ -151,6 +154,7 @@ nest_margin_pipeline <- function(.data,
                                  .margin_label_position,
                                  .check_margin_label,
                                  .duplicates,
+                                 .id,
                                  .key,
                                  .keep,
                                  call) {
@@ -174,16 +178,18 @@ nest_margin_pipeline <- function(.data,
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
-        .duplicates = .duplicates
+        .duplicates = .duplicates,
+        .id = .id
       )
+      .id <- options$id
       .margin_label <- options$margin_label
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
+      check_margin_id_collision(.id, .key, "nesting `.key`")
       if (identical(.duplicates, "keep")) {
         stop(
-          "Nesting does not support `.duplicates = \"keep\"` because ",
-          "duplicate grouping sets have no distinct visible key. Use ",
+          "Nesting does not support `.duplicates = \"keep\"`. Use ",
           "`\"error\"` or `\"drop\"`.",
           call. = FALSE
         )
@@ -200,6 +206,7 @@ nest_margin_pipeline <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .id = .id,
     call = call
   )
   result <- execute_margin_nest(
@@ -224,13 +231,21 @@ execute_margin_nest <- function(operation, .key, .keep) {
       }
 
       internal_names <- new_margin_internal_names(
-        1L + if (.keep) length(group_cols) else 0L,
-        used_names = unique(c(operation$data_vars, .key)),
+        as.integer(is.null(operation$id)) +
+          if (.keep) length(group_cols) else 0L,
+        used_names = unique(c(operation$data_vars, operation$id, .key)),
         prefix = "..marginplyr_nest_"
       )
-      set_col <- internal_names[[1L]]
+      set_col <- if (is.null(operation$id)) {
+        internal_names[[1L]]
+      } else {
+        operation$id
+      }
       keep_cols <- if (.keep && length(group_cols) > 0L) {
-        stats::setNames(internal_names[-1L], group_cols)
+        stats::setNames(
+          utils::tail(internal_names, length(group_cols)),
+          group_cols
+        )
       } else {
         character()
       }
@@ -260,7 +275,8 @@ execute_margin_nest <- function(operation, .key, .keep) {
         set_col = set_col,
         keep_cols = keep_cols,
         .key = .key,
-        .keep = .keep
+        .keep = .keep,
+        set_id_name = operation$id
       )
     },
     call = operation$call
@@ -272,7 +288,8 @@ nest_expanded_margins <- function(.data,
                                   set_col,
                                   keep_cols,
                                   .key,
-                                  .keep) {
+                                  .keep,
+                                  set_id_name = NULL) {
   if (.keep && length(group_cols) > 0L) {
     result <- dplyr::summarize(
       .data,
@@ -293,7 +310,10 @@ nest_expanded_margins <- function(.data,
     )
   }
 
-  dplyr::select(result, -dplyr::all_of(set_col))
+  if (is.null(set_id_name)) {
+    result <- dplyr::select(result, -dplyr::all_of(set_col))
+  }
+  result
 }
 
 utils::globalVariables(":=")
