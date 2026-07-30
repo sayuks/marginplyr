@@ -401,7 +401,29 @@ retail_sales |>
   )
 ```
 
-Use `.margin_label = NULL` to preserve the grouping column's input type:
+Use a named vector to give each resolved Margin dimension its own label.
+Names must cover the dimensions exactly once; `.by` columns are fixed keys
+and cannot be named:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(region, store),
+    .margin_label = c(
+      region = "All regions",
+      store = "All stores"
+    )
+  )
+```
+
+For factors and ordered factors, a non-missing Margin label becomes a
+synthetic level. It is placed last by default; use
+`.margin_label_position = "first"` to put it first. This changes only the
+level order, not the result row order.
+
+Use `.margin_label = NULL` or `NA_character_` to preserve the grouping
+column's input type and create a typed missing Margin value:
 
 ```{r}
 retail_sales |>
@@ -413,9 +435,44 @@ retail_sales |>
   )
 ```
 
-With a display label, grouping dimensions become character columns. With
-`NULL`, both source and generated missing values remain typed missing values,
-so retain `grouping_bit()` or `grouping_id()` when the distinction matters.
+`NULL` bypasses collision checks. `NA_character_` requests the same typed
+missing output but still checks for source missing values and factor NA
+levels when `.check_margin_label = TRUE`.
+
+A factor NA level and a missing factor code are different even though both
+can print as `<NA>`. Here the second value uses the NA level and the third is
+actually missing:
+
+```{r}
+factor_status <- structure(
+  c(1L, 2L, NA_integer_),
+  levels = c("kept", NA_character_),
+  class = "factor"
+)
+is.na(factor_status)
+levels(factor_status)
+
+factor_margins <- data.frame(
+  status = factor_status,
+  value = 1:3
+) |>
+  summarize_with_margins(
+    n = dplyr::n(),
+    status_is_margin = grouping_bit(status),
+    .grouping = rollup(status),
+    .margin_label = NULL
+  )
+
+levels(factor_margins$status)
+is.na(factor_margins$status)
+factor_margins
+```
+
+`NULL` preserves the NA level and uses a missing factor code for the Margin
+row. Retain `grouping_bit()` or `grouping_id()` because source missing values
+and generated Margin values are otherwise indistinguishable. With
+`NA_character_`, an existing factor NA level is a structural conflict even
+when `.check_margin_label = FALSE`.
 
 For local data, `.check_margin_label = TRUE` prevents an existing value such
 as `"Total"` from becoming visually ambiguous. Lazy inputs default to

@@ -118,6 +118,7 @@ nest_with_margins <- function(.data,
                               .by = NULL,
                               .grouping = NULL,
                               .margin_label = "Total",
+                              .margin_label_position = c("last", "first"),
                               .check_margin_label = is.data.frame(.data),
                               .duplicates = c("error", "drop"),
                               .key = "data",
@@ -134,6 +135,7 @@ nest_with_margins <- function(.data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
     .margin_label = .margin_label,
+    .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     .key = .key,
@@ -146,6 +148,7 @@ nest_margin_pipeline <- function(.data,
                                  by_quo,
                                  grouping_quo,
                                  .margin_label,
+                                 .margin_label_position,
                                  .check_margin_label,
                                  .duplicates,
                                  .key,
@@ -156,7 +159,6 @@ nest_margin_pipeline <- function(.data,
   with_margin_error_call(
     {
       assert_nest_possible(.data)
-      assert_logical_scalar(.check_margin_label)
       assert_logical_scalar(.keep)
       assert_string_scalar(.key)
       if (is.na(.key)) {
@@ -165,11 +167,19 @@ nest_margin_pipeline <- function(.data,
       if (!nzchar(.key)) {
         stop("`.key` must not be empty.", call. = FALSE)
       }
-      .margin_label <- normalize_margin_label(.margin_label)
       if (identical(.duplicates, c("error", "drop"))) {
         .duplicates <- "error"
       }
-      .duplicates <- match.arg(.duplicates, c("error", "drop", "keep"))
+      options <- normalize_margin_options(
+        .margin_label = .margin_label,
+        .margin_label_position = .margin_label_position,
+        .check_margin_label = .check_margin_label,
+        .duplicates = .duplicates
+      )
+      .margin_label <- options$margin_label
+      .margin_label_position <- options$margin_label_position
+      .check_margin_label <- options$check_margin_label
+      .duplicates <- options$duplicates
       if (identical(.duplicates, "keep")) {
         stop(
           "Nesting does not support `.duplicates = \"keep\"` because ",
@@ -187,6 +197,7 @@ nest_margin_pipeline <- function(.data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
     .margin_label = .margin_label,
+    .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     call = call
@@ -238,7 +249,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
       expanded <- expand_margin_union(
         data,
         plan = plan,
-        .margin_label = operation$margin_label,
+        margin_labels = operation$margin_labels,
         column_info = operation$column_info,
         set_id_name = set_col
       )

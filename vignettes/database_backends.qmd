@@ -173,6 +173,12 @@ duckdb_result
 Use `compute()` instead when the next stage should remain in the database as a
 materialized or temporary remote table.
 
+DuckDB also preserves factor grouping columns represented as enums. When a
+factor dimension uses `.margin_label = NA_character_` or `NULL`, marginplyr
+leaves the omitted dimension as a typed SQL `NULL`; it never attempts to add
+an NA enum label. A non-missing label is added as an enum level and is placed
+last by default or first with `.margin_label_position = "first"`.
+
 ## Portable fallback SQL
 
 marginplyr does not assume that every SQL dialect supports native grouping

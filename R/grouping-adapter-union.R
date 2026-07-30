@@ -11,7 +11,7 @@ summarize_margin_branch <- function(.data,
 summarize_margin_union <- function(.data,
                                    dots,
                                    plan,
-                                   .margin_label,
+                                   margin_labels,
                                    column_info,
                                    reserved_names) {
   group_vars <- unique(c(plan$by, plan$dimensions))
@@ -78,8 +78,9 @@ summarize_margin_union <- function(.data,
         result,
         plan = plan,
         grouping_set = grouping_set,
-        .margin_label = .margin_label,
-        prototypes = column_info$prototypes
+        margin_labels = margin_labels,
+        prototypes = column_info$prototypes,
+        factor_info = column_info$factors
       )
     }
   )
@@ -89,7 +90,7 @@ summarize_margin_union <- function(.data,
 
 expand_margin_union <- function(.data,
                                 plan,
-                                .margin_label,
+                                margin_labels,
                                 column_info,
                                 set_id_name = NULL) {
   branches <- Map(
@@ -98,8 +99,9 @@ expand_margin_union <- function(.data,
         .data,
         plan = plan,
         grouping_set = grouping_set,
-        .margin_label = .margin_label,
-        prototypes = column_info$prototypes
+        margin_labels = margin_labels,
+        prototypes = column_info$prototypes,
+        factor_info = column_info$factors
       )
 
       if (!is.null(set_id_name)) {

@@ -330,8 +330,8 @@ test_that("factor and ordered factor columns are reconstructed", {
 
   expect_true(is.ordered(result$a))
   expect_true(is.factor(result$b))
-  expect_equal(levels(result$a), c("Total", "x", "y"))
-  expect_equal(levels(result$b), c("Total", "u", "v"))
+  expect_equal(levels(result$a), c("x", "y", "Total"))
+  expect_equal(levels(result$b), c("u", "v", "Total"))
 })
 
 test_that("grouping helpers validate their context and columns", {
@@ -700,6 +700,16 @@ test_that("Margin verb formals expose only the supported common options", {
       identical(
         formals(verb)$.check_margin_label,
         quote(is.data.frame(.data))
+      )
+    },
+    logical(1)
+  )))
+  expect_true(all(vapply(
+    verbs,
+    function(verb) {
+      identical(
+        formals(verb)$.margin_label_position,
+        quote(c("last", "first"))
       )
     },
     logical(1)

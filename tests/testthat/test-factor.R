@@ -40,20 +40,20 @@ test_that("reconstruct_factor() works with data.frame", {
     data.frame(
       x1 = factor(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c")
+        levels = c("a", "b", "c", "aaa")
       ),
       x2 = ordered(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c")
+        levels = c("a", "b", "c", "aaa")
       ),
       x3 = factor(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c", NA),
+        levels = c("a", "b", "c", NA, "aaa"),
         exclude = NULL
       ),
       x4 = factor(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c")
+        levels = c("a", "b", "c", "aaa")
       )
     )
   )
@@ -113,10 +113,10 @@ test_that("reconstruct_factor() works with duckdb", {
       dplyr::collect(actual)
     ),
     data.frame(
-      x1 = factor(c("a", "b", "c", NA), levels = c("aaa", "a", "b", "c")),
-      x2 = factor(c("a", "b", "c", NA), levels = c("aaa", "a", "b", "c")),
-      x3 = factor(c("a", "b", "c", NA), levels = c("aaa", "a", "b", "c")),
-      x4 = factor(c("a", "b", "c", NA), levels = c("aaa", "a", "b", "c"))
+      x1 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa")),
+      x2 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa")),
+      x3 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa")),
+      x4 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa"))
     )
   )
 })
@@ -170,20 +170,20 @@ test_that("reconstruct_factor() works with dtplyr_step", {
     data.frame(
       x1 = factor(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c")
+        levels = c("a", "b", "c", "aaa")
       ),
       x2 = ordered(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c")
+        levels = c("a", "b", "c", "aaa")
       ),
       x3 = factor(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c", NA),
+        levels = c("a", "b", "c", NA, "aaa"),
         exclude = NULL
       ),
       x4 = factor(
         c("a", "b", "c", NA),
-        levels = c("aaa", "a", "b", "c")
+        levels = c("a", "b", "c", "aaa")
       )
     )
   )

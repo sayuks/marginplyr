@@ -11,6 +11,7 @@ summarize_with_margins(
   .by = NULL,
   .grouping = NULL,
   .margin_label = "Total",
+  .margin_label_position = c("last", "first"),
   .check_margin_label = is.data.frame(.data),
   .duplicates = c("error", "drop", "keep")
 )
@@ -21,6 +22,7 @@ summarise_with_margins(
   .by = NULL,
   .grouping = NULL,
   .margin_label = "Total",
+  .margin_label_position = c("last", "first"),
   .check_margin_label = is.data.frame(.data),
   .duplicates = c("error", "drop", "keep")
 )
@@ -40,12 +42,22 @@ implicit fixed keys.}
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
 represents one empty grouping set.}
 
-\item{.margin_label}{A character scalar used to display columns omitted from
-a grouping set. The default is \code{"Total"}. Use \code{NULL} to keep typed missing
-values instead of inserting a display label.}
+\item{.margin_label}{A display label for dimensions omitted from a grouping
+set. An unnamed character scalar applies to every resolved Margin
+dimension. A named character vector must name every resolved Margin
+dimension exactly once; order is irrelevant, and fixed \code{.by} columns must
+not be named. \code{NA_character_} and \code{NULL} use typed missing values instead
+of a display label. See \emph{Display labels and grouping identity}.}
 
-\item{.check_margin_label}{A logical scalar. If \code{TRUE}, check whether the
-display label already occurs in a grouping column.}
+\item{.margin_label_position}{Either \code{"last"} (the default) or \code{"first"}.
+This controls the position of a non-missing synthetic label in factor and
+ordered-factor levels. It does not sort result rows and has no effect for
+\code{NA_character_} or \code{NULL}.}
+
+\item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
+dimension independently for a value or factor level that collides with its
+display label. \code{NULL} bypasses collision checks. See \emph{Display labels and
+grouping identity} for the factor missing-value contract.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}
@@ -150,12 +162,47 @@ positions, or columns would not have one global meaning. Use
 
 \section{Display labels and grouping identity}{
 
-\code{.margin_label} is a display value, not the identity of a grouping set.
-When the source data can contain the same value, retain \code{\link[=grouping_bit]{grouping_bit()}} or
-\code{\link[=grouping_id]{grouping_id()}} in the result. The eager default
-\code{.check_margin_label = TRUE} detects collisions for local data. Lazy tables
-default to \code{FALSE} because checking would execute an extra query; opt in
-when the additional scan is appropriate.
+\code{.margin_label} is a display value, not the identity of a grouping set. An
+unnamed scalar labels every resolved Margin dimension. A named vector
+provides column-specific labels and must cover the resolved dimensions
+exactly once; missing, unknown, duplicate, and empty names are rejected, as
+are names from \code{.by}.
+
+Non-missing labels convert ordinary grouping dimensions to character. A
+factor or ordered factor is reconstructed after the Margin operation,
+preserving ordered status and placing the synthetic level last by default
+or first when \code{.margin_label_position = "first"}. With collision checking
+enabled, the complete factor domain is checked, including unused levels.
+With checking disabled, an existing level may be reused and is moved to the
+requested position. Reconstruction preserves the distinction between an
+observation that uses a factor NA level and an actually missing factor code.
+
+\code{NA_character_} and \code{NULL} both create a typed missing Margin value and do
+not create a synthetic factor level. Position is therefore a no-op for
+either value. \code{NA_character_} still participates in collision validation;
+\code{NULL} opts out. A factor NA level is a structural conflict for
+\code{NA_character_} even when \code{.check_margin_label = FALSE}.
+
+With \code{.check_margin_label = TRUE}, factor columns follow this contract:\tabular{lrrl}{
+   Margin label \tab NA level \tab Missing value \tab Result \cr
+   \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
+   \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr
+   \code{NA_character_} \tab no \tab yes \tab Error: the label collides with a value \cr
+   \code{NA_character_} \tab no \tab no \tab Allowed; use typed missing \cr
+   \code{NULL} \tab yes \tab yes \tab Allowed; use typed missing \cr
+   \code{NULL} \tab yes \tab no \tab Allowed; preserve the NA level and use typed missing \cr
+   \code{NULL} \tab no \tab yes \tab Allowed; use typed missing \cr
+   \code{NULL} \tab no \tab no \tab Allowed; use typed missing \cr
+}
+
+
+A factor observation that uses an NA level can print as \verb{<NA>} while
+\code{is.na()} is false. A missing factor code has \code{is.na()} equal to true.
+Source missing values and typed-missing Margin values may display
+identically, so retain \code{\link[=grouping_bit]{grouping_bit()}} or \code{\link[=grouping_id]{grouping_id()}} when structural
+identity matters. The eager default \code{.check_margin_label = TRUE} detects
+collisions for local data. Lazy tables default to \code{FALSE} because checking
+would execute an extra query; opt in when that scan is appropriate.
 }
 
 \section{Backend extension design}{
@@ -233,6 +280,12 @@ summarize_with_margins(
   revenue = sum(revenue),
   .grouping = rollup(year),
   .margin_label = "All years"
+)
+summarize_with_margins(
+  retail_sales,
+  revenue = sum(revenue),
+  .grouping = rollup(region, store),
+  .margin_label = c(region = "All regions", store = "All stores")
 )
 summarize_with_margins(
   retail_sales,

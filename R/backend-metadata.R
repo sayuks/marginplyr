@@ -38,7 +38,8 @@ margin_column_info <- function(data_proxy,
           col = col,
           levels = levels(x),
           ordered = is.ordered(x),
-          has_na_in_level = anyNA(levels(x))
+          has_na_in_level = anyNA(levels(x)),
+          preserve_missing_value = backend$can_encode_factor_missing_values
         )
       }
     )

@@ -1163,7 +1163,11 @@ test_that("DuckDB native and UNION adapters agree", {
     remote,
     dots = dots,
     plan = plan,
-    .margin_label = "Total",
+    margin_labels = resolve_margin_labels(
+      "Total",
+      dimensions = plan$dimensions,
+      by = plan$by
+    ),
     column_info = margin_column_info(
       grouping_selection_proxy(remote),
       plan$dimensions,

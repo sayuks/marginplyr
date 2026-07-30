@@ -39,7 +39,8 @@
 #' )
 #'
 #' # Keeping typed missing values makes the grouping bits essential: source
-#' # missing values and generated totals are both displayed as NA.
+#' # missing values, factor NA levels, and generated margins may all print as
+#' # NA even though their structural identities differ.
 #' summarize_with_margins(
 #'   dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),

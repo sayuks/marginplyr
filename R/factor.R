@@ -1,14 +1,71 @@
-reconstruct_factor <- function(data, info, .margin_name) {
+reconstruct_factor <- function(data, info, .margin_name, position = "last") {
   UseMethod("reconstruct_factor")
 }
 
-restore_margin_factors <- function(.data, factor_info, .margin_label) {
-  if (is.null(.margin_label) || length(factor_info) == 0L) {
+factor_missing_sentinel <- function(info, .margin_name) {
+  sentinel <- "..marginplyr_missing_factor_code"
+  reserved <- c(info$levels, .margin_name)
+  while (sentinel %in% reserved) {
+    sentinel <- paste0(sentinel, "_")
+  }
+  sentinel
+}
+
+encode_factor_for_margin <- function(x,
+                                     missing_sentinel,
+                                     preserve_missing_value) {
+  result <- as.character(x)
+  if (!isTRUE(preserve_missing_value)) {
+    return(result)
+  }
+
+  result[is.na(x)] <- missing_sentinel
+  result
+}
+
+reconstruct_factor_vector <- function(x,
+                                      new_levels,
+                                      ordered,
+                                      missing_sentinel) {
+  missing_value <- !is.na(x) & x == missing_sentinel
+  codes <- match(x, new_levels)
+  codes[missing_value] <- NA_integer_
+  structure(
+    codes,
+    levels = new_levels,
+    class = if (ordered) c("ordered", "factor") else "factor"
+  )
+}
+
+margin_factor_levels <- function(info, .margin_name, position) {
+  other_levels <- info$levels[vapply(
+    info$levels,
+    function(level) !identical(level, .margin_name),
+    logical(1)
+  )]
+  new_levels <- if (identical(position, "first")) {
+    c(.margin_name, other_levels)
+  } else {
+    c(other_levels, .margin_name)
+  }
+}
+
+restore_margin_factors <- function(.data,
+                                   factor_info,
+                                   margin_labels,
+                                   position = "last") {
+  if (length(factor_info) == 0L) {
     return(.data)
   }
 
   Reduce(
-    function(data, info) reconstruct_factor(data, info, .margin_label),
+    function(data, info) {
+      label <- margin_labels[[info$col]]
+      if (is_missing_margin_label(label)) {
+        return(data)
+      }
+      reconstruct_factor(data, info, label, position = position)
+    },
     factor_info,
     init = .data
   )
@@ -16,28 +73,21 @@ restore_margin_factors <- function(.data, factor_info, .margin_label) {
 
 #' @exportS3Method
 #' @noRd
-reconstruct_factor.data.frame <- function(data, info, .margin_name) {
+reconstruct_factor.data.frame <- function(data,
+                                          info,
+                                          .margin_name,
+                                          position = "last") {
   col <- info$col
-  # force .margin_name to the beginning of the level
-  new_levels <- union(.margin_name, info$levels)
+  new_levels <- margin_factor_levels(info, .margin_name, position)
   ord <- info$ordered
-  exc <- if (info$has_na_in_level) NULL else NA
+  missing_sentinel <- factor_missing_sentinel(info, .margin_name)
   dplyr::mutate(
     .data = data,
-    "{col}" := factor(
-      x = .data[[col]], # nolint: object_usage_linter
-      # x,
-      levels = new_levels,
-      # If .margin_name is not NA and there is NA in the original level,
-      # keep it (set exclude = NULL).
-      # The case where .margin_name is NA and level contains NA is
-      # not present here, as it is an error in the prior step.
-      # This means that if .margin_name is NA,
-      # info$has_na_in_level always returns FALSE, so exclude = NA.
-      # This excludes NA from the level.
-      # This is consistent with the default base::factor().
-      exclude = exc,
-      ordered = ord
+    "{col}" := reconstruct_factor_vector(
+      .data[[col]], # nolint: object_usage_linter
+      new_levels = new_levels,
+      ordered = ord,
+      missing_sentinel = missing_sentinel
     )
   )
 }
@@ -51,9 +101,10 @@ reconstruct_factor.dtplyr_step <- reconstruct_factor.data.frame
 #' @noRd
 reconstruct_factor.tbl_duckdb_connection <- function(data,
                                                      info,
-                                                     .margin_name) {
+                                                     .margin_name,
+                                                     position = "last") {
   col <- info$col # nolint: object_usage_linter
-  new_levels <- union(.margin_name, info$levels) # nolint: object_usage_linter
+  new_levels <- margin_factor_levels(info, .margin_name, position)
   con <- dbplyr::remote_con(data)
   sql_query <- dbplyr::sql_glue2(
     con,

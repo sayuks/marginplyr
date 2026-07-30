@@ -59,6 +59,7 @@ expand_with_margins <- function(.data,
                                 .by = NULL,
                                 .grouping = NULL,
                                 .margin_label = "Total",
+                                .margin_label_position = c("last", "first"),
                                 .check_margin_label = is.data.frame(.data),
                                 .duplicates = c("error", "drop", "keep")) {
   call <- rlang::current_call()
@@ -71,6 +72,7 @@ expand_with_margins <- function(.data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
     .margin_label = .margin_label,
+    .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     call = call
@@ -85,7 +87,7 @@ execute_margin_expand <- function(operation) {
   expand_margin_union(
     operation$data,
     plan = operation$plan,
-    .margin_label = operation$margin_label,
+    margin_labels = operation$margin_labels,
     column_info = operation$column_info
   )
 }

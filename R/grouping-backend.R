@@ -54,18 +54,30 @@ backend_capabilities <- function(kind) {
     "collect_selection_proxy",
     "can_read_schema",
     "can_restore_factors",
+    "can_encode_factor_missing_values",
     "native_grouping_sets",
     "native_duplicate_sets"
   )
   enabled <- list(
-    local = c("can_read_schema", "can_restore_factors"),
+    local = c(
+      "can_read_schema",
+      "can_restore_factors",
+      "can_encode_factor_missing_values"
+    ),
     dtplyr = c(
       "collect_selection_proxy",
       "can_read_schema",
-      "can_restore_factors"
+      "can_restore_factors",
+      "can_encode_factor_missing_values"
     ),
     arrow = "can_read_schema",
-    duckdb = capability_names,
+    duckdb = c(
+      "collect_selection_proxy",
+      "can_read_schema",
+      "can_restore_factors",
+      "native_grouping_sets",
+      "native_duplicate_sets"
+    ),
     postgres = "native_grouping_sets",
     sql = character(),
     other = character()

@@ -1,7 +1,7 @@
 summarize_margin_native <- function(.data,
                                     dots,
                                     plan,
-                                    .margin_label,
+                                    margin_labels,
                                     reserved_names) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
@@ -12,11 +12,14 @@ summarize_margin_native <- function(.data,
   )
   group_vars <- unique(c(plan$by, plan$dimensions))
 
-  needs_display_flags <-
-    !is.null(.margin_label) && length(plan$dimensions) > 0L
+  labelled_dimensions <- names(Filter(
+    function(label) !is_missing_margin_label(label),
+    margin_labels
+  ))
+  needs_display_flags <- length(labelled_dimensions) > 0L
   if (needs_display_flags) {
     flag_names <- new_margin_internal_names(
-      length(plan$dimensions),
+      length(labelled_dimensions),
       used_names = reserved_names,
       prefix = "..marginplyr_grouping_"
     )
@@ -27,7 +30,7 @@ summarize_margin_native <- function(.data,
           env = rlang::empty_env()
         )
       },
-      plan$dimensions,
+      labelled_dimensions,
       flag_names
     )
     names(flag_quos) <- flag_names
@@ -50,19 +53,20 @@ summarize_margin_native <- function(.data,
 
   if (needs_display_flags) {
     labels <- Map(
-      function(var, flag) {
+      function(var, flag, label) {
         rlang::expr(
           dplyr::if_else(
             .data[[!!flag]] == 1L,
-            !!.margin_label,
+            !!label,
             as.character(.data[[!!var]])
           )
         )
       },
-      plan$dimensions,
-      flag_names
+      labelled_dimensions,
+      flag_names,
+      margin_labels[labelled_dimensions]
     )
-    names(labels) <- plan$dimensions
+    names(labels) <- labelled_dimensions
     result <- dplyr::mutate(result, !!!labels)
     result <- dplyr::select(result, -dplyr::all_of(flag_names))
   }

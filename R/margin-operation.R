@@ -5,6 +5,8 @@ new_margin_operation <- function(data,
                                  plan,
                                  column_info,
                                  margin_label,
+                                 margin_labels,
+                                 margin_label_position,
                                  check_margin_label,
                                  call) {
   structure(
@@ -16,6 +18,8 @@ new_margin_operation <- function(data,
       plan = plan,
       column_info = column_info,
       margin_label = margin_label,
+      margin_labels = margin_labels,
+      margin_label_position = margin_label_position,
       check_margin_label = check_margin_label,
       call = call
     ),
@@ -39,12 +43,17 @@ with_margin_error_call <- function(expr, call) {
 }
 
 normalize_margin_options <- function(.margin_label,
+                                     .margin_label_position,
                                      .check_margin_label,
                                      .duplicates) {
   assert_logical_scalar(.check_margin_label)
 
   list(
     margin_label = normalize_margin_label(.margin_label),
+    margin_label_position = match.arg(
+      .margin_label_position,
+      choices = c("last", "first")
+    ),
     check_margin_label = .check_margin_label,
     duplicates = match.arg(
       .duplicates,
@@ -94,6 +103,7 @@ prepare_margin_operation <- function(.data,
                                      by_quo,
                                      grouping_quo,
                                      .margin_label,
+                                     .margin_label_position,
                                      .check_margin_label,
                                      .duplicates,
                                      call = rlang::caller_call()) {
@@ -103,10 +113,12 @@ prepare_margin_operation <- function(.data,
     {
       options <- normalize_margin_options(
         .margin_label = .margin_label,
+        .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates
       )
       .margin_label <- options$margin_label
+      .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
 
@@ -144,6 +156,11 @@ prepare_margin_operation <- function(.data,
         plan$dimensions,
         backend = backend
       )
+      margin_labels <- resolve_margin_labels(
+        .margin_label,
+        dimensions = plan$dimensions,
+        by = plan$by
+      )
 
       new_margin_operation(
         data = data,
@@ -153,6 +170,8 @@ prepare_margin_operation <- function(.data,
         plan = plan,
         column_info = column_info,
         margin_label = .margin_label,
+        margin_labels = margin_labels,
+        margin_label_position = .margin_label_position,
         check_margin_label = .check_margin_label,
         call = call
       )
@@ -167,10 +186,11 @@ validate_margin_operation <- function(operation) {
     validate_margin_label(
       operation$data,
       dimensions = operation$plan$dimensions,
+      by = operation$plan$by,
       .margin_label = operation$margin_label,
+      margin_labels = operation$margin_labels,
       .check_margin_label = operation$check_margin_label,
-      column_info = operation$column_info,
-      backend = operation$backend
+      column_info = operation$column_info
     ),
     call = operation$call
   )
@@ -182,7 +202,8 @@ finalize_margin_operation <- function(operation, result) {
   result <- restore_margin_factors(
     result,
     factor_info = operation$column_info$factors,
-    .margin_label = operation$margin_label
+    margin_labels = operation$margin_labels,
+    position = operation$margin_label_position
   )
   margin_cols <- c(operation$plan$by, operation$plan$dimensions)
   result <- dplyr::select(

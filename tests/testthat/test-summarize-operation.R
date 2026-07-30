@@ -68,6 +68,20 @@ test_that("invalid summary selections precede lazy label collision queries", {
   expect_identical(summary_label_check_capture$n, 0L)
 })
 
+test_that("invalid summary selections precede label name coverage errors", {
+  data <- data.frame(first = "x", second = "y", value = 1L)
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(unknown, sum),
+      .grouping = rollup(first, second),
+      .margin_label = c(first = "All first")
+    ),
+    "Invalid column selection.*unknown"
+  )
+})
+
 test_that("summary options are validated before context helpers", {
   expect_error(
     summarize_with_margins(

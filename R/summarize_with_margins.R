@@ -18,11 +18,20 @@
 #' @param .grouping A grouping specification made with [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
 #'   represents one empty grouping set.
-#' @param .margin_label A character scalar used to display columns omitted from
-#'   a grouping set. The default is `"Total"`. Use `NULL` to keep typed missing
-#'   values instead of inserting a display label.
-#' @param .check_margin_label A logical scalar. If `TRUE`, check whether the
-#'   display label already occurs in a grouping column.
+#' @param .margin_label A display label for dimensions omitted from a grouping
+#'   set. An unnamed character scalar applies to every resolved Margin
+#'   dimension. A named character vector must name every resolved Margin
+#'   dimension exactly once; order is irrelevant, and fixed `.by` columns must
+#'   not be named. `NA_character_` and `NULL` use typed missing values instead
+#'   of a display label. See *Display labels and grouping identity*.
+#' @param .margin_label_position Either `"last"` (the default) or `"first"`.
+#'   This controls the position of a non-missing synthetic label in factor and
+#'   ordered-factor levels. It does not sort result rows and has no effect for
+#'   `NA_character_` or `NULL`.
+#' @param .check_margin_label A logical scalar. If `TRUE`, check each Margin
+#'   dimension independently for a value or factor level that collides with its
+#'   display label. `NULL` bypasses collision checks. See *Display labels and
+#'   grouping identity* for the factor missing-value contract.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping sets after expansion.
 #'
@@ -109,12 +118,47 @@
 #' [grouping_bit()] and [grouping_id()] to identify margin levels.
 #'
 #' @section Display labels and grouping identity:
-#' `.margin_label` is a display value, not the identity of a grouping set.
-#' When the source data can contain the same value, retain [grouping_bit()] or
-#' [grouping_id()] in the result. The eager default
-#' `.check_margin_label = TRUE` detects collisions for local data. Lazy tables
-#' default to `FALSE` because checking would execute an extra query; opt in
-#' when the additional scan is appropriate.
+#' `.margin_label` is a display value, not the identity of a grouping set. An
+#' unnamed scalar labels every resolved Margin dimension. A named vector
+#' provides column-specific labels and must cover the resolved dimensions
+#' exactly once; missing, unknown, duplicate, and empty names are rejected, as
+#' are names from `.by`.
+#'
+#' Non-missing labels convert ordinary grouping dimensions to character. A
+#' factor or ordered factor is reconstructed after the Margin operation,
+#' preserving ordered status and placing the synthetic level last by default
+#' or first when `.margin_label_position = "first"`. With collision checking
+#' enabled, the complete factor domain is checked, including unused levels.
+#' With checking disabled, an existing level may be reused and is moved to the
+#' requested position. Reconstruction preserves the distinction between an
+#' observation that uses a factor NA level and an actually missing factor code.
+#'
+#' `NA_character_` and `NULL` both create a typed missing Margin value and do
+#' not create a synthetic factor level. Position is therefore a no-op for
+#' either value. `NA_character_` still participates in collision validation;
+#' `NULL` opts out. A factor NA level is a structural conflict for
+#' `NA_character_` even when `.check_margin_label = FALSE`.
+#'
+#' With `.check_margin_label = TRUE`, factor columns follow this contract:
+#'
+#' | Margin label | NA level | Missing value | Result |
+#' |---|---:|---:|---|
+#' | `NA_character_` | yes | yes | Error: NA is already a factor level |
+#' | `NA_character_` | yes | no | Error: NA is already a factor level |
+#' | `NA_character_` | no | yes | Error: the label collides with a value |
+#' | `NA_character_` | no | no | Allowed; use typed missing |
+#' | `NULL` | yes | yes | Allowed; use typed missing |
+#' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
+#' | `NULL` | no | yes | Allowed; use typed missing |
+#' | `NULL` | no | no | Allowed; use typed missing |
+#'
+#' A factor observation that uses an NA level can print as `<NA>` while
+#' `is.na()` is false. A missing factor code has `is.na()` equal to true.
+#' Source missing values and typed-missing Margin values may display
+#' identically, so retain [grouping_bit()] or [grouping_id()] when structural
+#' identity matters. The eager default `.check_margin_label = TRUE` detects
+#' collisions for local data. Lazy tables default to `FALSE` because checking
+#' would execute an extra query; opt in when that scan is appropriate.
 #'
 #' @section Backend extension design:
 #' Unlike [dplyr::summarize()], the public margin verbs are intentionally not
@@ -193,6 +237,12 @@
 #' summarize_with_margins(
 #'   retail_sales,
 #'   revenue = sum(revenue),
+#'   .grouping = rollup(region, store),
+#'   .margin_label = c(region = "All regions", store = "All stores")
+#' )
+#' summarize_with_margins(
+#'   retail_sales,
+#'   revenue = sum(revenue),
 #'   year_is_total = grouping_bit(year),
 #'   .grouping = rollup(year),
 #'   .margin_label = NULL
@@ -250,6 +300,7 @@ summarize_with_margins <- function(.data,
                                    .by = NULL,
                                    .grouping = NULL,
                                    .margin_label = "Total",
+                                   .margin_label_position = c("last", "first"),
                                    .check_margin_label = is.data.frame(.data),
                                    .duplicates = c("error", "drop", "keep")) {
   call <- rlang::current_call()
@@ -262,6 +313,7 @@ summarize_with_margins <- function(.data,
       assert_lazy_table(.data)
       normalize_margin_options(
         .margin_label = .margin_label,
+        .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates
       )
@@ -276,6 +328,7 @@ summarize_with_margins <- function(.data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
     .margin_label = .margin_label,
+    .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     call = call
@@ -325,7 +378,7 @@ execute_margin_summary <- function(operation, dots) {
           operation$data,
           dots = dots,
           plan = plan,
-          .margin_label = operation$margin_label,
+          margin_labels = operation$margin_labels,
           reserved_names = reserved_names
         )
       } else {
@@ -333,7 +386,7 @@ execute_margin_summary <- function(operation, dots) {
           operation$data,
           dots = dots,
           plan = plan,
-          .margin_label = operation$margin_label,
+          margin_labels = operation$margin_labels,
           column_info = operation$column_info,
           reserved_names = reserved_names
         )
