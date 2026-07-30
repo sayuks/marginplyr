@@ -115,6 +115,7 @@
 #' | Value | Meaning | Duplicate occurrences |
 #' |---|---|---|
 #' | `.id` | Position in this ordered Grouping plan | Distinct with `"keep"` |
+#' | [inspect_grouping()] `set_id` | The same position before execution | Distinct with `"keep"` |
 #' | [grouping_bit()] | Whether one dimension is omitted (`0L` or `1L`) | Same |
 #' | [grouping_id()] | Bit mask of omitted dimensions | Same |
 #'
@@ -123,6 +124,9 @@
 #' durable business key and can change when the Grouping plan is reordered or
 #' deduplicated. It records plan occurrence, not physical result order; use
 #' [dplyr::arrange()] when order matters.
+#' See the
+#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+#' for the complete comparison.
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.

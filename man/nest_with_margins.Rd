@@ -171,6 +171,7 @@ and is not included inside the nested data. For
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.\tabular{lll}{
    Value \tab Meaning \tab Duplicate occurrences \cr
    \code{.id} \tab Position in this ordered Grouping plan \tab Distinct with \code{"keep"} \cr
+   \code{\link[=inspect_grouping]{inspect_grouping()}} \code{set_id} \tab The same position before execution \tab Distinct with \code{"keep"} \cr
    \code{\link[=grouping_bit]{grouping_bit()}} \tab Whether one dimension is omitted (\code{0L} or \code{1L}) \tab Same \cr
    \code{\link[=grouping_id]{grouping_id()}} \tab Bit mask of omitted dimensions \tab Same \cr
 }
@@ -181,6 +182,9 @@ its \code{\link[=grouping_id]{grouping_id()}} values are \code{0L}, \code{1L}, a
 durable business key and can change when the Grouping plan is reordered or
 deduplicated. It records plan occurrence, not physical result order; use
 \code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
+See the
+\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide}
+for the complete comparison.
 }
 
 \section{Backend extension design}{
