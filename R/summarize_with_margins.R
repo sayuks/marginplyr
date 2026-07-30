@@ -111,9 +111,6 @@
 #' ordinary output columns. For [nest_with_margins()], `.id` is an outer key
 #' and is not included inside the nested data. For
 #' [nest_by_with_margins()], it is also a row-wise grouping key.
-#' Summary output names must be known before execution so collisions can be
-#' rejected eagerly; explicitly name an opaque custom summary when using
-#' `.id`.
 #'
 #' | Value | Meaning | Duplicate occurrences |
 #' |---|---|---|
@@ -391,11 +388,6 @@ execute_margin_summary <- function(operation, dots) {
           operation$data_vars,
           unique(group_vars)
         ))
-      )
-      check_margin_id_summary_names_known(
-        operation$set_id_name,
-        dots,
-        summary_selection_proxy
       )
       summary_output_names <- unique(c(
         names(dots)[nzchar(names(dots))],

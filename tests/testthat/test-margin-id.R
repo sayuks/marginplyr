@@ -188,23 +188,14 @@ test_that(".id rejects output-name collisions", {
   )
 })
 
-test_that(".id rejects opaque summary names before local execution", {
-  data <- data.frame(group = c("x", "y"), value = 1:2)
-  calls <- 0L
-  opaque_summary <- function(x) {
-    calls <<- calls + 1L
-    data.frame(set = sum(x))
-  }
+test_that(".id preserves ordinary unnamed summary expressions", {
+  data <- data.frame(value = 1:2)
 
-  expect_error(
-    summarize_with_margins(
-      data,
-      opaque_summary(value),
-      .id = "set"
-    ),
-    "`\\.id` \\(`set`\\).*output names cannot be determined"
-  )
-  expect_identical(calls, 0L)
+  result <- summarize_with_margins(data, sum(value), .id = "set")
+
+  expect_identical(names(result), c("set", "sum(value)"))
+  expect_identical(result$set, 1L)
+  expect_identical(result[["sum(value)"]], 3L)
 })
 
 test_that("native summaries derive .id from structural grouping metadata", {

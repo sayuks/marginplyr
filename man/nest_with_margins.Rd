@@ -168,10 +168,7 @@ identifier \code{1L}, and a zero-row result retains an integer \code{.id} column
 Output columns are ordered as fixed keys, variable dimensions, \code{.id}, then
 ordinary output columns. For \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{.id} is an outer key
 and is not included inside the nested data. For
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.
-Summary output names must be known before execution so collisions can be
-rejected eagerly; explicitly name an opaque custom summary when using
-\code{.id}.\tabular{lll}{
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.\tabular{lll}{
    Value \tab Meaning \tab Duplicate occurrences \cr
    \code{.id} \tab Position in this ordered Grouping plan \tab Distinct with \code{"keep"} \cr
    \code{\link[=grouping_bit]{grouping_bit()}} \tab Whether one dimension is omitted (\code{0L} or \code{1L}) \tab Same \cr
