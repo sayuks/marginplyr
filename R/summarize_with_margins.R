@@ -487,7 +487,7 @@ execute_margin_summary <- function(operation, dots) {
             plan,
             backend = operation$backend
           ) && !(
-            !is.null(operation$set_id_name) &&
+            !is.null(adapter_set_id_name) &&
               identical(plan$duplicates, "keep")
           )) {
             summarize_margin_native( # nolint: object_usage_linter

@@ -1,5 +1,4 @@
-test_that("dtplyr batches Parent shares with missing-safe parent matching", {
-  skip_if_not_installed("dtplyr")
+test_that("dtplyr and Arrow batch Parent shares with missing-safe matching", {
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "a", "a"),
     group = c(NA_character_, "x", NA_character_, "x"),
@@ -25,53 +24,41 @@ test_that("dtplyr batches Parent shares with missing-safe parent matching", {
   }
 
   expected <- summarize(data)
-  query <- summarize(dtplyr::lazy_dt(data))
-
-  expect_s3_class(query, "dtplyr_step")
-  expect_equal(
-    as.data.frame(dplyr::collect(query)),
-    as.data.frame(expected)
-  )
-})
-
-test_that("Arrow batches Parent shares while preserving lazy execution", {
-  skip_if_not_installed("arrow")
-  data <- data.frame(
-    fixed = c(NA_character_, NA_character_, "a", "a"),
-    group = c(NA_character_, "x", NA_character_, "x"),
-    revenue = c(1, 3, 2, 2),
-    units = c(1L, 3L, 0L, 0L)
-  )
-
-  summarize <- function(source) {
-    summarize_with_margins(
-      source,
-      level = grouping_id(group),
-      dplyr::across(c(revenue, units), sum),
-      dplyr::across(
-        c(revenue, units),
-        share_of_parent,
-        .names = "{.col}_share"
-      ),
-      .by = fixed,
-      .grouping = rollup(group),
-      .margin_label = NULL
-    ) |>
-      dplyr::arrange(fixed, level, group)
+  cases <- list()
+  if (rlang::is_installed("dtplyr")) {
+    cases$dtplyr <- list(
+      source = dtplyr::lazy_dt(data),
+      class = "dtplyr_step"
+    )
   }
+  if (rlang::is_installed("arrow")) {
+    cases$arrow <- list(
+      source = arrow::Table$create(data),
+      class = "arrow_dplyr_query"
+    )
+  }
+  skip_if(length(cases) == 0L, "Neither dtplyr nor Arrow is installed")
 
-  expected <- summarize(data)
-  query <- summarize(arrow::Table$create(data))
-
-  expect_s3_class(query, "arrow_dplyr_query")
-  expect_equal(
-    as.data.frame(dplyr::collect(query)),
-    as.data.frame(expected)
-  )
+  for (backend in names(cases)) {
+    query <- summarize(cases[[backend]]$source)
+    expect_s3_class(query, cases[[backend]]$class)
+    expect_equal(
+      as.data.frame(dplyr::collect(query)),
+      as.data.frame(expected),
+      info = backend
+    )
+  }
 })
 
 parent_sql_count <- function(sql, pattern) {
   lengths(gregexpr(pattern, sql, fixed = TRUE))
+}
+
+parent_lazy_probe_capture <- new.env(parent = emptyenv())
+
+parent_lazy_probe_collect <- function(con, sql, ...) {
+  parent_lazy_probe_capture$n <- parent_lazy_probe_capture$n + 1L
+  stop("Parent-share planning must not execute a schema probe.", call. = FALSE)
 }
 
 test_that("PostgreSQL renders one staged Parent-share mapping for all measures", {
@@ -110,6 +97,37 @@ test_that("PostgreSQL renders one staged Parent-share mapping for all measures",
   )
   expect_match(many_sql, "IS NULL AND", fixed = TRUE)
   expect_match(many_sql, "CAST(", fixed = TRUE)
+})
+
+test_that("general dbplyr leaves incompatible summary types to execution", {
+  registerS3method(
+    "db_collect",
+    "parent_lazy_probe_connection",
+    parent_lazy_probe_collect,
+    envir = asNamespace("dbplyr")
+  )
+  con <- dbplyr::simulate_dbi()
+  class(con) <- c("parent_lazy_probe_connection", class(con))
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = "x", label = "value"),
+    con = con
+  )
+  parent_lazy_probe_capture$n <- 0L
+
+  query <- summarize_with_margins(
+    remote,
+    label = min(label),
+    share = share_of_parent(label),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  expect_s3_class(query, "tbl_lazy")
+  expect_identical(parent_lazy_probe_capture$n, 0L)
+
+  sql <- dbplyr::sql_render(query)
+  expect_identical(parent_lazy_probe_capture$n, 0L)
+  expect_match(sql, "CAST(", fixed = TRUE)
+  expect_match(sql, "LEFT JOIN", fixed = TRUE)
 })
 
 test_that("fallback simulators render portable staged Parent-share SQL", {
@@ -176,7 +194,8 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
     group = c(NA_character_, "x", NA_character_, "x"),
     item = c("i", "j", "i", "j"),
     revenue = c(1, 3, 2, 2),
-    units = c(1L, 3L, 0L, 0L)
+    units = c(1L, 3L, 0L, 0L),
+    missing_source = c(1, 3, 2, 2)
   )
   remote <- dplyr::copy_to(
     con,
@@ -192,7 +211,13 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
       level = grouping_id(group, item),
       revenue = sum(revenue),
       units = sum(units),
+      missing_parent = dplyr::if_else(
+        dplyr::n() > 1L,
+        NA_real_,
+        sum(missing_source)
+      ),
       revenue_share = share_of_parent(revenue),
+      missing_parent_share = share_of_parent(missing_parent),
       dplyr::across(
         units,
         share_of_parent,
@@ -208,6 +233,12 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
 
   expected <- summarize(data, "drop") |>
     dplyr::arrange(fixed, set, group, item)
+  expect_true(all(is.na(
+    expected$missing_parent_share[expected$level == 1L]
+  )))
+  expect_true(all(
+    expected$missing_parent_share[expected$level == 3L] == 1
+  ))
   native <- summarize(remote, "drop")
   portable <- summarize(remote, "keep")
 
@@ -299,19 +330,25 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
 
 test_that("lazy Parent shares skip duplicate grouping-set occurrences", {
   data <- data.frame(group = c("x", "y"), value = c(1, 3))
-  summarize <- function(source) {
-    summarize_with_margins(
+  summarize <- function(source, include_id) {
+    id_name <- if (include_id) "set" else NULL
+    result <- summarize_with_margins(
       source,
       total = sum(value),
       share = share_of_parent(total),
       .grouping = rollup(group, group),
       .duplicates = "keep",
-      .id = "set",
+      .id = id_name,
       .margin_label = NULL
-    ) |>
-      dplyr::arrange(set, group)
+    )
+    if (include_id) {
+      return(dplyr::arrange(result, set, group))
+    }
+    result |>
+      dplyr::arrange(group, total, share)
   }
-  expected <- summarize(data)
+  expected <- summarize(data, include_id = TRUE)
+  expected_without_id <- summarize(data, include_id = FALSE)
   sources <- list()
   if (rlang::is_installed("dtplyr")) {
     sources$dtplyr <- dtplyr::lazy_dt(data)
@@ -334,8 +371,24 @@ test_that("lazy Parent shares skip duplicate grouping-set occurrences", {
 
   for (backend in names(sources)) {
     expect_equal(
-      as.data.frame(dplyr::collect(summarize(sources[[backend]]))),
+      as.data.frame(dplyr::collect(summarize(
+        sources[[backend]],
+        include_id = TRUE
+      ))),
       as.data.frame(expected),
+      info = backend
+    )
+    without_id <- summarize(sources[[backend]], include_id = FALSE)
+    if (identical(backend, "duckdb")) {
+      expect_match(
+        dbplyr::sql_render(without_id),
+        "UNION ALL",
+        fixed = TRUE
+      )
+    }
+    expect_equal(
+      as.data.frame(dplyr::collect(without_id)),
+      as.data.frame(expected_without_id),
       info = backend
     )
   }
