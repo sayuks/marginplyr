@@ -1,3 +1,15 @@
+check_removed_groups_argument <- function(dots) {
+  if (!".groups" %in% names(dots)) {
+    return(invisible(NULL))
+  }
+
+  stop(
+    "`summarize_with_margins()` does not support `.groups`; ",
+    "Margin-summary results are always ungrouped.",
+    call. = FALSE
+  )
+}
+
 check_summary_context_helpers <- function(dots) {
   unsupported <- unique(unlist(
     lapply(

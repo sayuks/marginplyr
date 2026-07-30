@@ -10,8 +10,7 @@ expand_with_margins(
   .grouping = NULL,
   .margin_label = "Total",
   .check_margin_label = is.data.frame(.data),
-  .duplicates = c("error", "drop", "keep"),
-  .sort = is.data.frame(.data)
+  .duplicates = c("error", "drop", "keep")
 )
 }
 \arguments{
@@ -35,14 +34,11 @@ display label already occurs in a grouping column.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}
-
-\item{.sort}{A logical scalar. If \code{TRUE}, sort by \code{.by} followed by grouping
-dimensions. It defaults to \code{TRUE} for local data frames and \code{FALSE} for
-lazy tables. With \code{FALSE}, local groups retain first-appearance order;
-lazy result order is unspecified unless an explicit order is requested.}
 }
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy.
+Result row order is unspecified; use \code{\link[dplyr:arrange]{dplyr::arrange()}} when presentation
+order matters.
 }
 \description{
 \code{\link[=expand_with_margins]{expand_with_margins()}} emits one copy of each input row for every grouping
@@ -98,10 +94,9 @@ backends.
 
 Unlike the default output of \code{\link[dplyr:summarize]{dplyr::summarize()}} on grouped data,
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}}, and
-\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. For
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}, this is why \code{.groups} only accepts \code{NULL} and
-\code{"drop"}. Arbitrary grouping sets contain multiple grains, so there is no
-single meaningful \code{drop_last}, \code{"keep"}, or \code{"rowwise"} structure.
+\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. Arbitrary grouping
+sets contain multiple grains, so there is no single meaningful grouping
+hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
 all visible fixed keys and grouping dimensions. Row-wise input is rejected;
 call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.

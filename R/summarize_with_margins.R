@@ -18,9 +18,6 @@
 #' @param .grouping A grouping specification made with [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
 #'   represents one empty grouping set.
-#' @param .groups `NULL` or `"drop"`. Unlike [dplyr::summarize()], margin
-#'   summaries always drop grouping metadata because a result containing
-#'   multiple grouping sets has no single `drop_last` hierarchy.
 #' @param .margin_label A character scalar used to display columns omitted from
 #'   a grouping set. The default is `"Total"`. Use `NULL` to keep typed missing
 #'   values instead of inserting a display label.
@@ -28,12 +25,10 @@
 #'   display label already occurs in a grouping column.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping sets after expansion.
-#' @param .sort A logical scalar. If `TRUE`, sort by `.by` followed by grouping
-#'   dimensions. It defaults to `TRUE` for local data frames and `FALSE` for
-#'   lazy tables. With `FALSE`, local groups retain first-appearance order;
-#'   lazy result order is unspecified unless an explicit order is requested.
 #'
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
+#'   Result row order is unspecified; use [dplyr::arrange()] when presentation
+#'   order matters.
 #'
 #' @details
 #' [grouping_sets()] forms a union of grouping families. [grouping_spec()]
@@ -85,10 +80,9 @@
 #'
 #' Unlike the default output of [dplyr::summarize()] on grouped data,
 #' [summarize_with_margins()], [expand_with_margins()], and
-#' [nest_with_margins()] always return ungrouped results. For
-#' [summarize_with_margins()], this is why `.groups` only accepts `NULL` and
-#' `"drop"`. Arbitrary grouping sets contain multiple grains, so there is no
-#' single meaningful `drop_last`, `"keep"`, or `"rowwise"` structure.
+#' [nest_with_margins()] always return ungrouped results. Arbitrary grouping
+#' sets contain multiple grains, so there is no single meaningful grouping
+#' hierarchy to retain.
 #' [nest_by_with_margins()] instead returns a row-wise data frame grouped by
 #' all visible fixed keys and grouping dimensions. Row-wise input is rejected;
 #' call [dplyr::ungroup()] first.
@@ -218,10 +212,9 @@
 #'     collapse = ", "
 #'   ),
 #'   .by = year,
-#'   .grouping = rollup(region),
-#'   .groups = "drop",
-#'   .sort = FALSE
-#' )
+#'   .grouping = rollup(region)
+#' ) |>
+#'   dplyr::arrange(year, region)
 #'
 #' # DuckDB executes a native GROUP BY GROUPING SETS query. The optional
 #' # dependency guard keeps this example runnable without DuckDB installed.
@@ -243,9 +236,9 @@
 #'     revenue = sum(revenue, na.rm = TRUE),
 #'     level = grouping_id(region, store),
 #'     .by = c(year, month),
-#'     .grouping = rollup(region, store),
-#'     .sort = TRUE
-#'   )
+#'     .grouping = rollup(region, store)
+#'   ) |>
+#'     dplyr::arrange(year, month, region, store)
 #'
 #'   dplyr::show_query(query)
 #'   result <- dplyr::collect(query)
@@ -256,11 +249,9 @@ summarize_with_margins <- function(.data,
                                    ...,
                                    .by = NULL,
                                    .grouping = NULL,
-                                   .groups = NULL,
                                    .margin_label = "Total",
                                    .check_margin_label = is.data.frame(.data),
-                                   .duplicates = c("error", "drop", "keep"),
-                                   .sort = is.data.frame(.data)) {
+                                   .duplicates = c("error", "drop", "keep")) {
   call <- rlang::current_call()
   dots <- rlang::enquos(...)
   grouping_quo <- rlang::enquo(.grouping)
@@ -269,19 +260,12 @@ summarize_with_margins <- function(.data,
   with_margin_error_call(
     {
       assert_lazy_table(.data)
-      if (!is.null(.groups) && !identical(.groups, "drop")) {
-        stop(
-          "`summarize_with_margins()` only supports `.groups = \"drop\"` ",
-          "or `NULL`.",
-          call. = FALSE
-        )
-      }
       normalize_margin_options(
         .margin_label = .margin_label,
         .check_margin_label = .check_margin_label,
-        .duplicates = .duplicates,
-        .sort = .sort
+        .duplicates = .duplicates
       )
+      check_removed_groups_argument(dots)
       check_summary_context_helpers(dots)
     },
     call = call
@@ -294,7 +278,6 @@ summarize_with_margins <- function(.data,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
-    .sort = .sort,
     call = call
   )
   result <- execute_margin_summary(operation, dots)

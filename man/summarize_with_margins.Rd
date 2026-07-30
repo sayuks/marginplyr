@@ -10,11 +10,9 @@ summarize_with_margins(
   ...,
   .by = NULL,
   .grouping = NULL,
-  .groups = NULL,
   .margin_label = "Total",
   .check_margin_label = is.data.frame(.data),
-  .duplicates = c("error", "drop", "keep"),
-  .sort = is.data.frame(.data)
+  .duplicates = c("error", "drop", "keep")
 )
 
 summarise_with_margins(
@@ -22,11 +20,9 @@ summarise_with_margins(
   ...,
   .by = NULL,
   .grouping = NULL,
-  .groups = NULL,
   .margin_label = "Total",
   .check_margin_label = is.data.frame(.data),
-  .duplicates = c("error", "drop", "keep"),
-  .sort = is.data.frame(.data)
+  .duplicates = c("error", "drop", "keep")
 )
 }
 \arguments{
@@ -44,10 +40,6 @@ implicit fixed keys.}
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
 represents one empty grouping set.}
 
-\item{.groups}{\code{NULL} or \code{"drop"}. Unlike \code{\link[dplyr:summarize]{dplyr::summarize()}}, margin
-summaries always drop grouping metadata because a result containing
-multiple grouping sets has no single \code{drop_last} hierarchy.}
-
 \item{.margin_label}{A character scalar used to display columns omitted from
 a grouping set. The default is \code{"Total"}. Use \code{NULL} to keep typed missing
 values instead of inserting a display label.}
@@ -57,14 +49,11 @@ display label already occurs in a grouping column.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}
-
-\item{.sort}{A logical scalar. If \code{TRUE}, sort by \code{.by} followed by grouping
-dimensions. It defaults to \code{TRUE} for local data frames and \code{FALSE} for
-lazy tables. With \code{FALSE}, local groups retain first-appearance order;
-lazy result order is unspecified unless an explicit order is requested.}
 }
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy.
+Result row order is unspecified; use \code{\link[dplyr:arrange]{dplyr::arrange()}} when presentation
+order matters.
 }
 \description{
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with grouping sets,
@@ -128,10 +117,9 @@ backends.
 
 Unlike the default output of \code{\link[dplyr:summarize]{dplyr::summarize()}} on grouped data,
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}}, and
-\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. For
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}, this is why \code{.groups} only accepts \code{NULL} and
-\code{"drop"}. Arbitrary grouping sets contain multiple grains, so there is no
-single meaningful \code{drop_last}, \code{"keep"}, or \code{"rowwise"} structure.
+\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. Arbitrary grouping
+sets contain multiple grains, so there is no single meaningful grouping
+hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
 all visible fixed keys and grouping dimensions. Row-wise input is rejected;
 call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
@@ -268,10 +256,9 @@ summarize_with_margins(
     collapse = ", "
   ),
   .by = year,
-  .grouping = rollup(region),
-  .groups = "drop",
-  .sort = FALSE
-)
+  .grouping = rollup(region)
+) |>
+  dplyr::arrange(year, region)
 
 # DuckDB executes a native GROUP BY GROUPING SETS query. The optional
 # dependency guard keeps this example runnable without DuckDB installed.
@@ -293,9 +280,9 @@ if (
     revenue = sum(revenue, na.rm = TRUE),
     level = grouping_id(region, store),
     .by = c(year, month),
-    .grouping = rollup(region, store),
-    .sort = TRUE
-  )
+    .grouping = rollup(region, store)
+  ) |>
+    dplyr::arrange(year, month, region, store)
 
   dplyr::show_query(query)
   result <- dplyr::collect(query)

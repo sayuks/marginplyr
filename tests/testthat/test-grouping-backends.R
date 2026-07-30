@@ -154,8 +154,7 @@ test_that("Arrow metadata preserves ordered dictionaries without collecting", {
     source,
     total = sum(value),
     .grouping = rollup(where(is.factor)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
 
   expect_identical(selection_proxy_capture$n, 0L)
@@ -193,8 +192,7 @@ test_that("dtplyr constructs one typed selection proxy for predicates", {
     source,
     n = dplyr::n(),
     .grouping = rollup(where(is.numeric)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
 
   expect_identical(selection_proxy_capture$n, 1L)
@@ -208,8 +206,7 @@ test_that("dtplyr constructs one typed selection proxy for predicates", {
     source,
     n = dplyr::n(),
     .grouping = rollup(where(is.character)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
   expect_identical(selection_proxy_capture$n, 1L)
   expect_identical(
@@ -254,8 +251,7 @@ test_that("DuckDB constructs one typed selection proxy for predicates", {
     source,
     n = dplyr::n(),
     .grouping = rollup(where(is.numeric)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
 
   expect_identical(selection_proxy_capture$n, 1L)
@@ -269,8 +265,7 @@ test_that("DuckDB constructs one typed selection proxy for predicates", {
     source,
     n = dplyr::n(),
     .grouping = rollup(where(is.character)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
   expect_identical(selection_proxy_capture$n, 1L)
   expect_identical(
@@ -673,8 +668,7 @@ test_that("column-wise summaries share one lazy-backend selection", {
       dplyr::n_distinct,
       .names = "n_{.col}"
     ),
-    .grouping = rollup(group),
-    .sort = FALSE
+    .grouping = rollup(group)
   ) |>
     dplyr::collect()
   expect_equal(names(dt_result), c("group", "n_value"))
@@ -688,8 +682,7 @@ test_that("column-wise summaries share one lazy-backend selection", {
       dplyr::n_distinct,
       .names = "n_{.col}"
     ),
-    .grouping = rollup(group),
-    .sort = FALSE
+    .grouping = rollup(group)
   ) |>
     dplyr::collect()
   expect_equal(names(arrow_result), c("group", "n_value"))
@@ -724,7 +717,7 @@ test_that("column-wise summaries share one lazy-backend selection", {
   )
 })
 
-test_that("union backends sort directly by resolved margin columns", {
+test_that("union backends preserve margin values without implicit ordering", {
   data <- data.frame(
     group = c("b", "a", "b"),
     value = 1:3
@@ -734,30 +727,27 @@ test_that("union backends sort directly by resolved margin columns", {
   local <- summarize_with_margins(
     data,
     total = sum(value),
-    .grouping = rollup(group),
-    .sort = TRUE
+    .grouping = rollup(group)
   )
-  expect_equal(local$group, expected)
+  expect_setequal(local$group, expected)
 
   skip_if_not_installed("dtplyr")
   dt_result <- summarize_with_margins(
     dtplyr::lazy_dt(data),
     total = sum(value),
-    .grouping = rollup(group),
-    .sort = TRUE
+    .grouping = rollup(group)
   ) |>
     dplyr::collect()
-  expect_equal(dt_result$group, expected)
+  expect_setequal(dt_result$group, expected)
 
   skip_if_not_installed("arrow")
   arrow_result <- summarize_with_margins(
     arrow::Table$create(data),
     total = sum(value),
-    .grouping = rollup(group),
-    .sort = TRUE
+    .grouping = rollup(group)
   ) |>
     dplyr::collect()
-  expect_equal(arrow_result$group, expected)
+  expect_setequal(arrow_result$group, expected)
 })
 
 test_that("dtplyr nesting retains original keys and empty rowwise behavior", {
@@ -806,8 +796,7 @@ test_that("grouped lazy inputs use their groups as fixed keys", {
   dt_summary <- summarize_with_margins(
     grouped_dt,
     value = sum(value),
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(dt_summary), character())
   expect_setequal(
@@ -817,23 +806,20 @@ test_that("grouped lazy inputs use their groups as fixed keys", {
 
   dt_union <- expand_with_margins(
     grouped_dt,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(dt_union), character())
 
   dt_nest <- nest_with_margins(
     grouped_dt,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(dt_nest), character())
   expect_equal(names(dplyr::collect(dt_nest)), c("year", "region", "data"))
 
   dt_nest_by <- nest_by_with_margins(
     grouped_dt,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   expect_s3_class(dt_nest_by, "rowwise_df")
   expect_equal(dplyr::group_vars(dt_nest_by), c("year", "region"))
@@ -844,8 +830,7 @@ test_that("grouped lazy inputs use their groups as fixed keys", {
   arrow_summary <- summarize_with_margins(
     grouped_arrow,
     value = sum(value),
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(arrow_summary), character())
   expect_setequal(
@@ -862,8 +847,7 @@ test_that("grouped lazy inputs use their groups as fixed keys", {
   sql_summary <- summarize_with_margins(
     grouped_sql,
     value = sum(value),
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(sql_summary), character())
   expect_match(
@@ -906,12 +890,12 @@ test_that("DuckDB executes grouped lazy input as fixed keys", {
   query <- summarize_with_margins(
     grouped,
     value = sum(value),
-    .grouping = rollup(region),
-    .sort = TRUE
+    .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(query), character())
 
   result <- dplyr::collect(query)
+  result <- dplyr::arrange(result, year, region)
   expect_equal(result$year, c(2025L, 2025L, 2025L, 2026L, 2026L, 2026L))
   expect_equal(
     result$region,

@@ -20,9 +20,9 @@
   `nest_by_with_margins()` returns a row-wise result.
 * Summary column selection now excludes every fixed key and grouping
   dimension consistently across grouping-set branches. Summary results cannot
-  overwrite grouping keys, `.groups` is limited to `NULL` or `"drop"`, and
-  branch-local `cur_group*()` helpers are rejected in favor of
-  `grouping_bit()` and `grouping_id()`.
+  overwrite grouping keys, always return ungrouped output, and reject
+  branch-local `cur_group*()` helpers in favor of `grouping_bit()` and
+  `grouping_id()`.
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across

@@ -24,7 +24,7 @@ Every exported margin verb follows the same explicit lifecycle:
    selects or invokes the appropriate adapter.
 4. **Finalize.** `finalize_margin_operation()` starts from an ungrouped
    result, restores factor margin columns, places fixed keys and grouping
-   dimensions first, and applies the resolved sorting policy.
+   dimensions first, and leaves row ordering unspecified.
 
 `nest_with_margins()` returns the common ungrouped result.
 `nest_by_with_margins()` collects that result when necessary, preserves its
@@ -99,11 +99,12 @@ after labels have been materialized; it does not acquire metadata itself.
 
 ### Summary selection (`R/summary-selections.R`)
 
-Owns summary-only semantics: rejecting branch-local grouping-context helpers,
-resolving `across()` and `pick()` selections while excluding every fixed key
-and grouping dimension, predicting known output names, and preventing summary
-outputs from overwriting grouping columns. These checks occur before semantic
-label validation, including any opt-in lazy collision query.
+Owns summary-only semantics: rejecting the removed `.groups` argument and
+branch-local grouping-context helpers, resolving `across()` and `pick()`
+selections while excluding every fixed key and grouping dimension, predicting
+known output names, and preventing summary outputs from overwriting grouping
+columns. These checks occur before semantic label validation, including any
+opt-in lazy collision query.
 
 ### Native adapter (`R/grouping-adapter-native.R`)
 

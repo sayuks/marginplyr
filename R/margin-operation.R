@@ -6,7 +6,6 @@ new_margin_operation <- function(data,
                                  column_info,
                                  margin_label,
                                  check_margin_label,
-                                 sort,
                                  call) {
   structure(
     list(
@@ -18,7 +17,6 @@ new_margin_operation <- function(data,
       column_info = column_info,
       margin_label = margin_label,
       check_margin_label = check_margin_label,
-      sort = sort,
       call = call
     ),
     class = "marginplyr_margin_operation"
@@ -42,10 +40,8 @@ with_margin_error_call <- function(expr, call) {
 
 normalize_margin_options <- function(.margin_label,
                                      .check_margin_label,
-                                     .duplicates,
-                                     .sort) {
+                                     .duplicates) {
   assert_logical_scalar(.check_margin_label)
-  assert_logical_scalar(.sort)
 
   list(
     margin_label = normalize_margin_label(.margin_label),
@@ -53,8 +49,7 @@ normalize_margin_options <- function(.margin_label,
     duplicates = match.arg(
       .duplicates,
       choices = c("error", "drop", "keep")
-    ),
-    sort = .sort
+    )
   )
 }
 
@@ -101,7 +96,6 @@ prepare_margin_operation <- function(.data,
                                      .margin_label,
                                      .check_margin_label,
                                      .duplicates,
-                                     .sort,
                                      call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
 
@@ -110,13 +104,11 @@ prepare_margin_operation <- function(.data,
       options <- normalize_margin_options(
         .margin_label = .margin_label,
         .check_margin_label = .check_margin_label,
-        .duplicates = .duplicates,
-        .sort = .sort
+        .duplicates = .duplicates
       )
       .margin_label <- options$margin_label
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
-      .sort <- options$sort
 
       grouping_spec <- rlang::eval_tidy(grouping_quo)
       validate_grouping_spec_early(grouping_spec)
@@ -162,7 +154,6 @@ prepare_margin_operation <- function(.data,
         column_info = column_info,
         margin_label = .margin_label,
         check_margin_label = .check_margin_label,
-        sort = .sort,
         call = call
       )
     },
@@ -199,10 +190,6 @@ finalize_margin_operation <- function(operation, result) {
     dplyr::all_of(margin_cols),
     dplyr::everything()
   )
-
-  if (operation$sort) {
-    result <- dplyr::arrange(result, !!!rlang::syms(margin_cols))
-  }
 
   result
 }

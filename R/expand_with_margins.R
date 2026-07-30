@@ -18,6 +18,8 @@
 #' @inheritSection summarize_with_margins Database backend coverage
 #' @inheritSection summarize_with_margins Backend extension design
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
+#'   Result row order is unspecified; use [dplyr::arrange()] when presentation
+#'   order matters.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -58,8 +60,7 @@ expand_with_margins <- function(.data,
                                 .grouping = NULL,
                                 .margin_label = "Total",
                                 .check_margin_label = is.data.frame(.data),
-                                .duplicates = c("error", "drop", "keep"),
-                                .sort = is.data.frame(.data)) {
+                                .duplicates = c("error", "drop", "keep")) {
   call <- rlang::current_call()
   with_margin_error_call(assert_lazy_table(.data), call = call)
   grouping_quo <- rlang::enquo(.grouping)
@@ -72,7 +73,6 @@ expand_with_margins <- function(.data,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
-    .sort = .sort,
     call = call
   )
   result <- execute_margin_expand(operation)

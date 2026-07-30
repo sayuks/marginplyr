@@ -104,6 +104,27 @@ test_that("summary rejects grouping before typed metadata acquisition", {
   )
 })
 
+test_that("removed .groups is rejected before typed metadata acquisition", {
+  skip_if_not_installed("dtplyr")
+  register_summary_proxy_methods()
+  source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
+  class(source) <- c("margin_summary_proxy_counter", class(source))
+  summary_proxy_capture$n <- 0L
+  summary_options <- list(.groups = "drop")
+
+  expect_error(
+    summarize_with_margins(
+      source,
+      n = dplyr::n(),
+      .grouping = rollup(group),
+      !!!summary_options
+    ),
+    "`summarize_with_margins\\(\\)` does not support `.groups`"
+  )
+
+  expect_identical(summary_proxy_capture$n, 0L)
+})
+
 test_that("dtplyr summary reuses one typed snapshot across selections", {
   skip_if_not_installed("dtplyr")
   register_summary_proxy_methods()
@@ -123,8 +144,7 @@ test_that("dtplyr summary reuses one typed snapshot across selections", {
       .names = "total_{.col}"
     ),
     .grouping = rollup(where(is.character)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
 
   expect_s3_class(query, "dtplyr_step")

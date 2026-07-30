@@ -20,6 +20,8 @@
 #' margin-operation pipeline, so they share one grouping plan and nesting
 #' contract without invoking each other.
 #' @return A row-wise data frame grouped by the visible grouping columns.
+#'   Result row order is unspecified; use [dplyr::arrange()] when presentation
+#'   order matters.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -96,9 +98,8 @@ nest_by_with_margins <- function(.data,
                                  .by = NULL,
                                  .grouping = NULL,
                                  .margin_label = "Total",
-                                 .check_margin_label = TRUE,
+                                 .check_margin_label = is.data.frame(.data),
                                  .duplicates = c("error", "drop"),
-                                 .sort = TRUE,
                                  .key = "data",
                                  .keep = FALSE) {
   call <- rlang::current_call()
@@ -112,7 +113,6 @@ nest_by_with_margins <- function(.data,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
-    .sort = .sort,
     .key = .key,
     .keep = .keep,
     call = call

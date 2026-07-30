@@ -1,4 +1,4 @@
-test_that("expand preserves fixed keys, types, column order, and sorting", {
+test_that("expand preserves fixed keys, types, and column order", {
   data <- data.frame(
     value = 1:3,
     group = ordered(c("b", "a", "b"), levels = c("a", "b")),
@@ -11,6 +11,7 @@ test_that("expand preserves fixed keys, types, column order, and sorting", {
     .grouping = rollup(group),
     .margin_label = NULL
   )
+  result <- dplyr::arrange(result, fixed, group, value)
 
   expect_identical(names(result), c("fixed", "group", "value"))
   expect_identical(dplyr::group_vars(result), character())
@@ -144,8 +145,7 @@ test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
   query <- expand_with_margins(
     source,
     .grouping = rollup(where(is.numeric)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
 
   expect_s3_class(query, "dtplyr_step")
@@ -169,15 +169,14 @@ test_that("Arrow expansion uses schema metadata without collecting", {
   query <- expand_with_margins(
     source,
     .grouping = rollup(where(is.character)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
 
   expect_identical(expand_proxy_capture$n, 0L)
   result <- dplyr::collect(query)
   expect_identical(nrow(result), 4L)
   expect_true(anyNA(result$group))
-  expect_identical(result$doubled, c(2L, 4L, 2L, 4L))
+  expect_identical(sort(result$doubled), c(2L, 2L, 4L, 4L))
 })
 
 test_that("DuckDB expansion acquires one typed selection proxy", {
@@ -203,8 +202,7 @@ test_that("DuckDB expansion acquires one typed selection proxy", {
   query <- expand_with_margins(
     source,
     .grouping = rollup(where(is.numeric)),
-    .margin_label = NULL,
-    .sort = FALSE
+    .margin_label = NULL
   )
 
   expect_s3_class(query, "tbl_lazy")
@@ -230,8 +228,7 @@ test_that("portable SQL expansion stays lazy and uses UNION ALL", {
     remote,
     .by = `fixed key`,
     .grouping = rollup(`group name`),
-    .margin_label = "Director's total",
-    .sort = TRUE
+    .margin_label = "Director's total"
   )
   sql <- dbplyr::sql_render(query)
 
@@ -240,7 +237,7 @@ test_that("portable SQL expansion stays lazy and uses UNION ALL", {
   expect_match(sql, "`fixed key`", fixed = TRUE)
   expect_match(sql, "`group name`", fixed = TRUE)
   expect_match(sql, "'Director''s total'", fixed = TRUE)
-  expect_match(sql, "ORDER BY", fixed = TRUE)
+  expect_no_match(sql, "ORDER BY", fixed = TRUE)
   expect_identical(
     as.character(dplyr::tbl_vars(query)),
     c("fixed key", "group name", "value", "..marginplyr_key_1")

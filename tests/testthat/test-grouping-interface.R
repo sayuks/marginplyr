@@ -12,10 +12,10 @@ test_that("rollup uses Total and exposes SQL-compatible grouping bits", {
       ga = grouping_bit(a),
       gb = grouping_bit(b),
       gid = grouping_id(a, b),
-      .grouping = rollup(a, b),
-      .sort = FALSE
+      .grouping = rollup(a, b)
     )
   )
+  result <- dplyr::arrange(result, gid, a, b)
 
   expect_equal(result$gid, c(0L, 0L, 1L, 1L, 3L))
   expect_equal(result$ga, c(0L, 0L, 0L, 0L, 1L))
@@ -45,9 +45,9 @@ test_that("arbitrary and empty grouping sets match explicit summaries", {
       grouping_set(a, b),
       grouping_set(a),
       grouping_set()
-    ),
-    .sort = FALSE
+    )
   )
+  result <- dplyr::arrange(result, gid, a, b)
 
   expect_equal(result$gid, c(0L, 0L, 0L, 1L, 1L, 3L))
   expect_equal(result$total, c(1, 2, 3, 3, 3, 6))
@@ -65,8 +65,7 @@ test_that("Cartesian products, nesting, and composite dimensions execute", {
     data,
     n = dplyr::n(),
     gid = grouping_id(country, state, year),
-    .grouping = cube(grouping_set(country, state), year),
-    .sort = FALSE
+    .grouping = cube(grouping_set(country, state), year)
   )
   expect_setequal(unique(composite$gid), c(0L, 1L, 6L, 7L))
   expect_false(any(composite$gid %in% c(2L, 3L, 4L, 5L)))
@@ -75,8 +74,7 @@ test_that("Cartesian products, nesting, and composite dimensions execute", {
     data,
     n = dplyr::n(),
     gid = grouping_id(country, state, year),
-    .grouping = grouping_spec(rollup(country, state), cube(year)),
-    .sort = FALSE
+    .grouping = grouping_spec(rollup(country, state), cube(year))
   )
   expect_setequal(unique(product$gid), c(0L, 1L, 2L, 3L, 6L, 7L))
 
@@ -225,6 +223,58 @@ test_that("margin labels are display-only and can be disabled", {
   expect_s3_class(typed$elapsed, "difftime")
   expect_equal(attr(typed$elapsed, "units"), "hours")
   expect_true(any(is.na(typed$a) & typed$gid == 15L))
+})
+
+test_that("all Margin verbs eagerly check local margin-label collisions", {
+  data <- data.frame(group = c("Total", "x"), value = 1:2)
+  operations <- list(
+    summarize = function(data) {
+      summarize_with_margins(
+        data,
+        n = dplyr::n(),
+        .grouping = rollup(group)
+      )
+    },
+    expand = function(data) {
+      expand_with_margins(data, .grouping = rollup(group))
+    },
+    nest = function(data) {
+      nest_with_margins(data, .grouping = rollup(group))
+    },
+    nest_by = function(data) {
+      nest_by_with_margins(data, .grouping = rollup(group))
+    }
+  )
+
+  for (operation in operations) {
+    expect_error(operation(data), "already present")
+  }
+})
+
+test_that("Margin verbs skip label checks for lazy inputs by default", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(group = c("Total", "x"), value = 1:2)
+  source <- dtplyr::lazy_dt(data)
+
+  expect_no_error(
+    summarize_with_margins(
+      source,
+      n = dplyr::n(),
+      .grouping = rollup(group)
+    ) |>
+      dplyr::collect()
+  )
+  expect_no_error(
+    expand_with_margins(source, .grouping = rollup(group)) |>
+      dplyr::collect()
+  )
+  expect_no_error(
+    nest_with_margins(source, .grouping = rollup(group)) |>
+      dplyr::collect()
+  )
+  expect_no_error(
+    nest_by_with_margins(source, .grouping = rollup(group))
+  )
 })
 
 test_that("margin label checks handle missing and non-syntactic columns", {
@@ -456,58 +506,58 @@ test_that("existing groups become implicit fixed keys", {
   implicit_summary <- summarize_with_margins(
     grouped,
     value = sum(value),
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   explicit_summary <- summarize_with_margins(
     ungrouped,
     value = sum(value),
     .by = year,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
+  implicit_summary <- dplyr::arrange(implicit_summary, year, region)
+  explicit_summary <- dplyr::arrange(explicit_summary, year, region)
   expect_equal(implicit_summary, explicit_summary)
   expect_equal(dplyr::group_vars(implicit_summary), character())
 
   implicit_union <- expand_with_margins(
     grouped,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   explicit_union <- expand_with_margins(
     ungrouped,
     .by = year,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
+  implicit_union <- dplyr::arrange(implicit_union, year, region, value)
+  explicit_union <- dplyr::arrange(explicit_union, year, region, value)
   expect_equal(implicit_union, explicit_union)
   expect_equal(dplyr::group_vars(implicit_union), character())
 
   implicit_nest <- nest_with_margins(
     grouped,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   explicit_nest <- nest_with_margins(
     ungrouped,
     .by = year,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
+  implicit_nest <- dplyr::arrange(implicit_nest, year, region)
+  explicit_nest <- dplyr::arrange(explicit_nest, year, region)
   expect_equal(implicit_nest, explicit_nest)
   expect_equal(dplyr::group_vars(implicit_nest), character())
 
   implicit_nest_by <- nest_by_with_margins(
     grouped,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
   explicit_nest_by <- nest_by_with_margins(
     ungrouped,
     .by = year,
-    .grouping = rollup(region),
-    .sort = FALSE
+    .grouping = rollup(region)
   )
+  implicit_nest_by <- dplyr::arrange(implicit_nest_by, year, region)
+  explicit_nest_by <- dplyr::arrange(explicit_nest_by, year, region)
   expect_equal(implicit_nest_by, explicit_nest_by)
   expect_equal(dplyr::group_vars(implicit_nest_by), c("year", "region"))
 })
@@ -604,52 +654,73 @@ test_that("empty persistent groups are rejected instead of silently dropped", {
   )
 })
 
-test_that("the unsupported .groups argument cannot become a summary column", {
+test_that("summary expressions reject the removed .groups argument", {
   data <- data.frame(group = c("b", "a", "b"), value = 1:3)
-
-  expect_no_error(
-    dropped <- summarize_with_margins(
-      data,
-      value = sum(value),
-      .by = group,
-      .groups = "drop"
-    )
-  )
-  expect_equal(dplyr::group_vars(dropped), character())
-  expect_false(".groups" %in% names(dropped))
 
   expect_error(
     summarize_with_margins(
       data,
       value = sum(value),
       .by = group,
-      .groups = "keep"
+      .groups = "drop"
     ),
-    "only supports.*drop"
+    "`summarize_with_margins\\(\\)` does not support `.groups`"
+  )
+
+  summary_options <- list(.groups = "drop")
+  expect_error(
+    summarize_with_margins(
+      data,
+      value = sum(value),
+      .by = group,
+      !!!summary_options
+    ),
+    "`summarize_with_margins\\(\\)` does not support `.groups`"
   )
 })
 
-test_that(".sort controls local ordering without changing the input class", {
+test_that("Margin verb formals expose only the supported common options", {
+  verbs <- list(
+    summarize_with_margins,
+    expand_with_margins,
+    nest_with_margins,
+    nest_by_with_margins
+  )
+
+  expect_false(any(vapply(
+    verbs,
+    function(verb) ".sort" %in% names(formals(verb)),
+    logical(1)
+  )))
+  expect_false(".groups" %in% names(formals(summarize_with_margins)))
+  expect_false(".groups" %in% names(formals(summarise_with_margins)))
+  expect_true(all(vapply(
+    verbs,
+    function(verb) {
+      identical(
+        formals(verb)$.check_margin_label,
+        quote(is.data.frame(.data))
+      )
+    },
+    logical(1)
+  )))
+})
+
+test_that("callers can arrange Margin results explicitly", {
   data <- data.frame(group = c("b", "a", "b"), value = 1:3)
 
-  in_input_order <- summarize_with_margins(
+  summarized <- summarize_with_margins(
     data,
     value = sum(value),
-    .by = group,
-    .sort = FALSE
-  )
-  sorted <- summarize_with_margins(
-    data,
-    value = sum(value),
-    .by = group,
-    .sort = TRUE
-  )
-  nested <- nest_with_margins(data, .by = group, .sort = FALSE)
+    .by = group
+  ) |>
+    dplyr::arrange(group)
+  nested <- nest_with_margins(data, .by = group) |>
+    dplyr::arrange(group)
 
-  expect_identical(class(in_input_order), "data.frame")
-  expect_equal(in_input_order$group, c("b", "a"))
-  expect_equal(sorted$group, c("a", "b"))
-  expect_equal(nested$group, c("b", "a"))
+  expect_identical(class(summarized), "data.frame")
+  expect_equal(summarized$group, c("a", "b"))
+  expect_equal(nested$group, c("a", "b"))
 })
 
 test_that("British and American summary spellings are synonyms", {
@@ -685,19 +756,18 @@ test_that("column-wise summaries exclude all grouping dimensions", {
       dplyr::n_distinct,
       .names = "n_{.col}"
     ),
-    .grouping = rollup(year),
-    .sort = FALSE
+    .grouping = rollup(year)
   )
   pick_result <- summarize_with_margins(
     data,
     picked = paste(names(dplyr::pick(dplyr::everything())), collapse = ","),
-    .grouping = rollup(year),
-    .sort = FALSE
+    .grouping = rollup(year)
   )
+  across_result <- dplyr::arrange(across_result, year)
 
   expect_equal(names(across_result), c("year", "n_value"))
-  expect_equal(across_result$year, c("2026", "2025", "Total"))
-  expect_equal(across_result$n_value, c(2L, 1L, 3L))
+  expect_equal(across_result$year, c("2025", "2026", "Total"))
+  expect_equal(across_result$n_value, c(1L, 2L, 3L))
   expect_equal(pick_result$picked, rep("value", 3L))
 })
 

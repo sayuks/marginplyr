@@ -9,9 +9,8 @@ nest_by_with_margins(
   .by = NULL,
   .grouping = NULL,
   .margin_label = "Total",
-  .check_margin_label = TRUE,
+  .check_margin_label = is.data.frame(.data),
   .duplicates = c("error", "drop"),
-  .sort = TRUE,
   .key = "data",
   .keep = FALSE
 )
@@ -40,9 +39,6 @@ display label already occurs in a grouping column.}
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} and \code{\link[=expand_with_margins]{expand_with_margins()}} is rejected because
 duplicate grouping sets would create indistinguishable outer keys.}
 
-\item{.sort}{A logical scalar. If \code{TRUE} (the default), sort by \code{.by}
-followed by grouping dimensions.}
-
 \item{.key}{A non-missing string naming the list column. Unlike
 \code{\link[=nest_with_margins]{nest_with_margins()}} and \code{\link[tidyr:nest]{tidyr::nest()}}, \code{NULL} is not converted to
 \code{"data"}; this follows \code{\link[dplyr:nest_by]{dplyr::nest_by()}}.}
@@ -53,6 +49,8 @@ original, pre-margin values rather than \code{.margin_label}.}
 }
 \value{
 A row-wise data frame grouped by the visible grouping columns.
+Result row order is unspecified; use \code{\link[dplyr:arrange]{dplyr::arrange()}} when presentation
+order matters.
 }
 \description{
 This is the row-wise counterpart of \code{\link[=nest_with_margins]{nest_with_margins()}}.
@@ -107,10 +105,9 @@ backends.
 
 Unlike the default output of \code{\link[dplyr:summarize]{dplyr::summarize()}} on grouped data,
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}}, and
-\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. For
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}, this is why \code{.groups} only accepts \code{NULL} and
-\code{"drop"}. Arbitrary grouping sets contain multiple grains, so there is no
-single meaningful \code{drop_last}, \code{"keep"}, or \code{"rowwise"} structure.
+\code{\link[=nest_with_margins]{nest_with_margins()}} always return ungrouped results. Arbitrary grouping
+sets contain multiple grains, so there is no single meaningful grouping
+hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
 all visible fixed keys and grouping dimensions. Row-wise input is rejected;
 call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
@@ -145,8 +142,7 @@ detail, subtotal, and total rows.
 specification, multiple list columns, or \code{.names_sep}. Existing grouping
 columns become implicit fixed keys, as they do for \code{\link[tidyr:nest]{tidyr::nest()}}, but
 \code{\link[=nest_with_margins]{nest_with_margins()}} returns an ungrouped result instead of preserving the
-input grouping. With the default \code{.sort = TRUE}, keys are sorted rather than
-kept in first-appearance order.
+input grouping.
 
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} resembles \code{\link[dplyr:nest_by]{dplyr::nest_by()}} and, like it, provides
 \code{.key} and \code{.keep}, but selects fixed keys with \code{.by} rather than \code{...}.

@@ -9,8 +9,6 @@
 #' @inheritSection summarize_with_margins Backend extension design
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
 #'   not supported because nesting creates list columns.
-#' @param .sort A logical scalar. If `TRUE` (the default), sort by `.by`
-#'   followed by grouping dimensions.
 #' @param .key A string naming the list column. As in [tidyr::nest()],
 #'   `NULL` uses `"data"`.
 #' @param .keep Should fixed `.by` columns and grouping dimensions also be kept
@@ -35,8 +33,7 @@
 #' specification, multiple list columns, or `.names_sep`. Existing grouping
 #' columns become implicit fixed keys, as they do for [tidyr::nest()], but
 #' [nest_with_margins()] returns an ungrouped result instead of preserving the
-#' input grouping. With the default `.sort = TRUE`, keys are sorted rather than
-#' kept in first-appearance order.
+#' input grouping.
 #'
 #' [nest_by_with_margins()] resembles [dplyr::nest_by()] and, like it, provides
 #' `.key` and `.keep`, but selects fixed keys with `.by` rather than `...`.
@@ -57,7 +54,9 @@
 #' before the result is returned.
 #'
 #' @return For a local input, an ungrouped data frame with one list column. A
-#'   `dtplyr` input returns a lazy `dtplyr` step until collected.
+#'   `dtplyr` input returns a lazy `dtplyr` step until collected. Result row
+#'   order is unspecified; use [dplyr::arrange()] when presentation order
+#'   matters.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -119,9 +118,8 @@ nest_with_margins <- function(.data,
                               .by = NULL,
                               .grouping = NULL,
                               .margin_label = "Total",
-                              .check_margin_label = TRUE,
+                              .check_margin_label = is.data.frame(.data),
                               .duplicates = c("error", "drop"),
-                              .sort = TRUE,
                               .key = "data",
                               .keep = FALSE) {
   call <- rlang::current_call()
@@ -138,7 +136,6 @@ nest_with_margins <- function(.data,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
-    .sort = .sort,
     .key = .key,
     .keep = .keep,
     call = call
@@ -151,7 +148,6 @@ nest_margin_pipeline <- function(.data,
                                  .margin_label,
                                  .check_margin_label,
                                  .duplicates,
-                                 .sort,
                                  .key,
                                  .keep,
                                  call) {
@@ -161,7 +157,6 @@ nest_margin_pipeline <- function(.data,
     {
       assert_nest_possible(.data)
       assert_logical_scalar(.check_margin_label)
-      assert_logical_scalar(.sort)
       assert_logical_scalar(.keep)
       assert_string_scalar(.key)
       if (is.na(.key)) {
@@ -194,7 +189,6 @@ nest_margin_pipeline <- function(.data,
     .margin_label = .margin_label,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
-    .sort = .sort,
     call = call
   )
   result <- execute_margin_nest(

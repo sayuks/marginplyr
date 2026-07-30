@@ -54,9 +54,9 @@ local_result <- january_sales |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
     level = grouping_id(region, store),
-    .grouping = rollup(region, store),
-    .sort = TRUE
-  )
+    .grouping = rollup(region, store)
+  ) |>
+  arrange(region, store)
 
 local_result
 ```
@@ -73,9 +73,9 @@ postgres_query <- postgres_sales |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
     level = grouping_id(region, store),
-    .grouping = rollup(region, store),
-    .sort = TRUE
-  )
+    .grouping = rollup(region, store)
+  ) |>
+  arrange(region, store)
 
 postgres_query
 ```
@@ -153,9 +153,9 @@ duckdb_query <- sales_db |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
     level = grouping_id(region, store),
-    .grouping = rollup(region, store),
-    .sort = TRUE
-  )
+    .grouping = rollup(region, store)
+  ) |>
+  arrange(region, store)
 
 show_query(duckdb_query)
 ```
@@ -262,7 +262,7 @@ server-specific behavior with a minimal query and the backend version.
   literal label `"Total"` can occur in the data.
 
 - Lazy results have no guaranteed order unless the query explicitly requests
-  one. Set `.sort = TRUE` or call `arrange()` when presentation order matters.
+  one. Call `arrange()` when presentation order matters.
 
 - Lazy inputs default to `.check_margin_label = FALSE` because detecting an
   existing label would require an additional query. Opt in only when that

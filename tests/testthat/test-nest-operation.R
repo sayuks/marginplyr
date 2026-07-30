@@ -82,8 +82,7 @@ test_that("dtplyr nesting reuses one typed snapshot and stays lazy", {
     source,
     .grouping = rollup(where(is.character)),
     .margin_label = NULL,
-    .keep = TRUE,
-    .sort = FALSE
+    .keep = TRUE
   )
 
   expect_s3_class(query, "dtplyr_step")
@@ -109,8 +108,7 @@ test_that("nest verbs preserve their own quosure environments", {
     nest_with_margins(
       data,
       .by = dplyr::all_of(fixed_cols),
-      .grouping = rollup(dplyr::all_of(dimension_cols)),
-      .sort = FALSE
+      .grouping = rollup(dplyr::all_of(dimension_cols))
     )
   }
   nest_by_from_local_scope <- function(data) {
@@ -119,8 +117,7 @@ test_that("nest verbs preserve their own quosure environments", {
     nest_by_with_margins(
       data,
       .by = dplyr::all_of(fixed_cols),
-      .grouping = rollup(dplyr::all_of(dimension_cols)),
-      .sort = FALSE
+      .grouping = rollup(dplyr::all_of(dimension_cols))
     )
   }
 
