@@ -22,8 +22,19 @@
 #' for how a resolved Grouping plan relates to `.id`, [inspect_grouping()],
 #' [grouping_bit()], and [grouping_id()].
 #'
-#' @param ... Bare columns, tidy-select expressions, or nested grouping
-#'   specifications as appropriate for the constructor.
+#' @param ... <[`tidy-select`][dplyr::dplyr_tidy_select]> Column selections
+#'   and, where supported, nested Grouping specifications. In
+#'   [grouping_set()], the selections form one grouping set; nested Grouping
+#'   specifications are not allowed, and no arguments form the empty grouping
+#'   set. In [rollup()] and [cube()], each selected column is one dimension;
+#'   wrap multiple columns in a non-empty [grouping_set()] to make a composite
+#'   dimension. These constructors accept no other nested Grouping
+#'   specifications and require at least one resolved dimension.
+#'   [grouping_sets()] forms the union of its arguments, accepts any valid
+#'   nested Grouping specification, and requires at least one argument.
+#'   [grouping_spec()] combines its arguments by Cartesian product, accepts any
+#'   valid nested Grouping specification, and with no arguments represents the
+#'   identity product (the empty grouping set).
 #'
 #' @return A grouping specification for use in `.grouping`.
 #' @export

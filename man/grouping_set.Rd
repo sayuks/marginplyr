@@ -19,8 +19,19 @@ cube(...)
 grouping_spec(...)
 }
 \arguments{
-\item{...}{Bare columns, tidy-select expressions, or nested grouping
-specifications as appropriate for the constructor.}
+\item{...}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Column selections
+and, where supported, nested Grouping specifications. In
+\code{\link[=grouping_set]{grouping_set()}}, the selections form one grouping set; nested Grouping
+specifications are not allowed, and no arguments form the empty grouping
+set. In \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}}, each selected column is one dimension;
+wrap multiple columns in a non-empty \code{\link[=grouping_set]{grouping_set()}} to make a composite
+dimension. These constructors accept no other nested Grouping
+specifications and require at least one resolved dimension.
+\code{\link[=grouping_sets]{grouping_sets()}} forms the union of its arguments, accepts any valid
+nested Grouping specification, and requires at least one argument.
+\code{\link[=grouping_spec]{grouping_spec()}} combines its arguments by Cartesian product, accepts any
+valid nested Grouping specification, and with no arguments represents the
+identity product (the empty grouping set).}
 }
 \value{
 A grouping specification for use in \code{.grouping}.
