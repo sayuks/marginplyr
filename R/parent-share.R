@@ -683,14 +683,19 @@ parent_cardinality_records <- function(analyses, requests) {
     cardinality <- c(cardinality, list(list(
       position = source_records[[1L]]$position,
       parent_output = pair$output,
-      source_summary = pair$source
+      source_summary = pair$source,
+      across_input = source_records[[1L]]$across_input,
+      across_function = source_records[[1L]]$across_function
     )))
     seen_sources <- c(seen_sources, pair$source)
   }
   cardinality
 }
 
-wrap_parent_sources <- function(dots, cardinality) {
+wrap_parent_sources <- function(dots,
+                                cardinality,
+                                call,
+                                backend_kind) {
   positions <- unique(vapply(
     cardinality,
     `[[`,
@@ -706,6 +711,18 @@ wrap_parent_sources <- function(dots, cardinality) {
     quo <- dots[[position]]
     expr <- rlang::quo_get_expr(quo)
     if (is_across_call(expr)) {
+      if (identical(backend_kind, "dtplyr")) {
+        wrapped <- wrap_dtplyr_parent_across(
+          expr,
+          checks = checks,
+          call = call
+        )
+        dots[[position]] <- rlang::new_quosure(
+          wrapped,
+          env = rlang::quo_get_env(quo)
+        )
+        next
+      }
       parent_outputs <- vapply(
         checks,
         `[[`,
@@ -719,17 +736,27 @@ wrap_parent_sources <- function(dots, cardinality) {
         "source_summary"
       )
       wrapped <- rlang::call2(
-        check_parent_across,
+        rlang::call2(
+          ":::",
+          rlang::sym("marginplyr"),
+          rlang::sym("check_parent_across")
+        ),
         expr,
-        parent_outputs = parent_outputs
+        parent_outputs = parent_outputs,
+        call = parent_call_text(call)
       )
     } else {
       check <- checks[[1L]]
       wrapped <- rlang::call2(
-        check_parent_scalar,
+        rlang::call2(
+          ":::",
+          rlang::sym("marginplyr"),
+          rlang::sym("check_parent_scalar")
+        ),
         expr,
         parent_output = check$parent_output,
-        source_summary = check$source_summary
+        source_summary = check$source_summary,
+        call = parent_call_text(call)
       )
     }
     dots[[position]] <- rlang::new_quosure(
@@ -740,12 +767,158 @@ wrap_parent_sources <- function(dots, cardinality) {
   dots
 }
 
-check_parent_across <- function(value, parent_outputs) {
+wrap_dtplyr_parent_across <- function(expr, checks, call) {
+  parsed <- parse_across_arguments(expr)
+  call_args <- parsed$call_args
+  fns_index <- parsed$fns_index
+  used <- c(
+    parsed$cols_index,
+    parsed$fns_index,
+    parsed$names_index,
+    parsed$unpack_index
+  )
+  additional <- setdiff(
+    seq_along(call_args),
+    used[used > 0L]
+  )
+  additional_args <- call_args[additional]
+  if (fns_index == 0L) {
+    functions <- list(rlang::expr(~.x))
+    function_names <- ""
+    fns_is_list <- FALSE
+  } else {
+    fns <- call_args[[fns_index]]
+    fns_is_list <- rlang::is_call(fns, "list")
+    if (fns_is_list) {
+      functions <- as.list(fns)[-1L]
+      function_names <- names(functions)
+    } else {
+      functions <- list(fns)
+      function_names <- ""
+    }
+  }
+  if (is.null(function_names)) {
+    function_names <- rep("", length(functions))
+  }
+
+  for (function_index in seq_along(functions)) {
+    function_checks <- Filter(
+      function(check) identical(check$across_function, function_index),
+      checks
+    )
+    if (length(function_checks) == 0L) {
+      next
+    }
+    inputs <- vapply(
+      function_checks,
+      `[[`,
+      character(1),
+      "across_input"
+    )
+    keep <- !duplicated(inputs)
+    inputs <- inputs[keep]
+    parent_outputs <- vapply(
+      function_checks[keep],
+      `[[`,
+      character(1),
+      "parent_output"
+    )
+    source_summaries <- vapply(
+      function_checks[keep],
+      `[[`,
+      character(1),
+      "source_summary"
+    )
+    functions[[function_index]] <- wrap_dtplyr_parent_function(
+      functions[[function_index]],
+      inputs = inputs,
+      parent_outputs = parent_outputs,
+      source_summaries = source_summaries,
+      additional_args = additional_args,
+      call = call
+    )
+  }
+
+  wrapped_fns <- if (fns_is_list) {
+    value <- rlang::call2("list", !!!functions)
+    names(value)[-1L] <- function_names
+    value
+  } else {
+    functions[[1L]]
+  }
+  if (fns_index == 0L) {
+    call_args <- append(call_args, list(.fns = wrapped_fns))
+  } else {
+    call_args[[fns_index]] <- wrapped_fns
+  }
+  if (length(additional) > 0L) {
+    call_args <- call_args[-additional]
+  }
+  rlang::call2(expr[[1L]], !!!call_args)
+}
+
+wrap_dtplyr_parent_function <- function(fn,
+                                        inputs,
+                                        parent_outputs,
+                                        source_summaries,
+                                        additional_args,
+                                        call) {
+  value <- if (rlang::is_call(fn, "~")) {
+    fn[[2L]]
+  } else {
+    rlang::call2( # nolint: object_usage_linter
+      fn,
+      rlang::expr(.x), # nolint: object_usage_linter
+      !!!additional_args
+    )
+  }
+  validator <- rlang::call2(
+    rlang::call2(
+      ":::",
+      rlang::sym("marginplyr"),
+      rlang::sym("check_dtplyr_parent_scalar")
+    ),
+    value,
+    inputs = inputs,
+    parent_outputs = parent_outputs,
+    source_summaries = source_summaries,
+    call = parent_call_text(call)
+  )
+  rlang::call2("~", validator)
+}
+
+check_dtplyr_parent_scalar <- function(value,
+                                       inputs,
+                                       parent_outputs,
+                                       source_summaries,
+                                       call) {
+  input <- intersect(
+    all.names(substitute(value), functions = FALSE, unique = TRUE),
+    inputs
+  )
+  if (length(input) == 0L) {
+    return(value)
+  }
+  input <- input[[1L]]
+  position <- match(input, inputs)
+  if (is.na(position)) {
+    return(value)
+  }
+  check_parent_scalar(
+    value,
+    parent_output = parent_outputs[[position]],
+    source_summary = source_summaries[[position]],
+    call = call
+  )
+}
+
+check_parent_across <- function(value, parent_outputs, call) {
   for (source_summary in names(parent_outputs)) {
     check_parent_scalar(
       value[[source_summary]],
       parent_output = parent_outputs[[source_summary]],
-      source_summary = source_summary
+      source_summary = source_summary,
+      call = call
     )
   }
   value
@@ -753,7 +926,14 @@ check_parent_across <- function(value, parent_outputs) {
 
 check_parent_scalar <- function(value,
                                 parent_output,
-                                source_summary) {
+                                source_summary,
+                                call) {
+  if (is.character(call)) {
+    call <- str2lang(call)
+  }
+  if (is.list(call)) {
+    call <- call[[1L]]
+  }
   if (length(value) != 1L) {
     abort_marginplyr( # nolint: object_usage_linter
       paste0(
@@ -765,10 +945,33 @@ check_parent_scalar <- function(value,
       ),
       class = "marginplyr_parent_cardinality_error",
       parent_output = parent_output,
-      source_summary = source_summary
+      source_summary = source_summary,
+      call = call
+    )
+  }
+  if (
+    !typeof(value) %in% c("integer", "double") ||
+      is.object(value)
+  ) {
+    detected_type <- if (is.object(value)) class(value) else typeof(value)
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Parent share `", parent_output, "` requires source summary `",
+        source_summary,
+        "` to be a plain integer or double scalar; detected type ",
+        paste(detected_type, collapse = "/"),
+        ". Convert it explicitly in the ordinary summary."
+      ),
+      parent_output = parent_output,
+      source_summary = source_summary,
+      call = call
     )
   }
   value
+}
+
+parent_call_text <- function(call) {
+  paste(deparse(call, width.cutoff = 500L), collapse = "\n")
 }
 
 analyze_ordinary_summaries <- function(dots, selection_proxy) {
@@ -824,16 +1027,43 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
       expression_alias_dependencies(expr, preceding_names),
       selected_dependencies
     ))
-    records <- lapply(
-      output_names,
-      function(name) {
+    across_inputs <- if (is_across_call(expr)) {
+      inputs <- known_across_source_names( # nolint: object_usage_linter
+        expr,
+        env,
+        selection_proxy
+      )
+      rep(inputs, each = length(known_across_function_names(
+        parse_across_arguments(expr)
+      )))
+    } else {
+      rep(NA_character_, length(output_names))
+    }
+    across_functions <- if (is_across_call(expr)) {
+      function_count <- length(known_across_function_names(
+        parse_across_arguments(expr)
+      ))
+      rep(
+        seq_len(function_count),
+        times = length(across_inputs) / function_count
+      )
+    } else {
+      rep(NA_integer_, length(output_names))
+    }
+    records <- Map(
+      function(name, across_input, across_function) {
         list(
           name = name,
           position = i,
           eligible = eligible,
-          dependencies = dependencies
+          dependencies = dependencies,
+          across_input = across_input,
+          across_function = across_function
         )
-      }
+      },
+      output_names,
+      across_inputs,
+      across_functions
     )
     analyses[[i]] <- list(records = records)
     preceding_names <- c(preceding_names, output_names)

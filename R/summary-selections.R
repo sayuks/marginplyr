@@ -55,7 +55,8 @@ plan_summary_expressions <- function(dots,
                                      data_vars,
                                      plan,
                                      backend_kind,
-                                     set_id_name) {
+                                     set_id_name,
+                                     call) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
   group_vars <- c(plan$by, plan$dimensions)
   selection_proxy <- dplyr::select(
@@ -78,7 +79,7 @@ plan_summary_expressions <- function(dots,
     selection_proxy = selection_proxy,
     plan = plan,
     set_id_name = set_id_name,
-    validate_cardinality = identical(backend_kind, "local")
+    validate_cardinality = backend_kind %in% c("local", "dtplyr")
   )
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
@@ -90,7 +91,9 @@ plan_summary_expressions <- function(dots,
   if (length(summary_plan$cardinality) > 0L) {
     summary_plan$dots <- wrap_parent_sources( # nolint: object_usage_linter
       summary_plan$dots,
-      cardinality = summary_plan$cardinality
+      cardinality = summary_plan$cardinality,
+      call = call,
+      backend_kind = backend_kind
     )
   }
   summary_plan$cardinality <- NULL

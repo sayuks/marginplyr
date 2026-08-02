@@ -47,6 +47,205 @@ test_that("Parent shares preserve columns, grouping, and laziness", {
   }
 })
 
+test_that("dtplyr validates Parent-share source types during collection", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "y"),
+    value = 1:2
+  )
+
+  query <- summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    flag = any(value > 0),
+    flag_share = share_of_parent(flag),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_s3_class(query, "dtplyr_step")
+  error <- expect_error(
+    dplyr::collect(query),
+    "plain integer or double scalar"
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(error$parent_output, "flag_share")
+  expect_identical(error$source_summary, "flag")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
+  )
+})
+
+test_that("dtplyr rejects every ineligible Parent-share source type", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "y"),
+    value = 1:2,
+    stamp = as.POSIXct("2020-01-01", tz = "UTC") + 1:2
+  )
+  expressions <- list(
+    logical = rlang::expr(any(value > 0)),
+    date_time = rlang::expr(min(stamp)),
+    duration = rlang::expr(difftime(max(stamp), min(stamp), units = "secs")),
+    character = rlang::expr(paste(value, collapse = "")),
+    factor = rlang::expr(factor("level")),
+    list = rlang::expr(list(sum(value)))
+  )
+
+  for (semantic_type in names(expressions)) {
+    query <- rlang::inject(summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      source = !!expressions[[semantic_type]],
+      share = share_of_parent(source),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ))
+
+    expect_s3_class(query, "dtplyr_step")
+    error <- expect_error(
+      dplyr::collect(query),
+      "plain integer or double scalar",
+      info = semantic_type
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(error$parent_output, "share", info = semantic_type)
+    expect_identical(error$source_summary, "source", info = semantic_type)
+    expect_identical(
+      rlang::call_name(conditionCall(error)),
+      "summarize_with_margins",
+      info = semantic_type
+    )
+  }
+})
+
+test_that("dtplyr rejects non-scalar Parent-share sources on collection", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3
+  )
+  expressions <- list(
+    zero = rlang::expr(numeric()),
+    multiple = rlang::expr(range(value))
+  )
+
+  for (cardinality in names(expressions)) {
+    query <- rlang::inject(summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      source = !!expressions[[cardinality]],
+      share = share_of_parent(source),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ))
+
+    expect_s3_class(query, "dtplyr_step")
+    error <- expect_error(
+      dplyr::collect(query),
+      "exactly one value per grouping row",
+      info = cardinality
+    )
+    expect_s3_class(
+      error,
+      "marginplyr_parent_cardinality_error"
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(error$parent_output, "share", info = cardinality)
+    expect_identical(error$source_summary, "source", info = cardinality)
+    expect_identical(
+      rlang::call_name(conditionCall(error)),
+      "summarize_with_margins",
+      info = cardinality
+    )
+  }
+})
+
+test_that("dtplyr integer and double Parent shares match local results", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    integer_value = 1:3,
+    double_value = c(0.5, 1.5, 4)
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      integer_total = sum(integer_value),
+      double_mean = mean(double_value),
+      integer_share = share_of_parent(integer_total),
+      double_share = share_of_parent(double_mean),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ) |>
+      dplyr::arrange(group)
+  }
+
+  expected <- summarize(data)
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  result <- dplyr::collect(query)
+
+  expect_equal(as.data.frame(result), as.data.frame(expected))
+  expect_type(result$integer_total, "integer")
+  expect_type(result$double_mean, "double")
+  expect_type(result$integer_share, "double")
+  expect_type(result$double_share, "double")
+})
+
+test_that("dtplyr validates each referenced source expanded by across", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3
+  )
+
+  query <- summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    dplyr::across(
+      value,
+      list(total = sum, flag = ~any(.x > 0))
+    ),
+    total_share = share_of_parent(value_total),
+    flag_share = share_of_parent(value_flag),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_s3_class(query, "dtplyr_step")
+  error <- expect_error(
+    dplyr::collect(query),
+    "plain integer or double scalar"
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(error$parent_output, "flag_share")
+  expect_identical(error$source_summary, "value_flag")
+})
+
+test_that("dtplyr Parent validation preserves ordinary across arguments", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = c(1, NA, 3)
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      dplyr::across(value, sum, na.rm = TRUE, .names = "total"),
+      share = share_of_parent(total),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ) |>
+      dplyr::arrange(group)
+  }
+
+  expected <- suppressWarnings(summarize(data))
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  expect_equal(
+    as.data.frame(dplyr::collect(query)),
+    as.data.frame(expected)
+  )
+})
+
 test_that("dtplyr and Arrow batch Parent shares with missing-safe matching", {
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "a", "a"),
@@ -102,6 +301,45 @@ test_that("dtplyr and Arrow batch Parent shares with missing-safe matching", {
 parent_sql_count <- function(sql, pattern) {
   lengths(gregexpr(pattern, sql, fixed = TRUE))
 }
+
+test_that("dtplyr batches validated summaries and parent mapping", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "y"),
+    revenue = c(1, 3),
+    units = 1:2
+  )
+  one <- summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  many <- summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    revenue = sum(revenue),
+    units = sum(units),
+    revenue_share = share_of_parent(revenue),
+    units_share = share_of_parent(units),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  one_call <- paste(capture.output(dplyr::show_query(one)), collapse = "\n")
+  many_call <- paste(capture.output(dplyr::show_query(many)), collapse = "\n")
+
+  expect_identical(
+    parent_sql_count(
+      many_call,
+      "check_parent_scalar(sum(revenue)"
+    ),
+    parent_sql_count(
+      one_call,
+      "check_parent_scalar(sum(revenue)"
+    )
+  )
+  expect_identical(parent_sql_count(many_call, "allow.cartesian = TRUE"), 1L)
+})
 
 parent_lazy_probe_capture <- new.env(parent = emptyenv())
 

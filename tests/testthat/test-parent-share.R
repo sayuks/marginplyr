@@ -1461,4 +1461,21 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
   expect_identical(parent_preflight_capture$n, 1L)
   result <- dplyr::collect(query)
   expect_setequal(result$share, c(1, 1))
+
+  parent_preflight_capture$n <- 0L
+  invalid <- summarize_with_margins(
+    source,
+    total = range(value),
+    share = share_of_parent(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  expect_s3_class(invalid, "dtplyr_step")
+  expect_identical(parent_preflight_capture$n, 1L)
+  error <- expect_error(
+    dplyr::collect(invalid),
+    "exactly one value per grouping row"
+  )
+  expect_s3_class(error, "marginplyr_parent_cardinality_error")
+  expect_identical(parent_preflight_capture$n, 1L)
 })

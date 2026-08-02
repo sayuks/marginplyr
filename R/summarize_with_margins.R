@@ -500,7 +500,8 @@ execute_margin_summary <- function(operation, dots) {
         data_vars = operation$data_vars,
         plan = plan,
         backend_kind = operation$backend$kind,
-        set_id_name = operation$set_id_name
+        set_id_name = operation$set_id_name,
+        call = operation$call
       )
       dots <- summary_plan$dots
       summary_selection_proxy <- dplyr::select(
