@@ -35,8 +35,13 @@ jobs:
         run: roxygen2::roxygenise()
         shell: Rscript {0}
 
-      # The committed help pages must be what the roxygen comments produce.
-      # A diff here means `man/` was edited by hand or left stale; regenerate
-      # it with `roxygen2::roxygenise()` and commit the result.
-      - name: Check man/ is up to date
-        run: git diff --exit-code man/
+      # The committed help pages and NAMESPACE must be what the roxygen
+      # comments produce. A diff here means one of them was edited by hand or
+      # left stale; regenerate with `roxygen2::roxygenise()` and commit that.
+      #
+      # NAMESPACE is included because a forgotten regeneration after adding
+      # `@export` is otherwise silent: `devtools::test()` loads the package
+      # with `export_all = TRUE`, so the missing export never fails a test,
+      # and `R CMD check` only rejects exports of objects that do not exist.
+      - name: Check man/ and NAMESPACE are up to date
+        run: git diff --exit-code man/ NAMESPACE
