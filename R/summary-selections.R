@@ -69,7 +69,8 @@ plan_summary_expressions <- function(dots,
     dots,
     selection_proxy = selection_proxy,
     plan = plan,
-    set_id_name = set_id_name
+    set_id_name = set_id_name,
+    validate_cardinality = identical(backend_kind, "local")
   )
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
@@ -78,6 +79,13 @@ plan_summary_expressions <- function(dots,
     group_vars = group_vars,
     normalize_across_names = identical(backend_kind, "dtplyr")
   )
+  if (length(summary_plan$cardinality) > 0L) {
+    summary_plan$dots <- wrap_parent_sources( # nolint: object_usage_linter
+      summary_plan$dots,
+      cardinality = summary_plan$cardinality
+    )
+  }
+  summary_plan$cardinality <- NULL
   summary_plan
 }
 

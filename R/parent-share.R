@@ -434,11 +434,12 @@
 #'   .grouping = rollup(region, store)
 #' ))
 share_of_parent <- function(x) {
-  stop(
-    "`share_of_parent()` can only be used inside ",
-    "`summarize_with_margins()` with a `rollup()`. To derive a value from ",
-    "an existing Parent share, use a following `dplyr::mutate()`.",
-    call. = FALSE
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      "`share_of_parent()` can only be used inside ",
+      "`summarize_with_margins()` with a `rollup()`. To derive a value from ",
+      "an existing Parent share, use a following `dplyr::mutate()`."
+    )
   )
 }
 
@@ -466,10 +467,13 @@ preflight_parent_shares <- function(dots) {
       next
     }
     if (contains_parent_share(expr)) {
-      stop(
-        "`share_of_parent()` must be the complete right-hand side of a ",
-        "named summary, or the direct `.fns` argument of `across()`.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "`share_of_parent()` must be the complete right-hand side of a ",
+          "named summary, or the direct `.fns` argument of `across()`. ",
+          "Create the Parent share as its own named summary, then use a ",
+          "following `dplyr::mutate()` for derived values."
+        )
       )
     }
   }
@@ -480,11 +484,13 @@ preflight_parent_shares <- function(dots) {
 validate_parent_share_grouping <- function(grouping_spec) {
   kind <- if (is.null(grouping_spec)) NULL else grouping_spec$type
   if (!identical(kind, "rollup")) {
-    stop(
-      "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
-      "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
-      "specifications do not define one unambiguous parent.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
+        "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
+        "specifications do not define one unambiguous parent. Rewrite ",
+        "`.grouping` as one `rollup()` or omit the Parent share."
+      )
     )
   }
   invisible(NULL)
@@ -493,7 +499,8 @@ validate_parent_share_grouping <- function(grouping_spec) {
 plan_parent_share_expressions <- function(dots,
                                           selection_proxy,
                                           plan,
-                                          set_id_name) {
+                                          set_id_name,
+                                          validate_cardinality = FALSE) {
   stopifnot(is.list(dots))
   stopifnot(inherits(plan, "margin_grouping_plan"))
   dot_names <- names(dots)
@@ -604,10 +611,39 @@ plan_parent_share_expressions <- function(dots,
     check_parent_grouping_kind(plan)
   }
 
+  cardinality <- if (isTRUE(validate_cardinality)) {
+    parent_cardinality_records(analyses, requests)
+  } else {
+    list()
+  }
+
   keep <- !vapply(planned_dots, is.null, logical(1))
+  kept_dots <- planned_dots[keep]
+  widths <- vapply(
+    kept_dots,
+    function(dot) {
+      if (inherits(dot, "marginplyr_parent_placeholders")) {
+        length(dot)
+      } else {
+        1L
+      }
+    },
+    integer(1)
+  )
+  flattened_positions <- cumsum(c(
+    1L,
+    utils::head(widths, -1L)
+  ))
+  names(flattened_positions) <- as.character(which(keep))
+  for (i in seq_along(cardinality)) {
+    original_position <- as.character(cardinality[[i]]$position)
+    cardinality[[i]]$position <- unname(
+      flattened_positions[[original_position]]
+    )
+  }
   planned_dots <- unlist(
     lapply(
-      planned_dots[keep],
+      kept_dots,
       function(dot) {
         if (inherits(dot, "marginplyr_parent_placeholders")) {
           unclass(dot)
@@ -618,7 +654,122 @@ plan_parent_share_expressions <- function(dots,
     ),
     recursive = FALSE
   )
-  list(dots = planned_dots, requests = requests)
+  list(
+    dots = planned_dots,
+    requests = requests,
+    cardinality = cardinality
+  )
+}
+
+parent_cardinality_records <- function(analyses, requests) {
+  pairs <- parent_share_pairs(requests)
+  records <- unlist(
+    lapply(analyses, `[[`, "records"),
+    recursive = FALSE
+  )
+  cardinality <- list()
+  seen_sources <- character()
+
+  for (pair in pairs) {
+    if (pair$source %in% seen_sources) {
+      next
+    }
+    source_records <- Filter(
+      function(record) identical(record$name, pair$source),
+      records
+    )
+    if (length(source_records) != 1L) {
+      next
+    }
+    cardinality <- c(cardinality, list(list(
+      position = source_records[[1L]]$position,
+      parent_output = pair$output,
+      source_summary = pair$source
+    )))
+    seen_sources <- c(seen_sources, pair$source)
+  }
+  cardinality
+}
+
+wrap_parent_sources <- function(dots, cardinality) {
+  positions <- unique(vapply(
+    cardinality,
+    `[[`,
+    integer(1),
+    "position"
+  ))
+
+  for (position in positions) {
+    checks <- Filter(
+      function(record) identical(record$position, position),
+      cardinality
+    )
+    quo <- dots[[position]]
+    expr <- rlang::quo_get_expr(quo)
+    if (is_across_call(expr)) {
+      parent_outputs <- vapply(
+        checks,
+        `[[`,
+        character(1),
+        "parent_output"
+      )
+      names(parent_outputs) <- vapply(
+        checks,
+        `[[`,
+        character(1),
+        "source_summary"
+      )
+      wrapped <- rlang::call2(
+        check_parent_across,
+        expr,
+        parent_outputs = parent_outputs
+      )
+    } else {
+      check <- checks[[1L]]
+      wrapped <- rlang::call2(
+        check_parent_scalar,
+        expr,
+        parent_output = check$parent_output,
+        source_summary = check$source_summary
+      )
+    }
+    dots[[position]] <- rlang::new_quosure(
+      wrapped,
+      env = rlang::quo_get_env(quo)
+    )
+  }
+  dots
+}
+
+check_parent_across <- function(value, parent_outputs) {
+  for (source_summary in names(parent_outputs)) {
+    check_parent_scalar(
+      value[[source_summary]],
+      parent_output = parent_outputs[[source_summary]],
+      source_summary = source_summary
+    )
+  }
+  value
+}
+
+check_parent_scalar <- function(value,
+                                parent_output,
+                                source_summary) {
+  if (length(value) != 1L) {
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Parent share `", parent_output, "` requires source summary `",
+        source_summary, "` to return exactly one value per grouping row. ",
+        "Define `", source_summary, "` as one scalar summary; for multiple ",
+        "statistics, create separate named summaries and a Parent share for ",
+        "each one."
+      ),
+      class = "marginplyr_parent_cardinality_error",
+      parent_output = parent_output,
+      source_summary = source_summary
+    )
+  }
+  value
 }
 
 analyze_ordinary_summaries <- function(dots, selection_proxy) {
@@ -710,18 +861,21 @@ plan_direct_parent_share <- function(expr,
 
 validate_parent_direct_syntax <- function(expr, output_name) {
   if (!nzchar(output_name)) {
-    stop(
-      "A direct `share_of_parent()` summary must have an explicit output ",
-      "name.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "A direct `share_of_parent()` summary must have an explicit output ",
+        "name. Rewrite it as `name = share_of_parent(source)`."
+      )
     )
   }
   args <- rlang::call_args(expr)
   if (length(args) != 1L || !rlang::is_symbol(args[[1L]])) {
-    stop(
-      "`", output_name, " = share_of_parent(...)` requires exactly one ",
-      "bare name of a preceding ordinary summary.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`", output_name, " = share_of_parent(...)` requires exactly one ",
+        "bare name of a preceding ordinary summary. Define the scalar ",
+        "summary first, then pass its name directly to `share_of_parent()`."
+      )
     )
   }
   args
@@ -1391,37 +1545,6 @@ parent_set_ids <- function(plan) {
     }
   }
   result
-}
-
-parent_cardinality_request <- function(requests, message) {
-  pairs <- unlist(
-    lapply(
-      requests,
-      function(request) {
-        Map(
-          list,
-          output = request$outputs,
-          source = request$sources
-        )
-      }
-    ),
-    recursive = FALSE
-  )
-  source_matches <- vapply(
-    pairs,
-    function(pair) {
-      grepl(
-        paste0("`", pair$source, "` must be size"),
-        message,
-        fixed = TRUE
-      )
-    },
-    logical(1)
-  )
-  if (any(source_matches)) {
-    return(pairs[[which(source_matches)[[1L]]]])
-  }
-  pairs[[1L]]
 }
 
 parent_share_placeholder <- function(outputs) {

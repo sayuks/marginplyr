@@ -122,13 +122,14 @@ validate_margin_label <- function(.data,
     )
     na_level_cols <- vapply(na_level_cols, function(x) x$col, character(1))
     if (length(na_level_cols) > 0L) {
-      stop(
-        "`NA_character_` is already a factor level in grouping column",
-        if (length(na_level_cols) == 1L) " " else "s ",
-        paste0("`", na_level_cols, "`", collapse = ", "),
-        ". Use `NULL` for a typed-missing Margin label while preserving the ",
-        "NA level.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "`NA_character_` is already a factor level in grouping column",
+          if (length(na_level_cols) == 1L) " " else "s ",
+          paste0("`", na_level_cols, "`", collapse = ", "),
+          ". Use `NULL` for a typed-missing Margin label while preserving ",
+          "the NA level."
+        )
       )
     }
   }
@@ -221,15 +222,16 @@ abort_margin_label_collision <- function(margin_labels, found) {
   )
   one_label <- length(unique(label_values)) == 1L
   label <- if (one_label) unique(label_values) else "Margin labels"
-  stop(
-    label,
-    if (one_label) " is" else " are",
-    " already present in grouping column",
-    if (sum(found) == 1L) " " else "s ",
-    bad_cols,
-    ". Choose another `.margin_label` or set ",
-    "`.check_margin_label = FALSE`.",
-    call. = FALSE
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      label,
+      if (one_label) " is" else " are",
+      " already present in grouping column",
+      if (sum(found) == 1L) " " else "s ",
+      bad_cols,
+      ". Choose another `.margin_label` or set ",
+      "`.check_margin_label = FALSE`."
+    )
   )
 }
 

@@ -238,9 +238,14 @@ test_that(paste0(
 test_that("share_of_parent reports its required context", {
   data <- data.frame(group = "x", value = 1)
 
-  expect_error(
+  context_error <- expect_error(
     share_of_parent(value),
     "only be used inside `summarize_with_margins\\(\\)`"
+  )
+  expect_s3_class(context_error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(context_error)),
+    "share_of_parent"
   )
   expect_error(
     dplyr::summarise(data, share = share_of_parent(value)),
@@ -262,7 +267,7 @@ test_that("Parent shares require one pure rollup", {
   )
 
   for (spec in unsupported) {
-    expect_error(
+    error <- expect_error(
       summarize_with_margins(
         data,
         total = sum(value),
@@ -271,6 +276,7 @@ test_that("Parent shares require one pure rollup", {
       ),
       "requires `.grouping` to be one pure `rollup\\(\\)`"
     )
+    expect_s3_class(error, "marginplyr_error")
   }
 })
 
@@ -286,8 +292,21 @@ test_that("direct Parent-share syntax and dependency errors are targeted", {
     ),
     "must have an explicit output name"
   )
+  syntax_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(sum(value)),
+      .grouping = rollup(group)
+    ),
+    "requires exactly one bare name"
+  )
+  expect_s3_class(syntax_error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(syntax_error)),
+    "summarize_with_margins"
+  )
   invalid_arguments <- list(
-    quote(share_of_parent(sum(value))),
     quote(share_of_parent("total")),
     quote(share_of_parent(total, value))
   )
@@ -557,6 +576,17 @@ test_that("Parent-share sources are numeric scalar summaries", {
     ),
     "exactly one value per grouping row"
   )
+  expect_s3_class(
+    cardinality_error,
+    "marginplyr_parent_cardinality_error"
+  )
+  expect_s3_class(cardinality_error, "marginplyr_error")
+  expect_identical(cardinality_error$parent_output, "share")
+  expect_identical(cardinality_error$source_summary, "total")
+  expect_identical(
+    rlang::call_name(conditionCall(cardinality_error)),
+    "summarize_with_margins"
+  )
   expect_match(conditionMessage(cardinality_error), "Parent share `share`")
   expect_match(conditionMessage(cardinality_error), "source summary `total`")
   expect_error(
@@ -607,6 +637,122 @@ test_that("cardinality errors identify the affected Parent-share request", {
 
   expect_match(conditionMessage(error), "Parent share `bad_share`")
   expect_match(conditionMessage(error), "source summary `bad`")
+  expect_s3_class(error, "marginplyr_parent_cardinality_error")
+  expect_identical(error$parent_output, "bad_share")
+  expect_identical(error$source_summary, "bad")
+
+  across_error <- expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(
+        value,
+        ~c(min(.x), max(.x)),
+        .names = "total"
+      ),
+      share = share_of_parent(total),
+      .grouping = rollup(group)
+    ),
+    "exactly one value per grouping row"
+  )
+  expect_s3_class(
+    across_error,
+    "marginplyr_parent_cardinality_error"
+  )
+  expect_identical(across_error$parent_output, "share")
+  expect_identical(across_error$source_summary, "total")
+
+  shifted_error <- expect_error(
+    summarize_with_margins(
+      data,
+      first = sum(value),
+      second = mean(value),
+      dplyr::across(
+        c(first, second),
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      bad = c(min(value), max(value)),
+      bad_share = share_of_parent(bad),
+      .grouping = rollup(group)
+    ),
+    "exactly one value per grouping row"
+  )
+  expect_s3_class(
+    shifted_error,
+    "marginplyr_parent_cardinality_error"
+  )
+  expect_identical(shifted_error$parent_output, "bad_share")
+  expect_identical(shifted_error$source_summary, "bad")
+})
+
+test_that("Parent-share execution preserves user-expression conditions", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  user_summary <- function(x) {
+    rlang::abort(
+      "Can't recycle this user-defined result.",
+      class = "marginplyr_test_user_error",
+      provenance = "user summary"
+    )
+  }
+
+  baseline <- expect_error(
+    dplyr::summarise(data, total = user_summary(value))
+  )
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = user_summary(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group)
+    )
+  )
+
+  expect_identical(class(error), class(baseline))
+  expect_identical(class(error$parent), class(baseline$parent))
+  expect_identical(error$parent$provenance, "user summary")
+  expect_identical(
+    rlang::call_name(conditionCall(error$parent)),
+    "user_summary"
+  )
+  expect_false(inherits(error, "marginplyr_error"))
+
+  callless_summary <- function(x) {
+    stop("Can't recycle this base error.", call. = FALSE)
+  }
+  callless_baseline <- expect_error(
+    dplyr::summarise(data, total = callless_summary(value))
+  )
+  callless_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = callless_summary(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group)
+    )
+  )
+  expect_identical(class(callless_error), class(callless_baseline))
+  expect_identical(
+    class(callless_error$parent),
+    class(callless_baseline$parent)
+  )
+  expect_identical(
+    conditionCall(callless_error$parent),
+    conditionCall(callless_baseline$parent)
+  )
+
+  callless_grouping <- function() {
+    stop("User grouping failed.", call. = FALSE)
+  }
+  grouping_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = callless_grouping()
+    )
+  )
+  expect_null(conditionCall(grouping_error))
+  expect_false(inherits(grouping_error, "marginplyr_error"))
 })
 
 test_that(paste0(

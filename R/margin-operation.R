@@ -35,13 +35,45 @@ check_margin_operation <- function(operation) {
 }
 
 with_margin_error_call <- function(expr, call) {
+  legacy_package_error <- FALSE
   tryCatch(
-    expr,
+    withCallingHandlers(
+      expr,
+      error = function(cnd) {
+        if (!inherits(cnd, "marginplyr_error")) {
+          legacy_package_error <<- error_signaled_by_marginplyr()
+        }
+      }
+    ),
     error = function(cnd) {
-      cnd$call <- call
+      if (
+        inherits(cnd, "marginplyr_error") ||
+          isTRUE(legacy_package_error)
+      ) {
+        cnd$call <- call
+      }
       stop(cnd)
     }
   )
+}
+
+error_signaled_by_marginplyr <- function() {
+  frames <- sys.frames()
+  # Exclude this helper and the calling handler in with_margin_error_call().
+  candidates <- utils::head(seq_along(frames), -2L)
+
+  for (i in rev(candidates)) {
+    top <- topenv(frames[[i]])
+    if (!isNamespace(top)) {
+      return(FALSE)
+    }
+    namespace <- getNamespaceName(top)
+    if (namespace %in% c("base", "rlang")) {
+      next
+    }
+    return(identical(namespace, "marginplyr"))
+  }
+  FALSE
 }
 
 normalize_margin_options <- function(.margin_label,

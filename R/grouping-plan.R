@@ -3,11 +3,13 @@ validate_grouping_spec_early <- function(grouping_spec) {
     return(invisible(NULL))
   }
   if (!inherits(grouping_spec, "margin_grouping_spec")) {
-    stop(
-      "`.grouping` must be created with ",
-      format_grouping_constructors(),
-      ".",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`.grouping` must be created with ",
+        format_grouping_constructors(),
+        "."
+      ),
+      class = "simpleError"
     )
   }
 
@@ -31,7 +33,10 @@ validate_grouping_spec_early <- function(grouping_spec) {
 }
 
 abort_invalid_grouping_spec <- function() {
-  stop("Invalid grouping specification.", call. = FALSE)
+  abort_marginplyr( # nolint: object_usage_linter
+    "Invalid grouping specification.",
+    class = "simpleError"
+  )
 }
 
 normalize_grouping_input <- function(.data, by_quo) {
@@ -181,7 +186,7 @@ allow_nested_grouping <- function(parent, nested) {
 
 validate_nested_grouping_units <- function(parent, nested) {
   if (!identical(nested$type, "set")) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       sprintf(
         paste0(
           "`%s()` only accepts columns or `grouping_set()` ",
@@ -189,7 +194,7 @@ validate_nested_grouping_units <- function(parent, nested) {
         ),
         parent$type
       ),
-      call. = FALSE
+      class = "simpleError"
     )
   }
   if (length(nested$args) == 0L) {
@@ -624,9 +629,11 @@ resolve_grouping_selection <- function(arg, data_proxy) {
   selected <- tryCatch(
     tidyselect::eval_select(arg, data = data_proxy, strict = TRUE),
     error = function(cnd) {
-      stop(
-        "Invalid grouping column selection: ", conditionMessage(cnd),
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Invalid grouping column selection: ",
+          conditionMessage(cnd)
+        )
       )
     }
   )

@@ -592,24 +592,9 @@ execute_margin_summary <- function(operation, dots) {
           }
         },
         error = function(cnd) {
-          if (
-            has_parent_shares &&
-              grepl(
-                "must be size|Can't recycle",
-                conditionMessage(cnd)
-              )
-          ) {
-            message <- conditionMessage(cnd)
-            request <- parent_cardinality_request( # nolint: object_usage_linter
-              summary_plan$requests,
-              message
-            )
-            stop(
-              "Parent share `", request$output,
-              "` requires source summary `", request$source,
-              "`, which must return exactly one value per grouping row.",
-              call. = FALSE
-            )
+          parent <- cnd$parent
+          if (has_parent_shares && inherits(parent, "marginplyr_error")) {
+            stop(parent)
           }
           stop(cnd)
         }
