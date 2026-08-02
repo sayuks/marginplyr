@@ -39,11 +39,8 @@ test_that("nest rejects grouping before typed metadata acquisition", {
   )
 
   expect_identical(nest_proxy_capture$n, 0L)
-  expect_match(
-    deparse1(conditionCall(error)),
-    "nest_with_margins",
-    fixed = TRUE
-  )
+  expect_s3_class(error, "vctrs_error_subscript_oob")
+  expect_false(inherits(error, "marginplyr_error"))
 
   nest_proxy_capture$n <- 0L
   expect_error(

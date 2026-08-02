@@ -123,6 +123,46 @@ test_that("grouping grammar errors retain each public verb call", {
   }
 })
 
+test_that("Grouping plan errors use the package condition seam", {
+  data <- data.frame(a = c("x", "y"), value = 1:2)
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = grouping_sets()
+    ),
+    "requires at least one set"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "Use `grouping_set\\(\\)`")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
+  )
+})
+
+test_that("Grouping tidyselect conditions retain their provenance", {
+  data <- data.frame(a = c("x", "y"), value = 1:2)
+  selection <- rlang::quo(unknown)
+  baseline <- expect_error(
+    tidyselect::eval_select(selection, data = data)
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = rollup(unknown)
+    )
+  )
+
+  expect_identical(class(error), class(baseline))
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_match(conditionMessage(error), "Column `unknown` doesn't exist")
+})
+
 test_that("fixed .by columns are never replaced", {
   data <- data.frame(
     year = c(2024L, 2024L, 2025L),
@@ -335,17 +375,24 @@ test_that("factor and ordered factor columns are reconstructed", {
 })
 
 test_that("grouping helpers validate their context and columns", {
-  expect_error(grouping_bit(a), "only be used inside")
-  expect_error(grouping_id(a), "only be used inside")
+  bit_context_error <- expect_error(grouping_bit(a), "only be used inside")
+  id_context_error <- expect_error(grouping_id(a), "only be used inside")
+  expect_s3_class(bit_context_error, "marginplyr_error")
+  expect_s3_class(id_context_error, "marginplyr_error")
 
   data <- data.frame(a = 1, b = 1)
-  expect_error(
+  column_error <- expect_error(
     summarize_with_margins(
       data,
       bad = grouping_bit(b),
       .grouping = rollup(a)
     ),
     "not part of"
+  )
+  expect_s3_class(column_error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(column_error)),
+    "summarize_with_margins"
   )
   expect_error(
     summarize_with_margins(

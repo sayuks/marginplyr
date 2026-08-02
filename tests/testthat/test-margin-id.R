@@ -28,15 +28,27 @@ test_that("all Margin verbs validate .id consistently", {
     nest_by = function(id) nest_by_with_margins(data, .id = id)
   )
   invalid_ids <- list(1, NA_character_, "", c("first", "second"))
+  public_calls <- c(
+    summary = "summarize_with_margins",
+    expand = "expand_with_margins",
+    nest = "nest_with_margins",
+    nest_by = "nest_by_with_margins"
+  )
 
-  for (operation in operations) {
+  for (operation_name in names(operations)) {
+    operation <- operations[[operation_name]]
     for (id in invalid_ids) {
-      expect_error(
+      error <- expect_error(
         operation(id),
         paste0(
           "`\\.id` must be `NULL` or one non-missing, non-empty ",
           "character string"
         )
+      )
+      expect_s3_class(error, "marginplyr_error")
+      expect_identical(
+        rlang::call_name(conditionCall(error)),
+        public_calls[[operation_name]]
       )
     }
   }

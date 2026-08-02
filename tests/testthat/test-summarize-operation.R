@@ -82,16 +82,68 @@ test_that("invalid summary selections precede label name coverage errors", {
   )
 })
 
-test_that("summary options are validated before context helpers", {
-  expect_error(
-    summarize_with_margins(
-      data.frame(group = "x"),
-      id = dplyr::cur_group_id(),
-      .grouping = rollup(group),
-      .check_margin_label = 1
+test_that("shared lifecycle options use package conditions", {
+  data <- data.frame(group = "x")
+  cases <- list(
+    check_margin_label = list(
+      expr = quote(summarize_with_margins(
+        data,
+        id = dplyr::cur_group_id(),
+        .grouping = rollup(group),
+        .check_margin_label = 1
+      )),
+      message = "`\\.check_margin_label` must be a logical scalar"
     ),
-    "`\\.check_margin_label` must be a logical scalar"
+    margin_label_position = list(
+      expr = quote(summarize_with_margins(
+        data,
+        n = dplyr::n(),
+        .margin_label_position = "middle"
+      )),
+      message = "`\\.margin_label_position` must be one of"
+    ),
+    duplicates = list(
+      expr = quote(summarize_with_margins(
+        data,
+        n = dplyr::n(),
+        .duplicates = "merge"
+      )),
+      message = "`\\.duplicates` must be one of"
+    )
   )
+
+  for (case in cases) {
+    error <- expect_error(eval(case$expr), case$message)
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      rlang::call_name(conditionCall(error)),
+      "summarize_with_margins"
+    )
+  }
+})
+
+test_that("shared lifecycle options preserve user-expression conditions", {
+  data <- data.frame(group = "x")
+  user_option <- function() {
+    rlang::abort(
+      "User option evaluation failed.",
+      class = "marginplyr_test_user_option_error",
+      provenance = "user option"
+    )
+  }
+  baseline <- expect_error(user_option())
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .duplicates = user_option()
+    )
+  )
+
+  expect_identical(class(error), class(baseline))
+  expect_identical(error$provenance, "user option")
+  expect_false(inherits(error, "marginplyr_error"))
 })
 
 test_that("summary rejects grouping before typed metadata acquisition", {
@@ -111,11 +163,8 @@ test_that("summary rejects grouping before typed metadata acquisition", {
   )
 
   expect_identical(summary_proxy_capture$n, 0L)
-  expect_match(
-    deparse1(conditionCall(error)),
-    "summarize_with_margins",
-    fixed = TRUE
-  )
+  expect_s3_class(error, "vctrs_error_subscript_oob")
+  expect_false(inherits(error, "marginplyr_error"))
 })
 
 test_that("removed .groups is rejected before typed metadata acquisition", {

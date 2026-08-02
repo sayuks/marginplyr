@@ -62,18 +62,18 @@
 #'   .margin_label = NULL
 #' )
 grouping_bit <- function(x) {
-  stop(
+  abort_marginplyr( # nolint: object_usage_linter
     "`grouping_bit()` can only be used inside `summarize_with_margins()`.",
-    call. = FALSE
+    class = "simpleError"
   )
 }
 
 #' @rdname grouping_bit
 #' @export
 grouping_id <- function(...) {
-  stop(
+  abort_marginplyr( # nolint: object_usage_linter
     "`grouping_id()` can only be used inside `summarize_with_margins()`.",
-    call. = FALSE
+    class = "simpleError"
   )
 }
 
@@ -160,41 +160,50 @@ grouping_helper_name <- function(expr) {
 
 grouping_helper_vars <- function(args, helper, plan) {
   if (identical(helper, "grouping_bit") && length(args) != 1L) {
-    stop("`grouping_bit()` requires exactly one column.", call. = FALSE)
+    abort_marginplyr( # nolint: object_usage_linter
+      "`grouping_bit()` requires exactly one column.",
+      class = "simpleError"
+    )
   }
   if (identical(helper, "grouping_id") && length(args) == 0L) {
-    stop("`grouping_id()` requires at least one column.", call. = FALSE)
+    abort_marginplyr( # nolint: object_usage_linter
+      "`grouping_id()` requires at least one column.",
+      class = "simpleError"
+    )
   }
 
   is_symbol <- vapply(args, is.symbol, logical(1))
   if (!all(is_symbol)) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       sprintf("`%s()` only accepts bare grouping columns.", helper),
-      call. = FALSE
+      class = "simpleError"
     )
   }
 
   vars <- vapply(args, as.character, character(1))
   if (anyDuplicated(vars)) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       sprintf("`%s()` does not accept duplicate columns.", helper),
-      call. = FALSE
+      class = "simpleError"
     )
   }
   if (identical(helper, "grouping_id") && length(vars) > 31L) {
-    stop("`grouping_id()` supports at most 31 columns.", call. = FALSE)
+    abort_marginplyr( # nolint: object_usage_linter
+      "`grouping_id()` supports at most 31 columns.",
+      class = "simpleError"
+    )
   }
   allowed <- unique(c(plan$by, plan$dimensions))
   unknown <- setdiff(vars, allowed)
   if (length(unknown) > 0L) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       sprintf(
         "Column%s %s %s not part of `.by` or `.grouping`.",
         if (length(unknown) == 1L) "" else "s",
         paste0("`", unknown, "`", collapse = ", "),
         if (length(unknown) == 1L) "is" else "are"
       ),
-      call. = FALSE
+      class = "simpleError"
     )
   }
 

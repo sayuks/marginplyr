@@ -8,10 +8,7 @@ grouping_backend <- function(.data) {
   is_sql <- inherits(.data, "tbl_lazy") && !is_dtplyr && !is_arrow
 
   dialect <- if (is_sql) {
-    tryCatch(
-      dbplyr::sql_dialect(dbplyr::remote_con(.data)),
-      error = function(cnd) NULL
-    )
+    dbplyr::sql_dialect(dbplyr::remote_con(.data))
   } else {
     NULL
   }

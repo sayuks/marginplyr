@@ -12,6 +12,40 @@ bad_query_sql_build <- function(op, con, ...) {
   dbplyr::sql("SELECT 1")
 }
 
+backend_dialect_error <- function(con) {
+  rlang::abort(
+    "Backend dialect classification failed.",
+    class = "marginplyr_test_backend_error",
+    provenance = "backend dialect"
+  )
+}
+
+test_that("backend classification preserves backend conditions", {
+  registerS3method(
+    "sql_dialect",
+    "marginplyr_backend_error_connection",
+    backend_dialect_error,
+    envir = asNamespace("dbplyr")
+  )
+  source <- dbplyr::tbl_lazy(
+    data.frame(group = "x"),
+    con = dbplyr::simulate_sqlite()
+  )
+  class(source$con) <- c(
+    "marginplyr_backend_error_connection",
+    class(source$con)
+  )
+
+  error <- expect_error(
+    inspect_grouping(source, .grouping = rollup(group)),
+    "Backend dialect classification failed"
+  )
+
+  expect_s3_class(error, "marginplyr_test_backend_error")
+  expect_identical(error$provenance, "backend dialect")
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
 selection_proxy_capture <- new.env(parent = emptyenv())
 
 proxy_counter_head <- function(x, ...) {

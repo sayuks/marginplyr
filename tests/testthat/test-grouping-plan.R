@@ -248,6 +248,6 @@ test_that("invalid or ambiguous specifications fail early", {
   )
   expect_error(
     compile_grouping_spec(rollup(floor(a)), "a"),
-    "Invalid grouping column selection"
+    "object 'a' not found"
   )
 })

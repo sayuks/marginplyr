@@ -76,25 +76,55 @@ error_signaled_by_marginplyr <- function() {
   FALSE
 }
 
+match_margin_choice <- function(value, choices, arg_name) {
+  call <- rlang::caller_call()
+  force(value)
+  tryCatch(
+    match.arg(value, choices),
+    error = function(...) {
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "`", arg_name, "` must be one of ",
+          paste0("\"", choices, "\"", collapse = ", "),
+          "."
+        ),
+        class = "simpleError",
+        call = call
+      )
+    }
+  )
+}
+
 normalize_margin_options <- function(.margin_label,
                                      .margin_label_position,
                                      .check_margin_label,
                                      .duplicates,
                                      .id = NULL) {
-  assert_logical_scalar(.check_margin_label)
+  if (
+    !is.logical(.check_margin_label) ||
+      length(.check_margin_label) != 1L ||
+      is.na(.check_margin_label)
+  ) {
+    abort_marginplyr( # nolint: object_usage_linter
+      "`.check_margin_label` must be a logical scalar (`TRUE` or `FALSE`).",
+      class = "simpleError"
+    )
+  }
   .id <- normalize_margin_id(.id)
 
   list(
     set_id_name = .id,
     margin_label = normalize_margin_label(.margin_label),
-    margin_label_position = match.arg(
+    margin_label_position = match_margin_choice(
       .margin_label_position,
-      choices = c("last", "first")
+      choices = c("last", "first"),
+      arg_name = ".margin_label_position"
     ),
     check_margin_label = .check_margin_label,
-    duplicates = match.arg(
+    duplicates = match_margin_choice(
       .duplicates,
-      choices = c("error", "drop", "keep")
+      choices = c("error", "drop", "keep"),
+      arg_name = ".duplicates"
     )
   )
 }
@@ -109,9 +139,9 @@ normalize_margin_id <- function(.id) {
       is.na(.id) ||
       !nzchar(.id)
   ) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       "`.id` must be `NULL` or one non-missing, non-empty character string.",
-      call. = FALSE
+      class = "simpleError"
     )
   }
   .id
@@ -119,9 +149,9 @@ normalize_margin_id <- function(.id) {
 
 check_margin_id_collision <- function(.id, names, where) {
   if (!is.null(.id) && .id %in% names) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       sprintf("`.id` (`%s`) conflicts with %s.", .id, where),
-      call. = FALSE
+      class = "simpleError"
     )
   }
   invisible(NULL)
