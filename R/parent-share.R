@@ -1132,11 +1132,17 @@ execute_parent_shares <- function(operation,
   check_margin_operation(operation) # nolint: object_usage_linter
   check_margin_summary_stage(staged_result) # nolint: object_usage_linter
   if (length(requests) == 0L) {
-    return(margin_summary_stage_result(staged_result))
+    return(margin_summary_stage_result( # nolint: object_usage_linter
+      staged_result
+    ))
   }
 
-  result <- margin_summary_stage_result(staged_result)
-  staged_set_id_name <- margin_summary_stage_set_id(staged_result)
+  result <- margin_summary_stage_result( # nolint: object_usage_linter
+    staged_result
+  )
+  staged_set_id_name <- margin_summary_stage_set_id( # nolint: object_usage_linter
+    staged_result
+  )
   adapter <- parent_share_adapter(operation$backend$kind)
   result <- adapter(
     operation,
@@ -1180,35 +1186,21 @@ execute_local_parent_shares <- function(operation,
                                         result,
                                         requests,
                                         set_id_name) {
-  plan <- operation$plan
-  check_parent_share_cardinality(
+  check_local_parent_share_types(result, requests)
+  apply_joined_parent_shares(
     result,
-    data = operation$data,
-    plan = plan,
     requests = requests,
-    set_id_name = set_id_name
+    plan = operation$plan,
+    set_id_name = set_id_name,
+    sql_join = FALSE
   )
-  parent_ids <- parent_set_ids(plan)
-  for (request in requests) {
-    for (i in seq_along(request$outputs)) {
-      result[[request$outputs[[i]]]] <- calculate_parent_share(
-        result,
-        output = request$outputs[[i]],
-        source = request$sources[[i]],
-        plan = plan,
-        parent_ids = parent_ids,
-        set_id_name = set_id_name
-      )
-    }
-  }
-  result
 }
 
 execute_dbplyr_parent_shares <- function(operation,
                                          result,
                                          requests,
                                          set_id_name) {
-  apply_lazy_parent_shares(
+  apply_joined_parent_shares(
     result,
     requests = requests,
     plan = operation$plan,
@@ -1221,7 +1213,7 @@ execute_non_sql_parent_shares <- function(operation,
                                           result,
                                           requests,
                                           set_id_name) {
-  apply_lazy_parent_shares(
+  apply_joined_parent_shares(
     result,
     requests = requests,
     plan = operation$plan,
@@ -1230,11 +1222,11 @@ execute_non_sql_parent_shares <- function(operation,
   )
 }
 
-apply_lazy_parent_shares <- function(result,
-                                     requests,
-                                     plan,
-                                     set_id_name,
-                                     sql_join) {
+apply_joined_parent_shares <- function(result,
+                                       requests,
+                                       plan,
+                                       set_id_name,
+                                       sql_join) {
   parent_ids <- parent_set_ids(plan)
   root_ids <- plan$set_ids[is.na(parent_ids)]
   pairs <- parent_share_pairs(requests)
@@ -1365,6 +1357,10 @@ apply_lazy_parent_shares <- function(result,
       character()
     }
   )
+  internal_names <- intersect(
+    internal_names,
+    get_col_names(result, dplyr::everything())
+  )
   if (length(internal_names) > 0L) {
     result <- dplyr::select(result, -dplyr::all_of(internal_names))
   }
@@ -1487,117 +1483,31 @@ add_lazy_parent_join_keys <- function(result,
   dplyr::mutate(result, !!!join_key_exprs)
 }
 
-calculate_parent_share <- function(result,
-                                   output,
-                                   source,
-                                   plan,
-                                   parent_ids,
-                                   set_id_name) {
-  values <- result[[source]]
-  if (
-    !typeof(values) %in% c("integer", "double") ||
-      is.object(values)
-  ) {
-    detected_type <- if (is.object(values)) class(values) else typeof(values)
-    stop(
-      "Parent share `", output, "` requires source summary `", source,
-      "` to be a plain integer or double scalar; detected type ",
-      paste(detected_type, collapse = "/"),
-      ". Convert it explicitly in the ordinary summary.",
-      call. = FALSE
-    )
-  }
+check_local_parent_share_types <- function(result, requests) {
+  pairs <- parent_share_pairs(requests)
+  checked_sources <- character()
 
-  shares <- rep(NA_real_, nrow(result))
-  for (set_id in plan$set_ids) {
-    rows <- which(result[[set_id_name]] == set_id)
-    if (length(rows) == 0L) {
+  for (pair in pairs) {
+    source <- pair$source
+    if (source %in% checked_sources) {
       next
     }
-    parent_id <- parent_ids[[set_id]]
-    if (is.na(parent_id)) {
-      shares[rows] <- 1
-      next
-    }
-
-    keys <- plan$sets[[parent_id]]
-    parent_rows <- which(result[[set_id_name]] == parent_id)
-    if (length(keys) == 0L) {
-      denominator <- rep(values[parent_rows[[1L]]], length(rows))
-    } else {
-      denominator_name <- new_margin_internal_names(
-        1L,
-        used_names = names(result),
-        prefix = "..marginplyr_parent_value_"
-      )
-      lookup <- result[parent_rows, keys, drop = FALSE]
-      lookup[[denominator_name]] <- values[parent_rows]
-      child <- result[rows, keys, drop = FALSE]
-      matched <- dplyr::left_join(
-        child,
-        lookup,
-        by = keys,
-        na_matches = "na"
-      )
-      denominator <- matched[[denominator_name]]
-    }
-    numerator <- values[rows]
-    invalid <- is.na(numerator) |
-      is.na(denominator) |
-      denominator == 0
-    shares[rows] <- ifelse(
-      invalid,
-      NA_real_,
-      as.double(numerator) / as.double(denominator)
-    )
-  }
-  shares
-}
-
-check_parent_share_cardinality <- function(result,
-                                           data,
-                                           plan,
-                                           requests,
-                                           set_id_name) {
-  output <- requests[[1L]]$outputs[[1L]]
-  source <- requests[[1L]]$sources[[1L]]
-  count_name <- new_margin_internal_names(
-    1L,
-    used_names = unique(c(names(data), names(result))),
-    prefix = "..marginplyr_parent_n_"
-  )
-  for (set_id in plan$set_ids) {
-    keys <- plan$sets[[set_id]]
-    rows <- result[result[[set_id_name]] == set_id, , drop = FALSE]
-    if (length(keys) == 0L) {
-      valid <- nrow(rows) == 1L
-    } else {
-      expected <- dplyr::distinct(
-        data,
-        dplyr::across(dplyr::all_of(keys))
-      )
-      actual <- dplyr::count(
-        rows,
-        dplyr::across(dplyr::all_of(keys)),
-        name = count_name
-      )
-      missing <- dplyr::anti_join(
-        expected,
-        actual,
-        by = keys,
-        na_matches = "na"
-      )
-      valid <- nrow(missing) == 0L &&
-        nrow(actual) == nrow(expected) &&
-        all(actual[[count_name]] == 1L)
-    }
-    if (!valid) {
-      stop(
-        "Parent share `", output, "` requires source summary `", source,
-        "`, which must return exactly one value per grouping row.",
-        call. = FALSE
+    values <- result[[source]]
+    if (
+      !typeof(values) %in% c("integer", "double") ||
+        is.object(values)
+    ) {
+      detected_type <- if (is.object(values)) class(values) else typeof(values)
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent share `", pair$output, "` requires source summary `", source,
+          "` to be a plain integer or double scalar; detected type ",
+          paste(detected_type, collapse = "/"),
+          ". Convert it explicitly in the ordinary summary."
+        )
       )
     }
+    checked_sources <- c(checked_sources, source)
   }
   invisible(NULL)
 }

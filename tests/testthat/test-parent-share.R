@@ -24,6 +24,72 @@ test_that("direct Parent shares use the immediate rollup parent", {
   expect_type(result$share, "double")
 })
 
+test_that("default Margin labels preserve typed grouping identity", {
+  dimensions <- list(
+    integer = c(1L, 2L),
+    double = c(1.5, 2.5),
+    logical = c(TRUE, FALSE),
+    Date = as.Date(c("2026-01-01", "2026-01-02")),
+    factor = factor(c("x", "y")),
+    character = c("x", "y")
+  )
+
+  for (dimension_type in names(dimensions)) {
+    data <- data.frame(
+      dimension = dimensions[[dimension_type]],
+      value = c(1, 3)
+    )
+    result <- summarize_with_margins(
+      data,
+      level = grouping_bit(dimension),
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(dimension)
+    )
+
+    expect_identical(nrow(result), 3L, info = dimension_type)
+    expect_setequal(result$total, c(1, 3, 4))
+    expect_setequal(result$share, c(0.25, 0.75, 1))
+    expect_type(result$share, "double")
+    expect_identical(dplyr::group_vars(result), character())
+  }
+})
+
+test_that("Parent identity separates missing keys from displayed margins", {
+  data <- data.frame(
+    fixed = c(NA_character_, NA_character_, "A", "A"),
+    group = c(NA_character_, "Total", NA_character_, "Total"),
+    ..marginplyr_parent_n_1 = c(1, 3, 2, 2),
+    check.names = FALSE
+  )
+  summarize <- function(margin_label) {
+    summarize_with_margins(
+      data,
+      level = grouping_bit(group),
+      total = sum(.data[["..marginplyr_parent_n_1"]]),
+      share = share_of_parent(total),
+      .by = fixed,
+      .grouping = rollup(group),
+      .margin_label = margin_label,
+      .check_margin_label = FALSE
+    )
+  }
+
+  displayed <- summarize("Total")
+  missing <- summarize(NULL)
+
+  expect_identical(nrow(displayed), 6L)
+  expect_identical(names(displayed), names(missing))
+  expect_identical(dplyr::group_vars(displayed), character())
+  expect_setequal(
+    displayed$share[displayed$level == 0L],
+    c(0.25, 0.75, 0.5, 0.5)
+  )
+  expect_identical(displayed$share[displayed$level == 1L], c(1, 1))
+  expect_equal(displayed$share, missing$share)
+  expect_identical(displayed$total, missing$total)
+})
+
 test_that("three-dimension Parent shares advance one rollup level", {
   data <- expand.grid(
     first = c("a", "b"),
@@ -607,6 +673,11 @@ test_that("Parent-share sources are numeric scalar summaries", {
     ),
     "plain integer or double scalar"
   )
+  expect_s3_class(type_error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(type_error)),
+    "summarize_with_margins"
+  )
   expect_match(conditionMessage(type_error), "Parent share `share`")
   expect_match(conditionMessage(type_error), "source summary `total`")
   expect_error(
@@ -921,21 +992,30 @@ test_that("Parent-share across cannot select keys or earlier Parent shares", {
   )
 })
 
-test_that("semantic numeric classes are not Parent-share sources", {
-  data <- data.frame(
-    group = c("x", "y"),
-    when = as.Date(c("2026-01-01", "2026-01-02"))
+test_that("semantic and nonnumeric classes are not Parent-share sources", {
+  data <- data.frame(group = c("x", "y"))
+  sources <- list(
+    Date = as.Date("2026-01-01"),
+    POSIXct = as.POSIXct("2026-01-01", tz = "UTC"),
+    difftime = as.difftime(1, units = "days"),
+    factor = factor("x"),
+    list = list(1)
   )
 
-  expect_error(
-    summarize_with_margins(
+  for (source_type in names(sources)) {
+    source <- sources[[source_type]]
+    error <- expect_error(summarize_with_margins(
       data,
-      first_when = min(when),
-      share = share_of_parent(first_when),
+      total = .env$source,
+      share = share_of_parent(total),
       .grouping = rollup(group)
-    ),
-    "detected type Date"
-  )
+    ))
+    expect_s3_class(error, "marginplyr_error")
+    expect_match(
+      conditionMessage(error),
+      paste0("detected type ", source_type)
+    )
+  }
 })
 
 test_that("Parent dependencies distinguish data-mask and environment lookups", {
