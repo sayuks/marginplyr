@@ -31,8 +31,8 @@ Install the development version of marginplyr from GitHub:
 install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
 
-# Used for the live DuckDB example in this guide.
-install.packages(c("DBI", "duckdb"))
+# Used for the optional backend sections of this guide.
+install.packages(c("DBI", "duckdb", "RSQLite", "dtplyr"))
 ```
 
 ```{r setup}
@@ -40,6 +40,22 @@ install.packages(c("DBI", "duckdb"))
 
 library(marginplyr)
 library(dplyr)
+```
+
+Only dplyr and dbplyr are required. The DuckDB, SQLite, and dtplyr sections
+below need optional packages, so their chunks evaluate only when those
+packages are installed. Where a package is missing the code is still shown,
+but its output is absent.
+
+```{r}
+#| include: false
+
+has_duckdb <- requireNamespace("DBI", quietly = TRUE) &&
+  requireNamespace("duckdb", quietly = TRUE)
+# dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
+# the installed driver version through RSQLite.
+has_sqlite_simulator <- requireNamespace("RSQLite", quietly = TRUE)
+has_dtplyr <- requireNamespace("dtplyr", quietly = TRUE)
 ```
 
 ## One report, two execution locations
@@ -138,6 +154,8 @@ The simulator above verifies SQL rendering without a server. DuckDB lets the
 same workflow execute against a live in-memory database:
 
 ```{r}
+#| eval: !expr has_duckdb
+
 con <- DBI::dbConnect(duckdb::duckdb())
 
 sales_db <- copy_to(
@@ -164,6 +182,8 @@ At this point `duckdb_query` is still lazy. `collect()` asks DuckDB to execute
 the grouping sets and transfers only the summarized result:
 
 ```{r}
+#| eval: !expr has_duckdb
+
 duckdb_result <- collect(duckdb_query)
 DBI::dbDisconnect(con)
 
@@ -186,6 +206,8 @@ sets. For an unconfirmed backend, it expands the plan into one query branch
 per grouping set and joins those branches with `UNION ALL`.
 
 ```{r}
+#| eval: !expr has_sqlite_simulator
+
 sqlite_sales <- dbplyr::tbl_lazy(
   january_sales,
   con = dbplyr::simulate_sqlite()
@@ -210,6 +232,8 @@ grouping specification.
 the row-expansion branches explicit:
 
 ```{r}
+#| eval: !expr has_sqlite_simulator
+
 sqlite_sales |>
   expand_with_margins(
     .grouping = rollup(region, store)
@@ -271,6 +295,8 @@ dtplyr is lazy without being a SQL connection. `show_query()` displays the
 generated data.table expression:
 
 ```{r}
+#| eval: !expr has_dtplyr
+
 dt_query <- january_sales |>
   dtplyr::lazy_dt() |>
   summarize_with_margins(

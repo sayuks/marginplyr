@@ -23,14 +23,16 @@ test_that("Parent shares preserve columns, grouping, and laziness", {
   expect_identical(names(local), expected_names)
   expect_identical(dplyr::group_vars(local), character())
 
-  sql <- summarize(dbplyr::tbl_lazy(
-    data,
-    con = dbplyr::simulate_sqlite()
-  ))
-  expect_s3_class(sql, "tbl_lazy")
-  expect_identical(as.character(dplyr::tbl_vars(sql)), expected_names)
-  expect_identical(dplyr::group_vars(sql), character())
-  expect_no_error(dbplyr::sql_render(sql))
+  if (sqlite_simulation_available()) {
+    sql <- summarize(dbplyr::tbl_lazy(
+      data,
+      con = dbplyr::simulate_sqlite()
+    ))
+    expect_s3_class(sql, "tbl_lazy")
+    expect_identical(as.character(dplyr::tbl_vars(sql)), expected_names)
+    expect_identical(dplyr::group_vars(sql), character())
+    expect_no_error(dbplyr::sql_render(sql))
+  }
 
   if (rlang::is_installed("dtplyr")) {
     lazy <- summarize(dtplyr::lazy_dt(data))
@@ -716,7 +718,7 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     group = NA_character_,
     value = 1
   )
-  simulators <- c(
+  simulators <- available_simulators(c(
     "simulate_access",
     "simulate_dbi",
     "simulate_hana",
@@ -732,7 +734,7 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     "simulate_spark_sql",
     "simulate_sqlite",
     "simulate_teradata"
-  )
+  ))
 
   for (simulator in simulators) {
     remote <- dbplyr::tbl_lazy(
@@ -1125,15 +1127,17 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   }
 
   expected <- summarize(data)
-  simulated <- summarize(dbplyr::tbl_lazy(
-    data,
-    con = dbplyr::simulate_sqlite()
-  ))
-  expect_identical(
-    as.character(dplyr::tbl_vars(simulated)),
-    names(expected)
-  )
-  expect_no_error(dbplyr::sql_render(simulated))
+  if (sqlite_simulation_available()) {
+    simulated <- summarize(dbplyr::tbl_lazy(
+      data,
+      con = dbplyr::simulate_sqlite()
+    ))
+    expect_identical(
+      as.character(dplyr::tbl_vars(simulated)),
+      names(expected)
+    )
+    expect_no_error(dbplyr::sql_render(simulated))
+  }
 
   skip_if_not_installed("duckdb")
   skip_if_not_installed("DBI")

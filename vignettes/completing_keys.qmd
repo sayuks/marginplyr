@@ -26,6 +26,19 @@ library(marginplyr)
 library(dplyr)
 ```
 
+Only dplyr and dbplyr are required. The tidyr and SQLite sections below need
+optional packages, so their chunks evaluate only when those packages are
+installed. Where a package is missing the code is still shown, but its output
+is absent.
+
+```{r}
+#| include: false
+
+has_tidyr <- requireNamespace("tidyr", quietly = TRUE)
+has_sqlite <- requireNamespace("DBI", quietly = TRUE) &&
+  requireNamespace("RSQLite", quietly = TRUE)
+```
+
 ## Why completion is a separate operation
 
 marginplyr does not provide `.complete`, `.fill`, or `.empty` arguments, and it
@@ -54,7 +67,7 @@ This small fact table does not contain every product for every observed
 region-store relationship:
 
 ```{r}
-facts <- tibble::tibble(
+facts <- tibble(
   fact_id = 1:3,
   region = c("East", "East", "West"),
   store = c("A", "B", "C"),
@@ -71,6 +84,8 @@ facts
 relationships while crossing each relationship with the product domain:
 
 ```{r}
+#| eval: !expr has_tidyr
+
 completed_facts <- facts |>
   mutate(is_fact = TRUE) |>
   tidyr::complete(
@@ -89,6 +104,8 @@ completed_facts
 The inserted zeros now participate in every level of the rollup:
 
 ```{r}
+#| eval: !expr has_tidyr
+
 completed_facts |>
   summarize_with_margins(
     rows = dplyr::n(),
@@ -130,7 +147,7 @@ cross product. Union it with observed keys before joining so facts outside the
 scaffold are not accidentally discarded:
 
 ```{r}
-requested_keys <- tibble::tribble(
+requested_keys <- tribble(
   ~region, ~store, ~product,
   "East", "A", "Laptop",
   "East", "A", "Monitor",
@@ -163,54 +180,51 @@ table is the natural source of a reusable key domain:
 
 ```{r}
 #| message: false
+#| eval: !expr has_sqlite
 
-has_sqlite <- requireNamespace("DBI", quietly = TRUE) &&
-  requireNamespace("RSQLite", quietly = TRUE)
-if (has_sqlite) {
-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
 
-  facts_db <- copy_to(
-    con,
-    facts,
-    name = "facts",
-    temporary = TRUE,
-    overwrite = TRUE
+facts_db <- copy_to(
+  con,
+  facts,
+  name = "facts",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+dimension_db <- copy_to(
+  con,
+  requested_keys,
+  name = "store_product_dimension",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+
+observed_keys_db <- facts_db |>
+  distinct(region, store, product)
+all_keys_db <- dimension_db |>
+  select(region, store, product) |>
+  union(observed_keys_db)
+
+completed_db <- all_keys_db |>
+  left_join(
+    facts_db,
+    by = c("region", "store", "product")
+  ) |>
+  mutate(
+    is_fact = !is.na(fact_id),
+    units = dplyr::coalesce(units, 0L),
+    revenue = dplyr::coalesce(revenue, 0)
   )
-  dimension_db <- copy_to(
-    con,
-    requested_keys,
-    name = "store_product_dimension",
-    temporary = TRUE,
-    overwrite = TRUE
+
+completed_query <- completed_db |>
+  summarize_with_margins(
+    observed_facts = sum(is_fact),
+    revenue = sum(revenue),
+    .grouping = rollup(region, store, product)
   )
 
-  observed_keys_db <- facts_db |>
-    distinct(region, store, product)
-  all_keys_db <- dimension_db |>
-    select(region, store, product) |>
-    union(observed_keys_db)
-
-  completed_db <- all_keys_db |>
-    left_join(
-      facts_db,
-      by = c("region", "store", "product")
-    ) |>
-    mutate(
-      is_fact = !is.na(fact_id),
-      units = dplyr::coalesce(units, 0L),
-      revenue = dplyr::coalesce(revenue, 0)
-    )
-
-  completed_query <- completed_db |>
-    summarize_with_margins(
-      observed_facts = sum(is_fact),
-      revenue = sum(revenue),
-      .grouping = rollup(region, store, product)
-    )
-
-  show_query(completed_query)
-  DBI::dbDisconnect(con)
-}
+show_query(completed_query)
+DBI::dbDisconnect(con)
 ```
 
 The union, join, completion expressions, and Margin summary remain lazy.
@@ -224,45 +238,42 @@ query text grow with the number of keys:
 
 ```{r}
 #| message: false
+#| eval: !expr has_sqlite
 
-has_sqlite <- requireNamespace("DBI", quietly = TRUE) &&
-  requireNamespace("RSQLite", quietly = TRUE)
-if (has_sqlite) {
-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
-  facts_db <- copy_to(
-    con,
-    facts,
-    name = "facts",
-    temporary = TRUE,
-    overwrite = TRUE
+con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+facts_db <- copy_to(
+  con,
+  facts,
+  name = "facts",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+
+inline_keys <- dbplyr::copy_inline(con, requested_keys)
+inline_query <- inline_keys |>
+  union(distinct(facts_db, region, store, product)) |>
+  left_join(
+    facts_db,
+    by = c("region", "store", "product")
   )
+show_query(inline_query)
 
-  inline_keys <- dbplyr::copy_inline(con, requested_keys)
-  inline_query <- inline_keys |>
-    union(distinct(facts_db, region, store, product)) |>
-    left_join(
-      facts_db,
-      by = c("region", "store", "product")
-    )
-  show_query(inline_query)
-
-  reusable_keys <- copy_to(
-    con,
-    requested_keys,
-    name = "requested_keys",
-    temporary = TRUE,
-    overwrite = TRUE
+reusable_keys <- copy_to(
+  con,
+  requested_keys,
+  name = "requested_keys",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+reusable_query <- reusable_keys |>
+  union(distinct(facts_db, region, store, product)) |>
+  left_join(
+    facts_db,
+    by = c("region", "store", "product")
   )
-  reusable_query <- reusable_keys |>
-    union(distinct(facts_db, region, store, product)) |>
-    left_join(
-      facts_db,
-      by = c("region", "store", "product")
-    )
-  show_query(reusable_query)
+show_query(reusable_query)
 
-  DBI::dbDisconnect(con)
-}
+DBI::dbDisconnect(con)
 ```
 
 Use explicit `dplyr::copy_to()` for a larger or reusable local key relation.

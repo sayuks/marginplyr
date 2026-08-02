@@ -439,7 +439,7 @@ test_that("documented SQL dialects use portable margin label checks", {
     margin_check_collect,
     envir = asNamespace("dbplyr")
   )
-  simulators <- c(
+  simulators <- available_simulators(c(
     "simulate_access",
     "simulate_dbi",
     "simulate_hana",
@@ -456,7 +456,7 @@ test_that("documented SQL dialects use portable margin label checks", {
     "simulate_spark_sql",
     "simulate_sqlite",
     "simulate_teradata"
-  )
+  ))
 
   for (simulator in simulators) {
     con <- getExportedValue("dbplyr", simulator)()
@@ -700,51 +700,54 @@ test_that("column-wise summaries share one lazy-backend selection", {
     value = c(1, 2, 3)
   )
 
-  skip_if_not_installed("dtplyr")
-  dt_result <- summarize_with_margins(
-    dtplyr::lazy_dt(data),
-    dplyr::across(
-      dplyr::everything(),
-      dplyr::n_distinct,
-      .names = "n_{.col}"
-    ),
-    .grouping = rollup(group)
-  ) |>
-    dplyr::collect()
-  expect_equal(names(dt_result), c("group", "n_value"))
-  expect_setequal(dt_result$n_value, c(2L, 1L, 3L))
+  if (rlang::is_installed("dtplyr")) {
+    dt_result <- summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      dplyr::across(
+        dplyr::everything(),
+        dplyr::n_distinct,
+        .names = "n_{.col}"
+      ),
+      .grouping = rollup(group)
+    ) |>
+      dplyr::collect()
+    expect_equal(names(dt_result), c("group", "n_value"))
+    expect_setequal(dt_result$n_value, c(2L, 1L, 3L))
+  }
 
-  skip_if_not_installed("arrow")
-  arrow_result <- summarize_with_margins(
-    arrow::Table$create(data),
-    dplyr::across(
-      dplyr::everything(),
-      dplyr::n_distinct,
-      .names = "n_{.col}"
-    ),
-    .grouping = rollup(group)
-  ) |>
-    dplyr::collect()
-  expect_equal(names(arrow_result), c("group", "n_value"))
-  expect_setequal(arrow_result$n_value, c(2L, 1L, 3L))
+  if (rlang::is_installed("arrow")) {
+    arrow_result <- summarize_with_margins(
+      arrow::Table$create(data),
+      dplyr::across(
+        dplyr::everything(),
+        dplyr::n_distinct,
+        .names = "n_{.col}"
+      ),
+      .grouping = rollup(group)
+    ) |>
+      dplyr::collect()
+    expect_equal(names(arrow_result), c("group", "n_value"))
+    expect_setequal(arrow_result$n_value, c(2L, 1L, 3L))
+  }
 
-  skip_if_not_installed("dbplyr")
-  sqlite <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_sqlite())
-  sqlite_query <- summarize_with_margins(
-    sqlite,
-    dplyr::across(value, mean, .names = "mean_{.col}"),
-    .grouping = rollup(group)
-  )
-  expect_match(
-    dbplyr::sql_render(sqlite_query),
-    "UNION ALL",
-    fixed = TRUE
-  )
-  expect_false(grepl(
-    "mean_group",
-    dbplyr::sql_render(sqlite_query),
-    fixed = TRUE
-  ))
+  if (sqlite_simulation_available()) {
+    sqlite <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_sqlite())
+    sqlite_query <- summarize_with_margins(
+      sqlite,
+      dplyr::across(value, mean, .names = "mean_{.col}"),
+      .grouping = rollup(group)
+    )
+    expect_match(
+      dbplyr::sql_render(sqlite_query),
+      "UNION ALL",
+      fixed = TRUE
+    )
+    expect_false(grepl(
+      "mean_group",
+      dbplyr::sql_render(sqlite_query),
+      fixed = TRUE
+    ))
+  }
 
   postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
   expect_error(
@@ -1055,8 +1058,12 @@ test_that("native grouping sets remain a subquery after downstream verbs", {
 test_that("unconfirmed SQL dialects use UNION ALL", {
   skip_if_not_installed("dbplyr")
   data <- data.frame(a = "x", b = "u", value = 1)
+  connections <- list(dbplyr::simulate_mysql())
+  if (sqlite_simulation_available()) {
+    connections <- c(connections, list(dbplyr::simulate_sqlite()))
+  }
 
-  for (con in list(dbplyr::simulate_mysql(), dbplyr::simulate_sqlite())) {
+  for (con in connections) {
     remote <- dbplyr::tbl_lazy(data, con = con)
     query <- summarize_with_margins(
       remote,
@@ -1073,7 +1080,7 @@ test_that("unconfirmed SQL dialects use UNION ALL", {
 test_that("documented fallback dialects render portable UNION ALL SQL", {
   skip_if_not_installed("dbplyr")
   data <- data.frame(a = "x", b = "u", value = 1)
-  simulators <- c(
+  simulators <- available_simulators(c(
     "simulate_access",
     "simulate_dbi",
     "simulate_hana",
@@ -1089,7 +1096,7 @@ test_that("documented fallback dialects render portable UNION ALL SQL", {
     "simulate_spark_sql",
     "simulate_sqlite",
     "simulate_teradata"
-  )
+  ))
 
   for (simulator in simulators) {
     con <- getExportedValue("dbplyr", simulator)()

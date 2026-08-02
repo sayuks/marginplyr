@@ -40,6 +40,21 @@ library(marginplyr)
 library(dplyr)
 ```
 
+Only dplyr and dbplyr are required. A few sections below illustrate optional
+tooling, so their chunks evaluate only when that tooling is installed. Where a
+package is missing the code is still shown, but its output is absent.
+
+```{r}
+#| include: false
+
+# dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
+# the installed driver version through RSQLite.
+has_sqlite_simulator <- requireNamespace("RSQLite", quietly = TRUE)
+has_dtplyr <- requireNamespace("dtplyr", quietly = TRUE)
+has_tabsets <- requireNamespace("knitr", quietly = TRUE) &&
+  requireNamespace("quartabs", quietly = TRUE)
+```
+
 ## Start with the report question
 
 `retail_sales` contains two years of monthly sales for a fictional retail
@@ -690,6 +705,8 @@ The same verb stays lazy for database tables. Its SQLite SQL makes the
 row-expansion branches explicit:
 
 ```{r}
+#| eval: !expr has_sqlite_simulator
+
 dbplyr::tbl_lazy(
   january_sales,
   con = dbplyr::simulate_sqlite()
@@ -741,6 +758,8 @@ A dtplyr input performs the expansion and nesting lazily until `collect()`.
 `show_query()` displays the generated data.table expression:
 
 ```{r}
+#| eval: !expr has_dtplyr
+
 nested_dt <- january_sales |>
   dtplyr::lazy_dt() |>
   nest_with_margins(
@@ -773,6 +792,8 @@ nested_by$data[[1]]
 The row-wise result is local even when the input is a dtplyr step:
 
 ```{r}
+#| eval: !expr has_dtplyr
+
 nested_by_dt <- january_sales |>
   dtplyr::lazy_dt() |>
   nest_by_with_margins(
@@ -860,6 +881,7 @@ Quarto tabset markup.
 
 ```{r}
 #| results: asis
+#| eval: !expr has_tabsets
 
 tabbed_report <- january_sales |>
   nest_by_with_margins(

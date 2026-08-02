@@ -361,6 +361,7 @@ test_that("DuckDB native and portable summaries agree on .id", {
 })
 
 test_that("portable .id paths remain lazy", {
+  skip_if_no_sqlite_simulation()
   remote <- dbplyr::tbl_lazy(
     data.frame(group = c("x", "y"), value = 1:2),
     con = dbplyr::simulate_sqlite()
