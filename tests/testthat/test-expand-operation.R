@@ -213,6 +213,7 @@ test_that("DuckDB expansion acquires one typed selection proxy", {
 })
 
 test_that("portable SQL expansion stays lazy and uses UNION ALL", {
+  skip_if_no_sqlite_simulation()
   remote <- dbplyr::tbl_lazy(
     data.frame(
       check.names = FALSE,

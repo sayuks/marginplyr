@@ -46,16 +46,20 @@
 #' dplyr::group_vars(grouped_expansion)
 #'
 #' # SQLite has no native GROUPING SETS support in marginplyr, so a simulated
-#' # lazy table makes the portable UNION ALL translation visible.
-#' sqlite_sales <- dbplyr::tbl_lazy(
-#'   january_sales,
-#'   con = dbplyr::simulate_sqlite()
-#' )
-#' sqlite_sales |>
-#'   expand_with_margins(
-#'     .grouping = rollup(region, store)
-#'   ) |>
-#'   dplyr::show_query()
+#' # lazy table makes the portable UNION ALL translation visible. Rendering
+#' # SQLite SQL reads the driver version from the optional RSQLite package,
+#' # even though the simulator opens no connection.
+#' if (requireNamespace("RSQLite", quietly = TRUE)) {
+#'   sqlite_sales <- dbplyr::tbl_lazy(
+#'     january_sales,
+#'     con = dbplyr::simulate_sqlite()
+#'   )
+#'   sqlite_sales |>
+#'     expand_with_margins(
+#'       .grouping = rollup(region, store)
+#'     ) |>
+#'     dplyr::show_query()
+#' }
 expand_with_margins <- function(.data,
                                 .by = NULL,
                                 .grouping = NULL,

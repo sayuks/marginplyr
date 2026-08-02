@@ -14,7 +14,7 @@ URL: https://sayuks.github.io/marginplyr/, https://github.com/sayuks/marginplyr
 BugReports: https://github.com/sayuks/marginplyr/issues
 Depends:
     R (>= 4.1.0)
-Imports: 
+Imports:
     dbplyr (>= 2.6.0),
     dplyr (>= 1.1.1),
     glue,
@@ -22,32 +22,26 @@ Imports:
     stats,
     tidyselect (>= 1.2.0),
     utils
-Suggests: 
+Suggests:
     altdoc (>= 0.7.3),
     arrow (>= 13.0.0),
-    data.table,
     DBI,
     dtplyr (>= 1.3.2),
     duckdb,
-    ggplot2,
     knitr,
-    purrr,
     quartabs (>= 0.1.1),
     quarto (>= 1.4),
     RSQLite,
-    sessioninfo,
     spelling,
-    stringr,
     testthat (>= 3.0.0),
     tibble,
-    tidyr,
+    tidyr
 Config/testthat/edition: 3
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
 Config/Needs/website:
     altdoc,
-    data.table,
     DBI,
     dtplyr,
     duckdb,

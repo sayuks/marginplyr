@@ -272,6 +272,7 @@ test_that("Arrow applies mixed named labels lazily with typed missing values", {
 })
 
 test_that("portable SQL consumes named per-column labels lazily", {
+  skip_if_no_sqlite_simulation()
   remote <- dbplyr::tbl_lazy(
     data.frame(first = "a", second = "b", value = 1L),
     con = dbplyr::simulate_sqlite()

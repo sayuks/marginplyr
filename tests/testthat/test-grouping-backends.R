@@ -457,6 +457,9 @@ test_that("documented SQL dialects use portable margin label checks", {
     "simulate_sqlite",
     "simulate_teradata"
   )
+  if (!sqlite_simulation_available()) {
+    simulators <- setdiff(simulators, "simulate_sqlite")
+  }
 
   for (simulator in simulators) {
     con <- getExportedValue("dbplyr", simulator)()
@@ -1055,8 +1058,12 @@ test_that("native grouping sets remain a subquery after downstream verbs", {
 test_that("unconfirmed SQL dialects use UNION ALL", {
   skip_if_not_installed("dbplyr")
   data <- data.frame(a = "x", b = "u", value = 1)
+  connections <- list(dbplyr::simulate_mysql())
+  if (sqlite_simulation_available()) {
+    connections <- c(connections, list(dbplyr::simulate_sqlite()))
+  }
 
-  for (con in list(dbplyr::simulate_mysql(), dbplyr::simulate_sqlite())) {
+  for (con in connections) {
     remote <- dbplyr::tbl_lazy(data, con = con)
     query <- summarize_with_margins(
       remote,
@@ -1090,6 +1097,9 @@ test_that("documented fallback dialects render portable UNION ALL SQL", {
     "simulate_sqlite",
     "simulate_teradata"
   )
+  if (!sqlite_simulation_available()) {
+    simulators <- setdiff(simulators, "simulate_sqlite")
+  }
 
   for (simulator in simulators) {
     con <- getExportedValue("dbplyr", simulator)()
