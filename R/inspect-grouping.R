@@ -51,9 +51,9 @@
 #' [dplyr::show_query()] for generated SQL and backend-native tools for an
 #' optimizer plan.
 #'
-#' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
-#' for the full comparison.
+#' See the [grouping identity guide][guide] for the full comparison.
+#'
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @export
 #' @examples
@@ -118,15 +118,15 @@ inspect_grouping <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  with_margin_error_call( # nolint: object_usage_linter
+  with_margin_error_call(
     {
       assert_lazy_table(.data)
-      .format <- match_margin_choice( # nolint: object_usage_linter
+      .format <- match_margin_choice(
         .format,
-        choices = c("text", "list"),
+        choices = grouping_format_choices,
         arg_name = ".format"
       )
-      grouping <- prepare_grouping_plan( # nolint: object_usage_linter
+      grouping <- prepare_grouping_plan(
         .data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,
@@ -139,9 +139,13 @@ inspect_grouping <- function(.data,
   )
 }
 
+# `inspect_grouping()`'s own option vocabulary; see the note in
+# R/margin-operation.R on why the formal still spells it out.
+grouping_format_choices <- c("text", "list")
+
 format_grouping_plan <- function(plan, format) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
-  stopifnot(format %in% c("text", "list"))
+  stopifnot(format %in% grouping_format_choices)
 
   included <- lapply(
     plan$sets,

@@ -36,6 +36,12 @@
 * Backend detection now validates the documented Arrow and dtplyr minimum
   versions, centralizes backend capabilities, and reports incompatible dbplyr
   query representations explicitly.
+* Every error marginplyr raises for a correctable call now inherits the
+  `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
+  all. It is the only promised class; narrower subclasses and message wording
+  remain implementation details. Errors from your summary expressions,
+  tidyselect, dplyr, or a backend keep their original class and call, and so do
+  internal invariant checks that no change to the call can avoid.
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns. `.keep = TRUE` retains original pre-margin key values,
   and nesting rejects duplicate sets with `.duplicates = "keep"` because

@@ -23,7 +23,7 @@ summarize_margin_native <- function(.data,
   }
 
   labelled_dimensions <- names(Filter(
-    function(label) !is_missing_margin_label(label), # nolint: object_usage_linter
+    function(label) !is_missing_margin_label(label),
     margin_labels
   ))
   needs_display_flags <- length(labelled_dimensions) > 0L
@@ -88,7 +88,8 @@ summarize_margin_native <- function(.data,
 grouping_set_id_sql_expr <- function(plan, con) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
   if (length(plan$dimensions) == 0L) {
-    set_id <- plan$set_ids[[1L]] # nolint: object_usage_linter
+    # Read only from the glue string below, which codetools cannot see.
+    set_id <- plan$set_ids[[1L]] # nolint: object_usage_linter.
     return(dbplyr::sql_glue2(con, "{set_id}"))
   }
 
@@ -96,7 +97,8 @@ grouping_set_id_sql_expr <- function(plan, con) {
     function(mask, set_id) {
       terms <- Map(
         function(var, bit) {
-          grouping_call <- grouping_sql_expr( # nolint: object_usage_linter
+          # Read only from the glue string below, which codetools cannot see.
+          grouping_call <- grouping_sql_expr( # nolint: object_usage_linter.
             var,
             con
           )
@@ -108,7 +110,8 @@ grouping_set_id_sql_expr <- function(plan, con) {
         plan$dimensions,
         as.integer(mask)
       )
-      condition <- Reduce( # nolint: object_usage_linter
+      # Read only from the glue string below, which codetools cannot see.
+      condition <- Reduce( # nolint: object_usage_linter.
         function(x, y) dbplyr::sql_glue2(con, "{.sql x} AND {.sql y}"),
         terms
       )
@@ -162,8 +165,10 @@ validate_grouping_sets_query <- function(op) {
   invisible(op)
 }
 
+# Not a Package condition: no rewrite of the call avoids an upstream
+# representation change. See ADR 0015.
 abort_dbplyr_representation <- function() {
-  abort_marginplyr( # nolint: object_usage_linter
+  stop(
     paste0(
       "The dbplyr query representation has changed and is not compatible ",
       "with this version of marginplyr (dbplyr ",
@@ -171,7 +176,7 @@ abort_dbplyr_representation <- function() {
       "). Please report this at ",
       "https://github.com/sayuks/marginplyr/issues."
     ),
-    class = "simpleError"
+    call. = FALSE
   )
 }
 
@@ -212,7 +217,10 @@ sql_build.lazy_grouping_sets_query <- function(op,
     }
   )
   set_sql <- vapply(set_sql, as.character, character(1))
-  grouping_sets_sql <- paste(set_sql, collapse = ", ") # nolint: object_usage_linter
+  # Read only from the glue string below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  grouping_sets_sql <- paste(set_sql, collapse = ", ")
+  # nolint end
 
   query$group_by <- dbplyr::sql_glue2(
     con,

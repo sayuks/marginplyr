@@ -109,7 +109,7 @@ test_that("grouping specification kinds enforce the nesting grammar", {
       }
 
       error <- expect_error(compile_nested(parent, child))
-      expect_s3_class(error, "simpleError")
+      expect_s3_class(error, "marginplyr_error")
       expect_identical(conditionMessage(error), nesting_errors[[parent]])
     }
   }
@@ -139,7 +139,7 @@ test_that("empty grouping rules preserve their phase and error precedence", {
   sets_error <- expect_error(
     compile_grouping_spec(grouping_sets(), "a")
   )
-  expect_s3_class(sets_error, "simpleError")
+  expect_s3_class(sets_error, "marginplyr_error")
   expect_identical(
     conditionMessage(sets_error),
     paste0(
@@ -151,7 +151,7 @@ test_that("empty grouping rules preserve their phase and error precedence", {
   for (constructor in c("rollup", "cube")) {
     spec <- eval(rlang::call2(constructor))
     error <- expect_error(compile_grouping_spec(spec, "a"))
-    expect_s3_class(error, "simpleError")
+    expect_s3_class(error, "marginplyr_error")
     expect_identical(
       conditionMessage(error),
       sprintf("`%s()` requires at least one dimension.", constructor)
@@ -192,7 +192,7 @@ test_that("empty grouping rules preserve their phase and error precedence", {
 
 test_that("invalid grouping input lists every supported constructor", {
   error <- expect_error(compile_grouping_spec(1, "a"))
-  expect_s3_class(error, "simpleError")
+  expect_s3_class(error, "marginplyr_error")
   expect_identical(
     conditionMessage(error),
     paste0(

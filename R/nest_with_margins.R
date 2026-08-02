@@ -151,6 +151,12 @@ nest_with_margins <- function(.data,
   )
 }
 
+# The nesting verbs narrow the Margin `.duplicates` vocabulary: nested
+# duplicate sets would share indistinguishable outer keys, so `"keep"` is not
+# offered. See the note in R/margin-operation.R on why the formals still spell
+# it out.
+nest_duplicates_choices <- c("error", "drop")
+
 nest_margin_pipeline <- function(.data,
                                  by_quo,
                                  grouping_quo,
@@ -164,27 +170,33 @@ nest_margin_pipeline <- function(.data,
                                  call) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
 
-  with_margin_error_call( # nolint: object_usage_linter
+  with_margin_error_call(
     {
       assert_nest_possible(.data)
       assert_logical_scalar(.keep)
       assert_string_scalar(.key)
       if (is.na(.key)) {
-        abort_marginplyr( # nolint: object_usage_linter
-          "`.key` must not be missing.",
-          class = "simpleError"
+        abort_marginplyr(
+          "`.key` must not be missing."
         )
       }
       if (!nzchar(.key)) {
-        abort_marginplyr( # nolint: object_usage_linter
-          "`.key` must not be empty.",
-          class = "simpleError"
+        abort_marginplyr(
+          "`.key` must not be empty."
         )
       }
-      if (identical(.duplicates, c("error", "drop"))) {
+      # The nesting verbs' `.duplicates` formal is the whole vocabulary, so
+      # receiving it unchanged means the caller left the argument at its
+      # default. Resolve it here because the shared normalizer matches against
+      # the wider Margin vocabulary.
+      left_at_default <- identical(
+        .duplicates,
+        nest_duplicates_choices
+      )
+      if (left_at_default) {
         .duplicates <- "error"
       }
-      options <- normalize_margin_options( # nolint: object_usage_linter
+      options <- normalize_margin_options(
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
@@ -196,21 +208,20 @@ nest_margin_pipeline <- function(.data,
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
-      check_margin_id_collision(set_id_name, .key, "nesting `.key`") # nolint: object_usage_linter
+      check_margin_id_collision(set_id_name, .key, "nesting `.key`")
       if (identical(.duplicates, "keep")) {
-        abort_marginplyr( # nolint: object_usage_linter
+        abort_marginplyr(
           paste0(
             "Nesting does not support `.duplicates = \"keep\"`. Use ",
             "`\"error\"` or `\"drop\"`."
-          ),
-          class = "simpleError"
+          )
         )
       }
     },
     call = call
   )
 
-  operation <- prepare_margin_operation( # nolint: object_usage_linter
+  operation <- prepare_margin_operation(
     .data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
@@ -226,19 +237,18 @@ nest_margin_pipeline <- function(.data,
     .key = .key,
     .keep = .keep
   )
-  finalize_margin_operation(operation, result) # nolint: object_usage_linter
+  finalize_margin_operation(operation, result)
 }
 
 execute_margin_nest <- function(operation, .key, .keep) {
-  check_margin_operation(operation) # nolint: object_usage_linter
-  with_margin_error_call( # nolint: object_usage_linter
+  check_margin_operation(operation)
+  with_margin_error_call(
     {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
       if (.key %in% group_cols) {
-        abort_marginplyr( # nolint: object_usage_linter
-          sprintf("`.key` (`%s`) must not be a grouping column.", .key),
-          class = "simpleError"
+        abort_marginplyr(
+          sprintf("`.key` (`%s`) must not be a grouping column.", .key)
         )
       }
 
@@ -275,9 +285,9 @@ execute_margin_nest <- function(operation, .key, .keep) {
         data <- dplyr::mutate(data, !!!keep_exprs)
       }
 
-      validate_margin_operation(operation) # nolint: object_usage_linter
+      validate_margin_operation(operation)
 
-      expanded <- expand_margin_union( # nolint: object_usage_linter
+      expanded <- expand_margin_union(
         data,
         plan = plan,
         margin_labels = operation$margin_labels,

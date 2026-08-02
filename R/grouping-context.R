@@ -25,10 +25,11 @@
 #' | [grouping_bit()] | Whether one chosen dimension is absent | The same for identical absence patterns | # nolint: line_length_linter
 #' | [grouping_id()] | Bit mask for chosen absent dimensions | The same for identical absence patterns | # nolint: line_length_linter
 #'
-#' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
-#' for the comparison with `.id` and [inspect_grouping()], rollup and cube
-#' masks, physical row order, Margin labels, and factor missingness.
+#' See the [grouping identity guide][guide] for the comparison with `.id` and
+#' [inspect_grouping()], rollup and cube masks, physical row order, Margin
+#' labels, and factor missingness.
+#'
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @param x A bare grouping column.
 #' @param ... Bare grouping columns.
@@ -62,18 +63,16 @@
 #'   .margin_label = NULL
 #' )
 grouping_bit <- function(x) {
-  abort_marginplyr( # nolint: object_usage_linter
-    "`grouping_bit()` can only be used inside `summarize_with_margins()`.",
-    class = "simpleError"
+  abort_marginplyr(
+    "`grouping_bit()` can only be used inside `summarize_with_margins()`."
   )
 }
 
 #' @rdname grouping_bit
 #' @export
 grouping_id <- function(...) {
-  abort_marginplyr( # nolint: object_usage_linter
-    "`grouping_id()` can only be used inside `summarize_with_margins()`.",
-    class = "simpleError"
+  abort_marginplyr(
+    "`grouping_id()` can only be used inside `summarize_with_margins()`."
   )
 }
 
@@ -160,50 +159,44 @@ grouping_helper_name <- function(expr) {
 
 grouping_helper_vars <- function(args, helper, plan) {
   if (identical(helper, "grouping_bit") && length(args) != 1L) {
-    abort_marginplyr( # nolint: object_usage_linter
-      "`grouping_bit()` requires exactly one column.",
-      class = "simpleError"
+    abort_marginplyr(
+      "`grouping_bit()` requires exactly one column."
     )
   }
   if (identical(helper, "grouping_id") && length(args) == 0L) {
-    abort_marginplyr( # nolint: object_usage_linter
-      "`grouping_id()` requires at least one column.",
-      class = "simpleError"
+    abort_marginplyr(
+      "`grouping_id()` requires at least one column."
     )
   }
 
   is_symbol <- vapply(args, is.symbol, logical(1))
   if (!all(is_symbol)) {
-    abort_marginplyr( # nolint: object_usage_linter
-      sprintf("`%s()` only accepts bare grouping columns.", helper),
-      class = "simpleError"
+    abort_marginplyr(
+      sprintf("`%s()` only accepts bare grouping columns.", helper)
     )
   }
 
   vars <- vapply(args, as.character, character(1))
   if (anyDuplicated(vars)) {
-    abort_marginplyr( # nolint: object_usage_linter
-      sprintf("`%s()` does not accept duplicate columns.", helper),
-      class = "simpleError"
+    abort_marginplyr(
+      sprintf("`%s()` does not accept duplicate columns.", helper)
     )
   }
   if (identical(helper, "grouping_id") && length(vars) > 31L) {
-    abort_marginplyr( # nolint: object_usage_linter
-      "`grouping_id()` supports at most 31 columns.",
-      class = "simpleError"
+    abort_marginplyr(
+      "`grouping_id()` supports at most 31 columns."
     )
   }
   allowed <- unique(c(plan$by, plan$dimensions))
   unknown <- setdiff(vars, allowed)
   if (length(unknown) > 0L) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       sprintf(
         "Column%s %s %s not part of `.by` or `.grouping`.",
         if (length(unknown) == 1L) "" else "s",
         paste0("`", unknown, "`", collapse = ", "),
         if (length(unknown) == 1L) "is" else "are"
-      ),
-      class = "simpleError"
+      )
     )
   }
 

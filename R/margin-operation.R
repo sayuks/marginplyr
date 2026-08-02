@@ -34,22 +34,13 @@ check_margin_operation <- function(operation) {
   invisible(operation)
 }
 
+# Package conditions report the Margin verb the caller wrote rather than the
+# internal frame that raised them. Everything else keeps its own provenance.
 with_margin_error_call <- function(expr, call) {
-  legacy_package_error <- FALSE
   tryCatch(
-    withCallingHandlers(
-      expr,
-      error = function(cnd) {
-        if (!inherits(cnd, "marginplyr_error")) {
-          legacy_package_error <<- error_signaled_by_marginplyr()
-        }
-      }
-    ),
+    expr,
     error = function(cnd) {
-      if (
-        inherits(cnd, "marginplyr_error") ||
-          isTRUE(legacy_package_error)
-      ) {
+      if (inherits(cnd, "marginplyr_error")) {
         cnd$call <- call
       }
       stop(cnd)
@@ -57,24 +48,14 @@ with_margin_error_call <- function(expr, call) {
   )
 }
 
-error_signaled_by_marginplyr <- function() {
-  frames <- sys.frames()
-  # Exclude this helper and the calling handler in with_margin_error_call().
-  candidates <- utils::head(seq_along(frames), -2L)
+# One vocabulary per shared option, so a choice list and the guards that
+# re-check it cannot drift apart. The public verbs still spell their defaults
+# out literally because those formals are the documented signature; a test in
+# test-grouping-interface.R holds each formal to the constant it mirrors.
+# Verb-specific vocabularies live with the verb that owns them.
+margin_duplicates_choices <- c("error", "drop", "keep")
 
-  for (i in rev(candidates)) {
-    top <- topenv(frames[[i]])
-    if (!isNamespace(top)) {
-      return(FALSE)
-    }
-    namespace <- getNamespaceName(top)
-    if (namespace %in% c("base", "rlang")) {
-      next
-    }
-    return(identical(namespace, "marginplyr"))
-  }
-  FALSE
-}
+margin_label_position_choices <- c("last", "first")
 
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
@@ -82,13 +63,12 @@ match_margin_choice <- function(value, choices, arg_name) {
   tryCatch(
     match.arg(value, choices),
     error = function(...) {
-      abort_marginplyr( # nolint: object_usage_linter
+      abort_marginplyr(
         paste0(
           "`", arg_name, "` must be one of ",
           paste0("\"", choices, "\"", collapse = ", "),
           "."
         ),
-        class = "simpleError",
         call = call
       )
     }
@@ -108,13 +88,13 @@ normalize_margin_options <- function(.margin_label,
     margin_label = normalize_margin_label(.margin_label),
     margin_label_position = match_margin_choice(
       .margin_label_position,
-      choices = c("last", "first"),
+      choices = margin_label_position_choices,
       arg_name = ".margin_label_position"
     ),
     check_margin_label = .check_margin_label,
     duplicates = match_margin_choice(
       .duplicates,
-      choices = c("error", "drop", "keep"),
+      choices = margin_duplicates_choices,
       arg_name = ".duplicates"
     )
   )
@@ -130,9 +110,8 @@ normalize_margin_id <- function(.id) {
       is.na(.id) ||
       !nzchar(.id)
   ) {
-    abort_marginplyr( # nolint: object_usage_linter
-      "`.id` must be `NULL` or one non-missing, non-empty character string.",
-      class = "simpleError"
+    abort_marginplyr(
+      "`.id` must be `NULL` or one non-missing, non-empty character string."
     )
   }
   .id
@@ -140,9 +119,8 @@ normalize_margin_id <- function(.id) {
 
 check_margin_id_collision <- function(.id, names, where) {
   if (!is.null(.id) && .id %in% names) {
-    abort_marginplyr( # nolint: object_usage_linter
-      sprintf("`.id` (`%s`) conflicts with %s.", .id, where),
-      class = "simpleError"
+    abort_marginplyr(
+      sprintf("`.id` (`%s`) conflicts with %s.", .id, where)
     )
   }
   invisible(NULL)
@@ -176,7 +154,7 @@ prepare_margin_operation <- function(.data,
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
 
-      grouping <- prepare_grouping_plan( # nolint: object_usage_linter
+      grouping <- prepare_grouping_plan(
         .data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,
@@ -201,7 +179,7 @@ prepare_margin_operation <- function(.data,
         plan$dimensions,
         backend = backend
       )
-      margin_labels <- resolve_margin_labels( # nolint: object_usage_linter
+      margin_labels <- resolve_margin_labels(
         .margin_label,
         dimensions = plan$dimensions
       )
@@ -227,7 +205,7 @@ prepare_margin_operation <- function(.data,
 
 validate_margin_operation <- function(operation) {
   check_margin_operation(operation)
-  with_margin_error_call( # nolint: object_usage_linter
+  with_margin_error_call(
     validate_margin_label(
       operation$data,
       dimensions = operation$plan$dimensions,
@@ -244,7 +222,7 @@ validate_margin_operation <- function(operation) {
 finalize_margin_operation <- function(operation, result) {
   check_margin_operation(operation)
   result <- dplyr::ungroup(result)
-  result <- restore_margin_factors( # nolint: object_usage_linter
+  result <- restore_margin_factors(
     result,
     factor_info = operation$column_info$factors,
     margin_labels = operation$margin_labels,

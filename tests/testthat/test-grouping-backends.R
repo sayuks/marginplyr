@@ -1021,7 +1021,8 @@ test_that("native SQL reports incompatible dbplyr query representations", {
     "dbplyr query representation has changed"
   )
 
-  expect_s3_class(error, "marginplyr_error")
+  # Not a Package condition: no call rewrite avoids it. See ADR 0015.
+  expect_false(inherits(error, "marginplyr_error"))
 })
 
 test_that("native grouping sets remain a subquery after downstream verbs", {

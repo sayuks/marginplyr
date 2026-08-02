@@ -3,12 +3,11 @@ check_removed_groups_argument <- function(dots) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr( # nolint: object_usage_linter
+  abort_marginplyr(
     paste0(
       "`summarize_with_margins()` does not support `.groups`; ",
       "Margin-summary results are always ungrouped."
-    ),
-    class = "simpleError"
+    )
   )
 }
 
@@ -26,7 +25,7 @@ check_summary_context_helpers <- function(dots) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr( # nolint: object_usage_linter
+  abort_marginplyr(
     paste0(
       "`summarize_with_margins()` does not support ",
       paste0("`", unsupported, "()`", collapse = ", "),
@@ -34,8 +33,7 @@ check_summary_context_helpers <- function(dots) {
       "but a margin result combines multiple grouping sets. Use ",
       "`grouping_bit()` or ",
       "`grouping_id()` when identifying margin levels."
-    ),
-    class = "simpleError"
+    )
   )
 }
 
@@ -45,14 +43,13 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr( # nolint: object_usage_linter
+  abort_marginplyr(
     paste0(
       "Summary results cannot overwrite grouping column",
       if (length(overwritten_groups) == 1L) " " else "s ",
       paste0("`", overwritten_groups, "`", collapse = ", "),
       "."
-    ),
-    class = "simpleError"
+    )
   )
 }
 
@@ -80,7 +77,7 @@ plan_summary_expressions <- function(dots,
     normalize_across_names = FALSE,
     skip_parent_shares = TRUE
   )
-  summary_plan <- plan_parent_share_expressions( # nolint: object_usage_linter
+  summary_plan <- plan_parent_share_expressions(
     dots,
     selection_proxy = selection_proxy,
     plan = plan,
@@ -95,7 +92,7 @@ plan_summary_expressions <- function(dots,
     normalize_across_names = identical(backend_kind, "dtplyr")
   )
   if (length(summary_plan$cardinality) > 0L) {
-    summary_plan$dots <- wrap_parent_sources( # nolint: object_usage_linter
+    summary_plan$dots <- wrap_parent_sources(
       summary_plan$dots,
       cardinality = summary_plan$cardinality,
       call = call,
@@ -155,7 +152,7 @@ resolve_summary_selections <- function(dots,
       expr <- rlang::quo_get_expr(dot)
       if (
         skip_parent_shares &&
-          contains_parent_share(expr) # nolint: object_usage_linter
+          contains_parent_share(expr)
       ) {
         return(dot)
       }

@@ -128,9 +128,9 @@
 #' durable business key and can change when the Grouping plan is reordered or
 #' deduplicated. It records plan occurrence, not physical result order; use
 #' [dplyr::arrange()] when order matters.
-#' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
-#' for the complete comparison.
+#' See the [grouping identity guide][guide] for the complete comparison.
+#'
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
@@ -457,24 +457,24 @@ summarize_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  has_parent_shares <- with_margin_error_call( # nolint: object_usage_linter
+  has_parent_shares <- with_margin_error_call(
     {
       assert_lazy_table(.data)
-      normalize_margin_options( # nolint: object_usage_linter
+      normalize_margin_options(
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
         .id = .id
       )
-      check_removed_groups_argument(dots) # nolint: object_usage_linter
+      check_removed_groups_argument(dots)
       check_summary_context_helpers(dots)
-      preflight_parent_shares(dots) # nolint: object_usage_linter
+      preflight_parent_shares(dots)
     },
     call = call
   )
 
-  operation <- prepare_margin_operation( # nolint: object_usage_linter
+  operation <- prepare_margin_operation(
     .data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
@@ -484,23 +484,23 @@ summarize_with_margins <- function(.data,
     .duplicates = .duplicates,
     .id = .id,
     validate_grouping = if (has_parent_shares) {
-      check_parent_grouping_spec # nolint: object_usage_linter
+      check_parent_grouping_spec
     } else {
       NULL
     },
     call = call
   )
   result <- execute_margin_summary(operation, dots)
-  finalize_margin_operation(operation, result) # nolint: object_usage_linter
+  finalize_margin_operation(operation, result)
 }
 
 execute_margin_summary <- function(operation, dots) {
-  check_margin_operation(operation) # nolint: object_usage_linter
-  with_margin_error_call( # nolint: object_usage_linter
+  check_margin_operation(operation)
+  with_margin_error_call(
     {
       plan <- operation$plan
       group_vars <- c(plan$by, plan$dimensions)
-      summary_plan <- plan_summary_expressions( # nolint: object_usage_linter
+      summary_plan <- plan_summary_expressions(
         dots,
         data_proxy = operation$data_proxy,
         data_vars = operation$data_vars,
@@ -525,7 +525,7 @@ execute_margin_summary <- function(operation, dots) {
         summary_output_names,
         group_vars = group_vars
       )
-      check_margin_id_collision( # nolint: object_usage_linter
+      check_margin_id_collision(
         operation$set_id_name,
         summary_output_names,
         "a summary output"
@@ -537,13 +537,13 @@ execute_margin_summary <- function(operation, dots) {
       ))
       has_parent_shares <- length(summary_plan$requests) > 0L
 
-      validate_margin_operation(operation) # nolint: object_usage_linter
+      validate_margin_operation(operation)
 
       if (
         has_parent_shares &&
           identical(operation$backend$kind, "arrow")
       ) {
-        abort_marginplyr( # nolint: object_usage_linter
+        abort_marginplyr(
           paste0(
             "Arrow backends do not support Parent shares because marginplyr ",
             "cannot enforce their scalar-summary contract safely before an ",
@@ -562,7 +562,7 @@ execute_margin_summary <- function(operation, dots) {
       )
 
       if (has_parent_shares) {
-        return(execute_parent_shares( # nolint: object_usage_linter
+        return(execute_parent_shares(
           operation,
           staged_result = staged_result,
           requests = summary_plan$requests
@@ -599,7 +599,7 @@ stage_margin_summaries <- function(operation,
         !is.null(set_id_name) &&
           identical(plan$duplicates, "keep")
       )) {
-        summarize_margin_native( # nolint: object_usage_linter
+        summarize_margin_native(
           operation$data,
           dots = dots,
           plan = plan,
@@ -608,7 +608,7 @@ stage_margin_summaries <- function(operation,
           set_id_name = set_id_name
         )
       } else {
-        summarize_margin_union( # nolint: object_usage_linter
+        summarize_margin_union(
           operation$data,
           dots = dots,
           plan = plan,

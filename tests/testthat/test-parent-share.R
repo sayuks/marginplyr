@@ -655,6 +655,11 @@ test_that("Parent-share sources are numeric scalar summaries", {
   )
   expect_match(conditionMessage(cardinality_error), "Parent share `share`")
   expect_match(conditionMessage(cardinality_error), "source summary `total`")
+  # Targeted snapshot: guards this diagnostic against silent rewording. The
+  # assertions above carry the contract; the snapshot carries neither the
+  # punctuation nor the wrapping as a promise, and is regenerated whenever the
+  # wording is deliberately improved.
+  expect_snapshot(conditionMessage(cardinality_error))
   expect_error(
     suppressWarnings(summarize_with_margins(
       data,
@@ -1203,6 +1208,8 @@ test_that("Parent-share across classifies source-name failures", {
   )
   expect_s3_class(predicate_error, "marginplyr_error")
 
+  # See the note on the cardinality snapshot: targeted regression protection,
+  # not a byte-for-byte public contract.
   expect_snapshot(conditionMessage(duplicate_error))
   expect_snapshot(conditionMessage(unavailable_error))
   expect_snapshot(conditionMessage(unknown_error))

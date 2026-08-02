@@ -117,7 +117,7 @@ test_that("grouping grammar errors retain each public verb call", {
 
   for (verb in names(calls)) {
     error <- expect_error(eval(calls[[verb]]))
-    expect_s3_class(error, "simpleError")
+    expect_s3_class(error, "marginplyr_error")
     expect_identical(conditionMessage(error), expected_message)
     expect_identical(rlang::call_name(conditionCall(error)), verb)
   }
@@ -915,5 +915,71 @@ test_that("branch-local dplyr group context helpers are rejected", {
       .by = group
     ),
     "does not support.*cur_data_all"
+  )
+})
+
+test_that("the documented `marginplyr_error` handler catches conditions", {
+  # The handler pattern promised in `?marginplyr`. `abort_marginplyr()` is the
+  # only constructor for Package conditions, so this covers the class contract
+  # for every one of them. See ADR 0015 for which errors stay outside it.
+  data <- data.frame(group = "x", value = 1)
+
+  caught <- tryCatch(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = rollup(group),
+      .duplicates = "merge"
+    ),
+    marginplyr_error = function(cnd) cnd
+  )
+
+  expect_s3_class(caught, "marginplyr_error")
+  # `marginplyr_error` is the whole promise, so the rest of the class vector
+  # stays unasserted. `simpleError` was a transitional shim and is gone.
+  expect_false(inherits(caught, "simpleError"))
+})
+
+test_that("documented option formals match the shared choice vocabularies", {
+  formal_default <- function(fn, arg) {
+    eval(formals(fn)[[arg]])
+  }
+
+  duplicates_verbs <- list(
+    summarize_with_margins = margin_duplicates_choices,
+    summarise_with_margins = margin_duplicates_choices,
+    expand_with_margins = margin_duplicates_choices,
+    inspect_grouping = margin_duplicates_choices,
+    nest_with_margins = nest_duplicates_choices,
+    nest_by_with_margins = nest_duplicates_choices
+  )
+
+  for (verb in names(duplicates_verbs)) {
+    expect_identical(
+      formal_default(get(verb), ".duplicates"),
+      duplicates_verbs[[verb]],
+      info = verb
+    )
+  }
+
+  position_verbs <- c(
+    "summarize_with_margins",
+    "summarise_with_margins",
+    "expand_with_margins",
+    "nest_with_margins",
+    "nest_by_with_margins"
+  )
+
+  for (verb in position_verbs) {
+    expect_identical(
+      formal_default(get(verb), ".margin_label_position"),
+      margin_label_position_choices,
+      info = verb
+    )
+  }
+
+  expect_identical(
+    formal_default(inspect_grouping, ".format"),
+    grouping_format_choices
   )
 })

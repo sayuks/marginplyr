@@ -173,9 +173,7 @@ its \code{\link[=grouping_id]{grouping_id()}} values are \code{0L}, \code{1L}, a
 durable business key and can change when the Grouping plan is reordered or
 deduplicated. It records plan occurrence, not physical result order; use
 \code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
-See the
-\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide}
-for the complete comparison.
+See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for the complete comparison.
 }
 
 \section{Relationship to dplyr summaries}{

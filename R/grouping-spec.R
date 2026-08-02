@@ -17,10 +17,11 @@
 #' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
 #' composite dimension. Its columns are added or removed together.
 #'
-#' See the
-#' [grouping identity guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html) # nolint: line_length_linter
-#' for how a resolved Grouping plan relates to `.id`, [inspect_grouping()],
-#' [grouping_bit()], and [grouping_id()].
+#' See the [grouping identity guide][guide] for how a resolved Grouping plan
+#' relates to `.id`, [inspect_grouping()], [grouping_bit()], and
+#' [grouping_id()].
+#'
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @param ... <[`tidy-select`][dplyr::dplyr_tidy_select]> Column selections
 #'   and, where supported, nested Grouping specifications. In

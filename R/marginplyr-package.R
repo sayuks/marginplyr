@@ -33,6 +33,34 @@
 #' - **Parent shares**: [share_of_parent()] calculates a summary's ratio to
 #'   its immediate rollup parent.
 #'
+#' @section Errors:
+#' Every error marginplyr raises for a call you can correct inherits the
+#' `"marginplyr_error"` class, so one handler catches them all:
+#'
+#' ```r
+#' tryCatch(
+#'   summarize_with_margins(
+#'     retail_sales,
+#'     revenue = sum(revenue),
+#'     .grouping = rollup(region),
+#'     .duplicates = "merge"
+#'   ),
+#'   marginplyr_error = function(cnd) conditionMessage(cnd)
+#' )
+#' ```
+#'
+#' `"marginplyr_error"` is the only class marginplyr promises. Narrower
+#' subclasses and the wording of any message are implementation details that
+#' can change without a deprecation cycle, so match on the class rather than on
+#' message text.
+#'
+#' Two kinds of error deliberately fall outside the class. Errors raised by
+#' your own summary expressions, by tidyselect, by dplyr, or by a database
+#' backend propagate with their original class and call intact. So do
+#' marginplyr's internal invariant checks, which report a defect no change to
+#' your call can avoid; please report those at
+#' <https://github.com/sayuks/marginplyr/issues>.
+#'
 #' @section Guides:
 #' - [Get started][g1]
 #' - [Database and lazy backends][g2]

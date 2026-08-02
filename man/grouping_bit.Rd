@@ -46,10 +46,9 @@ and it contributes a zero bit to \code{\link[=grouping_id]{grouping_id()}}.\tabu
 }
 
 
-See the
-\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide}
-for the comparison with \code{.id} and \code{\link[=inspect_grouping]{inspect_grouping()}}, rollup and cube
-masks, physical row order, Margin labels, and factor missingness.
+See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for the comparison with \code{.id} and
+\code{\link[=inspect_grouping]{inspect_grouping()}}, rollup and cube masks, physical row order, Margin
+labels, and factor missingness.
 }
 \examples{
 # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
