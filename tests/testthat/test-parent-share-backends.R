@@ -220,6 +220,40 @@ test_that("dtplyr validates each referenced source expanded by across", {
   expect_identical(error$source_summary, "value_flag")
 })
 
+test_that("dtplyr validates constant summaries expanded by across", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "y"),
+    value = 1:2
+  )
+  expressions <- list(
+    factor = rlang::expr(~factor("level")),
+    list = rlang::expr(~list(1)),
+    multiple = rlang::expr(~c(1, 2))
+  )
+
+  for (kind in names(expressions)) {
+    query <- rlang::inject(summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      dplyr::across(value, !!expressions[[kind]], .names = "source"),
+      share = share_of_parent(source),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ))
+
+    expect_s3_class(query, "dtplyr_step")
+    error <- expect_error(dplyr::collect(query))
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(error$parent_output, "share", info = kind)
+    expect_identical(error$source_summary, "source", info = kind)
+    if (identical(kind, "multiple")) {
+      expect_s3_class(error, "marginplyr_parent_cardinality_error")
+    } else {
+      expect_match(conditionMessage(error), "plain integer or double scalar")
+    }
+  }
+})
+
 test_that("dtplyr Parent validation preserves ordinary across arguments", {
   skip_if_not_installed("dtplyr")
   data <- data.frame(
@@ -231,6 +265,36 @@ test_that("dtplyr Parent validation preserves ordinary across arguments", {
       source,
       dplyr::across(value, sum, na.rm = TRUE, .names = "total"),
       share = share_of_parent(total),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ) |>
+      dplyr::arrange(group)
+  }
+
+  expected <- suppressWarnings(summarize(data))
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  expect_equal(
+    as.data.frame(dplyr::collect(query)),
+    as.data.frame(expected)
+  )
+})
+
+test_that("dtplyr preserves across arguments for unreferenced functions", {
+  skip_if_not_installed("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = c(1, NA, 3)
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      dplyr::across(
+        value,
+        list(total = sum, average = mean),
+        na.rm = TRUE
+      ),
+      share = share_of_parent(value_total),
       .grouping = rollup(group),
       .margin_label = NULL
     ) |>

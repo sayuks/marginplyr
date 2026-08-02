@@ -736,27 +736,28 @@ wrap_parent_sources <- function(dots,
         "source_summary"
       )
       wrapped <- rlang::call2(
-        rlang::call2(
-          ":::",
-          rlang::sym("marginplyr"),
-          rlang::sym("check_parent_across")
-        ),
+        parent_private_call("check_parent_across"),
         expr,
         parent_outputs = parent_outputs,
-        call = parent_call_text(call)
+        call = rlang::call2("quote", call)
       )
     } else {
       check <- checks[[1L]]
+      is_dtplyr <- identical(backend_kind, "dtplyr")
       wrapped <- rlang::call2(
-        rlang::call2(
-          ":::",
-          rlang::sym("marginplyr"),
-          rlang::sym("check_parent_scalar")
-        ),
+        parent_private_call(if (is_dtplyr) {
+          "check_dtplyr_parent_source"
+        } else {
+          "check_parent_scalar"
+        }),
         expr,
         parent_output = check$parent_output,
         source_summary = check$source_summary,
-        call = parent_call_text(call)
+        !!!if (is_dtplyr) {
+          list(call_text = parent_call_text(call))
+        } else {
+          list(call = rlang::call2("quote", call))
+        }
       )
     }
     dots[[position]] <- rlang::new_quosure(
@@ -771,17 +772,17 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   fns_index <- parsed$fns_index
-  used <- c(
+  recognized_positions <- c(
     parsed$cols_index,
     parsed$fns_index,
     parsed$names_index,
     parsed$unpack_index
   )
-  additional <- setdiff(
+  forwarded_positions <- setdiff(
     seq_along(call_args),
-    used[used > 0L]
+    recognized_positions[recognized_positions > 0L]
   )
-  additional_args <- call_args[additional]
+  forwarded_args <- call_args[forwarded_positions]
   if (fns_index == 0L) {
     functions <- list(rlang::expr(~.x))
     function_names <- ""
@@ -800,6 +801,12 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
   if (is.null(function_names)) {
     function_names <- rep("", length(functions))
   }
+  can_inline_forwarded <- !any(vapply(
+    functions,
+    rlang::is_call,
+    logical(1),
+    name = "~"
+  ))
 
   for (function_index in seq_along(functions)) {
     function_checks <- Filter(
@@ -807,6 +814,12 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
       checks
     )
     if (length(function_checks) == 0L) {
+      if (can_inline_forwarded && length(forwarded_args) > 0L) {
+        functions[[function_index]] <- inline_dtplyr_forwarded_fn(
+          functions[[function_index]],
+          forwarded_args = forwarded_args
+        )
+      }
       next
     }
     inputs <- vapply(
@@ -834,7 +847,11 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
       inputs = inputs,
       parent_outputs = parent_outputs,
       source_summaries = source_summaries,
-      additional_args = additional_args,
+      forwarded_args = if (can_inline_forwarded) {
+        forwarded_args
+      } else {
+        list()
+      },
       call = call
     )
   }
@@ -851,17 +868,28 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
   } else {
     call_args[[fns_index]] <- wrapped_fns
   }
-  if (length(additional) > 0L) {
-    call_args <- call_args[-additional]
+  if (can_inline_forwarded && length(forwarded_positions) > 0L) {
+    call_args <- call_args[-forwarded_positions]
   }
   rlang::call2(expr[[1L]], !!!call_args)
+}
+
+inline_dtplyr_forwarded_fn <- function(fn, forwarded_args) {
+  rlang::call2(
+    "~",
+    rlang::call2(
+      fn,
+      rlang::expr(.x), # nolint: object_usage_linter
+      !!!forwarded_args
+    )
+  )
 }
 
 wrap_dtplyr_parent_function <- function(fn,
                                         inputs,
                                         parent_outputs,
                                         source_summaries,
-                                        additional_args,
+                                        forwarded_args,
                                         call) {
   value <- if (rlang::is_call(fn, "~")) {
     fn[[2L]]
@@ -869,46 +897,80 @@ wrap_dtplyr_parent_function <- function(fn,
     rlang::call2( # nolint: object_usage_linter
       fn,
       rlang::expr(.x), # nolint: object_usage_linter
-      !!!additional_args
+      !!!forwarded_args
     )
   }
-  validator <- rlang::call2(
-    rlang::call2(
-      ":::",
-      rlang::sym("marginplyr"),
-      rlang::sym("check_dtplyr_parent_scalar")
-    ),
-    value,
+  input <- rlang::call2(
+    parent_private_call("dtplyr_parent_input_name"),
+    rlang::expr(.x) # nolint: object_usage_linter
+  )
+  mapping <- rlang::call2(
+    parent_private_call("new_parent_validation_mapping"),
     inputs = inputs,
     parent_outputs = parent_outputs,
-    source_summaries = source_summaries,
-    call = parent_call_text(call)
+    source_summaries = source_summaries
+  )
+  validator <- rlang::call2(
+    parent_private_call("check_dtplyr_parent_scalar"),
+    value,
+    input = input,
+    mapping = mapping,
+    call_text = parent_call_text(call)
   )
   rlang::call2("~", validator)
 }
 
 check_dtplyr_parent_scalar <- function(value,
-                                       inputs,
-                                       parent_outputs,
-                                       source_summaries,
-                                       call) {
-  input <- intersect(
-    all.names(substitute(value), functions = FALSE, unique = TRUE),
-    inputs
-  )
-  if (length(input) == 0L) {
-    return(value)
-  }
-  input <- input[[1L]]
-  position <- match(input, inputs)
+                                       input,
+                                       mapping,
+                                       call_text) {
+  position <- match(input, mapping$inputs)
   if (is.na(position)) {
     return(value)
   }
+  check_dtplyr_parent_source(
+    value,
+    parent_output = mapping$parent_outputs[[position]],
+    source_summary = mapping$source_summaries[[position]],
+    call_text = call_text
+  )
+}
+
+check_dtplyr_parent_source <- function(value,
+                                       parent_output,
+                                       source_summary,
+                                       call_text) {
   check_parent_scalar(
     value,
-    parent_output = parent_outputs[[position]],
-    source_summary = source_summaries[[position]],
-    call = call
+    parent_output = parent_output,
+    source_summary = source_summary,
+    call = str2lang(call_text)
+  )
+}
+
+dtplyr_parent_input_name <- function(value) {
+  deparse(substitute(value))
+}
+
+new_parent_validation_mapping <- function(inputs,
+                                          parent_outputs,
+                                          source_summaries) {
+  stopifnot(
+    length(inputs) == length(parent_outputs),
+    length(inputs) == length(source_summaries)
+  )
+  list(
+    inputs = inputs,
+    parent_outputs = parent_outputs,
+    source_summaries = source_summaries
+  )
+}
+
+parent_private_call <- function(name) {
+  rlang::call2(
+    ":::",
+    rlang::sym("marginplyr"),
+    rlang::sym(name)
   )
 }
 
@@ -928,12 +990,6 @@ check_parent_scalar <- function(value,
                                 parent_output,
                                 source_summary,
                                 call) {
-  if (is.character(call)) {
-    call <- str2lang(call)
-  }
-  if (is.list(call)) {
-    call <- call[[1L]]
-  }
   if (length(value) != 1L) {
     abort_marginplyr( # nolint: object_usage_linter
       paste0(
