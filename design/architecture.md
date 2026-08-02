@@ -184,7 +184,8 @@ The test suite divides supporting contracts as follows:
   internal-name safety, and live DuckDB equivalence.
 - `test-parent-share-backends.R` covers Parent-share adapter behavior,
   including targeted pre-query Arrow rejection, dtplyr execution-time
-  validation, lazy SQL composition, and live backend results.
+  validation, lazy SQL composition, live SQLite portable execution, and live
+  DuckDB native-versus-portable results.
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
   factor backend contracts.
 - `test-grouping-plan.R` covers the backend-independent Grouping

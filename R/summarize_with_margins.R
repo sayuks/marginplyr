@@ -251,10 +251,11 @@
 #' tests execute DuckDB queries against a live in-memory database and verify
 #' PostgreSQL SQL with dbplyr's simulator.
 #'
-#' The portable `UNION ALL` SQL path is verified with dbplyr simulators for
-#' Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL,
-#' Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus
-#' generic DBI and ODBC connections. Simulator coverage verifies SQL
+#' The portable `UNION ALL` SQL path is executed end to end for Parent shares
+#' against a live in-memory SQLite database. It is also verified with dbplyr
+#' simulators for Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server,
+#' MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and Teradata,
+#' plus generic DBI and ODBC connections. Simulator coverage verifies SQL
 #' generation, not execution against every database server.
 #'
 #' Arrow and dtplyr are also tested lazy backends, but they are not SQL

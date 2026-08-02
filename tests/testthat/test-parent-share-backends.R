@@ -616,6 +616,65 @@ test_that("general dbplyr leaves incompatible summary types to execution", {
   expect_match(sql, "LEFT JOIN", fixed = TRUE)
 })
 
+test_that("general dbplyr reports static Parent-share errors without probing", {
+  registerS3method(
+    "db_collect",
+    "parent_lazy_probe_connection",
+    parent_lazy_probe_collect,
+    envir = asNamespace("dbplyr")
+  )
+  con <- dbplyr::simulate_dbi()
+  class(con) <- c("parent_lazy_probe_connection", class(con))
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = "x", value = 1),
+    con = con
+  )
+  cases <- list(
+    syntax = rlang::expr(summarize_with_margins(
+      remote,
+      total = sum(value),
+      share = share_of_parent(sum(value)),
+      .grouping = rollup(group)
+    )),
+    source_name = rlang::expr(summarize_with_margins(
+      remote,
+      share = share_of_parent(total),
+      total = sum(value),
+      .grouping = rollup(group)
+    )),
+    dependency = rlang::expr(summarize_with_margins(
+      remote,
+      gross = sum(value),
+      net = gross,
+      share = share_of_parent(net),
+      .grouping = rollup(group)
+    )),
+    output_name = rlang::expr(summarize_with_margins(
+      remote,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group),
+      .id = "share"
+    )),
+    grouping_plan = rlang::expr(summarize_with_margins(
+      remote,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = cube(group)
+    ))
+  )
+
+  for (case_name in names(cases)) {
+    parent_lazy_probe_capture$n <- 0L
+    error <- expect_error(
+      rlang::eval_tidy(cases[[case_name]]),
+      info = case_name
+    )
+    expect_true(inherits(error, "marginplyr_error"), info = case_name)
+    expect_identical(parent_lazy_probe_capture$n, 0L, info = case_name)
+  }
+})
+
 test_that("fallback simulators render portable staged Parent-share SQL", {
   data <- data.frame(
     fixed = NA_character_,
@@ -668,6 +727,114 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
       info = simulator
     )
   }
+})
+
+test_that("RSQLite executes portable Parent shares end to end", {
+  skip_if_not_installed("RSQLite")
+  skip_if_not_installed("DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- data.frame(
+    fixed = c(NA_character_, NA_character_, "a", "a"),
+    group = c(NA_character_, "x", NA_character_, "x"),
+    revenue = c(1, 3, 2, 2),
+    units = c(1L, 3L, 0L, 0L)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "parent_share_sqlite_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      level = grouping_id(group),
+      revenue_total = sum(revenue),
+      units_total = sum(units),
+      missing_parent = dplyr::if_else(
+        dplyr::n() > 1L,
+        NA_real_,
+        sum(revenue)
+      ),
+      revenue_share = share_of_parent(revenue_total),
+      units_share = share_of_parent(units_total),
+      missing_parent_share = share_of_parent(missing_parent),
+      .by = fixed,
+      .grouping = rollup(group),
+      .id = "set",
+      .margin_label = "Margin"
+    )
+  }
+  arrange_result <- function(result) {
+    dplyr::arrange(
+      result,
+      is.na(fixed),
+      fixed,
+      set,
+      is.na(group),
+      group
+    )
+  }
+
+  expected <- arrange_result(summarize(data))
+  query <- summarize(remote)
+  sql <- dbplyr::sql_render(query)
+
+  expect_s3_class(query, "tbl_lazy")
+  expect_match(sql, "UNION ALL", fixed = TRUE)
+  expect_match(sql, "IS NULL AND", fixed = TRUE)
+  expect_match(sql, "CAST(", fixed = TRUE)
+  expect_false(grepl("GROUPING SETS", sql, fixed = TRUE))
+
+  result <- arrange_result(dplyr::collect(query))
+  expect_equal(as.data.frame(result), as.data.frame(expected))
+  expect_identical(result$set, expected$set)
+  expect_type(result$revenue_share, "double")
+  expect_type(result$units_share, "double")
+  expect_type(result$missing_parent_share, "double")
+  expect_true(all(result$revenue_share[result$level == 1L] == 1))
+  expect_true(all(is.na(
+    result$units_share[result$fixed == "a" & result$level == 0L]
+  )))
+  expect_true(all(is.na(
+    result$missing_parent_share[result$level == 0L]
+  )))
+})
+
+test_that("RSQLite Parent shares preserve runtime backend conditions", {
+  skip_if_not_installed("RSQLite")
+  skip_if_not_installed("DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(group = c("x", "y"), value = 1:2),
+    "parent_share_runtime_error_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  baseline <- expect_error(
+    remote |>
+      dplyr::summarize(bad = no_such_function(value)) |>
+      dplyr::collect()
+  )
+  query <- summarize_with_margins(
+    remote,
+    bad = no_such_function(value),
+    share = share_of_parent(bad),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_s3_class(query, "tbl_lazy")
+  error <- expect_error(dplyr::collect(query))
+  expect_identical(class(error), class(baseline))
+  expect_identical(class(error$parent), class(baseline$parent))
+  expect_false(inherits(error, "marginplyr_error"))
 })
 
 test_that("DuckDB Parent shares agree across native, portable, and local paths", { # nolint: line_length_linter

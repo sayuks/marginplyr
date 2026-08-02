@@ -332,6 +332,7 @@ subtotal, explicit dplyr code may be easier.
 | Verification status | Backends |
 |----|----|
 | Live native execution tested | DuckDB |
+| Live portable Parent-share execution tested | SQLite |
 | Native SQL generation tested | PostgreSQL |
 | Fallback SQL generation tested | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections |
 | Non-SQL lazy backend tested | Arrow, dtplyr |

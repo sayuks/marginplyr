@@ -295,13 +295,15 @@ running a query on a live server.
 | Status | Backends | What is verified |
 |---|---|---|
 | Live native execution tested | DuckDB | SQL generation, execution, result values, labels, and grouping identity |
+| Live portable Parent-share execution tested | SQLite | `UNION ALL` execution, Parent-share values, missing-safe matching, and Grouping set identifiers |
 | Native SQL generation tested | PostgreSQL | SQL rendered with dbplyr's PostgreSQL simulator |
 | Fallback SQL generation tested | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections | Portable branch and `UNION ALL` rendering with dbplyr simulators |
 | Non-SQL lazy backend tested | Arrow, dtplyr | Lazy summary or expansion behavior appropriate to the backend |
 
-Only DuckDB is currently exercised as a live SQL database in automated tests.
-Treat simulator-only backends as SQL-generation support, and report
-server-specific behavior with a minimal query and the backend version.
+DuckDB and SQLite are exercised as live SQL databases in automated tests;
+SQLite's live claim is limited to portable Parent-share execution. Treat
+simulator-only backends as SQL-generation support, and report server-specific
+behavior with a minimal query and the backend version.
 
 ## Practical rules for remote analysis
 

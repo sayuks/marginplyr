@@ -588,10 +588,11 @@ plan_parent_share_expressions <- function(dots,
     }
 
     if (contains_parent_share(expr)) {
-      stop(
-        "`share_of_parent()` must be the complete right-hand side of a ",
-        "named summary, or the direct `.fns` argument of `across()`.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "`share_of_parent()` must be the complete right-hand side of a ",
+          "named summary, or the direct `.fns` argument of `across()`."
+        )
       )
     }
 
@@ -600,12 +601,13 @@ plan_parent_share_expressions <- function(dots,
       preceding_parent_names
     )
     if (length(parent_dependency) > 0L) {
-      stop(
-        "Ordinary summaries cannot use an earlier Parent share (`",
-        parent_dependency[[1L]],
-        "`) in the same `summarize_with_margins()` call. Use a following ",
-        "`dplyr::mutate()` for derived values.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Ordinary summaries cannot use an earlier Parent share (`",
+          parent_dependency[[1L]],
+          "`) in the same `summarize_with_margins()` call. Use a following ",
+          "`dplyr::mutate()` for derived values."
+        )
       )
     }
     preceding_ordinary <- c(preceding_ordinary, analyses[[i]]$records)
@@ -1229,10 +1231,11 @@ validate_parent_across_syntax <- function(expr, env, output_name) {
   if (!is.null(args$unpack)) {
     unpack <- rlang::eval_tidy(args$unpack, env = env)
     if (!isFALSE(unpack)) {
-      stop(
-        "Parent-share `across()` requires `.unpack = FALSE` or an omitted ",
-        "`.unpack` argument.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent-share `across()` requires `.unpack = FALSE` or an ",
+          "omitted `.unpack` argument."
+        )
       )
     }
   }
@@ -1242,10 +1245,11 @@ validate_parent_across_syntax <- function(expr, env, output_name) {
       length(names_template) != 1L ||
       is.na(names_template)
   ) {
-    stop(
-      "Parent-share `across()` `.names` must be one non-missing character ",
-      "template.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Parent-share `across()` `.names` must be one non-missing character ",
+        "template."
+      )
     )
   }
   list(args = args, names_template = names_template)
@@ -1253,43 +1257,49 @@ validate_parent_across_syntax <- function(expr, env, output_name) {
 
 preflight_parent_across_syntax <- function(expr, output_name) {
   if (nzchar(output_name)) {
-    stop(
-      "An `across()` Parent-share expression must be unnamed; use its ",
-      "required `.names` argument to name the output columns.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "An `across()` Parent-share expression must be unnamed; use its ",
+        "required `.names` argument to name the output columns."
+      )
     )
   }
   args <- parse_across_arguments(expr) # nolint: object_usage_linter
   if (!is_parent_share_function(args$fns)) {
-    stop(
-      "For Parent shares, `across()` `.fns` must be `share_of_parent` or ",
-      "`marginplyr::share_of_parent` directly. Use two ordered `across()` ",
-      "expressions instead of a formula, anonymous function, or function list.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "For Parent shares, `across()` `.fns` must be `share_of_parent` or ",
+        "`marginplyr::share_of_parent` directly. Use two ordered `across()` ",
+        "expressions instead of a formula, anonymous function, or function ",
+        "list."
+      )
     )
   }
   if (length(args$additional) > 0L) {
-    stop(
-      "Parent-share `across()` does not accept additional function ",
-      "arguments: ",
-      paste0("`", args$additional, "`", collapse = ", "),
-      ". Put missing-value handling in the preceding ordinary summary.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Parent-share `across()` does not accept additional function ",
+        "arguments: ",
+        paste0("`", args$additional, "`", collapse = ", "),
+        ". Put missing-value handling in the preceding ordinary summary."
+      )
     )
   }
   if (is.null(args$names)) {
-    stop(
-      "Parent-share `across()` requires an explicit `.names` argument, for ",
-      "example `.names = \"{.col}_share\"`.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Parent-share `across()` requires an explicit `.names` argument, ",
+        "for example `.names = \"{.col}_share\"`."
+      )
     )
   }
   if (!is.null(args$unpack) && is.logical(args$unpack)) {
     if (length(args$unpack) != 1L || !isFALSE(args$unpack)) {
-      stop(
-        "Parent-share `across()` requires `.unpack = FALSE` or an omitted ",
-        "`.unpack` argument.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent-share `across()` requires `.unpack = FALSE` or an ",
+          "omitted `.unpack` argument."
+        )
       )
     }
   }
@@ -1308,14 +1318,17 @@ validate_parent_share_request <- function(outputs,
     return(invisible(NULL))
   }
   if (any(!nzchar(outputs))) {
-    stop("Parent-share output names must not be empty.", call. = FALSE)
+    abort_marginplyr( # nolint: object_usage_linter
+      "Parent-share output names must not be empty."
+    )
   }
   if (anyDuplicated(outputs)) {
-    stop(
-      "Parent-share output names must be unique; duplicate name `",
-      outputs[[anyDuplicated(outputs)]],
-      "` was generated.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Parent-share output names must be unique; duplicate name `",
+        outputs[[anyDuplicated(outputs)]],
+        "` was generated."
+      )
     )
   }
 
@@ -1330,53 +1343,60 @@ validate_parent_share_request <- function(outputs,
     source <- sources[[i]]
     output <- outputs[[i]]
     if (source %in% parent_names) {
-      stop(
-        "Parent share `", output, "` cannot use Parent share `", source,
-        "` as its source.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent share `", output, "` cannot use Parent share `", source,
+          "` as its source."
+        )
       )
     }
     if (!source %in% preceding_names) {
       if (source %in% all_names) {
-        stop(
-          "Parent share `", output, "` must refer to an ordinary summary ",
-          "defined before it; `", source, "` is a forward reference.",
-          call. = FALSE
+        abort_marginplyr( # nolint: object_usage_linter
+          paste0(
+            "Parent share `", output, "` must refer to an ordinary summary ",
+            "defined before it; `", source, "` is a forward reference."
+          )
         )
       }
-      stop(
-        "Parent share `", output, "` refers to unknown preceding ordinary ",
-        "summary `", source, "`.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent share `", output, "` refers to unknown preceding ordinary ",
+          "summary `", source, "`."
+        )
       )
     }
     if (
       !is.na(context$ordinary_counts[[source]]) &&
         context$ordinary_counts[[source]] != 1L
     ) {
-      stop(
-        "Parent share `", output, "` requires source summary `", source,
-        "` to be defined exactly once. Use one uniquely named ordinary ",
-        "summary.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent share `", output, "` requires source summary `", source,
+          "` to be defined exactly once. Use one uniquely named ordinary ",
+          "summary."
+        )
       )
     }
     record <- preceding[[max(which(preceding_names == source))]]
     if (!isTRUE(record$eligible)) {
-      stop(
-        "Parent share `", output, "` cannot use `", source,
-        "` because it was expanded from a data-frame-valued summary. Rewrite ",
-        "it as a top-level named summary or a preceding `across()` output.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent share `", output, "` cannot use `", source,
+          "` because it was expanded from a data-frame-valued summary. ",
+          "Rewrite it as a top-level named summary or a preceding `across()` ",
+          "output."
+        )
       )
     }
     if (length(record$dependencies) > 0L) {
-      stop(
-        "Parent share `", output, "` cannot use source summary `", source,
-        "` because it depends on earlier summary alias `",
-        record$dependencies[[1L]],
-        "`. Combine the calculation into one ordinary summary expression.",
-        call. = FALSE
+      abort_marginplyr( # nolint: object_usage_linter
+        paste0(
+          "Parent share `", output, "` cannot use source summary `", source,
+          "` because it depends on earlier summary alias `",
+          record$dependencies[[1L]],
+          "`. Combine the calculation into one ordinary summary expression."
+        )
       )
     }
   }
@@ -1390,11 +1410,12 @@ validate_parent_share_request <- function(outputs,
     ))
   )
   if (length(conflicts) > 0L) {
-    stop(
-      "Parent-share output name `", conflicts[[1L]],
-      "` conflicts with a grouping key, `.id`, ordinary summary, source ",
-      "summary, or earlier Parent share.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Parent-share output name `", conflicts[[1L]],
+        "` conflicts with a grouping key, `.id`, ordinary summary, source ",
+        "summary, or earlier Parent share."
+      )
     )
   }
   invisible(NULL)
