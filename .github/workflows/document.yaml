@@ -30,7 +30,6 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: any::roxygen2, local::.
-          needs: roxygen2
 
       - name: Regenerate documentation
         run: roxygen2::roxygenise()

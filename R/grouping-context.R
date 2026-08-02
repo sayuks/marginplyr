@@ -25,11 +25,11 @@
 #' | [grouping_bit()] | Whether one chosen dimension is absent | The same for identical absence patterns | # nolint: line_length_linter
 #' | [grouping_id()] | Bit mask for chosen absent dimensions | The same for identical absence patterns | # nolint: line_length_linter
 #'
-#' See the [grouping identity guide][gid] for the comparison with `.id` and
+#' See the [grouping identity guide][guide] for the comparison with `.id` and
 #' [inspect_grouping()], rollup and cube masks, physical row order, Margin
 #' labels, and factor missingness.
 #'
-#' [gid]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @param x A bare grouping column.
 #' @param ... Bare grouping columns.

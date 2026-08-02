@@ -46,6 +46,8 @@ assert_lazy_table <- function(x) {
 }
 
 # Required when dtplyr/data.table are optional Suggests rather than Imports.
+# data.table fixes the spelling of this name, so it cannot follow the package's
+# object naming convention.
 .datatable.aware <- TRUE # nolint: object_name_linter
 
 utils::globalVariables(".data")

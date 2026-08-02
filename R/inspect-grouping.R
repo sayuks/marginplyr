@@ -51,9 +51,9 @@
 #' [dplyr::show_query()] for generated SQL and backend-native tools for an
 #' optimizer plan.
 #'
-#' See the [grouping identity guide][gid] for the full comparison.
+#' See the [grouping identity guide][guide] for the full comparison.
 #'
-#' [gid]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @export
 #' @examples

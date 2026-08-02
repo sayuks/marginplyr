@@ -128,9 +128,9 @@
 #' durable business key and can change when the Grouping plan is reordered or
 #' deduplicated. It records plan occurrence, not physical result order; use
 #' [dplyr::arrange()] when order matters.
-#' See the [grouping identity guide][gid] for the complete comparison.
+#' See the [grouping identity guide][guide] for the complete comparison.
 #'
-#' [gid]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
