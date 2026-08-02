@@ -25,3 +25,4 @@
       conditionMessage(predicate_error)
     Output
       [1] "Parent-share `across()` only supports name-based tidyselect. Replace `where()` or another type/value predicate with explicit summary names."
+

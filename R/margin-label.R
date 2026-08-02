@@ -3,36 +3,47 @@ normalize_margin_label <- function(.margin_label) {
     return(NULL)
   }
   if (!is.character(.margin_label) || length(.margin_label) == 0L) {
-    stop(
-      "`.margin_label` must be `NULL`, an unnamed character scalar, or a ",
-      "named character vector.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`.margin_label` must be `NULL`, an unnamed character scalar, or a ",
+        "named character vector."
+      ),
+      class = "simpleError"
     )
   }
   label_names <- names(.margin_label)
   if (is.null(label_names)) {
     if (length(.margin_label) != 1L) {
-      stop(
+      abort_marginplyr( # nolint: object_usage_linter
         "An unnamed `.margin_label` must be a character vector of length 1.",
-        call. = FALSE
+        class = "simpleError"
       )
     }
     return(.margin_label)
   }
   if (anyNA(label_names)) {
-    stop("`.margin_label` names must not be missing.", call. = FALSE)
+    abort_marginplyr( # nolint: object_usage_linter
+      "`.margin_label` names must not be missing.",
+      class = "simpleError"
+    )
   }
   if (any(!nzchar(label_names))) {
-    stop("`.margin_label` names must not be empty.", call. = FALSE)
+    abort_marginplyr( # nolint: object_usage_linter
+      "`.margin_label` names must not be empty.",
+      class = "simpleError"
+    )
   }
   if (anyDuplicated(label_names)) {
-    stop("`.margin_label` names must not be duplicated.", call. = FALSE)
+    abort_marginplyr( # nolint: object_usage_linter
+      "`.margin_label` names must not be duplicated.",
+      class = "simpleError"
+    )
   }
   .margin_label
 }
 
-resolve_margin_labels <- function(.margin_label, dimensions, by) {
-  stopifnot(is.character(dimensions), is.character(by))
+resolve_margin_labels <- function(.margin_label, dimensions) {
+  stopifnot(is.character(dimensions))
 
   if (is.null(.margin_label)) {
     return(stats::setNames(rep(list(NULL), length(dimensions)), dimensions))
@@ -56,31 +67,37 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
   label_names <- names(.margin_label)
   fixed_names <- intersect(label_names, by)
   if (length(fixed_names) > 0L) {
-    stop(
-      "`.margin_label` must not name fixed `.by` column",
-      if (length(fixed_names) == 1L) " " else "s ",
-      paste0("`", fixed_names, "`", collapse = ", "),
-      ".",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`.margin_label` must not name fixed `.by` column",
+        if (length(fixed_names) == 1L) " " else "s ",
+        paste0("`", fixed_names, "`", collapse = ", "),
+        "."
+      ),
+      class = "simpleError"
     )
   }
   unknown_names <- setdiff(label_names, dimensions)
   if (length(unknown_names) > 0L) {
-    stop(
-      "`.margin_label` has unknown dimension name",
-      if (length(unknown_names) == 1L) " " else "s ",
-      paste0("`", unknown_names, "`", collapse = ", "),
-      ".",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`.margin_label` has unknown dimension name",
+        if (length(unknown_names) == 1L) " " else "s ",
+        paste0("`", unknown_names, "`", collapse = ", "),
+        "."
+      ),
+      class = "simpleError"
     )
   }
   missing_names <- setdiff(dimensions, label_names)
   if (length(missing_names) > 0L) {
-    stop(
-      "`.margin_label` must name every Margin dimension; missing ",
-      paste0("`", missing_names, "`", collapse = ", "),
-      ".",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`.margin_label` must name every Margin dimension; missing ",
+        paste0("`", missing_names, "`", collapse = ", "),
+        "."
+      ),
+      class = "simpleError"
     )
   }
   invisible(NULL)
@@ -97,7 +114,6 @@ validate_margin_label <- function(.data,
                                   margin_labels,
                                   .check_margin_label,
                                   column_info) {
-  assert_logical_scalar(.check_margin_label)
   validate_margin_label_names(
     .margin_label,
     dimensions = dimensions,

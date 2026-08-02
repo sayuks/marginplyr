@@ -67,3 +67,35 @@ test_that("assert_lazy_table() works", {
     )
   )
 })
+
+test_that("shared argument assertions use the package condition seam", {
+  x <- 1
+
+  logical_error <- expect_error(
+    assert_logical_scalar(x),
+    "`x` must be a logical scalar"
+  )
+  string_error <- expect_error(
+    assert_string_scalar(x),
+    "`x` must be a character vector of length 1"
+  )
+  nest_error <- expect_error(
+    assert_nest_possible(x),
+    "`x` must be one of the following classes"
+  )
+
+  expect_s3_class(logical_error, "marginplyr_error")
+  expect_s3_class(string_error, "marginplyr_error")
+  expect_s3_class(nest_error, "marginplyr_error")
+})
+
+test_that("lazy-table assertions use the package condition seam", {
+  skip_if_not_installed("arrow")
+
+  error <- expect_error(
+    assert_lazy_table(arrow::as_record_batch_reader(data.frame())),
+    "must not be an object of the following class"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+})

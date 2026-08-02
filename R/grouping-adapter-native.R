@@ -163,13 +163,15 @@ validate_grouping_sets_query <- function(op) {
 }
 
 abort_dbplyr_representation <- function() {
-  stop(
-    "The dbplyr query representation has changed and is not compatible with ",
-    "this version of marginplyr (dbplyr ",
-    as.character(utils::packageVersion("dbplyr")),
-    "). Please report this at ",
-    "https://github.com/sayuks/marginplyr/issues.",
-    call. = FALSE
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      "The dbplyr query representation has changed and is not compatible ",
+      "with this version of marginplyr (dbplyr ",
+      as.character(utils::packageVersion("dbplyr")),
+      "). Please report this at ",
+      "https://github.com/sayuks/marginplyr/issues."
+    ),
+    class = "simpleError"
   )
 }
 

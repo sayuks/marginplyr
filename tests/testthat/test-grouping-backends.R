@@ -628,13 +628,19 @@ test_that("union adapters diagnose opaque summary name collisions", {
     )
   }
 
-  expect_error(
+  error <- expect_error(
     summarize_with_margins(
       data,
       opaque_summary(value),
       .grouping = rollup(group)
     ),
     "summary output names conflict with internal grouping columns"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
   )
 })
 
@@ -1007,13 +1013,15 @@ test_that("native SQL reports incompatible dbplyr query representations", {
     group_vars = character()
   )
 
-  expect_error(
+  error <- expect_error(
     dbplyr::sql_build(
       grouping_query,
       con = dbplyr::simulate_postgres()
     ),
     "dbplyr query representation has changed"
   )
+
+  expect_s3_class(error, "marginplyr_error")
 })
 
 test_that("native grouping sets remain a subquery after downstream verbs", {
@@ -1199,8 +1207,7 @@ test_that("DuckDB native and UNION adapters agree", {
     plan = plan,
     margin_labels = resolve_margin_labels(
       "Total",
-      dimensions = plan$dimensions,
-      by = plan$by
+      dimensions = plan$dimensions
     ),
     column_info = margin_column_info(
       grouping_selection_proxy(remote),

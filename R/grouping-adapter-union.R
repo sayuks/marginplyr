@@ -63,12 +63,14 @@ summarize_margin_union <- function(.data,
         unname(key_names[setdiff(group_vars, grouping_set)])
       )
       if (length(unexpected_internal_names) > 0L) {
-        stop(
-          "Dynamically generated summary output names conflict with internal ",
-          "grouping columns: ",
-          paste0("`", unexpected_internal_names, "`", collapse = ", "),
-          ". Use different summary output names.",
-          call. = FALSE
+        abort_marginplyr( # nolint: object_usage_linter
+          paste0(
+            "Dynamically generated summary output names conflict with ",
+            "internal grouping columns: ",
+            paste0("`", unexpected_internal_names, "`", collapse = ", "),
+            ". Use different summary output names."
+          ),
+          class = "simpleError"
         )
       }
 

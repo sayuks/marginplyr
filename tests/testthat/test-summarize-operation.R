@@ -62,7 +62,7 @@ test_that("invalid summary selections precede lazy label collision queries", {
       .grouping = rollup(group),
       .check_margin_label = TRUE
     ),
-    "Invalid column selection.*unknown"
+    "Column `unknown` doesn't exist"
   )
 
   expect_identical(summary_label_check_capture$n, 0L)
@@ -78,7 +78,7 @@ test_that("invalid summary selections precede label name coverage errors", {
       .grouping = rollup(first, second),
       .margin_label = c(first = "All first")
     ),
-    "Invalid column selection.*unknown"
+    "Column `unknown` doesn't exist"
   )
 })
 
@@ -218,4 +218,64 @@ test_that("dtplyr summary reuses one typed snapshot across selections", {
     c("group", "total_code", "total_value")
   )
   expect_setequal(result$total_value, c(10, 20, 30))
+})
+
+test_that("summary selection errors use the package condition seam", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  summary_options <- list(.groups = "drop")
+  cases <- list(
+    removed_groups = list(
+      expr = rlang::expr(summarize_with_margins(
+        data,
+        n = dplyr::n(),
+        .grouping = rollup(group),
+        !!!summary_options
+      )),
+      message = "`summarize_with_margins\\(\\)` does not support `\\.groups`"
+    ),
+    context_helper = list(
+      expr = rlang::expr(summarize_with_margins(
+        data,
+        id = dplyr::cur_group_id(),
+        .grouping = rollup(group)
+      )),
+      message = "does not support `cur_group_id\\(\\)`"
+    ),
+    group_overwrite = list(
+      expr = rlang::expr(summarize_with_margins(
+        data,
+        group = sum(value),
+        .grouping = rollup(group)
+      )),
+      message = "cannot overwrite grouping column `group`"
+    )
+  )
+
+  for (case in cases) {
+    error <- expect_error(eval(case$expr), case$message)
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      rlang::call_name(conditionCall(error)),
+      "summarize_with_margins"
+    )
+  }
+})
+
+test_that("summary tidyselect conditions retain their provenance", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  baseline <- expect_error(
+    tidyselect::eval_select(rlang::quo(unknown), data = data["value"])
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(unknown, sum),
+      .grouping = rollup(group)
+    )
+  )
+
+  expect_identical(class(error), class(baseline))
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_match(conditionMessage(error), "Column `unknown` doesn't exist")
 })

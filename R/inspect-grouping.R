@@ -121,7 +121,11 @@ inspect_grouping <- function(.data,
   with_margin_error_call( # nolint: object_usage_linter
     {
       assert_lazy_table(.data)
-      .format <- match.arg(.format)
+      .format <- match_margin_choice( # nolint: object_usage_linter
+        .format,
+        choices = c("text", "list"),
+        arg_name = ".format"
+      )
       grouping <- prepare_grouping_plan( # nolint: object_usage_linter
         .data,
         by_quo = by_quo,

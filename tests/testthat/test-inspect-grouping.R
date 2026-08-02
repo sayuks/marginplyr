@@ -287,3 +287,18 @@ test_that("dbplyr inspection returns local plan data without a source query", {
   expect_identical(class(result), c("tbl_df", "tbl", "data.frame"))
   expect_identical(result$included, c("(group)", "()"))
 })
+
+test_that("inspect_grouping() options use the package condition seam", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  error <- expect_error(
+    inspect_grouping(data, .grouping = rollup(group), .format = "json"),
+    "`\\.format` must be one of"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "inspect_grouping"
+  )
+})

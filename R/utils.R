@@ -1,8 +1,9 @@
 assert_logical_scalar <- function(x) {
   nm <- deparse(substitute(x))
   if (!(isTRUE(x) || isFALSE(x))) {
-    stop(
-      sprintf("`%s` must be a logical scalar (`TRUE` or `FALSE`).", nm)
+    abort_marginplyr( # nolint: object_usage_linter
+      sprintf("`%s` must be a logical scalar (`TRUE` or `FALSE`).", nm),
+      class = "simpleError"
     )
   }
 }
@@ -11,36 +12,39 @@ assert_logical_scalar <- function(x) {
 assert_string_scalar <- function(x) {
   nm <- deparse(substitute(x))
   if (!(is.character(x) && length(x) == 1)) {
-    stop(
-      sprintf("`%s` must be a character vector of length 1.", nm)
+    abort_marginplyr( # nolint: object_usage_linter
+      sprintf("`%s` must be a character vector of length 1.", nm),
+      class = "simpleError"
     )
   }
 }
 
 assert_nest_possible <- function(x) {
   nm <- deparse(substitute(x))
-  valid_classes <- c("data.frame", "dtplyr_step", NULL)
+  valid_classes <- c("data.frame", "dtplyr_step")
   if (!inherits(x, valid_classes)) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       sprintf(
         "`%s` must be one of the following classes, which can be nested: %s",
         nm,
         toString(valid_classes)
-      )
+      ),
+      class = "simpleError"
     )
   }
 }
 
 assert_lazy_table <- function(x) {
   nm <- deparse(substitute(x))
-  invalid_lazy_table_names <- c("RecordBatchReader", NULL)
+  invalid_lazy_table_names <- "RecordBatchReader"
   if (inherits(x, invalid_lazy_table_names)) {
-    stop(
+    abort_marginplyr( # nolint: object_usage_linter
       sprintf(
         "`%s` must not be an object of the following classes: %s",
         nm,
         toString(invalid_lazy_table_names)
-      )
+      ),
+      class = "simpleError"
     )
   }
 }

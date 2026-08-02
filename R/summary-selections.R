@@ -3,10 +3,12 @@ check_removed_groups_argument <- function(dots) {
     return(invisible(NULL))
   }
 
-  stop(
-    "`summarize_with_margins()` does not support `.groups`; ",
-    "Margin-summary results are always ungrouped.",
-    call. = FALSE
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      "`summarize_with_margins()` does not support `.groups`; ",
+      "Margin-summary results are always ungrouped."
+    ),
+    class = "simpleError"
   )
 }
 
@@ -24,14 +26,16 @@ check_summary_context_helpers <- function(dots) {
     return(invisible(NULL))
   }
 
-  stop(
-    "`summarize_with_margins()` does not support ",
-    paste0("`", unsupported, "()`", collapse = ", "),
-    ". These helpers describe one branch-local dplyr grouping or data mask, ",
-    "but a margin result combines multiple grouping sets. Use ",
-    "`grouping_bit()` or ",
-    "`grouping_id()` when identifying margin levels.",
-    call. = FALSE
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      "`summarize_with_margins()` does not support ",
+      paste0("`", unsupported, "()`", collapse = ", "),
+      ". These helpers describe one branch-local dplyr grouping or data mask, ",
+      "but a margin result combines multiple grouping sets. Use ",
+      "`grouping_bit()` or ",
+      "`grouping_id()` when identifying margin levels."
+    ),
+    class = "simpleError"
   )
 }
 
@@ -41,12 +45,14 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
     return(invisible(NULL))
   }
 
-  stop(
-    "Summary results cannot overwrite grouping column",
-    if (length(overwritten_groups) == 1L) " " else "s ",
-    paste0("`", overwritten_groups, "`", collapse = ", "),
-    ".",
-    call. = FALSE
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      "Summary results cannot overwrite grouping column",
+      if (length(overwritten_groups) == 1L) " " else "s ",
+      paste0("`", overwritten_groups, "`", collapse = ", "),
+      "."
+    ),
+    class = "simpleError"
   )
 }
 
@@ -304,20 +310,11 @@ rewrite_pick_selection <- function(expr, env, data_proxy) {
 }
 
 resolve_summary_selection <- function(expr, env, data_proxy) {
-  tryCatch(
-    tidyselect::eval_select(
-      rlang::new_quosure(expr, env = env),
-      data = data_proxy,
-      strict = TRUE,
-      allow_rename = TRUE
-    ),
-    error = function(cnd) {
-      stop(
-        "Invalid column selection in a summary expression: ",
-        conditionMessage(cnd),
-        call. = FALSE
-      )
-    }
+  tidyselect::eval_select(
+    rlang::new_quosure(expr, env = env),
+    data = data_proxy,
+    strict = TRUE,
+    allow_rename = TRUE
   )
 }
 

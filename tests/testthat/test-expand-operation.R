@@ -267,3 +267,21 @@ test_that("expand preserves duplicate grouping-set policies", {
   expect_identical(nrow(kept), 4L)
   expect_identical(names(kept), names(data))
 })
+
+test_that("expand rejects unsupported sources with a package condition", {
+  skip_if_not_installed("arrow")
+
+  error <- expect_error(
+    expand_with_margins(
+      arrow::as_record_batch_reader(data.frame(group = c("x", "y"))),
+      .grouping = rollup(group)
+    ),
+    "`\\.data` must not be an object of the following classes"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "expand_with_margins"
+  )
+})

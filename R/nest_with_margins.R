@@ -170,10 +170,16 @@ nest_margin_pipeline <- function(.data,
       assert_logical_scalar(.keep)
       assert_string_scalar(.key)
       if (is.na(.key)) {
-        stop("`.key` must not be missing.", call. = FALSE)
+        abort_marginplyr( # nolint: object_usage_linter
+          "`.key` must not be missing.",
+          class = "simpleError"
+        )
       }
       if (!nzchar(.key)) {
-        stop("`.key` must not be empty.", call. = FALSE)
+        abort_marginplyr( # nolint: object_usage_linter
+          "`.key` must not be empty.",
+          class = "simpleError"
+        )
       }
       if (identical(.duplicates, c("error", "drop"))) {
         .duplicates <- "error"
@@ -192,10 +198,12 @@ nest_margin_pipeline <- function(.data,
       .duplicates <- options$duplicates
       check_margin_id_collision(set_id_name, .key, "nesting `.key`") # nolint: object_usage_linter
       if (identical(.duplicates, "keep")) {
-        stop(
-          "Nesting does not support `.duplicates = \"keep\"`. Use ",
-          "`\"error\"` or `\"drop\"`.",
-          call. = FALSE
+        abort_marginplyr( # nolint: object_usage_linter
+          paste0(
+            "Nesting does not support `.duplicates = \"keep\"`. Use ",
+            "`\"error\"` or `\"drop\"`."
+          ),
+          class = "simpleError"
         )
       }
     },
@@ -228,9 +236,9 @@ execute_margin_nest <- function(operation, .key, .keep) {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
       if (.key %in% group_cols) {
-        stop(
+        abort_marginplyr( # nolint: object_usage_linter
           sprintf("`.key` (`%s`) must not be a grouping column.", .key),
-          call. = FALSE
+          class = "simpleError"
         )
       }
 

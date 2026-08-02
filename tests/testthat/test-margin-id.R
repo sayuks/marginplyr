@@ -325,8 +325,7 @@ test_that("DuckDB native and portable summaries agree on .id", {
     plan = plan,
     margin_labels = resolve_margin_labels(
       "Total",
-      dimensions = plan$dimensions,
-      by = plan$by
+      dimensions = plan$dimensions
     ),
     column_info = margin_column_info(
       grouping_selection_proxy(remote),

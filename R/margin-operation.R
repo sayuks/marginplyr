@@ -100,16 +100,7 @@ normalize_margin_options <- function(.margin_label,
                                      .check_margin_label,
                                      .duplicates,
                                      .id = NULL) {
-  if (
-    !is.logical(.check_margin_label) ||
-      length(.check_margin_label) != 1L ||
-      is.na(.check_margin_label)
-  ) {
-    abort_marginplyr( # nolint: object_usage_linter
-      "`.check_margin_label` must be a logical scalar (`TRUE` or `FALSE`).",
-      class = "simpleError"
-    )
-  }
+  assert_logical_scalar(.check_margin_label)
   .id <- normalize_margin_id(.id)
 
   list(
@@ -212,8 +203,7 @@ prepare_margin_operation <- function(.data,
       )
       margin_labels <- resolve_margin_labels( # nolint: object_usage_linter
         .margin_label,
-        dimensions = plan$dimensions,
-        by = plan$by
+        dimensions = plan$dimensions
       )
 
       new_margin_operation(

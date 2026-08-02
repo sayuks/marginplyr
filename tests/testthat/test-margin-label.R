@@ -440,3 +440,63 @@ test_that("collision checks use the displayed value of non-factor columns", {
     fixed = TRUE
   )
 })
+
+test_that("Margin label option errors use the package condition seam", {
+  data <- data.frame(
+    fixed = "f",
+    first = "a",
+    second = "x",
+    value = 1L
+  )
+  operation <- function(label) {
+    expand_with_margins(
+      data,
+      .by = fixed,
+      .grouping = rollup(first, second),
+      .margin_label = label
+    )
+  }
+  cases <- list(
+    list(
+      label = 1L,
+      message = "must be `NULL`, an unnamed character scalar"
+    ),
+    list(
+      label = c("All", "Total"),
+      message = "unnamed `\\.margin_label` must be a character vector"
+    ),
+    list(
+      label = stats::setNames(c("All", "All"), c("first", NA_character_)),
+      message = "names must not be missing"
+    ),
+    list(
+      label = stats::setNames(c("All", "All"), c("first", "")),
+      message = "names must not be empty"
+    ),
+    list(
+      label = stats::setNames(c("All", "All"), c("first", "first")),
+      message = "names must not be duplicated"
+    ),
+    list(
+      label = c(fixed = "All", first = "All", second = "All"),
+      message = "must not name fixed `\\.by` column `fixed`"
+    ),
+    list(
+      label = c(first = "All", second = "All", unknown = "All"),
+      message = "unknown dimension name `unknown`"
+    ),
+    list(
+      label = c(first = "All"),
+      message = "must name every Margin dimension; missing `second`"
+    )
+  )
+
+  for (case in cases) {
+    error <- expect_error(operation(case$label), case$message)
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      rlang::call_name(conditionCall(error)),
+      "expand_with_margins"
+    )
+  }
+})

@@ -146,3 +146,76 @@ test_that("nest preflight precedes semantic margin-label validation", {
 
   expect_identical(nest_proxy_capture$n, 1L)
 })
+
+test_that("nesting option errors use the package condition seam", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  cases <- list(
+    keep = list(
+      expr = quote(nest_with_margins(data, .grouping = rollup(group), .keep = 1)), # nolint: line_length_linter
+      message = "`\\.keep` must be a logical scalar"
+    ),
+    key_type = list(
+      expr = quote(nest_with_margins(data, .grouping = rollup(group), .key = 1)), # nolint: line_length_linter
+      message = "`\\.key` must be a character vector of length 1"
+    ),
+    key_missing = list(
+      expr = quote(nest_with_margins(
+        data,
+        .grouping = rollup(group),
+        .key = NA_character_
+      )),
+      message = "`\\.key` must not be missing"
+    ),
+    key_empty = list(
+      expr = quote(nest_with_margins(
+        data,
+        .grouping = rollup(group),
+        .key = ""
+      )),
+      message = "`\\.key` must not be empty"
+    ),
+    duplicates_keep = list(
+      expr = quote(nest_with_margins(
+        data,
+        .grouping = rollup(group),
+        .duplicates = "keep"
+      )),
+      message = "Nesting does not support `\\.duplicates = \"keep\"`"
+    ),
+    key_grouping_column = list(
+      expr = quote(nest_with_margins(
+        data,
+        .grouping = rollup(group),
+        .key = "group"
+      )),
+      message = "`\\.key` \\(`group`\\) must not be a grouping column"
+    )
+  )
+
+  for (case in cases) {
+    error <- expect_error(eval(case$expr), case$message)
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      rlang::call_name(conditionCall(error)),
+      "nest_with_margins"
+    )
+  }
+})
+
+test_that("nesting rejects unsupported sources with a package condition", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = c("x", "y"), value = 1:2),
+    con = dbplyr::simulate_postgres()
+  )
+
+  error <- expect_error(
+    nest_with_margins(remote, .grouping = rollup(group)),
+    "`\\.data` must be one of the following classes"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "nest_with_margins"
+  )
+})
