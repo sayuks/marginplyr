@@ -38,6 +38,33 @@ honest: any leak into `man/` fails CI.
 `.github/workflows/document.yaml` regenerates both and fails when either
 differs from what the roxygen comments produce.
 
+### Dependency metadata
+
+`DESCRIPTION`'s Imports/Suggests split is audited by hand, not with
+`attachment::att_amend_desc()`. That tool statically scans `R/` for
+`pkg::fun()` calls and promotes anything it finds to Imports, but this package
+uses several Suggests conditionally — for example `arrow::schema()` in
+`R/backend-metadata.R` sits behind a backend-kind guard, so the call site
+exists without arrow ever being a hard dependency. A static scanner cannot see
+the guard; running the tool promotes arrow to Imports and drops genuinely used
+Suggests such as knitr, which would violate the "no package is promoted to
+Imports merely to make a check pass" rule the metadata is held to. No `pkg_ignore`
+or `extra.suggests` configuration fixes this, because the false positive comes
+from what the scanner can express, not from missing configuration.
+
+The manual audit is a grep for `pkg::` and bare-name usage of each Suggested
+package across `R/`, `tests/`, and `vignettes/`, checked against DESCRIPTION by
+eye when a dependency is added, removed, or moved between Imports and
+Suggests. That scan only answers "is this Suggest referenced somewhere" — it
+cannot tell whether a Suggest is genuinely optional at runtime. The
+`_R_CHECK_DEPENDS_ONLY_=true` check mode is the authority on optionality, not
+the manual scan: it rebuilds examples, tests, and vignettes with Suggested
+packages absent, which is the only way to confirm code guarded behind a
+Suggest actually degrades correctly instead of erroring. Run it locally with
+`_R_CHECK_DEPENDS_ONLY_=true R CMD check` against a source tarball; a
+dedicated CI job for it is not wired in yet (tracked in #38), so until then
+this is a manual step, same as the grep audit above.
+
 ## Agent skills
 
 ### Issue tracker
