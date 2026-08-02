@@ -205,11 +205,16 @@ positions, or columns would not have one global meaning. Use
 
 \code{\link[=share_of_parent]{share_of_parent()}} calculates a preceding named numeric scalar summary's
 ratio to its immediate less detailed \code{\link[=rollup]{rollup()}} parent for local data and
-supported lazy dbplyr, Arrow, and dtplyr inputs. It supports direct named
-expressions and a constrained \code{\link[dplyr:across]{dplyr::across()}} form for multiple preceding
-summaries. Fixed \code{.by} keys partition the calculation, composite dimensions
-move together, and duplicate occurrences skip identical sets when choosing
-a parent.
+supported lazy dbplyr and dtplyr inputs. It supports direct named expressions
+and a constrained \code{\link[dplyr:across]{dplyr::across()}} form for multiple preceding summaries.
+Fixed \code{.by} keys partition the calculation, composite dimensions move
+together, and duplicate occurrences skip identical sets when choosing the
+parent.
+
+Arrow inputs reject Parent shares after expression planning and common
+Margin-operation validation but before constructing a summary query. Other
+Arrow Margin operations remain supported and lazy. Explicitly collect an
+Arrow input first when local Parent-share execution is appropriate.
 
 Root rows receive \code{1.0}. Missing numerators or denominators and zero
 denominators receive \code{NA_real_}; other finite ratios are not clamped.

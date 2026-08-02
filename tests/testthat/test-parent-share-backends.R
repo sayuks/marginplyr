@@ -310,7 +310,160 @@ test_that("dtplyr preserves across arguments for unreferenced functions", {
   )
 })
 
-test_that("dtplyr and Arrow batch Parent shares with missing-safe matching", {
+test_that("Arrow rejects Parent shares before constructing a query", {
+  skip_if_not_installed("arrow")
+  source <- arrow::Table$create(data.frame(
+    group = c("x", "y"),
+    value = 1:2
+  ))
+  calls <- new.env(parent = emptyenv())
+  calls$schema <- 0L
+  calls$summarize <- 0L
+  calls$collect <- 0L
+  infer_schema <- getFromNamespace("infer_schema", "arrow")
+  testthat::local_mocked_bindings(
+    infer_schema = function(x) {
+      calls$schema <- calls$schema + 1L
+      infer_schema(x)
+    },
+    do_arrow_summarize = function(...) {
+      calls$summarize <- calls$summarize + 1L
+      stop("Arrow summary query was constructed.", call. = FALSE)
+    },
+    collect.arrow_dplyr_query = function(...) {
+      calls$collect <- calls$collect + 1L
+      stop("Arrow query was collected.", call. = FALSE)
+    },
+    collect.ArrowTabular = function(...) {
+      calls$collect <- calls$collect + 1L
+      stop("Arrow data was collected.", call. = FALSE)
+    },
+    .package = "arrow"
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ),
+    "Arrow.*Parent share"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error),
+    "Other Arrow Margin operations remain supported",
+    fixed = TRUE
+  )
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
+  )
+  expect_identical(calls$schema, 1L)
+  expect_identical(calls$summarize, 0L)
+  expect_identical(calls$collect, 0L)
+  expect_snapshot(conditionMessage(error))
+})
+
+test_that("Arrow ordinary Margin summaries remain lazy and available", {
+  skip_if_not_installed("arrow")
+  query <- summarize_with_margins(
+    arrow::Table$create(data.frame(
+      group = c("x", "x", "y"),
+      value = 1:3
+    )),
+    total = sum(value),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_s3_class(query, "arrow_dplyr_query")
+  result <- dplyr::collect(query)
+  expect_identical(names(result), c("group", "total"))
+  expect_setequal(result$total, c(3L, 3L, 6L))
+  expect_true(anyNA(result$group))
+})
+
+test_that("Arrow Parent-share planning errors precede backend rejection", {
+  skip_if_not_installed("arrow")
+  source <- arrow::Table$create(data.frame(
+    group = c("x", "y"),
+    value = 1:2
+  ))
+  cases <- list(
+    grammar = list(
+      call = rlang::expr(summarize_with_margins(
+        source,
+        total = sum(value),
+        share = share_of_parent(sum(value)),
+        .grouping = rollup(group),
+        .margin_label = NULL
+      )),
+      pattern = "requires exactly one bare name"
+    ),
+    source_name = list(
+      call = rlang::expr(summarize_with_margins(
+        source,
+        share = share_of_parent(total),
+        total = sum(value),
+        .grouping = rollup(group),
+        .margin_label = NULL
+      )),
+      pattern = "forward reference"
+    ),
+    dependency = list(
+      call = rlang::expr(summarize_with_margins(
+        source,
+        gross = sum(value),
+        net = gross,
+        share = share_of_parent(net),
+        .grouping = rollup(group),
+        .margin_label = NULL
+      )),
+      pattern = "depends on earlier summary alias"
+    ),
+    naming = list(
+      call = rlang::expr(summarize_with_margins(
+        source,
+        total = sum(value),
+        share = share_of_parent(total),
+        .grouping = rollup(group),
+        .margin_label = NULL,
+        .id = "share"
+      )),
+      pattern = "output name.*conflicts"
+    ),
+    grouping_plan = list(
+      call = rlang::expr(summarize_with_margins(
+        source,
+        total = sum(value),
+        share = share_of_parent(total),
+        .grouping = grouping_sets(group),
+        .margin_label = NULL
+      )),
+      pattern = "requires.*one pure.*rollup"
+    )
+  )
+
+  for (case_name in names(cases)) {
+    case <- cases[[case_name]]
+    error <- expect_error(
+      rlang::eval_tidy(case$call),
+      case$pattern,
+      info = case_name
+    )
+    expect_false(
+      grepl("Arrow backends do not support", conditionMessage(error)),
+      info = case_name
+    )
+  }
+})
+
+test_that("dtplyr batches Parent shares with missing-safe matching", {
+  skip_if_not_installed("dtplyr")
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "a", "a"),
     group = c(NA_character_, "x", NA_character_, "x"),
@@ -336,30 +489,12 @@ test_that("dtplyr and Arrow batch Parent shares with missing-safe matching", {
   }
 
   expected <- summarize(data)
-  cases <- list()
-  if (rlang::is_installed("dtplyr")) {
-    cases$dtplyr <- list(
-      source = dtplyr::lazy_dt(data),
-      class = "dtplyr_step"
-    )
-  }
-  if (rlang::is_installed("arrow")) {
-    cases$arrow <- list(
-      source = arrow::Table$create(data),
-      class = "arrow_dplyr_query"
-    )
-  }
-  skip_if(length(cases) == 0L, "Neither dtplyr nor Arrow is installed")
-
-  for (backend in names(cases)) {
-    query <- summarize(cases[[backend]]$source)
-    expect_s3_class(query, cases[[backend]]$class)
-    expect_equal(
-      as.data.frame(dplyr::collect(query)),
-      as.data.frame(expected),
-      info = backend
-    )
-  }
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  expect_equal(
+    as.data.frame(dplyr::collect(query)),
+    as.data.frame(expected)
+  )
 })
 
 parent_sql_count <- function(sql, pattern) {
@@ -637,9 +772,6 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
   if (rlang::is_installed("dtplyr")) {
     sources$dtplyr <- dtplyr::lazy_dt(empty)
   }
-  if (rlang::is_installed("arrow")) {
-    sources$arrow <- arrow::Table$create(empty)
-  }
   if (rlang::is_installed("duckdb") && rlang::is_installed("DBI")) {
     con <- DBI::dbConnect(duckdb::duckdb())
     on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -703,9 +835,6 @@ test_that("lazy Parent shares skip duplicate grouping-set occurrences", {
   sources <- list()
   if (rlang::is_installed("dtplyr")) {
     sources$dtplyr <- dtplyr::lazy_dt(data)
-  }
-  if (rlang::is_installed("arrow")) {
-    sources$arrow <- arrow::Table$create(data)
   }
   if (rlang::is_installed("duckdb") && rlang::is_installed("DBI")) {
     con <- DBI::dbConnect(duckdb::duckdb())

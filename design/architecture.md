@@ -109,6 +109,22 @@ known output names, and preventing summary outputs from overwriting grouping
 columns. These checks occur before semantic label validation, including any
 opt-in lazy collision query.
 
+### Parent share (`R/parent-share.R`)
+
+Owns Parent-share request planning, parent mapping, source validation, ratio
+calculation, collision-safe temporary names, and private backend adapter
+dispatch. The adapter interface receives the prepared Margin operation, the
+staged ordinary-summary result, and all planned requests together; selection
+uses the prepared backend kind rather than the staged result's incidental
+class.
+
+Arrow is rejected at the immediately earlier executor boundary because no
+ordinary-summary query may be staged for a valid Arrow Parent-share request.
+The rejection runs after request planning and common Margin-operation
+validation, uses only the operation's prepared backend kind, and adds no
+wrapper, hook, sentinel, or extension seam. Other Arrow Margin operations
+continue through the ordinary summary, expansion, and nesting paths.
+
 ### Native adapter (`R/grouping-adapter-native.R`)
 
 Owns the dbplyr `GROUPING SETS` summary path. It rewrites grouping helpers for
@@ -166,6 +182,9 @@ The test suite divides supporting contracts as follows:
 - `test-grouping-backends.R` covers Arrow and dtplyr metadata behavior,
   native and portable SQL strategy, lazy query composition, collision checks,
   internal-name safety, and live DuckDB equivalence.
+- `test-parent-share-backends.R` covers Parent-share adapter behavior,
+  including targeted pre-query Arrow rejection, dtplyr execution-time
+  validation, lazy SQL composition, and live backend results.
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
   factor backend contracts.
 - `test-grouping-plan.R` covers the backend-independent Grouping

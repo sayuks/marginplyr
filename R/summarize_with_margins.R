@@ -156,11 +156,16 @@
 #' @section Parent shares:
 #' [share_of_parent()] calculates a preceding named numeric scalar summary's
 #' ratio to its immediate less detailed [rollup()] parent for local data and
-#' supported lazy dbplyr, Arrow, and dtplyr inputs. It supports direct named
-#' expressions and a constrained [dplyr::across()] form for multiple preceding
-#' summaries. Fixed `.by` keys partition the calculation, composite dimensions
-#' move together, and duplicate occurrences skip identical sets when choosing
-#' a parent.
+#' supported lazy dbplyr and dtplyr inputs. It supports direct named expressions
+#' and a constrained [dplyr::across()] form for multiple preceding summaries.
+#' Fixed `.by` keys partition the calculation, composite dimensions move
+#' together, and duplicate occurrences skip identical sets when choosing the
+#' parent.
+#'
+#' Arrow inputs reject Parent shares after expression planning and common
+#' Margin-operation validation but before constructing a summary query. Other
+#' Arrow Margin operations remain supported and lazy. Explicitly collect an
+#' Arrow input first when local Parent-share execution is appropriate.
 #'
 #' Root rows receive `1.0`. Missing numerators or denominators and zero
 #' denominators receive `NA_real_`; other finite ratios are not clamped.
@@ -532,6 +537,21 @@ execute_margin_summary <- function(operation, dots) {
       has_parent_shares <- length(summary_plan$requests) > 0L
 
       validate_margin_operation(operation) # nolint: object_usage_linter
+
+      if (
+        has_parent_shares &&
+          identical(operation$backend$kind, "arrow")
+      ) {
+        abort_marginplyr( # nolint: object_usage_linter
+          paste0(
+            "Arrow backends do not support Parent shares because marginplyr ",
+            "cannot enforce their scalar-summary contract safely before an ",
+            "Arrow query is constructed. Other Arrow Margin operations ",
+            "remain supported. Omit `share_of_parent()` or explicitly ",
+            "collect the data before calling `summarize_with_margins()`."
+          )
+        )
+      }
 
       staged_result <- stage_margin_summaries(
         operation,

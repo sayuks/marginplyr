@@ -319,10 +319,15 @@
 #' Missing detail or subtotal combinations are not completed.
 #'
 #' @section Lazy execution boundaries:
-#' Parent-share execution supports local data frames and lazy dbplyr, Arrow,
-#' and dtplyr inputs for one pure [rollup()], including composite dimensions.
-#' Lazy results remain lazy: ordinary summaries are followed by one
-#' Parent-share mapping and join shared by every requested measure.
+#' Parent-share execution supports local data frames and lazy dbplyr and dtplyr
+#' inputs for one pure [rollup()], including composite dimensions. Lazy results
+#' remain lazy: ordinary summaries are followed by one Parent-share mapping and
+#' join shared by every requested measure.
+#'
+#' Arrow inputs reject Parent shares after expression planning and common
+#' Margin-operation validation but before constructing a summary query. Other
+#' Arrow Margin operations remain supported and lazy. Explicitly collect an
+#' Arrow input first when local Parent-share execution is appropriate.
 #'
 #' General dbplyr backends are not queried solely to discover an arbitrary
 #' summary result's type or cardinality. Statically detectable syntax and
@@ -1452,7 +1457,6 @@ parent_share_adapter <- function(backend_kind) {
     postgres = execute_dbplyr_parent_shares,
     sql = execute_dbplyr_parent_shares,
     dtplyr = execute_non_sql_parent_shares,
-    arrow = execute_non_sql_parent_shares,
     other = execute_non_sql_parent_shares
   )
   adapter <- adapters[[backend_kind]]
