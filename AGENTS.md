@@ -13,10 +13,11 @@ lintr::lint_package()
 `load_all()` it reports every internal marginplyr function as an undefined
 global, and installing the package is not enough — it must be loaded.
 
-`.lintr` records repo-wide configuration and an inline `# nolint` records a fact
-about one expression. Neither substitutes for giving the linter the information
-it needs, so a lint that only appears in a blind environment is a reason to fix
-the environment, not to suppress it. Every `# nolint` names the linter it
+When a repository needs lint configuration, `.lintr` records it; an inline
+`# nolint` records a fact about one expression. Neither substitutes for giving
+the linter the information it needs, so a lint that only appears in a blind
+environment is a reason to fix the environment, not to suppress it. Every
+`# nolint` names the linter it
 suppresses, and every one in R code sits next to a comment stating the
 expression-specific reason — a glue string or an NSE pronoun that `codetools`
 cannot follow, or a name fixed by another package's API.
