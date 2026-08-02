@@ -543,8 +543,51 @@ test_that("dtplyr batches validated summaries and parent mapping", {
 parent_lazy_probe_capture <- new.env(parent = emptyenv())
 
 parent_lazy_probe_collect <- function(con, sql, ...) {
-  parent_lazy_probe_capture$n <- parent_lazy_probe_capture$n + 1L
+  parent_lazy_probe_capture$collection <-
+    parent_lazy_probe_capture$collection + 1L
   stop("Parent-share planning must not execute a schema probe.", call. = FALSE)
+}
+
+parent_lazy_probe_fields <- function(con, sql, ...) {
+  parent_lazy_probe_capture$result_type <-
+    parent_lazy_probe_capture$result_type + 1L
+  stop("Parent-share planning must not query result fields.", call. = FALSE)
+}
+
+parent_lazy_probe_rows <- function(con, sql, ...) {
+  parent_lazy_probe_capture$cardinality <-
+    parent_lazy_probe_capture$cardinality + 1L
+  stop("Parent-share planning must not query result rows.", call. = FALSE)
+}
+
+new_parent_lazy_probe <- function(data) {
+  methods <- list(
+    db_collect = parent_lazy_probe_collect,
+    sql_query_fields = parent_lazy_probe_fields,
+    sql_query_rows = parent_lazy_probe_rows
+  )
+  for (generic in names(methods)) {
+    registerS3method(
+      generic,
+      "parent_lazy_probe_connection",
+      methods[[generic]],
+      envir = asNamespace("dbplyr")
+    )
+  }
+  con <- dbplyr::simulate_dbi()
+  class(con) <- c("parent_lazy_probe_connection", class(con))
+  parent_lazy_probe_capture$result_type <- 0L
+  parent_lazy_probe_capture$cardinality <- 0L
+  parent_lazy_probe_capture$collection <- 0L
+  dbplyr::tbl_lazy(data, con = con)
+}
+
+parent_lazy_probe_counts <- function() {
+  c(
+    result_type = parent_lazy_probe_capture$result_type,
+    cardinality = parent_lazy_probe_capture$cardinality,
+    collection = parent_lazy_probe_capture$collection
+  )
 }
 
 test_that("PostgreSQL renders one staged Parent-share mapping for all measures", { # nolint: line_length_linter
@@ -586,19 +629,9 @@ test_that("PostgreSQL renders one staged Parent-share mapping for all measures",
 })
 
 test_that("general dbplyr leaves incompatible summary types to execution", {
-  registerS3method(
-    "db_collect",
-    "parent_lazy_probe_connection",
-    parent_lazy_probe_collect,
-    envir = asNamespace("dbplyr")
+  remote <- new_parent_lazy_probe(
+    data.frame(group = "x", label = "value")
   )
-  con <- dbplyr::simulate_dbi()
-  class(con) <- c("parent_lazy_probe_connection", class(con))
-  remote <- dbplyr::tbl_lazy(
-    data.frame(group = "x", label = "value"),
-    con = con
-  )
-  parent_lazy_probe_capture$n <- 0L
 
   query <- summarize_with_margins(
     remote,
@@ -608,26 +641,25 @@ test_that("general dbplyr leaves incompatible summary types to execution", {
     .margin_label = NULL
   )
   expect_s3_class(query, "tbl_lazy")
-  expect_identical(parent_lazy_probe_capture$n, 0L)
+  expect_identical(parent_lazy_probe_counts(), c(
+    result_type = 0L,
+    cardinality = 0L,
+    collection = 0L
+  ))
 
   sql <- dbplyr::sql_render(query)
-  expect_identical(parent_lazy_probe_capture$n, 0L)
+  expect_identical(parent_lazy_probe_counts(), c(
+    result_type = 0L,
+    cardinality = 0L,
+    collection = 0L
+  ))
   expect_match(sql, "CAST(", fixed = TRUE)
   expect_match(sql, "LEFT JOIN", fixed = TRUE)
 })
 
 test_that("general dbplyr reports static Parent-share errors without probing", {
-  registerS3method(
-    "db_collect",
-    "parent_lazy_probe_connection",
-    parent_lazy_probe_collect,
-    envir = asNamespace("dbplyr")
-  )
-  con <- dbplyr::simulate_dbi()
-  class(con) <- c("parent_lazy_probe_connection", class(con))
-  remote <- dbplyr::tbl_lazy(
-    data.frame(group = "x", value = 1),
-    con = con
+  remote <- new_parent_lazy_probe(
+    data.frame(group = "x", value = 1)
   )
   cases <- list(
     syntax = rlang::expr(summarize_with_margins(
@@ -665,13 +697,16 @@ test_that("general dbplyr reports static Parent-share errors without probing", {
   )
 
   for (case_name in names(cases)) {
-    parent_lazy_probe_capture$n <- 0L
     error <- expect_error(
       rlang::eval_tidy(cases[[case_name]]),
       info = case_name
     )
     expect_true(inherits(error, "marginplyr_error"), info = case_name)
-    expect_identical(parent_lazy_probe_capture$n, 0L, info = case_name)
+    expect_identical(
+      parent_lazy_probe_counts(),
+      c(result_type = 0L, cardinality = 0L, collection = 0L),
+      info = case_name
+    )
   }
 })
 
@@ -738,7 +773,8 @@ test_that("RSQLite executes portable Parent shares end to end", {
     fixed = c(NA_character_, NA_character_, "a", "a"),
     group = c(NA_character_, "x", NA_character_, "x"),
     revenue = c(1, 3, 2, 2),
-    units = c(1L, 3L, 0L, 0L)
+    units = c(1L, 3L, 0L, 0L),
+    unclamped = c(-1, 2, -2, 3)
   )
   remote <- dplyr::copy_to(
     con,
@@ -754,6 +790,7 @@ test_that("RSQLite executes portable Parent shares end to end", {
       level = grouping_id(group),
       revenue_total = sum(revenue),
       units_total = sum(units),
+      unclamped_total = sum(unclamped),
       missing_parent = dplyr::if_else(
         dplyr::n() > 1L,
         NA_real_,
@@ -761,6 +798,7 @@ test_that("RSQLite executes portable Parent shares end to end", {
       ),
       revenue_share = share_of_parent(revenue_total),
       units_share = share_of_parent(units_total),
+      unclamped_share = share_of_parent(unclamped_total),
       missing_parent_share = share_of_parent(missing_parent),
       .by = fixed,
       .grouping = rollup(group),
@@ -794,6 +832,7 @@ test_that("RSQLite executes portable Parent shares end to end", {
   expect_identical(result$set, expected$set)
   expect_type(result$revenue_share, "double")
   expect_type(result$units_share, "double")
+  expect_type(result$unclamped_share, "double")
   expect_type(result$missing_parent_share, "double")
   expect_true(all(result$revenue_share[result$level == 1L] == 1))
   expect_true(all(is.na(
@@ -802,6 +841,10 @@ test_that("RSQLite executes portable Parent shares end to end", {
   expect_true(all(is.na(
     result$missing_parent_share[result$level == 0L]
   )))
+  expect_identical(
+    sort(result$unclamped_share[result$level == 0L]),
+    c(-2, -1, 2, 3)
+  )
 })
 
 test_that("RSQLite Parent shares preserve runtime backend conditions", {
@@ -848,7 +891,8 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
     item = c("i", "j", "i", "j"),
     revenue = c(1, 3, 2, 2),
     units = c(1L, 3L, 0L, 0L),
-    missing_source = c(1, 3, 2, 2)
+    missing_source = c(1, 3, 2, 2),
+    unclamped = c(-1, 2, -2, 3)
   )
   remote <- dplyr::copy_to(
     con,
@@ -864,12 +908,14 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
       level = grouping_id(group, item),
       revenue = sum(revenue),
       units = sum(units),
+      unclamped = sum(unclamped),
       missing_parent = dplyr::if_else(
         dplyr::n() > 1L,
         NA_real_,
         sum(missing_source)
       ),
       revenue_share = share_of_parent(revenue),
+      unclamped_share = share_of_parent(unclamped),
       missing_parent_share = share_of_parent(missing_parent),
       dplyr::across(
         units,
@@ -892,6 +938,10 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
   expect_true(all(
     expected$missing_parent_share[expected$level == 3L] == 1
   ))
+  expect_identical(
+    sort(expected$unclamped_share[expected$level == 1L]),
+    c(-2, -1, 2, 3)
+  )
   native <- summarize(remote, "drop")
   portable <- summarize(remote, "keep")
 
