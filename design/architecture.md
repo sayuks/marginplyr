@@ -53,7 +53,7 @@ on a verb kind.
 Owns the shared prepare and finalize lifecycle, common option normalization,
 grouped-input normalization, the package-private Margin operation value, the
 shared semantic margin-label validation entry point, and propagation of the
-public call in user-facing errors. Preparation stores only canonical derived
+public call in Package conditions. Preparation stores only canonical derived
 state needed by execution and finalization; a Margin operation is single-use
 state for one public call.
 

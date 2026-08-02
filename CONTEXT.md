@@ -60,3 +60,14 @@ including composite dimensions, and are calculated independently within each
 fixed `.by` group. Duplicate occurrences remain in the result but are skipped
 while finding the next strictly less detailed parent set.
 _Avoid_: Subtotal share, percent of grand total
+
+**Package condition**:
+An error marginplyr itself raises, inheriting the `marginplyr_error` base
+class. It reports something the caller can avoid by rewriting the call within
+the documented public interface.
+_Avoid_: Package error, internal error, user-facing error
+
+**External condition**:
+An error raised by a user summary expression, tidyselect, dplyr, or a backend
+and propagated with its original class and provenance intact.
+_Avoid_: Third-party error, foreign error
