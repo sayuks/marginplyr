@@ -883,13 +883,19 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
   rlang::call2(expr[[1L]], !!!call_args)
 }
 
+# The argument a dtplyr lambda binds to each column it is mapped over. Named
+# as a string rather than written bare, so that static analysis reads the
+# pronoun as data rather than as a variable this function expects to find.
+dtplyr_lambda_pronoun <- function() {
+  rlang::sym(".x")
+}
+
 inline_dtplyr_forwarded_fn <- function(fn, forwarded_args) {
   rlang::call2(
     "~",
     rlang::call2(
       fn,
-      # `.x` is the data.table lambda pronoun, quoted here rather than bound.
-      rlang::expr(.x), # nolint: object_usage_linter.
+      dtplyr_lambda_pronoun(),
       !!!forwarded_args
     )
   )
@@ -901,15 +907,13 @@ wrap_dtplyr_parent_function <- function(fn, mapping, forwarded_args, call) {
   } else {
     rlang::call2(
       fn,
-      # `.x` is the data.table lambda pronoun, quoted here rather than bound.
-      rlang::expr(.x), # nolint: object_usage_linter.
+      dtplyr_lambda_pronoun(),
       !!!forwarded_args
     )
   }
   input <- rlang::call2(
     parent_private_call("dtplyr_parent_input_name"),
-    # `.x` is the data.table lambda pronoun, quoted here rather than bound.
-    rlang::expr(.x) # nolint: object_usage_linter.
+    dtplyr_lambda_pronoun()
   )
   mapping_expr <- rlang::call2(
     parent_private_call("new_parent_validation_mapping"),
