@@ -11,3 +11,12 @@ skip_if_no_sqlite_simulation <- function() {
     skip("RSQLite is not installed")
   }
 }
+
+# Drops the dialects whose SQL cannot be rendered without an optional driver
+# package, so the remaining ones stay under test.
+available_simulators <- function(simulators) {
+  if (!sqlite_simulation_available()) {
+    simulators <- setdiff(simulators, "simulate_sqlite")
+  }
+  simulators
+}

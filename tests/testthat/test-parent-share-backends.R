@@ -718,7 +718,7 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     group = NA_character_,
     value = 1
   )
-  simulators <- c(
+  simulators <- available_simulators(c(
     "simulate_access",
     "simulate_dbi",
     "simulate_hana",
@@ -734,10 +734,7 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     "simulate_spark_sql",
     "simulate_sqlite",
     "simulate_teradata"
-  )
-  if (!sqlite_simulation_available()) {
-    simulators <- setdiff(simulators, "simulate_sqlite")
-  }
+  ))
 
   for (simulator in simulators) {
     remote <- dbplyr::tbl_lazy(
