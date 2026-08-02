@@ -162,8 +162,10 @@ validate_grouping_sets_query <- function(op) {
   invisible(op)
 }
 
+# Not a Package condition: no rewrite of the call avoids an upstream
+# representation change. See ADR 0015.
 abort_dbplyr_representation <- function() {
-  abort_marginplyr( # nolint: object_usage_linter
+  stop(
     paste0(
       "The dbplyr query representation has changed and is not compatible ",
       "with this version of marginplyr (dbplyr ",
@@ -171,7 +173,7 @@ abort_dbplyr_representation <- function() {
       "). Please report this at ",
       "https://github.com/sayuks/marginplyr/issues."
     ),
-    class = "simpleError"
+    call. = FALSE
   )
 }
 

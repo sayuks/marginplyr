@@ -7,36 +7,31 @@ normalize_margin_label <- function(.margin_label) {
       paste0(
         "`.margin_label` must be `NULL`, an unnamed character scalar, or a ",
         "named character vector."
-      ),
-      class = "simpleError"
+      )
     )
   }
   label_names <- names(.margin_label)
   if (is.null(label_names)) {
     if (length(.margin_label) != 1L) {
       abort_marginplyr( # nolint: object_usage_linter
-        "An unnamed `.margin_label` must be a character vector of length 1.",
-        class = "simpleError"
+        "An unnamed `.margin_label` must be a character vector of length 1."
       )
     }
     return(.margin_label)
   }
   if (anyNA(label_names)) {
     abort_marginplyr( # nolint: object_usage_linter
-      "`.margin_label` names must not be missing.",
-      class = "simpleError"
+      "`.margin_label` names must not be missing."
     )
   }
   if (any(!nzchar(label_names))) {
     abort_marginplyr( # nolint: object_usage_linter
-      "`.margin_label` names must not be empty.",
-      class = "simpleError"
+      "`.margin_label` names must not be empty."
     )
   }
   if (anyDuplicated(label_names)) {
     abort_marginplyr( # nolint: object_usage_linter
-      "`.margin_label` names must not be duplicated.",
-      class = "simpleError"
+      "`.margin_label` names must not be duplicated."
     )
   }
   .margin_label
@@ -73,8 +68,7 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
         if (length(fixed_names) == 1L) " " else "s ",
         paste0("`", fixed_names, "`", collapse = ", "),
         "."
-      ),
-      class = "simpleError"
+      )
     )
   }
   unknown_names <- setdiff(label_names, dimensions)
@@ -85,8 +79,7 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
         if (length(unknown_names) == 1L) " " else "s ",
         paste0("`", unknown_names, "`", collapse = ", "),
         "."
-      ),
-      class = "simpleError"
+      )
     )
   }
   missing_names <- setdiff(dimensions, label_names)
@@ -96,8 +89,7 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
         "`.margin_label` must name every Margin dimension; missing ",
         paste0("`", missing_names, "`", collapse = ", "),
         "."
-      ),
-      class = "simpleError"
+      )
     )
   }
   invisible(NULL)

@@ -1,3 +1,10 @@
+# Parent-share sources are numeric scalar summaries
+
+    Code
+      conditionMessage(cardinality_error)
+    Output
+      [1] "Parent share `share` requires source summary `total` to return exactly one value per grouping row. Define `total` as one scalar summary; for multiple statistics, create separate named summaries and a Parent share for each one."
+
 # Parent-share across classifies source-name failures
 
     Code

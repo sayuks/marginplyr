@@ -34,22 +34,13 @@ check_margin_operation <- function(operation) {
   invisible(operation)
 }
 
+# Package conditions report the Margin verb the caller wrote rather than the
+# internal frame that raised them. Everything else keeps its own provenance.
 with_margin_error_call <- function(expr, call) {
-  legacy_package_error <- FALSE
   tryCatch(
-    withCallingHandlers(
-      expr,
-      error = function(cnd) {
-        if (!inherits(cnd, "marginplyr_error")) {
-          legacy_package_error <<- error_signaled_by_marginplyr()
-        }
-      }
-    ),
+    expr,
     error = function(cnd) {
-      if (
-        inherits(cnd, "marginplyr_error") ||
-          isTRUE(legacy_package_error)
-      ) {
+      if (inherits(cnd, "marginplyr_error")) {
         cnd$call <- call
       }
       stop(cnd)
@@ -57,24 +48,14 @@ with_margin_error_call <- function(expr, call) {
   )
 }
 
-error_signaled_by_marginplyr <- function() {
-  frames <- sys.frames()
-  # Exclude this helper and the calling handler in with_margin_error_call().
-  candidates <- utils::head(seq_along(frames), -2L)
+# One vocabulary per shared option, so a choice list and the guards that
+# re-check it cannot drift apart. The public verbs still spell their defaults
+# out literally because those formals are the documented signature; a test in
+# test-grouping-interface.R holds each formal to the constant it mirrors.
+# Verb-specific vocabularies live with the verb that owns them.
+margin_duplicates_choices <- c("error", "drop", "keep")
 
-  for (i in rev(candidates)) {
-    top <- topenv(frames[[i]])
-    if (!isNamespace(top)) {
-      return(FALSE)
-    }
-    namespace <- getNamespaceName(top)
-    if (namespace %in% c("base", "rlang")) {
-      next
-    }
-    return(identical(namespace, "marginplyr"))
-  }
-  FALSE
-}
+margin_label_position_choices <- c("last", "first")
 
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
@@ -88,7 +69,6 @@ match_margin_choice <- function(value, choices, arg_name) {
           paste0("\"", choices, "\"", collapse = ", "),
           "."
         ),
-        class = "simpleError",
         call = call
       )
     }
@@ -108,13 +88,13 @@ normalize_margin_options <- function(.margin_label,
     margin_label = normalize_margin_label(.margin_label),
     margin_label_position = match_margin_choice(
       .margin_label_position,
-      choices = c("last", "first"),
+      choices = margin_label_position_choices, # nolint: object_usage_linter
       arg_name = ".margin_label_position"
     ),
     check_margin_label = .check_margin_label,
     duplicates = match_margin_choice(
       .duplicates,
-      choices = c("error", "drop", "keep"),
+      choices = margin_duplicates_choices, # nolint: object_usage_linter
       arg_name = ".duplicates"
     )
   )
@@ -131,8 +111,7 @@ normalize_margin_id <- function(.id) {
       !nzchar(.id)
   ) {
     abort_marginplyr( # nolint: object_usage_linter
-      "`.id` must be `NULL` or one non-missing, non-empty character string.",
-      class = "simpleError"
+      "`.id` must be `NULL` or one non-missing, non-empty character string."
     )
   }
   .id
@@ -141,8 +120,7 @@ normalize_margin_id <- function(.id) {
 check_margin_id_collision <- function(.id, names, where) {
   if (!is.null(.id) && .id %in% names) {
     abort_marginplyr( # nolint: object_usage_linter
-      sprintf("`.id` (`%s`) conflicts with %s.", .id, where),
-      class = "simpleError"
+      sprintf("`.id` (`%s`) conflicts with %s.", .id, where)
     )
   }
   invisible(NULL)

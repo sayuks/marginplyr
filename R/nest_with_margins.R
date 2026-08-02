@@ -151,6 +151,12 @@ nest_with_margins <- function(.data,
   )
 }
 
+# The nesting verbs narrow the Margin `.duplicates` vocabulary: nested
+# duplicate sets would share indistinguishable outer keys, so `"keep"` is not
+# offered. See the note in R/margin-operation.R on why the formals still spell
+# it out.
+nest_duplicates_choices <- c("error", "drop")
+
 nest_margin_pipeline <- function(.data,
                                  by_quo,
                                  grouping_quo,
@@ -171,17 +177,23 @@ nest_margin_pipeline <- function(.data,
       assert_string_scalar(.key)
       if (is.na(.key)) {
         abort_marginplyr( # nolint: object_usage_linter
-          "`.key` must not be missing.",
-          class = "simpleError"
+          "`.key` must not be missing."
         )
       }
       if (!nzchar(.key)) {
         abort_marginplyr( # nolint: object_usage_linter
-          "`.key` must not be empty.",
-          class = "simpleError"
+          "`.key` must not be empty."
         )
       }
-      if (identical(.duplicates, c("error", "drop"))) {
+      # The nesting verbs' `.duplicates` formal is the whole vocabulary, so
+      # receiving it unchanged means the caller left the argument at its
+      # default. Resolve it here because the shared normalizer matches against
+      # the wider Margin vocabulary.
+      left_at_default <- identical( # nolint: object_usage_linter
+        .duplicates,
+        nest_duplicates_choices
+      )
+      if (left_at_default) {
         .duplicates <- "error"
       }
       options <- normalize_margin_options( # nolint: object_usage_linter
@@ -202,8 +214,7 @@ nest_margin_pipeline <- function(.data,
           paste0(
             "Nesting does not support `.duplicates = \"keep\"`. Use ",
             "`\"error\"` or `\"drop\"`."
-          ),
-          class = "simpleError"
+          )
         )
       }
     },
@@ -237,8 +248,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
       group_cols <- c(plan$by, plan$dimensions)
       if (.key %in% group_cols) {
         abort_marginplyr( # nolint: object_usage_linter
-          sprintf("`.key` (`%s`) must not be a grouping column.", .key),
-          class = "simpleError"
+          sprintf("`.key` (`%s`) must not be a grouping column.", .key)
         )
       }
 

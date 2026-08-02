@@ -63,8 +63,7 @@
 #' )
 grouping_bit <- function(x) {
   abort_marginplyr( # nolint: object_usage_linter
-    "`grouping_bit()` can only be used inside `summarize_with_margins()`.",
-    class = "simpleError"
+    "`grouping_bit()` can only be used inside `summarize_with_margins()`."
   )
 }
 
@@ -72,8 +71,7 @@ grouping_bit <- function(x) {
 #' @export
 grouping_id <- function(...) {
   abort_marginplyr( # nolint: object_usage_linter
-    "`grouping_id()` can only be used inside `summarize_with_margins()`.",
-    class = "simpleError"
+    "`grouping_id()` can only be used inside `summarize_with_margins()`."
   )
 }
 
@@ -161,36 +159,31 @@ grouping_helper_name <- function(expr) {
 grouping_helper_vars <- function(args, helper, plan) {
   if (identical(helper, "grouping_bit") && length(args) != 1L) {
     abort_marginplyr( # nolint: object_usage_linter
-      "`grouping_bit()` requires exactly one column.",
-      class = "simpleError"
+      "`grouping_bit()` requires exactly one column."
     )
   }
   if (identical(helper, "grouping_id") && length(args) == 0L) {
     abort_marginplyr( # nolint: object_usage_linter
-      "`grouping_id()` requires at least one column.",
-      class = "simpleError"
+      "`grouping_id()` requires at least one column."
     )
   }
 
   is_symbol <- vapply(args, is.symbol, logical(1))
   if (!all(is_symbol)) {
     abort_marginplyr( # nolint: object_usage_linter
-      sprintf("`%s()` only accepts bare grouping columns.", helper),
-      class = "simpleError"
+      sprintf("`%s()` only accepts bare grouping columns.", helper)
     )
   }
 
   vars <- vapply(args, as.character, character(1))
   if (anyDuplicated(vars)) {
     abort_marginplyr( # nolint: object_usage_linter
-      sprintf("`%s()` does not accept duplicate columns.", helper),
-      class = "simpleError"
+      sprintf("`%s()` does not accept duplicate columns.", helper)
     )
   }
   if (identical(helper, "grouping_id") && length(vars) > 31L) {
     abort_marginplyr( # nolint: object_usage_linter
-      "`grouping_id()` supports at most 31 columns.",
-      class = "simpleError"
+      "`grouping_id()` supports at most 31 columns."
     )
   }
   allowed <- unique(c(plan$by, plan$dimensions))
@@ -202,8 +195,7 @@ grouping_helper_vars <- function(args, helper, plan) {
         if (length(unknown) == 1L) "" else "s",
         paste0("`", unknown, "`", collapse = ", "),
         if (length(unknown) == 1L) "is" else "are"
-      ),
-      class = "simpleError"
+      )
     )
   }
 

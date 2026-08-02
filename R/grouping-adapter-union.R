@@ -69,8 +69,7 @@ summarize_margin_union <- function(.data,
             "internal grouping columns: ",
             paste0("`", unexpected_internal_names, "`", collapse = ", "),
             ". Use different summary output names."
-          ),
-          class = "simpleError"
+          )
         )
       }
 

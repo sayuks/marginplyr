@@ -123,7 +123,7 @@ inspect_grouping <- function(.data,
       assert_lazy_table(.data)
       .format <- match_margin_choice( # nolint: object_usage_linter
         .format,
-        choices = c("text", "list"),
+        choices = grouping_format_choices, # nolint: object_usage_linter
         arg_name = ".format"
       )
       grouping <- prepare_grouping_plan( # nolint: object_usage_linter
@@ -139,9 +139,13 @@ inspect_grouping <- function(.data,
   )
 }
 
+# `inspect_grouping()`'s own option vocabulary; see the note in
+# R/margin-operation.R on why the formal still spells it out.
+grouping_format_choices <- c("text", "list")
+
 format_grouping_plan <- function(plan, format) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
-  stopifnot(format %in% c("text", "list"))
+  stopifnot(format %in% grouping_format_choices) # nolint: object_usage_linter
 
   included <- lapply(
     plan$sets,

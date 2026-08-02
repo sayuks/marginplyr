@@ -7,8 +7,7 @@ check_removed_groups_argument <- function(dots) {
     paste0(
       "`summarize_with_margins()` does not support `.groups`; ",
       "Margin-summary results are always ungrouped."
-    ),
-    class = "simpleError"
+    )
   )
 }
 
@@ -34,8 +33,7 @@ check_summary_context_helpers <- function(dots) {
       "but a margin result combines multiple grouping sets. Use ",
       "`grouping_bit()` or ",
       "`grouping_id()` when identifying margin levels."
-    ),
-    class = "simpleError"
+    )
   )
 }
 
@@ -51,8 +49,7 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
       if (length(overwritten_groups) == 1L) " " else "s ",
       paste0("`", overwritten_groups, "`", collapse = ", "),
       "."
-    ),
-    class = "simpleError"
+    )
   )
 }
 
