@@ -844,9 +844,11 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
     )
     functions[[function_index]] <- wrap_dtplyr_parent_function(
       functions[[function_index]],
-      inputs = inputs,
-      parent_outputs = parent_outputs,
-      source_summaries = source_summaries,
+      mapping = new_parent_validation_mapping(
+        inputs = inputs,
+        parent_outputs = parent_outputs,
+        source_summaries = source_summaries
+      ),
       forwarded_args = if (can_inline_forwarded) {
         forwarded_args
       } else {
@@ -885,12 +887,7 @@ inline_dtplyr_forwarded_fn <- function(fn, forwarded_args) {
   )
 }
 
-wrap_dtplyr_parent_function <- function(fn,
-                                        inputs,
-                                        parent_outputs,
-                                        source_summaries,
-                                        forwarded_args,
-                                        call) {
+wrap_dtplyr_parent_function <- function(fn, mapping, forwarded_args, call) {
   value <- if (rlang::is_call(fn, "~")) {
     fn[[2L]]
   } else {
@@ -904,17 +901,17 @@ wrap_dtplyr_parent_function <- function(fn,
     parent_private_call("dtplyr_parent_input_name"),
     rlang::expr(.x) # nolint: object_usage_linter
   )
-  mapping <- rlang::call2(
+  mapping_expr <- rlang::call2(
     parent_private_call("new_parent_validation_mapping"),
-    inputs = inputs,
-    parent_outputs = parent_outputs,
-    source_summaries = source_summaries
+    inputs = mapping$inputs,
+    parent_outputs = mapping$parent_outputs,
+    source_summaries = mapping$source_summaries
   )
   validator <- rlang::call2(
     parent_private_call("check_dtplyr_parent_scalar"),
     value,
     input = input,
-    mapping = mapping,
+    mapping = mapping_expr,
     call_text = parent_call_text(call)
   )
   rlang::call2("~", validator)
