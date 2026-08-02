@@ -73,9 +73,7 @@ Grouping plan. It is deliberately separate from a SQL execution plan. Use
 \code{\link[dplyr:show_query]{dplyr::show_query()}} for generated SQL and backend-native tools for an
 optimizer plan.
 
-See the
-\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide}
-for the full comparison.
+See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for the full comparison.
 }
 
 \examples{

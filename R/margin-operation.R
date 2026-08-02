@@ -63,7 +63,7 @@ match_margin_choice <- function(value, choices, arg_name) {
   tryCatch(
     match.arg(value, choices),
     error = function(...) {
-      abort_marginplyr( # nolint: object_usage_linter
+      abort_marginplyr(
         paste0(
           "`", arg_name, "` must be one of ",
           paste0("\"", choices, "\"", collapse = ", "),
@@ -88,13 +88,13 @@ normalize_margin_options <- function(.margin_label,
     margin_label = normalize_margin_label(.margin_label),
     margin_label_position = match_margin_choice(
       .margin_label_position,
-      choices = margin_label_position_choices, # nolint: object_usage_linter
+      choices = margin_label_position_choices,
       arg_name = ".margin_label_position"
     ),
     check_margin_label = .check_margin_label,
     duplicates = match_margin_choice(
       .duplicates,
-      choices = margin_duplicates_choices, # nolint: object_usage_linter
+      choices = margin_duplicates_choices,
       arg_name = ".duplicates"
     )
   )
@@ -110,7 +110,7 @@ normalize_margin_id <- function(.id) {
       is.na(.id) ||
       !nzchar(.id)
   ) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       "`.id` must be `NULL` or one non-missing, non-empty character string."
     )
   }
@@ -119,7 +119,7 @@ normalize_margin_id <- function(.id) {
 
 check_margin_id_collision <- function(.id, names, where) {
   if (!is.null(.id) && .id %in% names) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       sprintf("`.id` (`%s`) conflicts with %s.", .id, where)
     )
   }
@@ -154,7 +154,7 @@ prepare_margin_operation <- function(.data,
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
 
-      grouping <- prepare_grouping_plan( # nolint: object_usage_linter
+      grouping <- prepare_grouping_plan(
         .data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,
@@ -179,7 +179,7 @@ prepare_margin_operation <- function(.data,
         plan$dimensions,
         backend = backend
       )
-      margin_labels <- resolve_margin_labels( # nolint: object_usage_linter
+      margin_labels <- resolve_margin_labels(
         .margin_label,
         dimensions = plan$dimensions
       )
@@ -205,7 +205,7 @@ prepare_margin_operation <- function(.data,
 
 validate_margin_operation <- function(operation) {
   check_margin_operation(operation)
-  with_margin_error_call( # nolint: object_usage_linter
+  with_margin_error_call(
     validate_margin_label(
       operation$data,
       dimensions = operation$plan$dimensions,
@@ -222,7 +222,7 @@ validate_margin_operation <- function(operation) {
 finalize_margin_operation <- function(operation, result) {
   check_margin_operation(operation)
   result <- dplyr::ungroup(result)
-  result <- restore_margin_factors( # nolint: object_usage_linter
+  result <- restore_margin_factors(
     result,
     factor_info = operation$column_info$factors,
     margin_labels = operation$margin_labels,

@@ -57,10 +57,9 @@ comma-separated SQL \verb{GROUP BY} items.
 A \code{\link[=grouping_set]{grouping_set()}} nested directly inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} is a
 composite dimension. Its columns are added or removed together.
 
-See the
-\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide}
-for how a resolved Grouping plan relates to \code{.id}, \code{\link[=inspect_grouping]{inspect_grouping()}},
-\code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
+See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for how a resolved Grouping plan
+relates to \code{.id}, \code{\link[=inspect_grouping]{inspect_grouping()}}, \code{\link[=grouping_bit]{grouping_bit()}}, and
+\code{\link[=grouping_id]{grouping_id()}}.
 }
 \examples{
 # The operations team needs store, region, and company totals for each

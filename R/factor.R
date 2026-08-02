@@ -38,12 +38,14 @@ reconstruct_factor_vector <- function(x,
 }
 
 margin_factor_levels <- function(info, .margin_name, position) {
-  # nolint start: object_usage_linter
   other_levels <- info$levels[vapply(
     info$levels,
     function(level) !identical(level, .margin_name),
     logical(1)
   )]
+  # The assignment is this function's return value, which codetools reads as a
+  # dead store.
+  # nolint start: object_usage_linter.
   new_levels <- if (identical(position, "first")) {
     c(.margin_name, other_levels)
   } else {
@@ -63,7 +65,7 @@ restore_margin_factors <- function(.data,
   Reduce(
     function(data, info) {
       label <- margin_labels[[info$col]]
-      if (is_missing_margin_label(label)) { # nolint: object_usage_linter
+      if (is_missing_margin_label(label)) {
         return(data)
       }
       reconstruct_factor(data, info, label, position = position)
@@ -80,13 +82,13 @@ reconstruct_factor.data.frame <- function(data,
                                           .margin_name,
                                           position = "last") {
   col <- info$col
-  new_levels <- margin_factor_levels(info, .margin_name, position) # nolint: object_usage_linter
+  new_levels <- margin_factor_levels(info, .margin_name, position)
   ord <- info$ordered
   missing_sentinel <- factor_missing_sentinel(info, .margin_name)
   dplyr::mutate(
     .data = data,
     "{col}" := reconstruct_factor_vector(
-      .data[[col]], # nolint: object_usage_linter
+      .data[[col]],
       new_levels = new_levels,
       ordered = ord,
       missing_sentinel = missing_sentinel
@@ -105,8 +107,9 @@ reconstruct_factor.tbl_duckdb_connection <- function(data,
                                                      info,
                                                      .margin_name,
                                                      position = "last") {
-  col <- info$col # nolint: object_usage_linter
-  # nolint start: object_usage_linter
+  # Both are read only from the glue string below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  col <- info$col
   new_levels <- margin_factor_levels(info, .margin_name, position)
   # nolint end
   con <- dbplyr::remote_con(data)

@@ -110,7 +110,7 @@ nest_by_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  result <- nest_margin_pipeline( # nolint: object_usage_linter
+  result <- nest_margin_pipeline(
     .data = .data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,

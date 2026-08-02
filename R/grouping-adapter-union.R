@@ -63,7 +63,7 @@ summarize_margin_union <- function(.data,
         unname(key_names[setdiff(group_vars, grouping_set)])
       )
       if (length(unexpected_internal_names) > 0L) {
-        abort_marginplyr( # nolint: object_usage_linter
+        abort_marginplyr(
           paste0(
             "Dynamically generated summary output names conflict with ",
             "internal grouping columns: ",
@@ -77,7 +77,7 @@ summarize_margin_union <- function(.data,
         result_names,
         group_vars = group_vars
       )
-      check_margin_id_collision( # nolint: object_usage_linter
+      check_margin_id_collision(
         set_id_name,
         result_names,
         "a summary output"
@@ -90,7 +90,7 @@ summarize_margin_union <- function(.data,
         result <- dplyr::rename(result, !!!rename_pairs)
       }
 
-      result <- label_margin_branch( # nolint: object_usage_linter
+      result <- label_margin_branch(
         result,
         plan = plan,
         grouping_set = grouping_set,
@@ -115,7 +115,7 @@ expand_margin_union <- function(.data,
                                 set_id_name = NULL) {
   branches <- Map(
     function(grouping_set, set_id) {
-      result <- label_margin_branch( # nolint: object_usage_linter
+      result <- label_margin_branch(
         .data,
         plan = plan,
         grouping_set = grouping_set,

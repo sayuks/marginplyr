@@ -3,7 +3,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
     return(invisible(NULL))
   }
   if (!inherits(grouping_spec, "margin_grouping_spec")) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       paste0(
         "`.grouping` must be created with ",
         format_grouping_constructors(),
@@ -32,7 +32,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
 }
 
 abort_invalid_grouping_spec <- function() {
-  abort_marginplyr( # nolint: object_usage_linter
+  abort_marginplyr(
     "Invalid grouping specification."
   )
 }
@@ -41,13 +41,13 @@ normalize_grouping_input <- function(.data, by_quo) {
   stopifnot(rlang::is_quosure(by_quo))
 
   if (inherits(.data, "rowwise_df")) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       "`rowwise()` input is not supported. Call `dplyr::ungroup()` first."
     )
   }
 
   if (!dplyr::group_by_drop_default(.data)) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       paste0(
         "Grouped input created with `.drop = FALSE` is not supported. ",
         "Call `dplyr::ungroup()` first."
@@ -57,7 +57,7 @@ normalize_grouping_input <- function(.data, by_quo) {
 
   input_groups <- dplyr::group_vars(.data)
   if (length(input_groups) > 0L && !rlang::quo_is_null(by_quo)) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       paste0(
         "Can't supply `.by` when `.data` is grouped. ",
         "Call `dplyr::ungroup()` first."
@@ -86,11 +86,11 @@ prepare_grouping_plan <- function(.data,
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
   stopifnot(is.null(validate_names) || is.function(validate_names))
 
-  with_margin_error_call( # nolint: object_usage_linter
+  with_margin_error_call(
     {
-      .duplicates <- match_margin_choice( # nolint: object_usage_linter
+      .duplicates <- match_margin_choice(
         .duplicates,
-        choices = margin_duplicates_choices, # nolint: object_usage_linter
+        choices = margin_duplicates_choices,
         arg_name = ".duplicates"
       )
       grouping_spec <- rlang::eval_tidy(grouping_quo)
@@ -142,13 +142,13 @@ prepare_grouping_plan <- function(.data,
 }
 
 abort_empty_grouping_units <- function(kind) {
-  abort_marginplyr( # nolint: object_usage_linter
+  abort_marginplyr(
     sprintf("`%s()` requires at least one dimension.", kind)
   )
 }
 
 abort_empty_composite <- function() {
-  abort_marginplyr( # nolint: object_usage_linter
+  abort_marginplyr(
     "An empty `grouping_set()` cannot be a composite dimension."
   )
 }
@@ -159,7 +159,7 @@ allow_empty_grouping <- function(spec) {
 
 validate_empty_grouping_sets <- function(spec) {
   if (length(spec$args) == 0L) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       paste0(
         "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
         "for the empty grouping set."
@@ -177,7 +177,7 @@ validate_empty_grouping_units <- function(spec) {
 }
 
 reject_nested_in_set <- function(parent, nested) {
-  abort_marginplyr( # nolint: object_usage_linter
+  abort_marginplyr(
     paste0(
       "A `grouping_set()` can contain columns, not another ",
       "grouping family."
@@ -191,7 +191,7 @@ allow_nested_grouping <- function(parent, nested) {
 
 validate_nested_grouping_units <- function(parent, nested) {
   if (!identical(nested$type, "set")) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       sprintf(
         paste0(
           "`%s()` only accepts columns or `grouping_set()` ",
@@ -292,10 +292,10 @@ compile_grouping_spec <- function(.grouping,
                                   data_vars,
                                   data_proxy = NULL,
                                   .by = character(),
-                                  .duplicates = margin_duplicates_choices) { # nolint: object_usage_linter
-  .duplicates <- match_margin_choice( # nolint: object_usage_linter
+                                  .duplicates = margin_duplicates_choices) {
+  .duplicates <- match_margin_choice(
     .duplicates,
-    choices = margin_duplicates_choices, # nolint: object_usage_linter
+    choices = margin_duplicates_choices,
     arg_name = ".duplicates"
   )
   preflight <- preflight_grouping_spec(.grouping, data_vars)
@@ -314,14 +314,14 @@ compile_grouping_spec_impl <- function(.grouping,
                                        .by,
                                        .duplicates) {
   stopifnot(is.character(.by), !anyNA(.by))
-  stopifnot(.duplicates %in% margin_duplicates_choices) # nolint: object_usage_linter
+  stopifnot(.duplicates %in% margin_duplicates_choices)
   if (is.null(data_proxy)) {
     data_proxy <- grouping_name_proxy(data_vars)
   }
 
   unknown_by <- setdiff(.by, data_vars)
   if (length(unknown_by) > 0L) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       paste0(
         "Unknown `.by` column",
         if (length(unknown_by) == 1L) " " else "s ",
@@ -342,7 +342,7 @@ compile_grouping_spec_impl <- function(.grouping,
 
   overlap <- intersect(.by, dimensions)
   if (length(overlap) > 0L) {
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       paste0(
         "Columns cannot appear in both `.by` and `.grouping`: ",
         paste0("`", overlap, "`", collapse = ", "),
@@ -365,7 +365,7 @@ compile_grouping_spec_impl <- function(.grouping,
   if (any(duplicate_keys) && identical(.duplicates, "error")) {
     groups <- split(which(duplicate_keys), keys[duplicate_keys])
     positions <- vapply(groups, paste, collapse = ", ", character(1))
-    abort_marginplyr( # nolint: object_usage_linter
+    abort_marginplyr(
       paste0(
         "Duplicate grouping sets were produced at position",
         if (length(groups) == 1L) "s " else " groups ",
