@@ -529,83 +529,105 @@ execute_margin_summary <- function(operation, dots) {
         operation$set_id_name
       ))
       has_parent_shares <- length(summary_plan$requests) > 0L
-      if (has_parent_shares) {
-        parent_set_id_name <- new_margin_internal_names(
-          1L,
-          used_names = reserved_names,
-          prefix = "..marginplyr_parent_set_"
-        )
-        reserved_names <- c(reserved_names, parent_set_id_name)
-        adapter_set_id_name <- parent_set_id_name
-      } else {
-        parent_set_id_name <- NULL
-        adapter_set_id_name <- operation$set_id_name
-      }
 
       validate_margin_operation(operation) # nolint: object_usage_linter
 
-      result <- tryCatch(
-        {
-          if (supports_grouping_sets(
-            operation$data,
-            plan,
-            backend = operation$backend
-          ) && !(
-            !is.null(adapter_set_id_name) &&
-              identical(plan$duplicates, "keep")
-          )) {
-            summarize_margin_native( # nolint: object_usage_linter
-              operation$data,
-              dots = dots,
-              plan = plan,
-              margin_labels = operation$margin_labels,
-              reserved_names = reserved_names,
-              set_id_name = adapter_set_id_name
-            )
-          } else {
-            summarize_margin_union( # nolint: object_usage_linter
-              operation$data,
-              dots = dots,
-              plan = plan,
-              margin_labels = operation$margin_labels,
-              column_info = operation$column_info,
-              reserved_names = reserved_names,
-              set_id_name = adapter_set_id_name
-            )
-          }
-        },
-        error = function(cnd) {
-          parent <- cnd$parent
-          if (has_parent_shares && inherits(parent, "marginplyr_error")) {
-            stop(parent)
-          }
-          stop(cnd)
-        }
+      staged_result <- stage_margin_summaries(
+        operation,
+        dots = dots,
+        reserved_names = reserved_names,
+        keep_set_identity = has_parent_shares
       )
 
       if (has_parent_shares) {
-        result <- apply_parent_shares( # nolint: object_usage_linter
-          result,
-          requests = summary_plan$requests,
-          data = operation$data,
-          plan = plan,
-          set_id_name = parent_set_id_name
-        )
-        if (!is.null(operation$set_id_name)) {
-          result <- dplyr::mutate(
-            result,
-            "{operation$set_id_name}" := .data[[parent_set_id_name]]
-          )
-        }
-        result <- dplyr::select(
-          result,
-          -dplyr::all_of(parent_set_id_name)
-        )
+        return(execute_parent_shares( # nolint: object_usage_linter
+          operation,
+          staged_result = staged_result,
+          requests = summary_plan$requests
+        ))
       }
-      result
+      margin_summary_stage_result(staged_result)
     },
     call = operation$call
   )
+}
+
+stage_margin_summaries <- function(operation,
+                                   dots,
+                                   reserved_names,
+                                   keep_set_identity) {
+  plan <- operation$plan
+  set_id_name <- operation$set_id_name
+  if (keep_set_identity) {
+    set_id_name <- new_margin_internal_names(
+      1L,
+      used_names = reserved_names,
+      prefix = "..marginplyr_parent_set_"
+    )
+    reserved_names <- c(reserved_names, set_id_name)
+  }
+
+  result <- tryCatch(
+    {
+      if (supports_grouping_sets(
+        operation$data,
+        plan,
+        backend = operation$backend
+      ) && !(
+        !is.null(set_id_name) &&
+          identical(plan$duplicates, "keep")
+      )) {
+        summarize_margin_native( # nolint: object_usage_linter
+          operation$data,
+          dots = dots,
+          plan = plan,
+          margin_labels = operation$margin_labels,
+          reserved_names = reserved_names,
+          set_id_name = set_id_name
+        )
+      } else {
+        summarize_margin_union( # nolint: object_usage_linter
+          operation$data,
+          dots = dots,
+          plan = plan,
+          margin_labels = operation$margin_labels,
+          column_info = operation$column_info,
+          reserved_names = reserved_names,
+          set_id_name = set_id_name
+        )
+      }
+    },
+    error = function(cnd) {
+      parent <- cnd$parent
+      if (keep_set_identity && inherits(parent, "marginplyr_error")) {
+        stop(parent)
+      }
+      stop(cnd)
+    }
+  )
+  new_margin_summary_stage(result, set_id_name)
+}
+
+new_margin_summary_stage <- function(result, set_id_name) {
+  structure(
+    list(result = result, set_id_name = set_id_name),
+    class = "marginplyr_summary_stage"
+  )
+}
+
+check_margin_summary_stage <- function(staged_result) {
+  stopifnot(inherits(staged_result, "marginplyr_summary_stage"))
+  invisible(staged_result)
+}
+
+margin_summary_stage_result <- function(staged_result) {
+  check_margin_summary_stage(staged_result)
+  staged_result$result
+}
+
+margin_summary_stage_set_id <- function(staged_result) {
+  check_margin_summary_stage(staged_result)
+  staged_result$set_id_name
 }
 
 #' @rdname summarize_with_margins

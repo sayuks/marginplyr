@@ -1126,25 +1126,64 @@ check_parent_grouping_kind <- function(plan) {
   invisible(NULL)
 }
 
-apply_parent_shares <- function(result,
-                                requests,
-                                data,
-                                plan,
-                                set_id_name) {
+execute_parent_shares <- function(operation,
+                                  staged_result,
+                                  requests) {
+  check_margin_operation(operation) # nolint: object_usage_linter
+  check_margin_summary_stage(staged_result) # nolint: object_usage_linter
   if (length(requests) == 0L) {
-    return(result)
+    return(margin_summary_stage_result(staged_result))
   }
-  if (!is.data.frame(result)) {
-    return(apply_lazy_parent_shares(
+
+  result <- margin_summary_stage_result(staged_result)
+  staged_set_id_name <- margin_summary_stage_set_id(staged_result)
+  adapter <- parent_share_adapter(operation$backend$kind)
+  result <- adapter(
+    operation,
+    result = result,
+    requests = requests,
+    set_id_name = staged_set_id_name
+  )
+  if (!is.null(operation$set_id_name)) {
+    result <- dplyr::mutate(
       result,
-      requests = requests,
-      plan = plan,
-      set_id_name = set_id_name
-    ))
+      "{operation$set_id_name}" := .data[[staged_set_id_name]]
+    )
   }
+  dplyr::select(
+    result,
+    -dplyr::all_of(staged_set_id_name)
+  )
+}
+
+parent_share_adapter <- function(backend_kind) {
+  adapters <- list(
+    local = execute_local_parent_shares,
+    duckdb = execute_dbplyr_parent_shares,
+    postgres = execute_dbplyr_parent_shares,
+    sql = execute_dbplyr_parent_shares,
+    dtplyr = execute_non_sql_parent_shares,
+    arrow = execute_non_sql_parent_shares,
+    other = execute_non_sql_parent_shares
+  )
+  adapter <- adapters[[backend_kind]]
+  if (is.null(adapter)) {
+    stop(
+      "Unknown Parent-share backend kind: ", backend_kind,
+      call. = FALSE
+    )
+  }
+  adapter
+}
+
+execute_local_parent_shares <- function(operation,
+                                        result,
+                                        requests,
+                                        set_id_name) {
+  plan <- operation$plan
   check_parent_share_cardinality(
     result,
-    data = data,
+    data = operation$data,
     plan = plan,
     requests = requests,
     set_id_name = set_id_name
@@ -1165,10 +1204,37 @@ apply_parent_shares <- function(result,
   result
 }
 
+execute_dbplyr_parent_shares <- function(operation,
+                                         result,
+                                         requests,
+                                         set_id_name) {
+  apply_lazy_parent_shares(
+    result,
+    requests = requests,
+    plan = operation$plan,
+    set_id_name = set_id_name,
+    sql_join = TRUE
+  )
+}
+
+execute_non_sql_parent_shares <- function(operation,
+                                          result,
+                                          requests,
+                                          set_id_name) {
+  apply_lazy_parent_shares(
+    result,
+    requests = requests,
+    plan = operation$plan,
+    set_id_name = set_id_name,
+    sql_join = FALSE
+  )
+}
+
 apply_lazy_parent_shares <- function(result,
                                      requests,
                                      plan,
-                                     set_id_name) {
+                                     set_id_name,
+                                     sql_join) {
   parent_ids <- parent_set_ids(plan)
   root_ids <- plan$set_ids[is.na(parent_ids)]
   pairs <- parent_share_pairs(requests)
@@ -1222,7 +1288,7 @@ apply_lazy_parent_shares <- function(result,
       ))
     )
     join_names <- c(set_id_name, plan$by, unname(join_key_names))
-    if (inherits(result, "tbl_lazy")) {
+    if (sql_join) {
       right_join_names <- new_margin_internal_names(
         length(join_names),
         used_names = c(
@@ -1495,6 +1561,11 @@ check_parent_share_cardinality <- function(result,
                                            set_id_name) {
   output <- requests[[1L]]$outputs[[1L]]
   source <- requests[[1L]]$sources[[1L]]
+  count_name <- new_margin_internal_names(
+    1L,
+    used_names = unique(c(names(data), names(result))),
+    prefix = "..marginplyr_parent_n_"
+  )
   for (set_id in plan$set_ids) {
     keys <- plan$sets[[set_id]]
     rows <- result[result[[set_id_name]] == set_id, , drop = FALSE]
@@ -1508,7 +1579,7 @@ check_parent_share_cardinality <- function(result,
       actual <- dplyr::count(
         rows,
         dplyr::across(dplyr::all_of(keys)),
-        name = "..marginplyr_parent_n"
+        name = count_name
       )
       missing <- dplyr::anti_join(
         expected,
@@ -1518,7 +1589,7 @@ check_parent_share_cardinality <- function(result,
       )
       valid <- nrow(missing) == 0L &&
         nrow(actual) == nrow(expected) &&
-        all(actual[["..marginplyr_parent_n"]] == 1L)
+        all(actual[[count_name]] == 1L)
     }
     if (!valid) {
       stop(

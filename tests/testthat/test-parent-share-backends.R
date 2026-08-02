@@ -1,3 +1,52 @@
+test_that("Parent shares preserve columns, grouping, and laziness", {
+  data <- data.frame(
+    fixed = c("a", "a", "b"),
+    group = c("x", "y", "x"),
+    value = c(1, 3, 6)
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      share = share_of_parent(total),
+      rows = dplyr::n(),
+      .by = fixed,
+      .grouping = rollup(group),
+      .id = "set",
+      .margin_label = NULL
+    )
+  }
+  expected_names <- c("fixed", "group", "set", "total", "share", "rows")
+
+  local <- summarize(data) |>
+    dplyr::arrange(fixed, set, group)
+  expect_identical(names(local), expected_names)
+  expect_identical(dplyr::group_vars(local), character())
+
+  sql <- summarize(dbplyr::tbl_lazy(
+    data,
+    con = dbplyr::simulate_sqlite()
+  ))
+  expect_s3_class(sql, "tbl_lazy")
+  expect_identical(as.character(dplyr::tbl_vars(sql)), expected_names)
+  expect_identical(dplyr::group_vars(sql), character())
+  expect_no_error(dbplyr::sql_render(sql))
+
+  if (rlang::is_installed("dtplyr")) {
+    lazy <- summarize(dtplyr::lazy_dt(data))
+    expect_s3_class(lazy, "dtplyr_step")
+    expect_identical(as.character(dplyr::tbl_vars(lazy)), expected_names)
+    expect_identical(dplyr::group_vars(lazy), character())
+    expect_equal(
+      as.data.frame(
+        dplyr::collect(lazy) |>
+          dplyr::arrange(fixed, set, group)
+      ),
+      as.data.frame(local)
+    )
+  }
+})
+
 test_that("dtplyr and Arrow batch Parent shares with missing-safe matching", {
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "a", "a"),
