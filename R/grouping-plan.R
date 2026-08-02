@@ -80,9 +80,11 @@ prepare_grouping_plan <- function(.data,
                                   by_quo,
                                   grouping_quo,
                                   .duplicates,
+                                  validate_grouping = NULL,
                                   validate_names = NULL,
                                   call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
+  stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
   stopifnot(is.null(validate_names) || is.function(validate_names))
 
   with_margin_error_call( # nolint: object_usage_linter
@@ -93,6 +95,9 @@ prepare_grouping_plan <- function(.data,
       )
       grouping_spec <- rlang::eval_tidy(grouping_quo)
       validate_grouping_spec_early(grouping_spec)
+      if (!is.null(validate_grouping)) {
+        validate_grouping(grouping_spec)
+      }
 
       input <- normalize_grouping_input(.data, by_quo)
       data <- input$data

@@ -451,7 +451,7 @@ summarize_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  admission <- with_margin_error_call( # nolint: object_usage_linter
+  has_parent_shares <- with_margin_error_call( # nolint: object_usage_linter
     {
       assert_lazy_table(.data)
       normalize_margin_options( # nolint: object_usage_linter
@@ -463,32 +463,10 @@ summarize_with_margins <- function(.data,
       )
       check_removed_groups_argument(dots) # nolint: object_usage_linter
       check_summary_context_helpers(dots)
-      has_parent_shares <- preflight_parent_shares( # nolint: object_usage_linter
-        dots
-      )
-      grouping_spec <- NULL
-      if (has_parent_shares) {
-        grouping_spec <- rlang::eval_tidy(grouping_quo)
-        validate_grouping_spec_early( # nolint: object_usage_linter
-          grouping_spec
-        )
-        validate_parent_share_grouping( # nolint: object_usage_linter
-          grouping_spec
-        )
-      }
-      list(
-        has_parent_shares = has_parent_shares,
-        grouping_spec = grouping_spec
-      )
+      preflight_parent_shares(dots) # nolint: object_usage_linter
     },
     call = call
   )
-  if (admission$has_parent_shares) {
-    grouping_quo <- rlang::new_quosure(
-      admission$grouping_spec,
-      env = rlang::empty_env()
-    )
-  }
 
   operation <- prepare_margin_operation( # nolint: object_usage_linter
     .data,
@@ -499,6 +477,11 @@ summarize_with_margins <- function(.data,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     .id = .id,
+    validate_grouping = if (has_parent_shares) {
+      check_parent_grouping_spec # nolint: object_usage_linter
+    } else {
+      NULL
+    },
     call = call
   )
   result <- execute_margin_summary(operation, dots)

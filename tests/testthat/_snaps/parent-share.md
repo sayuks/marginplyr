@@ -1,0 +1,27 @@
+# Parent-share across classifies source-name failures
+
+    Code
+      conditionMessage(duplicate_error)
+    Output
+      [1] "`across()` can't select source summary `total` for `share_of_parent()` because summary `total` was defined more than once. Define it once with a complete ordinary summary expression, then select that unique preceding summary by name."
+
+---
+
+    Code
+      conditionMessage(unavailable_error)
+    Output
+      [1] "`across()` can't select source summary `hidden` for `share_of_parent()` because summary `hidden` is not available as a unique, preceding, self-contained ordinary summary. Define it as a top-level named summary or a statically named output from a preceding `across()`. Select only eligible preceding ordinary summaries by name."
+
+---
+
+    Code
+      conditionMessage(unknown_error)
+    Output
+      [1] "`across()` refers to unknown summary `missing` for `share_of_parent()`. Select only eligible preceding ordinary summaries by name, such as `total`."
+
+---
+
+    Code
+      conditionMessage(predicate_error)
+    Output
+      [1] "Parent-share `across()` only supports name-based tidyselect. Replace `where()` or another type/value predicate with explicit summary names."

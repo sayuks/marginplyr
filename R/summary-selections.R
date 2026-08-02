@@ -65,6 +65,14 @@ plan_summary_expressions <- function(dots,
       unique(group_vars)
     ))
   )
+  dots <- resolve_summary_selections(
+    dots,
+    data_proxy = data_proxy,
+    data_vars = data_vars,
+    group_vars = group_vars,
+    normalize_across_names = FALSE,
+    skip_parent_shares = TRUE
+  )
   summary_plan <- plan_parent_share_expressions( # nolint: object_usage_linter
     dots,
     selection_proxy = selection_proxy,
@@ -124,7 +132,8 @@ resolve_summary_selections <- function(dots,
                                        data_proxy,
                                        data_vars,
                                        group_vars,
-                                       normalize_across_names = FALSE) {
+                                       normalize_across_names = FALSE,
+                                       skip_parent_shares = FALSE) {
   selectable_vars <- setdiff(data_vars, unique(group_vars))
   selection_proxy <- dplyr::select(
     data_proxy,
@@ -134,8 +143,15 @@ resolve_summary_selections <- function(dots,
   lapply(
     dots,
     function(dot) {
+      expr <- rlang::quo_get_expr(dot)
+      if (
+        skip_parent_shares &&
+          contains_parent_share(expr) # nolint: object_usage_linter
+      ) {
+        return(dot)
+      }
       expr <- rewrite_summary_selections(
-        rlang::quo_get_expr(dot),
+        expr,
         env = rlang::quo_get_env(dot),
         data_proxy = selection_proxy,
         normalize_across_names = normalize_across_names
@@ -192,17 +208,9 @@ rewrite_across_selection <- function(expr,
                                      data_proxy,
                                      normalize_across_names) {
   call_name <- rlang::call_name(expr)
-  call_args <- as.list(expr)[-1L]
-  arg_names <- names(call_args)
-  if (is.null(arg_names)) {
-    arg_names <- rep("", length(call_args))
-  }
-
-  selection_index <- match(".cols", arg_names, nomatch = 0L)
-  if (selection_index == 0L) {
-    unnamed <- which(arg_names == "")
-    selection_index <- if (length(unnamed) > 0L) unnamed[[1L]] else 0L
-  }
+  parsed <- parse_across_arguments(expr)
+  call_args <- parsed$call_args
+  selection_index <- parsed$cols_index
 
   if (selection_index == 0L || is.na(selection_index)) {
     selected <- resolve_summary_selection(
@@ -225,23 +233,14 @@ rewrite_across_selection <- function(expr,
   }
 
   if (identical(call_name, "across") && normalize_across_names) {
-    arg_names <- names(call_args)
-    if (is.null(arg_names)) {
-      arg_names <- rep("", length(call_args))
-    }
-    unnamed <- which(arg_names == "")
-    names_index <- match(".names", arg_names, nomatch = 0L)
-    unpack_index <- match(".unpack", arg_names, nomatch = 0L)
+    parsed <- parse_across_arguments(rlang::call2(expr[[1L]], !!!call_args))
+    names_index <- parsed$names_index
+    unpack_index <- parsed$unpack_index
     unpack_is_false <- unpack_index == 0L || isFALSE(tryCatch(
       rlang::eval_tidy(call_args[[unpack_index]], env = env),
       error = function(cnd) NULL
     ))
-    function_names <- known_across_function_names(
-      call_args,
-      arg_names,
-      unnamed,
-      selection_index
-    )
+    function_names <- known_across_function_names(parsed)
 
     if (
       names_index > 0L &&
@@ -256,11 +255,7 @@ rewrite_across_selection <- function(expr,
           data_proxy
         )
 
-        fns_index <- across_function_index(
-          arg_names,
-          unnamed,
-          selection_index
-        )
+        fns_index <- parsed$fns_index
         if (
           fns_index > 0L &&
             rlang::is_call(call_args[[fns_index]], "list") &&
@@ -270,6 +265,16 @@ rewrite_across_selection <- function(expr,
         }
         call_args <- call_args[-names_index]
       }
+    }
+  }
+
+  if (identical(call_name, "across")) {
+    parsed <- parse_across_arguments(rlang::call2(expr[[1L]], !!!call_args))
+    if (parsed$names_index > 0L) {
+      call_args[[parsed$names_index]] <- rlang::eval_tidy(
+        call_args[[parsed$names_index]],
+        env = env
+      )
     }
   }
 
@@ -409,41 +414,19 @@ known_injected_argument_name <- function(expr) {
 }
 
 known_across_output_names <- function(expr, env, data_proxy) {
-  call_args <- as.list(expr)[-1L]
-  arg_names <- names(call_args)
-  if (is.null(arg_names)) {
-    arg_names <- rep("", length(call_args))
-  }
-
-  cols_index <- match(".cols", arg_names, nomatch = 0L)
-  unnamed <- which(arg_names == "")
-  if (cols_index == 0L && length(unnamed) > 0L) {
-    cols_index <- unnamed[[1L]]
-  }
-  cols_expr <- if (cols_index == 0L) {
-    rlang::expr(dplyr::everything())
-  } else {
-    call_args[[cols_index]]
-  }
+  parsed <- parse_across_arguments(expr)
+  call_args <- parsed$call_args
+  cols_expr <- parsed$cols
   column_names <- names(resolve_summary_selection(cols_expr, env, data_proxy))
 
-  names_index <- match(".names", arg_names, nomatch = 0L)
+  names_index <- parsed$names_index
   if (names_index == 0L) {
-    fns_index <- across_function_index(
-      arg_names,
-      unnamed,
-      cols_index
-    )
+    fns_index <- parsed$fns_index
     if (
       fns_index > 0L &&
         rlang::is_call(call_args[[fns_index]], "list")
     ) {
-      function_names <- known_across_function_names(
-        call_args,
-        arg_names,
-        unnamed,
-        cols_index
-      )
+      function_names <- known_across_function_names(parsed)
       return(unlist(
         lapply(
           column_names,
@@ -468,12 +451,7 @@ known_across_output_names <- function(expr, env, data_proxy) {
     return(character())
   }
 
-  function_names <- known_across_function_names(
-    call_args,
-    arg_names,
-    unnamed,
-    cols_index
-  )
+  function_names <- known_across_function_names(parsed)
   if (length(function_names) == 0L) {
     return(character())
   }
@@ -504,35 +482,18 @@ expand_across_name <- function(template, column, function_name, env) {
 }
 
 known_across_source_names <- function(expr, env, data_proxy) {
-  call_args <- as.list(expr)[-1L]
-  arg_names <- names(call_args)
-  if (is.null(arg_names)) {
-    arg_names <- rep("", length(call_args))
-  }
-  cols_index <- match(".cols", arg_names, nomatch = 0L)
-  unnamed <- which(arg_names == "")
-  if (cols_index == 0L && length(unnamed) > 0L) {
-    cols_index <- unnamed[[1L]]
-  }
-  cols_expr <- if (cols_index == 0L) {
-    rlang::expr(dplyr::everything())
-  } else {
-    call_args[[cols_index]]
-  }
-  selected <- resolve_summary_selection(cols_expr, env, data_proxy)
+  parsed <- parse_across_arguments(expr)
+  selected <- resolve_summary_selection(parsed$cols, env, data_proxy)
   get_col_names(data_proxy, dplyr::everything())[unname(selected)]
 }
 
-known_across_function_names <- function(call_args,
-                                        arg_names,
-                                        unnamed,
-                                        cols_index) {
-  fns_index <- across_function_index(arg_names, unnamed, cols_index)
+known_across_function_names <- function(parsed) {
+  fns_index <- parsed$fns_index
   if (fns_index == 0L) {
     return("1")
   }
 
-  fns_expr <- call_args[[fns_index]]
+  fns_expr <- parsed$call_args[[fns_index]]
   if (!rlang::is_call(fns_expr, "list")) {
     return("1")
   }
@@ -545,7 +506,17 @@ known_across_function_names <- function(call_args,
   fns_names
 }
 
-across_function_index <- function(arg_names, unnamed, cols_index) {
+parse_across_arguments <- function(expr) {
+  call_args <- rlang::call_args(expr)
+  arg_names <- names(call_args)
+  if (is.null(arg_names)) {
+    arg_names <- rep("", length(call_args))
+  }
+  unnamed <- which(arg_names == "")
+  cols_index <- match(".cols", arg_names, nomatch = 0L)
+  if (cols_index == 0L && length(unnamed) > 0L) {
+    cols_index <- unnamed[[1L]]
+  }
   fns_index <- match(".fns", arg_names, nomatch = 0L)
   if (fns_index == 0L) {
     positional <- setdiff(unnamed, cols_index)
@@ -553,5 +524,30 @@ across_function_index <- function(arg_names, unnamed, cols_index) {
       fns_index <- positional[[1L]]
     }
   }
-  fns_index
+  names_index <- match(".names", arg_names, nomatch = 0L)
+  unpack_index <- match(".unpack", arg_names, nomatch = 0L)
+  used <- c(cols_index, fns_index, names_index, unpack_index)
+  additional <- setdiff(seq_along(call_args), used[used > 0L])
+  additional_names <- arg_names[additional]
+  additional_names[additional_names == ""] <- paste0(
+    "..",
+    seq_along(additional_names)
+  )
+
+  list(
+    call_args = call_args,
+    cols_index = cols_index,
+    fns_index = fns_index,
+    names_index = names_index,
+    unpack_index = unpack_index,
+    cols = if (cols_index == 0L) {
+      rlang::expr(dplyr::everything())
+    } else {
+      call_args[[cols_index]]
+    },
+    fns = if (fns_index == 0L) NULL else call_args[[fns_index]],
+    names = if (names_index == 0L) NULL else call_args[[names_index]],
+    unpack = if (unpack_index == 0L) NULL else call_args[[unpack_index]],
+    additional = additional_names
+  )
 }

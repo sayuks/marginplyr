@@ -453,7 +453,6 @@ preflight_parent_shares <- function(dots) {
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
     expr <- rlang::quo_get_expr(quo)
-    env <- rlang::quo_get_env(quo)
     output_name <- dot_names[[i]]
 
     if (is_parent_share_call(expr)) {
@@ -462,7 +461,7 @@ preflight_parent_shares <- function(dots) {
       next
     }
     if (is_across_call(expr) && contains_parent_share(expr)) {
-      validate_parent_across_syntax(expr, env, output_name)
+      preflight_parent_across_syntax(expr, output_name)
       has_parent_shares <- TRUE
       next
     }
@@ -481,7 +480,7 @@ preflight_parent_shares <- function(dots) {
   has_parent_shares
 }
 
-validate_parent_share_grouping <- function(grouping_spec) {
+check_parent_grouping_spec <- function(grouping_spec) {
   kind <- if (is.null(grouping_spec)) NULL else grouping_spec$type
   if (!identical(kind, "rollup")) {
     abort_marginplyr( # nolint: object_usage_linter
@@ -777,69 +776,70 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
   if (is.null(dot_names)) {
     dot_names <- rep("", length(dots))
   }
+  analyses <- vector("list", length(dots))
   preceding_names <- character()
 
-  Map(
-    function(quo, output_name, position) {
-      expr <- rlang::quo_get_expr(quo)
-      env <- rlang::quo_get_env(quo)
-      if (contains_parent_share(expr)) {
-        return(list(records = list()))
-      }
+  for (i in seq_along(dots)) {
+    quo <- dots[[i]]
+    output_name <- dot_names[[i]]
+    expr <- rlang::quo_get_expr(quo)
+    env <- rlang::quo_get_env(quo)
+    if (contains_parent_share(expr)) {
+      analyses[[i]] <- list(records = list())
+      next
+    }
 
-      if (nzchar(output_name)) {
-        output_names <- output_name
-        eligible <- !is_across_call(expr)
-      } else if (is_across_call(expr)) {
-        output_names <- known_across_output_names(
-          expr,
-          env,
-          selection_proxy
-        )
-        eligible <- TRUE
-      } else {
-        output_names <- known_data_frame_output_names(
-          expr,
-          env,
-          selection_proxy
-        )
-        eligible <- FALSE
-      }
-
-      selected_dependencies <- if (is_across_call(expr)) {
-        intersect(
-          known_across_source_names( # nolint: object_usage_linter
-            expr,
-            env,
-            selection_proxy
-          ),
-          preceding_names
-        )
-      } else {
-        character()
-      }
-      dependencies <- unique(c(
-        expression_alias_dependencies(expr, preceding_names),
-        selected_dependencies
-      ))
-      records <- lapply(
-        output_names,
-        function(name) {
-          list(
-            name = name,
-            position = position,
-            eligible = eligible,
-            dependencies = dependencies
-          )
-        }
+    if (nzchar(output_name)) {
+      output_names <- output_name
+      eligible <- !is_across_call(expr)
+    } else if (is_across_call(expr)) {
+      output_names <- known_across_output_names(
+        expr,
+        env,
+        selection_proxy
       )
-      preceding_names <<- c(preceding_names, output_names)
-      list(records = records)
-    },
-    dots,
-    dot_names,
-    seq_along(dots)
-  )
+      eligible <- TRUE
+    } else {
+      output_names <- known_data_frame_output_names(
+        expr,
+        env,
+        selection_proxy
+      )
+      eligible <- FALSE
+    }
+
+    selected_dependencies <- if (is_across_call(expr)) {
+      intersect(
+        known_across_source_names( # nolint: object_usage_linter
+          expr,
+          env,
+          selection_proxy
+        ),
+        preceding_names
+      )
+    } else {
+      character()
+    }
+    dependencies <- unique(c(
+      expression_alias_dependencies(expr, preceding_names),
+      selected_dependencies
+    ))
+    records <- lapply(
+      output_names,
+      function(name) {
+        list(
+          name = name,
+          position = i,
+          eligible = eligible,
+          dependencies = dependencies
+        )
+      }
+    )
+    analyses[[i]] <- list(records = records)
+    preceding_names <- c(preceding_names, output_names)
+  }
+
+  analyses
 }
 
 plan_direct_parent_share <- function(expr,
@@ -906,17 +906,15 @@ plan_across_parent_share <- function(expr,
     character(1),
     "name"
   ))
-  if (contains_selection_predicate(
-    args$cols,
-    env = env,
-    selectable_names = preceding_names
-  )) {
+  if (contains_selection_predicate(args$cols)) {
     abort_parent_predicate()
   }
   sources <- resolve_parent_share_selection(
     args$cols,
     env = env,
-    preceding_names = preceding_names
+    preceding_names = preceding_names,
+    preceding = preceding,
+    context = context
   )
   outputs <- vapply(
     sources,
@@ -939,6 +937,33 @@ plan_across_parent_share <- function(expr,
 }
 
 validate_parent_across_syntax <- function(expr, env, output_name) {
+  args <- preflight_parent_across_syntax(expr, output_name)
+  if (!is.null(args$unpack)) {
+    unpack <- rlang::eval_tidy(args$unpack, env = env)
+    if (!isFALSE(unpack)) {
+      stop(
+        "Parent-share `across()` requires `.unpack = FALSE` or an omitted ",
+        "`.unpack` argument.",
+        call. = FALSE
+      )
+    }
+  }
+  names_template <- rlang::eval_tidy(args$names, env = env)
+  if (
+    !is.character(names_template) ||
+      length(names_template) != 1L ||
+      is.na(names_template)
+  ) {
+    stop(
+      "Parent-share `across()` `.names` must be one non-missing character ",
+      "template.",
+      call. = FALSE
+    )
+  }
+  list(args = args, names_template = names_template)
+}
+
+preflight_parent_across_syntax <- function(expr, output_name) {
   if (nzchar(output_name)) {
     stop(
       "An `across()` Parent-share expression must be unnamed; use its ",
@@ -946,7 +971,7 @@ validate_parent_across_syntax <- function(expr, env, output_name) {
       call. = FALSE
     )
   }
-  args <- parent_across_args(expr)
+  args <- parse_across_arguments(expr) # nolint: object_usage_linter
   if (!is_parent_share_function(args$fns)) {
     stop(
       "For Parent shares, `across()` `.fns` must be `share_of_parent` or ",
@@ -964,19 +989,6 @@ validate_parent_across_syntax <- function(expr, env, output_name) {
       call. = FALSE
     )
   }
-  if (!is.null(args$unpack)) {
-    unpack <- tryCatch(
-      rlang::eval_tidy(args$unpack, env = env),
-      error = function(cnd) NULL
-    )
-    if (!isFALSE(unpack)) {
-      stop(
-        "Parent-share `across()` requires `.unpack = FALSE` or an omitted ",
-        "`.unpack` argument.",
-        call. = FALSE
-      )
-    }
-  }
   if (is.null(args$names)) {
     stop(
       "Parent-share `across()` requires an explicit `.names` argument, for ",
@@ -984,25 +996,19 @@ validate_parent_across_syntax <- function(expr, env, output_name) {
       call. = FALSE
     )
   }
-  names_template <- tryCatch(
-    rlang::eval_tidy(args$names, env = env),
-    error = function(cnd) NULL
-  )
-  if (
-    !is.character(names_template) ||
-      length(names_template) != 1L ||
-      is.na(names_template)
-  ) {
-    stop(
-      "Parent-share `across()` `.names` must be one non-missing character ",
-      "template.",
-      call. = FALSE
-    )
+  if (!is.null(args$unpack) && is.logical(args$unpack)) {
+    if (length(args$unpack) != 1L || !isFALSE(args$unpack)) {
+      stop(
+        "Parent-share `across()` requires `.unpack = FALSE` or an omitted ",
+        "`.unpack` argument.",
+        call. = FALSE
+      )
+    }
   }
-  if (contains_selection_predicate(args$cols, env = env)) {
+  if (contains_selection_predicate(args$cols)) {
     abort_parent_predicate()
   }
-  list(args = args, names_template = names_template)
+  args
 }
 
 validate_parent_share_request <- function(outputs,
@@ -1108,11 +1114,13 @@ validate_parent_share_request <- function(outputs,
 
 check_parent_grouping_kind <- function(plan) {
   if (!identical(plan$kind, "rollup")) {
-    stop(
-      "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
-      "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
-      "specifications do not define one unambiguous parent.",
-      call. = FALSE
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
+        "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
+        "specifications do not define one unambiguous parent. Rewrite ",
+        "`.grouping` as one `rollup()` or omit the Parent share."
+      )
     )
   }
   invisible(NULL)
@@ -1599,57 +1607,17 @@ is_across_call <- function(expr) {
        identical(rlang::call_ns(expr), "dplyr"))
 }
 
-parent_across_args <- function(expr) {
-  args <- rlang::call_args(expr)
-  arg_names <- names(args)
-  if (is.null(arg_names)) {
-    arg_names <- rep("", length(args))
-  }
-  unnamed <- which(arg_names == "")
-  cols_index <- match(".cols", arg_names, nomatch = 0L)
-  if (cols_index == 0L && length(unnamed) > 0L) {
-    cols_index <- unnamed[[1L]]
-  }
-  fns_index <- match(".fns", arg_names, nomatch = 0L)
-  if (fns_index == 0L) {
-    positional <- setdiff(unnamed, cols_index)
-    if (length(positional) > 0L) {
-      fns_index <- positional[[1L]]
+resolve_parent_share_selection <- function(expr,
+                                           env,
+                                           preceding_names,
+                                           preceding,
+                                           context) {
+  if (rlang::is_symbol(expr)) {
+    source <- rlang::as_name(expr)
+    if (!source %in% preceding_names) {
+      abort_parent_source_name(source, preceding, context)
     }
   }
-  used <- c(
-    cols_index,
-    fns_index,
-    match(".names", arg_names, nomatch = 0L),
-    match(".unpack", arg_names, nomatch = 0L)
-  )
-  additional <- setdiff(seq_along(args), used[used > 0L])
-  additional_names <- arg_names[additional]
-  additional_names[additional_names == ""] <- paste0(
-    "..",
-    seq_along(additional_names)
-  )
-
-  list(
-    cols = if (cols_index == 0L) {
-      rlang::expr(dplyr::everything())
-    } else {
-      args[[cols_index]]
-    },
-    fns = if (fns_index == 0L) NULL else args[[fns_index]],
-    names = {
-      i <- match(".names", arg_names, nomatch = 0L)
-      if (i == 0L) NULL else args[[i]]
-    },
-    unpack = {
-      i <- match(".unpack", arg_names, nomatch = 0L)
-      if (i == 0L) NULL else args[[i]]
-    },
-    additional = additional_names
-  )
-}
-
-resolve_parent_share_selection <- function(expr, env, preceding_names) {
   proxy <- stats::setNames(
     as.list(seq_along(preceding_names)),
     preceding_names
@@ -1662,31 +1630,98 @@ resolve_parent_share_selection <- function(expr, env, preceding_names) {
       allow_rename = FALSE
     )),
     error = function(cnd) {
-      stop(
-        "Invalid Parent-share `across()` selection. Select only eligible ",
-        "preceding ordinary summaries: ",
-        conditionMessage(cnd),
-        call. = FALSE
-      )
+      abort_parent_selection_error(cnd, preceding, context)
     }
   )
 }
 
-contains_selection_predicate <- function(expr,
-                                         env,
-                                         selectable_names = NULL) {
-  if (rlang::is_symbol(expr)) {
-    if (
-      is.null(selectable_names) ||
-        rlang::as_name(expr) %in% selectable_names
-    ) {
-      return(FALSE)
-    }
-    value <- tryCatch(
-      rlang::env_get(env, rlang::as_name(expr), inherit = TRUE),
-      error = function(cnd) NULL
+abort_parent_selection_error <- function(cnd, preceding, context) {
+  missing <- parent_selection_missing_names(cnd)
+  if (length(missing) == 0L) {
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "Invalid Parent-share `across()` selection. Select only eligible ",
+        "preceding ordinary summaries by name: ",
+        conditionMessage(cnd)
+      )
     )
-    return(is.function(value))
+  }
+
+  abort_parent_source_name(missing[[1L]], preceding, context)
+}
+
+abort_parent_source_name <- function(source, preceding, context) {
+  all_names <- vapply(
+    context$all_records,
+    `[[`,
+    character(1),
+    "name"
+  )
+  occurrences <- sum(all_names == source)
+  if (occurrences > 1L) {
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`across()` can't select source summary `", source,
+        "` for `share_of_parent()` because summary `", source,
+        "` was defined more than once. Define it once with a complete ",
+        "ordinary summary expression, then select that unique preceding ",
+        "summary by name."
+      ),
+      class = "marginplyr_parent_source_duplicate_error",
+      source_summary = source
+    )
+  }
+  if (occurrences == 1L) {
+    abort_marginplyr( # nolint: object_usage_linter
+      paste0(
+        "`across()` can't select source summary `", source,
+        "` for `share_of_parent()` because summary `", source,
+        "` is not available as a unique, preceding, self-contained ordinary ",
+        "summary. Define it as a top-level named summary or a statically ",
+        "named output from a preceding `across()`. Select only eligible ",
+        "preceding ordinary summaries by name."
+      ),
+      class = "marginplyr_parent_source_unavailable_error",
+      source_summary = source
+    )
+  }
+
+  preceding_candidates <- unique(vapply(
+    preceding,
+    `[[`,
+    character(1),
+    "name"
+  ))
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      "`across()` refers to unknown summary `", source,
+      "` for `share_of_parent()`. Select only eligible preceding ordinary ",
+      "summaries by name",
+      if (length(preceding_candidates) > 0L) {
+        paste0(
+          ", such as `", preceding_candidates[[1L]], "`."
+        )
+      } else {
+        "."
+      }
+    ),
+    class = "marginplyr_parent_source_unknown_error",
+    source_summary = source
+  )
+}
+
+parent_selection_missing_names <- function(cnd) {
+  current <- if (is.character(cnd$i)) cnd$i else character()
+  parent <- cnd$parent
+  if (inherits(parent, "condition")) {
+    current <- c(current, parent_selection_missing_names(parent))
+  }
+  unique(current[nzchar(current)])
+}
+
+contains_selection_predicate <- function(expr) {
+  if (rlang::is_symbol(expr)) {
+    return(FALSE)
   }
   if (!rlang::is_call(expr)) {
     return(FALSE)
@@ -1697,17 +1732,16 @@ contains_selection_predicate <- function(expr,
   any(vapply(
     as.list(expr)[-1L],
     contains_selection_predicate,
-    logical(1),
-    env = env,
-    selectable_names = selectable_names
+    logical(1)
   ))
 }
 
 abort_parent_predicate <- function() {
-  stop(
-    "Parent-share `across()` only supports name-based tidyselect. Replace ",
-    "`where()` or another type/value predicate with explicit summary names.",
-    call. = FALSE
+  abort_marginplyr( # nolint: object_usage_linter
+    paste0(
+      "Parent-share `across()` only supports name-based tidyselect. Replace ",
+      "`where()` or another type/value predicate with explicit summary names."
+    )
   )
 }
 

@@ -135,8 +135,10 @@ prepare_margin_operation <- function(.data,
                                      .check_margin_label,
                                      .duplicates,
                                      .id = NULL,
+                                     validate_grouping = NULL,
                                      call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
+  stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
 
   with_margin_error_call(
     {
@@ -158,6 +160,7 @@ prepare_margin_operation <- function(.data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,
         .duplicates = .duplicates,
+        validate_grouping = validate_grouping,
         validate_names = function(data_vars) {
           check_margin_id_collision(
             set_id_name,

@@ -1040,10 +1040,10 @@ test_that("Parent-share everything selects only eligible summaries", {
   )
 })
 
-test_that("Parent-share across rejects bare type predicates", {
+test_that("Parent-share across does not infer bare predicate symbols", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 
-  expect_error(
+  error <- expect_error(
     summarize_with_margins(
       data,
       total = sum(value),
@@ -1054,8 +1054,101 @@ test_that("Parent-share across rejects bare type predicates", {
       ),
       .grouping = rollup(group)
     ),
+    "unknown summary `is.numeric`"
+  )
+  expect_false(grepl("predicate", conditionMessage(error), fixed = TRUE))
+})
+
+test_that("Parent-share across classifies source-name failures", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  duplicate_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      total = mean(value),
+      dplyr::across(
+        total,
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    "summary `total` was defined more than once"
+  )
+  expect_s3_class(duplicate_error, "marginplyr_error")
+
+  unavailable_error <- expect_error(
+    summarize_with_margins(
+      data,
+      base::data.frame(hidden = sum(value)),
+      dplyr::across(
+        hidden,
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    "summary `hidden` is not available"
+  )
+  expect_s3_class(unavailable_error, "marginplyr_error")
+
+  unknown_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(
+        missing,
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    "unknown summary `missing`"
+  )
+  expect_s3_class(unknown_error, "marginplyr_error")
+
+  predicate_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(
+        dplyr::where(is.numeric),
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
     "only supports name-based tidyselect"
   )
+  expect_s3_class(predicate_error, "marginplyr_error")
+
+  expect_snapshot(conditionMessage(duplicate_error))
+  expect_snapshot(conditionMessage(unavailable_error))
+  expect_snapshot(conditionMessage(unknown_error))
+  expect_snapshot(conditionMessage(predicate_error))
+})
+
+test_that("caller function symbols are not inferred to be predicates", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  caller_selection <- function(x) is.numeric(x)
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(
+        caller_selection,
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    "unknown summary `caller_selection`"
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_false(grepl("predicate", conditionMessage(error), fixed = TRUE))
 })
 
 test_that("across sources cannot hide earlier summary-alias dependencies", {
@@ -1123,7 +1216,90 @@ test_that("across name templates support static glue expressions", {
   expect_equal(result$share, result$value_SHARE)
 })
 
-test_that("Parent preflight evaluates the grouping expression once", {
+test_that("Parent planning preserves every public-call environment", {
+  data <- data.frame(
+    fixed = c("a", "a", "b"),
+    group = c("x", "y", "x"),
+    value = c(1, 3, 6)
+  )
+
+  summarize_from_local_scope <- function(data) {
+    fixed_cols <- "fixed"
+    dimension_cols <- "group"
+    summary_cols <- "value"
+    total <- function(x) sum(x)
+
+    summarize_with_margins(
+      data,
+      dplyr::across(
+        .fns = total,
+        .cols = dplyr::all_of(summary_cols),
+        .names = "total"
+      ),
+      dplyr::across(
+        .fns = share_of_parent,
+        .cols = total,
+        .names = "share"
+      ),
+      .by = dplyr::all_of(fixed_cols),
+      .grouping = rollup(dplyr::all_of(dimension_cols)),
+      .margin_label = NULL
+    )
+  }
+
+  result <- summarize_from_local_scope(data)
+
+  expect_identical(names(result), c("fixed", "group", "total", "share"))
+  expect_setequal(result$total, c(1, 3, 4, 6, 6))
+  expect_setequal(result$share, c(0.25, 0.75, 1, 1, 1))
+})
+
+test_that("Parent planning evaluates across arguments once", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  ordinary_cols_n <- 0L
+  ordinary_names_n <- 0L
+  parent_cols_n <- 0L
+  parent_names_n <- 0L
+  ordinary_cols <- function() {
+    ordinary_cols_n <<- ordinary_cols_n + 1L
+    dplyr::all_of("value")
+  }
+  ordinary_names <- function() {
+    ordinary_names_n <<- ordinary_names_n + 1L
+    "{.col}"
+  }
+  parent_cols <- function() {
+    parent_cols_n <<- parent_cols_n + 1L
+    dplyr::all_of("value")
+  }
+  parent_names <- function() {
+    parent_names_n <<- parent_names_n + 1L
+    "{.col}_share"
+  }
+
+  result <- summarize_with_margins(
+    data,
+    dplyr::across(
+      ordinary_cols(),
+      sum,
+      .names = ordinary_names()
+    ),
+    dplyr::across(
+      parent_cols(),
+      share_of_parent,
+      .names = parent_names()
+    ),
+    .grouping = rollup(group)
+  )
+
+  expect_true("value_share" %in% names(result))
+  expect_identical(ordinary_cols_n, 1L)
+  expect_identical(ordinary_names_n, 1L)
+  expect_identical(parent_cols_n, 1L)
+  expect_identical(parent_names_n, 1L)
+})
+
+test_that("Parent planning evaluates the grouping expression once", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   evaluations <- 0L
   grouping <- function() {
@@ -1180,6 +1356,17 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
       .grouping = rollup(group)
     ),
     "complete right-hand side"
+  )
+  expect_identical(parent_preflight_capture$n, 0L)
+
+  expect_error(
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = cube(group)
+    ),
+    "requires `.grouping` to be one pure `rollup\\(\\)`"
   )
   expect_identical(parent_preflight_capture$n, 0L)
 
