@@ -769,7 +769,7 @@ wrap_parent_sources <- function(dots,
 }
 
 wrap_dtplyr_parent_across <- function(expr, checks, call) {
-  parsed <- parse_across_arguments(expr)
+  parsed <- parse_across_arguments(expr) # nolint: object_usage_linter
   call_args <- parsed$call_args
   fns_index <- parsed$fns_index
   recognized_positions <- c(
@@ -1087,14 +1087,14 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
         selection_proxy
       )
       rep(inputs, each = length(known_across_function_names(
-        parse_across_arguments(expr)
+        parse_across_arguments(expr) # nolint: object_usage_linter
       )))
     } else {
       rep(NA_character_, length(output_names))
     }
     across_functions <- if (is_across_call(expr)) {
       function_count <- length(known_across_function_names(
-        parse_across_arguments(expr)
+        parse_across_arguments(expr) # nolint: object_usage_linter
       ))
       rep(
         seq_len(function_count),
