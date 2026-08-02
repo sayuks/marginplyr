@@ -33,9 +33,10 @@ honest: any leak into `man/` fails CI.
 
 ### Documentation
 
-`man/` is generated. After changing roxygen comments run `roxygen2::roxygenise()`
-and commit the result; `.github/workflows/document.yaml` regenerates it and
-fails when the committed `man/` differs from what the roxygen comments produce.
+`man/` and `NAMESPACE` are generated. After changing roxygen comments run
+`roxygen2::roxygenise()` and commit the result;
+`.github/workflows/document.yaml` regenerates both and fails when either
+differs from what the roxygen comments produce.
 
 ## Agent skills
 
