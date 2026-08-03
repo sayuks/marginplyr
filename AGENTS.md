@@ -84,6 +84,11 @@ or `rlang::is_installed()` directly, since those cannot be told to fail.
 (`skip_if_not_installed("dbplyr")` is not an exception: dbplyr is an Import, so
 it is never absent.)
 
+The `backend` jobs are also the only place snapshot expectations run: testthat
+skips them under CRAN semantics, so a snapshot never fails in a job that
+emulates CRAN. If a snapshot needs updating, it is a `backend` job that will
+say so.
+
 An installed package still does not prove its tests ran, so each `backend` job
 also lists the test names it exists to execute in its `proves` field, and
 `verify-backend.R` fails the job unless every one of them ran and passed.
