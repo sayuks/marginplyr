@@ -78,7 +78,8 @@ plan and require no rule awareness.
 The implementation must not change:
 
 - exported functions, arguments, syntax, or returned specification classes;
-- grouping-set membership, ordering, duplicate handling, or grouping masks;
+- grouping-set membership, ordering, duplicate handling, or Grouping
+  identifiers;
 - error condition classes, complete messages, public call contexts, or
   detection order;
 - quosure environments or the number and timing of evaluations without a

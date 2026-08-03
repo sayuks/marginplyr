@@ -12,7 +12,7 @@ mutations.
 Input completion and result completion have different semantics. Completing
 fact rows before summarization makes the inserted values participate in
 detail, subtotal, and grand-total calculations. Completing an already
-summarized margin result can add display rows without changing existing
+summarized Margin result can add display rows without changing existing
 aggregates. One argument cannot hide that distinction without surprising
 either row counts and non-additive summaries or the relationship between
 detail rows and totals.
