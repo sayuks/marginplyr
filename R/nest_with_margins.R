@@ -6,6 +6,7 @@
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Backend extension design
@@ -46,7 +47,12 @@
 #' that `.keep` retains grouping columns.
 #'
 #' The list column is a regular list of data frames; its exact `vctrs_list_of`
-#' subclass is not part of the API. [nest_with_margins()] follows
+#' subclass is not part of the API. Neither is the class of its elements,
+#' which follows whichever backend produced them: tibbles for a local input,
+#' because that is what [dplyr::pick()] returns, and data tables under
+#' `dtplyr`. Only their being data frames holding the input's non-key columns
+#' is promised. Call `lapply(result$data, tibble::as_tibble)` when one element
+#' class is needed across backends. [nest_with_margins()] follows
 #' [tidyr::nest()] for an empty ungrouped input and returns zero outer rows.
 #' [nest_by_with_margins()] follows [dplyr::nest_by()] and returns one row
 #' containing the empty input when there are no grouping keys.
@@ -55,8 +61,10 @@
 #' grouping-set and `.keep` columns are generated collision-free and removed
 #' before the result is returned.
 #'
-#' @return For a local input, an ungrouped data frame with one list column. A
-#'   `dtplyr` input returns a lazy `dtplyr` step until collected. Result row
+#' @return For a local input, an ungrouped data frame with one list column,
+#'   whose class and attributes follow [dplyr::summarize()]; see *Result class
+#'   and attributes*. A `dtplyr` input returns a lazy `dtplyr` step until
+#'   collected. Result row
 #'   order is unspecified; use [dplyr::arrange()] when presentation order
 #'   matters.
 #' @family summarize and expand data with margins
@@ -73,9 +81,9 @@
 #'   .data = january_sales,
 #'   .grouping = rollup(region, store)
 #' )
-#' # `january_sales` is a plain data frame and the outer class is preserved,
-#' # so `nested` prints its list column as flattened values. A tibble prints
-#' # each nested table as its dimensions instead.
+#' # `january_sales` is a plain data frame, so nesting it returns one too, and
+#' # `nested` prints its list column as flattened values. A tibble prints each
+#' # nested table as its dimensions instead.
 #' nested |>
 #'   dplyr::as_tibble() |>
 #'   head()

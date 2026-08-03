@@ -67,8 +67,10 @@ inside each nested data frame? If \code{TRUE}, the nested columns contain their
 original, pre-margin values rather than \code{.margin_label}.}
 }
 \value{
-For a local input, an ungrouped data frame with one list column. A
-\code{dtplyr} input returns a lazy \code{dtplyr} step until collected. Result row
+For a local input, an ungrouped data frame with one list column,
+whose class and attributes follow \code{\link[dplyr:summarize]{dplyr::summarize()}}; see \emph{Result class
+and attributes}. A \code{dtplyr} input returns a lazy \code{dtplyr} step until
+collected. Result row
 order is unspecified; use \code{\link[dplyr:arrange]{dplyr::arrange()}} when presentation order
 matters.
 }
@@ -103,7 +105,12 @@ with \code{"Total"}. This is the closest margin-aware analogue of dplyr's rule
 that \code{.keep} retains grouping columns.
 
 The list column is a regular list of data frames; its exact \code{vctrs_list_of}
-subclass is not part of the API. \code{\link[=nest_with_margins]{nest_with_margins()}} follows
+subclass is not part of the API. Neither is the class of its elements,
+which follows whichever backend produced them: tibbles for a local input,
+because that is what \code{\link[dplyr:pick]{dplyr::pick()}} returns, and data tables under
+\code{dtplyr}. Only their being data frames holding the input's non-key columns
+is promised. Call \code{lapply(result$data, tibble::as_tibble)} when one element
+class is needed across backends. \code{\link[=nest_with_margins]{nest_with_margins()}} follows
 \code{\link[tidyr:nest]{tidyr::nest()}} for an empty ungrouped input and returns zero outer rows.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} follows \code{\link[dplyr:nest_by]{dplyr::nest_by()}} and returns one row
 containing the empty input when there are no grouping keys.
@@ -158,6 +165,32 @@ hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
 all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
 Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+}
+
+\section{Result class and attributes}{
+
+Each Margin verb follows the same class and attribute rules as the dplyr
+verb it is built from: \code{\link[=summarize_with_margins]{summarize_with_margins()}} those of
+\code{\link[dplyr:summarize]{dplyr::summarize()}}, and \code{\link[=expand_with_margins]{expand_with_margins()}} and the nesting verbs
+those of \code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}. Passing a
+plain data frame therefore returns a plain data frame and passing a tibble
+returns a tibble.
+
+The input class is not guaranteed to be preserved, and neither are
+object-level attributes of the input or attributes of columns marginplyr
+does not rewrite. A data frame subclass survives only where dplyr can
+reconstruct it, so a subclass with no \code{\link[dplyr:dplyr_reconstruct]{dplyr::dplyr_reconstruct()}} method
+is lost by \code{\link[dplyr:summarize]{dplyr::summarize()}} itself. Attributes on a column that carries
+no class are dropped wherever branches are combined, because that is what
+the vctrs rules for combining bare vectors do with them. Attach the
+attributes a result must carry after the Margin operation, as with any
+dplyr pipeline.
+
+Factor and ordered-factor columns are the one exception, because
+marginplyr decomposes them to insert \code{.margin_label} and rebuilds them
+itself. Their levels and ordering are preserved; see \emph{Display labels and
+grouping identity}. Classed columns such as \link{Date} and \link{POSIXct}, including
+its \code{tzone}, are carried through by dplyr and vctrs unchanged.
 }
 
 \section{Grouping set identifiers}{
@@ -253,9 +286,9 @@ nested <- nest_with_margins(
   .data = january_sales,
   .grouping = rollup(region, store)
 )
-# `january_sales` is a plain data frame and the outer class is preserved,
-# so `nested` prints its list column as flattened values. A tibble prints
-# each nested table as its dimensions instead.
+# `january_sales` is a plain data frame, so nesting it returns one too, and
+# `nested` prints its list column as flattened values. A tibble prints each
+# nested table as its dimensions instead.
 nested |>
   dplyr::as_tibble() |>
   head()

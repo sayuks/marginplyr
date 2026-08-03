@@ -74,7 +74,9 @@ collide with source columns, grouping keys, summary outputs, or a nesting
 \code{.key}.}
 }
 \value{
-An ungrouped data frame, or a lazy table when \code{.data} is lazy.
+An ungrouped data frame, or a lazy table when \code{.data} is lazy. Its
+class and attributes follow \code{\link[dplyr:summarize]{dplyr::summarize()}}; see \emph{Result class and
+attributes}.
 Result row order is unspecified; use \code{\link[dplyr:arrange]{dplyr::arrange()}} when presentation
 order matters.
 }
@@ -146,6 +148,32 @@ hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
 all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
 Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+}
+
+\section{Result class and attributes}{
+
+Each Margin verb follows the same class and attribute rules as the dplyr
+verb it is built from: \code{\link[=summarize_with_margins]{summarize_with_margins()}} those of
+\code{\link[dplyr:summarize]{dplyr::summarize()}}, and \code{\link[=expand_with_margins]{expand_with_margins()}} and the nesting verbs
+those of \code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}. Passing a
+plain data frame therefore returns a plain data frame and passing a tibble
+returns a tibble.
+
+The input class is not guaranteed to be preserved, and neither are
+object-level attributes of the input or attributes of columns marginplyr
+does not rewrite. A data frame subclass survives only where dplyr can
+reconstruct it, so a subclass with no \code{\link[dplyr:dplyr_reconstruct]{dplyr::dplyr_reconstruct()}} method
+is lost by \code{\link[dplyr:summarize]{dplyr::summarize()}} itself. Attributes on a column that carries
+no class are dropped wherever branches are combined, because that is what
+the vctrs rules for combining bare vectors do with them. Attach the
+attributes a result must carry after the Margin operation, as with any
+dplyr pipeline.
+
+Factor and ordered-factor columns are the one exception, because
+marginplyr decomposes them to insert \code{.margin_label} and rebuilds them
+itself. Their levels and ordering are preserved; see \emph{Display labels and
+grouping identity}. Classed columns such as \link{Date} and \link{POSIXct}, including
+its \code{tzone}, are carried through by dplyr and vctrs unchanged.
 }
 
 \section{Grouping set identifiers}{

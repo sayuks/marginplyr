@@ -43,7 +43,9 @@
 #'   collide with source columns, grouping keys, summary outputs, or a nesting
 #'   `.key`.
 #'
-#' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
+#' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
+#'   class and attributes follow [dplyr::summarize()]; see *Result class and
+#'   attributes*.
 #'   Result row order is unspecified; use [dplyr::arrange()] when presentation
 #'   order matters.
 #'
@@ -103,6 +105,30 @@
 #' [nest_by_with_margins()] instead returns a row-wise data frame grouped by
 #' all visible fixed keys, grouping dimensions, and `.id` when supplied.
 #' Row-wise input is rejected; call [dplyr::ungroup()] first.
+#'
+#' @section Result class and attributes:
+#' Each Margin verb follows the same class and attribute rules as the dplyr
+#' verb it is built from: [summarize_with_margins()] those of
+#' [dplyr::summarize()], and [expand_with_margins()] and the nesting verbs
+#' those of [dplyr::mutate()] combined with [dplyr::union_all()]. Passing a
+#' plain data frame therefore returns a plain data frame and passing a tibble
+#' returns a tibble.
+#'
+#' The input class is not guaranteed to be preserved, and neither are
+#' object-level attributes of the input or attributes of columns marginplyr
+#' does not rewrite. A data frame subclass survives only where dplyr can
+#' reconstruct it, so a subclass with no [dplyr::dplyr_reconstruct()] method
+#' is lost by [dplyr::summarize()] itself. Attributes on a column that carries
+#' no class are dropped wherever branches are combined, because that is what
+#' the vctrs rules for combining bare vectors do with them. Attach the
+#' attributes a result must carry after the Margin operation, as with any
+#' dplyr pipeline.
+#'
+#' Factor and ordered-factor columns are the one exception, because
+#' marginplyr decomposes them to insert `.margin_label` and rebuilds them
+#' itself. Their levels and ordering are preserved; see *Display labels and
+#' grouping identity*. Classed columns such as [Date] and [POSIXct], including
+#' its `tzone`, are carried through by dplyr and vctrs unchanged.
 #'
 #' @section Grouping set identifiers:
 #' When `.id` names an output column, each result row receives the one-based

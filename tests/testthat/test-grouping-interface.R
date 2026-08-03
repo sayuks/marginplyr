@@ -609,6 +609,60 @@ test_that("existing groups become implicit fixed keys", {
   expect_equal(dplyr::group_vars(implicit_nest_by), c("year", "region"))
 })
 
+test_that("Margin results take their class from the underlying dplyr verb", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 2, 3)
+  )
+
+  summary <- summarize_with_margins(
+    data,
+    value = sum(value),
+    .grouping = rollup(region)
+  )
+
+  expect_identical(class(summary), "data.frame")
+  # ADR 0016 promises delegation rather than the literal class above:
+  # marginplyr adds no class of its own to what the corresponding dplyr verb
+  # returned. Were dplyr to change what `summarise()` gives a plain data
+  # frame, this expectation would keep passing while the previous one failed,
+  # which is the reading that says marginplyr still honours the promise.
+  expect_identical(
+    class(summary),
+    class(dplyr::summarise(data, value = sum(value), .by = region))
+  )
+
+  expansion <- expand_with_margins(data, .grouping = rollup(region))
+
+  expect_identical(class(expansion), "data.frame")
+  expect_identical(
+    class(expansion),
+    class(dplyr::union_all(data, dplyr::mutate(data, region = "Total")))
+  )
+
+  nested <- nest_with_margins(data, .grouping = rollup(region))
+
+  expect_identical(class(nested), "data.frame")
+})
+
+test_that("nest_by_with_margins() is row-wise whatever the input class", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 2, 3)
+  )
+
+  nested_by <- nest_by_with_margins(data, .grouping = rollup(region))
+
+  # Unlike the verbs above, the row-wise shape is marginplyr's own
+  # construction, so ADR 0016 promises it for every input class. There is no
+  # row-wise plain data frame in dplyr to delegate to.
+  expect_s3_class(nested_by, "rowwise_df")
+  expect_identical(dplyr::group_vars(nested_by), "region")
+  # The promise about list-column elements is only that each is a data frame.
+  # Their exact class follows the backend and is documented, not guaranteed.
+  expect_s3_class(nested_by$data[[1L]], "data.frame")
+})
+
 test_that("grouped inputs reject conflicting grouping instructions", {
   data <- data.frame(
     year = c(2025L, 2026L),
