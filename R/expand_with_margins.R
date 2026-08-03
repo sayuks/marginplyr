@@ -15,11 +15,14 @@
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Database backend coverage
 #' @inheritSection summarize_with_margins Backend extension design
-#' @return An ungrouped data frame, or a lazy table when `.data` is lazy.
+#' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
+#'   class and attributes follow [dplyr::mutate()] combined with
+#'   [dplyr::union_all()]; see *Result class and attributes*.
 #'   Result row order is unspecified; use [dplyr::arrange()] when presentation
 #'   order matters.
 #' @family summarize and expand data with margins

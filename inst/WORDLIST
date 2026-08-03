@@ -31,4 +31,5 @@ tidyr
 tidyselect
 unclamped
 ungrouped
+vctrs
 yaml

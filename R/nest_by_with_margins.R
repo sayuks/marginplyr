@@ -5,6 +5,7 @@
 #' @inheritParams nest_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Backend extension design
@@ -22,7 +23,9 @@
 #' margin-operation pipeline, so they share one grouping plan and nesting
 #' contract without invoking each other.
 #' @return A row-wise data frame grouped by the visible grouping columns and
-#'   `.id` when supplied.
+#'   `.id` when supplied. This is the return shape whatever the class of
+#'   `.data`, because a row-wise data frame is always a tibble subclass; see
+#'   *Result class and attributes*.
 #'   Result row order is unspecified; use [dplyr::arrange()] when presentation
 #'   order matters.
 #' @family summarize and expand data with margins

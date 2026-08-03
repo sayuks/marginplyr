@@ -100,6 +100,12 @@ Owns restoration of factor and ordered-factor Margin columns from the metadata
 captured during preparation. Its backend methods preserve levels and ordering
 after labels have been materialized; it does not acquire metadata itself.
 
+This is the only type or attribute restoration in the package, and it exists
+because marginplyr is what decomposed those factors. Every other class and
+attribute of a result is whatever the underlying dplyr and vctrs operations
+produced, and no verb restores one. See
+[ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md).
+
 ### Summary selection (`R/summary-selections.R`)
 
 Owns summary-only semantics: rejecting the removed `.groups` argument and
