@@ -47,9 +47,47 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
 
-      # P3M does not publish binaries for the development R series. Base R can
-      # install binaries for the compatible release series directly. Preinstall
-      # all check dependencies so pak does not rebuild them for R-devel.
+      # R-devel is covered by two jobs answering different questions, and the
+      # gate is not this one. The R-devel compatibility gate is
+      # `release-matrix.yaml`'s `tarball` job on `ubuntu-latest` / `r: devel`,
+      # which installs hard dependencies plus the test harness and
+      # VignetteBuilder, needs no workaround at all, and checks the artifact a
+      # submission would carry. marginplyr is pure R and
+      # arrow and duckdb are Suggests, so that job settles whether the package
+      # works on R-devel. The question left over -- do the backend paths work
+      # on R-devel? -- is what the steps below add on top of it. A failure
+      # here, in particular a P3M outage, is not by itself an R-devel
+      # compatibility break.
+      #
+      # Source-building the backends is rejected, not merely avoided. A
+      # hosted-runner measurement recorded in
+      # `investigation/github-actions-modernization.md` compiled the full
+      # Suggests set on R-devel for over 55 minutes and was still building
+      # arrow when the job was stopped -- past the `timeout-minutes: 60` set
+      # above. Whether arrow and duckdb build from source under R-devel is
+      # their maintainers' and CRAN's question, not this package's: when a
+      # CRAN r-devel flavor lacks them the tests skip, and
+      # `release-matrix.yaml`'s `depends-only` job already proves skipping is
+      # safe.
+      #
+      # P3M does not publish binaries for the development R series, so base R
+      # installs binaries built for the compatible release series instead.
+      # That they load under R-devel at all rests on one undocumented value.
+      # `R_INTERNALS_UUID`, a compile-time constant in R's private
+      # `src/include/Defn.h`, has been identical across R-4-2 through R-4-6
+      # and trunk; `loadNamespace()` compares it against the installed
+      # package's `Meta/features.rds` and stops when they differ. So the day
+      # R-devel bumps it, this job fails with a clean error naming arrow or
+      # duckdb rather than a crash. That clean failure is a convention R's
+      # developers keep, not a guarantee: an internals change shipped without
+      # a bump passes the guard and has no defined symptom. The bump has no
+      # announcement channel and no deprecation path; see
+      # `investigation/r-devel-binary-compatibility.md` for the evidence, and
+      # #57 for why dropping the backends from this job is the intended
+      # response rather than reverting to source builds.
+      #
+      # Preinstall all check dependencies so pak does not rebuild them for
+      # R-devel.
       - name: Install P3M binary dependencies for R-devel
         if: matrix.config.r == 'devel'
         run: |
@@ -99,6 +137,10 @@ jobs:
           message("Installing P3M binaries: ", paste(dependencies, collapse = ", "))
           install.packages(dependencies, repos = p3m, dependencies = NA)
 
+          # When a binary is unavailable P3M serves source instead, silently
+          # and without an error, so a successful install proves nothing on
+          # its own. `Built` is the only field that separates a served release
+          # binary from a source build that happened to compile.
           packages <- c("arrow", "duckdb")
           built <- vapply(
             packages,
@@ -123,6 +165,15 @@ jobs:
           needs: check
           cache-version: 3
 
+      # Repeats the `Built` assertion after pak has run, because pak resolves
+      # against the running R-devel series and a source build it chose would
+      # replace the binaries installed above. This is a supply-chain check,
+      # and the load check below does not replace it: a source build on
+      # R-devel loads perfectly and passes any load check while being exactly
+      # the hour-long, unexplained timeout this job exists to avoid. It is
+      # also the likelier of the two to fire, since P3M's source fallback is
+      # routine documented behavior whereas the internals UUID has not moved
+      # in four years.
       - name: Verify P3M binary backends on R-devel
         if: matrix.config.r == 'devel'
         run: |
@@ -138,6 +189,23 @@ jobs:
           if (!all(startsWith(built, expected))) {
             stop("Arrow and DuckDB were not installed from P3M release binaries")
           }
+        shell: Rscript {0}
+
+      # This adds no coverage. `R CMD check` below already loads both packages
+      # through the backend tests and would trip the same `loadNamespace()`
+      # guard unaided. The step is here for diagnosis speed: it turns a
+      # binary-incompatibility failure buried in the check log into an
+      # immediate one that names the package and the cause, instead of a test
+      # error that reads like a marginplyr bug.
+      - name: Load the P3M binary backends on R-devel
+        if: matrix.config.r == 'devel'
+        run: |
+          # The internals-UUID comparison lives in `loadNamespace()`, not in
+          # `library()`, so every load path trips it; `library()` is simply
+          # the shortest one to write.
+          library(arrow)
+          library(duckdb)
+          message("Loaded arrow and duckdb under ", R.version.string)
         shell: Rscript {0}
 
       # No `upload-snapshots` here, and no `NOT_CRAN`. This matrix emulates
