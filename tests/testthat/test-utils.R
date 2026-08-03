@@ -26,7 +26,7 @@ test_that("assert_sring_scalar() works", {
 })
 
 test_that("assert_nest_possible() works", {
-  skip_if_not_installed("dtplyr")
+  skip_if_backend_absent("dtplyr")
 
   expect_no_error(assert_nest_possible(data.frame()))
   expect_no_error(assert_nest_possible(dtplyr::lazy_dt(data.frame())))
@@ -40,7 +40,7 @@ test_that("assert_nest_possible() works", {
 })
 
 test_that("assert_lazy_table() works", {
-  skip_if_not_installed("arrow")
+  skip_if_backend_absent("arrow")
 
   expect_error(
     assert_lazy_table(
@@ -90,7 +90,7 @@ test_that("shared argument assertions use the package condition seam", {
 })
 
 test_that("lazy-table assertions use the package condition seam", {
-  skip_if_not_installed("arrow")
+  skip_if_backend_absent("arrow")
 
   error <- expect_error(
     assert_lazy_table(arrow::as_record_batch_reader(data.frame())),

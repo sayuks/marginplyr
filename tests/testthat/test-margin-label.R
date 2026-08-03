@@ -225,7 +225,7 @@ test_that("factor collisions include unused levels and remain column-specific", 
 })
 
 test_that("dtplyr applies mixed named labels lazily and restores factors", {
-  skip_if_not_installed("dtplyr")
+  skip_if_backend_absent("dtplyr")
   data <- data.frame(
     first = factor(c("a", "b")),
     second = ordered(c("x", "y")),
@@ -250,7 +250,7 @@ test_that("dtplyr applies mixed named labels lazily and restores factors", {
 })
 
 test_that("Arrow applies mixed named labels lazily with typed missing values", {
-  skip_if_not_installed("arrow")
+  skip_if_backend_absent("arrow")
   data <- data.frame(
     first = c("a", "b"),
     second = c(1L, 2L),
@@ -292,8 +292,7 @@ test_that("portable SQL consumes named per-column labels lazily", {
 })
 
 test_that("DuckDB uses typed missing for a missing factor Margin label", {
-  skip_if_not_installed("DBI")
-  skip_if_not_installed("duckdb")
+  skip_if_backend_absent("DBI", "duckdb")
   con <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(

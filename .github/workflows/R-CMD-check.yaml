@@ -140,8 +140,32 @@ jobs:
           }
         shell: Rscript {0}
 
+      # No `upload-snapshots` here, and no `NOT_CRAN`. This matrix emulates
+      # CRAN, and testthat skips snapshot expectations under CRAN semantics, so
+      # all three snapshot-bearing tests skip and there is never a snapshot to
+      # upload. Asking for one implied a coverage this job does not have.
+      #
+      # Snapshots run in `release-matrix.yaml`'s `backend` jobs, which set
+      # `NOT_CRAN` because they prove behavior rather than emulate CRAN, and
+      # whose uploaded check directory carries any `.new.md` diff. Keeping them
+      # to those jobs is deliberate: #23 holds snapshots to diagnostic meaning
+      # rather than byte-for-byte wording, and comparing five platforms' error
+      # text would fail on formatting that was never a promise.
       - name: Check package
         uses: r-lib/actions/check-r-package@v2
         with:
-          upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+          # Uploaded for successful runs too, not just failures. A NOTE that
+          # only appears on a green run is exactly the one nobody reads, and
+          # the release review has to account for every NOTE.
+          upload-results: true
+
+      # Puts the status line and the full text of every ERROR, WARNING, and
+      # NOTE on the run page, so auditing them does not require downloading
+      # and unzipping the check directory.
+      - name: Summarize the check log
+        if: always()
+        run: Rscript .github/scripts/summarize-check-log.R
+        env:
+          MARGINPLYR_CHECK_LABEL: >-
+            ${{ matrix.config.os }} (${{ matrix.config.r }})

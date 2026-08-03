@@ -1,0 +1,327 @@
+# Release gates for the source tarball.
+#
+# `R-CMD-check.yaml` checks a fully provisioned working tree, which is the
+# right signal while developing but cannot answer two release questions: are
+# the Suggested packages genuinely optional, and does each supported backend
+# actually execute? This workflow answers both against one built tarball --
+# the artifact a submission would carry -- so that nothing here can pass
+# because of a file that exists only in the development tree.
+#
+# The jobs divide the work:
+#
+#   build         produces the single tarball every other job checks.
+#   depends-only  rebuilds examples, tests, and vignettes with Suggested
+#                 packages withheld (`_R_CHECK_DEPENDS_ONLY_=true`).
+#   tarball       checks that tarball on R release, devel, and oldrel.
+#   backend       four jobs that each execute one backend's live behavior.
+#
+# Optional backends skip in `depends-only` and `tarball`, which is what a
+# minimal CRAN flavor does. That is only acceptable because the `backend` jobs
+# prove the same contracts, and those jobs set `MARGINPLYR_REQUIRED_SUGGESTS`
+# so that a backend which failed to install fails the job instead of skipping
+# into a false green. See `tests/testthat/helper-optional-backends.R`.
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+name: release-matrix.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+  # `--as-cran` otherwise queries CRAN on every run. That adds network
+  # flakiness and NOTEs about clock skew or momentarily unreachable URLs which
+  # say nothing about the change under test, and each one would be annotated as
+  # unexpected. Local incoming checks still run; the remote ones belong to the
+  # pre-submission `rhub.yaml` run, where a human is reading the result.
+  _R_CHECK_CRAN_INCOMING_REMOTE_: false
+
+jobs:
+  build:
+    name: Build source tarball
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      # The vignette engine is the quarto R package, which shells out to the
+      # Quarto CLI named in DESCRIPTION's SystemRequirements. Install it here
+      # rather than assuming the runner image ships one.
+      - uses: quarto-dev/quarto-actions/setup@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          # Quarto renders vignettes in a child R process that cannot see the
+          # temporary installation R CMD build makes, so install the package
+          # itself as well.
+          extra-packages: local::.
+          needs: check
+          cache-version: 3
+
+      - name: Build source tarball
+        run: |
+          mkdir tarball
+          R CMD build .
+          mv marginplyr_*.tar.gz tarball/
+
+      - name: Record the tarball contents
+        run: |
+          tarball=$(ls tarball/marginplyr_*.tar.gz)
+          echo "## Source tarball" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          ls -l "$tarball" >> "$GITHUB_STEP_SUMMARY"
+          tar -tzf "$tarball" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: source-tarball
+          path: tarball/marginplyr_*.tar.gz
+          retention-days: 7
+          if-no-files-found: error
+
+  depends-only:
+    name: Minimal dependencies (depends-only)
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    env:
+      # Withholds Suggested packages from examples, tests, and vignettes.
+      _R_CHECK_DEPENDS_ONLY_: true
+      # Without this, `--as-cran` treats the deliberately absent Suggests as a
+      # check failure, which would make the job impossible to run.
+      _R_CHECK_FORCE_SUGGESTS_: false
+      MARGINPLYR_CHECK_LABEL: Minimal dependencies (depends-only)
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # Installs only what DESCRIPTION declares as a hard dependency, plus the
+      # test harness and the declared VignetteBuilder. R CMD check makes the
+      # VignetteBuilder visible while rebuilding vignettes even in
+      # depends-only mode, so quarto here does not weaken the gate; every
+      # optional backend stays absent, and `verify-depends-only.R` fails the
+      # job if one turns out not to be.
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: any::rcmdcheck, any::testthat, any::quarto
+          cache-version: 3
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: source-tarball
+          path: tarball
+
+      - name: Check the tarball without Suggested packages
+        run: Rscript .github/scripts/check-tarball.R
+
+      # Runs even when the check failed: if a Suggested package leaked into the
+      # library, that leak is the most useful thing to report, and skipping the
+      # step would leave only the downstream symptom.
+      - name: Verify the minimal-dependency run proved something
+        if: always()
+        run: Rscript .github/scripts/verify-depends-only.R
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-depends-only
+          path: check
+          retention-days: 7
+
+  tarball:
+    name: Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})
+    needs: build
+    runs-on: ${{ matrix.config.os }}
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+          - {os: ubuntu-latest,  r: 'release'}
+          - {os: ubuntu-latest,  r: 'devel', http-user-agent: 'release'}
+          - {os: ubuntu-latest,  r: 'oldrel-1'}
+          - {os: macos-latest,   r: 'release'}
+          - {os: windows-latest, r: 'release'}
+
+    env:
+      # Optional backends are deliberately absent from this matrix; the
+      # dedicated `backend` jobs execute them. Without this, `--as-cran` would
+      # fail the job for the missing Suggests rather than let the tests skip.
+      _R_CHECK_FORCE_SUGGESTS_: false
+      MARGINPLYR_CHECK_LABEL: >-
+        Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-pandoc@v2
+
+      - uses: quarto-dev/quarto-actions/setup@v2
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          r-version: ${{ matrix.config.r }}
+          http-user-agent: ${{ matrix.config.http-user-agent }}
+          use-public-rspm: true
+
+      # Keeping this to hard dependencies plus the test harness and
+      # VignetteBuilder is what lets R-devel join the matrix without the
+      # binary-repository workaround `R-CMD-check.yaml` needs for arrow and
+      # duckdb: those packages are simply not part of this job.
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: any::rcmdcheck, any::testthat, any::quarto
+          cache-version: 3
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: source-tarball
+          path: tarball
+
+      - name: Check the tarball
+        run: Rscript .github/scripts/check-tarball.R
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-tarball-${{ matrix.config.os }}-${{ matrix.config.r }}
+          path: check
+          retention-days: 7
+
+  # Ubuntu at R release only. Each job's value is isolation -- one backend
+  # installed, everything else absent -- not platform breadth, and multiplying
+  # that by three operating systems would quadruple the cost of the workflow
+  # for a weaker signal. macOS and Windows still exercise every backend
+  # together in the fully provisioned `R-CMD-check.yaml` matrix.
+  backend:
+    name: Live ${{ matrix.backend.name }}
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        backend:
+          # `required` names the packages whose absence must fail this job
+          # instead of skipping its tests. `proves` names the tests that must
+          # actually have run and passed, which is a stronger claim: an
+          # installed package says nothing about whether the tests exercising
+          # it were renamed, deleted, or skipped for an unrelated reason.
+          # Renaming one of these tests deliberately breaks the job that
+          # guards it. Each entry traces to an acceptance criterion of #38.
+          - name: RSQLite
+            packages: any::DBI, any::RSQLite
+            required: RSQLite,DBI
+            proves: >-
+              RSQLite executes portable Parent shares end to end;
+              RSQLite Parent shares preserve runtime backend conditions
+          - name: DuckDB
+            packages: any::DBI, any::duckdb
+            required: duckdb,DBI
+            proves: >-
+              DuckDB executes native grouping sets with unambiguous bits;
+              DuckDB native and UNION adapters agree;
+              DuckDB native and portable summaries agree on .id;
+              DuckDB Parent shares agree across native, portable, and local
+              paths
+          - name: dtplyr
+            packages: any::dtplyr
+            required: dtplyr
+            proves: >-
+              dtplyr integer and double Parent shares match local results;
+              dtplyr rejects every ineligible Parent-share source type;
+              dtplyr rejects non-scalar Parent-share sources on collection;
+              dtplyr validates Parent-share source types during collection
+          - name: Arrow
+            packages: any::arrow
+            required: arrow
+            proves: >-
+              Arrow rejects Parent shares before constructing a query;
+              Arrow ordinary Margin summaries remain lazy and available
+
+    env:
+      # Turns an absent backend into a failure, so this job cannot pass while
+      # skipping the very tests it exists to run.
+      MARGINPLYR_REQUIRED_SUGGESTS: ${{ matrix.backend.required }}
+      # testthat skips snapshot expectations under CRAN semantics, which marks
+      # the whole test skipped -- including "Arrow rejects Parent shares before
+      # constructing a query", whose diagnostic this job is meant to execute.
+      # These jobs prove behavior rather than emulate CRAN, so they opt out.
+      # The `depends-only` and `tarball` jobs deliberately do not.
+      NOT_CRAN: true
+      # Every other optional backend is absent on purpose: proving one backend
+      # in isolation also proves it does not depend on the others.
+      _R_CHECK_FORCE_SUGGESTS_: false
+      # Vignette rebuilding is covered by `depends-only` and `tarball`. Leaving
+      # it out here keeps the job's toolchain to what the backend contract
+      # needs, and keeps what a failure means unambiguous.
+      MARGINPLYR_CHECK_ARGS: --as-cran --ignore-vignettes
+      MARGINPLYR_CHECK_LABEL: Live ${{ matrix.backend.name }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: >-
+            any::rcmdcheck, any::testthat, ${{ matrix.backend.packages }}
+          cache-version: 3
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: source-tarball
+          path: tarball
+
+      - name: Check the tarball with ${{ matrix.backend.name }} installed
+        run: Rscript .github/scripts/check-tarball.R
+
+      # Reports which named contracts executed, and fails if any of them did
+      # not. Runs even after a failed check, because "which contract broke" is
+      # the answer this job exists to give.
+      - name: Verify the live ${{ matrix.backend.name }} contracts executed
+        if: always()
+        run: Rscript .github/scripts/verify-backend.R
+        env:
+          MARGINPLYR_BACKEND_NAME: ${{ matrix.backend.name }}
+          MARGINPLYR_BACKEND_TESTS: ${{ matrix.backend.proves }}
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: check-backend-${{ matrix.backend.name }}
+          path: check
+          retention-days: 7

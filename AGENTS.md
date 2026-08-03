@@ -62,9 +62,46 @@ cannot tell whether a Suggest is genuinely optional at runtime. The
 the manual scan: it rebuilds examples, tests, and vignettes with Suggested
 packages absent, which is the only way to confirm code guarded behind a
 Suggest actually degrades correctly instead of erroring. Run it locally with
-`_R_CHECK_DEPENDS_ONLY_=true R CMD check` against a source tarball; a
-dedicated CI job for it is not wired in yet (tracked in #38), so until then
-this is a manual step, same as the grep audit above.
+`_R_CHECK_DEPENDS_ONLY_=true R CMD check` against a source tarball. CI runs the
+same mode in `release-matrix.yaml`'s `depends-only` job, so this is a gate
+rather than a manual step, but running it locally is still the fastest way to
+find out which guard is missing.
+
+### Release matrix
+
+`.github/workflows/release-matrix.yaml` checks one built tarball rather than
+the working tree, because a check that passes on the development tree can be
+passing on a file the tarball does not ship. Its `backend` jobs each install a
+single optional backend and set `MARGINPLYR_REQUIRED_SUGGESTS`, which turns
+that backend's absence into a test failure instead of a skip.
+
+That variable is what makes skipping safe everywhere else. Optional-backend
+tests skip when their package is missing, which is correct for CRAN's minimal
+flavors but means a green job proves nothing about the backend. Every such
+test therefore goes through `skip_if_backend_absent()` or `backend_available()`
+from `tests/testthat/helper-optional-backends.R` — never `skip_if_not_installed()`
+or `rlang::is_installed()` directly, since those cannot be told to fail.
+(`skip_if_not_installed("dbplyr")` is not an exception: dbplyr is an Import, so
+it is never absent.)
+
+The `backend` jobs are also the only place snapshot expectations run: testthat
+skips them under CRAN semantics, so a snapshot never fails in a job that
+emulates CRAN. If a snapshot needs updating, it is a `backend` job that will
+say so.
+
+An installed package still does not prove its tests ran, so each `backend` job
+also lists the test names it exists to execute in its `proves` field, and
+`verify-backend.R` fails the job unless every one of them ran and passed.
+Renaming a contract test is therefore expected to break its job — that is the
+gate working, and the fix is to update the `proves` list, not to relax it.
+
+Adding an optional backend means editing three places, and doing only the first
+leaves a contract nothing executes:
+
+1. the `skip_if_backend_absent()` call in the tests,
+2. a `backend` matrix entry in `release-matrix.yaml`, naming its contracts,
+3. `optional_backends` in `.github/scripts/verify-depends-only.R`, which
+   asserts the backend really was withheld from the minimal-dependency job.
 
 ## Agent skills
 
