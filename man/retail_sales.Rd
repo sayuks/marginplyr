@@ -29,4 +29,10 @@ Online-direct records have a missing \code{store}, which makes it possible to
 distinguish a source missing value from a subtotal produced by a grouping
 operation.
 }
+\seealso{
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}},
+\code{\link[=nest_with_margins]{nest_with_margins()}}, and \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} for the Margin verbs
+these columns are used with, and \code{\link[=grouping_bit]{grouping_bit()}} for telling the missing
+\code{store} values apart from a subtotal.
+}
 \keyword{datasets}

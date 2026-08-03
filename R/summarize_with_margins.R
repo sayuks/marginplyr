@@ -116,21 +116,11 @@
 #' and is not included inside the nested data. For
 #' [nest_by_with_margins()], it is also a row-wise grouping key.
 #'
-#' | Value | Meaning | Duplicate occurrences |
-#' |---|---|---|
-#' | `.id` | Position in this ordered Grouping plan | Distinct with `"keep"` |
-#' | [inspect_grouping()] `set_id` | The same position before execution | Distinct with `"keep"` | # nolint: line_length_linter
-#' | [grouping_bit()] | Whether one dimension is omitted (`0L` or `1L`) | Same |
-#' | [grouping_id()] | Bit mask of omitted dimensions | Same |
-#'
-#' Thus a two-dimension rollup has `.id` values `1L`, `2L`, and `3L`, while
-#' its [grouping_id()] values are `0L`, `1L`, and `3L`. `.id` is not a
-#' durable business key and can change when the Grouping plan is reordered or
-#' deduplicated. It records plan occurrence, not physical result order; use
-#' [dplyr::arrange()] when order matters.
-#' See the [grouping identity guide][guide] for the complete comparison.
-#'
-#' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
+#' `.id` records plan occurrence, not physical result order, and is not a
+#' durable business key: reordering or deduplicating the Grouping
+#' specification changes it. Use [dplyr::arrange()] when order matters.
+#' [grouping_bit()] documents how `.id` compares with
+#' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
@@ -178,19 +168,17 @@
 #' calculates all requested shares through one shared Parent mapping, and then
 #' removes the metadata before returning the requested column order.
 #'
-#' General dbplyr backends are not executed or probed solely to validate an
-#' arbitrary summary result's type or cardinality. Statically detectable helper
-#' errors remain targeted before execution; an incompatible lazy expression may
-#' instead fail with its database error at [dplyr::collect()]. See
-#' [share_of_parent()] for the complete direct-expression, source, ordering,
-#' value, and `across()` contracts.
+#' Local data frames reject an ineligible source before any Parent share is
+#' calculated. `dtplyr` steps stay lazy and report the same conditions during
+#' explicit execution, before an invalid grouping row is emitted. General
+#' dbplyr backends are not executed or probed solely to validate an arbitrary
+#' summary result's type or cardinality: statically detectable helper errors
+#' remain targeted before execution, while an incompatible lazy expression may
+#' instead fail with its database error at [dplyr::collect()].
 #'
-#' Empty inputs follow this Parent-share contract:
-#'
-#' | Input | Result rows | Parent-share column |
-#' |---|---:|---|
-#' | Empty, without `.by` | One root row | `1.0`, double |
-#' | Empty, with `.by` | Zero rows | Empty double vector |
+#' [share_of_parent()] is the canonical reference for the complete
+#' direct-expression, source, ordering, value, empty-input, and `across()`
+#' contracts.
 #'
 #' @section Display labels and grouping identity:
 #' `.margin_label` is a display value, not the identity of a grouping set. An
@@ -230,8 +218,11 @@
 #' A factor observation that uses an NA level can print as `<NA>` while
 #' `is.na()` is false. A missing factor code has `is.na()` equal to true.
 #' Source missing values and typed-missing Margin values may display
-#' identically, so retain [grouping_bit()] or [grouping_id()] when structural
-#' identity matters. The eager default `.check_margin_label = TRUE` detects
+#' identically, so keep a structural identity column when the difference
+#' matters: `.id` is available from every Margin verb, and
+#' [summarize_with_margins()] can additionally write [grouping_bit()] or
+#' [grouping_id()] as summaries. The eager default
+#' `.check_margin_label = TRUE` detects
 #' collisions for local data. Lazy tables default to `FALSE` because checking
 #' would execute an extra query; opt in when that scan is appropriate.
 #'

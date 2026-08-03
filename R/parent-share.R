@@ -322,12 +322,29 @@
 #' Parent-share execution supports local data frames and lazy dbplyr and dtplyr
 #' inputs for one pure [rollup()], including composite dimensions. Lazy results
 #' remain lazy: ordinary summaries are followed by one Parent-share mapping and
-#' join shared by every requested measure.
+#' join shared by every requested measure, however many measures are requested.
+#'
+#' Syntax, source-name, written-order, and `across()` errors are always
+#' reported locally, before execution, on every backend. Only the *result*
+#' rules — eligible numeric type and exactly-one-value cardinality — depend on
+#' what the backend can prove:
+#'
+#' | Backend | Where source type and cardinality are checked |
+#' |---|---|
+#' | Local data frame | Before any Parent share is calculated |
+#' | `dtplyr` step | At explicit execution, before an invalid row is emitted |
+#' | Arrow | Not reached; Parent shares are rejected outright |
+#' | General dbplyr | Not by marginplyr; the database may error at collection |
 #'
 #' Arrow inputs reject Parent shares after expression planning and common
 #' Margin-operation validation but before constructing a summary query. Other
 #' Arrow Margin operations remain supported and lazy. Explicitly collect an
 #' Arrow input first when local Parent-share execution is appropriate.
+#'
+#' A `dtplyr` step remains a native lazy query: no validation-only query is
+#' added and nothing is collected on your behalf. Its execution-time
+#' diagnostics keep the Parent-share output name, the source summary name, and
+#' the original public call, so they read like the local ones.
 #'
 #' General dbplyr backends are not queried solely to discover an arbitrary
 #' summary result's type or cardinality. Statically detectable syntax and
@@ -347,6 +364,9 @@
 #' @param x The bare name of one preceding eligible ordinary summary.
 #'
 #' @return A double vector when used inside [summarize_with_margins()].
+#' @family contextual summary helpers
+#' @seealso [summarize_with_margins()], the only verb this helper can be used
+#'   in, and [rollup()], the only Grouping specification it accepts.
 #' @export
 #' @examples
 #' summarize_with_margins(

@@ -312,6 +312,17 @@ collect(dt_query)
 SQL database and Arrow tables cannot use the nesting verbs because their
 result contains a list column.
 
+dtplyr also enforces the Parent-share source rules. A valid request stays a
+native lazy query, and an ineligible source type or a non-scalar summary
+raises a Package condition at explicit execution, before an invalid grouping
+row is emitted.
+
+Arrow summaries and expansions are supported and lazy, but a Parent share is
+rejected outright, before any Arrow query is constructed. Collect the Arrow
+table first when you need Parent shares. The
+[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+states where each backend reports these errors.
+
 ## Backend verification levels
 
 The status describes what the automated test suite actually verifies. SQL
@@ -329,7 +340,10 @@ running a query on a live server.
 DuckDB and SQLite are exercised as live SQL databases in automated tests;
 SQLite's live claim is limited to portable Parent-share execution. Treat
 simulator-only backends as SQL-generation support, and report server-specific
-behavior with a minimal query and the backend version.
+behavior with a minimal query and the backend version. *Database backend
+coverage* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+carries the same claims for the package documentation.
 
 ## Practical rules for remote analysis
 

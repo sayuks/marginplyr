@@ -390,9 +390,12 @@ retail_sales |>
 The source `NA` store has `store_is_total = 0`. The region subtotal has
 `store_is_total = 1`, because `store` was removed by the rollup.
 
-For the complete comparison of `.id`, `inspect_grouping()$set_id`,
-`grouping_bit()`, and `grouping_id()`, continue with the [Grouping identity
-guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html).
+The [`grouping_bit()`
+reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html) compares
+`.id`, `inspect_grouping()$set_id`, `grouping_bit()`, and `grouping_id()` in
+full. The [Grouping identity
+guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+works through the same values with executable examples.
 
 `grouping_id()` combines the flags as a bit mask. Its last argument is the
 least-significant bit:
@@ -501,6 +504,11 @@ query. Result row order is unspecified for both local and lazy inputs, so call
 display value; retain `grouping_bit()` or `grouping_id()` whenever source
 values can equal the label.
 
+Naming rules, ordered-factor preservation, level positioning, and the complete
+eight-case `NA_character_`/`NULL` factor contract live in *Display labels and
+grouping identity* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+
 ## Advanced dplyr behavior
 
 ### Persistent groups as fixed keys
@@ -559,6 +567,11 @@ interpretation:
 | `cur_group*()` and deprecated `cur_data*()` helpers | Describe the current dplyr group or data mask | Rejected because branch-local identifiers, rows, and columns have no global meaning after grouping sets are combined; use `grouping_bit()` or `grouping_id()` for levels |
 | Ordering | `.by` summaries use first-appearance order | Row order is unspecified for local and lazy results; call `arrange()` explicitly |
 | Backend extension | `summarize()` is a public S3 generic | Public margin verbs share one validated plan; a private adapter selects backend execution |
+
+This table exists to contrast the two APIs. *Relationship to dplyr summaries*
+in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+is the authoritative statement of the marginplyr side.
 
 For example, `everything()` below selects measures but not `year`, `region`,
 or `store`:
@@ -829,6 +842,9 @@ The margin-aware verbs deliberately share the main result shapes of
 
 The shared features in this table do not amount to complete upstream
 compatibility; the deliberate differences are part of the margin-aware API.
+*Relationship to tidyr and dplyr* in the [`nest_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html) is
+the authoritative statement of both contracts.
 
 For grouped input, existing grouping columns become fixed keys as though they
 had been supplied through `.by`. Unlike `tidyr::nest()`, `nest_with_margins()`

@@ -7,6 +7,7 @@
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Grouping set identifiers
+#' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Backend extension design
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
 #'   not supported because nesting creates list columns.

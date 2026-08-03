@@ -15,9 +15,16 @@ grouping_id(...)
 \item{...}{Bare grouping columns.}
 }
 \value{
-A numeric grouping flag or identifier when used inside
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}. Local results use integer vectors; database
-result types follow the backend.
+A grouping flag or identifier when used inside
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}. Local data frames and \code{dtplyr} steps return R
+integers, because the value is known for each Grouping-set branch and is
+substituted before execution. Arrow and every backend taking the portable
+\verb{UNION ALL} path receive that same constant as a literal in their own
+query. Only a backend actually running native \verb{GROUP BY GROUPING SETS}
+emits SQL \code{GROUPING()}, so PostgreSQL falls back to the literal whenever
+\code{.duplicates = "keep"} sends it down the portable path. In every remote
+case the collected type comes from the backend, so cast explicitly when a
+downstream calculation depends on it.
 }
 \description{
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} are contextual summary helpers for
@@ -37,7 +44,14 @@ for placing equal values next to one another.
 
 Columns fixed by \code{.by} may also be passed to these helpers. Because a \code{.by}
 column belongs to every grouping set, \code{\link[=grouping_bit]{grouping_bit()}} is always \code{0L} for it
-and it contributes a zero bit to \code{\link[=grouping_id]{grouping_id()}}.\tabular{lll}{
+and it contributes a zero bit to \code{\link[=grouping_id]{grouping_id()}}.
+}
+\section{Grouping identity values}{
+
+marginplyr exposes four related values. Two describe \emph{where} a Grouping-set
+occurrence sits in one ordered Grouping plan; two describe \emph{which}
+dimensions are absent from a row. Only the first pair can tell repeated
+identical Grouping sets apart:\tabular{lll}{
    Value \tab Meaning \tab Duplicate Grouping-set occurrences \cr
    \code{.id} \tab One-based position in the resolved Grouping plan \tab Distinct with \code{.duplicates = "keep"} \cr
    \code{\link[=inspect_grouping]{inspect_grouping()}} \verb{$set_id} \tab The same position before execution \tab Distinct with \code{.duplicates = "keep"} \cr
@@ -46,10 +60,31 @@ and it contributes a zero bit to \code{\link[=grouping_id]{grouping_id()}}.\tabu
 }
 
 
-See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for the comparison with \code{.id} and
-\code{\link[=inspect_grouping]{inspect_grouping()}}, rollup and cube masks, physical row order, Margin
-labels, and factor missingness.
+The correspondence between \code{.id} and \code{set_id} holds for one resolved \code{.by},
+\code{.grouping}, and \code{.duplicates}. Reordering or deduplicating a Grouping
+specification changes both, so \code{.id} is not a durable business key.
+
+Grouping identifiers encode absence and need not be consecutive. A
+\code{rollup(region, store)} plan therefore has \code{.id} values \code{1L}, \code{2L}, and
+\code{3L} but \code{\link[=grouping_id]{grouping_id()}} values \code{0L}, \code{1L}, and \code{3L}: identifier \code{2} would
+mean \code{region} absent while \code{store} remains, which the declared hierarchy
+never produces. A \code{cube(region, store)} plan contains every mask, so its
+identifiers are \code{0L}, \code{1L}, \code{2L}, and \code{3L}.
+
+Neither value records physical row order. Call \code{\link[dplyr:arrange]{dplyr::arrange()}} whenever
+presentation order matters.
+
+Displayed Margin labels are not identity. A source value can equal its
+Margin label, and a source missing value can print exactly like a
+typed-missing Margin value, so retain one of these helpers or \code{.id} when
+structural identity matters. See
+\emph{\link[=summarize_with_margins]{Display labels and grouping identity}} for the
+complete label, factor, and missing-value contract.
+
+The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
+executable examples.
 }
+
 \examples{
 # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 # that detail row but 1 when ROLLUP removes store to create a subtotal.
@@ -75,3 +110,13 @@ summarize_with_margins(
   .margin_label = NULL
 )
 }
+\seealso{
+Other grouping plans and grouping identity:
+\code{\link[=grouping_set]{grouping_set()}},
+\code{\link[=inspect_grouping]{inspect_grouping()}}
+
+Other contextual summary helpers:
+\code{\link[=share_of_parent]{share_of_parent()}}
+}
+\concept{contextual summary helpers}
+\concept{grouping plans and grouping identity}

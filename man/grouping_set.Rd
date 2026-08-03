@@ -57,9 +57,10 @@ comma-separated SQL \verb{GROUP BY} items.
 A \code{\link[=grouping_set]{grouping_set()}} nested directly inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} is a
 composite dimension. Its columns are added or removed together.
 
-See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for how a resolved Grouping plan
-relates to \code{.id}, \code{\link[=inspect_grouping]{inspect_grouping()}}, \code{\link[=grouping_bit]{grouping_bit()}}, and
-\code{\link[=grouping_id]{grouping_id()}}.
+A resolved Grouping plan can be read back in four ways: \code{.id},
+\code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
+\code{\link[=grouping_bit]{grouping_bit()}} compares them; the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works
+through the same values with executable examples.
 }
 \examples{
 # The operations team needs store, region, and company totals for each
@@ -158,3 +159,13 @@ postgres_sales |>
   ) |>
   dplyr::show_query()
 }
+\seealso{
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}},
+\code{\link[=nest_with_margins]{nest_with_margins()}}, and \code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, the Margin verbs
+that consume a grouping specification.
+
+Other grouping plans and grouping identity:
+\code{\link[=grouping_bit]{grouping_bit()}},
+\code{\link[=inspect_grouping]{inspect_grouping()}}
+}
+\concept{grouping plans and grouping identity}

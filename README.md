@@ -225,6 +225,87 @@ rollup removed `store`. This is the role of the SQL `GROUPING()`
 function; replacing every missing value with `"Total"` cannot preserve
 that distinction.
 
+## Compare each summary with its rollup parent
+
+`share_of_parent()` divides a preceding named summary by the same
+summary one rollup level up. Name the source summary first, then take
+its share:
+
+``` r
+parent_report <- january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    .grouping = rollup(region, store)
+  )
+
+parent_report
+#> # A tibble: 8 × 4
+#>   region store         revenue revenue_share
+#>   <chr>  <chr>           <dbl>         <dbl>
+#> 1 East   Boston           6000         0.536
+#> 2 East   New York         3000         0.268
+#> 3 East   <NA>             2200         0.196
+#> 4 West   San Francisco    7200         0.595
+#> 5 West   Seattle          4900         0.405
+#> 6 East   Total           11200         0.481
+#> 7 West   Total           12100         0.519
+#> 8 Total  Total           23300         1
+```
+
+For several measures, use two ordered `across()` expressions. The second
+one selects the summaries the first one created:
+
+``` r
+january_sales |>
+  summarize_with_margins(
+    dplyr::across(c(units, revenue), sum),
+    dplyr::across(
+      c(units, revenue),
+      share_of_parent,
+      .names = "{.col}_share"
+    ),
+    .grouping = rollup(region, store)
+  )
+#> # A tibble: 8 × 6
+#>   region store         units revenue units_share revenue_share
+#>   <chr>  <chr>         <int>   <dbl>       <dbl>         <dbl>
+#> 1 East   Boston            5    6000       0.135         0.536
+#> 2 East   New York         10    3000       0.270         0.268
+#> 3 East   <NA>             22    2200       0.595         0.196
+#> 4 West   San Francisco     6    7200       0.182         0.595
+#> 5 West   Seattle          27    4900       0.818         0.405
+#> 6 East   Total            37   11200       0.529         0.481
+#> 7 West   Total            33   12100       0.471         0.519
+#> 8 Total  Total            70   23300       1             1
+```
+
+Percentages, rounding, and other derived columns belong in a `mutate()`
+after the summary:
+
+``` r
+parent_report |>
+  dplyr::mutate(revenue_percent = 100 * revenue_share)
+#> # A tibble: 8 × 5
+#>   region store         revenue revenue_share revenue_percent
+#>   <chr>  <chr>           <dbl>         <dbl>           <dbl>
+#> 1 East   Boston           6000         0.536            53.6
+#> 2 East   New York         3000         0.268            26.8
+#> 3 East   <NA>             2200         0.196            19.6
+#> 4 West   San Francisco    7200         0.595            59.5
+#> 5 West   Seattle          4900         0.405            40.5
+#> 6 East   Total           11200         0.481            48.1
+#> 7 West   Total           12100         0.519            51.9
+#> 8 Total  Total           23300         1               100
+```
+
+The root row’s share is one, and a missing or zero denominator gives
+`NA`. Parent matching is structural, so display labels never choose the
+parent. The [`share_of_parent()`
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+documents the eligible sources, value rules, `across()` grammar, and
+backend boundaries in full.
+
 ## Use the same report with a database
 
 The grouping plan becomes part of the lazy query. `show_query()`

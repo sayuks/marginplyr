@@ -176,6 +176,53 @@ january_sales |>
 removed `store`. This is the role of the SQL `GROUPING()` function; replacing
 every missing value with `"Total"` cannot preserve that distinction.
 
+## Compare each summary with its rollup parent
+
+`share_of_parent()` divides a preceding named summary by the same summary one
+rollup level up. Name the source summary first, then take its share:
+
+```{r}
+parent_report <- january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    .grouping = rollup(region, store)
+  )
+
+parent_report
+```
+
+For several measures, use two ordered `across()` expressions. The second one
+selects the summaries the first one created:
+
+```{r}
+january_sales |>
+  summarize_with_margins(
+    dplyr::across(c(units, revenue), sum),
+    dplyr::across(
+      c(units, revenue),
+      share_of_parent,
+      .names = "{.col}_share"
+    ),
+    .grouping = rollup(region, store)
+  )
+```
+
+Percentages, rounding, and other derived columns belong in a `mutate()` after
+the summary:
+
+```{r}
+parent_report |>
+  dplyr::mutate(revenue_percent = 100 * revenue_share)
+```
+
+The root row's share is one, and a missing or zero denominator gives `NA`.
+Parent matching is structural, so display labels never choose the parent. The
+[`share_of_parent()`
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+documents the eligible sources, value rules, `across()` grammar, and backend
+boundaries in full.
+
 ## Use the same report with a database
 
 The grouping plan becomes part of the lazy query. `show_query()` inspects the

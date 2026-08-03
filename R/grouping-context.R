@@ -18,6 +18,12 @@
 #' column belongs to every grouping set, [grouping_bit()] is always `0L` for it
 #' and it contributes a zero bit to [grouping_id()].
 #'
+#' @section Grouping identity values:
+#' marginplyr exposes four related values. Two describe *where* a Grouping-set
+#' occurrence sits in one ordered Grouping plan; two describe *which*
+#' dimensions are absent from a row. Only the first pair can tell repeated
+#' identical Grouping sets apart:
+#'
 #' | Value | Meaning | Duplicate Grouping-set occurrences |
 #' |---|---|---|
 #' | `.id` | One-based position in the resolved Grouping plan | Distinct with `.duplicates = "keep"` | # nolint: line_length_linter
@@ -25,18 +31,47 @@
 #' | [grouping_bit()] | Whether one chosen dimension is absent | The same for identical absence patterns | # nolint: line_length_linter
 #' | [grouping_id()] | Bit mask for chosen absent dimensions | The same for identical absence patterns | # nolint: line_length_linter
 #'
-#' See the [grouping identity guide][guide] for the comparison with `.id` and
-#' [inspect_grouping()], rollup and cube masks, physical row order, Margin
-#' labels, and factor missingness.
+#' The correspondence between `.id` and `set_id` holds for one resolved `.by`,
+#' `.grouping`, and `.duplicates`. Reordering or deduplicating a Grouping
+#' specification changes both, so `.id` is not a durable business key.
+#'
+#' Grouping identifiers encode absence and need not be consecutive. A
+#' `rollup(region, store)` plan therefore has `.id` values `1L`, `2L`, and
+#' `3L` but [grouping_id()] values `0L`, `1L`, and `3L`: identifier `2` would
+#' mean `region` absent while `store` remains, which the declared hierarchy
+#' never produces. A `cube(region, store)` plan contains every mask, so its
+#' identifiers are `0L`, `1L`, `2L`, and `3L`.
+#'
+#' Neither value records physical row order. Call [dplyr::arrange()] whenever
+#' presentation order matters.
+#'
+#' Displayed Margin labels are not identity. A source value can equal its
+#' Margin label, and a source missing value can print exactly like a
+#' typed-missing Margin value, so retain one of these helpers or `.id` when
+#' structural identity matters. See
+#' *[Display labels and grouping identity][summarize_with_margins]* for the
+#' complete label, factor, and missing-value contract.
+#'
+#' The [grouping identity guide][guide] works through these values with
+#' executable examples.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
 #' @param x A bare grouping column.
 #' @param ... Bare grouping columns.
 #'
-#' @return A numeric grouping flag or identifier when used inside
-#'   [summarize_with_margins()]. Local results use integer vectors; database
-#'   result types follow the backend.
+#' @return A grouping flag or identifier when used inside
+#'   [summarize_with_margins()]. Local data frames and `dtplyr` steps return R
+#'   integers, because the value is known for each Grouping-set branch and is
+#'   substituted before execution. Arrow and every backend taking the portable
+#'   `UNION ALL` path receive that same constant as a literal in their own
+#'   query. Only a backend actually running native `GROUP BY GROUPING SETS`
+#'   emits SQL `GROUPING()`, so PostgreSQL falls back to the literal whenever
+#'   `.duplicates = "keep"` sends it down the portable path. In every remote
+#'   case the collected type comes from the backend, so cast explicitly when a
+#'   downstream calculation depends on it.
+#' @family grouping plans and grouping identity
+#' @family contextual summary helpers
 #' @export
 #' @examples
 #' # Online-direct sales have a source NA store. grouping_bit(store) is 0 for

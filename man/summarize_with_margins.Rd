@@ -159,21 +159,13 @@ identifier \code{1L}, and a zero-row result retains an integer \code{.id} column
 Output columns are ordered as fixed keys, variable dimensions, \code{.id}, then
 ordinary output columns. For \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{.id} is an outer key
 and is not included inside the nested data. For
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.\tabular{lll}{
-   Value \tab Meaning \tab Duplicate occurrences \cr
-   \code{.id} \tab Position in this ordered Grouping plan \tab Distinct with \code{"keep"} \cr
-   \code{\link[=inspect_grouping]{inspect_grouping()}} \code{set_id} \tab The same position before execution \tab Distinct with \code{"keep"} \cr
-   \code{\link[=grouping_bit]{grouping_bit()}} \tab Whether one dimension is omitted (\code{0L} or \code{1L}) \tab Same \cr
-   \code{\link[=grouping_id]{grouping_id()}} \tab Bit mask of omitted dimensions \tab Same \cr
-}
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.
 
-
-Thus a two-dimension rollup has \code{.id} values \code{1L}, \code{2L}, and \code{3L}, while
-its \code{\link[=grouping_id]{grouping_id()}} values are \code{0L}, \code{1L}, and \code{3L}. \code{.id} is not a
-durable business key and can change when the Grouping plan is reordered or
-deduplicated. It records plan occurrence, not physical result order; use
-\code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
-See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for the complete comparison.
+\code{.id} records plan occurrence, not physical result order, and is not a
+durable business key: reordering or deduplicating the Grouping
+specification changes it. Use \code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
+\code{\link[=grouping_bit]{grouping_bit()}} documents how \code{.id} compares with
+\code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
 }
 
 \section{Relationship to dplyr summaries}{
@@ -225,18 +217,17 @@ preserves collision-safe Grouping set metadata through ordinary aggregation,
 calculates all requested shares through one shared Parent mapping, and then
 removes the metadata before returning the requested column order.
 
-General dbplyr backends are not executed or probed solely to validate an
-arbitrary summary result's type or cardinality. Statically detectable helper
-errors remain targeted before execution; an incompatible lazy expression may
-instead fail with its database error at \code{\link[dplyr:collect]{dplyr::collect()}}. See
-\code{\link[=share_of_parent]{share_of_parent()}} for the complete direct-expression, source, ordering,
-value, and \code{across()} contracts.
+Local data frames reject an ineligible source before any Parent share is
+calculated. \code{dtplyr} steps stay lazy and report the same conditions during
+explicit execution, before an invalid grouping row is emitted. General
+dbplyr backends are not executed or probed solely to validate an arbitrary
+summary result's type or cardinality: statically detectable helper errors
+remain targeted before execution, while an incompatible lazy expression may
+instead fail with its database error at \code{\link[dplyr:collect]{dplyr::collect()}}.
 
-Empty inputs follow this Parent-share contract:\tabular{lrl}{
-   Input \tab Result rows \tab Parent-share column \cr
-   Empty, without \code{.by} \tab One root row \tab \code{1.0}, double \cr
-   Empty, with \code{.by} \tab Zero rows \tab Empty double vector \cr
-}
+\code{\link[=share_of_parent]{share_of_parent()}} is the canonical reference for the complete
+direct-expression, source, ordering, value, empty-input, and \code{across()}
+contracts.
 }
 
 \section{Display labels and grouping identity}{
@@ -278,8 +269,11 @@ With \code{.check_margin_label = TRUE}, factor columns follow this contract:\tab
 A factor observation that uses an NA level can print as \verb{<NA>} while
 \code{is.na()} is false. A missing factor code has \code{is.na()} equal to true.
 Source missing values and typed-missing Margin values may display
-identically, so retain \code{\link[=grouping_bit]{grouping_bit()}} or \code{\link[=grouping_id]{grouping_id()}} when structural
-identity matters. The eager default \code{.check_margin_label = TRUE} detects
+identically, so keep a structural identity column when the difference
+matters: \code{.id} is available from every Margin verb, and
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} can additionally write \code{\link[=grouping_bit]{grouping_bit()}} or
+\code{\link[=grouping_id]{grouping_id()}} as summaries. The eager default
+\code{.check_margin_label = TRUE} detects
 collisions for local data. Lazy tables default to \code{FALSE} because checking
 would execute an extra query; opt in when that scan is appropriate.
 }

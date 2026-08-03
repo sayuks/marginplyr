@@ -47,6 +47,9 @@ same resolved plan. \code{grouping_bits} instead describes whether each variable
 dimension is included (\code{0L}) or omitted (\code{1L}), and \code{grouping_id} encodes
 that absence pattern as a bit mask. \code{grouping_id} is \code{NA_integer_} beyond
 31 variable dimensions, while \code{grouping_bits} remains complete.
+
+\code{\link[=grouping_bit]{grouping_bit()}} is the canonical reference for how these four values
+relate and which of them distinguish duplicate Grouping-set occurrences.
 }
 
 \section{Formats and ordinary tibble behavior}{
@@ -73,7 +76,8 @@ Grouping plan. It is deliberately separate from a SQL execution plan. Use
 \code{\link[dplyr:show_query]{dplyr::show_query()}} for generated SQL and backend-native tools for an
 optimizer plan.
 
-See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for the full comparison.
+The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} walks through inspecting a plan and
+reading it back off a Margin result.
 }
 
 \examples{
@@ -130,3 +134,12 @@ inspect_grouping(
   .duplicates = "keep"
 )
 }
+\seealso{
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} to run a Margin operation on the
+inspected plan.
+
+Other grouping plans and grouping identity:
+\code{\link[=grouping_bit]{grouping_bit()}},
+\code{\link[=grouping_set]{grouping_set()}}
+}
+\concept{grouping plans and grouping identity}
