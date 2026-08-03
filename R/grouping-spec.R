@@ -17,9 +17,10 @@
 #' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
 #' composite dimension. Its columns are added or removed together.
 #'
-#' See the [grouping identity guide][guide] for how a resolved Grouping plan
-#' relates to `.id`, [inspect_grouping()], [grouping_bit()], and
-#' [grouping_id()].
+#' A resolved Grouping plan can be read back in four ways: `.id`,
+#' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
+#' [grouping_bit()] compares them; the [grouping identity guide][guide] works
+#' through the same values with executable examples.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
@@ -38,6 +39,10 @@
 #'   identity product (the empty grouping set).
 #'
 #' @return A grouping specification for use in `.grouping`.
+#' @family grouping plans and grouping identity
+#' @seealso [summarize_with_margins()], [expand_with_margins()],
+#'   [nest_with_margins()], and [nest_by_with_margins()], the Margin verbs
+#'   that consume a grouping specification.
 #' @export
 #' @examples
 #' # The operations team needs store, region, and company totals for each

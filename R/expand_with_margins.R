@@ -16,6 +16,7 @@
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Grouping set identifiers
+#' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Database backend coverage
 #' @inheritSection summarize_with_margins Backend extension design
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy.

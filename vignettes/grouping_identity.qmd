@@ -32,21 +32,18 @@ library(dplyr)
 
 ## Four related values
 
-| Interface | Meaning | Values | Duplicate Grouping sets |
-|---|---|---|---|
-| `.id = "name"` | One-based position of a Grouping-set occurrence in the resolved Grouping plan | `1L`, `2L`, ... | Distinct when `.duplicates = "keep"` |
-| `inspect_grouping()$set_id` | The same occurrence position, inspected before a Margin operation | `1L`, `2L`, ... | Distinct when `.duplicates = "keep"` |
-| `grouping_bit(x)` | Whether one chosen grouping dimension is absent | `0L` when included, `1L` when absent | The same for identical absence patterns |
-| `grouping_id(...)` | Bit mask formed from the chosen Grouping bits | A non-negative integer through 31 chosen dimensions | The same for identical absence patterns |
+Four interfaces answer two different questions. `.id` and
+`inspect_grouping()$set_id` describe *where an occurrence appears in one
+ordered Grouping plan*; `grouping_bit()` and `grouping_id()` describe *which
+dimensions are absent from a row*. A Grouping set identifier can therefore
+distinguish repeated identical sets, and a Grouping identifier deliberately
+cannot.
 
-The first two values describe *where an occurrence appears in one ordered
-Grouping plan*. The last two describe *which dimensions are absent from a
-row*. A Grouping set identifier can therefore distinguish repeated identical
-sets; a Grouping identifier deliberately cannot.
-
-The correspondence between `.id` and `set_id` holds for the same resolved
-`.by`, `.grouping`, and `.duplicates` arguments. Reordering or deduplicating a
-Grouping specification can change both Grouping set identifiers.
+The [`grouping_bit()`
+reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html)
+compares all four values side by side and states their duplicate-occurrence
+rules. The rest of this article works through what that comparison means in
+practice.
 
 ## Why a rollup skips Grouping identifier 2
 

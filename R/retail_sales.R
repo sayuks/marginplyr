@@ -18,6 +18,10 @@
 #'   \item{revenue}{Revenue in US dollars.}
 #' }
 #' @source Synthetic data created for marginplyr examples.
+#' @seealso [summarize_with_margins()], [expand_with_margins()],
+#'   [nest_with_margins()], and [nest_by_with_margins()] for the Margin verbs
+#'   these columns are used with, and [grouping_bit()] for telling the missing
+#'   `store` values apart from a subtotal.
 #' @keywords datasets
 #' @usage data(retail_sales)
 #' @name retail_sales

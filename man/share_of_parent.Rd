@@ -338,12 +338,29 @@ Missing detail or subtotal combinations are not completed.
 Parent-share execution supports local data frames and lazy dbplyr and dtplyr
 inputs for one pure \code{\link[=rollup]{rollup()}}, including composite dimensions. Lazy results
 remain lazy: ordinary summaries are followed by one Parent-share mapping and
-join shared by every requested measure.
+join shared by every requested measure, however many measures are requested.
+
+Syntax, source-name, written-order, and \code{across()} errors are always
+reported locally, before execution, on every backend. Only the \emph{result}
+rules — eligible numeric type and exactly-one-value cardinality — depend on
+what the backend can prove:\tabular{ll}{
+   Backend \tab Where source type and cardinality are checked \cr
+   Local data frame \tab Before any Parent share is calculated \cr
+   \code{dtplyr} step \tab At explicit execution, before an invalid row is emitted \cr
+   Arrow \tab Not reached; Parent shares are rejected outright \cr
+   General dbplyr \tab Not by marginplyr; the database may error at collection \cr
+}
+
 
 Arrow inputs reject Parent shares after expression planning and common
 Margin-operation validation but before constructing a summary query. Other
 Arrow Margin operations remain supported and lazy. Explicitly collect an
 Arrow input first when local Parent-share execution is appropriate.
+
+A \code{dtplyr} step remains a native lazy query: no validation-only query is
+added and nothing is collected on your behalf. Its execution-time
+diagnostics keep the Parent-share output name, the source summary name, and
+the original public call, so they read like the local ones.
 
 General dbplyr backends are not queried solely to discover an arbitrary
 summary result's type or cardinality. Statically detectable syntax and
@@ -452,3 +469,11 @@ try(summarize_with_margins(
   .grouping = rollup(region, store)
 ))
 }
+\seealso{
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, the only verb this helper can be used
+in, and \code{\link[=rollup]{rollup()}}, the only Grouping specification it accepts.
+
+Other contextual summary helpers:
+\code{\link[=grouping_bit]{grouping_bit()}}
+}
+\concept{contextual summary helpers}

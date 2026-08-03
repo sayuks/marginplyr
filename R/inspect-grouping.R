@@ -28,6 +28,9 @@
 #' that absence pattern as a bit mask. `grouping_id` is `NA_integer_` beyond
 #' 31 variable dimensions, while `grouping_bits` remains complete.
 #'
+#' [grouping_bit()] is the canonical reference for how these four values
+#' relate and which of them distinguish duplicate Grouping-set occurrences.
+#'
 #' @section Formats and ordinary tibble behavior:
 #' The default `.format = "text"` represents column collections as `()`,
 #' `(region)`, or `(region, store)`, and Grouping bits as text such as
@@ -51,10 +54,14 @@
 #' [dplyr::show_query()] for generated SQL and backend-native tools for an
 #' optimizer plan.
 #'
-#' See the [grouping identity guide][guide] for the full comparison.
+#' The [grouping identity guide][guide] walks through inspecting a plan and
+#' reading it back off a Margin result.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
+#' @family grouping plans and grouping identity
+#' @seealso [summarize_with_margins()] to run a Margin operation on the
+#'   inspected plan.
 #' @export
 #' @examples
 #' inspect_grouping(

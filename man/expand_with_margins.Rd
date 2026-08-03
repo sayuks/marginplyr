@@ -133,21 +133,61 @@ identifier \code{1L}, and a zero-row result retains an integer \code{.id} column
 Output columns are ordered as fixed keys, variable dimensions, \code{.id}, then
 ordinary output columns. For \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{.id} is an outer key
 and is not included inside the nested data. For
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.\tabular{lll}{
-   Value \tab Meaning \tab Duplicate occurrences \cr
-   \code{.id} \tab Position in this ordered Grouping plan \tab Distinct with \code{"keep"} \cr
-   \code{\link[=inspect_grouping]{inspect_grouping()}} \code{set_id} \tab The same position before execution \tab Distinct with \code{"keep"} \cr
-   \code{\link[=grouping_bit]{grouping_bit()}} \tab Whether one dimension is omitted (\code{0L} or \code{1L}) \tab Same \cr
-   \code{\link[=grouping_id]{grouping_id()}} \tab Bit mask of omitted dimensions \tab Same \cr
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, it is also a row-wise grouping key.
+
+\code{.id} records plan occurrence, not physical result order, and is not a
+durable business key: reordering or deduplicating the Grouping
+specification changes it. Use \code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
+\code{\link[=grouping_bit]{grouping_bit()}} documents how \code{.id} compares with
+\code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
+}
+
+\section{Display labels and grouping identity}{
+
+\code{.margin_label} is a display value, not the identity of a grouping set. An
+unnamed scalar labels every resolved Margin dimension. A named vector
+provides column-specific labels and must cover the resolved dimensions
+exactly once; missing, unknown, duplicate, and empty names are rejected, as
+are names from \code{.by}.
+
+Non-missing labels convert ordinary grouping dimensions to character. A
+factor or ordered factor is reconstructed after the Margin operation,
+preserving ordered status and placing the synthetic level last by default
+or first when \code{.margin_label_position = "first"}. With collision checking
+enabled, the complete factor domain is checked, including unused levels.
+With checking disabled, an existing level may be reused and is moved to the
+requested position. Reconstruction preserves the distinction between an
+observation that uses a factor NA level and an actually missing factor code.
+
+\code{NA_character_} and \code{NULL} both create a typed missing Margin value and do
+not create a synthetic factor level. Position is therefore a no-op for
+either value. \code{NA_character_} still participates in collision validation;
+\code{NULL} opts out. A factor NA level is a structural conflict for
+\code{NA_character_} even when \code{.check_margin_label = FALSE}.
+
+With \code{.check_margin_label = TRUE}, factor columns follow this contract:\tabular{lrrl}{
+   Margin label \tab NA level \tab Missing value \tab Result \cr
+   \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
+   \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr
+   \code{NA_character_} \tab no \tab yes \tab Error: the label collides with a value \cr
+   \code{NA_character_} \tab no \tab no \tab Allowed; use typed missing \cr
+   \code{NULL} \tab yes \tab yes \tab Allowed; source missing values and margins require structural identity \cr
+   \code{NULL} \tab yes \tab no \tab Allowed; preserve the NA level and use typed missing \cr
+   \code{NULL} \tab no \tab yes \tab Allowed; source missing values and margins require structural identity \cr
+   \code{NULL} \tab no \tab no \tab Allowed; use typed missing \cr
 }
 
 
-Thus a two-dimension rollup has \code{.id} values \code{1L}, \code{2L}, and \code{3L}, while
-its \code{\link[=grouping_id]{grouping_id()}} values are \code{0L}, \code{1L}, and \code{3L}. \code{.id} is not a
-durable business key and can change when the Grouping plan is reordered or
-deduplicated. It records plan occurrence, not physical result order; use
-\code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
-See the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} for the complete comparison.
+A factor observation that uses an NA level can print as \verb{<NA>} while
+\code{is.na()} is false. A missing factor code has \code{is.na()} equal to true.
+Source missing values and typed-missing Margin values may display
+identically, so keep a structural identity column when the difference
+matters: \code{.id} is available from every Margin verb, and
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} can additionally write \code{\link[=grouping_bit]{grouping_bit()}} or
+\code{\link[=grouping_id]{grouping_id()}} as summaries. The eager default
+\code{.check_margin_label = TRUE} detects
+collisions for local data. Lazy tables default to \code{FALSE} because checking
+would execute an extra query; opt in when that scan is appropriate.
 }
 
 \section{Database backend coverage}{

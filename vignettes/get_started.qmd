@@ -390,9 +390,12 @@ retail_sales |>
 The source `NA` store has `store_is_total = 0`. The region subtotal has
 `store_is_total = 1`, because `store` was removed by the rollup.
 
-For the complete comparison of `.id`, `inspect_grouping()$set_id`,
-`grouping_bit()`, and `grouping_id()`, continue with the [Grouping identity
-guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html).
+The [`grouping_bit()`
+reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html) compares
+`.id`, `inspect_grouping()$set_id`, `grouping_bit()`, and `grouping_id()` in
+full. The [Grouping identity
+guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+works through the same values with executable examples.
 
 `grouping_id()` combines the flags as a bit mask. Its last argument is the
 least-significant bit:
@@ -501,6 +504,11 @@ query. Result row order is unspecified for both local and lazy inputs, so call
 display value; retain `grouping_bit()` or `grouping_id()` whenever source
 values can equal the label.
 
+Naming rules, ordered-factor preservation, level positioning, and the complete
+eight-case `NA_character_`/`NULL` factor contract live in *Display labels and
+grouping identity* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+
 ## Advanced dplyr behavior
 
 ### Persistent groups as fixed keys
@@ -531,34 +539,42 @@ groups created with `.drop = FALSE` are rejected because empty factor groups
 do not have a consistent SQL or lazy-backend equivalent.
 
 Input groups affect the calculation but, except for the explicitly row-wise
-nesting verb, do not persist on the result:
-
-| Function | Output grouping | Difference from the closest official verb |
-|---|---|---|
-| `summarize_with_margins()` | Ungrouped | `dplyr::summarize()` can retain groups; arbitrary grouping sets have no single `drop_last` level |
-| `expand_with_margins()` | Ungrouped | The expanded branches deliberately discard persistent grouping metadata |
-| `nest_with_margins()` | Ungrouped | `tidyr::nest()` preserves grouped input; this function consumes those groups as fixed keys but does not preserve them |
-| `nest_by_with_margins()` | Row-wise by every visible key | Like `dplyr::nest_by()`, but grouping-set dimensions are also outer row-wise keys |
+nesting verb, do not persist on the result. `summarize_with_margins()`,
+`expand_with_margins()`, and `nest_with_margins()` all return ungrouped
+output, because a result spanning several grains has no single grouping
+hierarchy to keep. `nest_by_with_margins()` is row-wise by every visible key,
+grouping-set dimensions included.
 
 This invariant is shared by local data frames and supported lazy backends.
 The nesting functions support local data frames and dtplyr because SQL and
 Arrow tables cannot contain their list-column result.
 
+*Grouped and row-wise inputs* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the rule for all four verbs.
+
 ### Intentional differences from `dplyr::summarize()`
 
-Summary expressions use dplyr data masking, but marginplyr narrows a few parts
+Summary expressions use dplyr data masking, but marginplyr narrows the parts
 of the official API where arbitrary grouping sets have no portable
-interpretation:
+interpretation. A summary may not overwrite a fixed key or grouping dimension,
+even where the local dplyr backend would allow it, because that would destroy
+grouping-set identity. `across()` and `pick()` exclude every column in the
+complete grouping plan, not only the ones active in one branch. The
+`cur_group*()` family is rejected outright: a branch-local identifier, row
+position, or column set has no global meaning once several grouping sets are
+combined, so use `grouping_bit()` or `grouping_id()` to identify levels
+instead.
 
-| Feature | Official dplyr behavior | marginplyr behavior and rationale |
-|---|---|---|
-| Spelling | `summarise()` and `summarize()` are synonyms | `summarise_with_margins()` and `summarize_with_margins()` are synonyms |
-| Output grouping | Can retain or create output groups | Always ungrouped; multiple grains have no single grouping hierarchy |
-| Summary name matches a grouping key | The local backend can overwrite the key | Rejected, including data-frame-valued summaries, so grouping-set identity is not destroyed and backend behavior remains portable |
-| `across()` and `pick()` | Exclude the grouping columns active in the verb | Exclude all fixed keys and margin dimensions in the complete plan, even in a branch where a dimension is rolled up |
-| `cur_group*()` and deprecated `cur_data*()` helpers | Describe the current dplyr group or data mask | Rejected because branch-local identifiers, rows, and columns have no global meaning after grouping sets are combined; use `grouping_bit()` or `grouping_id()` for levels |
-| Ordering | `.by` summaries use first-appearance order | Row order is unspecified for local and lazy results; call `arrange()` explicitly |
-| Backend extension | `summarize()` is a public S3 generic | Public margin verbs share one validated plan; a private adapter selects backend execution |
+Two familiar conveniences also behave differently. Row order is unspecified
+for local and lazy results alike, so call `arrange()` when presentation order
+matters. And the Margin verbs are not S3 generics: they share one validated
+plan, and a private adapter chooses the backend. As in dplyr,
+`summarise_with_margins()` and `summarize_with_margins()` are synonyms.
+
+*Relationship to dplyr summaries* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states each of these rules in full.
 
 For example, `everything()` below selects measures but not `year`, `region`,
 or `store`:
@@ -820,15 +836,18 @@ dtplyr steps rather than SQL database tables.
 #### Relationship to tidyr and dplyr
 
 The margin-aware verbs deliberately share the main result shapes of
-`tidyr::nest()` and `dplyr::nest_by()`, but they are not drop-in replacements:
+`tidyr::nest()` and `dplyr::nest_by()`, but they are not drop-in replacements.
+Both select their keys with `.by` plus `.grouping` rather than data-masking
+`...`, and both take a logical `.keep`. `nest_with_margins()` always nests
+every non-key column and does not implement `...`, multiple list columns, or
+`.names_sep`. `nest_by_with_margins()` collects a dtplyr result before making
+it row-wise, because a row-wise data frame is a local object.
 
-| Function | Official reference | Shared behavior | Deliberate differences |
-|---|---|---|---|
-| `nest_with_margins()` | `tidyr::nest()` | `NULL` `.key` becomes `"data"`; returns one list column; grouping keys can also be retained inside | Uses `.by` plus `.grouping` and a logical `.keep`; always nests all non-key columns; does not implement `...`, multiple list columns, or `.names_sep`; always returns ungrouped output |
-| `nest_by_with_margins()` | `dplyr::nest_by()` | Requires a string `.key`; supports `.keep`; returns a row-wise data frame | Uses `.by` plus `.grouping` instead of data-masking `...`; collects a dtplyr result before making it row-wise |
-
-The shared features in this table do not amount to complete upstream
-compatibility; the deliberate differences are part of the margin-aware API.
+Sharing a result shape is not upstream compatibility; the differences are part
+of the margin-aware API. *Relationship to tidyr and dplyr* in the
+[`nest_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html)
+states both contracts in full.
 
 For grouped input, existing grouping columns become fixed keys as though they
 had been supplied through `.by`. Unlike `tidyr::nest()`, `nest_with_margins()`

@@ -123,10 +123,10 @@ assert_markers(
     "collect",
     "Parent shares use a staged lazy query",
     "Completion stays in the lazy input pipeline",
-    "Live native execution tested",
-    "Native SQL generation tested",
-    "Fallback SQL generation tested",
-    "Microsoft SQL Server"
+    "Only DuckDB and SQLite are exercised as live SQL databases",
+    "DuckDB covers native SQL end to end",
+    "dozen-plus fallback dialects",
+    "Arrow and dtplyr are tested for the lazy"
   ),
   "Database and lazy backends"
 )
@@ -146,8 +146,9 @@ assert_markers(
     "Relationship to dplyr summaries",
     "Display labels and grouping identity",
     "Parent shares",
-    "Empty inputs follow this Parent-share contract",
     "Backend extension design",
+    "Database backend coverage",
+    "Microsoft SQL Server",
     "NA is already a factor level",
     "cannot select any column named in the complete grouping plan",
     "cur_group_id"
@@ -174,6 +175,7 @@ assert_page_markers(
     "Column-wise Parent shares",
     "Rejected forms and supported rewrites",
     "Lazy execution boundaries",
+    "Parent shares never synthesize or complete keys",
     "revenue_quantile",
     "Missing fixed and included keys",
     "where(is.numeric)",
