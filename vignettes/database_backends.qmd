@@ -325,25 +325,24 @@ states where each backend reports these errors.
 
 ## Backend verification levels
 
-The status describes what the automated test suite actually verifies. SQL
-simulation is useful evidence about rendering, but it is not the same as
-running a query on a live server.
+Support is not one status. SQL simulation is useful evidence about rendering,
+but it is not the same as running a query on a live server, so it is worth
+knowing which claim rests on which.
 
-| Status | Backends | What is verified |
-|---|---|---|
-| Live native execution tested | DuckDB | SQL generation, execution, result values, labels, and grouping identity |
-| Live portable Parent-share execution tested | SQLite | `UNION ALL` execution, Parent-share values, missing-safe matching, and Grouping set identifiers |
-| Native SQL generation tested | PostgreSQL | SQL rendered with dbplyr's PostgreSQL simulator |
-| Fallback SQL generation tested | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections | Portable branch and `UNION ALL` rendering with dbplyr simulators |
-| Non-SQL lazy backend tested | Arrow, dtplyr | Lazy summary or expansion behavior appropriate to the backend |
+Only DuckDB and SQLite are exercised as live SQL databases. DuckDB covers
+native SQL end to end — generation, execution, result values, labels, and
+grouping identity — while SQLite's live claim is narrower: portable
+`UNION ALL` execution for Parent shares, including missing-safe matching and
+Grouping set identifiers. PostgreSQL and the dozen-plus fallback dialects are
+verified through dbplyr simulators, which prove what SQL is rendered and
+nothing about a running server. Arrow and dtplyr are tested for the lazy
+behavior each supports.
 
-DuckDB and SQLite are exercised as live SQL databases in automated tests;
-SQLite's live claim is limited to portable Parent-share execution. Treat
-simulator-only backends as SQL-generation support, and report server-specific
-behavior with a minimal query and the backend version. *Database backend
-coverage* in the [`summarize_with_margins()`
+Treat a simulator-only backend as SQL-generation support, and report
+server-specific behavior with a minimal query and the backend version.
+*Database backend coverage* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-carries the same claims for the package documentation.
+names every verified backend.
 
 ## Practical rules for remote analysis
 
