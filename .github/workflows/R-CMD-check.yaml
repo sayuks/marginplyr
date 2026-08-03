@@ -145,3 +145,17 @@ jobs:
         with:
           upload-snapshots: true
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
+          # Uploaded for successful runs too, not just failures. A NOTE that
+          # only appears on a green run is exactly the one nobody reads, and
+          # the release review has to account for every NOTE.
+          upload-results: true
+
+      # Puts the status line and the full text of every ERROR, WARNING, and
+      # NOTE on the run page, so auditing them does not require downloading
+      # and unzipping the check directory.
+      - name: Summarize the check log
+        if: always()
+        run: Rscript .github/scripts/summarize-check-log.R
+        env:
+          MARGINPLYR_CHECK_LABEL: >-
+            ${{ matrix.config.os }} (${{ matrix.config.r }})

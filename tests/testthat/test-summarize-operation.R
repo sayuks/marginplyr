@@ -147,7 +147,7 @@ test_that("shared lifecycle options preserve user-expression conditions", {
 })
 
 test_that("summary rejects grouping before typed metadata acquisition", {
-  skip_if_not_installed("dtplyr")
+  skip_if_backend_absent("dtplyr")
   register_summary_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
   class(source) <- c("margin_summary_proxy_counter", class(source))
@@ -168,7 +168,7 @@ test_that("summary rejects grouping before typed metadata acquisition", {
 })
 
 test_that("removed .groups is rejected before typed metadata acquisition", {
-  skip_if_not_installed("dtplyr")
+  skip_if_backend_absent("dtplyr")
   register_summary_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
   class(source) <- c("margin_summary_proxy_counter", class(source))
@@ -189,7 +189,7 @@ test_that("removed .groups is rejected before typed metadata acquisition", {
 })
 
 test_that("dtplyr summary reuses one typed snapshot across selections", {
-  skip_if_not_installed("dtplyr")
+  skip_if_backend_absent("dtplyr")
   register_summary_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
