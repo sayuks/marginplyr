@@ -15,23 +15,28 @@
 # a gate that cries wolf gets ignored. Judging the recorded NOTEs is part of
 # the release review.
 
+source(".github/scripts/ci-helpers.R")
+
 tarball_dir <- Sys.getenv("MARGINPLYR_TARBALL_DIR", "tarball")
-check_dir <- Sys.getenv("MARGINPLYR_CHECK_DIR", "check")
-label <- Sys.getenv("MARGINPLYR_CHECK_LABEL", "R CMD check")
+check_dir <- check_directory()
+label <- check_label()
 
 split_words <- function(value) {
   words <- trimws(strsplit(value, "[[:space:]]+")[[1]])
   words[nzchar(words)]
 }
 
-# NOTEs this package has already accounted for. Each entry pairs a regular
-# expression with the reason the NOTE is expected, so the job summary explains
-# itself without a reviewer having to reconstruct the history.
+# NOTEs this package has already accounted for. Each entry pairs a literal
+# fragment of the NOTE's text with the reason it is expected, so the job
+# summary explains itself without a reviewer reconstructing the history.
+#
+# Fragments are matched literally and kept narrow on purpose. Matching the
+# "checking CRAN incoming feasibility" header instead would classify every
+# future incoming finding -- misspellings, unreachable URLs -- as understood,
+# which is the opposite of what this list is for.
 understood_notes <- c(
   "New submission" =
     "marginplyr 0.1.0 is a first CRAN release, so incoming checks say so.",
-  "checking CRAN incoming feasibility" =
-    "Header of the first-release incoming NOTE above.",
   "Days since last update" =
     "Only meaningful for resubmissions during a review cycle."
 )
@@ -39,7 +44,7 @@ understood_notes <- c(
 describe_note <- function(note) {
   matched <- vapply(
     names(understood_notes),
-    function(pattern) grepl(pattern, note, fixed = TRUE),
+    function(fragment) grepl(fragment, note, fixed = TRUE),
     logical(1)
   )
   if (!any(matched)) {
@@ -90,9 +95,7 @@ append_section <- function(lines, heading, entries) {
     lines,
     sprintf("### %s", heading),
     "",
-    unlist(lapply(entries, function(entry) {
-      c("```", strsplit(entry, "\n", fixed = TRUE)[[1]], "```", "")
-    })),
+    unlist(lapply(entries, as_summary_block)),
     ""
   )
 }
@@ -110,21 +113,14 @@ for (note in result$notes) {
     "",
     if (is.na(reason)) "No recorded explanation for this NOTE." else reason,
     "",
-    "```",
-    strsplit(note, "\n", fixed = TRUE)[[1]],
-    "```",
-    ""
+    as_summary_block(note)
   )
   if (is.na(reason)) {
     unexpected <- c(unexpected, note)
   }
 }
 
-summary_path <- Sys.getenv("GITHUB_STEP_SUMMARY", "")
-if (nzchar(summary_path)) {
-  write(summary_lines, file = summary_path, append = TRUE)
-}
-cat(summary_lines, sep = "\n")
+write_step_summary(summary_lines)
 
 for (note in unexpected) {
   # `::warning::` surfaces the NOTE in the Actions run header, where a release

@@ -10,18 +10,21 @@
 # backend jobs: there an optional backend must be present, here it must be
 # absent.
 
-check_dir <- Sys.getenv("MARGINPLYR_CHECK_DIR", "check")
+source(".github/scripts/ci-helpers.R")
+
+# The backends whose absence this job depends on. `DBI` is deliberately not
+# here: `skip_if_backend_absent("duckdb", "DBI")` skips on the first missing
+# package, so a `{DBI} is not installed` line never appears and requiring one
+# would fail every run. Adding a backend to
+# `tests/testthat/helper-optional-backends.R` means adding it here too.
 optional_backends <- c("arrow", "duckdb", "dtplyr", "RSQLite")
 
-log_path <- file.path(check_dir, "marginplyr.Rcheck", "tests", "testthat.Rout")
-if (!file.exists(log_path)) {
-  stop(sprintf(
-    paste0(
-      "No testthat log at '%s'. The minimal-dependency check did not run ",
-      "the tests."
-    ),
-    log_path
-  ))
+log_path <- test_output_path(rcheck_directory())
+if (is.na(log_path)) {
+  stop(
+    "No testthat output under the .Rcheck directory, so the ",
+    "minimal-dependency check never ran the tests."
+  )
 }
 test_log <- readLines(log_path, warn = FALSE)
 

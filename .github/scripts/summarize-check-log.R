@@ -8,16 +8,16 @@
 # an already-completed check left behind, so it can be bolted onto a workflow
 # that uses the standard action.
 
-check_dir <- Sys.getenv("MARGINPLYR_CHECK_DIR", "check")
-label <- Sys.getenv("MARGINPLYR_CHECK_LABEL", "R CMD check")
+source(".github/scripts/ci-helpers.R")
 
-log_paths <- Sys.glob(file.path(check_dir, "*.Rcheck", "00check.log"))
-if (length(log_paths) == 0L) {
-  message("No check log under '", check_dir, "'; nothing to summarize.")
+rcheck <- rcheck_directory(required = FALSE)
+log_path <- file.path(rcheck, "00check.log")
+if (is.na(rcheck) || !file.exists(log_path)) {
+  message("No check log under '", check_directory(), "'; nothing to summarize.")
   quit(save = "no")
 }
 
-check_log <- readLines(log_paths[1], warn = FALSE)
+check_log <- readLines(log_path, warn = FALSE)
 
 # Check results are one line per test, so a result and its detail lines run
 # from a line ending in ERROR/WARNING/NOTE up to the next line starting a new
@@ -31,20 +31,16 @@ findings <- unlist(lapply(starts, function(start) {
   } else {
     next_boundary[1] - 1L
   }
-  c("```", check_log[start:end], "```", "")
+  as_summary_block(paste(check_log[start:end], collapse = "\n"))
 }))
 
 status <- grep("^Status:", check_log, value = TRUE)
 summary_lines <- c(
-  sprintf("## %s", label),
+  sprintf("## %s", check_label()),
   "",
   if (length(status) == 0L) "No status line in the check log." else status,
   "",
   findings
 )
 
-summary_path <- Sys.getenv("GITHUB_STEP_SUMMARY", "")
-if (nzchar(summary_path)) {
-  write(summary_lines, file = summary_path, append = TRUE)
-}
-cat(summary_lines, sep = "\n")
+write_step_summary(summary_lines)

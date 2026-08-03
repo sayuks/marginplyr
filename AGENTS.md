@@ -80,9 +80,23 @@ tests skip when their package is missing, which is correct for CRAN's minimal
 flavors but means a green job proves nothing about the backend. Every such
 test therefore goes through `skip_if_backend_absent()` or `backend_available()`
 from `tests/testthat/helper-optional-backends.R` — never `skip_if_not_installed()`
-or `rlang::is_installed()` directly, since those cannot be told to fail. A new
-optional backend needs both a `skip_if_backend_absent()` call and a `backend`
-matrix entry; adding only the first produces a contract nothing executes.
+or `rlang::is_installed()` directly, since those cannot be told to fail.
+(`skip_if_not_installed("dbplyr")` is not an exception: dbplyr is an Import, so
+it is never absent.)
+
+An installed package still does not prove its tests ran, so each `backend` job
+also lists the test names it exists to execute in its `proves` field, and
+`verify-backend.R` fails the job unless every one of them ran and passed.
+Renaming a contract test is therefore expected to break its job — that is the
+gate working, and the fix is to update the `proves` list, not to relax it.
+
+Adding an optional backend means editing three places, and doing only the first
+leaves a contract nothing executes:
+
+1. the `skip_if_backend_absent()` call in the tests,
+2. a `backend` matrix entry in `release-matrix.yaml`, naming its contracts,
+3. `optional_backends` in `.github/scripts/verify-depends-only.R`, which
+   asserts the backend really was withheld from the minimal-dependency job.
 
 ## Agent skills
 

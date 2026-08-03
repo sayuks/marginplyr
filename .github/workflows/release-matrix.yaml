@@ -37,6 +37,12 @@ concurrency:
 
 env:
   GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+  # `--as-cran` otherwise queries CRAN on every run. That adds network
+  # flakiness and NOTEs about clock skew or momentarily unreachable URLs which
+  # say nothing about the change under test, and each one would be annotated as
+  # unexpected. Local incoming checks still run; the remote ones belong to the
+  # pre-submission `rhub.yaml` run, where a human is reading the result.
+  _R_CHECK_CRAN_INCOMING_REMOTE_: false
 
 jobs:
   build:
@@ -134,7 +140,11 @@ jobs:
       - name: Check the tarball without Suggested packages
         run: Rscript .github/scripts/check-tarball.R
 
+      # Runs even when the check failed: if a Suggested package leaked into the
+      # library, that leak is the most useful thing to report, and skipping the
+      # step would leave only the downstream symptom.
       - name: Verify the minimal-dependency run proved something
+        if: always()
         run: Rscript .github/scripts/verify-depends-only.R
 
       - uses: actions/upload-artifact@v4
@@ -206,6 +216,11 @@ jobs:
           path: check
           retention-days: 7
 
+  # Ubuntu at R release only. Each job's value is isolation -- one backend
+  # installed, everything else absent -- not platform breadth, and multiplying
+  # that by three operating systems would quadruple the cost of the workflow
+  # for a weaker signal. macOS and Windows still exercise every backend
+  # together in the fully provisioned `R-CMD-check.yaml` matrix.
   backend:
     name: Live ${{ matrix.backend.name }}
     needs: build
@@ -217,30 +232,52 @@ jobs:
       matrix:
         backend:
           # `required` names the packages whose absence must fail this job
-          # instead of skipping its tests. `proves` is the contract the job
-          # exists to execute, recorded here so a reader knows what removing
-          # the job would cost.
+          # instead of skipping its tests. `proves` names the tests that must
+          # actually have run and passed, which is a stronger claim: an
+          # installed package says nothing about whether the tests exercising
+          # it were renamed, deleted, or skipped for an unrelated reason.
+          # Renaming one of these tests deliberately breaks the job that
+          # guards it. Each entry traces to an acceptance criterion of #38.
           - name: RSQLite
             packages: any::DBI, any::RSQLite
             required: RSQLite,DBI
-            proves: portable UNION ALL fallback executed end to end
+            proves: >-
+              RSQLite executes portable Parent shares end to end;
+              RSQLite Parent shares preserve runtime backend conditions
           - name: DuckDB
             packages: any::DBI, any::duckdb
             required: duckdb,DBI
-            proves: native grouping sets and forced-portable agreement
+            proves: >-
+              DuckDB executes native grouping sets with unambiguous bits;
+              DuckDB native and UNION adapters agree;
+              DuckDB native and portable summaries agree on .id;
+              DuckDB Parent shares agree across native, portable, and local
+              paths
           - name: dtplyr
             packages: any::dtplyr
             required: dtplyr
-            proves: valid and invalid Parent shares during collection
+            proves: >-
+              dtplyr integer and double Parent shares match local results;
+              dtplyr rejects every ineligible Parent-share source type;
+              dtplyr rejects non-scalar Parent-share sources on collection;
+              dtplyr validates Parent-share source types during collection
           - name: Arrow
             packages: any::arrow
             required: arrow
-            proves: rejected Parent shares and ordinary Margin summaries
+            proves: >-
+              Arrow rejects Parent shares before constructing a query;
+              Arrow ordinary Margin summaries remain lazy and available
 
     env:
       # Turns an absent backend into a failure, so this job cannot pass while
       # skipping the very tests it exists to run.
       MARGINPLYR_REQUIRED_SUGGESTS: ${{ matrix.backend.required }}
+      # testthat skips snapshot expectations under CRAN semantics, which marks
+      # the whole test skipped -- including "Arrow rejects Parent shares before
+      # constructing a query", whose diagnostic this job is meant to execute.
+      # These jobs prove behavior rather than emulate CRAN, so they opt out.
+      # The `depends-only` and `tarball` jobs deliberately do not.
+      NOT_CRAN: true
       # Every other optional backend is absent on purpose: proving one backend
       # in isolation also proves it does not depend on the others.
       _R_CHECK_FORCE_SUGGESTS_: false
@@ -272,10 +309,15 @@ jobs:
       - name: Check the tarball with ${{ matrix.backend.name }} installed
         run: Rscript .github/scripts/check-tarball.R
 
-      - name: Record what this job proved
+      # Reports which named contracts executed, and fails if any of them did
+      # not. Runs even after a failed check, because "which contract broke" is
+      # the answer this job exists to give.
+      - name: Verify the live ${{ matrix.backend.name }} contracts executed
         if: always()
-        run: |
-          echo "Proves: ${{ matrix.backend.proves }}" >> "$GITHUB_STEP_SUMMARY"
+        run: Rscript .github/scripts/verify-backend.R
+        env:
+          MARGINPLYR_BACKEND_NAME: ${{ matrix.backend.name }}
+          MARGINPLYR_BACKEND_TESTS: ${{ matrix.backend.proves }}
 
       - uses: actions/upload-artifact@v4
         if: always()
