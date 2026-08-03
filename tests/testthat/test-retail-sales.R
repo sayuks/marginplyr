@@ -1,3 +1,14 @@
+test_that("retail_sales keeps the lazy-data configuration its usage assumes", {
+  # `?retail_sales` gives the bare object name as its usage, and every other
+  # test here reads `retail_sales` without `data()`. Both only hold while the
+  # package is installed with `LazyData`; without it the data set would need
+  # `data(retail_sales)` first.
+  expect_identical(
+    tolower(utils::packageDescription("marginplyr")$LazyData),
+    "true"
+  )
+})
+
 test_that("retail_sales is a tibble with the documented columns", {
   expect_s3_class(retail_sales, "tbl_df")
   expect_equal(dim(retail_sales), c(24L, 8L))

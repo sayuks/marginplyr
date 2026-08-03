@@ -14,7 +14,7 @@ URL: https://sayuks.github.io/marginplyr/, https://github.com/sayuks/marginplyr
 BugReports: https://github.com/sayuks/marginplyr/issues
 Depends:
     R (>= 4.1.0)
-Imports: 
+Imports:
     dbplyr (>= 2.6.0),
     dplyr (>= 1.1.1),
     glue,
@@ -22,7 +22,7 @@ Imports:
     stats,
     tidyselect (>= 1.2.0),
     utils
-Suggests: 
+Suggests:
     altdoc (>= 0.7.3),
     arrow (>= 13.0.0),
     DBI,
@@ -40,6 +40,8 @@ Config/testthat/edition: 3
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
+    (<https://github.com/quarto-dev/quarto-cli>), needed to build the vignettes
+    from their '.qmd' sources.
 Config/Needs/website:
     altdoc,
     DBI,
@@ -48,7 +50,6 @@ Config/Needs/website:
     knitr,
     quartabs,
     RSQLite,
-    tibble,
     tidyr
 Encoding: UTF-8
 Language: en-US

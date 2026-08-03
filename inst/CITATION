@@ -1,6 +1,12 @@
 bibentry(
   bibtype = "Manual",
-  title = "marginplyr: Summarize and Expand Data with Margins",
-  author = person("Yusuke", "Sasaki", email = "sayuks.dev@gmail.com", role = c("aut", "cre")),
-  year = 2025
+  title = "marginplyr: SQL-Style Grouping Sets, Rollups, and Cubes for 'dplyr'",
+  author = person(
+    "Yusuke", "Sasaki",
+    email = "sayuks.dev@gmail.com",
+    role = c("aut", "cre", "cph")
+  ),
+  year = 2026,
+  note = sprintf("R package version %s", meta$Version),
+  url = "https://sayuks.github.io/marginplyr/"
 )
