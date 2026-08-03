@@ -29,7 +29,7 @@ _Avoid_: Grouping identifier, grouping mask
 A bit mask encoding which chosen grouping dimensions are absent from a
 grouping set. Identical absence patterns have the same identifier regardless
 of their position in a Grouping plan.
-_Avoid_: Grouping set identifier, set number
+_Avoid_: Grouping set identifier, set number, grouping mask
 
 **Grouping bit**:
 A zero-or-one flag indicating whether one chosen grouping dimension is absent
