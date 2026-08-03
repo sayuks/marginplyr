@@ -6,7 +6,7 @@ in [`adr/`](adr/) are authoritative.
 
 ## Lifecycle
 
-Every exported margin verb follows the same explicit lifecycle:
+Every exported Margin verb follows the same explicit lifecycle:
 
 1. **Capture and admit.** The public verb captures `.by`, `.grouping`, and,
    for summaries, `...` exactly once. It rejects unsupported input classes and
@@ -16,7 +16,7 @@ Every exported margin verb follows the same explicit lifecycle:
    discovers the backend and column names, validates an optional output
    Grouping set identifier name, acquires one typed metadata snapshot,
    compiles the Grouping specification into a Grouping plan, and derives
-   margin-column metadata. Locally detectable errors are rejected before the
+   Margin-column metadata. Locally detectable errors are rejected before the
    typed metadata read.
 3. **Execute.** The verb passes the prepared Margin operation to exactly one
    of `execute_margin_summary()`, `execute_margin_expand()`, or
@@ -24,7 +24,7 @@ Every exported margin verb follows the same explicit lifecycle:
    calls `validate_margin_operation()` immediately before low-level work, and
    selects or invokes the appropriate adapter.
 4. **Finalize.** `finalize_margin_operation()` starts from an ungrouped
-   result, restores factor margin columns, places fixed keys and grouping
+   result, restores factor Margin columns, places fixed keys and grouping
    dimensions followed by the optional Grouping set identifier first, and
    leaves row ordering unspecified.
 
@@ -52,7 +52,7 @@ on a verb kind.
 
 Owns the shared prepare and finalize lifecycle, common option normalization,
 grouped-input normalization, the package-private Margin operation value, the
-shared semantic margin-label validation entry point, and propagation of the
+shared semantic Margin label validation entry point, and propagation of the
 public call in Package conditions. Preparation stores only canonical derived
 state needed by execution and finalization; a Margin operation is single-use
 state for one public call.
@@ -76,7 +76,7 @@ Owns validation and compilation of a Grouping specification into the
 backend-independent Grouping plan: fixed keys, resolved dimensions, expanded
 grouping sets, their one-based occurrence identifiers, and the duplicate-set
 policy. It resolves selections against the prepared metadata but does not read
-a backend or execute a margin.
+a backend or execute a Margin operation.
 
 Grouping specification kinds are governed by one private strategy registry in
 this module. Each kind rule owns empty-argument validation, validation of
@@ -96,7 +96,7 @@ completed its schema-aware preflight and is about to execute.
 
 ### Factor (`R/factor.R`)
 
-Owns restoration of factor and ordered-factor margin columns from the metadata
+Owns restoration of factor and ordered-factor Margin columns from the metadata
 captured during preparation. Its backend methods preserve levels and ordering
 after labels have been materialized; it does not acquire metadata itself.
 
@@ -111,12 +111,88 @@ opt-in lazy collision query.
 
 ### Parent share (`R/parent-share.R`)
 
-Owns Parent-share request planning, parent mapping, source validation, ratio
-calculation, collision-safe temporary names, and private backend adapter
-dispatch. The adapter interface receives the prepared Margin operation, the
-staged ordinary-summary result, and all planned requests together; selection
-uses the prepared backend kind rather than the staged result's incidental
-class.
+One deep private module owns every Parent-share responsibility: request
+planning, parent mapping, source validation, ratio calculation, collision-safe
+temporary names and their cleanup, and backend adapter dispatch. Its file is
+large because the module is deep, not because it is several modules sharing a
+file; splitting it would move the seam without shrinking the interface.
+
+The exported `share_of_parent()` in this file is only a context guard: reaching
+its body means the helper was called outside a Margin summary, so it always
+raises. The rest of the module is private and is reached through four entry
+points, and no other:
+
+- `preflight_parent_shares()`, called from the public verb's admission block
+  before preparation, which reports whether the call contains any
+  Parent-share request and rejects statically impossible forms;
+- `plan_parent_share_expressions()`, called by `plan_summary_expressions()`
+  in the summary-selection module, which rewrites the captured summary
+  expressions into ordinary summaries plus planned Parent-share requests;
+- `wrap_parent_sources()`, called from the same place immediately afterwards,
+  which wraps each referenced source summary in the validator its backend can
+  execute; and
+- `execute_parent_shares()`, called by `execute_margin_summary()`, which
+  receives the prepared Margin operation, the staged ordinary-summary result,
+  and all planned requests together.
+
+Planning and wrapping are two calls rather than one because the summary
+selections have to be resolved between them: the plan names which summaries a
+Parent share depends on, resolution turns `across()` into the columns it
+expands to, and only then can the validator be wrapped around the right
+expressions.
+
+`check_parent_grouping_spec()` is additionally passed to
+`prepare_margin_operation()` as a validation hook, so the rollup-only
+restriction is checked with the rest of grouping validation instead of after
+it.
+
+The responsibilities divide as follows:
+
+- **Planning** analyzes the ordinary summaries preceding each request,
+  retains candidate-name provenance for duplicate, expanded, ineligible, and
+  unknown sources, validates direct and `across()` grammar, resolves
+  name-based tidyselect against preceding ordinary summaries only, and checks
+  output-name collisions against fixed keys, dimensions, ordinary summaries,
+  the Grouping set identifier, and other Parent shares.
+- **Validation** is placed where each backend can prove it. Local and dtplyr
+  operations wrap the referenced source summaries in a type-and-cardinality
+  validator inside the ordinary summary itself, so validation costs no extra
+  pass over the input and no validation-only query; the local adapter then
+  checks the materialized source types. General dbplyr keeps the documented
+  relaxation and issues no probe. Arrow is rejected before any of this.
+- **Mapping** derives each grouping set's parent from the Grouping plan with
+  `parent_set_ids()`, which skips duplicate occurrences while finding the
+  next strictly less detailed set. Parents are matched on the internal
+  Grouping set identifier, the fixed keys, and one join key per dimension
+  that carries the dimension's value only where the parent set includes it
+  and is missing otherwise — computed by the same expression on both sides,
+  and never from a displayed Margin label or the caller-visible `.id`.
+- **Calculation** builds one shared mapping for all requests, joins it once,
+  and emits each ratio as an explicit double division guarded for a root row,
+  a missing numerator, and a missing or zero denominator.
+- **Cleanup** allocates every temporary — denominators, join keys, and the
+  right-hand match names of the SQL join — through
+  `new_margin_internal_names()` against the names already in the result, and
+  drops all of them before returning.
+
+Adapter selection is a lookup on the prepared backend kind, not on the staged
+result's class, and every adapter takes the same four arguments. See
+[ADR 0014](adr/0014-select-parent-share-adapters-from-prepared-backend-kind.md).
+The mapping, calculation, and cleanup above are shared; there are three
+adapters, and each says only what its backends do differently:
+
+| Adapter | Backend kinds | Difference from the shared work |
+|---|---|---|
+| Local | `local` | Checks materialized source types first |
+| General dbplyr | `duckdb`, `postgres`, `sql` | Missing-safe `sql_on` join |
+| Lazy non-SQL | `dtplyr`, `other` | Nothing |
+
+The lazy non-SQL adapter adding nothing is the point rather than an
+oversight: it names the contract that a lazy non-SQL backend joins exactly as
+local data does but cannot have its source types checked first, because
+nothing is materialized to check. Its validation happens earlier, inside the
+ordinary summary. Collapsing it into the local adapter would make that
+difference invisible at the seam that has to honour it.
 
 Arrow is rejected at the immediately earlier executor boundary because no
 ordinary-summary query may be staged for a valid Arrow Parent-share request.
@@ -124,6 +200,21 @@ The rejection runs after request planning and common Margin-operation
 validation, uses only the operation's prepared backend kind, and adds no
 wrapper, hook, sentinel, or extension seam. Other Arrow Margin operations
 continue through the ordinary summary, expansion, and nesting paths.
+
+### Package conditions (`R/conditions.R`)
+
+`abort_marginplyr()` is the only constructor for a Package condition and the
+whole of this module. A Package condition is raised exactly when the caller
+can avoid it by rewriting the call within the documented public interface;
+unreachable invariants and upstream defects use bare `stop()` or
+`stopifnot()`, and External conditions propagate untouched. `marginplyr_error`
+is the only promised class. See
+[ADR 0015](adr/0015-separate-package-conditions-from-internal-invariants.md).
+
+The rule is not mechanically enforced, so both directions of the boundary are
+review surface: a Package condition demoted to `stop()` silently leaves the
+public contract, and an invariant promoted to `abort_marginplyr()` silently
+enters it.
 
 ### Native adapter (`R/grouping-adapter-native.R`)
 
@@ -150,14 +241,21 @@ or construct it independently.
 
 Direct field reads are confined to:
 
-- the Margin operation module, for validation and finalization; and
+- the Margin operation module, for validation and finalization;
 - the three dedicated verb executors, for their schema-aware preflight and
-  calls into low-level adapters.
+  calls into low-level adapters;
+- `execute_parent_shares()`, which reads the prepared backend kind to select
+  an adapter and the caller-visible Grouping set identifier name to restore
+  it after the join; and
+- the three Parent-share adapters, which read the Grouping plan and nothing
+  else.
 
-The native and portable adapters receive the specific derived values they
-need, not the Margin operation itself. This boundary lets the operation,
-Grouping plan, and backend representations change without spreading field
-access through public verbs or adapters.
+The native and portable Grouping adapters receive the specific derived values
+they need, not the Margin operation itself. The Parent-share adapters take it
+whole because they are dispatch targets of one signature rather than
+independent entry points. This boundary lets the operation, Grouping plan, and
+backend representations change without spreading field access through public
+verbs or adapters.
 
 ## Test seams
 
@@ -171,14 +269,27 @@ constructor shape, or internal helper order.
 The test suite divides supporting contracts as follows:
 
 - `test-grouping-interface.R` covers shared local behavior through the public
-  verbs, including grouping plans, labels, factors, duplicate policies,
-  persistent groups, result grouping, summary selections, and nesting.
+  verbs, including Grouping plans, labels, factors, duplicate policies,
+  persistent groups, result grouping, summary selections, nesting, and the
+  documented `marginplyr_error` handler.
 - `test-margin-id.R` covers Grouping set occurrence identifiers across all
   public verbs, including local, native, portable, duplicate, nesting,
-  collision, missing-value, and laziness semantics.
+  collision, missing-value, zero-row, and laziness semantics.
+- `test-margin-label.R` covers Margin labels through the public verbs: named
+  per-dimension labels, the eight-case factor NA contract of ADR 0012, label
+  placement, collisions including unused factor levels, and typed missing
+  values on dtplyr, Arrow, portable SQL, and DuckDB.
 - `test-summarize-operation.R`, `test-expand-operation.R`, and
   `test-nest-operation.R` cover lifecycle ordering and the single typed
-  metadata snapshot through public calls.
+  metadata snapshot through public calls. `test-nest-operation.R` also covers
+  the nesting duplicate-drop policy and quosure environments of both nesting
+  verbs.
+- `test-parent-share.R` covers Parent-share semantics through
+  `summarize_with_margins()`: rollup levels, typed grouping identity against
+  the default Margin label, missing keys separated from displayed margins,
+  the direct and `across()` grammar, source type and cardinality, output-name
+  collisions, dependency provenance, single evaluation of captured
+  expressions, and error precedence.
 - `test-grouping-backends.R` covers Arrow and dtplyr metadata behavior,
   native and portable SQL strategy, lazy query composition, collision checks,
   internal-name safety, and live DuckDB equivalence.
@@ -186,15 +297,55 @@ The test suite divides supporting contracts as follows:
   including targeted pre-query Arrow rejection, dtplyr execution-time
   validation, lazy SQL composition, live SQLite portable execution, and live
   DuckDB native-versus-portable results.
+- `test-inspect-grouping.R` covers `inspect_grouping()` as an ordinary tibble
+  per ADR 0013, including both formats, plan order, and that a lazy input is
+  inspected without executing a Margin operation.
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
   factor backend contracts.
 - `test-grouping-plan.R` covers the backend-independent Grouping
   specification compiler directly, including the complete kind-nesting
   grammar, phase-sensitive empty rules, error precedence, and expansion order.
+- `test-documentation.R` covers the reference documentation's own contracts:
+  that an italicised section cross-reference resolves in the topic it
+  promises, that every user-facing topic offers related-topic links, and that
+  the Grouping-identity comparison has exactly one canonical home.
+- `test-utils.R` and `test-retail-sales.R` cover the shared assertion helpers
+  and the documented properties of the bundled dataset.
+
+Package conditions are not tested in one file. Each module's tests assert the
+`marginplyr_error` class next to the behavior that raises it — the "use the
+package condition seam" tests in `test-grouping-interface.R`,
+`test-margin-label.R`, `test-summarize-operation.R`, `test-nest-operation.R`,
+`test-inspect-grouping.R`, and `test-utils.R` — while the matching
+"retain their provenance" and "preserve user-expression conditions" tests
+assert that an External condition keeps its original class. Keeping the two
+halves adjacent is what makes the boundary in ADR 0015 reviewable.
 
 Backend tests may instrument a backend seam or inspect semantic query shape,
 but should not couple to the Margin operation representation or require
 byte-for-byte SQL formatting.
+
+### Release gates
+
+One property of this suite is not observable from any single run of it: an
+optional-backend test that skipped and one that passed look the same in a
+green job. A backend contract therefore has a second seam, in
+`.github/workflows/release-matrix.yaml`, where a dedicated job installs that
+backend alone and fails if the contract did not execute.
+
+What this asks of a test is that it never decide on its own whether it may
+skip. Optional-backend tests route through `skip_if_backend_absent()` or
+`backend_available()` in `tests/testthat/helper-optional-backends.R` — never
+`skip_if_not_installed()` or `rlang::is_installed()` — because only the helper
+can be told, through `MARGINPLYR_REQUIRED_SUGGESTS`, that this job promised to
+prove the backend and an absence is a failure. `test-optional-backends.R`
+covers the helper itself. Snapshot expectations belong to the same seam:
+testthat skips them under CRAN semantics, so they run only in those jobs.
+
+A test title is part of that contract, because each job names the titles it
+exists to execute. Renaming a contract test is expected to break its job.
+`AGENTS.md` is the operational reference for the jobs, the verifier scripts,
+and the sites an added backend has to touch.
 
 ## Extending backend support
 
@@ -212,12 +363,18 @@ A backend change should:
    executor;
 3. reuse the existing portable adapter unless native `GROUPING SETS` support
    is confirmed and covered by the native adapter contract;
-4. keep label rules, factor restoration, summary selection, and finalization
-   in their owning modules rather than duplicating them in the adapter; and
-5. add contract coverage for metadata acquisition, observable results,
+4. name the new backend kind in `parent_share_adapter()`, choosing one of the
+   three existing Parent-share adapters or adding a fourth. The lookup has no
+   default: an unnamed kind stops the operation rather than falling through to
+   a plausible-looking join;
+5. keep label rules, factor restoration, summary selection, and finalization
+   in their owning modules rather than duplicating them in the adapter;
+6. add contract coverage for metadata acquisition, observable results,
    laziness, SQL strategy and composition where applicable, identifier and
    label quoting, and native-versus-portable equivalence when both paths
-   exist.
+   exist; and
+7. wire the new coverage into the release gates, per `AGENTS.md`, so its
+   contracts cannot pass by skipping.
 
 The backend capability description selects between already prepared execution
 strategies. It does not replace the Margin operation, specialize the Grouping
@@ -225,8 +382,15 @@ plan, or bypass common finalization.
 
 ## Repository placement
 
-This file, `CONTEXT.md`, and the ADRs are human-maintained contributor
-material. They are separate from the generated package site in `docs/`;
-`^CONTEXT\.md$` and `^design$` in `.Rbuildignore` exclude them from source
-packages. Internal architecture is not duplicated into the README or
+This file, `CONTEXT.md`, the ADRs, and
+[`review-dispositions.md`](review-dispositions.md) are human-maintained
+contributor material. They are separate from the generated package site in
+`docs/`; `^CONTEXT\.md$` and `^design$` in `.Rbuildignore` exclude them from
+source packages. Internal architecture is not duplicated into the README or
 vignettes.
+
+`review-dispositions.md` is the ledger that gives "review complete" an
+auditable meaning: every observation from a recorded review is listed there as
+fixed or rejected, with a test, command, or reproduction behind it. An ADR
+records what was decided; the ledger records what was reviewed and what
+happened to it.

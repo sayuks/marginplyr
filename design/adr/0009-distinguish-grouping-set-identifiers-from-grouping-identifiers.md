@@ -13,7 +13,7 @@ with `.duplicates = "keep"`, a native summary may use the portable
 
 `inspect_grouping()` always exposes this occurrence number in a column named
 `set_id`. Given the same resolved `.by`, `.grouping`, and `.duplicates`,
-`inspect_grouping()$set_id` is exactly the value produced by a margin verb
+`inspect_grouping()$set_id` is exactly the value produced by a Margin verb
 whose `.id` names an output column. The caller may choose any non-conflicting
 `.id` column name without changing its values.
 
@@ -37,3 +37,22 @@ will compare `.id`, `inspect_grouping()$set_id`, `grouping_bit()`, and
 and distinguish plan identity from Margin labels and physical row order. Each
 function reference will retain a compact comparison and link to the complete
 article rather than relying on the article alone.
+
+## Amendment: the comparison table lives in the reference, not the article
+
+The two sentences above place the single comparison table in the
+`grouping_identity` article and give each function reference a compact copy of
+it. That placement is superseded. Function references are the canonical
+user-facing contract, and a shared reference section is inherited from one
+canonical home rather than copied, so the table now lives only in the
+`grouping_bit()` reference; `summarize_with_margins()`, `inspect_grouping()`,
+`grouping_set()`, and the `grouping_identity` article carry prose plus a
+cross-link to it. `tests/testthat/test-documentation.R` asserts that it has
+exactly one home.
+
+The distinction this ADR decides is unaffected. A Grouping set identifier is
+stable only within one ordered Grouping plan and separates duplicate
+occurrences; a Grouping identifier is stable for one absence pattern and may be
+non-consecutive. Only where that comparison is written down has changed, and
+the article still exists and still explains the concepts — it links to the
+table instead of holding it.

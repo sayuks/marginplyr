@@ -9,7 +9,7 @@ Fixed `.by` columns partition the calculation.
 
 Calling `share_of_parent()` directly, from an ordinary `dplyr::summarise()`,
 or from `dplyr::mutate()` is an error. The error will explain that the helper
-requires the grouping plan and staged margin result owned by
+requires the Grouping plan and staged Margin result owned by
 `summarize_with_margins()`, and will point callers to a following
 `dplyr::mutate()` when they intend to derive a value from an existing Parent
 share.
@@ -213,15 +213,15 @@ uses its immediate parent.
 
 Parent shares cannot be evaluated by an ordinary summary expression because
 the denominator belongs to another grouping-set row. The executor will first
-materialize the ordinary margin summaries, then calculate all requested
+materialize the ordinary Margin summaries, then calculate all requested
 Parent shares together using one shared parent mapping. This staging also
 avoids relying on backend-specific support for referring to a summary alias
 from the same `summarise()` call.
 
 The staged calculation must preserve lazy execution and backend-independent
-results. Internal grouping-set metadata, rather than displayed margin labels,
+results. Internal grouping-set metadata, rather than displayed Margin labels,
 will identify levels and parent rows. Genuine missing grouping values and
-margin labels therefore cannot be confused while matching parents.
+Margin labels therefore cannot be confused while matching parents.
 
 Parent lookup uses missing-safe key identity. Missing values in fixed `.by`
 columns belong to one fixed partition, and missing values in included
@@ -383,6 +383,45 @@ schema or cardinality probe, so an incompatible summary-result type or
 non-scalar result may surface as a database error at execution even though all
 statically detectable helper errors are targeted before execution.
 
+## Amendment: where each backend proves the source contract
+
+This decision divides backends into ones whose summary-result type and
+cardinality are available before execution and ones whose are not, and it
+assumed every backend falls on one side or the other of that line. Two do not,
+and the implementation settled both. The value contract above is unchanged;
+only where each backend enforces it is amended.
+
+**Arrow rejects Parent shares entirely.** Arrow's schema seam can reject some
+semantic types but cannot prove scalar cardinality, and the mechanisms that
+would run validation inside the query — native UDFs, batch hooks, query
+wrappers — either erase the Package condition class and the caller's call or
+are not preserved by query-rebuilding verbs. Both alternatives to rejecting
+were therefore unavailable: enforcing the contract weakly would let an
+ineligible source through, and enforcing it by collecting would collect behind
+the caller's back. A Parent-share request on an Arrow backend raises a Package
+condition before ordinary summaries are staged, so no Arrow query is
+constructed. Ordinary Arrow Margin summaries, expansions, and nesting are
+unaffected. ADR 0005 records why that admission point is allowed to run after
+the typed metadata snapshot.
+
+**dtplyr validates at explicit execution.** dtplyr has no materialized result
+to inspect while the query is built, but unlike a general SQL backend it
+translates R expressions, so the check can be placed inside the ordinary
+summary rather than beside it. Each referenced source summary is wrapped in a
+validator that becomes part of the translated data.table expression and runs
+only when the caller collects. It costs no validation-only query, keeps the
+result a native lazy step, and raises the same Package condition — including
+`marginplyr_parent_cardinality_error` for a non-scalar source — naming the
+Parent share, the source summary, and the original public call. An invalid
+source therefore fails at collection rather than emitting a wrong row.
+
+Local execution uses the same wrapper for the same reason: validating inside
+the ordinary summary is what removes the full input rescan per Grouping set
+that a separate cardinality query would need. General dbplyr keeps the
+relaxation this decision already granted it: no extra schema or cardinality
+query, no implicit collection, and an incompatible type or non-scalar result
+surfacing as a database condition at execution.
+
 ## Considered options
 
 `rollup_share()` was rejected because it names the input structure rather than
@@ -391,6 +430,6 @@ subtotal rows to `1` is a presentation rule and obscures the immediate-parent
 definition, especially in rollups with three or more dimensions.
 
 A post-summary `add_rollup_share()` verb was rejected because the grouping
-plan and parent mapping are already available inside the margin operation.
+plan and parent mapping are already available inside the Margin operation.
 Allowing `cube()` or arbitrary grouping sets was deferred until an explicit
 parent-selection model exists.
