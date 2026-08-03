@@ -308,13 +308,17 @@
 #'   .grouping = rollup(region, store),
 #'   .margin_label = c(region = "All regions", store = "All stores")
 #' )
+#' # The retained type is the point of `NULL`, and a plain data frame prints
+#' # the Margin row as a bare `NA` whatever `year` now holds. A tibble's type
+#' # header is what shows that `year` is still <int> rather than character.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   year_is_total = grouping_bit(year),
 #'   .grouping = rollup(year),
 #'   .margin_label = NULL
-#' )
+#' ) |>
+#'   dplyr::as_tibble()
 #'
 #' # Ordered factors remain ordered. A disabled collision check can reuse an
 #' # unused level and move it to the requested position.

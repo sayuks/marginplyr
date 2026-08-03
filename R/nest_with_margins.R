@@ -73,7 +73,9 @@
 #'   .data = january_sales,
 #'   .grouping = rollup(region, store)
 #' )
-#' # Convert to a tibble so nested data frames print compactly.
+#' # `january_sales` is a plain data frame and the outer class is preserved,
+#' # so `nested` prints its list column as flattened values. A tibble prints
+#' # each nested table as its dimensions instead.
 #' nested |>
 #'   dplyr::as_tibble() |>
 #'   head()

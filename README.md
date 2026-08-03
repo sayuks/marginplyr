@@ -30,17 +30,15 @@ january_sales |>
     revenue = sum(revenue),
     .grouping = rollup(region, store)
   )
-#> # A tibble: 8 × 3
-#>   region store         revenue
-#>   <chr>  <chr>           <dbl>
-#> 1 East   Boston           6000
-#> 2 East   New York         3000
-#> 3 East   <NA>             2200
-#> 4 West   San Francisco    7200
-#> 5 West   Seattle          4900
-#> 6 East   Total           11200
-#> 7 West   Total           12100
-#> 8 Total  Total           23300
+#>   region         store revenue
+#> 1   East        Boston    6000
+#> 2   East      New York    3000
+#> 3   East          <NA>    2200
+#> 4   West San Francisco    7200
+#> 5   West       Seattle    4900
+#> 6   East         Total   11200
+#> 7   West         Total   12100
+#> 8  Total         Total   23300
 ```
 
 `rollup(region, store)` asks for three reporting levels:
@@ -125,17 +123,15 @@ monthly_report <- retail_sales |>
 
 monthly_report |>
   dplyr::filter(year == 2026L, month == "Jan")
-#> # A tibble: 8 × 6
-#>    year month region store         units revenue
-#>   <int> <chr> <chr>  <chr>         <int>   <dbl>
-#> 1  2026 Jan   East   Boston            5    6000
-#> 2  2026 Jan   East   New York         10    3000
-#> 3  2026 Jan   East   <NA>             22    2200
-#> 4  2026 Jan   West   San Francisco     6    7200
-#> 5  2026 Jan   West   Seattle          27    4900
-#> 6  2026 Jan   East   Total            37   11200
-#> 7  2026 Jan   West   Total            33   12100
-#> 8  2026 Jan   Total  Total            70   23300
+#>   year month region         store units revenue
+#> 1 2026   Jan   East        Boston     5    6000
+#> 2 2026   Jan   East      New York    10    3000
+#> 3 2026   Jan   East          <NA>    22    2200
+#> 4 2026   Jan   West San Francisco     6    7200
+#> 5 2026   Jan   West       Seattle    27    4900
+#> 6 2026   Jan   East         Total    37   11200
+#> 7 2026   Jan   West         Total    33   12100
+#> 8 2026   Jan  Total         Total    70   23300
 ```
 
 Use `.by` for report partitions that must never become totals, and
@@ -156,20 +152,18 @@ retail_sales |>
       grouping_set()
     )
   )
-#> # A tibble: 11 × 5
-#>    year  month region product    revenue
-#>    <chr> <chr> <chr>  <chr>        <dbl>
-#>  1 2025  Jan   Total  Total        15200
-#>  2 2025  Feb   Total  Total        18700
-#>  3 2026  Jan   Total  Total        23300
-#>  4 2026  Feb   Total  Total        30200
-#>  5 Total Total East   Laptop       22800
-#>  6 Total Total East   Monitor      11100
-#>  7 Total Total East   Headphones    8000
-#>  8 Total Total West   Laptop       27600
-#>  9 Total Total West   Monitor      12000
-#> 10 Total Total West   Headphones    5900
-#> 11 Total Total Total  Total        87400
+#>     year month region    product revenue
+#> 1   2025   Jan  Total      Total   15200
+#> 2   2025   Feb  Total      Total   18700
+#> 3   2026   Jan  Total      Total   23300
+#> 4   2026   Feb  Total      Total   30200
+#> 5  Total Total   East     Laptop   22800
+#> 6  Total Total   East    Monitor   11100
+#> 7  Total Total   East Headphones    8000
+#> 8  Total Total   West     Laptop   27600
+#> 9  Total Total   West    Monitor   12000
+#> 10 Total Total   West Headphones    5900
+#> 11 Total Total  Total      Total   87400
 ```
 
 `cube()` creates every subset of its dimensions:
@@ -180,19 +174,17 @@ january_sales |>
     revenue = sum(revenue),
     .grouping = cube(product, channel)
   )
-#> # A tibble: 10 × 3
-#>    product    channel revenue
-#>    <chr>      <chr>     <dbl>
-#>  1 Laptop     Store     13200
-#>  2 Monitor    Online     6300
-#>  3 Headphones Online     2200
-#>  4 Headphones Store      1600
-#>  5 Laptop     Total     13200
-#>  6 Monitor    Total      6300
-#>  7 Headphones Total      3800
-#>  8 Total      Store     14800
-#>  9 Total      Online     8500
-#> 10 Total      Total     23300
+#>       product channel revenue
+#> 1      Laptop   Store   13200
+#> 2     Monitor  Online    6300
+#> 3  Headphones  Online    2200
+#> 4  Headphones   Store    1600
+#> 5      Laptop   Total   13200
+#> 6     Monitor   Total    6300
+#> 7  Headphones   Total    3800
+#> 8       Total   Store   14800
+#> 9       Total  Online    8500
+#> 10      Total   Total   23300
 ```
 
 ## A total is not the same thing as `NA`
@@ -210,14 +202,12 @@ january_sales |>
     level = grouping_id(region, store),
     .grouping = rollup(region, store)
   )
-#> # A tibble: 5 × 5
-#>   region store    revenue store_is_total level
-#>   <chr>  <chr>      <dbl>          <int> <int>
-#> 1 East   Boston      6000              0     0
-#> 2 East   New York    3000              0     0
-#> 3 East   <NA>        2200              0     0
-#> 4 East   Total      11200              1     1
-#> 5 Total  Total      11200              1     3
+#>   region    store revenue store_is_total level
+#> 1   East   Boston    6000              0     0
+#> 2   East New York    3000              0     0
+#> 3   East     <NA>    2200              0     0
+#> 4   East    Total   11200              1     1
+#> 5  Total    Total   11200              1     3
 ```
 
 `grouping_bit(store)` is `0` for the source `NA` row and `1` when the
@@ -240,17 +230,15 @@ parent_report <- january_sales |>
   )
 
 parent_report
-#> # A tibble: 8 × 4
-#>   region store         revenue revenue_share
-#>   <chr>  <chr>           <dbl>         <dbl>
-#> 1 East   Boston           6000         0.536
-#> 2 East   New York         3000         0.268
-#> 3 East   <NA>             2200         0.196
-#> 4 West   San Francisco    7200         0.595
-#> 5 West   Seattle          4900         0.405
-#> 6 East   Total           11200         0.481
-#> 7 West   Total           12100         0.519
-#> 8 Total  Total           23300         1
+#>   region         store revenue revenue_share
+#> 1   East        Boston    6000     0.5357143
+#> 2   East      New York    3000     0.2678571
+#> 3   East          <NA>    2200     0.1964286
+#> 4   West San Francisco    7200     0.5950413
+#> 5   West       Seattle    4900     0.4049587
+#> 6   East         Total   11200     0.4806867
+#> 7   West         Total   12100     0.5193133
+#> 8  Total         Total   23300     1.0000000
 ```
 
 For several measures, use two ordered `across()` expressions. The second
@@ -267,17 +255,15 @@ january_sales |>
     ),
     .grouping = rollup(region, store)
   )
-#> # A tibble: 8 × 6
-#>   region store         units revenue units_share revenue_share
-#>   <chr>  <chr>         <int>   <dbl>       <dbl>         <dbl>
-#> 1 East   Boston            5    6000       0.135         0.536
-#> 2 East   New York         10    3000       0.270         0.268
-#> 3 East   <NA>             22    2200       0.595         0.196
-#> 4 West   San Francisco     6    7200       0.182         0.595
-#> 5 West   Seattle          27    4900       0.818         0.405
-#> 6 East   Total            37   11200       0.529         0.481
-#> 7 West   Total            33   12100       0.471         0.519
-#> 8 Total  Total            70   23300       1             1
+#>   region         store units revenue units_share revenue_share
+#> 1   East        Boston     5    6000   0.1351351     0.5357143
+#> 2   East      New York    10    3000   0.2702703     0.2678571
+#> 3   East          <NA>    22    2200   0.5945946     0.1964286
+#> 4   West San Francisco     6    7200   0.1818182     0.5950413
+#> 5   West       Seattle    27    4900   0.8181818     0.4049587
+#> 6   East         Total    37   11200   0.5285714     0.4806867
+#> 7   West         Total    33   12100   0.4714286     0.5193133
+#> 8  Total         Total    70   23300   1.0000000     1.0000000
 ```
 
 Percentages, rounding, and other derived columns belong in a `mutate()`
@@ -286,17 +272,15 @@ after the summary:
 ``` r
 parent_report |>
   dplyr::mutate(revenue_percent = 100 * revenue_share)
-#> # A tibble: 8 × 5
-#>   region store         revenue revenue_share revenue_percent
-#>   <chr>  <chr>           <dbl>         <dbl>           <dbl>
-#> 1 East   Boston           6000         0.536            53.6
-#> 2 East   New York         3000         0.268            26.8
-#> 3 East   <NA>             2200         0.196            19.6
-#> 4 West   San Francisco    7200         0.595            59.5
-#> 5 West   Seattle          4900         0.405            40.5
-#> 6 East   Total           11200         0.481            48.1
-#> 7 West   Total           12100         0.519            51.9
-#> 8 Total  Total           23300         1               100
+#>   region         store revenue revenue_share revenue_percent
+#> 1   East        Boston    6000     0.5357143        53.57143
+#> 2   East      New York    3000     0.2678571        26.78571
+#> 3   East          <NA>    2200     0.1964286        19.64286
+#> 4   West San Francisco    7200     0.5950413        59.50413
+#> 5   West       Seattle    4900     0.4049587        40.49587
+#> 6   East         Total   11200     0.4806867        48.06867
+#> 7   West         Total   12100     0.5193133        51.93133
+#> 8  Total         Total   23300     1.0000000       100.00000
 ```
 
 The root row’s share is one, and a missing or zero denominator gives
@@ -360,7 +344,9 @@ nested_sections <- january_sales |>
     .grouping = rollup(region, store)
   )
 
-# Convert to a tibble so nested data frames print compactly.
+# `january_sales` is a plain data frame and the outer class is preserved, so
+# `nested_sections` prints its list column as flattened values. A tibble
+# prints each nested table as its dimensions instead.
 nested_sections |>
   dplyr::as_tibble() |>
   head()

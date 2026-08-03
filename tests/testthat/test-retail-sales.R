@@ -9,8 +9,12 @@ test_that("retail_sales keeps the lazy-data configuration its usage assumes", {
   )
 })
 
-test_that("retail_sales is a tibble with the documented columns", {
-  expect_s3_class(retail_sales, "tbl_df")
+test_that("retail_sales is a plain data frame with the documented columns", {
+  # A Margin verb hands its input's class through dplyr, so this is what the
+  # examples print: a plain data frame in, a plain data frame out. Shipping a
+  # tibble instead would make the `dplyr::as_tibble()` calls in the
+  # documentation no-ops while their comments still claimed they were needed.
+  expect_s3_class(retail_sales, "data.frame", exact = TRUE)
   expect_equal(dim(retail_sales), c(24L, 8L))
   expect_named(
     retail_sales,
