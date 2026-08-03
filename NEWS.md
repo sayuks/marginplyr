@@ -5,12 +5,19 @@
   `grouping_spec()` for arbitrary SQL-style grouping plans, including empty
   sets, nesting, Cartesian products, and composite dimensions.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
+* Added the contextual `share_of_parent()` summary helper, which divides a
+  preceding numeric scalar summary by the same measure one `rollup()` level
+  up, partitioned by the fixed `.by` keys. Local data frames, dbplyr, and
+  dtplyr are supported, and lazy inputs stay lazy; Arrow rejects Parent shares
+  before a query is built.
+* Added `inspect_grouping()` for reading the resolved Grouping plan as an
+  ordinary local tibble, without executing a Margin operation.
 * Added `.id` to every Margin verb for one-based Grouping set occurrence
   identifiers, including duplicate-aware local, lazy, expansion, and nesting
   paths.
-* Added guides for Grouping identity and explicit key completion, expanded
-  Parent-share and Margin-label references, and documented Grouping-plan
-  inspection as an ordinary tibble.
+* Added guides for Grouping identity and explicit key completion, and made the
+  function references the canonical source of the Margin, Parent-share, and
+  Margin-label contracts.
 * Added explicit duplicate-set policies: `"error"`, `"drop"`, and `"keep"`.
 * Changed the default display label to `"Total"`; `.margin_label = NULL`
   preserves grouping-column types and typed missing values.
