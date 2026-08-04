@@ -292,7 +292,7 @@ test_that("portable SQL consumes named per-column labels lazily", {
 })
 
 test_that("DuckDB uses typed missing for a missing factor Margin label", {
-  skip_if_backend_absent("DBI", "duckdb")
+  skip_if_backend_absent("duckdb", "DBI")
   con <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(

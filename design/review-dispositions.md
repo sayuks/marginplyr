@@ -512,9 +512,12 @@ which is what makes the criterion's "cannot regress silently" hold: a step can
 be deleted, and deleting it would restore exactly this finding, whereas every
 job that checks the tarball necessarily makes the assertion. That covers
 `depends-only`, all five `tarball` jobs, and all four `backend` jobs — the ten
-that claim a backend is absent — and it also refuses a `required` package that
-`optional_backends()` does not track, so adding a fifth backend without
-registering it fails rather than going unchecked. The two isolation claims and
+that claim a backend is absent — and it also refuses a `required` package the
+tracked list does not name, so adding a fifth backend without registering it
+fails rather than going unchecked. That list was `optional_backends()` in
+`.github/scripts/ci-helpers.R` as #64 shipped it; #69 collapsed it into
+`optional_suggests()` in `tests/testthat/helper-optional-backends.R`, which is
+where to look now. The two isolation claims and
 both copies of the R-devel rationale are rewritten to what the jobs install.
 
 *Evidence for the fix:* release-matrix run
@@ -622,16 +625,31 @@ run. *Evidence:* `grep -rn "rescan\|single pass"
 tests/testthat/` returns nothing.
 
 **One `skip_if_backend_absent()` call reverses the argument order a CI gate
-depends on** (Standards). **Not fixed — #66.**
-`optional_backends()` in `.github/scripts/ci-helpers.R`, which #64 moved there
-from `verify-depends-only.R`, excludes DBI
-because `skip_if_backend_absent("duckdb", "DBI")` "skips on
-the first missing package, so a `{DBI} is not installed` line never appears".
-`tests/testthat/test-margin-label.R:295` calls it as `("DBI", "duckdb")`. The
-gate still passes, because `test-margin-id.R` and `test-expand-operation.R`
-call it duckdb-first and supply the required `{duckdb} is not installed`
-line — so the convention the script documents is unenforced, not broken.
-*Evidence:* the dependency-only run above skips 14 tests for `{duckdb}`.
+depends on** (Standards). **Fixed — #69, and the finding's premise was wrong.**
+As recorded, the finding read the reason `optional_backends()` in
+`.github/scripts/ci-helpers.R` gave for excluding DBI —
+`skip_if_backend_absent("duckdb", "DBI")` "skips on the first missing package,
+so a `{DBI} is not installed` line never appears" — observed that
+`tests/testthat/test-margin-label.R:295` calls it as `("DBI", "duckdb")`, and
+concluded that the gate passes only because other files call it duckdb-first,
+leaving the convention unenforced rather than broken.
+
+That is not why it passes. `dbplyr` is an Import and declares
+`Imports: DBI (>= 1.1.3)`, so DBI is inside the hard dependency closure and is
+installed in every release-matrix job, `depends-only` included. The reversed
+calls therefore reach `"duckdb"` and emit its skip line like every other call
+site, and no run can produce a `{DBI} is not installed` line at all. The
+closure is the reason DBI is untrackable; the skip order is a consequence of
+it, not the cause. *Evidence:* the dependency-only run above skips 14 tests for
+`{duckdb}` against 13 duckdb-first call sites, so at least one reversed site
+supplied a `{duckdb}` line; and `packageDescription("dbplyr")$Imports` names
+DBI.
+
+The finding also missed the second reversed site,
+`tests/testthat/test-factor.R:63`. #69 reorders both for consistency, records
+the closure reason where the list now lives, and asserts it in
+`test-optional-backends.R`, so a future dbplyr that drops DBI fails a test
+rather than silently making the exclusion wrong.
 
 ### Rejected
 
@@ -692,8 +710,11 @@ two-axis review and Docs & Tests audit with no unresolved findings, which is
 and the two-axis review of package behaviour are clean, and no finding above
 changes a result marginplyr returns. What is not clean is the evidence layer
 the gate is written in terms of. Two of its three tickets are still open:
-`cran-comments.md` states counts the tree no longer produces (#65), and the
-seven smaller standards and spec findings are #66. The third, #64, is fixed —
-the release matrix now withholds the optional backends it documents
-withholding, and a gate fails the workflow if it stops doing so. #40 stays open
-until #65 and #66 close, and no submission is made before then.
+`cran-comments.md` states counts the tree no longer produces (#65), and six of
+the seven smaller standards and spec findings are #66. The seventh, the
+skip-helper argument order, moved to #69, which took it because the finding as
+written was factually wrong about why the gate passes and correcting it belongs
+with the list it names. The third ticket, #64, is fixed — the release matrix
+now withholds the optional backends it documents withholding, and a gate fails
+the workflow if it stops doing so. #40 stays open until #65, #66, and #69
+close, and no submission is made before then.

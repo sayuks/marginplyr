@@ -13,7 +13,8 @@
 source(".github/scripts/ci-helpers.R")
 
 # The backends whose absence this job depends on, and the reason `DBI` is not
-# among them, are recorded with `optional_backends()` in `ci-helpers.R`.
+# among them, are recorded with `optional_suggests()` in
+# `tests/testthat/helper-optional-backends.R`.
 #
 # This script asserts absence at check time, from the tests' own skip lines.
 # `verify-library-isolation.R` asserts it earlier and from the library itself,

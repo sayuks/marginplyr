@@ -28,19 +28,21 @@ label <- check_label()
 backends <- optional_backends()
 declared <- env_list("MARGINPLYR_REQUIRED_SUGGESTS")
 
-# `DBI` is a driver interface rather than a backend, so it is not tracked by
-# `optional_backends()` and the jobs that name it are not making a claim about
-# it. Anything else unrecognized is a backend that was added to the matrix
-# without being added to `optional_backends()`, which would leave it unchecked
-# in every other job -- silently, since an untracked name simply drops out of
-# the intersection below. Failing here is what makes that omission visible.
-untracked <- setdiff(declared, c(backends, "DBI"))
+# `optional_suggests()` names every package a guard may be written against;
+# `optional_backends()` is the subset whose absence a job can claim, and is
+# what this script iterates over. A job may declare `DBI`, which is in the
+# first and not the second, and makes no absence claim by doing so. Anything in
+# neither is a backend added to the matrix without being added to the list,
+# which would leave it unchecked in every other job -- silently, since an
+# untracked name simply drops out of the intersection below. Failing here is
+# what makes that omission visible.
+untracked <- setdiff(declared, names(optional_suggests()))
 if (length(untracked) > 0L) {
   stop(call. = FALSE, sprintf(
     paste0(
       "%s declares %s in MARGINPLYR_REQUIRED_SUGGESTS, which ",
-      "`optional_backends()` in `ci-helpers.R` does not track, so no job ",
-      "asserts it is absent."
+      "`optional_suggests()` in `tests/testthat/helper-optional-backends.R` ",
+      "does not name, so no job asserts it is absent."
     ),
     label,
     paste(untracked, collapse = ", ")
