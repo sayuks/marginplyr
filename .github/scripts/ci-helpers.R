@@ -51,6 +51,27 @@ test_output_path <- function(rcheck, test = "testthat") {
   if (length(found) == 0L) NA_character_ else found[1]
 }
 
+# The optional backends the release matrix reasons about, named once so that
+# the job asserting they are absent and the job asserting one of them is
+# present cannot drift apart. Adding a backend to
+# `tests/testthat/helper-optional-backends.R` means adding it here too.
+#
+# `DBI` is deliberately not here. It is a driver interface rather than a
+# backend, and `verify-depends-only.R` reads skip lines:
+# `skip_if_backend_absent("duckdb", "DBI")` skips on the first missing package,
+# so a `{DBI} is not installed` line never appears and requiring one would fail
+# every run.
+optional_backends <- function() {
+  c("arrow", "duckdb", "dtplyr", "RSQLite")
+}
+
+# Reads a comma-separated package list from the environment, the form the
+# workflow's matrix entries are written in.
+env_packages <- function(name) {
+  declared <- trimws(strsplit(Sys.getenv(name, ""), ",", fixed = TRUE)[[1]])
+  declared[nzchar(declared)]
+}
+
 write_step_summary <- function(lines) {
   summary_path <- Sys.getenv("GITHUB_STEP_SUMMARY", "")
   if (nzchar(summary_path)) {

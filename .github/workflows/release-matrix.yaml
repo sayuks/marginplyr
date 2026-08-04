@@ -20,6 +20,31 @@
 # prove the same contracts, and those jobs set `MARGINPLYR_REQUIRED_SUGGESTS`
 # so that a backend which failed to install fails the job instead of skipping
 # into a false green. See `tests/testthat/helper-optional-backends.R`.
+#
+# Which packages a job installs is therefore the whole signal, and the
+# dependency cache is what nearly took it away. `setup-r-dependencies@v2` falls
+# back to a `restore-keys` prefix of `<os>-<R version>-<arch>-<cache-version>-`
+# when its exact key misses, so every job sharing a `cache-version` also shares
+# a library: while all five jobs here and `R-CMD-check.yaml` used
+# `cache-version: 3`, the fully provisioned library was restored into the jobs
+# documented as running without it, and pak installed only the remainder on top
+# (#64). The fix is a `cache-version` per dependency request rather than
+# `cache: false`, because these jobs still want a warm cache and losing it
+# would cost every run an install of the hard dependency closure; what they
+# cannot tolerate is sharing one with a differently provisioned job. The names
+# say which request they stand for:
+#
+#   full-1              hard dependencies plus every Suggest (`build`, and
+#                       `R-CMD-check.yaml`, whose matrix wants the same set).
+#   hard-1              hard dependencies plus rcmdcheck, testthat, and the
+#                       VignetteBuilder (`depends-only` and `tarball`).
+#   backend-<name>-1    that, plus exactly one optional backend.
+#
+# A cache key is not self-checking -- a mistake in one produces a green run
+# that reads like a correct one -- so `verify-library-isolation.R` asserts the
+# library each job actually got, before its check runs. Renaming a
+# `cache-version` is safe; dropping the isolation step is what would let this
+# regress.
 on:
   push:
     branches: [main, master]
@@ -71,7 +96,10 @@ jobs:
           # itself as well.
           extra-packages: local::.
           needs: check
-          cache-version: 3
+          # Provisioned on purpose: this job builds the tarball, and vignette
+          # sources exercise the optional backends. Shared with
+          # `R-CMD-check.yaml`, which asks for the same set.
+          cache-version: full-1
 
       - name: Build source tarball
         run: |
@@ -130,7 +158,14 @@ jobs:
         with:
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
-          cache-version: 3
+          cache-version: hard-1
+
+      # Fails before the check when the restored cache carried an optional
+      # backend in. `verify-depends-only.R` below proves the same thing from
+      # the tests' skip lines; this proves it from the library, which is where
+      # a cache mistake shows up first.
+      - name: Verify no optional backend is installed
+        run: Rscript .github/scripts/verify-library-isolation.R
 
       - uses: actions/download-artifact@v4
         with:
@@ -171,9 +206,10 @@ jobs:
           - {os: windows-latest, r: 'release'}
 
     env:
-      # Optional backends are deliberately absent from this matrix; the
-      # dedicated `backend` jobs execute them. Without this, `--as-cran` would
-      # fail the job for the missing Suggests rather than let the tests skip.
+      # Optional backends are deliberately absent from this matrix -- asserted
+      # by the isolation step below, not merely intended -- and the dedicated
+      # `backend` jobs execute them. Without this, `--as-cran` would fail the
+      # job for the missing Suggests rather than let the tests skip.
       _R_CHECK_FORCE_SUGGESTS_: false
       MARGINPLYR_CHECK_LABEL: >-
         Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})
@@ -194,12 +230,20 @@ jobs:
       # Keeping this to hard dependencies plus the test harness and
       # VignetteBuilder is what lets R-devel join the matrix without the
       # binary-repository workaround `R-CMD-check.yaml` needs for arrow and
-      # duckdb: those packages are simply not part of this job.
+      # duckdb. The hard dependency closure is pure R, so pak has nothing to
+      # build from source and nothing to resolve against a series P3M ships no
+      # binaries for. That is a claim about which packages this job installs,
+      # and the isolation step below is what checks it: while this job shared a
+      # `cache-version` with the provisioned matrix it was in fact installing
+      # arrow and duckdb from the restored cache (#64).
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
-          cache-version: 3
+          cache-version: hard-1
+
+      - name: Verify no optional backend is installed
+        run: Rscript .github/scripts/verify-library-isolation.R
 
       - uses: actions/download-artifact@v4
         with:
@@ -279,7 +323,10 @@ jobs:
       # The `depends-only` and `tarball` jobs deliberately do not.
       NOT_CRAN: true
       # Every other optional backend is absent on purpose: proving one backend
-      # in isolation also proves it does not depend on the others.
+      # in isolation also proves it does not depend on the others. That second
+      # half is only worth stating because the isolation step below enforces
+      # it; a `backend` job that could see the other three would still prove
+      # its own contracts and prove nothing about independence.
       _R_CHECK_FORCE_SUGGESTS_: false
       # Vignette rebuilding is covered by `depends-only` and `tarball`. Leaving
       # it out here keeps the job's toolchain to what the backend contract
@@ -299,7 +346,19 @@ jobs:
           dependencies: '"hard"'
           extra-packages: >-
             any::rcmdcheck, any::testthat, ${{ matrix.backend.packages }}
-          cache-version: 3
+          # One cache per backend. These four jobs share an operating system,
+          # R version, and architecture, so a single `cache-version` would put
+          # all four libraries behind one `restore-keys` prefix and every job
+          # would start from whichever ran last.
+          cache-version: backend-${{ matrix.backend.name }}-1
+
+      # Asserts that this job installed its own backend and none of the other
+      # three, which is what makes the isolation claim above a result rather
+      # than an intention. `MARGINPLYR_REQUIRED_SUGGESTS` is already the job's
+      # declaration of what it asked for, so the gate needs no second list to
+      # keep in step with the matrix.
+      - name: Verify only ${{ matrix.backend.name }} is installed
+        run: Rscript .github/scripts/verify-library-isolation.R
 
       - uses: actions/download-artifact@v4
         with:

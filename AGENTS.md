@@ -95,13 +95,26 @@ also lists the test names it exists to execute in its `proves` field, and
 Renaming a contract test is therefore expected to break its job — that is the
 gate working, and the fix is to update the `proves` list, not to relax it.
 
+Which packages a job installs is the whole signal of that design, so the
+dependency cache is part of it. `setup-r-dependencies@v2` falls back to a
+`restore-keys` prefix of `<os>-<R version>-<arch>-<cache-version>-`, which
+means every job sharing a `cache-version` shares a library. Each dependency
+request therefore gets its own value — `full-1`, `hard-1`,
+`backend-<name>-1`, named in `release-matrix.yaml`'s header — and a new job
+that copies an existing `cache-version` inherits that job's library rather than
+installing its own. `verify-library-isolation.R` runs before each check and
+fails the job when an optional backend it did not request is on `.libPaths()`,
+which is what keeps the scheme honest; a wrong cache key is otherwise
+indistinguishable from a correct run.
+
 Adding an optional backend means editing three places, and doing only the first
 leaves a contract nothing executes:
 
 1. the `skip_if_backend_absent()` call in the tests,
-2. a `backend` matrix entry in `release-matrix.yaml`, naming its contracts,
-3. `optional_backends` in `.github/scripts/verify-depends-only.R`, which
-   asserts the backend really was withheld from the minimal-dependency job.
+2. a `backend` matrix entry in `release-matrix.yaml`, naming its contracts and
+   carrying its own `cache-version`,
+3. `optional_backends()` in `.github/scripts/ci-helpers.R`, which is the one
+   list both `verify-depends-only.R` and `verify-library-isolation.R` read.
 
 ## Agent skills
 

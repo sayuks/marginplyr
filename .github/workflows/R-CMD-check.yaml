@@ -50,14 +50,17 @@ jobs:
       # R-devel is covered by two jobs answering different questions, and the
       # gate is not this one. The R-devel compatibility gate is
       # `release-matrix.yaml`'s `tarball` job on `ubuntu-latest` / `r: devel`,
-      # which installs hard dependencies plus the test harness and
-      # VignetteBuilder, needs no workaround at all, and checks the artifact a
-      # submission would carry. marginplyr is pure R and
-      # arrow and duckdb are Suggests, so that job settles whether the package
-      # works on R-devel. The question left over -- do the backend paths work
-      # on R-devel? -- is what the steps below add on top of it. A failure
-      # here, in particular a P3M outage, is not by itself an R-devel
-      # compatibility break.
+      # which installs hard dependencies plus rcmdcheck, testthat, and quarto
+      # and checks the artifact a submission would carry. That set is pure R,
+      # so pak has nothing to build from source and needs no workaround; arrow
+      # and duckdb are Suggests and stay out of it, which that job's own
+      # `verify-library-isolation.R` step asserts rather than assumes. Until
+      # #64 gave the two workflows separate `cache-version` values it did not
+      # hold: the tarball job restored this matrix's provisioned library by
+      # `restore-keys` prefix and installed arrow and duckdb along with it. The
+      # question left over -- do the backend paths work on R-devel? -- is what
+      # the steps below add on top of it. A failure here, in particular a P3M
+      # outage, is not by itself an R-devel compatibility break.
       #
       # Source-building the backends is rejected, not merely avoided. A
       # hosted-runner measurement recorded in
@@ -163,7 +166,11 @@ jobs:
           # so install the package itself first, as quarto-r's CI does.
           extra-packages: any::rcmdcheck, local::.
           needs: check
-          cache-version: 3
+          # This matrix is the provisioned one, so it shares the `full-1` cache
+          # with `release-matrix.yaml`'s `build` job and with nothing else. The
+          # naming scheme, and why a shared `cache-version` broke the release
+          # matrix, are recorded in that workflow's header.
+          cache-version: full-1
 
       # Repeats the `Built` assertion after pak has run, because pak resolves
       # against the running R-devel series and a source build it chose would
