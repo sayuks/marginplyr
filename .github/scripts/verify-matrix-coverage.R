@@ -50,20 +50,26 @@
 #   static property as the assertion above: withholding is the default, so the
 #   check would first have to decide which jobs make a claim worth asserting,
 #   which is a judgement about a job's shape rather than a fact the file states.
-#   Deferred rather than dismissed -- the case to reopen it is a job that
-#   declares `MARGINPLYR_REQUIRED_SUGGESTS` and checks no tarball.
+#   Deferred rather than dismissed, and #73 is where it is recorded -- the case
+#   to act on it is a job that declares `MARGINPLYR_REQUIRED_SUGGESTS` and
+#   checks no tarball.
+#
+# This script runs as a workflow step rather than being sourced by another
+# script, which is the arrangement #64 argued against for
+# `verify-library-isolation.R` on the grounds that a step can be deleted. There
+# is nothing here to source it from: no other job reads a workflow file, and
+# attaching it to `check-tarball.R` would make a claim about this repository
+# depend on a tarball that does not contain the file being read. Deleting the
+# step deletes the only job that has one, which is visible in a way that
+# dropping one assertion from a job that still checks a tarball is not.
 
 source(".github/scripts/ci-helpers.R")
 
-# `MARGINPLYR_WORKFLOW` is a knob for this script's own verification, not for
-# the workflow, which never sets it. A gate whose failure path has never been
-# executed is a gate on trust, and the real file is correct by construction, so
-# the only way to see the message this script exists to print is to point it at
-# a fixture. Same reason `backend_available()` takes a `known` argument.
-workflow_path <- Sys.getenv(
-  "MARGINPLYR_WORKFLOW",
-  ".github/workflows/release-matrix.yaml"
-)
+# Fixed rather than read from the environment, as in the sibling scripts, which
+# name the file they assert against. The failure path is reachable without a
+# knob: adding a name to `optional_suggests()` is the mistake this script exists
+# to catch, and doing it locally prints the message.
+workflow_path <- ".github/workflows/release-matrix.yaml"
 
 if (!file.exists(workflow_path)) {
   stop(call. = FALSE, sprintf("No workflow file at '%s'.", workflow_path))
@@ -93,11 +99,16 @@ entry_name <- function(entry) {
 # backend: it is what the job sets `MARGINPLYR_REQUIRED_SUGGESTS` from, so it is
 # the field that turns a failed install into a failed job instead of a skip. An
 # entry that installed a backend without naming it there would prove nothing.
+# `unlist()` before splitting because YAML gives `required` back as a character
+# vector when it is written as a block sequence and as one string when it is
+# written inline, as every entry is today. Without it the parsed list would keep
+# only its first element, and a backend named second would be reported missing
+# with a message blaming the wrong thing.
 entries_naming <- function(package, matrix_entries) {
   declared <- vapply(
     matrix_entries,
     function(entry) {
-      required <- if (is.null(entry$required)) "" else entry$required
+      required <- paste(unlist(entry$required), collapse = ",")
       package %in% split_list(required)
     },
     logical(1)
@@ -144,22 +155,22 @@ write_step_summary(c(
 
 problems <- character()
 
+# Collective phrasing throughout, as in `verify-library-isolation.R`. A message
+# that reads correctly for one backend and for several needs no branch on the
+# count, and a branch that pluralized only part of a sentence would leave the
+# rest disagreeing.
 uncovered <- backends[counts == 0L]
 if (length(uncovered) > 0L) {
   problems <- c(problems, sprintf(
     paste0(
-      "%s named by `optional_suggests()` in ",
-      "`tests/testthat/helper-optional-backends.R` but has no `backend` ",
-      "matrix entry in `%s`, so no job executes it and its contracts skip ",
-      "everywhere. Add an entry naming it in `required` and its contract ",
-      "tests in `proves`."
+      "These backends are named by `optional_suggests()` in ",
+      "`tests/testthat/helper-optional-backends.R` but have no `backend` ",
+      "matrix entry in `%s`, so no job executes them and their contracts ",
+      "skip everywhere: %s. Add an entry for each, naming it in `required` ",
+      "and its contract tests in `proves`."
     ),
-    if (length(uncovered) == 1L) {
-      sprintf("%s is", uncovered)
-    } else {
-      sprintf("%s are", paste(uncovered, collapse = ", "))
-    },
-    workflow_path
+    workflow_path,
+    paste(uncovered, collapse = ", ")
   ))
 }
 
@@ -173,15 +184,11 @@ if (length(duplicated_backends) > 0L) {
     ),
     workflow_path,
     paste(
-      sprintf(
-        "%s (%s)",
+      sprintf("%s (%s)", duplicated_backends, vapply(
         duplicated_backends,
-        vapply(
-          duplicated_backends,
-          function(package) paste(covering[[package]], collapse = ", "),
-          character(1)
-        )
-      ),
+        function(package) paste(covering[[package]], collapse = ", "),
+        character(1)
+      )),
       collapse = "; "
     )
   ))

@@ -128,11 +128,12 @@ loudly:
    one list every other consumer derives from — `optional_backends()` for the
    subset a job can be asked to withhold, and `verify-depends-only.R`,
    `verify-library-isolation.R`, and `verify-matrix-coverage.R` through it.
-   Doing only this fails `coverage`, which reads the list against the `backend`
-   matrix, and `depends-only`, where a `TRUE` entry makes
-   `verify-depends-only.R` require a `{<package>} is not installed` line that no
-   test would produce. A `FALSE` entry claims no absence and so is asserted by
-   nothing, which is the DBI case above.
+   A `TRUE` entry alone fails `coverage`, which reads the list against the
+   `backend` matrix, and `depends-only`, where it makes `verify-depends-only.R`
+   require a `{<package>} is not installed` line that no test would produce. A
+   `FALSE` entry claims no absence, so `optional_backends()` filters it out
+   before either of those sees it and nothing asserts it — which is the DBI case
+   above, and the reason that value exists.
 2. the `skip_if_backend_absent()` or `backend_available()` call in the tests.
    Doing only this errors immediately: those helpers refuse a package
    `optional_suggests()` does not name, since nothing would execute it and
@@ -150,9 +151,9 @@ parses `release-matrix.yaml` and fails when a package `optional_backends()`
 names has no `backend` entry, or has more than one. It is the only job that
 reads a workflow file as data, which is why it is the only one that installs
 `yaml`. Its header records the two further assertions #71 considered and why
-neither ships; the short version is that `verify-library-isolation.R` already
-makes one of them where the claim is made, and the other would guard a job that
-does not exist.
+neither ships: `verify-library-isolation.R` already makes one of them where the
+claim is made, and the other would guard a job that does not exist, which #73
+holds open.
 
 ## Agent skills
 
