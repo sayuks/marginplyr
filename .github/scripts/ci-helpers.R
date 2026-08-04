@@ -53,10 +53,10 @@ test_output_path <- function(rcheck, test = "testthat") {
 
 # `optional_suggests()` and `optional_backends()`, the one list of optional
 # backends the release matrix reasons about. It is defined with the guards that
-# consume it rather than here, because `.Rbuildignore` excludes `^\.github$`
-# and does not exclude `tests/`: the tarball ships the helper, so this file can
-# read it and a list kept here could not be read back from the tests. Every job
-# that runs these scripts checks out the repository, so the path resolves.
+# consume it rather than here; the helper's own comment records why that
+# direction is forced. This reads the working tree rather than the built
+# tarball, and every job that runs these scripts checks out the repository, so
+# the path resolves.
 #
 # `source()` evaluates top-level expressions only, and the helper's sole
 # testthat call sits inside `skip_if_backend_absent()`'s body, so this works

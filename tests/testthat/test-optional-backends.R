@@ -105,9 +105,19 @@ test_that("an untracked package is refused even when it is installed", {
 })
 
 test_that("optional_backends() is the subset a job can be asked to withhold", {
-  tracked <- optional_suggests()
-  expect_identical(optional_backends(), names(tracked)[tracked])
-  expect_true(all(nzchar(names(tracked))))
+  backends <- optional_backends()
+  # `verify-depends-only.R` iterates over this to require one skip line per
+  # backend, and `verify-library-isolation.R` to decide what must be absent. A
+  # derivation that returned nothing would leave both asserting nothing while
+  # still reporting success, so emptiness is the failure worth naming.
+  expect_type(backends, "character")
+  expect_gt(length(backends), 0L)
+  expect_null(names(backends))
+  # Approached from the other side than the derivation, so an inverted or
+  # ignored flag fails here rather than restating the function body.
+  untrackable <- names(optional_suggests())[!optional_suggests()]
+  expect_false(any(untrackable %in% backends))
+  expect_true(all(nzchar(names(optional_suggests()))))
 })
 
 test_that("every tracked Suggest is declared in DESCRIPTION", {

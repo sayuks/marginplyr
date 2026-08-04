@@ -121,15 +121,17 @@ run: it fails the job when an optional backend the job did not declare in
 it rather than the workflow calling it as a step, so the assertion cannot be
 dropped from a job that still checks a tarball.
 
-Adding an optional backend means editing three places. Three of the four ways
-to get that wrong fail loudly; the fourth is named at the end:
+Adding an optional backend means editing three places. Every partial edit fails
+loudly except one, which is named at the end:
 
 1. `optional_suggests()` in `tests/testthat/helper-optional-backends.R`, the
    one list every other consumer derives from — `optional_backends()` for the
    subset a job can be asked to withhold, and both `verify-depends-only.R` and
    `verify-library-isolation.R` through it. Doing only this fails
-   `depends-only`, which requires a `{<package>} is not installed` line that no
-   test would produce.
+   `depends-only`: a `TRUE` entry makes `verify-depends-only.R` require a
+   `{<package>} is not installed` line that no test would produce. A `FALSE`
+   entry claims no absence and so is asserted by nothing, which is the DBI case
+   above.
 2. the `skip_if_backend_absent()` or `backend_available()` call in the tests.
    Doing only this errors immediately: those helpers refuse a package
    `optional_suggests()` does not name, since nothing would execute it and
@@ -140,9 +142,10 @@ to get that wrong fail loudly; the fourth is named at the end:
    the new job: a `required` package `optional_suggests()` does not name is
    refused.
 
-Doing 1 and 2 without 3 is the combination that still passes quietly. The
+Doing 1 and 2 without 3 is the one combination that still passes quietly. The
 backend is asserted absent everywhere and executed nowhere, so its tests skip
-in every job. Nothing checks that a tracked backend has a matrix entry.
+in every job. Nothing checks that a tracked backend has a matrix entry; #71
+tracks whether it should, deferred from #69 rather than overlooked.
 
 ## Agent skills
 
