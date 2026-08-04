@@ -67,6 +67,18 @@ same mode in `release-matrix.yaml`'s `depends-only` job, so this is a gate
 rather than a manual step, but running it locally is still the fastest way to
 find out which guard is missing.
 
+A Suggest can also be non-optional without being an Import, because an Import
+already requires it. `dbplyr` declares `Imports: DBI`, so DBI sits in the hard
+dependency closure and is installed under `_R_CHECK_DEPENDS_ONLY_=true` like
+any Import; tibble reaches the same place through dplyr. Such a package is
+never absent, so a guard written against it never fires and
+`optional_suggests()` cannot claim it absent — that is why `DBI = FALSE`
+there. Check with `packageDescription("<import>")$Imports`, not by reading this
+package's DESCRIPTION: the closure is a property of another package's metadata,
+so it can change without a commit here. Keeping the Suggests entry is still
+right, because it records a direct use that would need declaring if the closure
+stopped supplying it.
+
 ### Release matrix
 
 `.github/workflows/release-matrix.yaml` checks one built tarball rather than
@@ -109,18 +121,28 @@ run: it fails the job when an optional backend the job did not declare in
 it rather than the workflow calling it as a step, so the assertion cannot be
 dropped from a job that still checks a tarball.
 
-Adding an optional backend means editing three places, and doing only the first
-leaves a contract nothing executes:
+Adding an optional backend means editing three places. Three of the four ways
+to get that wrong fail loudly; the fourth is named at the end:
 
-1. the `skip_if_backend_absent()` call in the tests,
-2. a `backend` matrix entry in `release-matrix.yaml`, naming its contracts in
+1. `optional_suggests()` in `tests/testthat/helper-optional-backends.R`, the
+   one list every other consumer derives from — `optional_backends()` for the
+   subset a job can be asked to withhold, and both `verify-depends-only.R` and
+   `verify-library-isolation.R` through it. Doing only this fails
+   `depends-only`, which requires a `{<package>} is not installed` line that no
+   test would produce.
+2. the `skip_if_backend_absent()` or `backend_available()` call in the tests.
+   Doing only this errors immediately: those helpers refuse a package
+   `optional_suggests()` does not name, since nothing would execute it and
+   nothing would assert it absent.
+3. a `backend` matrix entry in `release-matrix.yaml`, naming its contracts in
    `proves` and its packages in `required` — `required` is also what the
-   isolation assertion reads as the job's declaration,
-3. `optional_backends()` in `.github/scripts/ci-helpers.R`, which is the one
-   list both `verify-depends-only.R` and `verify-library-isolation.R` read.
-   Skipping this one fails the new job rather than passing quietly: a
-   `required` package that `optional_backends()` does not track is refused,
-   because nothing would assert it absent elsewhere.
+   isolation assertion reads as the job's declaration. Doing only this fails
+   the new job: a `required` package `optional_suggests()` does not name is
+   refused.
+
+Doing 1 and 2 without 3 is the combination that still passes quietly. The
+backend is asserted absent everywhere and executed nowhere, so its tests skip
+in every job. Nothing checks that a tracked backend has a matrix entry.
 
 ## Agent skills
 

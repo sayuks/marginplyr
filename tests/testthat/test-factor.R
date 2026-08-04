@@ -60,7 +60,7 @@ test_that("reconstruct_factor() works with data.frame", {
 })
 
 test_that("reconstruct_factor() works with duckdb", {
-  skip_if_backend_absent("DBI", "duckdb")
+  skip_if_backend_absent("duckdb", "DBI")
 
   x <- c("a", "b", "c", NA_character_)
   data <- data.frame(

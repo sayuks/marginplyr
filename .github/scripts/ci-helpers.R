@@ -51,19 +51,20 @@ test_output_path <- function(rcheck, test = "testthat") {
   if (length(found) == 0L) NA_character_ else found[1]
 }
 
-# The optional backends the release matrix reasons about, named once so that
-# the job asserting they are absent and the job asserting one of them is
-# present cannot drift apart. Adding a backend to
-# `tests/testthat/helper-optional-backends.R` means adding it here too.
+# `optional_suggests()` and `optional_backends()`, the one list of optional
+# backends the release matrix reasons about. It is defined with the guards that
+# consume it rather than here, because `.Rbuildignore` excludes `^\.github$`
+# and does not exclude `tests/`: the tarball ships the helper, so this file can
+# read it and a list kept here could not be read back from the tests. Every job
+# that runs these scripts checks out the repository, so the path resolves.
 #
-# `DBI` is deliberately not here. It is a driver interface rather than a
-# backend, and `verify-depends-only.R` reads skip lines:
-# `skip_if_backend_absent("duckdb", "DBI")` skips on the first missing package,
-# so a `{DBI} is not installed` line never appears and requiring one would fail
-# every run.
-optional_backends <- function() {
-  c("arrow", "duckdb", "dtplyr", "RSQLite")
-}
+# `source()` evaluates top-level expressions only, and the helper's sole
+# testthat call sits inside `skip_if_backend_absent()`'s body, so this works
+# from a bare `Rscript` with testthat unattached. It also brings in
+# `backend_available()` and `required_suggests()`; nothing here calls them, and
+# separating the list into its own file would trade that for a file whose only
+# purpose is the separation.
+source("tests/testthat/helper-optional-backends.R")
 
 # Reads a delimited list out of the environment, the form the workflow's matrix
 # entries are written in. Package lists are comma-separated; test names are

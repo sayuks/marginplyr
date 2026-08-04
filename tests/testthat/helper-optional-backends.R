@@ -18,11 +18,67 @@ required_suggests <- function() {
   declared[nzchar(declared)]
 }
 
+# The optional Suggests these helpers guard on, and the only list the release
+# matrix reads. It lives here rather than in `.github/` because `.Rbuildignore`
+# excludes `^\.github$` and does not exclude `tests/`: the tarball ships this
+# file, so `.github/scripts/ci-helpers.R` can source it, and a list kept there
+# could not be read back from the tests. Adding a backend starts here, because
+# `backend_available()` below refuses a name this list does not carry.
+#
+# The value answers whether the release matrix can assert the package absent by
+# name. `DBI` cannot. `dbplyr` is an Import and declares `Imports: DBI`, so DBI
+# is inside the hard dependency closure and is installed in every job,
+# `_R_CHECK_DEPENDS_ONLY_=true` included. `verify-depends-only.R` would then
+# require a `{DBI} is not installed` line that no run can produce, and
+# `verify-library-isolation.R` would find DBI on `.libPaths()` in every job that
+# withheld it.
+optional_suggests <- function() {
+  c(
+    arrow = TRUE,
+    duckdb = TRUE,
+    dtplyr = TRUE,
+    RSQLite = TRUE,
+    DBI = FALSE
+  )
+}
+
+# The subset a job can be asked to withhold, which is what the release matrix's
+# absence assertions iterate over. Keeps the name it had while it lived in
+# `ci-helpers.R`, so `verify-depends-only.R` and `verify-library-isolation.R`
+# call it unchanged.
+optional_backends <- function() {
+  asserted <- optional_suggests()
+  names(asserted)[asserted]
+}
+
 # Reports whether an optional backend can be used, and refuses to report FALSE
 # for a backend the running job promised to exercise. Callers that select among
 # several backends use this directly, because dropping one from a list records
 # no skip at all and would otherwise be invisible.
-backend_available <- function(package) {
+#
+# A package `known` does not name is an error rather than FALSE. Nothing in the
+# release matrix executes such a package and nothing asserts it absent, so a
+# guard on it would do nothing while reading as protection; erroring is what
+# makes this test suite the place a backend gets registered. The check runs
+# before `requireNamespace()` so that it fires the same way on a fully
+# provisioned developer machine, where the package is installed and a check
+# placed after it would never be reached.
+#
+# `known` is a parameter only so that this helper's own tests can drive both
+# outcomes. They need a sentinel name no CRAN package uses and a base package
+# that is always installed, and neither belongs in `optional_suggests()`. Every
+# other call site takes the default.
+backend_available <- function(package, known = optional_suggests()) {
+  if (!package %in% names(known)) {
+    stop(sprintf(
+      paste0(
+        "{%s} is not named in `optional_suggests()`, so no release-matrix job ",
+        "executes it and no job asserts it is absent. Add it there, and add a ",
+        "`backend` entry in `release-matrix.yaml`."
+      ),
+      package
+    ))
+  }
   if (requireNamespace(package, quietly = TRUE)) {
     return(TRUE)
   }
@@ -40,9 +96,12 @@ backend_available <- function(package) {
 
 # Skips unless every named backend is installed, keeping testthat's own wording
 # so the skip summary reads the same as it did under `skip_if_not_installed()`.
-skip_if_backend_absent <- function(...) {
+#
+# `known` sits after `...` and so can only be supplied by full name, which keeps
+# it from ever swallowing a backend argument.
+skip_if_backend_absent <- function(..., known = optional_suggests()) {
   for (package in c(...)) {
-    if (!backend_available(package)) {
+    if (!backend_available(package, known = known)) {
       skip(sprintf("{%s} is not installed", package))
     }
   }
