@@ -19,10 +19,12 @@ required_suggests <- function() {
 }
 
 # The optional Suggests these helpers guard on, and the only list the release
-# matrix reads. It lives here rather than in `.github/` because `.Rbuildignore`
-# excludes `^\.github$` and does not exclude `tests/`: the tarball ships this
-# file, so `.github/scripts/ci-helpers.R` can source it, and a list kept there
-# could not be read back from the tests. Adding a backend starts here, because
+# matrix reads. Which side of the repository it lives on is forced, not
+# preferred: `R CMD check` runs these tests from the unpacked tarball, and
+# `.Rbuildignore` excludes `^\.github$` from that tarball, so a list kept in
+# `.github/scripts/` would not exist where the tests execute. The CI scripts run
+# from the checkout instead and can read this file, which makes `tests/` the
+# only placement both sides reach. Adding a backend starts here, because
 # `backend_available()` below refuses a name this list does not carry.
 #
 # The value answers whether the release matrix can assert the package absent by
