@@ -11,6 +11,76 @@ check_removed_groups_argument <- function(dots) {
   )
 }
 
+# Options the verb once had. A caller following older material writes them as
+# if they were still arguments, and `...` would otherwise accept the value as
+# an ordinary summary and return a constant column.
+removed_summary_options <- c(".sort")
+
+# Every dot-prefixed name the summary verb answers to. `...` sits before them
+# in the signature, so R matches them exactly and a name that reaches `...`
+# was either misspelled or spliced in.
+summary_option_names <- function() {
+  names(formals(summarize_with_margins))[
+    startsWith(names(formals(summarize_with_margins)), ".")
+  ]
+}
+
+# Only dot-prefixed names are examined, and only against an exact match or a
+# one-character difference: that catches the pluralizations real callers
+# write (`.margin_labels`, `.groupings`, `.duplicate`) while leaving ordinary
+# leading-dot output names such as `.n` alone.
+misspelled_summary_option <- function(name, options) {
+  if (name %in% options) {
+    return(name)
+  }
+  distances <- utils::adist(name, options)[1L, ]
+  nearest <- options[distances <= 1L]
+  if (length(nearest) == 0L) {
+    return(NULL)
+  }
+  nearest[[1L]]
+}
+
+check_option_named_summaries <- function(dots) {
+  dot_names <- names(dots)
+  if (is.null(dot_names)) {
+    return(invisible(NULL))
+  }
+  candidates <- unique(dot_names[startsWith(dot_names, ".")])
+  if (length(candidates) == 0L) {
+    return(invisible(NULL))
+  }
+
+  options <- c(summary_option_names(), removed_summary_options)
+  for (name in candidates) {
+    matched <- misspelled_summary_option(name, options)
+    if (is.null(matched)) {
+      next
+    }
+    if (matched %in% removed_summary_options) {
+      # Naming `grouping_bit()` matters: sorting the result by its displayed
+      # values puts a margin wherever its label falls in the value order,
+      # which is not the order the caller writing `.sort` is asking for.
+      abort_marginplyr(
+        paste0(
+          "`summarize_with_margins()` has no `", matched, "` argument; row ",
+          "order is unspecified. Call `dplyr::arrange()` on the result, and ",
+          "add a `grouping_bit()` summary per dimension to sort each margin ",
+          "with the rows it summarizes."
+        )
+      )
+    }
+    abort_marginplyr(
+      paste0(
+        "`", name, "` is not an argument of `summarize_with_margins()`, so ",
+        "it was captured as a summary named `", name, "`. Did you mean `",
+        matched, "`? Rename the summary if the column is intended."
+      )
+    )
+  }
+  invisible(NULL)
+}
+
 check_summary_context_helpers <- function(dots) {
   unsupported <- unique(unlist(
     lapply(

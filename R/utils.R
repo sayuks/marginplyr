@@ -46,6 +46,38 @@ assert_nest_possible <- function(x) {
   }
 }
 
+# Admission is duck-typed rather than a class whitelist: marginplyr supports
+# any input the dplyr verbs it calls can handle, and a whitelist would reject
+# a backend that works. `group_vars()` is the first dplyr generic every Margin
+# operation reaches, so an input without a method for it cannot proceed, and
+# saying so here keeps the diagnostic in the caller's terms instead of
+# surfacing "no applicable method for 'group_vars'".
+assert_margin_input <- function(x) {
+  nm <- deparse(substitute(x))
+  supported <- tryCatch(
+    {
+      dplyr::group_vars(x)
+      TRUE
+    },
+    error = function(cnd) FALSE
+  )
+  if (supported) {
+    return(invisible(NULL))
+  }
+
+  abort_marginplyr(
+    sprintf(
+      paste0(
+        "`%s` must be a data frame or a lazy table that supports dplyr ",
+        "verbs; %s was supplied. Convert it with `as.data.frame()` or ",
+        "`dplyr::tbl()` first."
+      ),
+      nm,
+      if (is.null(x)) "`NULL`" else sprintf("a <%s>", class(x)[[1L]])
+    )
+  )
+}
+
 assert_lazy_table <- function(x) {
   nm <- deparse(substitute(x))
   invalid_lazy_table_names <- "RecordBatchReader"

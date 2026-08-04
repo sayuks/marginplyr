@@ -39,6 +39,7 @@ abort_invalid_grouping_spec <- function() {
 
 normalize_grouping_input <- function(.data, by_quo) {
   stopifnot(rlang::is_quosure(by_quo))
+  assert_margin_input(.data)
 
   if (inherits(.data, "rowwise_df")) {
     abort_marginplyr(

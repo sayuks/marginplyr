@@ -489,6 +489,7 @@ summarize_with_margins <- function(.data,
         .id = .id
       )
       check_removed_groups_argument(dots)
+      check_option_named_summaries(dots)
       check_summary_context_helpers(dots)
       preflight_parent_shares(dots)
     },
