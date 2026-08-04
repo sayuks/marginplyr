@@ -1,5 +1,7 @@
 # Local Parent-share benchmark
 
+Investigated: 2026-08-02
+
 This benchmark records the effect of issue #27 on representative local
 rollup execution. It is developer evidence, not a package test, and has no
 wall-clock assertion.

@@ -1,6 +1,6 @@
 # Quarto Vignettes and pkgsite 0.1.0
 
-Research date: 2026-07-25
+Investigated: 2026-07-25
 
 ## Conclusion
 

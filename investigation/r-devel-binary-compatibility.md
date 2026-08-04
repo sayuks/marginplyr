@@ -1,6 +1,6 @@
 # R-devel binary compatibility
 
-Investigated on 2026-08-03 for `marginplyr`.
+Investigated: 2026-08-03
 
 This note establishes what actually guarantees that Arrow and DuckDB binaries
 built for the release R series keep working when `R-CMD-check.yaml`'s

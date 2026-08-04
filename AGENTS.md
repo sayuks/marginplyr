@@ -116,3 +116,16 @@ Triage uses the five standard roles: `needs-triage`, `needs-info`, `ready-for-ag
 ### Domain docs
 
 This is a single-context repo. Read the root `CONTEXT.md` and relevant ADRs under `design/adr/`. See `design/agents/domain.md`.
+
+### Investigation notes
+
+`investigation/` holds dated research notes. A note records what was
+established on its date and is not maintained afterwards; a later investigation
+adds a dated revisions section rather than rewriting it. Authority splits by
+subject, not by recency: the note is authoritative for the evidence — sources
+read, what they said, what was measured — while a workflow comment, ADR,
+`AGENTS.md`, or the code is authoritative for the decision and for current
+state. A note therefore never describes the present, and once an artifact cites
+a note as a reason, the durable part belongs in `AGENTS.md` or an ADR. See
+`investigation/README.md` for the header block, the supersession form, and the
+grep to run before amending a note.

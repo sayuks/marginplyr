@@ -1,6 +1,6 @@
 # Column-name discovery across dplyr backends
 
-Research date: 2026-07-26
+Investigated: 2026-07-26
 
 ## Conclusion
 

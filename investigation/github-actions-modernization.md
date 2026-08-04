@@ -1,6 +1,6 @@
 # GitHub Actions modernization
 
-Research date: 2026-07-18
+Investigated: 2026-07-18
 
 ## Findings
 

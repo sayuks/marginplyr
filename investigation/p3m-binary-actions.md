@@ -1,8 +1,7 @@
 # P3M binaries in GitHub Actions
 
-Investigated on 2026-07-19 for `marginplyr`. Revised on 2026-08-04 to record
-what `investigation/r-devel-binary-compatibility.md` established about why
-loading release-series binaries under R-devel works, and what ends it.
+Investigated: 2026-07-19
+Revised: 2026-08-04 — investigation/r-devel-binary-compatibility.md
 
 ## Findings
 
@@ -33,7 +32,7 @@ loading release-series binaries under R-devel works, and what ends it.
   binary installer, and rerunning it would overwrite project-specific workflow
   changes. The existing workflow should therefore keep its explicit P3M step.
 
-## Revisions from the compatibility investigation (2026-08-04)
+## Revisions (2026-08-04)
 
 `investigation/r-devel-binary-compatibility.md` reread the primary sources for
 the parts of this note that were inferred rather than quoted. Four corrections

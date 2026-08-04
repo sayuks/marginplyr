@@ -1,7 +1,7 @@
 # Backend API improvement implementation plan
 
+Investigated: 2026-07-28
 Status: implemented
-Prepared: 2026-07-28
 Completed: 2026-07-28
 Primary input: [`backend-api-audit.md`](backend-api-audit.md)
 
