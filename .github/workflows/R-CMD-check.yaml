@@ -51,13 +51,14 @@ jobs:
       # gate is not this one. The R-devel compatibility gate is
       # `release-matrix.yaml`'s `tarball` job on `ubuntu-latest` / `r: devel`,
       # which installs hard dependencies plus rcmdcheck, testthat, and quarto
-      # and checks the artifact a submission would carry. That set is pure R,
-      # so pak has nothing to build from source and needs no workaround; arrow
-      # and duckdb are Suggests and stay out of it, which that job's own
+      # and checks the artifact a submission would carry. That job builds all
+      # of that from source on R-devel and needs no workaround, because the two
+      # packages whose source builds are prohibitive are arrow and duckdb, and
+      # they are Suggests it never requests -- which its own
       # `verify-library-isolation.R` step asserts rather than assumes. Until
-      # #64 gave the two workflows separate `cache-version` values it did not
+      # #64 gave the two workflows separate `cache-version` values that did not
       # hold: the tarball job restored this matrix's provisioned library by
-      # `restore-keys` prefix and installed arrow and duckdb along with it. The
+      # `restore-keys` prefix and received arrow and duckdb along with it. The
       # question left over -- do the backend paths work on R-devel? -- is what
       # the steps below add on top of it. A failure here, in particular a P3M
       # outage, is not by itself an R-devel compatibility break.

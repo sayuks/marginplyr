@@ -229,12 +229,16 @@ jobs:
 
       # Keeping this to hard dependencies plus the test harness and
       # VignetteBuilder is what lets R-devel join the matrix without the
-      # binary-repository workaround `R-CMD-check.yaml` needs for arrow and
-      # duckdb. The hard dependency closure is pure R, so pak has nothing to
-      # build from source and nothing to resolve against a series P3M ships no
-      # binaries for. That is a claim about which packages this job installs,
-      # and the isolation step below is what checks it: while this job shared a
-      # `cache-version` with the provisioned matrix it was in fact installing
+      # binary-repository workaround `R-CMD-check.yaml` needs. P3M publishes no
+      # binaries for the development series, so on R-devel pak builds this
+      # whole set from source; that is affordable because the two packages
+      # whose source builds are not are arrow and duckdb, which are Suggests
+      # and so are never requested here. The measurement is in
+      # `investigation/github-actions-modernization.md`.
+      #
+      # That is a claim about which packages this job installs, and the
+      # isolation step below is what checks it: while this job shared a
+      # `cache-version` with the provisioned matrix it was in fact receiving
       # arrow and duckdb from the restored cache (#64).
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
