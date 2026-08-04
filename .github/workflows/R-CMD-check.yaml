@@ -54,11 +54,11 @@ jobs:
       # and checks the artifact a submission would carry. That job builds all
       # of that from source on R-devel and needs no workaround, because the two
       # packages whose source builds are prohibitive are arrow and duckdb, and
-      # they are Suggests it never requests -- which its own
-      # `verify-library-isolation.R` step asserts rather than assumes. Until
-      # #64 gave the two workflows separate `cache-version` values that did not
-      # hold: the tarball job restored this matrix's provisioned library by
-      # `restore-keys` prefix and received arrow and duckdb along with it. The
+      # they are Suggests it never requests -- which its `check-tarball.R` run
+      # asserts rather than assumes. Until #64 moved that job off the
+      # `cache-version` this matrix uses, it did not hold: the tarball job
+      # restored this matrix's provisioned library by `restore-keys` prefix and
+      # received arrow and duckdb along with it. The
       # question left over -- do the backend paths work on R-devel? -- is what
       # the steps below add on top of it. A failure here, in particular a P3M
       # outage, is not by itself an R-devel compatibility break.
@@ -168,9 +168,11 @@ jobs:
           extra-packages: any::rcmdcheck, local::.
           needs: check
           # This matrix is the provisioned one, so it shares the `full-1` cache
-          # with `release-matrix.yaml`'s `build` job and with nothing else. The
-          # naming scheme, and why a shared `cache-version` broke the release
-          # matrix, are recorded in that workflow's header.
+          # with `release-matrix.yaml`'s `build` job and with nothing else.
+          # Neither of those two claims a package is absent, which is what
+          # makes sharing safe; the release matrix's isolation-critical jobs
+          # each have their own value. The naming scheme, and why one shared
+          # `cache-version` broke them, are recorded in that workflow's header.
           cache-version: full-1
 
       # Repeats the `Built` assertion after pak has run, because pak resolves

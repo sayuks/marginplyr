@@ -1,37 +1,53 @@
-# Confirms that a job whose signal depends on which optional backends are
-# installed really ran with that library.
+# Confirms that a job got the library it declared, before it checks anything.
 #
-# `r-lib/actions/setup-r-dependencies@v2` restores a cache by prefix --
-# `<os>-<R version>-<arch>-<cache-version>-` -- whenever the exact key misses,
-# so a job that asks for hard dependencies only still starts from whatever
-# library the last cache under that prefix saved, and pak then installs only
-# what is still missing on top of it. Every job in this workflow and in
-# `R-CMD-check.yaml` once shared `cache-version: 3`, which restored the fully
-# provisioned library into the jobs documented as running without it (#64). The
-# per-job `cache-version` values keep the prefixes apart; this script is what
-# stops that separation from decaying silently, because a cache-key mistake
-# produces a green run that looks exactly like a correct one unless somebody
-# reads a `Session info` step.
+# Which optional backends a job installs is the whole signal of `depends-only`,
+# `tarball`, and the four `backend` jobs, and the dependency cache is what
+# nearly took it away: `setup-r-dependencies@v2` falls back to a `restore-keys`
+# prefix, so jobs sharing a `cache-version` share a library (#64). The
+# `cache-version` scheme that separates them is recorded in
+# `release-matrix.yaml`'s header. A cache key is not self-checking, though --
+# a wrong one produces a green run that reads like a correct one -- which is
+# what this script is for.
+#
+# `check-tarball.R` sources it rather than the workflow calling it as its own
+# step. A step can be deleted, and deleting it would restore exactly the silent
+# regression #64 found; sourcing it here means a job can only skip the
+# assertion by no longer checking the tarball at all. Every job that checks one
+# is a job that makes a claim about which backends it had.
 #
 # `MARGINPLYR_REQUIRED_SUGGESTS` is the job's declaration of which optional
-# packages it asked for. Every one of them must be installed, and every other
-# optional backend must be absent. A job that names none, such as `tarball`, is
-# declaring that all of them are absent.
-#
-# This runs before `R CMD check` rather than after it. A leaked backend
-# invalidates the run's whole claim, so there is nothing to learn from spending
-# another 45 minutes on the check, and the failure names the cause instead of
-# the symptom.
+# packages it asked for -- the same one `helper-optional-backends.R` reads to
+# turn an absent backend into a failure -- so the assertion needs no second
+# list to keep in step with the matrix. Every package named there must be
+# installed, and every other optional backend must be absent. A job that names
+# none, such as `tarball`, is declaring that all of them are absent.
 
 source(".github/scripts/ci-helpers.R")
 
 label <- check_label()
 backends <- optional_backends()
+declared <- env_list("MARGINPLYR_REQUIRED_SUGGESTS")
 
-# The declaration also names `DBI`, which is a driver interface rather than a
-# backend and is not tracked by `optional_backends()`. Intersecting keeps the
-# two lists independent of each other.
-expected <- intersect(env_packages("MARGINPLYR_REQUIRED_SUGGESTS"), backends)
+# `DBI` is a driver interface rather than a backend, so it is not tracked by
+# `optional_backends()` and the jobs that name it are not making a claim about
+# it. Anything else unrecognized is a backend that was added to the matrix
+# without being added to `optional_backends()`, which would leave it unchecked
+# in every other job -- silently, since an untracked name simply drops out of
+# the intersection below. Failing here is what makes that omission visible.
+untracked <- setdiff(declared, c(backends, "DBI"))
+if (length(untracked) > 0L) {
+  stop(call. = FALSE, sprintf(
+    paste0(
+      "%s declares %s in MARGINPLYR_REQUIRED_SUGGESTS, which ",
+      "`optional_backends()` in `ci-helpers.R` does not track, so no job ",
+      "asserts it is absent."
+    ),
+    label,
+    paste(untracked, collapse = ", ")
+  ))
+}
+
+expected <- intersect(declared, backends)
 withheld <- setdiff(backends, expected)
 
 # Searches every library on the path, which is the same set `requireNamespace()`
@@ -59,11 +75,9 @@ describe <- function(package) {
   )
 }
 
-verdict <- ifelse(
-  backends %in% c(missing, leaked),
-  ifelse(backends %in% missing, "MISSING", "LEAKED"),
-  "OK"
-)
+verdict <- rep("OK", length(backends))
+verdict[backends %in% missing] <- "MISSING"
+verdict[backends %in% leaked] <- "LEAKED"
 
 summary_lines <- c(
   sprintf("## %s library isolation", label),
@@ -90,26 +104,32 @@ problems <- character()
 if (length(leaked) > 0L) {
   problems <- c(problems, sprintf(
     paste0(
-      "these optional backends are installed but were not requested: %s, so ",
-      "this job did not run with them withheld"
+      "These optional backends are installed but were not requested: %s. ",
+      "This job did not run with them withheld."
     ),
     paste(leaked, collapse = ", ")
   ))
 }
 if (length(missing) > 0L) {
   problems <- c(problems, sprintf(
-    "these requested optional backends are not installed: %s",
+    "These requested optional backends are not installed: %s.",
     paste(missing, collapse = ", ")
   ))
 }
 if (length(problems) > 0L) {
-  stop(sprintf("%s: %s.", label, paste(problems, collapse = "; ")))
+  # `call. = FALSE` because `check-tarball.R` sources this file: without it the
+  # message arrives wrapped in `Error in eval(ei, envir)` and a `source ->
+  # withVisible` traceback, which buries the one line that names the cause.
+  stop(call. = FALSE, sprintf("%s: %s", label, paste(problems, collapse = " ")))
 }
 
 message(sprintf(
   "Verified: %s runs with %s installed and %s withheld.",
   label,
-  if (length(expected) == 0L) "no optional backend" else
-    paste(expected, collapse = ", "),
+  if (length(expected) == 0L) {
+    "no optional backend"
+  } else {
+    paste(expected, collapse = ", ")
+  },
   paste(withheld, collapse = ", ")
 ))

@@ -14,12 +14,7 @@
 
 source(".github/scripts/ci-helpers.R")
 
-required_tests <- trimws(strsplit(
-  Sys.getenv("MARGINPLYR_BACKEND_TESTS", ""),
-  ";",
-  fixed = TRUE
-)[[1]])
-required_tests <- required_tests[nzchar(required_tests)]
+required_tests <- env_list("MARGINPLYR_BACKEND_TESTS", ";")
 if (length(required_tests) == 0L) {
   stop("MARGINPLYR_BACKEND_TESTS is empty, so this job asserts nothing.")
 }

@@ -17,6 +17,13 @@
 
 source(".github/scripts/ci-helpers.R")
 
+# Asserts that this job's library holds the optional backends it declared and
+# no others, and stops before the check when it does not. It runs here rather
+# than as its own workflow step so that it cannot be dropped from a job while
+# the job goes on claiming to check a tarball; see the script's own header. A
+# separate environment keeps its working names off this one.
+source(".github/scripts/verify-library-isolation.R", local = new.env())
+
 tarball_dir <- Sys.getenv("MARGINPLYR_TARBALL_DIR", "tarball")
 check_dir <- check_directory()
 label <- check_label()

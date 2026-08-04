@@ -506,17 +506,23 @@ reinstalling the hard dependency closure. A cache key is not self-checking, so
 the disposition is not the key change but the gate beside it:
 `.github/scripts/verify-library-isolation.R` reads the job's own
 `MARGINPLYR_REQUIRED_SUGGESTS` declaration and fails before the check when a
-requested backend is absent or an unrequested one is on `.libPaths()`. It runs
-in `depends-only`, all five `tarball` jobs, and all four `backend` jobs. The
-two isolation claims and both copies of the R-devel rationale are rewritten to
-what the jobs install.
+requested backend is absent or an unrequested one is on `.libPaths()`.
+`check-tarball.R` sources it rather than the workflow calling it as a step,
+which is what makes the criterion's "cannot regress silently" hold: a step can
+be deleted, and deleting it would restore exactly this finding, whereas every
+job that checks the tarball necessarily makes the assertion. That covers
+`depends-only`, all five `tarball` jobs, and all four `backend` jobs — the ten
+that claim a backend is absent — and it also refuses a `required` package that
+`optional_backends()` does not track, so adding a fifth backend without
+registering it fails rather than going unchecked. The two isolation claims and
+both copies of the R-devel rationale are rewritten to what the jobs install.
 
 *Evidence for the fix:* release-matrix run
 [30907216394](https://github.com/sayuks/marginplyr/actions/runs/30907216394) on
 `0a6363e`, all 11 jobs green. `Tarball ubuntu-latest (release)` now logs `Cache
 not found for input keys: ...-hard-1-2f5979dd..., ...-hard-1-` — the same
 primary key as before, with a restore-key prefix that no longer reaches the
-provisioned library — and its isolation step reports all four backends absent,
+provisioned library — and its isolation report lists all four backends absent,
 as do `depends-only` and the macOS and Windows tarball jobs. Each `backend` job
 reports its own backend and the other three absent: `Live Arrow` arrow 25.0.0,
 `Live DuckDB` duckdb 1.5.5, `Live dtplyr` dtplyr 1.3.3, `Live RSQLite` RSQLite
@@ -528,9 +534,10 @@ provisioned cache: it missed both keys, built the whole set from source under
 R 4.7.0, and reported `Status: OK` in 10m12s against a `timeout-minutes: 60` —
 against the over-55-minute arrow build that `R-CMD-check.yaml` avoids. The
 gate's
-four states — nothing requested and nothing installed, a requested backend
-absent, an unrequested one present, and the mixed case — were exercised
-locally against a controlled `R_LIBS_USER` before the run.
+states — nothing requested and nothing installed, a requested backend absent,
+an unrequested one present, the mixed case, and an untracked `required`
+package — were exercised locally against a controlled `R_LIBS_USER`, as was the
+ordering that stops the job before `check-tarball.R` looks for a tarball.
 
 **`cran-comments.md` reports test counts the current tree does not produce**
 (Docs & Tests). **Not fixed — blocking, #65.** The file

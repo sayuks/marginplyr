@@ -65,10 +65,11 @@ optional_backends <- function() {
   c("arrow", "duckdb", "dtplyr", "RSQLite")
 }
 
-# Reads a comma-separated package list from the environment, the form the
-# workflow's matrix entries are written in.
-env_packages <- function(name) {
-  declared <- trimws(strsplit(Sys.getenv(name, ""), ",", fixed = TRUE)[[1]])
+# Reads a delimited list out of the environment, the form the workflow's matrix
+# entries are written in. Package lists are comma-separated; test names are
+# separated by `;`, because a test name may contain a comma.
+env_list <- function(name, sep = ",") {
+  declared <- trimws(strsplit(Sys.getenv(name, ""), sep, fixed = TRUE)[[1]])
   declared[nzchar(declared)]
 }
 
