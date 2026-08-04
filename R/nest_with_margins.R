@@ -328,17 +328,23 @@ nest_expanded_margins <- function(.data,
                                   .keep,
                                   set_id_name = NULL) {
   if (.keep && length(group_cols) > 0L) {
-    result <- dplyr::summarize(
+    # `rename()` and `relocate()` run inside a data-masked summary expression,
+    # so their tidyselect resolves `keep_cols` and `group_cols` against the
+    # nested rows before the environment. Source columns with those names
+    # would select themselves; injecting the character vectors removes the
+    # ambiguity. The `.by` selection above is a plain tidyselect context and
+    # already resolves from the environment.
+    result <- rlang::inject(dplyr::summarize(
       .data,
       "{.key}" := list({
         nested <- dplyr::rename(
           dplyr::pick(dplyr::everything()),
-          dplyr::all_of(keep_cols)
+          dplyr::all_of(!!keep_cols)
         )
-        dplyr::relocate(nested, dplyr::all_of(group_cols))
+        dplyr::relocate(nested, dplyr::all_of(!!group_cols))
       }),
-      .by = dplyr::all_of(c(group_cols, set_col))
-    )
+      .by = dplyr::all_of(!!c(group_cols, set_col))
+    ))
   } else {
     result <- dplyr::summarize(
       .data,
