@@ -518,26 +518,33 @@ registering it fails rather than going unchecked. The two isolation claims and
 both copies of the R-devel rationale are rewritten to what the jobs install.
 
 *Evidence for the fix:* release-matrix run
+[30909320124](https://github.com/sayuks/marginplyr/actions/runs/30909320124) on
+`dc37234`, all 11 jobs green, is the run of the mechanism as it stands. Each
+`backend` job reports its own backend and the other three absent: `Live Arrow`
+arrow 25.0.0, `Live DuckDB` duckdb 1.5.5, `Live dtplyr` dtplyr 1.3.3, `Live
+RSQLite` RSQLite 3.53.3, each at `/home/runner/work/_temp/Library`. All twelve
+named contracts still ran. `depends-only`, all five `tarball` jobs, and both
+non-Linux platforms report all four backends absent, and `depends-only` reports
+1107 passed with 66 skipped.
+
+Two measurements come from the preceding run
 [30907216394](https://github.com/sayuks/marginplyr/actions/runs/30907216394) on
-`0a6363e`, all 11 jobs green. `Tarball ubuntu-latest (release)` now logs `Cache
+`0a6363e`, which was the first under the new `cache-version` values and so the
+only one whose caches were cold. `Tarball ubuntu-latest (release)` logs `Cache
 not found for input keys: ...-hard-1-2f5979dd..., ...-hard-1-` — the same
-primary key as before, with a restore-key prefix that no longer reaches the
-provisioned library — and its isolation report lists all four backends absent,
-as do `depends-only` and the macOS and Windows tarball jobs. Each `backend` job
-reports its own backend and the other three absent: `Live Arrow` arrow 25.0.0,
-`Live DuckDB` duckdb 1.5.5, `Live dtplyr` dtplyr 1.3.3, `Live RSQLite` RSQLite
-3.53.3, each at `/home/runner/work/_temp/Library`. All twelve named contracts
-still ran, and `depends-only` reports 1107 passed with 66 skipped.
-`Tarball ubuntu-latest (devel)` is the case the rewritten R-devel rationale
-turns on, and this is the first run where it was actually withheld from the
-provisioned cache: it missed both keys, built the whole set from source under
-R 4.7.0, and reported `Status: OK` in 10m12s against a `timeout-minutes: 60` —
-against the over-55-minute arrow build that `R-CMD-check.yaml` avoids. The
-gate's
-states — nothing requested and nothing installed, a requested backend absent,
-an unrequested one present, the mixed case, and an untracked `required`
-package — were exercised locally against a controlled `R_LIBS_USER`, as was the
-ordering that stops the job before `check-tarball.R` looks for a tarball.
+primary key it missed before, now with a restore-key prefix that no longer
+reaches the provisioned library. And `Tarball ubuntu-latest (devel)`, the case
+the rewritten R-devel rationale turns on, built the whole set from source under
+R 4.7.0 and reported `Status: OK` in 10m12s against a `timeout-minutes: 60` —
+against the over-55-minute arrow build `R-CMD-check.yaml` avoids. The same job
+takes 3m00s in run 30909320124 on a warm `hard-1` cache, which is why the cold
+figure is the one recorded here.
+
+The assertion's states — nothing requested and nothing installed, a requested
+backend absent, an unrequested one present, the mixed case, and an untracked
+`required` package — were exercised locally against a controlled `R_LIBS_USER`,
+as was the ordering that stops the job before `check-tarball.R` looks for a
+tarball.
 
 **`cran-comments.md` reports test counts the current tree does not produce**
 (Docs & Tests). **Not fixed — blocking, #65.** The file
