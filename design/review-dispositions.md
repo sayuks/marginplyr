@@ -446,9 +446,201 @@ results".
 
 ---
 
+## 8. The final CRAN-readiness review (#40)
+
+A fresh two-axis review of `1c782eb...HEAD` plus a separate Docs & Tests audit,
+run against the tree at `bd0b3b3`. The local gates are clean and are not
+findings; they are the baseline the findings below sit against.
+
+*Commands, all run on R 4.6.1, aarch64-apple-darwin23, Quarto 1.9.38, against
+one `R CMD build` tarball:* `pkgload::load_all(".")` then
+`lintr::lint_package()` → 0 lints. `roxygen2::roxygenise()` → no change to
+`man/` or `NAMESPACE` (`git status --porcelain` empty). `R CMD check --as-cran`
+→ **Status: OK**, 1506 pass / 3 skip. `_R_CHECK_DEPENDS_ONLY_=true R CMD check
+--as-cran` on the same tarball → **Status: OK**, 1102 pass / 68 skip, with
+arrow, duckdb, dtplyr, and RSQLite all withheld.
+`spelling::spell_check_package()` → no errors.
+
+*CI evidence:* release-matrix run
+[30889837726](https://github.com/sayuks/marginplyr/actions/runs/30889837726) on
+`bd0b3b3`, all 11 jobs green. The three tarball jobs #40 names — ubuntu
+`release`, `devel`, `oldrel-1` — each report `Status: OK`, so zero ERRORs and
+zero WARNINGs, as do macOS and Windows at release and the `depends-only` job.
+The four `backend` jobs each report one NOTE, dispositioned below, and each
+`verify-backend.R` step passed, so all twelve named contracts ran.
+
+### Findings
+
+**Every ubuntu release-matrix job restores a fully provisioned package library
+from a shared cache, so no job in the workflow runs with the optional backends
+actually withheld** (Docs & Tests). **Not fixed — blocking, #64.**
+`setup-r-dependencies@v2` sets `restore-keys` to the prefix
+`<os>-<R version>-<arch>-<cache-version>-`, and `R-CMD-check.yaml` and all four
+`release-matrix.yaml` jobs share `cache-version: 3`, so the fully provisioned
+library that `R-CMD-check.yaml` saves is restored into jobs that ask for hard
+dependencies only. *Evidence:* in run 30889837726, job `Tarball ubuntu-latest
+(release)` logs `Cache hit for restore-key: ...-3-bb148ad6...` after missing its
+own primary key `2f5979dd...`; the `Session info` step of every ubuntu job
+lists `arrow 25.0.0`, `dtplyr 1.3.3`, `duckdb 1.5.5`, and `RSQLite` among
+122–124 packages in `/home/runner/work/_temp/Library`; and `Live RSQLite`
+newly installs only `rcmdcheck`, `RSQLite`, `sessioninfo`, and `testthat` on
+top of what the cache supplied. Three documented claims are therefore false of
+what ran: `release-matrix.yaml`'s "Optional backends are deliberately absent
+from this matrix", its "Every other optional backend is absent on purpose:
+proving one backend in isolation also proves it does not depend on the others",
+and the R-devel rationale in both that file and `R-CMD-check.yaml` that arrow
+and duckdb "are simply not part of this job". No contract is unproven —
+`verify-backend.R` passed in all four jobs — but backend independence is, and
+the #57 R-devel separation is not what the runs demonstrate. `depends-only` is
+unaffected, because `_R_CHECK_DEPENDS_ONLY_=true` restricts the library at
+check time and `verify-depends-only.R` confirmed all four backends skipped.
+
+**`cran-comments.md` reports test counts the current tree does not produce**
+(Docs & Tests). **Not fixed — blocking, #65.** The file
+records "1487 tests pass" for the provisioned run and "1083 tests pass" for the
+dependency-only run; the tarball built from `bd0b3b3` produces 1506 and 1102.
+The counts were accurate when #37 wrote them and drifted as #55, #56, and #57
+added tests. *Evidence:* the two `R CMD check` commands above. The skip
+accounting in the same file still holds: the dependency-only run skips 64 tests
+for a missing optional package plus 2 for no supported lazy backend and 2 for
+CRAN snapshot semantics.
+
+**`investigation/r-devel-binary-compatibility.md` states live configuration in
+the present tense the notes' own rule forbids** (Standards). **Not fixed —
+split to a new ticket.** `investigation/README.md` lines 41–42: "Do not write
+bare `now`, `currently`, or `today`." The note written by `0a2842c` does so at
+lines 110, 128, 237, 252, and 253 — including the heading "The failure mode is
+a clean error today". This is the failure #61 already corrected once in a
+neighbouring note. *Evidence:* `grep -nE '\b(currently|today)\b'
+investigation/r-devel-binary-compatibility.md`.
+
+**Two new `# nolint` comments carry no expression-specific reason**
+(Standards). **Not fixed — #66.** `AGENTS.md`: "every one in
+R code sits next to a comment stating the expression-specific reason."
+`tests/testthat/test-nest-operation.R:154` and `:158` suppress
+`line_length_linter` with nothing beside them, and neither needs the
+suppression — the `key_missing` case at `:161` already wraps the same
+`quote()` shape across lines. *Evidence:* the two lines; the wrapped sibling
+seven lines below is the available fix.
+
+**A new test name uses a term the glossary bans** (Standards). **Not fixed —
+split to a new ticket.** `CONTEXT.md:11` lists `_Avoid_: Grouping expression`
+under Grouping specification. `tests/testthat/test-parent-share.R:1389` is
+`test_that("Parent planning evaluates the grouping expression once", ...)`, and
+§1 of this file quotes that name. Renaming the test also breaks nothing in
+`release-matrix.yaml`, which does not name it. *Evidence:* `grep -rn "grouping
+expression" R tests vignettes design CONTEXT.md` — the two hits in
+`vignettes/database_backends.qmd` predate `1c782eb` and are outside this diff.
+
+**`apply_joined_parent_shares()` discovers local state with `exists()`**
+(Spec). **Not fixed — #66.** #23's Implementation Decisions:
+"Fragile local-state patterns are removed: initialize optional locals
+explicitly." `R/parent-share.R:1682` and `:1687` test
+`exists("right_join_names", inherits = FALSE)` and
+`exists("join_key_names", inherits = FALSE)` to learn whether the
+`length(child_ids) > 0L` branch ran. Behaviour is correct — the fallback is
+`character()` — and the guard is already half redundant, since line 1643
+assigns `right_join_names <- character()` explicitly in the other branch.
+*Evidence:* the two `exists()` calls; initialising both above the branch is the
+fix, and `test-parent-share-backends.R` "lazy Parent-share staging avoids
+adversarial user-name collisions" covers the cleanup path either way.
+
+**The eligible-type diagnostic exists twice, and one copy drops its structured
+fields** (Spec). **Not fixed — #66.**
+`check_parent_scalar()` (`R/parent-share.R:1020`, message at `:1039`) attaches
+`parent_output`, `source_summary`, and `call` to the "requires source summary
+... to be a plain
+integer or double scalar" error. `check_local_parent_share_types()`
+(`R/parent-share.R:1820`, called from `:1522`) rebuilds the same message with a
+bare `abort_marginplyr()`. The class contract of US26 still holds — both
+inherit `marginplyr_error` — but the handler-visible fields and the call
+vanish on the local path. *Evidence:* the two message bodies are
+character-identical apart from the operands; `test-parent-share.R`
+"Parent-share sources are numeric" asserts the message, not the fields, which
+is why the drift survived.
+
+**No test asserts structurally that per-Grouping-set input rescans are gone**
+(Spec). **Not fixed — #66.** #23's Testing Decisions:
+"Assert the removal of Grouping-set-proportional full input scans
+structurally; do not put wall-clock thresholds in package tests." The
+benchmark half exists (`dev/benchmark-parent-share-local.R` and
+`investigation/parent-share-local-benchmark.md`), but nothing under
+`tests/testthat/` fails if a future change reintroduces a pass per Grouping
+set. US42 is currently guarded only by a developer script that CI does not
+run. *Evidence:* `grep -rn "rescan\|single pass"
+tests/testthat/` returns nothing.
+
+**One `skip_if_backend_absent()` call reverses the argument order a CI gate
+depends on** (Standards). **Not fixed — #66.**
+`.github/scripts/verify-depends-only.R:15-18` excludes DBI from
+`optional_backends` because `skip_if_backend_absent("duckdb", "DBI")` "skips on
+the first missing package, so a `{DBI} is not installed` line never appears".
+`tests/testthat/test-margin-label.R:295` calls it as `("DBI", "duckdb")`. The
+gate still passes, because `test-margin-id.R` and `test-expand-operation.R`
+call it duckdb-first and supply the required `{duckdb} is not installed`
+line — so the convention the script documents is unenforced, not broken.
+*Evidence:* the dependency-only run above skips 14 tests for `{duckdb}`.
+
+### Rejected
+
+**The `retail_sales` class change, ADR 0016, and the R-devel/P3M work are
+scope creep beyond #23** (Spec). **Rejected.** Each arrived as its own
+triaged, approved, and closed ticket raised after the #24–#40 decomposition:
+#55 and #56 for the data frame class and ADR 0016, #57 and #61 for the R-devel
+CI contract, #60 for the investigation-note policy. #23's Further Notes
+anticipate this: "The implementation should be split into blocker-aware
+tracer-bullet tickets before coding." A finding that work was done is not a
+finding that it was unapproved. *Evidence:* `gh issue view 55 56 57 60 61`,
+all closed with merged PRs #58, #59, #62, and #63.
+
+**Tests call `tibble::tibble()` without a Suggests guard** (Spec).
+**Rejected.** #23 asks that "Suggested packages are guarded at every
+executable use", and `tests/testthat/test-inspect-grouping.R:16`,
+`test-grouping-interface.R:923`, and `test-grouping-backends.R:603` call
+`tibble::tibble()` bare. tibble is not optional at those call sites: dplyr, an
+Import, declares `Imports: tibble (>= 3.2.0)`, so tibble is inside the hard
+dependency closure `_R_CHECK_DEPENDS_ONLY_` builds. *Evidence:* the
+dependency-only check above is `Status: OK` with those three tests executing,
+and `Rscript -e 'packageDescription("dplyr")$Imports'` names tibble. The
+DESCRIPTION entry is worth revisiting only if dplyr ever drops it, which is the
+manual audit's job under `AGENTS.md`, not a guard's.
+
+### NOTEs
+
+**New submission.** **Accepted.** Expected for a first release and the only
+NOTE a provisioned `--as-cran` run reports once CRAN's incoming checks are
+reachable. Neither local run above reproduces it, because both set
+`_R_CHECK_CRAN_INCOMING_REMOTE_=false`, and both report `checking CRAN incoming
+feasibility ... OK`. *Evidence:* `check-tarball.R`'s `understood_notes` records
+it; `cran-comments.md` states it.
+
+**`checking top-level files ... NOTE Files 'README.md' or 'NEWS.md' cannot be
+checked without 'pandoc' being installed`, in the four `backend` jobs.**
+**Accepted.** Those jobs deliberately omit `setup-pandoc`, because their
+toolchain is scoped to what a backend contract needs and they run with
+`--ignore-vignettes`. It is a property of the runner, not the tarball: the same
+tarball checked with pandoc present reports `checking top-level files ... OK`
+in every `tarball` job and in both local runs. *Evidence:* run 30889837726,
+`Status: 1 NOTE` in each backend job against `Status: OK` in each tarball job.
+
+**Days since last update.** **Accepted, not reached.** Recorded in
+`check-tarball.R` for a resubmission during a review cycle; no run has emitted
+it.
+
+---
+
 ## Status
 
 Every observation from every recorded review is dispositioned above. The
 release gate #23 sets is not met by this file alone: it also requires a fresh
 two-axis review and Docs & Tests audit with no unresolved findings, which is
 #40. New findings from that review are dispositioned here as they arrive.
+
+**The gate is not met as of #40's review.** Local checks, the release matrix,
+and the two-axis review of package behaviour are clean, and no finding above
+changes a result marginplyr returns. What is not clean is the evidence layer
+the gate is written in terms of: the release matrix does not withhold the
+optional backends it documents withholding (#64), and `cran-comments.md`
+states counts the tree no longer produces (#65). The seven smaller
+standards and spec findings are #66. #40 stays open until all three close,
+and no submission is made before then.
