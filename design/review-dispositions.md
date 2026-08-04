@@ -473,27 +473,78 @@ The four `backend` jobs each report one NOTE, dispositioned below, and each
 
 **Every ubuntu release-matrix job restores a fully provisioned package library
 from a shared cache, so no job in the workflow runs with the optional backends
-actually withheld** (Docs & Tests). **Not fixed — blocking, #64.**
+actually withheld** (Docs & Tests). **Fixed — #64, PR #68.**
 `setup-r-dependencies@v2` sets `restore-keys` to the prefix
 `<os>-<R version>-<arch>-<cache-version>-`, and `R-CMD-check.yaml` and all four
-`release-matrix.yaml` jobs share `cache-version: 3`, so the fully provisioned
-library that `R-CMD-check.yaml` saves is restored into jobs that ask for hard
-dependencies only. *Evidence:* in run 30889837726, job `Tarball ubuntu-latest
-(release)` logs `Cache hit for restore-key: ...-3-bb148ad6...` after missing its
-own primary key `2f5979dd...`; the `Session info` step of every ubuntu job
-lists `arrow 25.0.0`, `dtplyr 1.3.3`, `duckdb 1.5.5`, and `RSQLite` among
-122–124 packages in `/home/runner/work/_temp/Library`; and `Live RSQLite`
-newly installs only `rcmdcheck`, `RSQLite`, `sessioninfo`, and `testthat` on
-top of what the cache supplied. Three documented claims are therefore false of
-what ran: `release-matrix.yaml`'s "Optional backends are deliberately absent
-from this matrix", its "Every other optional backend is absent on purpose:
-proving one backend in isolation also proves it does not depend on the others",
-and the R-devel rationale in both that file and `R-CMD-check.yaml` that arrow
-and duckdb "are simply not part of this job". No contract is unproven —
-`verify-backend.R` passed in all four jobs — but backend independence is, and
-the #57 R-devel separation is not what the runs demonstrate. `depends-only` is
-unaffected, because `_R_CHECK_DEPENDS_ONLY_=true` restricts the library at
-check time and `verify-depends-only.R` confirmed all four backends skipped.
+`release-matrix.yaml` jobs shared `cache-version: 3`, so the fully provisioned
+library that `R-CMD-check.yaml` saves was restored into jobs that ask for hard
+dependencies only. *Evidence for the finding:* in run 30889837726, job `Tarball
+ubuntu-latest (release)` logs `Cache hit for restore-key: ...-3-bb148ad6...`
+after missing its own primary key `2f5979dd...`; the `Session info` step of
+every ubuntu job lists `arrow 25.0.0`, `dtplyr 1.3.3`, `duckdb 1.5.5`, and
+`RSQLite` among 122–124 packages in `/home/runner/work/_temp/Library`; and
+`Live RSQLite` newly installs only `rcmdcheck`, `RSQLite`, `sessioninfo`, and
+`testthat` on top of what the cache supplied. Three documented claims were
+therefore false of what ran: `release-matrix.yaml`'s "Optional backends are
+deliberately absent from this matrix", its "Every other optional backend is
+absent on purpose: proving one backend in isolation also proves it does not
+depend on the others", and the R-devel rationale in both that file and
+`R-CMD-check.yaml` that arrow and duckdb "are simply not part of this job". No
+contract was unproven — `verify-backend.R` passed in all four jobs — but
+backend independence was, and the #57 R-devel separation was not what those
+runs demonstrated. `depends-only` was unaffected, because
+`_R_CHECK_DEPENDS_ONLY_=true` restricts the library at check time and
+`verify-depends-only.R` confirmed all four backends skipped.
+
+The fix gives each dependency request its own `cache-version` — `full-1` for
+the provisioned jobs, `hard-1` for `depends-only` and `tarball`,
+`backend-<name>-1` for each of the four `backend` jobs, which had shared one
+prefix with each other as well as with the provisioned matrix. Disabling the
+cache on the isolation-critical jobs was the alternative and was not taken:
+separate prefixes cost nothing and `cache: false` would spend every run
+reinstalling the hard dependency closure. A cache key is not self-checking, so
+the disposition is not the key change but the gate beside it:
+`.github/scripts/verify-library-isolation.R` reads the job's own
+`MARGINPLYR_REQUIRED_SUGGESTS` declaration and fails before the check when a
+requested backend is absent or an unrequested one is on `.libPaths()`.
+`check-tarball.R` sources it rather than the workflow calling it as a step,
+which is what makes the criterion's "cannot regress silently" hold: a step can
+be deleted, and deleting it would restore exactly this finding, whereas every
+job that checks the tarball necessarily makes the assertion. That covers
+`depends-only`, all five `tarball` jobs, and all four `backend` jobs — the ten
+that claim a backend is absent — and it also refuses a `required` package that
+`optional_backends()` does not track, so adding a fifth backend without
+registering it fails rather than going unchecked. The two isolation claims and
+both copies of the R-devel rationale are rewritten to what the jobs install.
+
+*Evidence for the fix:* release-matrix run
+[30909320124](https://github.com/sayuks/marginplyr/actions/runs/30909320124) on
+`dc37234`, all 11 jobs green, is the run of the mechanism as it stands. Each
+`backend` job reports its own backend and the other three absent: `Live Arrow`
+arrow 25.0.0, `Live DuckDB` duckdb 1.5.5, `Live dtplyr` dtplyr 1.3.3, `Live
+RSQLite` RSQLite 3.53.3, each at `/home/runner/work/_temp/Library`. All twelve
+named contracts still ran. `depends-only`, all five `tarball` jobs, and both
+non-Linux platforms report all four backends absent, and `depends-only` reports
+1107 passed with 66 skipped.
+
+Two measurements come from the preceding run
+[30907216394](https://github.com/sayuks/marginplyr/actions/runs/30907216394) on
+`0a6363e`, which was the first under the new `cache-version` values and so the
+only one whose caches were cold. `Tarball ubuntu-latest (release)` logs `Cache
+not found for input keys: ...-hard-1-2f5979dd..., ...-hard-1-` — the same
+primary key it missed before, now with a restore-key prefix that no longer
+reaches the provisioned library. And `Tarball ubuntu-latest (devel)`, the case
+the rewritten R-devel rationale turns on, built the whole set from source under
+R 4.7.0 and reported `Status: OK` in 10m12s against a `timeout-minutes: 60` —
+against the over-55-minute arrow build `R-CMD-check.yaml` avoids. The same job
+takes 3m00s in run 30909320124 on a warm `hard-1` cache, which is why the cold
+figure is the one recorded here.
+
+The assertion's states — nothing requested and nothing installed, a requested
+backend absent, an unrequested one present, the mixed case, and an untracked
+`required` package — were exercised locally against a controlled `R_LIBS_USER`,
+as was the ordering that stops the job before `check-tarball.R` looks for a
+tarball.
 
 **`cran-comments.md` reports test counts the current tree does not produce**
 (Docs & Tests). **Not fixed — blocking, #65.** The file
@@ -572,8 +623,9 @@ tests/testthat/` returns nothing.
 
 **One `skip_if_backend_absent()` call reverses the argument order a CI gate
 depends on** (Standards). **Not fixed — #66.**
-`.github/scripts/verify-depends-only.R:15-18` excludes DBI from
-`optional_backends` because `skip_if_backend_absent("duckdb", "DBI")` "skips on
+`optional_backends()` in `.github/scripts/ci-helpers.R`, which #64 moved there
+from `verify-depends-only.R`, excludes DBI
+because `skip_if_backend_absent("duckdb", "DBI")` "skips on
 the first missing package, so a `{DBI} is not installed` line never appears".
 `tests/testthat/test-margin-label.R:295` calls it as `("DBI", "duckdb")`. The
 gate still passes, because `test-margin-id.R` and `test-expand-operation.R`
@@ -639,8 +691,9 @@ two-axis review and Docs & Tests audit with no unresolved findings, which is
 **The gate is not met as of #40's review.** Local checks, the release matrix,
 and the two-axis review of package behaviour are clean, and no finding above
 changes a result marginplyr returns. What is not clean is the evidence layer
-the gate is written in terms of: the release matrix does not withhold the
-optional backends it documents withholding (#64), and `cran-comments.md`
-states counts the tree no longer produces (#65). The seven smaller
-standards and spec findings are #66. #40 stays open until all three close,
-and no submission is made before then.
+the gate is written in terms of. Two of its three tickets are still open:
+`cran-comments.md` states counts the tree no longer produces (#65), and the
+seven smaller standards and spec findings are #66. The third, #64, is fixed —
+the release matrix now withholds the optional backends it documents
+withholding, and a gate fails the workflow if it stops doing so. #40 stays open
+until #65 and #66 close, and no submission is made before then.

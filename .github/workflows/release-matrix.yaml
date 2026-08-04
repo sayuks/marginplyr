@@ -20,6 +20,33 @@
 # prove the same contracts, and those jobs set `MARGINPLYR_REQUIRED_SUGGESTS`
 # so that a backend which failed to install fails the job instead of skipping
 # into a false green. See `tests/testthat/helper-optional-backends.R`.
+#
+# Which packages a job installs is therefore the whole signal, and the
+# dependency cache is what nearly took it away. `setup-r-dependencies@v2` falls
+# back to a `restore-keys` prefix of `<os>-<R version>-<arch>-<cache-version>-`
+# when its exact key misses, so every job sharing a `cache-version` also shares
+# a library: while all four jobs here and `R-CMD-check.yaml` used
+# `cache-version: 3`, the fully provisioned library was restored into the jobs
+# documented as running without it, and pak installed only the remainder on top
+# (#64). The fix is a `cache-version` per dependency request rather than
+# `cache: false`, because these jobs still want a warm cache and losing it
+# would cost every run an install of the hard dependency closure; what they
+# cannot tolerate is sharing one with a differently provisioned job. The names
+# say which request they stand for:
+#
+#   full-1              hard dependencies plus every Suggest, and the package
+#                       itself (`build`, and `R-CMD-check.yaml`).
+#   hard-1              hard dependencies plus rcmdcheck, testthat, and quarto
+#                       (`depends-only` and `tarball`).
+#   backend-<name>-1    hard dependencies plus rcmdcheck and testthat, and
+#                       exactly one optional backend (`backend`). No quarto:
+#                       these jobs run `--ignore-vignettes`.
+#
+# A cache key is not self-checking -- a mistake in one produces a green run
+# that reads like a correct one -- so `verify-library-isolation.R` asserts the
+# library each job got before its check runs. `check-tarball.R` sources it, so
+# every job that checks the tarball makes that assertion and no job can drop it
+# while still claiming to check anything. Renaming a `cache-version` is safe.
 on:
   push:
     branches: [main, master]
@@ -71,7 +98,13 @@ jobs:
           # itself as well.
           extra-packages: local::.
           needs: check
-          cache-version: 3
+          # Provisioned on purpose: this job builds the tarball, and vignette
+          # sources exercise the optional backends. Shared with
+          # `R-CMD-check.yaml`, which asks for the same set plus rcmdcheck.
+          # Sharing a prefix with a superset is safe here because neither job
+          # claims any package is absent; that claim is what the other
+          # `cache-version` values protect.
+          cache-version: full-1
 
       - name: Build source tarball
         run: |
@@ -130,13 +163,18 @@ jobs:
         with:
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
-          cache-version: 3
+          cache-version: hard-1
 
       - uses: actions/download-artifact@v4
         with:
           name: source-tarball
           path: tarball
 
+      # Stops before checking anything if the restored cache carried an
+      # optional backend in; see `verify-library-isolation.R`.
+      # `verify-depends-only.R` below proves the same absence from the tests'
+      # own skip lines, which is a different question: a library can be clean
+      # while the suite never starts.
       - name: Check the tarball without Suggested packages
         run: Rscript .github/scripts/check-tarball.R
 
@@ -171,9 +209,10 @@ jobs:
           - {os: windows-latest, r: 'release'}
 
     env:
-      # Optional backends are deliberately absent from this matrix; the
-      # dedicated `backend` jobs execute them. Without this, `--as-cran` would
-      # fail the job for the missing Suggests rather than let the tests skip.
+      # Optional backends are deliberately absent from this matrix -- asserted
+      # by `check-tarball.R`, not merely intended -- and the dedicated
+      # `backend` jobs execute them. Without this, `--as-cran` would fail the
+      # job for the missing Suggests rather than let the tests skip.
       _R_CHECK_FORCE_SUGGESTS_: false
       MARGINPLYR_CHECK_LABEL: >-
         Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})
@@ -193,13 +232,22 @@ jobs:
 
       # Keeping this to hard dependencies plus the test harness and
       # VignetteBuilder is what lets R-devel join the matrix without the
-      # binary-repository workaround `R-CMD-check.yaml` needs for arrow and
-      # duckdb: those packages are simply not part of this job.
+      # binary-repository workaround `R-CMD-check.yaml` needs. P3M publishes no
+      # binaries for the development series, so on R-devel pak builds this
+      # whole set from source; that is affordable because the two packages
+      # whose source builds are not are arrow and duckdb, which are Suggests
+      # and so are never requested here. The measurement is in
+      # `investigation/github-actions-modernization.md`.
+      #
+      # That is a claim about which packages this job installs, and
+      # `check-tarball.R` is what checks it: while this job shared a
+      # `cache-version` with the provisioned matrix it was in fact receiving
+      # arrow and duckdb from the restored cache (#64).
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
-          cache-version: 3
+          cache-version: hard-1
 
       - uses: actions/download-artifact@v4
         with:
@@ -279,7 +327,10 @@ jobs:
       # The `depends-only` and `tarball` jobs deliberately do not.
       NOT_CRAN: true
       # Every other optional backend is absent on purpose: proving one backend
-      # in isolation also proves it does not depend on the others.
+      # in isolation also proves it does not depend on the others. That second
+      # half is only worth stating because `check-tarball.R` enforces it; a
+      # `backend` job that could see the other three would still prove its own
+      # contracts and prove nothing about independence.
       _R_CHECK_FORCE_SUGGESTS_: false
       # Vignette rebuilding is covered by `depends-only` and `tarball`. Leaving
       # it out here keeps the job's toolchain to what the backend contract
@@ -299,7 +350,11 @@ jobs:
           dependencies: '"hard"'
           extra-packages: >-
             any::rcmdcheck, any::testthat, ${{ matrix.backend.packages }}
-          cache-version: 3
+          # One cache per backend. These four jobs share an operating system,
+          # R version, and architecture, so a single `cache-version` would put
+          # all four libraries behind one `restore-keys` prefix and every job
+          # would start from whichever ran last.
+          cache-version: backend-${{ matrix.backend.name }}-1
 
       - uses: actions/download-artifact@v4
         with:

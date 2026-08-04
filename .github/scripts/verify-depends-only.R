@@ -12,12 +12,16 @@
 
 source(".github/scripts/ci-helpers.R")
 
-# The backends whose absence this job depends on. `DBI` is deliberately not
-# here: `skip_if_backend_absent("duckdb", "DBI")` skips on the first missing
-# package, so a `{DBI} is not installed` line never appears and requiring one
-# would fail every run. Adding a backend to
-# `tests/testthat/helper-optional-backends.R` means adding it here too.
-optional_backends <- c("arrow", "duckdb", "dtplyr", "RSQLite")
+# The backends whose absence this job depends on, and the reason `DBI` is not
+# among them, are recorded with `optional_backends()` in `ci-helpers.R`.
+#
+# This script asserts absence at check time, from the tests' own skip lines.
+# `verify-library-isolation.R` asserts it earlier and from the library itself,
+# which is the half that catches a poisoned dependency cache before the check
+# runs. Neither replaces the other: a library can be clean while the suite
+# never starts, and the suite can skip a backend for a reason unrelated to
+# `_R_CHECK_DEPENDS_ONLY_`.
+withheld <- optional_backends()
 
 log_path <- test_output_path(rcheck_directory())
 if (is.na(log_path)) {
@@ -48,8 +52,8 @@ if (counts[["pass"]] == 0L) {
 
 # Every optional backend must have skipped. A backend that ran here was visible
 # to the check, which means Suggested packages were not actually withheld.
-visible <- optional_backends[!vapply(
-  optional_backends,
+visible <- withheld[!vapply(
+  withheld,
   function(package) {
     skipped <- sprintf("{%s} is not installed", package)
     any(grepl(skipped, test_log, fixed = TRUE))
@@ -70,5 +74,5 @@ message(sprintf(
   "Verified: %d tests passed with %d skipped, and %s were all withheld.",
   counts[["pass"]],
   counts[["skip"]],
-  paste(optional_backends, collapse = ", ")
+  paste(withheld, collapse = ", ")
 ))
