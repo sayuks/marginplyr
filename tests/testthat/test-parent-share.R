@@ -683,6 +683,8 @@ test_that("Parent-share sources are numeric scalar summaries", {
     rlang::call_name(conditionCall(type_error)),
     "summarize_with_margins"
   )
+  expect_identical(type_error$parent_output, "share")
+  expect_identical(type_error$source_summary, "total")
   expect_match(conditionMessage(type_error), "Parent share `share`")
   expect_match(conditionMessage(type_error), "source summary `total`")
   expect_error(
@@ -693,6 +695,45 @@ test_that("Parent-share sources are numeric scalar summaries", {
       .grouping = rollup(group)
     ),
     "plain integer or double scalar"
+  )
+})
+
+test_that("the local eligible-type check raises the shared diagnostic", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  wrapped_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = any(value > 0),
+      share = share_of_parent(total),
+      .grouping = rollup(group)
+    ),
+    "plain integer or double scalar"
+  )
+
+  # The local backend re-checks the collected result, so the same diagnostic
+  # has a second raising site. It is called directly here because the wrapped
+  # summary check reaches every ineligible type first from a public call, and
+  # a second copy of the message is exactly what drifted before.
+  local_error <- expect_error(
+    check_local_parent_share_types(
+      data.frame(group = "x", total = TRUE),
+      requests = list(list(outputs = "share", sources = "total")),
+      call = rlang::call2("summarize_with_margins")
+    ),
+    "plain integer or double scalar"
+  )
+
+  expect_identical(
+    conditionMessage(local_error),
+    conditionMessage(wrapped_error)
+  )
+  expect_s3_class(local_error, "marginplyr_error")
+  expect_identical(local_error$parent_output, "share")
+  expect_identical(local_error$source_summary, "total")
+  expect_identical(
+    rlang::call_name(conditionCall(local_error)),
+    "summarize_with_margins"
   )
 })
 
@@ -1386,7 +1427,7 @@ test_that("Parent planning evaluates across arguments once", {
   expect_identical(parent_names_n, 1L)
 })
 
-test_that("Parent planning evaluates the grouping expression once", {
+test_that("Parent planning evaluates the grouping specification once", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   evaluations <- 0L
   grouping <- function() {
@@ -1485,4 +1526,111 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
   )
   expect_s3_class(error, "marginplyr_parent_cardinality_error")
   expect_identical(parent_preflight_capture$n, 1L)
+})
+
+# US42 is structural, not a timing budget: the local Parent-share stage reads
+# the summarized result, never the input, so no pass over the input may be
+# proportional to the Grouping-set count. Every dplyr verb applied to an object
+# still carrying this class counts as one such pass, and the class is dropped
+# from whatever a verb returns, so a derived frame is not counted and only the
+# input itself is. `ungroup()` is deliberately not registered: it neither scans
+# nor reshapes, and counting it would drop the marker before the Margin
+# operation stores the input, hiding exactly the rescans this asserts against.
+parent_scan_capture <- new.env(parent = emptyenv())
+
+parent_scan_drop_marker <- function(x) {
+  if (is.data.frame(x)) {
+    class(x) <- setdiff(class(x), "parent_scan_counter")
+  }
+  x
+}
+
+parent_scan_dot_data_method <- function(.data, ...) {
+  parent_scan_capture$n <- parent_scan_capture$n + 1L
+  parent_scan_drop_marker(NextMethod())
+}
+
+parent_scan_x_method <- function(x, ...) {
+  parent_scan_capture$n <- parent_scan_capture$n + 1L
+  parent_scan_drop_marker(NextMethod())
+}
+
+register_parent_scan_methods <- function() {
+  dot_data_generics <- c(
+    "arrange", "distinct", "filter", "group_by", "mutate", "pull",
+    "reframe", "rename", "select", "slice", "summarise", "transmute"
+  )
+  x_generics <- c(
+    "anti_join", "collect", "count", "full_join", "inner_join",
+    "left_join", "right_join", "semi_join", "tally"
+  )
+  for (generic in dot_data_generics) {
+    registerS3method(
+      generic,
+      "parent_scan_counter",
+      parent_scan_dot_data_method,
+      envir = asNamespace("dplyr")
+    )
+  }
+  for (generic in x_generics) {
+    registerS3method(
+      generic,
+      "parent_scan_counter",
+      parent_scan_x_method,
+      envir = asNamespace("dplyr")
+    )
+  }
+}
+
+count_parent_input_passes <- function(data, ...) {
+  class(data) <- c("parent_scan_counter", class(data))
+  parent_scan_capture$n <- 0L
+  result <- summarize_with_margins(data, ...)
+  list(passes = parent_scan_capture$n, result = result)
+}
+
+test_that("Parent shares add no input pass per Grouping set", {
+  register_parent_scan_methods()
+  data <- data.frame(
+    a = c("x", "y", "x", "y"),
+    b = c("p", "p", "q", "q"),
+    c = c("m", "m", "n", "n"),
+    d = c("u", "v", "u", "v"),
+    value = 1:4
+  )
+
+  three_sets_plain <- count_parent_input_passes(
+    data,
+    total = sum(value),
+    .grouping = rollup(a, b)
+  )
+  three_sets_share <- count_parent_input_passes(
+    data,
+    total = sum(value),
+    share = share_of_parent(total),
+    .grouping = rollup(a, b)
+  )
+  five_sets_share <- count_parent_input_passes(
+    data,
+    total = sum(value),
+    share = share_of_parent(total),
+    .grouping = rollup(a, b, c, d)
+  )
+
+  # The counter is wired to something: a summarization does read the input.
+  expect_gt(three_sets_plain$passes, 0L)
+  # Adding two Grouping sets adds no pass over the input, so no pass is
+  # proportional to the Grouping-set count.
+  expect_identical(five_sets_share$passes, three_sets_share$passes)
+  # And Parent shares add no pass of their own at either size: they are
+  # calculated from the summarized result, not from a second look at the input.
+  expect_identical(three_sets_share$passes, three_sets_plain$passes)
+
+  # Guard against a vacuous pass: the runs above produced Parent shares.
+  expect_true("share" %in% names(three_sets_share$result))
+  expect_true("share" %in% names(five_sets_share$result))
+  expect_identical(
+    five_sets_share$result$share[[nrow(five_sets_share$result)]],
+    1
+  )
 })
