@@ -1036,25 +1036,42 @@ check_parent_scalar <- function(value,
       call = call
     )
   }
-  if (
-    !typeof(value) %in% c("integer", "double") ||
-      is.object(value)
-  ) {
-    detected_type <- if (is.object(value)) class(value) else typeof(value)
-    abort_marginplyr(
-      paste0(
-        "Parent share `", parent_output, "` requires source summary `",
-        source_summary,
-        "` to be a plain integer or double scalar; detected type ",
-        paste(detected_type, collapse = "/"),
-        ". Convert it explicitly in the ordinary summary."
-      ),
+  if (!is_parent_source_type(value)) {
+    abort_parent_source_type(
+      value,
       parent_output = parent_output,
       source_summary = source_summary,
       call = call
     )
   }
   value
+}
+
+# The eligible-type rule and its diagnostic have two raising sites — the check
+# wrapped around each summary expression, and the local backend's re-check of
+# the collected result. They share one definition so the handler-visible fields
+# cannot drift away from the message again.
+is_parent_source_type <- function(value) {
+  typeof(value) %in% c("integer", "double") && !is.object(value)
+}
+
+abort_parent_source_type <- function(value,
+                                     parent_output,
+                                     source_summary,
+                                     call) {
+  detected_type <- if (is.object(value)) class(value) else typeof(value)
+  abort_marginplyr(
+    paste0(
+      "Parent share `", parent_output, "` requires source summary `",
+      source_summary,
+      "` to be a plain integer or double scalar; detected type ",
+      paste(detected_type, collapse = "/"),
+      ". Convert it explicitly in the ordinary summary."
+    ),
+    parent_output = parent_output,
+    source_summary = source_summary,
+    call = call
+  )
 }
 
 parent_call_text <- function(call) {
@@ -1519,7 +1536,7 @@ execute_local_parent_shares <- function(operation,
                                         result,
                                         requests,
                                         set_id_name) {
-  check_local_parent_share_types(result, requests)
+  check_local_parent_share_types(result, requests, call = operation$call)
   apply_joined_parent_shares(
     result,
     requests = requests,
@@ -1571,6 +1588,13 @@ apply_joined_parent_shares <- function(result,
     prefix = "..marginplyr_parent_value_"
   )
   names(denominator_names) <- sources
+
+  # The cleanup at the end of this function drops whatever internal columns
+  # were added, so empty is what it needs when no grouping set has a parent
+  # and no join happens — and for `right_join_names`, also on the non-SQL
+  # path, which joins by name and renames nothing.
+  join_key_names <- character()
+  right_join_names <- character()
 
   child_ids <- plan$set_ids[!is.na(parent_ids)]
   if (length(child_ids) > 0L) {
@@ -1640,7 +1664,6 @@ apply_joined_parent_shares <- function(result,
         y_as = "RHS"
       )
     } else {
-      right_join_names <- character()
       result <- dplyr::left_join(
         result,
         mapping,
@@ -1679,16 +1702,8 @@ apply_joined_parent_shares <- function(result,
 
   internal_names <- c(
     unname(denominator_names),
-    if (exists("right_join_names", inherits = FALSE)) {
-      right_join_names
-    } else {
-      character()
-    },
-    if (exists("join_key_names", inherits = FALSE)) {
-      unname(join_key_names)
-    } else {
-      character()
-    }
+    right_join_names,
+    unname(join_key_names)
   )
   internal_names <- intersect(
     internal_names,
@@ -1817,7 +1832,7 @@ add_lazy_parent_join_keys <- function(result,
   dplyr::mutate(result, !!!join_key_exprs)
 }
 
-check_local_parent_share_types <- function(result, requests) {
+check_local_parent_share_types <- function(result, requests, call) {
   pairs <- parent_share_pairs(requests)
   checked_sources <- character()
 
@@ -1827,18 +1842,12 @@ check_local_parent_share_types <- function(result, requests) {
       next
     }
     values <- result[[source]]
-    if (
-      !typeof(values) %in% c("integer", "double") ||
-        is.object(values)
-    ) {
-      detected_type <- if (is.object(values)) class(values) else typeof(values)
-      abort_marginplyr(
-        paste0(
-          "Parent share `", pair$output, "` requires source summary `", source,
-          "` to be a plain integer or double scalar; detected type ",
-          paste(detected_type, collapse = "/"),
-          ". Convert it explicitly in the ordinary summary."
-        )
+    if (!is_parent_source_type(values)) {
+      abort_parent_source_type(
+        values,
+        parent_output = pair$output,
+        source_summary = source,
+        call = call
       )
     }
     checked_sources <- c(checked_sources, source)

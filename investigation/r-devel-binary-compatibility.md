@@ -107,7 +107,8 @@ correct.
 - The value compared is a compile-time constant in R's **private** header
   `src/include/Defn.h`, with the only statement of its contract being its own
   comment: "UUID identifying the internals version -- packages using compiled
-  code should be re-installed when this changes"; currently
+  code should be re-installed when this changes"; as read on 2026-08-03 the
+  definition was
   `#define R_INTERNALS_UUID "2fdf6c18-697a-4ba7-b8ef-11c0d92f1327"`.
 - **The intended contract is documented nowhere else.** `?library`'s Note
   section documents only that an installed package is detected by a `Built:`
@@ -123,12 +124,13 @@ correct.
 **Conclusion:** the version gate that matters is undocumented and explicitly
 private. Its behaviour is verifiable only from the R source, and R reserves the
 right to change it. That is the honest status; nothing in the documented API
-underwrites the current arrangement.
+underwrites the arrangement `R-CMD-check.yaml`'s R-devel job rests on.
 
-### 3. The failure mode is a clean error today — but only because of an undocumented guard
+### 3. The failure mode was a clean error on 2026-08-03 — but only because of an undocumented guard
 
 The working hypothesis (crash or unclear failure) is **refuted for the specific
-case in question, on current R**, and confirmed as the general position.
+case in question, against the R 4.6.1 and trunk sources read for this note**,
+and confirmed as the general position.
 
 - Refuted for this case: when R's internals UUID differs, `loadNamespace()`
   stops with a clear, actionable message naming the package and the required
@@ -234,7 +236,8 @@ Two things follow:
 
 ### How long the arrangement holds, and what ends it
 
-The arrangement rests on one value. Measured against the R source tree today:
+The arrangement rests on one value. Measured against the R source tree on
+2026-08-03:
 
 | Source | `R_INTERNALS_UUID` |
 |---|---|
@@ -246,16 +249,19 @@ The arrangement rests on one value. Measured against the R source tree today:
 | `branches/R-4-6-branch` (4.6.1 Patched) | `2fdf6c18-...` |
 | `trunk` (4.7.0 Under development) | `2fdf6c18-...` |
 
-Local R 4.6.1 reports `.Internal(internalsID())` as
+On the same date, local R 4.6.1 reported `.Internal(internalsID())` as
 `2fdf6c18-697a-4ba7-b8ef-11c0d92f1327`, and the `Meta/features.rds` of every
-locally installed compiled package — including `arrow` — records the same value.
-R-devel's internals UUID is currently **identical** to the release series'.
-That, and nothing else, is why release binaries load under R-devel today.
+locally installed compiled package — including `arrow` — recorded the same
+value. R-devel's internals UUID was therefore **identical** to the release
+series', and that, and nothing else, is why release binaries loaded under
+R-devel. `R-CMD-check.yaml`'s R-devel comment is authoritative for what that
+job relies on; this note is not.
 
-The mechanism was introduced between R 4.1.3 and R 4.2.3 and its value has not
-changed since. The `0310d4b8-ccb1-4bb8-ba94-d36a55f60262` constant in
-`namespace.R` is a sentinel assigned to packages installed before `features.rds`
-existed, not a superseded real value.
+The mechanism was introduced between R 4.1.3 and R 4.2.3, and as of 2026-08-03
+its value had not changed since. The
+`0310d4b8-ccb1-4bb8-ba94-d36a55f60262` constant in `namespace.R` is a sentinel
+assigned to packages installed before `features.rds` existed, not a superseded
+real value.
 
 **The specific event that ends the arrangement is a single commit to R-devel
 changing `R_INTERNALS_UUID` in `src/include/Defn.h`.** It is not tied to a

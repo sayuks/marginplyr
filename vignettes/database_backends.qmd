@@ -77,7 +77,7 @@ local_result <- january_sales |>
 local_result
 ```
 
-The grouping expression does not change when the input becomes a lazy table:
+The grouping specification does not change when the input becomes a lazy table:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -124,7 +124,7 @@ the outer query to label only dimensions removed by aggregation. A source
 `NULL` therefore stays different from a generated subtotal even though SQL
 would otherwise display both as missing.
 
-More complex SQL grouping expressions use the same translation. The two
+More complex grouping specifications use the same translation. The two
 rollups below are combined by Cartesian product, matching comma-separated SQL
 `GROUP BY` items:
 

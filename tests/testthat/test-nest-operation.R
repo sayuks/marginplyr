@@ -151,11 +151,19 @@ test_that("nesting option errors use the package condition seam", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   cases <- list(
     keep = list(
-      expr = quote(nest_with_margins(data, .grouping = rollup(group), .keep = 1)), # nolint: line_length_linter
+      expr = quote(nest_with_margins(
+        data,
+        .grouping = rollup(group),
+        .keep = 1
+      )),
       message = "`\\.keep` must be a logical scalar"
     ),
     key_type = list(
-      expr = quote(nest_with_margins(data, .grouping = rollup(group), .key = 1)), # nolint: line_length_linter
+      expr = quote(nest_with_margins(
+        data,
+        .grouping = rollup(group),
+        .key = 1
+      )),
       message = "`\\.key` must be a character vector of length 1"
     ),
     key_missing = list(

@@ -79,7 +79,7 @@ types to execution" and "general dbplyr reports static Parent-share errors
 without probing".
 
 **`.grouping` is evaluated through two paths** — #25. `test-parent-share.R`
-"Parent planning evaluates the grouping expression once", "Parent planning
+"Parent planning evaluates the grouping specification once", "Parent planning
 preserves every public-call environment", "Parent planning evaluates across
 arguments once".
 
@@ -560,16 +560,32 @@ for a missing optional package plus 2 for no supported lazy backend and 2 for
 CRAN snapshot semantics.
 
 **`investigation/r-devel-binary-compatibility.md` states live configuration in
-the present tense the notes' own rule forbids** (Standards). **Not fixed —
-split to a new ticket.** `investigation/README.md` lines 41–42: "Do not write
-bare `now`, `currently`, or `today`." The note written by `0a2842c` does so at
-lines 110, 128, 237, 252, and 253 — including the heading "The failure mode is
-a clean error today". This is the failure #61 already corrected once in a
-neighbouring note. *Evidence:* `grep -nE '\b(currently|today)\b'
+the present tense the notes' own rule forbids** (Standards). **Fixed — #66.**
+`investigation/README.md` lines 41–42: "Do not write bare `now`, `currently`,
+or `today`." The note written by `0a2842c` does so at lines 110, 128, 237, 252,
+and 253 — including the heading "The failure mode is a clean error today". This
+is the failure #61 already corrected once in a neighbouring note. *Evidence:*
+`grep -nE '\b(currently|today)\b'
 investigation/r-devel-binary-compatibility.md`.
 
+The five statements were edited in place rather than superseded. #61's
+mechanism does not apply here: a `Revised:` line and a dated revisions section
+record that a finding was **overturned**, and none of these was — the UUID
+readings, the `Defn.h` constant, and the load-time behaviour all still say what
+they said on 2026-08-03. Only the tense was wrong, so each statement now
+carries that date inline, and the paragraph that described the arrangement
+holding hands current state to `R-CMD-check.yaml`'s R-devel comment, which
+`investigation/README.md` makes authoritative for it. *Evidence:* the same grep
+returns nothing. `investigation/README.md`'s pre-amend grep for the note's path
+names four artifacts — `R-CMD-check.yaml`,
+`investigation/github-actions-modernization.md`,
+`investigation/p3m-binary-actions.md`, and this file — and
+`investigation/README.md` itself cites the note twice more by bare filename,
+which that grep does not reach. All six cite evidence the edit did not touch,
+so none needed updating alongside it.
+
 **Two new `# nolint` comments carry no expression-specific reason**
-(Standards). **Not fixed — #66.** `AGENTS.md`: "every one in
+(Standards). **Fixed — #66.** `AGENTS.md`: "every one in
 R code sits next to a comment stating the expression-specific reason."
 `tests/testthat/test-nest-operation.R:154` and `:158` suppress
 `line_length_linter` with nothing beside them, and neither needs the
@@ -577,8 +593,15 @@ suppression — the `key_missing` case at `:161` already wraps the same
 `quote()` shape across lines. *Evidence:* the two lines; the wrapped sibling
 seven lines below is the available fix.
 
-**A new test name uses a term the glossary bans** (Standards). **Not fixed —
-split to a new ticket.** `CONTEXT.md:11` lists `_Avoid_: Grouping expression`
+Both `quote()` calls are wrapped across lines like their sibling and both
+suppressions are deleted, so no reason comment is owed. Wrapping was preferred
+to writing the reason down because a reason would have had to say the line was
+long, which the linter can see for itself. *Evidence:* `lintr::lint_package()`
+after `pkgload::load_all(".")` → 0 lints, and `grep -n "nolint"
+tests/testthat/test-nest-operation.R` returns nothing.
+
+**A new test name uses a term the glossary bans** (Standards). **Fixed — #66.**
+`CONTEXT.md:11` lists `_Avoid_: Grouping expression`
 under Grouping specification. `tests/testthat/test-parent-share.R:1389` is
 `test_that("Parent planning evaluates the grouping expression once", ...)`, and
 §1 of this file quotes that name. Renaming the test also breaks nothing in
@@ -586,8 +609,23 @@ under Grouping specification. `tests/testthat/test-parent-share.R:1389` is
 expression" R tests vignettes design CONTEXT.md` — the two hits in
 `vignettes/database_backends.qmd` predate `1c782eb` and are outside this diff.
 
+The test is "Parent planning evaluates the grouping specification once", and §1
+above quotes the new name. The two vignette hits were fixed rather than
+deferred, since both name the user-declared argument the glossary term covers:
+`database_backends.qmd:80` becomes "The grouping specification does not
+change", and `:127` becomes "More complex grouping specifications use the same
+translation". The remaining hit, `R/grouping-context.R:243`'s "A database
+connection is required for SQL grouping expressions", is left alone: it names
+the `GROUPING()` SQL the function builds, not a grouping specification, so the
+glossary entry does not reach it. *Evidence:* `grep -rn "grouping expression" R
+tests vignettes CONTEXT.md` returns that one line. The finding's own grep
+included `design`, which this file now answers with three hits of its own —
+the quotation of the old name above, and this paragraph naming what it
+replaced. A disposition has to be able to say what it fixed, so the term
+survives here as a quotation and nowhere as a use.
+
 **`apply_joined_parent_shares()` discovers local state with `exists()`**
-(Spec). **Not fixed — #66.** #23's Implementation Decisions:
+(Spec). **Fixed — #66.** #23's Implementation Decisions:
 "Fragile local-state patterns are removed: initialize optional locals
 explicitly." `R/parent-share.R:1682` and `:1687` test
 `exists("right_join_names", inherits = FALSE)` and
@@ -599,8 +637,14 @@ assigns `right_join_names <- character()` explicitly in the other branch.
 fix, and `test-parent-share-backends.R` "lazy Parent-share staging avoids
 adversarial user-name collisions" covers the cleanup path either way.
 
+Both are `character()` before the branch, the redundant `else` assignment is
+gone, and the cleanup reads them directly. No new test guards this: the branch
+already has both states covered — a rollup with children and a single-set plan
+with none — and what changed is how the cleanup learns which one ran, not what
+it produces.
+
 **The eligible-type diagnostic exists twice, and one copy drops its structured
-fields** (Spec). **Not fixed — #66.**
+fields** (Spec). **Fixed — #66.**
 `check_parent_scalar()` (`R/parent-share.R:1020`, message at `:1039`) attaches
 `parent_output`, `source_summary`, and `call` to the "requires source summary
 ... to be a plain
@@ -613,8 +657,24 @@ character-identical apart from the operands; `test-parent-share.R`
 "Parent-share sources are numeric" asserts the message, not the fields, which
 is why the drift survived.
 
+`abort_parent_source_type()` is now the only place the message and its fields
+are built, and `is_parent_source_type()` the only place the rule is stated;
+both `check_parent_scalar()` and `check_local_parent_share_types()` call them,
+and the latter takes `operation$call` from `execute_local_parent_shares()`.
+The test change is the part that matters, because a shared constructor can be
+un-shared again: "Parent-share sources are numeric scalar summaries" now
+asserts `parent_output` and `source_summary` on the type error rather than only
+its message, and a new test, "the local eligible-type check raises the shared
+diagnostic", holds the local site's message, class, fields, and call against
+the wrapped site's. That test calls `check_local_parent_share_types()`
+directly, which is deliberate and is the second half of the finding: no public
+call reaches its error, because the check wrapped around each summary
+expression catches every ineligible type first. A raising site no test could
+reach is how two copies of one message stayed different without any run
+disagreeing.
+
 **No test asserts structurally that per-Grouping-set input rescans are gone**
-(Spec). **Not fixed — #66.** #23's Testing Decisions:
+(Spec). **Fixed — #66.** #23's Testing Decisions:
 "Assert the removal of Grouping-set-proportional full input scans
 structurally; do not put wall-clock thresholds in package tests." The
 benchmark half exists (`dev/benchmark-parent-share-local.R` and
@@ -623,6 +683,31 @@ benchmark half exists (`dev/benchmark-parent-share-local.R` and
 set. US42 is currently guarded only by a developer script that CI does not
 run. *Evidence:* `grep -rn "rescan\|single pass"
 tests/testthat/` returns nothing.
+
+`test-parent-share.R` "Parent shares add no input pass per Grouping set"
+supplies the missing half, with no wall-clock threshold. The input carries a
+marker class; every dplyr verb applied to an object still carrying it counts
+one pass, and each such verb drops the marker from what it returns, so a
+derived frame — including the summarized result the Parent-share stage works
+from — is not counted and the input alone is. The test then asserts two
+equalities rather than a number: a five-set plan reads the input as many times
+as a three-set one, and adding Parent shares changes neither count. Fixing a
+number would have made every unrelated refactor of the summarization path a
+failure; the equalities are what US42 actually claims.
+
+`ungroup()` is the one verb left unregistered, and the reason is load-bearing:
+it is applied to the input before the Margin operation stores it, so counting
+it would drop the marker from `operation$data` and hide precisely the rescans
+the test exists to catch. Its reach is the generic list in
+`register_parent_scan_methods()`: a rescan routed through a verb that list does
+not name would go uncounted, so the list is what to extend when the
+summarization path grows a new one.
+
+*Evidence for the gate:* reinstating in `execute_local_parent_shares()` one
+`dplyr::distinct(operation$data, across(all_of(keys)))` per grouping set with
+at least one key — the shape `check_parent_share_cardinality()` had before #27
+removed it — fails both equalities, at 12 against 10 and 10 against 8.
+Removing it returns the suite to green.
 
 **One `skip_if_backend_absent()` call reverses the argument order a CI gate
 depends on** (Standards). **Fixed — #69, and the finding's premise was wrong.**
@@ -709,12 +794,12 @@ two-axis review and Docs & Tests audit with no unresolved findings, which is
 **The gate is not met as of #40's review.** Local checks, the release matrix,
 and the two-axis review of package behaviour are clean, and no finding above
 changes a result marginplyr returns. What is not clean is the evidence layer
-the gate is written in terms of. Two of its three tickets are still open:
-`cran-comments.md` states counts the tree no longer produces (#65), and six of
-the seven smaller standards and spec findings are #66. The seventh, the
-skip-helper argument order, moved to #69, which took it because the finding as
-written was factually wrong about why the gate passes and correcting it belongs
-with the list it names. The third ticket, #64, is fixed — the release matrix
-now withholds the optional backends it documents withholding, and a gate fails
-the workflow if it stops doing so. #40 stays open until #65, #66, and #69
-close, and no submission is made before then.
+the gate is written in terms of. One of its three tickets is still open:
+`cran-comments.md` states counts the tree no longer produces (#65). Of the
+seven smaller standards and spec findings, six were #66 and are fixed above;
+the seventh, the skip-helper argument order, moved to #69, which took it
+because the finding as written was factually wrong about why the gate passes
+and correcting it belongs with the list it names. The third ticket, #64, is
+fixed — the release matrix now withholds the optional backends it documents
+withholding, and a gate fails the workflow if it stops doing so. #40 stays open
+until #65 closes, and no submission is made before then.
