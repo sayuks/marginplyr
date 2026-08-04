@@ -1,3 +1,13 @@
+# rlang soft-deprecated unquoting inside the `.data` pronoun, and signals a
+# lifecycle condition when `expr()` sees it — twice per Margin operation, into
+# whatever condition handler the caller has installed. Building the call
+# directly produces the identical expression, `.data[["name"]]`, without the
+# signal. The name must stay a literal: a bare symbol would be resolved
+# against the data mask when the generated expression runs.
+margin_column_pronoun <- function(name) {
+  rlang::call2("[[", rlang::sym(".data"), name)
+}
+
 assert_logical_scalar <- function(x) {
   nm <- deparse(substitute(x))
   if (!(isTRUE(x) || isFALSE(x))) {

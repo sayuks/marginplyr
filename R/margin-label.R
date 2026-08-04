@@ -275,7 +275,7 @@ label_margin_branch <- function(.data,
         )
         rlang::expr(
           encode_factor_for_margin(
-            .data[[!!col]],
+            !!margin_column_pronoun(col),
             missing_sentinel = !!missing_sentinel,
             preserve_missing_value = TRUE
           )

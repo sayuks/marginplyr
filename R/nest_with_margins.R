@@ -290,7 +290,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
       if (length(keep_cols) > 0L) {
         keep_exprs <- lapply(
           group_cols,
-          function(var) rlang::expr(.data[[!!var]])
+          function(var) margin_column_pronoun(var)
         )
         names(keep_exprs) <- unname(keep_cols)
         data <- dplyr::mutate(data, !!!keep_exprs)
