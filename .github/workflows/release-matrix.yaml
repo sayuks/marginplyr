@@ -9,6 +9,8 @@
 #
 # The jobs divide the work:
 #
+#   coverage      reads this file against `optional_suggests()` and fails when
+#                 a tracked backend has no `backend` entry below.
 #   build         produces the single tarball every other job checks.
 #   depends-only  rebuilds examples, tests, and vignettes with Suggested
 #                 packages withheld (`_R_CHECK_DEPENDS_ONLY_=true`).
@@ -72,6 +74,46 @@ env:
   _R_CHECK_CRAN_INCOMING_REMOTE_: false
 
 jobs:
+  # The `backend` matrix below is the only thing that executes an optional
+  # backend, and until now nothing checked that it named all of them: a backend
+  # added to `optional_suggests()` and guarded in the tests, with no entry here,
+  # left a green workflow in which every job correctly asserted it absent and no
+  # job ever ran it (#71). This job reads this file against that list.
+  #
+  # It takes no `needs`, because it asserts a static property of the repository
+  # and nothing it reads comes from the tarball. Failing before `build` finishes
+  # is the point: the answer does not depend on anything the other jobs produce.
+  #
+  # It also installs no dependencies through `setup-r-dependencies`, so it has
+  # no `cache-version` and stands outside the isolation scheme above. That is
+  # consistent rather than an exemption -- the scheme separates jobs by which
+  # optional backends they can see, and this job neither installs nor loads any
+  # package under test.
+  coverage:
+    name: Backend matrix coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      # `yaml` parses this file. It has no dependencies of its own and is not in
+      # DESCRIPTION: `.github/scripts/` may use packages installed only for CI,
+      # and promoting a parser used by one CI script into the package's metadata
+      # would be exactly the false Import `AGENTS.md` warns about. The
+      # alternative, a regex over the `backend:` block, fails open -- a pattern
+      # that stops matching finds nothing to report and passes.
+      - name: Install the YAML parser
+        run: install.packages("yaml")
+        shell: Rscript {0}
+
+      - name: Verify every tracked backend has a matrix entry
+        run: Rscript .github/scripts/verify-matrix-coverage.R
+
   build:
     name: Build source tarball
     runs-on: ubuntu-latest

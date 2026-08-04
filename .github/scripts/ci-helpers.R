@@ -66,12 +66,24 @@ test_output_path <- function(rcheck, test = "testthat") {
 # purpose is the separation.
 source("tests/testthat/helper-optional-backends.R")
 
-# Reads a delimited list out of the environment, the form the workflow's matrix
-# entries are written in. Package lists are comma-separated; test names are
-# separated by `;`, because a test name may contain a comma.
-env_list <- function(name, sep = ",") {
-  declared <- trimws(strsplit(Sys.getenv(name, ""), sep, fixed = TRUE)[[1]])
+# Splits a delimited list, the form the workflow's matrix entries are written
+# in. Package lists are comma-separated; test names are separated by `;`,
+# because a test name may contain a comma.
+#
+# Separate from `env_list()` because `verify-matrix-coverage.R` reads the same
+# fields out of the workflow file rather than out of the environment, and both
+# readings have to agree on what a list is: a `required` value that this script
+# splits differently from the job that consumes it would compare two different
+# package sets.
+split_list <- function(value, sep = ",") {
+  declared <- trimws(strsplit(value, sep, fixed = TRUE)[[1]])
   declared[nzchar(declared)]
+}
+
+# The same list read out of the environment, which is how a matrix entry reaches
+# the job that acts on it.
+env_list <- function(name, sep = ",") {
+  split_list(Sys.getenv(name, ""), sep)
 }
 
 write_step_summary <- function(lines) {

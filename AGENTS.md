@@ -122,16 +122,17 @@ it rather than the workflow calling it as a step, so the assertion cannot be
 dropped from a job that still checks a tarball.
 
 Adding an optional backend means editing three places. Every partial edit fails
-loudly except one, which is named at the end:
+loudly:
 
 1. `optional_suggests()` in `tests/testthat/helper-optional-backends.R`, the
    one list every other consumer derives from — `optional_backends()` for the
-   subset a job can be asked to withhold, and both `verify-depends-only.R` and
-   `verify-library-isolation.R` through it. Doing only this fails
-   `depends-only`: a `TRUE` entry makes `verify-depends-only.R` require a
-   `{<package>} is not installed` line that no test would produce. A `FALSE`
-   entry claims no absence and so is asserted by nothing, which is the DBI case
-   above.
+   subset a job can be asked to withhold, and `verify-depends-only.R`,
+   `verify-library-isolation.R`, and `verify-matrix-coverage.R` through it.
+   Doing only this fails `coverage`, which reads the list against the `backend`
+   matrix, and `depends-only`, where a `TRUE` entry makes
+   `verify-depends-only.R` require a `{<package>} is not installed` line that no
+   test would produce. A `FALSE` entry claims no absence and so is asserted by
+   nothing, which is the DBI case above.
 2. the `skip_if_backend_absent()` or `backend_available()` call in the tests.
    Doing only this errors immediately: those helpers refuse a package
    `optional_suggests()` does not name, since nothing would execute it and
@@ -142,10 +143,16 @@ loudly except one, which is named at the end:
    the new job: a `required` package `optional_suggests()` does not name is
    refused.
 
-Doing 1 and 2 without 3 is the one combination that still passes quietly. The
-backend is asserted absent everywhere and executed nowhere, so its tests skip
-in every job. Nothing checks that a tracked backend has a matrix entry; #71
-tracks whether it should, deferred from #69 rather than overlooked.
+Doing 1 and 2 without 3 used to pass quietly — the backend was asserted absent
+everywhere and executed nowhere, so its tests skipped in every job.
+`verify-matrix-coverage.R`, run by the `coverage` job, closes that (#71): it
+parses `release-matrix.yaml` and fails when a package `optional_backends()`
+names has no `backend` entry, or has more than one. It is the only job that
+reads a workflow file as data, which is why it is the only one that installs
+`yaml`. Its header records the two further assertions #71 considered and why
+neither ships; the short version is that `verify-library-isolation.R` already
+makes one of them where the claim is made, and the other would guard a job that
+does not exist.
 
 ## Agent skills
 
