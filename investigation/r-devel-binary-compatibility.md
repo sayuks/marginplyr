@@ -124,7 +124,7 @@ correct.
 **Conclusion:** the version gate that matters is undocumented and explicitly
 private. Its behaviour is verifiable only from the R source, and R reserves the
 right to change it. That is the honest status; nothing in the documented API
-underwrites the current arrangement.
+underwrites the arrangement `R-CMD-check.yaml`'s R-devel job rests on.
 
 ### 3. The failure mode was a clean error on 2026-08-03 — but only because of an undocumented guard
 

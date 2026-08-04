@@ -576,10 +576,13 @@ they said on 2026-08-03. Only the tense was wrong, so each statement now
 carries that date inline, and the paragraph that described the arrangement
 holding hands current state to `R-CMD-check.yaml`'s R-devel comment, which
 `investigation/README.md` makes authoritative for it. *Evidence:* the same grep
-returns nothing. The four artifacts citing this note — `R-CMD-check.yaml`,
+returns nothing. `investigation/README.md`'s pre-amend grep for the note's path
+names four artifacts — `R-CMD-check.yaml`,
 `investigation/github-actions-modernization.md`,
-`investigation/p3m-binary-actions.md`, and this file — cite evidence the edit
-did not touch, so none needed updating alongside it.
+`investigation/p3m-binary-actions.md`, and this file — and
+`investigation/README.md` itself cites the note twice more by bare filename,
+which that grep does not reach. All six cite evidence the edit did not touch,
+so none needed updating alongside it.
 
 **Two new `# nolint` comments carry no expression-specific reason**
 (Standards). **Fixed — #66.** `AGENTS.md`: "every one in
@@ -615,7 +618,11 @@ translation". The remaining hit, `R/grouping-context.R:243`'s "A database
 connection is required for SQL grouping expressions", is left alone: it names
 the `GROUPING()` SQL the function builds, not a grouping specification, so the
 glossary entry does not reach it. *Evidence:* `grep -rn "grouping expression" R
-tests vignettes design CONTEXT.md` returns that one line.
+tests vignettes CONTEXT.md` returns that one line. The finding's own grep
+included `design`, which this file now answers with three hits of its own —
+the quotation of the old name above, and this paragraph naming what it
+replaced. A disposition has to be able to say what it fixed, so the term
+survives here as a quotation and nowhere as a use.
 
 **`apply_joined_parent_shares()` discovers local state with `exists()`**
 (Spec). **Fixed — #66.** #23's Implementation Decisions:
@@ -691,12 +698,16 @@ failure; the equalities are what US42 actually claims.
 `ungroup()` is the one verb left unregistered, and the reason is load-bearing:
 it is applied to the input before the Margin operation stores it, so counting
 it would drop the marker from `operation$data` and hide precisely the rescans
-the test exists to catch. *Evidence for the gate:* reinstating a
-`dplyr::distinct(operation$data, across(all_of(keys)))` loop over
-`plan$set_ids` in `execute_local_parent_shares()` — the shape
-`check_parent_share_cardinality()` had before #27 removed it — fails both
-equalities, at 12 against 10 and 10 against 8. Removing it returns the suite to
-green.
+the test exists to catch. Its reach is the generic list in
+`register_parent_scan_methods()`: a rescan routed through a verb that list does
+not name would go uncounted, so the list is what to extend when the
+summarization path grows a new one.
+
+*Evidence for the gate:* reinstating in `execute_local_parent_shares()` one
+`dplyr::distinct(operation$data, across(all_of(keys)))` per grouping set with
+at least one key — the shape `check_parent_share_cardinality()` had before #27
+removed it — fails both equalities, at 12 against 10 and 10 against 8.
+Removing it returns the suite to green.
 
 **One `skip_if_backend_absent()` call reverses the argument order a CI gate
 depends on** (Standards). **Fixed — #69, and the finding's premise was wrong.**

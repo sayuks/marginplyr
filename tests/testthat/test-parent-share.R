@@ -1530,12 +1530,15 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
 
 # US42 is structural, not a timing budget: the local Parent-share stage reads
 # the summarized result, never the input, so no pass over the input may be
-# proportional to the Grouping-set count. Every dplyr verb applied to an object
-# still carrying this class counts as one such pass, and the class is dropped
-# from whatever a verb returns, so a derived frame is not counted and only the
-# input itself is. `ungroup()` is deliberately not registered: it neither scans
-# nor reshapes, and counting it would drop the marker before the Margin
-# operation stores the input, hiding exactly the rescans this asserts against.
+# proportional to the Grouping-set count. Each generic registered below counts
+# one such pass when applied to an object still carrying this class, and drops
+# the class from whatever it returns, so a derived frame is not counted and
+# only the input itself is. The list is the assertion's reach: a rescan routed
+# through a verb it does not name goes uncounted, so extend it when the
+# summarization path grows one. `ungroup()` is deliberately left out — it
+# neither scans nor reshapes, and counting it would drop the marker before the
+# Margin operation stores the input, hiding exactly the rescans asserted
+# against here.
 parent_scan_capture <- new.env(parent = emptyenv())
 
 parent_scan_drop_marker <- function(x) {
