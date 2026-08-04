@@ -1,6 +1,7 @@
 # GitHub Actions modernization
 
 Investigated: 2026-07-18
+Revised: 2026-08-04 — investigation/p3m-binary-actions.md
 
 ## Findings
 
@@ -50,6 +51,31 @@ only hard dependencies plus `rcmdcheck`, `testthat`, and the lightweight
 with the next R version. This uses the supported `dependencies` and
 `install-quarto` inputs documented by
 [`setup-r-dependencies`](https://github.com/r-lib/actions/blob/v2/setup-r-dependencies/action.yaml).
+
+## Revisions (2026-08-04)
+
+The R-devel dependency scope above describes an arrangement that was replaced
+the day after it was investigated. On 2026-07-19,
+`investigation/p3m-binary-actions.md` established the P3M binary approach, and
+`R-CMD-check.yaml`'s R-devel job was changed to install the **full** check
+dependency set — arrow and duckdb included — from P3M release-series binaries,
+and to build the vignettes as part of `R CMD check`. That workflow's R-devel
+comment is authoritative for what the job does and why; this note is not.
+
+The hard-dependencies-only configuration did not disappear; it moved. It is
+`release-matrix.yaml`'s `tarball` job on `ubuntu-latest` / `r: devel`, which
+installs hard dependencies plus `rcmdcheck`, `testthat`, and the `quarto`
+VignetteBuilder. #57 settled that this job, not the `R-CMD-check.yaml` one, is
+the R-devel compatibility gate, and recorded the contract in `AGENTS.md`. So a
+reader looking for the hard-deps-only R-devel job should read
+`release-matrix.yaml`, and the paragraph above names neither the workflow that
+holds that configuration nor the one it appears to describe.
+
+The measurement in that paragraph is unaffected by this revision. The full
+`Suggests` set compiling for over 55 minutes on a hosted runner, still building
+arrow when the job was stopped, is why source builds on R-devel are rejected
+rather than merely avoided; `R-CMD-check.yaml`'s R-devel comment and
+`investigation/r-devel-binary-compatibility.md` both cite it at this path.
 
 ## altdoc and GitHub Pages
 
