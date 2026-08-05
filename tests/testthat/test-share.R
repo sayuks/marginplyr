@@ -1641,3 +1641,413 @@ test_that("Parent shares add no input pass per Grouping set", {
     1
   )
 })
+
+# Total shares. Everything except the denominator is the machinery the tests
+# above already cover, so these state what is genuinely their own: which plans
+# they accept, which occurrence answers for every other, and that the terms
+# they are refused in are the ones the caller wrote.
+
+test_that("direct Total shares divide by the grand total set", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    store = c("A", "B", "C"),
+    revenue = c(10, 30, 60)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    level = grouping_id(region, store),
+    total = sum(revenue),
+    parent = share_of_parent(total),
+    whole = share_of_total(total),
+    .grouping = rollup(region, store),
+    .margin_label = NULL
+  ) |>
+    dplyr::arrange(level, region, store)
+
+  # Both kinds in one call keep the caller's written column order, so neither
+  # denominator pass is visible in the result.
+  expect_identical(
+    names(result),
+    c("region", "store", "level", "total", "parent", "whole")
+  )
+  expect_equal(result$total, c(10, 30, 60, 40, 60, 100))
+  expect_equal(result$parent, c(0.25, 0.75, 1, 0.4, 0.6, 1))
+  expect_equal(result$whole, c(0.1, 0.3, 0.6, 0.4, 0.6, 1))
+  expect_type(result$whole, "double")
+})
+
+test_that("Total shares divide within each fixed partition", {
+  data <- data.frame(
+    partition = c(NA_character_, NA_character_, "B", "B"),
+    group = c("x", NA_character_, "x", NA_character_),
+    value = c(3, 1, 6, 2)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    level = grouping_bit(group),
+    total = sum(value),
+    whole = share_of_total(total),
+    .by = partition,
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  detail <- result[result$level == 0L, ]
+  grand_total <- result[result$level == 1L, ]
+
+  # A missing fixed key is its own partition, matched with missing-safe
+  # identity rather than pooled into the other one.
+  expect_equal(sort(grand_total$total), c(4, 8))
+  expect_equal(
+    detail$whole[is.na(detail$partition)],
+    c(0.75, 0.25)
+  )
+  expect_equal(
+    detail$whole[!is.na(detail$partition)],
+    c(0.75, 0.25)
+  )
+  expect_identical(grand_total$whole, c(1, 1))
+})
+
+test_that("Total shares accept every plan containing a grand total set", {
+  data <- data.frame(
+    a = c("x", "x", "y", "y"),
+    b = c("p", "q", "p", "q"),
+    value = c(1, 3, 2, 4)
+  )
+  specifications <- list(
+    rollup = rollup(a, b),
+    cube = cube(a, b),
+    grouping_sets = grouping_sets(
+      grouping_set(a, b),
+      grouping_set(b),
+      grouping_set()
+    ),
+    grouping_spec = grouping_spec(rollup(a), grouping_set())
+  )
+
+  for (name in names(specifications)) {
+    result <- summarize_with_margins(
+      data,
+      total = sum(value),
+      whole = share_of_total(total),
+      .grouping = specifications[[name]],
+      .margin_label = NULL
+    )
+
+    grand_total <- result$total[result$whole == 1]
+    expect_identical(unique(grand_total), 10, info = name)
+    expect_equal(result$whole, result$total / 10, info = name)
+  }
+})
+
+test_that("Total shares require a plan containing a grand total set", {
+  data <- data.frame(a = "x", b = "y", value = 1)
+  unsupported <- list(
+    grouping_set(a),
+    grouping_sets(grouping_set(a), grouping_set(b)),
+    grouping_spec(rollup(a), grouping_set(b))
+  )
+
+  for (spec in unsupported) {
+    error <- expect_error(
+      summarize_with_margins(
+        data,
+        total = sum(value),
+        whole = share_of_total(total),
+        .grouping = spec
+      ),
+      "requires `.grouping` to produce the Grand total set"
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_match(
+      conditionMessage(error),
+      "empty `grouping_set()`",
+      fixed = TRUE
+    )
+  }
+
+  # A Parent share's restriction is the other way round: it refuses two of the
+  # specifications a Total share accepts, and the two are checked separately
+  # when one call requests both.
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      parent = share_of_parent(total),
+      whole = share_of_total(total),
+      .grouping = cube(a)
+    ),
+    "requires `.grouping` to be one pure `rollup\\(\\)`"
+  )
+})
+
+test_that("duplicate grand total occurrences are interchangeable", {
+  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+
+  result <- summarize_with_margins(
+    data,
+    total = sum(value),
+    whole = share_of_total(total),
+    .grouping = grouping_sets(
+      grouping_set(group),
+      grouping_set(),
+      grouping_set()
+    ),
+    .duplicates = "keep",
+    .id = "set",
+    .margin_label = NULL
+  ) |>
+    dplyr::arrange(set, group)
+
+  expect_identical(result$set, c(1L, 1L, 2L, 3L))
+  # Every occurrence of the Grand total set is itself one, and the duplicate
+  # supplies no second denominator row that would fan the detail rows out.
+  expect_equal(result$whole, c(0.25, 0.75, 1, 1))
+  expect_identical(nrow(result), 4L)
+})
+
+test_that("Total shares reuse the Parent-share value rules", {
+  data <- data.frame(
+    group = c("x", "y"),
+    signed = c(5, -5),
+    unclamped = c(-1, 3)
+  )
+
+  zero_denominator <- summarize_with_margins(
+    data,
+    total = sum(signed),
+    whole = share_of_total(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  # A zero denominator is missing, and the grand total row is still one.
+  expect_identical(zero_denominator$whole, c(NA_real_, NA_real_, 1))
+
+  unclamped <- summarize_with_margins(
+    data,
+    total = sum(unclamped),
+    missing = dplyr::if_else(dplyr::n() > 1L, NA_real_, sum(unclamped)),
+    whole = share_of_total(total),
+    missing_whole = share_of_total(missing),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  expect_equal(unclamped$whole, c(-0.5, 1.5, 1))
+  # A missing denominator is missing wherever it is read, and the row that is
+  # its own denominator is one even then.
+  expect_identical(unclamped$missing_whole, c(NA_real_, NA_real_, 1))
+})
+
+test_that("Total shares expand through across and integer sources", {
+  data <- data.frame(
+    group = c("x", "y"),
+    units = c(1L, 3L),
+    revenue = c(10, 30)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    dplyr::across(c(units, revenue), sum),
+    dplyr::across(
+      c(units, revenue),
+      share_of_total,
+      .names = "{.col}_of_total"
+    ),
+    dplyr::across(
+      c(units, revenue),
+      share_of_parent,
+      .names = "{.col}_of_parent"
+    ),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_identical(
+    names(result),
+    c(
+      "group",
+      "units",
+      "revenue",
+      "units_of_total",
+      "revenue_of_total",
+      "units_of_parent",
+      "revenue_of_parent"
+    )
+  )
+  expect_equal(result$units_of_total, c(0.25, 0.75, 1))
+  expect_equal(result$revenue_of_total, c(0.25, 0.75, 1))
+  expect_equal(result$units_of_parent, result$units_of_total)
+  expect_type(result$units_of_total, "double")
+})
+
+test_that("Total-share staging avoids adversarial user-name collisions", {
+  # The fixed-key stand-in a Total share joins on when `.by` is empty is the
+  # one internal name Parent shares never allocate.
+  partition_name <- "..marginplyr_total_key_1"
+  denominator_name <- "..marginplyr_share_value_1"
+  data <- data.frame(
+    c("x", "y"),
+    c(1, 3),
+    c(2, 2),
+    check.names = FALSE
+  )
+  names(data) <- c("group", partition_name, denominator_name)
+
+  result <- summarize_with_margins(
+    data,
+    total = sum(.data[[partition_name]]),
+    shadow = sum(.data[[denominator_name]]),
+    whole = share_of_total(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_identical(names(result), c("group", "total", "shadow", "whole"))
+  expect_equal(result$whole, c(0.25, 0.75, 1))
+  expect_equal(result$shadow, c(2, 2, 4))
+})
+
+test_that("share_of_total reports its required context", {
+  data <- data.frame(group = "x", value = 1)
+
+  context_error <- expect_error(
+    share_of_total(value),
+    "only be used inside `summarize_with_margins\\(\\)`"
+  )
+  expect_s3_class(context_error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(context_error)),
+    "share_of_total"
+  )
+  expect_match(conditionMessage(context_error), "Grand total set", fixed = TRUE)
+  expect_error(
+    dplyr::summarise(data, share = share_of_total(value)),
+    "following `dplyr::mutate\\(\\)`"
+  )
+  expect_error(
+    dplyr::mutate(data, share = share_of_total(value)),
+    "following `dplyr::mutate\\(\\)`"
+  )
+})
+
+test_that("Total-share diagnostics name the helper the caller wrote", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  summarize <- function(...) {
+    summarize_with_margins(
+      data,
+      ...,
+      .grouping = rollup(group)
+    )
+  }
+
+  cardinality_error <- expect_error(
+    summarize(
+      total = c(min(value), max(value)),
+      whole = share_of_total(total)
+    ),
+    "exactly one value per grouping row"
+  )
+  expect_s3_class(cardinality_error, "marginplyr_share_cardinality_error")
+  expect_snapshot(conditionMessage(cardinality_error))
+
+  type_error <- expect_error(
+    summarize(
+      total = any(value > 0),
+      whole = share_of_total(total)
+    ),
+    "plain integer or double scalar"
+  )
+  expect_match(conditionMessage(type_error), "Total share `whole`")
+
+  predicate_error <- expect_error(
+    summarize(
+      total = sum(value),
+      dplyr::across(
+        dplyr::where(is.numeric),
+        share_of_total,
+        .names = "{.col}_share"
+      )
+    ),
+    "name-based tidyselect"
+  )
+  expect_snapshot(conditionMessage(predicate_error))
+
+  unknown_error <- expect_error(
+    summarize(
+      total = sum(value),
+      dplyr::across(
+        dplyr::all_of("missing"),
+        share_of_total,
+        .names = "{.col}_share"
+      )
+    ),
+    "unknown summary"
+  )
+  expect_s3_class(unknown_error, "marginplyr_share_source_unknown_error")
+  expect_snapshot(conditionMessage(unknown_error))
+
+  # A share of either kind can be named as another one's rejected source, and
+  # each is named for what it is.
+  mixed_error <- expect_error(
+    summarize(
+      total = sum(value),
+      parent = share_of_parent(total),
+      whole = share_of_total(parent)
+    ),
+    "cannot use Parent share `parent`"
+  )
+  expect_match(conditionMessage(mixed_error), "Total share `whole`")
+
+  expect_error(
+    summarize(
+      total = sum(value),
+      whole = 100 * share_of_total(total)
+    ),
+    "`share_of_total\\(\\)` must be the complete right-hand side"
+  )
+  expect_error(
+    summarize(
+      total = sum(value),
+      whole = share_of_total(total),
+      derived = whole * 100
+    ),
+    "Ordinary summaries cannot use an earlier Total share"
+  )
+  expect_error(
+    summarize(
+      total = sum(value),
+      whole = share_of_total(sum(value))
+    ),
+    "`whole = share_of_total\\(...\\)` requires exactly one bare name"
+  )
+  expect_error(
+    summarize(
+      total = sum(value),
+      dplyr::across(
+        total,
+        share_of_total
+      )
+    ),
+    "Total-share `across\\(\\)` requires an explicit `.names` argument"
+  )
+  expect_error(
+    summarize(
+      total = sum(value),
+      dplyr::across(
+        total,
+        ~share_of_total(.x),
+        .names = "{.col}_share"
+      )
+    ),
+    "For Total shares, `across\\(\\)` `.fns` must be `share_of_total`"
+  )
+  expect_error(
+    summarize(
+      total = sum(value),
+      group = share_of_total(total)
+    ),
+    "Total-share output name `group` conflicts"
+  )
+})

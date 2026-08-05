@@ -322,19 +322,22 @@ The test suite divides supporting contracts as follows:
   metadata snapshot through public calls. `test-nest-operation.R` also covers
   the nesting duplicate-drop policy and quosure environments of both nesting
   verbs.
-- `test-share.R` covers Parent-share semantics through
+- `test-share.R` covers contextual-share semantics through
   `summarize_with_margins()`: rollup levels, typed grouping identity against
   the default Margin label, missing keys separated from displayed margins,
   the direct and `across()` grammar, source type and cardinality, output-name
   collisions, dependency provenance, single evaluation of captured
-  expressions, and error precedence.
+  expressions, and error precedence. Its Total-share tests state only what is
+  the second denominator's own — which plans it accepts, interchangeable
+  duplicate Grand total occurrences, the fixed-key stand-in used when `.by` is
+  empty, and that each diagnostic names the helper the caller wrote.
 - `test-grouping-backends.R` covers Arrow and dtplyr metadata behavior,
   native and portable SQL strategy, lazy query composition, collision checks,
   internal-name safety, and live DuckDB equivalence.
-- `test-share-backends.R` covers Parent-share adapter behavior,
-  including targeted pre-query Arrow rejection, dtplyr execution-time
-  validation, lazy SQL composition, live SQLite portable execution, and live
-  DuckDB native-versus-portable results.
+- `test-share-backends.R` covers contextual-share adapter behavior for both
+  denominators, including targeted pre-query Arrow rejection, dtplyr
+  execution-time validation, lazy SQL composition, live SQLite portable
+  execution, and live DuckDB native-versus-portable results.
 - `test-inspect-grouping.R` covers `inspect_grouping()` as an ordinary tibble
   per ADR 0013, including both formats, plan order, and that a lazy input is
   inspected without executing a Margin operation.
