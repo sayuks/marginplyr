@@ -432,4 +432,8 @@ definition, especially in rollups with three or more dimensions.
 A post-summary `add_rollup_share()` verb was rejected because the grouping
 plan and parent mapping are already available inside the Margin operation.
 Allowing `cube()` or arbitrary grouping sets was deferred until an explicit
-parent-selection model exists.
+parent-selection model exists. That deferral is about selecting a parent, and
+[ADR 0017](0017-calculate-total-shares-against-the-grand-total-set.md) records
+why it does not reach a denominator that is not selected: `share_of_total()`
+accepts any plan containing a Grand total set, while this restriction on
+`share_of_parent()` still stands.

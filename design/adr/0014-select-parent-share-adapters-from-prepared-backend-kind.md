@@ -42,7 +42,7 @@ Every adapter has the same signature: the prepared Margin operation, the
 staged result, the planned requests, and the internal Grouping set identifier
 name. Adapters are dispatch targets rather than independent entry points, so
 they receive the operation whole; they read the Grouping plan from it and
-nothing else. `execute_parent_shares()` reads the backend kind and the
+nothing else. `execute_shares()` reads the backend kind and the
 caller-visible Grouping set identifier name and is the only place the
 operation crosses into the module.
 
