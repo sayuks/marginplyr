@@ -167,6 +167,44 @@ test_that("duckdb factor restoration ignores a column named `sql_query`", {
   expect_equal(result$s, c(1, 2, 3, 3, 3))
 })
 
+test_that("the grouping-set id ignores a source column named `set_id`", {
+  data <- data.frame(
+    g = c("a", "a", "b"),
+    set_id = c(10L, 20L, 30L),
+    v = c(1, 2, 3)
+  )
+
+  # `rollup(g)` has two grouping sets, so the id is 1 on the detail rows and
+  # 2 on the Margin rows regardless of what the colliding column holds.
+  result <- summarize_with_margins(
+    data,
+    s = sum(v),
+    .by = set_id,
+    .grouping = rollup(g),
+    .id = "sid"
+  )
+
+  expect_equal(result$sid, c(1L, 1L, 1L, 2L, 2L, 2L))
+  expect_equal(result$set_id, c(10L, 20L, 30L, 10L, 20L, 30L))
+})
+
+test_that("expansion's grouping-set id ignores a column named `set_id`", {
+  data <- data.frame(
+    g = c("a", "a", "b"),
+    set_id = c(10L, 20L, 30L),
+    v = c(1, 2, 3)
+  )
+
+  result <- expand_with_margins(
+    data,
+    .by = set_id,
+    .grouping = rollup(g),
+    .id = "sid"
+  )
+
+  expect_equal(result$sid, c(1L, 1L, 1L, 2L, 2L, 2L))
+})
+
 test_that("nesting ignores source columns named like its locals", {
   for (name in c("group_cols", "keep_cols", "set_col")) {
     data <- data.frame(
