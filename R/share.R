@@ -468,29 +468,29 @@ share_of_parent <- function(x) {
   )
 }
 
-preflight_parent_shares <- function(dots) {
+preflight_shares <- function(dots) {
   dot_names <- names(dots)
   if (is.null(dot_names)) {
     dot_names <- rep("", length(dots))
   }
-  has_parent_shares <- FALSE
+  has_shares <- FALSE
 
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
     expr <- rlang::quo_get_expr(quo)
     output_name <- dot_names[[i]]
 
-    if (is_parent_share_call(expr)) {
-      validate_parent_direct_syntax(expr, output_name)
-      has_parent_shares <- TRUE
+    if (is_share_helper_call(expr)) {
+      validate_share_direct_syntax(expr, output_name)
+      has_shares <- TRUE
       next
     }
-    if (is_across_call(expr) && contains_parent_share(expr)) {
-      preflight_parent_across_syntax(expr, output_name)
-      has_parent_shares <- TRUE
+    if (is_across_call(expr) && contains_share_helper(expr)) {
+      preflight_share_across_syntax(expr, output_name)
+      has_shares <- TRUE
       next
     }
-    if (contains_parent_share(expr)) {
+    if (contains_share_helper(expr)) {
       abort_marginplyr(
         paste0(
           "`share_of_parent()` must be the complete right-hand side of a ",
@@ -502,7 +502,7 @@ preflight_parent_shares <- function(dots) {
     }
   }
 
-  has_parent_shares
+  has_shares
 }
 
 check_parent_grouping_spec <- function(grouping_spec) {
@@ -520,11 +520,11 @@ check_parent_grouping_spec <- function(grouping_spec) {
   invisible(NULL)
 }
 
-plan_parent_share_expressions <- function(dots,
-                                          selection_proxy,
-                                          plan,
-                                          set_id_name,
-                                          validate_cardinality = FALSE) {
+plan_share_expressions <- function(dots,
+                                   selection_proxy,
+                                   plan,
+                                   set_id_name,
+                                   validate_cardinality = FALSE) {
   stopifnot(is.list(dots))
   stopifnot(inherits(plan, "margin_grouping_plan"))
   dot_names <- names(dots)
@@ -557,7 +557,7 @@ plan_parent_share_expressions <- function(dots,
   planned_dots <- as.list(dots)
   requests <- list()
   preceding_ordinary <- list()
-  preceding_parent_names <- character()
+  preceding_share_names <- character()
 
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
@@ -565,12 +565,12 @@ plan_parent_share_expressions <- function(dots,
     env <- rlang::quo_get_env(quo)
     output_name <- dot_names[[i]]
 
-    if (is_parent_share_call(expr)) {
-      request <- plan_direct_parent_share(
+    if (is_share_helper_call(expr)) {
+      request <- plan_direct_share(
         expr,
         output_name = output_name,
         preceding = preceding_ordinary,
-        parent_names = preceding_parent_names,
+        share_names = preceding_share_names,
         context = planning_context
       )
       planned_dots[[i]] <- rlang::new_quosure(
@@ -578,36 +578,36 @@ plan_parent_share_expressions <- function(dots,
         env = rlang::empty_env()
       )
       requests <- c(requests, list(request))
-      preceding_parent_names <- c(
-        preceding_parent_names,
+      preceding_share_names <- c(
+        preceding_share_names,
         request$outputs
       )
       next
     }
 
-    if (is_across_call(expr) && contains_parent_share(expr)) {
-      request <- plan_across_parent_share(
+    if (is_across_call(expr) && contains_share_helper(expr)) {
+      request <- plan_across_share(
         expr,
         env = env,
         output_name = output_name,
         preceding = preceding_ordinary,
-        parent_names = preceding_parent_names,
+        share_names = preceding_share_names,
         context = planning_context
       )
       if (length(request$outputs) == 0L) {
         planned_dots[i] <- list(NULL)
         next
       }
-      planned_dots[[i]] <- parent_share_placeholder(request$outputs)
+      planned_dots[[i]] <- share_placeholder(request$outputs)
       requests <- c(requests, list(request))
-      preceding_parent_names <- c(
-        preceding_parent_names,
+      preceding_share_names <- c(
+        preceding_share_names,
         request$outputs
       )
       next
     }
 
-    if (contains_parent_share(expr)) {
+    if (contains_share_helper(expr)) {
       abort_marginplyr(
         paste0(
           "`share_of_parent()` must be the complete right-hand side of a ",
@@ -616,15 +616,15 @@ plan_parent_share_expressions <- function(dots,
       )
     }
 
-    parent_dependency <- expression_alias_dependencies(
+    share_dependency <- expression_alias_dependencies(
       expr,
-      preceding_parent_names
+      preceding_share_names
     )
-    if (length(parent_dependency) > 0L) {
+    if (length(share_dependency) > 0L) {
       abort_marginplyr(
         paste0(
           "Ordinary summaries cannot use an earlier Parent share (`",
-          parent_dependency[[1L]],
+          share_dependency[[1L]],
           "`) in the same `summarize_with_margins()` call. Use a following ",
           "`dplyr::mutate()` for derived values."
         )
@@ -638,7 +638,7 @@ plan_parent_share_expressions <- function(dots,
   }
 
   cardinality <- if (isTRUE(validate_cardinality)) {
-    parent_cardinality_records(analyses, requests)
+    share_cardinality_records(analyses, requests)
   } else {
     list()
   }
@@ -648,7 +648,7 @@ plan_parent_share_expressions <- function(dots,
   widths <- vapply(
     kept_dots,
     function(dot) {
-      if (inherits(dot, "marginplyr_parent_placeholders")) {
+      if (inherits(dot, "marginplyr_share_placeholders")) {
         length(dot)
       } else {
         1L
@@ -671,7 +671,7 @@ plan_parent_share_expressions <- function(dots,
     lapply(
       kept_dots,
       function(dot) {
-        if (inherits(dot, "marginplyr_parent_placeholders")) {
+        if (inherits(dot, "marginplyr_share_placeholders")) {
           unclass(dot)
         } else {
           list(dot)
@@ -687,8 +687,8 @@ plan_parent_share_expressions <- function(dots,
   )
 }
 
-parent_cardinality_records <- function(analyses, requests) {
-  pairs <- parent_share_pairs(requests)
+share_cardinality_records <- function(analyses, requests) {
+  pairs <- share_pairs(requests)
   records <- unlist(
     lapply(analyses, `[[`, "records"),
     recursive = FALSE
@@ -719,10 +719,10 @@ parent_cardinality_records <- function(analyses, requests) {
   cardinality
 }
 
-wrap_parent_sources <- function(dots,
-                                cardinality,
-                                call,
-                                backend_kind) {
+wrap_share_sources <- function(dots,
+                               cardinality,
+                               call,
+                               backend_kind) {
   positions <- unique(vapply(
     cardinality,
     `[[`,
@@ -739,7 +739,7 @@ wrap_parent_sources <- function(dots,
     expr <- rlang::quo_get_expr(quo)
     if (is_across_call(expr)) {
       if (identical(backend_kind, "dtplyr")) {
-        wrapped <- wrap_dtplyr_parent_across(
+        wrapped <- wrap_dtplyr_share_across(
           expr,
           checks = checks,
           call = call
@@ -763,7 +763,7 @@ wrap_parent_sources <- function(dots,
         "source_summary"
       )
       wrapped <- rlang::call2(
-        parent_private_call("check_parent_across"),
+        share_private_call("check_share_across"),
         expr,
         parent_outputs = parent_outputs,
         call = rlang::call2("quote", call)
@@ -772,16 +772,16 @@ wrap_parent_sources <- function(dots,
       check <- checks[[1L]]
       is_dtplyr <- identical(backend_kind, "dtplyr")
       wrapped <- rlang::call2(
-        parent_private_call(if (is_dtplyr) {
-          "check_dtplyr_parent_source"
+        share_private_call(if (is_dtplyr) {
+          "check_dtplyr_share_source"
         } else {
-          "check_parent_scalar"
+          "check_share_scalar"
         }),
         expr,
         parent_output = check$parent_output,
         source_summary = check$source_summary,
         !!!if (is_dtplyr) {
-          list(call_text = parent_call_text(call))
+          list(call_text = share_call_text(call))
         } else {
           list(call = rlang::call2("quote", call))
         }
@@ -795,7 +795,7 @@ wrap_parent_sources <- function(dots,
   dots
 }
 
-wrap_dtplyr_parent_across <- function(expr, checks, call) {
+wrap_dtplyr_share_across <- function(expr, checks, call) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   fns_index <- parsed$fns_index
@@ -869,9 +869,9 @@ wrap_dtplyr_parent_across <- function(expr, checks, call) {
       character(1),
       "source_summary"
     )
-    functions[[function_index]] <- wrap_dtplyr_parent_function(
+    functions[[function_index]] <- wrap_dtplyr_share_function(
       functions[[function_index]],
-      mapping = new_parent_validation_mapping(
+      mapping = new_share_validation_mapping(
         inputs = inputs,
         parent_outputs = parent_outputs,
         source_summaries = source_summaries
@@ -921,7 +921,7 @@ inline_dtplyr_forwarded_fn <- function(fn, forwarded_args) {
   )
 }
 
-wrap_dtplyr_parent_function <- function(fn, mapping, forwarded_args, call) {
+wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
   value <- if (rlang::is_call(fn, "~")) {
     fn[[2L]]
   } else {
@@ -932,34 +932,34 @@ wrap_dtplyr_parent_function <- function(fn, mapping, forwarded_args, call) {
     )
   }
   input <- rlang::call2(
-    parent_private_call("dtplyr_parent_input_name"),
+    share_private_call("dtplyr_share_input_name"),
     dtplyr_lambda_pronoun()
   )
   mapping_expr <- rlang::call2(
-    parent_private_call("new_parent_validation_mapping"),
+    share_private_call("new_share_validation_mapping"),
     inputs = mapping$inputs,
     parent_outputs = mapping$parent_outputs,
     source_summaries = mapping$source_summaries
   )
   validator <- rlang::call2(
-    parent_private_call("check_dtplyr_parent_scalar"),
+    share_private_call("check_dtplyr_share_scalar"),
     value,
     input = input,
     mapping = mapping_expr,
-    call_text = parent_call_text(call)
+    call_text = share_call_text(call)
   )
   rlang::call2("~", validator)
 }
 
-check_dtplyr_parent_scalar <- function(value,
-                                       input,
-                                       mapping,
-                                       call_text) {
+check_dtplyr_share_scalar <- function(value,
+                                      input,
+                                      mapping,
+                                      call_text) {
   position <- match(input, mapping$inputs)
   if (is.na(position)) {
     return(value)
   }
-  check_dtplyr_parent_source(
+  check_dtplyr_share_source(
     value,
     parent_output = mapping$parent_outputs[[position]],
     source_summary = mapping$source_summaries[[position]],
@@ -967,11 +967,11 @@ check_dtplyr_parent_scalar <- function(value,
   )
 }
 
-check_dtplyr_parent_source <- function(value,
-                                       parent_output,
-                                       source_summary,
-                                       call_text) {
-  check_parent_scalar(
+check_dtplyr_share_source <- function(value,
+                                      parent_output,
+                                      source_summary,
+                                      call_text) {
+  check_share_scalar(
     value,
     parent_output = parent_output,
     source_summary = source_summary,
@@ -979,13 +979,13 @@ check_dtplyr_parent_source <- function(value,
   )
 }
 
-dtplyr_parent_input_name <- function(value) {
+dtplyr_share_input_name <- function(value) {
   deparse(substitute(value))
 }
 
-new_parent_validation_mapping <- function(inputs,
-                                          parent_outputs,
-                                          source_summaries) {
+new_share_validation_mapping <- function(inputs,
+                                         parent_outputs,
+                                         source_summaries) {
   stopifnot(
     length(inputs) == length(parent_outputs),
     length(inputs) == length(source_summaries)
@@ -997,7 +997,7 @@ new_parent_validation_mapping <- function(inputs,
   )
 }
 
-parent_private_call <- function(name) {
+share_private_call <- function(name) {
   rlang::call2(
     ":::",
     rlang::sym("marginplyr"),
@@ -1005,9 +1005,9 @@ parent_private_call <- function(name) {
   )
 }
 
-check_parent_across <- function(value, parent_outputs, call) {
+check_share_across <- function(value, parent_outputs, call) {
   for (source_summary in names(parent_outputs)) {
-    check_parent_scalar(
+    check_share_scalar(
       value[[source_summary]],
       parent_output = parent_outputs[[source_summary]],
       source_summary = source_summary,
@@ -1017,10 +1017,10 @@ check_parent_across <- function(value, parent_outputs, call) {
   value
 }
 
-check_parent_scalar <- function(value,
-                                parent_output,
-                                source_summary,
-                                call) {
+check_share_scalar <- function(value,
+                               parent_output,
+                               source_summary,
+                               call) {
   if (length(value) != 1L) {
     abort_marginplyr(
       paste0(
@@ -1036,8 +1036,8 @@ check_parent_scalar <- function(value,
       call = call
     )
   }
-  if (!is_parent_source_type(value)) {
-    abort_parent_source_type(
+  if (!is_share_source_type(value)) {
+    abort_share_source_type(
       value,
       parent_output = parent_output,
       source_summary = source_summary,
@@ -1051,14 +1051,14 @@ check_parent_scalar <- function(value,
 # wrapped around each summary expression, and the local backend's re-check of
 # the collected result. They share one definition so the handler-visible fields
 # cannot drift away from the message again.
-is_parent_source_type <- function(value) {
+is_share_source_type <- function(value) {
   typeof(value) %in% c("integer", "double") && !is.object(value)
 }
 
-abort_parent_source_type <- function(value,
-                                     parent_output,
-                                     source_summary,
-                                     call) {
+abort_share_source_type <- function(value,
+                                    parent_output,
+                                    source_summary,
+                                    call) {
   detected_type <- if (is.object(value)) class(value) else typeof(value)
   abort_marginplyr(
     paste0(
@@ -1074,7 +1074,7 @@ abort_parent_source_type <- function(value,
   )
 }
 
-parent_call_text <- function(call) {
+share_call_text <- function(call) {
   paste(deparse(call, width.cutoff = 500L), collapse = "\n")
 }
 
@@ -1091,7 +1091,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
     output_name <- dot_names[[i]]
     expr <- rlang::quo_get_expr(quo)
     env <- rlang::quo_get_env(quo)
-    if (contains_parent_share(expr)) {
+    if (contains_share_helper(expr)) {
       analyses[[i]] <- list(records = list())
       next
     }
@@ -1176,24 +1176,24 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
   analyses
 }
 
-plan_direct_parent_share <- function(expr,
-                                     output_name,
-                                     preceding,
-                                     parent_names,
-                                     context) {
-  args <- validate_parent_direct_syntax(expr, output_name)
+plan_direct_share <- function(expr,
+                              output_name,
+                              preceding,
+                              share_names,
+                              context) {
+  args <- validate_share_direct_syntax(expr, output_name)
   source <- rlang::as_name(args[[1L]])
-  validate_parent_share_request(
+  validate_share_request(
     outputs = output_name,
     sources = source,
     preceding = preceding,
-    parent_names = parent_names,
+    share_names = share_names,
     context = context
   )
   list(outputs = output_name, sources = source)
 }
 
-validate_parent_direct_syntax <- function(expr, output_name) {
+validate_share_direct_syntax <- function(expr, output_name) {
   if (!nzchar(output_name)) {
     abort_marginplyr(
       paste0(
@@ -1215,13 +1215,13 @@ validate_parent_direct_syntax <- function(expr, output_name) {
   args
 }
 
-plan_across_parent_share <- function(expr,
-                                     env,
-                                     output_name,
-                                     preceding,
-                                     parent_names,
-                                     context) {
-  syntax <- validate_parent_across_syntax(expr, env, output_name)
+plan_across_share <- function(expr,
+                              env,
+                              output_name,
+                              preceding,
+                              share_names,
+                              context) {
+  syntax <- validate_share_across_syntax(expr, env, output_name)
   args <- syntax$args
   names_template <- syntax$names_template
 
@@ -1241,9 +1241,9 @@ plan_across_parent_share <- function(expr,
     "name"
   ))
   if (contains_selection_predicate(args$cols)) {
-    abort_parent_predicate()
+    abort_share_predicate()
   }
-  sources <- resolve_parent_share_selection(
+  sources <- resolve_share_selection(
     args$cols,
     env = env,
     preceding_names = preceding_names,
@@ -1258,18 +1258,18 @@ plan_across_parent_share <- function(expr,
     character(1)
   )
 
-  validate_parent_share_request(
+  validate_share_request(
     outputs = outputs,
     sources = sources,
     preceding = preceding,
-    parent_names = parent_names,
+    share_names = share_names,
     context = context
   )
   list(outputs = outputs, sources = sources)
 }
 
-validate_parent_across_syntax <- function(expr, env, output_name) {
-  args <- preflight_parent_across_syntax(expr, output_name)
+validate_share_across_syntax <- function(expr, env, output_name) {
+  args <- preflight_share_across_syntax(expr, output_name)
   if (!is.null(args$unpack)) {
     unpack <- rlang::eval_tidy(args$unpack, env = env)
     if (!isFALSE(unpack)) {
@@ -1297,7 +1297,7 @@ validate_parent_across_syntax <- function(expr, env, output_name) {
   list(args = args, names_template = names_template)
 }
 
-preflight_parent_across_syntax <- function(expr, output_name) {
+preflight_share_across_syntax <- function(expr, output_name) {
   if (nzchar(output_name)) {
     abort_marginplyr(
       paste0(
@@ -1307,7 +1307,7 @@ preflight_parent_across_syntax <- function(expr, output_name) {
     )
   }
   args <- parse_across_arguments(expr)
-  if (!is_parent_share_function(args$fns)) {
+  if (!is_share_helper_function(args$fns)) {
     abort_marginplyr(
       paste0(
         "For Parent shares, `across()` `.fns` must be `share_of_parent` or ",
@@ -1346,16 +1346,16 @@ preflight_parent_across_syntax <- function(expr, output_name) {
     }
   }
   if (contains_selection_predicate(args$cols)) {
-    abort_parent_predicate()
+    abort_share_predicate()
   }
   args
 }
 
-validate_parent_share_request <- function(outputs,
-                                          sources,
-                                          preceding,
-                                          parent_names,
-                                          context) {
+validate_share_request <- function(outputs,
+                                   sources,
+                                   preceding,
+                                   share_names,
+                                   context) {
   if (length(outputs) == 0L) {
     return(invisible(NULL))
   }
@@ -1384,7 +1384,7 @@ validate_parent_share_request <- function(outputs,
   for (i in seq_along(sources)) {
     source <- sources[[i]]
     output <- outputs[[i]]
-    if (source %in% parent_names) {
+    if (source %in% share_names) {
       abort_marginplyr(
         paste0(
           "Parent share `", output, "` cannot use Parent share `", source,
@@ -1448,7 +1448,7 @@ validate_parent_share_request <- function(outputs,
     unique(c(
       context$conflicting_names,
       all_names,
-      parent_names
+      share_names
     ))
   )
   if (length(conflicts) > 0L) {
@@ -1477,9 +1477,9 @@ check_parent_grouping_kind <- function(plan) {
   invisible(NULL)
 }
 
-execute_parent_shares <- function(operation,
-                                  staged_result,
-                                  requests) {
+execute_shares <- function(operation,
+                           staged_result,
+                           requests) {
   check_margin_operation(operation)
   check_margin_summary_stage(staged_result)
   if (length(requests) == 0L) {
@@ -1494,7 +1494,7 @@ execute_parent_shares <- function(operation,
   staged_set_id_name <- margin_summary_stage_set_id(
     staged_result
   )
-  adapter <- parent_share_adapter(operation$backend$kind)
+  adapter <- share_adapter(operation$backend$kind)
   result <- adapter(
     operation,
     result = result,
@@ -1513,14 +1513,14 @@ execute_parent_shares <- function(operation,
   )
 }
 
-parent_share_adapter <- function(backend_kind) {
+share_adapter <- function(backend_kind) {
   adapters <- list(
-    local = execute_local_parent_shares,
-    duckdb = execute_dbplyr_parent_shares,
-    postgres = execute_dbplyr_parent_shares,
-    sql = execute_dbplyr_parent_shares,
-    dtplyr = execute_non_sql_parent_shares,
-    other = execute_non_sql_parent_shares
+    local = execute_local_shares,
+    duckdb = execute_dbplyr_shares,
+    postgres = execute_dbplyr_shares,
+    sql = execute_dbplyr_shares,
+    dtplyr = execute_non_sql_shares,
+    other = execute_non_sql_shares
   )
   adapter <- adapters[[backend_kind]]
   if (is.null(adapter)) {
@@ -1532,12 +1532,12 @@ parent_share_adapter <- function(backend_kind) {
   adapter
 }
 
-execute_local_parent_shares <- function(operation,
-                                        result,
-                                        requests,
-                                        set_id_name) {
-  check_local_parent_share_types(result, requests, call = operation$call)
-  apply_joined_parent_shares(
+execute_local_shares <- function(operation,
+                                 result,
+                                 requests,
+                                 set_id_name) {
+  check_local_share_types(result, requests, call = operation$call)
+  apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
@@ -1546,11 +1546,11 @@ execute_local_parent_shares <- function(operation,
   )
 }
 
-execute_dbplyr_parent_shares <- function(operation,
-                                         result,
-                                         requests,
-                                         set_id_name) {
-  apply_joined_parent_shares(
+execute_dbplyr_shares <- function(operation,
+                                  result,
+                                  requests,
+                                  set_id_name) {
+  apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
@@ -1559,11 +1559,11 @@ execute_dbplyr_parent_shares <- function(operation,
   )
 }
 
-execute_non_sql_parent_shares <- function(operation,
-                                          result,
-                                          requests,
-                                          set_id_name) {
-  apply_joined_parent_shares(
+execute_non_sql_shares <- function(operation,
+                                   result,
+                                   requests,
+                                   set_id_name) {
+  apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
@@ -1572,20 +1572,20 @@ execute_non_sql_parent_shares <- function(operation,
   )
 }
 
-apply_joined_parent_shares <- function(result,
-                                       requests,
-                                       plan,
-                                       set_id_name,
-                                       sql_join) {
+apply_joined_shares <- function(result,
+                                requests,
+                                plan,
+                                set_id_name,
+                                sql_join) {
   parent_ids <- parent_set_ids(plan)
   root_ids <- plan$set_ids[is.na(parent_ids)]
-  pairs <- parent_share_pairs(requests)
+  pairs <- share_pairs(requests)
   sources <- unique(vapply(pairs, `[[`, character(1), "source"))
   result_names <- get_col_names(result, dplyr::everything())
   denominator_names <- new_margin_internal_names(
     length(sources),
     used_names = result_names,
-    prefix = "..marginplyr_parent_value_"
+    prefix = "..marginplyr_share_value_"
   )
   names(denominator_names) <- sources
 
@@ -1645,7 +1645,7 @@ apply_joined_parent_shares <- function(result,
           denominator_names,
           join_key_names
         ),
-        prefix = "..marginplyr_parent_match_"
+        prefix = "..marginplyr_share_match_"
       )
       rename_pairs <- rlang::set_names(
         rlang::syms(join_names),
@@ -1655,7 +1655,7 @@ apply_joined_parent_shares <- function(result,
       result <- dplyr::left_join(
         result,
         mapping,
-        sql_on = lazy_parent_sql_on(
+        sql_on = lazy_share_sql_on(
           con = dbplyr::remote_con(result),
           left_names = join_names,
           right_names = right_join_names
@@ -1715,7 +1715,7 @@ apply_joined_parent_shares <- function(result,
   result
 }
 
-lazy_parent_sql_on <- function(con, left_names, right_names) {
+lazy_share_sql_on <- function(con, left_names, right_names) {
   stopifnot(length(left_names) == length(right_names))
   # Both are read only from the glue string below, which codetools cannot see.
   # nolint start: object_usage_linter.
@@ -1743,7 +1743,7 @@ lazy_parent_sql_on <- function(con, left_names, right_names) {
   ))
 }
 
-parent_share_pairs <- function(requests) {
+share_pairs <- function(requests) {
   unlist(
     lapply(
       requests,
@@ -1829,8 +1829,8 @@ add_lazy_parent_join_keys <- function(result,
   dplyr::mutate(result, !!!join_key_exprs)
 }
 
-check_local_parent_share_types <- function(result, requests, call) {
-  pairs <- parent_share_pairs(requests)
+check_local_share_types <- function(result, requests, call) {
+  pairs <- share_pairs(requests)
   checked_sources <- character()
 
   for (pair in pairs) {
@@ -1839,8 +1839,8 @@ check_local_parent_share_types <- function(result, requests, call) {
       next
     }
     values <- result[[source]]
-    if (!is_parent_source_type(values)) {
-      abort_parent_source_type(
+    if (!is_share_source_type(values)) {
+      abort_share_source_type(
         values,
         parent_output = pair$output,
         source_summary = source,
@@ -1876,7 +1876,7 @@ parent_set_ids <- function(plan) {
   result
 }
 
-parent_share_placeholder <- function(outputs) {
+share_placeholder <- function(outputs) {
   placeholders <- lapply(
     outputs,
     function(output) {
@@ -1884,34 +1884,34 @@ parent_share_placeholder <- function(outputs) {
     }
   )
   names(placeholders) <- outputs
-  structure(placeholders, class = "marginplyr_parent_placeholders")
+  structure(placeholders, class = "marginplyr_share_placeholders")
 }
 
-is_parent_share_call <- function(expr) {
+is_share_helper_call <- function(expr) {
   rlang::is_call(expr) &&
     identical(rlang::call_name(expr), "share_of_parent") &&
     (is.null(rlang::call_ns(expr)) ||
        identical(rlang::call_ns(expr), "marginplyr"))
 }
 
-contains_parent_share <- function(expr) {
-  if (is_parent_share_function(expr)) {
+contains_share_helper <- function(expr) {
+  if (is_share_helper_function(expr)) {
     return(TRUE)
   }
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
-  if (is_parent_share_call(expr)) {
+  if (is_share_helper_call(expr)) {
     return(TRUE)
   }
   any(vapply(
     as.list(expr)[-1L],
-    contains_parent_share,
+    contains_share_helper,
     logical(1)
   ))
 }
 
-is_parent_share_function <- function(expr) {
+is_share_helper_function <- function(expr) {
   if (rlang::is_symbol(expr)) {
     return(identical(rlang::as_name(expr), "share_of_parent"))
   }
@@ -1928,15 +1928,15 @@ is_across_call <- function(expr) {
        identical(rlang::call_ns(expr), "dplyr"))
 }
 
-resolve_parent_share_selection <- function(expr,
-                                           env,
-                                           preceding_names,
-                                           preceding,
-                                           context) {
+resolve_share_selection <- function(expr,
+                                    env,
+                                    preceding_names,
+                                    preceding,
+                                    context) {
   if (rlang::is_symbol(expr)) {
     source <- rlang::as_name(expr)
     if (!source %in% preceding_names) {
-      abort_parent_source_name(source, preceding, context)
+      abort_share_source_name(source, preceding, context)
     }
   }
   proxy <- stats::setNames(
@@ -1951,13 +1951,13 @@ resolve_parent_share_selection <- function(expr,
       allow_rename = FALSE
     )),
     error = function(cnd) {
-      abort_parent_selection_error(cnd, preceding, context)
+      abort_share_selection_error(cnd, preceding, context)
     }
   )
 }
 
-abort_parent_selection_error <- function(cnd, preceding, context) {
-  missing <- parent_selection_missing_names(cnd)
+abort_share_selection_error <- function(cnd, preceding, context) {
+  missing <- share_selection_missing_names(cnd)
   if (length(missing) == 0L) {
     abort_marginplyr(
       paste0(
@@ -1968,10 +1968,10 @@ abort_parent_selection_error <- function(cnd, preceding, context) {
     )
   }
 
-  abort_parent_source_name(missing[[1L]], preceding, context)
+  abort_share_source_name(missing[[1L]], preceding, context)
 }
 
-abort_parent_source_name <- function(source, preceding, context) {
+abort_share_source_name <- function(source, preceding, context) {
   all_names <- vapply(
     context$all_records,
     `[[`,
@@ -2031,11 +2031,11 @@ abort_parent_source_name <- function(source, preceding, context) {
   )
 }
 
-parent_selection_missing_names <- function(cnd) {
+share_selection_missing_names <- function(cnd) {
   current <- if (is.character(cnd$i)) cnd$i else character()
   parent <- cnd$parent
   if (inherits(parent, "condition")) {
-    current <- c(current, parent_selection_missing_names(parent))
+    current <- c(current, share_selection_missing_names(parent))
   }
   unique(current[nzchar(current)])
 }
@@ -2057,7 +2057,7 @@ contains_selection_predicate <- function(expr) {
   ))
 }
 
-abort_parent_predicate <- function() {
+abort_share_predicate <- function() {
   abort_marginplyr(
     paste0(
       "Parent-share `across()` only supports name-based tidyselect. Replace ",

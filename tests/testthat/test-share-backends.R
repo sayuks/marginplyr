@@ -532,11 +532,11 @@ test_that("dtplyr batches validated summaries and parent mapping", {
   expect_identical(
     parent_sql_count(
       many_call,
-      "check_parent_scalar(sum(revenue)"
+      "check_share_scalar(sum(revenue)"
     ),
     parent_sql_count(
       one_call,
-      "check_parent_scalar(sum(revenue)"
+      "check_share_scalar(sum(revenue)"
     )
   )
   expect_identical(parent_sql_count(many_call, "allow.cartesian = TRUE"), 1L)
@@ -1092,10 +1092,10 @@ test_that("lazy Parent shares skip duplicate grouping-set occurrences", {
 
 test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   group_name <- "..marginplyr_parent_key_1"
-  value_name <- "..marginplyr_parent_value_1"
-  summary_name <- "..marginplyr_parent_value_1_"
-  share_name <- "..marginplyr_parent_set_1_"
-  id_name <- "..marginplyr_parent_match_1_"
+  value_name <- "..marginplyr_share_value_1"
+  summary_name <- "..marginplyr_share_value_1_"
+  share_name <- "..marginplyr_set_id_1_"
+  id_name <- "..marginplyr_share_match_1_"
   data <- data.frame(
     c(group_name, "x"),
     c(1, 3),
@@ -1106,8 +1106,8 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   names(data) <- c(
     group_name,
     value_name,
-    "..marginplyr_parent_set_1",
-    "..marginplyr_parent_match_1"
+    "..marginplyr_set_id_1",
+    "..marginplyr_share_match_1"
   )
 
   summarize <- function(source) {

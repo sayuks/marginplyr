@@ -115,7 +115,7 @@ known output names, and preventing summary outputs from overwriting grouping
 columns. These checks occur before semantic label validation, including any
 opt-in lazy collision query.
 
-### Parent share (`R/parent-share.R`)
+### Contextual shares (`R/share.R`)
 
 One deep private module owns every Parent-share responsibility: request
 planning, parent mapping, source validation, ratio calculation, collision-safe
@@ -123,21 +123,29 @@ temporary names and their cleanup, and backend adapter dispatch. Its file is
 large because the module is deep, not because it is several modules sharing a
 file; splitting it would move the seam without shrinking the interface.
 
+Its shared machinery is named `share_*` rather than `parent_share_*` because
+every one of those responsibilities except the denominator is independent of
+which contextual share is being calculated. The names that stayed
+`parent_*` — `parent_set_ids()`, `check_parent_grouping_spec()`,
+`check_parent_grouping_kind()`, `build_lazy_parent_mapping()`, and
+`add_lazy_parent_join_keys()` — are the ones that genuinely resolve a
+*parent* occurrence, and a second contextual share would not reach them.
+
 The exported `share_of_parent()` in this file is only a context guard: reaching
 its body means the helper was called outside a Margin summary, so it always
 raises. The rest of the module is private and is reached through four entry
 points, and no other:
 
-- `preflight_parent_shares()`, called from the public verb's admission block
+- `preflight_shares()`, called from the public verb's admission block
   before preparation, which reports whether the call contains any
   Parent-share request and rejects statically impossible forms;
-- `plan_parent_share_expressions()`, called by `plan_summary_expressions()`
+- `plan_share_expressions()`, called by `plan_summary_expressions()`
   in the summary-selection module, which rewrites the captured summary
   expressions into ordinary summaries plus planned Parent-share requests;
-- `wrap_parent_sources()`, called from the same place immediately afterwards,
+- `wrap_share_sources()`, called from the same place immediately afterwards,
   which wraps each referenced source summary in the validator its backend can
   execute; and
-- `execute_parent_shares()`, called by `execute_margin_summary()`, which
+- `execute_shares()`, called by `execute_margin_summary()`, which
   receives the prepared Margin operation, the staged ordinary-summary result,
   and all planned requests together.
 
@@ -250,7 +258,7 @@ Direct field reads are confined to:
 - the Margin operation module, for validation and finalization;
 - the three dedicated verb executors, for their schema-aware preflight and
   calls into low-level adapters;
-- `execute_parent_shares()`, which reads the prepared backend kind to select
+- `execute_shares()`, which reads the prepared backend kind to select
   an adapter and the caller-visible Grouping set identifier name to restore
   it after the join; and
 - the three Parent-share adapters, which read the Grouping plan and nothing
@@ -290,7 +298,7 @@ The test suite divides supporting contracts as follows:
   metadata snapshot through public calls. `test-nest-operation.R` also covers
   the nesting duplicate-drop policy and quosure environments of both nesting
   verbs.
-- `test-parent-share.R` covers Parent-share semantics through
+- `test-share.R` covers Parent-share semantics through
   `summarize_with_margins()`: rollup levels, typed grouping identity against
   the default Margin label, missing keys separated from displayed margins,
   the direct and `across()` grammar, source type and cardinality, output-name
@@ -299,7 +307,7 @@ The test suite divides supporting contracts as follows:
 - `test-grouping-backends.R` covers Arrow and dtplyr metadata behavior,
   native and portable SQL strategy, lazy query composition, collision checks,
   internal-name safety, and live DuckDB equivalence.
-- `test-parent-share-backends.R` covers Parent-share adapter behavior,
+- `test-share-backends.R` covers Parent-share adapter behavior,
   including targeted pre-query Arrow rejection, dtplyr execution-time
   validation, lazy SQL composition, live SQLite portable execution, and live
   DuckDB native-versus-portable results.
@@ -369,7 +377,7 @@ A backend change should:
    executor;
 3. reuse the existing portable adapter unless native `GROUPING SETS` support
    is confirmed and covered by the native adapter contract;
-4. name the new backend kind in `parent_share_adapter()`, choosing one of the
+4. name the new backend kind in `share_adapter()`, choosing one of the
    three existing Parent-share adapters or adding a fourth. The lookup has no
    default: an unnamed kind stops the operation rather than falling through to
    a plausible-looking join;

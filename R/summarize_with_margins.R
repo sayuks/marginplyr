@@ -478,7 +478,7 @@ summarize_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  has_parent_shares <- with_margin_error_call(
+  has_shares <- with_margin_error_call(
     {
       assert_margin_input(.data)
       assert_lazy_table(.data)
@@ -492,7 +492,7 @@ summarize_with_margins <- function(.data,
       check_removed_groups_argument(dots)
       check_option_named_summaries(dots)
       check_summary_context_helpers(dots)
-      preflight_parent_shares(dots)
+      preflight_shares(dots)
     },
     call = call
   )
@@ -506,7 +506,7 @@ summarize_with_margins <- function(.data,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     .id = .id,
-    validate_grouping = if (has_parent_shares) {
+    validate_grouping = if (has_shares) {
       check_parent_grouping_spec
     } else {
       NULL
@@ -558,12 +558,12 @@ execute_margin_summary <- function(operation, dots) {
         summary_output_names,
         operation$set_id_name
       ))
-      has_parent_shares <- length(summary_plan$requests) > 0L
+      has_shares <- length(summary_plan$requests) > 0L
 
       validate_margin_operation(operation)
 
       if (
-        has_parent_shares &&
+        has_shares &&
           identical(operation$backend$kind, "arrow")
       ) {
         abort_marginplyr(
@@ -581,11 +581,11 @@ execute_margin_summary <- function(operation, dots) {
         operation,
         dots = dots,
         reserved_names = reserved_names,
-        keep_set_identity = has_parent_shares
+        keep_set_identity = has_shares
       )
 
-      if (has_parent_shares) {
-        return(execute_parent_shares(
+      if (has_shares) {
+        return(execute_shares(
           operation,
           staged_result = staged_result,
           requests = summary_plan$requests
@@ -607,7 +607,7 @@ stage_margin_summaries <- function(operation,
     set_id_name <- new_margin_internal_names(
       1L,
       used_names = reserved_names,
-      prefix = "..marginplyr_parent_set_"
+      prefix = "..marginplyr_set_id_"
     )
     reserved_names <- c(reserved_names, set_id_name)
   }

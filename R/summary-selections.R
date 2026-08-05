@@ -166,9 +166,9 @@ plan_summary_expressions <- function(dots,
     data_vars = data_vars,
     group_vars = group_vars,
     normalize_across_names = FALSE,
-    skip_parent_shares = TRUE
+    skip_shares = TRUE
   )
-  summary_plan <- plan_parent_share_expressions(
+  summary_plan <- plan_share_expressions(
     dots,
     selection_proxy = selection_proxy,
     plan = plan,
@@ -183,7 +183,7 @@ plan_summary_expressions <- function(dots,
     normalize_across_names = identical(backend_kind, "dtplyr")
   )
   if (length(summary_plan$cardinality) > 0L) {
-    summary_plan$dots <- wrap_parent_sources(
+    summary_plan$dots <- wrap_share_sources(
       summary_plan$dots,
       cardinality = summary_plan$cardinality,
       call = call,
@@ -230,7 +230,7 @@ resolve_summary_selections <- function(dots,
                                        data_vars,
                                        group_vars,
                                        normalize_across_names = FALSE,
-                                       skip_parent_shares = FALSE) {
+                                       skip_shares = FALSE) {
   selectable_vars <- setdiff(data_vars, unique(group_vars))
   selection_proxy <- dplyr::select(
     data_proxy,
@@ -242,8 +242,8 @@ resolve_summary_selections <- function(dots,
     function(dot) {
       expr <- rlang::quo_get_expr(dot)
       if (
-        skip_parent_shares &&
-          contains_parent_share(expr)
+        skip_shares &&
+          contains_share_helper(expr)
       ) {
         return(dot)
       }
