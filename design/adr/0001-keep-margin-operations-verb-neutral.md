@@ -40,3 +40,28 @@ then grouping dimensions, then the optional Grouping set identifier.
 Nothing else in this decision changes. Verb-neutrality was never what made
 sorting shared, and removing the sort left the finalizer's remaining
 responsibilities in the same place.
+
+## Amendment: the finalizer orders rows again, on request
+
+The clause the amendment above withdrew is restored, narrowly. ADR 0018
+returns `.sort` to every Margin verb as an opt-in Margin order and puts it
+back in the shared finalizer, so **"applies the common sorting semantics"**
+holds once more.
+
+Its reason no longer holds either. That amendment withdrew the clause because
+`.sort` had been removed; the option exists again, and it is a different
+feature under the same name — it orders by the Grouping plan's structure,
+taking each dimension's Grouping bit before that dimension's value, rather
+than by displayed values.
+
+What the amendment above decided about row order survives as the default.
+Finalization still leaves row order unspecified on every backend unless a
+caller asks for a Margin order, and callers still use an explicit
+`dplyr::arrange()` otherwise. ADR 0013's Grouping-plan order guarantee for
+`inspect_grouping()` is still an inspection guarantee that does not extend to
+Margin-operation results, and a Margin order is not that order.
+
+Verb-neutrality is again untouched. The sort key is derived from the Grouping
+plan, which the shared module already holds, so no verb kind is passed in to
+produce it. ADR 0018 records the order, how far it is promised, and the two
+backend mechanisms that produce it.
