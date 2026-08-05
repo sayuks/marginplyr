@@ -335,6 +335,7 @@ jobs:
             required: RSQLite,DBI
             proves: >-
               RSQLite executes portable Parent shares end to end;
+              RSQLite executes portable Total shares end to end;
               RSQLite Parent shares preserve runtime backend conditions
           - name: DuckDB
             packages: any::DBI, any::duckdb
@@ -345,13 +346,17 @@ jobs:
               DuckDB native and portable summaries agree on .id;
               DuckDB Parent shares agree across native, portable, and local
               paths;
+              DuckDB Total shares agree across native, portable, and local
+              paths;
               duckdb factor restoration ignores a column named `sql_query`
           - name: dtplyr
             packages: any::dtplyr
             required: dtplyr
             proves: >-
               dtplyr integer and double Parent shares match local results;
+              dtplyr Total shares match local results;
               dtplyr rejects every ineligible Parent-share source type;
+              dtplyr rejects ineligible Total-share sources on collection;
               dtplyr rejects non-scalar Parent-share sources on collection;
               dtplyr validates Parent-share source types during collection;
               dtplyr factor restoration ignores columns named like its locals
@@ -360,6 +365,7 @@ jobs:
             required: arrow
             proves: >-
               Arrow rejects Parent shares before constructing a query;
+              Arrow rejects Total shares before constructing a query;
               Arrow ordinary Margin summaries remain lazy and available
 
     env:

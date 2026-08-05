@@ -33,3 +33,24 @@
     Output
       [1] "Parent-share `across()` only supports name-based tidyselect. Replace `where()` or another type/value predicate with explicit summary names."
 
+# Total-share diagnostics name the helper the caller wrote
+
+    Code
+      conditionMessage(cardinality_error)
+    Output
+      [1] "Total share `whole` requires source summary `total` to return exactly one value per grouping row. Define `total` as one scalar summary; for multiple statistics, create separate named summaries and a Total share for each one."
+
+---
+
+    Code
+      conditionMessage(predicate_error)
+    Output
+      [1] "Total-share `across()` only supports name-based tidyselect. Replace `where()` or another type/value predicate with explicit summary names."
+
+---
+
+    Code
+      conditionMessage(unknown_error)
+    Output
+      [1] "`across()` refers to unknown summary `missing` for `share_of_total()`. Select only eligible preceding ordinary summaries by name, such as `total`."
+

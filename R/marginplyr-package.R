@@ -30,8 +30,9 @@
 #' - **Grouping-plan inspection and grouping identities**:
 #'   [inspect_grouping()], [grouping_bit()], and [grouping_id()] resolve and
 #'   identify grouping sets before or after running a margin operation.
-#' - **Parent shares**: [share_of_parent()] calculates a summary's ratio to
-#'   its immediate rollup parent.
+#' - **Contextual shares**: [share_of_parent()] and [share_of_total()]
+#'   calculate a summary's ratio to its immediate rollup parent, or to the
+#'   grand total.
 #'
 #' @section Errors:
 #' Every error marginplyr raises for a call you can correct inherits the

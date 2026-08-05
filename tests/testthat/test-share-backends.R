@@ -70,7 +70,7 @@ test_that("dtplyr validates Parent-share source types during collection", {
     "plain integer or double scalar"
   )
   expect_s3_class(error, "marginplyr_error")
-  expect_identical(error$parent_output, "flag_share")
+  expect_identical(error$share_output, "flag_share")
   expect_identical(error$source_summary, "flag")
   expect_identical(
     rlang::call_name(conditionCall(error)),
@@ -110,7 +110,7 @@ test_that("dtplyr rejects every ineligible Parent-share source type", {
       info = semantic_type
     )
     expect_s3_class(error, "marginplyr_error")
-    expect_identical(error$parent_output, "share", info = semantic_type)
+    expect_identical(error$share_output, "share", info = semantic_type)
     expect_identical(error$source_summary, "source", info = semantic_type)
     expect_identical(
       rlang::call_name(conditionCall(error)),
@@ -148,10 +148,10 @@ test_that("dtplyr rejects non-scalar Parent-share sources on collection", {
     )
     expect_s3_class(
       error,
-      "marginplyr_parent_cardinality_error"
+      "marginplyr_share_cardinality_error"
     )
     expect_s3_class(error, "marginplyr_error")
-    expect_identical(error$parent_output, "share", info = cardinality)
+    expect_identical(error$share_output, "share", info = cardinality)
     expect_identical(error$source_summary, "source", info = cardinality)
     expect_identical(
       rlang::call_name(conditionCall(error)),
@@ -218,7 +218,7 @@ test_that("dtplyr validates each referenced source expanded by across", {
     "plain integer or double scalar"
   )
   expect_s3_class(error, "marginplyr_error")
-  expect_identical(error$parent_output, "flag_share")
+  expect_identical(error$share_output, "flag_share")
   expect_identical(error$source_summary, "value_flag")
 })
 
@@ -246,10 +246,10 @@ test_that("dtplyr validates constant summaries expanded by across", {
     expect_s3_class(query, "dtplyr_step")
     error <- expect_error(dplyr::collect(query))
     expect_s3_class(error, "marginplyr_error")
-    expect_identical(error$parent_output, "share", info = kind)
+    expect_identical(error$share_output, "share", info = kind)
     expect_identical(error$source_summary, "source", info = kind)
     if (identical(kind, "multiple")) {
-      expect_s3_class(error, "marginplyr_parent_cardinality_error")
+      expect_s3_class(error, "marginplyr_share_cardinality_error")
     } else {
       expect_match(conditionMessage(error), "plain integer or double scalar")
     }
@@ -532,11 +532,11 @@ test_that("dtplyr batches validated summaries and parent mapping", {
   expect_identical(
     parent_sql_count(
       many_call,
-      "check_parent_scalar(sum(revenue)"
+      "check_share_scalar(sum(revenue)"
     ),
     parent_sql_count(
       one_call,
-      "check_parent_scalar(sum(revenue)"
+      "check_share_scalar(sum(revenue)"
     )
   )
   expect_identical(parent_sql_count(many_call, "allow.cartesian = TRUE"), 1L)
@@ -981,7 +981,7 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
   )
 })
 
-test_that("lazy Parent shares preserve empty-input root and partition behavior", { # nolint: line_length_linter
+test_that("lazy shares preserve empty-input grand total and partitions", {
   empty <- data.frame(group = character(), value = double())
   sources <- list()
 
@@ -994,7 +994,7 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
     sources$duckdb <- dplyr::copy_to(
       con,
       empty,
-      "empty_parent_share_data",
+      "empty_share_data",
       overwrite = TRUE,
       temporary = TRUE
     )
@@ -1007,6 +1007,7 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
       source,
       total = sum(value),
       share = share_of_parent(total),
+      whole = share_of_total(total),
       .grouping = rollup(group),
       .margin_label = NULL
     ) |>
@@ -1015,6 +1016,7 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
       source,
       total = sum(value),
       share = share_of_parent(total),
+      whole = share_of_total(total),
       .by = group,
       .grouping = rollup(value),
       .margin_label = NULL
@@ -1022,8 +1024,12 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
       dplyr::collect()
 
     expect_identical(root$share, 1, info = backend)
+    expect_identical(root$whole, 1, info = backend)
     expect_identical(nrow(partitioned), 0L, info = backend)
     expect_type(partitioned$share, "double")
+    # A Total share joins its denominator on the fixed keys, so the empty
+    # partitioned case is the one where that join has nothing on either side.
+    expect_type(partitioned$whole, "double")
   }
 })
 
@@ -1092,10 +1098,10 @@ test_that("lazy Parent shares skip duplicate grouping-set occurrences", {
 
 test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   group_name <- "..marginplyr_parent_key_1"
-  value_name <- "..marginplyr_parent_value_1"
-  summary_name <- "..marginplyr_parent_value_1_"
-  share_name <- "..marginplyr_parent_set_1_"
-  id_name <- "..marginplyr_parent_match_1_"
+  value_name <- "..marginplyr_share_value_1"
+  summary_name <- "..marginplyr_share_value_1_"
+  share_name <- "..marginplyr_set_id_1_"
+  id_name <- "..marginplyr_share_match_1_"
   data <- data.frame(
     c(group_name, "x"),
     c(1, 3),
@@ -1106,8 +1112,8 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   names(data) <- c(
     group_name,
     value_name,
-    "..marginplyr_parent_set_1",
-    "..marginplyr_parent_match_1"
+    "..marginplyr_set_id_1",
+    "..marginplyr_share_match_1"
   )
 
   summarize <- function(source) {
@@ -1150,4 +1156,334 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
     as.data.frame(dplyr::collect(summarize(remote))),
     as.data.frame(expected)
   )
+})
+
+test_that("RSQLite executes portable Total shares end to end", {
+  skip_if_backend_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- data.frame(
+    fixed = c(NA_character_, NA_character_, "a", "a"),
+    group = c(NA_character_, "x", NA_character_, "x"),
+    item = c("i", "j", "i", "j"),
+    revenue = c(1, 3, 2, 2),
+    units = c(1L, 3L, 0L, 0L),
+    unclamped = c(-1, 2, -2, 3)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "total_share_sqlite_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      level = grouping_id(group, item),
+      revenue_total = sum(revenue),
+      units_total = sum(units),
+      unclamped_total = sum(unclamped),
+      missing_total = dplyr::if_else(
+        dplyr::n() > 1L,
+        NA_real_,
+        sum(revenue)
+      ),
+      revenue_share = share_of_total(revenue_total),
+      units_share = share_of_total(units_total),
+      unclamped_share = share_of_total(unclamped_total),
+      missing_share = share_of_total(missing_total),
+      .by = fixed,
+      .grouping = rollup(group, item),
+      .id = "set",
+      .margin_label = "Margin"
+    )
+  }
+  arrange_result <- function(result) {
+    dplyr::arrange(
+      result,
+      is.na(fixed),
+      fixed,
+      set,
+      is.na(group),
+      group,
+      is.na(item),
+      item
+    )
+  }
+
+  expected <- arrange_result(summarize(data))
+  query <- summarize(remote)
+  sql <- dbplyr::sql_render(query)
+
+  expect_s3_class(query, "tbl_lazy")
+  expect_match(sql, "UNION ALL", fixed = TRUE)
+  # The fixed key is matched with missing-safe identity, and every measure
+  # shares the one denominator join rather than adding a join each.
+  expect_match(sql, "IS NULL AND", fixed = TRUE)
+  expect_identical(
+    lengths(regmatches(sql, gregexpr("LEFT JOIN", sql, fixed = TRUE))),
+    1L
+  )
+  expect_false(grepl("GROUPING SETS", sql, fixed = TRUE))
+
+  result <- arrange_result(dplyr::collect(query))
+  expect_equal(as.data.frame(result), as.data.frame(expected))
+  expect_type(result$revenue_share, "double")
+  expect_true(all(result$revenue_share[result$level == 3L] == 1))
+  expect_equal(
+    result$revenue_share[result$level == 0L],
+    c(0.5, 0.5, 0.75, 0.25)
+  )
+  # Missing and zero denominators are missing on the database too.
+  expect_true(all(is.na(
+    result$units_share[result$fixed == "a" & result$level != 3L]
+  )))
+  expect_true(all(is.na(result$missing_share[result$level != 3L])))
+  expect_identical(
+    sort(result$unclamped_share[result$level == 0L]),
+    c(-2, -1, 2, 3)
+  )
+})
+
+test_that("DuckDB Total shares agree across native, portable, and local paths", { # nolint: line_length_linter
+  skip_if_backend_absent("duckdb", "DBI")
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    fixed = c(NA_character_, NA_character_, "a", "a"),
+    group = c(NA_character_, "x", NA_character_, "x"),
+    item = c("i", "j", "i", "j"),
+    revenue = c(1, 3, 2, 2),
+    units = c(1L, 3L, 0L, 0L)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "total_share_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  summarize <- function(source, duplicates) {
+    summarize_with_margins(
+      source,
+      level = grouping_id(group, item),
+      revenue = sum(revenue),
+      units = sum(units),
+      revenue_share = share_of_total(revenue),
+      dplyr::across(
+        units,
+        share_of_total,
+        .names = "{.col}_share"
+      ),
+      .by = fixed,
+      .grouping = cube(group, item),
+      .duplicates = duplicates,
+      .id = "set",
+      .margin_label = NULL
+    )
+  }
+
+  expected <- summarize(data, "drop") |>
+    dplyr::arrange(fixed, set, group, item)
+  # A cube is the plan a Parent share cannot accept, and every cell of it
+  # divides by the one Grand total row of its own fixed partition.
+  expect_identical(sum(expected$revenue_share == 1), 2L)
+  expect_equal(
+    expected$revenue_share[expected$level == 0L],
+    c(0.5, 0.5, 0.75, 0.25)
+  )
+  native <- summarize(remote, "drop")
+  portable <- summarize(remote, "keep")
+
+  expect_s3_class(native, "tbl_lazy")
+  expect_match(dbplyr::sql_render(native), "GROUPING SETS", fixed = TRUE)
+  expect_match(dbplyr::sql_render(portable), "UNION ALL", fixed = TRUE)
+  expect_equal(
+    as.data.frame(
+      dplyr::collect(native) |>
+        dplyr::arrange(fixed, set, group, item)
+    ),
+    as.data.frame(expected)
+  )
+  expect_equal(
+    as.data.frame(
+      dplyr::collect(portable) |>
+        dplyr::arrange(fixed, set, group, item)
+    ),
+    as.data.frame(expected)
+  )
+
+  composed <- native |>
+    dplyr::select(fixed, group, item, set, revenue, revenue_share) |>
+    dplyr::mutate(revenue_percent = 100 * revenue_share) |>
+    dplyr::arrange(fixed, set, group, item)
+  expect_s3_class(composed, "tbl_lazy")
+  expect_output(dplyr::show_query(composed), "SELECT")
+  expect_equal(
+    as.data.frame(dplyr::collect(composed)),
+    as.data.frame(
+      expected |>
+        dplyr::select(fixed, group, item, set, revenue, revenue_share) |>
+        dplyr::mutate(revenue_percent = 100 * revenue_share) |>
+        dplyr::arrange(fixed, set, group, item)
+    )
+  )
+})
+
+test_that("dtplyr Total shares match local results", {
+  skip_if_backend_absent("dtplyr")
+  data <- data.frame(
+    fixed = c("p", "p", "q", "q"),
+    group = c("x", "y", "x", "y"),
+    item = c("i", "j", "i", "j"),
+    revenue = c(1, 3, 2, 2),
+    units = c(1L, 3L, 2L, 2L)
+  )
+  summarize <- function(source, grouping) {
+    summarize_with_margins(
+      source,
+      level = grouping_id(group, item),
+      revenue = sum(revenue),
+      units = sum(units),
+      revenue_share = share_of_total(revenue),
+      units_share = share_of_total(units),
+      .by = fixed,
+      .grouping = grouping,
+      .margin_label = NULL
+    )
+  }
+  arrange_result <- function(result) {
+    dplyr::arrange(result, fixed, level, group, item)
+  }
+
+  for (grouping in list(rollup(group, item), cube(group, item))) {
+    expected <- arrange_result(summarize(data, grouping))
+    step <- summarize(dtplyr::lazy_dt(data), grouping)
+
+    expect_s3_class(step, "dtplyr_step")
+    result <- arrange_result(dplyr::collect(step))
+    expect_equal(as.data.frame(result), as.data.frame(expected))
+    expect_type(result$revenue_share, "double")
+    expect_true(all(result$revenue_share[result$level == 3L] == 1))
+    expect_equal(
+      result$revenue_share[result$level == 0L],
+      c(0.25, 0.75, 0.5, 0.5)
+    )
+  }
+
+  # Without fixed keys the denominator is one row and the join key standing in
+  # for a partition is internal: it must not reach the result.
+  unpartitioned <- dplyr::collect(summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    revenue = sum(revenue),
+    revenue_share = share_of_total(revenue),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  ))
+  expect_identical(names(unpartitioned), c("group", "revenue", "revenue_share"))
+  expect_equal(sum(unpartitioned$revenue_share), 2)
+})
+
+test_that("dtplyr rejects ineligible Total-share sources on collection", {
+  skip_if_backend_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
+
+  query <- summarize_with_margins(
+    step,
+    total = as.Date("2026-01-01"),
+    whole = share_of_total(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  expect_s3_class(query, "dtplyr_step")
+
+  error <- expect_error(
+    dplyr::collect(query),
+    "plain integer or double scalar"
+  )
+  expect_s3_class(error, "marginplyr_error")
+  # The execution-time diagnostic names the helper the caller wrote, the
+  # output, the source, and the original public call.
+  expect_match(conditionMessage(error), "Total share `whole`")
+  expect_match(conditionMessage(error), "source summary `total`")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
+  )
+
+  across_error <- expect_error(
+    dplyr::collect(summarize_with_margins(
+      step,
+      dplyr::across(value, function(x) c(min(x), max(x))),
+      dplyr::across(value, share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )),
+    "exactly one value per grouping row"
+  )
+  expect_s3_class(across_error, "marginplyr_share_cardinality_error")
+  expect_match(conditionMessage(across_error), "Total share `value_share`")
+})
+
+test_that("Arrow rejects Total shares before constructing a query", {
+  skip_if_backend_absent("arrow")
+  source <- arrow::Table$create(data.frame(
+    group = c("x", "y"),
+    value = 1:2
+  ))
+  calls <- new.env(parent = emptyenv())
+  calls$summarize <- 0L
+  calls$collect <- 0L
+  testthat::local_mocked_bindings(
+    do_arrow_summarize = function(...) {
+      calls$summarize <- calls$summarize + 1L
+      stop("Arrow summary query was constructed.", call. = FALSE)
+    },
+    collect.arrow_dplyr_query = function(...) {
+      calls$collect <- calls$collect + 1L
+      stop("Arrow query was collected.", call. = FALSE)
+    },
+    collect.ArrowTabular = function(...) {
+      calls$collect <- calls$collect + 1L
+      stop("Arrow data was collected.", call. = FALSE)
+    },
+    .package = "arrow"
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      whole = share_of_total(total),
+      .grouping = cube(group),
+      .margin_label = NULL
+    ),
+    "Arrow.*Total share"
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
+  )
+  expect_snapshot(conditionMessage(error))
+
+  # A call using both helpers is refused once, naming both.
+  both <- expect_error(
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      parent = share_of_parent(total),
+      whole = share_of_total(total),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ),
+    "Arrow"
+  )
+  expect_snapshot(conditionMessage(both))
+
+  expect_identical(calls$summarize, 0L)
+  expect_identical(calls$collect, 0L)
 })

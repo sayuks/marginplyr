@@ -411,7 +411,7 @@ summary rather than beside it. Each referenced source summary is wrapped in a
 validator that becomes part of the translated data.table expression and runs
 only when the caller collects. It costs no validation-only query, keeps the
 result a native lazy step, and raises the same Package condition — including
-`marginplyr_parent_cardinality_error` for a non-scalar source — naming the
+`marginplyr_share_cardinality_error` for a non-scalar source — naming the
 Parent share, the source summary, and the original public call. An invalid
 source therefore fails at collection rather than emitting a wrong row.
 
@@ -432,4 +432,8 @@ definition, especially in rollups with three or more dimensions.
 A post-summary `add_rollup_share()` verb was rejected because the grouping
 plan and parent mapping are already available inside the Margin operation.
 Allowing `cube()` or arbitrary grouping sets was deferred until an explicit
-parent-selection model exists.
+parent-selection model exists. That deferral is about selecting a parent, and
+[ADR 0017](0017-calculate-total-shares-against-the-grand-total-set.md) records
+why it does not reach a denominator that is not selected: `share_of_total()`
+accepts any plan containing a Grand total set, while this restriction on
+`share_of_parent()` still stands.

@@ -659,6 +659,46 @@ parent_report |>
   mutate(revenue_percent = 100 * revenue_share)
 ```
 
+## Compare a summary with the whole
+
+`share_of_total()` divides by the grand total row instead of the parent level.
+It is written the same way, and both helpers can appear in one summary:
+
+```{r}
+retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = rollup(region, store)
+  ) |>
+  arrange(region, store)
+```
+
+A parent is ambiguous outside a rollup, but a grand total is not: a plan
+either contains one or it does not. So `share_of_total()` accepts any
+Grouping specification that produces one, including the `cube()` and
+`grouping_sets()` forms `share_of_parent()` rejects:
+
+```{r}
+retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = cube(region, store)
+  ) |>
+  arrange(region, store)
+```
+
+A `grouping_sets()` specification qualifies only when it includes an empty
+`grouping_set()`; one without it is rejected naming that fix. Everything else
+is shared with `share_of_parent()` — eligible sources, the `across()` form,
+and the value rules — and the
+[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+documents both helpers.
+
 ## Complete absent keys before summarizing
 
 Grouping specifications choose reporting grains; they do not create
