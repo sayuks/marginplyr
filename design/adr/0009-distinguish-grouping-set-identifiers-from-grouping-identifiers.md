@@ -56,3 +56,24 @@ occurrences; a Grouping identifier is stable for one absence pattern and may be
 non-consecutive. Only where that comparison is written down has changed, and
 the article still exists and still explains the concepts — it links to the
 table instead of holding it.
+
+## Amendment: row order is unspecified by default, not always
+
+One sentence above reads "Margin-operation result rows have no implicit order
+after removal of `.sort`". `.sort` exists again under ADR 0018, so that
+sentence now holds only as a default: result rows have no implicit order
+unless the caller asks for a Margin order, and callers still use an explicit
+`dplyr::arrange()` otherwise.
+
+What this ADR decides about `.id` is unchanged. `.id` still records which
+plan occurrence a row came from and still promises nothing about physical row
+order — a Margin order is produced by finalization from the Grouping plan's
+structure, not by `.id`, and `.id` is neither required for it nor implied by
+it. The two do meet in one place: when `.id` names a column, that column is
+the Margin order's final tiebreaker, so duplicate occurrences retained under
+`.duplicates = "keep"` come out adjacent and in plan order. That is a
+property of the ordering, not a new guarantee about the identifier, which
+remains stable only within one ordered plan.
+
+`inspect_grouping()`'s guaranteed Grouping-plan order is likewise unchanged,
+and is still not the same thing as a Margin order.

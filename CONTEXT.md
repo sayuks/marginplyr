@@ -49,6 +49,16 @@ label represented by `NULL` use a typed missing value instead of a synthetic
 factor level.
 _Avoid_: Total value, missing-value replacement
 
+**Margin order**:
+The row order a Margin operation produces when it is asked to order its
+result. Within each fixed key, every grouping dimension contributes its
+Grouping bit before its own value, so a margin row sits with the rows it
+summarizes rather than wherever its Margin label falls among the values.
+Missing values come last within a Grouping bit group. It is a property of the
+result a Margin verb returns, not of any table derived from it, and it is
+distinct from Grouping-plan order, which numbers grouping-set occurrences.
+_Avoid_: Report order, result order, row order, sort order
+
 **Grand total set**:
 The grouping set in which every variable grouping dimension is omitted. A
 Grouping plan contains at most one, except when duplicate occurrences are

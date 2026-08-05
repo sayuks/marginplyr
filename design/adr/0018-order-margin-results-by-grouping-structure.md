@@ -1,0 +1,217 @@
+# Order Margin results by grouping structure
+
+`.sort` returns to every Margin verb as an opt-in Margin order. It shares
+only its name with the `.sort` that ADR 0001's amendment removed. That one
+ordered by displayed values and sorted the Margin label as a string among
+them; this one orders by the Grouping plan's structure, taking each
+dimension's Grouping bit before that dimension's own value. This decision
+records what the order is, how far it is promised, and where it is produced.
+
+## Decision
+
+### It is a different feature with the same name
+
+The removed `.sort` was `dplyr::arrange(result, !!!margin_cols)`. It placed
+`"Total"` wherever that string fell among the values, which is locale
+dependent and answers no question a caller has. Removing it was correct and
+this decision does not reverse that judgment.
+
+The name is reused for three reasons. No released version carried the old
+option: the `0.1.0` section of `NEWS.md` never mentioned it, and it existed
+only in the development tree, so no caller holds the old meaning. The
+caller's intent is unchanged — a report in a sensible order — and what was
+wrong was the key, not the request. And the plain reading of `.sort = TRUE`
+matches what now happens: rows ascend by their keys, with each margin row
+beside the rows it summarizes rather than at whichever end its label sorts
+to.
+
+`.sort` is not a logical. It takes `"none"`, `"last"`, or `"first"`, which
+is the shape `.duplicates` and `.margin_label_position` already use, and a
+caller who writes `TRUE` from memory of the old option gets an error naming
+the three choices.
+
+### The order
+
+Within each fixed `.by` key, every grouping dimension contributes three
+terms in the result's own column order:
+
+```
+by1 … byN,  bit(d1), is.na(d1), d1,  bit(d2), is.na(d2), d2,  …,  [set_id]
+```
+
+The key is therefore the result's leading grouping columns, left to right,
+each dimension preceded by its Grouping bit and its missingness. Setting
+`.sort` to `"first"` reverses the Grouping bits alone; missingness and values
+stay
+ascending, because first and last position margins and not missing values.
+
+Two rules follow rather than being stated separately. Fixed keys sort first
+because they come first, which is also the partition Parent shares and Total
+shares are calculated within. A Grouping set identifier is the final
+tiebreaker when `.id` names one, which makes duplicate occurrences adjacent
+and in plan order; without `.id` there is no column to break the tie and no
+observable difference to break, because duplicate occurrences aggregate the
+same rows into identical values.
+
+Composite dimensions need no rule. Their columns enter and leave a grouping
+set together, so their bits are always equal and the second bit term is
+redundant rather than wrong.
+
+The order is locale independent because a Margin label never competes with a
+value: at `bit = 1` the dimension holds the label alone, and at `bit = 0` it
+never holds the label. The same property settles `.margin_label_position`,
+which positions a synthetic factor level and therefore moves `levels()` and
+never marginplyr's row order. It reaches row order only in an
+`dplyr::arrange()` the caller writes themselves.
+
+### Factor dimensions sort by level
+
+A factor dimension sorts by its restored levels, not by its rendering. This
+is what the backends that can hold factors already do — `arrange()` orders a
+factor by level on local data and dtplyr, and DuckDB orders an `ENUM` by its
+definition — so value order would be the option that costs an explicit cast.
+A caller who declared `small < medium < large` asked for that order, and
+`can_restore_factors` is true only for local, dtplyr, and DuckDB, so no
+backend is asked for an order it cannot express.
+
+### Missing values come last, and that is promised
+
+Dialects disagree by default: with `arrange(g)` DuckDB returns `NA` last and
+SQLite returns it first, while local `arrange()` returns it last. Sorting by
+`is.na(g)` ahead of `g` returns it last on all three.
+
+The promise is made rather than declined because it costs one term per
+dimension and `IS NULL` is standard SQL. Declining it would reinstate
+precisely what `.sort` exists to remove: the same code producing a different
+first row on a different backend.
+
+One consequence is worth recording. ADR 0012 leaves a source missing value
+and a `NULL` Margin label indistinguishable from the grouping column alone.
+Under a Margin order they remain indistinguishable by value but separate by
+position, because the Grouping bit puts them in different groups.
+
+### It promises exactly what `dplyr::arrange()` promises
+
+A Margin order is a property of the object a Margin verb returns. On local
+and dtplyr inputs that is the row order; on dbplyr inputs it is the
+outermost query's `ORDER BY`, which `collect()` observes.
+
+Whether it survives further verbs is not promised. Measured against dbplyr
+2.6.0 and DuckDB, `select()`, `filter()`, and `head()` keep it while
+`mutate()`, `left_join()`, and a further `group_by()` and `summarise()` lose
+it. That split is dbplyr's query flattening, which marginplyr does not own
+and which changes between releases, so enumerating the safe verbs would put
+another package's optimizer into this one's contract. dbplyr warns on each
+of the three losing cases, and documentation says so without making it a
+promise.
+
+This is the whole promise because it is the promise callers already know.
+`.sort` writes the `arrange()` a caller cannot write, and inherits its
+contract unchanged.
+
+### Where the order is produced
+
+`finalize_margin_operation()` orders rows, after it places the grouping
+columns. ADR 0001's original sentence gave the shared finalizer "the common
+sorting semantics" and its amendment withdrew that clause; the placement was
+right and only the key was wrong, so the responsibility returns to where it
+started. No verb kind is passed in: the key is derived from the Grouping
+plan, which the shared module already holds.
+
+The implementation rule is that the sort key must be resolvable in the `FROM`
+clause of the query that carries the `ORDER BY`. Three paths satisfy it:
+
+- A native summary on DuckDB or PostgreSQL sorts by an `ORDER BY` over
+  `GROUPING(d)` and `d`, which folds into the aggregate query. No internal
+  column exists, so none has to be dropped.
+- Every other path — the `UNION ALL` adapter, and `expand_with_margins()` on
+  every backend, since it always uses that adapter — sorts by an expression
+  over a per-branch identifier literal. The union is already a subquery, so
+  the identifier stays resolvable in `FROM` and the outer `ORDER BY` reads it
+  after the projection drops it.
+- The nesting verbs admit only data frames and dtplyr steps, so they sort
+  with an ordinary `arrange()`.
+
+The rule is stated this way because the narrower one is false. Materializing
+a sort key is not what breaks: arranging on a column the same query
+summarized and then dropping it lets dbplyr flatten the projection into the
+aggregate, leaving an `ORDER BY` that names a column no longer in `FROM`.
+DuckDB rejects that query with a binder error rather than losing the order
+quietly, and it is the shape a prototype reached first. Neither adapter has
+it.
+
+### It costs nothing under `.duplicates = "keep"`
+
+`.sort` neither requires an internal identifier on a native backend nor
+changes which adapter runs. Whether a plan keeping duplicates falls back to
+`UNION ALL` is decided by `native_duplicate_sets` alone, which is why
+PostgreSQL already falls back and DuckDB does not. The combination is
+accepted with no diagnostic, because there is no cost to report.
+
+### The default is `"none"`
+
+Row order stays unspecified unless a caller asks for a Margin order. The
+existing rule survives as the default rather than being withdrawn, which is
+also why this decision narrows ADR 0001 and ADR 0009 rather than replacing
+them.
+
+A default of `"last"` was weighed against this. A Margin result is as often
+joined or mutated as read, and sorting it is work the caller did not request;
+an `ORDER BY` on a large lazy result is not free. The cost falls on whoever
+is served less often, and that is judged to be the reader, who types one
+argument.
+
+The default is not data dependent. The removed option defaulted to
+`is.data.frame(.data)`, so identical code ordered local results and left
+lazy results unordered. Row order is where such a split is hardest to
+notice.
+
+## Considered options
+
+**`.bits`, an argument adding one Grouping bit column per dimension, leaving
+the ordering to the caller's `arrange()`.** It was the narrower change and
+would have left ADR 0001 and ADR 0009 intact. Rejected on measurement: the
+caller must drop those columns afterwards, and `arrange()` followed by
+dropping a summarized column is exactly the shape dbplyr flattens, so the
+order is lost on lazy backends. The trap moves out of marginplyr into caller
+code that nothing designed. Keeping the bit columns to keep the order is not
+the result the caller asked for.
+
+**Leaving both out and keeping row order unspecified.** Rejected: the
+existing guidance tells a caller to add a `grouping_bit()` summary per
+dimension and drop it again, which fails on lazy backends for the reason
+above and is unavailable at all under `.margin_label = NULL`.
+
+**`summarize_with_margins()` only, or the lazy-accepting verbs only.**
+Rejected: the key comes from the Grouping plan and never from the verb, so
+restricting it would put a verb kind into the shared module that ADR 0001
+exists to keep out. Every other common option is on all four verbs, and
+`nest_by_with_margins()` returns a row-wise result whose row order is
+iteration order.
+
+**A logical `.sort`, or a logical accepting `"last"` and `"first"` as
+well.** Rejected: three states do not fit a logical, and the union type makes
+every mention of the argument a disjunction that exists only to be collapsed.
+
+**`.margin_order` or another new name.** Rejected: no caller holds the old
+meaning, and a new name would signal a new concept to learn where there is
+none.
+
+**`margins_first` and `margins_last` as the choices**, to keep `.sort` from
+sharing vocabulary with `.margin_label_position`. Rejected: the two options
+answer the same question about different things, and identical words let one
+sentence say so. The confusion they invite is that setting one sets the
+other, which the entry above denies directly.
+
+**Declining to promise where missing values sort.** Rejected above.
+
+**Enumerating the downstream verbs that preserve the order.** Rejected
+above.
+
+**Erroring on `.sort` with `.duplicates = "keep"`.** Rejected above: the
+combination has no cost to refuse.
+
+**Coordinating `.sort` with `.margin_label_position`, or warning when they
+disagree.** Rejected: they are independent, no combination is wrong, and
+`.margin_label_position = "first"` without `.sort` is what a caller writing
+their own `arrange()` wants.
