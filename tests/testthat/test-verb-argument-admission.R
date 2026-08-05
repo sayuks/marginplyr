@@ -57,22 +57,19 @@ test_that("every removed option answers its near misses the same way", {
     class = "marginplyr_error"
   )
 
-  for (misspelling in c(".group", ".groupss")) {
-    spliced <- stats::setNames(list("drop"), misspelling)
-    expect_error(
-      summarize_with_margins(
-        admission_data(),
-        s = sum(v),
-        .grouping = rollup(g),
-        !!!spliced
-      ),
-      paste0(
-        "`\\", misspelling, "` is not an argument.+neither is the `\\.groups` ",
-        "it resembles; ", guidance
-      ),
-      class = "marginplyr_error"
-    )
-  }
+  expect_error(
+    summarize_with_margins(
+      admission_data(),
+      s = sum(v),
+      .grouping = rollup(g),
+      .groupss = "drop"
+    ),
+    paste0(
+      "`\\.groupss` is not an argument.+neither is the `\\.groups` it ",
+      "resembles; ", guidance
+    ),
+    class = "marginplyr_error"
+  )
 })
 
 test_that("the synonym answers removed options identically", {
@@ -89,7 +86,7 @@ test_that("the synonym answers removed options identically", {
     conditionMessage(condition)
   }
 
-  for (option in c(".groups", ".group", ".sort", ".sorts")) {
+  for (option in c(".groups", ".groupss", ".sort", ".sorts")) {
     expect_identical(
       removed_option_message(summarise_with_margins, option),
       removed_option_message(summarize_with_margins, option)
@@ -161,6 +158,36 @@ test_that("a misspelled option names the argument it resembles", {
     ),
     "Did you mean `.id`"
   )
+})
+
+test_that("a name callers write on purpose is left alone", {
+  # `.group` is one character from the removed `.groups`, so the net would read
+  # it as a misspelling. It is a column callers produce deliberately, and it is
+  # exempt for that reason — not because of anything about the distance, which
+  # is the same one-character deletion that makes `.duplicate` worth catching.
+  expect_named(
+    summarize_with_margins(
+      admission_data(),
+      .group = max(v),
+      .grouping = rollup(g)
+    ),
+    c("g", ".group")
+  )
+  # The exemption is the name, not a prefix of it: the option itself and its
+  # other near misses are still answered.
+  for (misspelling in c(".groups", ".groupss")) {
+    spliced <- stats::setNames(list("drop"), misspelling)
+    expect_error(
+      summarize_with_margins(
+        admission_data(),
+        s = sum(v),
+        .grouping = rollup(g),
+        !!!spliced
+      ),
+      "Margin-summary results are always ungrouped",
+      class = "marginplyr_error"
+    )
+  }
 })
 
 test_that("the check is scoped to names that resemble an option", {

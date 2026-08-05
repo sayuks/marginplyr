@@ -31,19 +31,31 @@ summary_option_names <- function() {
   setdiff(formal_names[startsWith(formal_names, ".")], c(".data", "..."))
 }
 
+# Leading-dot names a caller writes on purpose, exempt from the net below even
+# though each sits one character from an option. `.group` is one deletion from
+# the removed `.groups`, and a group label column is the likelier reading of it.
+#
+# The exemption is by name because no rule over the distance separates these
+# from the mistakes: `.duplicate` is the same one-character deletion from
+# `.duplicates` and is worth catching. What differs is whether callers write
+# the name deliberately, which only a list can record. The cost is that a
+# caller who typed `.group` meaning `.groups` gets a column instead of the
+# guidance — accepted, because the name is common enough that the net cost
+# landed on people who meant it.
+summary_output_name_exemptions <- c(".group")
+
 # Only dot-prefixed names are examined, and only against an exact match or a
 # one-character difference: that catches the pluralizations real callers
 # write (`.margin_labels`, `.groupings`, `.duplicate`) while leaving ordinary
 # leading-dot output names such as `.n` alone.
-#
-# The net is not free of ordinary names: `.groups` puts `.group` inside it, and
-# `.group` is a plausible column to want. That is the trade the removed options
-# are worth — a caller who meant the column renames it, while a caller
-# following older material gets told what replaced the option instead of a
-# constant column named after it.
 nearest_summary_option <- function(name, known_options) {
   if (name %in% known_options) {
     return(name)
+  }
+  # After the exact match, so a name here would still be answered if it ever
+  # became an option — the exemption covers resemblance, not the option itself.
+  if (name %in% summary_output_name_exemptions) {
+    return(NULL)
   }
   distances <- utils::adist(name, known_options)[1L, ]
   nearest <- known_options[distances <= 1L]
