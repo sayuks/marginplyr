@@ -49,17 +49,37 @@ label represented by `NULL` use a typed missing value instead of a synthetic
 factor level.
 _Avoid_: Total value, missing-value replacement
 
+**Grand total set**:
+The grouping set in which every variable grouping dimension is omitted. A
+Grouping plan contains at most one, except when duplicate occurrences are
+retained; every occurrence of it holds the same values, so which one a
+calculation uses as its denominator is not specified. With fixed `.by`
+columns it holds one row for each fixed partition.
+_Avoid_: Root set, root row, total row, margin row
+
 **Parent share**:
 For a row in a rollup result, the ratio of one named scalar summary value to
-the corresponding value in the immediately less detailed grouping set. The
-root row has a parent share of one. A missing numerator, zero denominator, or
+the corresponding value in the immediately less detailed grouping set. A row
+of the Grand total set has a parent share of one. A missing numerator, zero
+denominator, or missing denominator produces a missing double value. The
+source is a previously defined numeric scalar summary and the result is
+always a double; finite ratios are not clamped. Parent shares are defined for
+a rollup, including composite dimensions, and are calculated independently
+within each fixed `.by` group. Duplicate occurrences remain in the result but
+are skipped while finding the next strictly less detailed parent set.
+_Avoid_: Subtotal share, percent of grand total
+
+**Total share**:
+For a row in a multi-grain result, the ratio of one named scalar summary
+value to the corresponding value in the Grand total set. A row of the Grand
+total set has a total share of one. A missing numerator, zero denominator, or
 missing denominator produces a missing double value. The source is a
 previously defined numeric scalar summary and the result is always a double;
-finite ratios are not clamped. Parent shares are defined for a rollup,
-including composite dimensions, and are calculated independently within each
-fixed `.by` group. Duplicate occurrences remain in the result but are skipped
-while finding the next strictly less detailed parent set.
-_Avoid_: Subtotal share, percent of grand total
+finite ratios are not clamped. Total shares are defined for any Grouping plan
+that contains a Grand total set, and are calculated independently within each
+fixed `.by` group, so a fixed key never contributes to another partition's
+denominator.
+_Avoid_: Percent of total, root share, grand total percentage
 
 **Package condition**:
 An error marginplyr itself raises, inheriting the `marginplyr_error` base
