@@ -65,7 +65,8 @@ leaves row order unspecified. The other two order the result by the
 structure of its Grouping plan: within each fixed \code{.by} key, every grouping
 dimension contributes its Grouping bit and its missingness before its own
 value, so a margin row sits with the rows it summarizes rather than
-wherever \code{.margin_label} falls among that dimension's values. \code{"last"}
+wherever \code{.margin_label} falls among that dimension's values, and missing
+values come last wherever they appear. \code{"last"}
 places margins after the rows they summarize and \code{"first"} before them.
 The order is a property of the returned object, as with
 \code{\link[dplyr:arrange]{dplyr::arrange()}}, and may not survive further verbs applied to a lazy
@@ -202,7 +203,7 @@ displayed values. The key is the result's own leading grouping columns, left
 to right, with each grouping dimension preceded by its Grouping bit and by
 whether its value is missing:
 
-\if{html}{\out{<div class="sourceCode">}}\preformatted{by1 ... byN, bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
+\if{html}{\out{<div class="sourceCode">}}\preformatted{is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
 }\if{html}{\out{</div>}}
 
 A margin row therefore sits with the rows it summarizes instead of wherever
@@ -217,8 +218,9 @@ rule of its own, because its columns share one Grouping bit.
 
 \code{"first"} reverses the Grouping bits alone. Missing values and ordinary
 values stay ascending, because the choice positions margins and not missing
-values. Missing values come last within each Grouping bit group on every
-backend, including those whose own default is the opposite. Under
+values. Every column in the key carries a missingness term, fixed \code{.by} keys
+included, so missing values come last wherever they appear on every backend,
+including those whose own default is the opposite. Under
 \code{.margin_label = NULL} a source missing value and a margin still display
 alike, but they are separated by position, because their Grouping bits
 differ.

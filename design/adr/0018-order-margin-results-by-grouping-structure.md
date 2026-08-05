@@ -265,3 +265,35 @@ what this decision exists to remove.
 a join reads survives into the query the caller receives, so ordering has to
 come after them. The identifier they already stage is the one the finalizer
 orders by, so that path adds no column either.
+
+## Amendment: fixed keys order their missing values last too
+
+The key above reads `by1 … byN` for the fixed keys, giving a missingness term
+to the grouping dimensions alone. Every column in the key gets one instead:
+
+```
+is.na(by1), by1, …, is.na(byN), byN,
+bit(d1), is.na(d1), d1,  bit(d2), is.na(d2), d2,  …,  [set_id]
+```
+
+A fixed key still takes no Grouping bit, because it is present in every
+grouping set and never holds a Margin label. Only its missingness is new.
+
+The original key follows from framing missingness as something a dimension
+contributes alongside its Grouping bit. Read that way a fixed key has nothing
+to contribute, because it has no bit — but the consequence is that a `.by`
+column holding missing values is ordered by the dialect's own default, last on
+a local input and on DuckDB and first on SQLite. That is exactly the
+disagreement "Missing values come last, and that is promised" exists to
+remove, reappearing one column to the left of where that entry was looking.
+The promise is therefore made of the key as a whole: wherever a column appears
+in it, its missing values sort last.
+
+The cost is the same one term per column that entry already accepted, and
+`IS NULL` is standard SQL. `"first"` still reverses the Grouping bits alone,
+so a fixed key's missing values stay last whichever end the margins are at.
+
+One reading is closed by this. The entry above says missing values come last
+"within a Grouping bit group", which was true of dimensions and said nothing
+about fixed keys; it now reads as the whole key, and `CONTEXT.md`'s **Margin
+order** entry says the same.

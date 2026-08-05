@@ -564,6 +564,89 @@ test_that("missing values sort last on every backend", {
   }
 })
 
+test_that("a fixed key sorts its missing values last on every backend", {
+  # A `.by` column takes no Grouping bit, so its missingness is the only thing
+  # separating it from the dialect's own default — last locally and on DuckDB,
+  # first on SQLite.
+  data <- data.frame(
+    year = c(2026L, NA, 2025L),
+    region = c("West", "East", "East"),
+    units = c(1, 2, 4)
+  )
+  summarized <- function(input) {
+    dplyr::collect(summarize_with_margins(
+      input,
+      units = sum(units, na.rm = TRUE),
+      .by = year,
+      .grouping = rollup(region),
+      .sort = "last"
+    ))
+  }
+  expected_year <- c(2025L, 2025L, 2026L, 2026L, NA, NA)
+  expected_region <- c("East", "Total", "West", "Total", "East", "Total")
+
+  local <- summarized(data)
+  expect_identical(local$year, expected_year)
+  expect_identical(local$region, expected_region)
+
+  if (backend_available("RSQLite") && backend_available("DBI")) {
+    # Each connection gets its own name: `on.exit()` stores the expression, so
+    # two handlers naming one variable would both close whichever connection it
+    # held last.
+    sqlite_con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+    on.exit(DBI::dbDisconnect(sqlite_con), add = TRUE)
+    remote <- dplyr::copy_to(
+      sqlite_con,
+      data,
+      "margin_order_by_na",
+      temporary = TRUE
+    )
+    result <- summarized(remote)
+    expect_identical(result$year, expected_year)
+    expect_identical(result$region, expected_region)
+  }
+
+  if (backend_available("duckdb") && backend_available("DBI")) {
+    # DuckDB keeps the native plan, so this also covers the fixed key's
+    # missingness reaching a `GROUP BY GROUPING SETS` query.
+    duckdb_con <- DBI::dbConnect(duckdb::duckdb())
+    on.exit(DBI::dbDisconnect(duckdb_con, shutdown = TRUE), add = TRUE)
+    remote <- dplyr::copy_to(
+      duckdb_con,
+      data,
+      "margin_order_by_na",
+      overwrite = TRUE,
+      temporary = TRUE
+    )
+    expect_match(
+      dbplyr::sql_render(summarize_with_margins(
+        remote,
+        units = sum(units, na.rm = TRUE),
+        .by = year,
+        .grouping = rollup(region),
+        .sort = "last"
+      )),
+      "GROUP BY GROUPING SETS",
+      fixed = TRUE
+    )
+    result <- summarized(remote)
+    expect_identical(result$year, expected_year)
+    expect_identical(result$region, expected_region)
+  }
+
+  if (backend_available("dtplyr")) {
+    result <- summarized(dtplyr::lazy_dt(data))
+    expect_identical(result$year, expected_year)
+    expect_identical(result$region, expected_region)
+  }
+
+  if (backend_available("arrow")) {
+    result <- summarized(arrow::as_arrow_table(data))
+    expect_identical(result$year, expected_year)
+    expect_identical(result$region, expected_region)
+  }
+})
+
 test_that("dtplyr and Arrow agree with local Margin order", {
   data <- margin_order_data()
   local <- summarize_with_margins(

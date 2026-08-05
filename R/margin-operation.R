@@ -333,17 +333,27 @@ order_margin_result <- function(operation, result, execution) {
 
 # The key of ADR 0018, built from the Grouping plan alone:
 #
-#   by1 … byN, bit(d1), is.na(d1), d1, …, [set_id]
+#   is.na(by1), by1, …, bit(d1), is.na(d1), d1, …, [set_id]
 #
 # Fixed-key priority and the Grouping set identifier tiebreak are consequences
 # of following the result's own leading grouping columns, not separate rules,
 # and a composite dimension needs no special case because its columns share a
 # Grouping bit.
 #
+# Every column in the key carries a missingness term, fixed keys included, so
+# that missing values come last wherever they appear rather than wherever the
+# dialect puts them. A fixed key takes no Grouping bit, because it is in every
+# grouping set and never holds a Margin label.
+#
 # `"first"` reverses the Grouping bits alone. Missingness and values stay
 # ascending, because first and last position margins and not missing values.
 margin_order_terms <- function(plan, sort, sort_id) {
-  terms <- lapply(plan$by, margin_column_pronoun)
+  terms <- unlist(
+    lapply(plan$by, function(key) {
+      list(margin_missing_last_expr(key), margin_column_pronoun(key))
+    }),
+    recursive = FALSE
+  )
 
   for (dimension in plan$dimensions) {
     bit <- margin_grouping_bit_expr(plan, dimension, sort_id)
@@ -356,13 +366,12 @@ margin_order_terms <- function(plan, sort, sort_id) {
         }
       ))
     }
-    column <- margin_column_pronoun(dimension)
-    # Written as a comparison rather than as the bare `is.na()` predicate,
-    # because ordering by a boolean is not accepted by every dialect the
-    # portable adapter renders for.
     terms <- c(
       terms,
-      list(rlang::expr(dplyr::if_else(is.na(!!column), 1L, 0L)), column)
+      list(
+        margin_missing_last_expr(dimension),
+        margin_column_pronoun(dimension)
+      )
     )
   }
 
@@ -370,6 +379,17 @@ margin_order_terms <- function(plan, sort, sort_id) {
     terms <- c(terms, list(margin_column_pronoun(sort_id)))
   }
   terms
+}
+
+# One column's missingness term. Written as a comparison rather than as the
+# bare `is.na()` predicate, because ordering by a boolean is not accepted by
+# every dialect the portable adapter renders for.
+margin_missing_last_expr <- function(column) {
+  rlang::expr(dplyr::if_else(
+    is.na(!!margin_column_pronoun(column)),
+    1L,
+    0L
+  ))
 }
 
 # One dimension's Grouping bit, read from the Grouping set identifier the

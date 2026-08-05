@@ -28,8 +28,8 @@
   its missingness before its own value, so a subtotal sits with the rows it
   summarizes whatever the Margin label sorts as, and the grand total comes
   last. Factor dimensions follow their restored levels, missing values come
-  last within each Grouping bit group on every backend, `"first"` reverses the
-  Grouping bits alone, and lazy inputs stay lazy on a native `GROUPING SETS`
+  last wherever they appear on every backend, `"first"` reverses the Grouping
+  bits alone, and lazy inputs stay lazy on a native `GROUPING SETS`
   plan as well as the portable one. As with `dplyr::arrange()`, the order is a
   property of the returned object and may not survive further verbs applied to
   a lazy result.
