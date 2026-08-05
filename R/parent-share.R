@@ -1769,10 +1769,7 @@ build_lazy_parent_mapping <- function(result,
                                       plan,
                                       set_id_name) {
   group_vars <- unique(c(plan$by, plan$dimensions))
-  key_exprs <- lapply(
-    group_vars,
-    function(var) margin_column_pronoun(var)
-  )
+  key_exprs <- lapply(group_vars, margin_column_pronoun)
   names(key_exprs) <- group_vars
   denominator_exprs <- lapply(
     sources,

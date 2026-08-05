@@ -5,6 +5,11 @@
 # signal. The name must stay a literal: a bare symbol would be resolved
 # against the data mask when the generated expression runs.
 margin_column_pronoun <- function(name) {
+  # An invariant, not a Package condition (ADR-0015): every call site passes a
+  # column name it already holds as a string, so no rewrite of a public call
+  # reaches this. A symbol arriving here would build the mask-resolving
+  # reference the comment above warns about, silently.
+  stopifnot(is.character(name), length(name) == 1L, !is.na(name))
   rlang::call2("[[", rlang::sym(".data"), name)
 }
 
