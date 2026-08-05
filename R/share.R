@@ -1741,6 +1741,14 @@ execute_shares <- function(operation,
       "{operation$set_id_name}" := .data[[staged_set_id_name]]
     )
   }
+  # A Margin order reads its Grouping bits from the same staged identifier, so
+  # it is the finalizer that drops it on that path, after the `ORDER BY`.
+  if (identical(
+    margin_summary_stage_sort_id(staged_result),
+    staged_set_id_name
+  )) {
+    return(result)
+  }
   dplyr::select(
     result,
     -dplyr::all_of(staged_set_id_name)

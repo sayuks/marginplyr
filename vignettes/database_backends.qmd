@@ -373,7 +373,8 @@ names every verified backend.
   literal label `"Total"` can occur in the data.
 
 - Lazy results have no guaranteed order unless the query explicitly requests
-  one. Call `arrange()` when presentation order matters.
+  one. Ask for a Margin order with `.sort`, or call `arrange()` for any other
+  presentation order.
 
 - Lazy inputs default to `.check_margin_label = FALSE` because detecting an
   existing label would require an additional query. Opt in only when that

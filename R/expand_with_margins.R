@@ -17,14 +17,16 @@
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Grouping set identifiers
+#' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Database backend coverage
 #' @inheritSection summarize_with_margins Backend extension design
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
 #'   class and attributes follow [dplyr::mutate()] combined with
 #'   [dplyr::union_all()]; see *Result class and attributes*.
-#'   Result row order is unspecified; use [dplyr::arrange()] when presentation
-#'   order matters.
+#'   Result row order is unspecified unless `.sort` asks for a Margin order;
+#'   see *Margin order*, or use [dplyr::arrange()] for any other presentation
+#'   order.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -71,7 +73,8 @@ expand_with_margins <- function(.data,
                                 .margin_label_position = c("last", "first"),
                                 .check_margin_label = is.data.frame(.data),
                                 .duplicates = c("error", "drop", "keep"),
-                                .id = NULL) {
+                                .id = NULL,
+                                .sort = c("none", "last", "first")) {
   call <- rlang::current_call()
   with_margin_error_call(
     {
@@ -91,21 +94,34 @@ expand_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .sort = .sort,
     .id = .id,
     call = call
   )
-  result <- execute_margin_expand(operation)
-  finalize_margin_operation(operation, result)
+  execution <- execute_margin_expand(operation)
+  finalize_margin_operation(operation, execution)
 }
 
 execute_margin_expand <- function(operation) {
   check_margin_operation(operation)
   validate_margin_operation(operation)
-  expand_margin_union(
-    operation$data,
-    plan = operation$plan,
-    margin_labels = operation$margin_labels,
-    column_info = operation$column_info,
-    set_id_name = operation$set_id_name
+  # Expansion always uses the portable adapter, so a Margin order always reads
+  # its Grouping bits from a per-branch identifier literal.
+  sort_id <- margin_sort_identifier(
+    operation,
+    set_id_name = operation$set_id_name,
+    used_names = operation$data_vars
+  )
+  set_id_name <- if (is.null(sort_id)) operation$set_id_name else sort_id
+
+  new_margin_execution(
+    expand_margin_union(
+      operation$data,
+      plan = operation$plan,
+      margin_labels = operation$margin_labels,
+      column_info = operation$column_info,
+      set_id_name = set_id_name
+    ),
+    sort_id = sort_id
   )
 }

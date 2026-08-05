@@ -63,5 +63,5 @@ Margin-operation results, and a Margin order is not that order.
 
 Verb-neutrality is again untouched. The sort key is derived from the Grouping
 plan, which the shared module already holds, so no verb kind is passed in to
-produce it. ADR 0018 records the order, how far it is promised, and the two
-backend mechanisms that produce it.
+produce it. ADR 0018 records the order, how far it is promised, and how it is
+produced.

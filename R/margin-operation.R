@@ -9,6 +9,7 @@ new_margin_operation <- function(data,
                                  margin_labels,
                                  margin_label_position,
                                  check_margin_label,
+                                 sort,
                                  call) {
   structure(
     list(
@@ -23,9 +24,51 @@ new_margin_operation <- function(data,
       margin_labels = margin_labels,
       margin_label_position = margin_label_position,
       check_margin_label = check_margin_label,
+      sort = sort,
       call = call
     ),
     class = "marginplyr_margin_operation"
+  )
+}
+
+# What an executor leaves the finalizer to work with. A Margin order is a
+# property of the Grouping plan, so the key itself is built by the finalizer;
+# all an executor reports is `sort_id`, the Grouping set identifier column its
+# query left behind for the key's Grouping bits to be read from. The finalizer
+# drops that column again unless the caller asked for it with `.id`.
+#
+# One identifier serves every adapter because it is the only form of the key
+# that stays resolvable in the `FROM` clause of the query carrying the
+# `ORDER BY`. A Grouping bit is nameable in SQL only as `GROUPING(d)`, which
+# resolves in the aggregate query alone, and dbplyr discards the ordering of
+# any query it goes on to wrap in a subquery — which labelling the omitted
+# dimensions and placing the grouping columns both do.
+new_margin_execution <- function(result, sort_id = NULL) {
+  structure(
+    list(result = result, sort_id = sort_id),
+    class = "marginplyr_margin_execution"
+  )
+}
+
+margin_sorting <- function(operation) {
+  !identical(operation$sort, "none")
+}
+
+# The Grouping set identifier a Margin order reads its Grouping bits from: the
+# caller's `.id` when there is one, and otherwise an internal column the
+# finalizer drops again. Every executor allocates it only after it has chosen
+# an adapter, so that asking for an order never changes which one runs.
+margin_sort_identifier <- function(operation, set_id_name, used_names) {
+  if (!margin_sorting(operation)) {
+    return(NULL)
+  }
+  if (!is.null(set_id_name)) {
+    return(set_id_name)
+  }
+  new_margin_internal_names(
+    1L,
+    used_names = used_names,
+    prefix = "..marginplyr_sort_"
   )
 }
 
@@ -57,6 +100,8 @@ margin_duplicates_choices <- c("error", "drop", "keep")
 
 margin_label_position_choices <- c("last", "first")
 
+margin_sort_choices <- c("none", "last", "first")
+
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
   force(value)
@@ -79,6 +124,7 @@ normalize_margin_options <- function(.margin_label,
                                      .margin_label_position,
                                      .check_margin_label,
                                      .duplicates,
+                                     .sort,
                                      .id = NULL) {
   assert_logical_scalar(.check_margin_label)
   .id <- normalize_margin_id(.id)
@@ -96,6 +142,11 @@ normalize_margin_options <- function(.margin_label,
       .duplicates,
       choices = margin_duplicates_choices,
       arg_name = ".duplicates"
+    ),
+    sort = match_margin_choice(
+      .sort,
+      choices = margin_sort_choices,
+      arg_name = ".sort"
     )
   )
 }
@@ -133,6 +184,7 @@ prepare_margin_operation <- function(.data,
                                      .margin_label_position,
                                      .check_margin_label,
                                      .duplicates,
+                                     .sort,
                                      .id = NULL,
                                      validate_grouping = NULL,
                                      call = rlang::caller_call()) {
@@ -146,6 +198,7 @@ prepare_margin_operation <- function(.data,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
+        .sort = .sort,
         .id = .id
       )
       set_id_name <- options$set_id_name
@@ -153,6 +206,7 @@ prepare_margin_operation <- function(.data,
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
+      .sort <- options$sort
 
       grouping <- prepare_grouping_plan(
         .data,
@@ -196,6 +250,7 @@ prepare_margin_operation <- function(.data,
         margin_labels = margin_labels,
         margin_label_position = .margin_label_position,
         check_margin_label = .check_margin_label,
+        sort = .sort,
         call = call
       )
     },
@@ -219,9 +274,10 @@ validate_margin_operation <- function(operation) {
   )
 }
 
-finalize_margin_operation <- function(operation, result) {
+finalize_margin_operation <- function(operation, execution) {
   check_margin_operation(operation)
-  result <- dplyr::ungroup(result)
+  stopifnot(inherits(execution, "marginplyr_margin_execution"))
+  result <- dplyr::ungroup(execution$result)
   result <- restore_margin_factors(
     result,
     factor_info = operation$column_info$factors,
@@ -239,5 +295,103 @@ finalize_margin_operation <- function(operation, result) {
     dplyr::everything()
   )
 
+  order_margin_result(operation, result, execution)
+}
+
+# Ordering comes last so that the `ORDER BY` is the outermost one, and after
+# factor restoration so that a factor dimension sorts by its restored levels
+# rather than by the character values the branches carried.
+order_margin_result <- function(operation, result, execution) {
+  if (!margin_sorting(operation)) {
+    return(result)
+  }
+
+  sort_id <- execution$sort_id
+  # An invariant, not a Package condition (ADR-0015): an executor that reports
+  # no identifier to derive the Grouping bits from would return the rows in an
+  # order that only looks sorted.
+  stopifnot(
+    length(operation$plan$dimensions) == 0L || !is.null(sort_id)
+  )
+
+  terms <- margin_order_terms(
+    plan = operation$plan,
+    sort = operation$sort,
+    sort_id = sort_id
+  )
+  if (length(terms) > 0L) {
+    result <- dplyr::arrange(result, !!!terms)
+  }
+  if (
+    !is.null(sort_id) &&
+      !identical(sort_id, operation$set_id_name)
+  ) {
+    result <- dplyr::select(result, -dplyr::all_of(sort_id))
+  }
   result
+}
+
+# The key of ADR 0018, built from the Grouping plan alone:
+#
+#   by1 … byN, bit(d1), is.na(d1), d1, …, [set_id]
+#
+# Fixed-key priority and the Grouping set identifier tiebreak are consequences
+# of following the result's own leading grouping columns, not separate rules,
+# and a composite dimension needs no special case because its columns share a
+# Grouping bit.
+#
+# `"first"` reverses the Grouping bits alone. Missingness and values stay
+# ascending, because first and last position margins and not missing values.
+margin_order_terms <- function(plan, sort, sort_id) {
+  terms <- lapply(plan$by, margin_column_pronoun)
+
+  for (dimension in plan$dimensions) {
+    bit <- margin_grouping_bit_expr(plan, dimension, sort_id)
+    if (!is.null(bit)) {
+      terms <- c(terms, list(
+        if (identical(sort, "first")) {
+          rlang::expr(dplyr::desc(!!bit))
+        } else {
+          bit
+        }
+      ))
+    }
+    column <- margin_column_pronoun(dimension)
+    # Written as a comparison rather than as the bare `is.na()` predicate,
+    # because ordering by a boolean is not accepted by every dialect the
+    # portable adapter renders for.
+    terms <- c(
+      terms,
+      list(rlang::expr(dplyr::if_else(is.na(!!column), 1L, 0L)), column)
+    )
+  }
+
+  if (!is.null(sort_id)) {
+    terms <- c(terms, list(margin_column_pronoun(sort_id)))
+  }
+  terms
+}
+
+# One dimension's Grouping bit, read from the Grouping set identifier the
+# adapter left in the result. `NULL` when the plan makes the bit constant, so
+# that a term with nothing to order by is not emitted.
+margin_grouping_bit_expr <- function(plan, dimension, sort_id) {
+  if (is.null(sort_id)) {
+    return(NULL)
+  }
+  margin_ids <- as.integer(
+    plan$set_ids[plan$grouping_masks[, dimension] == 1L]
+  )
+  if (
+    length(margin_ids) == 0L ||
+      length(margin_ids) == length(plan$set_ids)
+  ) {
+    return(NULL)
+  }
+
+  rlang::expr(dplyr::if_else(
+    (!!margin_column_pronoun(sort_id)) %in% !!margin_ids,
+    1L,
+    0L
+  ))
 }

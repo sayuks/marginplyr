@@ -793,11 +793,6 @@ test_that("Margin verb formals expose only the supported common options", {
     nest_by_with_margins
   )
 
-  expect_false(any(vapply(
-    verbs,
-    function(verb) ".sort" %in% names(formals(verb)),
-    logical(1)
-  )))
   expect_false(".groups" %in% names(formals(summarize_with_margins)))
   expect_false(".groups" %in% names(formals(summarise_with_margins)))
   expect_true(all(vapply(
@@ -816,6 +811,16 @@ test_that("Margin verb formals expose only the supported common options", {
       identical(
         formals(verb)$.margin_label_position,
         quote(c("last", "first"))
+      )
+    },
+    logical(1)
+  )))
+  expect_true(all(vapply(
+    verbs,
+    function(verb) {
+      identical(
+        formals(verb)$.sort,
+        quote(c("none", "last", "first"))
       )
     },
     logical(1)

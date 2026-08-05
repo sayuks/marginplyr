@@ -8,6 +8,7 @@
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Grouping set identifiers
+#' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Backend extension design
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
@@ -64,9 +65,9 @@
 #' @return For a local input, an ungrouped data frame with one list column,
 #'   whose class and attributes follow [dplyr::summarize()]; see *Result class
 #'   and attributes*. A `dtplyr` input returns a lazy `dtplyr` step until
-#'   collected. Result row
-#'   order is unspecified; use [dplyr::arrange()] when presentation order
-#'   matters.
+#'   collected. Result row order is unspecified unless `.sort` asks for a
+#'   Margin order; see *Margin order*, or use [dplyr::arrange()] for any other
+#'   presentation order.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -138,6 +139,7 @@ nest_with_margins <- function(.data,
                               .check_margin_label = is.data.frame(.data),
                               .duplicates = c("error", "drop"),
                               .id = NULL,
+                              .sort = c("none", "last", "first"),
                               .key = "data",
                               .keep = FALSE) {
   call <- rlang::current_call()
@@ -155,6 +157,7 @@ nest_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .sort = .sort,
     .id = .id,
     .key = .key,
     .keep = .keep,
@@ -175,6 +178,7 @@ nest_margin_pipeline <- function(.data,
                                  .margin_label_position,
                                  .check_margin_label,
                                  .duplicates,
+                                 .sort,
                                  .id,
                                  .key,
                                  .keep,
@@ -216,6 +220,7 @@ nest_margin_pipeline <- function(.data,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
+        .sort = .sort,
         .id = .id
       )
       set_id_name <- options$set_id_name
@@ -223,6 +228,7 @@ nest_margin_pipeline <- function(.data,
       .margin_label_position <- options$margin_label_position
       .check_margin_label <- options$check_margin_label
       .duplicates <- options$duplicates
+      .sort <- options$sort
       check_margin_id_collision(set_id_name, .key, "nesting `.key`")
       if (identical(.duplicates, "keep")) {
         abort_marginplyr(
@@ -244,15 +250,16 @@ nest_margin_pipeline <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .sort = .sort,
     .id = .id,
     call = call
   )
-  result <- execute_margin_nest(
+  execution <- execute_margin_nest(
     operation,
     .key = .key,
     .keep = .keep
   )
-  finalize_margin_operation(operation, result)
+  finalize_margin_operation(operation, execution)
 }
 
 execute_margin_nest <- function(operation, .key, .keep) {
@@ -307,14 +314,22 @@ execute_margin_nest <- function(operation, .key, .keep) {
         set_id_name = set_col
       )
 
-      nest_expanded_margins(
-        expanded,
-        group_cols = group_cols,
-        set_col = set_col,
-        keep_cols = keep_cols,
-        .key = .key,
-        .keep = .keep,
-        set_id_name = operation$set_id_name
+      # Nesting always expands through the portable adapter and already carries
+      # a Grouping set identifier, so a Margin order costs it no column of its
+      # own; the identifier is retained past the nest and dropped once the
+      # finalizer has ordered by it.
+      sorting <- margin_sorting(operation)
+      new_margin_execution(
+        nest_expanded_margins(
+          expanded,
+          group_cols = group_cols,
+          set_col = set_col,
+          keep_cols = keep_cols,
+          .key = .key,
+          .keep = .keep,
+          drop_set_col = is.null(operation$set_id_name) && !sorting
+        ),
+        sort_id = if (sorting) set_col else NULL
       )
     },
     call = operation$call
@@ -327,7 +342,7 @@ nest_expanded_margins <- function(.data,
                                   keep_cols,
                                   .key,
                                   .keep,
-                                  set_id_name = NULL) {
+                                  drop_set_col = TRUE) {
   if (.keep && length(group_cols) > 0L) {
     # `rename()` and `relocate()` run inside a data-masked summary expression,
     # so their tidyselect resolves `keep_cols` and `group_cols` against the
@@ -356,7 +371,7 @@ nest_expanded_margins <- function(.data,
     )
   }
 
-  if (is.null(set_id_name)) {
+  if (drop_set_col) {
     result <- dplyr::select(result, -dplyr::all_of(set_col))
   }
   result
