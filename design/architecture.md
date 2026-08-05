@@ -128,11 +128,12 @@ It serves two helpers, `share_of_parent()` and `share_of_total()`, which
 differ only in their denominator. Everything else — the source contract, the
 `across()` grammar, output naming, the value rules, and the backend
 boundaries — is one implementation, which is why the shared machinery is named
-`share_*`. Each request carries its *kind*, and `share_helper_kinds` is the
-one table mapping a helper name to one: detection, the grouping requirement
-each kind states, the denominator it builds, and the terms its diagnostics use
-are all derived from the kind, so no message and no branch names a helper
-independently. See
+`share_*`. Each request carries its *kind*, and `share_kind_rules()` is the one
+table describing a kind: the name a caller writes, the terms its diagnostics
+use, what it requires of the compiled Grouping plan, and the denominator
+mapping it joins. Detection reads that table backwards, from a written name to
+its kind, so no message and no branch names a helper independently and a third
+helper is one entry with no second site to answer for it. See
 [ADR 0017](adr/0017-calculate-total-shares-against-the-grand-total-set.md).
 
 The names that stayed `parent_*` — `parent_set_ids()`,

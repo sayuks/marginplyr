@@ -338,11 +338,11 @@
 #' `NULL = NULL`.
 #'
 #' A Parent share's denominator is the immediate strictly less detailed
-#' [rollup()] level. Composite dimensions are added or removed together. A
-#' root Parent share is `1.0`, even when its source is zero or missing.
-#' Duplicate Grouping set occurrences remain in the result but are skipped
-#' while finding the next coarser parent, because a parent must be strictly
-#' less detailed.
+#' [rollup()] level. Composite dimensions are added or removed together. The
+#' Grand total set has no parent, so its Parent share is `1.0`, even when its
+#' source is zero or missing. Duplicate Grouping set occurrences remain in the
+#' result but are skipped while finding the next coarser parent, because a
+#' parent must be strictly less detailed.
 #'
 #' A Total share's denominator is the Grand total set. Every row of it,
 #' duplicate occurrences included, has a Total share of `1.0`, even when its
@@ -351,12 +351,12 @@
 #' rather than skipped and which one supplies the denominator is not
 #' specified.
 #'
-#' Empty input gives one root row or none at all, and the share column keeps
-#' its type either way:
+#' Empty input gives one Grand total set row or no rows at all, and the share
+#' column keeps its type either way:
 #'
 #' | Empty input | Rows | Share value and type |
 #' |---|---:|---|
-#' | Without fixed `.by` keys | One root row | `1.0`, double |
+#' | Without fixed `.by` keys | One row of the Grand total set | `1.0`, double |
 #' | With fixed `.by` keys | Zero rows | Empty double vector |
 #'
 #' Missing detail or subtotal combinations are not completed.
@@ -482,16 +482,20 @@
 #'   .margin_label = NULL
 #' )
 #'
-#' # Empty input without `.by` has one root share. With `.by`, there are no
-#' # partitions; both results retain a double share column.
+#' # Empty input without `.by` has one Grand total set row, whose share is
+#' # one. With `.by`, there are no partitions; both results retain a double
+#' # share column.
 #' empty_keys <- missing_keys[0, ]
-#' empty_root <- summarize_with_margins(
+#' empty_grand_total <- summarize_with_margins(
 #'   .data = empty_keys,
 #'   total = sum(value),
 #'   share = share_of_parent(total),
 #'   .grouping = rollup(group)
 #' )
-#' c(rows = nrow(empty_root), type = typeof(empty_root$share))
+#' c(
+#'   rows = nrow(empty_grand_total),
+#'   type = typeof(empty_grand_total$share)
+#' )
 #' empty_partitions <- summarize_with_margins(
 #'   .data = empty_keys,
 #'   total = sum(value),
@@ -613,7 +617,7 @@ abort_share_helper_position <- function(kind, complete) {
 # names whichever helpers the caller wrote rather than a fixed one. Its
 # vocabulary lives here; the executor decides when to raise it.
 abort_arrow_shares <- function(kinds) {
-  kinds <- share_helper_kinds[share_helper_kinds %in% kinds]
+  kinds <- intersect(share_kind_names(), kinds)
   abort_marginplyr(
     paste0(
       "Arrow backends do not support ",
@@ -1663,11 +1667,8 @@ validate_share_request <- function(outputs,
 # must satisfy both, which is why this checks every requested kind rather than
 # choosing one.
 check_share_grouping_kinds <- function(plan, kinds) {
-  if ("parent" %in% kinds) {
-    check_parent_grouping_kind(plan)
-  }
-  if ("total" %in% kinds) {
-    check_total_grouping_kind(plan)
+  for (kind in intersect(share_kind_names(), kinds)) {
+    share_kind_rule(kind)$check_grouping(plan)
   }
   invisible(NULL)
 }
@@ -1687,7 +1688,7 @@ check_parent_grouping_kind <- function(plan) {
 }
 
 check_total_grouping_kind <- function(plan) {
-  if (length(grand_total_set_ids(plan)) > 0L) {
+  if (length(grand_total_occurrence_ids(plan)) > 0L) {
     return(invisible(NULL))
   }
   abort_marginplyr(
@@ -1817,7 +1818,7 @@ apply_joined_shares <- function(result,
                                 set_id_name,
                                 kind,
                                 sql_join) {
-  rule <- share_denominator_rule(kind)
+  rule <- share_kind_rule(kind)
   target_ids <- rule$target_ids(plan)
   own_denominator_ids <- plan$set_ids[is.na(target_ids)]
   pairs <- share_pairs(requests)
@@ -1839,7 +1840,7 @@ apply_joined_shares <- function(result,
 
   joined_ids <- plan$set_ids[!is.na(target_ids)]
   if (length(joined_ids) > 0L) {
-    denominator <- rule$build(
+    denominator <- rule$build_denominator(
       result,
       plan = plan,
       target_ids = target_ids,
@@ -1930,28 +1931,11 @@ apply_joined_shares <- function(result,
   result
 }
 
-# Everything a share kind contributes to the join above: which occurrence each
-# row's denominator comes from, and the denominator rows themselves with the
-# columns they are matched on. A builder returns the result it was given,
-# because a kind may have to add matching columns to both sides.
-share_denominator_rule <- function(kind) {
-  rules <- list(
-    parent = list(
-      target_ids = parent_set_ids,
-      build = build_parent_denominator
-    ),
-    total = list(
-      target_ids = total_set_ids,
-      build = build_total_denominator
-    )
-  )
-  rule <- rules[[kind]]
-  if (is.null(rule)) {
-    stop("Unknown contextual-share kind: ", kind, call. = FALSE)
-  }
-  rule
-}
-
+# What a kind contributes to the join above is two entries of
+# `share_kind_rules()`: which occurrence each row's denominator comes from, and
+# the denominator rows themselves with the columns they are matched on. A
+# builder returns the result it was given, because a kind may have to add
+# matching columns to both sides.
 build_parent_denominator <- function(result,
                                      plan,
                                      target_ids,
@@ -2203,8 +2187,10 @@ check_local_share_types <- function(result, requests, call) {
 }
 
 # The Grand total occurrences of a plan: those omitting every variable
-# grouping dimension. There is at most one unless duplicates were kept.
-grand_total_set_ids <- function(plan) {
+# grouping dimension. There is at most one unless duplicates were kept. Named
+# for the occurrences it returns, because `total_set_ids()` below returns the
+# other shape — one denominator per occurrence, in plan order.
+grand_total_occurrence_ids <- function(plan) {
   variable_sets <- lapply(plan$sets, setdiff, y = plan$by)
   plan$set_ids[lengths(variable_sets) == 0L]
 }
@@ -2216,7 +2202,7 @@ grand_total_set_ids <- function(plan) {
 # is used is not part of the contract.
 total_set_ids <- function(plan) {
   result <- rep(NA_integer_, length(plan$sets))
-  grand_total_ids <- grand_total_set_ids(plan)
+  grand_total_ids <- grand_total_occurrence_ids(plan)
   if (length(grand_total_ids) == 0L) {
     return(result)
   }
@@ -2259,43 +2245,78 @@ share_placeholder <- function(outputs) {
   structure(placeholders, class = "marginplyr_share_placeholders")
 }
 
-# Every contextual share helper, mapped to the kind of denominator its request
-# resolves to. It is the one place a helper name appears: detection, the
-# grouping requirement each kind states, the denominator mapping each kind
-# builds, and the terms every diagnostic uses are all derived from a kind, so
-# a third helper is added here and answered for in `share_kind_terms()`,
-# `check_share_grouping_kinds()`, and `share_denominator_rule()`.
-share_helper_kinds <- c(
-  share_of_parent = "parent",
-  share_of_total = "total"
-)
-
-share_helper_name <- function(kind) {
-  names(share_helper_kinds)[[match(kind, share_helper_kinds)]]
+# Every contextual share helper, keyed by the kind of denominator its request
+# resolves to. It is the one place a helper is described: the name a caller
+# writes, the two forms a diagnostic needs to name it, what it requires of the
+# compiled Grouping plan, and the denominator mapping it joins. Detection reads
+# the table backwards, from a written name to its kind. A third helper is one
+# entry here and nothing else in this module.
+#
+# Both term forms are written out because a message uses whichever its sentence
+# needs, and deriving one from the other would make the wording of every
+# message depend on a rule about hyphens rather than on this table.
+share_kind_rules <- function() {
+  list(
+    parent = list(
+      helper = "share_of_parent",
+      label = "Parent share",
+      modifier = "Parent-share",
+      check_grouping = check_parent_grouping_kind,
+      target_ids = parent_set_ids,
+      build_denominator = build_parent_denominator
+    ),
+    total = list(
+      helper = "share_of_total",
+      label = "Total share",
+      modifier = "Total-share",
+      check_grouping = check_total_grouping_kind,
+      target_ids = total_set_ids,
+      build_denominator = build_total_denominator
+    )
+  )
 }
 
-# What a diagnostic calls a share of this kind. Both forms are written out
-# because a message uses whichever its sentence needs, and deriving one from
-# the other would make the wording of every message depend on a rule about
-# hyphens rather than on this table.
-share_kind_terms <- function(kind) {
-  terms <- list(
-    parent = list(label = "Parent share", modifier = "Parent-share"),
-    total = list(label = "Total share", modifier = "Total-share")
-  )
-  terms[[kind]]
+share_kind_rule <- function(kind) {
+  rule <- share_kind_rules()[[kind]]
+  if (is.null(rule)) {
+    stop("Unknown contextual-share kind: ", kind, call. = FALSE)
+  }
+  rule
+}
+
+# The kinds in the order this module names them, which is the order a message
+# listing several uses. A caller's writing order is not it: the same two
+# helpers should be listed the same way whichever was written first.
+share_kind_names <- function() {
+  names(share_kind_rules())
+}
+
+share_helper_name <- function(kind) {
+  share_kind_rule(kind)$helper
 }
 
 share_kind_label <- function(kind) {
-  share_kind_terms(kind)$label
+  share_kind_rule(kind)$label
 }
 
 share_kind_modifier <- function(kind) {
-  share_kind_terms(kind)$modifier
+  share_kind_rule(kind)$modifier
 }
 
 share_kind_call <- function(kind) {
   paste0("`", share_helper_name(kind), "()`")
+}
+
+# The kind a written helper name resolves to, or `NULL` when it names no
+# helper.
+share_named_kind <- function(name) {
+  rules <- share_kind_rules()
+  helpers <- vapply(rules, `[[`, character(1), "helper")
+  kind <- names(rules)[match(name, helpers, nomatch = 0L)]
+  if (length(kind) == 0L) {
+    return(NULL)
+  }
+  kind
 }
 
 share_helper_call_kind <- function(expr) {
@@ -2303,14 +2324,14 @@ share_helper_call_kind <- function(expr) {
     return(NULL)
   }
   name <- rlang::call_name(expr)
-  if (is.null(name) || !name %in% names(share_helper_kinds)) {
+  if (is.null(name)) {
     return(NULL)
   }
   namespace <- rlang::call_ns(expr)
   if (!is.null(namespace) && !identical(namespace, "marginplyr")) {
     return(NULL)
   }
-  unname(share_helper_kinds[[name]])
+  share_named_kind(name)
 }
 
 share_helper_function_kind <- function(expr) {
@@ -2326,10 +2347,7 @@ share_helper_function_kind <- function(expr) {
   } else {
     return(NULL)
   }
-  if (!name %in% names(share_helper_kinds)) {
-    return(NULL)
-  }
-  unname(share_helper_kinds[[name]])
+  share_named_kind(name)
 }
 
 is_share_helper_call <- function(expr) {

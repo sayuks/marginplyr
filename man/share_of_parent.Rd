@@ -356,11 +356,11 @@ are matched with missing-safe identity rather than ordinary SQL
 \code{NULL = NULL}.
 
 A Parent share's denominator is the immediate strictly less detailed
-\code{\link[=rollup]{rollup()}} level. Composite dimensions are added or removed together. A
-root Parent share is \code{1.0}, even when its source is zero or missing.
-Duplicate Grouping set occurrences remain in the result but are skipped
-while finding the next coarser parent, because a parent must be strictly
-less detailed.
+\code{\link[=rollup]{rollup()}} level. Composite dimensions are added or removed together. The
+Grand total set has no parent, so its Parent share is \code{1.0}, even when its
+source is zero or missing. Duplicate Grouping set occurrences remain in the
+result but are skipped while finding the next coarser parent, because a
+parent must be strictly less detailed.
 
 A Total share's denominator is the Grand total set. Every row of it,
 duplicate occurrences included, has a Total share of \code{1.0}, even when its
@@ -369,10 +369,10 @@ same rows and therefore hold the same values, so they are interchangeable
 rather than skipped and which one supplies the denominator is not
 specified.
 
-Empty input gives one root row or none at all, and the share column keeps
-its type either way:\tabular{lrl}{
+Empty input gives one Grand total set row or no rows at all, and the share
+column keeps its type either way:\tabular{lrl}{
    Empty input \tab Rows \tab Share value and type \cr
-   Without fixed \code{.by} keys \tab One root row \tab \code{1.0}, double \cr
+   Without fixed \code{.by} keys \tab One row of the Grand total set \tab \code{1.0}, double \cr
    With fixed \code{.by} keys \tab Zero rows \tab Empty double vector \cr
 }
 
@@ -494,16 +494,20 @@ summarize_with_margins(
   .margin_label = NULL
 )
 
-# Empty input without `.by` has one root share. With `.by`, there are no
-# partitions; both results retain a double share column.
+# Empty input without `.by` has one Grand total set row, whose share is
+# one. With `.by`, there are no partitions; both results retain a double
+# share column.
 empty_keys <- missing_keys[0, ]
-empty_root <- summarize_with_margins(
+empty_grand_total <- summarize_with_margins(
   .data = empty_keys,
   total = sum(value),
   share = share_of_parent(total),
   .grouping = rollup(group)
 )
-c(rows = nrow(empty_root), type = typeof(empty_root$share))
+c(
+  rows = nrow(empty_grand_total),
+  type = typeof(empty_grand_total$share)
+)
 empty_partitions <- summarize_with_margins(
   .data = empty_keys,
   total = sum(value),

@@ -458,16 +458,20 @@ dplyr::mutate(
   revenue_percent = 100 * revenue_share
 )
 
-# Empty unpartitioned input has one root share; fixed `.by` input has no
-# partitions. Both retain a double Parent-share column.
+# Empty unpartitioned input has one Grand total set row, whose share is
+# one; fixed `.by` input has no partitions. Both retain a double
+# Parent-share column.
 empty_sales <- retail_sales[0, ]
-empty_root <- summarize_with_margins(
+empty_grand_total <- summarize_with_margins(
   .data = empty_sales,
   revenue = sum(revenue),
   revenue_share = share_of_parent(revenue),
   .grouping = rollup(region)
 )
-c(rows = nrow(empty_root), type = typeof(empty_root$revenue_share))
+c(
+  rows = nrow(empty_grand_total),
+  type = typeof(empty_grand_total$revenue_share)
+)
 empty_partitions <- summarize_with_margins(
   .data = empty_sales,
   revenue = sum(revenue),

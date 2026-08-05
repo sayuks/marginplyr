@@ -145,7 +145,7 @@ assert_markers(
     "summarise_with_margins",
     "Relationship to dplyr summaries",
     "Display labels and grouping identity",
-    "Parent shares",
+    "Contextual shares",
     "Backend extension design",
     "Database backend coverage",
     "Microsoft SQL Server",
@@ -170,12 +170,15 @@ assert_page_markers(
 assert_page_markers(
   "docs/man/share_of_parent.html",
   c(
-    "Direct Parent shares",
+    "Direct shares",
     "Eligible source summaries",
-    "Column-wise Parent shares",
+    "Column-wise shares",
     "Rejected forms and supported rewrites",
     "Lazy execution boundaries",
-    "Parent shares never synthesize or complete keys",
+    # The page documents both denominators, and states that neither completes
+    # keys. Losing either would leave one helper without a contract.
+    "share_of_total",
+    "synthesizes or completes keys",
     "revenue_quantile",
     "Missing fixed and included keys",
     "where(is.numeric)",
