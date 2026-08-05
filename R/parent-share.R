@@ -1683,15 +1683,15 @@ apply_joined_parent_shares <- function(result,
       }
       rlang::expr(
         dplyr::if_else(
-          .data[[!!set_id_name]] %in% !!root_ids,
+          (!!margin_column_pronoun(set_id_name)) %in% !!root_ids,
           1.0,
           dplyr::if_else(
-            is.na(.data[[!!source]]) |
-              is.na(.data[[!!denominator]]) |
-              .data[[!!denominator]] == 0,
+            is.na(!!margin_column_pronoun(source)) |
+              is.na(!!margin_column_pronoun(denominator)) |
+              (!!margin_column_pronoun(denominator)) == 0,
             NA_real_,
-            as.double(.data[[!!source]]) /
-              as.double(.data[[!!denominator]])
+            as.double(!!margin_column_pronoun(source)) /
+              as.double(!!margin_column_pronoun(denominator))
           )
         )
       )
@@ -1769,14 +1769,11 @@ build_lazy_parent_mapping <- function(result,
                                       plan,
                                       set_id_name) {
   group_vars <- unique(c(plan$by, plan$dimensions))
-  key_exprs <- lapply(
-    group_vars,
-    function(var) rlang::expr(.data[[!!var]])
-  )
+  key_exprs <- lapply(group_vars, margin_column_pronoun)
   names(key_exprs) <- group_vars
   denominator_exprs <- lapply(
     sources,
-    function(source) rlang::expr(.data[[!!source]])
+    function(source) margin_column_pronoun(source)
   )
   names(denominator_exprs) <- unname(denominator_names[sources])
 
@@ -1821,8 +1818,8 @@ add_lazy_parent_join_keys <- function(result,
       )]
       rlang::expr(
         dplyr::if_else(
-          .data[[!!set_id_name]] %in% !!matching_child_ids,
-          .data[[!!dimension]],
+          (!!margin_column_pronoun(set_id_name)) %in% !!matching_child_ids,
+          !!margin_column_pronoun(dimension),
           NA
         )
       )

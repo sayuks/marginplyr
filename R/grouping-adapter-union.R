@@ -39,10 +39,7 @@ summarize_margin_union <- function(.data,
   names(key_names) <- group_vars
 
   if (length(group_vars) > 0L) {
-    key_exprs <- lapply(
-      group_vars,
-      function(var) rlang::expr(.data[[!!var]])
-    )
+    key_exprs <- lapply(group_vars, margin_column_pronoun)
     names(key_exprs) <- unname(key_names)
     .data <- dplyr::mutate(.data, !!!key_exprs)
   }

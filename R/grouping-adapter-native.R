@@ -67,9 +67,9 @@ summarize_margin_native <- function(.data,
       function(var, flag, label) {
         rlang::expr(
           dplyr::if_else(
-            .data[[!!flag]] == 1L,
+            (!!margin_column_pronoun(flag)) == 1L,
             !!label,
-            as.character(.data[[!!var]])
+            as.character(!!margin_column_pronoun(var))
           )
         )
       },

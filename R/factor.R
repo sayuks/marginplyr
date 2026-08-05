@@ -93,7 +93,7 @@ reconstruct_factor.data.frame <- function(data,
     .data = data,
     "{col}" := !!rlang::expr(
       reconstruct_factor_vector(
-        .data[[!!col]],
+        !!margin_column_pronoun(col),
         new_levels = !!new_levels,
         ordered = !!ord,
         missing_sentinel = !!missing_sentinel
