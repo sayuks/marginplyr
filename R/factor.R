@@ -85,13 +85,19 @@ reconstruct_factor.data.frame <- function(data,
   new_levels <- margin_factor_levels(info, .margin_name, position)
   ord <- info$ordered
   missing_sentinel <- factor_missing_sentinel(info, .margin_name)
+  # Every value is injected rather than named. A bare name here resolves
+  # against the data mask first, so a source column called `new_levels`,
+  # `ord`, or `missing_sentinel` would supply the argument instead of the
+  # local, silently rebuilding the factor from the wrong levels.
   dplyr::mutate(
     .data = data,
-    "{col}" := reconstruct_factor_vector(
-      .data[[col]],
-      new_levels = new_levels,
-      ordered = ord,
-      missing_sentinel = missing_sentinel
+    "{col}" := !!rlang::expr(
+      reconstruct_factor_vector(
+        .data[[!!col]],
+        new_levels = !!new_levels,
+        ordered = !!ord,
+        missing_sentinel = !!missing_sentinel
+      )
     )
   )
 }
@@ -117,8 +123,10 @@ reconstruct_factor.tbl_duckdb_connection <- function(data,
     con,
     "CAST({.id col} AS ENUM {new_levels*})"
   )
+  # Injected for the same reason as the data frame method: a source column
+  # named `sql_query` would otherwise replace the cast with that column.
   dplyr::mutate(
     .data = data,
-    "{col}" := sql_query
+    "{col}" := !!sql_query
   )
 }
