@@ -10,8 +10,8 @@
 #'
 #' @param .data A data frame or lazy table.
 #' @param ... Name-value pairs as used in [dplyr::summarize()]. Contextual
-#'   helpers [grouping_bit()], [grouping_id()], and [share_of_parent()] can
-#'   also be used here.
+#'   helpers [grouping_bit()], [grouping_id()], [share_of_parent()], and
+#'   [share_of_total()] can also be used here.
 #' @param .by <[`tidy-select`][dplyr::dplyr_tidy_select]> Columns included in
 #'   every grouping set. These columns never receive `.margin_label`. When
 #'   `.data` is grouped and `.by` is `NULL`, its grouping columns are used as
@@ -169,32 +169,39 @@
 #' positions, or columns would not have one global meaning. Use
 #' [grouping_bit()] and [grouping_id()] to identify margin levels.
 #'
-#' @section Parent shares:
-#' [share_of_parent()] calculates a preceding named numeric scalar summary's
-#' ratio to its immediate less detailed [rollup()] parent for local data and
-#' supported lazy dbplyr and dtplyr inputs. It supports direct named expressions
-#' and a constrained [dplyr::across()] form for multiple preceding summaries.
-#' Fixed `.by` keys partition the calculation, composite dimensions move
-#' together, and duplicate occurrences skip identical sets when choosing the
-#' parent.
+#' @section Contextual shares:
+#' [share_of_parent()] and [share_of_total()] calculate a preceding named
+#' numeric scalar summary's ratio to the same summary on another row of the
+#' result, for local data and supported lazy dbplyr and dtplyr inputs. Both
+#' support direct named expressions and a constrained [dplyr::across()] form
+#' for multiple preceding summaries, and both partition the calculation by the
+#' fixed `.by` keys.
 #'
-#' Arrow inputs reject Parent shares after expression planning and common
+#' They differ only in the denominator. [share_of_parent()] divides by the
+#' immediate less detailed [rollup()] level, so it requires one pure
+#' [rollup()]; composite dimensions move together, and duplicate occurrences
+#' skip identical sets when choosing the parent. [share_of_total()] divides by
+#' the Grand total set, so it accepts any Grouping specification whose plan
+#' contains one, including [cube()]; duplicate Grand total occurrences hold
+#' the same values and are interchangeable.
+#'
+#' Arrow inputs reject both after expression planning and common
 #' Margin-operation validation but before constructing a summary query. Other
 #' Arrow Margin operations remain supported and lazy. Explicitly collect an
-#' Arrow input first when local Parent-share execution is appropriate.
+#' Arrow input first when local share execution is appropriate.
 #'
-#' Root rows receive `1.0`. Missing numerators or denominators and zero
-#' denominators receive `NA_real_`; other finite ratios are not clamped.
-#' Parent matching is structural, so `.id`, missing grouping values, and
-#' displayed Margin labels do not determine the parent.
+#' A row that is its own denominator receives `1.0`. Missing numerators or
+#' denominators and zero denominators receive `NA_real_`; other finite ratios
+#' are not clamped. Matching is structural, so `.id`, missing grouping values,
+#' and displayed Margin labels do not determine the denominator.
 #'
-#' Parent shares require one pure [rollup()]. The source must be a unique,
-#' preceding, self-contained integer or double scalar summary. Lazy execution
-#' preserves collision-safe Grouping set metadata through ordinary aggregation,
-#' calculates all requested shares through one shared Parent mapping, and then
-#' removes the metadata before returning the requested column order.
+#' The source must be a unique, preceding, self-contained integer or double
+#' scalar summary. Lazy execution preserves collision-safe Grouping set
+#' metadata through ordinary aggregation, calculates the requested shares
+#' through one shared mapping per denominator kind, and then removes the
+#' metadata before returning the requested column order.
 #'
-#' Local data frames reject an ineligible source before any Parent share is
+#' Local data frames reject an ineligible source before any share is
 #' calculated. `dtplyr` steps stay lazy and report the same conditions during
 #' explicit execution, before an invalid grouping row is emitted. General
 #' dbplyr backends are not executed or probed solely to validate an arbitrary
@@ -204,7 +211,7 @@
 #'
 #' [share_of_parent()] is the canonical reference for the complete
 #' direct-expression, source, ordering, value, empty-input, and `across()`
-#' contracts.
+#' contracts of both helpers.
 #'
 #' @section Display labels and grouping identity:
 #' `.margin_label` is a display value, not the identity of a grouping set. An
@@ -268,12 +275,12 @@
 #' tests execute DuckDB queries against a live in-memory database and verify
 #' PostgreSQL SQL with dbplyr's simulator.
 #'
-#' The portable `UNION ALL` SQL path is executed end to end for Parent shares
-#' against a live in-memory SQLite database. It is also verified with dbplyr
-#' simulators for Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server,
-#' MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and Teradata,
-#' plus generic DBI and ODBC connections. Simulator coverage verifies SQL
-#' generation, not execution against every database server.
+#' The portable `UNION ALL` SQL path is executed end to end for contextual
+#' shares against a live in-memory SQLite database. It is also verified with
+#' dbplyr simulators for Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL
+#' Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and
+#' Teradata, plus generic DBI and ODBC connections. Simulator coverage verifies
+#' SQL generation, not execution against every database server.
 #'
 #' Arrow and dtplyr are also tested lazy backends, but they are not SQL
 #' database connections.

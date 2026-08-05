@@ -3,7 +3,7 @@
 \name{share_of_parent}
 \alias{share_of_parent}
 \alias{share_of_total}
-\title{Calculate a summary's share of its rollup parent}
+\title{Calculate a summary's share of its rollup parent or of the grand total}
 \usage{
 share_of_parent(x)
 
@@ -16,19 +16,48 @@ share_of_total(x)
 A double vector when used inside \code{\link[=summarize_with_margins]{summarize_with_margins()}}.
 }
 \description{
-\code{share_of_parent()} is a contextual summary helper for
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}. It divides one preceding named numeric scalar
-summary by the corresponding value in the immediately less detailed
-\code{\link[=rollup]{rollup()}} level. Fixed \code{.by} columns partition the calculation.
+\code{share_of_parent()} and \code{share_of_total()} are contextual summary helpers
+for \code{\link[=summarize_with_margins]{summarize_with_margins()}}. Each divides one preceding named numeric
+scalar summary by the same summary on another row of the same result. Only
+the denominator differs:
 }
 \details{
-The helper is contextual because its denominator belongs to another
-Grouping-set row. It can be used only inside
-\code{\link[=summarize_with_margins]{summarize_with_margins()}} with one pure \code{\link[=rollup]{rollup()}}. Direct calls, ordinary
-\code{\link[dplyr:summarize]{dplyr::summarize()}} calls, \code{\link[dplyr:mutate]{dplyr::mutate()}} calls, \code{\link[=grouping_sets]{grouping_sets()}},
-\code{\link[=cube]{cube()}}, and \code{\link[=grouping_spec]{grouping_spec()}} are rejected.
+\tabular{lll}{
+   Helper \tab Denominator \tab Accepted \code{.grouping} \cr
+   \code{share_of_parent()} \tab The immediately less detailed \code{\link[=rollup]{rollup()}} level \tab One pure \code{\link[=rollup]{rollup()}} \cr
+   \code{share_of_total()} \tab The Grand total set, in which every grouping dimension is omitted \tab Any specification whose plan contains one \cr
 }
-\section{Direct Parent shares}{
+
+
+Fixed \code{.by} columns partition both calculations, so a fixed key never
+contributes to another partition's denominator. Everything else on this
+page — eligible sources, the direct and \code{across()} grammar, output naming,
+the value rules, and the backend boundaries — is the same for both helpers,
+and both are written the same way:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{revenue = sum(revenue)
+parent_share = share_of_parent(revenue)
+total_share = share_of_total(revenue)
+}\if{html}{\out{</div>}}
+
+A helper is contextual because its denominator belongs to another
+Grouping-set row, so it can be used only inside
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}. Direct calls, ordinary \code{\link[dplyr:summarize]{dplyr::summarize()}}
+calls, and \code{\link[dplyr:mutate]{dplyr::mutate()}} calls are rejected.
+
+\code{share_of_parent()} additionally requires one pure \code{\link[=rollup]{rollup()}};
+\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=cube]{cube()}}, and \code{\link[=grouping_spec]{grouping_spec()}} are rejected. A grouping
+set can have several strictly less detailed sets in the same plan, and
+nothing in the plan says which of them is \emph{the} parent.
+
+\code{share_of_total()} has no such choice to make: a Grand total set is not
+selected, and a plan either contains one or does not. It therefore accepts
+any Grouping specification whose plan contains one. \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}}
+always produce one; \code{\link[=grouping_sets]{grouping_sets()}} produces one only when it includes an
+empty \code{\link[=grouping_set]{grouping_set()}}, and a specification without one is rejected naming
+that fix.
+}
+\section{Direct shares}{
 
 A direct call must be the complete right-hand side of an explicitly named
 summary. Its argument must be the bare name of one eligible ordinary summary
@@ -47,24 +76,24 @@ revenue_share = share_of_parent(revenue)
 
 # Rejected: wrapping or scaling the helper
 revenue_percent = 100 * share_of_parent(revenue)
-# Rewrite: derive from the finished Parent share afterwards
+# Rewrite: derive from the finished share afterwards
 result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 }\if{html}{\out{</div>}}
 
 A direct call cannot be unnamed, use a string, use a forward reference,
-redefine the source name, or use a Parent share as another Parent share's
-source. Each rejected form and its rewrite are listed below.
+redefine the source name, or use a share as another share's source. Each
+rejected form and its rewrite are listed below.
 }
 
 \section{Eligible source summaries}{
 
-The source must be defined exactly once before the Parent share. It must be
+The source must be defined exactly once before the share. It must be
 a top-level named summary or a statically named output from a preceding
 \code{\link[dplyr:across]{dplyr::across()}}, return one plain integer or double per grouping row, and
 be self-contained. A source cannot depend on an earlier summary alias.
 
 Integer, double, and the corresponding database numeric/decimal scalar
-summaries are eligible. The Parent share is always a double. Logical,
+summaries are eligible. A share is always a double. Logical,
 complex, date-time, duration, character, factor, list, data-frame, and other
 semantic classes are not converted implicitly. Convert intentionally in the
 ordinary summary:
@@ -79,9 +108,9 @@ day_share = share_of_parent(first_day)
 }\if{html}{\out{</div>}}
 
 Scalar means exactly one value per grouping row. Zero-length and multi-value
-summaries cannot be matched to one parent key. A quantile call with several
-probabilities is one common multi-value result. Define each statistic as a
-separate scalar summary column:
+summaries cannot be matched to one denominator row. A quantile call with
+several probabilities is one common multi-value result. Define each
+statistic as a separate scalar summary column:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{# Rejected
 revenue_quantile = stats::quantile(revenue, c(0.25, 0.75))
@@ -103,7 +132,7 @@ give data-frame outputs top-level names or create them with a preceding
 An unnamed data-frame-valued summary is an expression such as
 \code{tibble::tibble(revenue_total = sum(revenue))} supplied in \code{...} without a
 top-level output name. dplyr expands its columns into the result, but their
-static provenance is not portable enough for a Parent-share dependency:
+static provenance is not portable enough for a share's dependency:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{# Rejected
 tibble::tibble(revenue_total = sum(revenue))
@@ -144,7 +173,7 @@ net_share = share_of_parent(net)
 }\if{html}{\out{</div>}}
 
 Later independent ordinary summaries are allowed. A later summary cannot
-use a Parent share in the same call because many database backends cannot
+use a share in the same call because many database backends cannot
 reuse aliases in one summary projection. Use a following \code{\link[dplyr:mutate]{dplyr::mutate()}}
 for percentages, rounding, labels, or other derived values.
 
@@ -155,13 +184,14 @@ expansion position of each \code{across()} call; internal staging does not
 reorder the public result.
 }
 
-\section{Column-wise Parent shares}{
+\section{Column-wise shares}{
 
-In \code{across(.cols, share_of_parent, .names = ...)}, \code{.cols} sees only
-preceding eligible ordinary summaries. Source-data columns, fixed \code{.by}
-keys, variable grouping dimensions, and earlier Parent shares are outside
-this selection context. \code{\link[dplyr:everything]{dplyr::everything()}} therefore means every
-preceding ordinary summary, not every input column.
+In \code{across(.cols, share_of_parent, .names = ...)} and its
+\code{share_of_total} counterpart, \code{.cols} sees only preceding eligible ordinary
+summaries. Source-data columns, fixed \code{.by} keys, variable grouping
+dimensions, and earlier shares are outside this selection context.
+\code{\link[dplyr:everything]{dplyr::everything()}} therefore means every preceding ordinary summary, not
+every input column.
 
 Name-based tidyselect is supported: direct names, ranges, Boolean
 combinations, positive and negative selections, \code{\link[dplyr:all_of]{dplyr::all_of()}},
@@ -178,10 +208,11 @@ across(where(is.numeric), share_of_parent, .names = "\{.col\}_share")
 across(c(revenue, units), share_of_parent, .names = "\{.col\}_share")
 }\if{html}{\out{</div>}}
 
-\code{.fns} must be the direct bare helper \code{share_of_parent} or the explicit
-\code{marginplyr::share_of_parent}. Formulas, anonymous functions, and function
-lists are rejected, even if they contain only this helper. Use two ordered
-\code{across()} expressions so the dependency is explicit:
+\code{.fns} must be one direct bare helper — \code{share_of_parent},
+\code{share_of_total}, or either written as \code{marginplyr::share_of_parent}.
+Formulas, anonymous functions, and function lists are rejected, even if
+they contain only a helper. Use two ordered \code{across()} expressions so the
+dependency is explicit:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{# Rejected
 across(
@@ -200,7 +231,7 @@ across(
 
 Additional function arguments are rejected; missing-value handling belongs
 to the preceding aggregate. \code{.unpack = TRUE} is also rejected because one
-Parent share is already one scalar double column:
+share is already one scalar double column:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{# Rejected
 across(
@@ -223,8 +254,8 @@ across(
 
 \code{.names} is required. Generated names must be non-empty and unique and must
 not collide with fixed or variable grouping keys, ordinary summaries,
-source columns that remain in the result, \code{.id}, or another Parent share.
-Change the template or rename the conflicting output:
+source columns that remain in the result, \code{.id}, or another share of either
+kind. Change the template or rename the conflicting output:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{# Rejected: overwrites each source summary
 across(revenue, share_of_parent, .names = "\{.col\}")
@@ -245,8 +276,10 @@ it:
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}; derive from the finished \code{share} in a following
 \code{dplyr::mutate()}.
 \item \strong{Unsupported Grouping specification:} \code{grouping_sets()}, \code{cube()}, and
-\code{grouping_spec()} do not define one Parent chain. Replace them with one
-pure \code{rollup()} or omit the Parent-share request.
+\code{grouping_spec()} do not define one Parent chain. For a Parent share,
+replace them with one pure \code{rollup()} or omit the request. For a Total
+share only a plan without a Grand total set is rejected; add an empty
+\code{grouping_set()} to the \code{grouping_sets()} specification.
 \item \strong{Unnamed direct output:} \code{share_of_parent(total)} supplied without
 \verb{share =} is rejected. Use \code{share = share_of_parent(total)}.
 \item \strong{Non-bare source:} \code{share_of_parent(sum(value))},
@@ -266,31 +299,31 @@ a preceding \code{across()}.
 \item \strong{Summary-alias dependency:} \code{gross = sum(value)},
 \code{net = gross - sum(discount)} is rejected when \code{net} is a source. Use
 \code{net = sum(value) - sum(discount)}.
-\item \strong{Wrapped Parent share:} \code{percent = 100 * share_of_parent(total)} is
+\item \strong{Wrapped share:} \code{percent = 100 * share_of_parent(total)} is
 rejected. Create \code{share = share_of_parent(total)}, then use
 \code{dplyr::mutate(percent = 100 * share)} on the result.
-\item \strong{Parent-share dependency:} a Parent share cannot source another Parent
-share or an ordinary summary later in the same call. Create all requested
-Parent shares from ordinary summaries, then derive further columns in
+\item \strong{Share dependency:} a share cannot source another share of either kind,
+or an ordinary summary later in the same call. Create all requested
+shares from ordinary summaries, then derive further columns in
 \code{dplyr::mutate()}.
 \item \strong{Non-numeric or non-scalar source:} semantic classes, zero-length
 results, and \code{quantile(value, c(0.25, 0.75))} are rejected. Convert only
 when meaningful and create one scalar summary per output, such as
 \code{q25 = quantile(value, 0.25)} and \code{q25_share = share_of_parent(q25)}.
 \item \strong{Ineligible \code{across()} selection:} source columns, grouping keys, and
-previous Parent shares are rejected. Select only preceding ordinary
+previous shares are rejected. Select only preceding ordinary
 summaries, for example \code{across(c(total, count), share_of_parent, ...)}.
 \item \strong{Predicate selection:} \code{where(is.numeric)} is rejected. Use explicit
 names, \code{all_of()}, \code{any_of()}, or another name-based selector.
 \item \strong{Indirect \code{.fns}:} \code{~share_of_parent(.x)},
-\verb{\\(x) share_of_parent(x)}, and \code{list(share_of_parent)} are rejected. Pass
-bare \code{share_of_parent} or \code{marginplyr::share_of_parent} directly.
+\verb{\\(x) share_of_total(x)}, and \code{list(share_of_parent)} are rejected. Pass
+the bare helper, or \code{marginplyr::share_of_parent}, directly.
 \item \strong{Aggregate and share in one function list:}
 \code{across(value, list(total = sum, share = share_of_parent))} is rejected.
 Use one \code{across(value, sum)} followed by a second
 \code{across(value, share_of_parent, .names = "{.col}_share")}.
-\item \strong{Additional function arguments:} passing \code{na.rm = TRUE} to the
-Parent-share \code{across()} is rejected. Handle it in the preceding
+\item \strong{Additional function arguments:} passing \code{na.rm = TRUE} to a share's
+\code{across()} is rejected. Handle it in the preceding
 \code{total = sum(value, na.rm = TRUE)}, then select \code{total}.
 \item \strong{Unpacking:} \code{.unpack = TRUE} is rejected. Omit \code{.unpack} or use
 \code{.unpack = FALSE}.
@@ -306,28 +339,39 @@ and is rejected. Use \code{.names = "{.col}_share"}.
 \item \strong{\code{.id} collision:} \code{.names = "set"} with \code{.id = "set"} is rejected.
 Rename either output, for example \code{.id = "occurrence"} and
 \code{.names = "{.col}_share"}.
-\item \strong{Parent-share collision:} reusing a direct or generated Parent-share
-name is rejected. Give each Parent share one unique output name.
+\item \strong{Share collision:} reusing a direct or generated share name is
+rejected. Give each share one unique output name.
 }
 }
 
 \section{Value rules}{
 
-The parent is the immediate strictly less detailed \code{\link[=rollup]{rollup()}} level within
-each fixed \code{.by} partition. Composite dimensions are added or removed
-together. Duplicate Grouping set occurrences remain in the result but are
-skipped while finding the next coarser parent.
+Both helpers divide within each fixed \code{.by} partition, and neither ever
+synthesizes or completes keys. A missing numerator, missing denominator, or
+zero denominator gives \code{NA_real_}; local \code{NaN} is missing. Other finite
+ratios are unclamped doubles, so negative values and values above one are
+retained. Denominator matching uses internal Grouping set metadata rather
+than \code{.id} or displayed Margin labels, and missing fixed or variable keys
+are matched with missing-safe identity rather than ordinary SQL
+\code{NULL = NULL}.
 
-A root Parent share is \code{1.0}, even when its source is zero or missing.
-A missing numerator, missing denominator, or zero denominator gives
-\code{NA_real_}; local \code{NaN} is missing. Other finite ratios are unclamped
-doubles, so negative values and values above one are retained. Parent
-matching uses internal Grouping set metadata rather than \code{.id} or displayed
-Margin labels. Missing fixed or variable keys are matched with missing-safe
-identity rather than ordinary SQL \code{NULL = NULL}.
+A Parent share's denominator is the immediate strictly less detailed
+\code{\link[=rollup]{rollup()}} level. Composite dimensions are added or removed together. A
+root Parent share is \code{1.0}, even when its source is zero or missing.
+Duplicate Grouping set occurrences remain in the result but are skipped
+while finding the next coarser parent, because a parent must be strictly
+less detailed.
 
-Parent shares never synthesize or complete keys:\tabular{lrl}{
-   Empty input \tab Rows \tab Parent-share value and type \cr
+A Total share's denominator is the Grand total set. Every row of it,
+duplicate occurrences included, has a Total share of \code{1.0}, even when its
+source is zero or missing. Duplicate Grand total occurrences aggregate the
+same rows and therefore hold the same values, so they are interchangeable
+rather than skipped and which one supplies the denominator is not
+specified.
+
+Empty input gives one root row or none at all, and the share column keeps
+its type either way:\tabular{lrl}{
+   Empty input \tab Rows \tab Share value and type \cr
    Without fixed \code{.by} keys \tab One root row \tab \code{1.0}, double \cr
    With fixed \code{.by} keys \tab Zero rows \tab Empty double vector \cr
 }
@@ -338,31 +382,34 @@ Missing detail or subtotal combinations are not completed.
 
 \section{Lazy execution boundaries}{
 
-Parent-share execution supports local data frames and lazy dbplyr and dtplyr
-inputs for one pure \code{\link[=rollup]{rollup()}}, including composite dimensions. Lazy results
-remain lazy: ordinary summaries are followed by one Parent-share mapping and
-join shared by every requested measure, however many measures are requested.
+Share execution supports local data frames and lazy dbplyr and dtplyr
+inputs, including composite dimensions. Lazy results remain lazy: ordinary
+summaries are followed by one denominator mapping and join per requested
+kind, shared by every measure requested of that kind, however many measures
+are requested.
 
 Syntax, source-name, written-order, and \code{across()} errors are always
 reported locally, before execution, on every backend. Only the \emph{result}
 rules — eligible numeric type and exactly-one-value cardinality — depend on
 what the backend can prove:\tabular{ll}{
    Backend \tab Where source type and cardinality are checked \cr
-   Local data frame \tab Before any Parent share is calculated \cr
+   Local data frame \tab Before any share is calculated \cr
    \code{dtplyr} step \tab At explicit execution, before an invalid row is emitted \cr
-   Arrow \tab Not reached; Parent shares are rejected outright \cr
+   Arrow \tab Not reached; shares are rejected outright \cr
    General dbplyr \tab Not by marginplyr; the database may error at collection \cr
 }
 
 
-Arrow inputs reject Parent shares after expression planning and common
-Margin-operation validation but before constructing a summary query. Other
-Arrow Margin operations remain supported and lazy. Explicitly collect an
-Arrow input first when local Parent-share execution is appropriate.
+Arrow inputs reject both helpers after expression planning and common
+Margin-operation validation but before constructing a summary query. The
+reason belongs to the source summary they share, so it applies to both, and
+the diagnostic names whichever helpers the call used. Other Arrow Margin
+operations remain supported and lazy. Explicitly collect an Arrow input
+first when local share execution is appropriate.
 
 A \code{dtplyr} step remains a native lazy query: no validation-only query is
 added and nothing is collected on your behalf. Its execution-time
-diagnostics keep the Parent-share output name, the source summary name, and
+diagnostics keep the share's output name, the source summary name, and
 the original public call, so they read like the local ones.
 
 General dbplyr backends are not queried solely to discover an arbitrary
@@ -382,12 +429,24 @@ remain errors at the backend execution boundary.
 }
 
 \examples{
+# Both denominators in one call: the parent level, and the whole.
 summarize_with_margins(
   .data = retail_sales,
   revenue = sum(revenue),
   revenue_share = share_of_parent(revenue),
+  revenue_of_total = share_of_total(revenue),
   .by = c(year, month),
   .grouping = rollup(region, store)
+)
+
+# A Total share accepts any plan containing the Grand total set, so a cube
+# can report what fraction of the whole each cell is.
+summarize_with_margins(
+  .data = retail_sales,
+  revenue = sum(revenue),
+  revenue_of_total = share_of_total(revenue),
+  .by = year,
+  .grouping = cube(region, store)
 )
 
 # Multiple measures use two ordered across() expressions. Selection for the
@@ -397,8 +456,8 @@ summarize_with_margins(
   dplyr::across(c(units, revenue), sum),
   dplyr::across(
     c(units, revenue),
-    share_of_parent,
-    .names = "{.col}_share"
+    share_of_total,
+    .names = "{.col}_of_total"
   ),
   .by = c(year, month),
   .grouping = rollup(region, store)
@@ -416,8 +475,9 @@ dplyr::mutate(
   revenue_percent = 100 * revenue_share
 )
 
-# Missing fixed and included keys use missing-safe Parent lookup. The
-# Grouping bit distinguishes an included missing group from its subtotal.
+# Missing fixed and included keys use missing-safe denominator lookup, and
+# a missing fixed key is still its own partition. The Grouping bit
+# distinguishes an included missing group from its subtotal.
 missing_keys <- data.frame(
   partition = c(NA_character_, NA_character_, "B", "B"),
   group = c("x", NA_character_, "x", NA_character_),
@@ -427,6 +487,7 @@ summarize_with_margins(
   .data = missing_keys,
   total = sum(value),
   share = share_of_parent(total),
+  of_total = share_of_total(total),
   group_is_margin = grouping_bit(group),
   .by = partition,
   .grouping = rollup(group),
@@ -434,7 +495,7 @@ summarize_with_margins(
 )
 
 # Empty input without `.by` has one root share. With `.by`, there are no
-# partitions; both results retain a double Parent-share column.
+# partitions; both results retain a double share column.
 empty_keys <- missing_keys[0, ]
 empty_root <- summarize_with_margins(
   .data = empty_keys,
@@ -455,7 +516,8 @@ c(
   type = typeof(empty_partitions$share)
 )
 
-# Rejected forms report their supported context or rewrite.
+# Rejected forms report their supported context or rewrite, naming the
+# helper that was written.
 try(share_of_parent(revenue))
 try(dplyr::summarize(
   .data = retail_sales,
@@ -466,15 +528,32 @@ try(summarize_with_margins(
   revenue = sum(revenue),
   dplyr::across(
     dplyr::where(is.numeric),
-    share_of_parent,
+    share_of_total,
     .names = "{.col}_share"
   ),
   .grouping = rollup(region, store)
 ))
+
+# A Parent share needs one pure rollup(); a Total share needs a plan that
+# contains the Grand total set.
+try(summarize_with_margins(
+  .data = retail_sales,
+  revenue = sum(revenue),
+  revenue_share = share_of_parent(revenue),
+  .grouping = cube(region, store)
+))
+try(summarize_with_margins(
+  .data = retail_sales,
+  revenue = sum(revenue),
+  revenue_of_total = share_of_total(revenue),
+  .grouping = grouping_sets(grouping_set(region), grouping_set(store))
+))
 }
 \seealso{
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}, the only verb this helper can be used
-in, and \code{\link[=rollup]{rollup()}}, the only Grouping specification it accepts.
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}, the only verb these helpers can be
+used in; \code{\link[=rollup]{rollup()}}, the only Grouping specification \code{share_of_parent()}
+accepts; and \code{\link[=cube]{cube()}} and \code{\link[=grouping_sets]{grouping_sets()}}, which \code{share_of_total()}
+also accepts whenever the plan contains a Grand total set.
 
 Other contextual summary helpers:
 \code{\link[=grouping_bit]{grouping_bit()}}

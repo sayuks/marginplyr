@@ -10,6 +10,12 @@
   up, partitioned by the fixed `.by` keys. Local data frames, dbplyr, and
   dtplyr are supported, and lazy inputs stay lazy; Arrow rejects Parent shares
   before a query is built.
+* Added the contextual `share_of_total()` summary helper, which divides the
+  same kind of source summary by the Grand total set within each fixed `.by`
+  partition. It shares every rule of `share_of_parent()` except the
+  denominator, so it accepts any Grouping specification whose plan contains a
+  Grand total set — `rollup()`, `cube()`, and any `grouping_sets()` including
+  an empty `grouping_set()`.
 * Added `inspect_grouping()` for reading the resolved Grouping plan as an
   ordinary local tibble, without executing a Margin operation.
 * Added `.id` to every Margin verb for one-based Grouping set occurrence

@@ -1,17 +1,45 @@
-#' Calculate a summary's share of its rollup parent
+#' Calculate a summary's share of its rollup parent or of the grand total
 #'
-#' `share_of_parent()` is a contextual summary helper for
-#' [summarize_with_margins()]. It divides one preceding named numeric scalar
-#' summary by the corresponding value in the immediately less detailed
-#' [rollup()] level. Fixed `.by` columns partition the calculation.
+#' `share_of_parent()` and `share_of_total()` are contextual summary helpers
+#' for [summarize_with_margins()]. Each divides one preceding named numeric
+#' scalar summary by the same summary on another row of the same result. Only
+#' the denominator differs:
 #'
-#' The helper is contextual because its denominator belongs to another
-#' Grouping-set row. It can be used only inside
-#' [summarize_with_margins()] with one pure [rollup()]. Direct calls, ordinary
-#' [dplyr::summarize()] calls, [dplyr::mutate()] calls, [grouping_sets()],
-#' [cube()], and [grouping_spec()] are rejected.
+#' | Helper | Denominator | Accepted `.grouping` |
+#' |---|---|---|
+#' | `share_of_parent()` | The immediately less detailed [rollup()] level | One pure [rollup()] | # nolint: line_length_linter
+#' | `share_of_total()` | The Grand total set, in which every grouping dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
 #'
-#' @section Direct Parent shares:
+#' Fixed `.by` columns partition both calculations, so a fixed key never
+#' contributes to another partition's denominator. Everything else on this
+#' page — eligible sources, the direct and `across()` grammar, output naming,
+#' the value rules, and the backend boundaries — is the same for both helpers,
+#' and both are written the same way:
+#'
+#' ```
+#' revenue = sum(revenue)
+#' parent_share = share_of_parent(revenue)
+#' total_share = share_of_total(revenue)
+#' ```
+#'
+#' A helper is contextual because its denominator belongs to another
+#' Grouping-set row, so it can be used only inside
+#' [summarize_with_margins()]. Direct calls, ordinary [dplyr::summarize()]
+#' calls, and [dplyr::mutate()] calls are rejected.
+#'
+#' `share_of_parent()` additionally requires one pure [rollup()];
+#' [grouping_sets()], [cube()], and [grouping_spec()] are rejected. A grouping
+#' set can have several strictly less detailed sets in the same plan, and
+#' nothing in the plan says which of them is *the* parent.
+#'
+#' `share_of_total()` has no such choice to make: a Grand total set is not
+#' selected, and a plan either contains one or does not. It therefore accepts
+#' any Grouping specification whose plan contains one. [rollup()] and [cube()]
+#' always produce one; [grouping_sets()] produces one only when it includes an
+#' empty [grouping_set()], and a specification without one is rejected naming
+#' that fix.
+#'
+#' @section Direct shares:
 #' A direct call must be the complete right-hand side of an explicitly named
 #' summary. Its argument must be the bare name of one eligible ordinary summary
 #' written earlier in the same call:
@@ -30,22 +58,22 @@
 #'
 #' # Rejected: wrapping or scaling the helper
 #' revenue_percent = 100 * share_of_parent(revenue)
-#' # Rewrite: derive from the finished Parent share afterwards
+#' # Rewrite: derive from the finished share afterwards
 #' result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 #' ```
 #'
 #' A direct call cannot be unnamed, use a string, use a forward reference,
-#' redefine the source name, or use a Parent share as another Parent share's
-#' source. Each rejected form and its rewrite are listed below.
+#' redefine the source name, or use a share as another share's source. Each
+#' rejected form and its rewrite are listed below.
 #'
 #' @section Eligible source summaries:
-#' The source must be defined exactly once before the Parent share. It must be
+#' The source must be defined exactly once before the share. It must be
 #' a top-level named summary or a statically named output from a preceding
 #' [dplyr::across()], return one plain integer or double per grouping row, and
 #' be self-contained. A source cannot depend on an earlier summary alias.
 #'
 #' Integer, double, and the corresponding database numeric/decimal scalar
-#' summaries are eligible. The Parent share is always a double. Logical,
+#' summaries are eligible. A share is always a double. Logical,
 #' complex, date-time, duration, character, factor, list, data-frame, and other
 #' semantic classes are not converted implicitly. Convert intentionally in the
 #' ordinary summary:
@@ -61,9 +89,9 @@
 #' ```
 #'
 #' Scalar means exactly one value per grouping row. Zero-length and multi-value
-#' summaries cannot be matched to one parent key. A quantile call with several
-#' probabilities is one common multi-value result. Define each statistic as a
-#' separate scalar summary column:
+#' summaries cannot be matched to one denominator row. A quantile call with
+#' several probabilities is one common multi-value result. Define each
+#' statistic as a separate scalar summary column:
 #'
 #' ```
 #' # Rejected
@@ -86,7 +114,7 @@
 #' An unnamed data-frame-valued summary is an expression such as
 #' `tibble::tibble(revenue_total = sum(revenue))` supplied in `...` without a
 #' top-level output name. dplyr expands its columns into the result, but their
-#' static provenance is not portable enough for a Parent-share dependency:
+#' static provenance is not portable enough for a share's dependency:
 #'
 #' ```
 #' # Rejected
@@ -130,7 +158,7 @@
 #' ```
 #'
 #' Later independent ordinary summaries are allowed. A later summary cannot
-#' use a Parent share in the same call because many database backends cannot
+#' use a share in the same call because many database backends cannot
 #' reuse aliases in one summary projection. Use a following [dplyr::mutate()]
 #' for percentages, rounding, labels, or other derived values.
 #'
@@ -140,12 +168,13 @@
 #' expansion position of each `across()` call; internal staging does not
 #' reorder the public result.
 #'
-#' @section Column-wise Parent shares:
-#' In `across(.cols, share_of_parent, .names = ...)`, `.cols` sees only
-#' preceding eligible ordinary summaries. Source-data columns, fixed `.by`
-#' keys, variable grouping dimensions, and earlier Parent shares are outside
-#' this selection context. [dplyr::everything()] therefore means every
-#' preceding ordinary summary, not every input column.
+#' @section Column-wise shares:
+#' In `across(.cols, share_of_parent, .names = ...)` and its
+#' `share_of_total` counterpart, `.cols` sees only preceding eligible ordinary
+#' summaries. Source-data columns, fixed `.by` keys, variable grouping
+#' dimensions, and earlier shares are outside this selection context.
+#' [dplyr::everything()] therefore means every preceding ordinary summary, not
+#' every input column.
 #'
 #' Name-based tidyselect is supported: direct names, ranges, Boolean
 #' combinations, positive and negative selections, [dplyr::all_of()],
@@ -163,10 +192,11 @@
 #' across(c(revenue, units), share_of_parent, .names = "{.col}_share")
 #' ```
 #'
-#' `.fns` must be the direct bare helper `share_of_parent` or the explicit
-#' `marginplyr::share_of_parent`. Formulas, anonymous functions, and function
-#' lists are rejected, even if they contain only this helper. Use two ordered
-#' `across()` expressions so the dependency is explicit:
+#' `.fns` must be one direct bare helper — `share_of_parent`,
+#' `share_of_total`, or either written as `marginplyr::share_of_parent`.
+#' Formulas, anonymous functions, and function lists are rejected, even if
+#' they contain only a helper. Use two ordered `across()` expressions so the
+#' dependency is explicit:
 #'
 #' ```
 #' # Rejected
@@ -186,7 +216,7 @@
 #'
 #' Additional function arguments are rejected; missing-value handling belongs
 #' to the preceding aggregate. `.unpack = TRUE` is also rejected because one
-#' Parent share is already one scalar double column:
+#' share is already one scalar double column:
 #'
 #' ```
 #' # Rejected
@@ -210,8 +240,8 @@
 #'
 #' `.names` is required. Generated names must be non-empty and unique and must
 #' not collide with fixed or variable grouping keys, ordinary summaries,
-#' source columns that remain in the result, `.id`, or another Parent share.
-#' Change the template or rename the conflicting output:
+#' source columns that remain in the result, `.id`, or another share of either
+#' kind. Change the template or rename the conflicting output:
 #'
 #' ```
 #' # Rejected: overwrites each source summary
@@ -231,8 +261,10 @@
 #'   [summarize_with_margins()]; derive from the finished `share` in a following
 #'   `dplyr::mutate()`.
 #' - **Unsupported Grouping specification:** `grouping_sets()`, `cube()`, and
-#'   `grouping_spec()` do not define one Parent chain. Replace them with one
-#'   pure `rollup()` or omit the Parent-share request.
+#'   `grouping_spec()` do not define one Parent chain. For a Parent share,
+#'   replace them with one pure `rollup()` or omit the request. For a Total
+#'   share only a plan without a Grand total set is rejected; add an empty
+#'   `grouping_set()` to the `grouping_sets()` specification.
 #' - **Unnamed direct output:** `share_of_parent(total)` supplied without
 #'   `share =` is rejected. Use `share = share_of_parent(total)`.
 #' - **Non-bare source:** `share_of_parent(sum(value))`,
@@ -252,31 +284,31 @@
 #' - **Summary-alias dependency:** `gross = sum(value)`,
 #'   `net = gross - sum(discount)` is rejected when `net` is a source. Use
 #'   `net = sum(value) - sum(discount)`.
-#' - **Wrapped Parent share:** `percent = 100 * share_of_parent(total)` is
+#' - **Wrapped share:** `percent = 100 * share_of_parent(total)` is
 #'   rejected. Create `share = share_of_parent(total)`, then use
 #'   `dplyr::mutate(percent = 100 * share)` on the result.
-#' - **Parent-share dependency:** a Parent share cannot source another Parent
-#'   share or an ordinary summary later in the same call. Create all requested
-#'   Parent shares from ordinary summaries, then derive further columns in
+#' - **Share dependency:** a share cannot source another share of either kind,
+#'   or an ordinary summary later in the same call. Create all requested
+#'   shares from ordinary summaries, then derive further columns in
 #'   `dplyr::mutate()`.
 #' - **Non-numeric or non-scalar source:** semantic classes, zero-length
 #'   results, and `quantile(value, c(0.25, 0.75))` are rejected. Convert only
 #'   when meaningful and create one scalar summary per output, such as
 #'   `q25 = quantile(value, 0.25)` and `q25_share = share_of_parent(q25)`.
 #' - **Ineligible `across()` selection:** source columns, grouping keys, and
-#'   previous Parent shares are rejected. Select only preceding ordinary
+#'   previous shares are rejected. Select only preceding ordinary
 #'   summaries, for example `across(c(total, count), share_of_parent, ...)`.
 #' - **Predicate selection:** `where(is.numeric)` is rejected. Use explicit
 #'   names, `all_of()`, `any_of()`, or another name-based selector.
 #' - **Indirect `.fns`:** `~share_of_parent(.x)`,
-#'   `\(x) share_of_parent(x)`, and `list(share_of_parent)` are rejected. Pass
-#'   bare `share_of_parent` or `marginplyr::share_of_parent` directly.
+#'   `\(x) share_of_total(x)`, and `list(share_of_parent)` are rejected. Pass
+#'   the bare helper, or `marginplyr::share_of_parent`, directly.
 #' - **Aggregate and share in one function list:**
 #'   `across(value, list(total = sum, share = share_of_parent))` is rejected.
 #'   Use one `across(value, sum)` followed by a second
 #'   `across(value, share_of_parent, .names = "{.col}_share")`.
-#' - **Additional function arguments:** passing `na.rm = TRUE` to the
-#'   Parent-share `across()` is rejected. Handle it in the preceding
+#' - **Additional function arguments:** passing `na.rm = TRUE` to a share's
+#'   `across()` is rejected. Handle it in the preceding
 #'   `total = sum(value, na.rm = TRUE)`, then select `total`.
 #' - **Unpacking:** `.unpack = TRUE` is rejected. Omit `.unpack` or use
 #'   `.unpack = FALSE`.
@@ -292,26 +324,37 @@
 #' - **`.id` collision:** `.names = "set"` with `.id = "set"` is rejected.
 #'   Rename either output, for example `.id = "occurrence"` and
 #'   `.names = "{.col}_share"`.
-#' - **Parent-share collision:** reusing a direct or generated Parent-share
-#'   name is rejected. Give each Parent share one unique output name.
+#' - **Share collision:** reusing a direct or generated share name is
+#'   rejected. Give each share one unique output name.
 #'
 #' @section Value rules:
-#' The parent is the immediate strictly less detailed [rollup()] level within
-#' each fixed `.by` partition. Composite dimensions are added or removed
-#' together. Duplicate Grouping set occurrences remain in the result but are
-#' skipped while finding the next coarser parent.
+#' Both helpers divide within each fixed `.by` partition, and neither ever
+#' synthesizes or completes keys. A missing numerator, missing denominator, or
+#' zero denominator gives `NA_real_`; local `NaN` is missing. Other finite
+#' ratios are unclamped doubles, so negative values and values above one are
+#' retained. Denominator matching uses internal Grouping set metadata rather
+#' than `.id` or displayed Margin labels, and missing fixed or variable keys
+#' are matched with missing-safe identity rather than ordinary SQL
+#' `NULL = NULL`.
 #'
-#' A root Parent share is `1.0`, even when its source is zero or missing.
-#' A missing numerator, missing denominator, or zero denominator gives
-#' `NA_real_`; local `NaN` is missing. Other finite ratios are unclamped
-#' doubles, so negative values and values above one are retained. Parent
-#' matching uses internal Grouping set metadata rather than `.id` or displayed
-#' Margin labels. Missing fixed or variable keys are matched with missing-safe
-#' identity rather than ordinary SQL `NULL = NULL`.
+#' A Parent share's denominator is the immediate strictly less detailed
+#' [rollup()] level. Composite dimensions are added or removed together. A
+#' root Parent share is `1.0`, even when its source is zero or missing.
+#' Duplicate Grouping set occurrences remain in the result but are skipped
+#' while finding the next coarser parent, because a parent must be strictly
+#' less detailed.
 #'
-#' Parent shares never synthesize or complete keys:
+#' A Total share's denominator is the Grand total set. Every row of it,
+#' duplicate occurrences included, has a Total share of `1.0`, even when its
+#' source is zero or missing. Duplicate Grand total occurrences aggregate the
+#' same rows and therefore hold the same values, so they are interchangeable
+#' rather than skipped and which one supplies the denominator is not
+#' specified.
 #'
-#' | Empty input | Rows | Parent-share value and type |
+#' Empty input gives one root row or none at all, and the share column keeps
+#' its type either way:
+#'
+#' | Empty input | Rows | Share value and type |
 #' |---|---:|---|
 #' | Without fixed `.by` keys | One root row | `1.0`, double |
 #' | With fixed `.by` keys | Zero rows | Empty double vector |
@@ -319,10 +362,11 @@
 #' Missing detail or subtotal combinations are not completed.
 #'
 #' @section Lazy execution boundaries:
-#' Parent-share execution supports local data frames and lazy dbplyr and dtplyr
-#' inputs for one pure [rollup()], including composite dimensions. Lazy results
-#' remain lazy: ordinary summaries are followed by one Parent-share mapping and
-#' join shared by every requested measure, however many measures are requested.
+#' Share execution supports local data frames and lazy dbplyr and dtplyr
+#' inputs, including composite dimensions. Lazy results remain lazy: ordinary
+#' summaries are followed by one denominator mapping and join per requested
+#' kind, shared by every measure requested of that kind, however many measures
+#' are requested.
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. Only the *result*
@@ -331,19 +375,21 @@
 #'
 #' | Backend | Where source type and cardinality are checked |
 #' |---|---|
-#' | Local data frame | Before any Parent share is calculated |
+#' | Local data frame | Before any share is calculated |
 #' | `dtplyr` step | At explicit execution, before an invalid row is emitted |
-#' | Arrow | Not reached; Parent shares are rejected outright |
+#' | Arrow | Not reached; shares are rejected outright |
 #' | General dbplyr | Not by marginplyr; the database may error at collection |
 #'
-#' Arrow inputs reject Parent shares after expression planning and common
-#' Margin-operation validation but before constructing a summary query. Other
-#' Arrow Margin operations remain supported and lazy. Explicitly collect an
-#' Arrow input first when local Parent-share execution is appropriate.
+#' Arrow inputs reject both helpers after expression planning and common
+#' Margin-operation validation but before constructing a summary query. The
+#' reason belongs to the source summary they share, so it applies to both, and
+#' the diagnostic names whichever helpers the call used. Other Arrow Margin
+#' operations remain supported and lazy. Explicitly collect an Arrow input
+#' first when local share execution is appropriate.
 #'
 #' A `dtplyr` step remains a native lazy query: no validation-only query is
 #' added and nothing is collected on your behalf. Its execution-time
-#' diagnostics keep the Parent-share output name, the source summary name, and
+#' diagnostics keep the share's output name, the source summary name, and
 #' the original public call, so they read like the local ones.
 #'
 #' General dbplyr backends are not queried solely to discover an arbitrary
@@ -365,16 +411,30 @@
 #'
 #' @return A double vector when used inside [summarize_with_margins()].
 #' @family contextual summary helpers
-#' @seealso [summarize_with_margins()], the only verb this helper can be used
-#'   in, and [rollup()], the only Grouping specification it accepts.
+#' @seealso [summarize_with_margins()], the only verb these helpers can be
+#'   used in; [rollup()], the only Grouping specification `share_of_parent()`
+#'   accepts; and [cube()] and [grouping_sets()], which `share_of_total()`
+#'   also accepts whenever the plan contains a Grand total set.
 #' @export
 #' @examples
+#' # Both denominators in one call: the parent level, and the whole.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),
 #'   revenue_share = share_of_parent(revenue),
+#'   revenue_of_total = share_of_total(revenue),
 #'   .by = c(year, month),
 #'   .grouping = rollup(region, store)
+#' )
+#'
+#' # A Total share accepts any plan containing the Grand total set, so a cube
+#' # can report what fraction of the whole each cell is.
+#' summarize_with_margins(
+#'   .data = retail_sales,
+#'   revenue = sum(revenue),
+#'   revenue_of_total = share_of_total(revenue),
+#'   .by = year,
+#'   .grouping = cube(region, store)
 #' )
 #'
 #' # Multiple measures use two ordered across() expressions. Selection for the
@@ -384,8 +444,8 @@
 #'   dplyr::across(c(units, revenue), sum),
 #'   dplyr::across(
 #'     c(units, revenue),
-#'     share_of_parent,
-#'     .names = "{.col}_share"
+#'     share_of_total,
+#'     .names = "{.col}_of_total"
 #'   ),
 #'   .by = c(year, month),
 #'   .grouping = rollup(region, store)
@@ -403,8 +463,9 @@
 #'   revenue_percent = 100 * revenue_share
 #' )
 #'
-#' # Missing fixed and included keys use missing-safe Parent lookup. The
-#' # Grouping bit distinguishes an included missing group from its subtotal.
+#' # Missing fixed and included keys use missing-safe denominator lookup, and
+#' # a missing fixed key is still its own partition. The Grouping bit
+#' # distinguishes an included missing group from its subtotal.
 #' missing_keys <- data.frame(
 #'   partition = c(NA_character_, NA_character_, "B", "B"),
 #'   group = c("x", NA_character_, "x", NA_character_),
@@ -414,6 +475,7 @@
 #'   .data = missing_keys,
 #'   total = sum(value),
 #'   share = share_of_parent(total),
+#'   of_total = share_of_total(total),
 #'   group_is_margin = grouping_bit(group),
 #'   .by = partition,
 #'   .grouping = rollup(group),
@@ -421,7 +483,7 @@
 #' )
 #'
 #' # Empty input without `.by` has one root share. With `.by`, there are no
-#' # partitions; both results retain a double Parent-share column.
+#' # partitions; both results retain a double share column.
 #' empty_keys <- missing_keys[0, ]
 #' empty_root <- summarize_with_margins(
 #'   .data = empty_keys,
@@ -442,7 +504,8 @@
 #'   type = typeof(empty_partitions$share)
 #' )
 #'
-#' # Rejected forms report their supported context or rewrite.
+#' # Rejected forms report their supported context or rewrite, naming the
+#' # helper that was written.
 #' try(share_of_parent(revenue))
 #' try(dplyr::summarize(
 #'   .data = retail_sales,
@@ -453,10 +516,25 @@
 #'   revenue = sum(revenue),
 #'   dplyr::across(
 #'     dplyr::where(is.numeric),
-#'     share_of_parent,
+#'     share_of_total,
 #'     .names = "{.col}_share"
 #'   ),
 #'   .grouping = rollup(region, store)
+#' ))
+#'
+#' # A Parent share needs one pure rollup(); a Total share needs a plan that
+#' # contains the Grand total set.
+#' try(summarize_with_margins(
+#'   .data = retail_sales,
+#'   revenue = sum(revenue),
+#'   revenue_share = share_of_parent(revenue),
+#'   .grouping = cube(region, store)
+#' ))
+#' try(summarize_with_margins(
+#'   .data = retail_sales,
+#'   revenue = sum(revenue),
+#'   revenue_of_total = share_of_total(revenue),
+#'   .grouping = grouping_sets(grouping_set(region), grouping_set(store))
 #' ))
 share_of_parent <- function(x) {
   abort_marginplyr(

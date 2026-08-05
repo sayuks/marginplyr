@@ -39,8 +39,9 @@ sets a margin operation computes.
 \item \strong{Grouping-plan inspection and grouping identities}:
 \code{\link[=inspect_grouping]{inspect_grouping()}}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}} resolve and
 identify grouping sets before or after running a margin operation.
-\item \strong{Parent shares}: \code{\link[=share_of_parent]{share_of_parent()}} calculates a summary's ratio to
-its immediate rollup parent.
+\item \strong{Contextual shares}: \code{\link[=share_of_parent]{share_of_parent()}} and \code{\link[=share_of_total]{share_of_total()}}
+calculate a summary's ratio to its immediate rollup parent, or to the
+grand total.
 }
 }
 
