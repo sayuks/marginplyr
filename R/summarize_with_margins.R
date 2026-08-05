@@ -480,6 +480,7 @@ summarize_with_margins <- function(.data,
 
   has_parent_shares <- with_margin_error_call(
     {
+      assert_margin_input(.data)
       assert_lazy_table(.data)
       normalize_margin_options(
         .margin_label = .margin_label,

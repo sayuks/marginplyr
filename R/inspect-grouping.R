@@ -127,6 +127,7 @@ inspect_grouping <- function(.data,
 
   with_margin_error_call(
     {
+      assert_margin_input(.data)
       assert_lazy_table(.data)
       .format <- match_margin_choice(
         .format,

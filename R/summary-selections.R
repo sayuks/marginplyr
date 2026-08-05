@@ -13,28 +13,45 @@ check_removed_groups_argument <- function(dots) {
 
 # Options the verb once had. A caller following older material writes them as
 # if they were still arguments, and `...` would otherwise accept the value as
-# an ordinary summary and return a constant column.
-removed_summary_options <- c(".sort")
+# an ordinary summary and return a constant column. Each entry carries its own
+# guidance, because what replaces a removed option is specific to that option:
+# a shared sentence parameterized by the name would be confidently wrong for
+# the second entry added here.
+#
+# Naming `grouping_bit()` matters for `.sort`: sorting the result by a
+# dimension's displayed values puts a margin wherever its label falls in the
+# value order, which is not the order the caller writing `.sort` is asking for.
+removed_summary_options <- list(
+  .sort = paste0(
+    "row order is unspecified. Call `dplyr::arrange()` on the result, and ",
+    "add a `grouping_bit()` summary per dimension to sort each margin with ",
+    "the rows it summarizes."
+  )
+)
 
 # Every dot-prefixed name the summary verb answers to. `...` sits before them
 # in the signature, so R matches them exactly and a name that reaches `...`
 # was either misspelled or spliced in.
+#
+# `.data` and `...` are excluded. Neither can reach `...` as a mistaken option
+# name — `.data` matches its own formal exactly, and `...` is not a name a
+# caller can write — so keeping them would only widen the near-miss net over
+# ordinary output names, which is how `.date` came to resemble `.data`.
 summary_option_names <- function() {
-  names(formals(summarize_with_margins))[
-    startsWith(names(formals(summarize_with_margins)), ".")
-  ]
+  formal_names <- names(formals(summarize_with_margins))
+  setdiff(formal_names[startsWith(formal_names, ".")], c(".data", "..."))
 }
 
 # Only dot-prefixed names are examined, and only against an exact match or a
 # one-character difference: that catches the pluralizations real callers
 # write (`.margin_labels`, `.groupings`, `.duplicate`) while leaving ordinary
 # leading-dot output names such as `.n` alone.
-misspelled_summary_option <- function(name, options) {
-  if (name %in% options) {
+nearest_summary_option <- function(name, known_options) {
+  if (name %in% known_options) {
     return(name)
   }
-  distances <- utils::adist(name, options)[1L, ]
-  nearest <- options[distances <= 1L]
+  distances <- utils::adist(name, known_options)[1L, ]
+  nearest <- known_options[distances <= 1L]
   if (length(nearest) == 0L) {
     return(NULL)
   }
@@ -51,23 +68,27 @@ check_option_named_summaries <- function(dots) {
     return(invisible(NULL))
   }
 
-  options <- c(summary_option_names(), removed_summary_options)
+  known_options <- c(summary_option_names(), names(removed_summary_options))
   for (name in candidates) {
-    matched <- misspelled_summary_option(name, options)
+    matched <- nearest_summary_option(name, known_options)
     if (is.null(matched)) {
       next
     }
-    if (matched %in% removed_summary_options) {
-      # Naming `grouping_bit()` matters: sorting the result by its displayed
-      # values puts a margin wherever its label falls in the value order,
-      # which is not the order the caller writing `.sort` is asking for.
-      abort_marginplyr(
+    # Both messages name what the caller wrote, not only what it resembles: a
+    # caller who wrote `.sorts` never wrote `.sort`, and an error naming only
+    # the option they were reaching for leaves them looking for a word that is
+    # not in their code.
+    if (matched %in% names(removed_summary_options)) {
+      opening <- if (identical(name, matched)) {
+        paste0("`summarize_with_margins()` has no `", matched, "` argument")
+      } else {
         paste0(
-          "`summarize_with_margins()` has no `", matched, "` argument; row ",
-          "order is unspecified. Call `dplyr::arrange()` on the result, and ",
-          "add a `grouping_bit()` summary per dimension to sort each margin ",
-          "with the rows it summarizes."
+          "`", name, "` is not an argument of `summarize_with_margins()`, ",
+          "and neither is the `", matched, "` it resembles"
         )
+      }
+      abort_marginplyr(
+        paste0(opening, "; ", removed_summary_options[[matched]])
       )
     }
     abort_marginplyr(

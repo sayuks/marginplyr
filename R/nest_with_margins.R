@@ -183,6 +183,10 @@ nest_margin_pipeline <- function(.data,
 
   with_margin_error_call(
     {
+      # General admission first, then the narrower constraint: an input dplyr
+      # cannot group is not a nesting problem, and reporting it as one would
+      # answer a caller who supplied a matrix with the classes that nest.
+      assert_margin_input(.data)
       assert_nest_possible(.data)
       assert_logical_scalar(.keep)
       assert_string_scalar(.key)

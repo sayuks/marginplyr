@@ -17,16 +17,23 @@ test_that("a removed option is reported instead of summarized", {
       .grouping = rollup(g),
       .sort = TRUE
     ),
+    "no `.sort` argument",
     class = "marginplyr_error"
   )
+})
+
+test_that("a near miss on a removed option names what the caller wrote", {
+  # The caller never wrote `.sort`, so an error naming only the option they
+  # were reaching for sends them looking for a word that is not in their code.
   expect_error(
     summarize_with_margins(
       admission_data(),
       s = sum(v),
       .grouping = rollup(g),
-      .sort = TRUE
+      .sorts = TRUE
     ),
-    "no `.sort` argument"
+    "`.sorts` is not an argument.+neither is the `.sort` it resembles",
+    class = "marginplyr_error"
   )
 })
 
@@ -96,17 +103,28 @@ test_that("the check is scoped to names that resemble an option", {
     ),
     c("g", ".set", "s")
   )
+  # `.data` and `...` are formals but not options a caller can misspell into
+  # `...`, so they are kept out of the comparison. Counting `.data` made
+  # `.date` — an ordinary output name — a near miss.
+  expect_named(
+    summarize_with_margins(
+      admission_data(),
+      .date = max(v),
+      .grouping = rollup(g)
+    ),
+    c("g", ".date")
+  )
 })
 
 test_that("the option check survives splicing", {
-  options <- list(.sort = TRUE)
+  spliced <- list(.sort = TRUE)
 
   expect_error(
     summarize_with_margins(
       admission_data(),
       s = sum(v),
       .grouping = rollup(g),
-      !!!options
+      !!!spliced
     ),
     class = "marginplyr_error"
   )
@@ -116,11 +134,8 @@ test_that("input that dplyr cannot group is rejected in the caller's terms", {
   for (input in list(as.matrix(admission_data()), as.list(admission_data()))) {
     expect_error(
       summarize_with_margins(input, s = sum(v), .grouping = rollup(g)),
+      "must be a data frame or a lazy table",
       class = "marginplyr_error"
-    )
-    expect_error(
-      summarize_with_margins(input, s = sum(v), .grouping = rollup(g)),
-      "must be a data frame or a lazy table"
     )
   }
 
@@ -132,21 +147,43 @@ test_that("input that dplyr cannot group is rejected in the caller's terms", {
 
 test_that("every entry point admits input the same way", {
   input <- as.matrix(admission_data())
+  # The same message, not merely the same class: the nesting verbs reject a
+  # matrix on their own narrower whitelist too, which would satisfy a
+  # class-only assertion while answering the caller with the classes that nest.
+  admission_message <- "must be a data frame or a lazy table"
 
   expect_error(
     expand_with_margins(input, .grouping = rollup(g)),
+    admission_message,
     class = "marginplyr_error"
   )
   expect_error(
     nest_with_margins(input, .grouping = rollup(g)),
+    admission_message,
     class = "marginplyr_error"
   )
   expect_error(
     nest_by_with_margins(input, .grouping = rollup(g)),
+    admission_message,
     class = "marginplyr_error"
   )
   expect_error(
     inspect_grouping(input, .grouping = rollup(g)),
+    admission_message,
+    class = "marginplyr_error"
+  )
+})
+
+test_that("admission does not widen what the nesting verbs accept", {
+  skip_if_backend_absent("arrow")
+
+  # Admitted by the shared rule, still refused by nesting's own constraint.
+  expect_error(
+    nest_with_margins(
+      arrow::as_arrow_table(admission_data()),
+      .grouping = rollup(g)
+    ),
+    "which can be nested",
     class = "marginplyr_error"
   )
 })
