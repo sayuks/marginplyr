@@ -217,11 +217,41 @@ parent_report |>
 ```
 
 The root row's share is one, and a missing or zero denominator gives `NA`.
-Parent matching is structural, so display labels never choose the parent. The
-[`share_of_parent()`
+Parent matching is structural, so display labels never choose the parent.
+
+## Compare each summary with the whole
+
+`share_of_total()` is the same helper with a different denominator: the grand
+total of the same report, within each fixed `.by` group. There is never a
+question of *which* row that is, so it accepts any grouping specification that
+produces one — including the `cube()` that `share_of_parent()` rejects:
+
+```{r}
+january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = cube(region, store)
+  )
+```
+
+Both helpers can appear in one summary, and everything except the denominator
+is shared:
+
+```{r}
+january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = rollup(region, store)
+  )
+```
+
+The [`share_of_parent()`
 reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-documents the eligible sources, value rules, `across()` grammar, and backend
-boundaries in full.
+documents both helpers in full: the eligible sources, value rules, `across()`
+grammar, and backend boundaries.
 
 ## Use the same report with a database
 

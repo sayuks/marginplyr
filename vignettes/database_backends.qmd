@@ -265,6 +265,21 @@ to run it. Native and portable grouping adapters both feed the same staged
 Parent-share contract. Parent matching uses internal Grouping identity and
 missing-safe keys rather than displayed Margin labels.
 
+`share_of_total()` stages the same way and asks less of the query. Its
+denominator depends on the fixed `.by` keys and nothing else, so its mapping
+is one filtered read of the grand total row, joined on those keys alone — and
+on a constant when, as here, there are none:
+
+```{r}
+postgres_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = rollup(region, store)
+  ) |>
+  show_query()
+```
+
 Syntax, source-name, written-order, and `across()` errors are validated before
 execution. General dbplyr backends do not expose every arbitrary aggregate's
 result type or cardinality from metadata, and marginplyr does not run an extra
@@ -276,7 +291,7 @@ The portable value contract covers finite numbers, missing values, and zero
 denominators. Backend-specific non-finite representations are outside that
 contract. See the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-for supported sources, immediate-parent and root rules, `across()` forms,
+for both helpers' supported sources, denominator rules, `across()` forms,
 empty inputs, and post-summary `mutate()` guidance.
 
 ## Completion stays in the lazy input pipeline
@@ -312,14 +327,15 @@ collect(dt_query)
 SQL database and Arrow tables cannot use the nesting verbs because their
 result contains a list column.
 
-dtplyr also enforces the Parent-share source rules. A valid request stays a
-native lazy query, and an ineligible source type or a non-scalar summary
-raises a Package condition at explicit execution, before an invalid grouping
-row is emitted.
+dtplyr also enforces the contextual-share source rules, for both denominators.
+A valid request stays a native lazy query, and an ineligible source type or a
+non-scalar summary raises a Package condition at explicit execution, before an
+invalid grouping row is emitted.
 
-Arrow summaries and expansions are supported and lazy, but a Parent share is
-rejected outright, before any Arrow query is constructed. Collect the Arrow
-table first when you need Parent shares. The
+Arrow summaries and expansions are supported and lazy, but `share_of_parent()`
+and `share_of_total()` are both rejected outright, before any Arrow query is
+constructed: the reason is the source summary they share. Collect the Arrow
+table first when you need either. The
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 states where each backend reports these errors.
 

@@ -286,6 +286,7 @@ parent_result <- data.frame(
   summarize_with_margins(
     revenue = sum(revenue),
     revenue_share = share_of_parent(revenue),
+    revenue_of_total = share_of_total(revenue),
     absence = grouping_id(region, store),
     .grouping = rollup(region, store),
     .margin_label = NULL
@@ -297,6 +298,11 @@ parent_result |>
 
 The included source `NA` store and the subtotal's omitted `store` may display
 the same value, but their Grouping identities differ and Parent lookup remains
-unambiguous. See the
+unambiguous.
+
+`share_of_total()` is identified the same way and asks a smaller question of
+the plan: its denominator is the Grand total set, the grouping set in which
+every dimension is omitted, so it is defined for any plan containing one
+rather than for a rollup alone. See the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-for its value, source-summary, ordering, and `across()` rules.
+for both helpers' value, source-summary, ordering, and `across()` rules.

@@ -43,7 +43,7 @@ january_sales |>
 
 `rollup(region, store)` asks for three reporting levels:
 
-``` text
+```
 (region, store)  store detail
 (region)         region subtotal
 ()               company total
@@ -61,8 +61,8 @@ build and combine yourself.
 - Distinguishes a source `NA` from a dimension removed to create a
   total.
 
-- Exposes Grouping set identifiers and SQL-compatible absence masks without
-  relying on display labels.
+- Exposes Grouping set identifiers and SQL-compatible absence masks
+  without relying on display labels.
 
 - Calculates each scalar summary’s share of its immediate rollup parent.
 
@@ -285,10 +285,65 @@ parent_report |>
 
 The root row’s share is one, and a missing or zero denominator gives
 `NA`. Parent matching is structural, so display labels never choose the
-parent. The [`share_of_parent()`
+parent.
+
+## Compare each summary with the whole
+
+`share_of_total()` is the same helper with a different denominator: the
+grand total of the same report, within each fixed `.by` group. There is
+never a question of *which* row that is, so it accepts any grouping
+specification that produces one — including the `cube()` that
+`share_of_parent()` rejects:
+
+``` r
+january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = cube(region, store)
+  )
+#>    region         store revenue revenue_of_total
+#> 1    East        Boston    6000        0.2575107
+#> 2    East      New York    3000        0.1287554
+#> 3    East          <NA>    2200        0.0944206
+#> 4    West San Francisco    7200        0.3090129
+#> 5    West       Seattle    4900        0.2103004
+#> 6    East         Total   11200        0.4806867
+#> 7    West         Total   12100        0.5193133
+#> 8   Total        Boston    6000        0.2575107
+#> 9   Total      New York    3000        0.1287554
+#> 10  Total          <NA>    2200        0.0944206
+#> 11  Total San Francisco    7200        0.3090129
+#> 12  Total       Seattle    4900        0.2103004
+#> 13  Total         Total   23300        1.0000000
+```
+
+Both helpers can appear in one summary, and everything except the
+denominator is shared:
+
+``` r
+january_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = rollup(region, store)
+  )
+#>   region         store revenue revenue_share revenue_of_total
+#> 1   East        Boston    6000     0.5357143        0.2575107
+#> 2   East      New York    3000     0.2678571        0.1287554
+#> 3   East          <NA>    2200     0.1964286        0.0944206
+#> 4   West San Francisco    7200     0.5950413        0.3090129
+#> 5   West       Seattle    4900     0.4049587        0.2103004
+#> 6   East         Total   11200     0.4806867        0.4806867
+#> 7   West         Total   12100     0.5193133        0.5193133
+#> 8  Total         Total   23300     1.0000000        1.0000000
+```
+
+The [`share_of_parent()`
 reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-documents the eligible sources, value rules, `across()` grammar, and
-backend boundaries in full.
+documents both helpers in full: the eligible sources, value rules,
+`across()` grammar, and backend boundaries.
 
 ## Use the same report with a database
 
@@ -351,8 +406,8 @@ nested_sections |>
   dplyr::as_tibble() |>
   head()
 #> # A tibble: 6 × 3
-#>   region store         data
-#>   <chr>  <chr>         <list>
+#>   region store         data            
+#>   <chr>  <chr>         <list>          
 #> 1 East   Boston        <tibble [1 × 6]>
 #> 2 East   New York      <tibble [1 × 6]>
 #> 3 East   <NA>          <tibble [1 × 6]>

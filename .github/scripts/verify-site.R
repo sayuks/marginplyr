@@ -55,6 +55,7 @@ assert_markers(
     "pkg_install",
     "SQL-style grouping sets",
     "A total is not the same thing as",
+    "Compare each summary with the whole",
     "Choose the tool for the job",
     "grouping_identity.html",
     "completing_keys.html",
@@ -76,6 +77,7 @@ assert_markers(
     "grouping_bit",
     "expand_with_margins",
     "For several measures, use two ordered",
+    "Compare a summary with the whole",
     "original pre-margin",
     "funion(funion(",
     "Total"
@@ -122,6 +124,7 @@ assert_markers(
     "show_query",
     "collect",
     "Parent shares use a staged lazy query",
+    "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Only DuckDB and SQLite are exercised as live SQL databases",
     "DuckDB covers native SQL end to end",
