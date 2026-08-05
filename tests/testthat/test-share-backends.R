@@ -981,7 +981,7 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
   )
 })
 
-test_that("lazy Parent shares preserve empty-input root and partition behavior", { # nolint: line_length_linter
+test_that("lazy shares preserve empty-input grand total and partitions", {
   empty <- data.frame(group = character(), value = double())
   sources <- list()
 
@@ -994,7 +994,7 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
     sources$duckdb <- dplyr::copy_to(
       con,
       empty,
-      "empty_parent_share_data",
+      "empty_share_data",
       overwrite = TRUE,
       temporary = TRUE
     )
@@ -1007,6 +1007,7 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
       source,
       total = sum(value),
       share = share_of_parent(total),
+      whole = share_of_total(total),
       .grouping = rollup(group),
       .margin_label = NULL
     ) |>
@@ -1015,6 +1016,7 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
       source,
       total = sum(value),
       share = share_of_parent(total),
+      whole = share_of_total(total),
       .by = group,
       .grouping = rollup(value),
       .margin_label = NULL
@@ -1022,8 +1024,12 @@ test_that("lazy Parent shares preserve empty-input root and partition behavior",
       dplyr::collect()
 
     expect_identical(root$share, 1, info = backend)
+    expect_identical(root$whole, 1, info = backend)
     expect_identical(nrow(partitioned), 0L, info = backend)
     expect_type(partitioned$share, "double")
+    # A Total share joins its denominator on the fixed keys, so the empty
+    # partitioned case is the one where that join has nothing on either side.
+    expect_type(partitioned$whole, "double")
   }
 })
 

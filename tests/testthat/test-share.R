@@ -1724,7 +1724,8 @@ test_that("Total shares accept every plan containing a grand total set", {
       grouping_set(b),
       grouping_set()
     ),
-    grouping_spec = grouping_spec(rollup(a), grouping_set())
+    grouping_spec = grouping_spec(rollup(a), grouping_set()),
+    composite = rollup(grouping_set(a, b))
   )
 
   for (name in names(specifications)) {
@@ -2049,5 +2050,119 @@ test_that("Total-share diagnostics name the helper the caller wrote", {
       group = share_of_total(total)
     ),
     "Total-share output name `group` conflicts"
+  )
+})
+
+test_that("Total shares need no join when every occurrence is the whole", {
+  data <- data.frame(
+    partition = c("p", "p", "q"),
+    value = c(1, 3, 6)
+  )
+  # A plan whose only occurrences are Grand total sets has no row whose
+  # denominator lives elsewhere, so no denominator is joined at all. Only a
+  # Total share reaches this: a Parent share refuses each of these
+  # specifications.
+  specifications <- list(
+    absent = NULL,
+    empty_set = grouping_set(),
+    duplicate_empty_sets = grouping_sets(grouping_set(), grouping_set())
+  )
+
+  for (name in names(specifications)) {
+    result <- summarize_with_margins(
+      data,
+      total = sum(value),
+      whole = share_of_total(total),
+      .by = partition,
+      .grouping = specifications[[name]],
+      .duplicates = "keep"
+    )
+
+    expect_setequal(result$total, c(4, 6))
+    expect_true(all(result$whole == 1), info = name)
+    expect_type(result$whole, "double")
+  }
+
+  # Its source is never read for the ratio, so an ineligible one is still
+  # refused and a zero one is still one.
+  expect_identical(
+    summarize_with_margins(
+      data.frame(value = 0),
+      total = sum(value),
+      whole = share_of_total(total)
+    )$whole,
+    1
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = any(value > 0),
+      whole = share_of_total(total),
+      .by = partition
+    ),
+    "plain integer or double scalar"
+  )
+})
+
+test_that("Total shares preserve empty-input whole and partition behavior", {
+  empty <- data.frame(
+    partition = character(),
+    group = character(),
+    value = double()
+  )
+
+  grand_total <- summarize_with_margins(
+    empty,
+    total = sum(value),
+    whole = share_of_total(total),
+    .grouping = rollup(group)
+  )
+  partitioned <- summarize_with_margins(
+    empty,
+    total = sum(value),
+    whole = share_of_total(total),
+    .by = partition,
+    .grouping = rollup(group)
+  )
+
+  # Without fixed keys there is one row, the Grand total set's, and its share
+  # is one even though its source is empty. With fixed keys there are no
+  # partitions, so the denominator join has nothing on either side.
+  expect_identical(nrow(grand_total), 1L)
+  expect_identical(grand_total$whole, 1)
+  expect_identical(nrow(partitioned), 0L)
+  expect_type(partitioned$whole, "double")
+})
+
+test_that("across arguments are validated after evaluation, not as literals", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  unpack_flag <- TRUE
+  template <- 1L
+
+  # The admission pass can only read a literal, so `.unpack` and `.names`
+  # written as names reach a second check after evaluation. Both name the
+  # helper the caller wrote, like every other diagnostic.
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(
+        total,
+        share_of_parent,
+        .names = "{.col}_share",
+        .unpack = unpack_flag
+      ),
+      .grouping = rollup(group)
+    ),
+    "Parent-share `across\\(\\)` requires `.unpack = FALSE`"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(total, share_of_total, .names = template),
+      .grouping = rollup(group)
+    ),
+    "Total-share `across\\(\\)` `.names` must be one non-missing character"
   )
 })
