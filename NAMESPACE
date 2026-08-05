@@ -21,5 +21,7 @@ export(share_of_parent)
 export(share_of_total)
 export(summarise_with_margins)
 export(summarize_with_margins)
-importFrom(dbplyr,op_vars)
-importFrom(dbplyr,sql_build)
+importFrom(dbplyr,
+  op_vars,
+  sql_build
+)
