@@ -2,9 +2,12 @@
 % Please edit documentation in R/share.R
 \name{share_of_parent}
 \alias{share_of_parent}
+\alias{share_of_total}
 \title{Calculate a summary's share of its rollup parent}
 \usage{
 share_of_parent(x)
+
+share_of_total(x)
 }
 \arguments{
 \item{x}{The bare name of one preceding eligible ordinary summary.}

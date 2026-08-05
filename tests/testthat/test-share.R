@@ -718,7 +718,11 @@ test_that("the local eligible-type check raises the shared diagnostic", {
   local_error <- expect_error(
     check_local_share_types(
       data.frame(group = "x", total = TRUE),
-      requests = list(list(outputs = "share", sources = "total")),
+      requests = list(list(
+        outputs = "share",
+        sources = "total",
+        kind = "parent"
+      )),
       call = rlang::call2("summarize_with_margins")
     ),
     "plain integer or double scalar"

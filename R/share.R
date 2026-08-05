@@ -468,12 +468,27 @@ share_of_parent <- function(x) {
   )
 }
 
+#' @rdname share_of_parent
+#' @export
+share_of_total <- function(x) {
+  abort_marginplyr(
+    paste0(
+      "`share_of_total()` can only be used inside ",
+      "`summarize_with_margins()` with a Grouping plan that contains the ",
+      "Grand total set. To derive a value from an existing Total share, use ",
+      "a following `dplyr::mutate()`."
+    )
+  )
+}
+
+# Returns the share kinds the call requests, which is what the verb needs to
+# decide which grouping requirement to check before the plan is compiled.
 preflight_shares <- function(dots) {
   dot_names <- names(dots)
   if (is.null(dot_names)) {
     dot_names <- rep("", length(dots))
   }
-  has_shares <- FALSE
+  kinds <- character()
 
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
@@ -482,27 +497,76 @@ preflight_shares <- function(dots) {
 
     if (is_share_helper_call(expr)) {
       validate_share_direct_syntax(expr, output_name)
-      has_shares <- TRUE
+      kinds <- c(kinds, share_helper_call_kind(expr))
       next
     }
     if (is_across_call(expr) && contains_share_helper(expr)) {
       preflight_share_across_syntax(expr, output_name)
-      has_shares <- TRUE
+      kinds <- c(kinds, share_across_kind(expr))
       next
     }
-    if (contains_share_helper(expr)) {
-      abort_marginplyr(
-        paste0(
-          "`share_of_parent()` must be the complete right-hand side of a ",
-          "named summary, or the direct `.fns` argument of `across()`. ",
-          "Create the Parent share as its own named summary, then use a ",
-          "following `dplyr::mutate()` for derived values."
-        )
-      )
+    kind <- share_expression_kind(expr)
+    if (!is.null(kind)) {
+      abort_share_helper_position(kind, complete = TRUE)
     }
   }
 
-  has_shares
+  unique(kinds)
+}
+
+abort_share_helper_position <- function(kind, complete) {
+  abort_marginplyr(
+    paste0(
+      share_kind_call(kind), " must be the complete right-hand side of a ",
+      "named summary, or the direct `.fns` argument of `across()`.",
+      if (complete) {
+        paste0(
+          " Create the ", share_kind_label(kind), " as its own named ",
+          "summary, then use a following `dplyr::mutate()` for derived ",
+          "values."
+        )
+      }
+    )
+  )
+}
+
+# Arrow rejects every contextual share for one reason — the numerator's source
+# summary cannot be proved scalar before the query is built — so the rejection
+# names whichever helpers the caller wrote rather than a fixed one. Its
+# vocabulary lives here; the executor decides when to raise it.
+abort_arrow_shares <- function(kinds) {
+  kinds <- share_helper_kinds[share_helper_kinds %in% kinds]
+  abort_marginplyr(
+    paste0(
+      "Arrow backends do not support ",
+      paste(
+        vapply(kinds, function(kind) {
+          paste0(share_kind_label(kind), "s")
+        }, character(1)),
+        collapse = " and "
+      ),
+      " because marginplyr cannot enforce their scalar-summary contract ",
+      "safely before an Arrow query is constructed. Other Arrow Margin ",
+      "operations remain supported. Omit ",
+      paste(
+        vapply(kinds, share_kind_call, character(1)),
+        collapse = " and "
+      ),
+      " or explicitly collect the data before calling ",
+      "`summarize_with_margins()`."
+    )
+  )
+}
+
+# Only a Parent share can be refused from the Grouping specification alone.
+# Whether a plan contains the Grand total set is a property of the compiled
+# plan, so a Total share is checked there instead, by
+# `check_share_grouping_kinds()`.
+share_grouping_spec_validator <- function(kinds) {
+  if (!"parent" %in% kinds) {
+    return(NULL)
+  }
+  check_parent_grouping_spec
 }
 
 check_parent_grouping_spec <- function(grouping_spec) {
@@ -557,7 +621,7 @@ plan_share_expressions <- function(dots,
   planned_dots <- as.list(dots)
   requests <- list()
   preceding_ordinary <- list()
-  preceding_share_names <- character()
+  preceding_shares <- new_share_names()
 
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
@@ -570,7 +634,7 @@ plan_share_expressions <- function(dots,
         expr,
         output_name = output_name,
         preceding = preceding_ordinary,
-        share_names = preceding_share_names,
+        shares = preceding_shares,
         context = planning_context
       )
       planned_dots[[i]] <- rlang::new_quosure(
@@ -578,10 +642,7 @@ plan_share_expressions <- function(dots,
         env = rlang::empty_env()
       )
       requests <- c(requests, list(request))
-      preceding_share_names <- c(
-        preceding_share_names,
-        request$outputs
-      )
+      preceding_shares <- add_share_names(preceding_shares, request)
       next
     }
 
@@ -591,7 +652,7 @@ plan_share_expressions <- function(dots,
         env = env,
         output_name = output_name,
         preceding = preceding_ordinary,
-        share_names = preceding_share_names,
+        shares = preceding_shares,
         context = planning_context
       )
       if (length(request$outputs) == 0L) {
@@ -600,30 +661,28 @@ plan_share_expressions <- function(dots,
       }
       planned_dots[[i]] <- share_placeholder(request$outputs)
       requests <- c(requests, list(request))
-      preceding_share_names <- c(
-        preceding_share_names,
-        request$outputs
-      )
+      preceding_shares <- add_share_names(preceding_shares, request)
       next
     }
 
-    if (contains_share_helper(expr)) {
-      abort_marginplyr(
-        paste0(
-          "`share_of_parent()` must be the complete right-hand side of a ",
-          "named summary, or the direct `.fns` argument of `across()`."
-        )
-      )
+    kind <- share_expression_kind(expr)
+    if (!is.null(kind)) {
+      abort_share_helper_position(kind, complete = FALSE)
     }
 
     share_dependency <- expression_alias_dependencies(
       expr,
-      preceding_share_names
+      preceding_shares$names
     )
     if (length(share_dependency) > 0L) {
       abort_marginplyr(
         paste0(
-          "Ordinary summaries cannot use an earlier Parent share (`",
+          "Ordinary summaries cannot use an earlier ",
+          share_kind_label(share_name_kind(
+            preceding_shares,
+            share_dependency[[1L]]
+          )),
+          " (`",
           share_dependency[[1L]],
           "`) in the same `summarize_with_margins()` call. Use a following ",
           "`dplyr::mutate()` for derived values."
@@ -634,7 +693,7 @@ plan_share_expressions <- function(dots,
   }
 
   if (length(requests) > 0L) {
-    check_parent_grouping_kind(plan)
+    check_share_grouping_kinds(plan, share_request_kinds(requests))
   }
 
   cardinality <- if (isTRUE(validate_cardinality)) {
@@ -711,6 +770,7 @@ share_cardinality_records <- function(analyses, requests) {
       position = source_records[[1L]]$position,
       share_output = pair$output,
       source_summary = pair$source,
+      share_kind = pair$kind,
       across_input = source_records[[1L]]$across_input,
       across_function = source_records[[1L]]$across_function
     )))
@@ -750,22 +810,25 @@ wrap_share_sources <- function(dots,
         )
         next
       }
-      share_outputs <- vapply(
-        checks,
-        `[[`,
-        character(1),
-        "share_output"
-      )
-      names(share_outputs) <- vapply(
+      source_summaries <- vapply(
         checks,
         `[[`,
         character(1),
         "source_summary"
       )
+      share_outputs <- stats::setNames(
+        vapply(checks, `[[`, character(1), "share_output"),
+        source_summaries
+      )
+      share_kinds <- stats::setNames(
+        vapply(checks, `[[`, character(1), "share_kind"),
+        source_summaries
+      )
       wrapped <- rlang::call2(
         share_private_call("check_share_across"),
         expr,
         share_outputs = share_outputs,
+        share_kinds = share_kinds,
         call = rlang::call2("quote", call)
       )
     } else {
@@ -780,6 +843,7 @@ wrap_share_sources <- function(dots,
         expr,
         share_output = check$share_output,
         source_summary = check$source_summary,
+        share_kind = check$share_kind,
         !!!if (is_dtplyr) {
           list(call_text = share_call_text(call))
         } else {
@@ -869,12 +933,19 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
       character(1),
       "source_summary"
     )
+    share_kinds <- vapply(
+      function_checks[keep],
+      `[[`,
+      character(1),
+      "share_kind"
+    )
     functions[[function_index]] <- wrap_dtplyr_share_function(
       functions[[function_index]],
       mapping = new_share_validation_mapping(
         inputs = inputs,
         share_outputs = share_outputs,
-        source_summaries = source_summaries
+        source_summaries = source_summaries,
+        share_kinds = share_kinds
       ),
       forwarded_args = if (can_inline_forwarded) {
         forwarded_args
@@ -939,7 +1010,8 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
     share_private_call("new_share_validation_mapping"),
     inputs = mapping$inputs,
     share_outputs = mapping$share_outputs,
-    source_summaries = mapping$source_summaries
+    source_summaries = mapping$source_summaries,
+    share_kinds = mapping$share_kinds
   )
   validator <- rlang::call2(
     share_private_call("check_dtplyr_share_scalar"),
@@ -963,6 +1035,7 @@ check_dtplyr_share_scalar <- function(value,
     value,
     share_output = mapping$share_outputs[[position]],
     source_summary = mapping$source_summaries[[position]],
+    share_kind = mapping$share_kinds[[position]],
     call_text = call_text
   )
 }
@@ -970,11 +1043,13 @@ check_dtplyr_share_scalar <- function(value,
 check_dtplyr_share_source <- function(value,
                                       share_output,
                                       source_summary,
+                                      share_kind,
                                       call_text) {
   check_share_scalar(
     value,
     share_output = share_output,
     source_summary = source_summary,
+    share_kind = share_kind,
     call = str2lang(call_text)
   )
 }
@@ -985,15 +1060,18 @@ dtplyr_share_input_name <- function(value) {
 
 new_share_validation_mapping <- function(inputs,
                                          share_outputs,
-                                         source_summaries) {
+                                         source_summaries,
+                                         share_kinds) {
   stopifnot(
     length(inputs) == length(share_outputs),
-    length(inputs) == length(source_summaries)
+    length(inputs) == length(source_summaries),
+    length(inputs) == length(share_kinds)
   )
   list(
     inputs = inputs,
     share_outputs = share_outputs,
-    source_summaries = source_summaries
+    source_summaries = source_summaries,
+    share_kinds = share_kinds
   )
 }
 
@@ -1005,12 +1083,13 @@ share_private_call <- function(name) {
   )
 }
 
-check_share_across <- function(value, share_outputs, call) {
+check_share_across <- function(value, share_outputs, share_kinds, call) {
   for (source_summary in names(share_outputs)) {
     check_share_scalar(
       value[[source_summary]],
       share_output = share_outputs[[source_summary]],
       source_summary = source_summary,
+      share_kind = share_kinds[[source_summary]],
       call = call
     )
   }
@@ -1020,14 +1099,16 @@ check_share_across <- function(value, share_outputs, call) {
 check_share_scalar <- function(value,
                                share_output,
                                source_summary,
+                               share_kind,
                                call) {
+  label <- share_kind_label(share_kind)
   if (length(value) != 1L) {
     abort_marginplyr(
       paste0(
-        "Parent share `", share_output, "` requires source summary `",
+        label, " `", share_output, "` requires source summary `",
         source_summary, "` to return exactly one value per grouping row. ",
         "Define `", source_summary, "` as one scalar summary; for multiple ",
-        "statistics, create separate named summaries and a Parent share for ",
+        "statistics, create separate named summaries and a ", label, " for ",
         "each one."
       ),
       class = "marginplyr_share_cardinality_error",
@@ -1041,6 +1122,7 @@ check_share_scalar <- function(value,
       value,
       share_output = share_output,
       source_summary = source_summary,
+      share_kind = share_kind,
       call = call
     )
   }
@@ -1058,11 +1140,13 @@ is_share_source_type <- function(value) {
 abort_share_source_type <- function(value,
                                     share_output,
                                     source_summary,
+                                    share_kind,
                                     call) {
   detected_type <- if (is.object(value)) class(value) else typeof(value)
   abort_marginplyr(
     paste0(
-      "Parent share `", share_output, "` requires source summary `",
+      share_kind_label(share_kind), " `", share_output,
+      "` requires source summary `",
       source_summary,
       "` to be a plain integer or double scalar; detected type ",
       paste(detected_type, collapse = "/"),
@@ -1176,29 +1260,50 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
   analyses
 }
 
+# The share outputs written so far, each with its kind: a diagnostic naming
+# one of them names it in the caller's terms, and only that output's own kind
+# can supply the words.
+new_share_names <- function() {
+  list(names = character(), kinds = character())
+}
+
+add_share_names <- function(shares, request) {
+  list(
+    names = c(shares$names, request$outputs),
+    kinds = c(shares$kinds, rep(request$kind, length(request$outputs)))
+  )
+}
+
+share_name_kind <- function(shares, name) {
+  shares$kinds[[match(name, shares$names)]]
+}
+
 plan_direct_share <- function(expr,
                               output_name,
                               preceding,
-                              share_names,
+                              shares,
                               context) {
   args <- validate_share_direct_syntax(expr, output_name)
   source <- rlang::as_name(args[[1L]])
+  kind <- share_helper_call_kind(expr)
   validate_share_request(
     outputs = output_name,
     sources = source,
     preceding = preceding,
-    share_names = share_names,
-    context = context
+    shares = shares,
+    context = context,
+    kind = kind
   )
-  list(outputs = output_name, sources = source)
+  list(outputs = output_name, sources = source, kind = kind)
 }
 
 validate_share_direct_syntax <- function(expr, output_name) {
+  helper <- share_helper_name(share_helper_call_kind(expr))
   if (!nzchar(output_name)) {
     abort_marginplyr(
       paste0(
-        "A direct `share_of_parent()` summary must have an explicit output ",
-        "name. Rewrite it as `name = share_of_parent(source)`."
+        "A direct `", helper, "()` summary must have an explicit output ",
+        "name. Rewrite it as `name = ", helper, "(source)`."
       )
     )
   }
@@ -1206,9 +1311,9 @@ validate_share_direct_syntax <- function(expr, output_name) {
   if (length(args) != 1L || !rlang::is_symbol(args[[1L]])) {
     abort_marginplyr(
       paste0(
-        "`", output_name, " = share_of_parent(...)` requires exactly one ",
+        "`", output_name, " = ", helper, "(...)` requires exactly one ",
         "bare name of a preceding ordinary summary. Define the scalar ",
-        "summary first, then pass its name directly to `share_of_parent()`."
+        "summary first, then pass its name directly to `", helper, "()`."
       )
     )
   }
@@ -1219,8 +1324,9 @@ plan_across_share <- function(expr,
                               env,
                               output_name,
                               preceding,
-                              share_names,
+                              shares,
                               context) {
+  kind <- share_across_kind(expr)
   syntax <- validate_share_across_syntax(expr, env, output_name)
   args <- syntax$args
   names_template <- syntax$names_template
@@ -1241,14 +1347,15 @@ plan_across_share <- function(expr,
     "name"
   ))
   if (contains_selection_predicate(args$cols)) {
-    abort_share_predicate()
+    abort_share_predicate(kind)
   }
   sources <- resolve_share_selection(
     args$cols,
     env = env,
     preceding_names = preceding_names,
     preceding = preceding,
-    context = context
+    context = context,
+    kind = kind
   )
   outputs <- vapply(
     sources,
@@ -1262,23 +1369,20 @@ plan_across_share <- function(expr,
     outputs = outputs,
     sources = sources,
     preceding = preceding,
-    share_names = share_names,
-    context = context
+    shares = shares,
+    context = context,
+    kind = kind
   )
-  list(outputs = outputs, sources = sources)
+  list(outputs = outputs, sources = sources, kind = kind)
 }
 
 validate_share_across_syntax <- function(expr, env, output_name) {
+  kind <- share_across_kind(expr)
   args <- preflight_share_across_syntax(expr, output_name)
   if (!is.null(args$unpack)) {
     unpack <- rlang::eval_tidy(args$unpack, env = env)
     if (!isFALSE(unpack)) {
-      abort_marginplyr(
-        paste0(
-          "Parent-share `across()` requires `.unpack = FALSE` or an ",
-          "omitted `.unpack` argument."
-        )
-      )
+      abort_share_across_unpack(kind)
     }
   }
   names_template <- rlang::eval_tidy(args$names, env = env)
@@ -1289,7 +1393,8 @@ validate_share_across_syntax <- function(expr, env, output_name) {
   ) {
     abort_marginplyr(
       paste0(
-        "Parent-share `across()` `.names` must be one non-missing character ",
+        share_kind_modifier(kind),
+        " `across()` `.names` must be one non-missing character ",
         "template."
       )
     )
@@ -1298,30 +1403,33 @@ validate_share_across_syntax <- function(expr, env, output_name) {
 }
 
 preflight_share_across_syntax <- function(expr, output_name) {
+  kind <- share_across_kind(expr)
   if (nzchar(output_name)) {
     abort_marginplyr(
       paste0(
-        "An `across()` Parent-share expression must be unnamed; use its ",
-        "required `.names` argument to name the output columns."
+        "An `across()` ", share_kind_modifier(kind), " expression must be ",
+        "unnamed; use its required `.names` argument to name the output ",
+        "columns."
       )
     )
   }
   args <- parse_across_arguments(expr)
   if (!is_share_helper_function(args$fns)) {
+    helper <- share_helper_name(kind)
     abort_marginplyr(
       paste0(
-        "For Parent shares, `across()` `.fns` must be `share_of_parent` or ",
-        "`marginplyr::share_of_parent` directly. Use two ordered `across()` ",
-        "expressions instead of a formula, anonymous function, or function ",
-        "list."
+        "For ", share_kind_label(kind), "s, `across()` `.fns` must be `",
+        helper, "` or `marginplyr::", helper, "` directly. Use two ordered ",
+        "`across()` expressions instead of a formula, anonymous function, ",
+        "or function list."
       )
     )
   }
   if (length(args$additional) > 0L) {
     abort_marginplyr(
       paste0(
-        "Parent-share `across()` does not accept additional function ",
-        "arguments: ",
+        share_kind_modifier(kind),
+        " `across()` does not accept additional function arguments: ",
         paste0("`", args$additional, "`", collapse = ", "),
         ". Put missing-value handling in the preceding ordinary summary."
       )
@@ -1330,44 +1438,52 @@ preflight_share_across_syntax <- function(expr, output_name) {
   if (is.null(args$names)) {
     abort_marginplyr(
       paste0(
-        "Parent-share `across()` requires an explicit `.names` argument, ",
+        share_kind_modifier(kind),
+        " `across()` requires an explicit `.names` argument, ",
         "for example `.names = \"{.col}_share\"`."
       )
     )
   }
   if (!is.null(args$unpack) && is.logical(args$unpack)) {
     if (length(args$unpack) != 1L || !isFALSE(args$unpack)) {
-      abort_marginplyr(
-        paste0(
-          "Parent-share `across()` requires `.unpack = FALSE` or an ",
-          "omitted `.unpack` argument."
-        )
-      )
+      abort_share_across_unpack(kind)
     }
   }
   if (contains_selection_predicate(args$cols)) {
-    abort_share_predicate()
+    abort_share_predicate(kind)
   }
   args
+}
+
+abort_share_across_unpack <- function(kind) {
+  abort_marginplyr(
+    paste0(
+      share_kind_modifier(kind),
+      " `across()` requires `.unpack = FALSE` or an ",
+      "omitted `.unpack` argument."
+    )
+  )
 }
 
 validate_share_request <- function(outputs,
                                    sources,
                                    preceding,
-                                   share_names,
-                                   context) {
+                                   shares,
+                                   context,
+                                   kind) {
   if (length(outputs) == 0L) {
     return(invisible(NULL))
   }
   if (any(!nzchar(outputs))) {
     abort_marginplyr(
-      "Parent-share output names must not be empty."
+      paste0(share_kind_modifier(kind), " output names must not be empty.")
     )
   }
   if (anyDuplicated(outputs)) {
     abort_marginplyr(
       paste0(
-        "Parent-share output names must be unique; duplicate name `",
+        share_kind_modifier(kind),
+        " output names must be unique; duplicate name `",
         outputs[[anyDuplicated(outputs)]],
         "` was generated."
       )
@@ -1381,13 +1497,15 @@ validate_share_request <- function(outputs,
     character(1),
     "name"
   )
+  label <- share_kind_label(kind)
   for (i in seq_along(sources)) {
     source <- sources[[i]]
     output <- outputs[[i]]
-    if (source %in% share_names) {
+    if (source %in% shares$names) {
       abort_marginplyr(
         paste0(
-          "Parent share `", output, "` cannot use Parent share `", source,
+          label, " `", output, "` cannot use ",
+          share_kind_label(share_name_kind(shares, source)), " `", source,
           "` as its source."
         )
       )
@@ -1396,14 +1514,14 @@ validate_share_request <- function(outputs,
       if (source %in% all_names) {
         abort_marginplyr(
           paste0(
-            "Parent share `", output, "` must refer to an ordinary summary ",
+            label, " `", output, "` must refer to an ordinary summary ",
             "defined before it; `", source, "` is a forward reference."
           )
         )
       }
       abort_marginplyr(
         paste0(
-          "Parent share `", output, "` refers to unknown preceding ordinary ",
+          label, " `", output, "` refers to unknown preceding ordinary ",
           "summary `", source, "`."
         )
       )
@@ -1414,7 +1532,7 @@ validate_share_request <- function(outputs,
     ) {
       abort_marginplyr(
         paste0(
-          "Parent share `", output, "` requires source summary `", source,
+          label, " `", output, "` requires source summary `", source,
           "` to be defined exactly once. Use one uniquely named ordinary ",
           "summary."
         )
@@ -1424,7 +1542,7 @@ validate_share_request <- function(outputs,
     if (!isTRUE(record$eligible)) {
       abort_marginplyr(
         paste0(
-          "Parent share `", output, "` cannot use `", source,
+          label, " `", output, "` cannot use `", source,
           "` because it was expanded from a data-frame-valued summary. ",
           "Rewrite it as a top-level named summary or a preceding `across()` ",
           "output."
@@ -1434,7 +1552,7 @@ validate_share_request <- function(outputs,
     if (length(record$dependencies) > 0L) {
       abort_marginplyr(
         paste0(
-          "Parent share `", output, "` cannot use source summary `", source,
+          label, " `", output, "` cannot use source summary `", source,
           "` because it depends on earlier summary alias `",
           record$dependencies[[1L]],
           "`. Combine the calculation into one ordinary summary expression."
@@ -1448,17 +1566,30 @@ validate_share_request <- function(outputs,
     unique(c(
       context$conflicting_names,
       all_names,
-      share_names
+      shares$names
     ))
   )
   if (length(conflicts) > 0L) {
     abort_marginplyr(
       paste0(
-        "Parent-share output name `", conflicts[[1L]],
+        share_kind_modifier(kind), " output name `", conflicts[[1L]],
         "` conflicts with a grouping key, `.id`, ordinary summary, source ",
-        "summary, or earlier Parent share."
+        "summary, or earlier contextual share."
       )
     )
+  }
+  invisible(NULL)
+}
+
+# Each kind states what the compiled plan must provide. A call requesting both
+# must satisfy both, which is why this checks every requested kind rather than
+# choosing one.
+check_share_grouping_kinds <- function(plan, kinds) {
+  if ("parent" %in% kinds) {
+    check_parent_grouping_kind(plan)
+  }
+  if ("total" %in% kinds) {
+    check_total_grouping_kind(plan)
   }
   invisible(NULL)
 }
@@ -1475,6 +1606,20 @@ check_parent_grouping_kind <- function(plan) {
     )
   }
   invisible(NULL)
+}
+
+check_total_grouping_kind <- function(plan) {
+  if (length(grand_total_set_ids(plan)) > 0L) {
+    return(invisible(NULL))
+  }
+  abort_marginplyr(
+    paste0(
+      "`share_of_total()` requires `.grouping` to produce the Grand total ",
+      "set, in which every grouping dimension is omitted. `rollup()` and ",
+      "`cube()` always produce it. Add an empty `grouping_set()` to the ",
+      "`grouping_sets()` specification, or omit the Total share."
+    )
+  )
 }
 
 execute_shares <- function(operation,
@@ -1495,12 +1640,22 @@ execute_shares <- function(operation,
     staged_result
   )
   adapter <- share_adapter(operation$backend$kind)
-  result <- adapter(
-    operation,
-    result = result,
-    requests = requests,
-    set_id_name = staged_set_id_name
-  )
+  # One adapter pass per requested kind. Every pass reads the same staged
+  # result and writes over the placeholder column each request reserved in the
+  # caller's written order, so the passes are independent and their order is
+  # not visible in the result.
+  for (kind in share_request_kinds(requests)) {
+    result <- adapter(
+      operation,
+      result = result,
+      requests = Filter(
+        function(request) identical(request$kind, kind),
+        requests
+      ),
+      set_id_name = staged_set_id_name,
+      kind = kind
+    )
+  }
   if (!is.null(operation$set_id_name)) {
     result <- dplyr::mutate(
       result,
@@ -1525,7 +1680,7 @@ share_adapter <- function(backend_kind) {
   adapter <- adapters[[backend_kind]]
   if (is.null(adapter)) {
     stop(
-      "Unknown Parent-share backend kind: ", backend_kind,
+      "Unknown contextual-share backend kind: ", backend_kind,
       call. = FALSE
     )
   }
@@ -1535,13 +1690,15 @@ share_adapter <- function(backend_kind) {
 execute_local_shares <- function(operation,
                                  result,
                                  requests,
-                                 set_id_name) {
+                                 set_id_name,
+                                 kind) {
   check_local_share_types(result, requests, call = operation$call)
   apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
+    kind = kind,
     sql_join = FALSE
   )
 }
@@ -1549,12 +1706,14 @@ execute_local_shares <- function(operation,
 execute_dbplyr_shares <- function(operation,
                                   result,
                                   requests,
-                                  set_id_name) {
+                                  set_id_name,
+                                  kind) {
   apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
+    kind = kind,
     sql_join = TRUE
   )
 }
@@ -1562,12 +1721,14 @@ execute_dbplyr_shares <- function(operation,
 execute_non_sql_shares <- function(operation,
                                    result,
                                    requests,
-                                   set_id_name) {
+                                   set_id_name,
+                                   kind) {
   apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
+    kind = kind,
     sql_join = FALSE
   )
 }
@@ -1576,9 +1737,11 @@ apply_joined_shares <- function(result,
                                 requests,
                                 plan,
                                 set_id_name,
+                                kind,
                                 sql_join) {
-  parent_ids <- parent_set_ids(plan)
-  root_ids <- plan$set_ids[is.na(parent_ids)]
+  rule <- share_denominator_rule(kind)
+  target_ids <- rule$target_ids(plan)
+  own_denominator_ids <- plan$set_ids[is.na(target_ids)]
   pairs <- share_pairs(requests)
   sources <- unique(vapply(pairs, `[[`, character(1), "source"))
   result_names <- get_col_names(result, dplyr::everything())
@@ -1590,60 +1753,34 @@ apply_joined_shares <- function(result,
   names(denominator_names) <- sources
 
   # The cleanup at the end of this function drops whatever internal columns
-  # were added, so empty is what it needs when no grouping set has a parent
-  # and no join happens — and for `right_join_names`, also on the non-SQL
-  # path, which joins by name and renames nothing.
-  join_key_names <- character()
+  # were added, so empty is what it needs when every occurrence is its own
+  # denominator and no join happens — and for `right_join_names`, also on the
+  # non-SQL path, which joins by name and renames nothing.
+  key_names <- character()
   right_join_names <- character()
 
-  child_ids <- plan$set_ids[!is.na(parent_ids)]
-  if (length(child_ids) > 0L) {
-    mapping <- build_lazy_parent_mapping(
+  joined_ids <- plan$set_ids[!is.na(target_ids)]
+  if (length(joined_ids) > 0L) {
+    denominator <- rule$build(
       result,
-      child_ids = child_ids,
-      parent_ids = parent_ids,
+      plan = plan,
+      target_ids = target_ids,
       sources = sources,
       denominator_names = denominator_names,
-      plan = plan,
-      set_id_name = set_id_name
-    )
-    join_key_names <- new_margin_internal_names(
-      length(plan$dimensions),
-      used_names = c(result_names, denominator_names),
-      prefix = "..marginplyr_parent_key_"
-    )
-    names(join_key_names) <- plan$dimensions
-    result <- add_lazy_parent_join_keys(
-      result,
-      plan = plan,
-      parent_ids = parent_ids,
       set_id_name = set_id_name,
-      join_key_names = join_key_names
+      used_names = c(result_names, denominator_names)
     )
-    mapping <- add_lazy_parent_join_keys(
-      mapping,
-      plan = plan,
-      parent_ids = parent_ids,
-      set_id_name = set_id_name,
-      join_key_names = join_key_names
-    )
-    mapping <- dplyr::select(
-      mapping,
-      dplyr::all_of(c(
-        set_id_name,
-        plan$by,
-        unname(join_key_names),
-        unname(denominator_names)
-      ))
-    )
-    join_names <- c(set_id_name, plan$by, unname(join_key_names))
+    result <- denominator$result
+    mapping <- denominator$mapping
+    join_names <- denominator$join_names
+    key_names <- denominator$key_names
     if (sql_join) {
       right_join_names <- new_margin_internal_names(
         length(join_names),
         used_names = c(
           result_names,
           denominator_names,
-          join_key_names
+          key_names
         ),
         prefix = "..marginplyr_share_match_"
       )
@@ -1678,12 +1815,12 @@ apply_joined_shares <- function(result,
     function(pair) {
       source <- pair$source
       denominator <- denominator_names[[source]]
-      if (length(child_ids) == 0L) {
+      if (length(joined_ids) == 0L) {
         return(rlang::expr(1.0))
       }
       rlang::expr(
         dplyr::if_else(
-          (!!margin_column_pronoun(set_id_name)) %in% !!root_ids,
+          (!!margin_column_pronoun(set_id_name)) %in% !!own_denominator_ids,
           1.0,
           dplyr::if_else(
             is.na(!!margin_column_pronoun(source)) |
@@ -1703,7 +1840,7 @@ apply_joined_shares <- function(result,
   internal_names <- c(
     unname(denominator_names),
     right_join_names,
-    unname(join_key_names)
+    key_names
   )
   internal_names <- intersect(
     internal_names,
@@ -1713,6 +1850,136 @@ apply_joined_shares <- function(result,
     result <- dplyr::select(result, -dplyr::all_of(internal_names))
   }
   result
+}
+
+# Everything a share kind contributes to the join above: which occurrence each
+# row's denominator comes from, and the denominator rows themselves with the
+# columns they are matched on. A builder returns the result it was given,
+# because a kind may have to add matching columns to both sides.
+share_denominator_rule <- function(kind) {
+  rules <- list(
+    parent = list(
+      target_ids = parent_set_ids,
+      build = build_parent_denominator
+    ),
+    total = list(
+      target_ids = total_set_ids,
+      build = build_total_denominator
+    )
+  )
+  rule <- rules[[kind]]
+  if (is.null(rule)) {
+    stop("Unknown contextual-share kind: ", kind, call. = FALSE)
+  }
+  rule
+}
+
+build_parent_denominator <- function(result,
+                                     plan,
+                                     target_ids,
+                                     sources,
+                                     denominator_names,
+                                     set_id_name,
+                                     used_names) {
+  mapping <- build_lazy_parent_mapping(
+    result,
+    child_ids = plan$set_ids[!is.na(target_ids)],
+    parent_ids = target_ids,
+    sources = sources,
+    denominator_names = denominator_names,
+    plan = plan,
+    set_id_name = set_id_name
+  )
+  join_key_names <- new_margin_internal_names(
+    length(plan$dimensions),
+    used_names = used_names,
+    prefix = "..marginplyr_parent_key_"
+  )
+  names(join_key_names) <- plan$dimensions
+  result <- add_lazy_parent_join_keys(
+    result,
+    plan = plan,
+    parent_ids = target_ids,
+    set_id_name = set_id_name,
+    join_key_names = join_key_names
+  )
+  mapping <- add_lazy_parent_join_keys(
+    mapping,
+    plan = plan,
+    parent_ids = target_ids,
+    set_id_name = set_id_name,
+    join_key_names = join_key_names
+  )
+  mapping <- dplyr::select(
+    mapping,
+    dplyr::all_of(c(
+      set_id_name,
+      plan$by,
+      unname(join_key_names),
+      unname(denominator_names)
+    ))
+  )
+  list(
+    result = result,
+    mapping = mapping,
+    join_names = c(set_id_name, plan$by, unname(join_key_names)),
+    key_names = unname(join_key_names)
+  )
+}
+
+# A Total share's denominator depends on `.by` and nothing else, so its
+# mapping is the Grand total rows reduced to one row per fixed partition and
+# matched on the fixed keys alone. See ADR 0017.
+build_total_denominator <- function(result,
+                                    plan,
+                                    target_ids,
+                                    sources,
+                                    denominator_names,
+                                    set_id_name,
+                                    used_names) {
+  denominator_id <- unique(target_ids[!is.na(target_ids)])
+  stopifnot(length(denominator_id) == 1L)
+  key_exprs <- lapply(plan$by, margin_column_pronoun)
+  names(key_exprs) <- plan$by
+  denominator_exprs <- lapply(sources, margin_column_pronoun)
+  names(denominator_exprs) <- unname(denominator_names[sources])
+  mapping <- dplyr::transmute(
+    dplyr::filter(
+      result,
+      .data[[set_id_name]] == !!denominator_id
+    ),
+    !!!key_exprs,
+    !!!denominator_exprs
+  )
+
+  if (length(plan$by) > 0L) {
+    return(list(
+      result = result,
+      mapping = mapping,
+      join_names = plan$by,
+      key_names = character()
+    ))
+  }
+
+  # Without fixed keys there is one denominator row and nothing to match it
+  # on. A constant column on both sides keeps that case on the same join as
+  # every other, including the missing-safe SQL one, rather than adding a
+  # second join shape that only this case would exercise.
+  partition_name <- new_margin_internal_names(
+    1L,
+    used_names = used_names,
+    prefix = "..marginplyr_total_key_"
+  )
+  partition_expr <- stats::setNames(
+    list(rlang::expr(1L)),
+    partition_name
+  )
+  list(
+    result = dplyr::mutate(result, !!!partition_expr),
+    mapping = dplyr::mutate(mapping, !!!partition_expr),
+    join_names = partition_name,
+    key_names = partition_name
+  )
 }
 
 lazy_share_sql_on <- function(con, left_names, right_names) {
@@ -1750,7 +2017,11 @@ share_pairs <- function(requests) {
       function(request) {
         Map(
           function(output, source) {
-            list(output = output, source = source)
+            list(
+              output = output,
+              source = source,
+              kind = request$kind
+            )
           },
           request$outputs,
           request$sources
@@ -1844,12 +2115,35 @@ check_local_share_types <- function(result, requests, call) {
         values,
         share_output = pair$output,
         source_summary = source,
+        share_kind = pair$kind,
         call = call
       )
     }
     checked_sources <- c(checked_sources, source)
   }
   invisible(NULL)
+}
+
+# The Grand total occurrences of a plan: those omitting every variable
+# grouping dimension. There is at most one unless duplicates were kept.
+grand_total_set_ids <- function(plan) {
+  variable_sets <- lapply(plan$sets, setdiff, y = plan$by)
+  plan$set_ids[lengths(variable_sets) == 0L]
+}
+
+# The denominator occurrence of every grouping set, in the shape
+# `parent_set_ids()` returns: `NA` where the row is its own denominator, and
+# otherwise the occurrence supplying it. Duplicate Grand total occurrences
+# hold the same values, so any of them answers for every other set; which one
+# is used is not part of the contract.
+total_set_ids <- function(plan) {
+  result <- rep(NA_integer_, length(plan$sets))
+  grand_total_ids <- grand_total_set_ids(plan)
+  if (length(grand_total_ids) == 0L) {
+    return(result)
+  }
+  result[!plan$set_ids %in% grand_total_ids] <- grand_total_ids[[1L]]
+  result
 }
 
 parent_set_ids <- function(plan) {
@@ -1887,38 +2181,131 @@ share_placeholder <- function(outputs) {
   structure(placeholders, class = "marginplyr_share_placeholders")
 }
 
-is_share_helper_call <- function(expr) {
-  rlang::is_call(expr) &&
-    identical(rlang::call_name(expr), "share_of_parent") &&
-    (is.null(rlang::call_ns(expr)) ||
-       identical(rlang::call_ns(expr), "marginplyr"))
+# Every contextual share helper, mapped to the kind of denominator its request
+# resolves to. It is the one place a helper name appears: detection, the
+# grouping requirement each kind states, the denominator mapping each kind
+# builds, and the terms every diagnostic uses are all derived from a kind, so
+# a third helper is added here and answered for in `share_kind_terms()`,
+# `check_share_grouping_kinds()`, and `share_denominator_rule()`.
+share_helper_kinds <- c(
+  share_of_parent = "parent",
+  share_of_total = "total"
+)
+
+share_helper_name <- function(kind) {
+  names(share_helper_kinds)[[match(kind, share_helper_kinds)]]
 }
 
-contains_share_helper <- function(expr) {
-  if (is_share_helper_function(expr)) {
-    return(TRUE)
-  }
+# What a diagnostic calls a share of this kind. Both forms are written out
+# because a message uses whichever its sentence needs, and deriving one from
+# the other would make the wording of every message depend on a rule about
+# hyphens rather than on this table.
+share_kind_terms <- function(kind) {
+  terms <- list(
+    parent = list(label = "Parent share", modifier = "Parent-share"),
+    total = list(label = "Total share", modifier = "Total-share")
+  )
+  terms[[kind]]
+}
+
+share_kind_label <- function(kind) {
+  share_kind_terms(kind)$label
+}
+
+share_kind_modifier <- function(kind) {
+  share_kind_terms(kind)$modifier
+}
+
+share_kind_call <- function(kind) {
+  paste0("`", share_helper_name(kind), "()`")
+}
+
+share_helper_call_kind <- function(expr) {
   if (!rlang::is_call(expr)) {
-    return(FALSE)
+    return(NULL)
   }
-  if (is_share_helper_call(expr)) {
-    return(TRUE)
+  name <- rlang::call_name(expr)
+  if (is.null(name) || !name %in% names(share_helper_kinds)) {
+    return(NULL)
   }
-  any(vapply(
-    as.list(expr)[-1L],
-    contains_share_helper,
-    logical(1)
-  ))
+  namespace <- rlang::call_ns(expr)
+  if (!is.null(namespace) && !identical(namespace, "marginplyr")) {
+    return(NULL)
+  }
+  unname(share_helper_kinds[[name]])
+}
+
+share_helper_function_kind <- function(expr) {
+  name <- if (rlang::is_symbol(expr)) {
+    rlang::as_name(expr)
+  } else if (
+    rlang::is_call(expr, "::") &&
+      length(expr) == 3L &&
+      rlang::is_symbol(expr[[2L]], "marginplyr") &&
+      rlang::is_symbol(expr[[3L]])
+  ) {
+    rlang::as_name(expr[[3L]])
+  } else {
+    return(NULL)
+  }
+  if (!name %in% names(share_helper_kinds)) {
+    return(NULL)
+  }
+  unname(share_helper_kinds[[name]])
+}
+
+is_share_helper_call <- function(expr) {
+  !is.null(share_helper_call_kind(expr))
 }
 
 is_share_helper_function <- function(expr) {
-  if (rlang::is_symbol(expr)) {
-    return(identical(rlang::as_name(expr), "share_of_parent"))
+  !is.null(share_helper_function_kind(expr))
+}
+
+# The kind of the first share helper anywhere in an expression. A rejected
+# expression is named after the helper the caller wrote, and that helper can
+# sit anywhere inside it — wrapped in arithmetic, or behind a formula in
+# `.fns` — so the search is the same one that decides whether the expression
+# concerns this module at all.
+share_expression_kind <- function(expr) {
+  kind <- share_helper_function_kind(expr)
+  if (!is.null(kind)) {
+    return(kind)
   }
-  rlang::is_call(expr, "::") &&
-    length(expr) == 3L &&
-    rlang::is_symbol(expr[[2L]], "marginplyr") &&
-    rlang::is_symbol(expr[[3L]], "share_of_parent")
+  if (!rlang::is_call(expr)) {
+    return(NULL)
+  }
+  kind <- share_helper_call_kind(expr)
+  if (!is.null(kind)) {
+    return(kind)
+  }
+  for (argument in as.list(expr)[-1L]) {
+    kind <- share_expression_kind(argument)
+    if (!is.null(kind)) {
+      return(kind)
+    }
+  }
+  NULL
+}
+
+contains_share_helper <- function(expr) {
+  !is.null(share_expression_kind(expr))
+}
+
+# An `across()` expression is named after its `.fns` when that is a helper,
+# and otherwise after whichever helper it does contain: a rejected
+# `.fns = ~share_of_total(.x)` is still a Total-share request as far as the
+# caller is concerned.
+share_across_kind <- function(expr) {
+  kind <- share_helper_function_kind(parse_across_arguments(expr)$fns)
+  if (!is.null(kind)) {
+    return(kind)
+  }
+  share_expression_kind(expr)
+}
+
+share_request_kinds <- function(requests) {
+  unique(vapply(requests, `[[`, character(1), "kind"))
 }
 
 is_across_call <- function(expr) {
@@ -1932,11 +2319,12 @@ resolve_share_selection <- function(expr,
                                     env,
                                     preceding_names,
                                     preceding,
-                                    context) {
+                                    context,
+                                    kind) {
   if (rlang::is_symbol(expr)) {
     source <- rlang::as_name(expr)
     if (!source %in% preceding_names) {
-      abort_share_source_name(source, preceding, context)
+      abort_share_source_name(source, preceding, context, kind)
     }
   }
   proxy <- stats::setNames(
@@ -1951,27 +2339,28 @@ resolve_share_selection <- function(expr,
       allow_rename = FALSE
     )),
     error = function(cnd) {
-      abort_share_selection_error(cnd, preceding, context)
+      abort_share_selection_error(cnd, preceding, context, kind)
     }
   )
 }
 
-abort_share_selection_error <- function(cnd, preceding, context) {
+abort_share_selection_error <- function(cnd, preceding, context, kind) {
   missing <- share_selection_missing_names(cnd)
   if (length(missing) == 0L) {
     abort_marginplyr(
       paste0(
-        "Invalid Parent-share `across()` selection. Select only eligible ",
-        "preceding ordinary summaries by name: ",
+        "Invalid ", share_kind_modifier(kind), " `across()` selection. ",
+        "Select only eligible preceding ordinary summaries by name: ",
         conditionMessage(cnd)
       )
     )
   }
 
-  abort_share_source_name(missing[[1L]], preceding, context)
+  abort_share_source_name(missing[[1L]], preceding, context, kind)
 }
 
-abort_share_source_name <- function(source, preceding, context) {
+abort_share_source_name <- function(source, preceding, context, kind) {
+  helper <- share_kind_call(kind)
   all_names <- vapply(
     context$all_records,
     `[[`,
@@ -1983,7 +2372,7 @@ abort_share_source_name <- function(source, preceding, context) {
     abort_marginplyr(
       paste0(
         "`across()` can't select source summary `", source,
-        "` for `share_of_parent()` because summary `", source,
+        "` for ", helper, " because summary `", source,
         "` was defined more than once. Define it once with a complete ",
         "ordinary summary expression, then select that unique preceding ",
         "summary by name."
@@ -1996,7 +2385,7 @@ abort_share_source_name <- function(source, preceding, context) {
     abort_marginplyr(
       paste0(
         "`across()` can't select source summary `", source,
-        "` for `share_of_parent()` because summary `", source,
+        "` for ", helper, " because summary `", source,
         "` is not available as a unique, preceding, self-contained ordinary ",
         "summary. Define it as a top-level named summary or a statically ",
         "named output from a preceding `across()`. Select only eligible ",
@@ -2016,7 +2405,7 @@ abort_share_source_name <- function(source, preceding, context) {
   abort_marginplyr(
     paste0(
       "`across()` refers to unknown summary `", source,
-      "` for `share_of_parent()`. Select only eligible preceding ordinary ",
+      "` for ", helper, ". Select only eligible preceding ordinary ",
       "summaries by name",
       if (length(preceding_candidates) > 0L) {
         paste0(
@@ -2057,10 +2446,11 @@ contains_selection_predicate <- function(expr) {
   ))
 }
 
-abort_share_predicate <- function() {
+abort_share_predicate <- function(kind) {
   abort_marginplyr(
     paste0(
-      "Parent-share `across()` only supports name-based tidyselect. Replace ",
+      share_kind_modifier(kind),
+      " `across()` only supports name-based tidyselect. Replace ",
       "`where()` or another type/value predicate with explicit summary names."
     )
   )

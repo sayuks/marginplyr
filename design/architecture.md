@@ -117,31 +117,41 @@ opt-in lazy collision query.
 
 ### Contextual shares (`R/share.R`)
 
-One deep private module owns every Parent-share responsibility: request
-planning, parent mapping, source validation, ratio calculation, collision-safe
-temporary names and their cleanup, and backend adapter dispatch. Its file is
-large because the module is deep, not because it is several modules sharing a
-file; splitting it would move the seam without shrinking the interface.
+One deep private module owns every contextual-share responsibility: request
+planning, denominator mapping, source validation, ratio calculation,
+collision-safe temporary names and their cleanup, and backend adapter
+dispatch. Its file is large because the module is deep, not because it is
+several modules sharing a file; splitting it would move the seam without
+shrinking the interface.
 
-Its shared machinery is named `share_*` rather than `parent_share_*` because
-every one of those responsibilities except the denominator is independent of
-which contextual share is being calculated. The names that stayed
-`parent_*` — `parent_set_ids()`, `check_parent_grouping_spec()`,
-`check_parent_grouping_kind()`, `build_lazy_parent_mapping()`, and
-`add_lazy_parent_join_keys()` — are the ones that genuinely resolve a
-*parent* occurrence, and a second contextual share would not reach them.
+It serves two helpers, `share_of_parent()` and `share_of_total()`, which
+differ only in their denominator. Everything else — the source contract, the
+`across()` grammar, output naming, the value rules, and the backend
+boundaries — is one implementation, which is why the shared machinery is named
+`share_*`. Each request carries its *kind*, and `share_helper_kinds` is the
+one table mapping a helper name to one: detection, the grouping requirement
+each kind states, the denominator it builds, and the terms its diagnostics use
+are all derived from the kind, so no message and no branch names a helper
+independently. See
+[ADR 0017](adr/0017-calculate-total-shares-against-the-grand-total-set.md).
 
-The exported `share_of_parent()` in this file is only a context guard: reaching
-its body means the helper was called outside a Margin summary, so it always
+The names that stayed `parent_*` — `parent_set_ids()`,
+`check_parent_grouping_spec()`, `check_parent_grouping_kind()`,
+`build_lazy_parent_mapping()`, and `add_lazy_parent_join_keys()` — are the
+ones that genuinely resolve a *parent* occurrence, and no Total share reaches
+any of them.
+
+The exported helpers in this file are only context guards: reaching either
+body means the helper was called outside a Margin summary, so it always
 raises. The rest of the module is private and is reached through four entry
 points, and no other:
 
 - `preflight_shares()`, called from the public verb's admission block
-  before preparation, which reports whether the call contains any
-  Parent-share request and rejects statically impossible forms;
+  before preparation, which reports which share kinds the call requests and
+  rejects statically impossible forms;
 - `plan_share_expressions()`, called by `plan_summary_expressions()`
   in the summary-selection module, which rewrites the captured summary
-  expressions into ordinary summaries plus planned Parent-share requests;
+  expressions into ordinary summaries plus planned share requests;
 - `wrap_share_sources()`, called from the same place immediately afterwards,
   which wraps each referenced source summary in the validator its backend can
   execute; and
@@ -151,14 +161,16 @@ points, and no other:
 
 Planning and wrapping are two calls rather than one because the summary
 selections have to be resolved between them: the plan names which summaries a
-Parent share depends on, resolution turns `across()` into the columns it
-expands to, and only then can the validator be wrapped around the right
-expressions.
+share depends on, resolution turns `across()` into the columns it expands to,
+and only then can the validator be wrapped around the right expressions.
 
-`check_parent_grouping_spec()` is additionally passed to
-`prepare_margin_operation()` as a validation hook, so the rollup-only
-restriction is checked with the rest of grouping validation instead of after
-it.
+`share_grouping_spec_validator()` is additionally passed to
+`prepare_margin_operation()` as a validation hook, so a Parent share's
+rollup-only restriction is checked with the rest of grouping validation
+instead of after it. It answers `NULL` unless a Parent share was requested:
+whether a plan contains the Grand total set is a property of the compiled
+plan, not of the specification, so a Total share's requirement is checked
+against the plan by `check_share_grouping_kinds()`.
 
 The responsibilities divide as follows:
 
@@ -167,30 +179,40 @@ The responsibilities divide as follows:
   unknown sources, validates direct and `across()` grammar, resolves
   name-based tidyselect against preceding ordinary summaries only, and checks
   output-name collisions against fixed keys, dimensions, ordinary summaries,
-  the Grouping set identifier, and other Parent shares.
+  the Grouping set identifier, and other contextual shares.
 - **Validation** is placed where each backend can prove it. Local and dtplyr
   operations wrap the referenced source summaries in a type-and-cardinality
   validator inside the ordinary summary itself, so validation costs no extra
   pass over the input and no validation-only query; the local adapter then
   checks the materialized source types. General dbplyr keeps the documented
   relaxation and issues no probe. Arrow is rejected before any of this.
-- **Mapping** derives each grouping set's parent from the Grouping plan with
-  `parent_set_ids()`, which skips duplicate occurrences while finding the
-  next strictly less detailed set. Parents are matched on the internal
-  Grouping set identifier, the fixed keys, and one join key per dimension
-  that carries the dimension's value only where the parent set includes it
-  and is missing otherwise — computed by the same expression on both sides,
-  and never from a displayed Margin label or the caller-visible `.id`.
-- **Calculation** builds one shared mapping for all requests, joins it once,
-  and emits each ratio as an explicit double division guarded for a root row,
-  a missing numerator, and a missing or zero denominator.
+- **Mapping** is the one responsibility a kind supplies for itself, through
+  `share_denominator_rule()`: which occurrence each row's denominator comes
+  from, and the denominator rows with the columns they are matched on. A
+  Parent share derives each grouping set's parent with `parent_set_ids()`,
+  which skips duplicate occurrences while finding the next strictly less
+  detailed set, and matches on the internal Grouping set identifier, the fixed
+  keys, and one join key per dimension that carries the dimension's value only
+  where the parent set includes it and is missing otherwise — computed by the
+  same expression on both sides, and never from a displayed Margin label or
+  the caller-visible `.id`. A Total share's denominator depends on `.by` and
+  nothing else, so its mapping is one read of the Grand total occurrence
+  matched on the fixed keys alone, with a constant column standing in when
+  there are none.
+- **Calculation** builds one shared mapping per requested kind, joins each
+  once, and emits every ratio as an explicit double division guarded for a row
+  that is its own denominator, a missing numerator, and a missing or zero
+  denominator. Each request wrote a placeholder column at its position in the
+  caller's summary expressions and the join overwrites that column in place,
+  so a call requesting both kinds runs two passes without either pass being
+  visible in the result's column order.
 - **Cleanup** allocates every temporary — denominators, join keys, and the
   right-hand match names of the SQL join — through
   `new_margin_internal_names()` against the names already in the result, and
   drops all of them before returning.
 
 Adapter selection is a lookup on the prepared backend kind, not on the staged
-result's class, and every adapter takes the same four arguments. See
+result's class, and every adapter takes the same five arguments. See
 [ADR 0014](adr/0014-select-parent-share-adapters-from-prepared-backend-kind.md).
 The mapping, calculation, and cleanup above are shared; there are three
 adapters, and each says only what its backends do differently:
@@ -209,11 +231,13 @@ ordinary summary. Collapsing it into the local adapter would make that
 difference invisible at the seam that has to honour it.
 
 Arrow is rejected at the immediately earlier executor boundary because no
-ordinary-summary query may be staged for a valid Arrow Parent-share request.
-The rejection runs after request planning and common Margin-operation
+ordinary-summary query may be staged for a valid Arrow contextual-share
+request. The rejection runs after request planning and common Margin-operation
 validation, uses only the operation's prepared backend kind, and adds no
-wrapper, hook, sentinel, or extension seam. Other Arrow Margin operations
-continue through the ordinary summary, expansion, and nesting paths.
+wrapper, hook, sentinel, or extension seam. Its reason is the numerator's
+source summary, which both helpers share, so it names whichever helpers the
+caller wrote rather than a fixed one. Other Arrow Margin operations continue
+through the ordinary summary, expansion, and nesting paths.
 
 ### Package conditions (`R/conditions.R`)
 
@@ -261,12 +285,12 @@ Direct field reads are confined to:
 - `execute_shares()`, which reads the prepared backend kind to select
   an adapter and the caller-visible Grouping set identifier name to restore
   it after the join; and
-- the three Parent-share adapters, which read the Grouping plan and nothing
-  else.
+- the three contextual-share adapters, which read the Grouping plan and
+  nothing else.
 
 The native and portable Grouping adapters receive the specific derived values
-they need, not the Margin operation itself. The Parent-share adapters take it
-whole because they are dispatch targets of one signature rather than
+they need, not the Margin operation itself. The contextual-share adapters take
+it whole because they are dispatch targets of one signature rather than
 independent entry points. This boundary lets the operation, Grouping plan, and
 backend representations change without spreading field access through public
 verbs or adapters.
@@ -377,8 +401,8 @@ A backend change should:
    executor;
 3. reuse the existing portable adapter unless native `GROUPING SETS` support
    is confirmed and covered by the native adapter contract;
-4. name the new backend kind in `share_adapter()`, choosing one of the
-   three existing Parent-share adapters or adding a fourth. The lookup has no
+4. name the new backend kind in `share_adapter()`, choosing one of the three
+   existing contextual-share adapters or adding a fourth. The lookup has no
    default: an unnamed kind stops the operation rather than falling through to
    a plausible-looking join;
 5. keep label rules, factor restoration, summary selection, and finalization

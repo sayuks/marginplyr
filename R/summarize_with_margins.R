@@ -478,7 +478,7 @@ summarize_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  has_shares <- with_margin_error_call(
+  share_kinds <- with_margin_error_call(
     {
       assert_margin_input(.data)
       assert_lazy_table(.data)
@@ -506,11 +506,7 @@ summarize_with_margins <- function(.data,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     .id = .id,
-    validate_grouping = if (has_shares) {
-      check_parent_grouping_spec
-    } else {
-      NULL
-    },
+    validate_grouping = share_grouping_spec_validator(share_kinds),
     call = call
   )
   result <- execute_margin_summary(operation, dots)
@@ -566,15 +562,7 @@ execute_margin_summary <- function(operation, dots) {
         has_shares &&
           identical(operation$backend$kind, "arrow")
       ) {
-        abort_marginplyr(
-          paste0(
-            "Arrow backends do not support Parent shares because marginplyr ",
-            "cannot enforce their scalar-summary contract safely before an ",
-            "Arrow query is constructed. Other Arrow Margin operations ",
-            "remain supported. Omit `share_of_parent()` or explicitly ",
-            "collect the data before calling `summarize_with_margins()`."
-          )
-        )
+        abort_arrow_shares(share_request_kinds(summary_plan$requests))
       }
 
       staged_result <- stage_margin_summaries(
