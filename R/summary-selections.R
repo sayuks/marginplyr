@@ -1,22 +1,10 @@
-check_removed_groups_argument <- function(dots) {
-  if (!".groups" %in% names(dots)) {
-    return(invisible(NULL))
-  }
-
-  abort_marginplyr(
-    paste0(
-      "`summarize_with_margins()` does not support `.groups`; ",
-      "Margin-summary results are always ungrouped."
-    )
-  )
-}
-
 # Options the verb once had. A caller following older material writes them as
 # if they were still arguments, and `...` would otherwise accept the value as
 # an ordinary summary and return a constant column. Each entry carries its own
 # guidance, because what replaces a removed option is specific to that option:
-# a shared sentence parameterized by the name would be confidently wrong for
-# the second entry added here.
+# `.sort` is answered by a call the caller adds, `.groups` by a property the
+# result already has, and a shared sentence parameterized by the name could
+# say neither.
 #
 # Naming `grouping_bit()` matters for `.sort`: sorting the result by a
 # dimension's displayed values puts a margin wherever its label falls in the
@@ -26,7 +14,8 @@ removed_summary_options <- list(
     "row order is unspecified. Call `dplyr::arrange()` on the result, and ",
     "add a `grouping_bit()` summary per dimension to sort each margin with ",
     "the rows it summarizes."
-  )
+  ),
+  .groups = "Margin-summary results are always ungrouped."
 )
 
 # Every dot-prefixed name the summary verb answers to. `...` sits before them
@@ -42,6 +31,19 @@ summary_option_names <- function() {
   setdiff(formal_names[startsWith(formal_names, ".")], c(".data", "..."))
 }
 
+# Leading-dot names a caller writes on purpose, exempt from the net below even
+# though each sits one character from an option. `.group` is one deletion from
+# the removed `.groups`, and a group label column is the likelier reading of it.
+#
+# The exemption is by name because no rule over the distance separates these
+# from the mistakes: `.duplicate` is the same one-character deletion from
+# `.duplicates` and is worth catching. What differs is whether callers write
+# the name deliberately, which only a list can record. The cost is that a
+# caller who typed `.group` meaning `.groups` gets a column instead of the
+# guidance — accepted, because the name is common enough that the net cost
+# landed on people who meant it.
+summary_output_name_exemptions <- c(".group")
+
 # Only dot-prefixed names are examined, and only against an exact match or a
 # one-character difference: that catches the pluralizations real callers
 # write (`.margin_labels`, `.groupings`, `.duplicate`) while leaving ordinary
@@ -49,6 +51,11 @@ summary_option_names <- function() {
 nearest_summary_option <- function(name, known_options) {
   if (name %in% known_options) {
     return(name)
+  }
+  # After the exact match, so a name here would still be answered if it ever
+  # became an option — the exemption covers resemblance, not the option itself.
+  if (name %in% summary_output_name_exemptions) {
+    return(NULL)
   }
   distances <- utils::adist(name, known_options)[1L, ]
   nearest <- known_options[distances <= 1L]
@@ -68,6 +75,15 @@ check_option_named_summaries <- function(dots) {
     return(invisible(NULL))
   }
 
+  # A call can carry more than one option-shaped name, and this loop answers
+  # the first one the caller wrote. `.groups` used to be checked ahead of every
+  # name by its own function, so it won regardless of where it appeared; inside
+  # the shared loop it has no such standing.
+  #
+  # Written order is the rule rather than an ordering over the kinds of match,
+  # because a caller who wrote two of these has to fix both, and the only thing
+  # an ordering would change is which one they are sent to first. Reading in
+  # written order keeps that walk down the call instead of jumping around it.
   known_options <- c(summary_option_names(), names(removed_summary_options))
   for (name in candidates) {
     matched <- nearest_summary_option(name, known_options)

@@ -37,6 +37,91 @@ test_that("a near miss on a removed option names what the caller wrote", {
   )
 })
 
+test_that("every removed option answers its near misses the same way", {
+  # `.groups` reached the table by way of a bespoke check that matched the name
+  # exactly, so its misspellings used to fall through to the generic "captured
+  # as a summary" message. The guidance is a property of the option, not of how
+  # the caller spelled it.
+  guidance <- "Margin-summary results are always ungrouped\\."
+
+  expect_error(
+    summarize_with_margins(
+      admission_data(),
+      s = sum(v),
+      .grouping = rollup(g),
+      .groups = "drop"
+    ),
+    paste0(
+      "`summarize_with_margins\\(\\)` has no `\\.groups` argument; ", guidance
+    ),
+    class = "marginplyr_error"
+  )
+
+  expect_error(
+    summarize_with_margins(
+      admission_data(),
+      s = sum(v),
+      .grouping = rollup(g),
+      .groupss = "drop"
+    ),
+    paste0(
+      "`\\.groupss` is not an argument.+neither is the `\\.groups` it ",
+      "resembles; ", guidance
+    ),
+    class = "marginplyr_error"
+  )
+})
+
+test_that("the synonym answers removed options identically", {
+  # `summarise_with_margins()` is the same object, but the option names are read
+  # from formals and the messages name one spelling, so the synonym is where a
+  # divergence would show first. Comparing the messages asserts that directly;
+  # a pattern per spelling would pass while the two drifted apart.
+  removed_option_message <- function(verb, option) {
+    spliced <- stats::setNames(list(TRUE), option)
+    condition <- rlang::catch_cnd(
+      verb(admission_data(), s = sum(v), .grouping = rollup(g), !!!spliced),
+      classes = "marginplyr_error"
+    )
+    conditionMessage(condition)
+  }
+
+  for (option in c(".groups", ".groupss", ".sort", ".sorts")) {
+    expect_identical(
+      removed_option_message(summarise_with_margins, option),
+      removed_option_message(summarize_with_margins, option)
+    )
+  }
+})
+
+test_that("the first option-shaped name written is the one reported", {
+  # `.groups` had its own check ahead of this loop, so it won wherever it
+  # appeared in the call. It has no such standing now, and both orders are
+  # asserted because either one alone would also pass under a rule that ranked
+  # removed options above near misses.
+  reported <- function(...) {
+    spliced <- list(...)
+    conditionMessage(rlang::catch_cnd(
+      summarize_with_margins(
+        admission_data(),
+        s = sum(v),
+        .grouping = rollup(g),
+        !!!spliced
+      ),
+      classes = "marginplyr_error"
+    ))
+  }
+
+  expect_match(
+    reported(.margin_labels = "ALL", .groups = "drop"),
+    "Did you mean `\\.margin_label`"
+  )
+  expect_match(
+    reported(.groups = "drop", .margin_labels = "ALL"),
+    "has no `\\.groups` argument"
+  )
+})
+
 test_that("a misspelled option names the argument it resembles", {
   expect_error(
     summarize_with_margins(
@@ -73,6 +158,36 @@ test_that("a misspelled option names the argument it resembles", {
     ),
     "Did you mean `.id`"
   )
+})
+
+test_that("a name callers write on purpose is left alone", {
+  # `.group` is one character from the removed `.groups`, so the net would read
+  # it as a misspelling. It is a column callers produce deliberately, and it is
+  # exempt for that reason — not because of anything about the distance, which
+  # is the same one-character deletion that makes `.duplicate` worth catching.
+  expect_named(
+    summarize_with_margins(
+      admission_data(),
+      .group = max(v),
+      .grouping = rollup(g)
+    ),
+    c("g", ".group")
+  )
+  # The exemption is the name, not a prefix of it: the option itself and its
+  # other near misses are still answered.
+  for (misspelling in c(".groups", ".groupss")) {
+    spliced <- stats::setNames(list("drop"), misspelling)
+    expect_error(
+      summarize_with_margins(
+        admission_data(),
+        s = sum(v),
+        .grouping = rollup(g),
+        !!!spliced
+      ),
+      "Margin-summary results are always ungrouped",
+      class = "marginplyr_error"
+    )
+  }
 })
 
 test_that("the check is scoped to names that resemble an option", {

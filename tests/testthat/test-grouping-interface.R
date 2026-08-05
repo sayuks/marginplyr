@@ -765,7 +765,11 @@ test_that("summary expressions reject the removed .groups argument", {
       .by = group,
       .groups = "drop"
     ),
-    "`summarize_with_margins\\(\\)` does not support `.groups`"
+    paste0(
+      "`summarize_with_margins\\(\\)` has no `\\.groups` argument; ",
+      "Margin-summary results are always ungrouped\\."
+    ),
+    class = "marginplyr_error"
   )
 
   summary_options <- list(.groups = "drop")
@@ -776,7 +780,8 @@ test_that("summary expressions reject the removed .groups argument", {
       .by = group,
       !!!summary_options
     ),
-    "`summarize_with_margins\\(\\)` does not support `.groups`"
+    "`summarize_with_margins\\(\\)` has no `\\.groups` argument",
+    class = "marginplyr_error"
   )
 })
 
