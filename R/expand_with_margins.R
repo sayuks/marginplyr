@@ -73,7 +73,13 @@ expand_with_margins <- function(.data,
                                 .duplicates = c("error", "drop", "keep"),
                                 .id = NULL) {
   call <- rlang::current_call()
-  with_margin_error_call(assert_lazy_table(.data), call = call)
+  with_margin_error_call(
+    {
+      assert_margin_input(.data)
+      assert_lazy_table(.data)
+    },
+    call = call
+  )
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 

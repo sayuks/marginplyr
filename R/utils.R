@@ -46,6 +46,53 @@ assert_nest_possible <- function(x) {
   }
 }
 
+# Admission is duck-typed rather than a class whitelist: marginplyr supports
+# any input the dplyr verbs it calls can handle, and a whitelist would reject
+# a backend that works. `group_vars()` is the first dplyr generic every Margin
+# operation reaches, so an input without a method for it cannot proceed, and
+# saying so here keeps the diagnostic in the caller's terms instead of
+# surfacing "no applicable method for 'group_vars'".
+#
+# Admissibility is decided by looking for a method rather than by calling the
+# generic and catching whatever comes back. A backend's `group_vars()` can
+# fail for its own reasons, and catching every error would report that failure
+# as the caller having supplied the wrong kind of object. dplyr registers no
+# default method, so an object no registered method matches is exactly the
+# object the generic cannot dispatch on.
+assert_margin_input <- function(x) {
+  nm <- deparse(substitute(x))
+  dispatches <- any(vapply(
+    class(x),
+    function(cls) {
+      # `envir` names the namespace that owns the generic. The default is the
+      # caller's frame, where `group_vars` is not visible from inside this
+      # package, so every class would look unsupported.
+      !is.null(utils::getS3method(
+        "group_vars",
+        cls,
+        optional = TRUE,
+        envir = asNamespace("dplyr")
+      ))
+    },
+    logical(1L)
+  ))
+  if (dispatches) {
+    return(invisible(NULL))
+  }
+
+  abort_marginplyr(
+    sprintf(
+      paste0(
+        "`%s` must be a data frame or a lazy table that supports dplyr ",
+        "verbs; %s was supplied. Convert it with `as.data.frame()` or ",
+        "`dplyr::tbl()` first."
+      ),
+      nm,
+      if (is.null(x)) "`NULL`" else sprintf("a <%s>", class(x)[[1L]])
+    )
+  )
+}
+
 assert_lazy_table <- function(x) {
   nm <- deparse(substitute(x))
   invalid_lazy_table_names <- "RecordBatchReader"
