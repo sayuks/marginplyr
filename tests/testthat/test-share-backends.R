@@ -70,7 +70,7 @@ test_that("dtplyr validates Parent-share source types during collection", {
     "plain integer or double scalar"
   )
   expect_s3_class(error, "marginplyr_error")
-  expect_identical(error$parent_output, "flag_share")
+  expect_identical(error$share_output, "flag_share")
   expect_identical(error$source_summary, "flag")
   expect_identical(
     rlang::call_name(conditionCall(error)),
@@ -110,7 +110,7 @@ test_that("dtplyr rejects every ineligible Parent-share source type", {
       info = semantic_type
     )
     expect_s3_class(error, "marginplyr_error")
-    expect_identical(error$parent_output, "share", info = semantic_type)
+    expect_identical(error$share_output, "share", info = semantic_type)
     expect_identical(error$source_summary, "source", info = semantic_type)
     expect_identical(
       rlang::call_name(conditionCall(error)),
@@ -148,10 +148,10 @@ test_that("dtplyr rejects non-scalar Parent-share sources on collection", {
     )
     expect_s3_class(
       error,
-      "marginplyr_parent_cardinality_error"
+      "marginplyr_share_cardinality_error"
     )
     expect_s3_class(error, "marginplyr_error")
-    expect_identical(error$parent_output, "share", info = cardinality)
+    expect_identical(error$share_output, "share", info = cardinality)
     expect_identical(error$source_summary, "source", info = cardinality)
     expect_identical(
       rlang::call_name(conditionCall(error)),
@@ -218,7 +218,7 @@ test_that("dtplyr validates each referenced source expanded by across", {
     "plain integer or double scalar"
   )
   expect_s3_class(error, "marginplyr_error")
-  expect_identical(error$parent_output, "flag_share")
+  expect_identical(error$share_output, "flag_share")
   expect_identical(error$source_summary, "value_flag")
 })
 
@@ -246,10 +246,10 @@ test_that("dtplyr validates constant summaries expanded by across", {
     expect_s3_class(query, "dtplyr_step")
     error <- expect_error(dplyr::collect(query))
     expect_s3_class(error, "marginplyr_error")
-    expect_identical(error$parent_output, "share", info = kind)
+    expect_identical(error$share_output, "share", info = kind)
     expect_identical(error$source_summary, "source", info = kind)
     if (identical(kind, "multiple")) {
-      expect_s3_class(error, "marginplyr_parent_cardinality_error")
+      expect_s3_class(error, "marginplyr_share_cardinality_error")
     } else {
       expect_match(conditionMessage(error), "plain integer or double scalar")
     }

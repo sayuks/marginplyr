@@ -709,7 +709,7 @@ share_cardinality_records <- function(analyses, requests) {
     }
     cardinality <- c(cardinality, list(list(
       position = source_records[[1L]]$position,
-      parent_output = pair$output,
+      share_output = pair$output,
       source_summary = pair$source,
       across_input = source_records[[1L]]$across_input,
       across_function = source_records[[1L]]$across_function
@@ -750,13 +750,13 @@ wrap_share_sources <- function(dots,
         )
         next
       }
-      parent_outputs <- vapply(
+      share_outputs <- vapply(
         checks,
         `[[`,
         character(1),
-        "parent_output"
+        "share_output"
       )
-      names(parent_outputs) <- vapply(
+      names(share_outputs) <- vapply(
         checks,
         `[[`,
         character(1),
@@ -765,7 +765,7 @@ wrap_share_sources <- function(dots,
       wrapped <- rlang::call2(
         share_private_call("check_share_across"),
         expr,
-        parent_outputs = parent_outputs,
+        share_outputs = share_outputs,
         call = rlang::call2("quote", call)
       )
     } else {
@@ -778,7 +778,7 @@ wrap_share_sources <- function(dots,
           "check_share_scalar"
         }),
         expr,
-        parent_output = check$parent_output,
+        share_output = check$share_output,
         source_summary = check$source_summary,
         !!!if (is_dtplyr) {
           list(call_text = share_call_text(call))
@@ -857,11 +857,11 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
     )
     keep <- !duplicated(inputs)
     inputs <- inputs[keep]
-    parent_outputs <- vapply(
+    share_outputs <- vapply(
       function_checks[keep],
       `[[`,
       character(1),
-      "parent_output"
+      "share_output"
     )
     source_summaries <- vapply(
       function_checks[keep],
@@ -873,7 +873,7 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
       functions[[function_index]],
       mapping = new_share_validation_mapping(
         inputs = inputs,
-        parent_outputs = parent_outputs,
+        share_outputs = share_outputs,
         source_summaries = source_summaries
       ),
       forwarded_args = if (can_inline_forwarded) {
@@ -938,7 +938,7 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
   mapping_expr <- rlang::call2(
     share_private_call("new_share_validation_mapping"),
     inputs = mapping$inputs,
-    parent_outputs = mapping$parent_outputs,
+    share_outputs = mapping$share_outputs,
     source_summaries = mapping$source_summaries
   )
   validator <- rlang::call2(
@@ -961,19 +961,19 @@ check_dtplyr_share_scalar <- function(value,
   }
   check_dtplyr_share_source(
     value,
-    parent_output = mapping$parent_outputs[[position]],
+    share_output = mapping$share_outputs[[position]],
     source_summary = mapping$source_summaries[[position]],
     call_text = call_text
   )
 }
 
 check_dtplyr_share_source <- function(value,
-                                      parent_output,
+                                      share_output,
                                       source_summary,
                                       call_text) {
   check_share_scalar(
     value,
-    parent_output = parent_output,
+    share_output = share_output,
     source_summary = source_summary,
     call = str2lang(call_text)
   )
@@ -984,15 +984,15 @@ dtplyr_share_input_name <- function(value) {
 }
 
 new_share_validation_mapping <- function(inputs,
-                                         parent_outputs,
+                                         share_outputs,
                                          source_summaries) {
   stopifnot(
-    length(inputs) == length(parent_outputs),
+    length(inputs) == length(share_outputs),
     length(inputs) == length(source_summaries)
   )
   list(
     inputs = inputs,
-    parent_outputs = parent_outputs,
+    share_outputs = share_outputs,
     source_summaries = source_summaries
   )
 }
@@ -1005,11 +1005,11 @@ share_private_call <- function(name) {
   )
 }
 
-check_share_across <- function(value, parent_outputs, call) {
-  for (source_summary in names(parent_outputs)) {
+check_share_across <- function(value, share_outputs, call) {
+  for (source_summary in names(share_outputs)) {
     check_share_scalar(
       value[[source_summary]],
-      parent_output = parent_outputs[[source_summary]],
+      share_output = share_outputs[[source_summary]],
       source_summary = source_summary,
       call = call
     )
@@ -1018,20 +1018,20 @@ check_share_across <- function(value, parent_outputs, call) {
 }
 
 check_share_scalar <- function(value,
-                               parent_output,
+                               share_output,
                                source_summary,
                                call) {
   if (length(value) != 1L) {
     abort_marginplyr(
       paste0(
-        "Parent share `", parent_output, "` requires source summary `",
+        "Parent share `", share_output, "` requires source summary `",
         source_summary, "` to return exactly one value per grouping row. ",
         "Define `", source_summary, "` as one scalar summary; for multiple ",
         "statistics, create separate named summaries and a Parent share for ",
         "each one."
       ),
-      class = "marginplyr_parent_cardinality_error",
-      parent_output = parent_output,
+      class = "marginplyr_share_cardinality_error",
+      share_output = share_output,
       source_summary = source_summary,
       call = call
     )
@@ -1039,7 +1039,7 @@ check_share_scalar <- function(value,
   if (!is_share_source_type(value)) {
     abort_share_source_type(
       value,
-      parent_output = parent_output,
+      share_output = share_output,
       source_summary = source_summary,
       call = call
     )
@@ -1056,19 +1056,19 @@ is_share_source_type <- function(value) {
 }
 
 abort_share_source_type <- function(value,
-                                    parent_output,
+                                    share_output,
                                     source_summary,
                                     call) {
   detected_type <- if (is.object(value)) class(value) else typeof(value)
   abort_marginplyr(
     paste0(
-      "Parent share `", parent_output, "` requires source summary `",
+      "Parent share `", share_output, "` requires source summary `",
       source_summary,
       "` to be a plain integer or double scalar; detected type ",
       paste(detected_type, collapse = "/"),
       ". Convert it explicitly in the ordinary summary."
     ),
-    parent_output = parent_output,
+    share_output = share_output,
     source_summary = source_summary,
     call = call
   )
@@ -1842,7 +1842,7 @@ check_local_share_types <- function(result, requests, call) {
     if (!is_share_source_type(values)) {
       abort_share_source_type(
         values,
-        parent_output = pair$output,
+        share_output = pair$output,
         source_summary = source,
         call = call
       )
@@ -1988,7 +1988,7 @@ abort_share_source_name <- function(source, preceding, context) {
         "ordinary summary expression, then select that unique preceding ",
         "summary by name."
       ),
-      class = "marginplyr_parent_source_duplicate_error",
+      class = "marginplyr_share_source_duplicate_error",
       source_summary = source
     )
   }
@@ -2002,7 +2002,7 @@ abort_share_source_name <- function(source, preceding, context) {
         "named output from a preceding `across()`. Select only eligible ",
         "preceding ordinary summaries by name."
       ),
-      class = "marginplyr_parent_source_unavailable_error",
+      class = "marginplyr_share_source_unavailable_error",
       source_summary = source
     )
   }
@@ -2026,7 +2026,7 @@ abort_share_source_name <- function(source, preceding, context) {
         "."
       }
     ),
-    class = "marginplyr_parent_source_unknown_error",
+    class = "marginplyr_share_source_unknown_error",
     source_summary = source
   )
 }

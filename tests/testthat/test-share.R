@@ -644,10 +644,10 @@ test_that("Parent-share sources are numeric scalar summaries", {
   )
   expect_s3_class(
     cardinality_error,
-    "marginplyr_parent_cardinality_error"
+    "marginplyr_share_cardinality_error"
   )
   expect_s3_class(cardinality_error, "marginplyr_error")
-  expect_identical(cardinality_error$parent_output, "share")
+  expect_identical(cardinality_error$share_output, "share")
   expect_identical(cardinality_error$source_summary, "total")
   expect_identical(
     rlang::call_name(conditionCall(cardinality_error)),
@@ -683,7 +683,7 @@ test_that("Parent-share sources are numeric scalar summaries", {
     rlang::call_name(conditionCall(type_error)),
     "summarize_with_margins"
   )
-  expect_identical(type_error$parent_output, "share")
+  expect_identical(type_error$share_output, "share")
   expect_identical(type_error$source_summary, "total")
   expect_match(conditionMessage(type_error), "Parent share `share`")
   expect_match(conditionMessage(type_error), "source summary `total`")
@@ -729,7 +729,7 @@ test_that("the local eligible-type check raises the shared diagnostic", {
     conditionMessage(wrapped_error)
   )
   expect_s3_class(local_error, "marginplyr_error")
-  expect_identical(local_error$parent_output, "share")
+  expect_identical(local_error$share_output, "share")
   expect_identical(local_error$source_summary, "total")
   expect_identical(
     rlang::call_name(conditionCall(local_error)),
@@ -754,8 +754,8 @@ test_that("cardinality errors identify the affected Parent-share request", {
 
   expect_match(conditionMessage(error), "Parent share `bad_share`")
   expect_match(conditionMessage(error), "source summary `bad`")
-  expect_s3_class(error, "marginplyr_parent_cardinality_error")
-  expect_identical(error$parent_output, "bad_share")
+  expect_s3_class(error, "marginplyr_share_cardinality_error")
+  expect_identical(error$share_output, "bad_share")
   expect_identical(error$source_summary, "bad")
 
   across_error <- expect_error(
@@ -773,9 +773,9 @@ test_that("cardinality errors identify the affected Parent-share request", {
   )
   expect_s3_class(
     across_error,
-    "marginplyr_parent_cardinality_error"
+    "marginplyr_share_cardinality_error"
   )
-  expect_identical(across_error$parent_output, "share")
+  expect_identical(across_error$share_output, "share")
   expect_identical(across_error$source_summary, "total")
 
   shifted_error <- expect_error(
@@ -796,9 +796,9 @@ test_that("cardinality errors identify the affected Parent-share request", {
   )
   expect_s3_class(
     shifted_error,
-    "marginplyr_parent_cardinality_error"
+    "marginplyr_share_cardinality_error"
   )
-  expect_identical(shifted_error$parent_output, "bad_share")
+  expect_identical(shifted_error$share_output, "bad_share")
   expect_identical(shifted_error$source_summary, "bad")
 })
 
@@ -1524,7 +1524,7 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
     dplyr::collect(invalid),
     "exactly one value per grouping row"
   )
-  expect_s3_class(error, "marginplyr_parent_cardinality_error")
+  expect_s3_class(error, "marginplyr_share_cardinality_error")
   expect_identical(parent_preflight_capture$n, 1L)
 })
 

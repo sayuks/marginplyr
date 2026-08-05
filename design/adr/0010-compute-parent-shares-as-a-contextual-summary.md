@@ -411,7 +411,7 @@ summary rather than beside it. Each referenced source summary is wrapped in a
 validator that becomes part of the translated data.table expression and runs
 only when the caller collects. It costs no validation-only query, keeps the
 result a native lazy step, and raises the same Package condition — including
-`marginplyr_parent_cardinality_error` for a non-scalar source — naming the
+`marginplyr_share_cardinality_error` for a non-scalar source — naming the
 Parent share, the source summary, and the original public call. An invalid
 source therefore fails at collection rather than emitting a wrong row.
 
