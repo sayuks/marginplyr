@@ -332,8 +332,10 @@ nest_expanded_margins <- function(.data,
     # so their tidyselect resolves `keep_cols` and `group_cols` against the
     # nested rows before the environment. Source columns with those names
     # would select themselves; injecting the character vectors removes the
-    # ambiguity. The `.by` selection above is a plain tidyselect context and
-    # already resolves from the environment.
+    # ambiguity. `inject()` reaches the whole call, so `.by` is injected too
+    # even though a top-level tidyselect context already resolves from the
+    # environment — that is why the `else` branch below can leave its own
+    # `.by` bare and still be correct.
     result <- rlang::inject(dplyr::summarize(
       .data,
       "{.key}" := list({

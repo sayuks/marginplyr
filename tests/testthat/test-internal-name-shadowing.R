@@ -118,7 +118,7 @@ test_that("missing factor values survive a column named `missing_sentinel`", {
 test_that("dtplyr factor restoration ignores columns named like its locals", {
   skip_if_backend_absent("dtplyr")
 
-  for (name in c("new_levels", "ord")) {
+  for (name in factor_shadow_names) {
     result <- dplyr::collect(summarize_with_margins(
       dtplyr::lazy_dt(factor_shadow_data(name)),
       s = sum(v),
@@ -144,8 +144,8 @@ test_that("duckdb factor restoration ignores a column named `sql_query`", {
 
   data <- factor_shadow_data("sql_query")
   con <- DBI::dbConnect(duckdb::duckdb())
-  on.exit(DBI::dbDisconnect(con), add = TRUE)
-  duckdb::duckdb_register(con, "shadow", data)
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "shadow", data)
 
   result <- dplyr::collect(summarize_with_margins(
     dplyr::tbl(con, "shadow"),
@@ -167,7 +167,7 @@ test_that("duckdb factor restoration ignores a column named `sql_query`", {
   expect_equal(result$s, c(1, 2, 3, 3, 3))
 })
 
-test_that("the grouping-set id ignores a source column named `set_id`", {
+test_that("the Grouping set identifier ignores a column named `set_id`", {
   data <- data.frame(
     g = c("a", "a", "b"),
     set_id = c(10L, 20L, 30L),
@@ -188,7 +188,7 @@ test_that("the grouping-set id ignores a source column named `set_id`", {
   expect_equal(result$set_id, c(10L, 20L, 30L, 10L, 20L, 30L))
 })
 
-test_that("expansion's grouping-set id ignores a column named `set_id`", {
+test_that("expansion's Grouping set identifier ignores a `set_id` column", {
   data <- data.frame(
     g = c("a", "a", "b"),
     set_id = c(10L, 20L, 30L),

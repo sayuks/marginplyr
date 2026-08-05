@@ -327,7 +327,9 @@ jobs:
           # installed package says nothing about whether the tests exercising
           # it were renamed, deleted, or skipped for an unrelated reason.
           # Renaming one of these tests deliberately breaks the job that
-          # guards it. Each entry traces to an acceptance criterion of #38.
+          # guards it. Most entries trace to an acceptance criterion of #38;
+          # the factor-restoration shadowing contracts trace to #76, whose
+          # fix is only observable on a live backend.
           - name: RSQLite
             packages: any::DBI, any::RSQLite
             required: RSQLite,DBI
@@ -342,7 +344,8 @@ jobs:
               DuckDB native and UNION adapters agree;
               DuckDB native and portable summaries agree on .id;
               DuckDB Parent shares agree across native, portable, and local
-              paths
+              paths;
+              duckdb factor restoration ignores a column named `sql_query`
           - name: dtplyr
             packages: any::dtplyr
             required: dtplyr
@@ -350,7 +353,8 @@ jobs:
               dtplyr integer and double Parent shares match local results;
               dtplyr rejects every ineligible Parent-share source type;
               dtplyr rejects non-scalar Parent-share sources on collection;
-              dtplyr validates Parent-share source types during collection
+              dtplyr validates Parent-share source types during collection;
+              dtplyr factor restoration ignores columns named like its locals
           - name: Arrow
             packages: any::arrow
             required: arrow
