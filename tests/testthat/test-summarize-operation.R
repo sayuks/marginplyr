@@ -182,7 +182,7 @@ test_that("removed .groups is rejected before typed metadata acquisition", {
       .grouping = rollup(group),
       !!!summary_options
     ),
-    "`summarize_with_margins\\(\\)` does not support `.groups`"
+    "`summarize_with_margins\\(\\)` has no `\\.groups` argument"
   )
 
   expect_identical(summary_proxy_capture$n, 0L)
@@ -231,7 +231,7 @@ test_that("summary selection errors use the package condition seam", {
         .grouping = rollup(group),
         !!!summary_options
       )),
-      message = "`summarize_with_margins\\(\\)` does not support `\\.groups`"
+      message = "`summarize_with_margins\\(\\)` has no `\\.groups` argument"
     ),
     context_helper = list(
       expr = rlang::expr(summarize_with_margins(

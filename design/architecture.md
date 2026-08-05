@@ -108,12 +108,13 @@ produced, and no verb restores one. See
 
 ### Summary selection (`R/summary-selections.R`)
 
-Owns summary-only semantics: rejecting the removed `.groups` argument and
-branch-local grouping-context helpers, resolving `across()` and `pick()`
-selections while excluding every fixed key and grouping dimension, predicting
-known output names, and preventing summary outputs from overwriting grouping
-columns. These checks occur before semantic label validation, including any
-opt-in lazy collision query.
+Owns summary-only semantics: rejecting the removed `.sort` and `.groups`
+options — along with the near misses that resemble them — and branch-local
+grouping-context helpers, resolving `across()` and `pick()` selections while
+excluding every fixed key and grouping dimension, predicting known output
+names, and preventing summary outputs from overwriting grouping columns. These
+checks occur before semantic label validation, including any opt-in lazy
+collision query.
 
 ### Contextual shares (`R/share.R`)
 

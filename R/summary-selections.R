@@ -1,22 +1,10 @@
-check_removed_groups_argument <- function(dots) {
-  if (!".groups" %in% names(dots)) {
-    return(invisible(NULL))
-  }
-
-  abort_marginplyr(
-    paste0(
-      "`summarize_with_margins()` does not support `.groups`; ",
-      "Margin-summary results are always ungrouped."
-    )
-  )
-}
-
 # Options the verb once had. A caller following older material writes them as
 # if they were still arguments, and `...` would otherwise accept the value as
 # an ordinary summary and return a constant column. Each entry carries its own
 # guidance, because what replaces a removed option is specific to that option:
-# a shared sentence parameterized by the name would be confidently wrong for
-# the second entry added here.
+# `.sort` is answered by a call the caller adds, `.groups` by a property the
+# result already has, and a shared sentence parameterized by the name could
+# say neither.
 #
 # Naming `grouping_bit()` matters for `.sort`: sorting the result by a
 # dimension's displayed values puts a margin wherever its label falls in the
@@ -26,7 +14,8 @@ removed_summary_options <- list(
     "row order is unspecified. Call `dplyr::arrange()` on the result, and ",
     "add a `grouping_bit()` summary per dimension to sort each margin with ",
     "the rows it summarizes."
-  )
+  ),
+  .groups = "Margin-summary results are always ungrouped."
 )
 
 # Every dot-prefixed name the summary verb answers to. `...` sits before them
@@ -46,6 +35,12 @@ summary_option_names <- function() {
 # one-character difference: that catches the pluralizations real callers
 # write (`.margin_labels`, `.groupings`, `.duplicate`) while leaving ordinary
 # leading-dot output names such as `.n` alone.
+#
+# The net is not free of ordinary names: `.groups` puts `.group` inside it, and
+# `.group` is a plausible column to want. That is the trade the removed options
+# are worth — a caller who meant the column renames it, while a caller
+# following older material gets told what replaced the option instead of a
+# constant column named after it.
 nearest_summary_option <- function(name, known_options) {
   if (name %in% known_options) {
     return(name)
@@ -68,6 +63,15 @@ check_option_named_summaries <- function(dots) {
     return(invisible(NULL))
   }
 
+  # A call can carry more than one option-shaped name, and this loop answers
+  # the first one the caller wrote. `.groups` used to be checked ahead of every
+  # name by its own function, so it won regardless of where it appeared; inside
+  # the shared loop it has no such standing.
+  #
+  # Written order is the rule rather than an ordering over the kinds of match,
+  # because a caller who wrote two of these has to fix both, and the only thing
+  # an ordering would change is which one they are sent to first. Reading in
+  # written order keeps that walk down the call instead of jumping around it.
   known_options <- c(summary_option_names(), names(removed_summary_options))
   for (name in candidates) {
     matched <- nearest_summary_option(name, known_options)
