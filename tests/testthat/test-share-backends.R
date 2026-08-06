@@ -1336,7 +1336,7 @@ test_that("DuckDB Total shares agree across native, portable, and local paths", 
   expected <- summarize(data, "drop") |>
     dplyr::arrange(fixed, set, group, item)
   # A cube is the plan a Parent share cannot accept, and every cell of it
-  # divides by the one Grand total row of its own fixed partition.
+  # divides by the one row of the Grand total set in its own fixed partition.
   expect_identical(sum(expected$revenue_share == 1), 2L)
   expect_equal(
     expected$revenue_share[expected$level == 0L],

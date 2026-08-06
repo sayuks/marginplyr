@@ -284,9 +284,9 @@ parent_report |>
 #> 8  Total         Total   23300     1.0000000       100.00000
 ```
 
-The root row’s share is one, and a missing or zero denominator gives
-`NA`. Parent matching is structural, so display labels never choose the
-parent.
+A row of the Grand total set has a parent share of one, and a missing or
+zero denominator gives `NA`. Parent matching is structural, so display
+labels never choose the parent.
 
 ## Compare each summary with the whole
 

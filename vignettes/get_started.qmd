@@ -667,8 +667,9 @@ parent_report |>
 
 ## Compare a summary with the whole
 
-`share_of_total()` divides by the grand total row instead of the parent level.
-It is written the same way, and both helpers can appear in one summary:
+`share_of_total()` divides by a row of the Grand total set instead of the
+parent level. It is written the same way, and both helpers can appear in one
+summary:
 
 ```{r}
 retail_sales |>
