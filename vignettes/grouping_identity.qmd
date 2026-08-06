@@ -114,9 +114,10 @@ are `0`, `1`, `2`, and `3`.
 `inspect_grouping()` returns rows in Grouping-plan order, but Margin-operation
 results have no implicit physical order. `.id` records which occurrence
 produced a row; it does not request an `ORDER BY` or sort rows within an
-occurrence.
+occurrence. Asking for a Margin order with `.sort` is what does, and `.id` is
+then its final tiebreak rather than its key.
 
-Use `arrange()` explicitly whenever presentation order matters:
+Use `arrange()` explicitly whenever some other presentation order matters:
 
 ```{r}
 rollup_result |>

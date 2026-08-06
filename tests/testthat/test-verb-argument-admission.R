@@ -9,39 +9,23 @@ admission_data <- function() {
   data.frame(g = c("a", "a", "b"), v = c(1, 2, 3))
 }
 
-test_that("a removed option is reported instead of summarized", {
-  expect_error(
-    summarize_with_margins(
-      admission_data(),
-      s = sum(v),
-      .grouping = rollup(g),
-      .sort = TRUE
-    ),
-    "no `.sort` argument",
-    class = "marginplyr_error"
-  )
-})
-
-test_that("a near miss on a removed option names what the caller wrote", {
-  # The caller never wrote `.sort`, so an error naming only the option they
-  # were reaching for sends them looking for a word that is not in their code.
-  expect_error(
-    summarize_with_margins(
-      admission_data(),
-      s = sum(v),
-      .grouping = rollup(g),
-      .sorts = TRUE
-    ),
-    "`.sorts` is not an argument.+neither is the `.sort` it resembles",
-    class = "marginplyr_error"
-  )
-})
-
+# Two tests stood here, `a removed option is reported instead of summarized`
+# and `a near miss on a removed option names what the caller wrote`. Both were
+# written against `.sort`, which ADR 0018 returned as a live argument: a name
+# the verb has matches its own formal and never reaches `...`, so neither test
+# entered the branch it existed for any more, while both still passed.
+#
+# They were not repointed at `.groups`, because the test below already makes
+# both assertions about the one removed option left, in the same order and more
+# tightly. Repointing would have duplicated it rather than covering anything.
 test_that("every removed option answers its near misses the same way", {
   # `.groups` reached the table by way of a bespoke check that matched the name
   # exactly, so its misspellings used to fall through to the generic "captured
   # as a summary" message. The guidance is a property of the option, not of how
-  # the caller spelled it.
+  # the caller spelled it. Both messages also name what the caller wrote: a
+  # caller who wrote `.groupss` never wrote `.groups`, and an error naming only
+  # the option they were reaching for sends them looking for a word that is not
+  # in their code.
   guidance <- "Margin-summary results are always ungrouped\\."
 
   expect_error(
@@ -86,7 +70,7 @@ test_that("the synonym answers removed options identically", {
     conditionMessage(condition)
   }
 
-  for (option in c(".groups", ".groupss", ".sort", ".sorts")) {
+  for (option in c(".groups", ".groupss")) {
     expect_identical(
       removed_option_message(summarise_with_margins, option),
       removed_option_message(summarize_with_margins, option)
@@ -232,7 +216,7 @@ test_that("the check is scoped to names that resemble an option", {
 })
 
 test_that("the option check survives splicing", {
-  spliced <- list(.sort = TRUE)
+  spliced <- list(.groups = "drop")
 
   expect_error(
     summarize_with_margins(

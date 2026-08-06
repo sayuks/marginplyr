@@ -504,8 +504,9 @@ when `.check_margin_label = FALSE`.
 For local data, `.check_margin_label = TRUE` prevents an existing value such
 as `"Total"` from becoming visually ambiguous. Lazy inputs default to
 `.check_margin_label = FALSE` because checking would execute an additional
-query. Result row order is unspecified for both local and lazy inputs, so call
-`arrange()` explicitly when presentation order matters. A label is only a
+query. Result row order is unspecified for both local and lazy inputs unless
+`.sort` asks for a Margin order; use `arrange()` for any other presentation
+order. A label is only a
 display value; retain `grouping_bit()` or `grouping_id()` whenever source
 values can equal the label.
 
@@ -572,9 +573,10 @@ combined, so use `grouping_bit()` or `grouping_id()` to identify levels
 instead.
 
 Two familiar conveniences also behave differently. Row order is unspecified
-for local and lazy results alike, so call `arrange()` when presentation order
-matters. And the Margin verbs are not S3 generics: they share one validated
-plan, and a private adapter chooses the backend. As in dplyr,
+for local and lazy results alike unless `.sort` asks for a Margin order, which
+puts each margin row with the rows it summarizes; call `arrange()` for any
+other presentation order. And the Margin verbs are not S3 generics: they share
+one validated plan, and a private adapter chooses the backend. As in dplyr,
 `summarise_with_margins()` and `summarize_with_margins()` are synonyms.
 
 *Relationship to dplyr summaries* in the [`summarize_with_margins()`

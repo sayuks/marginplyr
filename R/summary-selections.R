@@ -1,20 +1,14 @@
 # Options the verb once had. A caller following older material writes them as
 # if they were still arguments, and `...` would otherwise accept the value as
 # an ordinary summary and return a constant column. Each entry carries its own
-# guidance, because what replaces a removed option is specific to that option:
-# `.sort` is answered by a call the caller adds, `.groups` by a property the
-# result already has, and a shared sentence parameterized by the name could
-# say neither.
+# guidance, because what replaces a removed option is specific to that option
+# and a shared sentence parameterized by the name could say none of them.
 #
-# Naming `grouping_bit()` matters for `.sort`: sorting the result by a
-# dimension's displayed values puts a margin wherever its label falls in the
-# value order, which is not the order the caller writing `.sort` is asking for.
+# `.sort` was here until ADR 0018 returned it as a live argument. A removed
+# option that becomes live leaves this list rather than staying as a second
+# answer, because a name the verb has matches its own formal and never reaches
+# `...`.
 removed_summary_options <- list(
-  .sort = paste0(
-    "row order is unspecified. Call `dplyr::arrange()` on the result, and ",
-    "add a `grouping_bit()` summary per dimension to sort each margin with ",
-    "the rows it summarizes."
-  ),
   .groups = "Margin-summary results are always ungrouped."
 )
 

@@ -13,6 +13,7 @@ nest_with_margins(
   .check_margin_label = is.data.frame(.data),
   .duplicates = c("error", "drop"),
   .id = NULL,
+  .sort = c("none", "last", "first"),
   .key = "data",
   .keep = FALSE
 )
@@ -59,6 +60,18 @@ identifies one occurrence in the resolved Grouping plan. The name must not
 collide with source columns, grouping keys, summary outputs, or a nesting
 \code{.key}.}
 
+\item{.sort}{One of \code{"none"} (the default), \code{"last"}, or \code{"first"}. \code{"none"}
+leaves row order unspecified. The other two order the result by the
+structure of its Grouping plan: within each fixed \code{.by} key, every grouping
+dimension contributes its Grouping bit and its missingness before its own
+value, so a margin row sits with the rows it summarizes rather than
+wherever \code{.margin_label} falls among that dimension's values, and missing
+values come last wherever they appear. \code{"last"}
+places margins after the rows they summarize and \code{"first"} before them.
+The order is a property of the returned object, as with
+\code{\link[dplyr:arrange]{dplyr::arrange()}}, and may not survive further verbs applied to a lazy
+result. See \emph{Margin order}.}
+
 \item{.key}{A string naming the list column. As in \code{\link[tidyr:nest]{tidyr::nest()}},
 \code{NULL} uses \code{"data"}.}
 
@@ -70,9 +83,9 @@ original, pre-margin values rather than \code{.margin_label}.}
 For a local input, an ungrouped data frame with one list column,
 whose class and attributes follow \code{\link[dplyr:summarize]{dplyr::summarize()}}; see \emph{Result class
 and attributes}. A \code{dtplyr} input returns a lazy \code{dtplyr} step until
-collected. Result row
-order is unspecified; use \code{\link[dplyr:arrange]{dplyr::arrange()}} when presentation order
-matters.
+collected. Result row order is unspecified unless \code{.sort} asks for a
+Margin order; see \emph{Margin order}, or use \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other
+presentation order.
 }
 \description{
 \code{\link[=nest_with_margins]{nest_with_margins()}} creates one nested data frame for every group in every
@@ -211,6 +224,53 @@ durable business key: reordering or deduplicating the Grouping
 specification changes it. Use \code{\link[dplyr:arrange]{dplyr::arrange()}} when order matters.
 \code{\link[=grouping_bit]{grouping_bit()}} documents how \code{.id} compares with
 \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
+}
+
+\section{Margin order}{
+
+\code{.sort} orders a result by the structure of its Grouping plan rather than by
+displayed values. The key is the result's own leading grouping columns, left
+to right, with each grouping dimension preceded by its Grouping bit and by
+whether its value is missing:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
+}\if{html}{\out{</div>}}
+
+A margin row therefore sits with the rows it summarizes instead of wherever
+its \code{.margin_label} falls among that dimension's values, which is what keeps
+the order independent of the label and of the locale. Two rules follow from
+the key rather than being separate: fixed \code{.by} keys sort first because they
+come first, so each partition is one contiguous block whose internal order
+does not depend on any other partition; and \code{.id} breaks the remaining ties
+when it names a column, which puts duplicate occurrences of one grouping set
+next to each other and in Grouping plan order. A composite dimension needs no
+rule of its own, because its columns share one Grouping bit.
+
+\code{"first"} reverses the Grouping bits alone. Missing values and ordinary
+values stay ascending, because the choice positions margins and not missing
+values. Every column in the key carries a missingness term, fixed \code{.by} keys
+included, so missing values come last wherever they appear on every backend,
+including those whose own default is the opposite. Under
+\code{.margin_label = NULL} a source missing value and a margin still display
+alike, but they are separated by position, because their Grouping bits
+differ.
+
+Factor and ordered-factor dimensions sort by their restored levels rather
+than by their rendering. \code{.margin_label_position} positions a synthetic
+factor level and never a row: it changes \code{levels()} and nothing else, so the
+two options stay independent and no combination of them is wrong.
+
+A Margin order promises exactly what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises. It is a
+property of the object the verb returns: on local data frames and \code{dtplyr}
+steps that is the row order, and on lazy tables it is the outermost query's
+\verb{ORDER BY}, which \code{\link[dplyr:collect]{dplyr::collect()}} observes. Whether it survives further
+verbs applied to a lazy result is not promised, because that depends on
+dbplyr's query flattening, which marginplyr does not own and which changes
+between releases.
+
+Asking for a Margin order never costs a native \verb{GROUP BY GROUPING SETS}
+plan, and never changes which adapter runs. It composes with
+\code{.duplicates = "keep"} with no diagnostic, and lazy inputs stay lazy.
 }
 
 \section{Display labels and grouping identity}{

@@ -215,3 +215,85 @@ combination has no cost to refuse.
 disagree.** Rejected: they are independent, no combination is wrong, and
 `.margin_label_position = "first"` without `.sort` is what a caller writing
 their own `arrange()` wants.
+
+## Amendment: one identifier produces the order on every backend
+
+"Where the order is produced" gave the native summary an `ORDER BY` over
+`GROUPING(d)` and `d` folded into its aggregate query, and recorded that it
+therefore adds no internal column. That mechanism is withdrawn. The
+placement decision and the key are unchanged; only how the Grouping bits reach
+the `ORDER BY` is.
+
+**dbplyr will not emit an `ORDER BY` inside a query it wraps.** Measured
+against dbplyr 2.6.0: an `arrange()` applied to the aggregate query is
+discarded, with an "ORDER BY is ignored in subqueries without LIMIT" warning,
+as soon as a later verb wraps that query in a subquery — which labelling the
+omitted dimensions and placing the grouping columns both do. Writing the
+`ORDER BY` into the aggregate `select_query` from `sql_build()` reaches the
+same place, because `sql_render()` strips a subquery's `ORDER BY` itself. The
+narrower rule the decision above already states is what holds: the sort key
+must be resolvable in the `FROM` clause of the query that carries the
+`ORDER BY`, and `GROUPING(d)` is resolvable in the aggregate query alone.
+
+**The Grouping set identifier is resolvable there instead.** The native
+adapter already computes one for `.id`, as a `CASE` over `GROUPING()` calls
+that folds into the aggregate query, and every Grouping bit is a function of
+it. `finalize_margin_operation()` derives the bits from that column and drops
+it again. This is the same expression-over-an-identifier the `UNION ALL`
+adapter uses, so there is one mechanism rather than two, and the finalizer
+holds the whole key for every path.
+
+Three consequences are worth recording.
+
+*The native summary gains one internal column* when `.sort` is not `"none"`
+and `.id` does not already name one; it is dropped from the result. What that
+criterion was protecting still holds: `GROUP BY GROUPING SETS` is unchanged,
+and which adapter runs is decided by `native_duplicate_sets` and `.id` before
+the identifier is allocated, so a Margin order still never costs the native
+plan and still adds no fallback. A sort-only identifier does not have to
+number occurrences, which is why it does not force the `UNION ALL` fallback
+that `.id` forces under `.duplicates = "keep"`.
+
+*The key really is the result's own leading grouping columns*, which the
+in-aggregate `ORDER BY` could not have been. The aggregate query holds the
+pre-label values, so a labelled dimension that is not already character would
+have ordered by its input type there and as character on a local input — the
+same code producing a different first row on a different backend, which is
+what this decision exists to remove.
+
+*Contextual shares compose.* They join the staged result, and no `ORDER BY`
+a join reads survives into the query the caller receives, so ordering has to
+come after them. The identifier they already stage is the one the finalizer
+orders by, so that path adds no column either.
+
+## Amendment: fixed keys order their missing values last too
+
+The key above reads `by1 … byN` for the fixed keys, giving a missingness term
+to the grouping dimensions alone. Every column in the key gets one instead:
+
+```
+is.na(by1), by1, …, is.na(byN), byN,
+bit(d1), is.na(d1), d1,  bit(d2), is.na(d2), d2,  …,  [set_id]
+```
+
+A fixed key still takes no Grouping bit, because it is present in every
+grouping set and never holds a Margin label. Only its missingness is new.
+
+The original key follows from framing missingness as something a dimension
+contributes alongside its Grouping bit. Read that way a fixed key has nothing
+to contribute, because it has no bit — but the consequence is that a `.by`
+column holding missing values is ordered by the dialect's own default, last on
+a local input and on DuckDB and first on SQLite. That is exactly the
+disagreement "Missing values come last, and that is promised" exists to
+remove, reappearing one column to the left of where that entry was looking.
+The promise is therefore made of the key as a whole: wherever a column appears
+in it, its missing values sort last.
+
+The cost is the same one term per column that entry already accepted, and
+`IS NULL` is standard SQL. `"first"` still reverses the Grouping bits alone,
+so a fixed key's missing values stay last whichever end the margins are at.
+
+One reading is closed by this. The entry above says missing values come last
+"within a Grouping bit group", which was true of dimensions and said nothing
+about fixed keys; it now reads as the whole key, and `CONTEXT.md`'s **Margin
+order** entry says the same.

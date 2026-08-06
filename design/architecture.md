@@ -26,7 +26,12 @@ Every exported Margin verb follows the same explicit lifecycle:
 4. **Finalize.** `finalize_margin_operation()` starts from an ungrouped
    result, restores factor Margin columns, places fixed keys and grouping
    dimensions followed by the optional Grouping set identifier first, and
-   leaves row ordering unspecified.
+   leaves row ordering unspecified by default. When `.sort` asks for a Margin
+   order, it applies that order last — after restoration, so a factor
+   dimension sorts by its restored levels, and after placement, so the
+   `ORDER BY` is the outermost one. The key comes from the Grouping plan the
+   module already holds, so no verb kind is passed in. See
+   [ADR 0018](adr/0018-order-margin-results-by-grouping-structure.md).
 
 `nest_with_margins()` returns the common ungrouped result.
 `nest_by_with_margins()` collects that result when necessary, preserves its
@@ -108,8 +113,8 @@ produced, and no verb restores one. See
 
 ### Summary selection (`R/summary-selections.R`)
 
-Owns summary-only semantics: rejecting the removed `.sort` and `.groups`
-options — along with the near misses that resemble them — and branch-local
+Owns summary-only semantics: rejecting the removed `.groups` option — along
+with the near misses that resemble it — and branch-local
 grouping-context helpers, resolving `across()` and `pick()` selections while
 excluding every fixed key and grouping dimension, predicting known output
 names, and preventing summary outputs from overwriting grouping columns. These
@@ -315,6 +320,13 @@ The test suite divides supporting contracts as follows:
 - `test-margin-id.R` covers Grouping set occurrence identifiers across all
   public verbs, including local, native, portable, duplicate, nesting,
   collision, missing-value, zero-row, and laziness semantics.
+- `test-margin-order.R` covers `.sort` across all four public verbs per ADR
+  0018: the key and what follows from it, `"first"` reversing the Grouping
+  bits alone, factor level order, missing values last, fixed-key contiguity,
+  composite dimensions, duplicate occurrences, the `"none"` default, and the
+  vocabulary error. It asserts rows rather than the key builder, because the
+  ADR leaves each adapter to resolve the key in what its own query can name;
+  its two rendered-SQL tests carry only what rows cannot show.
 - `test-margin-label.R` covers Margin labels through the public verbs: named
   per-dimension labels, the eight-case factor NA contract of ADR 0012, label
   placement, collisions including unused factor levels, and typed missing

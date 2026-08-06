@@ -7,6 +7,7 @@
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Grouping set identifiers
+#' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Backend extension design
 #' @inheritSection nest_with_margins Relationship to tidyr and dplyr
@@ -26,8 +27,9 @@
 #'   `.id` when supplied. This is the return shape whatever the class of
 #'   `.data`, because a row-wise data frame is always a tibble subclass; see
 #'   *Result class and attributes*.
-#'   Result row order is unspecified; use [dplyr::arrange()] when presentation
-#'   order matters.
+#'   Result row order is unspecified unless `.sort` asks for a Margin order;
+#'   see *Margin order*, or use [dplyr::arrange()] for any other presentation
+#'   order.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -108,6 +110,7 @@ nest_by_with_margins <- function(.data,
                                  .check_margin_label = is.data.frame(.data),
                                  .duplicates = c("error", "drop"),
                                  .id = NULL,
+                                 .sort = c("none", "last", "first"),
                                  .key = "data",
                                  .keep = FALSE) {
   call <- rlang::current_call()
@@ -122,6 +125,7 @@ nest_by_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .sort = .sort,
     .id = .id,
     .key = .key,
     .keep = .keep,

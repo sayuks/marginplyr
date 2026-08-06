@@ -37,6 +37,17 @@
 #'   lazy inputs, where checking would require an additional query.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping sets after expansion.
+#' @param .sort One of `"none"` (the default), `"last"`, or `"first"`. `"none"`
+#'   leaves row order unspecified. The other two order the result by the
+#'   structure of its Grouping plan: within each fixed `.by` key, every grouping
+#'   dimension contributes its Grouping bit and its missingness before its own
+#'   value, so a margin row sits with the rows it summarizes rather than
+#'   wherever `.margin_label` falls among that dimension's values, and missing
+#'   values come last wherever they appear. `"last"`
+#'   places margins after the rows they summarize and `"first"` before them.
+#'   The order is a property of the returned object, as with
+#'   [dplyr::arrange()], and may not survive further verbs applied to a lazy
+#'   result. See *Margin order*.
 #' @param .id `NULL`, or one non-missing, non-empty character string naming an
 #'   integer output column of one-based Grouping set identifiers. Each value
 #'   identifies one occurrence in the resolved Grouping plan. The name must not
@@ -46,8 +57,9 @@
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
 #'   class and attributes follow [dplyr::summarize()]; see *Result class and
 #'   attributes*.
-#'   Result row order is unspecified; use [dplyr::arrange()] when presentation
-#'   order matters.
+#'   Result row order is unspecified unless `.sort` asks for a Margin order;
+#'   see *Margin order*, or use [dplyr::arrange()] for any other presentation
+#'   order.
 #'
 #' @details
 #' [grouping_sets()] forms a union of grouping families. [grouping_spec()]
@@ -147,6 +159,52 @@
 #' specification changes it. Use [dplyr::arrange()] when order matters.
 #' [grouping_bit()] documents how `.id` compares with
 #' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
+#'
+#' @section Margin order:
+#' `.sort` orders a result by the structure of its Grouping plan rather than by
+#' displayed values. The key is the result's own leading grouping columns, left
+#' to right, with each grouping dimension preceded by its Grouping bit and by
+#' whether its value is missing:
+#'
+#' ```
+#' is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
+#' ```
+#'
+#' A margin row therefore sits with the rows it summarizes instead of wherever
+#' its `.margin_label` falls among that dimension's values, which is what keeps
+#' the order independent of the label and of the locale. Two rules follow from
+#' the key rather than being separate: fixed `.by` keys sort first because they
+#' come first, so each partition is one contiguous block whose internal order
+#' does not depend on any other partition; and `.id` breaks the remaining ties
+#' when it names a column, which puts duplicate occurrences of one grouping set
+#' next to each other and in Grouping plan order. A composite dimension needs no
+#' rule of its own, because its columns share one Grouping bit.
+#'
+#' `"first"` reverses the Grouping bits alone. Missing values and ordinary
+#' values stay ascending, because the choice positions margins and not missing
+#' values. Every column in the key carries a missingness term, fixed `.by` keys
+#' included, so missing values come last wherever they appear on every backend,
+#' including those whose own default is the opposite. Under
+#' `.margin_label = NULL` a source missing value and a margin still display
+#' alike, but they are separated by position, because their Grouping bits
+#' differ.
+#'
+#' Factor and ordered-factor dimensions sort by their restored levels rather
+#' than by their rendering. `.margin_label_position` positions a synthetic
+#' factor level and never a row: it changes `levels()` and nothing else, so the
+#' two options stay independent and no combination of them is wrong.
+#'
+#' A Margin order promises exactly what [dplyr::arrange()] promises. It is a
+#' property of the object the verb returns: on local data frames and `dtplyr`
+#' steps that is the row order, and on lazy tables it is the outermost query's
+#' `ORDER BY`, which [dplyr::collect()] observes. Whether it survives further
+#' verbs applied to a lazy result is not promised, because that depends on
+#' dbplyr's query flattening, which marginplyr does not own and which changes
+#' between releases.
+#'
+#' Asking for a Margin order never costs a native `GROUP BY GROUPING SETS`
+#' plan, and never changes which adapter runs. It composes with
+#' `.duplicates = "keep"` with no diagnostic, and lazy inputs stay lazy.
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
@@ -297,6 +355,16 @@
 #'   .by = c(year, month),
 #'   .grouping = rollup(region, store),
 #'   .id = "set"
+#' )
+#'
+#' # `.sort` puts each subtotal with the rows it summarizes and the company
+#' # total last, whatever the Margin label sorts as.
+#' summarize_with_margins(
+#'   .data = retail_sales,
+#'   revenue = sum(revenue),
+#'   .by = year,
+#'   .grouping = rollup(region, store),
+#'   .sort = "last"
 #' )
 #'
 #' # Existing dplyr groups are implicit fixed keys. The calculation below is
@@ -483,7 +551,8 @@ summarize_with_margins <- function(.data,
                                    .margin_label_position = c("last", "first"),
                                    .check_margin_label = is.data.frame(.data),
                                    .duplicates = c("error", "drop", "keep"),
-                                   .id = NULL) {
+                                   .id = NULL,
+                                   .sort = c("none", "last", "first")) {
   call <- rlang::current_call()
   dots <- rlang::enquos(...)
   grouping_quo <- rlang::enquo(.grouping)
@@ -498,6 +567,7 @@ summarize_with_margins <- function(.data,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
+        .sort = .sort,
         .id = .id
       )
       check_option_named_summaries(dots)
@@ -515,12 +585,13 @@ summarize_with_margins <- function(.data,
     .margin_label_position = .margin_label_position,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
+    .sort = .sort,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
     call = call
   )
-  result <- execute_margin_summary(operation, dots)
-  finalize_margin_operation(operation, result)
+  execution <- execute_margin_summary(operation, dots)
+  finalize_margin_operation(operation, execution)
 }
 
 execute_margin_summary <- function(operation, dots) {
@@ -583,13 +654,19 @@ execute_margin_summary <- function(operation, dots) {
       )
 
       if (has_shares) {
-        return(execute_shares(
-          operation,
-          staged_result = staged_result,
-          requests = summary_plan$requests
+        return(new_margin_execution(
+          execute_shares(
+            operation,
+            staged_result = staged_result,
+            requests = summary_plan$requests
+          ),
+          sort_id = margin_summary_stage_sort_id(staged_result)
         ))
       }
-      margin_summary_stage_result(staged_result)
+      new_margin_execution(
+        margin_summary_stage_result(staged_result),
+        sort_id = margin_summary_stage_sort_id(staged_result)
+      )
     },
     call = operation$call
   )
@@ -610,16 +687,32 @@ stage_margin_summaries <- function(operation,
     reserved_names <- c(reserved_names, set_id_name)
   }
 
+  # Which adapter runs stays a function of the duplicate policy and of an
+  # identifier that has to number occurrences. A Margin order needs Grouping
+  # bits rather than occurrences, so the identifier it may add below is
+  # allocated after this decision and never changes it.
+  use_native <- supports_grouping_sets(
+    operation$data,
+    plan,
+    backend = operation$backend
+  ) && !(
+    !is.null(set_id_name) &&
+      identical(plan$duplicates, "keep")
+  )
+
+  sort_id <- margin_sort_identifier(
+    operation,
+    set_id_name = set_id_name,
+    used_names = reserved_names
+  )
+  if (!is.null(sort_id)) {
+    set_id_name <- sort_id
+    reserved_names <- unique(c(reserved_names, set_id_name))
+  }
+
   result <- tryCatch(
     {
-      if (supports_grouping_sets(
-        operation$data,
-        plan,
-        backend = operation$backend
-      ) && !(
-        !is.null(set_id_name) &&
-          identical(plan$duplicates, "keep")
-      )) {
+      if (use_native) {
         summarize_margin_native(
           operation$data,
           dots = dots,
@@ -648,12 +741,16 @@ stage_margin_summaries <- function(operation,
       stop(cnd)
     }
   )
-  new_margin_summary_stage(result, set_id_name)
+  new_margin_summary_stage(result, set_id_name, sort_id = sort_id)
 }
 
-new_margin_summary_stage <- function(result, set_id_name) {
+new_margin_summary_stage <- function(result, set_id_name, sort_id = NULL) {
   structure(
-    list(result = result, set_id_name = set_id_name),
+    list(
+      result = result,
+      set_id_name = set_id_name,
+      sort_id = sort_id
+    ),
     class = "marginplyr_summary_stage"
   )
 }
@@ -671,6 +768,11 @@ margin_summary_stage_result <- function(staged_result) {
 margin_summary_stage_set_id <- function(staged_result) {
   check_margin_summary_stage(staged_result)
   staged_result$set_id_name
+}
+
+margin_summary_stage_sort_id <- function(staged_result) {
+  check_margin_summary_stage(staged_result)
+  staged_result$sort_id
 }
 
 #' @rdname summarize_with_margins

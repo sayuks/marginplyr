@@ -21,6 +21,18 @@
 * Added `.id` to every Margin verb for one-based Grouping set occurrence
   identifiers, including duplicate-aware local, lazy, expansion, and nesting
   paths.
+* Added `.sort` to every Margin verb for an opt-in Margin order, taking
+  `"none"` (the default), `"last"`, or `"first"`. It orders a result by the
+  structure of its Grouping plan rather than by displayed values: within each
+  fixed `.by` key, every grouping dimension contributes its Grouping bit and
+  its missingness before its own value, so a subtotal sits with the rows it
+  summarizes whatever the Margin label sorts as, and the grand total comes
+  last. Factor dimensions follow their restored levels, missing values come
+  last wherever they appear on every backend, `"first"` reverses the Grouping
+  bits alone, and lazy inputs stay lazy on a native `GROUPING SETS`
+  plan as well as the portable one. As with `dplyr::arrange()`, the order is a
+  property of the returned object and may not survive further verbs applied to
+  a lazy result.
 * Added guides for Grouping identity and explicit key completion, and made the
   function references the canonical source of the Margin, Parent-share, and
   Margin-label contracts.
