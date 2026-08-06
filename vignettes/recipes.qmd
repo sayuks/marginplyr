@@ -1,0 +1,459 @@
+---
+title: Recipes for common reporting tasks
+vignette: >
+  %\VignetteIndexEntry{Recipes for common reporting tasks}
+  %\VignetteEngine{quarto::html}
+  %\VignetteEncoding{UTF-8}
+format:
+  html:
+    code-tools: true
+    toc: true
+    toc-expand: true
+    number-sections: true
+date: last-modified
+---
+
+The other guides are organized by concept. This one is organized by task: each
+section states a reporting question, answers it with one worked pipeline, and
+stops. Read them in any order and skip the rest — no recipe uses a value
+another recipe defined, so every one starts from `retail_sales` or from its
+own lazy table.
+
+Read [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) first
+if Grouping specifications are new to you. Each recipe links to the concept
+guide that explains why its answer works.
+
+```{r setup}
+#| message: false
+
+library(marginplyr)
+library(dplyr)
+```
+
+Only dplyr and dbplyr are required. One recipe executes against DuckDB, so its
+chunks evaluate only when DuckDB is installed. Where a package is missing the
+code is still shown, but its output is absent. Everything else runs either
+locally or against `dbplyr::simulate_postgres()`, which needs no database and
+no optional package.
+
+```{r}
+#| include: false
+
+has_duckdb <- requireNamespace("DBI", quietly = TRUE) &&
+  requireNamespace("duckdb", quietly = TRUE)
+```
+
+```{r}
+#| include: false
+
+# Several recipes below show a call that is meant to fail, so the reader sees
+# the real diagnostic rather than a quotation of one. Quarto's `error: true`
+# permits an error without requiring one, which would let this prose outlive
+# the behavior it describes. `must_error: true` adds the missing half: it
+# implies `error: true` and halts the render if the chunk stops failing.
+# See AGENTS.md.
+local({
+  knitr::opts_hooks$set(must_error = function(options) {
+    if (isTRUE(options$must_error)) options$error <- TRUE
+    options
+  })
+  default_evaluate <- knitr::knit_hooks$get("evaluate")
+  knitr::knit_hooks$set(evaluate = function(...) {
+    res <- default_evaluate(...)
+    opts <- knitr::opts_current$get()
+    if (isTRUE(opts$must_error) &&
+          !any(vapply(res, inherits, logical(1), "error"))) {
+      stop(
+        "Chunk `", opts$label, "` is marked `must_error: true` but ",
+        "completed without raising an error.",
+        call. = FALSE
+      )
+    }
+    res
+  })
+})
+```
+
+## Put each subtotal with the rows it summarizes
+
+By default a Margin result promises no particular arrangement, so subtotals
+can land anywhere:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .by = year,
+    .grouping = rollup(region, store)
+  )
+```
+
+`.sort = "last"` asks for a Margin order instead. Within each fixed `.by` key
+every dimension contributes its Grouping bit before its own value, so each
+subtotal sits directly beneath the rows it summarizes:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .by = year,
+    .grouping = rollup(region, store),
+    .sort = "last"
+  )
+```
+
+`"first"` puts each subtotal above its rows instead. Neither choice looks at
+`.margin_label`, so the placement does not change if the label does, and it
+does not depend on the locale. The `NA` store keeps its own position because
+missing values sort last wherever they appear, independently of the margins.
+
+**A Margin order belongs to the object the verb returned, not to anything
+derived from it.** Any later verb is free to reorder, and on a lazy backend
+one usually does — see [Name the grouping set on every
+row](#name-the-grouping-set-on-every-row) for a join that drops it silently.
+When some other presentation order is what you want, `arrange()` after the
+fact and do not ask for a Margin order at all.
+
+[Grouping
+identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+explains why Grouping-plan order and a Margin order answer different
+questions.
+
+## Compare each row with the right total
+
+`share_of_total()` divides a summary by the same summary on the Grand total
+set. Which rows that set covers is decided by the fixed `.by` keys, and that
+is the whole of the choice. With `.by = year`, each year is its own
+denominator:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    share_of_year = share_of_total(revenue),
+    .by = year,
+    .grouping = rollup(region),
+    .sort = "last"
+  )
+```
+
+The shares inside each year add up to one, and 2025 contributes nothing to
+2026's denominator. Move the dimension out of `.by` and into the Grouping
+specification, and the same helper measures against the whole table instead:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    share_overall = share_of_total(revenue),
+    .grouping = rollup(year, region),
+    .sort = "last"
+  )
+```
+
+Now every row is a share of all four region-years together, and the year rows
+are subtotals rather than partitions. Both calls are correct; they answer
+different questions, and `.by` is what distinguishes them.
+
+For a denominator one rollup level up rather than at the top, use
+`share_of_parent()`. The
+[`share_of_parent()`
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+documents both helpers, and [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+compares them side by side.
+
+## Keep only one grouping set
+
+Filtering on a Margin label is unsafe: a source value can equal the label, and
+the label can be changed or set to `NULL`. Filter on Grouping identity
+instead. The obstacle is knowing which value to ask for — and guessing the bit
+order is easy to get backwards.
+
+Do not guess. `inspect_grouping()` prints the answer for every set in the plan
+before any data is summarized:
+
+```{r}
+inspect_grouping(
+  .data = retail_sales,
+  .grouping = cube(region, channel)
+)
+```
+
+Read `grouping_bits` beside `grouping_id`: the last dimension is the least
+significant bit, so `channel` alone being omitted is `1`, `region` alone is
+`2`, and both is `3`. Retain the identifier in the summary and filter on it:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    absence = grouping_id(region, channel),
+    .grouping = cube(region, channel),
+    .sort = "last"
+  ) |>
+  filter(absence == 1L)
+```
+
+Two steps are required because `grouping_id()` and `grouping_bit()` are
+contextual summary helpers. They read the Grouping set that produced a row,
+which only the summary knows, so calling one inside `filter()` is rejected:
+
+```{r}
+#| label: grouping-bit-in-filter
+#| must_error: true
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = cube(region, channel)
+  ) |>
+  filter(grouping_bit(channel) == 1L)
+```
+
+For a single dimension, `grouping_bit()` avoids the bit arithmetic altogether:
+retain one flag column per dimension and filter on the flags. [Grouping
+identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+compares all four identity values and states their duplicate-occurrence rules.
+
+## Name the grouping set on every row
+
+`.id` numbers the Grouping-set occurrence behind each row, and
+`inspect_grouping()` returns one row per occurrence keyed by the same number.
+Joining them attaches whatever name you care to write.
+
+Build the name on the plan first. `inspect_grouping()` returns an ordinary
+tibble with no custom class (ADR 0013), so ordinary dplyr applies, and cutting
+it down to two columns keeps the plan's five description columns out of the
+report:
+
+```{r}
+sales_levels <- retail_sales |>
+  inspect_grouping(
+    .by = year,
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    level = case_when(
+      omitted == "()" ~ "Store detail",
+      omitted == "(store)" ~ "Region subtotal",
+      .default = "All regions"
+    )
+  ) |>
+  select(set_id, level)
+
+sales_levels
+```
+
+Then join it onto the result:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .by = year,
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  ) |>
+  left_join(sales_levels, by = c(set = "set_id"))
+```
+
+### The same join against a lazy table
+
+`inspect_grouping()` is local even when `.data` is not: it reads captured
+column metadata and the Grouping plan, never the source rows (ADR 0013). A
+lazy result and a local tibble have no common source, so dbplyr refuses the
+join outright:
+
+```{r}
+postgres_sales <- dbplyr::tbl_lazy(
+  retail_sales,
+  con = dbplyr::simulate_postgres()
+)
+
+postgres_report <- postgres_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .by = year,
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  )
+```
+
+```{r}
+#| label: join-without-copy
+#| must_error: true
+
+postgres_report |>
+  left_join(sales_levels, by = c(set = "set_id"))
+```
+
+`copy = "inline"` compiles the plan into the query as a `VALUES` list, which
+suits a table holding one row per grouping set and needs no permission to
+write one:
+
+```{r}
+postgres_report |>
+  left_join(sales_levels, by = c(set = "set_id"), copy = "inline")
+```
+
+Two conditions come with that route, and neither announces itself.
+
+**The Margin order does not survive the join.** As the previous recipe put it,
+a Margin order is a property of the object the verb returned, not of anything
+derived from it. Here the database is entitled to ignore an `ORDER BY` buried
+in a subquery, and does; the only warning is dbplyr's generic *ORDER BY is
+ignored in subqueries without LIMIT*, which names nothing in marginplyr, while
+`show_query()` goes on printing an `# Ordered by:` line for an order that is
+no longer honored. `.sort` is an argument of the Margin verb, so it cannot be
+applied again afterwards — order with `arrange()` after the join, or collect
+first as below.
+
+**The plan has to be in the default `.format = "text"`.** The list columns of
+`.format = "list"` have no SQL type, and the failure surfaces while dbplyr
+renders the query, without naming `.format`:
+
+```{r}
+list_levels <- inspect_grouping(
+  .data = postgres_sales,
+  .by = year,
+  .grouping = rollup(region, store),
+  .format = "list"
+)
+```
+
+```{r}
+#| label: join-list-format
+#| must_error: true
+
+postgres_report |>
+  left_join(list_levels, by = c(set = "set_id"), copy = "inline") |>
+  show_query()
+```
+
+Prefer `collect()` before the join whenever the result is a report you are
+about to read. The plan is one row per grouping set and a finished summary is
+already small, so nothing is gained by making the database perform the join —
+and collecting first keeps the Margin order, allows `.format = "list"`, and
+needs no `copy` argument at all:
+
+```{r}
+#| eval: !expr has_duckdb
+
+con <- DBI::dbConnect(duckdb::duckdb())
+duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .by = year,
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  ) |>
+  collect() |>
+  left_join(sales_levels, by = c(set = "set_id"))
+```
+
+```{r}
+#| include: false
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+[Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+covers query shape and execution for lazy inputs generally.
+
+## Compute what the summary pass cannot express
+
+A summary expression can do more than call one aggregate. On a local data
+frame dplyr hands it the whole group, so a calculation that needs both a
+group-level value and the rows behind it works directly — here, the share of
+revenue coming from rows above their own set's mean:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    above_mean_share =
+      sum(revenue[revenue > mean(revenue)]) / sum(revenue),
+    .by = year,
+    .grouping = rollup(region, store),
+    .sort = "last"
+  )
+```
+
+Against a database the same expression has to compile to SQL aggregates, and
+this one does not: the comparison needs an average that is itself an aggregate
+over the same group, which no dialect allows inside another aggregate. The
+error comes from the database, with its own wording:
+
+```{r}
+#| eval: !expr has_duckdb
+
+con <- DBI::dbConnect(duckdb::duckdb())
+duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
+```
+
+```{r}
+#| label: nested-aggregate
+#| must_error: true
+#| eval: !expr has_duckdb
+
+duckdb_sales |>
+  summarize_with_margins(
+    above_mean_share =
+      sum(revenue[revenue > mean(revenue)]) / sum(revenue),
+    .by = year,
+    .grouping = rollup(region, store)
+  ) |>
+  collect()
+```
+
+`expand_with_margins()` is the way through. It emits one copy of each source
+row for every grouping set, which turns the one summary pass into ordinary
+rows you can take as many passes over as the calculation needs — a window
+function for the group's mean, then an aggregate over the comparison. It stays
+lazy throughout:
+
+```{r}
+#| eval: !expr has_duckdb
+
+duckdb_sales |>
+  expand_with_margins(
+    .by = year,
+    .grouping = rollup(region, store),
+    .id = "set"
+  ) |>
+  group_by(year, region, store, set) |>
+  mutate(set_mean = mean(revenue, na.rm = TRUE)) |>
+  summarize(
+    above_mean_share =
+      sum(ifelse(revenue > set_mean, revenue, 0), na.rm = TRUE) /
+      sum(revenue, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  collect()
+```
+
+```{r}
+#| include: false
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+The values match the local calculation above. The cost is in the row count:
+expansion produces one copy of the input per grouping set, so a plan with many
+sets multiplies the rows the database has to scan. Reach for this when the
+aggregation pass genuinely cannot express the calculation, not to avoid
+writing a summary.
+
+[Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+shows the SQL `expand_with_margins()` generates on native and fallback
+backends.

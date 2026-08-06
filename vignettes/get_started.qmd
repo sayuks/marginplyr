@@ -395,7 +395,9 @@ reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html) compares
 `.id`, `inspect_grouping()$set_id`, `grouping_bit()`, and `grouping_id()` in
 full. The [Grouping identity
 guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
-works through the same values with executable examples.
+works through the same values with executable examples, and
+[Recipes](https://sayuks.github.io/marginplyr/vignettes/recipes.html) uses
+them to keep one grouping set and to name the set behind every row.
 
 `grouping_id()` combines the flags as a bit mask. Its last argument is the
 least-significant bit:
@@ -506,7 +508,9 @@ as `"Total"` from becoming visually ambiguous. Lazy inputs default to
 `.check_margin_label = FALSE` because checking would execute an additional
 query. Result row order is unspecified for both local and lazy inputs unless
 `.sort` asks for a Margin order; use `arrange()` for any other presentation
-order. A label is only a
+order. [Put each subtotal with the rows it
+summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html)
+shows `.sort` at work and what it does not promise. A label is only a
 display value; retain `grouping_bit()` or `grouping_id()` whenever source
 values can equal the label.
 
@@ -701,6 +705,11 @@ and the value rules — and the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 documents both helpers.
 
+Which rows the denominator covers is decided by the fixed `.by` keys. [Compare
+each row with the right
+total](https://sayuks.github.io/marginplyr/vignettes/recipes.html) works
+through that choice.
+
 ## Complete absent keys before summarizing
 
 Grouping specifications choose reporting grains; they do not create
@@ -779,6 +788,12 @@ dbplyr::tbl_lazy(
   ) |>
   show_query()
 ```
+
+Expanded rows are also the way to compute something one aggregation pass
+cannot express, which is a real limit on a database rather than a local one.
+[Compute what the summary pass cannot
+express](https://sayuks.github.io/marginplyr/vignettes/recipes.html) works
+through that case.
 
 ### Nest locally or with dtplyr
 

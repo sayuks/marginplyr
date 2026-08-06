@@ -206,6 +206,12 @@
 #' plan, and never changes which adapter runs. It composes with
 #' `.duplicates = "keep"` with no diagnostic, and lazy inputs stay lazy.
 #'
+#' The [recipes guide][recipes] shows a Margin order before and after, and
+#' shows a join dropping one from a lazy result with no diagnostic naming this
+#' package.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
 #' [dplyr::across()] and [dplyr::pick()] cannot select any column named in the

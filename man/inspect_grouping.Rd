@@ -77,7 +77,11 @@ Grouping plan. It is deliberately separate from a SQL execution plan. Use
 optimizer plan.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} walks through inspecting a plan and
-reading it back off a Margin result.
+reading it back off a Margin result. The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} uses a
+plan to choose which grouping set to keep, and joins one against \code{.id} to
+name the set behind every row. Because the plan is local, that join needs a
+\code{copy} argument when the Margin result is lazy, and it does not preserve a
+Margin order.
 }
 
 \examples{

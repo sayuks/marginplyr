@@ -39,6 +39,32 @@ honest: any leak into `man/` fails CI.
 `.github/workflows/document.yaml` regenerates both and fails when either
 differs from what the roxygen comments produce.
 
+### Chunks that must fail
+
+A vignette showing a rejected call executes it rather than quoting its error,
+so the reader sees the diagnostic their own session would produce. Quarto's
+`error: true` is the wrong option on its own: it *permits* an error without
+requiring one, so a chunk that stops failing renders a success underneath
+prose that still claims a failure, and nothing reports it. knitr and Quarto
+offer no option for the other half, and no package supplies one
+(`investigation/margin-order-and-plan-joins.md`).
+
+`vignettes/recipes.qmd` therefore defines a `must_error: true` chunk option in
+a hidden setup chunk. It implies `error: true`, so the two are never set
+inconsistently, and it halts the render naming the chunk when a chunk marked
+with it completes without raising an error. Mark a chunk with it instead of
+`error: true` whenever the surrounding prose asserts that the call fails.
+
+Two properties are load-bearing and easy to lose in a rewrite. It is
+implemented as a wrapper around knitr's `evaluate` hook, which inspects the
+returned result objects; that keeps knitr's own error rendering, whereas
+catching the condition in a helper prints an `<error/rlang_error>` header and
+a backtrace through the helper, which no reader would see. And because knitr
+does not call that hook for a chunk it does not evaluate, a chunk withheld by
+an availability guard is skipped without a special case — a guarded chunk that
+never runs must not be reported as a chunk that stopped failing, or
+`_R_CHECK_DEPENDS_ONLY_` builds break.
+
 ### Dependency metadata
 
 `DESCRIPTION`'s Imports/Suggests split is audited by hand, not with

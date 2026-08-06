@@ -256,6 +256,10 @@ between releases.
 Asking for a Margin order never costs a native \verb{GROUP BY GROUPING SETS}
 plan, and never changes which adapter runs. It composes with
 \code{.duplicates = "keep"} with no diagnostic, and lazy inputs stay lazy.
+
+The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, and
+shows a join dropping one from a lazy result with no diagnostic naming this
+package.
 }
 
 \section{Relationship to dplyr summaries}{
