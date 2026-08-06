@@ -5,23 +5,60 @@
 # the Suggested packages genuinely optional, and does each supported backend
 # actually execute? This workflow answers both against one built tarball --
 # the artifact a submission would carry -- so that nothing here can pass
-# because of a file that exists only in the development tree.
+# because of a file that exists only in the development tree. The one job that
+# reads the working tree instead is `structure`, and the reason it can is that
+# it asserts a property of the tests as written rather than of what ships.
 #
 # The jobs divide the work:
 #
-#   coverage      reads this file against `optional_suggests()` and fails when
-#                 a tracked backend has no `backend` entry below.
-#   build         produces the single tarball every other job checks.
-#   depends-only  rebuilds examples, tests, and vignettes with Suggested
-#                 packages withheld (`_R_CHECK_DEPENDS_ONLY_=true`).
-#   tarball       checks that tarball on R release, devel, and oldrel.
-#   backend       four jobs that each execute one backend's live behavior.
+#   structure      runs the suite once per optional backend with the others
+#                  simulated absent, and fails unless every test executes in at
+#                  least one of those configurations.
+#   backend-matrix generates the `backend` matrix below from the one table in
+#                  `tests/testthat/helper-optional-backends.R`.
+#   build          produces the single tarball every other job checks.
+#   depends-only   rebuilds examples, tests, and vignettes with Suggested
+#                  packages withheld (`_R_CHECK_DEPENDS_ONLY_=true`).
+#   tarball        checks that tarball on R release, devel, and oldrel.
+#   backend        one generated job per optional backend, each executing that
+#                  backend's live behavior with the others genuinely absent.
 #
 # Optional backends skip in `depends-only` and `tarball`, which is what a
 # minimal CRAN flavor does. That is only acceptable because the `backend` jobs
 # prove the same contracts, and those jobs set `MARGINPLYR_REQUIRED_SUGGESTS`
 # so that a backend which failed to install fails the job instead of skipping
 # into a false green. See `tests/testthat/helper-optional-backends.R`.
+#
+# Which contracts those jobs prove is settled by construction rather than by a
+# list (#93). Every `backend` job installs one optional backend and withholds
+# the rest, so between them they execute every test that requires at most one
+# backend; a test requiring two is executed by none of them and skips in all of
+# them, unnoticed. Three layers close that, and no one of them is enough:
+#
+#   Structure    `structure`, against the working tree. Every test executes in
+#                some single-backend configuration and asserts something there.
+#   Environment  the `backend` jobs. The backend works when the others are
+#                genuinely absent, rather than merely hidden from the guards.
+#   Soundness    `verify-backend.R`, inside each `backend` job. The suite
+#                started, passed something, failed nothing, and every skip
+#                names a backend that job withheld.
+#
+# The soundness layer is what a `proves` list of contract test names used to
+# approximate. It is strictly stronger: a skip for any other reason -- a stray
+# `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being dropped so the snapshot
+# tests skip -- now fails the job, and none of those was caught before.
+#
+# `structure` stands outside the tarball scheme deliberately. It asks about the
+# tests as written, so a built tarball would add a build step and a `needs`
+# without changing the answer, and it is the one gate here an agent can run
+# before pushing: `Rscript .github/scripts/verify-suite-coverage.R` gives the
+# same verdict locally that the job gives in CI.
+#
+# The `backend` matrix is generated rather than written out because every field
+# in it was a restatement of the same table -- which package to install, which
+# absence must fail the job, what to call the cache. The cost is that this file
+# no longer shows its own jobs, which `backend-matrix` pays back by writing the
+# matrix it produced to the step summary.
 #
 # Which packages a job installs is therefore the whole signal, and the
 # dependency cache is what nearly took it away. `setup-r-dependencies@v2` falls
@@ -37,12 +74,15 @@
 # say which request they stand for:
 #
 #   full-1              hard dependencies plus every Suggest, and the package
-#                       itself (`build`, and `R-CMD-check.yaml`).
+#                       itself (`build`, `structure`, and `R-CMD-check.yaml`).
 #   hard-1              hard dependencies plus rcmdcheck, testthat, and quarto
 #                       (`depends-only` and `tarball`).
 #   backend-<name>-1    hard dependencies plus rcmdcheck and testthat, and
-#                       exactly one optional backend (`backend`). No quarto:
-#                       these jobs run `--ignore-vignettes`.
+#                       exactly one optional backend plus its companions
+#                       (`backend`). Derived per entry by
+#                       `generate-backend-matrix.R`, so a backend added to the
+#                       table cannot arrive sharing another's library. No
+#                       quarto: these jobs run `--ignore-vignettes`.
 #
 # A cache key is not self-checking -- a mistake in one produces a green run
 # that reads like a correct one -- so `verify-library-isolation.R` asserts the
@@ -74,25 +114,32 @@ env:
   _R_CHECK_CRAN_INCOMING_REMOTE_: false
 
 jobs:
-  # The `backend` matrix below is the only thing that executes an optional
-  # backend, and until now nothing checked that it named all of them: a backend
-  # added to `optional_suggests()` and guarded in the tests, with no entry here,
-  # left a green workflow in which every job correctly asserted it absent and no
-  # job ever ran it (#71). This job reads this file against that list.
+  # Every test executes in some single-backend configuration. Proving it needs
+  # the whole suite run once per backend with the others withheld, which the
+  # `backend` jobs cannot answer between them: each reports its own green, and
+  # a test that skipped in all four leaves four greens behind.
   #
-  # It takes no `needs`, because it asserts a static property of the repository
-  # and nothing it reads comes from the tarball. Failing before `build` finishes
-  # is the point: the answer does not depend on anything the other jobs produce.
+  # So this simulates the four configurations in one job, through
+  # `MARGINPLYR_HIDE_SUGGESTS`. Simulated rather than aggregated from the real
+  # jobs' artifacts for one reason: an agent can run it before pushing. A guard
+  # is the only thing that decides whether a test skips and the hook drives the
+  # guards, so the structural answer is the same one four jobs would give; what
+  # a simulation cannot answer -- whether a backend works when the others are
+  # genuinely gone -- is what those jobs remain for.
   #
-  # It also installs no dependencies through `setup-r-dependencies`, so it has
-  # no `cache-version` and stands outside the isolation scheme above. That is
-  # consistent rather than an exemption -- the scheme separates jobs by which
-  # optional backends they can see, and this job neither installs nor loads any
-  # package under test.
-  coverage:
-    name: Backend matrix coverage
+  # It takes no `needs` and downloads no tarball, because the property is about
+  # the tests as written. Failing before `build` finishes is the point.
+  #
+  # It shares `full-1` with `build` by making the identical dependency request.
+  # That is consistent with the isolation scheme rather than an exemption to it:
+  # the scheme separates jobs that claim an optional backend is absent, and this
+  # job claims the opposite -- it needs all of them installed, and
+  # `verify-suite-coverage.R` stops if any is missing rather than reporting a
+  # vacuous pass.
+  structure:
+    name: Suite coverage by construction
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v7
@@ -101,18 +148,47 @@ jobs:
         with:
           use-public-rspm: true
 
-      # `yaml` parses this file. It has no dependencies of its own and is not in
-      # DESCRIPTION: `.github/scripts/` may use packages installed only for CI,
-      # and promoting a parser used by one CI script into the package's metadata
-      # would be exactly the false Import `AGENTS.md` warns about. The
-      # alternative, a regex over the `backend:` block, fails open -- a pattern
-      # that stops matching finds nothing to report and passes.
-      - name: Install the YAML parser
-        run: install.packages("yaml")
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          extra-packages: local::.
+          needs: check
+          cache-version: full-1
+
+      - name: Verify every test executes in some backend configuration
+        run: Rscript .github/scripts/verify-suite-coverage.R
+
+  # The `backend` jobs below are one job body repeated per optional backend, and
+  # every field that differed between them was a restatement of
+  # `optional_backend_spec()`. This job derives them from it instead, so a
+  # backend cannot be tracked by the tests and executed by nothing: the job is
+  # the table. That is what retired the `coverage` job, which existed only to
+  # read this file back against the same list (#71).
+  #
+  # No `needs`, and no dependency install through `setup-r-dependencies`: it
+  # reads the checkout and writes JSON, so it has no `cache-version` and stands
+  # outside the isolation scheme above.
+  backend-matrix:
+    name: Generate the backend matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    outputs:
+      backend: ${{ steps.generate.outputs.backend }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - name: Install the JSON serializer
+        run: install.packages("jsonlite")
         shell: Rscript {0}
 
-      - name: Verify every tracked backend has a matrix entry
-        run: Rscript .github/scripts/verify-matrix-coverage.R
+      - name: Generate the backend matrix
+        id: generate
+        run: Rscript .github/scripts/generate-backend-matrix.R
 
   build:
     name: Build source tarball
@@ -313,94 +389,35 @@ jobs:
   # together in the fully provisioned `R-CMD-check.yaml` matrix.
   backend:
     name: Live ${{ matrix.backend.name }}
-    needs: build
+    needs: [build, backend-matrix]
     runs-on: ubuntu-latest
     timeout-minutes: 45
 
     strategy:
       fail-fast: false
       matrix:
-        backend:
-          # `required` names the packages whose absence must fail this job
-          # instead of skipping its tests. `proves` names the tests that must
-          # actually have run and passed, which is a stronger claim: an
-          # installed package says nothing about whether the tests exercising
-          # it were renamed, deleted, or skipped for an unrelated reason.
-          # Renaming one of these tests deliberately breaks the job that
-          # guards it. Most entries trace to an acceptance criterion of #38;
-          # the factor-restoration shadowing contracts trace to #76, whose
-          # fix is only observable on a live backend; the Margin order
-          # contracts trace to #88, where the order is already correct
-          # everywhere and what was missing was a job proving it executed.
-          #
-          # A Margin order is asserted per backend rather than once, because
-          # the key is resolved by a different mechanism on each -- a native
-          # `GROUPING()` expression on DuckDB, a per-branch literal on the
-          # portable adapter, an ordinary `arrange()` on dtplyr and Arrow --
-          # and only the backend that runs one of them proves it. Level order
-          # is named only where the backend can restore factors, which is
-          # DuckDB and dtplyr; on RSQLite and Arrow the same contract test
-          # asserts the value order that arrives instead.
-          - name: RSQLite
-            packages: any::DBI, any::RSQLite
-            required: RSQLite,DBI
-            proves: >-
-              RSQLite executes portable Parent shares end to end;
-              RSQLite executes portable Total shares end to end;
-              RSQLite Parent shares preserve runtime backend conditions;
-              RSQLite executes a portable Margin order end to end;
-              RSQLite places missing values where its own default would not
-          - name: DuckDB
-            packages: any::DBI, any::duckdb
-            required: duckdb,DBI
-            proves: >-
-              DuckDB executes native grouping sets with unambiguous bits;
-              DuckDB native and UNION adapters agree;
-              DuckDB native and portable summaries agree on .id;
-              DuckDB Parent shares agree across native, portable, and local
-              paths;
-              DuckDB Total shares agree across native, portable, and local
-              paths;
-              duckdb factor restoration ignores a column named `sql_query`;
-              DuckDB executes a Margin order on its native plan;
-              DuckDB native and portable Margin orders agree;
-              DuckDB orders a factor dimension by its restored levels
-          - name: dtplyr
-            packages: any::dtplyr
-            required: dtplyr
-            proves: >-
-              dtplyr integer and double Parent shares match local results;
-              dtplyr Total shares match local results;
-              dtplyr rejects every ineligible Parent-share source type;
-              dtplyr rejects ineligible Total-share sources on collection;
-              dtplyr rejects non-scalar Parent-share sources on collection;
-              dtplyr validates Parent-share source types during collection;
-              dtplyr factor restoration ignores columns named like its locals;
-              dtplyr executes a Margin order end to end;
-              dtplyr orders a factor dimension by its restored levels
-          - name: Arrow
-            packages: any::arrow
-            required: arrow
-            proves: >-
-              Arrow rejects Parent shares before constructing a query;
-              Arrow rejects Total shares before constructing a query;
-              Arrow ordinary Margin summaries remain lazy and available;
-              Arrow executes a Margin order end to end
+        # Generated by `generate-backend-matrix.R`, one entry per member of
+        # `optional_backends()`, each carrying the packages to install, the
+        # `required` list to declare, and its own `cache-version`. The job that
+        # produced it writes it to the step summary, because this file no longer
+        # shows it.
+        backend: ${{ fromJSON(needs.backend-matrix.outputs.backend) }}
 
     env:
       # Turns an absent backend into a failure, so this job cannot pass while
       # skipping the very tests it exists to run.
       MARGINPLYR_REQUIRED_SUGGESTS: ${{ matrix.backend.required }}
       # testthat skips snapshot expectations under CRAN semantics, which marks
-      # the whole test skipped -- including "Arrow rejects Parent shares before
-      # constructing a query", whose diagnostic this job is meant to execute.
-      # These jobs prove behavior rather than emulate CRAN, so they opt out.
-      # The `depends-only` and `tarball` jobs deliberately do not.
+      # the whole test skipped. These jobs prove behavior rather than emulate
+      # CRAN, so they opt out; the `depends-only` and `tarball` jobs
+      # deliberately do not. Dropping this no longer merely weakens the job:
+      # `verify-backend.R` refuses an "On CRAN" skip, because it is not a
+      # backend this job withheld.
       NOT_CRAN: true
       # Every other optional backend is absent on purpose: proving one backend
       # in isolation also proves it does not depend on the others. That second
       # half is only worth stating because `check-tarball.R` enforces it; a
-      # `backend` job that could see the other three would still prove its own
+      # `backend` job that could see the rest would still prove its own
       # contracts and prove nothing about independence.
       _R_CHECK_FORCE_SUGGESTS_: false
       # Vignette rebuilding is covered by `depends-only` and `tarball`. Leaving
@@ -421,11 +438,13 @@ jobs:
           dependencies: '"hard"'
           extra-packages: >-
             any::rcmdcheck, any::testthat, ${{ matrix.backend.packages }}
-          # One cache per backend. These four jobs share an operating system,
-          # R version, and architecture, so a single `cache-version` would put
-          # all four libraries behind one `restore-keys` prefix and every job
-          # would start from whichever ran last.
-          cache-version: backend-${{ matrix.backend.name }}-1
+          # One cache per backend, derived alongside the rest of the entry so
+          # that a new backend cannot arrive sharing another's library. These
+          # jobs share an operating system, R version, and architecture, so a
+          # single `cache-version` would put every library behind one
+          # `restore-keys` prefix and each job would start from whichever ran
+          # last (#64).
+          cache-version: ${{ matrix.backend.cache }}
 
       - uses: actions/download-artifact@v4
         with:
@@ -435,15 +454,14 @@ jobs:
       - name: Check the tarball with ${{ matrix.backend.name }} installed
         run: Rscript .github/scripts/check-tarball.R
 
-      # Reports which named contracts executed, and fails if any of them did
-      # not. Runs even after a failed check, because "which contract broke" is
-      # the answer this job exists to give.
-      - name: Verify the live ${{ matrix.backend.name }} contracts executed
+      # Reads the check's own testthat log and fails unless the suite started,
+      # passed something, failed nothing, and skipped nothing for a reason
+      # other than a backend this job withheld. Runs even after a failed check,
+      # because "what did this run actually execute" is the answer the job
+      # exists to give.
+      - name: Verify the live ${{ matrix.backend.name }} run was sound
         if: always()
         run: Rscript .github/scripts/verify-backend.R
-        env:
-          MARGINPLYR_BACKEND_NAME: ${{ matrix.backend.name }}
-          MARGINPLYR_BACKEND_TESTS: ${{ matrix.backend.proves }}
 
       - uses: actions/upload-artifact@v4
         if: always()

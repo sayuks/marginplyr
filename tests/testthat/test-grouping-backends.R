@@ -59,14 +59,18 @@ proxy_counter_collect <- function(x, ...) {
   NextMethod()
 }
 
-test_that("dtplyr and Arrow use the normalized grouping contract", {
-  data <- data.frame(
+normalized_contract_data <- function() {
+  data.frame(
     a = c("x", "x", "y"),
     b = c("u", "v", "u"),
     value = 1:3
   )
+}
 
+test_that("dtplyr uses the normalized grouping contract", {
   skip_if_backend_absent("dtplyr")
+  data <- normalized_contract_data()
+
   expect_no_message(
     dt_result <- summarize_with_margins(
       dtplyr::lazy_dt(data),
@@ -85,8 +89,12 @@ test_that("dtplyr and Arrow use the normalized grouping contract", {
   )
   expect_s3_class(dt_rowwise, "rowwise_df")
   expect_equal(names(dt_rowwise), c("a", "b", "data"))
+})
 
+test_that("Arrow uses the normalized grouping contract", {
   skip_if_backend_absent("arrow")
+  data <- normalized_contract_data()
+
   arrow_result <- summarize_with_margins(
     arrow::Table$create(data),
     n = dplyr::n(),
@@ -341,41 +349,52 @@ test_that("public Arrow table classes are supported", {
   )
 })
 
-test_that("lazy backends check margin labels across all dimensions", {
-  data <- data.frame(
+margin_label_check_data <- function() {
+  data.frame(
     first = c("Total", "x"),
     second = c("y", "Total"),
     value = 1:2
   )
+}
 
+# Every dimension has to reach the diagnostic, not just the first one that
+# collides. The three tests below assert the same message against the same
+# fixture, once per lazy backend that can execute the check. The call is written
+# out in each rather than wrapped in a shared expectation, because a closure
+# would put `first` and `second` somewhere `codetools` cannot follow them.
+test_that("dtplyr checks margin labels across all dimensions", {
   skip_if_backend_absent("dtplyr")
   expect_error(
     summarize_with_margins(
-      dtplyr::lazy_dt(data),
+      dtplyr::lazy_dt(margin_label_check_data()),
       n = dplyr::n(),
       .grouping = rollup(first, second),
       .check_margin_label = TRUE
     ),
     "grouping columns `first`, `second`"
   )
+})
 
+test_that("Arrow checks margin labels across all dimensions", {
   skip_if_backend_absent("arrow")
   expect_error(
     summarize_with_margins(
-      arrow::Table$create(data),
+      arrow::Table$create(margin_label_check_data()),
       n = dplyr::n(),
       .grouping = rollup(first, second),
       .check_margin_label = TRUE
     ),
     "grouping columns `first`, `second`"
   )
+})
 
+test_that("DuckDB checks margin labels across all dimensions", {
   skip_if_backend_absent("duckdb", "DBI")
   con <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
     con,
-    data,
+    margin_label_check_data(),
     "margin_label_checks",
     overwrite = TRUE,
     temporary = TRUE
@@ -497,47 +516,60 @@ test_that("documented SQL dialects use portable margin label checks", {
   }
 })
 
-test_that("union adapters reserve user columns that look internal", {
+reserved_column_data <- function() {
   data <- data.frame(
     group = c("x", "x", "y"),
     value = 1:3,
     check.names = FALSE
   )
   data[["..marginplyr_key_1"]] <- 10:12
-  expected <- data.frame(
+  data
+}
+
+# The literal every adapter owes, which the local test below pins first. A
+# backend test asserts against this rather than against a freshly computed local
+# result so that the two cannot drift together.
+reserved_column_expected <- function() {
+  data.frame(
     group = c("Total", "x", "y"),
     total = c(6L, 3L, 3L)
   )
+}
 
-  local <- summarize_with_margins(
-    data,
+test_that("local summaries reserve user columns that look internal", {
+  result <- summarize_with_margins(
+    reserved_column_data(),
     total = sum(value),
     .grouping = rollup(group)
   )
-  expect_equal(dplyr::arrange(local, group), expected)
-
-  skip_if_backend_absent("dtplyr")
-  dt_result <- summarize_with_margins(
-    dtplyr::lazy_dt(data),
-    total = sum(value),
-    .grouping = rollup(group)
-  ) |>
-    dplyr::collect() |>
-    dplyr::arrange(group)
-  expect_equal(as.data.frame(dt_result), expected)
-
-  skip_if_backend_absent("arrow")
-  arrow_result <- summarize_with_margins(
-    arrow::Table$create(data),
-    total = sum(value),
-    .grouping = rollup(group)
-  ) |>
-    dplyr::collect() |>
-    dplyr::arrange(group)
-  expect_equal(as.data.frame(arrow_result), expected)
+  expect_equal(dplyr::arrange(result, group), reserved_column_expected())
 })
 
-test_that("union adapters reserve generated summary names", {
+test_that("the dtplyr union adapter reserves user columns that look internal", {
+  skip_if_backend_absent("dtplyr")
+  result <- summarize_with_margins(
+    dtplyr::lazy_dt(reserved_column_data()),
+    total = sum(value),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(group)
+  expect_equal(as.data.frame(result), reserved_column_expected())
+})
+
+test_that("the Arrow union adapter reserves user columns that look internal", {
+  skip_if_backend_absent("arrow")
+  result <- summarize_with_margins(
+    arrow::Table$create(reserved_column_data()),
+    total = sum(value),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(group)
+  expect_equal(as.data.frame(result), reserved_column_expected())
+})
+
+generated_name_data <- function() {
   data <- data.frame(
     group = c("x", "x", "y"),
     value = 1:3,
@@ -545,14 +577,21 @@ test_that("union adapters reserve generated summary names", {
   )
   data[["..marginplyr_key_1"]] <- 10:12
   data[["..marginplyr_key_1_"]] <- 20:22
+  data
+}
+
+generated_name_expected <- function() {
   expected <- data.frame(
     group = c("Total", "x", "y"),
     check.names = FALSE
   )
   expected[["..marginplyr_key_1__"]] <- c(6L, 3L, 3L)
+  expected
+}
 
-  local <- summarize_with_margins(
-    data,
+test_that("local summaries reserve generated summary names", {
+  result <- summarize_with_margins(
+    generated_name_data(),
     dplyr::across(
       value,
       sum,
@@ -560,11 +599,13 @@ test_that("union adapters reserve generated summary names", {
     ),
     .grouping = rollup(group)
   )
-  expect_equal(dplyr::arrange(local, group), expected)
+  expect_equal(dplyr::arrange(result, group), generated_name_expected())
+})
 
+test_that("the dtplyr union adapter reserves generated summary names", {
   skip_if_backend_absent("dtplyr")
-  dt_result <- summarize_with_margins(
-    dtplyr::lazy_dt(data),
+  result <- summarize_with_margins(
+    dtplyr::lazy_dt(generated_name_data()),
     dplyr::across(
       value,
       sum,
@@ -574,11 +615,13 @@ test_that("union adapters reserve generated summary names", {
   ) |>
     dplyr::collect() |>
     dplyr::arrange(group)
-  expect_equal(as.data.frame(dt_result), expected)
+  expect_equal(as.data.frame(result), generated_name_expected())
+})
 
+test_that("the Arrow union adapter reserves generated summary names", {
   skip_if_backend_absent("arrow")
-  arrow_result <- summarize_with_margins(
-    arrow::Table$create(data),
+  result <- summarize_with_margins(
+    arrow::Table$create(generated_name_data()),
     dplyr::across(
       value,
       sum,
@@ -588,7 +631,7 @@ test_that("union adapters reserve generated summary names", {
   ) |>
     dplyr::collect() |>
     dplyr::arrange(group)
-  expect_equal(as.data.frame(arrow_result), expected)
+  expect_equal(as.data.frame(result), generated_name_expected())
 })
 
 test_that("union adapters reserve dynamically injected summary names", {
@@ -757,37 +800,48 @@ test_that("column-wise summaries share one lazy-backend selection", {
   )
 })
 
-test_that("union backends preserve margin values without implicit ordering", {
-  data <- data.frame(
+unordered_margin_data <- function() {
+  data.frame(
     group = c("b", "a", "b"),
     value = 1:3
   )
-  expected <- c("Total", "a", "b")
+}
 
+# Set equality rather than a sequence, because the point is that no adapter
+# drops or invents a margin value while none of them promises an order here.
+unordered_margin_expected <- function() {
+  c("Total", "a", "b")
+}
+
+test_that("local summaries preserve margin values without implicit ordering", {
   local <- summarize_with_margins(
-    data,
+    unordered_margin_data(),
     total = sum(value),
     .grouping = rollup(group)
   )
-  expect_setequal(local$group, expected)
+  expect_setequal(local$group, unordered_margin_expected())
+})
 
+test_that("dtplyr preserves margin values without implicit ordering", {
   skip_if_backend_absent("dtplyr")
-  dt_result <- summarize_with_margins(
-    dtplyr::lazy_dt(data),
+  result <- summarize_with_margins(
+    dtplyr::lazy_dt(unordered_margin_data()),
     total = sum(value),
     .grouping = rollup(group)
   ) |>
     dplyr::collect()
-  expect_setequal(dt_result$group, expected)
+  expect_setequal(result$group, unordered_margin_expected())
+})
 
+test_that("Arrow preserves margin values without implicit ordering", {
   skip_if_backend_absent("arrow")
-  arrow_result <- summarize_with_margins(
-    arrow::Table$create(data),
+  result <- summarize_with_margins(
+    arrow::Table$create(unordered_margin_data()),
     total = sum(value),
     .grouping = rollup(group)
   ) |>
     dplyr::collect()
-  expect_setequal(arrow_result$group, expected)
+  expect_setequal(result$group, unordered_margin_expected())
 })
 
 test_that("dtplyr nesting retains original keys and empty rowwise behavior", {
@@ -822,15 +876,25 @@ test_that("dtplyr nesting retains original keys and empty rowwise behavior", {
   expect_equal(names(empty$data[[1]]), names(data))
 })
 
-test_that("grouped lazy inputs use their groups as fixed keys", {
-  data <- data.frame(
+grouped_lazy_data <- function() {
+  data.frame(
     year = c(2025L, 2025L, 2026L, 2026L),
     region = c("East", "West", "East", "West"),
     value = c(1, 10, 100, 1000)
   )
+}
 
+# One value per (year, region) cell plus the two subtotals a rollup over the
+# region adds, which is what "the group became a fixed key" looks like in the
+# rows. Fixed here rather than recomputed locally, because a local data frame
+# carries no groups for the adapter to promote.
+grouped_lazy_values <- function() {
+  c(1, 10, 11, 100, 1000, 1100)
+}
+
+test_that("grouped dtplyr inputs use their groups as fixed keys", {
   skip_if_backend_absent("dtplyr")
-  grouped_dt <- dtplyr::lazy_dt(data) |>
+  grouped_dt <- dtplyr::lazy_dt(grouped_lazy_data()) |>
     dplyr::group_by(year)
 
   dt_summary <- summarize_with_margins(
@@ -839,10 +903,7 @@ test_that("grouped lazy inputs use their groups as fixed keys", {
     .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(dt_summary), character())
-  expect_setequal(
-    dplyr::collect(dt_summary)$value,
-    c(1, 10, 11, 100, 1000, 1100)
-  )
+  expect_setequal(dplyr::collect(dt_summary)$value, grouped_lazy_values())
 
   dt_union <- expand_with_margins(
     grouped_dt,
@@ -863,27 +924,30 @@ test_that("grouped lazy inputs use their groups as fixed keys", {
   )
   expect_s3_class(dt_nest_by, "rowwise_df")
   expect_equal(dplyr::group_vars(dt_nest_by), c("year", "region"))
+})
 
+test_that("grouped Arrow inputs use their groups as fixed keys", {
   skip_if_backend_absent("arrow")
-  grouped_arrow <- arrow::Table$create(data) |>
+  grouped_arrow <- arrow::Table$create(grouped_lazy_data()) |>
     dplyr::group_by(year)
+
   arrow_summary <- summarize_with_margins(
     grouped_arrow,
     value = sum(value),
     .grouping = rollup(region)
   )
   expect_equal(dplyr::group_vars(arrow_summary), character())
-  expect_setequal(
-    dplyr::collect(arrow_summary)$value,
-    c(1, 10, 11, 100, 1000, 1100)
-  )
+  expect_setequal(dplyr::collect(arrow_summary)$value, grouped_lazy_values())
+})
 
+test_that("grouped SQL inputs use their groups as fixed keys", {
   skip_if_not_installed("dbplyr")
   grouped_sql <- dbplyr::tbl_lazy(
-    data,
+    grouped_lazy_data(),
     con = dbplyr::simulate_postgres()
   ) |>
     dplyr::group_by(year)
+
   sql_summary <- summarize_with_margins(
     grouped_sql,
     value = sum(value),

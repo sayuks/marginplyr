@@ -51,6 +51,30 @@ test_output_path <- function(rcheck, test = "testthat") {
   if (length(found) == 0L) NA_character_ else found[1]
 }
 
+# testthat's final result tally, for example
+# "[ FAIL 0 | WARN 0 | SKIP 68 | PASS 1083 ]", as a named integer vector.
+#
+# Shared because `verify-depends-only.R` and `verify-backend.R` both read it out
+# of a check's testthat log and both draw the same two conclusions from it --
+# the suite completed, and it passed something. Two copies of this pattern would
+# be two places to update when testthat changes the line, and the failure of the
+# one left behind is silence: a tally that stops matching reports a suite that
+# never ran, which is indistinguishable from the real thing this guards against.
+#
+# `useBytes` because the surrounding report is box-drawn UTF-8, and a runner
+# without a UTF-8 locale would otherwise turn a parse into an encoding error.
+# `NULL` when there is no tally at all, which each caller words for itself.
+test_tally <- function(test_log) {
+  tally <- grep("\\[ FAIL [0-9]+ \\|", test_log, value = TRUE, useBytes = TRUE)
+  if (length(tally) == 0L) {
+    return(NULL)
+  }
+  tally <- tally[length(tally)]
+  counts <- as.integer(regmatches(tally, gregexpr("[0-9]+", tally))[[1]])
+  names(counts) <- c("fail", "warn", "skip", "pass")
+  list(line = tally, counts = counts)
+}
+
 # `optional_suggests()` and `optional_backends()`, the one list of optional
 # backends the release matrix reasons about. It is defined with the guards that
 # consume it rather than here; the helper's own comment records why that
@@ -66,24 +90,14 @@ test_output_path <- function(rcheck, test = "testthat") {
 # purpose is the separation.
 source("tests/testthat/helper-optional-backends.R")
 
-# Splits a delimited list, the form the workflow's matrix entries are written
-# in. Package lists are comma-separated; test names are separated by `;`,
-# because a test name may contain a comma.
-#
-# Separate from `env_list()` because `verify-matrix-coverage.R` reads the same
-# fields out of the workflow file rather than out of the environment, and both
-# readings have to agree on what a list is: a `required` value that this script
-# splits differently from the job that consumes it would compare two different
-# package sets.
-split_list <- function(value, sep = ",") {
-  declared <- trimws(strsplit(value, sep, fixed = TRUE)[[1]])
-  declared[nzchar(declared)]
-}
-
-# The same list read out of the environment, which is how a matrix entry reaches
-# the job that acts on it.
+# Reads a comma-separated list out of the environment, which is how a generated
+# matrix entry reaches the job that acts on it. It splits the same way
+# `required_suggests()` in `tests/testthat/helper-optional-backends.R` does, so
+# a `required` value means one package set to the CI scripts and to the tests
+# that run under them.
 env_list <- function(name, sep = ",") {
-  split_list(Sys.getenv(name, ""), sep)
+  declared <- trimws(strsplit(Sys.getenv(name, ""), sep, fixed = TRUE)[[1]])
+  declared[nzchar(declared)]
 }
 
 write_step_summary <- function(lines) {
