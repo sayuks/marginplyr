@@ -981,60 +981,93 @@ test_that("DuckDB Parent shares agree across native, portable, and local paths",
   )
 })
 
-test_that("lazy shares preserve empty-input grand total and partitions", {
-  empty <- data.frame(group = character(), value = double())
-  sources <- list()
+empty_share_data <- function() {
+  data.frame(group = character(), value = double())
+}
 
-  if (backend_available("dtplyr")) {
-    sources$dtplyr <- dtplyr::lazy_dt(empty)
-  }
-  if (backend_available("duckdb") && backend_available("DBI")) {
-    con <- DBI::dbConnect(duckdb::duckdb())
-    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-    sources$duckdb <- dplyr::copy_to(
-      con,
-      empty,
-      "empty_share_data",
-      overwrite = TRUE,
-      temporary = TRUE
-    )
-  }
-  skip_if(length(sources) == 0L, "No supported lazy backend is installed")
+# The identities an empty input still owes, whichever backend produced it. Given
+# collected results rather than a source, so the summarize calls stay inside
+# their own `test_that()` block where `codetools` does not follow them and the
+# bare dimension names need no `all_of()` or `# nolint`.
+expect_empty_share_identities <- function(root, partitioned) {
+  expect_identical(root$share, 1)
+  expect_identical(root$whole, 1)
+  expect_identical(nrow(partitioned), 0L)
+  expect_type(partitioned$share, "double")
+  # A Total share joins its denominator on the fixed keys, so the empty
+  # partitioned case is the one where that join has nothing on either side.
+  expect_type(partitioned$whole, "double")
+}
 
-  for (backend in names(sources)) {
-    source <- sources[[backend]]
-    root <- summarize_with_margins(
-      source,
-      total = sum(value),
-      share = share_of_parent(total),
-      whole = share_of_total(total),
-      .grouping = rollup(group),
-      .margin_label = NULL
-    ) |>
-      dplyr::collect()
-    partitioned <- summarize_with_margins(
-      source,
-      total = sum(value),
-      share = share_of_parent(total),
-      whole = share_of_total(total),
-      .by = group,
-      .grouping = rollup(value),
-      .margin_label = NULL
-    ) |>
-      dplyr::collect()
+test_that("dtplyr shares preserve empty-input grand total and partitions", {
+  skip_if_backend_absent("dtplyr")
+  source <- dtplyr::lazy_dt(empty_share_data())
 
-    expect_identical(root$share, 1, info = backend)
-    expect_identical(root$whole, 1, info = backend)
-    expect_identical(nrow(partitioned), 0L, info = backend)
-    expect_type(partitioned$share, "double")
-    # A Total share joins its denominator on the fixed keys, so the empty
-    # partitioned case is the one where that join has nothing on either side.
-    expect_type(partitioned$whole, "double")
-  }
+  root <- summarize_with_margins(
+    source,
+    total = sum(value),
+    share = share_of_parent(total),
+    whole = share_of_total(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  ) |>
+    dplyr::collect()
+  partitioned <- summarize_with_margins(
+    source,
+    total = sum(value),
+    share = share_of_parent(total),
+    whole = share_of_total(total),
+    .by = group,
+    .grouping = rollup(value),
+    .margin_label = NULL
+  ) |>
+    dplyr::collect()
+
+  expect_empty_share_identities(root, partitioned)
 })
 
-test_that("lazy Parent shares skip duplicate grouping-set occurrences", {
-  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+test_that("DuckDB shares preserve empty-input grand total and partitions", {
+  skip_if_backend_absent("duckdb", "DBI")
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    empty_share_data(),
+    "empty_share_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  root <- summarize_with_margins(
+    source,
+    total = sum(value),
+    share = share_of_parent(total),
+    whole = share_of_total(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  ) |>
+    dplyr::collect()
+  partitioned <- summarize_with_margins(
+    source,
+    total = sum(value),
+    share = share_of_parent(total),
+    whole = share_of_total(total),
+    .by = group,
+    .grouping = rollup(value),
+    .margin_label = NULL
+  ) |>
+    dplyr::collect()
+
+  expect_empty_share_identities(root, partitioned)
+})
+
+duplicate_share_data <- function() {
+  data.frame(group = c("x", "y"), value = c(1, 3))
+}
+
+test_that("dtplyr Parent shares skip duplicate grouping-set occurrences", {
+  skip_if_backend_absent("dtplyr")
+  data <- duplicate_share_data()
   summarize <- function(source, include_id) {
     id_name <- if (include_id) "set" else NULL
     result <- summarize_with_margins(
@@ -1052,48 +1085,62 @@ test_that("lazy Parent shares skip duplicate grouping-set occurrences", {
     result |>
       dplyr::arrange(group, total, share)
   }
-  expected <- summarize(data, include_id = TRUE)
-  expected_without_id <- summarize(data, include_id = FALSE)
-  sources <- list()
-  if (backend_available("dtplyr")) {
-    sources$dtplyr <- dtplyr::lazy_dt(data)
-  }
-  if (backend_available("duckdb") && backend_available("DBI")) {
-    con <- DBI::dbConnect(duckdb::duckdb())
-    on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-    sources$duckdb <- dplyr::copy_to(
-      con,
-      data,
-      "duplicate_parent_share_data",
-      overwrite = TRUE,
-      temporary = TRUE
-    )
-  }
-  skip_if(length(sources) == 0L, "No supported lazy backend is installed")
+  source <- dtplyr::lazy_dt(data)
 
-  for (backend in names(sources)) {
-    expect_equal(
-      as.data.frame(dplyr::collect(summarize(
-        sources[[backend]],
-        include_id = TRUE
-      ))),
-      as.data.frame(expected),
-      info = backend
+  # Against the local result for the same specification, so the backend cannot
+  # pass by being self-consistently wrong.
+  expect_equal(
+    as.data.frame(dplyr::collect(summarize(source, include_id = TRUE))),
+    as.data.frame(summarize(data, include_id = TRUE))
+  )
+  expect_equal(
+    as.data.frame(dplyr::collect(summarize(source, include_id = FALSE))),
+    as.data.frame(summarize(data, include_id = FALSE))
+  )
+})
+
+test_that("DuckDB Parent shares skip duplicate grouping-set occurrences", {
+  skip_if_backend_absent("duckdb", "DBI")
+  data <- duplicate_share_data()
+  summarize <- function(source, include_id) {
+    id_name <- if (include_id) "set" else NULL
+    result <- summarize_with_margins(
+      source,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group, group),
+      .duplicates = "keep",
+      .id = id_name,
+      .margin_label = NULL
     )
-    without_id <- summarize(sources[[backend]], include_id = FALSE)
-    if (identical(backend, "duckdb")) {
-      expect_match(
-        dbplyr::sql_render(without_id),
-        "UNION ALL",
-        fixed = TRUE
-      )
+    if (include_id) {
+      return(dplyr::arrange(result, set, group))
     }
-    expect_equal(
-      as.data.frame(dplyr::collect(without_id)),
-      as.data.frame(expected_without_id),
-      info = backend
-    )
+    result |>
+      dplyr::arrange(group, total, share)
   }
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    data,
+    "duplicate_parent_share_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  expect_equal(
+    as.data.frame(dplyr::collect(summarize(source, include_id = TRUE))),
+    as.data.frame(summarize(data, include_id = TRUE))
+  )
+  without_id <- summarize(source, include_id = FALSE)
+  # Duplicate occurrences cost DuckDB its native plan, which is the half a
+  # collected result cannot show.
+  expect_match(dbplyr::sql_render(without_id), "UNION ALL", fixed = TRUE)
+  expect_equal(
+    as.data.frame(dplyr::collect(without_id)),
+    as.data.frame(summarize(data, include_id = FALSE))
+  )
 })
 
 test_that("lazy Parent-share staging avoids adversarial user-name collisions", {

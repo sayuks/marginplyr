@@ -323,7 +323,11 @@ deleted, or skipped for an unrelated reason still left a `backend` job green.
 passed. It immediately caught a real gap — `expect_snapshot()` skips under
 CRAN semantics, so "Arrow rejects Parent shares before constructing a query"
 had never executed inside `R CMD check`. The `backend` jobs now set `NOT_CRAN`;
-the CRAN-emulating jobs deliberately do not.
+the CRAN-emulating jobs deliberately do not. *Superseded by #93:* the `proves`
+lists are gone. The disposition stands and the gate is stronger — coverage is
+now structural, and `verify-backend.R` refuses any skip that does not name a
+backend the job withheld, which fails the `NOT_CRAN` regression above rather
+than only the one test that had been named.
 
 **`R-CMD-check.yaml` asked for snapshot artifacts it can never produce**
 (Docs & Tests, PR #53). **Fixed.** `upload-snapshots: true` implied coverage

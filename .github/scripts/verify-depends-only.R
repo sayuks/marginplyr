@@ -33,16 +33,16 @@ if (is.na(log_path)) {
 }
 test_log <- readLines(log_path, warn = FALSE)
 
-# testthat's final tally, for example
-# "[ FAIL 0 | WARN 0 | SKIP 68 | PASS 1083 ]".
-tally <- grep("\\[ FAIL [0-9]+ \\|", test_log, value = TRUE)
-if (length(tally) == 0L) {
+# Read through `test_tally()` in `ci-helpers.R`, which `verify-backend.R` also
+# uses. Both scripts ask the same two things of it -- did the suite complete,
+# did it pass anything -- and a second copy of the parse would be a second place
+# to update when testthat changes the line, whose failure is silence.
+tally <- test_tally(test_log)
+if (is.null(tally)) {
   stop("The testthat log has no result tally, so the suite did not complete.")
 }
-tally <- tally[length(tally)]
-counts <- as.integer(regmatches(tally, gregexpr("[0-9]+", tally))[[1]])
-names(counts) <- c("fail", "warn", "skip", "pass")
-message("Minimal-dependency test tally: ", tally)
+counts <- tally$counts
+message("Minimal-dependency test tally: ", tally$line)
 
 if (counts[["fail"]] > 0L) {
   stop("The minimal-dependency run has failing tests.")

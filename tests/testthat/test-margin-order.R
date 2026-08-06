@@ -485,11 +485,12 @@ test_that("a fixed key sorts its missing values last", {
 # rendered query. Neither answers the question these tests exist for: whether a
 # real DuckDB, SQLite, dtplyr, or Arrow run returns the rows in that order.
 #
-# Each backend gets its own named tests, and `release-matrix.yaml` names them in
-# that backend's `proves` list. One test branching over several backends would
-# not do: `verify-backend.R` asks whether a named test ran, so a shared test
-# would be reported as proven by whichever job happened to run one of its
-# branches, and the others would be invisible.
+# Each backend gets its own tests. One test branching over several backends
+# would not do, and the reason is that no job executes it: every `backend` job
+# in `release-matrix.yaml` installs one optional backend and withholds the rest,
+# so a test needing two skips in all of them while each job reports green. The
+# whole suite is held to that rule now, by `verify-suite-coverage.R` rather than
+# by this comment.
 
 # Runs the scenarios a live backend has to reproduce and compares each with the
 # local result for the same Grouping specification, so that a backend cannot
