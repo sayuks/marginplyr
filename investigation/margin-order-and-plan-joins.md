@@ -67,8 +67,9 @@ way to do. `"inline"` compiles the plan into a `VALUES` subquery instead, so
 it needs neither a live connection nor write permission. For a table of one
 row per grouping set that is the cheaper form as well.
 
-This is why the vignette teaches `"inline"`: it is the only value whose
-demonstration produces output when Suggested packages are absent.
+Only `"inline"` therefore produces output in a documentation chunk built
+without Suggested packages. `AGENTS.md` and `vignettes/recipes.qmd` are
+authoritative for what the package documents.
 
 ## Which simulated connection is free of Suggests
 
@@ -80,9 +81,8 @@ its simulator chunks behind `has_sqlite_simulator`.
 `dbplyr::simulate_postgres()` loaded no additional namespace. Each of the
 three failures above — the `copy`-less refusal, the `ORDER BY is ignored`
 warning under `copy = "inline"`, and the `sql_cast_dispatch` failure for
-`.format = "list"` — reproduced on it unchanged. `vignettes/get_started.qmd:725`
-already uses it in an unguarded chunk, so it is the established form here for
-lazy demonstration that must render everywhere.
+`.format = "list"` — reproduced on it unchanged. As of 2026-08-06
+`vignettes/get_started.qmd:725` used it in an unguarded chunk.
 
 ## The join destroys the Margin order, and says so only generically
 
@@ -143,27 +143,3 @@ its own class.
 `summarize()` returned the same values as the local expression and stayed
 lazy on DuckDB. Expansion produced 72 rows from 24 source rows for a
 three-set rollup, one copy per grouping set.
-
-## No mechanism exists for requiring a documentation chunk to fail
-
-Searched 2026-08-07, while deciding how the vignette should show these
-failures. knitr 1.51 exposes exactly one relevant chunk option, `error`, whose
-`TRUE` value permits an error without requiring one; there is no option,
-hook, or documented idiom for asserting that a chunk *must* fail. Quarto 1.9.38
-documents `error: true` with the same permissive meaning. No package on CRAN
-was found that supplies the assertion, and the knitr and rmarkdown issue
-trackers discuss only the permissive direction (yihui/knitr#2366,
-rstudio/rmarkdown#149).
-
-The gap is what `vignettes/recipes.qmd` fills with its own `must_error: true`
-chunk option; `AGENTS.md` is authoritative for what that option does.
-
-Two candidate implementations were built and measured. Wrapping each call in a
-helper that catches the condition works, but renders the condition object
-rather than knitr's error output — an `<error/rlang_error>` header and a
-backtrace naming the helper, `tryCatch`, and `tryCatchList`, none of which a
-reader would see in their own console. Overriding knitr's `evaluate` hook and
-inspecting the returned result objects preserves knitr's own error rendering
-exactly, and needs no special case for a chunk withheld by an availability
-guard, because knitr does not call the hook for a chunk it does not evaluate.
-The second was adopted.

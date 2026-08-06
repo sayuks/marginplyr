@@ -24,6 +24,20 @@ started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) first
 if Grouping specifications are new to you. Each recipe links to the concept
 guide that explains why its answer works.
 
+## Installation
+
+Install the development version of marginplyr from GitHub:
+
+```{r}
+#| eval: false
+
+install.packages("pak")
+pak::pkg_install("sayuks/marginplyr")
+
+# Used for the sections of this guide that execute against a database.
+install.packages(c("DBI", "duckdb"))
+```
+
 ```{r setup}
 #| message: false
 
@@ -31,28 +45,21 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Only dplyr and dbplyr are required. One recipe executes against DuckDB, so its
-chunks evaluate only when DuckDB is installed. Where a package is missing the
-code is still shown, but its output is absent. Everything else runs either
-locally or against `dbplyr::simulate_postgres()`, which needs no database and
-no optional package.
+Only dplyr and dbplyr are required. Two recipes execute against DuckDB, so
+their chunks evaluate only when DuckDB is installed. Where a package is
+missing the code is still shown, but its output is absent. Everything else
+runs either locally or against `dbplyr::simulate_postgres()`, which needs no
+database and no optional package.
 
 ```{r}
 #| include: false
 
 has_duckdb <- requireNamespace("DBI", quietly = TRUE) &&
   requireNamespace("duckdb", quietly = TRUE)
-```
 
-```{r}
-#| include: false
-
-# Several recipes below show a call that is meant to fail, so the reader sees
-# the real diagnostic rather than a quotation of one. Quarto's `error: true`
-# permits an error without requiring one, which would let this prose outlive
-# the behavior it describes. `must_error: true` adds the missing half: it
-# implies `error: true` and halts the render if the chunk stops failing.
-# See AGENTS.md.
+# Chunks marked `must_error: true` show a call that is meant to fail, so the
+# reader sees the real diagnostic rather than a quotation of one. AGENTS.md is
+# authoritative for what the option does and why it exists.
 local({
   knitr::opts_hooks$set(must_error = function(options) {
     if (isTRUE(options$must_error)) options$error <- TRUE
@@ -105,8 +112,10 @@ retail_sales |>
 
 `"first"` puts each subtotal above its rows instead. Neither choice looks at
 `.margin_label`, so the placement does not change if the label does, and it
-does not depend on the locale. The `NA` store keeps its own position because
-missing values sort last wherever they appear, independently of the margins.
+does not depend on the locale. The `NA` store sorts after the named stores but
+still ahead of the region subtotal: each dimension contributes its Grouping
+bit before its missingness, so a margin outranks a missing value rather than
+competing with one.
 
 **A Margin order belongs to the object the verb returned, not to anything
 derived from it.** Any later verb is free to reorder, and on a lazy backend
@@ -138,9 +147,11 @@ retail_sales |>
   )
 ```
 
-The shares inside each year add up to one, and 2025 contributes nothing to
-2026's denominator. Move the dimension out of `.by` and into the Grouping
-specification, and the same helper measures against the whole table instead:
+The region rows inside each year add up to one, and 2025 contributes nothing
+to 2026's denominator. The year's own row is the denominator, so its share is
+one by definition rather than by addition. Move the dimension out of `.by` and
+into the Grouping specification, and the same helper measures against the
+whole table instead:
 
 ```{r}
 retail_sales |>
@@ -224,7 +235,8 @@ compares all four identity values and states their duplicate-occurrence rules.
 Joining them attaches whatever name you care to write.
 
 Build the name on the plan first. `inspect_grouping()` returns an ordinary
-tibble with no custom class (ADR 0013), so ordinary dplyr applies, and cutting
+tibble with no custom class ([ADR 0013][adr13]), so ordinary dplyr applies,
+and cutting
 it down to two columns keeps the plan's five description columns out of the
 report:
 
@@ -263,9 +275,11 @@ retail_sales |>
 ### The same join against a lazy table
 
 `inspect_grouping()` is local even when `.data` is not: it reads captured
-column metadata and the Grouping plan, never the source rows (ADR 0013). A
-lazy result and a local tibble have no common source, so dbplyr refuses the
-join outright:
+column metadata and the Grouping plan, never the source rows
+([ADR 0013][adr13]). A lazy result and a local tibble have no common source,
+so dbplyr refuses the join outright:
+
+[adr13]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0013-inspect-grouping-plans-as-ordinary-tibbles.md
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -302,15 +316,39 @@ postgres_report |>
 
 Two conditions come with that route, and neither announces itself.
 
-**The Margin order does not survive the join.** As the previous recipe put it,
-a Margin order is a property of the object the verb returned, not of anything
-derived from it. Here the database is entitled to ignore an `ORDER BY` buried
-in a subquery, and does; the only warning is dbplyr's generic *ORDER BY is
-ignored in subqueries without LIMIT*, which names nothing in marginplyr, while
-`show_query()` goes on printing an `# Ordered by:` line for an order that is
-no longer honored. `.sort` is an argument of the Margin verb, so it cannot be
-applied again afterwards — order with `arrange()` after the join, or collect
-first as below.
+**The Margin order does not survive the join.** As [Put each subtotal with the
+rows it summarizes](#put-each-subtotal-with-the-rows-it-summarizes) put it, a
+Margin order is a property of the object the verb returned, not of anything
+derived from it. A simulated connection renders SQL without running it, so
+seeing this needs a live database:
+
+```{r}
+#| eval: !expr has_duckdb
+
+con <- DBI::dbConnect(duckdb::duckdb())
+duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
+
+duckdb_report <- duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .by = year,
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  )
+
+duckdb_report |>
+  left_join(sales_levels, by = c(set = "set_id"), copy = "inline") |>
+  collect()
+```
+
+The subtotals are scattered and the years interleave. A database is entitled
+to ignore an `ORDER BY` buried in a subquery, and this one does; the only
+warning is dbplyr's generic *ORDER BY is ignored in subqueries without LIMIT*,
+which names nothing in marginplyr, while `show_query()` goes on printing an
+`# Ordered by:` line for an order that is no longer honored. `.sort` is an
+argument of the Margin verb, so it cannot be applied again afterwards — order
+with `arrange()` after the join, or collect first as below.
 
 **The plan has to be in the default `.format = "text"`.** The list columns of
 `.format = "list"` have no SQL type, and the failure surfaces while dbplyr
@@ -335,28 +373,22 @@ postgres_report |>
 ```
 
 Prefer `collect()` before the join whenever the result is a report you are
-about to read. The plan is one row per grouping set and a finished summary is
-already small, so nothing is gained by making the database perform the join —
-and collecting first keeps the Margin order, allows `.format = "list"`, and
-needs no `copy` argument at all:
+about to read. It is the same shape as the local join at the top of this
+recipe: the plan is one row per grouping set and a finished summary is already
+small, so nothing is gained by making the database perform the join — and
+collecting first keeps the Margin order, allows `.format = "list"`, and needs
+no `copy` argument at all:
 
 ```{r}
 #| eval: !expr has_duckdb
 
-con <- DBI::dbConnect(duckdb::duckdb())
-duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
-
-duckdb_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    .by = year,
-    .grouping = rollup(region, store),
-    .id = "set",
-    .sort = "last"
-  ) |>
+duckdb_report |>
   collect() |>
   left_join(sales_levels, by = c(set = "set_id"))
 ```
+
+Same query, same plan, same join — and every subtotal is back under the rows
+it summarizes.
 
 ```{r}
 #| include: false
@@ -447,7 +479,11 @@ duckdb_sales |>
 DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
-The values match the local calculation above. The cost is in the row count:
+Every value matches the local calculation above. The two tables are not laid
+out alike — this one carries the `set` column and is in no Margin order,
+because the pipeline ends in an ordinary `summarize()` rather than in a Margin
+verb — so compare them by key rather than row by row. The cost is in the row
+count:
 expansion produces one copy of the input per grouping set, so a plan with many
 sets multiplies the rows the database has to scan. Reach for this when the
 aggregation pass genuinely cannot express the calculation, not to avoid

@@ -47,7 +47,7 @@ so the reader sees the diagnostic their own session would produce. Quarto's
 requiring one, so a chunk that stops failing renders a success underneath
 prose that still claims a failure, and nothing reports it. knitr and Quarto
 offer no option for the other half, and no package supplies one
-(`investigation/margin-order-and-plan-joins.md`).
+(`investigation/requiring-a-documentation-chunk-to-fail.md`).
 
 `vignettes/recipes.qmd` therefore defines a `must_error: true` chunk option in
 a hidden setup chunk. It implies `error: true`, so the two are never set
