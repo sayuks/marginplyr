@@ -1,8 +1,8 @@
 # A Margin order is asserted through the rows a public verb returns, not
 # through the key builder. ADR 0018 deliberately leaves each adapter to resolve
 # the key in whatever its query can name, so an assertion on the builder would
-# freeze one of those mechanisms; the rendered-SQL tests at the end of this file
-# carry only what rows cannot show.
+# freeze one of those mechanisms; the tests that render SQL carry only what rows
+# cannot show, which is that the mechanism a backend used is the one it owes.
 
 margin_order_data <- function() {
   # Deliberately out of order in both dimensions, so an unordered result and an
@@ -11,6 +11,31 @@ margin_order_data <- function() {
     region = c("East", "East", "West", "West"),
     store = c("s2", "s1", "s4", "s3"),
     units = c(1, 2, 4, 8)
+  )
+}
+
+margin_order_missing_data <- function() {
+  data.frame(
+    region = c("East", NA, "West"),
+    units = c(1, 2, 4)
+  )
+}
+
+margin_order_by_missing_data <- function() {
+  data.frame(
+    year = c(2026L, NA, 2025L),
+    region = c("West", "East", "East"),
+    units = c(1, 2, 4)
+  )
+}
+
+margin_order_factor_data <- function() {
+  data.frame(
+    size = ordered(
+      c("large", "small", "medium"),
+      levels = c("small", "medium", "large")
+    ),
+    units = c(1, 2, 4)
   )
 }
 
@@ -421,45 +446,196 @@ test_that("the portable adapter keeps its branch identifier resolvable", {
   )
 })
 
-test_that("DuckDB orders natively and agrees with local results", {
+test_that("missing values sort last within a Grouping bit group", {
+  result <- summarize_with_margins(
+    margin_order_missing_data(),
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(region),
+    .margin_label = NULL,
+    .sort = "last"
+  )
+
+  expect_identical(result$region, c("East", "West", NA, NA))
+  expect_identical(result$units, c(1, 4, 2, 7))
+})
+
+test_that("a fixed key sorts its missing values last", {
+  # A `.by` column takes no Grouping bit, so its missingness is the only thing
+  # separating it from the dialect's own default — last locally and on DuckDB,
+  # first on SQLite.
+  result <- summarize_with_margins(
+    margin_order_by_missing_data(),
+    units = sum(units, na.rm = TRUE),
+    .by = year,
+    .grouping = rollup(region),
+    .sort = "last"
+  )
+
+  expect_identical(result$year, c(2025L, 2025L, 2026L, 2026L, NA, NA))
+  expect_identical(
+    result$region,
+    c("East", "Total", "West", "Total", "East", "Total")
+  )
+  expect_identical(result$units, c(4, 4, 1, 1, 2, 2))
+})
+
+# The live backend contracts follow.
+#
+# Everything above proves the order against a local data frame or against a
+# rendered query. Neither answers the question these tests exist for: whether a
+# real DuckDB, SQLite, dtplyr, or Arrow run returns the rows in that order.
+#
+# Each backend gets its own named tests, and `release-matrix.yaml` names them in
+# that backend's `proves` list. One test branching over several backends would
+# not do: `verify-backend.R` asks whether a named test ran, so a shared test
+# would be reported as proven by whichever job happened to run one of its
+# branches, and the others would be invisible.
+
+# Runs the scenarios a live backend has to reproduce and compares each with the
+# local result for the same Grouping specification, so that a backend cannot
+# pass by being self-consistently wrong. The literals pinning those local
+# results are the assertions earlier in this file.
+#
+# `as_input()` takes a data frame and a table name and returns the backend's
+# representation of it; the name is a parameter because the SQL backends need a
+# distinct table per scenario.
+#
+# The dimensions are selected by name rather than as bare symbols, which the
+# tests above can write because `test_that()` passes a block rather than defines
+# a closure. `codetools` reads the closures below and cannot follow an NSE
+# pronoun, so bare symbols here would need one `# nolint` each; `all_of()` is
+# the same selection written in a form the linter can see through.
+expect_margin_order_agrees <- function(as_input) {
+  scenarios <- list(
+    # A rollup over two dimensions: subtotals with the rows they summarize.
+    rollup = list(
+      data = margin_order_data(),
+      summarize = function(input) {
+        summarize_with_margins(
+          input,
+          units = sum(units, na.rm = TRUE),
+          .grouping = rollup(dplyr::all_of(c("region", "store"))),
+          .sort = "last"
+        )
+      },
+      columns = c("region", "store", "units")
+    ),
+    # A source missing value and a margin display alike under
+    # `.margin_label = NULL`, and the Grouping bit is what separates them.
+    missing = list(
+      data = margin_order_missing_data(),
+      summarize = function(input) {
+        summarize_with_margins(
+          input,
+          units = sum(units, na.rm = TRUE),
+          .grouping = rollup(dplyr::all_of("region")),
+          .margin_label = NULL,
+          .sort = "last"
+        )
+      },
+      columns = c("region", "units")
+    ),
+    # A fixed key takes no Grouping bit, so its missingness term is the only
+    # thing standing between it and the dialect's own default.
+    fixed_key = list(
+      data = margin_order_by_missing_data(),
+      summarize = function(input) {
+        summarize_with_margins(
+          input,
+          units = sum(units, na.rm = TRUE),
+          .by = dplyr::all_of("year"),
+          .grouping = rollup(dplyr::all_of("region")),
+          .sort = "last"
+        )
+      },
+      columns = c("year", "region", "units")
+    )
+  )
+
+  for (name in names(scenarios)) {
+    scenario <- scenarios[[name]]
+    local <- scenario$summarize(scenario$data)
+    remote <- dplyr::collect(
+      scenario$summarize(as_input(scenario$data, paste0("margin_order_", name)))
+    )
+    for (column in scenario$columns) {
+      expect_identical(
+        remote[[column]],
+        local[[column]],
+        info = paste(name, column)
+      )
+    }
+  }
+
+  invisible(NULL)
+}
+
+# The `as_input()` a SQL backend needs: each scenario gets its own table on the
+# connection the calling test opened, so that a scenario reads the data it named
+# rather than whatever the previous one left behind.
+copy_to_input <- function(con) {
+  function(data, name) {
+    dplyr::copy_to(con, data, name, overwrite = TRUE, temporary = TRUE)
+  }
+}
+
+test_that("DuckDB executes a Margin order on its native plan", {
   skip_if_backend_absent("duckdb", "DBI")
 
   con <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  expect_margin_order_agrees(copy_to_input(con))
+
   data <- margin_order_data()
   remote <- dplyr::copy_to(
     con,
     data,
-    "margin_order_data",
+    "margin_order_native",
     overwrite = TRUE,
     temporary = TRUE
   )
-
   query <- summarize_with_margins(
     remote,
     units = sum(units, na.rm = TRUE),
     .grouping = rollup(region, store),
     .sort = "last"
   )
+  # Asking for a Margin order does not cost the native plan, which is the half
+  # of the promise a collected result cannot show. The simulated connections
+  # earlier in this file render the same claim; asserting it here too is what
+  # ties it to the rows this job collected from a real DuckDB.
+  sql <- dbplyr::sql_render(query)
+  expect_match(sql, "GROUP BY GROUPING SETS", fixed = TRUE)
+  expect_false(grepl("UNION ALL", sql, fixed = TRUE))
+  expect_identical(
+    as.character(dplyr::tbl_vars(query)),
+    c("region", "store", "units")
+  )
+
+  # A fixed key's missingness term reaches the aggregate query too, rather than
+  # costing the plan the way a staged sort column would.
+  fixed_key <- dplyr::copy_to(
+    con,
+    margin_order_by_missing_data(),
+    "margin_order_native_by",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
   expect_match(
-    dbplyr::sql_render(query),
+    dbplyr::sql_render(summarize_with_margins(
+      fixed_key,
+      units = sum(units, na.rm = TRUE),
+      .by = year,
+      .grouping = rollup(region),
+      .sort = "last"
+    )),
     "GROUP BY GROUPING SETS",
     fixed = TRUE
   )
 
-  native <- dplyr::collect(query)
-  local <- summarize_with_margins(
-    data,
-    units = sum(units),
-    .grouping = rollup(region, store),
-    .sort = "last"
-  )
-  expect_identical(native$region, local$region)
-  expect_identical(native$store, local$store)
-  expect_identical(native$units, local$units)
-
-  # Keeping duplicates does not move the work off the native plan, because
-  # which adapter runs is decided before a Margin order asks for anything.
+  # Keeping duplicates does not move the work off the native plan either,
+  # because which adapter runs is decided before a Margin order asks for
+  # anything.
   duplicated_query <- summarize_with_margins(
     remote,
     units = sum(units, na.rm = TRUE),
@@ -476,18 +652,80 @@ test_that("DuckDB orders natively and agrees with local results", {
   )
 })
 
+test_that("DuckDB native and portable Margin orders agree", {
+  skip_if_backend_absent("duckdb", "DBI")
+
+  con <- DBI::dbConnect(duckdb::duckdb())
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- margin_order_data()
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "margin_order_adapters",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  spec <- rollup(region, store)
+  summarized <- function(...) {
+    summarize_with_margins(
+      remote,
+      units = sum(units, na.rm = TRUE),
+      .grouping = spec,
+      .id = "set",
+      .sort = "last",
+      ...
+    )
+  }
+
+  # `.id` together with `.duplicates = "keep"` is what sends a DuckDB summary
+  # through the portable adapter, and this plan holds no duplicate occurrence,
+  # so the two adapters owe the same rows in the same order. Both sides go
+  # through the public verb rather than calling `summarize_margin_union()` the
+  # way the `.id` agreement test does: ordering happens in the shared finalizer,
+  # which an adapter called directly never reaches, so that comparison would put
+  # an unordered result against an ordered one.
+  #
+  # Which adapter each side actually took is therefore asserted rather than
+  # assumed. Without this, a change to the native-plan guard would quietly turn
+  # the comparison below into native against native.
+  native_query <- summarized()
+  portable_query <- summarized(.duplicates = "keep")
+  expect_match(
+    dbplyr::sql_render(native_query),
+    "GROUP BY GROUPING SETS",
+    fixed = TRUE
+  )
+  expect_match(
+    dbplyr::sql_render(portable_query),
+    "UNION ALL",
+    fixed = TRUE
+  )
+
+  native <- dplyr::collect(native_query)
+  portable <- dplyr::collect(portable_query)
+  local <- summarize_with_margins(
+    data,
+    units = sum(units, na.rm = TRUE),
+    .grouping = spec,
+    .id = "set",
+    .sort = "last"
+  )
+
+  expect_identical(native, portable)
+  expect_identical(native$region, local$region)
+  expect_identical(native$store, local$store)
+  expect_identical(native$set, local$set)
+  expect_identical(portable$region, local$region)
+  expect_identical(portable$store, local$store)
+  expect_identical(portable$set, local$set)
+})
+
 test_that("DuckDB orders a factor dimension by its restored levels", {
   skip_if_backend_absent("duckdb", "DBI")
 
   con <- DBI::dbConnect(duckdb::duckdb())
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  data <- data.frame(
-    size = ordered(
-      c("large", "small", "medium"),
-      levels = c("small", "medium", "large")
-    ),
-    units = c(1, 2, 4)
-  )
+  data <- margin_order_factor_data()
   DBI::dbWriteTable(con, "margin_order_factor", data)
 
   result <- dplyr::collect(summarize_with_margins(
@@ -497,188 +735,175 @@ test_that("DuckDB orders a factor dimension by its restored levels", {
     .sort = "last"
   ))
 
+  # Level order, not the alphabetical order the rendered labels would give.
+  expect_true(is.factor(result$size))
   expect_identical(
     as.character(result$size),
     c("small", "medium", "large", "Total")
   )
 })
 
-test_that("missing values sort last on every backend", {
-  data <- data.frame(
-    region = c("East", NA, "West"),
-    units = c(1, 2, 4)
-  )
-  expected <- c("East", "West", NA, NA)
+test_that("RSQLite executes a portable Margin order end to end", {
+  skip_if_backend_absent("RSQLite", "DBI")
 
-  local <- summarize_with_margins(
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  expect_margin_order_agrees(copy_to_input(con))
+
+  data <- margin_order_data()
+  remote <- dplyr::copy_to(
+    con,
     data,
-    units = sum(units),
-    .grouping = rollup(region),
-    .margin_label = NULL,
+    "margin_order_portable",
+    temporary = TRUE
+  )
+  query <- summarize_with_margins(
+    remote,
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(region, store),
     .sort = "last"
   )
-  expect_identical(local$region, expected)
-
-  if (backend_available("RSQLite") && backend_available("DBI")) {
-    # SQLite returns missing values first by default, which is the disagreement
-    # the promise exists to remove.
-    con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
-    on.exit(DBI::dbDisconnect(con), add = TRUE)
-    remote <- dplyr::copy_to(con, data, "margin_order_na", temporary = TRUE)
-    expect_identical(
-      dplyr::collect(summarize_with_margins(
-        remote,
-        units = sum(units, na.rm = TRUE),
-        .grouping = rollup(region),
-        .margin_label = NULL,
-        .sort = "last"
-      ))$region,
-      expected
-    )
-  }
-
-  if (backend_available("dtplyr")) {
-    expect_identical(
-      dplyr::collect(summarize_with_margins(
-        dtplyr::lazy_dt(data),
-        units = sum(units),
-        .grouping = rollup(region),
-        .margin_label = NULL,
-        .sort = "last"
-      ))$region,
-      expected
-    )
-  }
-
-  if (backend_available("arrow")) {
-    expect_identical(
-      dplyr::collect(summarize_with_margins(
-        arrow::as_arrow_table(data),
-        units = sum(units),
-        .grouping = rollup(region),
-        .margin_label = NULL,
-        .sort = "last"
-      ))$region,
-      expected
-    )
-  }
-})
-
-test_that("a fixed key sorts its missing values last on every backend", {
-  # A `.by` column takes no Grouping bit, so its missingness is the only thing
-  # separating it from the dialect's own default — last locally and on DuckDB,
-  # first on SQLite.
-  data <- data.frame(
-    year = c(2026L, NA, 2025L),
-    region = c("West", "East", "East"),
-    units = c(1, 2, 4)
+  expect_match(dbplyr::sql_render(query), "UNION ALL", fixed = TRUE)
+  # The per-branch identifier the order is derived from stays inside the query.
+  expect_identical(
+    as.character(dplyr::tbl_vars(query)),
+    c("region", "store", "units")
   )
-  summarized <- function(input) {
-    dplyr::collect(summarize_with_margins(
-      input,
-      units = sum(units, na.rm = TRUE),
-      .by = year,
-      .grouping = rollup(region),
-      .sort = "last"
-    ))
-  }
-  expected_year <- c(2025L, 2025L, 2026L, 2026L, NA, NA)
-  expected_region <- c("East", "Total", "West", "Total", "East", "Total")
 
-  local <- summarized(data)
-  expect_identical(local$year, expected_year)
-  expect_identical(local$region, expected_region)
-
-  if (backend_available("RSQLite") && backend_available("DBI")) {
-    # Each connection gets its own name: `on.exit()` stores the expression, so
-    # two handlers naming one variable would both close whichever connection it
-    # held last.
-    sqlite_con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
-    on.exit(DBI::dbDisconnect(sqlite_con), add = TRUE)
-    remote <- dplyr::copy_to(
-      sqlite_con,
-      data,
-      "margin_order_by_na",
-      temporary = TRUE
-    )
-    result <- summarized(remote)
-    expect_identical(result$year, expected_year)
-    expect_identical(result$region, expected_region)
-  }
-
-  if (backend_available("duckdb") && backend_available("DBI")) {
-    # DuckDB keeps the native plan, so this also covers the fixed key's
-    # missingness reaching a `GROUP BY GROUPING SETS` query.
-    duckdb_con <- DBI::dbConnect(duckdb::duckdb())
-    on.exit(DBI::dbDisconnect(duckdb_con, shutdown = TRUE), add = TRUE)
-    remote <- dplyr::copy_to(
-      duckdb_con,
-      data,
-      "margin_order_by_na",
-      overwrite = TRUE,
-      temporary = TRUE
-    )
-    expect_match(
-      dbplyr::sql_render(summarize_with_margins(
-        remote,
-        units = sum(units, na.rm = TRUE),
-        .by = year,
-        .grouping = rollup(region),
-        .sort = "last"
-      )),
-      "GROUP BY GROUPING SETS",
-      fixed = TRUE
-    )
-    result <- summarized(remote)
-    expect_identical(result$year, expected_year)
-    expect_identical(result$region, expected_region)
-  }
-
-  if (backend_available("dtplyr")) {
-    result <- summarized(dtplyr::lazy_dt(data))
-    expect_identical(result$year, expected_year)
-    expect_identical(result$region, expected_region)
-  }
-
-  if (backend_available("arrow")) {
-    result <- summarized(arrow::as_arrow_table(data))
-    expect_identical(result$year, expected_year)
-    expect_identical(result$region, expected_region)
-  }
+  # Level order is not asserted here: the SQLite backend cannot restore
+  # factors, so the dimension arrives as the character values the branches
+  # carried and orders by those.
+  factors <- dplyr::copy_to(
+    con,
+    margin_order_factor_data(),
+    "margin_order_sqlite_factor",
+    temporary = TRUE
+  )
+  result <- dplyr::collect(summarize_with_margins(
+    factors,
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(size),
+    .sort = "last"
+  ))
+  expect_identical(result$size, c("large", "medium", "small", "Total"))
 })
 
-test_that("dtplyr and Arrow agree with local Margin order", {
-  data <- margin_order_data()
-  local <- summarize_with_margins(
-    data,
+test_that("RSQLite places missing values where its own default would not", {
+  skip_if_backend_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- margin_order_missing_data()
+  remote <- dplyr::copy_to(con, data, "margin_order_na", temporary = TRUE)
+
+  # SQLite is the one backend whose own ordering puts missing values first,
+  # which is the disagreement the promise exists to remove. The test above
+  # already compared these rows with the local result; restating them as
+  # literals is what makes the comparison evidence rather than a coincidence,
+  # because a Margin order that had simply inherited the dialect's default would
+  # agree with local everywhere except here.
+  expect_identical(
+    dplyr::collect(dplyr::arrange(remote, region))$region,
+    c(NA, "East", "West")
+  )
+
+  expect_identical(
+    dplyr::collect(summarize_with_margins(
+      remote,
+      units = sum(units, na.rm = TRUE),
+      .grouping = rollup(region),
+      .margin_label = NULL,
+      .sort = "last"
+    ))$region,
+    c("East", "West", NA, NA)
+  )
+
+  # A fixed key takes no Grouping bit, so nothing but its own missingness term
+  # separates it from that default.
+  fixed <- dplyr::copy_to(
+    con,
+    margin_order_by_missing_data(),
+    "margin_order_by_na",
+    temporary = TRUE
+  )
+  result <- dplyr::collect(summarize_with_margins(
+    fixed,
+    units = sum(units, na.rm = TRUE),
+    .by = year,
+    .grouping = rollup(region),
+    .sort = "last"
+  ))
+  expect_identical(result$year, c(2025L, 2025L, 2026L, 2026L, NA, NA))
+  expect_identical(
+    result$region,
+    c("East", "Total", "West", "Total", "East", "Total")
+  )
+})
+
+test_that("dtplyr executes a Margin order end to end", {
+  skip_if_backend_absent("dtplyr")
+
+  expect_margin_order_agrees(function(data, name) dtplyr::lazy_dt(data))
+
+  # Ordering does not collect the step.
+  lazy <- summarize_with_margins(
+    dtplyr::lazy_dt(margin_order_data()),
     units = sum(units),
     .grouping = rollup(region, store),
     .sort = "last"
   )
+  expect_s3_class(lazy, "dtplyr_step")
+})
 
-  if (backend_available("dtplyr")) {
-    lazy <- summarize_with_margins(
-      dtplyr::lazy_dt(data),
-      units = sum(units),
-      .grouping = rollup(region, store),
-      .sort = "last"
-    )
-    expect_s3_class(lazy, "dtplyr_step")
-    collected <- dplyr::collect(lazy)
-    expect_identical(collected$region, local$region)
-    expect_identical(collected$store, local$store)
-  }
+test_that("dtplyr orders a factor dimension by its restored levels", {
+  skip_if_backend_absent("dtplyr")
 
-  if (backend_available("arrow")) {
-    lazy <- summarize_with_margins(
-      arrow::as_arrow_table(data),
+  data <- margin_order_factor_data()
+  result <- dplyr::collect(summarize_with_margins(
+    dtplyr::lazy_dt(data),
+    units = sum(units),
+    .grouping = rollup(size),
+    .sort = "last"
+  ))
+
+  expect_true(is.ordered(result$size))
+  expect_identical(
+    as.character(result$size),
+    c("small", "medium", "large", "Total")
+  )
+  expect_identical(
+    as.character(result$size),
+    as.character(summarize_with_margins(
+      data,
       units = sum(units),
-      .grouping = rollup(region, store),
+      .grouping = rollup(size),
       .sort = "last"
-    )
-    expect_s3_class(lazy, "arrow_dplyr_query")
-    collected <- dplyr::collect(lazy)
-    expect_identical(collected$region, local$region)
-    expect_identical(collected$store, local$store)
-  }
+    )$size)
+  )
+})
+
+test_that("Arrow executes a Margin order end to end", {
+  skip_if_backend_absent("arrow")
+
+  expect_margin_order_agrees(function(data, name) arrow::as_arrow_table(data))
+
+  # Ordering does not execute the query.
+  lazy <- summarize_with_margins(
+    arrow::as_arrow_table(margin_order_data()),
+    units = sum(units),
+    .grouping = rollup(region, store),
+    .sort = "last"
+  )
+  expect_s3_class(lazy, "arrow_dplyr_query")
+
+  # Level order is not asserted here: the Arrow backend cannot restore
+  # factors, so an ordered dimension arrives as character and orders by those
+  # values.
+  result <- dplyr::collect(summarize_with_margins(
+    arrow::as_arrow_table(margin_order_factor_data()),
+    units = sum(units),
+    .grouping = rollup(size),
+    .sort = "last"
+  ))
+  expect_identical(result$size, c("large", "medium", "small", "Total"))
 })

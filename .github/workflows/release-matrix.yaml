@@ -329,14 +329,27 @@ jobs:
           # Renaming one of these tests deliberately breaks the job that
           # guards it. Most entries trace to an acceptance criterion of #38;
           # the factor-restoration shadowing contracts trace to #76, whose
-          # fix is only observable on a live backend.
+          # fix is only observable on a live backend; the Margin order
+          # contracts trace to #88, where the order is already correct
+          # everywhere and what was missing was a job proving it executed.
+          #
+          # A Margin order is asserted per backend rather than once, because
+          # the key is resolved by a different mechanism on each -- a native
+          # `GROUPING()` expression on DuckDB, a per-branch literal on the
+          # portable adapter, an ordinary `arrange()` on dtplyr and Arrow --
+          # and only the backend that runs one of them proves it. Level order
+          # is named only where the backend can restore factors, which is
+          # DuckDB and dtplyr; on RSQLite and Arrow the same contract test
+          # asserts the value order that arrives instead.
           - name: RSQLite
             packages: any::DBI, any::RSQLite
             required: RSQLite,DBI
             proves: >-
               RSQLite executes portable Parent shares end to end;
               RSQLite executes portable Total shares end to end;
-              RSQLite Parent shares preserve runtime backend conditions
+              RSQLite Parent shares preserve runtime backend conditions;
+              RSQLite executes a portable Margin order end to end;
+              RSQLite places missing values where its own default would not
           - name: DuckDB
             packages: any::DBI, any::duckdb
             required: duckdb,DBI
@@ -348,7 +361,10 @@ jobs:
               paths;
               DuckDB Total shares agree across native, portable, and local
               paths;
-              duckdb factor restoration ignores a column named `sql_query`
+              duckdb factor restoration ignores a column named `sql_query`;
+              DuckDB executes a Margin order on its native plan;
+              DuckDB native and portable Margin orders agree;
+              DuckDB orders a factor dimension by its restored levels
           - name: dtplyr
             packages: any::dtplyr
             required: dtplyr
@@ -359,14 +375,17 @@ jobs:
               dtplyr rejects ineligible Total-share sources on collection;
               dtplyr rejects non-scalar Parent-share sources on collection;
               dtplyr validates Parent-share source types during collection;
-              dtplyr factor restoration ignores columns named like its locals
+              dtplyr factor restoration ignores columns named like its locals;
+              dtplyr executes a Margin order end to end;
+              dtplyr orders a factor dimension by its restored levels
           - name: Arrow
             packages: any::arrow
             required: arrow
             proves: >-
               Arrow rejects Parent shares before constructing a query;
               Arrow rejects Total shares before constructing a query;
-              Arrow ordinary Margin summaries remain lazy and available
+              Arrow ordinary Margin summaries remain lazy and available;
+              Arrow executes a Margin order end to end
 
     env:
       # Turns an absent backend into a failure, so this job cannot pass while
