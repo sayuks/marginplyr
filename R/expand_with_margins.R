@@ -12,6 +12,18 @@
 #' row copies. Naming the public operation for row expansion keeps the SQL
 #' implementation strategy out of the user-facing API.
 #'
+#' @section Calculations one summary pass cannot express:
+#' Expanded rows are also the route to a calculation the aggregation pass
+#' cannot express. A summary that needs both a group-level value and the rows
+#' behind it works directly in [summarize_with_margins()] on a local data
+#' frame, because dplyr hands the expression the whole group; against a
+#' database the same expression has to compile to SQL aggregates, and a nested
+#' aggregate is rejected. Expanding first gives ordinary window functions over
+#' the copies and stays lazy, at the cost of one copy of the input per
+#' grouping set. The [recipes guide][recipes] works the case through.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#'
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs

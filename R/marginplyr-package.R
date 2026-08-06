@@ -64,6 +64,7 @@
 #'
 #' @section Guides:
 #' - [Get started][g1]
+#' - [Recipes for common reporting tasks][g5]
 #' - [Database and lazy backends][g2]
 #' - [Grouping identity][g3]
 #' - [Complete absent keys before margins][g4]
@@ -72,6 +73,7 @@
 #' [g2]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #' [g3]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #' [g4]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
+#' [g5]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @keywords internal
 #' @examples

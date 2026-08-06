@@ -55,9 +55,14 @@
 #' optimizer plan.
 #'
 #' The [grouping identity guide][guide] walks through inspecting a plan and
-#' reading it back off a Margin result.
+#' reading it back off a Margin result. The [recipes guide][recipes] uses a
+#' plan to choose which grouping set to keep, and joins one against `.id` to
+#' name the set behind every row. Because the plan is local, that join needs a
+#' `copy` argument when the Margin result is lazy, and it does not preserve a
+#' Margin order.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()] to run a Margin operation on the

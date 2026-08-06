@@ -78,6 +78,7 @@ your call can avoid; please report those at
 
 \itemize{
 \item \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started}
+\item \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{Recipes for common reporting tasks}
 \item \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{Database and lazy backends}
 \item \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{Grouping identity}
 \item \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins}

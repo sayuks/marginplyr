@@ -14,6 +14,8 @@ website:
     left:
       - text: Get started
         href: vignettes/get_started.qmd
+      - text: Recipes
+        href: vignettes/recipes.qmd
       - text: Grouping identity
         href: vignettes/grouping_identity.qmd
       - text: Complete absent keys
@@ -30,6 +32,7 @@ website:
       # - text: Home
         # file: index.md
       - vignettes/get_started.qmd
+      - vignettes/recipes.qmd
       - vignettes/grouping_identity.qmd
       - vignettes/completing_keys.qmd
       - vignettes/database_backends.qmd

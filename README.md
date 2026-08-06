@@ -70,8 +70,9 @@ build and combine yourself.
 
 New to the idea? Start with [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html).
-Need to compare `.id`, Grouping bits, and Grouping identifiers? See
-[Grouping
+Know the task and want the call? See [Recipes for common reporting
+tasks](https://sayuks.github.io/marginplyr/vignettes/recipes.html). Need
+to compare `.id`, Grouping bits, and Grouping identifiers? See [Grouping
 identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html).
 Need absent dimension keys? See [Complete absent keys before
 margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
