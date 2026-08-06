@@ -267,8 +267,8 @@ missing-safe keys rather than displayed Margin labels.
 
 `share_of_total()` stages the same way and asks less of the query. Its
 denominator depends on the fixed `.by` keys and nothing else, so its mapping
-is one filtered read of the grand total row, joined on those keys alone — and
-on a constant when, as here, there are none:
+is one filtered read of a row of the Grand total set, joined on those keys
+alone — and on a constant when, as here, there are none:
 
 ```{r}
 postgres_sales |>

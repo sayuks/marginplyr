@@ -218,7 +218,8 @@ parent_report |>
   dplyr::mutate(revenue_percent = 100 * revenue_share)
 ```
 
-The root row's share is one, and a missing or zero denominator gives `NA`.
+A row of the Grand total set has a parent share of one, and a missing or zero
+denominator gives `NA`.
 Parent matching is structural, so display labels never choose the parent.
 
 ## Compare each summary with the whole

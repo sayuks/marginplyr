@@ -1823,7 +1823,8 @@ test_that("Total shares reuse the Parent-share value rules", {
     .grouping = rollup(group),
     .margin_label = NULL
   )
-  # A zero denominator is missing, and the grand total row is still one.
+  # A zero denominator is missing, and the row of the Grand total set is
+  # still one.
   expect_identical(zero_denominator$whole, c(NA_real_, NA_real_, 1))
 
   unclamped <- summarize_with_margins(
