@@ -154,6 +154,27 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
   )
 }
 
+# Both execution paths put columns of their own beside the summary outputs --
+# the union path's renamed grouping keys, the native path's Grouping bit flags
+# and its Grouping set identifier -- and a summary whose real output name is not
+# statically predictable can land on one of them. The message is shared so the
+# two paths report the same conflict the same way.
+check_internal_summary_names <- function(output_names, internal_names) {
+  conflicting_names <- intersect(output_names, internal_names)
+  if (length(conflicting_names) == 0L) {
+    return(invisible(NULL))
+  }
+
+  abort_marginplyr(
+    paste0(
+      "Dynamically generated summary output names conflict with ",
+      "internal grouping columns: ",
+      paste0("`", conflicting_names, "`", collapse = ", "),
+      ". Use different summary output names."
+    )
+  )
+}
+
 plan_summary_expressions <- function(dots,
                                      data_proxy,
                                      data_vars,
