@@ -748,8 +748,13 @@ test_that("Parent-share sources are numeric scalar summaries", {
   )
 })
 
-test_that("the local eligible-type check raises the shared diagnostic", {
+test_that("the sampled eligible-type check raises the shared diagnostic", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
+  requests <- list(list(
+    outputs = "share",
+    sources = "total",
+    kind = "parent"
+  ))
 
   wrapped_error <- expect_error(
     summarize_with_margins(
@@ -761,34 +766,37 @@ test_that("the local eligible-type check raises the shared diagnostic", {
     "plain integer or double scalar"
   )
 
-  # The local backend re-checks the collected result, so the same diagnostic
-  # has a second raising site. It is called directly here because the wrapped
-  # summary check reaches every ineligible type first from a public call, and
-  # a second copy of the message is exactly what drifted before.
-  local_error <- expect_error(
-    check_local_share_types(
+  # Every backend checks its sampled source types, so the same diagnostic has a
+  # second raising site. It is called directly here because the wrapped summary
+  # check reaches every ineligible type first from a public call, and a second
+  # copy of the message is exactly what drifted before.
+  sampled_error <- expect_error(
+    check_share_source_types(
       data.frame(group = "x", total = TRUE),
-      requests = list(list(
-        outputs = "share",
-        sources = "total",
-        kind = "parent"
-      )),
+      requests = requests,
       call = rlang::call2("summarize_with_margins")
     ),
     "plain integer or double scalar"
   )
 
   expect_identical(
-    conditionMessage(local_error),
+    conditionMessage(sampled_error),
     conditionMessage(wrapped_error)
   )
-  expect_s3_class(local_error, "marginplyr_error")
-  expect_identical(local_error$share_output, "share")
-  expect_identical(local_error$source_summary, "total")
+  expect_s3_class(sampled_error, "marginplyr_error")
+  expect_identical(sampled_error$share_output, "share")
+  expect_identical(sampled_error$source_summary, "total")
   expect_identical(
-    rlang::call_name(conditionCall(local_error)),
+    rlang::call_name(conditionCall(sampled_error)),
     "summarize_with_margins"
   )
+
+  # A source the backend could not sample is not a source it disproved.
+  expect_null(check_share_source_types(
+    list(other = "x"),
+    requests = requests,
+    call = rlang::call2("summarize_with_margins")
+  ))
 })
 
 test_that("cardinality errors identify the affected Parent-share request", {

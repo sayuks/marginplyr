@@ -224,7 +224,7 @@ plan_summary_expressions <- function(dots,
     selection_proxy = selection_proxy,
     plan = plan,
     set_id_name = set_id_name,
-    validate_cardinality = backend_kind %in% c("local", "dtplyr")
+    validate_cardinality = wraps_share_sources_in_summary(backend_kind)
   )
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,

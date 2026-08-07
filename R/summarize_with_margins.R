@@ -278,10 +278,10 @@
 #' Local data frames reject an ineligible source before any share is
 #' calculated. `dtplyr` steps stay lazy and report the same conditions during
 #' explicit execution, before an invalid grouping row is emitted. General
-#' dbplyr backends are not executed or probed solely to validate an arbitrary
-#' summary result's type or cardinality: statically detectable helper errors
-#' remain targeted before execution, while an incompatible lazy expression may
-#' instead fail with its database error at [dplyr::collect()].
+#' dbplyr backends read the ordinary summaries over one input row and reject
+#' an ineligible source with the same condition; cardinality remains a
+#' local-and-`dtplyr` rule, because a SQL aggregate returns one value per
+#' grouping row by construction.
 #'
 #' [share_of_parent()] is the canonical reference for the complete
 #' direct-expression, source, ordering, value, empty-input, and `across()`
@@ -676,7 +676,8 @@ execute_margin_summary <- function(operation, dots) {
           execute_shares(
             operation,
             staged_result = staged_result,
-            requests = summary_plan$requests
+            requests = summary_plan$requests,
+            summary_dots = dots
           ),
           sort_id = margin_summary_stage_sort_id(staged_result)
         ))

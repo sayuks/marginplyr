@@ -788,6 +788,44 @@ it.
 
 ---
 
+## 9. Dispositions reversed by #106
+
+Two entries above were dispositioned on a premise that a later bug disproved.
+They are not amended in place — they were correct about the evidence available
+when they were written — but a reader who reaches them now needs to arrive at
+this section.
+
+**"General dbplyr must stay lazy with no validation-only probe" (§1, #30) is
+reversed.** The relaxation it recorded was stated as a cost — no extra query —
+and was read as a contract. It was not one: because the eligible-type rule was
+reached only from the local adapter, which sources a call rejected became a
+property of the dialect. DuckDB raised its own error naming the internal
+`..marginplyr_share_value_1`; SQLite returned an all-missing share column
+carrying the grand total's own-denominator `1`, which reads as 100% (#106).
+Two dialects disagreeing about whether a call is valid is the absence of a
+rule, not a relaxation of one. A general dbplyr backend now reads the summaries
+a share reads over one input row and rejects an ineligible source before
+returning the query. *Evidence:* `test-share-backends.R` "RSQLite rejects an
+ineligible share source like the local backend" and "DuckDB rejects an
+ineligible share source like the local backend", both comparing the condition
+message against the local one; ADR 0010's second amendment records the
+reasoning, and ADR 0002 records why a value read is not the typed snapshot.
+
+**"The emptiness of the third adapter is the contract" (§7, #39) no longer
+holds.** That rejection rested on one difference: the local adapter ran the
+type check and a lazy non-SQL adapter could not. With the rule settled above
+adapter selection, the two bodies are the same function, and the merge that
+was refused as a line-count change is now behaviour-preserving. The
+one-adapter-per-kind rejection it defended stands unchanged. *Evidence:*
+`git show HEAD:R/share.R` shows `execute_local_shares()` and
+`execute_non_sql_shares()` with byte-identical bodies once the check moves out;
+the contracts it named — "dtplyr validates Parent-share source types during
+collection" and "dtplyr integer and double Parent shares match local results" —
+still pass, because `share_source_sampler()` now carries the difference the
+adapter used to.
+
+---
+
 ## Status
 
 Every observation from every recorded review is dispositioned above. The
