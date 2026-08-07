@@ -74,10 +74,11 @@ test_that("falling through a call head still sees its arguments", {
 test_that("a `[[` call head is walked, and other head shapes are not", {
   # The function position is dropped so `sum` never counts as a column, which
   # leaves a read inside a call-valued head unseen. `[[` is the one head shape
-  # whose parts are all mask reads, so it is walked; `$` and a function
-  # definition are not, because walking them with the rules this analysis has
-  # today would report a read that is not one. #130 carries the rest, and
-  # these are the two halves that must not drift into each other.
+  # whose parts are all mask reads, so it is walked; a function definition is
+  # not, because it binds its own formals and walking it would report a read
+  # that is not one. A `$` head is not walked either, so the object it reads
+  # is missed -- #130 carries that, and these are the two halves that must not
+  # drift into each other.
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
@@ -115,6 +116,181 @@ test_that("a `[[` call head is walked, and other head shapes are not", {
       .grouping = rollup(region)
     )
   )
+})
+
+test_that("an ordinary `$` field name is not a data-mask read", {
+  # `cfg$share` reads a field of a list. The name after `$` is fixed text
+  # rather than a lookup, so collecting it made the guard against reading an
+  # earlier share believe an ordinary summary read the share of that name, and
+  # legal code was rejected -- while `cfg[["share"]]`, the same access spelled
+  # with a string, ran and returned the right answer (#101).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  # nolint start: object_usage_linter.
+  # `cfg` is read from the summary expressions below, which codetools cannot
+  # follow through the data mask.
+  cfg <- list(share = "annual", total = 99)
+  # nolint end
+
+  from_dollar <- summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_parent(total),
+    note = cfg$share,
+    .grouping = rollup(region)
+  )
+  from_bracket <- summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_parent(total),
+    note = cfg[["share"]],
+    .grouping = rollup(region)
+  )
+
+  expect_equal(from_dollar, from_bracket)
+  expect_identical(unique(from_dollar$note), "annual")
+
+  # The same disagreement reached from the other side: the field name made a
+  # share source look as though it depended on an earlier summary alias.
+  source_dollar <- summarize_with_margins(
+    data,
+    total = sum(value),
+    scaled = sum(value) * cfg$total,
+    sh = share_of_parent(scaled),
+    .grouping = rollup(region)
+  )
+  source_bracket <- summarize_with_margins(
+    data,
+    total = sum(value),
+    scaled = sum(value) * cfg[["total"]],
+    sh = share_of_parent(scaled),
+    .grouping = rollup(region)
+  )
+
+  expect_equal(source_dollar, source_bracket)
+})
+
+test_that("the object of a `$` and the index of a `[[` are still read", {
+  # Only the field name stops counting. Dropping `$` calls from the walk
+  # altogether would let a read of the object through, and `[[` is not the
+  # same shape at all: its index is evaluated, so `cfg[[share]]` reads the
+  # share the guard exists to catch.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  from_object <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = share$field,
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_object, "marginplyr_error")
+
+  from_index <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = list(a = 1)[[share]],
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_index, "marginplyr_error")
+
+  expect_identical(expression_data_symbols(quote(cfg$share)), "cfg")
+  expect_identical(
+    expression_data_symbols(quote(cfg[[share]])),
+    c("cfg", "share")
+  )
+  # `@` names a slot the same literal way, and the walk reaches it through the
+  # same fall-through, so it is fixed in the same pass (#101). It is asserted
+  # on the walk rather than through a summary because an S4 object in a
+  # summary expression would add a dependency the package does not otherwise
+  # need.
+  expect_identical(expression_data_symbols(quote(cfg@share)), "cfg")
+})
+
+test_that("a genuine read of an earlier share is still rejected", {
+  # The two true positives the false positives above sit next to: an ordinary
+  # summary that really does name the share, and a share source that really
+  # does depend on an earlier alias. Both messages are the ones #101 must
+  # leave untouched.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  ordinary <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(total),
+      note = share,
+      .grouping = rollup(region)
+    ),
+    "Ordinary summaries cannot use an earlier Parent share (`share`)",
+    fixed = TRUE
+  )
+  expect_s3_class(ordinary, "marginplyr_error")
+
+  source <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      scaled = total * 2,
+      sh = share_of_parent(scaled),
+      .grouping = rollup(region)
+    ),
+    paste0(
+      "Parent share `sh` cannot use source summary `scaled` because it ",
+      "depends on earlier summary alias `total`"
+    ),
+    fixed = TRUE
+  )
+  expect_s3_class(source, "marginplyr_error")
+})
+
+test_that("`.data$x` still reads a column and `.env$x` still reads none", {
+  # The pronoun branches sit above the `$` handling and are unchanged: the
+  # fix must not reach them.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  # nolint start: object_usage_linter.
+  # Read through `.env` from the summary expression below.
+  share <- "from the environment"
+  # nolint end
+
+  pronoun <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = .data$share * 2,
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(pronoun, "marginplyr_error")
+
+  from_env <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    note = .env$share,
+    .grouping = rollup(region)
+  )
+  expect_identical(unique(from_env$note), "from the environment")
 })
 
 test_that("a `get()` call with no name argument raises the caller's error", {

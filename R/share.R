@@ -2628,14 +2628,30 @@ expression_data_symbols <- function(expr) {
       return(character())
     }
   }
+  # Any other `a$b` or `a@b` names `b` literally: the field or slot name is
+  # fixed text rather than a lookup, so only the object is walked. Collecting
+  # the name made `cfg$share` claim a dependency on a column named `share`,
+  # which the share analysis then read as an ordinary summary using an earlier
+  # share, and put the two spellings of one access -- `cfg$share` and
+  # `cfg[["share"]]` -- into disagreement (#101). `[[` is not the same shape:
+  # its index is evaluated, so `cfg[[bucket]]` really does read `bucket` and
+  # falls through to the walk below.
+  if (
+    !is.null(call_name) &&
+      call_name %in% c("$", "@") &&
+      length(expr) >= 2L
+  ) {
+    return(expression_data_symbols(expr[[2L]]))
+  }
   # Element 1 is the function position, dropped because a symbol there names a
   # function rather than a column -- that is what keeps `sum` out of every
   # result. A `[[` there is the one head shape whose parts are all evaluated
   # in the data mask, so `fns[[bucket]](x)` reads `bucket` and the walk has to
-  # see it (#100). The other head shapes are left alone deliberately: `a$b`
-  # names `b` literally rather than reading it, and a function definition
-  # binds its own formals, so walking either would report a read that is not
-  # one and reject a call dplyr accepts (#130).
+  # see it (#100). The other head shapes are left alone: a function definition
+  # binds its own formals, so walking one would report a read that is not one
+  # and reject a call dplyr accepts. A `$` head is no longer that case now
+  # that its field name contributes nothing, and the read of its object is
+  # missed here -- #130 owns the head, and this line is not its fix.
   parts <- as.list(expr)[-1L]
   if (rlang::is_call(expr[[1L]], "[[")) {
     parts <- c(list(expr[[1L]]), parts)
