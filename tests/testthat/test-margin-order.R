@@ -405,6 +405,33 @@ test_that("a native summary reuses `.id` rather than staging its own", {
   )
 })
 
+test_that("a Margin order leaves no window ordering to inherit", {
+  remote <- dbplyr::tbl_lazy(
+    margin_order_data(),
+    con = dbplyr::simulate_postgres()
+  )
+
+  query <- summarize_with_margins(
+    remote,
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(region, store),
+    .sort = "last"
+  )
+  # The key reads its Grouping bits from a column the result does not expose,
+  # so no ordering over the columns it does expose reproduces it. What survives
+  # the projection is a truncated key that orders a margin row by where its
+  # label falls, and replaying that is what `compute()` fails on (#102), so a
+  # window function written over the result inherits nothing.
+  windowed <- suppressWarnings(
+    dbplyr::sql_render(dplyr::mutate(query, running = cumsum(units)))
+  )
+  expect_match(windowed, "OVER (ROWS", fixed = TRUE)
+  expect_false(grepl("OVER (ORDER BY", windowed, fixed = TRUE))
+
+  # The `ORDER BY` the rows arrive in is not what was cleared.
+  expect_match(dbplyr::sql_render(query), "ORDER BY", fixed = TRUE)
+})
+
 test_that("the portable adapter keeps its branch identifier resolvable", {
   skip_if_no_sqlite_simulation()
   remote <- dbplyr::tbl_lazy(
@@ -580,6 +607,67 @@ copy_to_input <- function(con) {
   }
 }
 
+# Materializing a sorted Margin order, which `vignettes/database_backends.qmd`
+# recommends for keeping a result in the database, and which #102 found no
+# `.sort` but `"none"` could survive. ADR 0018's second amendment is what the
+# rows below are owed.
+#
+# Every value of the option runs from one place, because what has to hold is
+# that materializing keeps whichever order the option asked for. Each is checked
+# against the local result for the same specification -- the literals pinning
+# those are the assertions earlier in this file -- so that a backend cannot pass
+# by materializing its own wrong order faithfully. `"none"` promises no order,
+# so it is compared as a set.
+expect_computed_margin_order <- function(as_input) {
+  columns <- c("region", "store", "units")
+
+  for (sort in margin_sort_choices) {
+    summarize_input <- function(input) {
+      summarize_with_margins(
+        input,
+        units = sum(units, na.rm = TRUE),
+        .grouping = rollup(dplyr::all_of(c("region", "store"))),
+        .sort = sort
+      )
+    }
+    query <- summarize_input(
+      as_input(margin_order_data(), paste0("margin_order_compute_", sort))
+    )
+    computed <- dplyr::compute(query)
+
+    expect_s3_class(computed, "tbl_lazy")
+    # The Grouping set identifier the order reads its Grouping bits from is
+    # staged inside the query, so materializing must not surface it.
+    expect_identical(
+      as.character(dplyr::tbl_vars(computed)),
+      columns,
+      info = sort
+    )
+
+    local <- summarize_input(margin_order_data())
+    materialized <- dplyr::collect(computed)
+    if (identical(sort, "none")) {
+      by_key <- function(result) {
+        dplyr::arrange(
+          result,
+          dplyr::across(dplyr::all_of(c("region", "store")))
+        )
+      }
+      local <- by_key(local)
+      materialized <- by_key(materialized)
+    }
+    for (column in columns) {
+      expect_identical(
+        materialized[[column]],
+        local[[column]],
+        info = paste(sort, column)
+      )
+    }
+  }
+
+  invisible(NULL)
+}
+
 test_that("DuckDB executes a Margin order on its native plan", {
   skip_if_backend_absent("duckdb", "DBI")
 
@@ -721,6 +809,48 @@ test_that("DuckDB native and portable Margin orders agree", {
   expect_identical(portable$set, local$set)
 })
 
+test_that("DuckDB materializes a sorted Margin result with `compute()`", {
+  skip_if_backend_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  expect_computed_margin_order(copy_to_input(con))
+
+  # A caller's own `.id` is the Grouping set identifier the order reads, so it
+  # stays in the result and the ordering terms derived from it are the ones a
+  # projection cannot prune. Materializing has to survive that too.
+  remote <- dplyr::copy_to(
+    con,
+    margin_order_data(),
+    "margin_order_compute_id",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  query <- summarize_with_margins(
+    remote,
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  )
+  computed <- dplyr::compute(query)
+  expect_identical(
+    as.character(dplyr::tbl_vars(computed)),
+    c("region", "store", "set", "units")
+  )
+  materialized <- dplyr::collect(computed)
+  local <- summarize_with_margins(
+    margin_order_data(),
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  )
+  for (column in c("region", "store", "set", "units")) {
+    expect_identical(materialized[[column]], local[[column]], info = column)
+  }
+})
+
 test_that("DuckDB orders a factor dimension by its restored levels", {
   skip_if_backend_absent("duckdb", "DBI")
 
@@ -787,6 +917,16 @@ test_that("RSQLite executes a portable Margin order end to end", {
     .sort = "last"
   ))
   expect_identical(result$size, c("large", "medium", "small", "Total"))
+})
+
+test_that("RSQLite materializes a portable Margin order with `compute()`", {
+  skip_if_backend_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  # The portable adapter carries its Grouping set identifier as a per-branch
+  # literal inside a `UNION ALL`, so this is the other shape the order can take.
+  expect_computed_margin_order(copy_to_input(con))
 })
 
 test_that("RSQLite places missing values where its own default would not", {

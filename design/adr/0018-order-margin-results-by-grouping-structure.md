@@ -297,3 +297,51 @@ One reading is closed by this. The entry above says missing values come last
 "within a Grouping bit group", which was true of dimensions and said nothing
 about fixed keys; it now reads as the whole key, and `CONTEXT.md`'s **Margin
 order** entry says the same.
+
+## Amendment: a lazy result carries the order and records no window ordering
+
+"It promises exactly what `dplyr::arrange()` promises" names `collect()` as
+what observes the `ORDER BY` on a dbplyr input. `compute()` observes it too,
+and the entry above did not say so because it could not: on dbplyr 2.6.0 a
+Margin order made `compute()` fail outright for every `.sort` but `"none"`
+(#102), on the very workflow the database-backends guide recommends for
+keeping a result in the database.
+
+Naming it is not the enumeration this decision rejected. That rejection is
+about verbs applied *after* the result, whose outcome dbplyr's query
+flattening decides and can change between releases. `compute()` renders this
+query and materializes the rows it returns, so it observes the `ORDER BY` for
+the same reason `collect()` does, and one warning about flattening does not
+cover a call that never flattens anything.
+
+**`arrange()` writes the key into two places.** Alongside the query's
+`ORDER BY` it records a window ordering, which is what a window function
+written over the result would order by. The previous amendment's rule holds
+for the first and not for the second: the `ORDER BY` reads the Grouping set
+identifier out of the `FROM` clause and survives the projection that drops
+that column, while the window ordering is rewritten by the same projection,
+losing every term that names the identifier. What stays recorded is a
+truncated key — the displayed values and their missingness, with the Grouping
+bits gone — which is not this decision's order and orders a margin row by
+where its label falls.
+
+**A Margin result therefore records no window ordering at all.** `compute()`
+replays whatever is recorded through `window_order()`, which accepts a bare
+column name or `desc()` of one and rejects everything else, so each missingness
+term and each Grouping bit fails there; clearing it is what makes a sorted
+result materializable. It also removes a claim that could only be wrong, since
+no ordering over the columns a Margin result exposes reproduces the key. A
+window function over a sorted lazy result needs `dbplyr::window_order()`,
+exactly as it does over an unsorted one, and asking for a Margin order
+discards any window ordering the input carried.
+
+Two consequences are worth recording.
+
+*The order the rows arrive in is untouched.* Clearing the window ordering
+leaves the `ORDER BY` alone, so the rendered SQL is what it was and
+`collect()` returns what it returned.
+
+*Which results this reaches is read from the prepared backend kind*, as the
+`records_window_order` capability, and not from the class of the finalized
+result — ADR 0014's rule, for its reason. A local result and a dtplyr step
+record no window ordering to clear, and the nesting verbs admit only those.

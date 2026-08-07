@@ -197,10 +197,20 @@
 #' A Margin order promises exactly what [dplyr::arrange()] promises. It is a
 #' property of the object the verb returns: on local data frames and `dtplyr`
 #' steps that is the row order, and on lazy tables it is the outermost query's
-#' `ORDER BY`, which [dplyr::collect()] observes. Whether it survives further
-#' verbs applied to a lazy result is not promised, because that depends on
-#' dbplyr's query flattening, which marginplyr does not own and which changes
-#' between releases.
+#' `ORDER BY`, which [dplyr::collect()] and [dplyr::compute()] both observe:
+#' a materialized result carries the Margin order rather than losing it.
+#' Whether the order survives further verbs applied to a lazy result is not
+#' promised, because that depends on dbplyr's query flattening, which
+#' marginplyr does not own and which changes between releases.
+#'
+#' What a lazy result does not carry is a dbplyr window ordering. The key reads
+#' Grouping bits from a column the result does not expose, so no ordering over
+#' the returned columns alone reproduces it, and marginplyr leaves none
+#' recorded rather than record a truncated one. A window function written over
+#' a sorted lazy result therefore needs [dbplyr::window_order()], exactly as it
+#' would over an unsorted one, and asking for a Margin order discards any
+#' window ordering the input carried. `.sort = "none"` records no order and
+#' clears none.
 #'
 #' Asking for a Margin order never costs a native `GROUP BY GROUPING SETS`
 #' plan, and never changes which adapter runs. It composes with

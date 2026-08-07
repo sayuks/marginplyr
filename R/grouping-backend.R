@@ -53,7 +53,8 @@ backend_capabilities <- function(kind) {
     "can_restore_factors",
     "can_encode_factor_missing_values",
     "native_grouping_sets",
-    "native_duplicate_sets"
+    "native_duplicate_sets",
+    "records_window_order"
   )
   enabled <- list(
     local = c(
@@ -73,10 +74,11 @@ backend_capabilities <- function(kind) {
       "can_read_schema",
       "can_restore_factors",
       "native_grouping_sets",
-      "native_duplicate_sets"
+      "native_duplicate_sets",
+      "records_window_order"
     ),
-    postgres = "native_grouping_sets",
-    sql = character(),
+    postgres = c("native_grouping_sets", "records_window_order"),
+    sql = "records_window_order",
     other = character()
   )
 

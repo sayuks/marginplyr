@@ -56,7 +56,8 @@ Grouping bit before its own value, so a margin row sits with the rows it
 summarizes rather than wherever its Margin label falls among the values. Every
 column in the key carries a missingness term, fixed keys included, so missing
 values come last wherever they appear. It is a property of the
-result a Margin verb returns, not of any table derived from it, and it is
+result a Margin verb returns, not of any table derived from it — except a
+materialization of that same result, which carries it — and it is
 distinct from Grouping-plan order, which numbers grouping-set occurrences.
 _Avoid_: Report order, result order, row order, sort order
 
