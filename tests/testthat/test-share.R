@@ -171,6 +171,56 @@ test_that("Parent shares use statically named across function-list outputs", {
   expect_type(result$value_average_share, "double")
 })
 
+test_that("a named across() source is one packed column, not many summaries", {
+  data <- data.frame(
+    group = c("a", "a", "b"),
+    v = c(1, 2, 3),
+    u = c(4, 5, 6),
+    w = c(7, 8, 9)
+  )
+  # One selected column, several, and a `.names` template: the refusal is the
+  # caller's one packed name in every case, never the multiplicity the earlier
+  # analysis inferred by zipping that name against the selected columns (#105).
+  packing_sources <- list(
+    quote(dplyr::across(v, sum)),
+    quote(dplyr::across(c(v, u), sum)),
+    quote(dplyr::across(c(v, u, w), sum)),
+    quote(dplyr::across(c(v, u), sum, .names = "{.col}_total"))
+  )
+
+  for (source in packing_sources) {
+    condition <- expect_error(
+      rlang::inject(summarize_with_margins(
+        data,
+        tot = !!source,
+        sh = share_of_parent(tot),
+        .grouping = rollup(group)
+      )),
+      "a named `across\\(\\)` packs its outputs"
+    )
+    expect_s3_class(condition, "marginplyr_error")
+    expect_match(conditionMessage(condition), "Drop the `tot =` name")
+    expect_false(grepl(
+      "defined exactly once",
+      conditionMessage(condition),
+      fixed = TRUE
+    ))
+  }
+
+  # The true positive the analysis must keep: two `across()` calls really do
+  # define `v` twice.
+  expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(v, sum),
+      dplyr::across(v, mean),
+      sh = share_of_parent(v),
+      .grouping = rollup(group)
+    ),
+    "defined exactly once"
+  )
+})
+
 test_that(paste0(
   "Parent shares support composite dimensions, fixed keys, ",
   "and duplicates"

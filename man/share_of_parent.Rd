@@ -296,6 +296,10 @@ complete expression such as \code{net = sum(revenue) - sum(discount)} before
 \code{tibble::tibble(total = sum(value))} cannot provide \code{total}. Rewrite it as
 the top-level \code{total = sum(value)} or create a statically named column with
 a preceding \code{across()}.
+\item \strong{Named \code{across()} source:} \code{total = across(c(revenue, units), sum)}
+packs both results into one data-frame-valued \code{total} column, so \code{total}
+is not a scalar source. Drop the \verb{total =} name to get one column per
+selected column, or define each summary at top level.
 \item \strong{Summary-alias dependency:} \code{gross = sum(value)},
 \code{net = gross - sum(discount)} is rejected when \code{net} is a source. Use
 \code{net = sum(value) - sum(discount)}.
