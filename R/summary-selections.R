@@ -602,7 +602,8 @@ known_across_output_names <- function(expr, env, data_proxy) {
         vapply(
           function_names,
           function(fn) {
-            expand_across_name(names_template, column, fn, env)
+            expanded <- expand_across_name(names_template, column, fn, env)
+            check_across_name_count(expanded, names_template, column)
           },
           character(1)
         )
@@ -618,6 +619,28 @@ expand_across_name <- function(template, column, function_name, env) {
     template,
     .envir = env
   ))
+}
+
+# The expansion names one output per selected column, so a template that
+# expands to any other number is one `across()` will reject too. That is what
+# separates this from the `character()` the caller above returns: there the
+# template could not be evaluated at all and the analysis simply does not
+# know the names, whereas here it knows them and knows they are wrong. Saying
+# so here reaches the caller before the summary is staged, rather than as a
+# size error out of the query built from it (ADR-0005).
+check_across_name_count <- function(expanded, template, column) {
+  if (length(expanded) == 1L) {
+    return(expanded)
+  }
+
+  abort_marginplyr(
+    paste0(
+      "The `across()` `.names` template `", template, "` must produce one ",
+      "name per column, but it produced ", length(expanded),
+      " for column `", column,
+      "`. Use a template that expands to a single name."
+    )
+  )
 }
 
 known_across_source_names <- function(expr, env, data_proxy) {
