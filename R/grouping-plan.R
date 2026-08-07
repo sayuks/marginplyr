@@ -642,11 +642,42 @@ grouping_arg_spec <- function(arg, data_vars) {
   NULL
 }
 
+# tidyselect reports a selection under the names the caller gave it, so
+# `all_of(c(area = "region"))` selects `region` and calls it `area`. A grouping
+# dimension is a column of the input, so a renamed selection would put a name
+# the data does not have into the plan. Renaming is refused here, the one place
+# that sees both names, rather than with `eval_select(allow_rename = FALSE)`,
+# whose diagnostic says only that renaming is disallowed and never names the
+# pair the caller has to fix. A name that repeats its own column renames
+# nothing and is left alone.
 resolve_grouping_selection <- function(arg, data_proxy) {
   selected <- tidyselect::eval_select(
     arg,
     data = data_proxy,
     strict = TRUE
   )
-  names(selected)
+  selected_names <- names(selected)
+  # `tidyselect_data_proxy()` is how tidyselect itself sees the columns the
+  # positions in `selected` index, so it reads a lazy table's columns rather
+  # than the fields of the object holding them, which `names()` would return.
+  source_names <- names(tidyselect::tidyselect_data_proxy(data_proxy))[selected]
+  renamed <- selected_names != source_names
+  if (any(renamed)) {
+    abort_grouping_rename(selected_names[renamed], source_names[renamed])
+  }
+  selected_names
+}
+
+abort_grouping_rename <- function(selected_names, source_names) {
+  abort_marginplyr(
+    paste0(
+      "Can't rename grouping dimension",
+      if (length(selected_names) == 1L) " " else "s ",
+      paste0(
+        "`", selected_names, " = ", source_names, "`",
+        collapse = ", "
+      ),
+      ". Grouping dimensions must name existing columns."
+    )
+  )
 }

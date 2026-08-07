@@ -224,6 +224,88 @@ test_that("inspection shares grouped and row-wise input validation", {
   )
 })
 
+renaming_grouping_data <- function() {
+  data.frame(region = c("x", "y"), revenue = 1:2)
+}
+
+renaming_grouping_message <- function() {
+  paste0(
+    "Can't rename grouping dimension `area = region`. ",
+    "Grouping dimensions must name existing columns."
+  )
+}
+
+test_that("inspection and execution refuse a renaming selection alike", {
+  data <- renaming_grouping_data()
+
+  inspected <- expect_error(
+    inspect_grouping(
+      data,
+      .grouping = rollup(tidyselect::all_of(c(area = "region")))
+    )
+  )
+  expect_s3_class(inspected, "marginplyr_error")
+  expect_identical(conditionMessage(inspected), renaming_grouping_message())
+  expect_identical(
+    rlang::call_name(conditionCall(inspected)),
+    "inspect_grouping"
+  )
+
+  # Every Margin verb resolves the same specification, so each one reports what
+  # the inspection verb reported. The calls are written out rather than built
+  # from the verb names, so `codetools` can follow them.
+  summarized <- expect_error(
+    summarize_with_margins(
+      data,
+      revenue = sum(revenue),
+      .grouping = rollup(tidyselect::all_of(c(area = "region")))
+    )
+  )
+  expect_identical(conditionMessage(summarized), renaming_grouping_message())
+
+  expanded <- expect_error(
+    expand_with_margins(
+      data,
+      .grouping = rollup(tidyselect::all_of(c(area = "region")))
+    )
+  )
+  expect_identical(conditionMessage(expanded), renaming_grouping_message())
+
+  nested <- expect_error(
+    nest_with_margins(
+      data,
+      .grouping = rollup(tidyselect::all_of(c(area = "region")))
+    )
+  )
+  expect_identical(conditionMessage(nested), renaming_grouping_message())
+
+  nested_by <- expect_error(
+    nest_by_with_margins(
+      data,
+      .grouping = rollup(tidyselect::all_of(c(area = "region")))
+    )
+  )
+  expect_identical(conditionMessage(nested_by), renaming_grouping_message())
+
+  for (error in list(summarized, expanded, nested, nested_by)) {
+    expect_s3_class(error, "marginplyr_error")
+  }
+})
+
+test_that("a renaming selection resolved from typed metadata is refused", {
+  # A selection carrying a predicate cannot be resolved from column names
+  # alone, so it reaches the typed selection proxy rather than the name proxy
+  # that rejects every other renaming selection before a backend is read.
+  error <- expect_error(
+    inspect_grouping(
+      renaming_grouping_data(),
+      .grouping = rollup(c(area = region, where(is.numeric)))
+    )
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(conditionMessage(error), renaming_grouping_message())
+})
+
 inspect_proxy_capture <- new.env(parent = emptyenv())
 
 inspect_proxy_counter_head <- function(x, ...) {

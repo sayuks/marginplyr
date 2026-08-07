@@ -31,7 +31,11 @@ specifications and require at least one resolved dimension.
 nested Grouping specification, and requires at least one argument.
 \code{\link[=grouping_spec]{grouping_spec()}} combines its arguments by Cartesian product, accepts any
 valid nested Grouping specification, and with no arguments represents the
-identity product (the empty grouping set).}
+identity product (the empty grouping set).
+
+A dimension is a column of the input, so a selection cannot rename it:
+\code{c(area = region)} is an error rather than a dimension named \code{area}.
+Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}
 }
 \value{
 A grouping specification for use in \code{.grouping}.

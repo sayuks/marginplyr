@@ -218,6 +218,95 @@ test_that("selectors and fixed .by columns are resolved once", {
   )
 })
 
+test_that("a renaming grouping selection is refused by every constructor", {
+  data_vars <- c("region", "year", "value")
+  renamed_message <- paste0(
+    "Can't rename grouping dimension `area = region`. ",
+    "Grouping dimensions must name existing columns."
+  )
+  renaming_calls <- list(
+    quote(tidyselect::all_of(c(area = "region"))),
+    quote(c(area = region))
+  )
+  constructors <- c(
+    "grouping_set",
+    "grouping_sets",
+    "rollup",
+    "cube",
+    "grouping_spec"
+  )
+
+  for (constructor in constructors) {
+    for (selection in renaming_calls) {
+      spec <- eval(rlang::call2(constructor, selection))
+      error <- expect_error(compile_grouping_spec(spec, data_vars))
+      expect_s3_class(error, "marginplyr_error")
+      expect_identical(conditionMessage(error), renamed_message)
+    }
+  }
+
+  nested <- expect_error(
+    compile_grouping_spec(
+      rollup(grouping_set(tidyselect::all_of(c(area = "region")))),
+      data_vars
+    )
+  )
+  expect_s3_class(nested, "marginplyr_error")
+  expect_identical(conditionMessage(nested), renamed_message)
+
+  several <- expect_error(
+    compile_grouping_spec(
+      rollup(tidyselect::all_of(c(area = "region", when = "year"))),
+      data_vars
+    )
+  )
+  expect_s3_class(several, "marginplyr_error")
+  expect_identical(
+    conditionMessage(several),
+    paste0(
+      "Can't rename grouping dimensions `area = region`, `when = year`. ",
+      "Grouping dimensions must name existing columns."
+    )
+  )
+})
+
+test_that("non-renaming grouping selections keep resolving", {
+  data_vars <- c("region", "region_code", "year")
+  selected <- c("region", "year")
+
+  expect_equal(
+    compile_grouping_spec(rollup(region, year), data_vars)$dimensions,
+    c("region", "year")
+  )
+  expect_equal(
+    compile_grouping_spec(
+      rollup(tidyselect::all_of(selected)),
+      data_vars
+    )$dimensions,
+    c("region", "year")
+  )
+  expect_equal(
+    compile_grouping_spec(
+      rollup(tidyselect::starts_with("region")),
+      data_vars
+    )$dimensions,
+    c("region", "region_code")
+  )
+  expect_equal(
+    compile_grouping_spec(rollup(-year), data_vars)$dimensions,
+    c("region", "region_code")
+  )
+  # A name that repeats the column it selects renames nothing, so the plan it
+  # builds still names a column of the input.
+  expect_equal(
+    compile_grouping_spec(
+      rollup(tidyselect::all_of(c(region = "region"))),
+      data_vars
+    )$dimensions,
+    "region"
+  )
+})
+
 test_that("duplicate grouping sets have explicit policies", {
   spec <- grouping_sets(grouping_set(a), grouping_set(a))
 
