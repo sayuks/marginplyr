@@ -49,6 +49,13 @@ summarize_margin_native <- function(.data,
     flag_quos <- list()
   }
 
+  check_summary_output_names(
+    native_summary_output_names(.data, dots),
+    group_vars = group_vars,
+    internal_names = flag_names,
+    set_id_name = set_id_name
+  )
+
   result <- dplyr::summarize(
     .data = dplyr::group_by(
       .data,
@@ -83,6 +90,25 @@ summarize_margin_native <- function(.data,
   }
 
   result
+}
+
+# What `check_summary_output_names()` needs and the grouped summarize above
+# cannot supply. A summary output that shadows a grouping dimension takes that
+# dimension's place in the result, so the name is present exactly once whether
+# or not the collision happened, and the two cases are indistinguishable there.
+# Building the same expressions over the ungrouped table names the outputs on
+# their own. Every `across()`, `pick()`, and `if_any()` selection was resolved
+# to an `all_of()` literal before either adapter ran, so dropping the grouping
+# cannot change which columns they cover.
+#
+# A lazy summarize computes its result names without reading from the backend,
+# so this stays a locally detectable error rejected before any backend read
+# (ADR 0005).
+native_summary_output_names <- function(.data, dots) {
+  get_col_names(
+    dplyr::summarize(dplyr::ungroup(.data), !!!dots),
+    dplyr::everything()
+  )
 }
 
 grouping_set_id_sql_expr <- function(plan, con) {

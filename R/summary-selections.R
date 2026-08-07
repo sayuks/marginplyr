@@ -154,6 +154,38 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
   )
 }
 
+# The three questions to ask of the names a summary really produced, which the
+# pre-execution checks can only ask of the names the static predictor could
+# guess. Both execution paths ask them, and the point of asking twice is that
+# the two agree: a call one backend rejects must be rejected on every other.
+# Composing them here is what keeps the checks, their wording, and their order
+# from drifting apart. Only `internal_names` differs between the callers,
+# because each path puts columns of its own beside the summary outputs.
+check_summary_output_names <- function(output_names,
+                                       group_vars,
+                                       internal_names,
+                                       set_id_name) {
+  check_internal_summary_names(output_names, internal_names)
+  check_summary_group_overwrite(output_names, group_vars = group_vars)
+  check_margin_id_collision(set_id_name, output_names, "a summary output")
+}
+
+check_internal_summary_names <- function(output_names, internal_names) {
+  conflicting_names <- intersect(output_names, internal_names)
+  if (length(conflicting_names) == 0L) {
+    return(invisible(NULL))
+  }
+
+  abort_marginplyr(
+    paste0(
+      "Dynamically generated summary output names conflict with ",
+      "internal grouping columns: ",
+      paste0("`", conflicting_names, "`", collapse = ", "),
+      ". Use different summary output names."
+    )
+  )
+}
+
 plan_summary_expressions <- function(dots,
                                      data_proxy,
                                      data_vars,
