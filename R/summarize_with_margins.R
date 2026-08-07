@@ -526,7 +526,9 @@
 #'   requireNamespace("DBI", quietly = TRUE) &&
 #'   requireNamespace("duckdb", quietly = TRUE)
 #' ) {
-#'   con <- suppressMessages(DBI::dbConnect(duckdb::duckdb()))
+#'   # `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets
+#'   # inside the session's temporary directory instead of `~/.duckdb`.
+#'   con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
 #'
 #'   sales_db <- dplyr::copy_to(
 #'     con,

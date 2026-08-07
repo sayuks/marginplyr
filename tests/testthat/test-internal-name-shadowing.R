@@ -143,7 +143,7 @@ test_that("duckdb factor restoration ignores a column named `sql_query`", {
   skip_if_backend_absent("duckdb", "DBI")
 
   data <- factor_shadow_data("sql_query")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   DBI::dbWriteTable(con, "shadow", data)
 

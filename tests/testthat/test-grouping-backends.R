@@ -272,7 +272,7 @@ test_that("DuckDB constructs one typed selection proxy for predicates", {
     envir = asNamespace("dplyr")
   )
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(
     con,
@@ -390,7 +390,7 @@ test_that("Arrow checks margin labels across all dimensions", {
 
 test_that("DuckDB checks margin labels across all dimensions", {
   skip_if_backend_absent("duckdb", "DBI")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
     con,
@@ -708,7 +708,7 @@ test_that("native adapters reserve generated summary names", {
   expect_match(sql, "\"..marginplyr_grouping_1__\"", fixed = TRUE)
 
   skip_if_backend_absent("duckdb", "DBI")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
     con,
@@ -973,7 +973,7 @@ test_that("grouped SQL inputs use their groups as fixed keys", {
 test_that("DuckDB executes grouped lazy input as fixed keys", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(
     year = c(2025L, 2025L, 2026L, 2026L),
@@ -1194,7 +1194,7 @@ test_that("PostgreSQL duplicate keep falls back conservatively", {
 test_that("DuckDB executes native grouping sets with unambiguous bits", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(
     a = c("x", NA_character_, "Total"),
@@ -1224,7 +1224,7 @@ test_that("DuckDB executes native grouping sets with unambiguous bits", {
 test_that("DuckDB keeps input types available to summary expressions", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(a = c(1L, 1L, 2L), value = 1:3)
   dplyr::copy_to(
@@ -1248,7 +1248,7 @@ test_that("DuckDB keeps input types available to summary expressions", {
 test_that("DuckDB native and UNION adapters agree", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(a = c("x", "x", "y"), b = c("u", "v", "u"), value = 1:3)
   dplyr::copy_to(con, data, "adapter_data", overwrite = TRUE, temporary = TRUE)
@@ -1290,7 +1290,7 @@ test_that("DuckDB native and UNION adapters agree", {
 test_that("DuckDB duplicate keep and downstream verbs remain lazy", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   dplyr::copy_to(
     con,
@@ -1328,7 +1328,7 @@ test_that("DuckDB duplicate keep and downstream verbs remain lazy", {
 test_that("DuckDB safely quotes factor identifiers and labels", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(check.names = FALSE, "odd name" = factor(c("A", "B")))
   dplyr::copy_to(con, data, "factor_data", overwrite = TRUE, temporary = TRUE)

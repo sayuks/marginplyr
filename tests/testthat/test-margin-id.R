@@ -290,7 +290,7 @@ test_that("non-syntactic .id names work across Margin verbs", {
 test_that("DuckDB native and portable summaries agree on .id", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(group = c("x", "x", "y"), value = 1:3)
   remote <- dplyr::copy_to(

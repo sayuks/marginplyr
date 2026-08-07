@@ -325,7 +325,9 @@ seeing this needs a live database:
 ```{r}
 #| eval: !expr has_duckdb
 
-con <- DBI::dbConnect(duckdb::duckdb())
+# `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets in
+# the session's temporary directory rather than in `~/.duckdb`.
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
 duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
 
 duckdb_report <- duckdb_sales |>
@@ -427,7 +429,7 @@ error comes from the database, with its own wording:
 ```{r}
 #| eval: !expr has_duckdb
 
-con <- DBI::dbConnect(duckdb::duckdb())
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
 duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
 ```
 
