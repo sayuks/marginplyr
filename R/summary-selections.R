@@ -164,7 +164,16 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
 check_summary_output_names <- function(output_names,
                                        group_vars,
                                        internal_names,
-                                       set_id_name) {
+                                       set_id_name,
+                                       set_id_is_internal = FALSE) {
+  # A Grouping set identifier the package allocated for itself is one of the
+  # internal columns, not the caller's `.id`, and reporting it as `.id` names
+  # an argument the caller never wrote and a column they cannot see.
+  if (set_id_is_internal) {
+    internal_names <- c(internal_names, set_id_name)
+    set_id_name <- NULL
+  }
+
   check_internal_summary_names(output_names, internal_names)
   check_summary_group_overwrite(output_names, group_vars = group_vars)
   check_margin_id_collision(set_id_name, output_names, "a summary output")

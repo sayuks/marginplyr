@@ -200,6 +200,81 @@ test_that(".id rejects output-name collisions", {
   )
 })
 
+# The checks above run before execution, against the names the static
+# predictor could guess. The two below run inside the adapters, against the
+# names a summary really produced, and are reachable only for a summary the
+# predictor could not name -- which is what `unpredictable_summary_dots()`
+# builds and asserts.
+test_that("an internally allocated set identifier is not reported as `.id`", {
+  data <- data.frame(group = c("x", "x", "y"), value = c(1, 2, 3))
+  # `.sort` needs an identifier and the caller supplied none, so
+  # `margin_sort_identifier()` allocates `..marginplyr_sort_1`.
+  dots <- unpredictable_summary_dots("..marginplyr_sort_1")
+
+  local_error <- expect_error(
+    rlang::inject(summarize_with_margins(
+      data,
+      !!!dots,
+      .grouping = rollup(group),
+      .sort = "last"
+    )),
+    class = "marginplyr_error"
+  )
+  # Naming `.id` here would report an argument the caller never wrote, for a
+  # column the public interface does not expose.
+  expect_false(grepl("`.id`", conditionMessage(local_error), fixed = TRUE))
+  expect_match(
+    conditionMessage(local_error),
+    "conflict with internal grouping columns.*`..marginplyr_sort_1`"
+  )
+
+  postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+  native_error <- expect_error(
+    rlang::inject(summarize_with_margins(
+      postgres,
+      !!!dots,
+      .grouping = rollup(group),
+      .sort = "last"
+    )),
+    class = "marginplyr_error"
+  )
+  expect_identical(
+    conditionMessage(native_error),
+    conditionMessage(local_error)
+  )
+})
+
+test_that("a caller's `.id` is still reported as `.id`", {
+  data <- data.frame(group = c("x", "x", "y"), value = c(1, 2, 3))
+  dots <- unpredictable_summary_dots("sid")
+  postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+
+  for (source in list(local = data, native = postgres)) {
+    expect_error(
+      rlang::inject(summarize_with_margins(
+        source,
+        !!!dots,
+        .grouping = rollup(group),
+        .id = "sid"
+      )),
+      "`\\.id` \\(`sid`\\) conflicts with a summary output"
+    )
+  }
+
+  # `.sort` reuses a caller's identifier rather than allocating one, so the
+  # name stays the caller's and the message must not change with it.
+  expect_error(
+    rlang::inject(summarize_with_margins(
+      data,
+      !!!dots,
+      .grouping = rollup(group),
+      .id = "sid",
+      .sort = "last"
+    )),
+    "`\\.id` \\(`sid`\\) conflicts with a summary output"
+  )
+})
+
 test_that(".id preserves ordinary unnamed summary expressions", {
   data <- data.frame(value = 1:2)
 
