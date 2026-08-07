@@ -882,7 +882,7 @@ test_that("RSQLite Parent shares preserve runtime backend conditions", {
 
 test_that("DuckDB Parent shares agree across native, portable, and local paths", { # nolint: line_length_linter
   skip_if_backend_absent("duckdb", "DBI")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "a", "a"),
@@ -1028,7 +1028,7 @@ test_that("dtplyr shares preserve empty-input grand total and partitions", {
 
 test_that("DuckDB shares preserve empty-input grand total and partitions", {
   skip_if_backend_absent("duckdb", "DBI")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(
     con,
@@ -1119,7 +1119,7 @@ test_that("DuckDB Parent shares skip duplicate grouping-set occurrences", {
     result |>
       dplyr::arrange(group, total, share)
   }
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(
     con,
@@ -1190,7 +1190,7 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   }
 
   skip_if_backend_absent("duckdb", "DBI")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
     con,
@@ -1296,7 +1296,7 @@ test_that("RSQLite executes portable Total shares end to end", {
 
 test_that("DuckDB Total shares agree across native, portable, and local paths", { # nolint: line_length_linter
   skip_if_backend_absent("duckdb", "DBI")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "a", "a"),

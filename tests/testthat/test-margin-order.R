@@ -583,7 +583,7 @@ copy_to_input <- function(con) {
 test_that("DuckDB executes a Margin order on its native plan", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   expect_margin_order_agrees(copy_to_input(con))
 
@@ -656,7 +656,7 @@ test_that("DuckDB executes a Margin order on its native plan", {
 test_that("DuckDB native and portable Margin orders agree", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- margin_order_data()
   remote <- dplyr::copy_to(
@@ -724,7 +724,7 @@ test_that("DuckDB native and portable Margin orders agree", {
 test_that("DuckDB orders a factor dimension by its restored levels", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- margin_order_factor_data()
   DBI::dbWriteTable(con, "margin_order_factor", data)

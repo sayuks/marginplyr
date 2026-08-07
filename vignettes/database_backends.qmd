@@ -156,7 +156,9 @@ same workflow execute against a live in-memory database:
 ```{r}
 #| eval: !expr has_duckdb
 
-con <- DBI::dbConnect(duckdb::duckdb())
+# `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets in
+# the session's temporary directory rather than in `~/.duckdb`.
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
 
 sales_db <- copy_to(
   con,

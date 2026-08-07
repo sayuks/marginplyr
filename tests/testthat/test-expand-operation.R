@@ -182,7 +182,7 @@ test_that("Arrow expansion uses schema metadata without collecting", {
 test_that("DuckDB expansion acquires one typed selection proxy", {
   skip_if_backend_absent("duckdb", "DBI")
   register_expand_proxy_methods()
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(
     con,

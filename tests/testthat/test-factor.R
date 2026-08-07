@@ -70,7 +70,7 @@ test_that("reconstruct_factor() works with duckdb", {
     x4 = factor(x, levels = c("a", "b", "c", "aaa"))
   )
 
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 
   DBI::dbWriteTable(con, "data", data)
