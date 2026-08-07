@@ -29,7 +29,8 @@ summarize_margin_union <- function(.data,
                                    margin_labels,
                                    column_info,
                                    reserved_names,
-                                   set_id_name = NULL) {
+                                   set_id_name = NULL,
+                                   set_id_is_internal = FALSE) {
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -63,7 +64,8 @@ summarize_margin_union <- function(.data,
         get_col_names(result, dplyr::everything()),
         group_vars = group_vars,
         internal_names = unname(key_names[setdiff(group_vars, grouping_set)]),
-        set_id_name = set_id_name
+        set_id_name = set_id_name,
+        set_id_is_internal = set_id_is_internal
       )
 
       if (length(grouping_set) > 0L) {

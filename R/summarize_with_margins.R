@@ -718,6 +718,14 @@ stage_margin_summaries <- function(operation,
     reserved_names <- unique(c(reserved_names, set_id_name))
   }
 
+  # Both branches above may replace the caller's `.id` with a name allocated
+  # here -- for keeping set identity under a share, or for a Margin order. The
+  # adapters check their result names against whichever they were handed, and
+  # only this frame can still tell the two apart. Getting it wrong is not
+  # cosmetic: `check_margin_id_collision()` names `.id` in its message, which a
+  # caller who wrote no `.id` cannot act on.
+  set_id_is_internal <- !identical(set_id_name, operation$set_id_name)
+
   result <- tryCatch(
     {
       if (use_native) {
@@ -727,7 +735,8 @@ stage_margin_summaries <- function(operation,
           plan = plan,
           margin_labels = operation$margin_labels,
           reserved_names = reserved_names,
-          set_id_name = set_id_name
+          set_id_name = set_id_name,
+          set_id_is_internal = set_id_is_internal
         )
       } else {
         summarize_margin_union(
@@ -737,7 +746,8 @@ stage_margin_summaries <- function(operation,
           margin_labels = operation$margin_labels,
           column_info = operation$column_info,
           reserved_names = reserved_names,
-          set_id_name = set_id_name
+          set_id_name = set_id_name,
+          set_id_is_internal = set_id_is_internal
         )
       }
     },

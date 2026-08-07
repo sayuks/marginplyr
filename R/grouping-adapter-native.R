@@ -3,7 +3,8 @@ summarize_margin_native <- function(.data,
                                     plan,
                                     margin_labels,
                                     reserved_names,
-                                    set_id_name = NULL) {
+                                    set_id_name = NULL,
+                                    set_id_is_internal = FALSE) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
     dots,
@@ -53,7 +54,8 @@ summarize_margin_native <- function(.data,
     native_summary_output_names(.data, dots),
     group_vars = group_vars,
     internal_names = flag_names,
-    set_id_name = set_id_name
+    set_id_name = set_id_name,
+    set_id_is_internal = set_id_is_internal
   )
 
   result <- dplyr::summarize(
