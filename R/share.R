@@ -281,6 +281,10 @@
 #'   `tibble::tibble(total = sum(value))` cannot provide `total`. Rewrite it as
 #'   the top-level `total = sum(value)` or create a statically named column with
 #'   a preceding `across()`.
+#' - **Named `across()` source:** `total = across(c(revenue, units), sum)`
+#'   packs both results into one data-frame-valued `total` column, so `total`
+#'   is not a scalar source. Drop the `total =` name to get one column per
+#'   selected column, or define each summary at top level.
 #' - **Summary-alias dependency:** `gross = sum(value)`,
 #'   `net = gross - sum(discount)` is rejected when `net` is a source. Use
 #'   `net = sum(value) - sum(discount)`.
@@ -1264,21 +1268,21 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
 
     if (nzchar(output_name)) {
       output_names <- output_name
-      eligible <- !is_across_call(expr)
+      eligibility <- if (is_across_call(expr)) "named_across" else "eligible"
     } else if (is_across_call(expr)) {
       output_names <- known_across_output_names(
         expr,
         env,
         selection_proxy
       )
-      eligible <- TRUE
+      eligibility <- "eligible"
     } else {
       output_names <- known_data_frame_output_names(
         expr,
         env,
         selection_proxy
       )
-      eligible <- FALSE
+      eligibility <- "expanded"
     }
 
     selected_dependencies <- if (is_across_call(expr)) {
@@ -1297,35 +1301,21 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
       expression_alias_dependencies(expr, preceding_names),
       selected_dependencies
     ))
-    across_inputs <- if (is_across_call(expr)) {
-      inputs <- known_across_source_names(
-        expr,
-        env,
-        selection_proxy
-      )
-      rep(inputs, each = length(known_across_function_names(
-        parse_across_arguments(expr)
-      )))
-    } else {
-      rep(NA_character_, length(output_names))
-    }
-    across_functions <- if (is_across_call(expr)) {
-      function_count <- length(known_across_function_names(
-        parse_across_arguments(expr)
-      ))
-      rep(
-        seq_len(function_count),
-        times = length(across_inputs) / function_count
-      )
-    } else {
-      rep(NA_integer_, length(output_names))
-    }
+    provenance <- across_output_provenance(
+      expr,
+      env,
+      selection_proxy,
+      output_names,
+      expands_own_names = is_across_call(expr) && !nzchar(output_name)
+    )
+    across_inputs <- provenance$inputs
+    across_functions <- provenance$functions
     records <- Map(
       function(name, across_input, across_function) {
         list(
           name = name,
           position = i,
-          eligible = eligible,
+          eligibility = eligibility,
           dependencies = dependencies,
           across_input = across_input,
           across_function = across_function
@@ -1340,6 +1330,44 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
   }
 
   analyses
+}
+
+# Which selected column and which `.fns` entry produced each output name. Only
+# an `across()` that expanded its own names has that correspondence: one name
+# per (column, function) pair, in that order. A named `across()` packs every
+# pair into the single column the caller named, so its one name came from all
+# of them and from none in particular; recording `NA` there rather than zipping
+# the two lists is what keeps that name from being multiplied into one record
+# per selected column (#105). A single-column named `across()` is why this
+# takes the caller's naming rather than comparing counts: one output and one
+# column agree in count while still standing for a pack.
+across_output_provenance <- function(expr,
+                                     env,
+                                     data_proxy,
+                                     output_names,
+                                     expands_own_names) {
+  unknown <- list(
+    inputs = rep(NA_character_, length(output_names)),
+    functions = rep(NA_integer_, length(output_names))
+  )
+  if (!expands_own_names) {
+    return(unknown)
+  }
+
+  inputs <- known_across_source_names(expr, env, data_proxy)
+  function_count <- length(known_across_function_names(
+    parse_across_arguments(expr)
+  ))
+  # A `.names` template the analysis could not expand leaves the output names
+  # unknown, so the pairs it would have named cannot be matched to them.
+  if (length(inputs) * function_count != length(output_names)) {
+    return(unknown)
+  }
+
+  list(
+    inputs = rep(inputs, each = function_count),
+    functions = rep(seq_len(function_count), times = length(inputs))
+  )
 }
 
 # The share outputs written so far, each with its kind: a diagnostic naming
@@ -1416,7 +1444,7 @@ plan_across_share <- function(expr,
   selectable <- vapply(
     preceding,
     function(record) {
-      isTRUE(record$eligible) &&
+      identical(record$eligibility, "eligible") &&
         length(record$dependencies) == 0L &&
         context$ordinary_counts[[record$name]] == 1L
     },
@@ -1622,14 +1650,12 @@ validate_share_request <- function(outputs,
       )
     }
     record <- preceding[[max(which(preceding_names == source))]]
-    if (!isTRUE(record$eligible)) {
-      abort_marginplyr(
-        paste0(
-          label, " `", output, "` cannot use `", source,
-          "` because it was expanded from a data-frame-valued summary. ",
-          "Rewrite it as a top-level named summary or a preceding `across()` ",
-          "output."
-        )
+    if (!identical(record$eligibility, "eligible")) {
+      abort_ineligible_share_source(
+        label = label,
+        output = output,
+        source = source,
+        eligibility = record$eligibility
       )
     }
     if (length(record$dependencies) > 0L) {
@@ -1662,6 +1688,31 @@ validate_share_request <- function(outputs,
     )
   }
   invisible(NULL)
+}
+
+# An ineligible source is refused in the terms of the summary the caller wrote,
+# because the two ways a name can be ineligible need opposite rewrites. A
+# column expanded from an unnamed data-frame-valued summary needs a top-level
+# name; a named `across()` already has one, and needs that name dropped so
+# dplyr writes a column per selected column instead of packing them all into
+# it. Telling the second caller to add a top-level name would name the summary
+# they already named (#105).
+abort_ineligible_share_source <- function(label, output, source, eligibility) {
+  advice <- if (identical(eligibility, "named_across")) {
+    paste0(
+      "a named `across()` packs its outputs into one data-frame-valued ",
+      "column. Drop the `", source, " =` name so each selected column is ",
+      "named on its own, or define `", source, "` as a top-level summary."
+    )
+  } else {
+    paste0(
+      "it was expanded from a data-frame-valued summary. Rewrite it as a ",
+      "top-level named summary or a preceding `across()` output."
+    )
+  }
+  abort_marginplyr(
+    paste0(label, " `", output, "` cannot use `", source, "` because ", advice)
+  )
 }
 
 # Each kind states what the compiled plan must provide. A call requesting both

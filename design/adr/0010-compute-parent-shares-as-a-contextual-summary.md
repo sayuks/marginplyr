@@ -77,13 +77,16 @@ summary has the same name as a source-data column, the helper refers to the
 preceding summary output, not the source-data column.
 
 An eligible ordinary summary is either a top-level explicitly named summary
-or a statically named column produced by a preceding `across()`. A column
-expanded from an unnamed data-frame-valued summary is not eligible, although
-such summaries otherwise retain their existing margin-summary behavior. The
-expanded column's provenance, type, and expression position are not
-consistently available for static dependency validation across local and lazy
-backends. The error shows how to rewrite it as top-level named summaries or a
-preceding `across()`.
+or a statically named column produced by a preceding `across()`. A named
+`across()` is neither: dplyr packs its outputs into one data-frame-valued
+column under that name, so the name stands for the pack rather than for one of
+the columns in it, and the error says to drop the name instead of adding one.
+A column expanded from an unnamed data-frame-valued summary is not eligible,
+although such summaries otherwise retain their existing margin-summary
+behavior. The expanded column's provenance, type, and expression position are
+not consistently available for static dependency validation across local and
+lazy backends. The error shows how to rewrite it as top-level named summaries
+or a preceding `across()`.
 
 The eligible source name must be defined exactly once in the call before the
 Parent share expression. Redefining a summary name makes its provenance and
