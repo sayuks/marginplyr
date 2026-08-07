@@ -2574,7 +2574,12 @@ expression_data_symbols <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(character())
   }
-  if (identical(rlang::call_name(expr), "get") && length(expr) >= 2L) {
+  # A call whose head is itself a call -- `fns$total(x)`, an inline lambda --
+  # has no name, so `call_name()` returns `NULL`. Every comparison below is
+  # written to be NULL-safe, since such a call is simply not the shape this
+  # analysis recognizes and must fall through to its parts (#100).
+  call_name <- rlang::call_name(expr)
+  if (identical(call_name, "get") && length(expr) >= 2L) {
     if (get_has_external_env(expr)) {
       return(character())
     }
@@ -2585,19 +2590,22 @@ expression_data_symbols <- function(expr) {
     }
     name_index <- match("x", arg_names, nomatch = 0L)
     if (name_index == 0L) {
-      name_index <- which(arg_names == "")[[1L]]
+      name_index <- match("", arg_names, nomatch = 0L)
     }
-    name <- args[[name_index]]
-    if (
-      is.character(name) &&
-        length(name) == 1L &&
-        !is.na(name)
-    ) {
-      return(name)
+    if (name_index > 0L) {
+      name <- args[[name_index]]
+      if (
+        is.character(name) &&
+          length(name) == 1L &&
+          !is.na(name)
+      ) {
+        return(name)
+      }
     }
   }
   if (
-    rlang::call_name(expr) %in% c("$", "[[") &&
+    !is.null(call_name) &&
+      call_name %in% c("$", "[[") &&
       length(expr) >= 3L &&
       rlang::is_symbol(expr[[2L]])
   ) {
@@ -2620,9 +2628,20 @@ expression_data_symbols <- function(expr) {
       return(character())
     }
   }
-  args <- as.list(expr)[-1L]
+  # Element 1 is the function position, dropped because a symbol there names a
+  # function rather than a column -- that is what keeps `sum` out of every
+  # result. A `[[` there is the one head shape whose parts are all evaluated
+  # in the data mask, so `fns[[bucket]](x)` reads `bucket` and the walk has to
+  # see it (#100). The other head shapes are left alone deliberately: `a$b`
+  # names `b` literally rather than reading it, and a function definition
+  # binds its own formals, so walking either would report a read that is not
+  # one and reject a call dplyr accepts (#130).
+  parts <- as.list(expr)[-1L]
+  if (rlang::is_call(expr[[1L]], "[[")) {
+    parts <- c(list(expr[[1L]]), parts)
+  }
   unique(unlist(
-    lapply(args, expression_data_symbols),
+    lapply(parts, expression_data_symbols),
     use.names = FALSE
   ))
 }
