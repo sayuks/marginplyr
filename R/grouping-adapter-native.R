@@ -49,9 +49,8 @@ summarize_margin_native <- function(.data,
     flag_quos <- list()
   }
 
-  check_native_summary_names(
-    .data,
-    dots = dots,
+  check_summary_output_names(
+    native_summary_output_names(.data, dots),
     group_vars = group_vars,
     internal_names = flag_names,
     set_id_name = set_id_name
@@ -93,38 +92,23 @@ summarize_margin_native <- function(.data,
   result
 }
 
-# The pre-execution checks run against `known_summary_output_names()`, which is
-# a prediction rather than a reading: an `across()` whose `.fns` is a variable
-# has no function-name component the expression can supply, so the predictor
-# substitutes a placeholder and the collision goes unseen. The union path
-# re-checks the names its branches actually produce; this is that check for the
-# native path, which builds one summarize over every grouping set instead.
-#
-# Reading the names back off the grouped summarize would not answer the
-# question. A summary output that shadows a grouping dimension takes that
-# dimension's place in the result, so the name is present exactly once either
-# way and the two cases are indistinguishable. Building the same expressions
-# over the ungrouped table names the outputs on their own. Every `across()`,
-# `pick()`, and `if_any()` selection was resolved to an `all_of()` literal
-# before either adapter ran, so dropping the grouping cannot change which
-# columns they cover.
+# What `check_summary_output_names()` needs and the grouped summarize above
+# cannot supply. A summary output that shadows a grouping dimension takes that
+# dimension's place in the result, so the name is present exactly once whether
+# or not the collision happened, and the two cases are indistinguishable there.
+# Building the same expressions over the ungrouped table names the outputs on
+# their own. Every `across()`, `pick()`, and `if_any()` selection was resolved
+# to an `all_of()` literal before either adapter ran, so dropping the grouping
+# cannot change which columns they cover.
 #
 # A lazy summarize computes its result names without reading from the backend,
 # so this stays a locally detectable error rejected before any backend read
 # (ADR 0005).
-check_native_summary_names <- function(.data,
-                                       dots,
-                                       group_vars,
-                                       internal_names,
-                                       set_id_name) {
-  output_names <- get_col_names(
+native_summary_output_names <- function(.data, dots) {
+  get_col_names(
     dplyr::summarize(dplyr::ungroup(.data), !!!dots),
     dplyr::everything()
   )
-
-  check_internal_summary_names(output_names, internal_names)
-  check_summary_group_overwrite(output_names, group_vars = group_vars)
-  check_margin_id_collision(set_id_name, output_names, "a summary output")
 }
 
 grouping_set_id_sql_expr <- function(plan, con) {

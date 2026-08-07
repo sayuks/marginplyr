@@ -59,21 +59,13 @@ summarize_margin_union <- function(.data,
         .by = unname(key_names[grouping_set])
       )
 
-      result_names <- get_col_names(result, dplyr::everything())
-      check_internal_summary_names(
-        result_names,
-        unname(key_names[setdiff(group_vars, grouping_set)])
+      check_summary_output_names(
+        get_col_names(result, dplyr::everything()),
+        group_vars = group_vars,
+        internal_names = unname(key_names[setdiff(group_vars, grouping_set)]),
+        set_id_name = set_id_name
       )
 
-      check_summary_group_overwrite(
-        result_names,
-        group_vars = group_vars
-      )
-      check_margin_id_collision(
-        set_id_name,
-        result_names,
-        "a summary output"
-      )
       if (length(grouping_set) > 0L) {
         rename_pairs <- rlang::set_names(
           rlang::syms(unname(key_names[grouping_set])),
