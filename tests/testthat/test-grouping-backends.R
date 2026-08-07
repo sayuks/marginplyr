@@ -349,6 +349,37 @@ test_that("public Arrow table classes are supported", {
   )
 })
 
+# Deciding whether a selection renames means comparing what it selected against
+# the columns it selected from, and a lazy selection proxy is the table object
+# itself: `names()` on it returns `con`, `src`, and `lazy_query`, so reading it
+# would report a rename for a selection that renames nothing and would name the
+# proxy's own fields when one does rename. Both halves are asserted here because
+# the first fails only on a backend that never collects its proxy.
+test_that("a lazy selection proxy resolves renames against its columns", {
+  source <- dbplyr::tbl_lazy(
+    data.frame(region = c("x", "y"), value = 1:2),
+    con = dbplyr::simulate_sqlite()
+  )
+
+  plan <- inspect_grouping(source, .grouping = rollup(region))
+  expect_identical(plan$included, c("(region)", "()"))
+
+  error <- expect_error(
+    inspect_grouping(
+      source,
+      .grouping = rollup(tidyselect::all_of(c(area = "region")))
+    )
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(
+    conditionMessage(error),
+    paste0(
+      "Can't rename grouping dimension `area = region`. ",
+      "Grouping dimensions must name existing columns."
+    )
+  )
+})
+
 margin_label_check_data <- function() {
   data.frame(
     first = c("Total", "x"),

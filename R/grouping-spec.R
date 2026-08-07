@@ -38,6 +38,10 @@
 #'   valid nested Grouping specification, and with no arguments represents the
 #'   identity product (the empty grouping set).
 #'
+#'   A dimension is a column of the input, so a selection cannot rename it:
+#'   `c(area = region)` is an error rather than a dimension named `area`.
+#'   Rename the result afterwards with [dplyr::rename()].
+#'
 #' @return A grouping specification for use in `.grouping`.
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()], [expand_with_margins()],
