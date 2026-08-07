@@ -328,7 +328,29 @@ order_margin_result <- function(operation, result, execution) {
   ) {
     result <- dplyr::select(result, -dplyr::all_of(sort_id))
   }
-  result
+  forget_margin_window_order(result, backend = operation$backend)
+}
+
+# Where a backend records a window ordering, `arrange()` has just written the
+# key into two places, and only one of them is a Margin order. ADR 0018's rule
+# -- the key must be resolvable in the `FROM` clause of the query carrying the
+# `ORDER BY` -- is what splits them. The `ORDER BY` reads the Grouping set
+# identifier out of `FROM`, so it survives the projection above dropping that
+# column; the window ordering is rewritten by that same projection and loses
+# every term naming the identifier, leaving a truncated key that orders a
+# margin row by where its label falls.
+#
+# Recording that is worse than recording nothing, and it is also unusable:
+# `compute()` replays a window ordering through `window_order()`, which takes a
+# bare column name or `desc()` of one and nothing else, so the computed terms a
+# Margin key is made of stop it and no sorted result can be materialized at all
+# (#102). Clearing it takes nothing away, because the rows still arrive in the
+# Margin order -- that is the `ORDER BY`, which this leaves alone.
+forget_margin_window_order <- function(result, backend) {
+  if (!backend$records_window_order) {
+    return(result)
+  }
+  dbplyr::window_order(result)
 }
 
 # The key of ADR 0018, built from the Grouping plan alone:
