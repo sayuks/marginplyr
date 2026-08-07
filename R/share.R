@@ -1437,7 +1437,8 @@ plan_across_share <- function(expr,
     preceding_names = preceding_names,
     preceding = preceding,
     context = context,
-    kind = kind
+    kind = kind,
+    error_call = expr
   )
   outputs <- vapply(
     sources,
@@ -2419,12 +2420,21 @@ is_across_call <- function(expr) {
        identical(rlang::call_ns(expr), "dplyr"))
 }
 
+# `error_call` is the caller's own `across()` call rather than this frame,
+# because whatever tidyselect raises here is kept as the parent of the reported
+# condition. Left at its default the chain would name this function and a line
+# of this file, which is an internal frame no caller can act on. It reaches the
+# conditions tidyselect raises itself, which is every one a caller can act on
+# by rewriting the selection; a condition tidyselect re-signals from vctrs, such
+# as a scalar out-of-bounds subscript, keeps the call vctrs gave it, and nothing
+# short of rewriting that condition would change it.
 resolve_share_selection <- function(expr,
                                     env,
                                     preceding_names,
                                     preceding,
                                     context,
-                                    kind) {
+                                    kind,
+                                    error_call) {
   if (rlang::is_symbol(expr)) {
     source <- rlang::as_name(expr)
     if (!source %in% preceding_names) {
@@ -2440,7 +2450,8 @@ resolve_share_selection <- function(expr,
       rlang::new_quosure(expr, env = env),
       data = proxy,
       strict = TRUE,
-      allow_rename = FALSE
+      allow_rename = FALSE,
+      error_call = error_call
     )),
     error = function(cnd) {
       abort_share_selection_error(cnd, preceding, context, kind)
@@ -2448,15 +2459,21 @@ resolve_share_selection <- function(expr,
   )
 }
 
+# A selection naming something ineligible is marginplyr's own report and stays
+# parentless. Anything else -- a selection expression that raised, or tidyselect
+# rejecting the selection -- is an External condition, so it becomes the parent
+# rather than being flattened into the message. That keeps the class and the
+# chain a caller sees identical to the one the ordinary summary path propagates
+# for the same expression, with only marginplyr's context added on top.
 abort_share_selection_error <- function(cnd, preceding, context, kind) {
   missing <- share_selection_missing_names(cnd)
   if (length(missing) == 0L) {
     abort_marginplyr(
       paste0(
         "Invalid ", share_kind_modifier(kind), " `across()` selection. ",
-        "Select only eligible preceding ordinary summaries by name: ",
-        conditionMessage(cnd)
-      )
+        "Select only eligible preceding ordinary summaries by name."
+      ),
+      parent = cnd
     )
   }
 

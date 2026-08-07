@@ -2167,3 +2167,90 @@ test_that("across arguments are validated after evaluation, not as literals", {
     "Total-share `across\\(\\)` `.names` must be one non-missing character"
   )
 })
+
+test_that("a failed share selection keeps the original condition", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  boom <- function() rlang::abort("boom", class = "my_user_error")
+
+  share_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(
+        dplyr::all_of(boom()),
+        share_of_total,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(share_error),
+    "Total-share `across\\(\\)` selection"
+  )
+
+  # The share path adds its own context on top of the condition the ordinary
+  # path propagates unchanged, so the chain below the marginplyr frame is the
+  # same one `summarise()` would have surfaced for the same selection.
+  ordinary_error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(dplyr::all_of(boom()), sum),
+      .grouping = rollup(group)
+    )
+  )
+  expect_s3_class(share_error$parent, class(ordinary_error))
+  expect_s3_class(share_error$parent$parent, "my_user_error")
+  expect_s3_class(ordinary_error$parent, "my_user_error")
+})
+
+test_that("an ineligible share selection raises a parentless condition", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  # A selection that evaluates cleanly and names something ineligible is
+  # marginplyr's own report, so it has no external condition to preserve.
+  ineligible <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(
+        dplyr::all_of("missing"),
+        share_of_total,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_null(ineligible$parent)
+})
+
+test_that("a share selection tidyselect rejects keeps tidyselect's condition", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  # A rename is refused by tidyselect rather than by marginplyr, so the
+  # condition to preserve is tidyselect's own. Its class comes from asking
+  # tidyselect the same question directly, rather than from naming an internal
+  # class of another package here.
+  rejected <- expect_error(tidyselect::eval_select(
+    rlang::quo(c(copy = total)),
+    data = list(total = 1L),
+    allow_rename = FALSE
+  ))
+  renamed <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      dplyr::across(
+        c(copy = total),
+        share_of_total,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_s3_class(renamed$parent, class(rejected))
+})
