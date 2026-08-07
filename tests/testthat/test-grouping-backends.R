@@ -734,11 +734,6 @@ test_that("native adapters reserve generated summary names", {
   )
 })
 
-# An `across()` whose `.fns` arrives as a variable hides the function-name
-# component from the static predictor, so `known_summary_output_names()` cannot
-# report the name these calls really produce. That is the one gap the adapters'
-# own result-name checks exist to close, and the whole point of the data below
-# is that the pre-execution check passes it through.
 shadowed_summary_data <- function() {
   data.frame(
     group = c("x", "x", "y"),
@@ -746,23 +741,19 @@ shadowed_summary_data <- function() {
   )
 }
 
-shadowed_summary_fns <- function(name) {
-  stats::setNames(list(sum), name)
-}
-
 test_that("native adapters reject a summary output shadowing a dimension", {
   data <- shadowed_summary_data()
-  fns <- shadowed_summary_fns("group")
+  dots <- unpredictable_summary_dots("group")
 
   # Local takes the union path, whose result-name check already rejects this.
   # Its condition is the contract the native path has to match, so it is read
   # here rather than restated.
   local_error <- expect_error(
-    summarize_with_margins(
+    rlang::inject(summarize_with_margins(
       data,
-      dplyr::across(dplyr::all_of("value"), fns, .names = "{.fn}"),
+      !!!dots,
       .grouping = rollup(group)
-    ),
+    )),
     class = "marginplyr_error"
   )
   expect_match(
@@ -772,11 +763,11 @@ test_that("native adapters reject a summary output shadowing a dimension", {
 
   postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
   native_error <- expect_error(
-    summarize_with_margins(
+    rlang::inject(summarize_with_margins(
       postgres,
-      dplyr::across(dplyr::all_of("value"), fns, .names = "{.fn}"),
+      !!!dots,
       .grouping = rollup(group)
-    ),
+    )),
     class = "marginplyr_error"
   )
   expect_identical(
@@ -789,21 +780,23 @@ test_that("native adapters reject a summary output shadowing a dimension", {
 test_that("DuckDB rejects a summary output shadowing a dimension", {
   skip_if_backend_absent("duckdb", "DBI")
 
-  # The reported failure: two dimensions where the second is named for the
-  # first, so `across(all_of("x"), list(region = sum))` produces `x_region`.
+  # The reported failure, kept in the shape it was reported in: two dimensions
+  # where the second is named for the first, so `across(all_of("x"), fns)` with
+  # `fns <- list(region = sum)` produces `x_region` under `across()`'s own
+  # naming.
   data <- data.frame(
     region = c("E", "E", "W"),
     x_region = c("p", "q", "p"),
     x = c(1, 2, 3)
   )
-  fns <- shadowed_summary_fns("region")
+  dots <- unpredictable_summary_dots("region", cols = "x", .names = NULL)
 
   local_error <- expect_error(
-    summarize_with_margins(
+    rlang::inject(summarize_with_margins(
       data,
-      dplyr::across(dplyr::all_of("x"), fns),
+      !!!dots,
       .grouping = rollup(region, x_region)
-    ),
+    )),
     class = "marginplyr_error"
   )
 
@@ -818,11 +811,11 @@ test_that("DuckDB rejects a summary output shadowing a dimension", {
   )
 
   duckdb_error <- expect_error(
-    summarize_with_margins(
+    rlang::inject(summarize_with_margins(
       remote,
-      dplyr::across(dplyr::all_of("x"), fns),
+      !!!dots,
       .grouping = rollup(region, x_region)
-    ),
+    )),
     class = "marginplyr_error"
   )
   expect_identical(
@@ -839,25 +832,25 @@ test_that("native adapters reject summary outputs on their own columns", {
   # takes the Grouping set identifier from `.id`; both are written beside the
   # summary outputs in one `summarize()`, so a collision would silently drop
   # the summary rather than the internal column.
-  fns <- shadowed_summary_fns("..marginplyr_grouping_1")
+  flag_dots <- unpredictable_summary_dots("..marginplyr_grouping_1")
   flag_error <- expect_error(
-    summarize_with_margins(
+    rlang::inject(summarize_with_margins(
       postgres,
-      dplyr::across(dplyr::all_of("value"), fns, .names = "{.fn}"),
+      !!!flag_dots,
       .grouping = rollup(group)
-    ),
+    )),
     "summary output names conflict with internal grouping columns"
   )
   expect_s3_class(flag_error, "marginplyr_error")
 
-  fns <- shadowed_summary_fns("sid")
+  id_dots <- unpredictable_summary_dots("sid")
   id_error <- expect_error(
-    summarize_with_margins(
+    rlang::inject(summarize_with_margins(
       postgres,
-      dplyr::across(dplyr::all_of("value"), fns, .names = "{.fn}"),
+      !!!id_dots,
       .grouping = rollup(group),
       .id = "sid"
-    ),
+    )),
     "`.id` \\(`sid`\\) conflicts with a summary output"
   )
   expect_s3_class(id_error, "marginplyr_error")
@@ -865,19 +858,19 @@ test_that("native adapters reject summary outputs on their own columns", {
 
 test_that("native adapters keep unpredictable names that collide with none", {
   data <- shadowed_summary_data()
-  fns <- shadowed_summary_fns("total")
-  expected <- summarize_with_margins(
+  dots <- unpredictable_summary_dots("total", .names = NULL)
+  expected <- rlang::inject(summarize_with_margins(
     data,
-    dplyr::across(dplyr::all_of("value"), fns),
+    !!!dots,
     .grouping = rollup(group)
-  )
+  ))
 
   postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
-  query <- summarize_with_margins(
+  query <- rlang::inject(summarize_with_margins(
     postgres,
-    dplyr::across(dplyr::all_of("value"), fns),
+    !!!dots,
     .grouping = rollup(group)
-  )
+  ))
   expect_identical(
     get_col_names(query, dplyr::everything()),
     names(expected)
@@ -898,11 +891,11 @@ test_that("native adapters keep unpredictable names that collide with none", {
     overwrite = TRUE,
     temporary = TRUE
   )
-  result <- summarize_with_margins(
+  result <- rlang::inject(summarize_with_margins(
     remote,
-    dplyr::across(dplyr::all_of("value"), fns),
+    !!!dots,
     .grouping = rollup(group)
-  ) |>
+  )) |>
     dplyr::collect() |>
     dplyr::arrange(group)
   expect_equal(
