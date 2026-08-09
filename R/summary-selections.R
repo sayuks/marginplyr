@@ -664,8 +664,21 @@ known_across_function_names <- function(parsed) {
   if (is.null(fns_names)) {
     fns_names <- rep("", length(fns))
   }
-  fns_names[fns_names == ""] <- as.character(which(fns_names == ""))
-  fns_names
+  name_unnamed_by_position(fns_names, "")
+}
+
+# Both callers name the unnamed entries of an argument list by position, which
+# is how dplyr refers to them: an argument forwarded through `across()`'s `...`
+# is `..n`, and an unnamed `.fns` list entry takes its index. The replacement
+# has to be indexed by the same positions that select it. Building it over the
+# whole list instead makes the two sides differ in length whenever any entry is
+# named, so base R recycles -- warning from a call that otherwise succeeds --
+# and numbers the survivors by their position among the unnamed entries rather
+# than among all of them (#104).
+name_unnamed_by_position <- function(arg_names, prefix) {
+  unnamed <- which(arg_names == "")
+  arg_names[unnamed] <- paste0(prefix, unnamed)
+  arg_names
 }
 
 parse_across_arguments <- function(expr) {
@@ -690,11 +703,7 @@ parse_across_arguments <- function(expr) {
   unpack_index <- match(".unpack", arg_names, nomatch = 0L)
   used <- c(cols_index, fns_index, names_index, unpack_index)
   additional <- setdiff(seq_along(call_args), used[used > 0L])
-  additional_names <- arg_names[additional]
-  additional_names[additional_names == ""] <- paste0(
-    "..",
-    seq_along(additional_names)
-  )
+  additional_names <- name_unnamed_by_position(arg_names[additional], "..")
 
   list(
     call_args = call_args,
