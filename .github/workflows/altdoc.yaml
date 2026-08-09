@@ -36,6 +36,12 @@ jobs:
           extra-packages: local::.
           needs: website
 
+      # Before the render rather than after it. A `must_error` option that
+      # stopped asserting anything reports nothing, so the site it produces
+      # looks exactly like a correct one; failing here says which half broke.
+      - name: Verify the must_error chunk option
+        run: Rscript .github/scripts/verify-must-error.R
+
       - name: Build site
         run: |
           altdoc::render_docs(parallel = FALSE, freeze = FALSE)

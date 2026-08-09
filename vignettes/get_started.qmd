@@ -53,6 +53,11 @@ has_sqlite_simulator <- requireNamespace("RSQLite", quietly = TRUE)
 has_dtplyr <- requireNamespace("dtplyr", quietly = TRUE)
 has_tabsets <- requireNamespace("knitr", quietly = TRUE) &&
   requireNamespace("quartabs", quietly = TRUE)
+
+# Chunks marked with `must_error` show a call that is meant to fail, so the
+# reader sees the real diagnostic rather than a quotation of one. AGENTS.md is
+# authoritative for what the option does and why it exists.
+source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
 ```
 
 ## Start with the report question
@@ -574,7 +579,19 @@ complete grouping plan, not only the ones active in one branch. The
 `cur_group*()` family is rejected outright: a branch-local identifier, row
 position, or column set has no global meaning once several grouping sets are
 combined, so use `grouping_bit()` or `grouping_id()` to identify levels
-instead.
+instead. The refusal is a Package condition naming the replacement, not a
+silently different answer:
+
+```{r}
+#| label: cur-group-id-rejected
+#| must_error: marginplyr_error
+
+retail_sales |>
+  summarize_with_margins(
+    branch = cur_group_id(),
+    .grouping = cube(region, channel)
+  )
+```
 
 Two familiar conveniences also behave differently. Row order is unspecified
 for local and lazy results alike unless `.sort` asks for a Margin order, which

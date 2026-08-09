@@ -267,7 +267,14 @@ markers <- list(
     "Compare a summary with the whole",
     "original pre-margin",
     "funion(funion(",
-    "Total"
+    "Total",
+    # The guide's one `must_error` chunk, by the diagnostic it has to produce.
+    # It is marked with the class form, so this marker also stands for the
+    # assertion: prose survives a chunk that stopped running, and a chunk that
+    # started failing for some other reason halts the render rather than
+    # reaching this scan.
+    "Error in `summarize_with_margins()`",
+    "does not support `cur_group_id()`"
   ),
   "docs/vignettes/recipes.html" = c(
     "Put each subtotal with the rows it summarizes",
@@ -278,7 +285,7 @@ markers <- list(
     "Compute what the summary pass cannot express",
     "share_of_total",
     "expand_with_margins",
-    # The guide's `must_error: true` chunks, by the diagnostic each one has to
+    # The guide's `must_error` chunks, by the diagnostic each one has to
     # produce. Prose alone would still be there if every chunk stopped running;
     # a rendered error is proof the call was made and was refused. Only the
     # three that need no database are listed, so the markers hold wherever the

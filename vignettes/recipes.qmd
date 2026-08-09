@@ -57,29 +57,10 @@ database and no optional package.
 has_duckdb <- requireNamespace("DBI", quietly = TRUE) &&
   requireNamespace("duckdb", quietly = TRUE)
 
-# Chunks marked `must_error: true` show a call that is meant to fail, so the
+# Chunks marked with `must_error` show a call that is meant to fail, so the
 # reader sees the real diagnostic rather than a quotation of one. AGENTS.md is
 # authoritative for what the option does and why it exists.
-local({
-  knitr::opts_hooks$set(must_error = function(options) {
-    if (isTRUE(options$must_error)) options$error <- TRUE
-    options
-  })
-  default_evaluate <- knitr::knit_hooks$get("evaluate")
-  knitr::knit_hooks$set(evaluate = function(...) {
-    res <- default_evaluate(...)
-    opts <- knitr::opts_current$get()
-    if (isTRUE(opts$must_error) &&
-          !any(vapply(res, inherits, logical(1), "error"))) {
-      stop(
-        "Chunk `", opts$label, "` is marked `must_error: true` but ",
-        "completed without raising an error.",
-        call. = FALSE
-      )
-    }
-    res
-  })
-})
+source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
 ```
 
 ## Put each subtotal with the rows it summarizes
@@ -213,7 +194,7 @@ which only the summary knows, so calling one inside `filter()` is rejected:
 
 ```{r}
 #| label: grouping-bit-in-filter
-#| must_error: true
+#| must_error: marginplyr_error
 
 retail_sales |>
   summarize_with_margins(
