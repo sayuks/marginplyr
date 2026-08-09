@@ -630,7 +630,12 @@ test_that("PostgreSQL renders one staged Parent-share mapping for all measures",
   expect_match(many_sql, "CAST(", fixed = TRUE)
 })
 
-test_that("general dbplyr leaves incompatible summary types to execution", {
+# This connection cannot collect at all, so it stands for a backend the type
+# sample learns nothing from: the read fails, the source goes unsampled, and
+# the staged query is returned for the caller to execute. The counters are
+# what hold the rest of the contract — nothing asks this connection for the
+# staged query's fields, its row count, or its results.
+test_that("general dbplyr leaves a source it cannot sample to execution", {
   remote <- new_parent_lazy_probe(
     data.frame(group = "x", label = "value")
   )
@@ -878,6 +883,243 @@ test_that("RSQLite Parent shares preserve runtime backend conditions", {
   expect_identical(class(error), class(baseline))
   expect_identical(class(error$parent), class(baseline$parent))
   expect_false(inherits(error, "marginplyr_error"))
+})
+
+# The reproduction from #106. A weakly typed dialect used to answer it with an
+# all-missing share column plus the grand total's own-denominator `1`, because
+# the eligible-type rule was reached only from the local adapter. Comparing the
+# condition against the local one is what makes "the same rejection" checkable
+# without a second backend in this test.
+test_that("RSQLite rejects an ineligible share source like the local backend", {
+  skip_if_backend_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    store = c("s1", "s2", "s3"),
+    revenue = c(1, 3, 2)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_type_sqlite_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      lab = max(region),
+      p = share_of_parent(lab),
+      .grouping = rollup(region, store)
+    )
+  }
+
+  local_error <- expect_error(summarize(data), "plain integer or double scalar")
+  remote_error <- expect_error(
+    summarize(remote),
+    "plain integer or double scalar"
+  )
+
+  expect_s3_class(remote_error, "marginplyr_error")
+  expect_identical(
+    conditionMessage(remote_error),
+    conditionMessage(local_error)
+  )
+  expect_identical(remote_error$share_output, "p")
+  expect_identical(remote_error$source_summary, "lab")
+  expect_identical(
+    rlang::call_name(conditionCall(remote_error)),
+    "summarize_with_margins"
+  )
+  # The internal denominator and match columns are marginplyr's own names for
+  # temporaries the caller never wrote and cannot act on.
+  expect_false(grepl(
+    "..marginplyr",
+    conditionMessage(remote_error),
+    fixed = TRUE
+  ))
+})
+
+test_that("RSQLite rejects an ineligible source beside a Margin level", {
+  skip_if_backend_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(
+      region = c("E", "E", "W"),
+      store = c("s1", "s2", "s3"),
+      revenue = c(1, 3, 2)
+    ),
+    "share_source_level_sqlite_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  # `grouping_bit()` and `grouping_id()` are marginplyr's own summary-context
+  # helpers, so the backend has no such functions and the read that types the
+  # source summaries would fail on them as a whole. A call that identifies its
+  # Margin levels must not lose the rule for its measures.
+  error <- expect_error(
+    summarize_with_margins(
+      remote,
+      level = grouping_id(region, store),
+      bit = grouping_bit(store),
+      lab = max(region),
+      p = share_of_parent(lab),
+      .grouping = rollup(region, store)
+    ),
+    "plain integer or double scalar"
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(error$source_summary, "lab")
+})
+
+test_that("RSQLite types a share source past an unrelated failing summary", {
+  skip_if_backend_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(
+      region = c("E", "E", "W"),
+      store = c("s1", "s2", "s3"),
+      revenue = c(1, 3, 2)
+    ),
+    "share_source_scope_sqlite_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  # A summary no share reads must not decide whether the rule runs. Reading it
+  # too would fail the whole read on this expression the backend refuses, and
+  # the source it was never asked about would go unchecked with it.
+  error <- expect_error(
+    summarize_with_margins(
+      remote,
+      unrelated = no_such_aggregate(revenue),
+      lab = max(region),
+      p = share_of_parent(lab),
+      .grouping = rollup(region, store)
+    ),
+    "plain integer or double scalar"
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(error$source_summary, "lab")
+})
+
+test_that("RSQLite keeps eligible share sources working after the probe", {
+  skip_if_backend_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    revenue = c(1, 3, 2),
+    units = c(1L, 3L, 0L),
+    # The first input row is missing, so a weakly typed dialect answers the
+    # type probe with a value carrying no type at all. That is not evidence of
+    # an ineligible source, and rejecting on it would break a working call.
+    sparse = c(NA_real_, 4, 5)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_probe_sqlite_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      revenue_total = sum(revenue),
+      units_total = sum(units),
+      sparse_total = sum(sparse, na.rm = TRUE),
+      revenue_share = share_of_parent(revenue_total),
+      units_share = share_of_total(units_total),
+      sparse_share = share_of_parent(sparse_total),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ) |>
+      dplyr::arrange(is.na(group), group)
+  }
+
+  expected <- summarize(data)
+  query <- summarize(remote)
+
+  expect_s3_class(query, "tbl_lazy")
+  expect_equal(
+    as.data.frame(dplyr::collect(query)),
+    as.data.frame(expected)
+  )
+})
+
+test_that("a lazy backend that answers nothing keeps its share source", {
+  skip_if_no_sqlite_simulation()
+  # A simulated connection executes no query, so the type probe learns nothing
+  # and the call must stay lazy rather than reject a source it cannot read.
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = c("x", "y"), value = 1:2),
+    con = dbplyr::simulate_sqlite()
+  )
+
+  query <- summarize_with_margins(
+    remote,
+    total = sum(value),
+    share = share_of_parent(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  expect_s3_class(query, "tbl_lazy")
+  expect_match(dbplyr::sql_render(query), "UNION ALL", fixed = TRUE)
+})
+
+test_that("DuckDB rejects an ineligible share source like the local backend", {
+  skip_if_backend_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    store = c("s1", "s2", "s3"),
+    revenue = c(1, 3, 2)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_type_duckdb_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      lab = max(region),
+      p = share_of_total(lab),
+      .grouping = rollup(region, store)
+    )
+  }
+
+  local_error <- expect_error(summarize(data), "plain integer or double scalar")
+  remote_error <- expect_error(
+    summarize(remote),
+    "plain integer or double scalar"
+  )
+
+  expect_s3_class(remote_error, "marginplyr_error")
+  expect_identical(
+    conditionMessage(remote_error),
+    conditionMessage(local_error)
+  )
+  expect_identical(remote_error$share_output, "p")
+  expect_identical(remote_error$source_summary, "lab")
+  # The backend used to raise its own error here, naming the internal
+  # denominator column the join reserved.
+  expect_false(grepl(
+    "..marginplyr",
+    conditionMessage(remote_error),
+    fixed = TRUE
+  ))
 })
 
 test_that("DuckDB Parent shares agree across native, portable, and local paths", { # nolint: line_length_linter

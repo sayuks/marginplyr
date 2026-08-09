@@ -283,11 +283,16 @@ postgres_sales |>
 ```
 
 Syntax, source-name, written-order, and `across()` errors are validated before
-execution. General dbplyr backends do not expose every arbitrary aggregate's
-result type or cardinality from metadata, and marginplyr does not run an extra
-schema query or collect the result to discover them. A runtime-only type or
-cardinality incompatibility can therefore surface from the database when the
-staged query executes.
+execution. A share source must still be a plain integer or double, and that
+rule holds here too. A general dbplyr backend exposes no metadata for an
+arbitrary aggregate's result type, so marginplyr reads the summaries a share
+reads over a single input row and rejects an ineligible source before
+returning the query. That read is bounded in the rows it asks for and gets
+back, not in the work the input may have to do to produce one row — the staged
+query above is still not executed, and `show_query()` runs nothing. A source
+the sample cannot type is left alone rather than rejected, so a runtime-only
+incompatibility, and any non-scalar summary, can still surface from the
+database when the staged query executes.
 
 The portable value contract covers finite numbers, missing values, and zero
 denominators. Backend-specific non-finite representations are outside that

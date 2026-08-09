@@ -373,16 +373,18 @@
 #' are requested.
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
-#' reported locally, before execution, on every backend. Only the *result*
-#' rules — eligible numeric type and exactly-one-value cardinality — depend on
-#' what the backend can prove:
+#' reported locally, before execution, on every backend. The eligible-type
+#' rule is also enforced on every backend, and no backend calculates a share
+#' from a source it has shown to be ineligible. What differs is when the
+#' source's type becomes readable, and whether the exactly-one-value
+#' cardinality rule can be read with it:
 #'
 #' | Backend | Where source type and cardinality are checked |
 #' |---|---|
 #' | Local data frame | Before any share is calculated |
 #' | `dtplyr` step | At explicit execution, before an invalid row is emitted |
 #' | Arrow | Not reached; shares are rejected outright |
-#' | General dbplyr | Not by marginplyr; the database may error at collection |
+#' | General dbplyr | Type only, from one input row, before the query returns |
 #'
 #' Arrow inputs reject both helpers after expression planning and common
 #' Margin-operation validation but before constructing a summary query. The
@@ -396,20 +398,32 @@
 #' diagnostics keep the share's output name, the source summary name, and
 #' the original public call, so they read like the local ones.
 #'
-#' General dbplyr backends are not queried solely to discover an arbitrary
-#' summary result's type or cardinality. Statically detectable syntax and
-#' dependency errors remain local, while an incompatible lazy summary may
-#' report its backend error when [dplyr::collect()] executes the staged query.
+#' A general dbplyr backend evaluates the source summary in the database, so
+#' its type is readable only from a value the database returns. marginplyr
+#' reads one: when a share is requested, it collects the ordinary summaries
+#' over a single input row and rejects an ineligible source before returning
+#' the query. The read is bounded in rows requested and returned, not in the
+#' work the input may have to do to produce that one row. It is the staged
+#' query that stays lazy — nothing else is executed, [dplyr::show_query()]
+#' remains non-executing, and no further query is run to improve an error.
+#'
+#' A source the read cannot type is left alone rather than rejected. A dialect
+#' that types values rather than columns says nothing about a summary whose
+#' one sampled value is missing, and a summary the database refuses is
+#' reported by the database when [dplyr::collect()] executes the staged
+#' query, where its own diagnostic is the useful one. Cardinality is not read
+#' this way at all: a SQL aggregate returns one value per grouping row by
+#' construction, so there is nothing for the sample to disprove. What the
+#' sample cannot type and every non-scalar summary therefore remain
+#' runtime-only incompatibilities: errors the database reports for itself at
+#' [dplyr::collect()] rather than ones marginplyr raises before returning the
+#' query.
+#'
 #' The portable value guarantee covers finite numbers, missing values, and
 #' zero denominators. Infinite values and backend-specific `NaN`
 #' representations are outside that guarantee because supported SQL dialects
 #' do not share one portable finite-value predicate. Normalize potentially
 #' non-finite summaries explicitly with operations supported by the backend.
-#'
-#' marginplyr does not run a schema query, execute the staged query, or collect
-#' it solely to improve type or cardinality errors. This preserves laziness and
-#' makes [dplyr::show_query()] non-executing; runtime-only incompatibilities
-#' remain errors at the backend execution boundary.
 #'
 #' @param x The bare name of one preceding eligible ordinary summary.
 #'
@@ -863,6 +877,15 @@ share_cardinality_records <- function(analyses, requests) {
     seen_sources <- c(seen_sources, pair$source)
   }
   cardinality
+}
+
+# The backends whose ordinary summaries evaluate R code, so
+# `wrap_share_sources()` below can put the eligible-type and cardinality rules
+# inside the summary itself. The planner reads it to decide whether to wrap,
+# and `unsampled_share_sources()` asserts it: a kind may only be left unsampled
+# because it carries the rule in its own summary.
+wraps_share_sources_in_summary <- function(backend_kind) {
+  backend_kind %in% c("local", "dtplyr")
 }
 
 wrap_share_sources <- function(dots,
@@ -1755,7 +1778,8 @@ check_total_grouping_kind <- function(plan) {
 
 execute_shares <- function(operation,
                            staged_result,
-                           requests) {
+                           requests,
+                           summary_dots) {
   check_margin_operation(operation)
   check_margin_summary_stage(staged_result)
   if (length(requests) == 0L) {
@@ -1769,6 +1793,20 @@ execute_shares <- function(operation,
   )
   staged_set_id_name <- margin_summary_stage_set_id(
     staged_result
+  )
+  # The eligible-type rule is a property of the source summary, not of the
+  # join that follows, so it is settled once here rather than inside the
+  # adapter that happens to run. Only where its answer comes from is a backend
+  # question, and that is what the sampler below decides.
+  check_share_source_types(
+    sample_share_sources(
+      operation,
+      result = result,
+      requests = requests,
+      summary_dots = summary_dots
+    ),
+    requests = requests,
+    call = operation$call
   )
   adapter <- share_adapter(operation$backend$kind)
   # One adapter pass per requested kind. Every pass reads the same staged
@@ -1809,12 +1847,12 @@ execute_shares <- function(operation,
 
 share_adapter <- function(backend_kind) {
   adapters <- list(
-    local = execute_local_shares,
+    local = execute_row_matched_shares,
     duckdb = execute_dbplyr_shares,
     postgres = execute_dbplyr_shares,
     sql = execute_dbplyr_shares,
-    dtplyr = execute_non_sql_shares,
-    other = execute_non_sql_shares
+    dtplyr = execute_row_matched_shares,
+    other = execute_row_matched_shares
   )
   adapter <- adapters[[backend_kind]]
   if (is.null(adapter)) {
@@ -1826,12 +1864,11 @@ share_adapter <- function(backend_kind) {
   adapter
 }
 
-execute_local_shares <- function(operation,
-                                 result,
-                                 requests,
-                                 set_id_name,
-                                 kind) {
-  check_local_share_types(result, requests, call = operation$call)
+execute_row_matched_shares <- function(operation,
+                                       result,
+                                       requests,
+                                       set_id_name,
+                                       kind) {
   apply_joined_shares(
     result,
     requests = requests,
@@ -1857,19 +1894,131 @@ execute_dbplyr_shares <- function(operation,
   )
 }
 
-execute_non_sql_shares <- function(operation,
-                                   result,
-                                   requests,
-                                   set_id_name,
-                                   kind) {
-  apply_joined_shares(
-    result,
-    requests = requests,
-    plan = operation$plan,
-    set_id_name = set_id_name,
-    kind = kind,
-    sql_join = FALSE
+# Where the eligible-type rule reads its source values, chosen from the
+# prepared backend kind exactly as the adapter above is. The samplers share
+# the adapters' signature and, like them, the lookup has no default: an
+# unrecognized kind is a marginplyr defect rather than something a caller can
+# rewrite.
+share_source_sampler <- function(backend_kind) {
+  samplers <- list(
+    local = sample_materialized_sources,
+    duckdb = probe_share_sources,
+    postgres = probe_share_sources,
+    sql = probe_share_sources,
+    dtplyr = unsampled_share_sources,
+    other = probe_share_sources
   )
+  sampler <- samplers[[backend_kind]]
+  if (is.null(sampler)) {
+    stop(
+      "Unknown contextual-share source-sampler backend kind: ", backend_kind,
+      call. = FALSE
+    )
+  }
+  sampler
+}
+
+sample_share_sources <- function(operation,
+                                 result,
+                                 requests,
+                                 summary_dots) {
+  sampler <- share_source_sampler(operation$backend$kind)
+  sampler(
+    operation,
+    result = result,
+    requests = requests,
+    summary_dots = summary_dots
+  )
+}
+
+# A materialized result carries the summaries' own types, so the staged result
+# is the sample and nothing is read.
+sample_materialized_sources <- function(operation,
+                                        result,
+                                        requests,
+                                        summary_dots) {
+  values <- as.list(result)
+  values[intersect(share_source_names(requests), names(values))]
+}
+
+# `wrap_share_sources()` put the same rule inside the ordinary summary for the
+# backends that evaluate summaries in R and stay lazy, where it raises at
+# execution with the caller's own call. Sampling here would collect their
+# input on the caller's behalf to say what they already say themselves.
+unsampled_share_sources <- function(operation,
+                                    result,
+                                    requests,
+                                    summary_dots) {
+  stopifnot(wraps_share_sources_in_summary(operation$backend$kind))
+  list()
+}
+
+# One bounded read: the planned ordinary summaries over a single input row,
+# collected so each share source comes back with the type the backend gives
+# it. It is the only way to learn that type in a dialect that types values
+# rather than columns -- a zero-row read there answers every computed column
+# with no type at all -- and it is bounded in rows read and returned, though
+# not in the work the lazy input may still have to do to produce that one row.
+#
+# Anything the probe cannot answer leaves the source unsampled rather than
+# rejected. A query that fails here fails again for the caller at collection,
+# where its own diagnostic is the useful one, and a missing value carries no
+# type in a weakly typed dialect, so it is not evidence of an ineligible
+# source. Warnings are already the staged query's, which was built first.
+probe_share_sources <- function(operation,
+                                result,
+                                requests,
+                                summary_dots) {
+  # The one row is read as if it were a row of the most detailed grouping set.
+  # `grouping_bit()` and `grouping_id()` only ever become integer constants, so
+  # which set that is cannot change a source's type -- but leaving them for a
+  # backend that has no such functions would fail the whole read, and a call
+  # that identifies its Margin levels would lose the check for its measures.
+  probed_dots <- rewrite_grouping_dots(
+    share_source_dots(summary_dots, share_source_names(requests)),
+    plan = operation$plan,
+    grouping_set = operation$plan$dimensions
+  )
+  probe <- tryCatch(
+    suppressMessages(suppressWarnings(
+      dplyr::collect(dplyr::summarize(
+        utils::head(operation$data, n = 1L),
+        !!!probed_dots
+      ))
+    )),
+    error = function(cnd) NULL
+  )
+  if (is.null(probe)) {
+    return(list())
+  }
+  values <- as.list(probe)
+  values <- values[intersect(share_source_names(requests), names(values))]
+  Filter(share_probe_carries_a_type, values)
+}
+
+share_probe_carries_a_type <- function(value) {
+  !(is.logical(value) && all(is.na(value)))
+}
+
+# Only the summaries a share reads. Reading the rest would let a summary no
+# share depends on decide whether the rule runs at all: one expression the
+# backend refuses fails the whole read, and the sources it was never asked
+# about would go unchecked with it.
+#
+# There is nothing to follow past the named source. `validate_share_request()`
+# refuses a source that depends on an earlier summary alias, so a source
+# summary is self-contained and carries no dependency to keep with it.
+#
+# A summary the caller did not name is kept rather than guessed at. Its outputs
+# are the names an `across()` expands to, which the planner resolved and this
+# frame did not, and reading one summary too many costs a column while dropping
+# one costs the source it defines.
+share_source_dots <- function(dots, sources) {
+  dot_names <- names(dots)
+  if (is.null(dot_names)) {
+    dot_names <- rep("", length(dots))
+  }
+  dots[!nzchar(dot_names) | dot_names %in% sources]
 }
 
 apply_joined_shares <- function(result,
@@ -1882,7 +2031,7 @@ apply_joined_shares <- function(result,
   target_ids <- rule$target_ids(plan)
   own_denominator_ids <- plan$set_ids[is.na(target_ids)]
   pairs <- share_pairs(requests)
-  sources <- unique(vapply(pairs, `[[`, character(1), "source"))
+  sources <- share_source_names(requests)
   result_names <- get_col_names(result, dplyr::everything())
   denominator_names <- new_margin_internal_names(
     length(sources),
@@ -2154,6 +2303,12 @@ share_pairs <- function(requests) {
   )
 }
 
+# The source summaries a set of requests reads, each named once however many
+# shares are calculated from it.
+share_source_names <- function(requests) {
+  unique(vapply(share_pairs(requests), `[[`, character(1), "source"))
+}
+
 build_lazy_parent_mapping <- function(result,
                                       child_ids,
                                       parent_ids,
@@ -2222,26 +2377,29 @@ add_lazy_parent_join_keys <- function(result,
   dplyr::mutate(result, !!!join_key_exprs)
 }
 
-check_local_share_types <- function(result, requests, call) {
-  pairs <- share_pairs(requests)
-  checked_sources <- character()
+# `values` is whatever the backend's sampler could say about the source
+# summaries, keyed by source name. A source it does not name went unsampled,
+# which is not a verdict: the rule is what an eligible type is, never how many
+# backends can be asked.
+check_share_source_types <- function(values, requests, call) {
+  sampled <- names(values)
 
-  for (pair in pairs) {
+  for (pair in share_pairs(requests)) {
     source <- pair$source
-    if (source %in% checked_sources) {
+    if (!source %in% sampled) {
       next
     }
-    values <- result[[source]]
-    if (!is_share_source_type(values)) {
-      abort_share_source_type(
-        values,
-        share_output = pair$output,
-        source_summary = source,
-        share_kind = pair$kind,
-        call = call
-      )
+    value <- values[[source]]
+    if (is_share_source_type(value)) {
+      next
     }
-    checked_sources <- c(checked_sources, source)
+    abort_share_source_type(
+      value,
+      share_output = pair$output,
+      source_summary = source,
+      share_kind = pair$kind,
+      call = call
+    )
   }
   invisible(NULL)
 }

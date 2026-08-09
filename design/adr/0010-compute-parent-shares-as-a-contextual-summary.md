@@ -425,6 +425,38 @@ relaxation this decision already granted it: no extra schema or cardinality
 query, no implicit collection, and an incompatible type or non-scalar result
 surfacing as a database condition at execution.
 
+## Amendment: the eligible-type rule holds on every backend
+
+The relaxation granted to general dbplyr above was written as a statement
+about cost — no extra query — but it was read by callers as a statement about
+the contract, and it was not one. Because the type rule was reached only from
+the local adapter, which sources a call rejected became a property of the
+dialect: DuckDB raised its own error naming the internal denominator column
+`..marginplyr_share_value_1`, while SQLite silently returned an all-missing
+share column carrying the grand total's own-denominator `1`, which reads as
+100% (#106). Two backends disagreeing about whether a call is valid is not a
+relaxation; it is the absence of a rule.
+
+The eligible-type rule is therefore enforced on every backend, and no backend
+calculates a share from a source shown to be ineligible. A general dbplyr
+backend evaluates the source summary in the database, so the only thing that
+can report its type is a value the database returns: when a share is
+requested, marginplyr collects the planned ordinary summaries over a single
+input row and rejects an ineligible source before returning the query. This
+amends the "no additional query" half of the decision above, deliberately: one
+read bounded in rows requested and returned buys the same rejection everywhere,
+and the alternative was a contract that no two dialects agreed on. The staged
+query itself is still not executed, `show_query()` still runs nothing, and no
+further query is issued to improve an error.
+
+What a read of one row cannot answer, it does not answer. A summary whose
+sampled value is missing carries no type in a dialect that types values rather
+than columns, and a summary the database refuses is left to the database, whose
+own diagnostic at collection is the useful one; neither is treated as evidence
+of an ineligible source. Cardinality is unamended and remains a local and
+dtplyr rule: a SQL aggregate returns one value per grouping row by
+construction, so the sample has nothing to disprove.
+
 ## Considered options
 
 `rollup_share()` was rejected because it names the input structure rather than

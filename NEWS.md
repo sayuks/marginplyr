@@ -9,7 +9,10 @@
   preceding numeric scalar summary by the same measure one `rollup()` level
   up, partitioned by the fixed `.by` keys. Local data frames, dbplyr, and
   dtplyr are supported, and lazy inputs stay lazy; Arrow rejects Parent shares
-  before a query is built.
+  before a query is built. A share source must be a plain integer or double on
+  every backend: where the type is not readable without asking, marginplyr
+  reads the ordinary summaries over one input row rather than leaving the rule
+  to the dialect.
 * Added the contextual `share_of_total()` summary helper, which divides the
   same kind of source summary by the Grand total set within each fixed `.by`
   partition. It shares every rule of `share_of_parent()` except the
