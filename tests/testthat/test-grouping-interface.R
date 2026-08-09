@@ -529,7 +529,7 @@ test_that("nesting rejects duplicate grouping sets without visible identity", {
       .grouping = spec,
       .duplicates = "keep"
     ),
-    "does not support `.duplicates = \"keep\"`"
+    "`\\.duplicates` must be one of \"error\", \"drop\"\\."
   )
   expect_error(
     nest_by_with_margins(
@@ -537,7 +537,7 @@ test_that("nesting rejects duplicate grouping sets without visible identity", {
       .grouping = spec,
       .duplicates = "keep"
     ),
-    "does not support `.duplicates = \"keep\"`"
+    "`\\.duplicates` must be one of \"error\", \"drop\"\\."
   )
 })
 

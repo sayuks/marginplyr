@@ -59,7 +59,7 @@ test_that("nest rejects grouping before typed metadata acquisition", {
   nest_proxy_capture$n <- 0L
   expect_error(
     nest_with_margins(source, .duplicates = "keep"),
-    "does not support `.duplicates = \"keep\"`"
+    "`\\.duplicates` must be one of \"error\", \"drop\"\\."
   )
   expect_identical(nest_proxy_capture$n, 0L)
 })
@@ -188,7 +188,11 @@ test_that("nesting option errors use the package condition seam", {
         .grouping = rollup(group),
         .duplicates = "keep"
       )),
-      message = "Nesting does not support `\\.duplicates = \"keep\"`"
+      # `"keep"` is refused by the nesting vocabulary itself rather than by a
+      # second guard, so it reads like any other value outside it (#110).
+      # test-verb-argument-admission.R asserts the whole message; what this
+      # case adds is that it reaches the caller through the condition seam.
+      message = "`\\.duplicates` must be one of \"error\", \"drop\"\\."
     ),
     key_grouping_column = list(
       expr = quote(nest_with_margins(

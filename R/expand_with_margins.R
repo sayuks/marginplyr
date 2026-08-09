@@ -107,6 +107,7 @@ expand_with_margins <- function(.data,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     .sort = .sort,
+    duplicates_choices = margin_duplicates_choices,
     .id = .id,
     call = call
   )
