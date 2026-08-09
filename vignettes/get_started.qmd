@@ -464,9 +464,9 @@ retail_sales |>
   dplyr::as_tibble()
 ```
 
-`NULL` bypasses collision checks. `NA_character_` requests the same typed
-missing output but still checks for source missing values and factor NA
-levels when `.check_margin_label = TRUE`.
+`.margin_label = NULL` bypasses collision checks. `NA_character_` requests
+the same typed missing output but still checks for source missing values and
+factor NA levels when `.check_margin_label = TRUE`.
 
 A factor NA level and a missing factor code are different even though both
 can print as `<NA>`. Here the second value uses the NA level and the third is

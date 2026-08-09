@@ -31,10 +31,11 @@
 #'   `NA_character_` or `NULL`.
 #' @param .check_margin_label A logical scalar. If `TRUE`, check each Margin
 #'   dimension independently for a value or factor level that collides with its
-#'   display label. `NULL` bypasses collision checks. See *Display labels and
-#'   grouping identity* for the factor missing-value contract. Every Margin
-#'   verb uses the same default: `TRUE` for local data frames and `FALSE` for
-#'   lazy inputs, where checking would require an additional query.
+#'   display label. `.margin_label = NULL` opts out of these checks. See
+#'   *Display labels and grouping identity* for the factor missing-value
+#'   contract. Every Margin verb uses the same default: `TRUE` for local data
+#'   frames and `FALSE` for lazy inputs, where checking would require an
+#'   additional query.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping sets after expansion.
 #' @param .sort One of `"none"` (the default), `"last"`, or `"first"`. `"none"`
