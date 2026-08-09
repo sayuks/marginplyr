@@ -95,36 +95,50 @@ with_margin_error_call <- function(expr, call) {
 # re-check it cannot drift apart. The public verbs still spell their defaults
 # out literally because those formals are the documented signature; a test in
 # test-grouping-interface.R holds each formal to the constant it mirrors.
-# Verb-specific vocabularies live with the verb that owns them.
+# Verb-specific vocabularies live with the verb that owns them, and a verb that
+# narrows one hands its own list down rather than being re-checked against the
+# wider one: see `duplicates_choices` below.
 margin_duplicates_choices <- c("error", "drop", "keep")
 
 margin_label_position_choices <- c("last", "first")
 
 margin_sort_choices <- c("none", "last", "first")
 
+# An option argument admits its documented spellings and nothing else.
+# `match.arg()` also resolved any unambiguous prefix of one, so `.sort = "f"`
+# and `.duplicates = "k"` were accepted (#110). Nothing documents a prefix, so
+# every one of them was API by accident: a later value sharing a prefix would
+# have redefined what an accepted abbreviation resolves to. The one
+# `match.arg()` behaviour the signatures rely on is kept: an untouched formal
+# default arrives as the whole vocabulary and stands for its first entry.
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
-  force(value)
-  tryCatch(
-    match.arg(value, choices),
-    error = function(...) {
-      abort_marginplyr(
-        paste0(
-          "`", arg_name, "` must be one of ",
-          paste0("\"", choices, "\"", collapse = ", "),
-          "."
-        ),
-        call = call
-      )
-    }
+  if (identical(value, choices)) {
+    return(choices[[1L]])
+  }
+  if (rlang::is_string(value) && value %in% choices) {
+    return(value)
+  }
+  abort_marginplyr(
+    paste0(
+      "`", arg_name, "` must be one of ",
+      paste0("\"", choices, "\"", collapse = ", "),
+      "."
+    ),
+    call = call
   )
 }
 
+# `duplicates_choices` has no default because it is the one vocabulary a verb
+# may narrow, and a default here is what let the nesting verbs be validated
+# against a list their own formals exclude. Every caller states the list its
+# own signature documents.
 normalize_margin_options <- function(.margin_label,
                                      .margin_label_position,
                                      .check_margin_label,
                                      .duplicates,
                                      .sort,
+                                     duplicates_choices,
                                      .id = NULL) {
   assert_logical_scalar(.check_margin_label)
   .id <- normalize_margin_id(.id)
@@ -140,7 +154,7 @@ normalize_margin_options <- function(.margin_label,
     check_margin_label = .check_margin_label,
     duplicates = match_margin_choice(
       .duplicates,
-      choices = margin_duplicates_choices,
+      choices = duplicates_choices,
       arg_name = ".duplicates"
     ),
     sort = match_margin_choice(
@@ -185,6 +199,7 @@ prepare_margin_operation <- function(.data,
                                      .check_margin_label,
                                      .duplicates,
                                      .sort,
+                                     duplicates_choices,
                                      .id = NULL,
                                      validate_grouping = NULL,
                                      call = rlang::caller_call()) {
@@ -199,6 +214,7 @@ prepare_margin_operation <- function(.data,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
         .sort = .sort,
+        duplicates_choices = duplicates_choices,
         .id = .id
       )
       set_id_name <- options$set_id_name
@@ -213,6 +229,7 @@ prepare_margin_operation <- function(.data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,
         .duplicates = .duplicates,
+        duplicates_choices = duplicates_choices,
         validate_grouping = validate_grouping,
         validate_names = function(data_vars) {
           check_margin_id_collision(

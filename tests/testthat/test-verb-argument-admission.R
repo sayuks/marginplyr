@@ -1,9 +1,10 @@
-# Two admission rules that keep a mistake from becoming a plausible result.
+# Three admission rules that keep a mistake from becoming a plausible result.
 #
 # `...` accepts any named expression, so an argument name the verb does not
-# have becomes a constant summary column instead of an error; and an input
+# have becomes a constant summary column instead of an error; an input
 # without dplyr methods reached `group_vars()` and reported an internal
-# generic rather than the argument the caller supplied.
+# generic rather than the argument the caller supplied; and an option argument
+# validated with `match.arg()` accepted abbreviations nothing documents.
 
 admission_data <- function() {
   data.frame(g = c("a", "a", "b"), v = c(1, 2, 3))
@@ -227,6 +228,201 @@ test_that("the option check survives splicing", {
     ),
     class = "marginplyr_error"
   )
+})
+
+# Every fixed-vocabulary option, paired with the verb that takes it and the
+# values that verb accepts. The vocabularies are read from the shared constants
+# rather than written out again here, so a vocabulary that grows is covered
+# without an edit; test-grouping-interface.R holds each verb's formal to the
+# same constants, which is what makes reading them here an assertion about the
+# documented signature rather than a tautology.
+option_vocabulary_cases <- function() {
+  margin_verbs <- c(
+    "summarize_with_margins",
+    "summarise_with_margins",
+    "expand_with_margins",
+    "nest_with_margins",
+    "nest_by_with_margins"
+  )
+  nesting_verbs <- c("nest_with_margins", "nest_by_with_margins")
+
+  cases <- list()
+  for (verb in margin_verbs) {
+    duplicates <- if (verb %in% nesting_verbs) {
+      nest_duplicates_choices
+    } else {
+      margin_duplicates_choices
+    }
+    cases <- c(cases, list(
+      list(verb = verb, option = ".duplicates", values = duplicates),
+      list(
+        verb = verb,
+        option = ".margin_label_position",
+        values = margin_label_position_choices
+      ),
+      list(verb = verb, option = ".sort", values = margin_sort_choices)
+    ))
+  }
+  # `inspect_grouping()` reads a plan rather than executing one, so it takes
+  # `.duplicates` and its own `.format` but no Margin presentation options.
+  c(cases, list(
+    list(
+      verb = "inspect_grouping",
+      option = ".duplicates",
+      values = margin_duplicates_choices
+    ),
+    list(
+      verb = "inspect_grouping",
+      option = ".format",
+      values = grouping_format_choices
+    )
+  ))
+}
+
+call_with_option <- function(verb, option, value) {
+  args <- list(quote(admission_data()), .grouping = quote(rollup(g)))
+  if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
+    args <- c(args, list(s = quote(sum(v))))
+  }
+  args[[option]] <- value
+  eval(rlang::call2(verb, !!!args))
+}
+
+option_case_label <- function(case, value) {
+  paste0(case$verb, "(", case$option, " = \"", value, "\")")
+}
+
+# The one message a rejected value may produce, built from the vocabulary the
+# case says the verb accepts. Asserting the whole sentence rather than a
+# pattern is what holds a verb to its own vocabulary: a message enumerating one
+# value more or fewer is a different string.
+expected_vocabulary_message <- function(case) {
+  paste0(
+    "`", case$option, "` must be one of ",
+    paste0("\"", case$values, "\"", collapse = ", "),
+    "."
+  )
+}
+
+option_rejection_message <- function(verb, option, value) {
+  condition <- rlang::catch_cnd(
+    call_with_option(verb, option, value),
+    classes = "marginplyr_error"
+  )
+  if (is.null(condition)) {
+    return(NA_character_)
+  }
+  conditionMessage(condition)
+}
+
+test_that("every documented option value is accepted", {
+  # The other half of the vocabulary contract, and the half that makes the
+  # rejection messages below assertions rather than assumptions: no verb may
+  # refuse a value its own rejection message offers.
+  refused <- character()
+
+  for (case in option_vocabulary_cases()) {
+    for (value in case$values) {
+      accepted <- tryCatch(
+        {
+          call_with_option(case$verb, case$option, value)
+          TRUE
+        },
+        marginplyr_error = function(cnd) FALSE
+      )
+      if (!accepted) {
+        refused <- c(refused, option_case_label(case, value))
+      }
+    }
+  }
+
+  expect_identical(refused, character())
+})
+
+test_that("an abbreviation of an option value is rejected", {
+  # `match.arg()` resolved any unambiguous prefix to the value it abbreviates,
+  # so `.sort = "f"` and `.duplicates = "k"` were accepted (#110). Every
+  # vocabulary here is distinct in its first character, so the one-character
+  # prefix is exactly the abbreviation `match.arg()` would have taken.
+  for (case in option_vocabulary_cases()) {
+    for (value in case$values) {
+      abbreviation <- substr(value, 1L, 1L)
+      expect_identical(
+        option_rejection_message(case$verb, case$option, abbreviation),
+        expected_vocabulary_message(case),
+        info = option_case_label(case, abbreviation)
+      )
+    }
+  }
+})
+
+test_that("a wholly invalid option value names only what the verb accepts", {
+  for (case in option_vocabulary_cases()) {
+    expect_identical(
+      option_rejection_message(case$verb, case$option, "zzz"),
+      expected_vocabulary_message(case),
+      info = option_case_label(case, "zzz")
+    )
+  }
+})
+
+test_that("a diagnostic offering a `.duplicates` policy offers a real one", {
+  # The rejection message above is not the only place a vocabulary is spoken
+  # aloud: refusing a duplicate grouping set names the policies that would have
+  # accepted it. That message enumerated `"drop"` and `"keep"` from a constant,
+  # so the nesting verbs told a caller to use a value they then refuse — the
+  # same defect as #110, one message further in.
+  duplicated_sets <- grouping_sets(grouping_set(g), grouping_set(g))
+
+  refusal <- function(verb) {
+    fn <- get(verb, envir = asNamespace("marginplyr"))
+    args <- list(admission_data(), .grouping = duplicated_sets)
+    if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
+      args <- c(args, list(s = quote(sum(v))))
+    }
+    conditionMessage(rlang::catch_cnd(
+      eval(rlang::call2(verb, !!!args)),
+      classes = "marginplyr_error"
+    ))
+  }
+
+  for (case in option_vocabulary_cases()) {
+    if (!identical(case$option, ".duplicates")) {
+      next
+    }
+    message <- refusal(case$verb)
+    expect_match(
+      message,
+      "^Duplicate grouping sets were produced",
+      info = case$verb
+    )
+    for (value in setdiff(margin_duplicates_choices, case$values)) {
+      expect_false(
+        grepl(paste0("\"", value, "\""), message, fixed = TRUE),
+        info = paste(case$verb, value)
+      )
+    }
+    for (value in setdiff(case$values, "error")) {
+      expect_true(
+        grepl(paste0("\"", value, "\""), message, fixed = TRUE),
+        info = paste(case$verb, value)
+      )
+    }
+  }
+})
+
+test_that("the nesting verbs answer `.duplicates = \"keep\"` in their terms", {
+  # The narrower formal used to be widened before validation and taken away
+  # again by a second guard, so the rejection message named `"keep"` and the
+  # verb then refused it (#110). One vocabulary owns the answer now, and the
+  # message the caller sees is the one every other invalid value gets.
+  for (verb in c("nest_with_margins", "nest_by_with_margins")) {
+    expect_identical(
+      option_rejection_message(verb, ".duplicates", "keep"),
+      "`.duplicates` must be one of \"error\", \"drop\".",
+      info = verb
+    )
+  }
 })
 
 test_that("input that dplyr cannot group is rejected in the caller's terms", {

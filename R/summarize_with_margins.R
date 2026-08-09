@@ -213,8 +213,9 @@
 #' clears none.
 #'
 #' Asking for a Margin order never costs a native `GROUP BY GROUPING SETS`
-#' plan, and never changes which adapter runs. It composes with
-#' `.duplicates = "keep"` with no diagnostic, and lazy inputs stay lazy.
+#' plan, and never changes which adapter runs. It composes with every
+#' `.duplicates` policy the verb accepts with no diagnostic, and lazy inputs
+#' stay lazy.
 #'
 #' The [recipes guide][recipes] shows a Margin order before and after, and
 #' shows a join dropping one from a lazy result with no diagnostic naming this
@@ -586,6 +587,7 @@ summarize_with_margins <- function(.data,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
         .sort = .sort,
+        duplicates_choices = margin_duplicates_choices,
         .id = .id
       )
       check_option_named_summaries(dots)
@@ -604,6 +606,7 @@ summarize_with_margins <- function(.data,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     .sort = .sort,
+    duplicates_choices = margin_duplicates_choices,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
     call = call

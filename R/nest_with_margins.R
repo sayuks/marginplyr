@@ -204,23 +204,13 @@ nest_margin_pipeline <- function(.data,
           "`.key` must not be empty."
         )
       }
-      # The nesting verbs' `.duplicates` formal is the whole vocabulary, so
-      # receiving it unchanged means the caller left the argument at its
-      # default. Resolve it here because the shared normalizer matches against
-      # the wider Margin vocabulary.
-      left_at_default <- identical(
-        .duplicates,
-        nest_duplicates_choices
-      )
-      if (left_at_default) {
-        .duplicates <- "error"
-      }
       options <- normalize_margin_options(
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,
         .check_margin_label = .check_margin_label,
         .duplicates = .duplicates,
         .sort = .sort,
+        duplicates_choices = nest_duplicates_choices,
         .id = .id
       )
       set_id_name <- options$set_id_name
@@ -230,14 +220,6 @@ nest_margin_pipeline <- function(.data,
       .duplicates <- options$duplicates
       .sort <- options$sort
       check_margin_id_collision(set_id_name, .key, "nesting `.key`")
-      if (identical(.duplicates, "keep")) {
-        abort_marginplyr(
-          paste0(
-            "Nesting does not support `.duplicates = \"keep\"`. Use ",
-            "`\"error\"` or `\"drop\"`."
-          )
-        )
-      }
     },
     call = call
   )
@@ -251,6 +233,7 @@ nest_margin_pipeline <- function(.data,
     .check_margin_label = .check_margin_label,
     .duplicates = .duplicates,
     .sort = .sort,
+    duplicates_choices = nest_duplicates_choices,
     .id = .id,
     call = call
   )

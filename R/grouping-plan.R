@@ -79,20 +79,26 @@ prepare_grouping_plan <- function(.data,
                                   by_quo,
                                   grouping_quo,
                                   .duplicates,
+                                  duplicates_choices,
                                   validate_grouping = NULL,
                                   validate_names = NULL,
                                   call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
   stopifnot(is.null(validate_names) || is.function(validate_names))
+  # Already matched against the calling verb's own vocabulary, which may be
+  # narrower than the Margin one. Re-matching here against the wider list is
+  # what made the nesting verbs' rejection message offer a value they refuse
+  # (#110), so this asserts the precondition instead of re-deciding it. The
+  # vocabulary travels on because the duplicate-set diagnostic names the
+  # policies the caller could have asked for instead.
+  stopifnot(
+    rlang::is_string(.duplicates),
+    .duplicates %in% duplicates_choices
+  )
 
   with_margin_error_call(
     {
-      .duplicates <- match_margin_choice(
-        .duplicates,
-        choices = margin_duplicates_choices,
-        arg_name = ".duplicates"
-      )
       grouping_spec <- rlang::eval_tidy(grouping_quo)
       validate_grouping_spec_early(grouping_spec)
       if (!is.null(validate_grouping)) {
@@ -117,7 +123,8 @@ prepare_grouping_plan <- function(.data,
           data_vars = data_vars,
           data_proxy = grouping_name_proxy(data_vars),
           .by = by,
-          .duplicates = .duplicates
+          .duplicates = .duplicates,
+          duplicates_choices = duplicates_choices
         )
       }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
@@ -126,7 +133,8 @@ prepare_grouping_plan <- function(.data,
         data_vars = data_vars,
         data_proxy = data_proxy,
         .by = by,
-        .duplicates = .duplicates
+        .duplicates = .duplicates,
+        duplicates_choices = duplicates_choices
       )
 
       list(
@@ -304,7 +312,8 @@ compile_grouping_spec <- function(.grouping,
     data_vars = data_vars,
     data_proxy = data_proxy,
     .by = .by,
-    .duplicates = .duplicates
+    .duplicates = .duplicates,
+    duplicates_choices = margin_duplicates_choices
   )
 }
 
@@ -312,9 +321,10 @@ compile_grouping_spec_impl <- function(.grouping,
                                        data_vars,
                                        data_proxy,
                                        .by,
-                                       .duplicates) {
+                                       .duplicates,
+                                       duplicates_choices) {
   stopifnot(is.character(.by), !anyNA(.by))
-  stopifnot(.duplicates %in% margin_duplicates_choices)
+  stopifnot(.duplicates %in% duplicates_choices)
   if (is.null(data_proxy)) {
     data_proxy <- grouping_name_proxy(data_vars)
   }
@@ -365,12 +375,21 @@ compile_grouping_spec_impl <- function(.grouping,
   if (any(duplicate_keys) && identical(.duplicates, "error")) {
     groups <- split(which(duplicate_keys), keys[duplicate_keys])
     positions <- vapply(groups, paste, collapse = ", ", character(1))
+    # The policies this caller could have asked for instead, which is every
+    # value of its own vocabulary but the one that raised this. Reading them
+    # from the vocabulary is what keeps the nesting verbs, whose `.duplicates`
+    # excludes `"keep"`, from being offered it here (#110).
+    alternatives <- setdiff(duplicates_choices, .duplicates)
+    offered <- paste0("`\"", alternatives, "\"`")
+    offered[[1L]] <- paste0("`.duplicates = \"", alternatives[[1L]], "\"`")
     abort_marginplyr(
       paste0(
         "Duplicate grouping sets were produced at position",
         if (length(groups) == 1L) "s " else " groups ",
         paste(positions, collapse = "; "),
-        ". Use `.duplicates = \"drop\"` or `\"keep\"`."
+        ". Use ",
+        paste(offered, collapse = " or "),
+        "."
       )
     )
   }

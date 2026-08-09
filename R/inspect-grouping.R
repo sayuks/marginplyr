@@ -139,11 +139,17 @@ inspect_grouping <- function(.data,
         choices = grouping_format_choices,
         arg_name = ".format"
       )
+      .duplicates <- match_margin_choice(
+        .duplicates,
+        choices = margin_duplicates_choices,
+        arg_name = ".duplicates"
+      )
       grouping <- prepare_grouping_plan(
         .data,
         by_quo = by_quo,
         grouping_quo = grouping_quo,
         .duplicates = .duplicates,
+        duplicates_choices = margin_duplicates_choices,
         call = call
       )
       format_grouping_plan(grouping$plan, format = .format)

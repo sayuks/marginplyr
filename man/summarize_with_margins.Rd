@@ -264,8 +264,9 @@ window ordering the input carried. \code{.sort = "none"} records no order and
 clears none.
 
 Asking for a Margin order never costs a native \verb{GROUP BY GROUPING SETS}
-plan, and never changes which adapter runs. It composes with
-\code{.duplicates = "keep"} with no diagnostic, and lazy inputs stay lazy.
+plan, and never changes which adapter runs. It composes with every
+\code{.duplicates} policy the verb accepts with no diagnostic, and lazy inputs
+stay lazy.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, and
 shows a join dropping one from a lazy result with no diagnostic naming this
