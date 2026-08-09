@@ -29,7 +29,7 @@ test_that("reconstruct_factor() works with data.frame", {
 
   actual <- Reduce(
     function(df, info) {
-      reconstruct_factor.data.frame(df, info, "aaa")
+      reconstruct_factor(df, info, "aaa")
     },
     x = l_info,
     init = data_chr
@@ -101,7 +101,7 @@ test_that("reconstruct_factor() works with duckdb", {
 
   actual <- Reduce(
     function(df, info) {
-      reconstruct_factor.tbl_duckdb_connection(df, info, "aaa")
+      reconstruct_factor(df, info, "aaa")
     },
     x = l_info,
     init = data_chr
@@ -156,7 +156,7 @@ test_that("reconstruct_factor() works with dtplyr_step", {
 
   actual <- Reduce(
     function(df, info) {
-      reconstruct_factor.dtplyr_step(df, info, "aaa")
+      reconstruct_factor(df, info, "aaa")
     },
     x = l_info,
     init = data_chr
