@@ -113,28 +113,34 @@ prepare_grouping_plan <- function(.data,
       if (!is.null(validate_names)) {
         validate_names(data_vars)
       }
+      # Preflighted once and handed to both compilation passes. Preflight is
+      # not a free re-run: `grouping_arg_spec()` evaluates a symbol or a nested
+      # constructor argument, so preflighting per pass would evaluate a
+      # caller's quosure twice, and ADR-0008 holds the number and timing of
+      # evaluations fixed.
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
-      grouping_spec <- preflight$spec
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The
         # canonical plan is compiled from the typed snapshot below.
-        compile_grouping_spec_impl(
+        compile_grouping_spec(
           grouping_spec,
           data_vars = data_vars,
           data_proxy = grouping_name_proxy(data_vars),
           .by = by,
           .duplicates = .duplicates,
-          duplicates_choices = duplicates_choices
+          duplicates_choices = duplicates_choices,
+          preflight = preflight
         )
       }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
-      plan <- compile_grouping_spec_impl(
+      plan <- compile_grouping_spec(
         grouping_spec,
         data_vars = data_vars,
         data_proxy = data_proxy,
         .by = by,
         .duplicates = .duplicates,
-        duplicates_choices = duplicates_choices
+        duplicates_choices = duplicates_choices,
+        preflight = preflight
       )
 
       list(
@@ -296,24 +302,53 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   list(spec = grouping_spec, name_only = name_only)
 }
 
-compile_grouping_spec <- function(.grouping,
-                                  data_vars,
-                                  data_proxy = NULL,
-                                  .by = character(),
-                                  .duplicates = margin_duplicates_choices) {
+# The one way to turn a Grouping specification into a plan: preflight the
+# specification, then compile what the preflight resolved. Every call site is
+# here, `prepare_grouping_plan()`'s two compilation passes included, so a test
+# that compiles through this function runs the sequence production runs. It was
+# not always so — production reached `compile_grouping_spec_impl()` directly and
+# performed the preflight and the `.duplicates` matching for itself, leaving
+# this wrapper a second source of truth that only tests exercised (#119).
+# `test-grouping-plan.R` holds the namespace to a single caller of the
+# implementation so that cannot come back.
+#
+# `duplicates_choices` is the calling verb's own vocabulary, never the Margin
+# one: a verb that narrows it hands its list down rather than being re-checked
+# against the wider one (#110), and the hard-coded `margin_duplicates_choices`
+# this replaces is what put the nesting verbs' narrowing beyond a test's reach.
+# It has no default for the reason it has none in `normalize_margin_options()`
+# — a default here is what let the nesting verbs be validated against a list
+# their own formals exclude, and `compile_grouping_spec_impl()`'s membership
+# assert would not catch it, since the wider list admits the narrower one's
+# every value. `.duplicates` defaults to whichever list the caller stated,
+# which keeps `match_margin_choice()`'s "an untouched formal stands for its
+# first entry" idiom working for a narrowed vocabulary.
+#
+# `preflight` lets a caller running more than one pass over one specification
+# hand the same preflight to each, rather than paying a second evaluation of
+# the caller's quosures for a result that cannot differ (ADR-0008).
+compile_grouping_spec <- function(
+  .grouping,
+  data_vars,
+  data_proxy = NULL,
+  .by = character(),
+  .duplicates = duplicates_choices,
+  duplicates_choices,
+  preflight = preflight_grouping_spec(.grouping, data_vars)
+) {
   .duplicates <- match_margin_choice(
     .duplicates,
-    choices = margin_duplicates_choices,
+    choices = duplicates_choices,
     arg_name = ".duplicates"
   )
-  preflight <- preflight_grouping_spec(.grouping, data_vars)
+  stopifnot(identical(preflight$spec, .grouping))
   compile_grouping_spec_impl(
     preflight$spec,
     data_vars = data_vars,
     data_proxy = data_proxy,
     .by = .by,
     .duplicates = .duplicates,
-    duplicates_choices = margin_duplicates_choices
+    duplicates_choices = duplicates_choices
   )
 }
 

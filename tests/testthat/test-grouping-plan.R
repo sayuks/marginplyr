@@ -1,7 +1,8 @@
 test_that("rollup and cube compile to concrete grouping sets", {
   rollup_plan <- compile_grouping_spec(
     rollup(a, b, c),
-    data_vars = c("a", "b", "c")
+    data_vars = c("a", "b", "c"),
+    duplicates_choices = margin_duplicates_choices
   )
   expect_equal(
     rollup_plan$sets,
@@ -18,7 +19,8 @@ test_that("rollup and cube compile to concrete grouping sets", {
 
   cube_plan <- compile_grouping_spec(
     cube(grouping_set(country, state), year),
-    data_vars = c("country", "state", "year")
+    data_vars = c("country", "state", "year"),
+    duplicates_choices = margin_duplicates_choices
   )
   expect_equal(
     cube_plan$sets,
@@ -36,7 +38,8 @@ test_that("grouping families support union, nesting, and Cartesian product", {
 
   product <- compile_grouping_spec(
     grouping_spec(rollup(a, b), cube(c)),
-    data_vars = vars
+    data_vars = vars,
+    duplicates_choices = margin_duplicates_choices
   )
   expect_equal(
     product$sets,
@@ -49,7 +52,8 @@ test_that("grouping families support union, nesting, and Cartesian product", {
   nested <- compile_grouping_spec(
     grouping_sets(rollup(a, b), cube(c, d)),
     data_vars = vars,
-    .duplicates = "drop"
+    .duplicates = "drop",
+    duplicates_choices = margin_duplicates_choices
   )
   expect_equal(
     nested$sets,
@@ -98,7 +102,12 @@ test_that("grouping specification kinds enforce the nesting grammar", {
     spec <- eval(
       rlang::call2(constructors[[parent]], nested_calls[[child]])
     )
-    compile_grouping_spec(spec, "a", .duplicates = "keep")
+    compile_grouping_spec(
+      spec,
+      "a",
+      .duplicates = "keep",
+      duplicates_choices = margin_duplicates_choices
+    )
   }
 
   for (parent in names(constructors)) {
@@ -117,27 +126,48 @@ test_that("grouping specification kinds enforce the nesting grammar", {
   for (constructor in constructors) {
     spec <- eval(rlang::call2(constructor, rlang::sym("a")))
     expect_no_error(
-      compile_grouping_spec(spec, "a", .duplicates = "keep")
+      compile_grouping_spec(
+        spec,
+        "a",
+        .duplicates = "keep",
+        duplicates_choices = margin_duplicates_choices
+      )
     )
   }
 })
 
 test_that("empty grouping rules preserve their phase and error precedence", {
   expect_equal(
-    compile_grouping_spec(grouping_set(a), "a")$sets,
+    compile_grouping_spec(
+      grouping_set(a),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    )$sets,
     list("a")
   )
   expect_equal(
-    compile_grouping_spec(grouping_set(), "a")$sets,
+    compile_grouping_spec(
+      grouping_set(),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    )$sets,
     list(character())
   )
   expect_equal(
-    compile_grouping_spec(grouping_spec(), "a")$sets,
+    compile_grouping_spec(
+      grouping_spec(),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    )$sets,
     list(character())
   )
 
   sets_error <- expect_error(
-    compile_grouping_spec(grouping_sets(), "a")
+    compile_grouping_spec(
+      grouping_sets(),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    )
   )
   expect_s3_class(sets_error, "marginplyr_error")
   expect_identical(
@@ -150,7 +180,11 @@ test_that("empty grouping rules preserve their phase and error precedence", {
 
   for (constructor in c("rollup", "cube")) {
     spec <- eval(rlang::call2(constructor))
-    error <- expect_error(compile_grouping_spec(spec, "a"))
+    error <- expect_error(compile_grouping_spec(
+      spec,
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    ))
     expect_s3_class(error, "marginplyr_error")
     expect_identical(
       conditionMessage(error),
@@ -164,7 +198,11 @@ test_that("empty grouping rules preserve their phase and error precedence", {
       quote(tidyselect::any_of("missing"))
     ))
     resolved_empty <- expect_error(
-      compile_grouping_spec(resolved_spec, "a")
+      compile_grouping_spec(
+        resolved_spec,
+        "a",
+        duplicates_choices = margin_duplicates_choices
+      )
     )
     expect_identical(
       conditionMessage(resolved_empty),
@@ -176,7 +214,11 @@ test_that("empty grouping rules preserve their phase and error precedence", {
       quote(grouping_set(tidyselect::any_of("missing")))
     ))
     empty_composite <- expect_error(
-      compile_grouping_spec(composite_spec, "a")
+      compile_grouping_spec(
+        composite_spec,
+        "a",
+        duplicates_choices = margin_duplicates_choices
+      )
     )
     expect_identical(
       conditionMessage(empty_composite),
@@ -185,13 +227,21 @@ test_that("empty grouping rules preserve their phase and error precedence", {
   }
 
   child_error <- expect_error(
-    compile_grouping_spec(rollup(grouping_sets()), "a")
+    compile_grouping_spec(
+      rollup(grouping_sets()),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    )
   )
   expect_identical(conditionMessage(child_error), conditionMessage(sets_error))
 })
 
 test_that("invalid grouping input lists every supported constructor", {
-  error <- expect_error(compile_grouping_spec(1, "a"))
+  error <- expect_error(compile_grouping_spec(
+    1,
+    "a",
+    duplicates_choices = margin_duplicates_choices
+  ))
   expect_s3_class(error, "marginplyr_error")
   expect_identical(
     conditionMessage(error),
@@ -207,7 +257,8 @@ test_that("selectors and fixed .by columns are resolved once", {
   plan <- compile_grouping_spec(
     rollup(tidyselect::all_of(selected)),
     data_vars = c("year", "a", "b", "value"),
-    .by = "year"
+    .by = "year",
+    duplicates_choices = margin_duplicates_choices
   )
 
   expect_equal(plan$by, "year")
@@ -239,7 +290,11 @@ test_that("a renaming grouping selection is refused by every constructor", {
   for (constructor in constructors) {
     for (selection in renaming_calls) {
       spec <- eval(rlang::call2(constructor, selection))
-      error <- expect_error(compile_grouping_spec(spec, data_vars))
+      error <- expect_error(compile_grouping_spec(
+        spec,
+        data_vars,
+        duplicates_choices = margin_duplicates_choices
+      ))
       expect_s3_class(error, "marginplyr_error")
       expect_identical(conditionMessage(error), renamed_message)
     }
@@ -248,7 +303,8 @@ test_that("a renaming grouping selection is refused by every constructor", {
   nested <- expect_error(
     compile_grouping_spec(
       rollup(grouping_set(tidyselect::all_of(c(area = "region")))),
-      data_vars
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
     )
   )
   expect_s3_class(nested, "marginplyr_error")
@@ -257,7 +313,8 @@ test_that("a renaming grouping selection is refused by every constructor", {
   several <- expect_error(
     compile_grouping_spec(
       rollup(tidyselect::all_of(c(area = "region", when = "year"))),
-      data_vars
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
     )
   )
   expect_s3_class(several, "marginplyr_error")
@@ -275,25 +332,35 @@ test_that("non-renaming grouping selections keep resolving", {
   selected <- c("region", "year")
 
   expect_equal(
-    compile_grouping_spec(rollup(region, year), data_vars)$dimensions,
+    compile_grouping_spec(
+      rollup(region, year),
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
+    )$dimensions,
     c("region", "year")
   )
   expect_equal(
     compile_grouping_spec(
       rollup(tidyselect::all_of(selected)),
-      data_vars
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
     )$dimensions,
     c("region", "year")
   )
   expect_equal(
     compile_grouping_spec(
       rollup(tidyselect::starts_with("region")),
-      data_vars
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
     )$dimensions,
     c("region", "region_code")
   )
   expect_equal(
-    compile_grouping_spec(rollup(-year), data_vars)$dimensions,
+    compile_grouping_spec(
+      rollup(-year),
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
+    )$dimensions,
     c("region", "region_code")
   )
   # A name that repeats the column it selects renames nothing, so the plan it
@@ -301,7 +368,8 @@ test_that("non-renaming grouping selections keep resolving", {
   expect_equal(
     compile_grouping_spec(
       rollup(tidyselect::all_of(c(region = "region"))),
-      data_vars
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
     )$dimensions,
     "region"
   )
@@ -311,11 +379,25 @@ test_that("duplicate grouping sets have explicit policies", {
   spec <- grouping_sets(grouping_set(a), grouping_set(a))
 
   expect_error(
-    compile_grouping_spec(spec, "a"),
+    compile_grouping_spec(
+      spec,
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    ),
     "Duplicate grouping sets"
   )
-  dropped <- compile_grouping_spec(spec, "a", .duplicates = "drop")
-  kept <- compile_grouping_spec(spec, "a", .duplicates = "keep")
+  dropped <- compile_grouping_spec(
+    spec,
+    "a",
+    .duplicates = "drop",
+    duplicates_choices = margin_duplicates_choices
+  )
+  kept <- compile_grouping_spec(
+    spec,
+    "a",
+    .duplicates = "keep",
+    duplicates_choices = margin_duplicates_choices
+  )
   expect_equal(dropped$sets, list("a"))
   expect_identical(dropped$set_ids, 1L)
   expect_equal(kept$sets, list("a", "a"))
@@ -324,19 +406,125 @@ test_that("duplicate grouping sets have explicit policies", {
 
 test_that("invalid or ambiguous specifications fail early", {
   expect_error(
-    compile_grouping_spec(rollup(a), "a", .by = "a"),
+    compile_grouping_spec(
+      rollup(a),
+      "a",
+      .by = "a",
+      duplicates_choices = margin_duplicates_choices
+    ),
     "both `.by` and `.grouping`"
   )
   expect_error(
-    compile_grouping_spec(rollup(cube(a)), "a"),
+    compile_grouping_spec(
+      rollup(cube(a)),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    ),
     "only accepts columns"
   )
   expect_error(
-    compile_grouping_spec(grouping_sets(), "a"),
+    compile_grouping_spec(
+      grouping_sets(),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    ),
     "requires at least one set"
   )
   expect_error(
-    compile_grouping_spec(rollup(floor(a)), "a"),
+    compile_grouping_spec(
+      rollup(floor(a)),
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    ),
     "object 'a' not found"
   )
+})
+
+# The plan compiler was reachable without going through
+# `compile_grouping_spec()`, so the preflight and the `.duplicates` matching
+# the wrapper performs were a second source of truth that production supplied
+# for itself (#119). A test that compiled through the wrapper therefore proved
+# nothing about the sequence production ran. This holds the two together: the
+# wrapper is the entry point, and a new call site that skips it fails here
+# rather than in whichever plan silently stopped being preflighted.
+test_that("compile_grouping_spec() is the only caller of the plan compiler", {
+  # Assembled rather than written out, so the source scan below does not
+  # report this file for holding the name it searches for.
+  impl <- paste0("compile_grouping_spec", "_impl")
+  ns <- asNamespace("marginplyr")
+  objects <- ls(ns, all.names = TRUE)
+  calls_impl <- vapply(
+    objects,
+    function(name) {
+      object <- get(name, envir = ns)
+      if (!is.function(object)) {
+        return(FALSE)
+      }
+      any(grepl(impl, deparse(body(object)), fixed = TRUE))
+    },
+    logical(1)
+  )
+  expect_identical(unname(objects[calls_impl]), "compile_grouping_spec")
+
+  # The namespace scan cannot see a test, and a test reaching the
+  # implementation with `:::` is the half of #119 that was actually there. The
+  # sources sit beside this file whenever the suite runs, so scanning them
+  # needs no installed copy; the assertion below refuses a scan that found no
+  # files rather than passing on one.
+  sources <- list.files(".", pattern = "^test-.*\\.R$", full.names = TRUE)
+  expect_gt(length(sources), 1L)
+  reached_by <- Filter(
+    function(path) {
+      any(grepl(paste0(impl, "("), readLines(path), fixed = TRUE))
+    },
+    sources
+  )
+  expect_identical(reached_by, character())
+})
+
+# The Margin vocabulary was hard-coded here, so the nesting verbs' narrower one
+# reached the compiler through `prepare_grouping_plan()` and through no test.
+test_that("compile_grouping_spec() reads a narrowed duplicates vocabulary", {
+  spec <- grouping_sets(grouping_set(a), grouping_set(a))
+
+  refused <- expect_error(
+    compile_grouping_spec(
+      spec,
+      "a",
+      .duplicates = "keep",
+      duplicates_choices = nest_duplicates_choices
+    )
+  )
+  expect_s3_class(refused, "marginplyr_error")
+  expect_identical(
+    conditionMessage(refused),
+    "`.duplicates` must be one of \"error\", \"drop\"."
+  )
+
+  # An untouched `.duplicates` stands for the first entry of the list the
+  # caller stated, not of the Margin one.
+  duplicated <- expect_error(
+    compile_grouping_spec(
+      spec,
+      "a",
+      duplicates_choices = nest_duplicates_choices
+    )
+  )
+  # The diagnostic offers the policies this caller could have asked for
+  # instead, so a narrowed vocabulary must not offer `"keep"` (#110).
+  expect_identical(
+    conditionMessage(duplicated),
+    paste0(
+      "Duplicate grouping sets were produced at positions 1, 2. ",
+      "Use `.duplicates = \"drop\"`."
+    )
+  )
+
+  dropped <- compile_grouping_spec(
+    spec,
+    "a",
+    .duplicates = "drop",
+    duplicates_choices = nest_duplicates_choices
+  )
+  expect_equal(dropped$sets, list("a"))
 })
