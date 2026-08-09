@@ -182,6 +182,14 @@ new_grouping_spec <- function(type, args) {
 #' @exportS3Method
 #' @noRd
 print.margin_grouping_spec <- function(x, ...) {
-  cat("<marginplyr grouping specification: ", x$type, ">\n", sep = "")
+  # The kind stored on the object is internal; three of the five kinds are not
+  # the name of any function a caller can write. The kind rules already carry
+  # each kind's public constructor, so a new kind names itself correctly here
+  # without an edit. A kind with no rule is not constructible through the
+  # package, and printing one falls back to what it stores rather than
+  # reporting no name at all.
+  rule <- find_grouping_kind_rule(x$type)
+  name <- if (is.null(rule)) x$type else rule$constructor
+  cat("<marginplyr grouping specification: ", name, ">\n", sep = "")
   invisible(x)
 }

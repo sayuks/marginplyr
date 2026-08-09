@@ -1047,3 +1047,30 @@ test_that("documented option formals match the shared choice vocabularies", {
     grouping_format_choices
   )
 })
+
+test_that("a printed Grouping specification names the constructor called", {
+  exports <- getNamespaceExports("marginplyr")
+
+  for (kind in names(grouping_kind_rules())) {
+    constructor <- find_grouping_kind_rule(kind)$constructor
+    expect_true(constructor %in% exports, info = kind)
+
+    spec <- eval(rlang::call2(constructor, rlang::sym("a")))
+    # The printed name is read from the kind stored on the object, so a rule
+    # naming a constructor that produces some other kind would print the wrong
+    # name for both of them.
+    expect_identical(spec$type, kind, info = kind)
+    expect_identical(
+      utils::capture.output(print(spec)),
+      paste0("<marginplyr grouping specification: ", constructor, ">"),
+      info = kind
+    )
+  }
+
+  # No constructor makes a kind the rules do not know, and the verbs reject
+  # one. Printing it still names something rather than nothing.
+  expect_identical(
+    utils::capture.output(print(new_grouping_spec("nonesuch", list()))),
+    "<marginplyr grouping specification: nonesuch>"
+  )
+})
