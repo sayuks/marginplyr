@@ -1,3 +1,96 @@
+# The `UNION ALL` composition every branch list ends in, and the one place the
+# package combines branches. `Reduce(dplyr::union_all, branches)` is
+# quadratic in the number of branches (#111): on an eager backend each step
+# re-copies the accumulated frame, and on a lazy one dbplyr re-aligns every
+# branch already folded in against the branch being added. The count is 2^n for
+# a cube over n dimensions, so a ten-dimension cube folds 1024 branches, and the
+# local backend has no `native_grouping_sets` capability, so it always folds.
+#
+# There is no single linear substitution, because a branch list is eager or
+# lazy depending on the input the verb was handed, and only the eager one can
+# be combined in one call. The two paths below are therefore chosen from the
+# branches rather than from the operation's backend: what is being combined is
+# what decides, and `build_lazy_parent_mapping()` in `R/share.R` reaches this
+# from every backend despite its name.
+combine_margin_branches <- function(branches) {
+  # An invariant, not a Package condition (ADR-0015): a plan holds at least one
+  # grouping set, and the share module gates its own call on a non-empty
+  # mapping list. `Reduce()` answered `NULL` here, which is not a result any
+  # caller could use.
+  stopifnot(is.list(branches), length(branches) > 0L)
+
+  if (length(branches) == 1L) {
+    return(branches[[1L]])
+  }
+  if (is.data.frame(branches[[1L]])) {
+    return(bind_margin_branches(branches))
+  }
+  union_margin_branches(branches)
+}
+
+# `dplyr::bind_rows()` combines the whole list in one pass, and it is the whole
+# of the eager path: `union_all.data.frame()` ends in a `dplyr_reconstruct()`
+# onto its first argument, but that call restores nothing `vec_rbind()` did not
+# already take from the same frame, so reproducing it would add the
+# reconstruction step ADR-0016 forbids an adapter and change no result.
+#
+# What does differ is strictness. `bind_rows()` fills a column a branch does not
+# have with `NA` where `union_all()` rejects the pair, so the check below
+# restores it explicitly: a branch of an unexpected shape is a defect in the
+# builders further down this file, and widening the result would hide it.
+bind_margin_branches <- function(branches) {
+  check_branch_columns(branches)
+  dplyr::bind_rows(branches)
+}
+
+# `names()` rather than `get_col_names()`: this runs on data frames only, where
+# it is exact and costs nothing per branch. Column *order* is not checked,
+# because `union_all()` accepts a reordered branch and matches by name.
+check_branch_columns <- function(branches) {
+  expected <- names(branches[[1L]])
+  for (i in seq_along(branches)[-1L]) {
+    actual <- names(branches[[i]])
+    if (length(actual) == length(expected) && setequal(actual, expected)) {
+      next
+    }
+    # Branch, not grouping-set branch: the share module's denominator mappings
+    # are combined here too, and they are one per set that has a coarser one
+    # rather than one per set.
+    stop(
+      "Union branch ", i, " does not have the columns of branch 1.\n",
+      "Only in branch ", i, ": ",
+      toString(setdiff(actual, expected)), "\n",
+      "Only in branch 1: ",
+      toString(setdiff(expected, actual)),
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
+# A lazy branch list has to be combined two at a time, since no backend here
+# exposes an n-ary `union_all()`. Pairing adjacent branches and halving makes
+# the work O(n log n) rather than quadratic and, just as importantly, bounds the
+# nesting depth at log2(n): dtplyr builds one step object per pair, and
+# collecting a left fold of 512 branches -- a cube over nine dimensions --
+# exhausts the C stack.
+#
+# Re-associating is safe because `UNION ALL` concatenates, so the row sequence
+# is the same however the pairs are bracketed. dbplyr flattens a union of
+# unions into one query, so the rendered SQL is a single `UNION ALL` over every
+# branch either way, with no subquery per pair.
+union_margin_branches <- function(branches) {
+  while (length(branches) > 1L) {
+    n <- length(branches)
+    pairs <- lapply(
+      seq_len(n %/% 2L),
+      function(i) dplyr::union_all(branches[[2L * i - 1L]], branches[[2L * i]])
+    )
+    branches <- if (n %% 2L == 1L) c(pairs, branches[n]) else pairs
+  }
+  branches[[1L]]
+}
+
 summarize_margin_branch <- function(.data,
                                     ...,
                                     .by) {
@@ -91,7 +184,7 @@ summarize_margin_union <- function(.data,
     plan$set_ids
   )
 
-  Reduce(dplyr::union_all, branches)
+  combine_margin_branches(branches)
 }
 
 expand_margin_union <- function(.data,
@@ -116,5 +209,5 @@ expand_margin_union <- function(.data,
     plan$set_ids
   )
 
-  Reduce(dplyr::union_all, branches)
+  combine_margin_branches(branches)
 }
