@@ -49,21 +49,72 @@ prose that still claims a failure, and nothing reports it. knitr and Quarto
 offer no option for the other half, and no package supplies one
 (`investigation/requiring-a-documentation-chunk-to-fail.md`).
 
-`vignettes/recipes.qmd` therefore defines a `must_error: true` chunk option in
-a hidden setup chunk. It implies `error: true`, so the two are never set
-inconsistently, and it halts the render naming the chunk when a chunk marked
-with it completes without raising an error. Mark a chunk with it instead of
-`error: true` whenever the surrounding prose asserts that the call fails.
+`inst/vignette-hooks/must-error.R` therefore defines a `must_error` chunk
+option. It implies `error: true`, so the two are never set inconsistently, and
+it halts the render naming the chunk when a chunk marked with it completes
+without raising an error. Mark a chunk with it instead of `error: true`
+whenever the surrounding prose asserts that the call fails.
 
-Two properties are load-bearing and easy to lose in a rewrite. It is
+It takes two forms. `must_error: true` accepts any error, which is what the
+option has always meant. `must_error: marginplyr_error` additionally requires
+the error to carry that condition class. Prefer the class form wherever the
+prose names what refuses the call: a bare `true` passes when the call fails for
+an unrelated reason — a renamed argument, a typo, a changed column — and the
+reader is then shown a diagnostic the prose does not describe. The check reads
+the `parent` chain, because a Package condition usually reaches the reader
+wrapped by the dplyr verb that raised it, and it is the wrapped class the prose
+names. Any other value halts the render rather than being ignored, since a
+header this cannot read is one whose assertion silently stopped happening.
+
+The definition lives under `inst/` so that every vignette reaches it in one
+line rather than carrying a copy:
+
+```r
+source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
+```
+
+That works because vignettes are built against the *installed* package, which
+is also why a working tree whose hook file changed must be reinstalled before
+its vignettes are rendered. The call needs no availability guard even though
+knitr is a Suggest: `VignetteBuilder: quarto` is visible while vignettes are
+rebuilt even under `_R_CHECK_DEPENDS_ONLY_=true`, and quarto imports rmarkdown,
+which imports knitr — the `DBI = FALSE` case from *Dependency metadata*, so a
+guard on knitr in a vignette would never fire
+(`investigation/restoring-knitr-hooks-a-vignette-installs.md`).
+
+Three properties are load-bearing and easy to lose in a rewrite. It is
 implemented as a wrapper around knitr's `evaluate` hook, which inspects the
 returned result objects; that keeps knitr's own error rendering, whereas
 catching the condition in a helper prints an `<error/rlang_error>` header and
-a backtrace through the helper, which no reader would see. And because knitr
+a backtrace through the helper, which no reader would see. Because knitr
 does not call that hook for a chunk it does not evaluate, a chunk withheld by
 an availability guard is skipped without a special case — a guarded chunk that
 never runs must not be reported as a chunk that stopped failing, or
-`_R_CHECK_DEPENDS_ONLY_` builds break.
+`_R_CHECK_DEPENDS_ONLY_` builds break. And the definition undoes itself from an
+`after.knit` hook, which `knit()` runs from `on.exit()` so that a render halted
+by the option restores as a completed one does; knitr restores neither the
+`opts_hooks` entry nor a `knit_hooks` entry installed while it runs, and the
+`document` hook — the obvious alternative — is not called on the halted path
+(`investigation/restoring-knitr-hooks-a-vignette-installs.md`).
+
+`.github/scripts/verify-must-error.R` is the gate, run by `altdoc.yaml` and
+locally with `Rscript .github/scripts/verify-must-error.R`. It knits fixture
+documents covering each form, the guarded chunk, a malformed option value, and
+the restoration, because nothing else in the repository fails when the option
+stops working — an option that asserts nothing reports nothing, which reads
+exactly like a set of vignettes whose rejected calls are all still rejected.
+It is not a testthat test: `release-matrix.yaml`'s `backend` jobs install the
+hard dependencies plus one optional backend, so knitr is absent there — a
+vignette rebuild is what puts it in the closure, and those jobs pass
+`--ignore-vignettes` — and `verify-backend.R` fails a job for any skip that does
+not name a backend the job withheld.
+
+Its guarded-chunk fixture withholds a name no library holds, because what a
+fixture can vary is whether knitr evaluated a chunk and not why. A genuinely
+absent Suggest is covered where one is absent: `depends-only` rebuilds the
+vignettes with every Suggest withheld, and `recipes.qmd`'s `nested-aggregate`
+chunk is a `must_error` chunk behind `has_duckdb`, so an option that reported it
+fails that job.
 
 ### Site verification
 
