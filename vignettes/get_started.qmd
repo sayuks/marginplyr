@@ -631,11 +631,11 @@ parent_report |>
   arrange(region, store)
 ```
 
-The root share is one. Missing numerators or denominators and zero
-denominators produce a missing double value. The helper requires a rollup and
-uses internal Grouping identity, so displayed Margin labels and source missing
-keys do not determine the parent. For multiple measures, complete source
-rules, and the supported `across()` form, see the
+A row of the Grand total set has a Parent share of one. Missing numerators or
+denominators and zero denominators produce a missing double value. The helper
+requires a rollup and uses internal Grouping identity, so displayed Margin
+labels and source missing keys do not determine the parent. For multiple
+measures, complete source rules, and the supported `across()` form, see the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html).
 
 For several measures, use two ordered `across()` expressions: the first
