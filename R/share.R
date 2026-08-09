@@ -407,14 +407,17 @@
 #' query that stays lazy — nothing else is executed, [dplyr::show_query()]
 #' remains non-executing, and no further query is run to improve an error.
 #'
-#' A source that read of the input cannot type is left alone rather than
-#' rejected. A dialect that types values rather than columns says nothing
-#' about a summary whose one sampled value is missing, and a summary the
-#' database refuses is reported by the database when [dplyr::collect()]
-#' executes the staged query, where its own diagnostic is the useful one.
-#' Cardinality is not read this way at all: a SQL aggregate returns one value
-#' per grouping row by construction, so there is nothing for the sample to
-#' disprove.
+#' A source the read cannot type is left alone rather than rejected. A dialect
+#' that types values rather than columns says nothing about a summary whose
+#' one sampled value is missing, and a summary the database refuses is
+#' reported by the database when [dplyr::collect()] executes the staged
+#' query, where its own diagnostic is the useful one. Cardinality is not read
+#' this way at all: a SQL aggregate returns one value per grouping row by
+#' construction, so there is nothing for the sample to disprove. What the
+#' sample cannot type and every non-scalar summary therefore remain
+#' runtime-only incompatibilities: errors the database reports for itself at
+#' [dplyr::collect()] rather than ones marginplyr raises before returning the
+#' query.
 #'
 #' The portable value guarantee covers finite numbers, missing values, and
 #' zero denominators. Infinite values and backend-specific `NaN`
