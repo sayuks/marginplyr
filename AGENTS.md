@@ -149,6 +149,31 @@ so it can change without a commit here. Keeping the Suggests entry is still
 right, because it records a direct use that would need declaring if the closure
 stopped supplying it.
 
+The audit runs in the other direction too, and a scanner is no more use there:
+a package the shipped sources never reference does not belong in Suggests,
+however real the tool that needs it. `att_amend_desc()` does prune, but by the
+same static reading that over-prunes above, so what it removes is not evidence
+either. `altdoc` was declared there while nothing outside `.Rbuildignore`d
+paths used it — `.github/workflows/altdoc.yaml` and the `altdoc::render_docs()`
+call in this file build the site, `altdoc/` configures it, and
+`.github/scripts/verify-site.R` reads its output — so the entry installed a
+dependency closure for a package the tarball never mentions (#113).
+
+`Config/Needs/website` is where such a dependency belongs, and it is not a
+weaker home: `setup-r-dependencies@v2` resolves that field through pak, which
+parses *and enforces* a version constraint written there, so a floor moved
+across loses nothing. That is worth re-checking rather than assuming, because
+nothing in this repository would fail if it stopped holding — a dropped
+constraint silently installs an older altdoc. Check it by putting an
+unsatisfiable constraint in the field of a throwaway package and resolving it:
+`pak::pkg_deps("local::<pkg>", dependencies = list(direct =
+"Config/Needs/website", indirect = "Config/Needs/website"))` must fail naming
+the constraint, not resolve.
+
+The grep above is what finds an entry like this, because `R CMD check` does not
+— an unused Suggest raises no NOTE, which is why nothing flagged it for as long
+as it stood.
+
 ### Release matrix
 
 `.github/workflows/release-matrix.yaml` checks one built tarball rather than
