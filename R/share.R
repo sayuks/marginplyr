@@ -2345,7 +2345,7 @@ build_lazy_parent_mapping <- function(result,
       )
     }
   )
-  Reduce(dplyr::union_all, mappings)
+  combine_margin_branches(mappings)
 }
 
 add_lazy_parent_join_keys <- function(result,

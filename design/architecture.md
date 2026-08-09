@@ -288,6 +288,17 @@ keys, and labels omitted dimensions. Expansion emits one labelled input branch
 per grouping set; nesting builds on that expansion in its verb executor. Like
 the native adapter, it consumes derived inputs and does not own the lifecycle.
 
+`combine_margin_branches()` is the one place the package combines a branch
+list, and the contextual-share module calls it for its denominator mappings
+rather than folding its own. It chooses its strategy from the branches, not
+from the operation's backend: an eager list is combined in a single
+`bind_rows()` behind an explicit column check that keeps the strictness
+`union_all()` supplied, and a lazy one is paired and halved. That makes the
+eager path one pass over the branches and the lazy path `O(n log n)` with
+nesting depth `log2(n)`, in place of the quadratic pairwise fold both used to
+take. It matters because a cube over ten dimensions is 1024 branches and the
+local backend has no native grouping-sets capability to avoid them.
+
 ## Opaque Margin operation seam
 
 The class name, fields, and constructor of a prepared Margin operation are
