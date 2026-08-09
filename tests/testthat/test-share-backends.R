@@ -592,7 +592,7 @@ parent_lazy_probe_counts <- function() {
   )
 }
 
-test_that("PostgreSQL renders one staged Parent-share mapping for all measures", { # nolint: line_length_linter
+test_that("PostgreSQL renders one staged Parent-share join for all measures", {
   data <- data.frame(
     region = "East",
     store = "A",
@@ -1122,7 +1122,7 @@ test_that("DuckDB rejects an ineligible share source like the local backend", {
   ))
 })
 
-test_that("DuckDB Parent shares agree across native, portable, and local paths", { # nolint: line_length_linter
+test_that("DuckDB Parent shares agree across native, portable, local paths", {
   skip_if_backend_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1536,7 +1536,7 @@ test_that("RSQLite executes portable Total shares end to end", {
   )
 })
 
-test_that("DuckDB Total shares agree across native, portable, and local paths", { # nolint: line_length_linter
+test_that("DuckDB Total shares agree across native, portable, local paths", {
   skip_if_backend_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

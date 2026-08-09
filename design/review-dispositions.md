@@ -116,8 +116,8 @@ audit; nothing promoted to Imports.
 
 **Supported-backend claims are not backed by live execution** — #35, #38.
 `test-parent-share-backends.R` "RSQLite executes portable Parent shares end to
-end" and "DuckDB Parent shares agree across native, portable, and local
-paths", executed by the four `backend` jobs.
+end" and "DuckDB Parent shares agree across native, portable, local paths",
+executed by the four `backend` jobs.
 
 **Reference documentation duplicates contracts that can drift** — #36. All
 three tests in `test-documentation.R`.
@@ -162,8 +162,8 @@ its sole occurrence identifier" covers the `nest_by` one-row empty case.
 **Factor returns are defective** (Spec).
 **Rejected — no observable gap.** No factor-return defect reproduces at the
 public interface. `test-margin-label.R` "factor NA levels and missing values
-follow the eight-case contract" walks the whole ADR 0012 table; "NA factor
-levels stay structural when collision checks are disabled" covers the
+obey the eight-case contract" walks the whole ADR 0012 table; "NA factor
+levels stay structural when collision checks are off" covers the
 `.check_margin_label = FALSE` clause; "dtplyr applies mixed named labels
 lazily and restores factors" and "DuckDB uses typed missing for a missing
 factor Margin label" cover factor returns from lazy backends. Returned columns
