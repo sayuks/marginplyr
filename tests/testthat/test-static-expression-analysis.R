@@ -352,6 +352,103 @@ test_that("an `across()` `.names` template must name one output per column", {
   )
 })
 
+test_that("an unnamed `across()` argument is numbered by its own position", {
+  # The placeholder names the analysis gives the unnamed additional arguments
+  # of an `across()` call are only ever read back in a diagnostic, so a wrong
+  # one is invisible until something quotes it. Building them over *every*
+  # additional argument while assigning to the unnamed ones is visible sooner
+  # than that: the two sides differ in length whenever any additional argument
+  # is named, so base R recycles and warns from a call that otherwise
+  # succeeds, once per grouping-set branch (#104).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+
+  # Only untyped warnings are collected. Passing an argument through
+  # `across()`'s `...` at all is deprecated by dplyr, which warns for its own
+  # reasons from the same call; that warning is dplyr's to raise, carries its
+  # own class, and is untouched by this fix, whereas a bare `simpleWarning`
+  # here can only have come from the analysis.
+  untyped_warnings <- character()
+  withCallingHandlers(
+    summarize_with_margins(
+      data,
+      dplyr::across(c(units, revenue), sum, na.rm = TRUE, TRUE),
+      .grouping = rollup(region)
+    ),
+    warning = function(cnd) {
+      if (inherits(cnd, "simpleWarning")) {
+        untyped_warnings <<- c(untyped_warnings, conditionMessage(cnd))
+      }
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_identical(untyped_warnings, character())
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(revenue),
+      dplyr::across(
+        c(total),
+        share_of_total,
+        .names = "{.col}_s",
+        na.rm = TRUE,
+        TRUE
+      ),
+      .grouping = rollup(region)
+    ),
+    "does not accept additional function arguments"
+  )
+  # dplyr names an argument passed on to the function by its position among
+  # those arguments, so the unnamed one here -- second of the two -- is `..2`.
+  expect_match(conditionMessage(error), "`na.rm`, `..2`", fixed = TRUE)
+})
+
+test_that("`across()` argument numbering holds without a mix of names", {
+  # The two ends of the same rule: with no named argument the ordinals are
+  # already what a sequence over everything would produce, and with no unnamed
+  # one there is nothing to number. Neither reaches the subassignment that
+  # #104 was about, so both must keep behaving as they did.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    revenue = c(2, 4, 8)
+  )
+  base_call <- function(...) {
+    summarize_with_margins(
+      data,
+      total = sum(revenue),
+      ...,
+      .grouping = rollup(region)
+    )
+  }
+
+  all_unnamed <- expect_error(
+    base_call(dplyr::across(
+      c(total),
+      share_of_total,
+      .names = "{.col}_s",
+      TRUE,
+      TRUE
+    )),
+    "does not accept additional function arguments"
+  )
+  expect_match(conditionMessage(all_unnamed), "`..1`, `..2`", fixed = TRUE)
+
+  all_named <- expect_error(
+    base_call(dplyr::across(
+      c(total),
+      share_of_total,
+      .names = "{.col}_s",
+      na.rm = TRUE
+    )),
+    "does not accept additional function arguments"
+  )
+  expect_match(conditionMessage(all_named), "`na.rm`.", fixed = TRUE)
+})
+
 test_that("no analysed shape reaches the caller as an untyped condition", {
   # The classes below are what each site raised before #100. Asserting their
   # absence together keeps a future rewrite that reintroduces one of them from
