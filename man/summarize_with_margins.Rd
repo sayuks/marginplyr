@@ -61,10 +61,11 @@ ordered-factor levels. It does not sort result rows and has no effect for
 
 \item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
 dimension independently for a value or factor level that collides with its
-display label. \code{NULL} bypasses collision checks. See \emph{Display labels and
-grouping identity} for the factor missing-value contract. Every Margin
-verb uses the same default: \code{TRUE} for local data frames and \code{FALSE} for
-lazy inputs, where checking would require an additional query.}
+display label. \code{.margin_label = NULL} opts out of these checks. See
+\emph{Display labels and grouping identity} for the factor missing-value
+contract. Every Margin verb uses the same default: \code{TRUE} for local data
+frames and \code{FALSE} for lazy inputs, where checking would require an
+additional query.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}

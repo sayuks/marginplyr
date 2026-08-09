@@ -94,6 +94,15 @@ test_that("shared lifecycle options use package conditions", {
       )),
       message = "`\\.check_margin_label` must be a logical scalar"
     ),
+    check_margin_label_null = list(
+      expr = quote(summarize_with_margins(
+        data,
+        id = dplyr::cur_group_id(),
+        .grouping = rollup(group),
+        .check_margin_label = NULL
+      )),
+      message = "`\\.check_margin_label` must be a logical scalar"
+    ),
     margin_label_position = list(
       expr = quote(summarize_with_margins(
         data,
