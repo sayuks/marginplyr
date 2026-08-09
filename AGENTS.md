@@ -65,6 +65,50 @@ an availability guard is skipped without a special case — a guarded chunk that
 never runs must not be reported as a chunk that stopped failing, or
 `_R_CHECK_DEPENDS_ONLY_` builds break.
 
+### Site verification
+
+`.github/workflows/altdoc.yaml` renders the site and then runs
+`.github/scripts/verify-site.R` over `docs/`. That script derives the pages it
+requires instead of listing them: one per `vignettes/*.qmd`, one per `man/*.Rd`
+that is not marked `\keyword{internal}`, `docs/index.html`, and one per
+`file: $ALTDOC_*` slot in `altdoc/quarto_website.yml` whose repository file is
+present. Adding a vignette or an exported function therefore needs no edit to
+the script for its page to be covered.
+
+Only the last of those keeps a table, because a placeholder cannot say on its
+own whether the file behind it exists, and an assertion is what stops that
+table behaving like the list this replaced: a `file:` slot the site config
+declares and the table does not name fails the job rather than escaping it. A
+second assertion counts the derived pages against the sources they came from,
+since every check iterates over that set and a set that arrived empty is a set
+that passes.
+
+The derivation is what decides coverage; the marker list is not. Every derived
+page has to exist, reach `</html>`, carry no build-machine path, and contain
+neither `installed.packages` nor the retired name `union_all_with_margins`. The
+last two scans also run over `docs/search.json`, which carries every page's
+text and is served beside them. `markers` adds page-specific prose on top of
+that, and a key naming no derived page is an error, so renaming a vignette
+moves its markers rather than silently dropping them. Marking a `must_error`
+chunk's rendered diagnostic is the strongest marker available: prose survives a
+chunk that stopped running, a diagnostic does not.
+
+Both halves replaced something weaker. The hand-written required list omitted
+`recipes.html` entirely, so a silent render failure of the newest vignette left
+the job green (#114); the path scan named only `Rtmp` and ran against one
+article, which is why #99's `/Users/<user>/.duckdb` reached two shipped
+vignettes unnoticed. As with the backend matrix, the cost is that the workflow
+no longer shows what it checks, so the script writes the derived set to the job
+summary.
+
+To run it locally, render first with
+`altdoc::render_docs(parallel = FALSE, freeze = FALSE)`, then
+`Rscript .github/scripts/verify-site.R`. The render executes vignette and
+example code against the *installed* marginplyr, not the working tree, so
+install the working tree first — otherwise the reference pages fail on
+functions the installed version does not export, and the failure looks like a
+broken vignette rather than a stale library.
+
 ### Dependency metadata
 
 `DESCRIPTION`'s Imports/Suggests split is audited by hand, not with
