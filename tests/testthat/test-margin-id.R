@@ -392,7 +392,11 @@ test_that("DuckDB native and portable summaries agree on .id", {
     dplyr::collect() |>
     dplyr::arrange(set, group)
 
-  plan <- compile_grouping_spec(spec, names(data))
+  plan <- compile_grouping_spec(
+    spec,
+    names(data),
+    duplicates_choices = margin_duplicates_choices
+  )
   portable <- summarize_margin_union(
     remote,
     dots = rlang::quos(total = sum(value)),

@@ -1466,7 +1466,11 @@ test_that("DuckDB native and UNION adapters agree", {
     dplyr::collect() |>
     dplyr::arrange(a, b, gid)
 
-  plan <- compile_grouping_spec(spec, names(data))
+  plan <- compile_grouping_spec(
+    spec,
+    names(data),
+    duplicates_choices = margin_duplicates_choices
+  )
   dots <- rlang::quos(total = sum(value), gid = grouping_id(a, b))
   fallback <- summarize_margin_union(
     remote,

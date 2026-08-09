@@ -115,7 +115,12 @@ test_that("an eager expansion over 512 branches keeps one branch per set", {
   dimensions <- names(data)[names(data) != "value"]
   expanded <- expand_with_margins(data, .grouping = spec)
 
-  expect_identical(length(compile_grouping_spec(spec, names(data))$sets), 512L)
+  plan <- compile_grouping_spec(
+    spec,
+    names(data),
+    duplicates_choices = margin_duplicates_choices
+  )
+  expect_identical(length(plan$sets), 512L)
   expect_identical(nrow(expanded), 512L * nrow(data))
   # One branch labels every dimension, and no other branch can.
   all_total <- rowSums(expanded[dimensions] == "Total") == length(dimensions)
@@ -168,7 +173,12 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
   # dbplyr flattens a union of unions, so this holds whichever way the branches
   # are bracketed on the way in, and it is the property rather than the
   # bracketing that is pinned here.
-  set_count <- length(compile_grouping_spec(spec, names(data))$sets)
+  plan <- compile_grouping_spec(
+    spec,
+    names(data),
+    duplicates_choices = margin_duplicates_choices
+  )
+  set_count <- length(plan$sets)
   expect_identical(set_count, 8L)
   expect_identical(count_top_level_unions(sql), set_count - 1L)
 
