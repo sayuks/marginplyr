@@ -590,11 +590,15 @@ summarize_with_margins(
 ) |>
   dplyr::arrange(year, region)
 
-# DuckDB executes a native GROUP BY GROUPING SETS query. The optional
-# dependency guard keeps this example runnable without DuckDB installed.
+# DuckDB executes a native GROUP BY GROUPING SETS query. The guard shipped
+# with marginplyr keeps this example runnable without DuckDB, and withholds
+# it just the same when the installed DuckDB is older than the version
+# DESCRIPTION requires -- `shared_home` below is an error there, not a
+# degraded result.
+source(system.file("suggests", "guard.R", package = "marginplyr"))
 if (
-  requireNamespace("DBI", quietly = TRUE) &&
-  requireNamespace("duckdb", quietly = TRUE)
+  marginplyr_suggest_available("DBI") &&
+  marginplyr_suggest_available("duckdb")
 ) {
   # `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets
   # inside the session's temporary directory instead of `~/.duckdb`.

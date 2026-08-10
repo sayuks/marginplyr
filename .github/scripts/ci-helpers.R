@@ -84,10 +84,16 @@ test_tally <- function(test_log) {
 #
 # `source()` evaluates top-level expressions only, and the helper's sole
 # testthat call sits inside `skip_if_backend_absent()`'s body, so this works
-# from a bare `Rscript` with testthat unattached. It also brings in
-# `backend_available()` and `required_suggests()`; nothing here calls them, and
-# separating the list into its own file would trade that for a file whose only
-# purpose is the separation.
+# from a bare `Rscript` with testthat unattached. Its reading of DESCRIPTION and
+# of `inst/suggests/guard.R` is inside function bodies for the same reason, one
+# step further on: `generate-backend-matrix.R` runs before marginplyr is
+# installed and asks only for the list, so resolving either at source time would
+# fail a script that has no version question to ask. `verify-suite-coverage.R`
+# does ask one, and runs from the repository root where both are present.
+#
+# The helper also brings in `backend_available()`, `suggest_status()`, and
+# `required_suggests()`; separating the list into its own file would trade that
+# for a file whose only purpose is the separation.
 source("tests/testthat/helper-optional-backends.R")
 
 # Reads a comma-separated list out of the environment, which is how a generated
