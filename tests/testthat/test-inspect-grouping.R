@@ -306,6 +306,135 @@ test_that("a renaming selection resolved from typed metadata is refused", {
   expect_identical(conditionMessage(error), renaming_grouping_message())
 })
 
+renaming_by_data <- function() {
+  data.frame(region = c("x", "y"), area = c("p", "q"), revenue = 1:2)
+}
+
+renaming_by_message <- function() {
+  paste0(
+    "Can't rename `.by` column `area = region`. ",
+    "Fixed `.by` keys must name existing columns."
+  )
+}
+
+test_that("inspection and execution refuse a renaming .by alike", {
+  # `area` is a column too, so the resolution this replaces reported the name
+  # the caller wrote, fixed the plan on `area`, and partitioned every result by
+  # a column the selection never named (#134).
+  data <- renaming_by_data()
+
+  inspected <- expect_error(
+    inspect_grouping(data, .by = c(area = region), .grouping = rollup(revenue))
+  )
+  expect_s3_class(inspected, "marginplyr_error")
+  expect_identical(conditionMessage(inspected), renaming_by_message())
+  expect_identical(
+    rlang::call_name(conditionCall(inspected)),
+    "inspect_grouping"
+  )
+
+  # Every Margin verb resolves `.by` through the same helper, so each one
+  # reports what the inspection verb reported. The calls are written out rather
+  # than built from the verb names, so `codetools` can follow them.
+  summarized <- expect_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .by = c(area = region),
+      .grouping = rollup(revenue)
+    )
+  )
+  expect_identical(conditionMessage(summarized), renaming_by_message())
+
+  expanded <- expect_error(
+    expand_with_margins(
+      data,
+      .by = c(area = region),
+      .grouping = rollup(revenue)
+    )
+  )
+  expect_identical(conditionMessage(expanded), renaming_by_message())
+
+  nested <- expect_error(
+    nest_with_margins(
+      data,
+      .by = c(area = region),
+      .grouping = rollup(revenue)
+    )
+  )
+  expect_identical(conditionMessage(nested), renaming_by_message())
+
+  nested_by <- expect_error(
+    nest_by_with_margins(
+      data,
+      .by = c(area = region),
+      .grouping = rollup(revenue)
+    )
+  )
+  expect_identical(conditionMessage(nested_by), renaming_by_message())
+
+  for (error in list(summarized, expanded, nested, nested_by)) {
+    expect_s3_class(error, "marginplyr_error")
+  }
+})
+
+test_that("a renaming .by is refused whether or not the name is a column", {
+  # The renamed-to name is no column of this input, which used to be reported
+  # as an unknown `.by` column the caller never wrote.
+  error <- expect_error(
+    inspect_grouping(
+      data.frame(region = c("x", "y"), revenue = 1:2),
+      .by = c(area = region),
+      .grouping = rollup(revenue)
+    )
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(conditionMessage(error), renaming_by_message())
+})
+
+test_that("a renaming .by resolved from typed metadata is refused", {
+  # A selection carrying a predicate cannot be resolved from column names
+  # alone, so it reaches the typed selection proxy rather than the name proxy
+  # that rejects every other renaming `.by` before a backend is read.
+  error <- expect_error(
+    inspect_grouping(
+      renaming_by_data(),
+      .by = c(area = region, where(is.numeric)),
+      .grouping = grouping_set()
+    )
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(conditionMessage(error), renaming_by_message())
+})
+
+test_that("fixed .by keys still resolve without renaming", {
+  data <- renaming_by_data()
+
+  plan <- inspect_grouping(data, .by = region, .grouping = rollup(revenue))
+  expect_identical(plan$fixed, c("(region)", "(region)"))
+
+  # A grouped input supplies the same keys through `dplyr::group_vars()`.
+  grouped <- inspect_grouping(
+    dplyr::group_by(data, region),
+    .grouping = rollup(revenue)
+  )
+  expect_identical(grouped$fixed, c("(region)", "(region)"))
+
+  # A predicate resolves against the typed snapshot instead of the names.
+  typed <- inspect_grouping(
+    data,
+    .by = where(is.numeric),
+    .grouping = rollup(region)
+  )
+  expect_identical(typed$fixed, c("(revenue)", "(revenue)"))
+
+  # No `.by` at all fixes nothing.
+  expect_identical(
+    inspect_grouping(data, .grouping = rollup(region))$fixed,
+    c("()", "()")
+  )
+})
+
 inspect_proxy_capture <- new.env(parent = emptyenv())
 
 inspect_proxy_counter_head <- function(x, ...) {
@@ -353,6 +482,33 @@ test_that("lazy inspection reads typed metadata once, executing no margins", {
   expect_identical(class(result), c("tbl_df", "tbl", "data.frame"))
   expect_identical(result$included, c("(group)", "()"))
   expect_identical(result$grouping_id, c(0L, 1L))
+})
+
+test_that("a name-only grouping error precedes a .by predicate's read", {
+  # A `.by` predicate is resolved from typed metadata, but the Grouping
+  # specification beside it may still be resolvable from names — and ADR-0005
+  # puts its rejection before any backend read. Deferred fixed keys stand in as
+  # none for that pass, so the read a predicate needs cannot be pulled ahead of
+  # an error the names already decide.
+  skip_if_backend_absent("dtplyr")
+  register_inspect_proxy_methods()
+  source <- dtplyr::lazy_dt(data.frame(
+    group = c("x", "y"),
+    value = 1:2
+  ))
+  class(source) <- c("margin_inspect_proxy_counter", class(source))
+  inspect_proxy_capture$n <- 0L
+
+  error <- expect_error(
+    inspect_grouping(
+      source,
+      .by = where(is.numeric),
+      .grouping = rollup(tidyselect::all_of("absent"))
+    )
+  )
+
+  expect_identical(inspect_proxy_capture$n, 0L)
+  expect_match(conditionMessage(error), "absent")
 })
 
 test_that("dbplyr inspection returns local plan data without a source query", {

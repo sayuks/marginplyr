@@ -25,7 +25,9 @@ not supported because nesting creates list columns.}
 \item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns included in
 every grouping set. These columns never receive \code{.margin_label}. When
 \code{.data} is grouped and \code{.by} is \code{NULL}, its grouping columns are used as
-implicit fixed keys.}
+implicit fixed keys. A fixed key is a column of the input, so a selection
+cannot rename it: \code{c(area = region)} is an error rather than a fixed key
+named \code{area}. Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}
 
 \item{.grouping}{A grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}

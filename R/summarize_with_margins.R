@@ -15,7 +15,9 @@
 #' @param .by <[`tidy-select`][dplyr::dplyr_tidy_select]> Columns included in
 #'   every grouping set. These columns never receive `.margin_label`. When
 #'   `.data` is grouped and `.by` is `NULL`, its grouping columns are used as
-#'   implicit fixed keys.
+#'   implicit fixed keys. A fixed key is a column of the input, so a selection
+#'   cannot rename it: `c(area = region)` is an error rather than a fixed key
+#'   named `area`. Rename the result afterwards with [dplyr::rename()].
 #' @param .grouping A grouping specification made with [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
 #'   represents one empty grouping set.

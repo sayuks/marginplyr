@@ -66,13 +66,42 @@ normalize_grouping_input <- function(.data, by_quo) {
   }
 
   .data <- dplyr::ungroup(.data)
-  by <- if (length(input_groups) > 0L) {
-    input_groups
-  } else {
-    rlang::inject(get_col_names(.data, !!by_quo))
-  }
 
-  list(data = .data, by = by)
+  list(data = .data, groups = input_groups)
+}
+
+# The fixed keys, wherever column names alone settle them: the grouping columns
+# of a grouped input, an absent `.by`, or a selection that names columns.
+# `NULL` says the selection carries a predicate, which no set of names can
+# answer; that one is resolved against the typed snapshot instead, exactly as a
+# Grouping dimension carrying a predicate is.
+resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
+  if (length(group_vars) > 0L) {
+    # Grouping columns are names dplyr resolved, so they name columns of the
+    # input and cannot rename one.
+    return(group_vars)
+  }
+  if (rlang::quo_is_null(by_quo)) {
+    return(character())
+  }
+  if (!is_name_only_selection(by_quo, data_vars)) {
+    return(NULL)
+  }
+  resolve_by_selection(by_quo, grouping_name_proxy(data_vars))
+}
+
+# A fixed key is a column of the input, exactly as a grouping dimension is, so
+# the rule #103 established for `.grouping` holds here too. `.by` was resolved
+# by selecting it and reading the names back with `get_col_names()`, which are
+# the names the caller wrote, so `.by = c(area = region)` was accepted two ways:
+# as a plan rejected for `area`, a column the caller never wrote, and — where
+# `area` is another column — as a plan silently fixed on that other column,
+# partitioning every verb's result by a column the selection did not name
+# (#134). Resolving through the selection is what keeps both names in hand;
+# `get_col_names()`'s other callers read back names dplyr assigned on purpose,
+# so the check belongs on this resolution rather than in that helper.
+resolve_by_selection <- function(by_quo, data_proxy) {
+  resolve_column_selection(by_quo, data_proxy, labels = by_rename_labels())
 }
 
 prepare_grouping_plan <- function(.data,
@@ -107,9 +136,9 @@ prepare_grouping_plan <- function(.data,
 
       input <- normalize_grouping_input(.data, by_quo)
       data <- input$data
-      by <- input$by
       backend <- grouping_backend(data)
       data_vars <- get_col_names(data, dplyr::everything())
+      by <- resolve_fixed_keys(by_quo, input$groups, data_vars)
       if (!is.null(validate_names)) {
         validate_names(data_vars)
       }
@@ -121,18 +150,27 @@ prepare_grouping_plan <- function(.data,
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The
-        # canonical plan is compiled from the typed snapshot below.
+        # canonical plan is compiled from the typed snapshot below. Unresolved
+        # fixed keys stand in as none: a `.by` carrying a predicate is not known
+        # until that snapshot, and the two checks that read the keys — an
+        # unknown fixed key and one overlapping a dimension — are made again
+        # against the resolved keys below. Withholding the pass instead would
+        # make a `.grouping` error determinable from names alone wait for a
+        # backend read, which ADR-0005 forbids.
         compile_grouping_spec(
           grouping_spec,
           data_vars = data_vars,
           data_proxy = grouping_name_proxy(data_vars),
-          .by = by,
+          .by = if (is.null(by)) character() else by,
           .duplicates = .duplicates,
           duplicates_choices = duplicates_choices,
           preflight = preflight
         )
       }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
+      if (is.null(by)) {
+        by <- resolve_by_selection(by_quo, data_proxy)
+      }
       plan <- compile_grouping_spec(
         grouping_spec,
         data_vars = data_vars,
@@ -696,15 +734,20 @@ grouping_arg_spec <- function(arg, data_vars) {
   NULL
 }
 
-# tidyselect reports a selection under the names the caller gave it, so
-# `all_of(c(area = "region"))` selects `region` and calls it `area`. A grouping
-# dimension is a column of the input, so a renamed selection would put a name
-# the data does not have into the plan. Renaming is refused here, the one place
-# that sees both names, rather than with `eval_select(allow_rename = FALSE)`,
-# whose diagnostic says only that renaming is disallowed and never names the
-# pair the caller has to fix. A name that repeats its own column renames
-# nothing and is left alone.
 resolve_grouping_selection <- function(arg, data_proxy) {
+  resolve_column_selection(arg, data_proxy, labels = grouping_rename_labels())
+}
+
+# tidyselect reports a selection under the names the caller gave it, so
+# `all_of(c(area = "region"))` selects `region` and calls it `area`. A column
+# a Margin verb selects — a grouping dimension or a fixed `.by` key alike — is
+# a column of the input, so a renamed selection would put a name the data does
+# not have into the plan. Renaming is refused here, the one place that sees
+# both names, rather than with `eval_select(allow_rename = FALSE)`, whose
+# diagnostic says only that renaming is disallowed and never names the pair the
+# caller has to fix. A name that repeats its own column renames nothing and is
+# left alone.
+resolve_column_selection <- function(arg, data_proxy, labels) {
   selected <- tidyselect::eval_select(
     arg,
     data = data_proxy,
@@ -717,21 +760,46 @@ resolve_grouping_selection <- function(arg, data_proxy) {
   source_names <- names(tidyselect::tidyselect_data_proxy(data_proxy))[selected]
   renamed <- selected_names != source_names
   if (any(renamed)) {
-    abort_grouping_rename(selected_names[renamed], source_names[renamed])
+    abort_selection_rename(
+      selected_names[renamed],
+      source_names[renamed],
+      labels = labels
+    )
   }
   selected_names
 }
 
-abort_grouping_rename <- function(selected_names, source_names) {
+# One caller mistake, one diagnostic: `.grouping` and `.by` refuse a renaming
+# selection for the same reason, and only the noun and the rule it states
+# differ.
+grouping_rename_labels <- function() {
+  list(
+    singular = "grouping dimension",
+    plural = "grouping dimensions",
+    rule = "Grouping dimensions must name existing columns."
+  )
+}
+
+by_rename_labels <- function() {
+  list(
+    singular = "`.by` column",
+    plural = "`.by` columns",
+    rule = "Fixed `.by` keys must name existing columns."
+  )
+}
+
+abort_selection_rename <- function(selected_names, source_names, labels) {
   abort_marginplyr(
     paste0(
-      "Can't rename grouping dimension",
-      if (length(selected_names) == 1L) " " else "s ",
+      "Can't rename ",
+      if (length(selected_names) == 1L) labels$singular else labels$plural,
+      " ",
       paste0(
         "`", selected_names, " = ", source_names, "`",
         collapse = ", "
       ),
-      ". Grouping dimensions must name existing columns."
+      ". ",
+      labels$rule
     )
   )
 }
