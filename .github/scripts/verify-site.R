@@ -268,13 +268,21 @@ markers <- list(
     "original pre-margin",
     "funion(funion(",
     "Total",
-    # The guide's one `must_error` chunk, by the diagnostic it has to produce.
-    # It is marked with the class form, so this marker also stands for the
-    # assertion: prose survives a chunk that stopped running, and a chunk that
-    # started failing for some other reason halts the render rather than
-    # reaching this scan.
+    # The guide's `must_error` chunks, by the diagnostic each one has to
+    # produce. Every one is marked with the class form, so these markers also
+    # stand for the assertions: prose survives a chunk that stopped running,
+    # and a chunk that started failing for some other reason halts the render
+    # rather than reaching this scan. None of them needs an optional Suggest,
+    # so all of them hold wherever the page is built.
     "Error in `summarize_with_margins()`",
-    "does not support `cur_group_id()`"
+    "Error in `nest_with_margins()`",
+    "does not support `cur_group_id()`",
+    "Duplicate grouping sets were produced at positions",
+    "Can't supply `.by` when `.data` is grouped",
+    "Grouped input created with `.drop = FALSE` is not supported",
+    "do not define one unambiguous parent",
+    "Add an empty `grouping_set()` to the `grouping_sets()` specification",
+    "`.duplicates` must be one of \"error\", \"drop\""
   ),
   "docs/vignettes/recipes.html" = c(
     "Put each subtotal with the rows it summarizes",
@@ -325,7 +333,14 @@ markers <- list(
     "Only DuckDB and SQLite are exercised as live SQL databases",
     "DuckDB covers native SQL end to end",
     "dozen-plus fallback dialects",
-    "Arrow and dtplyr are tested for the lazy"
+    "Arrow and dtplyr are tested for the lazy",
+    # The one `must_error` chunk on this page that needs no optional Suggest:
+    # nesting a SQL table, refused through the dbplyr simulator. The guide's
+    # DuckDB, dtplyr, and Arrow refusals are behind availability guards, so
+    # they render nothing where their package is absent and can carry no
+    # marker — the same reason only three of `recipes.qmd`'s are listed above.
+    "Error in `nest_with_margins()`",
+    "which can be nested: data.frame, dtplyr_step"
   ),
   "docs/man/summarize_with_margins.html" = c(
     "summarise_with_margins",

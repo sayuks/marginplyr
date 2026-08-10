@@ -267,9 +267,26 @@ This is a union of:
 (year, month), (year), (), (region, store), (region)
 ```
 
-Both rollups contain `()`. The default `.duplicates = "error"` catches this
-overlap. `"drop"` retains one copy; `"keep"` retains both copies when repeated
-totals are intentionally meaningful:
+Both rollups contain `()`, which is why the call above asks for `"drop"`.
+Without it, the default `.duplicates = "error"` catches the overlap and names
+the positions that collide:
+
+```{r}
+#| label: duplicate-grouping-sets
+#| must_error: marginplyr_error
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = grouping_sets(
+      rollup(year, month),
+      rollup(region, store)
+    )
+  )
+```
+
+`"drop"` retains one copy; `"keep"` retains both copies when repeated totals
+are intentionally meaningful:
 
 ```{r}
 retail_sales |>
@@ -553,11 +570,40 @@ group_vars(grouped_monthly_report)
 ```
 
 The calculation is equivalent to the earlier `.by = c(year, month)` call.
-Do not combine grouped input with `.by`. A fixed grouping column also cannot
-appear in `.grouping`; call `ungroup()` first if that column should be rolled
-up instead. Row-wise inputs must likewise be ungrouped explicitly. Local
-groups created with `.drop = FALSE` are rejected because empty factor groups
-do not have a consistent SQL or lazy-backend equivalent.
+Grouped input and `.by` name the fixed keys twice over, so supplying both is
+refused rather than resolved in one direction:
+
+```{r}
+#| label: grouped-input-with-by
+#| must_error: marginplyr_error
+
+retail_sales |>
+  group_by(year) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .by = month,
+    .grouping = rollup(region, store)
+  )
+```
+
+A fixed grouping column also cannot appear in `.grouping`; call `ungroup()`
+first if that column should be rolled up instead. Row-wise inputs must
+likewise be ungrouped explicitly. Local groups created with `.drop = FALSE`
+are rejected because empty factor groups do not have a consistent SQL or
+lazy-backend equivalent:
+
+```{r}
+#| label: drop-false-groups
+#| must_error: marginplyr_error
+
+retail_sales |>
+  mutate(region = factor(region)) |>
+  group_by(region, .drop = FALSE) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(store)
+  )
+```
 
 Input groups affect the calculation but, except for the explicitly row-wise
 nesting verb, do not persist on the result. `summarize_with_margins()`,
@@ -707,9 +753,24 @@ retail_sales |>
 ```
 
 A parent is ambiguous outside a rollup, but a grand total is not: a plan
-either contains one or it does not. So `share_of_total()` accepts any
-Grouping specification that produces one, including the `cube()` and
-`grouping_sets()` forms `share_of_parent()` rejects:
+either contains one or it does not. A `cube()` therefore has no Parent share,
+and asking for one names the rewrite instead of choosing a parent:
+
+```{r}
+#| label: parent-share-outside-rollup
+#| must_error: marginplyr_error
+
+retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_share = share_of_parent(revenue),
+    .grouping = cube(region, store)
+  )
+```
+
+`share_of_total()` accepts any Grouping specification that produces a Grand
+total set, that same `cube()` included:
 
 ```{r}
 retail_sales |>
@@ -723,9 +784,26 @@ retail_sales |>
 ```
 
 A `grouping_sets()` specification qualifies only when it includes an empty
-`grouping_set()`; one without it is rejected naming that fix. Everything else
-is shared with `share_of_parent()` — eligible sources, the `across()` form,
-and the value rules — and the
+`grouping_set()`; one without it is rejected naming that fix:
+
+```{r}
+#| label: total-share-without-grand-total
+#| must_error: marginplyr_error
+
+retail_sales |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = grouping_sets(
+      grouping_set(region, store),
+      grouping_set(region)
+    )
+  )
+```
+
+Everything else is shared with `share_of_parent()` — eligible sources, the
+`across()` form, and the value rules — and the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 documents both helpers.
 
@@ -955,9 +1033,22 @@ subtotal, and total rows.
 
 Nesting accepts `.duplicates = "error"` or `"drop"`, but rejects `"keep"`.
 Unlike a summary or row expansion, two duplicate nested groups have no
-visible set identifier and would therefore be indistinguishable. Internal set
-identifiers and `.keep` copies use collision-free temporary names, so no input
-column name is reserved.
+visible set identifier and would therefore be indistinguishable, so the value
+is refused where it is written rather than where a duplicate first appears:
+
+```{r}
+#| label: nesting-duplicates-keep
+#| must_error: marginplyr_error
+
+january_sales |>
+  nest_with_margins(
+    .grouping = rollup(region, store),
+    .duplicates = "keep"
+  )
+```
+
+Internal set identifiers and `.keep` copies use collision-free temporary
+names, so no input column name is reserved.
 
 The list column is a regular list of data frames; a
 `vctrs::list_of` subclass is not promised. On an empty ungrouped input,

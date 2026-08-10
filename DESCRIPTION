@@ -43,6 +43,7 @@ SystemRequirements: Quarto command line tool
     from their '.qmd' sources.
 Config/Needs/website:
     altdoc (>= 0.7.3),
+    arrow,
     DBI,
     dtplyr,
     duckdb,

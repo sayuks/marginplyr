@@ -32,7 +32,7 @@ install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
 
 # Used for the optional backend sections of this guide.
-install.packages(c("DBI", "duckdb", "RSQLite", "dtplyr"))
+install.packages(c("DBI", "duckdb", "RSQLite", "dtplyr", "arrow"))
 ```
 
 ```{r setup}
@@ -42,8 +42,8 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Only dplyr and dbplyr are required. The DuckDB, SQLite, and dtplyr sections
-below need optional packages, so their chunks evaluate only when those
+Only dplyr and dbplyr are required. The DuckDB, SQLite, dtplyr, and Arrow
+sections below need optional packages, so their chunks evaluate only when those
 packages are installed at the versions marginplyr asks for. Where a package is
 missing or too old the code is still shown, but its output is absent.
 
@@ -61,6 +61,12 @@ has_duckdb <- marginplyr_suggest_available("DBI") &&
 # the installed driver version through RSQLite.
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
+has_arrow <- marginplyr_suggest_available("arrow")
+
+# Chunks marked with `must_error` show a call that is meant to fail, so the
+# reader sees the real diagnostic rather than a quotation of one. AGENTS.md is
+# authoritative for what the option does and why it exists.
+source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
 ```
 
 ## One report, two execution locations
@@ -294,10 +300,47 @@ arbitrary aggregate's result type, so marginplyr reads the summaries a share
 reads over a single input row and rejects an ineligible source before
 returning the query. That read is bounded in the rows it asks for and gets
 back, not in the work the input may have to do to produce one row — the staged
-query above is still not executed, and `show_query()` runs nothing. A source
-the sample cannot type is left alone rather than rejected, so a runtime-only
-incompatibility, and any non-scalar summary, can still surface from the
-database when the staged query executes.
+query above is still not executed, and `show_query()` runs nothing.
+
+Sampling one row needs a connection that can execute one, so this refusal is
+shown against a live DuckDB table rather than the simulator used above:
+
+```{r}
+#| eval: !expr has_duckdb
+
+sample_con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+sample_sales <- copy_to(
+  sample_con,
+  january_sales,
+  name = "january_sales",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+```
+
+```{r}
+#| label: duckdb-ineligible-share-source
+#| eval: !expr has_duckdb
+#| must_error: marginplyr_error
+
+sample_sales |>
+  summarize_with_margins(
+    last_channel = max(channel),
+    last_channel_share = share_of_parent(last_channel),
+    .grouping = rollup(region, store)
+  )
+```
+
+```{r}
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(sample_con)
+```
+
+A source the sample cannot type is left alone rather than rejected — which is
+what the simulator above falls under, since it executes nothing at all. So a
+runtime-only incompatibility, and any non-scalar summary, can still surface
+from the database when the staged query executes.
 
 The portable value contract covers finite numbers, missing values, and zero
 denominators. Backend-specific non-finite representations are outside that
@@ -337,17 +380,70 @@ collect(dt_query)
 
 `nest_with_margins()` also supports dtplyr and remains lazy until collection.
 SQL database and Arrow tables cannot use the nesting verbs because their
-result contains a list column.
+result contains a list column, and the refusal names the classes that can:
+
+```{r}
+#| label: nesting-a-sql-table
+#| must_error: marginplyr_error
+
+postgres_sales |>
+  nest_with_margins(
+    .grouping = rollup(region, store)
+  )
+```
 
 dtplyr also enforces the contextual-share source rules, for both denominators.
 A valid request stays a native lazy query, and an ineligible source type or a
 non-scalar summary raises a Package condition at explicit execution, before an
-invalid grouping row is emitted.
+invalid grouping row is emitted:
+
+```{r}
+#| label: dtplyr-ineligible-share-source
+#| eval: !expr has_dtplyr
+#| must_error: marginplyr_error
+
+january_sales |>
+  dtplyr::lazy_dt() |>
+  summarize_with_margins(
+    last_channel = max(channel),
+    last_channel_share = share_of_parent(last_channel),
+    .grouping = rollup(region, store)
+  ) |>
+  collect()
+```
 
 Arrow summaries and expansions are supported and lazy, but `share_of_parent()`
 and `share_of_total()` are both rejected outright, before any Arrow query is
 constructed: the reason is the source summary they share. Collect the Arrow
-table first when you need either. The
+table first when you need either.
+
+```{r}
+#| label: arrow-parent-share
+#| eval: !expr has_arrow
+#| must_error: marginplyr_error
+
+arrow::arrow_table(january_sales) |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    revenue_share = share_of_parent(revenue),
+    .grouping = rollup(region, store)
+  )
+```
+
+```{r}
+#| label: arrow-total-share
+#| eval: !expr has_arrow
+#| must_error: marginplyr_error
+
+arrow::arrow_table(january_sales) |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = rollup(region, store)
+  )
+```
+
+The
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 states where each backend reports these errors.
 
