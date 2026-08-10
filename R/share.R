@@ -2840,8 +2840,15 @@ expression_data_symbols <- function(expr, bound = character()) {
   } else {
     rlang::call_name(expr)
   }
+  # The length is part of deciding whether this is a function definition at
+  # all, not a precondition to check inside. A node built by hand rather than
+  # parsed -- `rlang::call2("function")` arriving through injection -- can
+  # carry a head named `function` without formals or a body, and it falls
+  # through to the general walk below, which reports whatever its parts hold.
+  # Answering `character()` for it instead would be a silent miss, which is
+  # the one direction this walk is not allowed to be wrong in.
   if (identical(call_name, "function") && length(expr) >= 3L) {
-    return(function_definition_symbols(expr, bound))
+    return(definition_data_symbols(expr, bound))
   }
   if (identical(call_name, "get") && length(expr) >= 2L) {
     if (get_has_external_env(expr)) {
@@ -2970,7 +2977,7 @@ expression_data_symbols <- function(expr, bound = character()) {
 #
 # The srcref at element 4 is deliberately not walked: it is not code the mask
 # ever evaluates.
-function_definition_symbols <- function(expr, bound) {
+definition_data_symbols <- function(expr, bound) {
   formals_list <- as.list(expr[[2L]])
   inner <- unique(c(bound, names(formals_list)))
   defaults <- formals_list[
