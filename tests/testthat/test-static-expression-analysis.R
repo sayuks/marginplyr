@@ -314,6 +314,37 @@ test_that("a formula is walked as the call to `~` that it is", {
   expect_s3_class(from_across, "marginplyr_error")
 })
 
+test_that("a read inside an injected quosure is still reached", {
+  # A quosure is a call to `~`, so it is named as one -- no name -- and every
+  # walk descends into it instead. That answer is only safe if descending
+  # reaches what the quosure carries, which is what this asserts in the
+  # package's own terms rather than in rlang's: the guard against an ordinary
+  # summary reading an earlier share is the walk, so a read it stops seeing is
+  # a guard that stops firing, and the wrong number is returned in silence
+  # (#130).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # The walks subset the quosure node they descend into -- `expr[[1L]]`,
+  # `as.list(expr)[-1L]` -- and rlang soft-deprecated both spellings on a
+  # quosure, so walking one signals a lifecycle condition into whatever handler
+  # the caller has installed. That is #165, not this: the suppression comes out
+  # when the walks read a quosure with `rlang::quo_get_expr()` instead.
+  error <- expect_error(
+    suppressWarnings(summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sum(!!rlang::quo(share)),
+      .grouping = rollup(region)
+    )),
+    "`share`"
+  )
+  expect_s3_class(error, "marginplyr_error")
+})
+
 test_that("every analysis that names a call reads a formula as a `~` call", {
   # The nine further analyses #163 lists guarded with `rlang::is_call()` and
   # then asked for a name, so each read a formula as whatever its right-hand
@@ -331,29 +362,44 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
   proxy <- data.frame(value = double(), other = double())
   env <- rlang::current_env()
 
-  # The three reads #163 names, and the two-sided formula that is the one
-  # shape `call_name()` did answer as `~`.
+  # The three reads #163 names -- `"$"`, `"get"`, and `"+"` -- and the
+  # two-sided formula, which is the one shape `call_name()` did answer as `~`.
   expect_null(static_call_name(quote(~ .data$share)))
   expect_null(static_call_name(quote(~ get("share"))))
+  expect_null(static_call_name(quote(~ .x + share)))
   expect_null(static_call_ns(quote(~ dplyr::n())))
   expect_null(static_call_name(quote(a ~ b)))
 
   # An injected quosure is a `~` call as well, and gets the same answer for a
   # stronger reason than a formula does: every site reads operands from the
   # node it has just named, and a quosure answers none of those reads as the
-  # call it carries. Its length is 2 whatever it holds, so a name read through
-  # to the call inside would not describe the operands beside it -- which is
-  # this defect rather than a fix for it.
+  # call it carries, so a name read through to the call inside would not
+  # describe the operands beside it. That is this defect rather than a fix for
+  # it. What the answer must not cost is the read inside, which the walk
+  # reaches as a part -- asserted end to end below.
   expect_null(static_call_name(rlang::quo(dplyr::across(value, mean))))
   expect_null(static_call_ns(rlang::quo(dplyr::n())))
-  expect_identical(length(rlang::quo(dplyr::across(value, mean))), 2L)
   # A quosure carrying no call is a name this cannot read, not an error: that
   # is the shape `rlang::call_name()` aborts on.
   expect_null(static_call_name(rlang::quo(value)))
-  # Anything that is not a call has no name to read either, so a site needs no
-  # `rlang::is_call()` guard of its own before asking.
+
+  # Anything that is not a call has no name to read either. That is deliberate
+  # and load-bearing rather than incidental: it is what lets a site ask without
+  # a guard of its own, which `share_helper_call_kind()`, `is_across_call()`,
+  # `is_name_only_expr()`, and `grouping_arg_spec()` each rely on.
   expect_null(static_call_name(quote(value)))
+  expect_null(static_call_ns(quote(value)))
+  expect_null(static_call_name(1L))
   expect_null(static_call_ns(1L))
+  expect_false(is_share_helper_call(quote(value)))
+  expect_false(is_across_call(quote(value)))
+  # A language object that is no call, which is what the guard dropped from
+  # `is_name_only_expr()` used to answer. A literal takes the branch above it
+  # and is a name-only selection, as it was before.
+  expect_false(
+    is_name_only_expr(expression(x), env = env, data_vars = "region")
+  )
+  expect_true(is_name_only_expr(1L, env = env, data_vars = "region"))
 
   # A walk still reaches what the formula holds: the helper inside is found
   # once, from the parts, rather than twice -- once from the formula misread

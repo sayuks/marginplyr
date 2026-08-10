@@ -108,8 +108,9 @@ assert_lazy_table <- function(x) {
 }
 
 # The name and namespace a static analysis reads from a call, and `NULL` when
-# there is no name to read -- which anything that is not a call also is, so a
-# site needs no `rlang::is_call()` guard of its own to ask.
+# there is none to read. Anything that is not a call answers `NULL` too, so a
+# site may ask without a guard of its own; the sites that keep one keep it for
+# a read it makes beside this, such as walking `as.list(expr)[-1L]`.
 #
 # `rlang::call_name()` and `rlang::call_ns()` do not answer a formula as the
 # call to `~` that it is: both unwrap a one-sided formula to its right-hand
@@ -118,9 +119,10 @@ assert_lazy_table <- function(x) {
 # separates -- and when it is not they answer a different call, so
 # `~ .data$share` reads as a `$` call and the analysis enters a branch written
 # for another shape, carrying the formula as the expression that branch then
-# reads `[[2L]]` of. `rlang::call_args()` unwraps the same way, which is how a
-# formula reached the direct-share path and was computed as the share it is
-# not (#163).
+# reads `[[2L]]` of (#163). `rlang::call_args()` unwraps the same way, which is
+# how a formula reached the direct-share path and was computed as the share it
+# is not -- measured on 5f078ea, and the one shape of this whose misread raised
+# nothing, which is what the ticket's severity note does not cover.
 #
 # Every analysis in this package recognizes a call by its name, none of them
 # recognizes `~`, and each already has an answer for a name it does not know:
@@ -140,26 +142,25 @@ assert_lazy_table <- function(x) {
 # that expression as a part and analyses it there, where the operands are its
 # own.
 static_call_name <- function(expr) {
-  if (is.null(static_call_expr(expr))) {
+  if (!is_nameable_call(expr)) {
     return(NULL)
   }
   rlang::call_name(expr)
 }
 
 static_call_ns <- function(expr) {
-  if (is.null(static_call_expr(expr))) {
+  if (!is_nameable_call(expr)) {
     return(NULL)
   }
   rlang::call_ns(expr)
 }
 
-# The call a name is read from, or `NULL` when there is none: anything that is
-# not a call, and any call to `~` -- a formula or a quosure.
-static_call_expr <- function(expr) {
-  if (!rlang::is_call(expr) || rlang::is_call(expr, "~")) {
-    return(NULL)
-  }
-  expr
+# Whether `rlang::call_name()` and `rlang::call_ns()` may be asked about this
+# node at all: it is a call, and not a call to `~`. It does not promise a name
+# -- a call whose head is itself a call has none, and both answer `NULL` for it
+# (#100), which every site is already written to handle.
+is_nameable_call <- function(expr) {
+  rlang::is_call(expr) && !rlang::is_call(expr, "~")
 }
 
 # Required because dtplyr is an optional Suggest rather than an Import: it

@@ -2538,9 +2538,8 @@ share_named_kind <- function(name) {
 }
 
 share_helper_call_kind <- function(expr) {
-  if (!rlang::is_call(expr)) {
-    return(NULL)
-  }
+  # No `rlang::is_call()` guard: `static_call_name()` answers `NULL` for a
+  # node that is no call, which is the answer the next line already gives.
   name <- static_call_name(expr)
   if (is.null(name)) {
     return(NULL)
@@ -2623,8 +2622,7 @@ share_request_kinds <- function(requests) {
 }
 
 is_across_call <- function(expr) {
-  rlang::is_call(expr) &&
-    identical(static_call_name(expr), "across") &&
+  identical(static_call_name(expr), "across") &&
     (is.null(static_call_ns(expr)) ||
        identical(static_call_ns(expr), "dplyr"))
 }
@@ -2831,7 +2829,7 @@ expression_data_symbols <- function(expr, bound = character()) {
   }
   # A formula is a call to `~`, and the general walk below already treats it as
   # one, so it is never asked for a name. `static_call_name()` is why, and it
-  # is the same answer nine other analyses read (#163).
+  # is the same answer every other analysis in this package reads (#163).
   call_name <- static_call_name(expr)
   # The length is part of deciding whether this is a function definition at
   # all, not a precondition to check inside. A node built by hand rather than
