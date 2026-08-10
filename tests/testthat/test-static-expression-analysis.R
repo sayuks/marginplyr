@@ -202,6 +202,101 @@ test_that("every call head that is not a bare symbol is walked", {
   )
 })
 
+test_that("a namespaced call reads neither of its operands", {
+  # `pkg::fun` is the head shape the mask does not evaluate: `::` takes both
+  # operands literally, so neither names a column. Walking every non-symbol
+  # head brings it into scope of the walk for the first time, and reporting
+  # its parts rejects `dplyr::n()` wherever a summary is named `n` -- which is
+  # how this package's own vignettes write it.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(expression_data_symbols(quote(dplyr::n())), character())
+  expect_identical(
+    expression_data_symbols(quote(stats::median(value))),
+    "value"
+  )
+  # Argument position reaches the same node, so one branch answers both.
+  expect_identical(
+    expression_data_symbols(quote(list(m = stats::median))),
+    character()
+  )
+  expect_identical(expression_data_symbols(quote(pkg:::fun(x))), "x")
+
+  # A share source depending on an alias named after the function it calls.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      records = dplyr::n(),
+      share = share_of_total(records),
+      .grouping = rollup(region)
+    )
+  )
+
+  # An ordinary summary written after a share of the same name.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      n = share_of_total(units),
+      rows = dplyr::n(),
+      .grouping = rollup(region)
+    )
+  )
+
+  # `base::get()` still reaches the `get()` branch: the namespace qualifier
+  # names the function, and the literal it is given is still a mask read.
+  expect_identical(
+    expression_data_symbols(quote(base::get("share"))),
+    "share"
+  )
+})
+
+test_that("a formula is walked as the call to `~` that it is", {
+  # `rlang::call_name()` unwraps a one-sided formula to its right-hand side.
+  # That errors outright when the right-hand side is a bare symbol, and
+  # misreads the call otherwise -- `~ .data$share` answers `$`, so the walk
+  # entered a branch written for a different shape and got the right answer by
+  # accident. Asking a formula for a call name is the mistake; it is a call to
+  # `~` and the general walk already handles it.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(expression_data_symbols(quote(~.x)), ".x")
+  expect_identical(expression_data_symbols(quote(~value)), "value")
+  expect_identical(
+    expression_data_symbols(quote(~ .x + share)),
+    c(".x", "share")
+  )
+  expect_identical(expression_data_symbols(quote(~ .data$share)), "share")
+  expect_identical(expression_data_symbols(quote(~ get("share"))), "share")
+
+  # A formal's default is a new entry point into a formula: defaults were not
+  # walked at all before, so this shape could not reach the walk until now.
+  # It is asserted end to end because this walk is the only analysis that
+  # descends into a default.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(f = ~.x) length(f))(),
+      .grouping = rollup(region)
+    )
+  )
+
+  # A formula written at the top of a summary expression -- `length(~value)`
+  # -- still aborts, from `find_summary_context_helpers()` rather than from
+  # here: the same `is_call()`-then-`call_name()` pairing appears at nine
+  # sites, and it fails there before this walk is reached. That predates #130
+  # and is tracked in #163, so it is deliberately not asserted here.
+})
+
 test_that("a function definition binds its formals", {
   # The walk used to collect every symbol in a function body, so a lambda
   # binding a name equal to a preceding share was rejected while a lambda

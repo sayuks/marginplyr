@@ -2819,7 +2819,27 @@ expression_data_symbols <- function(expr, bound = character()) {
   # has no name, so `call_name()` returns `NULL`. Every comparison below is
   # written to be NULL-safe, since such a call is simply not the shape this
   # analysis recognizes and must fall through to its parts (#100).
-  call_name <- rlang::call_name(expr)
+  # `pkg::fun` is the one head shape the data mask does not evaluate. `::` and
+  # `:::` take both operands literally -- neither is a lookup -- so a call to
+  # one reads nothing, in a head or anywhere else. Walking every non-symbol
+  # head is what brought this node into the walk's reach, and reporting its
+  # parts rejects `dplyr::n()` in any call holding a summary named `n`, which
+  # is how the vignettes here write it. The same over-report already reached
+  # argument position, so answering it once at the node covers both.
+  if (rlang::is_call(expr, c("::", ":::"))) {
+    return(character())
+  }
+  # `rlang::call_name()` unwraps a one-sided formula to its right-hand side.
+  # That errors when the right-hand side is a bare symbol -- `~.x` -- and
+  # misreads the call when it is not: `~ .data$share` answers `$`, so the walk
+  # entered a branch written for a different shape and reached the right
+  # answer by accident. A formula is a call to `~`, and the general walk below
+  # already treats it as one, so it is never asked for a name.
+  call_name <- if (rlang::is_call(expr, "~")) {
+    NULL
+  } else {
+    rlang::call_name(expr)
+  }
   if (identical(call_name, "function") && length(expr) >= 3L) {
     return(function_definition_symbols(expr, bound))
   }
