@@ -2793,9 +2793,24 @@ expression_alias_dependencies <- function(expr, aliases) {
   intersect(unique(expression_data_symbols(expr)), aliases)
 }
 
-expression_data_symbols <- function(expr) {
+# `bound` carries the names a construct inside the expression has bound, so a
+# symbol matching one is a read of that binding rather than of a column. It is
+# threaded through the recursion rather than applied to the result, because the
+# two are not the same answer: `(function(share) share)(share)` reads the
+# column in argument position while the body reads the formal, and
+# `(function(share) .data$share)(value)` reads the column through a pronoun no
+# local binding shadows. Filtering the output collapses both, silently (#130).
+#
+# Only a function definition populates it today. `<-`, `for`, and `local()`
+# bind names the walk still reports as reads, which is a false positive rather
+# than the silence this argument exists for, and is tracked in #162.
+expression_data_symbols <- function(expr, bound = character()) {
   if (rlang::is_symbol(expr)) {
-    return(rlang::as_name(expr))
+    name <- rlang::as_name(expr)
+    if (name %in% bound) {
+      return(character())
+    }
+    return(name)
   }
   if (!rlang::is_call(expr)) {
     return(character())
@@ -2804,7 +2819,37 @@ expression_data_symbols <- function(expr) {
   # has no name, so `call_name()` returns `NULL`. Every comparison below is
   # written to be NULL-safe, since such a call is simply not the shape this
   # analysis recognizes and must fall through to its parts (#100).
-  call_name <- rlang::call_name(expr)
+  # `pkg::fun` is the one head shape the data mask does not evaluate. `::` and
+  # `:::` take both operands literally -- neither is a lookup -- so a call to
+  # one reads nothing, in a head or anywhere else. Walking every non-symbol
+  # head is what brought this node into the walk's reach, and reporting its
+  # parts rejects `dplyr::n()` in any call holding a summary named `n`, which
+  # is how the vignettes here write it. The same over-report already reached
+  # argument position, so answering it once at the node covers both.
+  if (rlang::is_call(expr, c("::", ":::"))) {
+    return(character())
+  }
+  # `rlang::call_name()` unwraps a one-sided formula to its right-hand side.
+  # That errors when the right-hand side is a bare symbol -- `~.x` -- and
+  # misreads the call when it is not: `~ .data$share` answers `$`, so the walk
+  # entered a branch written for a different shape and reached the right
+  # answer by accident. A formula is a call to `~`, and the general walk below
+  # already treats it as one, so it is never asked for a name.
+  call_name <- if (rlang::is_call(expr, "~")) {
+    NULL
+  } else {
+    rlang::call_name(expr)
+  }
+  # The length is part of deciding whether this is a function definition at
+  # all, not a precondition to check inside. A node built by hand rather than
+  # parsed -- `rlang::call2("function")` arriving through injection -- can
+  # carry a head named `function` without formals or a body, and it falls
+  # through to the general walk below, which reports whatever its parts hold.
+  # Answering `character()` for it instead would be a silent miss, which is
+  # the one direction this walk is not allowed to be wrong in.
+  if (identical(call_name, "function") && length(expr) >= 3L) {
+    return(definition_data_symbols(expr, bound))
+  }
   if (identical(call_name, "get") && length(expr) >= 2L) {
     if (get_has_external_env(expr)) {
       return(character())
@@ -2825,6 +2870,12 @@ expression_data_symbols <- function(expr) {
           length(name) == 1L &&
           !is.na(name)
       ) {
+        # `get()` performs ordinary name resolution, so a local binding is
+        # what it finds. This is the branch the bound set applies to, unlike
+        # the pronoun below.
+        if (name %in% bound) {
+          return(character())
+        }
         return(name)
       }
     }
@@ -2835,6 +2886,15 @@ expression_data_symbols <- function(expr) {
       length(expr) >= 3L &&
       rlang::is_symbol(expr[[2L]])
   ) {
+    # The bound set is deliberately not consulted here. `.data` is dplyr's
+    # contract for reaching a column whatever else is in scope, so a local
+    # binding of that column's name does not shadow it and
+    # `(function(share) .data$share)(value)` really does read the column.
+    # Applying the bound set to a pronoun-resolved name is the silent miss
+    # this whole walk exists to prevent. `.data` bound as a formal is left
+    # alone for the same reason, in the over-reporting direction: a caller who
+    # does that has already left the contract, and a diagnostic is the safe
+    # side to be wrong on.
     pronoun <- rlang::as_name(expr[[2L]])
     if (identical(pronoun, ".env")) {
       return(character())
@@ -2867,23 +2927,68 @@ expression_data_symbols <- function(expr) {
       call_name %in% c("$", "@") &&
       length(expr) >= 2L
   ) {
-    return(expression_data_symbols(expr[[2L]]))
+    return(expression_data_symbols(expr[[2L]], bound))
   }
-  # Element 1 is the function position, dropped because a symbol there names a
-  # function rather than a column -- that is what keeps `sum` out of every
-  # result. A `[[` there is the one head shape whose parts are all evaluated
-  # in the data mask, so `fns[[bucket]](x)` reads `bucket` and the walk has to
-  # see it (#100). The other head shapes are left alone: a function definition
-  # binds its own formals, so walking one would report a read that is not one
-  # and reject a call dplyr accepts. A `$` head is no longer that case now
-  # that its field name contributes nothing, and the read of its object is
-  # missed here -- #130 owns the head, and this line is not its fix.
+  # Element 1 is the function position. A bare symbol there is dropped, and it
+  # is the only head shape that can be: R resolves a symbol in that position
+  # through function lookup, which skips non-function bindings, so a share
+  # named `sum` cannot shadow `sum(x)`. Every other head is evaluated in the
+  # data mask exactly like an argument, so a read hidden in one bypasses the
+  # guard against an ordinary summary using an earlier share (#130).
+  #
+  # This names the one shape that is excluded rather than listing the shapes
+  # that are walked. #100 could justify only `[[` at the time and listed it,
+  # which left `(fns[[bucket]])(x)` -- a head that is a call to `(`, not to
+  # `[[` -- slipping past, together with `$`, `if`/`else`, and computed heads.
+  #
+  # The head comes first so that the walk returns symbols in source order,
+  # which is user-visible: the guard names `share_dependency[[1L]]`, so this
+  # decides which share an expression reading two of them is reported against.
+  #
+  # A formula falls through here like any other call, so `~ .x + share`
+  # reports `.x`. That is deliberate. A formula is not intrinsically a lambda
+  # -- it becomes one only where something calls `as_function()` on it, which
+  # this walk cannot see -- so `.x` is over-reported, in the direction whose
+  # errors are diagnostics rather than silence. Suppressing it outright would
+  # miss a genuine read of a summary named `.x`, and suppressing it only under
+  # `across()` would make the walk depend on its own call position, which is
+  # what left function definitions behaving differently in a head (#130).
   parts <- as.list(expr)[-1L]
-  if (rlang::is_call(expr[[1L]], "[[")) {
+  if (!rlang::is_symbol(expr[[1L]])) {
     parts <- c(list(expr[[1L]]), parts)
   }
   unique(unlist(
-    lapply(parts, expression_data_symbols),
+    lapply(parts, expression_data_symbols, bound = bound),
+    use.names = FALSE
+  ))
+}
+
+# A function definition binds its formals, so its body reads the mask only
+# through the names they do not cover. The formals' default values are mask
+# reads too: a default is evaluated in the function's own frame, whose
+# enclosure is the definition environment -- the mask -- so
+# `(function(y = share) y)()` reads the share. The walk collected nothing from
+# the formals pairlist at all, which is why that one was silent (#130).
+#
+# Defaults are scoped against every formal rather than the ones written before
+# them. R evaluates them lazily in a frame that already holds all the formals,
+# so `(function(a = b, b = 1) a)()` is 1, and `k` in `function(share, k =
+# share)` names the formal rather than the column.
+#
+# The srcref at element 4 is deliberately not walked: it is not code the mask
+# ever evaluates.
+definition_data_symbols <- function(expr, bound) {
+  formals_list <- as.list(expr[[2L]])
+  inner <- unique(c(bound, names(formals_list)))
+  defaults <- formals_list[
+    !vapply(formals_list, rlang::is_missing, logical(1))
+  ]
+  unique(unlist(
+    lapply(
+      c(defaults, list(expr[[3L]])),
+      expression_data_symbols,
+      bound = inner
+    ),
     use.names = FALSE
   ))
 }

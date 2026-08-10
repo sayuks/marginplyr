@@ -71,14 +71,23 @@ test_that("falling through a call head still sees its arguments", {
   expect_s3_class(error, "marginplyr_error")
 })
 
-test_that("a `[[` call head is walked, and other head shapes are not", {
-  # The function position is dropped so `sum` never counts as a column, which
-  # leaves a read inside a call-valued head unseen. `[[` is the one head shape
-  # whose parts are all mask reads, so it is walked; a function definition is
-  # not, because it binds its own formals and walking it would report a read
-  # that is not one. A `$` head is not walked either, so the object it reads
-  # is missed -- #130 carries that, and these are the two halves that must not
-  # drift into each other.
+test_that("every call head that is not a bare symbol is walked", {
+  # A bare symbol in the function position is the one head that cannot read a
+  # column: R resolves it through function lookup, which skips non-function
+  # bindings, so a share named `sum` does not shadow `sum(x)`. Every other head
+  # is evaluated in the data mask exactly like an argument, so a read hidden
+  # there bypasses the guard against an ordinary summary using an earlier share
+  # (#130).
+  #
+  # The exclusion is written as that one shape rather than as a list of walked
+  # shapes. #100 could justify only the double-bracket head at the time and
+  # enumerated it, which is why a redundant pair of parentheses -- making the
+  # head a call to the paren function -- slipped past that fix. The cases
+  # below are the head
+  # shapes that were reaching the caller as `attempt to apply non-function`,
+  # `$ operator is invalid for atomic vectors`, and `missing value where
+  # TRUE/FALSE needed`: untyped conditions naming nothing the caller can act
+  # on, which is the class ADR-0015 separates.
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
@@ -92,7 +101,7 @@ test_that("a `[[` call head is walked, and other head shapes are not", {
   )
   # nolint end
 
-  from_head <- expect_error(
+  from_index <- expect_error(
     summarize_with_margins(
       data,
       units = sum(value),
@@ -102,11 +111,66 @@ test_that("a `[[` call head is walked, and other head shapes are not", {
     ),
     "`share`"
   )
-  expect_s3_class(from_head, "marginplyr_error")
+  expect_s3_class(from_index, "marginplyr_error")
+
+  # The same `[[` head wrapped in redundant parentheses. The head is now a call
+  # to `(`, so an enumeration of walked head shapes misses it.
+  from_parenthesized <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (fns[[share]])(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_parenthesized, "marginplyr_error")
+
+  # The object of a `$` head. #101 stopped the field name counting as a read,
+  # which is what makes walking this head safe; the object was still missed.
+  from_dollar_object <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = share$total(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_dollar_object, "marginplyr_error")
+
+  from_condition <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (if (share > 0) sum else prod)(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_condition, "marginplyr_error")
+
+  # A head that is an ordinary call returning a function. Nothing about this
+  # shape is special; it is here because an enumeration would have to name it.
+  from_computed <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(s) function(v) s * v)(share)(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_computed, "marginplyr_error")
 
   # `total` in `fns$total` names a field of `fns` rather than reading the
   # share of that name, so this call must execute. Rejecting it is the defect
-  # #100 was filed against, reached from the other direction.
+  # #100 was filed against, reached from the other direction, and walking the
+  # head must not bring it back.
   expect_no_error(
     summarize_with_margins(
       data,
@@ -115,6 +179,339 @@ test_that("a `[[` call head is walked, and other head shapes are not", {
       derived = fns$total(value, TRUE),
       .grouping = rollup(region)
     )
+  )
+
+  # A bare symbol head stays excluded, which is what the exclusion is for.
+  # `doubled` here names both a share and a function, and R's function lookup
+  # skips the non-function binding: the call reaches the function even though
+  # the mask holds a share of that name, so reporting the head as a read would
+  # reject a call that runs correctly.
+  # nolint start: object_usage_linter.
+  # `doubled` is called from the summary expression below, through the data
+  # mask, which codetools cannot follow.
+  doubled <- function(x) sum(x) * 2
+  # nolint end
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      doubled = share_of_total(units),
+      derived = doubled(value),
+      .grouping = rollup(region)
+    )
+  )
+})
+
+test_that("a namespaced call reads neither of its operands", {
+  # `pkg::fun` is the head shape the mask does not evaluate: `::` takes both
+  # operands literally, so neither names a column. Walking every non-symbol
+  # head brings it into scope of the walk for the first time, and reporting
+  # its parts rejects `dplyr::n()` wherever a summary is named `n` -- which is
+  # how this package's own vignettes write it.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(expression_data_symbols(quote(dplyr::n())), character())
+  expect_identical(
+    expression_data_symbols(quote(stats::median(value))),
+    "value"
+  )
+  # Argument position reaches the same node, so one branch answers both.
+  expect_identical(
+    expression_data_symbols(quote(list(m = stats::median))),
+    character()
+  )
+  expect_identical(expression_data_symbols(quote(pkg:::fun(x))), "x")
+
+  # A share source depending on an alias named after the function it calls.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      records = dplyr::n(),
+      share = share_of_total(records),
+      .grouping = rollup(region)
+    )
+  )
+
+  # An ordinary summary written after a share of the same name.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      n = share_of_total(units),
+      rows = dplyr::n(),
+      .grouping = rollup(region)
+    )
+  )
+
+  # `base::get()` still reaches the `get()` branch: the namespace qualifier
+  # names the function, and the literal it is given is still a mask read.
+  expect_identical(
+    expression_data_symbols(quote(base::get("share"))),
+    "share"
+  )
+})
+
+test_that("a formula is walked as the call to `~` that it is", {
+  # `rlang::call_name()` unwraps a one-sided formula to its right-hand side.
+  # That errors outright when the right-hand side is a bare symbol, and
+  # misreads the call otherwise -- `~ .data$share` answers `$`, so the walk
+  # entered a branch written for a different shape and got the right answer by
+  # accident. Asking a formula for a call name is the mistake; it is a call to
+  # `~` and the general walk already handles it.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(expression_data_symbols(quote(~.x)), ".x")
+  expect_identical(expression_data_symbols(quote(~value)), "value")
+  expect_identical(
+    expression_data_symbols(quote(~ .x + share)),
+    c(".x", "share")
+  )
+  expect_identical(expression_data_symbols(quote(~ .data$share)), "share")
+  expect_identical(expression_data_symbols(quote(~ get("share"))), "share")
+
+  # A formal's default is a new entry point into a formula: defaults were not
+  # walked at all before, so this shape could not reach the walk until now.
+  # It is asserted end to end because this walk is the only analysis that
+  # descends into a default.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(f = ~.x) length(f))(),
+      .grouping = rollup(region)
+    )
+  )
+
+  # A formula written at the top of a summary expression -- `length(~value)`
+  # -- still aborts, from `find_summary_context_helpers()` rather than from
+  # here: the same `is_call()`-then-`call_name()` pairing appears at nine
+  # sites, and it fails there before this walk is reached. That predates #130
+  # and is tracked in #163, so it is deliberately not asserted here.
+
+  # A formula in the `.fns` position of `across()` is the one spelling of this
+  # that users are documented to write (`R/share.R:307`), and it was the only
+  # shape in #130's tables asserted at the walk alone. The guard is where the
+  # caller meets it, so it is asserted there too: `.x` is over-reported by
+  # design, and the read of `share` beside it must still be refused.
+  from_across <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = across(value, ~ .x + share),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_across, "marginplyr_error")
+})
+
+test_that("the head is walked before the arguments, and the guard says so", {
+  # The walk returns symbols in source order, and the head is syntactically
+  # first. That is not an internal detail: the guard names
+  # `share_dependency[[1L]]` (`R/share.R:786`), so this order decides which
+  # share an expression reading two of them is reported against. Asserting it
+  # through the message is what makes it a property of the diagnostic the
+  # caller reads rather than of the vector the walk happens to build.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  from_head <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      a = share_of_total(units),
+      b = share_of_total(units),
+      derived = (if (a > 0) sum else prod)(b),
+      .grouping = rollup(region)
+    ),
+    "`a`"
+  )
+  expect_s3_class(from_head, "marginplyr_error")
+
+  # The same two shares with neither in a head: the first one written is the
+  # one named, so the case above is reporting the head rather than reporting
+  # whichever share happens to sort first.
+  from_argument <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      a = share_of_total(units),
+      b = share_of_total(units),
+      derived = b + a,
+      .grouping = rollup(region)
+    ),
+    "`b`"
+  )
+  expect_s3_class(from_argument, "marginplyr_error")
+
+  expect_identical(
+    expression_data_symbols(quote((if (a > 0) sum else prod)(b))),
+    c("a", "sum", "prod", "b")
+  )
+})
+
+test_that("a function definition binds its formals", {
+  # The walk used to collect every symbol in a function body, so a lambda
+  # binding a name equal to a preceding share was rejected while a lambda
+  # genuinely reading that share was accepted only when it sat in argument
+  # position. Both halves are asserted here, because a fix that suppresses
+  # formal names by filtering the walk's output passes the first and breaks
+  # the second (#130).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # A read the guard owes the caller. In head position this returned a silent
+  # `NA` column rather than any condition, which is what made #130 a blocker.
+  from_lambda_head <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(y) share * 100)(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_lambda_head, "marginplyr_error")
+
+  from_backslash_head <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (\(y) share * 100)(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_backslash_head, "marginplyr_error")
+
+  # The same read in argument position was already rejected, and must stay so.
+  from_argument <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sum(vapply(value, function(z) z + share, numeric(1))),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_argument, "marginplyr_error")
+
+  # A formal shadowing the share. The lambda never reads the column, so
+  # rejecting this is the #101 defect reached through a different construct.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sum(vapply(value, function(share) share + 1, numeric(1))),
+      .grouping = rollup(region)
+    )
+  )
+
+  # Formals reach the body and the defaults, and nothing else. The argument
+  # here is evaluated in the mask, so it reads the share even though the
+  # function it is passed to binds that name.
+  from_sibling_argument <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(share) share)(share),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_sibling_argument, "marginplyr_error")
+
+  # Nesting stacks: the inner formal shadows only inside the inner body.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sum(
+        vapply(value, function(z) (function(share) share)(z), numeric(1))
+      ),
+      .grouping = rollup(region)
+    )
+  )
+})
+
+test_that("a formal's default value is a data-mask read", {
+  # A default is evaluated in the function's own frame, whose enclosure is the
+  # data mask, so it reads the mask like any other expression. The walk
+  # collected nothing from the formals pairlist, so this was silent in every
+  # position -- the same failure as a lambda head, reached without one (#130).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  from_default <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(y = share) y)(),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_default, "marginplyr_error")
+
+  # A default is scoped against every formal, not only the ones written before
+  # it: R evaluates defaults lazily in a frame that already holds them all, so
+  # `(function(a = b, b = 1) a)()` is 1. `k` here therefore names the formal
+  # `share` rather than the column, and the call must run.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(share, k = share) sum(k))(value),
+      .grouping = rollup(region)
+    )
+  )
+})
+
+test_that("a bound name shadows a symbol and a `get()`, but not a pronoun", {
+  # The bound set has to be threaded through the recursion as a scope rather
+  # than applied to the walk's output, and these are the three cases that tell
+  # the two implementations apart. `.data$share` reads the column whatever is
+  # bound locally, because the pronoun is dplyr's contract; `get("share")`
+  # goes through ordinary name resolution and finds the binding (#130).
+  expect_identical(
+    expression_data_symbols(quote(share), bound = "share"),
+    character()
+  )
+  expect_identical(expression_data_symbols(quote(share)), "share")
+  expect_identical(
+    expression_data_symbols(quote(.data$share), bound = "share"),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(.data[["share"]]), bound = "share"),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(get("share")), bound = "share"),
+    character()
   )
 })
 
