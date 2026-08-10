@@ -432,26 +432,28 @@ test_that("a selection inside a quosure resolves in the quosure's own env", {
   expect_identical(result$rows, c(2L, 1L, 3L))
 })
 
+# Runs `code` with rlang's soft deprecations raised as errors, restoring
+# whatever the checking environment had before. Written with `on.exit()` rather
+# than withr so the tests add no dependency beyond the ones DESCRIPTION
+# declares, as `with_required_suggests()` in `test-optional-backends.R` is, and
+# at file level so the next test asserting a signal-free walk reaches it.
+with_deprecation_errors <- function(code) {
+  previous <- options(lifecycle_verbosity = "error")
+  on.exit(options(previous), add = TRUE)
+  force(code)
+}
+
 test_that("no walk subsets a quosure", {
   # rlang soft-deprecated `[` and `[[` on a quosure, so a walk spelling its
   # reads that way signals a lifecycle condition into whatever handler the
   # caller has installed -- the class of signal `margin_column_pronoun()`
-  # exists to avoid producing. The verbosity option turns the soft deprecation
-  # into an error, because the warning itself is shown only once every eight
-  # hours and would otherwise pass unnoticed here.
+  # exists to avoid producing. Raising the soft deprecation is what makes the
+  # assertion hold: the warning itself is shown only once every eight hours,
+  # so a test reading for one would pass on a walk that still subsets.
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
   )
-
-  # Written with `on.exit()` rather than withr so the tests add no dependency
-  # beyond the ones DESCRIPTION declares, as `with_required_suggests()` in
-  # `test-optional-backends.R` is.
-  with_deprecation_errors <- function(code) {
-    previous <- options(lifecycle_verbosity = "error")
-    on.exit(options(previous), add = TRUE)
-    force(code)
-  }
 
   # Each walk in turn: the share analysis that reads a summary for an earlier
   # share, the two rewrites, and the context-helper search.

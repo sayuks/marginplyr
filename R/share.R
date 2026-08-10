@@ -991,7 +991,7 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
     fns <- call_args[[fns_index]]
     fns_is_list <- rlang::is_call(fns, "list")
     if (fns_is_list) {
-      functions <- as.list(fns)[-1L]
+      functions <- static_call_args(fns)
       function_names <- names(functions)
     } else {
       functions <- list(fns)
@@ -1080,7 +1080,7 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
   if (can_inline_forwarded && length(forwarded_positions) > 0L) {
     call_args <- call_args[-forwarded_positions]
   }
-  rebuild_call(expr, call_args)
+  rebuild_static_call(expr, call_args)
 }
 
 # The argument a dtplyr lambda binds to each column it is mapped over. Named
@@ -3041,7 +3041,7 @@ is_binding_statement <- function(call_name, expr) {
 # took this for one of those would pass a list to `intersect()`.
 block_reads_and_bound <- function(expr, bound) {
   reads <- character()
-  for (statement in as.list(expr)[-1L]) {
+  for (statement in static_call_args(expr)) {
     step <- statement_reads_and_bound(statement, bound)
     reads <- c(reads, step$reads)
     bound <- step$bound

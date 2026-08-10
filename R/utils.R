@@ -192,6 +192,14 @@ is_nameable_call <- function(expr) {
 # A `~` written in source is untouched by any of this: the verb captures it
 # unevaluated, so the node is a bare call with no attributes to lose. The
 # exposure is injection, for a quosure and a formula alike.
+#
+# Every site reading a node's parts goes through these, including the many a
+# name match has already told cannot hold a quosure -- a `list()` of `.fns`, a
+# `{` block, a `pick()` call. Those sites are safe as they stand, and routing
+# them here anyway is what makes the rule checkable rather than remembered:
+# neither deprecated spelling survives anywhere in `R/` outside this block, so
+# a walk written the old way is one grep away rather than a signal nobody sees
+# until a caller installs a handler.
 static_call_head <- function(expr) {
   if (rlang::is_quosure(expr)) {
     return(quote(`~`))
@@ -206,7 +214,15 @@ static_call_args <- function(expr) {
   as.list(expr)[-1L]
 }
 
-rebuild_call <- function(expr, args) {
+rebuild_static_call <- function(expr, args) {
+  # An invariant, not a Package condition (ADR-0015): a quosure carries exactly
+  # one expression, so rebuilding one around any other number of arguments
+  # would attach its class to a `~` call that is not a quosure at all -- an
+  # object rlang's own accessors would then misread. No rewrite of a public
+  # call reaches this: the two walks that hand a quosure here map the
+  # arguments `static_call_args()` gave them one to one, and the ones that
+  # change an argument count are named `across()` and `pick()` calls.
+  stopifnot(!rlang::is_quosure(expr) || length(args) == 1L)
   rebuilt <- rlang::call2(static_call_head(expr), !!!args)
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.

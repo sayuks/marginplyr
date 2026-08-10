@@ -147,7 +147,7 @@ rewrite_grouping_expr <- function(expr,
 
   helper <- grouping_helper_name(expr)
   if (!is.null(helper)) {
-    args <- as.list(expr)[-1]
+    args <- static_call_args(expr)
     vars <- grouping_helper_vars(args, helper, plan)
 
     if (identical(helper, "grouping_bit")) {
@@ -174,7 +174,7 @@ rewrite_grouping_expr <- function(expr,
     sql = sql,
     con = con
   )
-  rebuild_call(expr, call_args)
+  rebuild_static_call(expr, call_args)
 }
 
 grouping_helper_name <- function(expr) {
