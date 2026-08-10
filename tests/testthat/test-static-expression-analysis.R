@@ -922,6 +922,24 @@ test_that("`rm()` puts a name back within reach of the column", {
   )
   expect_s3_class(from_removal, "marginplyr_error")
 
+  # A removal the walk cannot read has to reach the guard too, since emptying
+  # the set is only the safe answer if the reads it restores are reported.
+  from_dynamic_removal <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = {
+        share <- 1
+        rm(list = paste0("sh", "are"))
+        share
+      },
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_dynamic_removal, "marginplyr_error")
+
   expect_identical(
     expression_data_symbols(quote({
       tmp <- 1
@@ -942,14 +960,22 @@ test_that("`rm()` puts a name back within reach of the column", {
   )
   # A removal the walk cannot read empties the set rather than being ignored:
   # `rm(list = v)` removes whatever that vector holds, and `rm(x, envir = e)`
-  # may remove nothing at all.
+  # may remove nothing at all. The same holds under the other spelling.
   expect_identical(
     expression_data_symbols(quote({
       tmp <- 1
       rm(list = v)
-      tmp
+      tmp + share
     })),
-    c("v", "tmp")
+    c("v", "tmp", "share")
+  )
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <- 1
+      remove(list = v)
+      tmp + share
+    })),
+    c("v", "tmp", "share")
   )
   # A name it does not remove stays bound, so the removal costs nothing beside
   # itself.
@@ -960,6 +986,69 @@ test_that("`rm()` puts a name back within reach of the column", {
       tmp
     })),
     "other"
+  )
+})
+
+test_that("a removal takes back only the names it names", {
+  # The transition `rm()` introduces runs the opposite way to every other one
+  # here -- bound to unbound -- so each place the bound set travels needs
+  # asserting in that direction too. Every expectation below was confirmed
+  # against R by evaluating the block in a child of an environment holding the
+  # removed names, and reading which binding the final read reached (#162).
+
+  # A removal beside an untouched binding: `a` reaches the enclosing value
+  # again, `b` is still the local one.
+  expect_identical(
+    expression_data_symbols(quote({
+      a <- 1
+      b <- 2
+      rm(a)
+      a + b
+    })),
+    "a"
+  )
+  # Several names removed at once, under both spellings of the call.
+  expect_identical(
+    expression_data_symbols(quote({
+      a <- 1
+      b <- 2
+      rm(a, b)
+      a + b
+    })),
+    c("a", "b")
+  )
+  expect_identical(
+    expression_data_symbols(quote({
+      a <- 1
+      b <- 2
+      remove(a, b)
+      a + b
+    })),
+    c("a", "b")
+  )
+  # Rebinding after a removal binds again: the set grows and shrinks along the
+  # block rather than being decided once for it.
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <- 1
+      rm(tmp)
+      tmp <- 2
+      tmp
+    })),
+    character()
+  )
+  # A nested block and a redundant parenthesis carry a removal out of
+  # themselves exactly as they carry a binding: neither opens a scope, so
+  # `rm()` inside one removes the binding the statements after it would see.
+  # Both blocks are parsed from text because writing the inner braces out is
+  # the one shape `brace_linter` refuses.
+  expect_identical(
+    expression_data_symbols(str2lang("{ tmp <- 1; { rm(tmp) }; tmp }")),
+    "tmp"
+  )
+  expect_identical(
+    expression_data_symbols(str2lang("{ tmp <- 1; (rm(tmp)); tmp }")),
+    "tmp"
   )
 })
 
