@@ -808,6 +808,20 @@ test_that("`<-`, `for`, and `local()` bind names rather than reading them", {
     .grouping = rollup(region)
   )
   expect_identical(unique(from_local$derived), 4)
+
+  # A binding statement reached outside a block, which is the other branch the
+  # walk answers: nothing follows it for the binding to reach, so only its
+  # reads count and it has none. A bare `for` cannot be asserted here because
+  # it evaluates to `NULL` and no summary can be one, so the walk-level table
+  # below is the layer that covers that spelling.
+  from_bare_assignment <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    derived = (share <- 2),
+    .grouping = rollup(region)
+  )
+  expect_identical(unique(from_bare_assignment$derived), 2)
 })
 
 test_that("a bound name does not hide a genuine read beside it", {
@@ -867,6 +881,86 @@ test_that("a bound name does not hide a genuine read beside it", {
     "`share`"
   )
   expect_s3_class(from_local_body, "marginplyr_error")
+
+  from_bare_assignment <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (tmp <- share),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_bare_assignment, "marginplyr_error")
+})
+
+test_that("`rm()` puts a name back within reach of the column", {
+  # The bound set may only shrink where the walk can see the removal, and
+  # `rm()` is the one statement that shrinks it: after `rm(share)` the next
+  # read reaches the column again. Losing that read would be the silent class
+  # #130 removed rather than the loud class this issue owns, so it is the one
+  # direction growing a bound set is not allowed to be wrong in (#162).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  from_removal <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = {
+        share <- 1
+        rm(share)
+        share
+      },
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_removal, "marginplyr_error")
+
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <- 1
+      rm(tmp)
+      tmp
+    })),
+    "tmp"
+  )
+  # `remove()` is the same function under its other name, and a string names
+  # the binding as directly as a symbol does.
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <- 1
+      remove("tmp")
+      tmp
+    })),
+    "tmp"
+  )
+  # A removal the walk cannot read empties the set rather than being ignored:
+  # `rm(list = v)` removes whatever that vector holds, and `rm(x, envir = e)`
+  # may remove nothing at all.
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <- 1
+      rm(list = v)
+      tmp
+    })),
+    c("v", "tmp")
+  )
+  # A name it does not remove stays bound, so the removal costs nothing beside
+  # itself.
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <- 1
+      rm(other)
+      tmp
+    })),
+    "other"
+  )
 })
 
 test_that("a binding is visible to the statements after it and no others", {
