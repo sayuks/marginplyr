@@ -164,6 +164,56 @@ is_nameable_call <- function(expr) {
   rlang::is_call(expr) && !rlang::is_call(expr, "~")
 }
 
+# The head and the arguments of a call a walk descends into, and the node
+# rebuilt around rewritten arguments. `static_call_name()` above answers what a
+# walk asks of a node it does not descend into; these three are what it asks of
+# one it does.
+#
+# All three exist for the same node the name read exists for. A quosure is a
+# call to `~`, so a walk descends into it, and the spellings a walk reaches for
+# -- `expr[[1L]]`, `as.list(expr)[-1L]` -- are the two rlang soft-deprecated on
+# a quosure in 0.4.0. Walking one therefore signals a lifecycle condition into
+# whatever handler the caller has installed, which is the class of signal
+# `margin_column_pronoun()` above exists to avoid producing. `as.list()` is the
+# subtler half: it keeps the quosure's class on the list it returns, so it is
+# the `[-1L]` after it that dispatches to rlang's deprecated method (#165).
+#
+# The rebuild is the half that changed an answer rather than only a signal.
+# `rlang::call2()` and `as.call()` build a plain call, so the environment and
+# the class a quosure carries were dropped and dplyr was handed a one-sided
+# formula where the caller injected a quosure: `sum(!!rlang::quo(dplyr::n()))`
+# reached the summary as `sum(~dplyr::n())` and `sum()` was given a language
+# object. A formula object a caller injects loses the same two attributes, and
+# nothing tests for it -- `rlang::is_formula()` reads the call's shape rather
+# than its class -- so a lambda came out resolving against whatever mask it
+# landed in rather than where it was written. Carrying the attributes across
+# covers both, and covers a plain call for free, which has none.
+#
+# A `~` written in source is untouched by any of this: the verb captures it
+# unevaluated, so the node is a bare call with no attributes to lose. The
+# exposure is injection, for a quosure and a formula alike.
+static_call_head <- function(expr) {
+  if (rlang::is_quosure(expr)) {
+    return(quote(`~`))
+  }
+  expr[[1L]]
+}
+
+static_call_args <- function(expr) {
+  if (rlang::is_quosure(expr)) {
+    return(list(rlang::quo_get_expr(expr)))
+  }
+  as.list(expr)[-1L]
+}
+
+rebuild_call <- function(expr, args) {
+  rebuilt <- rlang::call2(static_call_head(expr), !!!args)
+  # Argument names live in the call's own pairlist tags rather than in an
+  # attribute, so this replaces nothing `call2()` just set.
+  attributes(rebuilt) <- attributes(expr)
+  rebuilt
+}
+
 # Required because dtplyr is an optional Suggest rather than an Import: it
 # brings data.table, which reads this flag from the calling namespace.
 # data.table fixes the spelling of this name, so it cannot follow the package's

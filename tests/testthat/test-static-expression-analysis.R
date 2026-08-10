@@ -327,22 +327,160 @@ test_that("a read inside an injected quosure is still reached", {
     value = c(1, 3, 6)
   )
 
-  # The walks subset the quosure node they descend into -- `expr[[1L]]`,
-  # `as.list(expr)[-1L]` -- and rlang soft-deprecated both spellings on a
-  # quosure, so walking one signals a lifecycle condition into whatever handler
-  # the caller has installed. That is #165, not this: the suppression comes out
-  # when the walks read a quosure with `rlang::quo_get_expr()` instead.
   error <- expect_error(
-    suppressWarnings(summarize_with_margins(
+    summarize_with_margins(
       data,
       units = sum(value),
       share = share_of_total(units),
       derived = sum(!!rlang::quo(share)),
       .grouping = rollup(region)
-    )),
+    ),
     "`share`"
   )
   expect_s3_class(error, "marginplyr_error")
+})
+
+test_that("a rewritten expression gives back the quosure it walked into", {
+  # Every walk that rewrites a node rebuilds it, and `rlang::call2()` and
+  # `as.call()` build a plain call. A quosure is a call to `~` carrying an
+  # environment and a class, so a walk that descended into one handed dplyr a
+  # one-sided formula in its place and the summary was given a language object
+  # instead of the value the caller injected (#165).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # `rewrite_summary_selections()` is the walk that flattened this one. The
+  # quosure carries no selection to rewrite, so what it must give back is the
+  # node it was handed.
+  counted <- summarize_with_margins(
+    data,
+    units = sum(!!rlang::quo(dplyr::n())),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(counted$units, c(2L, 1L, 3L))
+
+  # `rewrite_grouping_expr()` is the second walk, and it substitutes a constant
+  # into the quosure rather than leaving it untouched, so this asserts the
+  # rebuild rather than a walk that happened to change nothing. On `main` the
+  # flattening reached the caller as `sum(~0L)` (#165), and before #163 as a
+  # `grouping_id()` diagnostic naming a fault the caller did not have.
+  identified <- summarize_with_margins(
+    data,
+    units = sum(value),
+    level = sum(!!rlang::quo(grouping_id(region))),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(identified$level, c(0L, 0L, 1L))
+})
+
+test_that("a rewritten expression gives back the formula object it walked", {
+  # A formula object is a call to `~` carrying attributes exactly as a quosure
+  # is, so the same rebuild drops its class and its `.Environment`. Nothing
+  # written in source is exposed -- a `~` typed inside a summary expression is
+  # a bare call with no attributes at rewrite time -- so the shape is an
+  # injected formula the caller holds.
+  #
+  # `rlang::is_formula()` still answers `TRUE` for the flattened node, because
+  # it tests the call's shape. The loss shows only where the class is used, and
+  # `~` is one such place: R returns a classed call unevaluated and rebuilds an
+  # unclassed one against whatever environment it is evaluated in, so a
+  # flattened lambda resolves in the data mask rather than where it was
+  # written.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  written_in <- rlang::env(offset = 100)
+  lambda <- rlang::new_formula(NULL, quote(.x + offset), env = written_in)
+
+  result <- summarize_with_margins(
+    data,
+    units = sum(value),
+    kept = identical(attr(!!lambda, ".Environment"), !!written_in),
+    applied = rlang::as_function(!!lambda)(units),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_true(all(result$kept))
+  expect_identical(result$applied, result$units + 100)
+})
+
+test_that("a selection inside a quosure resolves in the quosure's own env", {
+  # The rewrite evaluates a selection in the environment of the dot it is
+  # walking. A quosure carries an environment of its own, and that is the point
+  # of injecting one, so a selection inside it resolves there instead. Reading
+  # the outer environment would look up a name the caller never put in it.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  held <- local({
+    selected <- "value"
+    rlang::quo(dplyr::pick(dplyr::all_of(selected)))
+  })
+
+  result <- summarize_with_margins(
+    data,
+    rows = nrow(!!held),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(result$rows, c(2L, 1L, 3L))
+})
+
+test_that("no walk subsets a quosure", {
+  # rlang soft-deprecated `[` and `[[` on a quosure, so a walk spelling its
+  # reads that way signals a lifecycle condition into whatever handler the
+  # caller has installed -- the class of signal `margin_column_pronoun()`
+  # exists to avoid producing. The verbosity option turns the soft deprecation
+  # into an error, because the warning itself is shown only once every eight
+  # hours and would otherwise pass unnoticed here.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # Written with `on.exit()` rather than withr so the tests add no dependency
+  # beyond the ones DESCRIPTION declares, as `with_required_suggests()` in
+  # `test-optional-backends.R` is.
+  with_deprecation_errors <- function(code) {
+    previous <- options(lifecycle_verbosity = "error")
+    on.exit(options(previous), add = TRUE)
+    force(code)
+  }
+
+  # Each walk in turn: the share analysis that reads a summary for an earlier
+  # share, the two rewrites, and the context-helper search.
+  with_deprecation_errors(expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sum(!!rlang::quo(share)),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  ))
+  with_deprecation_errors(expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(!!rlang::quo(dplyr::n())),
+      level = sum(!!rlang::quo(grouping_id(region))),
+      .grouping = rollup(region)
+    )
+  ))
+  with_deprecation_errors(expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(!!rlang::quo(dplyr::cur_group_id())),
+      .grouping = rollup(region)
+    ),
+    "does not support"
+  ))
 })
 
 test_that("every analysis that names a call reads a formula as a `~` call", {

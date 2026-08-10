@@ -166,16 +166,15 @@ rewrite_grouping_expr <- function(expr,
     return(as.integer(sum(bits * weights)))
   }
 
-  pieces <- as.list(expr)
-  pieces[-1] <- lapply(
-    pieces[-1],
+  call_args <- lapply(
+    static_call_args(expr),
     rewrite_grouping_expr,
     plan = plan,
     grouping_set = grouping_set,
     sql = sql,
     con = con
   )
-  as.call(pieces)
+  rebuild_call(expr, call_args)
 }
 
 grouping_helper_name <- function(expr) {
