@@ -2800,9 +2800,12 @@ expression_alias_dependencies <- function(expr, aliases) {
 # `(function(share) .data$share)(value)` reads the column through a pronoun no
 # local binding shadows. Filtering the output collapses both, silently (#130).
 #
-# Only a function definition populates it today. `<-`, `for`, and `local()`
-# bind names the walk still reports as reads, which is a false positive rather
-# than the silence this argument exists for, and is tracked in #162.
+# A function definition populates it, and so do the statement-level binding
+# constructs: `<-` and `=` bind their target, `for` binds its index, and both
+# assign into the bottom of the data mask, so the name is a new binding rather
+# than a column read. `local()` needs no case of its own -- it binds nothing
+# itself, and the bindings its body makes are confined by the `{` walk below
+# (#162).
 expression_data_symbols <- function(expr, bound = character()) {
   if (rlang::is_symbol(expr)) {
     name <- rlang::as_name(expr)
@@ -2841,6 +2844,22 @@ expression_data_symbols <- function(expr, bound = character()) {
   # the one direction this walk is not allowed to be wrong in.
   if (identical(call_name, "function") && length(expr) >= 3L) {
     return(definition_data_symbols(expr, bound))
+  }
+  # `{` is where a binding becomes visible to anything other than itself: it
+  # opens no scope, so a name bound by one statement is bound for the ones
+  # after it and for nothing before them. Walking the statements in order is
+  # what tells `{ tmp <- share; tmp }`, which reads only the share, from
+  # `{ tmp + share; tmp <- 1 }`, which reads the column `tmp` before anything
+  # binds it. Collecting the block's bindings first and filtering the whole
+  # block with them would answer the second one silently wrong (#162).
+  if (identical(call_name, "{")) {
+    return(block_data_symbols(expr, bound)$reads)
+  }
+  # The same constructs reached outside a block -- `for (i in v) i + share` as
+  # a whole summary expression -- bind for their own operands alone, so only
+  # the reads are wanted here.
+  if (is_binding_statement(call_name, expr)) {
+    return(statement_data_symbols(expr, bound)$reads)
   }
   if (identical(call_name, "get") && length(expr) >= 2L) {
     if (get_has_external_env(expr)) {
@@ -2983,6 +3002,95 @@ definition_data_symbols <- function(expr, bound) {
     ),
     use.names = FALSE
   ))
+}
+
+# Whether this node binds a name into the environment holding it. The length is
+# part of the answer for the reason it is at the `function` node: a call built
+# by hand rather than parsed can carry one of these heads without the operands
+# the grammar guarantees, and it must fall through to the general walk, which
+# reports whatever its parts hold, rather than be read for an operand it does
+# not have.
+#
+# `<<-` is deliberately absent. It assigns past the environment it runs in, so
+# what it binds is not decidable from the expression, and reporting its target
+# as a read leaves the error on the diagnostic side rather than the silent one.
+is_binding_statement <- function(call_name, expr) {
+  if (is.null(call_name)) {
+    return(FALSE)
+  }
+  (call_name %in% c("<-", "=") && length(expr) >= 3L) ||
+    (identical(call_name, "for") && length(expr) >= 4L)
+}
+
+# A block's statements, walked in source order with the bound set growing as
+# they bind, and the set the statement after the block would see. Only a
+# statement that always runs grows it: an assignment nested inside anything
+# conditional -- `if (p) tmp <- 1`, a loop body over a sequence that may be
+# empty -- may not, so the name it would bind stays a read, which over-reports
+# rather than missing the read of a column that really did reach the mask
+# (#162).
+block_data_symbols <- function(expr, bound) {
+  reads <- character()
+  for (statement in as.list(expr)[-1L]) {
+    step <- statement_data_symbols(statement, bound)
+    reads <- c(reads, step$reads)
+    bound <- step$bound
+  }
+  list(reads = unique(reads), bound = bound)
+}
+
+# One statement's reads together with the bound set the statement after it
+# sees. A node that binds nothing returns the set it was given.
+statement_data_symbols <- function(expr, bound) {
+  call_name <- static_call_name(expr)
+  # A nested block and a redundant parenthesis are transparent here for the
+  # reason the enclosing block is: neither opens a scope, and both always run,
+  # so `{ { tmp <- share }; tmp }` and `{ (tmp <- share); tmp }` bind `tmp` for
+  # what follows exactly as the unwrapped statement does.
+  if (identical(call_name, "{")) {
+    return(block_data_symbols(expr, bound))
+  }
+  if (identical(call_name, "(") && length(expr) >= 2L) {
+    return(statement_data_symbols(expr[[2L]], bound))
+  }
+  if (!is_binding_statement(call_name, expr)) {
+    return(list(reads = expression_data_symbols(expr, bound), bound = bound))
+  }
+  if (identical(call_name, "for")) {
+    # The index survives the loop: R binds it in the enclosing environment, and
+    # binds it even when the sequence is empty, so `{ for (i in v) NULL; i }`
+    # reads no column `i`. The sequence is read before the index is bound, the
+    # body after.
+    inner <- bound
+    index <- expr[[2L]]
+    if (rlang::is_symbol(index)) {
+      inner <- unique(c(bound, rlang::as_name(index)))
+    }
+    return(list(
+      reads = unique(c(
+        expression_data_symbols(expr[[3L]], bound),
+        expression_data_symbols(expr[[4L]], inner)
+      )),
+      bound = inner
+    ))
+  }
+  target <- expr[[2L]]
+  value <- expression_data_symbols(expr[[3L]], bound)
+  if (rlang::is_symbol(target)) {
+    return(list(
+      reads = value,
+      bound = unique(c(bound, rlang::as_name(target)))
+    ))
+  }
+  # A replacement form -- `names(x) <- v` -- reads its target before it rebuilds
+  # it, so the target is walked and reported, in source order ahead of the
+  # value. It rebinds the object too, but the walk does not record that: which
+  # name a replacement call rebinds depends on the shape it is nested in, and
+  # leaving it unbound over-reports.
+  list(
+    reads = unique(c(expression_data_symbols(target, bound), value)),
+    bound = bound
+  )
 }
 
 get_has_external_env <- function(expr) {

@@ -758,6 +758,227 @@ test_that("a bound name shadows a symbol and a `get()`, but not a pronoun", {
   )
 })
 
+test_that("`<-`, `for`, and `local()` bind names rather than reading them", {
+  # `<-` inside a summary expression assigns into the bottom of the data mask,
+  # `for` binds its index the same way, and `local()` evaluates in a child
+  # environment of it. The walk collected every symbol it passed, so each bound
+  # name was reported as a column read, and where one collided with a preceding
+  # share the guard rejected legal code naming a share the expression never
+  # reads (#162).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  from_assignment <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    derived = {
+      share <- 2
+      share
+    },
+    .grouping = rollup(region)
+  )
+  expect_identical(unique(from_assignment$derived), 2)
+
+  from_loop <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    derived = {
+      out <- 0
+      for (share in c(1, 2)) {
+        out <- out + share
+      }
+      out
+    },
+    .grouping = rollup(region)
+  )
+  expect_identical(unique(from_loop$derived), 3)
+
+  from_local <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    derived = local({
+      share <- 4
+      share
+    }),
+    .grouping = rollup(region)
+  )
+  expect_identical(unique(from_local$derived), 4)
+})
+
+test_that("a bound name does not hide a genuine read beside it", {
+  # The other half of #162: dropping a name because something binds it must
+  # not drop the reads that reach the mask in the same expression. Each of
+  # these really does read the share, and the guard still owes the caller a
+  # `marginplyr_error`.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  from_value <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = {
+        tmp <- share
+        tmp
+      },
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_value, "marginplyr_error")
+
+  from_loop_body <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = {
+        out <- 0
+        for (i in c(1, 2)) {
+          out <- out + share
+        }
+        out
+      },
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_loop_body, "marginplyr_error")
+
+  from_local_body <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = local({
+        x <- 1
+        x + share
+      }),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_local_body, "marginplyr_error")
+})
+
+test_that("a binding is visible to the statements after it and no others", {
+  # A `{` opens no scope, so the bound set has to grow along the block rather
+  # than be collected from it and applied to the whole. The two spellings below
+  # differ only in the order of their statements, and a walk that filtered the
+  # block with its bindings would answer both `"share"` -- reporting no read of
+  # the column `tmp` that the second one really does make (#162).
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <- share
+      tmp
+    })),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp + share
+      tmp <- 1
+    })),
+    c("tmp", "share")
+  )
+  # An assignment that is not a statement of the block may not run, so the name
+  # it would bind stays a read. That over-reports, which is the side of this
+  # walk whose errors are diagnostics rather than silence.
+  expect_identical(
+    expression_data_symbols(quote({
+      if (p) tmp <- 1
+      tmp
+    })),
+    c("p", "tmp")
+  )
+  # A nested block and a redundant parenthesis are the other side of that: they
+  # open no scope either, and unlike an `if` they always run, so the binding
+  # inside one reaches the statements after it. Reading them as opaque would
+  # reject `{ { tmp <- 1 }; tmp }` naming a share it never reads, which is the
+  # false positive this issue removes rather than one to leave standing. The
+  # nested block is parsed from text because writing it out is the one brace
+  # shape `brace_linter` refuses, and the shape is the whole point of the case.
+  expect_identical(
+    expression_data_symbols(str2lang("{ { tmp <- share }; tmp }")),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote({
+      (tmp <- share)
+      tmp
+    })),
+    "share"
+  )
+  # `<<-` assigns past the environment it runs in, so what it binds is not
+  # decidable here and its target is left reported for the same reason.
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp <<- 1
+      tmp
+    })),
+    "tmp"
+  )
+  # `=` is the same node under another spelling.
+  expect_identical(
+    expression_data_symbols(quote({
+      tmp = share
+      tmp
+    })),
+    "share"
+  )
+})
+
+test_that("a loop reads its sequence and binds its index past the loop", {
+  expect_identical(
+    expression_data_symbols(quote(for (i in v) i + share)),
+    c("v", "share")
+  )
+  # R binds the index in the enclosing environment, and binds it even when the
+  # sequence is empty, so nothing after the loop reads a column of that name.
+  expect_identical(
+    expression_data_symbols(quote({
+      for (i in v) NULL
+      i
+    })),
+    "v"
+  )
+})
+
+test_that("an assignment still reads its value and a replacement target", {
+  # The target of `x <- ...` is not a read, but everything else about the
+  # statement is: the value always, and a replacement form's target, which is
+  # read before it is rebuilt.
+  expect_identical(expression_data_symbols(quote(x <- x + 1)), "x")
+  expect_identical(
+    expression_data_symbols(quote(names(x) <- share)),
+    c("x", "share")
+  )
+  # The bound set reaches a symbol and a `get()` and stops at a pronoun, the
+  # same three-way split a formal makes (#130).
+  expect_identical(
+    expression_data_symbols(quote({
+      share <- 1
+      get("share")
+    })),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote({
+      share <- 1
+      .data$share
+    })),
+    "share"
+  )
+})
+
 test_that("an ordinary `$` field name is not a data-mask read", {
   # `cfg$share` reads a field of a list. The name after `$` is fixed text
   # rather than a lookup, so collecting it made the guard against reading an
