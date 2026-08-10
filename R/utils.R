@@ -107,8 +107,9 @@ assert_lazy_table <- function(x) {
   }
 }
 
-# The name and namespace a static analysis reads from a call it has already
-# recognized as one with `rlang::is_call()`.
+# The name and namespace a static analysis reads from a call, and `NULL` when
+# there is no name to read -- which anything that is not a call also is, so a
+# site needs no `rlang::is_call()` guard of its own to ask.
 #
 # `rlang::call_name()` and `rlang::call_ns()` do not answer a formula as the
 # call to `~` that it is: both unwrap a one-sided formula to its right-hand
@@ -126,18 +127,39 @@ assert_lazy_table <- function(x) {
 # walk the call's parts, or report the shape as one it does not handle. A
 # formula is therefore a call with no name, and the analysis treats it as the
 # `~` call it is rather than as its right-hand side.
+#
+# An injected quosure is a call to `~` as well, and gets the same answer for a
+# stronger reason. Every site reads operands from the node it has just named --
+# `expr[[2L]]`, `as.list(expr)[-1L]`, `length(expr)` -- and a quosure answers
+# none of those as the call it carries: `rlang::quo(.data$share)[[2L]]` is
+# `.data$share` rather than `.data`, and warns that subsetting a quosure is
+# deprecated, while `length()` of any quosure is 2. Naming a quosure for the
+# call inside it would split the name from the operands, which is the defect
+# this removes rather than a fix for it. Falling through costs nothing:
+# `as.list()` of a quosure yields the expression it carries, so a walk reaches
+# that expression as a part and analyses it there, where the operands are its
+# own.
 static_call_name <- function(expr) {
-  if (rlang::is_call(expr, "~")) {
+  if (is.null(static_call_expr(expr))) {
     return(NULL)
   }
   rlang::call_name(expr)
 }
 
 static_call_ns <- function(expr) {
-  if (rlang::is_call(expr, "~")) {
+  if (is.null(static_call_expr(expr))) {
     return(NULL)
   }
   rlang::call_ns(expr)
+}
+
+# The call a name is read from, or `NULL` when there is none: anything that is
+# not a call, and any call to `~` -- a formula or a quosure.
+static_call_expr <- function(expr) {
+  if (!rlang::is_call(expr) || rlang::is_call(expr, "~")) {
+    return(NULL)
+  }
+  expr
 }
 
 # Required because dtplyr is an optional Suggest rather than an Import: it

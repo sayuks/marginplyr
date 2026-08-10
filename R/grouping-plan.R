@@ -712,8 +712,8 @@ grouping_arg_spec <- function(arg, data_vars) {
   }
 
   constructors <- grouping_constructor_names()
-  call_name <- if (rlang::is_call(expr)) rlang::call_name(expr) else NULL
-  call_ns <- if (rlang::is_call(expr)) rlang::call_ns(expr) else NULL
+  call_name <- static_call_name(expr)
+  call_ns <- static_call_ns(expr)
   is_constructor_call <-
     !is.null(call_name) &&
     call_name %in% constructors &&
