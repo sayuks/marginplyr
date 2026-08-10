@@ -2541,11 +2541,11 @@ share_helper_call_kind <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(NULL)
   }
-  name <- rlang::call_name(expr)
+  name <- static_call_name(expr)
   if (is.null(name)) {
     return(NULL)
   }
-  namespace <- rlang::call_ns(expr)
+  namespace <- static_call_ns(expr)
   if (!is.null(namespace) && !identical(namespace, "marginplyr")) {
     return(NULL)
   }
@@ -2624,9 +2624,9 @@ share_request_kinds <- function(requests) {
 
 is_across_call <- function(expr) {
   rlang::is_call(expr) &&
-    identical(rlang::call_name(expr), "across") &&
-    (is.null(rlang::call_ns(expr)) ||
-       identical(rlang::call_ns(expr), "dplyr"))
+    identical(static_call_name(expr), "across") &&
+    (is.null(static_call_ns(expr)) ||
+       identical(static_call_ns(expr), "dplyr"))
 }
 
 # `error_call` is the caller's own `across()` call rather than this frame,
@@ -2766,7 +2766,7 @@ contains_selection_predicate <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
-  if (identical(rlang::call_name(expr), "where")) {
+  if (identical(static_call_name(expr), "where")) {
     return(TRUE)
   }
   any(vapply(

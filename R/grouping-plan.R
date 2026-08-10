@@ -279,7 +279,7 @@ is_name_only_expr <- function(expr, env, data_vars) {
     return(FALSE)
   }
 
-  call_name <- rlang::call_name(expr)
+  call_name <- static_call_name(expr)
   if (is.null(call_name)) {
     return(FALSE)
   }

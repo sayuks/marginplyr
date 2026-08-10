@@ -107,6 +107,39 @@ assert_lazy_table <- function(x) {
   }
 }
 
+# The name and namespace a static analysis reads from a call it has already
+# recognized as one with `rlang::is_call()`.
+#
+# `rlang::call_name()` and `rlang::call_ns()` do not answer a formula as the
+# call to `~` that it is: both unwrap a one-sided formula to its right-hand
+# side. When that side is a bare symbol they raise "`call` must be a defused
+# call, not a symbol" -- an untyped condition of the class ADR-0015
+# separates -- and when it is not they answer a different call, so
+# `~ .data$share` reads as a `$` call and the analysis enters a branch written
+# for another shape, carrying the formula as the expression that branch then
+# reads `[[2L]]` of. `rlang::call_args()` unwraps the same way, which is how a
+# formula reached the direct-share path and was computed as the share it is
+# not (#163).
+#
+# Every analysis in this package recognizes a call by its name, none of them
+# recognizes `~`, and each already has an answer for a name it does not know:
+# walk the call's parts, or report the shape as one it does not handle. A
+# formula is therefore a call with no name, and the analysis treats it as the
+# `~` call it is rather than as its right-hand side.
+static_call_name <- function(expr) {
+  if (rlang::is_call(expr, "~")) {
+    return(NULL)
+  }
+  rlang::call_name(expr)
+}
+
+static_call_ns <- function(expr) {
+  if (rlang::is_call(expr, "~")) {
+    return(NULL)
+  }
+  rlang::call_ns(expr)
+}
+
 # Required because dtplyr is an optional Suggest rather than an Import: it
 # brings data.table, which reads this flag from the calling namespace.
 # data.table fixes the spelling of this name, so it cannot follow the package's
