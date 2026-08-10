@@ -295,6 +295,70 @@ test_that("a formula is walked as the call to `~` that it is", {
   # here: the same `is_call()`-then-`call_name()` pairing appears at nine
   # sites, and it fails there before this walk is reached. That predates #130
   # and is tracked in #163, so it is deliberately not asserted here.
+
+  # A formula in the `.fns` position of `across()` is the one spelling of this
+  # that users are documented to write (`R/share.R:307`), and it was the only
+  # shape in #130's tables asserted at the walk alone. The guard is where the
+  # caller meets it, so it is asserted there too: `.x` is over-reported by
+  # design, and the read of `share` beside it must still be refused.
+  from_across <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = across(value, ~ .x + share),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_across, "marginplyr_error")
+})
+
+test_that("the head is walked before the arguments, and the guard says so", {
+  # The walk returns symbols in source order, and the head is syntactically
+  # first. That is not an internal detail: the guard names
+  # `share_dependency[[1L]]` (`R/share.R:786`), so this order decides which
+  # share an expression reading two of them is reported against. Asserting it
+  # through the message is what makes it a property of the diagnostic the
+  # caller reads rather than of the vector the walk happens to build.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  from_head <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      a = share_of_total(units),
+      b = share_of_total(units),
+      derived = (if (a > 0) sum else prod)(b),
+      .grouping = rollup(region)
+    ),
+    "`a`"
+  )
+  expect_s3_class(from_head, "marginplyr_error")
+
+  # The same two shares with neither in a head: the first one written is the
+  # one named, so the case above is reporting the head rather than reporting
+  # whichever share happens to sort first.
+  from_argument <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      a = share_of_total(units),
+      b = share_of_total(units),
+      derived = b + a,
+      .grouping = rollup(region)
+    ),
+    "`b`"
+  )
+  expect_s3_class(from_argument, "marginplyr_error")
+
+  expect_identical(
+    expression_data_symbols(quote((if (a > 0) sum else prod)(b))),
+    c("a", "sum", "prod", "b")
+  )
 })
 
 test_that("a function definition binds its formals", {
