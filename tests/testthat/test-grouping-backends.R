@@ -380,6 +380,77 @@ test_that("a lazy selection proxy resolves renames against its columns", {
   )
 })
 
+backend_by_rename_message <- function() {
+  paste0(
+    "Can't rename `.by` column `area = region`. ",
+    "Fixed `.by` keys must name existing columns."
+  )
+}
+
+# A `.by` selection naming columns is settled from column names alone, so a
+# lazy input is never touched to resolve one. This source has no connection to
+# touch: a resolution that reached past the names would fail rather than report
+# what the caller has to fix.
+test_that("a lazy .by selection is settled before the table is read", {
+  source <- dbplyr::tbl_lazy(
+    data.frame(region = c("x", "y"), area = c("p", "q"), value = 1:2),
+    con = dbplyr::simulate_sqlite()
+  )
+
+  plan <- inspect_grouping(source, .by = region, .grouping = rollup(value))
+  expect_identical(plan$fixed, c("(region)", "(region)"))
+
+  error <- expect_error(
+    inspect_grouping(
+      source,
+      .by = tidyselect::all_of(c(area = "region")),
+      .grouping = rollup(value)
+    )
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(conditionMessage(error), backend_by_rename_message())
+})
+
+# A `.by` predicate is the one fixed-key selection column names cannot answer,
+# so it reads the typed snapshot — for Arrow, the schema the operation already
+# acquired. The schema reads are counted because a second one is what a
+# resolution of its own would look like, and it would still return the right
+# columns (ADR-0002).
+test_that("an Arrow .by predicate resolves against the typed snapshot", {
+  skip_if_backend_absent("arrow")
+
+  source <- arrow::Table$create(
+    data.frame(region = c("x", "y"), area = c("p", "q"), value = 1:2)
+  )
+  schema_reads <- 0L
+  infer_schema <- getFromNamespace("infer_schema", "arrow")
+  testthat::local_mocked_bindings(
+    infer_schema = function(x) {
+      schema_reads <<- schema_reads + 1L
+      infer_schema(x)
+    },
+    .package = "arrow"
+  )
+
+  plan <- inspect_grouping(
+    source,
+    .by = where(is.numeric),
+    .grouping = rollup(region)
+  )
+  expect_identical(plan$fixed, c("(value)", "(value)"))
+  expect_identical(schema_reads, 1L)
+
+  error <- expect_error(
+    inspect_grouping(
+      source,
+      .by = c(area = region, where(is.numeric)),
+      .grouping = grouping_set()
+    )
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(conditionMessage(error), backend_by_rename_message())
+})
+
 margin_label_check_data <- function() {
   data.frame(
     first = c("Total", "x"),

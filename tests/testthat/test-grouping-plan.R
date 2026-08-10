@@ -375,6 +375,112 @@ test_that("non-renaming grouping selections keep resolving", {
   )
 })
 
+by_rename_vars <- function() {
+  c("region", "area", "region_code", "value")
+}
+
+by_rename_message <- function() {
+  paste0(
+    "Can't rename `.by` column `area = region`. ",
+    "Fixed `.by` keys must name existing columns."
+  )
+}
+
+test_that("a renaming .by selection is refused", {
+  data_vars <- by_rename_vars()
+
+  # The renamed-to name is another column of the input, so a resolution that
+  # reports the name the caller wrote fixes the plan on `area` and never groups
+  # by the column the selection named (#134).
+  clashing <- expect_error(
+    resolve_fixed_keys(rlang::quo(c(area = region)), character(), data_vars)
+  )
+  expect_s3_class(clashing, "marginplyr_error")
+  expect_identical(conditionMessage(clashing), by_rename_message())
+
+  # The renamed-to name is no column at all, which used to be rejected as an
+  # unknown `.by` column the caller never wrote.
+  absent <- expect_error(
+    resolve_fixed_keys(
+      rlang::quo(c(area = region)),
+      character(),
+      c("region", "value")
+    )
+  )
+  expect_s3_class(absent, "marginplyr_error")
+  expect_identical(conditionMessage(absent), by_rename_message())
+
+  several <- expect_error(
+    resolve_fixed_keys(
+      rlang::quo(tidyselect::all_of(c(area = "region", size = "value"))),
+      character(),
+      data_vars
+    )
+  )
+  expect_s3_class(several, "marginplyr_error")
+  expect_identical(
+    conditionMessage(several),
+    paste0(
+      "Can't rename `.by` columns `area = region`, `size = value`. ",
+      "Fixed `.by` keys must name existing columns."
+    )
+  )
+})
+
+test_that("fixed keys settled by name alone need no typed metadata", {
+  data_vars <- by_rename_vars()
+  selected <- c("region", "value")
+
+  expect_identical(
+    resolve_fixed_keys(rlang::quo(region), character(), data_vars),
+    "region"
+  )
+  expect_identical(
+    resolve_fixed_keys(rlang::quo(c(region, area)), character(), data_vars),
+    c("region", "area")
+  )
+  expect_identical(
+    resolve_fixed_keys(
+      rlang::quo(tidyselect::all_of(selected)),
+      character(),
+      data_vars
+    ),
+    c("region", "value")
+  )
+  expect_identical(
+    resolve_fixed_keys(
+      rlang::quo(tidyselect::starts_with("region")),
+      character(),
+      data_vars
+    ),
+    c("region", "region_code")
+  )
+  expect_identical(
+    resolve_fixed_keys(rlang::quo(NULL), character(), data_vars),
+    character()
+  )
+  # A name that repeats the column it selects renames nothing.
+  expect_identical(
+    resolve_fixed_keys(
+      rlang::quo(tidyselect::all_of(c(region = "region"))),
+      character(),
+      data_vars
+    ),
+    "region"
+  )
+  # Grouping columns are names dplyr resolved, so a grouped input's keys are
+  # taken as they stand rather than selected again.
+  expect_identical(
+    resolve_fixed_keys(rlang::quo(NULL), "region", data_vars),
+    "region"
+  )
+  # A predicate is the one selection column names cannot answer, so it is left
+  # for the typed snapshot.
+  expect_null(
+    resolve_fixed_keys(rlang::quo(where(is.numeric)), character(), data_vars)
+  )
+})
+
 test_that("duplicate grouping sets have explicit policies", {
   spec <- grouping_sets(grouping_set(a), grouping_set(a))
 

@@ -17,7 +17,10 @@ inspect_grouping(
 
 \item{.by}{<\code{\link[dplyr:dplyr_tidy_select]{tidy-select}}> Columns retained in
 every grouping set. For grouped input, the existing grouping columns are
-used and \code{.by} must be \code{NULL}.}
+used and \code{.by} must be \code{NULL}. A fixed key is a column of the input, so a
+selection cannot rename it: \code{c(area = region)} is an error rather than a
+fixed key named \code{area}. Rename the result afterwards with
+\code{\link[dplyr:rename]{dplyr::rename()}}.}
 
 \item{.grouping}{A Grouping specification created by \code{\link[=grouping_set]{grouping_set()}},
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}

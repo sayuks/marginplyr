@@ -7,7 +7,10 @@
 #' @param .data A data frame or lazy table.
 #' @param .by <[`tidy-select`][dplyr::dplyr_tidy_select]> Columns retained in
 #'   every grouping set. For grouped input, the existing grouping columns are
-#'   used and `.by` must be `NULL`.
+#'   used and `.by` must be `NULL`. A fixed key is a column of the input, so a
+#'   selection cannot rename it: `c(area = region)` is an error rather than a
+#'   fixed key named `area`. Rename the result afterwards with
+#'   [dplyr::rename()].
 #' @param .grouping A Grouping specification created by [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
 #'   represents the empty grouping set.
