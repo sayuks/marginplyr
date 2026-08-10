@@ -207,6 +207,15 @@ static_call_head <- function(expr) {
   expr[[1L]]
 }
 
+# An element of what this returns can be R's empty argument, so a caller reads
+# the parts by subscript -- `lapply()`, `vapply()`, or `parts[[i]]` under a
+# `seq_along()` loop -- and never as `for (part in static_call_args(expr))`.
+# All three of the first form pass the empty symbol as a value, which forces
+# without error; `for` binds the missing marker to a variable instead, and the
+# first read of that variable raises base R's untyped `missingArgError` naming
+# the loop variable rather than anything the caller wrote (#168). This is not a
+# contrived shape: every empty-index spelling has one, and `x[, "col"]` is
+# everyday R that `dplyr::summarise()` accepts.
 static_call_args <- function(expr) {
   if (rlang::is_quosure(expr)) {
     return(list(rlang::quo_get_expr(expr)))

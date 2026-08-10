@@ -2592,8 +2592,12 @@ share_expression_kind <- function(expr) {
   if (!is.null(kind)) {
     return(kind)
   }
-  for (argument in static_call_args(expr)) {
-    kind <- share_expression_kind(argument)
+  # By subscript for the reason `static_call_args()` gives. An empty argument
+  # holds no share helper, so it answers `NULL` like any other unrecognized
+  # shape and the walk carries on to the arguments after it.
+  arguments <- static_call_args(expr)
+  for (index in seq_along(arguments)) {
+    kind <- share_expression_kind(arguments[[index]])
     if (!is.null(kind)) {
       return(kind)
     }
@@ -3041,8 +3045,12 @@ is_binding_statement <- function(call_name, expr) {
 # took this for one of those would pass a list to `intersect()`.
 block_reads_and_bound <- function(expr, bound) {
   reads <- character()
-  for (statement in static_call_args(expr)) {
-    step <- statement_reads_and_bound(statement, bound)
+  # By subscript for the reason `static_call_args()` gives. A `{` block cannot
+  # hold an empty statement -- the parser produces none -- so this is written
+  # the way the rule asks rather than to repair anything reachable here.
+  statements <- static_call_args(expr)
+  for (index in seq_along(statements)) {
+    step <- statement_reads_and_bound(statements[[index]], bound)
     reads <- c(reads, step$reads)
     bound <- step$bound
   }
