@@ -2829,17 +2829,10 @@ expression_data_symbols <- function(expr, bound = character()) {
   if (rlang::is_call(expr, c("::", ":::"))) {
     return(character())
   }
-  # `rlang::call_name()` unwraps a one-sided formula to its right-hand side.
-  # That errors when the right-hand side is a bare symbol -- `~.x` -- and
-  # misreads the call when it is not: `~ .data$share` answers `$`, so the walk
-  # entered a branch written for a different shape and reached the right
-  # answer by accident. A formula is a call to `~`, and the general walk below
-  # already treats it as one, so it is never asked for a name.
-  call_name <- if (rlang::is_call(expr, "~")) {
-    NULL
-  } else {
-    rlang::call_name(expr)
-  }
+  # A formula is a call to `~`, and the general walk below already treats it as
+  # one, so it is never asked for a name. `static_call_name()` is why, and it
+  # is the same answer nine other analyses read (#163).
+  call_name <- static_call_name(expr)
   # The length is part of deciding whether this is a function definition at
   # all, not a precondition to check inside. A node built by hand rather than
   # parsed -- `rlang::call2("function")` arriving through injection -- can
