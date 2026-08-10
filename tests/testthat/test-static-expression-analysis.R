@@ -1633,6 +1633,103 @@ test_that("`across()` argument numbering holds without a mix of names", {
   expect_match(conditionMessage(all_named), "`na.rm`.", fixed = TRUE)
 })
 
+test_that("an empty argument in a summary expression evaluates, not aborts", {
+  # Every empty-index spelling carries R's missing marker as an argument, and
+  # `x[, "col"]` is everyday R rather than a contrived shape, so these are
+  # written as the four spellings a caller writes rather than as a synthetic
+  # `rlang::missing_arg()` (#168). An empty argument holds no share helper and
+  # nothing else the analysis recognizes, so ADR-0015 asks each to fall through
+  # and evaluate exactly as `dplyr::summarise()` evaluates it.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    subset = sum(value[]),
+    picked = sum(dplyr::pick(value)[, "value"]),
+    row = sum(matrix(value, nrow = 1)[1, ]),
+    trailing = mean(value, ),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+
+  expected <- data |>
+    dplyr::group_by(region) |>
+    dplyr::summarise(
+      subset = sum(value[]),
+      picked = sum(dplyr::pick(value)[, "value"]),
+      row = sum(matrix(value, nrow = 1)[1, ]),
+      trailing = mean(value, ),
+      .groups = "drop"
+    )
+
+  expect_equal(
+    dplyr::arrange(result[!is.na(result$region), ], region),
+    as.data.frame(expected),
+    ignore_attr = "row.names"
+  )
+})
+
+test_that("a function rejecting an empty argument raises the caller's error", {
+  # `sum(value, )` is the fourth spelling from #168, and it is the one whose
+  # empty argument the called function itself refuses -- `mean()` accepts a
+  # trailing empty argument and `sum()` does not. Falling through is still the
+  # right answer: nothing is wrong with the analysis, so the call evaluates and
+  # the condition `dplyr::summarise()` produces for the same expression is the
+  # one that reaches the caller.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  baseline <- expect_error(
+    data |>
+      dplyr::group_by(region) |>
+      dplyr::summarise(trailing = sum(value, ), .groups = "drop")
+  )
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      trailing = sum(value, ),
+      .grouping = rollup(region)
+    )
+  )
+
+  expect_identical(class(error), class(baseline))
+  expect_identical(class(error$parent), class(baseline$parent))
+  expect_match(
+    conditionMessage(error$parent),
+    "argument 2 is empty",
+    fixed = TRUE
+  )
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
+test_that("an empty argument does not hide a share helper beside it", {
+  # Answering `NULL` for the empty argument is a fall-through, not a stop: the
+  # walk has to carry on to the arguments after it, or a share helper written
+  # beside an empty index would reach the backend as an ordinary summary
+  # instead of the diagnostic that names it.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      derived = sum(c(total[], share_of_total(total))),
+      .grouping = rollup(region)
+    ),
+    "`share_of_total()`",
+    fixed = TRUE
+  )
+  expect_s3_class(error, "marginplyr_error")
+})
+
 test_that("no analysed shape reaches the caller as an untyped condition", {
   # The classes below are what each site raised before #100. Asserting their
   # absence together keeps a future rewrite that reintroduces one of them from
