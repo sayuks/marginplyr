@@ -2869,17 +2869,19 @@ expression_data_symbols <- function(expr) {
   ) {
     return(expression_data_symbols(expr[[2L]]))
   }
-  # Element 1 is the function position, dropped because a symbol there names a
-  # function rather than a column -- that is what keeps `sum` out of every
-  # result. A `[[` there is the one head shape whose parts are all evaluated
-  # in the data mask, so `fns[[bucket]](x)` reads `bucket` and the walk has to
-  # see it (#100). The other head shapes are left alone: a function definition
-  # binds its own formals, so walking one would report a read that is not one
-  # and reject a call dplyr accepts. A `$` head is no longer that case now
-  # that its field name contributes nothing, and the read of its object is
-  # missed here -- #130 owns the head, and this line is not its fix.
+  # Element 1 is the function position. A bare symbol there is dropped, and it
+  # is the only head shape that can be: R resolves a symbol in that position
+  # through function lookup, which skips non-function bindings, so a share
+  # named `sum` cannot shadow `sum(x)`. Every other head is evaluated in the
+  # data mask exactly like an argument, so a read hidden in one bypasses the
+  # guard against an ordinary summary using an earlier share (#130).
+  #
+  # This names the one shape that is excluded rather than listing the shapes
+  # that are walked. #100 could justify only `[[` at the time and listed it,
+  # which left `(fns[[bucket]])(x)` -- a head that is a call to `(`, not to
+  # `[[` -- slipping past, together with `$`, `if`/`else`, and computed heads.
   parts <- as.list(expr)[-1L]
-  if (rlang::is_call(expr[[1L]], "[[")) {
+  if (!rlang::is_symbol(expr[[1L]])) {
     parts <- c(list(expr[[1L]]), parts)
   }
   unique(unlist(

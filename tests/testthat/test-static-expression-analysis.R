@@ -71,14 +71,22 @@ test_that("falling through a call head still sees its arguments", {
   expect_s3_class(error, "marginplyr_error")
 })
 
-test_that("a `[[` call head is walked, and other head shapes are not", {
-  # The function position is dropped so `sum` never counts as a column, which
-  # leaves a read inside a call-valued head unseen. `[[` is the one head shape
-  # whose parts are all mask reads, so it is walked; a function definition is
-  # not, because it binds its own formals and walking it would report a read
-  # that is not one. A `$` head is not walked either, so the object it reads
-  # is missed -- #130 carries that, and these are the two halves that must not
-  # drift into each other.
+test_that("every call head that is not a bare symbol is walked", {
+  # A bare symbol in the function position is the one head that cannot read a
+  # column: R resolves it through function lookup, which skips non-function
+  # bindings, so a share named `sum` does not shadow `sum(x)`. Every other head
+  # is evaluated in the data mask exactly like an argument, so a read hidden
+  # there bypasses the guard against an ordinary summary using an earlier share
+  # (#130).
+  #
+  # The exclusion is written as that one shape rather than as a list of walked
+  # shapes. #100 could justify only `[[` at the time and enumerated it, which
+  # is why a redundant pair of parentheses -- making the head a call to `(`
+  # rather than to `[[` -- slipped past that fix. The cases below are the head
+  # shapes that were reaching the caller as `attempt to apply non-function`,
+  # `$ operator is invalid for atomic vectors`, and `missing value where
+  # TRUE/FALSE needed`: untyped conditions naming nothing the caller can act
+  # on, which is the class ADR-0015 separates.
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
@@ -92,7 +100,7 @@ test_that("a `[[` call head is walked, and other head shapes are not", {
   )
   # nolint end
 
-  from_head <- expect_error(
+  from_index <- expect_error(
     summarize_with_margins(
       data,
       units = sum(value),
@@ -102,17 +110,92 @@ test_that("a `[[` call head is walked, and other head shapes are not", {
     ),
     "`share`"
   )
-  expect_s3_class(from_head, "marginplyr_error")
+  expect_s3_class(from_index, "marginplyr_error")
+
+  # The same `[[` head wrapped in redundant parentheses. The head is now a call
+  # to `(`, so an enumeration of walked head shapes misses it.
+  from_parenthesized <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (fns[[share]])(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_parenthesized, "marginplyr_error")
+
+  # The object of a `$` head. #101 stopped the field name counting as a read,
+  # which is what makes walking this head safe; the object was still missed.
+  from_dollar_object <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = share$total(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_dollar_object, "marginplyr_error")
+
+  from_condition <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (if (share > 0) sum else prod)(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_condition, "marginplyr_error")
+
+  # A head that is an ordinary call returning a function. Nothing about this
+  # shape is special; it is here because an enumeration would have to name it.
+  from_computed <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = (function(s) function(v) s * v)(share)(value),
+      .grouping = rollup(region)
+    ),
+    "`share`"
+  )
+  expect_s3_class(from_computed, "marginplyr_error")
 
   # `total` in `fns$total` names a field of `fns` rather than reading the
   # share of that name, so this call must execute. Rejecting it is the defect
-  # #100 was filed against, reached from the other direction.
+  # #100 was filed against, reached from the other direction, and walking the
+  # head must not bring it back.
   expect_no_error(
     summarize_with_margins(
       data,
       units = sum(value),
       total = share_of_total(units),
       derived = fns$total(value, TRUE),
+      .grouping = rollup(region)
+    )
+  )
+
+  # A bare symbol head stays excluded, which is what the exclusion is for.
+  # `doubled` here names both a share and a function, and R's function lookup
+  # skips the non-function binding: the call reaches the function even though
+  # the mask holds a share of that name, so reporting the head as a read would
+  # reject a call that runs correctly.
+  # nolint start: object_usage_linter.
+  # `doubled` is called from the summary expression below, through the data
+  # mask, which codetools cannot follow.
+  doubled <- function(x) sum(x) * 2
+  # nolint end
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      doubled = share_of_total(units),
+      derived = doubled(value),
       .grouping = rollup(region)
     )
   )
