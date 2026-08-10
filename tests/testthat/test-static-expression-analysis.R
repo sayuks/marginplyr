@@ -291,10 +291,10 @@ test_that("a formula is walked as the call to `~` that it is", {
   )
 
   # A formula written at the top of a summary expression -- `length(~value)`
-  # -- still aborts, from `find_summary_context_helpers()` rather than from
-  # here: the same `is_call()`-then-`call_name()` pairing appears at nine
-  # sites, and it fails there before this walk is reached. That predates #130
-  # and is tracked in #163, so it is deliberately not asserted here.
+  # -- used to abort from `find_summary_context_helpers()` before this walk was
+  # reached: the same `is_call()`-then-`call_name()` pairing appeared at nine
+  # further sites. That predated #130 and was fixed in #163, whose tests below
+  # cover the sites and the shapes this one does not.
 
   # A formula in the `.fns` position of `across()` is the one spelling of this
   # that users are documented to write (`R/share.R:307`), and it was the only
@@ -312,6 +312,249 @@ test_that("a formula is walked as the call to `~` that it is", {
     "`share`"
   )
   expect_s3_class(from_across, "marginplyr_error")
+})
+
+test_that("a read inside an injected quosure is still reached", {
+  # A quosure is a call to `~`, so it is named as one -- no name -- and every
+  # walk descends into it instead. That answer is only safe if descending
+  # reaches what the quosure carries, which is what this asserts in the
+  # package's own terms rather than in rlang's: the guard against an ordinary
+  # summary reading an earlier share is the walk, so a read it stops seeing is
+  # a guard that stops firing, and the wrong number is returned in silence
+  # (#130).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # The walks subset the quosure node they descend into -- `expr[[1L]]`,
+  # `as.list(expr)[-1L]` -- and rlang soft-deprecated both spellings on a
+  # quosure, so walking one signals a lifecycle condition into whatever handler
+  # the caller has installed. That is #165, not this: the suppression comes out
+  # when the walks read a quosure with `rlang::quo_get_expr()` instead.
+  error <- expect_error(
+    suppressWarnings(summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sum(!!rlang::quo(share)),
+      .grouping = rollup(region)
+    )),
+    "`share`"
+  )
+  expect_s3_class(error, "marginplyr_error")
+})
+
+test_that("every analysis that names a call reads a formula as a `~` call", {
+  # The nine further analyses #163 lists guarded with `rlang::is_call()` and
+  # then asked for a name, so each read a formula as whatever its right-hand
+  # side is. Each is asserted at its own function rather than end to end,
+  # because only one half of the misread reports itself: a bare symbol on the
+  # right raises "`call` must be a defused call, not a symbol", while a call on
+  # the right silently sends the formula into a branch written for another
+  # shape, where `expr[[2L]]` is the formula's right-hand side and not the
+  # operand that branch means to read.
+  #
+  # `grouping_arg_spec()` is a tenth site, which #163 lists as unaffected on
+  # the grounds that it guards each read individually. That is NULL-safety for
+  # a non-call and no protection from a formula, which passes `is_call()`
+  # there like anywhere else; the test below covers it.
+  proxy <- data.frame(value = double(), other = double())
+  env <- rlang::current_env()
+
+  # The three reads #163 names -- `"$"`, `"get"`, and `"+"` -- and the
+  # two-sided formula, which is the one shape `call_name()` did answer as `~`.
+  expect_null(static_call_name(quote(~ .data$share)))
+  expect_null(static_call_name(quote(~ get("share"))))
+  expect_null(static_call_name(quote(~ .x + share)))
+  expect_null(static_call_ns(quote(~ dplyr::n())))
+  expect_null(static_call_name(quote(a ~ b)))
+
+  # An injected quosure is a `~` call as well, and gets the same answer for a
+  # stronger reason than a formula does: every site reads operands from the
+  # node it has just named, and a quosure answers none of those reads as the
+  # call it carries, so a name read through to the call inside would not
+  # describe the operands beside it. That is this defect rather than a fix for
+  # it. What the answer must not cost is the read inside, which the walk
+  # reaches as a part -- asserted end to end below.
+  expect_null(static_call_name(rlang::quo(dplyr::across(value, mean))))
+  expect_null(static_call_ns(rlang::quo(dplyr::n())))
+  # A quosure carrying no call is a name this cannot read, not an error: that
+  # is the shape `rlang::call_name()` aborts on.
+  expect_null(static_call_name(rlang::quo(value)))
+
+  # Anything that is not a call has no name to read either. That is deliberate
+  # and load-bearing rather than incidental: it is what lets a site ask without
+  # a guard of its own, which `share_helper_call_kind()`, `is_across_call()`,
+  # `is_name_only_expr()`, and `grouping_arg_spec()` each rely on.
+  expect_null(static_call_name(quote(value)))
+  expect_null(static_call_ns(quote(value)))
+  expect_null(static_call_name(1L))
+  expect_null(static_call_ns(1L))
+  expect_false(is_share_helper_call(quote(value)))
+  expect_false(is_across_call(quote(value)))
+  # A language object that is no call, which is what the guard dropped from
+  # `is_name_only_expr()` used to answer. A literal takes the branch above it
+  # and is a name-only selection, as it was before.
+  expect_false(
+    is_name_only_expr(expression(x), env = env, data_vars = "region")
+  )
+  expect_true(is_name_only_expr(1L, env = env, data_vars = "region"))
+
+  # A walk still reaches what the formula holds: the helper inside is found
+  # once, from the parts, rather than twice -- once from the formula misread
+  # as the call it wraps, and once from that call itself.
+  expect_identical(
+    find_summary_context_helpers(quote(length(~ dplyr::cur_group()))),
+    "cur_group"
+  )
+  expect_identical(
+    find_summary_context_helpers(quote(length(~value))),
+    character()
+  )
+
+  # The rewrite belongs to the `across()` inside the formula, which the walk
+  # over the arguments already reaches. Rewriting the formula as that
+  # `across()` too turned a lambda into the two-sided formula
+  # `dplyr::all_of("value") ~ mean`.
+  expect_identical(
+    rewrite_summary_selections(
+      quote(~ dplyr::across(c(value), mean)),
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    quote(~ dplyr::across(dplyr::all_of("value"), mean))
+  )
+  expect_identical(
+    rewrite_summary_selections(
+      quote(~.x),
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    quote(~.x)
+  )
+
+  # A formula names no output columns, is no share helper call, no `across()`
+  # call, no name-only selection, and no grouping helper -- whatever sits on
+  # its right-hand side. Each of these answered for that right-hand side.
+  expect_identical(
+    known_data_frame_output_names(quote(~ dplyr::pick(value)), env, proxy),
+    character()
+  )
+  expect_null(share_helper_call_kind(quote(~ share_of_total(units))))
+  expect_false(is_across_call(quote(~ dplyr::across(value, mean))))
+  expect_false(
+    is_name_only_expr(quote(~c(region)), env = env, data_vars = "region")
+  )
+  expect_null(grouping_helper_name(quote(~ grouping_id(region))))
+
+  # The predicate search still finds `where()`, from the parts rather than
+  # from a misread name, and answers a bare-symbol right-hand side instead of
+  # aborting on it.
+  expect_true(contains_selection_predicate(quote(~ where(is.numeric))))
+  expect_false(contains_selection_predicate(quote(~.x)))
+})
+
+test_that("a formula in a summary expression evaluates instead of aborting", {
+  # `derived = purrr::map_dbl(v, ~.x)` is the realistic spelling of this. purrr
+  # is neither an Import nor a Suggest of this package, so it is written here
+  # against one that is: `rlang::as_function()` is what `map_dbl()` applies the
+  # formula through, and it is the same shape -- a lambda whose right-hand side
+  # is a bare symbol, in argument position. `length(~value)` is #163's
+  # contrived one, and it reaches further: the formula sits at the top of the
+  # summary expression rather than inside a call, so every analysis that reads
+  # a top-level expression sees it.
+  #
+  # Both are ordinary R that marginplyr has nothing to say about, so ADR-0015
+  # asks them to fall through and evaluate rather than to raise a condition of
+  # any class. A formula is a value, not a deferred read of the mask: the
+  # length of `~value` is 2 whatever the data holds.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    derived = length(~value),
+    lambda = rlang::as_function(~.x)(units),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+
+  expect_identical(result$derived, rep(2L, nrow(result)))
+  expect_identical(result$lambda, result$units)
+  expect_identical(result$share, result$units / sum(data$value))
+})
+
+test_that("a formula in a grouping specification reaches tidyselect", {
+  # `grouping_arg_spec()` read a name to decide whether an argument is a
+  # Grouping constructor call or a selection to evaluate later. It guarded each
+  # read with `rlang::is_call()` separately, which #163 reads as protection --
+  # but that is NULL-safety for an argument that is no call at all, and a
+  # formula is a call. `rollup(~region)` passed both guards and aborted with
+  # the untyped condition, from a site the ticket lists as unaffected.
+  #
+  # A formula is no Grouping constructor, so the argument is a selection, and
+  # tidyselect is what has something to say about a formula in one. Its message
+  # names the rewrite; the internal abort named an rlang argument the caller
+  # never wrote.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      .grouping = rollup(~region)
+    ),
+    "Formula shorthand must be wrapped in `where\\(\\)`"
+  )
+  # The selection is the caller's own, so what tidyselect raises reaches them
+  # as tidyselect raised it -- neither re-typed as a Package condition nor
+  # replaced by one of this package's internal invariants (ADR-0015).
+  expect_s3_class(error, "rlang_error")
+  expect_false(inherits(error, "marginplyr_error"))
+
+  # A constructor argument is still recognized as one, and a bare column is
+  # still a name-only selection.
+  expect_no_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      .grouping = rollup(region)
+    )
+  )
+})
+
+test_that("a formula wrapping a share helper is refused, not computed", {
+  # The one shape whose misread raised nothing. `rlang::call_args()` unwraps a
+  # formula exactly as `call_name()` does, so `~ share_of_total(units)` was
+  # read as the direct share `share_of_total(units)` -- name, argument, and
+  # all. The formula the caller wrote was dropped and a share appeared under
+  # the name they gave it, which is the silently wrong result the raised
+  # conditions elsewhere in #163 were not.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      derived = ~ share_of_total(units),
+      .grouping = rollup(region)
+    ),
+    "must be the complete right-hand side"
+  )
+  expect_s3_class(error, "marginplyr_error")
 })
 
 test_that("the head is walked before the arguments, and the guard says so", {

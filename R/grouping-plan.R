@@ -275,11 +275,11 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (!is.language(expr)) {
     return(is.atomic(expr))
   }
-  if (!rlang::is_call(expr)) {
-    return(FALSE)
-  }
 
-  call_name <- rlang::call_name(expr)
+  # A language object that is no call -- an expression vector, a pairlist --
+  # answers `NULL` here, which the next line already turns into the `FALSE` a
+  # guard would have returned.
+  call_name <- static_call_name(expr)
   if (is.null(call_name)) {
     return(FALSE)
   }
@@ -712,8 +712,8 @@ grouping_arg_spec <- function(arg, data_vars) {
   }
 
   constructors <- grouping_constructor_names()
-  call_name <- if (rlang::is_call(expr)) rlang::call_name(expr) else NULL
-  call_ns <- if (rlang::is_call(expr)) rlang::call_ns(expr) else NULL
+  call_name <- static_call_name(expr)
+  call_ns <- static_call_ns(expr)
   is_constructor_call <-
     !is.null(call_name) &&
     call_name %in% constructors &&

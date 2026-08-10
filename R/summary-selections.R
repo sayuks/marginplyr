@@ -250,8 +250,8 @@ find_summary_context_helpers <- function(expr) {
     return(character())
   }
 
-  call_name <- rlang::call_name(expr)
-  call_ns <- rlang::call_ns(expr)
+  call_name <- static_call_name(expr)
+  call_ns <- static_call_ns(expr)
   unsupported <- c(
     "cur_group",
     "cur_group_id",
@@ -329,8 +329,8 @@ rewrite_summary_selections <- function(expr,
   names(call_args) <- names(as.list(expr)[-1L])
   expr <- rlang::call2(expr[[1L]], !!!call_args)
 
-  call_name <- rlang::call_name(expr)
-  call_ns <- rlang::call_ns(expr)
+  call_name <- static_call_name(expr)
+  call_ns <- static_call_ns(expr)
   is_dplyr_call <- is.null(call_ns) || identical(call_ns, "dplyr")
   if (!is_dplyr_call) {
     return(expr)
@@ -341,7 +341,8 @@ rewrite_summary_selections <- function(expr,
       expr,
       env,
       data_proxy,
-      normalize_across_names = normalize_across_names
+      normalize_across_names = normalize_across_names,
+      call_name = call_name
     ))
   }
   if (identical(call_name, "pick")) {
@@ -351,11 +352,16 @@ rewrite_summary_selections <- function(expr,
   expr
 }
 
+# `call_name` is the caller's answer rather than one asked again here. Asking
+# again would answer the same, since the shared read answers a formula as no
+# name at all (#163); it would just be a second question about an expression
+# the only caller enters this function having already named, and the two
+# answers would then have to be kept in step by hand.
 rewrite_across_selection <- function(expr,
                                      env,
                                      data_proxy,
-                                     normalize_across_names) {
-  call_name <- rlang::call_name(expr)
+                                     normalize_across_names,
+                                     call_name) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   selection_index <- parsed$cols_index
@@ -488,8 +494,8 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     return(character())
   }
 
-  call_name <- rlang::call_name(expr)
-  call_ns <- rlang::call_ns(expr)
+  call_name <- static_call_name(expr)
+  call_ns <- static_call_ns(expr)
   is_tibble_constructor <-
     !is.null(call_name) &&
     call_name %in% c("tibble", "data_frame") &&

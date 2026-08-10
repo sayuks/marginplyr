@@ -179,8 +179,8 @@ rewrite_grouping_expr <- function(expr,
 }
 
 grouping_helper_name <- function(expr) {
-  name <- rlang::call_name(expr)
-  namespace <- rlang::call_ns(expr)
+  name <- static_call_name(expr)
+  namespace <- static_call_ns(expr)
   if (
     !is.null(name) &&
       name %in% c("grouping_bit", "grouping_id") &&

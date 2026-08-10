@@ -107,6 +107,63 @@ assert_lazy_table <- function(x) {
   }
 }
 
+# The name and namespace a static analysis reads from a call, and `NULL` when
+# there is none to read. Anything that is not a call answers `NULL` too, so a
+# site may ask without a guard of its own; the sites that keep one keep it for
+# a read it makes beside this, such as walking `as.list(expr)[-1L]`.
+#
+# `rlang::call_name()` and `rlang::call_ns()` do not answer a formula as the
+# call to `~` that it is: both unwrap a one-sided formula to its right-hand
+# side. When that side is a bare symbol they raise "`call` must be a defused
+# call, not a symbol" -- an untyped condition of the class ADR-0015
+# separates -- and when it is not they answer a different call, so
+# `~ .data$share` reads as a `$` call and the analysis enters a branch written
+# for another shape, carrying the formula as the expression that branch then
+# reads `[[2L]]` of (#163). `rlang::call_args()` unwraps the same way, which is
+# how a formula reached the direct-share path and was computed as the share it
+# is not -- measured on 5f078ea, and the one shape of this whose misread raised
+# nothing, which is what the ticket's severity note does not cover.
+#
+# Every analysis that reads a name recognizes a call by that name, none of them
+# recognizes `~`, and each already has an answer for a name it does not know:
+# walk the call's parts, or report the shape as one it does not handle. A
+# formula is therefore a call with no name, and the analysis treats it as the
+# `~` call it is rather than as its right-hand side.
+#
+# An injected quosure is a call to `~` as well, and gets the same answer for a
+# stronger reason. Every site reads operands from the node it has just named --
+# `expr[[2L]]`, `as.list(expr)[-1L]`, `length(expr)` -- and a quosure answers
+# none of those as the call it carries: `rlang::quo(.data$share)[[2L]]` is
+# `.data$share` rather than `.data`, and warns that subsetting a quosure is
+# deprecated, while `length()` of any quosure is 2. Naming a quosure for the
+# call inside it would split the name from the operands, which is the defect
+# this removes rather than a fix for it. Falling through costs nothing:
+# `as.list()` of a quosure yields the expression it carries, so a walk reaches
+# that expression as a part and analyses it there, where the operands are its
+# own.
+static_call_name <- function(expr) {
+  if (!is_nameable_call(expr)) {
+    return(NULL)
+  }
+  rlang::call_name(expr)
+}
+
+static_call_ns <- function(expr) {
+  if (!is_nameable_call(expr)) {
+    return(NULL)
+  }
+  rlang::call_ns(expr)
+}
+
+# Whether `rlang::call_name()` and `rlang::call_ns()` may be asked about this
+# node at all: it is a call, and not a call to `~`. It does not promise a name
+# -- a call whose head is itself a call has none, and both answer `NULL` for
+# it, which every site is already written to handle since #100 made the name
+# read NULL-safe.
+is_nameable_call <- function(expr) {
+  rlang::is_call(expr) && !rlang::is_call(expr, "~")
+}
+
 # Required because dtplyr is an optional Suggest rather than an Import: it
 # brings data.table, which reads this flag from the calling namespace.
 # data.table fixes the spelling of this name, so it cannot follow the package's

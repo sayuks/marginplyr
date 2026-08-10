@@ -2538,14 +2538,13 @@ share_named_kind <- function(name) {
 }
 
 share_helper_call_kind <- function(expr) {
-  if (!rlang::is_call(expr)) {
-    return(NULL)
-  }
-  name <- rlang::call_name(expr)
+  # A node that is no call answers `NULL` here, which the next line already
+  # turns into the answer a guard would have returned.
+  name <- static_call_name(expr)
   if (is.null(name)) {
     return(NULL)
   }
-  namespace <- rlang::call_ns(expr)
+  namespace <- static_call_ns(expr)
   if (!is.null(namespace) && !identical(namespace, "marginplyr")) {
     return(NULL)
   }
@@ -2623,10 +2622,11 @@ share_request_kinds <- function(requests) {
 }
 
 is_across_call <- function(expr) {
-  rlang::is_call(expr) &&
-    identical(rlang::call_name(expr), "across") &&
-    (is.null(rlang::call_ns(expr)) ||
-       identical(rlang::call_ns(expr), "dplyr"))
+  # Asked of any expression, not only of a call: a node that is no call has no
+  # name, and no name matches.
+  identical(static_call_name(expr), "across") &&
+    (is.null(static_call_ns(expr)) ||
+       identical(static_call_ns(expr), "dplyr"))
 }
 
 # `error_call` is the caller's own `across()` call rather than this frame,
@@ -2760,13 +2760,12 @@ share_selection_missing_names <- function(cnd) {
 }
 
 contains_selection_predicate <- function(expr) {
-  if (rlang::is_symbol(expr)) {
-    return(FALSE)
-  }
+  # A symbol needs no test of its own: it is no call, so the walk below has
+  # nothing to descend into and the guard covers it.
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
-  if (identical(rlang::call_name(expr), "where")) {
+  if (identical(static_call_name(expr), "where")) {
     return(TRUE)
   }
   any(vapply(
@@ -2829,17 +2828,10 @@ expression_data_symbols <- function(expr, bound = character()) {
   if (rlang::is_call(expr, c("::", ":::"))) {
     return(character())
   }
-  # `rlang::call_name()` unwraps a one-sided formula to its right-hand side.
-  # That errors when the right-hand side is a bare symbol -- `~.x` -- and
-  # misreads the call when it is not: `~ .data$share` answers `$`, so the walk
-  # entered a branch written for a different shape and reached the right
-  # answer by accident. A formula is a call to `~`, and the general walk below
-  # already treats it as one, so it is never asked for a name.
-  call_name <- if (rlang::is_call(expr, "~")) {
-    NULL
-  } else {
-    rlang::call_name(expr)
-  }
+  # A formula is a call to `~`, and the general walk below already treats it as
+  # one, so it is never asked for a name. `static_call_name()` is why, and it
+  # is the same answer every other analysis in this package reads (#163).
+  call_name <- static_call_name(expr)
   # The length is part of deciding whether this is a function definition at
   # all, not a precondition to check inside. A node built by hand rather than
   # parsed -- `rlang::call2("function")` arriving through injection -- can
