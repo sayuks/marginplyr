@@ -401,8 +401,12 @@ grouped_nested <- retail_sales |>
   )
 dplyr::group_vars(grouped_nested)
 
-# The same operation stays lazy for a dtplyr input until collect().
-if (requireNamespace("dtplyr", quietly = TRUE)) {
+# The same operation stays lazy for a dtplyr input until collect(). The
+# guard shipped with marginplyr reports dtplyr usable only at the version
+# DESCRIPTION requires, so an older one withholds this rather than failing
+# inside it.
+source(system.file("suggests", "guard.R", package = "marginplyr"))
+if (marginplyr_suggest_available("dtplyr")) {
   nested_dt <- january_sales |>
     dtplyr::lazy_dt() |>
     nest_with_margins(

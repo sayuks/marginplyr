@@ -66,8 +66,11 @@
 #' # SQLite has no native GROUPING SETS support in marginplyr, so a simulated
 #' # lazy table makes the portable UNION ALL translation visible. Rendering
 #' # SQLite SQL reads the driver version from the optional RSQLite package,
-#' # even though the simulator opens no connection.
-#' if (requireNamespace("RSQLite", quietly = TRUE)) {
+#' # even though the simulator opens no connection. Every optional-dependency
+#' # guard in this package's documentation goes through the guard shipped with
+#' # it, so none of them can be the one that forgot to read a version.
+#' source(system.file("suggests", "guard.R", package = "marginplyr"))
+#' if (marginplyr_suggest_available("RSQLite")) {
 #'   sqlite_sales <- dbplyr::tbl_lazy(
 #'     january_sales,
 #'     con = dbplyr::simulate_sqlite()

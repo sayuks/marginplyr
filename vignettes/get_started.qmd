@@ -41,18 +41,24 @@ library(dplyr)
 ```
 
 Only dplyr and dbplyr are required. A few sections below illustrate optional
-tooling, so their chunks evaluate only when that tooling is installed. Where a
-package is missing the code is still shown, but its output is absent.
+tooling, so their chunks evaluate only when that tooling is installed at the
+version marginplyr asks for. Where a package is missing or too old the code is
+still shown, but its output is absent.
 
 ```{r}
 #| include: false
 
+# `marginplyr_suggest_available()` answers what a bare installation check
+# could not: whether the installed package satisfies the version DESCRIPTION
+# requires. AGENTS.md is authoritative for which guards must go through it.
+source(system.file("suggests", "guard.R", package = "marginplyr"))
+
 # dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
 # the installed driver version through RSQLite.
-has_sqlite_simulator <- requireNamespace("RSQLite", quietly = TRUE)
-has_dtplyr <- requireNamespace("dtplyr", quietly = TRUE)
-has_tabsets <- requireNamespace("knitr", quietly = TRUE) &&
-  requireNamespace("quartabs", quietly = TRUE)
+has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
+has_dtplyr <- marginplyr_suggest_available("dtplyr")
+has_tabsets <- marginplyr_suggest_available("knitr") &&
+  marginplyr_suggest_available("quartabs")
 
 # Chunks marked with `must_error` show a call that is meant to fail, so the
 # reader sees the real diagnostic rather than a quotation of one. AGENTS.md is

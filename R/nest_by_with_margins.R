@@ -80,7 +80,11 @@
 #'
 #' # dtplyr performs the expansion and nesting lazily, then
 #' # nest_by_with_margins() collects it to create a local row-wise data frame.
-#' if (requireNamespace("dtplyr", quietly = TRUE)) {
+#' # The guard shipped with marginplyr reports dtplyr usable only at the
+#' # version DESCRIPTION requires, so an older one withholds this rather than
+#' # failing inside it.
+#' source(system.file("suggests", "guard.R", package = "marginplyr"))
+#' if (marginplyr_suggest_available("dtplyr")) {
 #'   lazy_nested <- january_sales |>
 #'     dtplyr::lazy_dt() |>
 #'     nest_with_margins(

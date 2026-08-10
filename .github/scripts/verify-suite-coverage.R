@@ -60,21 +60,28 @@ if (length(backends) == 0L) {
   stop(call. = FALSE, "`optional_backends()` is empty, so this proves nothing.")
 }
 
-# Half one of the mechanism. `requireNamespace()` directly rather than
-# `backend_available()`, because the question is what the library holds, not
-# what the guards report -- and the guards are the thing under test here.
-installed <- vapply(
-  backends,
-  function(package) requireNamespace(package, quietly = TRUE),
-  logical(1)
-)
-if (!all(installed)) {
+# Half one of the mechanism: this run's library holds every backend, at a
+# version DESCRIPTION accepts. Asked of the library rather than through
+# `backend_available()`, because the guards are the thing under test here --
+# `suggest_status()` reads DESCRIPTION and the installed version and knows
+# nothing of `MARGINPLYR_HIDE_SUGGESTS`, which is what the simulation drives.
+#
+# The version half matters as much as the presence half. A backend installed
+# below its constraint now reports unavailable, so it would skip in every
+# configuration and be reported below as requiring two backends -- a violation
+# invented entirely by the environment this ran in (#123).
+status <- lapply(backends, suggest_status)
+unusable <- Filter(function(one) !one$available, status)
+if (length(unusable) > 0L) {
   stop(call. = FALSE, sprintf(
     paste0(
       "This job simulates each backend's absence, so it needs all of them ",
-      "installed. These are not: %s."
+      "installed at the version DESCRIPTION requires. These are not: %s."
     ),
-    paste(backends[!installed], collapse = ", ")
+    paste(
+      vapply(unusable, function(one) one$reason, character(1)),
+      collapse = "; "
+    )
   ))
 }
 

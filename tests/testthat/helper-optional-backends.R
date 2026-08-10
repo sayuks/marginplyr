@@ -38,6 +38,94 @@ hidden_suggests <- function() {
   suggests_env_list("MARGINPLYR_HIDE_SUGGESTS")
 }
 
+# Whether a package is usable is not the same question as whether it is
+# installed, because six of this package's Suggests carry a version constraint
+# (#123). `inst/suggests/guard.R` is what reads one, and these helpers source
+# that file rather than carrying a second reading of DESCRIPTION: no vignette
+# and no example can reach `tests/`, so a copy here would be the copy every one
+# of those sites drifts from.
+#
+# Repository copies are preferred over installed ones throughout, for the reason
+# `test-package-metadata.R` records: `system.file()` reads whichever marginplyr
+# happens to be installed, so a working tree that moved a version floor, or
+# changed the guard, would otherwise be tested against neither change. Under
+# `R CMD check` no repository copy is reachable and the installed package is the
+# only answer, which is the same package the tarball built.
+#
+# The lookup is a function rather than a value because `.github/scripts/`
+# sources this file from a bare `Rscript` before marginplyr is installed --
+# `generate-backend-matrix.R` needs only `optional_backend_spec()` -- so
+# resolving a path at source time would fail a script that never asks a version
+# question. Both candidate paths are relative, and both possible working
+# directories are covered: the repository root under those scripts, and
+# `tests/testthat` under testthat, from where the repository root is `../..`.
+#
+# The plain path is tried first because the `../..` form is the one that can
+# reach outside the repository: run from the root it names the parent of the
+# checkout, where a stray `DESCRIPTION` would quietly win. Neither
+# `tests/testthat/DESCRIPTION` nor `tests/testthat/inst/` exists, so trying the
+# plain path first costs nothing under testthat.
+repository_file <- function(path) {
+  candidates <- c(path, file.path("..", "..", path))
+  found <- candidates[file.exists(candidates)]
+  if (length(found) == 0L) {
+    return(NA_character_)
+  }
+  found[[1]]
+}
+
+# The `Suggests` field the guard reads its constraints out of.
+declared_suggests <- function() {
+  path <- repository_file("DESCRIPTION")
+  if (is.na(path)) {
+    path <- system.file("DESCRIPTION", package = "marginplyr")
+  }
+  if (!nzchar(path) || !file.exists(path)) {
+    stop("No DESCRIPTION is reachable to read Suggests versions from.")
+  }
+  suggests <- unname(read.dcf(path, fields = "Suggests")[1L, 1L])
+  # A DESCRIPTION stating no Suggests would make every guard below report every
+  # backend unconstrained, which reads exactly like a package whose constraints
+  # are all satisfied.
+  if (is.na(suggests)) {
+    stop(sprintf("%s states no Suggests field.", path))
+  }
+  suggests
+}
+
+# The shipped guard, sourced once into an environment of its own so that its
+# definitions cannot be mistaken for helpers defined here. Loaded on demand for
+# the reason above, and cached because every guarded test asks for it.
+suggest_guard <- local({
+  loaded <- NULL
+  function() {
+    if (!is.null(loaded)) {
+      return(loaded)
+    }
+    path <- repository_file(file.path("inst", "suggests", "guard.R"))
+    if (is.na(path)) {
+      path <- system.file("suggests", "guard.R", package = "marginplyr")
+    }
+    if (!nzchar(path) || !file.exists(path)) {
+      stop(
+        "`inst/suggests/guard.R` is not reachable, so no guard here can tell ",
+        "an installed backend from a usable one."
+      )
+    }
+    loaded <<- new.env(parent = globalenv())
+    sys.source(path, envir = loaded)
+    loaded
+  }
+})
+
+# What the guard reports about one Suggested package. `suggests` is a seam
+# rather than a convenience: it is how `test-optional-backends.R` drives the
+# too-old branch with a package that is certainly installed, which no real
+# constraint in DESCRIPTION would ever produce in a passing environment.
+suggest_status <- function(package, suggests = declared_suggests()) {
+  suggest_guard()$marginplyr_suggest_status(package, suggests = suggests)
+}
+
 # The one table describing the optional Suggests these helpers guard on, and the
 # only list the release matrix reads. Which side of the repository it lives on
 # is forced, not preferred: `R CMD check` runs these tests from the unpacked
@@ -103,19 +191,27 @@ backend_job_packages <- function(package) {
 # several backends use this directly, because dropping one from a list records
 # no skip at all and would otherwise be invisible.
 #
+# "Can be used" includes the version DESCRIPTION requires, which is what
+# `requireNamespace()` here could not say (#123). An installed-but-too-old
+# backend now reports FALSE and skips, where it used to report TRUE and let the
+# test call an API the installed version does not have.
+#
 # A package `known` does not name is an error rather than FALSE. Nothing in the
 # release matrix executes such a package and nothing asserts it absent, so a
 # guard on it would do nothing while reading as protection; erroring is what
 # makes this test suite the place a backend gets registered. The check runs
-# before `requireNamespace()` so that it fires the same way on a fully
+# before the guard is consulted so that it fires the same way on a fully
 # provisioned developer machine, where the package is installed and a check
 # placed after it would never be reached.
 #
-# `known` is a parameter only so that this helper's own tests can drive both
-# outcomes. They need a sentinel name no CRAN package uses and a base package
-# that is always installed, and neither belongs in `optional_suggests()`. Every
-# other call site takes the default.
-backend_available <- function(package, known = optional_suggests()) {
+# `known` and `suggests` are parameters only so that this helper's own tests can
+# drive every outcome. They need a sentinel name no CRAN package uses, a base
+# package that is always installed, and a constraint no installed version can
+# satisfy; none of the three belongs in `optional_suggests()` or in DESCRIPTION.
+# Every other call site takes the defaults.
+backend_available <- function(package,
+                              known = optional_suggests(),
+                              suggests = declared_suggests()) {
   if (!package %in% names(known)) {
     stop(sprintf(
       paste0(
@@ -146,30 +242,57 @@ backend_available <- function(package, known = optional_suggests()) {
       package
     ))
   }
-  if (!hidden && requireNamespace(package, quietly = TRUE)) {
+  status <- suggest_status(package, suggests = suggests)
+  if (!hidden && status$available) {
     return(TRUE)
   }
   if (package %in% required_suggests()) {
     stop(sprintf(
       paste0(
-        "{%s} is named in MARGINPLYR_REQUIRED_SUGGESTS but is not installed, ",
-        "so this job cannot prove its backend contract."
+        "%s, and it is named in MARGINPLYR_REQUIRED_SUGGESTS, so this job ",
+        "cannot prove its backend contract."
       ),
-      package
+      backend_absence_reason(package, suggests = suggests)
     ))
   }
   FALSE
 }
 
-# Skips unless every named backend is installed, keeping testthat's own wording
-# so the skip summary reads the same as it did under `skip_if_not_installed()`.
+# Why a backend is unusable, in the wording a skip carries.
 #
-# `known` sits after `...` and so can only be supplied by full name, which keeps
-# it from ever swallowing a backend argument.
-skip_if_backend_absent <- function(..., known = optional_suggests()) {
+# A hidden backend reports the absent wording rather than the guard's, because
+# `MARGINPLYR_HIDE_SUGGESTS` claims a package this process could otherwise see
+# is gone: `verify-suite-coverage.R` and `verify-depends-only.R` both attribute
+# a skip by matching `{pkg} is not installed`, and a simulated absence that
+# announced itself differently would be a skip neither could attribute.
+#
+# The too-old wording is deliberately not that phrase, and not because a
+# `backend` job needs it to be: a backend that job named is required, so
+# `backend_available()` above stops rather than skipping, and a backend it
+# withheld is not installed at all. What the distinction is for is the reader of
+# a skip -- "not installed" would send someone looking for a package sitting in
+# their library -- and for `verify-backend.R`, which fails a job on any skip it
+# cannot attribute. Sharing the absent wording would let a version failure pass
+# there as a withheld backend if one ever reached that path.
+backend_absence_reason <- function(package, suggests = declared_suggests()) {
+  if (package %in% hidden_suggests()) {
+    return(sprintf("{%s} is not installed", package))
+  }
+  suggest_status(package, suggests = suggests)$reason
+}
+
+# Skips unless every named backend is usable, keeping testthat's own wording for
+# an absent package so the skip summary reads the same as it did under
+# `skip_if_not_installed()`.
+#
+# `known` and `suggests` sit after `...` and so can only be supplied by full
+# name, which keeps them from ever swallowing a backend argument.
+skip_if_backend_absent <- function(...,
+                                   known = optional_suggests(),
+                                   suggests = declared_suggests()) {
   for (package in c(...)) {
-    if (!backend_available(package, known = known)) {
-      skip(sprintf("{%s} is not installed", package))
+    if (!backend_available(package, known = known, suggests = suggests)) {
+      skip(backend_absence_reason(package, suggests = suggests))
     }
   }
   invisible(NULL)
