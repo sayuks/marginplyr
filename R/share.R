@@ -2538,8 +2538,8 @@ share_named_kind <- function(name) {
 }
 
 share_helper_call_kind <- function(expr) {
-  # No `rlang::is_call()` guard: `static_call_name()` answers `NULL` for a
-  # node that is no call, which is the answer the next line already gives.
+  # A node that is no call answers `NULL` here, which the next line already
+  # turns into the answer a guard would have returned.
   name <- static_call_name(expr)
   if (is.null(name)) {
     return(NULL)
@@ -2622,6 +2622,8 @@ share_request_kinds <- function(requests) {
 }
 
 is_across_call <- function(expr) {
+  # Asked of any expression, not only of a call: a node that is no call has no
+  # name, and no name matches.
   identical(static_call_name(expr), "across") &&
     (is.null(static_call_ns(expr)) ||
        identical(static_call_ns(expr), "dplyr"))
@@ -2758,9 +2760,8 @@ share_selection_missing_names <- function(cnd) {
 }
 
 contains_selection_predicate <- function(expr) {
-  if (rlang::is_symbol(expr)) {
-    return(FALSE)
-  }
+  # A symbol needs no test of its own: it is no call, so the walk below has
+  # nothing to descend into and the guard covers it.
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }

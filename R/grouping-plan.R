@@ -276,9 +276,9 @@ is_name_only_expr <- function(expr, env, data_vars) {
     return(is.atomic(expr))
   }
 
-  # No `rlang::is_call()` guard: `static_call_name()` answers `NULL` for a
-  # language object that is no call, which is the answer the next line already
-  # gives.
+  # A language object that is no call -- an expression vector, a pairlist --
+  # answers `NULL` here, which the next line already turns into the `FALSE` a
+  # guard would have returned.
   call_name <- static_call_name(expr)
   if (is.null(call_name)) {
     return(FALSE)

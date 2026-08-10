@@ -352,10 +352,11 @@ rewrite_summary_selections <- function(expr,
   expr
 }
 
-# `call_name` is the caller's answer rather than one asked again here: the only
-# caller reaches this after reading it, and asking a second time is the pairing
-# that made an unrecognized shape -- a formula -- answer as one of the three
-# names this handles (#163).
+# `call_name` is the caller's answer rather than one asked again here. Asking
+# again would answer the same, since the shared read answers a formula as no
+# name at all (#163); it would just be a second question about an expression
+# the only caller enters this function having already named, and the two
+# answers would then have to be kept in step by hand.
 rewrite_across_selection <- function(expr,
                                      env,
                                      data_proxy,

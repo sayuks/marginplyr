@@ -458,9 +458,11 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
 })
 
 test_that("a formula in a summary expression evaluates instead of aborting", {
-  # `derived = purrr::map_dbl(v, ~.x)` is the realistic spelling of this;
-  # written against an Import it is `rlang::as_function()`, which is what
-  # `map_dbl()` applies the formula through. `length(~value)` is #163's
+  # `derived = purrr::map_dbl(v, ~.x)` is the realistic spelling of this. purrr
+  # is neither an Import nor a Suggest of this package, so it is written here
+  # against one that is: `rlang::as_function()` is what `map_dbl()` applies the
+  # formula through, and it is the same shape -- a lambda whose right-hand side
+  # is a bare symbol, in argument position. `length(~value)` is #163's
   # contrived one, and it reaches further: the formula sits at the top of the
   # summary expression rather than inside a call, so every analysis that reads
   # a top-level expression sees it.

@@ -124,7 +124,7 @@ assert_lazy_table <- function(x) {
 # is not -- measured on 5f078ea, and the one shape of this whose misread raised
 # nothing, which is what the ticket's severity note does not cover.
 #
-# Every analysis in this package recognizes a call by its name, none of them
+# Every analysis that reads a name recognizes a call by that name, none of them
 # recognizes `~`, and each already has an answer for a name it does not know:
 # walk the call's parts, or report the shape as one it does not handle. A
 # formula is therefore a call with no name, and the analysis treats it as the
@@ -157,8 +157,9 @@ static_call_ns <- function(expr) {
 
 # Whether `rlang::call_name()` and `rlang::call_ns()` may be asked about this
 # node at all: it is a call, and not a call to `~`. It does not promise a name
-# -- a call whose head is itself a call has none, and both answer `NULL` for it
-# (#100), which every site is already written to handle.
+# -- a call whose head is itself a call has none, and both answer `NULL` for
+# it, which every site is already written to handle since #100 made the name
+# read NULL-safe.
 is_nameable_call <- function(expr) {
   rlang::is_call(expr) && !rlang::is_call(expr, "~")
 }
