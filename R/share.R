@@ -2592,11 +2592,9 @@ share_expression_kind <- function(expr) {
   if (!is.null(kind)) {
     return(kind)
   }
-  # By subscript rather than over the arguments themselves, for the reason
-  # `static_call_args()` gives: an empty argument bound to a loop variable
-  # raises on the first read of it. An empty argument holds no share helper, so
-  # it answers `NULL` like any other unrecognized shape and the walk carries on
-  # to the arguments after it.
+  # By subscript for the reason `static_call_args()` gives. An empty argument
+  # holds no share helper, so it answers `NULL` like any other unrecognized
+  # shape and the walk carries on to the arguments after it.
   arguments <- static_call_args(expr)
   for (index in seq_along(arguments)) {
     kind <- share_expression_kind(arguments[[index]])

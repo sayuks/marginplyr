@@ -1731,9 +1731,9 @@ test_that("an empty argument does not hide a share helper beside it", {
 })
 
 test_that("no analysed shape reaches the caller as an untyped condition", {
-  # The classes below are what each site raised before #100. Asserting their
-  # absence together keeps a future rewrite that reintroduces one of them from
-  # passing on the message alone.
+  # The classes below are what each site raised before #100, and before #168 in
+  # `missingArgError`'s case. Asserting their absence together keeps a future
+  # rewrite that reintroduces one of them from passing on the message alone.
   data <- data.frame(
     region = c("East", "East", "West"),
     units = c(1, 3, 6)
@@ -1764,13 +1764,23 @@ test_that("no analysed shape reaches the caller as an untyped condition", {
         .grouping = rollup(region)
       ),
       error = function(cnd) cnd
+    ),
+    empty_argument = tryCatch(
+      summarize_with_margins(
+        data,
+        total = sum(units[]),
+        .grouping = rollup(region)
+      ),
+      error = function(cnd) cnd
     )
   )
 
   expect_s3_class(errors$call_head, "data.frame")
+  expect_s3_class(errors$empty_argument, "data.frame")
   for (error in errors[c("missing_get_name", "across_names")]) {
     expect_s3_class(error, "condition")
     expect_false(inherits(error, "simpleError"))
     expect_false(inherits(error, "subscriptOutOfBoundsError"))
+    expect_false(inherits(error, "missingArgError"))
   }
 })
