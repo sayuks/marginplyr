@@ -147,7 +147,7 @@ rewrite_grouping_expr <- function(expr,
 
   helper <- grouping_helper_name(expr)
   if (!is.null(helper)) {
-    args <- as.list(expr)[-1]
+    args <- static_call_args(expr)
     vars <- grouping_helper_vars(args, helper, plan)
 
     if (identical(helper, "grouping_bit")) {
@@ -166,16 +166,15 @@ rewrite_grouping_expr <- function(expr,
     return(as.integer(sum(bits * weights)))
   }
 
-  pieces <- as.list(expr)
-  pieces[-1] <- lapply(
-    pieces[-1],
+  call_args <- lapply(
+    static_call_args(expr),
     rewrite_grouping_expr,
     plan = plan,
     grouping_set = grouping_set,
     sql = sql,
     con = con
   )
-  as.call(pieces)
+  rebuild_static_call(expr, call_args)
 }
 
 grouping_helper_name <- function(expr) {

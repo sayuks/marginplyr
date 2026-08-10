@@ -269,10 +269,12 @@ find_summary_context_helpers <- function(expr) {
     character()
   }
 
-  pieces <- as.list(expr)[-1L]
   c(
     found,
-    unlist(lapply(pieces, find_summary_context_helpers), use.names = FALSE)
+    unlist(
+      lapply(static_call_args(expr), find_summary_context_helpers),
+      use.names = FALSE
+    )
   )
 }
 
@@ -318,16 +320,22 @@ rewrite_summary_selections <- function(expr,
     return(expr)
   }
 
-  call_args <- as.list(expr)[-1L]
+  # An injected quosure carries an environment of its own, and that is what
+  # injecting one is for, so a selection inside it resolves there rather than
+  # in the environment of the dot that contains it. Reading the outer one would
+  # look up a name the caller never put in it.
+  if (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
+  }
+
   call_args <- lapply(
-    call_args,
+    static_call_args(expr),
     rewrite_summary_selections,
     env = env,
     data_proxy = data_proxy,
     normalize_across_names = normalize_across_names
   )
-  names(call_args) <- names(as.list(expr)[-1L])
-  expr <- rlang::call2(expr[[1L]], !!!call_args)
+  expr <- rebuild_static_call(expr, call_args)
 
   call_name <- static_call_name(expr)
   call_ns <- static_call_ns(expr)
@@ -387,7 +395,7 @@ rewrite_across_selection <- function(expr,
   }
 
   if (identical(call_name, "across") && normalize_across_names) {
-    parsed <- parse_across_arguments(rlang::call2(expr[[1L]], !!!call_args))
+    parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
     names_index <- parsed$names_index
     unpack_index <- parsed$unpack_index
     unpack_is_false <- unpack_index == 0L || isFALSE(tryCatch(
@@ -423,7 +431,7 @@ rewrite_across_selection <- function(expr,
   }
 
   if (identical(call_name, "across")) {
-    parsed <- parse_across_arguments(rlang::call2(expr[[1L]], !!!call_args))
+    parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
     if (parsed$names_index > 0L) {
       call_args[[parsed$names_index]] <- rlang::eval_tidy(
         call_args[[parsed$names_index]],
@@ -432,11 +440,11 @@ rewrite_across_selection <- function(expr,
     }
   }
 
-  rlang::call2(expr[[1L]], !!!call_args)
+  rebuild_static_call(expr, call_args)
 }
 
 rewrite_pick_selection <- function(expr, env, data_proxy) {
-  call_args <- as.list(expr)[-1L]
+  call_args <- static_call_args(expr)
   selection <- if (length(call_args) == 0L) {
     rlang::expr(dplyr::everything())
   } else {
@@ -448,10 +456,7 @@ rewrite_pick_selection <- function(expr, env, data_proxy) {
     data_proxy = data_proxy
   )
 
-  rlang::call2(
-    expr[[1L]],
-    summary_all_of_expr(selected, data_proxy)
-  )
+  rebuild_static_call(expr, list(summary_all_of_expr(selected, data_proxy)))
 }
 
 resolve_summary_selection <- function(expr, env, data_proxy) {
@@ -504,7 +509,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     identical(call_name, "data.frame") &&
     (is.null(call_ns) || identical(call_ns, "base"))
   if (is_tibble_constructor || is_data_frame_constructor) {
-    call_args <- as.list(expr)[-1L]
+    call_args <- static_call_args(expr)
     arg_names <- names(call_args)
     if (is.null(arg_names)) {
       arg_names <- rep("", length(call_args))
@@ -524,7 +529,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     identical(call_name, "pick") &&
       (is.null(call_ns) || identical(call_ns, "dplyr"))
   ) {
-    call_args <- as.list(expr)[-1L]
+    call_args <- static_call_args(expr)
     selection <- if (length(call_args) == 0L) {
       rlang::expr(dplyr::everything())
     } else {
@@ -665,7 +670,7 @@ known_across_function_names <- function(parsed) {
   if (!rlang::is_call(fns_expr, "list")) {
     return("1")
   }
-  fns <- as.list(fns_expr)[-1L]
+  fns <- static_call_args(fns_expr)
   fns_names <- names(fns)
   if (is.null(fns_names)) {
     fns_names <- rep("", length(fns))

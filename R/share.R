@@ -991,7 +991,7 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
     fns <- call_args[[fns_index]]
     fns_is_list <- rlang::is_call(fns, "list")
     if (fns_is_list) {
-      functions <- as.list(fns)[-1L]
+      functions <- static_call_args(fns)
       function_names <- names(functions)
     } else {
       functions <- list(fns)
@@ -1080,7 +1080,7 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
   if (can_inline_forwarded && length(forwarded_positions) > 0L) {
     call_args <- call_args[-forwarded_positions]
   }
-  rlang::call2(expr[[1L]], !!!call_args)
+  rebuild_static_call(expr, call_args)
 }
 
 # The argument a dtplyr lambda binds to each column it is mapped over. Named
@@ -2592,7 +2592,7 @@ share_expression_kind <- function(expr) {
   if (!is.null(kind)) {
     return(kind)
   }
-  for (argument in as.list(expr)[-1L]) {
+  for (argument in static_call_args(expr)) {
     kind <- share_expression_kind(argument)
     if (!is.null(kind)) {
       return(kind)
@@ -2769,7 +2769,7 @@ contains_selection_predicate <- function(expr) {
     return(TRUE)
   }
   any(vapply(
-    as.list(expr)[-1L],
+    static_call_args(expr),
     contains_selection_predicate,
     logical(1)
   ))
@@ -2963,9 +2963,10 @@ expression_data_symbols <- function(expr, bound = character()) {
   # miss a genuine read of a summary named `.x`, and suppressing it only under
   # `across()` would make the walk depend on its own call position, which is
   # what left function definitions behaving differently in a head (#130).
-  parts <- as.list(expr)[-1L]
-  if (!rlang::is_symbol(expr[[1L]])) {
-    parts <- c(list(expr[[1L]]), parts)
+  call_head <- static_call_head(expr)
+  parts <- static_call_args(expr)
+  if (!rlang::is_symbol(call_head)) {
+    parts <- c(list(call_head), parts)
   }
   unique(unlist(
     lapply(parts, expression_data_symbols, bound = bound),
@@ -3040,7 +3041,7 @@ is_binding_statement <- function(call_name, expr) {
 # took this for one of those would pass a list to `intersect()`.
 block_reads_and_bound <- function(expr, bound) {
   reads <- character()
-  for (statement in as.list(expr)[-1L]) {
+  for (statement in static_call_args(expr)) {
     step <- statement_reads_and_bound(statement, bound)
     reads <- c(reads, step$reads)
     bound <- step$bound
