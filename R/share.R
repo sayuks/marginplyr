@@ -2789,11 +2789,27 @@ abort_share_predicate <- function(kind) {
   )
 }
 
+# A lookup the walk could not resolve is reported as a read of every alias in
+# scope. That is the over-reporting the contract asks for, applied where the
+# alias set is known: the walk itself cannot name what `get(name)` reads, and
+# a call with no alias to read is left alone, so an unresolvable lookup is
+# refused where it could hide a dependency and is legal everywhere else (#173).
+#
+# The messages downstream name `dependencies[[1L]]`, so an over-reported
+# refusal names an alias the caller may not have written. The remedy those
+# messages give is the one the caller needs either way -- move the derived
+# value into a following `mutate()`, or fold the alias into one expression --
+# and naming the marker instead would put a name no summary has into a message
+# about the caller's own summaries.
 expression_alias_dependencies <- function(expr, aliases) {
   if (length(aliases) == 0L) {
     return(character())
   }
-  intersect(unique(expression_data_symbols(expr)), aliases)
+  symbols <- unique(expression_data_symbols(expr))
+  if (unresolved_lookup_name() %in% symbols) {
+    return(aliases)
+  }
+  intersect(symbols, aliases)
 }
 
 # `bound` carries the names a construct inside the expression has bound, so a
@@ -2864,35 +2880,33 @@ expression_data_symbols <- function(expr, bound = character()) {
   if (is_binding_statement(call_name, expr)) {
     return(statement_reads_and_bound(expr, bound)$reads)
   }
-  if (identical(call_name, "get") && length(expr) >= 2L) {
-    if (get_has_external_env(expr)) {
-      return(character())
-    }
-    args <- rlang::call_args(expr)
-    arg_names <- names(args)
-    if (is.null(arg_names)) {
-      arg_names <- rep("", length(args))
-    }
-    name_index <- match("x", arg_names, nomatch = 0L)
-    if (name_index == 0L) {
-      name_index <- match("", arg_names, nomatch = 0L)
-    }
-    if (name_index > 0L) {
-      name <- args[[name_index]]
-      if (
-        is.character(name) &&
-          length(name) == 1L &&
-          !is.na(name)
-      ) {
-        # `get()` performs ordinary name resolution, so a local binding is
-        # what it finds. This is the branch the bound set applies to, unlike
-        # the pronoun below.
-        if (name %in% bound) {
-          return(character())
-        }
-        return(name)
-      }
-    }
+  # A name a summary expression reaches through one of the reflective
+  # primitives is the same read as the symbol would be, so it follows the same
+  # dependency rule: `get("share")` and `share` resolve one binding. Only
+  # `get()` was read that way, so `get0("share")`, `exists("share")`,
+  # `mget("share")` and every name built for `eval()` reached the staging
+  # placeholder instead -- silently for most of them (#173).
+  #
+  # Both branches add what the primitive resolves to the walk of the call's own
+  # parts rather than answering in its place, because a reflective call
+  # evaluates its arguments in the mask exactly as any other call does:
+  # `get(name)` really does read `name` there.
+  #
+  # `static_callee_name()` rather than the name read above, because a head
+  # wrapped in redundant parentheses invokes the same primitive while carrying
+  # no name of its own -- the shape #130 recorded defeating #100's fix.
+  callee_name <- static_callee_name(expr, call_name)
+  if (is_reflective_lookup(callee_name)) {
+    return(unique(c(
+      call_part_symbols(expr, bound),
+      reflective_lookup_symbols(expr, bound)
+    )))
+  }
+  if (is_reflective_evaluation(callee_name)) {
+    return(unique(c(
+      call_part_symbols(expr, bound),
+      evaluated_language_symbols(expr, bound)
+    )))
   }
   if (
     !is.null(call_name) &&
@@ -2967,6 +2981,14 @@ expression_data_symbols <- function(expr, bound = character()) {
   # miss a genuine read of a summary named `.x`, and suppressing it only under
   # `across()` would make the walk depend on its own call position, which is
   # what left function definitions behaving differently in a head (#130).
+  call_part_symbols(expr, bound)
+}
+
+# The reads of a call's own parts: its arguments, and its head when the head is
+# not a bare symbol. This is the general walk above, reached by name so that
+# the reflective branches can add their resolved names to it instead of
+# answering in its place.
+call_part_symbols <- function(expr, bound) {
   call_head <- static_call_head(expr)
   parts <- static_call_args(expr)
   if (!rlang::is_symbol(call_head)) {
@@ -3154,17 +3176,271 @@ removal_retained_bound <- function(expr, bound) {
   setdiff(bound, removed)
 }
 
-get_has_external_env <- function(expr) {
+lookup_has_external_env <- function(expr) {
   args <- rlang::call_args(expr)
   arg_names <- names(args)
   if (is.null(arg_names)) {
     arg_names <- rep("", length(args))
   }
-  if (any(arg_names %in% c("pos", "envir"))) {
+  if (any(arg_names %in% c("pos", "envir", "where", "frame"))) {
     return(TRUE)
   }
 
   unnamed_count <- sum(arg_names == "")
   x_is_named <- "x" %in% arg_names
   unnamed_count > as.integer(!x_is_named)
+}
+
+# The name of the function a call invokes, which is the name it was read for
+# unless the head is a call with no name of its own. Redundant parentheses are
+# the case that matters: `(get)("share")` invokes the same primitive as
+# `get("share")`, and #130 recorded the shape defeating #100's fix for the one
+# head shape that fix listed. A namespace qualifier under those parentheses is
+# unwrapped for the same reason `rlang::call_name()` unwraps one that is not
+# parenthesized -- `base::get` names `get`.
+#
+# What the parentheses do change is how the head is found: `(f)` is evaluated
+# in the mask as a value rather than through R's function lookup, so it is a
+# read. `call_part_symbols()` is what reports it, and every caller of this
+# unions the two.
+static_callee_name <- function(expr, call_name) {
+  if (!is.null(call_name)) {
+    return(call_name)
+  }
+  callee <- static_call_head(expr)
+  while (rlang::is_call(callee, "(") && length(callee) >= 2L) {
+    callee <- callee[[2L]]
+  }
+  if (rlang::is_symbol(callee)) {
+    return(rlang::as_name(callee))
+  }
+  if (
+    rlang::is_call(callee, c("::", ":::")) &&
+      length(callee) >= 3L &&
+      rlang::is_symbol(callee[[3L]])
+  ) {
+    return(rlang::as_name(callee[[3L]]))
+  }
+  NULL
+}
+
+# The primitives that resolve a name given as a string. Each searches ordinary
+# lexical scope from an environment that, under a data mask, is the mask, so a
+# name one of them is handed is a mask read exactly as the symbol is.
+#
+# `dynGet()` is deliberately absent: it searches the calling frames rather than
+# the lexical scope, so it does not reach the mask at all -- measured, not
+# assumed. `do.call()` and `match.fun()` are absent for the reason a bare
+# symbol in head position is excluded from the walk: both resolve a name
+# through function lookup, which skips a non-function binding, so a share
+# cannot shadow what either of them finds.
+is_reflective_lookup <- function(callee_name) {
+  !is.null(callee_name) &&
+    callee_name %in% c("get", "get0", "mget", "exists")
+}
+
+# The primitives that evaluate a language object. `evalq()` is absent because
+# it quotes its first argument, so the general walk already reports the symbols
+# under it -- adding it here would answer the same thing twice.
+is_reflective_evaluation <- function(callee_name) {
+  !is.null(callee_name) &&
+    callee_name %in% c("eval", "eval_tidy", "eval_bare")
+}
+
+# The names a reflective lookup resolves in the mask.
+#
+# An environment argument terminates the search: all four primitives require an
+# environment there -- `get("x", envir = list(x = 1))` is an error, not a
+# lookup in that list -- so a call supplying one reads no column, and code
+# reaching deliberately outside the mask keeps working beside a share of the
+# same name.
+#
+# The bound set applies here, unlike at the pronoun below: these perform
+# ordinary name resolution, so a local binding is what they find.
+#
+# A name that is not statically knowable is the undecidable shape #130's
+# contract resolves toward over-reporting, and the marker is how this walk says
+# so. Evaluating the argument to find out what it holds is the one thing this
+# analysis may not do -- it runs while the call is planned, on the caller's own
+# code.
+reflective_lookup_symbols <- function(expr, bound) {
+  if (lookup_has_external_env(expr)) {
+    return(character())
+  }
+  argument <- call_formal_argument(expr, "x")
+  if (length(argument) == 0L) {
+    # Nothing to look up, and nothing wrong with the walk: the call raises R's
+    # own condition for the missing argument when it runs.
+    return(character())
+  }
+  looked_up <- static_character_value(argument[[1L]])
+  if (is.null(looked_up)) {
+    return(unresolved_lookup_name())
+  }
+  setdiff(looked_up, bound)
+}
+
+# The names the language object handed to `eval()` reads.
+#
+# An `envir` argument is deliberately not an exemption here, unlike at the
+# lookup primitives above. `eval()`'s `enclos` defaults to `parent.frame()`,
+# which under a data mask is the mask, so a supplied `envir` that is a list or
+# a data frame leaves the mask on the lookup path -- `eval(as.name("share"),
+# list(a = 1))` reads the share. Which of the two an argument evaluates to is
+# not decidable here, so the node resolves toward over-reporting.
+evaluated_language_symbols <- function(expr, bound) {
+  argument <- call_formal_argument(expr, "expr")
+  if (length(argument) == 0L) {
+    return(character())
+  }
+  values <- static_language_values(argument[[1L]])
+  if (is.null(values)) {
+    return(unresolved_lookup_name())
+  }
+  unique(unlist(
+    lapply(values, expression_data_symbols, bound = bound),
+    use.names = FALSE
+  ))
+}
+
+# The language objects an expression is statically known to hand `eval()`, and
+# `NULL` where it is not knowable. An empty list is the third answer and is not
+# the same as `NULL`: a constant evaluates to itself and looks nothing up.
+#
+# Only the constructors that hide a name from the walk need a case. A name
+# written as a symbol -- `eval(quote(share))`, `evalq(share)` -- is already
+# reported by the walk of the call's parts; a name written as a string is not,
+# and that is the whole of what this recovers. `bquote()` is not among them
+# because `.()` substitutes an expression this walk cannot see, which leaves it
+# with the answer it gives any other unrecognized shape.
+static_language_values <- function(expr) {
+  if (rlang::is_symbol(expr)) {
+    # The symbol names a value, and which language object that value holds is
+    # not visible here.
+    return(NULL)
+  }
+  if (!rlang::is_call(expr)) {
+    return(list())
+  }
+  call_name <- static_call_name(expr)
+  if (is.null(call_name)) {
+    return(NULL)
+  }
+  if (identical(call_name, "quote")) {
+    return(call_formal_argument(expr, "expr"))
+  }
+  if (identical(call_name, "expression")) {
+    return(static_call_args(expr))
+  }
+  if (call_name %in% c("as.name", "as.symbol")) {
+    return(recovered_name_values(call_formal_argument(expr, "x")))
+  }
+  if (identical(call_name, "str2lang")) {
+    return(parsed_language_values(call_formal_argument(expr, "s")))
+  }
+  if (identical(call_name, "str2expression")) {
+    return(parsed_language_values(call_formal_argument(expr, "text")))
+  }
+  if (identical(call_name, "parse")) {
+    # Matched by name alone: `parse()`'s first positional argument is a
+    # connection, and what a connection holds is not knowable here.
+    return(parsed_language_values(
+      call_formal_argument(expr, "text", positional = FALSE)
+    ))
+  }
+  NULL
+}
+
+# The symbols a statically known string names. An empty string is dropped
+# rather than turned into a symbol, because `as.name("")` is an error in R and
+# the walk must raise none of its own.
+recovered_name_values <- function(argument) {
+  if (length(argument) == 0L) {
+    return(NULL)
+  }
+  text <- static_character_value(argument[[1L]])
+  if (is.null(text)) {
+    return(NULL)
+  }
+  lapply(text[nzchar(text)], as.name)
+}
+
+# The language a statically known string parses to. Parsing is not evaluation:
+# nothing the caller wrote runs here, which is what lets the recovery happen
+# during planning at all. Text that does not parse is reported as unknown
+# rather than raised, since the call itself raises R's own condition when it
+# runs.
+parsed_language_values <- function(argument) {
+  if (length(argument) == 0L) {
+    return(NULL)
+  }
+  text <- static_character_value(argument[[1L]])
+  if (is.null(text)) {
+    return(NULL)
+  }
+  parsed <- tryCatch(
+    str2expression(paste(text, collapse = "\n")),
+    error = function(cnd) NULL
+  )
+  if (is.null(parsed)) {
+    return(NULL)
+  }
+  as.list(parsed)
+}
+
+# The character vector an expression is statically known to be, and `NULL`
+# where it is not. A literal is one, and so is a `c()` of literals, which is
+# how a caller writes the vector `mget()` takes; anything else names a value
+# this walk cannot see without running it.
+static_character_value <- function(expr) {
+  if (is.character(expr)) {
+    if (anyNA(expr)) {
+      return(NULL)
+    }
+    return(expr)
+  }
+  if (!rlang::is_call(expr, "c")) {
+    return(NULL)
+  }
+  values <- lapply(rlang::call_args(expr), static_character_value)
+  if (any(vapply(values, is.null, logical(1)))) {
+    return(NULL)
+  }
+  recovered <- unlist(values, use.names = FALSE)
+  if (is.null(recovered)) {
+    # `c()` of nothing, which names nothing.
+    return(character())
+  }
+  recovered
+}
+
+# The argument a call gives one formal, matched by name and then by position,
+# which is how R matches the primitives above. Returned as a list of length one
+# or an empty list, so that an argument written as `NULL` is not read as an
+# absent one.
+call_formal_argument <- function(expr, formal, positional = TRUE) {
+  args <- rlang::call_args(expr)
+  arg_names <- names(args)
+  if (is.null(arg_names)) {
+    arg_names <- rep("", length(args))
+  }
+  index <- match(formal, arg_names, nomatch = 0L)
+  if (index == 0L && positional) {
+    index <- match("", arg_names, nomatch = 0L)
+  }
+  args[index]
+}
+
+# The name the walk reports for a read it could not resolve. It travels with
+# the names it is reported beside, because the walk's only channel to its
+# caller is the character vector it returns, and the alias analysis above is
+# the one place that reads it: a walk with no way to say "some name" would have
+# to answer either silently or by refusing the call, and #130 rules out both.
+#
+# The `..marginplyr` prefix is the one this package's internal names carry. A
+# column of this name would be read as unresolvable rather than as itself,
+# which is the over-reporting direction, so a collision costs a diagnostic and
+# never a silent miss.
+unresolved_lookup_name <- function() {
+  "..marginplyr_unresolved_lookup"
 }
