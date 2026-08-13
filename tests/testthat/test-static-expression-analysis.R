@@ -2007,6 +2007,102 @@ test_that("a parenthesized head is still the primitive it names", {
   expect_share_dependency_error(data, quote((get)("share") * 100))
 })
 
+test_that("a primitive named through another primitive is still itself", {
+  # `match.fun("get")`, `getFunction("get")` and `get("get")` each evaluate to
+  # the same primitive, so a head spelled any of those ways performs the same
+  # lookup as `get("share")` and owes the caller the same diagnostic. Each was
+  # silently `NA` while the branch matched on the call's own name, which a
+  # call whose head is a call does not have.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # The head is a read of its own wherever it is not a bare symbol, so the
+  # name it looks the function up under is reported beside the column.
+  expect_identical(
+    expression_data_symbols(quote(match.fun("get")("share"))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(get("get")("share"))),
+    c("get", "share")
+  )
+
+  expect_share_dependency_error(data, quote(match.fun("get")("share") * 100))
+  expect_share_dependency_error(data, quote(getFunction("get")("share") * 100))
+  expect_share_dependency_error(data, quote(get("get")("share") * 100))
+  expect_share_dependency_error(data, quote(get0("get0")("share") * 100))
+})
+
+test_that("`do.call()` of a reflective primitive is an unresolved lookup", {
+  # `do.call()` runs the call it builds in the caller's environment, which
+  # under a data mask is the mask, so a primitive it names looks a column up
+  # there. What that primitive is handed is a list built at run time, so the
+  # name is not recoverable and the marker is the answer -- as it is for any
+  # lookup this walk cannot resolve.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(
+    expression_data_symbols(quote(do.call("get", list("share")))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(do.call(get, list("share")))),
+    c("get", unresolved_lookup_name())
+  )
+  # A `do.call()` of anything else is left alone: its arguments are values by
+  # the time it runs, and the walk has reported the expressions that built
+  # them.
+  expect_identical(
+    expression_data_symbols(quote(do.call("sum", list(value)))),
+    "value"
+  )
+
+  expect_share_dependency_error(
+    data,
+    quote(do.call("get", list("share")) * 100)
+  )
+  expect_share_dependency_error(data, quote(do.call(get, list("share")) * 100))
+
+  legal <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    doubled = do.call("sum", list(value)) * 2,
+    .grouping = rollup(region)
+  )
+  expect_identical(legal$doubled, c(8, 12, 20))
+})
+
+test_that("a primitive reached as a value is out of the walk's reach", {
+  # `sapply(c("share"), get)` hands the primitive on as a value, and the
+  # environment it then searches from is the frame inside `sapply()` rather
+  # than the mask -- so it raises instead of reading the placeholder, and the
+  # walk owes it nothing. This is asserted rather than assumed because the
+  # comment at `is_reflective_lookup()` rests on it: were it to reach the
+  # mask, the shape would be a silent miss of exactly the kind #173 removes.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sapply(c("share"), get)[[1L]],
+      .grouping = rollup(region)
+    )
+  )
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_match(conditionMessage(error), "'share' not found")
+})
+
 test_that("a reflective alias of an earlier summary is not a share source", {
   # The other direction of the same rule. A share source must be an ordinary
   # summary that depends on nothing earlier, and an alias built reflectively
