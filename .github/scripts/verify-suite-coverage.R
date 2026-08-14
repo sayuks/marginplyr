@@ -25,7 +25,7 @@
 # cannot pass by being self-consistently wrong the way two backends agreeing
 # with each other can.
 #
-# The measurement is a simulation rather than an aggregate over the four jobs'
+# The measurement is a simulation rather than an aggregate over those jobs'
 # artifacts, for one reason: an agent can run this before pushing. A guard is
 # the only thing that decides whether a test skips, and the hook drives the
 # guards, so simulating absence answers the same structural question the real

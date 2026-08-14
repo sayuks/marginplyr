@@ -1,7 +1,7 @@
 # Confirms that a job got the library it declared, before it checks anything.
 #
 # Which optional backends a job installs is the whole signal of `depends-only`,
-# `tarball`, and the four `backend` jobs, and the dependency cache is what
+# `tarball`, and the `backend` jobs, and the dependency cache is what
 # nearly took it away: `setup-r-dependencies@v2` falls back to a `restore-keys`
 # prefix, so jobs sharing a `cache-version` share a library (#64). The
 # `cache-version` scheme that separates them is recorded in

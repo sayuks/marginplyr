@@ -148,11 +148,28 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # `companions` names the packages a job proving this backend must install
 # alongside it. They are not the backend, so they are not what the job promises
 # to execute -- but a driver package without DBI installs and then does nothing.
+# It is also how a job declares what its backend drags in: dtplyr declares
+# `Imports: data.table`, so a job installing dtplyr installs data.table whether
+# it asked for it or not, and `verify-library-isolation.R` would read that as a
+# leak from a shared cache. Naming it here is the job saying it expected it.
+#
+# `data.table` is an entry of its own as well, because it is not only dtplyr's
+# dependency here: raw `data.table` input reaches the local backend as an
+# ordinary data frame subclass (#176), and it is genuinely absent under
+# `_R_CHECK_DEPENDS_ONLY_=true`, which is what `asserted` claims. It is the
+# second entry to stretch the word "backend" -- `DBI` was the first -- since
+# what the table actually holds is every optional Suggest a guard may name, and
+# what a `backend` job proves for this one is an input class rather than a
+# translation target. The name is left alone deliberately and the choice is
+# #185's to make: it is spelled into four CI scripts, the workflow, and every
+# guard, so renaming it is a larger change than any entry it holds, and nothing
+# reads the table wrongly today.
 optional_backend_spec <- function() {
   list(
     arrow = list(asserted = TRUE, companions = character()),
     duckdb = list(asserted = TRUE, companions = "DBI"),
-    dtplyr = list(asserted = TRUE, companions = character()),
+    dtplyr = list(asserted = TRUE, companions = "data.table"),
+    data.table = list(asserted = TRUE, companions = character()),
     RSQLite = list(asserted = TRUE, companions = "DBI"),
     DBI = list(asserted = FALSE, companions = character())
   )

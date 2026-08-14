@@ -30,10 +30,12 @@
 # into a false green. See `tests/testthat/helper-optional-backends.R`.
 #
 # Which contracts those jobs prove is settled by construction rather than by a
-# list (#93). Every `backend` job installs one optional backend and withholds
-# the rest, so between them they execute every test that requires at most one
-# backend; a test requiring two is executed by none of them and skips in all of
-# them, unnoticed. Three layers close that, and no one of them is enough:
+# list (#93). Every `backend` job installs one optional backend -- plus the
+# companions its entry declares, which may themselves be tracked backends when
+# one drags another in -- and withholds everything else, so between them they
+# execute every test that requires at most one backend; a test requiring two is
+# executed by none of them and skips in all of them, unnoticed. Three layers
+# close that, and no one of them is enough:
 #
 #   Structure    `structure`, against the working tree. Every test executes in
 #                some single-backend configuration and asserts something there.
@@ -117,13 +119,13 @@ jobs:
   # Every test executes in some single-backend configuration. Proving it needs
   # the whole suite run once per backend with the others withheld, which the
   # `backend` jobs cannot answer between them: each reports its own green, and
-  # a test that skipped in all four leaves four greens behind.
+  # a test that skipped in every one of them leaves a green behind for each.
   #
-  # So this simulates the four configurations in one job, through
+  # So this simulates every configuration in one job, through
   # `MARGINPLYR_HIDE_SUGGESTS`. Simulated rather than aggregated from the real
   # jobs' artifacts for one reason: an agent can run it before pushing. A guard
   # is the only thing that decides whether a test skips and the hook drives the
-  # guards, so the structural answer is the same one four jobs would give; what
+  # guards, so the structural answer is the one those jobs would give; what
   # a simulation cannot answer -- whether a backend works when the others are
   # genuinely gone -- is what those jobs remain for.
   #
