@@ -1,13 +1,15 @@
 # Reading a file the package ships alongside its code. Both callers --
 # `test-package-metadata.R` on the license files and `test-documentation.R` on
-# DESCRIPTION and the generated README -- need the same two answers, so they are
-# given once here rather than once per test file.
+# DESCRIPTION -- need the same two answers, so they are given once here rather
+# than once per test file.
 
 # Prefer the repository copy, because `system.file()` reads whichever marginplyr
 # happens to be installed. `R CMD check` runs the tests from a directory holding
 # no repository copy, and there the installed package is the only one -- which
-# reaches these files because R installs them: `LICENSE` because the `License`
-# field names it, `README.md` because R installs it at the package root.
+# reaches these files because R installs them, `LICENSE` because the `License`
+# field names it. A file whose installation depends on the R version, as
+# `README.md`'s does, cannot use this: absence there is a fact about the
+# checking machine and not the drift being guarded against.
 metadata_path <- function(file) {
   source_copy <- test_path("..", "..", file)
   if (file.exists(source_copy)) {

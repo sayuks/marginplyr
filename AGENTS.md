@@ -364,19 +364,21 @@ using the guard must source it and vice versa. The Rd half reads `man/` when it
 is present and `tools::Rd_db("marginplyr")` otherwise, so it holds under
 `R CMD check` too; the vignette half is repository-only, because `R CMD check`
 unpacks the tarball beside the `.Rcheck` directory rather than inside it; the
-README is reachable either way, since `.Rbuildignore` keeps `README.Rmd` out of
-the tarball while R installs `README.md` at the package root, and
-`metadata_path()` takes whichever is there. The README is in the set because it
-is installation documentation, which is where a version-blind test is likeliest
-to be written in the first place — the same reason `verify-site.R` forbids
-`installed.packages` anywhere on the rendered site. Prose that needs to name a
-version-blind call has to spell it some other way — the scan is deliberately
-blunt.
+README is read from the repository where there is one, and otherwise from the
+installed `README.md`, which exists only from R 4.6.0 — "Package `README.md`
+files are now installed and featured in HTML help" — while `DESCRIPTION`
+supports 4.1.0, so an oldrel job checking a tarball reaches neither half. The
+README is in the set because it is installation documentation, which is where a
+version-blind test is likeliest to be written in the first place — the same
+reason `verify-site.R` forbids `installed.packages` anywhere on the rendered
+site. Prose that needs to name a version-blind call has to spell it some other
+way — the scan is deliberately blunt.
 
-Those two sources also make the set non-empty in every run, which is why
-neither scan carries a skip: a skip naming no withheld backend is what
-`verify-backend.R` fails a job over, and one that could never fire is a line
-claiming a condition the code no longer has.
+A source is added where it is reachable rather than skipped for where it is
+not, since a skip naming no withheld backend is what `verify-backend.R` fails a
+job over. Reaching nothing at all is the other case, and
+`documentation_sources()` stops on it: every scan iterates over that set, so a
+set that arrived empty is a set that passes.
 
 ### Release matrix
 

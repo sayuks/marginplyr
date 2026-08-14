@@ -143,28 +143,42 @@ version_blind_guards <- c("requireNamespace", "is_installed")
 # Both halves of the README are pages: `README.Rmd` is where a claim is
 # written, and `README.md` is what a reader on GitHub is shown and what the
 # website's home page includes.
+#
+# A repository run reads both. A check run reads whichever half R installed,
+# and that is a question about the R running the check, not about this package:
+# `.Rbuildignore` keeps `README.Rmd` out of the tarball, and "Package README.md
+# files are now installed and featured in HTML help" is an R 4.6.0 change, while
+# `DESCRIPTION` supports 4.1.0. So an older R checking a tarball reaches
+# neither, which is a page the scans do not see rather than a failure -- the
+# residency the vignette sources already have.
 readme_sources <- function() {
-  source <- testthat::test_path("..", "..", "README.Rmd")
-  read_pages(c(source[file.exists(source)], metadata_path("README.md")))
+  repository <- c(
+    testthat::test_path("..", "..", "README.Rmd"),
+    testthat::test_path("..", "..", "README.md")
+  )
+  paths <- repository[file.exists(repository)]
+  if (length(paths) == 0L) {
+    installed <- system.file("README.md", package = "marginplyr")
+    paths <- installed[nzchar(installed)]
+  }
+  read_pages(paths)
 }
 
 # Every shipped page the scans below hold to their rules, whatever it is
 # written in. The three sources reach a run from different places, and each
 # takes the strongest route open to it:
 #
-# - Rd topics: `man/` in a repository, `tools::Rd_db()` otherwise, so they are
-#   there either way.
-# - Vignette sources: repository-only. `.Rbuildignore` keeps none of them out
-#   of the tarball, but `R CMD check` unpacks it beside the `.Rcheck`
-#   directory rather than inside it.
-# - The README: `metadata_path()`, so the repository copy when there is one and
-#   the copy `R CMD INSTALL` leaves at the installed package root otherwise --
-#   which is also why it stops rather than returning nothing.
+# - Rd topics: `man/` in a repository, `tools::Rd_db()` otherwise.
+# - Vignette sources: repository-only, because `R CMD check` unpacks the
+#   tarball beside the `.Rcheck` directory rather than inside it.
+# - The README: repository copies, else the installed `README.md` where the R
+#   running the check is new enough to have installed one.
 #
-# The vignettes are added conditionally rather than skipped for, because a skip
-# naming no withheld backend is what `verify-backend.R` fails a job over. No
-# scan below needs a skip of its own either: the Rd topics and the README are
-# both always there, so this set is never empty.
+# Each is added when it is reachable rather than skipped for when it is not,
+# because a skip naming no withheld backend is what `verify-backend.R` fails a
+# job over. Reaching nothing at all is a different thing and stops: every scan
+# below iterates over this set, so a set that arrived empty is a set that
+# passes.
 documentation_sources <- function() {
   pages <- rd_topics()
   vignettes <- testthat::test_path("..", "..", "vignettes")
@@ -172,7 +186,11 @@ documentation_sources <- function() {
     sources <- list.files(vignettes, pattern = "[.]qmd$", full.names = TRUE)
     pages <- c(pages, read_pages(sources))
   }
-  c(pages, readme_sources())
+  pages <- c(pages, readme_sources())
+  if (length(pages) == 0L) {
+    stop("No documentation source is reachable to scan.", call. = FALSE)
+  }
+  pages
 }
 
 test_that("no shipped page guards on installation alone", {
@@ -285,19 +303,30 @@ cran_state_disagreements <- function(status, pages) {
   }
 
   readme <- pages[["README.md"]]
+  if (is.null(readme)) {
+    # No copy of the generated README was reachable, which is the older-R
+    # tarball case `readme_sources()` describes. There is nothing to judge
+    # here, and the repository run that produced the tarball judged it.
+    return(character())
+  }
+
   complete <- holds_any(readme, cran_install_call) &&
     holds_any(readme, setdiff(cran_claims, cran_install_call))
   if (complete) character() else "README.md"
 }
 
 test_that("installation instructions follow the recorded CRAN state", {
-  # The generated README is the page both directions are about, and
-  # `readme_sources()` stops rather than leaving it out, so neither direction
-  # can pass by having nothing to check.
-  disagreeing <- cran_state_disagreements(
-    cran_status(),
-    documentation_sources()
-  )
+  pages <- documentation_sources()
+
+  # The generated README is the page the `published` direction is about, and a
+  # repository run always has both halves on disk. Asserting that they reached
+  # the page set is what stops a broken derivation from reading as a state
+  # nothing disagrees with -- which is the one way this gate could go quiet.
+  if (file.exists(testthat::test_path("..", "..", "README.md"))) {
+    expect_true(all(c("README.Rmd", "README.md") %in% names(pages)))
+  }
+
+  disagreeing <- cran_state_disagreements(cran_status(), pages)
 
   # Named rather than counted, so the failure says which page is out of step
   # with the state, and where the rule it broke is written down.
@@ -342,6 +371,15 @@ test_that("the CRAN-state rule reads both states", {
     cran_state_disagreements("published", instruction_only),
     "README.md"
   )
+
+  # An older R checking a tarball, where neither half of the README is
+  # readable. The Rd topics are still held to `unpublished`.
+  no_readme <- list("summarize_with_margins.Rd" = cran_install_call)
+  expect_equal(
+    cran_state_disagreements("unpublished", no_readme),
+    "summarize_with_margins.Rd"
+  )
+  expect_equal(cran_state_disagreements("published", no_readme), character())
 })
 
 test_that("an unreadable CRAN state stops rather than choosing a direction", {
