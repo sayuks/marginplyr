@@ -2184,3 +2184,104 @@ test_that("a lazy input is refused at planning like a local one", {
   )
   expect_s3_class(source, "marginplyr_error")
 })
+
+test_that("a name the recovery cannot read fails closed, not through", {
+  # Each shape here is one the recovery does not read: a literal that is not a
+  # name, a vector holding something other than literals, text that does not
+  # parse, a constructor this walk does not recognize, a head with no name of
+  # its own. All of them resolve to the marker rather than to silence, which
+  # is the direction #130 fixed and the one the guard depends on.
+  expect_identical(
+    expression_data_symbols(quote(get(NA_character_))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(mget(c("share", name)))),
+    c("name", unresolved_lookup_name())
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(str2lang("share +")))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(as.name()))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(str2lang()))),
+    unresolved_lookup_name()
+  )
+  # `bquote()` substitutes an expression through `.()`, which this walk cannot
+  # see, so it is unrecognized rather than recovered -- and the symbols under
+  # it are still reported by the walk of the parts.
+  expect_identical(
+    expression_data_symbols(quote(eval(bquote(share)))),
+    c("share", unresolved_lookup_name())
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(fns$build()))),
+    c("fns", unresolved_lookup_name())
+  )
+})
+
+test_that("a name the recovery can read is read, however it is spelled", {
+  # The other half of the same table: shapes that are statically knowable, and
+  # the two that are knowable to read nothing at all.
+  expect_identical(
+    expression_data_symbols(quote(eval(expression(share)))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(str2expression("share * 2")))),
+    "share"
+  )
+  # A namespace qualifier under the parentheses names the same primitive, as
+  # it does without them.
+  expect_identical(
+    expression_data_symbols(quote((base::get)("share"))),
+    "share"
+  )
+  # A string is not a language object: `eval()` answers the string itself and
+  # looks nothing up.
+  expect_identical(expression_data_symbols(quote(eval("share"))), character())
+  # `c()` of nothing names nothing, so there is nothing to report and nothing
+  # unresolved either.
+  expect_identical(expression_data_symbols(quote(get(c()))), character())
+})
+
+test_that("a head that names no function leaves the call unrecognized", {
+  # A shape the analysis does not recognize falls through and evaluates, which
+  # is ADR-0015's answer wherever no fault of the analysis is involved: the
+  # walk reports the parts and claims nothing about what the call resolves.
+  expect_identical(
+    expression_data_symbols(quote(match.fun()("share"))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(match.fun(name)("share"))),
+    "name"
+  )
+  expect_identical(
+    expression_data_symbols(quote(do.call(1L, list("share")))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(do.call(args = list("share")))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(envir = outside))),
+    "outside"
+  )
+})
+
+test_that("an unnamed argument list still answers one name per argument", {
+  # `rlang::call_args()` names every argument, empty where the caller passed
+  # one positionally, so the walk never reaches the fallback. It is what keeps
+  # the reading correct for a list that carries no names at all: `match("",
+  # NULL)` and `sum(NULL == "")` both answer 0 rather than failing, so a
+  # missing name vector would read as a call with no positional arguments and
+  # an environment argument beside a name would go unseen.
+  expect_identical(argument_names(list(1, 2)), c("", ""))
+  expect_identical(argument_names(list(a = 1, 2)), c("a", ""))
+})
