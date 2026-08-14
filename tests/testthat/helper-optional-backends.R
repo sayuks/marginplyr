@@ -160,9 +160,10 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # second entry to stretch the word "backend" -- `DBI` was the first -- since
 # what the table actually holds is every optional Suggest a guard may name, and
 # what a `backend` job proves for this one is an input class rather than a
-# translation target. The name is left alone deliberately: it is spelled into
-# four CI scripts, the workflow, and every guard, and renaming it would be a
-# larger change than any entry it holds.
+# translation target. The name is left alone deliberately and the choice is
+# #185's to make: it is spelled into four CI scripts, the workflow, and every
+# guard, so renaming it is a larger change than any entry it holds, and nothing
+# reads the table wrongly today.
 optional_backend_spec <- function() {
   list(
     arrow = list(asserted = TRUE, companions = character()),

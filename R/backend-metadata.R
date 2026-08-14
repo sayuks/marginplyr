@@ -32,6 +32,16 @@ grouping_selection_proxy <- function(.data,
 # would already be failing inside dplyr. #77 admits exactly what dplyr can
 # group, so depending on the read dplyr depends on adds no assumption.
 #
+# That is a boundary rather than a guarantee, and it is worth naming because the
+# failure on the wrong side of it is silent. A subclass whose `[[` returned a
+# wrong value rather than `NULL` would have that value read as the column's
+# levels and prototype, so the Margin label would be added to the wrong factor
+# and no diagnostic would say so -- the check below catches only the absent
+# case. No detection is available that dplyr does not already need: a column
+# read is a column read, and a class breaking it is producing wrong answers in
+# the pipeline that grouped it long before reaching here. No such class is
+# known, and marginplyr is not the layer that would find one.
+#
 # Every name is known to be a column by the time this runs, having been resolved
 # against the same data by tidyselect, so a `NULL` from `[[` reports a defect
 # rather than anything a caller can rewrite their way out of -- either a proxy
