@@ -251,7 +251,11 @@ test_that("a backend job installs its backend and its companions", {
   # would install, run nothing, and report green.
   expect_identical(backend_job_packages("duckdb"), c("duckdb", "DBI"))
   expect_identical(backend_job_packages("RSQLite"), c("RSQLite", "DBI"))
-  expect_identical(backend_job_packages("dtplyr"), "dtplyr")
+  # dtplyr declares `Imports: data.table`, so the job installs it regardless;
+  # naming it is what keeps `verify-library-isolation.R` from reading a
+  # dependency of the requested backend as a cache leak.
+  expect_identical(backend_job_packages("dtplyr"), c("dtplyr", "data.table"))
+  expect_identical(backend_job_packages("data.table"), "data.table")
   expect_error(backend_job_packages(absent_package), "optional_backend_spec")
 })
 

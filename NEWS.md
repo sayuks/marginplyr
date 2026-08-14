@@ -83,3 +83,10 @@
   `data.table` cannot represent one. The class of such a cell is described
   rather than promised, as every nested element class is: on both backends it
   is what `dplyr::tibble()` produced.
+* A `data.frame` subclass whose `[` is not column selection — a raw
+  `data.table` is the case — now reaches every Margin verb that accepts local
+  data frames. Factor levels and the prototypes behind an absent Margin label
+  are read one column at a time, so a subclass that reads a character index as
+  a join key no longer fails before any grouping happens, and the input is not
+  modified by reference. The result's class still follows the dplyr verb the
+  Margin verb ends in, and is not promised to be the input's.

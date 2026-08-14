@@ -117,13 +117,13 @@ jobs:
   # Every test executes in some single-backend configuration. Proving it needs
   # the whole suite run once per backend with the others withheld, which the
   # `backend` jobs cannot answer between them: each reports its own green, and
-  # a test that skipped in all four leaves four greens behind.
+  # a test that skipped in every one of them leaves a green behind for each.
   #
-  # So this simulates the four configurations in one job, through
+  # So this simulates every configuration in one job, through
   # `MARGINPLYR_HIDE_SUGGESTS`. Simulated rather than aggregated from the real
   # jobs' artifacts for one reason: an agent can run it before pushing. A guard
   # is the only thing that decides whether a test skips and the hook drives the
-  # guards, so the structural answer is the same one four jobs would give; what
+  # guards, so the structural answer is the one those jobs would give; what
   # a simulation cannot answer -- whether a backend works when the others are
   # genuinely gone -- is what those jobs remain for.
   #
