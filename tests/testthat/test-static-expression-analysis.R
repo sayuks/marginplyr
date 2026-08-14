@@ -2717,3 +2717,383 @@ test_that("an unnamed argument list still answers one name per argument", {
   expect_identical(argument_names(list(1, 2)), c("", ""))
   expect_identical(argument_names(list(a = 1, 2)), c("a", ""))
 })
+
+# The tests below cover the boundary R draws between an expression the data
+# mask evaluates and one a call captures as language data (#179). Every
+# analysis here walked into `quote()` as if its argument were code: the
+# dependency walk reported a quoted name as a read of that column, the share,
+# selection, and context-helper searches found helpers no caller had asked
+# for, and the two rewrites replaced the quoted object with what the helper
+# compiles to -- so `deparse1(quote(grouping_bit(region)))` answered `"0L"`
+# and a summary holding `quote(share_of_total(units))` was refused as a share
+# helper written in the wrong position.
+#
+# The rule the analyses follow is R's own. A captured argument is data until
+# something evaluates it; an operand the capturing call does evaluate --
+# `substitute()`'s `env` -- is code like any other; and a captured expression
+# handed to `eval()` is the read it performs, which is what keeps #173's
+# dependency rule from being escaped by spelling a share `eval(quote(share))`.
+#
+# Only a capture written plainly is recognized, `quote()` or `base::quote()`.
+# Every other spelling falls through to the walk, which reports the symbols
+# under it. That direction is deliberate: reading a capture where there is
+# none costs a diagnostic, while missing one is the silent miss #130 fixed the
+# walk to prevent, and no static reading of `pkg::quote()` or of a computed
+# head can tell which of the two it is.
+
+test_that("a quoted expression is data at every analysis that walks one", {
+  proxy <- data.frame(value = double(), other = double())
+  env <- rlang::current_env()
+
+  # The dependency walk. A quoted name is not a read of the column, and the
+  # arguments beside the quoted one are still walked.
+  expect_identical(expression_data_symbols(quote(quote(share))), character())
+  expect_identical(
+    expression_data_symbols(quote(deparse1(quote(share * units)))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(list(quote(share), value))),
+    "value"
+  )
+  # A quoted name reaches no branch of the walk that resolves one, either: the
+  # pronoun, the reflective primitives, and the binding constructs are all
+  # code the mask never runs here.
+  expect_identical(
+    expression_data_symbols(quote(quote(.data$share))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(quote(get("share")))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(quote({
+      tmp <- share
+      tmp
+    }))),
+    character()
+  )
+
+  # The share search, which decides both whether a summary requests a share
+  # and whether it is refused for writing a helper in a position that is not
+  # the complete right-hand side.
+  expect_null(share_expression_kind(quote(deparse1(quote(share_of_total(x))))))
+  expect_false(contains_share_helper(quote(quote(share_of_parent(x)))))
+
+  # The context-helper search, whose finding is a refusal of the whole call.
+  expect_identical(
+    find_summary_context_helpers(quote(deparse1(quote(dplyr::cur_group())))),
+    character()
+  )
+  # The predicate search, which refuses a share `across()` naming `where()`.
+  expect_false(contains_selection_predicate(quote(quote(where(is.numeric)))))
+
+  # The selection rewrite gives back the quoted object the caller wrote, down
+  # to the argument names inside it: the walk descends past a capture into the
+  # parts beside it, so the rebuilt call must carry the tags of the ones it
+  # did not rewrite.
+  quoted_selection <- quote(paste(
+    deparse1(quote(dplyr::across(value, mean, .names = "{.col}"))),
+    collapse = ""
+  ))
+  expect_identical(
+    rewrite_summary_selections(
+      quoted_selection,
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    quoted_selection
+  )
+  # A node the caller injected keeps its class and its environment across the
+  # rebuild, as #165 requires of every walk -- and here without the walk ever
+  # reading it, since a captured part is given back as the object it is.
+  injected <- rlang::quo(dplyr::across(value, mean))
+  captured <- rlang::call2("quote", injected)
+  expect_identical(
+    rewrite_summary_selections(
+      captured,
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    captured
+  )
+
+  # The selection beside the quoted one is still resolved.
+  expect_identical(
+    rewrite_summary_selections(
+      quote(list(
+        quote(dplyr::across(value, mean)),
+        dplyr::across(value, mean)
+      )),
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    quote(list(
+      quote(dplyr::across(value, mean)),
+      dplyr::across(dplyr::all_of("value"), mean)
+    ))
+  )
+})
+
+test_that("`substitute()` protects what it captures and reads what it runs", {
+  # `substitute()` captures its first argument and evaluates its second, so
+  # the two halves of one call get opposite answers. Under a data mask the
+  # capture reads nothing: dplyr binds a column and an earlier summary alike
+  # so that `substitute(share)` answers the symbol rather than the value --
+  # measured, not assumed, which is why the bare form is protected at all.
+  expect_identical(
+    expression_data_symbols(quote(substitute(share))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(substitute(expr = share))),
+    character()
+  )
+  # The `env` argument is evaluated in the mask like any other operand.
+  expect_identical(
+    expression_data_symbols(quote(substitute(share, list(x = other)))),
+    "other"
+  )
+  expect_identical(
+    expression_data_symbols(quote(substitute(share, env = mask))),
+    "mask"
+  )
+})
+
+test_that("a capture the walk cannot name plainly is analyzed, not assumed", {
+  # A namespace qualifier naming base is the same primitive; one naming
+  # anything else is a function this walk knows nothing about, and a computed
+  # head is the shape it cannot name at all. Both fall through and report the
+  # symbols under them, which over-reports rather than protecting an
+  # expression that may well be evaluated.
+  expect_identical(
+    expression_data_symbols(quote(base::quote(share))),
+    character()
+  )
+  expect_identical(expression_data_symbols(quote(pkg::quote(share))), "share")
+  # A parenthesized head is evaluated in the mask like any other operand, so
+  # the name of the primitive is itself a read there -- the answer the walk has
+  # given every head that is not a bare symbol since #130.
+  expect_identical(
+    expression_data_symbols(quote((quote)(share))),
+    c("quote", "share")
+  )
+  # A call carrying more arguments than the primitive takes is not the shape
+  # this recognizes either: R refuses `quote(a, b)` when it runs, and the walk
+  # reports the argument beyond the captured one rather than claiming it is
+  # data.
+  expect_identical(expression_data_symbols(quote(quote(share, units))), "units")
+
+  # A name the expression itself binds may be the function the call reaches,
+  # and a binding is the one shadowing this walk can see. R's function lookup
+  # would skip a non-function binding and find `base::quote()` anyway, which
+  # makes the shape undecidable, so it is answered in the direction that
+  # reports the read: a summary that binds `quote` and then calls it is walked
+  # as the call to its own function it may well be.
+  expect_identical(
+    expression_data_symbols(quote({
+      quote <- function(e) e
+      quote(share)
+    })),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(quote(share)), bound = "quote"),
+    "share"
+  )
+  # A qualified head is out of reach of any binding, so it keeps its capture.
+  expect_identical(
+    expression_data_symbols(quote({
+      quote <- function(e) e
+      base::quote(share)
+    })),
+    character()
+  )
+
+  # `evalq()` captures its first argument and then evaluates it, so it is no
+  # boundary: the walk reports the symbols under it, as it always has.
+  expect_identical(expression_data_symbols(quote(evalq(share))), "share")
+  # `bquote()` captures too, but `.()` substitutes an expression evaluated in
+  # the enclosing frame -- the mask -- so `bquote(f(.(share)))` really does
+  # read the share. The whole call stays analyzed rather than being read for
+  # the parts of it that are data.
+  expect_identical(expression_data_symbols(quote(bquote(share))), "share")
+  expect_identical(
+    expression_data_symbols(quote(bquote(f(.(share))))),
+    "share"
+  )
+})
+
+test_that("evaluating a captured expression is the read it performs", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # What the capture branch stops reporting, the evaluation branch recovers:
+  # `eval()` runs the language it is handed in the mask, so the names under a
+  # recovered `quote()` are read exactly as a written symbol is.
+  expect_identical(expression_data_symbols(quote(eval(quote(share)))), "share")
+  expect_identical(
+    expression_data_symbols(quote(eval(substitute(share)))),
+    "share"
+  )
+  # A bound name shadows the recovered read as it shadows a symbol.
+  expect_identical(
+    expression_data_symbols(quote(eval(quote(share))), bound = "share"),
+    character()
+  )
+  # A `substitute()` given an environment replaces names from it, which this
+  # walk cannot read, so the language handed to `eval()` is unknown and the
+  # marker says so -- beside the read of the environment argument itself.
+  expect_identical(
+    expression_data_symbols(quote(eval(substitute(share, mask)))),
+    c("mask", unresolved_lookup_name())
+  )
+
+  expect_share_dependency_error(data, quote(eval(quote(share)) * 100))
+  expect_share_dependency_error(data, quote(eval(substitute(share)) * 100))
+})
+
+test_that("a quoted helper reaches the summary as the language it is", {
+  # End to end, on the local planning path. Each of these was analyzed as a
+  # request the caller never made: the grouping helper compiled to its
+  # branch-local constant, the context helper refused the call, the selection
+  # was resolved to `all_of()`, and the share helper was refused for its
+  # position (#179).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    total = sum(value),
+    grouping = deparse1(quote(grouping_bit(region))),
+    context = deparse1(quote(dplyr::cur_group())),
+    selection = deparse1(quote(dplyr::across(value, mean))),
+    helper = deparse1(quote(share_of_total(total))),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+
+  expect_identical(
+    names(result),
+    c("region", "total", "grouping", "context", "selection", "helper")
+  )
+  expect_identical(unique(result$grouping), "grouping_bit(region)")
+  expect_identical(unique(result$context), "dplyr::cur_group()")
+  expect_identical(unique(result$selection), "dplyr::across(value, mean)")
+  expect_identical(unique(result$helper), "share_of_total(total)")
+
+  # A language object the caller keeps is the same object on the way out,
+  # rather than one carrying whatever the analysis rewrote inside it.
+  kept <- summarize_with_margins(
+    data,
+    total = sum(value),
+    call = list(quote(share_of_total(total))),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(kept$call[[1L]], quote(share_of_total(total)))
+})
+
+test_that("a quoted alias of an earlier share is not a dependency on it", {
+  # The guard #130 wrote and #173 extended reports a read of an earlier share,
+  # and a quoted name is not one. Refusing this call named a share the summary
+  # never reads and left the caller no rewrite that keeps the quoted object.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    label = deparse1(quote(share)),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+
+  expect_identical(names(result), c("region", "units", "share", "label"))
+  expect_identical(unique(result$label), "share")
+})
+
+test_that("a share source quoting an earlier alias is still self-contained", {
+  # The other direction of the same rule, which #173 asserts for the reads a
+  # source really makes: a source summary must depend on nothing written
+  # earlier, and quoting an earlier name is not a dependency on it. Refusing
+  # this named the source as depending on a summary it never reads.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    alias = sum(value),
+    units = length(quote(alias)) * sum(value),
+    share = share_of_total(units),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+
+  expect_identical(names(result), c("region", "alias", "units", "share"))
+  expect_identical(result$units, result$alias)
+  expect_identical(result$share, result$units / sum(data$value))
+})
+
+test_that("a lazy plan reads a quoted expression as data too", {
+  # The same planning decisions on the lazy path, which makes them before any
+  # SQL is rendered. The quoted grouping helper was compiled to the branch
+  # constant of whichever grouping set was being staged -- the rendered query
+  # said `deparse1(quote(GROUPING("region")))` -- while the quoted context and
+  # share helpers were refused outright, so neither call reached a dialect at
+  # all.
+  #
+  # What the dialect then does with a `quote()` call is the dialect's own
+  # translation and not this package's: dbplyr has no capture rule, so it
+  # builds SQL out of whatever the call holds. The helper names surviving into
+  # the query are what says the analysis left the expression alone.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+
+  query <- summarize_with_margins(
+    postgres,
+    total = sum(value),
+    grouping = deparse1(quote(grouping_bit(region))),
+    context = deparse1(quote(cur_group())),
+    helper = deparse1(quote(share_of_total(value))),
+    .grouping = rollup(region)
+  )
+  sql <- as.character(dbplyr::sql_render(query))
+  expect_match(sql, "quote(grouping_bit(", fixed = TRUE)
+  expect_match(sql, "quote(cur_group())", fixed = TRUE)
+  expect_match(sql, "quote(share_of_total(", fixed = TRUE)
+
+  # A quoted alias of an earlier share is no longer refused here either. It
+  # does not execute: dbplyr's own rule about a name created in the same
+  # `summarise()` reads the quoted symbol as a use of it and says so, in its
+  # own class. That is the External condition ADR-0015 keeps intact, and the
+  # assertion is written so that it holds whichever way dbplyr answers -- what
+  # this ticket changed is that the refusal is not marginplyr's.
+  planned <- tryCatch(
+    summarize_with_margins(
+      postgres,
+      units = sum(value),
+      share = share_of_total(units),
+      label = deparse1(quote(share)),
+      .grouping = rollup(region)
+    ),
+    error = function(cnd) cnd
+  )
+  expect_false(inherits(planned, "marginplyr_error"))
+})

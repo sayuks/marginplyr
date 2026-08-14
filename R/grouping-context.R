@@ -166,15 +166,23 @@ rewrite_grouping_expr <- function(expr,
     return(as.integer(sum(bits * weights)))
   }
 
-  call_args <- lapply(
-    static_call_args(expr),
-    rewrite_grouping_expr,
-    plan = plan,
-    grouping_set = grouping_set,
-    sql = sql,
-    con = con
+  # A helper the caller quoted is language data rather than a request to
+  # compile, so the rewrite descends past it: `deparse1(quote(
+  # grouping_bit(region)))` answered `"0L"` in one branch and `"1L"` in
+  # another, which is the branch-local constant this helper exists to produce
+  # and not the object the caller wrote (#179).
+  rewrite_evaluated_call_parts(
+    expr,
+    function(part) {
+      rewrite_grouping_expr(
+        part,
+        plan = plan,
+        grouping_set = grouping_set,
+        sql = sql,
+        con = con
+      )
+    }
   )
-  rebuild_static_call(expr, call_args)
 }
 
 grouping_helper_name <- function(expr) {

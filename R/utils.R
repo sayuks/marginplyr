@@ -257,6 +257,155 @@ rebuild_static_call <- function(expr, args) {
   rebuilt
 }
 
+# The name each of a call's arguments was given, empty where it was passed
+# positionally. An unnamed call carries no names at all rather than empty ones,
+# which is the case every site reading both name and position has to fill in.
+argument_names <- function(args) {
+  arg_names <- names(args)
+  if (is.null(arg_names)) {
+    return(rep("", length(args)))
+  }
+  arg_names
+}
+
+# The argument a call gives one formal, matched by name and then by position,
+# which is how R matches the primitives the analyses here read. Returned as a
+# list of length one or an empty list, so that an argument written as `NULL` is
+# not read as an absent one.
+call_formal_argument <- function(expr, formal, positional = TRUE) {
+  args <- rlang::call_args(expr)
+  args[call_formal_index(args, formal, positional = positional)]
+}
+
+# Where that argument sits, and `0L` when the call supplies none. The two
+# answers are one matching rule read two ways: a site reading the argument
+# takes the value, and one that has to put something back where the caller
+# wrote it takes the position.
+call_formal_index <- function(args, formal, positional = TRUE) {
+  arg_names <- argument_names(args)
+  index <- match(formal, arg_names, nomatch = 0L)
+  if (index == 0L && positional) {
+    index <- match("", arg_names, nomatch = 0L)
+  }
+  index
+}
+
+# Whether a call supplies an argument beyond the one it takes in `formal`,
+# either by naming one of `other_names` or by leaving one more argument unnamed
+# than `formal` accounts for. Both primitives that ask this ask it about an
+# environment: `get()` and its siblings search the one they are given instead of
+# the mask, and `substitute()` substitutes from it.
+call_supplies_other_argument <- function(expr, formal, other_names) {
+  args <- rlang::call_args(expr)
+  arg_names <- argument_names(args)
+  if (any(arg_names %in% other_names)) {
+    return(TRUE)
+  }
+  sum(arg_names == "") > as.integer(!(formal %in% arg_names))
+}
+
+# The formal a language-capturing primitive takes its captured argument in, and
+# `NULL` for a call that captures nothing. R evaluates that argument nowhere:
+# `quote()` answers it unchanged, and `substitute()` answers it with names
+# replaced from an environment. Until something evaluates what either returns,
+# the expression under it is data the caller is carrying rather than code the
+# data mask runs, so no analysis here may read a helper, a selection, or a
+# column reference out of it, and no rewrite may replace what is inside it
+# (#179).
+#
+# `evalq()` and `bquote()` are deliberately absent. `evalq()` captures its
+# first argument and then evaluates it, so the symbols under it are read;
+# `bquote()` evaluates whatever `.()` wraps in the enclosing frame, which under
+# a data mask is the mask, so `bquote(f(.(share)))` reads the share. Both stay
+# analyzed, which over-reports the parts of them that really are data.
+language_capture_formal <- function(call_name) {
+  if (is.null(call_name)) {
+    return(NULL)
+  }
+  switch(call_name,
+    quote = ,
+    substitute = "expr",
+    NULL
+  )
+}
+
+# Which of a call's arguments are captured that way, as a logical vector over
+# `static_call_args()`. Everything else the call holds is evaluated:
+# `substitute()`'s `env` is an ordinary operand, and so is every argument of a
+# call that captures nothing.
+#
+# A capture is recognized only where it is written plainly -- `quote()`, or
+# `base::quote()`. A qualifier naming another namespace is another package's
+# function, and a computed head names nothing this can read, so both fall
+# through to the walk that reports the symbols under them. That asymmetry is
+# the point: reading a capture where there is none costs a diagnostic about a
+# column the caller did write, while missing one is the silent miss #130 fixed
+# this walk to prevent, and no static reading tells `pkg::quote()` from
+# `base::quote()` except the qualifier itself.
+#
+# What the name alone cannot rule out is a caller who binds a function of their
+# own to it. A binding this analysis can see is answered where the bound names
+# are known, in `call_part_symbols()`; one made outside the expression --
+# `quote <- function(e) e` in the calling environment -- is the undecidable
+# case `is_reflective_lookup()` records for `f <- get`, and it resolves the
+# same way, by reading what the name says.
+#
+# A call carrying more arguments than the primitive takes is not the shape this
+# recognizes either. R refuses `quote(a, b)` when it runs, so the argument
+# beyond the captured one is reported rather than protected, which is the same
+# direction the length tests in `expression_data_symbols()` resolve toward.
+captured_call_parts <- function(expr, call_name = static_call_name(expr)) {
+  args <- static_call_args(expr)
+  captured <- rep(FALSE, length(args))
+  formal <- language_capture_formal(call_name)
+  if (is.null(formal)) {
+    return(captured)
+  }
+  namespace <- static_call_ns(expr)
+  if (!is.null(namespace) && !identical(namespace, "base")) {
+    return(captured)
+  }
+  index <- call_formal_index(args, formal)
+  if (index == 0L) {
+    return(captured)
+  }
+  captured[[index]] <- TRUE
+  captured
+}
+
+# The arguments of a call a walk analyzes: everything the mask evaluates, and
+# nothing it captures. Every search that descends into a call reaches its parts
+# through this rather than through `static_call_args()` directly, which is what
+# keeps one reading of the boundary from being four.
+evaluated_call_args <- function(expr, call_name = static_call_name(expr)) {
+  static_call_args(expr)[!captured_call_parts(expr, call_name)]
+}
+
+# The call a rewrite gives back once it has descended into the same parts:
+# each evaluated argument replaced by what `rewrite` makes of it, each captured
+# argument left as the caller wrote it.
+#
+# The arguments are read by index rather than mapped over, because a rewrite
+# has to put its replacements back in the positions they came from, and the
+# names have to be carried across with them: they live in the call's pairlist
+# tags, which `rebuild_static_call()` takes from this list, so an index map that
+# dropped them would turn `across(value, .names = "{.col}")` into a call whose
+# template is a positional argument.
+rewrite_evaluated_call_parts <- function(expr, rewrite) {
+  parts <- static_call_args(expr)
+  captured <- captured_call_parts(expr)
+  rewritten <- lapply(
+    seq_along(parts),
+    function(index) {
+      if (captured[[index]]) {
+        return(parts[[index]])
+      }
+      rewrite(parts[[index]])
+    }
+  )
+  rebuild_static_call(expr, stats::setNames(rewritten, names(parts)))
+}
+
 # Required because dtplyr is an optional Suggest rather than an Import: it
 # brings data.table, which reads this flag from the calling namespace.
 # data.table fixes the spelling of this name, so it cannot follow the package's

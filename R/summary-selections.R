@@ -269,10 +269,16 @@ find_summary_context_helpers <- function(expr) {
     character()
   }
 
+  # The arguments the mask evaluates. A helper name the caller quoted describes
+  # no grouping this call has to combine -- nothing calls it -- and refusing
+  # the call over one refused a summary that only names the helper (#179).
   c(
     found,
     unlist(
-      lapply(static_call_args(expr), find_summary_context_helpers),
+      lapply(
+        evaluated_call_args(expr, call_name = call_name),
+        find_summary_context_helpers
+      ),
       use.names = FALSE
     )
   )
@@ -328,14 +334,22 @@ rewrite_summary_selections <- function(expr,
     env <- rlang::quo_get_env(expr)
   }
 
-  call_args <- lapply(
-    static_call_args(expr),
-    rewrite_summary_selections,
-    env = env,
-    data_proxy = data_proxy,
-    normalize_across_names = normalize_across_names
+  # A selection the caller quoted is language data, so the walk descends past
+  # it and gives the object back as it was written. Resolving it turned
+  # `quote(dplyr::across(value, mean))` into
+  # `quote(dplyr::across(dplyr::all_of("value"), mean))`, which is a different
+  # expression to whatever the caller meant to carry (#179).
+  expr <- rewrite_evaluated_call_parts(
+    expr,
+    function(part) {
+      rewrite_summary_selections(
+        part,
+        env = env,
+        data_proxy = data_proxy,
+        normalize_across_names = normalize_across_names
+      )
+    }
   )
-  expr <- rebuild_static_call(expr, call_args)
 
   call_name <- static_call_name(expr)
   call_ns <- static_call_ns(expr)
