@@ -2612,7 +2612,7 @@ share_expression_kind <- function(expr) {
   # helper the call does use: `eval(quote(share_of_total(total)))` reaches the
   # helper itself, which answers for a position it cannot see and names a
   # Grouping plan the caller already has.
-  arguments <- c(evaluated_call_args(expr), searched_language_parts(expr))
+  arguments <- searched_call_parts(expr)
   for (index in seq_along(arguments)) {
     kind <- share_expression_kind(arguments[[index]])
     if (!is.null(kind)) {
@@ -2790,7 +2790,7 @@ contains_selection_predicate <- function(expr) {
     return(TRUE)
   }
   any(vapply(
-    c(evaluated_call_args(expr), searched_language_parts(expr)),
+    searched_call_parts(expr),
     contains_selection_predicate,
     logical(1)
   ))
@@ -2919,10 +2919,7 @@ expression_data_symbols <- function(expr, bound = character()) {
   # own. `(get)` is the redundant-parenthesis shape #130 recorded, and a head
   # built by `match.fun()` or `getFunction()` names the same primitive through
   # one whose whole purpose is to name a function.
-  callee_name <- call_name
-  if (is.null(callee_name)) {
-    callee_name <- static_callee_name(static_call_head(expr))
-  }
+  callee_name <- resolved_callee_name(expr, call_name)
   if (is_reflective_lookup(callee_name)) {
     return(unique(c(
       call_part_symbols(expr, bound),
@@ -3032,20 +3029,10 @@ expression_data_symbols <- function(expr, bound = character()) {
 # rather than testing for a capture of its own (#179).
 call_part_symbols <- function(expr, bound) {
   call_head <- static_call_head(expr)
-  # A name the expression has bound may be the function this call reaches, so
-  # the capture is not claimed for it: a block that binds `quote` to a function
-  # of its own and then calls it evaluates the argument. R's function lookup
-  # skips a non-function binding, so the name may still reach `base::quote()`
-  # and the parts be data after all -- undecidable here, and answered in the
-  # direction that reports the read rather than the one that hides it. A
-  # qualified head is out of reach of any binding and keeps its capture.
-  shadowed <- rlang::is_symbol(call_head) &&
-    rlang::as_name(call_head) %in% bound
-  parts <- if (shadowed) {
-    static_call_args(expr)
-  } else {
-    evaluated_call_args(expr)
-  }
+  # The bound set travels into the capture reading, which is where a name this
+  # expression has bound to a function of its own stops being read as the
+  # primitive it spells. This walk is the only caller that has one to pass.
+  parts <- evaluated_call_args(expr, bound = bound)
   if (!rlang::is_symbol(call_head)) {
     parts <- c(list(call_head), parts)
   }
@@ -3249,104 +3236,6 @@ lookup_has_external_env <- function(expr) {
   )
 }
 
-# The function an expression statically names, however it spells it: a symbol,
-# a namespace qualifier, redundant parentheses, or a call to a primitive whose
-# purpose is to name a function. `get("get")("share")`,
-# `match.fun("get")("share")` and `getFunction("get")("share")` all invoke the
-# same primitive as `get("share")`, and a branch matching on the call's own
-# name sees none of them, because a call whose head is a call has no name.
-#
-# What none of those spellings change is that the head is a read: `(f)`,
-# `match.fun("f")` and the rest are evaluated in the mask as values rather than
-# through R's function lookup. `call_part_symbols()` reports that read, and
-# every caller of this unions the two answers.
-#
-# A literal string is here for `do.call()`, which takes its function that way.
-static_callee_name <- function(callee) {
-  if (rlang::is_symbol(callee)) {
-    return(rlang::as_name(callee))
-  }
-  if (!rlang::is_call(callee)) {
-    named <- static_character_value(callee)
-    if (is.null(named) || length(named) != 1L) {
-      return(NULL)
-    }
-    return(named)
-  }
-  if (rlang::is_call(callee, "(") && length(callee) >= 2L) {
-    return(static_callee_name(callee[[2L]]))
-  }
-  if (rlang::is_call(callee, c("::", ":::")) && length(callee) >= 3L) {
-    return(static_callee_name(callee[[3L]]))
-  }
-  call_name <- static_call_name(callee)
-  if (is.null(call_name)) {
-    return(NULL)
-  }
-  formal <- function_naming_formal(call_name)
-  if (is.null(formal)) {
-    return(NULL)
-  }
-  static_callee_name_from(callee, formal)
-}
-
-# The name a function-naming primitive was given, where that name is statically
-# knowable. One that is not leaves the head unnamed, which is the answer for
-# any other computed head: the walk reports the head's own reads and treats the
-# call as the ordinary call it cannot recognize.
-static_callee_name_from <- function(callee, formal) {
-  argument <- call_formal_argument(callee, formal)
-  if (length(argument) == 0L) {
-    return(NULL)
-  }
-  named <- static_character_value(argument[[1L]])
-  if (is.null(named) || length(named) != 1L) {
-    return(NULL)
-  }
-  named
-}
-
-# The formal each function-naming primitive takes its name in, and `NULL` for a
-# call that names no function. `mget()` and `exists()` are absent because
-# neither can answer a function to call: one answers a list and the other a
-# flag.
-function_naming_formal <- function(call_name) {
-  switch(call_name,
-    match.fun = "FUN",
-    getFunction = "name",
-    get = ,
-    get0 = "x",
-    NULL
-  )
-}
-
-# The primitives that resolve a name given as a string. Each searches ordinary
-# lexical scope from an environment that, under a data mask, is the mask, so a
-# name one of them is handed is a mask read exactly as the symbol is.
-#
-# `dynGet()` is deliberately absent: it searches the calling frames rather than
-# the lexical scope, so it does not reach the mask -- measured, not assumed.
-#
-# One of these reached as a *value* rather than as a callee is out of reach of
-# any static walk, and is safe for the same measured reason: in
-# `sapply(c("share"), get)` the environment `get()` searches from is the frame
-# that called it, inside `sapply()`, so the call raises rather than reading a
-# column. Which function a value holds is undecidable in general -- `f <- get`
-# is the smallest case -- so a walk answering it would have to over-report
-# every call it cannot name, and that is nearly all of them.
-is_reflective_lookup <- function(callee_name) {
-  !is.null(callee_name) &&
-    callee_name %in% c("get", "get0", "mget", "exists")
-}
-
-# The primitives that evaluate a language object. `evalq()` is absent because
-# it quotes its first argument, so the general walk already reports the symbols
-# under it -- adding it here would answer the same thing twice.
-is_reflective_evaluation <- function(callee_name) {
-  !is.null(callee_name) &&
-    callee_name %in% c("eval", "eval_tidy", "eval_bare")
-}
-
 # The names a reflective lookup resolves in the mask.
 #
 # An environment argument terminates the search: all four primitives require an
@@ -3419,185 +3308,6 @@ evaluated_language_symbols <- function(expr, bound) {
     lapply(values, expression_data_symbols, bound = bound),
     use.names = FALSE
   ))
-}
-
-# Where in a call's arguments the language it evaluates sits, and `0L` for a
-# call that evaluates none. The searches and the rewrites open the argument the
-# dependency walk reads, so the three read its position once -- through
-# `static_callee_name()`, since a head that names the primitive without being a
-# symbol names it here as it does there.
-evaluated_language_index <- function(expr, call_name = static_call_name(expr)) {
-  callee_name <- call_name
-  if (is.null(callee_name)) {
-    callee_name <- static_callee_name(static_call_head(expr))
-  }
-  if (!is_reflective_evaluation(callee_name)) {
-    return(0L)
-  }
-  call_formal_index(static_call_args(expr), "expr")
-}
-
-# The language a call is statically known to evaluate: `list()` for a call that
-# evaluates none, and `NULL` where what it evaluates is not knowable. The two
-# empty answers are the ones `static_language_values()` separates, kept apart
-# because the walk turns one of them into the marker.
-evaluated_language_parts <- function(expr, call_name = static_call_name(expr)) {
-  index <- evaluated_language_index(expr, call_name = call_name)
-  if (index == 0L) {
-    return(list())
-  }
-  static_language_values(static_call_args(expr)[[index]])
-}
-
-# The same language as parts a search analyzes beside a call's own arguments.
-# `eval()` runs what it is handed in the data mask, so a helper written under a
-# capture there is one this call really does use, and the boundary #179 draws
-# must not hide it: without this, `eval(quote(cur_group_id()))` ran and
-# answered a branch-local identifier, which is the value that guard exists to
-# refuse (#179).
-#
-# What is not knowable contributes nothing rather than a marker. The dependency
-# walk has an alias set to compare an over-report against and turns an
-# unreadable one into a read of every alias; a search has nothing to compare,
-# so refusing on one would reject `eval(built)` wherever it appears, which is
-# legal code and always was.
-searched_language_parts <- function(expr, call_name = static_call_name(expr)) {
-  values <- evaluated_language_parts(expr, call_name = call_name)
-  if (is.null(values)) {
-    return(list())
-  }
-  values
-}
-
-# The language objects an expression is statically known to hand `eval()`, and
-# `NULL` where it is not knowable. An empty list is the third answer and is not
-# the same as `NULL`: a constant evaluates to itself and looks nothing up.
-#
-# The constructors that hide a name from the walk need a case, and so do the
-# two that capture one. A name written as a string was never reported by the
-# walk of the call's parts, and a name written under `quote()` or
-# `substitute()` no longer is, since the mask evaluates neither (#179) -- so
-# this is the only thing standing between `eval(quote(share))` and the silence
-# that #173 removed.
-#
-# A capture evaluated in place, as `evalq()` evaluates its argument, needs no
-# case of its own: the walk of the call's parts reports the symbol under it as
-# it always did.
-#
-# `bquote()` is not among them because `.()` substitutes an expression this
-# walk cannot see, which leaves it with the answer it gives any other
-# unrecognized shape.
-static_language_values <- function(expr) {
-  if (rlang::is_symbol(expr)) {
-    # The symbol names a value, and which language object that value holds is
-    # not visible here.
-    return(NULL)
-  }
-  if (!rlang::is_call(expr)) {
-    return(list())
-  }
-  call_name <- static_call_name(expr)
-  if (is.null(call_name)) {
-    return(NULL)
-  }
-  if (identical(call_name, "quote")) {
-    return(call_formal_argument(expr, "expr"))
-  }
-  if (identical(call_name, "substitute")) {
-    # What `substitute()` answers is its captured argument with names replaced
-    # from `env`. A call supplying one is a substitution this walk cannot read,
-    # so the language reaching `eval()` is unknown; a call supplying none
-    # substitutes from the mask, which leaves a column and an earlier summary
-    # alias alone -- measured under dplyr -- so the expression arrives as
-    # written.
-    if (call_supplies_other_argument(expr, "expr", "env")) {
-      return(NULL)
-    }
-    return(call_formal_argument(expr, "expr"))
-  }
-  if (identical(call_name, "expression")) {
-    return(static_call_args(expr))
-  }
-  if (call_name %in% c("as.name", "as.symbol")) {
-    return(recovered_name_values(call_formal_argument(expr, "x")))
-  }
-  if (identical(call_name, "str2lang")) {
-    return(parsed_language_values(call_formal_argument(expr, "s")))
-  }
-  if (identical(call_name, "str2expression")) {
-    return(parsed_language_values(call_formal_argument(expr, "text")))
-  }
-  if (identical(call_name, "parse")) {
-    # Matched by name alone: `parse()`'s first positional argument is a
-    # connection, and what a connection holds is not knowable here.
-    return(parsed_language_values(
-      call_formal_argument(expr, "text", positional = FALSE)
-    ))
-  }
-  NULL
-}
-
-# The symbols a statically known string names. An empty string is dropped
-# rather than turned into a symbol, because `as.name("")` is an error in R and
-# the walk must raise none of its own.
-recovered_name_values <- function(argument) {
-  if (length(argument) == 0L) {
-    return(NULL)
-  }
-  text <- static_character_value(argument[[1L]])
-  if (is.null(text)) {
-    return(NULL)
-  }
-  lapply(text[nzchar(text)], as.name)
-}
-
-# The language a statically known string parses to. Parsing is not evaluation:
-# nothing the caller wrote runs here, which is what lets the recovery happen
-# during planning at all. Text that does not parse is reported as unknown
-# rather than raised, since the call itself raises R's own condition when it
-# runs.
-parsed_language_values <- function(argument) {
-  if (length(argument) == 0L) {
-    return(NULL)
-  }
-  text <- static_character_value(argument[[1L]])
-  if (is.null(text)) {
-    return(NULL)
-  }
-  parsed <- tryCatch(
-    str2expression(paste(text, collapse = "\n")),
-    error = function(cnd) NULL
-  )
-  if (is.null(parsed)) {
-    return(NULL)
-  }
-  as.list(parsed)
-}
-
-# The character vector an expression is statically known to be, and `NULL`
-# where it is not. A literal is one, and so is a `c()` of literals, which is
-# how a caller writes the vector `mget()` takes; anything else names a value
-# this walk cannot see without running it.
-static_character_value <- function(expr) {
-  if (is.character(expr)) {
-    if (anyNA(expr)) {
-      return(NULL)
-    }
-    return(expr)
-  }
-  if (!rlang::is_call(expr, "c")) {
-    return(NULL)
-  }
-  values <- lapply(rlang::call_args(expr), static_character_value)
-  if (any(vapply(values, is.null, logical(1)))) {
-    return(NULL)
-  }
-  recovered <- unlist(values, use.names = FALSE)
-  if (is.null(recovered)) {
-    # `c()` of nothing, which names nothing.
-    return(character())
-  }
-  recovered
 }
 
 # The name the walk reports for a read it could not resolve.

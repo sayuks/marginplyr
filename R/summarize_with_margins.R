@@ -248,14 +248,23 @@
 #' [grouping_bit()] and [grouping_id()] to identify margin levels.
 #'
 #' Every rule above reads the expression the data mask evaluates. An expression
-#' captured as language data — the argument of [base::quote()], of
-#' [base::substitute()], or of [base::expression()] — is a value the summary
-#' carries, so marginplyr neither analyzes nor rewrites what is inside it: a
-#' captured helper name requests nothing, creates no dependency on an earlier
-#' summary, and reaches the backend as written. Evaluating one with
-#' [base::eval()] runs it in the data mask, so what it holds is analyzed as
-#' the code it becomes and every rule above applies to it, wherever the
-#' language it evaluates can be read without running the call.
+#' captured as language data — the argument of a plainly written
+#' [base::quote()], [base::substitute()], or [base::expression()] — is a value
+#' the summary carries, so marginplyr neither analyzes nor rewrites what is
+#' inside it: a captured helper name requests nothing, creates no dependency on
+#' an earlier summary, and reaches the backend as written. Evaluating one with
+#' [base::eval()], [rlang::eval_tidy()], or [rlang::eval_bare()] runs it in the
+#' data mask, so what it holds is analyzed as the code it becomes and every
+#' rule above applies to it.
+#'
+#' Both halves are read statically, so both stop where a static reading does.
+#' A capture is one where the call names the primitive plainly, qualified with
+#' `base::` or not; any other spelling — another namespace, or a head computed
+#' at run time — is analyzed as ordinary code, which can refuse a call that
+#' only carries language. An evaluation is followed wherever the language it
+#' runs can be read without running the call, which covers a capture written
+#' out and text parsed from a literal, but not language a summary builds while
+#' it runs.
 #'
 #' @section Contextual shares:
 #' [share_of_parent()] and [share_of_total()] calculate a preceding named

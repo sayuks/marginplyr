@@ -3079,6 +3079,27 @@ test_that("a lazy plan reads a quoted expression as data too", {
   expect_match(sql, "quote(cur_group())", fixed = TRUE)
   expect_match(sql, "quote(share_of_total(", fixed = TRUE)
 
+  # A share beside a quoted expression plans and renders, which is the
+  # positive half: the planner stages both, and the query carries the
+  # expression the caller wrote. The quoted name has to be a column here,
+  # which is the same fact as the paragraph above -- dbplyr resolves what a
+  # `quote()` holds rather than carrying it, so a name no column has fails at
+  # build time. Round-tripping language is a local guarantee; what holds on
+  # every backend is that this package's analysis leaves the expression alone.
+  shared <- summarize_with_margins(
+    postgres,
+    units = sum(value),
+    share = share_of_total(units),
+    label = deparse1(quote(value)),
+    .grouping = rollup(region)
+  )
+  expect_s3_class(shared, "tbl_lazy")
+  expect_match(
+    as.character(dbplyr::sql_render(shared)),
+    "quote(\"value\")",
+    fixed = TRUE
+  )
+
   # A quoted alias of an earlier share is no longer refused here either. It
   # does not execute: dbplyr's own rule about a name created in the same
   # `summarise()` reads the quoted symbol as a use of it and says so, in its
@@ -3249,4 +3270,125 @@ test_that("`expression()` is one capture on both sides of the boundary", {
     .margin_label = NULL
   )
   expect_identical(unique(carried$e), "expression(share_of_total(total))")
+})
+
+test_that("only the walk that tracks bindings reads a shadowed capture", {
+  # One reading of the capture, told what each caller knows.
+  # `captured_call_parts()` is where a bound name stops being read as the
+  # primitive it spells, and the share dependency walk is the only analysis
+  # with a bound set to hand it -- the only one that tracks bindings at all,
+  # and the only one whose wrong answer is silence about a wrong number.
+  proxy <- data.frame(value = double())
+  env <- rlang::current_env()
+
+  expect_identical(
+    captured_call_parts(quote(quote(share)), bound = "quote"),
+    FALSE
+  )
+  expect_identical(captured_call_parts(quote(quote(share))), TRUE)
+
+  # The searches and the rewrites pass no bound set, which is the reading they
+  # already give every name they match: a locally bound `across` is resolved
+  # as a selection, and a locally bound `cur_group` is refused as the
+  # branch-local helper. A shadowed capture is read the same scope-blind way,
+  # so the answer is a diagnostic or an uncompiled helper rather than a silent
+  # value.
+  expect_identical(
+    rewrite_summary_selections(
+      quote({
+        across <- function(...) 1
+        dplyr::across(value, mean)
+      }),
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    quote({
+      across <- function(...) 1
+      dplyr::across(dplyr::all_of("value"), mean)
+    })
+  )
+  expect_identical(
+    find_summary_context_helpers(quote({
+      cur_group <- function() 1
+      cur_group()
+    })),
+    "cur_group"
+  )
+  expect_identical(
+    find_summary_context_helpers(quote({
+      quote <- function(e) e
+      quote(cur_group())
+    })),
+    character()
+  )
+})
+
+test_that("a rewrite opens only the language a search can read", {
+  # The rewrite and the searches read one index. `substitute()` given an
+  # environment substitutes from it, which this analysis cannot read, so what
+  # reaches the mask is unknown: the searches contribute nothing about it and
+  # the rewrite leaves it alone rather than compiling a helper nothing else
+  # can see. Without the environment the language is the expression as
+  # written, and both halves read it.
+  proxy <- data.frame(value = double())
+  env <- rlang::current_env()
+
+  unreadable <- quote(eval(substitute(dplyr::across(value, mean), env)))
+  expect_identical(
+    rewrite_summary_selections(
+      unreadable,
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    unreadable
+  )
+  expect_identical(
+    find_summary_context_helpers(
+      quote(eval(substitute(dplyr::cur_group(), env)))
+    ),
+    character()
+  )
+
+  expect_identical(
+    rewrite_summary_selections(
+      quote(eval(substitute(dplyr::across(value, mean)))),
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    quote(eval(substitute(dplyr::across(dplyr::all_of("value"), mean))))
+  )
+  expect_identical(
+    find_summary_context_helpers(quote(eval(substitute(dplyr::cur_group())))),
+    "cur_group"
+  )
+})
+
+test_that("a formula a capture carries keeps its class and environment", {
+  # #165's rule reaches the captured part too, and by a stronger route: the
+  # rewrite gives back the object rather than rebuilding it, so a formula the
+  # caller injected inside a `quote()` keeps the `.Environment` a lambda
+  # resolves against. Asserted end to end, because a flattened one still
+  # answers `TRUE` to `rlang::is_formula()` and shows only where the class is
+  # used.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  written_in <- rlang::env(offset = 100)
+  lambda <- rlang::new_formula(NULL, quote(.x + offset), env = written_in)
+
+  result <- summarize_with_margins(
+    data,
+    units = sum(value),
+    kept = identical(attr(quote(!!lambda), ".Environment"), !!written_in),
+    applied = rlang::as_function(quote(!!lambda))(units),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+
+  expect_true(all(result$kept))
+  expect_identical(result$applied, result$units + 100)
 })

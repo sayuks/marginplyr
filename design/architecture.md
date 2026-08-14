@@ -121,6 +121,21 @@ names, and preventing summary outputs from overwriting grouping columns. These
 checks occur before semantic label validation, including any opt-in lazy
 collision query.
 
+### Static expression reading (`R/utils.R`)
+
+Owns what a summary expression *says*, and decides nothing about it: the name
+and namespace a call carries, the head and arguments a walk descends into and
+the node rebuilt around them, which arguments a call captures as language
+rather than evaluating, which primitives resolve a name or evaluate language,
+and which language object a call is statically known to build.
+
+Four analyses read through it and each decides for itself — the share
+dependency walk, the two rewrites, and the three searches — so the module is
+shallow by design where the ones below it are deep. It is also why the
+dependency runs one way: a reader that lived in `R/share.R` would make the
+grouping-context rewrite reach into the contextual-share module for a fact
+that is not about shares (#179).
+
 ### Contextual shares (`R/share.R`)
 
 One deep private module owns every contextual-share responsibility: request

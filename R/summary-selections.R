@@ -279,10 +279,7 @@ find_summary_context_helpers <- function(expr) {
     found,
     unlist(
       lapply(
-        c(
-          evaluated_call_args(expr, call_name = call_name),
-          searched_language_parts(expr, call_name = call_name)
-        ),
+        searched_call_parts(expr, call_name = call_name),
         find_summary_context_helpers
       ),
       use.names = FALSE

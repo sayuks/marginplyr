@@ -368,11 +368,33 @@ language_capture_formal <- function(call_name) {
 # recognizes either. R refuses `quote(a, b)` when it runs, so the argument
 # beyond the captured one is reported rather than protected, which is the same
 # direction the length tests in `expression_data_symbols()` resolve toward.
-captured_call_parts <- function(expr, call_name = static_call_name(expr)) {
+#
+# `bound` is what the caller knows about the names in scope where this call
+# sits, and a bare head naming one of them is not claimed as a capture: a block
+# that binds `quote` to a function of its own and then calls it evaluates the
+# argument. R's function lookup skips a non-function binding, so the name may
+# still reach `base::quote()` and the parts be data after all -- undecidable
+# here, and answered in the direction that analyses rather than the one that
+# hides. A qualified head is out of reach of any binding and keeps its capture.
+#
+# Only the share dependency walk passes a set, because it is the only analysis
+# that tracks bindings and the only one whose wrong answer is silence about a
+# wrong number (#130, #162). The searches and the rewrites pass none, and that
+# is the reading they already give every name they match: a locally bound
+# `across` is resolved as a selection today, and a locally bound `cur_group` is
+# refused as the branch-local helper. Their wrong answer is a diagnostic or an
+# uncompiled helper, both of which the caller sees.
+captured_call_parts <- function(expr,
+                                call_name = static_call_name(expr),
+                                bound = character()) {
   args <- static_call_args(expr)
   captured <- rep(FALSE, length(args))
   formal <- language_capture_formal(call_name)
   if (is.null(formal)) {
+    return(captured)
+  }
+  call_head <- static_call_head(expr)
+  if (rlang::is_symbol(call_head) && rlang::as_name(call_head) %in% bound) {
     return(captured)
   }
   namespace <- static_call_ns(expr)
@@ -394,8 +416,10 @@ captured_call_parts <- function(expr, call_name = static_call_name(expr)) {
 # nothing it captures. Every search that descends into a call reaches its parts
 # through this rather than through `static_call_args()` directly, which is what
 # keeps one reading of the boundary from being four.
-evaluated_call_args <- function(expr, call_name = static_call_name(expr)) {
-  static_call_args(expr)[!captured_call_parts(expr, call_name)]
+evaluated_call_args <- function(expr,
+                                call_name = static_call_name(expr),
+                                bound = character()) {
+  static_call_args(expr)[!captured_call_parts(expr, call_name, bound = bound)]
 }
 
 # The call a rewrite gives back once it has descended into the same parts:
@@ -409,22 +433,49 @@ evaluated_call_args <- function(expr, call_name = static_call_name(expr)) {
 # dropped them would turn `across(value, .names = "{.col}")` into a call whose
 # template is a positional argument.
 rewrite_evaluated_call_parts <- function(expr, rewrite) {
-  parts <- static_call_args(expr)
   captured <- captured_call_parts(expr)
-  language_index <- evaluated_language_index(expr)
-  rewritten <- lapply(
-    seq_along(parts),
-    function(index) {
+  language_index <- readable_language_index(expr)
+  map_call_parts(
+    expr,
+    function(part, index) {
       if (captured[[index]]) {
-        return(parts[[index]])
+        return(part)
       }
       if (index == language_index) {
-        return(rewrite_evaluated_language(parts[[index]], rewrite))
+        return(rewrite_evaluated_language(part, rewrite))
       }
-      rewrite(parts[[index]])
+      rewrite(part)
     }
   )
-  rebuild_static_call(expr, stats::setNames(rewritten, names(parts)))
+}
+
+# The call rebuilt around parts a walk mapped one to one. The arguments are
+# read by index rather than mapped over, because a rewrite has to put its
+# replacements back in the positions they came from, and the names have to be
+# carried across with them: they live in the call's pairlist tags, which
+# `rebuild_static_call()` takes from this list, so an index map that dropped
+# them would turn `across(value, .names = "{.col}")` into a call whose template
+# is a positional argument.
+map_call_parts <- function(expr, map) {
+  parts <- static_call_args(expr)
+  mapped <- lapply(
+    seq_along(parts),
+    function(index) map(parts[[index]], index)
+  )
+  rebuild_static_call(expr, stats::setNames(mapped, names(parts)))
+}
+
+# Where a rewrite may open a capture: the argument an `eval()` runs, and only
+# where what it runs is statically readable. `eval(substitute(x, env))`
+# substitutes from an environment this analysis cannot read, so what reaches
+# the mask is unknown -- and a rewrite that opened it anyway would compile a
+# helper the searches beside it contribute nothing about, which is the same
+# index read three ways instead of one.
+readable_language_index <- function(expr, call_name = static_call_name(expr)) {
+  if (is.null(evaluated_language_parts(expr, call_name = call_name))) {
+    return(0L)
+  }
+  evaluated_language_index(expr, call_name = call_name)
 }
 
 # The argument an `eval()` runs, rewritten as the code it becomes. A capture
@@ -439,16 +490,320 @@ rewrite_evaluated_call_parts <- function(expr, rewrite) {
 # rewrite, and it reached the helper before this ticket exactly as it does
 # after: what a search can recover by parsing, a rewrite cannot put back.
 rewrite_evaluated_language <- function(expr, rewrite) {
-  captured <- captured_call_parts(expr)
-  if (!any(captured)) {
+  if (!any(captured_call_parts(expr))) {
     return(rewrite(expr))
   }
-  parts <- static_call_args(expr)
-  rewritten <- lapply(
-    seq_along(parts),
-    function(index) rewrite(parts[[index]])
+  map_call_parts(expr, function(part, index) rewrite(part))
+}
+
+# The readers below say what a call names and what language it holds. They
+# answer questions about an expression and decide nothing about it: which
+# function a head names however it is spelled, which primitives resolve a name
+# or evaluate language, and which language object a call is statically known to
+# build. Every walk in the package reads through them -- the share dependency
+# walk in `R/share.R`, the two rewrites, and the three searches -- and each
+# decides for itself what to do with the answer.
+#
+# They live here rather than beside the walk that first needed them, in #173
+# and then #179, so that the dependency runs one way. `R/share.R` owns every
+# contextual share decision, as design/architecture.md records, and a shared
+# reader that lived there would be a deep module the grouping-context rewrite
+# and the summary-selection searches had to reach into for a fact that is not
+# about shares at all.
+#
+# The function an expression statically names, however it spells it: a symbol,
+# a namespace qualifier, redundant parentheses, or a call to a primitive whose
+# purpose is to name a function. `get("get")("share")`,
+# `match.fun("get")("share")` and `getFunction("get")("share")` all invoke the
+# same primitive as `get("share")`, and a branch matching on the call's own
+# name sees none of them, because a call whose head is a call has no name.
+#
+# What none of those spellings change is that the head is a read: `(f)`,
+# `match.fun("f")` and the rest are evaluated in the mask as values rather than
+# through R's function lookup. `call_part_symbols()` reports that read, and
+# every caller of this unions the two answers.
+#
+# A literal string is here for `do.call()`, which takes its function that way.
+static_callee_name <- function(callee) {
+  if (rlang::is_symbol(callee)) {
+    return(rlang::as_name(callee))
+  }
+  if (!rlang::is_call(callee)) {
+    named <- static_character_value(callee)
+    if (is.null(named) || length(named) != 1L) {
+      return(NULL)
+    }
+    return(named)
+  }
+  if (rlang::is_call(callee, "(") && length(callee) >= 2L) {
+    return(static_callee_name(callee[[2L]]))
+  }
+  if (rlang::is_call(callee, c("::", ":::")) && length(callee) >= 3L) {
+    return(static_callee_name(callee[[3L]]))
+  }
+  call_name <- static_call_name(callee)
+  if (is.null(call_name)) {
+    return(NULL)
+  }
+  formal <- function_naming_formal(call_name)
+  if (is.null(formal)) {
+    return(NULL)
+  }
+  static_callee_name_from(callee, formal)
+}
+
+# The name a function-naming primitive was given, where that name is statically
+# knowable. One that is not leaves the head unnamed, which is the answer for
+# any other computed head: the walk reports the head's own reads and treats the
+# call as the ordinary call it cannot recognize.
+static_callee_name_from <- function(callee, formal) {
+  argument <- call_formal_argument(callee, formal)
+  if (length(argument) == 0L) {
+    return(NULL)
+  }
+  named <- static_character_value(argument[[1L]])
+  if (is.null(named) || length(named) != 1L) {
+    return(NULL)
+  }
+  named
+}
+
+# The formal each function-naming primitive takes its name in, and `NULL` for a
+# call that names no function. `mget()` and `exists()` are absent because
+# neither can answer a function to call: one answers a list and the other a
+# flag.
+function_naming_formal <- function(call_name) {
+  switch(call_name,
+    match.fun = "FUN",
+    getFunction = "name",
+    get = ,
+    get0 = "x",
+    NULL
   )
-  rebuild_static_call(expr, stats::setNames(rewritten, names(parts)))
+}
+
+# The primitives that resolve a name given as a string. Each searches ordinary
+# lexical scope from an environment that, under a data mask, is the mask, so a
+# name one of them is handed is a mask read exactly as the symbol is.
+#
+# `dynGet()` is deliberately absent: it searches the calling frames rather than
+# the lexical scope, so it does not reach the mask -- measured, not assumed.
+#
+# One of these reached as a *value* rather than as a callee is out of reach of
+# any static walk, and is safe for the same measured reason: in
+# `sapply(c("share"), get)` the environment `get()` searches from is the frame
+# that called it, inside `sapply()`, so the call raises rather than reading a
+# column. Which function a value holds is undecidable in general -- `f <- get`
+# is the smallest case -- so a walk answering it would have to over-report
+# every call it cannot name, and that is nearly all of them.
+is_reflective_lookup <- function(callee_name) {
+  !is.null(callee_name) &&
+    callee_name %in% c("get", "get0", "mget", "exists")
+}
+
+# The primitives that evaluate a language object. `evalq()` is absent because
+# it quotes its first argument, so the general walk already reports the symbols
+# under it -- adding it here would answer the same thing twice.
+is_reflective_evaluation <- function(callee_name) {
+  !is.null(callee_name) &&
+    callee_name %in% c("eval", "eval_tidy", "eval_bare")
+}
+
+# The function a call reaches, read from its own name where it has one and from
+# its head where it does not. `(get)("share")` and `match.fun("get")("share")`
+# name the primitive through a head that is a call, so a site matching on the
+# call's name alone sees neither (#130, #173).
+#
+# `call_name` is taken rather than read again because every caller has read it
+# already, and reading a node's name once is what the analysis sites here were
+# folded down to (#163). That is also why the readers below thread it: one
+# search hands its own read all the way through.
+resolved_callee_name <- function(expr, call_name = static_call_name(expr)) {
+  if (!is.null(call_name)) {
+    return(call_name)
+  }
+  static_callee_name(static_call_head(expr))
+}
+
+# Where in a call's arguments the language it evaluates sits, and `0L` for a
+# call that evaluates none. The searches, the rewrites, and the dependency walk
+# open the same argument, so its position is read once here.
+evaluated_language_index <- function(expr, call_name = static_call_name(expr)) {
+  if (!is_reflective_evaluation(resolved_callee_name(expr, call_name))) {
+    return(0L)
+  }
+  call_formal_index(static_call_args(expr), "expr")
+}
+
+# The language a call is statically known to evaluate: `list()` for a call that
+# evaluates none, and `NULL` where what it evaluates is not knowable. The two
+# empty answers are the ones `static_language_values()` separates, kept apart
+# because each reader resolves them differently -- the walk turns `NULL` into
+# the marker, a search into nothing, and a rewrite into a capture it may not
+# open.
+#
+# An `envir` argument is not an exemption, here or at the walk that used to ask
+# this question alone. `eval()`'s `enclos` defaults to `parent.frame()`, which
+# under a data mask is the mask, so a supplied `envir` that is a list or a data
+# frame leaves the mask on the lookup path -- `eval(as.name("share"),
+# list(a = 1))` reads the share, measured rather than assumed. Which of the two
+# an argument evaluates to is not decidable here.
+evaluated_language_parts <- function(expr, call_name = static_call_name(expr)) {
+  index <- evaluated_language_index(expr, call_name = call_name)
+  if (index == 0L) {
+    return(list())
+  }
+  static_language_values(static_call_args(expr)[[index]])
+}
+
+# Everything a search descends into: the arguments the mask evaluates, and the
+# language the call hands `eval()`. Both halves are the boundary #179 draws,
+# read in one place because a search that took only the first half would let
+# `eval(quote(cur_group_id()))` run and answer a branch-local identifier, which
+# is the value that guard exists to refuse.
+#
+# Language that is not statically readable contributes nothing rather than a
+# marker. The dependency walk has an alias set to compare an over-report
+# against and turns an unreadable one into a read of every alias; a search has
+# nothing to compare, so refusing on one would reject `eval(built)` wherever it
+# appears, which is legal code and always was.
+searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
+  language <- evaluated_language_parts(expr, call_name = call_name)
+  if (is.null(language)) {
+    language <- list()
+  }
+  c(evaluated_call_args(expr, call_name = call_name), language)
+}
+
+# The language objects an expression is statically known to hand `eval()`, and
+# `NULL` where it is not knowable. An empty list is the third answer and is not
+# the same as `NULL`: a constant evaluates to itself and looks nothing up.
+#
+# The constructors that hide a name from the walk need a case, and so do the
+# two that capture one. A name written as a string was never reported by the
+# walk of the call's parts, and a name written under `quote()` or
+# `substitute()` no longer is, since the mask evaluates neither (#179) -- so
+# this is the only thing standing between `eval(quote(share))` and the silence
+# that #173 removed.
+#
+# A capture evaluated in place, as `evalq()` evaluates its argument, needs no
+# case of its own: the walk of the call's parts reports the symbol under it as
+# it always did.
+#
+# `bquote()` is not among them because `.()` substitutes an expression this
+# walk cannot see, which leaves it with the answer it gives any other
+# unrecognized shape.
+static_language_values <- function(expr) {
+  if (rlang::is_symbol(expr)) {
+    # The symbol names a value, and which language object that value holds is
+    # not visible here.
+    return(NULL)
+  }
+  if (!rlang::is_call(expr)) {
+    return(list())
+  }
+  call_name <- static_call_name(expr)
+  if (is.null(call_name)) {
+    return(NULL)
+  }
+  if (identical(call_name, "quote")) {
+    return(call_formal_argument(expr, "expr"))
+  }
+  if (identical(call_name, "substitute")) {
+    # What `substitute()` answers is its captured argument with names replaced
+    # from `env`. A call supplying one is a substitution this walk cannot read,
+    # so the language reaching `eval()` is unknown; a call supplying none
+    # substitutes from the mask, which leaves a column and an earlier summary
+    # alias alone -- measured under dplyr -- so the expression arrives as
+    # written.
+    if (call_supplies_other_argument(expr, "expr", "env")) {
+      return(NULL)
+    }
+    return(call_formal_argument(expr, "expr"))
+  }
+  if (identical(call_name, "expression")) {
+    return(static_call_args(expr))
+  }
+  if (call_name %in% c("as.name", "as.symbol")) {
+    return(recovered_name_values(call_formal_argument(expr, "x")))
+  }
+  if (identical(call_name, "str2lang")) {
+    return(parsed_language_values(call_formal_argument(expr, "s")))
+  }
+  if (identical(call_name, "str2expression")) {
+    return(parsed_language_values(call_formal_argument(expr, "text")))
+  }
+  if (identical(call_name, "parse")) {
+    # Matched by name alone: `parse()`'s first positional argument is a
+    # connection, and what a connection holds is not knowable here.
+    return(parsed_language_values(
+      call_formal_argument(expr, "text", positional = FALSE)
+    ))
+  }
+  NULL
+}
+
+# The symbols a statically known string names. An empty string is dropped
+# rather than turned into a symbol, because `as.name("")` is an error in R and
+# the walk must raise none of its own.
+recovered_name_values <- function(argument) {
+  if (length(argument) == 0L) {
+    return(NULL)
+  }
+  text <- static_character_value(argument[[1L]])
+  if (is.null(text)) {
+    return(NULL)
+  }
+  lapply(text[nzchar(text)], as.name)
+}
+
+# The language a statically known string parses to. Parsing is not evaluation:
+# nothing the caller wrote runs here, which is what lets the recovery happen
+# during planning at all. Text that does not parse is reported as unknown
+# rather than raised, since the call itself raises R's own condition when it
+# runs.
+parsed_language_values <- function(argument) {
+  if (length(argument) == 0L) {
+    return(NULL)
+  }
+  text <- static_character_value(argument[[1L]])
+  if (is.null(text)) {
+    return(NULL)
+  }
+  parsed <- tryCatch(
+    str2expression(paste(text, collapse = "\n")),
+    error = function(cnd) NULL
+  )
+  if (is.null(parsed)) {
+    return(NULL)
+  }
+  as.list(parsed)
+}
+
+# The character vector an expression is statically known to be, and `NULL`
+# where it is not. A literal is one, and so is a `c()` of literals, which is
+# how a caller writes the vector `mget()` takes; anything else names a value
+# this walk cannot see without running it.
+static_character_value <- function(expr) {
+  if (is.character(expr)) {
+    if (anyNA(expr)) {
+      return(NULL)
+    }
+    return(expr)
+  }
+  if (!rlang::is_call(expr, "c")) {
+    return(NULL)
+  }
+  values <- lapply(rlang::call_args(expr), static_character_value)
+  if (any(vapply(values, is.null, logical(1)))) {
+    return(NULL)
+  }
+  recovered <- unlist(values, use.names = FALSE)
+  if (is.null(recovered)) {
+    # `c()` of nothing, which names nothing.
+    return(character())
+  }
+  recovered
 }
 
 # Required because dtplyr is an optional Suggest rather than an Import: it
