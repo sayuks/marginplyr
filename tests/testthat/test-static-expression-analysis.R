@@ -2050,6 +2050,11 @@ test_that("an empty argument answers as omitted wherever the walk reads one", {
     x
   }))
   injected <- known_injected_argument_name(quote(`:=`(, 1)))
+  # The contrast, in both spellings of a name this can read: the empty
+  # argument has to fall through the same branch a readable name is taken by,
+  # rather than the branch taking it under the name `""`.
+  injected_symbol <- known_injected_argument_name(quote(x := 1))
+  injected_string <- known_injected_argument_name(quote("x" := 1))
 
   expect_identical(subset, "value")
   expect_identical(pronoun, character())
@@ -2057,6 +2062,8 @@ test_that("an empty argument answers as omitted wherever the walk reads one", {
   expect_identical(assigned, "share")
   expect_identical(removed, c("share", "x"))
   expect_identical(injected, "")
+  expect_identical(injected_symbol, "x")
+  expect_identical(injected_string, "x")
 })
 
 test_that("an empty argument outside `across()` evaluates as dplyr evaluates", {
