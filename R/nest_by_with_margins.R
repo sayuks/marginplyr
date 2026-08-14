@@ -147,7 +147,9 @@ nest_by_with_margins <- function(.data,
     )
     result <- dplyr::summarize(
       empty_data,
-      "{.key}" := list(dplyr::pick(dplyr::everything()))
+      "{.key}" := list(
+        !!nest_cell_expr(empty_payload = ncol(empty_data) == 0L)
+      )
     )
     if (!is.null(.id)) {
       result <- dplyr::mutate(result, "{.id}" := 1L)

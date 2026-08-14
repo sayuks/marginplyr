@@ -76,3 +76,10 @@
   internal columns. `.keep = TRUE` retains original pre-margin key values,
   and nesting rejects duplicate sets with `.duplicates = "keep"` because
   their visible outer keys would be indistinguishable.
+* A nesting that leaves no payload column now nests one inner row per source
+  row, on detail groups, subtotals, and the Grand total set alike, as
+  `dplyr::nest_by()` does, and local and `dtplyr` results agree once collected.
+  An input with no columns at all is outside that agreement, because a
+  `data.table` cannot represent one. The class of such a cell is described
+  rather than promised, as every nested element class is: on both backends it
+  is what `dplyr::tibble()` produced.
