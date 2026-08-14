@@ -374,38 +374,38 @@ rewrite_across_selection <- function(expr,
   call_args <- parsed$call_args
   selection_index <- parsed$cols_index
 
-  if (selection_index == 0L || is.na(selection_index)) {
-    selected <- resolve_summary_selection(
-      rlang::expr(dplyr::everything()),
-      env = env,
-      data_proxy = data_proxy
-    )
+  # One resolution, whichever way the selection was written: `parsed$cols` is
+  # already the `dplyr::everything()` that an omitted `.cols` selects, and an
+  # argument the caller left empty is omitted in exactly that sense. What the
+  # branch decides is only where the resolved selection goes -- prepended when
+  # no argument occupies `.cols`, and written back over the argument that does,
+  # so an empty one keeps its position instead of being dropped from the
+  # middle of the call (#174).
+  selected <- resolve_summary_selection(
+    parsed$cols,
+    env = env,
+    data_proxy = data_proxy
+  )
+  if (selection_index == 0L) {
     call_args <- append(
       list(.cols = summary_all_of_expr(selected, data_proxy)),
       call_args
     )
     selection_index <- 1L
   } else {
-    selected <- resolve_summary_selection(
-      call_args[[selection_index]],
-      env = env,
-      data_proxy = data_proxy
-    )
     call_args[[selection_index]] <- summary_all_of_expr(selected, data_proxy)
   }
 
   if (identical(call_name, "across") && normalize_across_names) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
-    names_index <- parsed$names_index
-    unpack_index <- parsed$unpack_index
-    unpack_is_false <- unpack_index == 0L || isFALSE(tryCatch(
-      rlang::eval_tidy(call_args[[unpack_index]], env = env),
+    unpack_is_false <- is.null(parsed$unpack) || isFALSE(tryCatch(
+      rlang::eval_tidy(parsed$unpack, env = env),
       error = function(cnd) NULL
     ))
     function_names <- known_across_function_names(parsed)
 
     if (
-      names_index > 0L &&
+      !is.null(parsed$names) &&
         unpack_is_false &&
         length(function_names) == 1L
     ) {
@@ -417,24 +417,22 @@ rewrite_across_selection <- function(expr,
           data_proxy
         )
 
-        fns_index <- parsed$fns_index
         if (
-          fns_index > 0L &&
-            rlang::is_call(call_args[[fns_index]], "list") &&
-            length(call_args[[fns_index]]) == 2L
+          rlang::is_call(parsed$fns, "list") &&
+            length(parsed$fns) == 2L
         ) {
-          call_args[[fns_index]] <- call_args[[fns_index]][[2L]]
+          call_args[[parsed$fns_index]] <- parsed$fns[[2L]]
         }
-        call_args <- call_args[-names_index]
+        call_args <- call_args[-parsed$names_index]
       }
     }
   }
 
   if (identical(call_name, "across")) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
-    if (parsed$names_index > 0L) {
+    if (!is.null(parsed$names)) {
       call_args[[parsed$names_index]] <- rlang::eval_tidy(
-        call_args[[parsed$names_index]],
+        parsed$names,
         env = env
       )
     }
@@ -553,29 +551,30 @@ known_injected_argument_name <- function(expr) {
     return("")
   }
 
-  lhs <- expr[[2L]]
-  if (is.character(lhs) && length(lhs) == 1L && !is.na(lhs)) {
-    return(lhs)
+  # By subscript, because a name-position argument the caller left empty is R's
+  # missing marker: `lhs <- expr[[2L]]` binds it and raises `missingArgError`
+  # on the first read of that name (#174). It names no output, which is what
+  # the fall-through below already says.
+  if (
+    is.character(expr[[2L]]) &&
+      length(expr[[2L]]) == 1L &&
+      !is.na(expr[[2L]])
+  ) {
+    return(expr[[2L]])
   }
-  if (rlang::is_symbol(lhs)) {
-    return(rlang::as_name(lhs))
+  if (is_name_part(expr[[2L]])) {
+    return(rlang::as_name(expr[[2L]]))
   }
   ""
 }
 
 known_across_output_names <- function(expr, env, data_proxy) {
   parsed <- parse_across_arguments(expr)
-  call_args <- parsed$call_args
   cols_expr <- parsed$cols
   column_names <- names(resolve_summary_selection(cols_expr, env, data_proxy))
 
-  names_index <- parsed$names_index
-  if (names_index == 0L) {
-    fns_index <- parsed$fns_index
-    if (
-      fns_index > 0L &&
-        rlang::is_call(call_args[[fns_index]], "list")
-    ) {
+  if (is.null(parsed$names)) {
+    if (rlang::is_call(parsed$fns, "list")) {
       function_names <- known_across_function_names(parsed)
       return(unlist(
         lapply(
@@ -590,7 +589,7 @@ known_across_output_names <- function(expr, env, data_proxy) {
     return(column_names)
   }
   names_template <- tryCatch(
-    rlang::eval_tidy(call_args[[names_index]], env = env),
+    rlang::eval_tidy(parsed$names, env = env),
     error = function(cnd) NULL
   )
   if (
@@ -660,17 +659,15 @@ known_across_source_names <- function(expr, env, data_proxy) {
   get_col_names(data_proxy, dplyr::everything())[unname(selected)]
 }
 
+# `"1"` is what `{.fn}` expands to for a `.fns` that is one function, and for
+# one that was never supplied: dplyr numbers a single function by its position
+# whether the caller wrote it or took the identity default.
 known_across_function_names <- function(parsed) {
-  fns_index <- parsed$fns_index
-  if (fns_index == 0L) {
+  if (!rlang::is_call(parsed$fns, "list")) {
     return("1")
   }
 
-  fns_expr <- parsed$call_args[[fns_index]]
-  if (!rlang::is_call(fns_expr, "list")) {
-    return("1")
-  }
-  fns <- static_call_args(fns_expr)
+  fns <- static_call_args(parsed$fns)
   fns_names <- names(fns)
   if (is.null(fns_names)) {
     fns_names <- rep("", length(fns))
@@ -692,6 +689,22 @@ name_unnamed_by_position <- function(arg_names, prefix) {
   arg_names
 }
 
+# The one place that knows an `across()` argument can be empty, so that no
+# caller has to. R's empty argument is what a caller leaves in a position they
+# omitted, and R answers it as an omission: `across(v, )` takes `.fns`'s
+# default exactly as `across(v)` does, which is why `dplyr::across()` treats
+# the two alike down to the `{.fn}` expansion and the `.cols` deprecation. The
+# value fields below therefore answer for an empty argument what they answer
+# for an absent one, and the index fields keep naming the position it occupies:
+# a rewrite puts its replacement back where the caller wrote it rather than
+# dropping an argument, which would slide every positional argument after it
+# into a formal that is not its own (#174).
+#
+# Reading a value here rather than out of `call_args` is also what keeps the
+# empty argument from being bound to a name downstream. `parts[[index]]` is
+# safe, and passing what it returns straight to a function is safe, but binding
+# it -- `for (part in parts)` as in #168, or `part <- parts[[index]]` as here --
+# raises base R's untyped `missingArgError` on the first read of that name.
 parse_across_arguments <- function(expr) {
   call_args <- rlang::call_args(expr)
   arg_names <- names(call_args)
@@ -715,6 +728,9 @@ parse_across_arguments <- function(expr) {
   used <- c(cols_index, fns_index, names_index, unpack_index)
   additional <- setdiff(seq_along(call_args), used[used > 0L])
   additional_names <- name_unnamed_by_position(arg_names[additional], "..")
+  supplied <- function(index) {
+    index > 0L && !rlang::is_missing(call_args[[index]])
+  }
 
   list(
     call_args = call_args,
@@ -722,14 +738,14 @@ parse_across_arguments <- function(expr) {
     fns_index = fns_index,
     names_index = names_index,
     unpack_index = unpack_index,
-    cols = if (cols_index == 0L) {
-      rlang::expr(dplyr::everything())
-    } else {
+    cols = if (supplied(cols_index)) {
       call_args[[cols_index]]
+    } else {
+      rlang::expr(dplyr::everything())
     },
-    fns = if (fns_index == 0L) NULL else call_args[[fns_index]],
-    names = if (names_index == 0L) NULL else call_args[[names_index]],
-    unpack = if (unpack_index == 0L) NULL else call_args[[unpack_index]],
+    fns = if (supplied(fns_index)) call_args[[fns_index]] else NULL,
+    names = if (supplied(names_index)) call_args[[names_index]] else NULL,
+    unpack = if (supplied(unpack_index)) call_args[[unpack_index]] else NULL,
     additional = additional_names
   )
 }

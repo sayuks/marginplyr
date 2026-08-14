@@ -229,6 +229,41 @@ test_that("dtplyr summary reuses one typed snapshot across selections", {
   expect_setequal(result$total_value, c(10, 20, 30))
 })
 
+test_that("dtplyr unwraps a `.fns` list of one into the function it holds", {
+  skip_if_backend_absent("dtplyr")
+  # dtplyr is the only backend whose `across()` output names are normalized
+  # before staging: the `.names` template is expanded into the selection, and
+  # a `.fns` list holding one function is unwrapped to that function, since a
+  # list would otherwise name the outputs a second time. The rebuild reads
+  # that list off the parse rather than out of the argument list it is
+  # rewriting (#174), so the unwrapping is asserted here. Compared against the
+  # local result, which needs no optional backend.
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      dplyr::across(c(units, revenue), list(sum), .names = "{.col}_total"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ) |>
+      dplyr::arrange(group)
+  }
+
+  expected <- summarize(data)
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  expect_equal(
+    as.data.frame(dplyr::collect(query)),
+    as.data.frame(expected)
+  )
+  # The template named each output once, rather than the list naming it again.
+  expect_named(expected, c("group", "units_total", "revenue_total"))
+})
+
 test_that("summary selection errors use the package condition seam", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   summary_options <- list(.groups = "drop")

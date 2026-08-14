@@ -1730,6 +1730,438 @@ test_that("an empty argument does not hide a share helper beside it", {
   expect_s3_class(error, "marginplyr_error")
 })
 
+# The tests below cover the second place an empty argument reaches, and the
+# reason it needed one of its own (#174). #168's walk only reads a summary
+# expression; an `across()` call is taken apart and rebuilt, so an argument the
+# caller omitted has to come back out in the position they left it, still
+# omitted. R decides what "omitted" means and dplyr follows it: `f(a = )` takes
+# the default exactly as `f()` does, so `dplyr::summarise()` is the oracle for
+# every shape here rather than a rule restated in this package.
+#
+# One difference from dplyr is deliberate and is not a shape omitted below.
+# dplyr deprecated an omitted `.cols` and warns about it, while a summary
+# staged here reaches dplyr with its selection already resolved to an
+# `all_of()` literal -- the invariant `native_summary_output_names()` depends
+# on -- so the call dplyr finally sees omits nothing and its lifecycle warning
+# does not fire. That is what the omitted spelling `across(.fns = sum)` has
+# always done here, and the empty spelling now matches it. The columns and the
+# values are dplyr's either way, which is what these assert.
+
+test_that("an omitted `across()` selection keeps the columns dplyr selects", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+
+  result <- summarize_with_margins(
+    data,
+    dplyr::across(, sum),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  # Named and positional spellings of the same omission. R matches `.cols` by
+  # name here and finds it empty, which is the same missing argument the
+  # positional spelling leaves in the first position.
+  named <- summarize_with_margins(
+    data,
+    dplyr::across(.cols = , .fns = sum),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+
+  expected <- suppressWarnings(
+    data |>
+      dplyr::group_by(region) |>
+      dplyr::summarise(dplyr::across(, sum), .groups = "drop")
+  )
+
+  expect_equal(
+    dplyr::arrange(result[!is.na(result$region), ], region),
+    as.data.frame(expected),
+    ignore_attr = "row.names"
+  )
+  expect_equal(named, result)
+
+  # The one difference from dplyr, asserted rather than left to the comment
+  # above. Raising the deprecation is what makes it visible: dplyr refuses
+  # `across(, sum)` outright there, while the summary staged here reaches
+  # dplyr with `.cols` resolved to an `all_of()` literal, so nothing about the
+  # call it finally sees is deprecated. A change that let the signal through
+  # fails here and sends its author to that comment rather than passing
+  # silently in either direction.
+  with_deprecation_errors({
+    expect_error(
+      data |>
+        dplyr::group_by(region) |>
+        dplyr::summarise(dplyr::across(, sum), .groups = "drop"),
+      "across()",
+      fixed = TRUE
+    )
+    expect_equal(
+      summarize_with_margins(
+        data,
+        dplyr::across(, sum),
+        .grouping = rollup(region),
+        .margin_label = NULL
+      ),
+      result
+    )
+  })
+})
+
+test_that("an omitted `across()` function keeps the columns dplyr returns", {
+  # An omitted `.fns` is the identity, so every group must hold one row for the
+  # result to be a summary at all -- which is dplyr's rule, not this package's,
+  # and the reason the plan below carries a single grouping set.
+  data <- data.frame(
+    region = c("East", "West"),
+    units = c(1, 3),
+    revenue = c(2, 4)
+  )
+  plan <- grouping_sets(grouping_set(region))
+
+  result <- summarize_with_margins(
+    data,
+    dplyr::across(units, ),
+    .grouping = plan
+  )
+  # `{.fn}` expands to `"1"` for an omitted `.fns`, exactly as it does for a
+  # `.fns` that is a single unnamed function.
+  templated <- summarize_with_margins(
+    data,
+    dplyr::across(c(units, revenue), , .names = "{.col}_{.fn}"),
+    .grouping = plan
+  )
+
+  expected <- data |>
+    dplyr::group_by(region) |>
+    dplyr::summarise(dplyr::across(units, ), .groups = "drop")
+  expected_templated <- data |>
+    dplyr::group_by(region) |>
+    dplyr::summarise(
+      dplyr::across(c(units, revenue), , .names = "{.col}_{.fn}"),
+      .groups = "drop"
+    )
+
+  expect_equal(result, as.data.frame(expected), ignore_attr = "row.names")
+  expect_equal(
+    templated,
+    as.data.frame(expected_templated),
+    ignore_attr = "row.names"
+  )
+})
+
+test_that("an omitted `across()` argument leaves the positions around it", {
+  # The surrounding arguments are what a rebuild that drops or appends gets
+  # wrong: an argument removed from the middle moves every positional argument
+  # after it into a formal that is not its own.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+  summarize <- function(...) {
+    summarize_with_margins(
+      data,
+      ...,
+      .grouping = rollup(region),
+      .margin_label = NULL
+    )
+  }
+  expected <- function(...) {
+    as.data.frame(suppressWarnings(
+      data |>
+        dplyr::group_by(region) |>
+        dplyr::summarise(..., .groups = "drop")
+    ))
+  }
+  without_margins <- function(result) {
+    dplyr::arrange(result[!is.na(result$region), ], region)
+  }
+
+  # An omitted `.cols` before a `.names` template that names what follows it.
+  expect_equal(
+    without_margins(summarize(dplyr::across(, sum, .names = "{.col}_total"))),
+    expected(dplyr::across(, sum, .names = "{.col}_total")),
+    ignore_attr = "row.names"
+  )
+  # An omitted `.names` after a selection and a function, both positional.
+  expect_equal(
+    without_margins(summarize(dplyr::across(c(units), sum, .names = ))),
+    expected(dplyr::across(c(units), sum, .names = )),
+    ignore_attr = "row.names"
+  )
+  # An omitted `.unpack`, whose default this package also reads.
+  expect_equal(
+    without_margins(summarize(dplyr::across(units, sum, .unpack = ))),
+    expected(dplyr::across(units, sum, .unpack = )),
+    ignore_attr = "row.names"
+  )
+  # Partially named: an omitted `.cols`, a positional `.fns`, and a named
+  # argument that `across()` forwards to it. The forwarded argument has to
+  # stay forwarded, which it does not if the omission is closed by inserting
+  # an argument ahead of it. dplyr deprecated forwarding through `...`, and
+  # that its warning still reaches the caller is the evidence the argument is
+  # in that position after the rebuild rather than in a formal of its own.
+  expect_equal(
+    suppressWarnings(
+      without_margins(summarize(dplyr::across(, mean, na.rm = TRUE)))
+    ),
+    expected(dplyr::across(, mean, na.rm = TRUE)),
+    ignore_attr = "row.names"
+  )
+  # Collected rather than expected one at a time, since a plan of this shape
+  # runs one branch per grouping set and each raises the warning of its own.
+  signalled <- character()
+  withCallingHandlers(
+    summarize(dplyr::across(, mean, na.rm = TRUE)),
+    warning = function(condition) {
+      signalled <<- c(signalled, conditionMessage(condition))
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_true(any(grepl(
+    "argument of `across()` is deprecated",
+    signalled,
+    fixed = TRUE
+  )))
+  # And with the function list named, where `{.fn}` names each output.
+  expect_equal(
+    without_margins(summarize(dplyr::across(, list(total = sum, m = mean)))),
+    expected(dplyr::across(, list(total = sum, m = mean))),
+    ignore_attr = "row.names"
+  )
+})
+
+test_that("an invalid omitted `across()` argument raises dplyr's own error", {
+  # An omitted `.fns` over a group of more than one row is a size error dplyr
+  # itself raises, and the analysis has no fault to report: the caller must see
+  # the condition their own expression produces, not a missing-argument lookup
+  # from inside the rebuild (ADR-0015).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6)
+  )
+
+  baseline <- expect_error(
+    data |>
+      dplyr::group_by(region) |>
+      dplyr::summarise(dplyr::across(units, ), .groups = "drop")
+  )
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(units, ),
+      .grouping = rollup(region)
+    )
+  )
+
+  expect_identical(class(error), class(baseline))
+  expect_false(inherits(error, "missingArgError"))
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_match(conditionMessage(error), "must be size 1", fixed = TRUE)
+})
+
+test_that("an omitted selection in a share `across()` selects every source", {
+  # The share planner reads the selection from the same parse, so an omitted
+  # one has to reach it as the `everything()` dplyr would have applied --
+  # over the eligible preceding summaries, which is what an `across()` share
+  # selects from.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+  summarize <- function(selection) {
+    rlang::inject(summarize_with_margins(
+      data,
+      units = sum(units),
+      revenue = sum(revenue),
+      dplyr::across(!!!selection, share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    ))
+  }
+
+  expect_equal(
+    summarize(list(rlang::missing_arg())),
+    summarize(list(quote(dplyr::everything())))
+  )
+})
+
+test_that("an omitted share `.fns` is refused by name, not by lookup", {
+  # A share helper written past an omitted `.fns` is not a `.fns` at all, and
+  # the diagnostic that says so is the one the caller can act on.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6)
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(units),
+      dplyr::across(units, , share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(region)
+    ),
+    "`.fns` must be",
+    fixed = TRUE
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_false(inherits(error, "missingArgError"))
+})
+
+test_that("an empty argument answers as omitted wherever the walk reads one", {
+  # `across()` was the reconstruction path #174 was filed for, and the audit
+  # that fixed it found the same read in four more places, each reached by an
+  # expression R and dplyr both accept: a name position (`rm(x, )`), an
+  # injected output name, the `.data` pronoun's index, and the target of a
+  # binding written as a call. All five bound a part of the caller's call to a
+  # name, which is `missingArgError` on the first read of it (#168), and the
+  # empty argument passes `rlang::is_symbol()` besides, so the name `""` was
+  # what the two survivors reported.
+  #
+  # Each expression is read into a variable before it is asserted on, because
+  # `expect_identical()` quotes its own first argument and rlang's quotation
+  # walks what it finds there -- an expression carrying an empty argument
+  # aborts in the expectation rather than in what it is testing.
+  read <- function(expr) expression_data_symbols(expr)
+
+  subset <- read(quote(sum(value[])))
+  pronoun <- read(quote(sum(.data[[, 1]])))
+  # `` `for`(, seq, body) `` and `` `<-`(, value) `` are calls R evaluates
+  # without complaint, so the walk has to answer them: neither binds a name,
+  # and the parts around the empty target are read as they always were.
+  looped <- read(quote({
+    `for`(, share, NULL)
+    1
+  }))
+  assigned <- read(quote({
+    `<-`(, share)
+    2
+  }))
+  # An `rm()` whose argument is empty removes nothing readable, so the bound
+  # set empties and the read after it is reported -- the over-reporting side
+  # this walk is required to be wrong on (#162).
+  removed <- read(quote({
+    x <- share
+    rm(x, )
+    x
+  }))
+  injected <- known_injected_argument_name(quote(`:=`(, 1)))
+  # The contrast, in both spellings of a name this can read: the empty
+  # argument has to fall through the same branch a readable name is taken by,
+  # rather than the branch taking it under the name `""`.
+  injected_symbol <- known_injected_argument_name(quote(x := 1))
+  injected_string <- known_injected_argument_name(quote("x" := 1))
+
+  expect_identical(subset, "value")
+  expect_identical(pronoun, character())
+  expect_identical(looped, "share")
+  expect_identical(assigned, "share")
+  expect_identical(removed, c("share", "x"))
+  expect_identical(injected, "")
+  expect_identical(injected_symbol, "x")
+  expect_identical(injected_string, "x")
+})
+
+test_that("an empty argument outside `across()` evaluates as dplyr evaluates", {
+  # The end-to-end half of the same audit, with dplyr as the oracle: whatever
+  # each expression does in `dplyr::summarise()` is what it must do here,
+  # whether that is a result or the error the caller's own code produces.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # A name a `tibble()` builds from an empty argument is a name dplyr accepts,
+  # so a result is what both sides must return.
+  injected <- summarize_with_margins(
+    data,
+    tibble::tibble(`:=`(, 1)),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expected <- data |>
+    dplyr::group_by(region) |>
+    dplyr::summarise(tibble::tibble(`:=`(, 1)), .groups = "drop")
+  expect_equal(
+    dplyr::arrange(injected[!is.na(injected$region), ], region),
+    as.data.frame(expected),
+    ignore_attr = "row.names"
+  )
+
+  # `rm(x, )` is refused by `rm()` itself, so the caller must see that refusal
+  # rather than a missing-argument lookup from inside the walk.
+  baseline <- expect_error(
+    data |>
+      dplyr::group_by(region) |>
+      dplyr::summarise(
+        derived = {
+          x <- 2
+          rm(x, )
+          5
+        },
+        .groups = "drop"
+      )
+  )
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      derived = {
+        x <- 2
+        rm(x, )
+        5
+      },
+      .grouping = rollup(region)
+    )
+  )
+  expect_identical(class(error), class(baseline))
+  expect_identical(class(error$parent), class(baseline$parent))
+  expect_false(inherits(error, "missingArgError"))
+  expect_match(
+    conditionMessage(error$parent),
+    "zero-length variable name",
+    fixed = TRUE
+  )
+})
+
+test_that("`parse_across_arguments()` answers an empty argument as omitted", {
+  # The seam every `across()` path reads, and the one place that has to know
+  # about the empty argument: each field below answers what it answers for an
+  # argument that is absent, so no caller binds R's missing marker to a name
+  # -- the read that raises `missingArgError` whether it is spelled `for` or
+  # `<-` (#168).
+  empty <- parse_across_arguments(quote(across(, , .names = , .unpack = )))
+  absent <- parse_across_arguments(quote(across()))
+
+  expect_identical(empty$cols, absent$cols)
+  expect_identical(empty$fns, absent$fns)
+  expect_identical(empty$names, absent$names)
+  expect_identical(empty$unpack, absent$unpack)
+  expect_identical(empty$additional, absent$additional)
+
+  # The positions are the half that is not the same. An empty argument
+  # occupies the formal it was written in, so the indices name it and a
+  # rewrite puts its replacement back where the caller left it.
+  expect_identical(empty$cols_index, 1L)
+  expect_identical(empty$fns_index, 2L)
+  expect_identical(empty$names_index, 3L)
+  expect_identical(empty$unpack_index, 4L)
+  expect_true(rlang::is_missing(empty$call_args[[1L]]))
+  expect_true(rlang::is_missing(empty$call_args[[3L]]))
+
+  # A supplied argument is unchanged by the same reading.
+  supplied <- parse_across_arguments(
+    quote(across(units, sum, .names = "{.col}", .unpack = FALSE))
+  )
+  expect_identical(supplied$cols, quote(units))
+  expect_identical(supplied$fns, quote(sum))
+  expect_identical(supplied$names, "{.col}")
+  expect_identical(supplied$unpack, FALSE)
+})
+
 test_that("no analysed shape reaches the caller as an untyped condition", {
   # The classes below are what each site raised before #100, and before #168 in
   # `missingArgError`'s case. Asserting their absence together keeps a future

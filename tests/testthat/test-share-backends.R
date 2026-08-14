@@ -312,6 +312,44 @@ test_that("dtplyr preserves across arguments for unreferenced functions", {
   )
 })
 
+test_that("dtplyr preserves an omitted across selection", {
+  skip_if_backend_absent("dtplyr")
+  # dtplyr takes the share `across()` apart and rebuilds it a second time, to
+  # wrap each function in the validation the lazy backend needs, so an argument
+  # the caller omitted has one more rebuild to survive (#174). Compared against
+  # the local result, which needs no optional backend and cannot agree with a
+  # wrong rebuild by making the same mistake.
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = c(1, 3, 6),
+    other = c(2, 4, 8)
+  )
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      rest = sum(other),
+      dplyr::across(, share_of_parent, .names = "{.col}_share"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ) |>
+      dplyr::arrange(group)
+  }
+
+  expected <- summarize(data)
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  expect_equal(
+    as.data.frame(dplyr::collect(query)),
+    as.data.frame(expected)
+  )
+  # The omission selected both eligible summaries, as `everything()` does.
+  expect_named(
+    expected,
+    c("group", "total", "rest", "total_share", "rest_share")
+  )
+})
+
 test_that("Arrow rejects Parent shares before constructing a query", {
   skip_if_backend_absent("arrow")
   source <- arrow::Table$create(data.frame(
