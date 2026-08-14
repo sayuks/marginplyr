@@ -66,6 +66,13 @@
 #' [dplyr::tibble()] produced, because a `data.table` cannot hold rows without
 #' columns at all.
 #'
+#' That last point is also a limit on what an input can carry into `dtplyr`,
+#' rather than anything nesting does: a data frame with rows and no columns
+#' loses its rows on the way in, so `dtplyr::lazy_dt(data.frame(row.names =
+#' 1:3))` is already empty before marginplyr reads it and no behavior here can
+#' restore the three rows. Nest an input that has no columns at all locally
+#' when its row count matters.
+#'
 #' No input column name is reserved for internal bookkeeping. Temporary
 #' grouping-set and `.keep` columns are generated collision-free and removed
 #' before the result is returned.

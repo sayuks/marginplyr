@@ -399,16 +399,14 @@ test_that("nesting keeps cardinality under both keep options", {
 test_that("nesting keeps cardinality when duplicate sets are dropped", {
   # `.duplicates` is the other option the cardinality has to survive, and a
   # dropped repeat must leave the surviving set's cells the size they were.
+  # Refusing the repeat is asserted where it belongs, in "nesting drops
+  # duplicate grouping sets" above; this covers only what dropping it does to
+  # a cell with no payload column.
   input <- keys_only_sales()
   spec <- grouping_sets(rollup(region, store), grouping_set(region, store))
   expected <- keys_only_expected()
 
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
-    expect_error(
-      verb(input, .grouping = spec, .sort = "last"),
-      "Duplicate grouping sets"
-    )
-
     dropped <- verb(
       input,
       .grouping = spec,
