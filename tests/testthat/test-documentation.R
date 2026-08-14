@@ -2,6 +2,10 @@
 # rules they state must be reachable from every topic that points at them.
 # These tests read the Rd sources rather than any private roxygen structure.
 
+read_documentation <- function(path) {
+  paste(readLines(path, warn = FALSE), collapse = "\n")
+}
+
 rd_topics <- function() {
   # Prefer the source `man/` directory, because `tools::Rd_db()` reads whatever
   # marginplyr version happens to be installed and would silently test stale
@@ -9,9 +13,7 @@ rd_topics <- function() {
   man <- testthat::test_path("..", "..", "man")
   if (dir.exists(man)) {
     files <- list.files(man, pattern = "[.]Rd$", full.names = TRUE)
-    topics <- lapply(files, function(file) {
-      paste(readLines(file, warn = FALSE), collapse = "\n")
-    })
+    topics <- lapply(files, read_documentation)
     return(stats::setNames(topics, basename(files)))
   }
 
@@ -133,6 +135,18 @@ test_that("the Grouping-identity comparison has exactly one canonical home", {
 # which makes it the likelier of the two to arrive looking correct.
 version_blind_guards <- c("requireNamespace", "is_installed")
 
+# Both halves of the README are pages: `README.Rmd` is where a claim is
+# written, and `README.md` is what a reader on GitHub is shown and what the
+# website's home page includes. `.Rbuildignore` keeps the source out of the
+# tarball, so a check run reaches the generated half alone -- but it does reach
+# it, and `metadata_path()` is what finds it there, so a run that could reach
+# neither copy stops rather than returning a page set with no README in it.
+readme_sources <- function() {
+  source <- testthat::test_path("..", "..", "README.Rmd")
+  paths <- c(source[file.exists(source)], metadata_path("README.md"))
+  stats::setNames(lapply(paths, read_documentation), basename(paths))
+}
+
 # Every shipped page whose guards this holds to, whatever it is written in.
 #
 # `.Rbuildignore` keeps no vignette out of the tarball, but `R CMD check`
@@ -147,12 +161,10 @@ documentation_sources <- function() {
   vignettes <- testthat::test_path("..", "..", "vignettes")
   if (dir.exists(vignettes)) {
     sources <- list.files(vignettes, pattern = "[.]qmd$", full.names = TRUE)
-    text <- lapply(sources, function(path) {
-      paste(readLines(path, warn = FALSE), collapse = "\n")
-    })
+    text <- lapply(sources, read_documentation)
     pages <- c(pages, stats::setNames(text, basename(sources)))
   }
-  pages
+  c(pages, readme_sources())
 }
 
 test_that("no shipped page guards on installation alone", {
@@ -183,6 +195,84 @@ test_that("no shipped page guards on installation alone", {
       "`inst/suggests/guard.R` instead."
     )
   )
+})
+
+# Where a reader can get the package is a fact about the outside world, and no
+# page can be read to find it out: a README claiming CRAN availability reads
+# exactly the same whether CRAN has published the package or not. DESCRIPTION's
+# `Config/marginplyr/cran-status` field is where that fact is recorded, once,
+# and it is what the two directions below are asserted against.
+#
+# Only `unpublished` and `published` can be read. Any other value stops the
+# test rather than being treated as either, for the reason a malformed
+# `must_error` header halts a render: a field this cannot read is a field whose
+# assertions silently stopped happening.
+cran_status <- function() {
+  field <- "Config/marginplyr/cran-status"
+  status <- dcf_field(metadata_path("DESCRIPTION"), field)
+  if (!isTRUE(status %in% c("unpublished", "published"))) {
+    stop(
+      "DESCRIPTION's `",
+      field,
+      "` must read `unpublished` or `published`, not `",
+      status,
+      "`.",
+      call. = FALSE
+    )
+  }
+  status
+}
+
+# The instruction itself, which is what a reader installs from. The other two
+# forms below claim availability without giving the reader anything to run, so
+# only this one can stand for the published direction.
+cran_install_call <- "install.packages(\"marginplyr\")"
+
+# The concrete forms in which a page tells a reader that CRAN has this package.
+# Each one names marginplyr, because the README's comparison table links to
+# another package's CRAN page and that is not a claim about this one. Prose
+# needing to mention the CRAN call has to spell it some other way, as the
+# version-blind guard scan above already requires of prose naming those calls.
+cran_claims <- c(
+  cran_install_call,
+  "cranlogs.r-pkg.org/badges/marginplyr",
+  "cran.r-project.org/package=marginplyr"
+)
+
+test_that("installation instructions follow the recorded CRAN state", {
+  # The generated README is the page both directions below are about, and
+  # `readme_sources()` stops rather than leaving it out, so neither direction
+  # can pass by having nothing to check.
+  pages <- documentation_sources()
+
+  claiming <- names(pages)[vapply(
+    pages,
+    function(text) {
+      any(vapply(cran_claims, grepl, logical(1), x = text, fixed = TRUE))
+    },
+    logical(1)
+  )]
+
+  if (identical(cran_status(), "unpublished")) {
+    # Named rather than counted, so the failure says which page is telling
+    # readers to install from a repository that does not have the package.
+    expect_equal(
+      claiming,
+      character(),
+      info = paste(
+        "Set `Config/marginplyr/cran-status` to `published` only once CRAN",
+        "has published the package; until then no page may claim it."
+      )
+    )
+  } else {
+    # The other direction, so flipping the field is what activates the CRAN
+    # instruction rather than something a release can forget to write. It asks
+    # for the instruction and not merely a claim, because the release also
+    # restores a CRAN badge to the same file: a check any claim satisfied
+    # would pass a README carrying the badge and still sending every reader to
+    # GitHub for the install itself.
+    expect_true(grepl(cran_install_call, pages[["README.md"]], fixed = TRUE))
+  }
 })
 
 test_that("every shipped page using the guard also sources it", {

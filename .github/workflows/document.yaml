@@ -23,16 +23,48 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      # README.md is knitted through rmarkdown's `github_document` format,
+      # which is pandoc; nothing else in this job needs it.
+      #
+      # The version is pinned because pandoc's markdown writer is not stable
+      # across versions and the check below is a byte comparison: 3.8.3 writes
+      # the `text` info string on the fence at `README.Rmd`'s reporting-levels
+      # block, and 3.10.1 omits it. So an unpinned action reds this job on a
+      # README that is perfectly up to date, and reds it again on whatever
+      # r-lib moves its default to next. The pin names the renderer the
+      # committed `README.md` came from; moving it means regenerating that
+      # file in the same commit.
+      - uses: r-lib/actions/setup-pandoc@v2
+        with:
+          pandoc-version: '3.10.1'
+
       - uses: r-lib/actions/setup-r@v2
         with:
           use-public-rspm: true
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::roxygen2, local::.
+          extra-packages: any::roxygen2, any::rmarkdown, local::.
 
       - name: Regenerate documentation
         run: roxygen2::roxygenise()
+        shell: Rscript {0}
+
+      # README.md is generated from README.Rmd the same way, and it is read
+      # further than any other generated file here: GitHub shows it, and the
+      # website's home page includes it. `.Rbuildignore` keeps the source out
+      # of the tarball, so nothing a check run can reach says what the
+      # generated file was supposed to contain, and an installation
+      # instruction edited into one half alone is invisible until a reader
+      # follows it.
+      #
+      # Both regenerations run before either check, because this one writes
+      # into `man/` as well: `README.Rmd` sets `fig.path` to
+      # `man/figures/README-`, so a figure chunk added later produces a file
+      # the check below does not look at and the `man/` check would already
+      # have passed.
+      - name: Regenerate README.md
+        run: rmarkdown::render("README.Rmd", quiet = TRUE)
         shell: Rscript {0}
 
       # The committed help pages and NAMESPACE must be what the roxygen
@@ -45,3 +77,6 @@ jobs:
       # and `R CMD check` only rejects exports of objects that do not exist.
       - name: Check man/ and NAMESPACE are up to date
         run: git diff --exit-code man/ NAMESPACE
+
+      - name: Check README.md is up to date
+        run: git diff --exit-code README.md

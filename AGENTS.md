@@ -34,10 +34,70 @@ honest: any leak into `man/` fails CI.
 
 ### Documentation
 
-`man/` and `NAMESPACE` are generated. After changing roxygen comments run
-`roxygen2::roxygenise()` and commit the result;
-`.github/workflows/document.yaml` regenerates both and fails when either
-differs from what the roxygen comments produce.
+`man/`, `NAMESPACE`, and `README.md` are generated. After changing roxygen
+comments run `roxygen2::roxygenise()`; after changing `README.Rmd` run
+`rmarkdown::render("README.Rmd")`. Commit what either produces;
+`.github/workflows/document.yaml` regenerates all three and fails when any
+differs from what its source produces.
+
+The README is the generated file with the widest reach — GitHub shows it and
+the website's home page includes it — and the only one whose source
+`.Rbuildignore` keeps out of the tarball, so nothing a check run reaches
+records what it should have contained. Rendering it executes its chunks
+against the *installed* marginplyr, as the site build does, so install the
+working tree first or the regenerated file shows an older package's output.
+
+Its renderer is pinned, unlike roxygen2's, because pandoc's markdown writer
+is not stable across versions while the check is a byte comparison: pandoc
+3.8.3 — what `setup-pandoc@v2` installs by default — writes a `text` info
+string on the fence holding the reporting-levels block, and 3.10.1 omits it,
+so an unpinned job reds on a README nobody touched. `document.yaml` names the
+version the committed file came from; regenerating locally against a
+different pandoc produces a diff that is a pandoc difference and not a stale
+file. Moving the pin means regenerating `README.md` in the same commit.
+
+### Installation instructions
+
+An installation instruction is a claim about the outside world, and no file
+here can be read to check it: a README saying `install.packages()` finds
+marginplyr reads exactly the same whether CRAN has published the package or
+not. `DESCRIPTION`'s `Config/marginplyr/cran-status` field is where that fact
+is recorded — `unpublished` or `published`, no other value — and it is the
+only place it is written down. While it reads `unpublished`, the route the
+documentation gives is the one an external user can actually run today,
+`pak::pkg_install("sayuks/marginplyr")`.
+
+`test-documentation.R` asserts both directions against the field, over the Rd
+topics, the vignette sources, and both halves of the README. While the field
+reads `unpublished` no page may name the CRAN installation call, the cranlogs
+badge, or this package's CRAN page — the badge included because it renders
+`CRAN downloads 0/month` for a package CRAN has never seen, which is a claim
+of availability and not a report of zero interest. Once the field reads
+`published`, `README.md` has to carry the CRAN instruction. Both directions
+are load-bearing: the first is what stops the documentation getting ahead of
+CRAN, and the second is what stops a release flipping the field while the
+README still sends readers to GitHub alone.
+
+The scan is deliberately blunt, as the version-blind guard scan above is:
+prose that needs to name the CRAN installation call has to spell it some other
+way. Its markers all name marginplyr, because the README's comparison table
+links to another package's CRAN page and that is not a claim about this one.
+
+The milestone is publication, not submission. The field flips on the day
+`https://cran.r-project.org/package=marginplyr` resolves — not when the
+tarball is uploaded, not when `cran-comments.md` is written, and not when a
+release ticket is closed. A submission can be rejected or archived, and an
+instruction made true by uploading one would be false for however long that
+took. On that day:
+
+1. set the field to `published`;
+2. restore the CRAN paragraph to `README.Rmd`'s installation section, above
+   the GitHub route, and a CRAN badge to its badge block;
+3. regenerate `README.md`; and
+4. revisit the vignette installation blocks. They name the GitHub route only,
+   which stays true in both states and is why nothing asserts them — but the
+   distinction between the released and the development version becomes worth
+   drawing again, and it is deliberately not drawn now.
 
 ### Chunks that must fail
 

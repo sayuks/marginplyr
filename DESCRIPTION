@@ -36,6 +36,7 @@ Suggests:
     testthat (>= 3.0.0),
     tibble,
     tidyr
+Config/marginplyr/cran-status: unpublished
 Config/testthat/edition: 3
 VignetteBuilder:
     quarto

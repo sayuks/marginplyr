@@ -23,7 +23,7 @@ first. This guide focuses on query shape, execution, and backend support.
 
 ## Installation
 
-Install the development version of marginplyr from GitHub:
+Install marginplyr from GitHub:
 
 ```{r}
 #| eval: false

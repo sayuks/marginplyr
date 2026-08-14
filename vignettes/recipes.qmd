@@ -26,7 +26,7 @@ guide that explains why its answer works.
 
 ## Installation
 
-Install the development version of marginplyr from GitHub:
+Install marginplyr from GitHub:
 
 ```{r}
 #| eval: false

@@ -16,7 +16,6 @@ a lazy database table.
 [![Codecov test
 coverage](https://codecov.io/gh/sayuks/marginplyr/graph/badge.svg)](https://app.codecov.io/gh/sayuks/marginplyr)
 [![lint.yaml](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml)
-<a href = "https://sayuks.github.io/marginplyr/" target = "_blank"><img src="https://cranlogs.r-pkg.org/badges/marginplyr"></a>
 <!-- badges: end -->
 
 ``` r
@@ -81,13 +80,7 @@ backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 
 ## Installation
 
-You can install `marginplyr` from CRAN:
-
-``` r
-install.packages("marginplyr")
-```
-
-You can install the development version from
+`marginplyr` is not on CRAN yet. Install it from
 [GitHub](https://github.com/sayuks/marginplyr) with:
 
 ``` r

@@ -7,36 +7,9 @@
 # of restating it, so the holder is recorded in one place and the license files
 # are checked against that record.
 
-# Prefer the repository copy, because `system.file()` reads whichever marginplyr
-# happens to be installed. `R CMD check` runs the tests from a directory holding
-# neither copy, and there the installed package is the only one -- `LICENSE` is
-# installed beside `DESCRIPTION` because the `License` field names it.
-metadata_path <- function(file) {
-  source_copy <- test_path("..", "..", file)
-  if (file.exists(source_copy)) {
-    return(source_copy)
-  }
-  installed <- system.file(file, package = "marginplyr")
-  if (!nzchar(installed)) {
-    stop(sprintf("No copy of %s is available to read.", file), call. = FALSE)
-  }
-  installed
-}
-
-# A field this cannot find is a failure rather than a pass, since a file that
-# states no holder is exactly the drift being guarded against.
-dcf_field <- function(path, field) {
-  # `read.dcf()` names the value after the field, which would otherwise turn a
-  # holder mismatch into a report about names.
-  value <- unname(read.dcf(path, fields = field)[1L, 1L])
-  if (is.na(value)) {
-    stop(
-      sprintf("%s states no %s field.", basename(path), field),
-      call. = FALSE
-    )
-  }
-  value
-}
+# `metadata_path()` and `dcf_field()` come from `helper-package-metadata.R`,
+# because `test-documentation.R` asks the same two questions of DESCRIPTION and
+# the generated README.
 
 # `format()` renders a `person` the way a license notice names someone, so the
 # expectation comes from the metadata rather than from a second copy of the
