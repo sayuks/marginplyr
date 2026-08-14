@@ -78,5 +78,15 @@ jobs:
       - name: Check man/ and NAMESPACE are up to date
         run: git diff --exit-code man/ NAMESPACE
 
+      # The diff is shown, and then what it might mean: a byte comparison of
+      # rendered markdown reds for two different reasons, and the second one
+      # sends a reader looking for an edit nobody made. Whoever committed this
+      # `README.md` may have rendered it against a different pandoc from the
+      # one pinned above.
       - name: Check README.md is up to date
-        run: git diff --exit-code README.md
+        run: |
+          if git diff --exit-code README.md; then
+            exit 0
+          fi
+          echo '::error::README.md is not what README.Rmd renders. Regenerate it with rmarkdown::render("README.Rmd") and commit the result. If the only differences are code-fence info strings or rewrapped prose, the pandoc you rendered with differs from the version this workflow pins.'
+          exit 1
