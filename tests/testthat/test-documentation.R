@@ -318,13 +318,20 @@ cran_state_disagreements <- function(status, pages) {
 test_that("installation instructions follow the recorded CRAN state", {
   pages <- documentation_sources()
 
-  # The generated README is the page the `published` direction is about, and a
-  # repository run always has both halves on disk. Asserting that they reached
-  # the page set is what stops a broken derivation from reading as a state
-  # nothing disagrees with -- which is the one way this gate could go quiet.
-  if (file.exists(testthat::test_path("..", "..", "README.md"))) {
-    expect_true(all(c("README.Rmd", "README.md") %in% names(pages)))
-  }
+  # Every half that is on disk has to have reached the page set, which is what
+  # stops a broken derivation from reading as a state nothing disagrees with --
+  # the one way this gate could go quiet. Asserted over what is there rather
+  # than over a fixed pair, because which halves are there varies and none of
+  # the variation is this package's doing: covr runs from a copy built without
+  # the `.Rbuildignore`d `README.Rmd`, and an R older than 4.6.0 checking a
+  # tarball has neither half.
+  on_disk <- c("README.Rmd", "README.md")
+  on_disk <- on_disk[vapply(
+    on_disk,
+    function(file) file.exists(testthat::test_path("..", "..", file)),
+    logical(1)
+  )]
+  expect_true(all(on_disk %in% names(pages)))
 
   disagreeing <- cran_state_disagreements(cran_status(), pages)
 
