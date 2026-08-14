@@ -58,6 +58,12 @@
 #' [nest_by_with_margins()] follows [dplyr::nest_by()] and returns one row
 #' containing the empty input when there are no grouping keys.
 #'
+#' When nesting leaves no payload column — every input column is a fixed key or
+#' a grouping dimension, and `.keep` does not put them back — each nested data
+#' frame still has one row per source row it stands for, as [dplyr::nest_by()]
+#' does. Such a cell is a tibble whatever the backend, since a `data.table`
+#' cannot hold rows without columns.
+#'
 #' No input column name is reserved for internal bookkeeping. Temporary
 #' grouping-set and `.keep` columns are generated collision-free and removed
 #' before the result is returned.
@@ -323,6 +329,24 @@ execute_margin_nest <- function(operation, .key, .keep) {
   )
 }
 
+# A nesting that removes every payload column still stands for a known number
+# of source rows per cell, and once the columns are gone the count is the only
+# thing left to carry it. `pick()` cannot: with an empty selection it answers a
+# one-row frame locally and an empty `data.table` under dtplyr, so each cell
+# reports a cardinality no source row produced, and the two backends disagree
+# besides. `n()` is that count, and dtplyr translates it to `.N`, so one
+# expression serves both. The cell is a tibble on either backend, because a
+# `data.table` cannot hold rows without columns — `dim()` reads its row count
+# from its first column, so a column-less one is always empty — and the element
+# class is documented as whatever the backend produced rather than promised.
+nest_cell_expr <- function(empty_payload) {
+  if (empty_payload) {
+    quote(dplyr::tibble(.rows = dplyr::n()))
+  } else {
+    quote(dplyr::pick(dplyr::everything()))
+  }
+}
+
 nest_expanded_margins <- function(.data,
                                   group_cols,
                                   set_col,
@@ -330,6 +354,8 @@ nest_expanded_margins <- function(.data,
                                   .key,
                                   .keep,
                                   drop_set_col = TRUE) {
+  # `.keep = TRUE` with grouping columns nests them, so that branch always has
+  # a payload column and needs no count of its own.
   if (.keep && length(group_cols) > 0L) {
     # `rename()` and `relocate()` run inside a data-masked summary expression,
     # so their tidyselect resolves `keep_cols` and `group_cols` against the
@@ -351,10 +377,19 @@ nest_expanded_margins <- function(.data,
       .by = dplyr::all_of(!!c(group_cols, set_col))
     ))
   } else {
+    outer_cols <- c(group_cols, set_col)
+    # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
+    # so answers `NULL` for a `dtplyr` step — every payload column would then
+    # look absent and be dropped from every cell.
+    payload_cols <- setdiff(
+      get_col_names(.data, dplyr::everything()),
+      outer_cols
+    )
+    cell <- nest_cell_expr(length(payload_cols) == 0L)
     result <- dplyr::summarize(
       .data,
-      "{.key}" := list(dplyr::pick(dplyr::everything())),
-      .by = dplyr::all_of(c(group_cols, set_col))
+      "{.key}" := list(!!cell),
+      .by = dplyr::all_of(outer_cols)
     )
   }
 
