@@ -34,10 +34,89 @@ honest: any leak into `man/` fails CI.
 
 ### Documentation
 
-`man/` and `NAMESPACE` are generated. After changing roxygen comments run
-`roxygen2::roxygenise()` and commit the result;
-`.github/workflows/document.yaml` regenerates both and fails when either
-differs from what the roxygen comments produce.
+`man/`, `NAMESPACE`, and `README.md` are generated. After changing roxygen
+comments run `roxygen2::roxygenise()`; after changing `README.Rmd` run
+`rmarkdown::render("README.Rmd")`. Commit what either produces;
+`.github/workflows/document.yaml` regenerates all three and fails when any
+differs from what its source produces.
+
+The README is the generated file with the widest reach — GitHub shows it and
+the website's home page includes it — and the only one whose source
+`.Rbuildignore` keeps out of the tarball, so nothing a check run reaches
+records what it should have contained. Rendering it executes its chunks
+against the *installed* marginplyr, as the site build does, so install the
+working tree first or the regenerated file shows an older package's output.
+
+Its renderer is pinned, unlike roxygen2's, because pandoc's markdown writer
+is not stable across versions while the check is a byte comparison: pandoc
+3.8.3 — what `setup-pandoc@v2` installs by default — writes a `text` info
+string on the fence holding the reporting-levels block, and 3.10.1 omits it,
+so an unpinned job reds on a README nobody touched. `document.yaml` names the
+version the committed file came from; regenerating locally against a
+different pandoc produces a diff that is a pandoc difference and not a stale
+file. Moving the pin means regenerating `README.md` in the same commit.
+
+### Installation instructions
+
+An installation instruction is a claim about the outside world, and no file
+here can be read to check it: a README saying `install.packages()` finds
+marginplyr reads exactly the same whether CRAN has published the package or
+not. `DESCRIPTION`'s `Config/marginplyr/cran-status` field is where that fact
+is recorded — `unpublished` or `published`, no other value — and it is the
+only place it is written down. While it reads `unpublished`, the route the
+documentation gives is the one an external user can actually run today,
+`pak::pkg_install("sayuks/marginplyr")`.
+
+`test-documentation.R` asserts both directions against the field, over the Rd
+topics, the vignette sources, and both halves of the README. While the field
+reads `unpublished` no page may name the CRAN installation call, the cranlogs
+badge, or this package's CRAN page — the badge included because it renders
+`CRAN downloads 0/month` for a package CRAN has never seen, which is a claim
+of availability and not a report of zero interest. Once the field reads
+`published`, `README.md` has to carry both halves of what publication gives a
+reader: the instruction to run, and the badge or link saying where it goes.
+Both directions are load-bearing: the first is what stops the documentation
+getting ahead of CRAN, and the second is what stops a release flipping the
+field while the README still sends readers to GitHub alone.
+
+The rule is written as a function of the state and the pages rather than as a
+branch on the field, so the fixtures beside it execute the `published`
+direction today. A branch first evaluated on the day of the release is a
+branch nothing has ever run, which is the objection *Chunks that must fail*
+makes to an assertion that cannot fail.
+
+The scan is deliberately blunt, as the version-blind guard scan above is:
+prose that needs to name the CRAN installation call has to spell it some other
+way. Its markers all name marginplyr, because the README's comparison table
+links to another package's CRAN page and that is not a claim about this one,
+and they match case-insensitively, because `cran.r-project.org` and
+`CRAN.R-project.org` are one host and a claim is not less of one for being
+typed the second way.
+
+The milestone is publication, not submission. The field flips on the day
+`https://cran.r-project.org/package=marginplyr` resolves — not when the
+tarball is uploaded, not when `cran-comments.md` is written, and not when a
+release ticket is closed. A submission can be rejected or archived, and an
+instruction made true by uploading one would be false for however long that
+took. On that day:
+
+1. set the field to `published`;
+2. restore the CRAN paragraph to `README.Rmd`'s installation section, above
+   the GitHub route, and a CRAN badge to its badge block;
+3. regenerate `README.md`; and
+4. revisit the vignette installation blocks. They name the GitHub route only,
+   which stays true in both states and is why nothing asserts them — but the
+   distinction between the released and the development version becomes worth
+   drawing again, and it is deliberately not drawn now.
+
+Steps 1 to 3 hold each other up rather than relying on this list being
+followed: 1 without 2 fails the suite, 2 without 1 fails it too, and 3 is what
+`document.yaml` checks, so a `README.md` regenerated from a `README.Rmd` that
+step 2 never touched fails at step 2's assertion instead. Step 4 is the one a
+release can genuinely skip, which is why it is last and why it changes prose
+that is true either way. No other file needs editing: the field is the release
+process's copy of this fact, and it sits in `DESCRIPTION` beside the `Version`
+a release is already bumping.
 
 ### Chunks that must fail
 
@@ -279,14 +358,27 @@ installation alone while reading as protection.
 
 Two scans in `test-documentation.R` are what keep this from decaying, and they
 scan rather than list, for the reason every other gate here derives rather than
-lists. Each runs over the Rd topics and over the vignette sources: no page may
-name a version-blind guard, and a page using the guard must source it and vice
-versa. The Rd half reads `man/` when it is present and
-`tools::Rd_db("marginplyr")` otherwise, so it holds under `R CMD check` too;
-the vignette half is repository-only, because `R CMD check` unpacks the tarball
-beside the `.Rcheck` directory rather than inside it. Prose that needs to name
-a version-blind call has to spell it some other way — the scan is deliberately
-blunt.
+lists. Each runs over three sources — the Rd topics, the vignette sources, and
+both halves of the README: no page may name a version-blind guard, and a page
+using the guard must source it and vice versa. The Rd half reads `man/` when it
+is present and `tools::Rd_db("marginplyr")` otherwise, so it holds under
+`R CMD check` too; the vignette half is repository-only, because `R CMD check`
+unpacks the tarball beside the `.Rcheck` directory rather than inside it; the
+README is read from the repository where there is one, and otherwise from the
+installed `README.md`, which exists only from R 4.6.0 — "Package `README.md`
+files are now installed and featured in HTML help" — while `DESCRIPTION`
+supports 4.1.0, so an oldrel job checking a tarball reaches neither half. The
+README is in the set because it is installation documentation, which is where a
+version-blind test is likeliest to be written in the first place — the same
+reason `verify-site.R` forbids `installed.packages` anywhere on the rendered
+site. Prose that needs to name a version-blind call has to spell it some other
+way — the scan is deliberately blunt.
+
+A source is added where it is reachable rather than skipped for where it is
+not, since a skip naming no withheld backend is what `verify-backend.R` fails a
+job over. Reaching nothing at all is the other case, and
+`documentation_sources()` stops on it: every scan iterates over that set, so a
+set that arrived empty is a set that passes.
 
 ### Release matrix
 

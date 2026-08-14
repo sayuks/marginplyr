@@ -24,7 +24,7 @@ guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
 
 ## Installation
 
-Install the development version from GitHub:
+Install marginplyr from GitHub:
 
 ```{r}
 #| eval: false
