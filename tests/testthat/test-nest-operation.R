@@ -278,7 +278,7 @@ payload_sales <- function() {
   cbind(keys_only_sales(), units = c(10L, 20L, 30L))
 }
 
-# Sorted by the outer keys rather than by `.sort`, so the expectation reads the
+# Sorted by the sales keys rather than by `.sort`, so the expectation reads the
 # same for both verbs and both backends whatever Margin order they return.
 keys_only_expected <- function() {
   list(
@@ -288,17 +288,20 @@ keys_only_expected <- function() {
   )
 }
 
-# Sorting by name rather than by symbol keeps the outer keys out of this
-# file's global-variable surface, which the linter reads without a data mask.
-arrange_outer_keys <- function(result) {
+# The three helpers below read the sales fixtures specifically, hence the
+# names: each one knows that `region` and `store` are the keys.
+#
+# Sorting by name rather than by symbol keeps those keys out of this file's
+# global-variable surface, which the linter reads without a data mask.
+arrange_sales_keys <- function(result) {
   dplyr::arrange(
     dplyr::ungroup(result),
     dplyr::across(dplyr::all_of(c("region", "store")))
   )
 }
 
-nested_cell_dims <- function(result) {
-  ordered <- arrange_outer_keys(result)
+sales_cell_shape <- function(result) {
+  ordered <- arrange_sales_keys(result)
   list(
     region = ordered$region,
     store = ordered$store,
@@ -306,6 +309,14 @@ nested_cell_dims <- function(result) {
     cols = vapply(ordered$data, ncol, integer(1)),
     names = lapply(ordered$data, names)
   )
+}
+
+# The element class follows the backend and is not part of the API, so cells
+# are compared as tibbles; everything else must match exactly.
+sales_cells_as_tibble <- function(result) {
+  ordered <- arrange_sales_keys(result)
+  ordered$data <- lapply(ordered$data, dplyr::as_tibble)
+  dplyr::as_tibble(ordered)
 }
 
 test_that("nesting keeps source-row cardinality with no payload columns", {
@@ -322,11 +333,11 @@ test_that("nesting keeps source-row cardinality with no payload columns", {
       .grouping = rollup(region, store),
       .sort = "last"
     )
-    actual <- nested_cell_dims(result)
+    actual <- sales_cell_shape(result)
 
     expect_identical(actual$region, expected$region, info = verb_name)
     expect_identical(actual$store, expected$store, info = verb_name)
-    # Repeated detail groups, the `East` subtotal, and the grand total each
+    # Repeated detail groups, the `East` subtotal, and the Grand total set each
     # nest every source row they stand for.
     expect_identical(actual$rows, expected$rows, info = verb_name)
     expect_identical(
@@ -340,9 +351,18 @@ test_that("nesting keeps source-row cardinality with no payload columns", {
       info = verb_name
     )
 
-    # An internal column that survived into a cell would be invisible in the
-    # counts above once it was the thing being counted.
-    printed <- paste(utils::capture.output(print(result)), collapse = "\n")
+    # The cells are printed as well as the result, because the outer result is
+    # a data frame and `print.data.frame()` renders a list column as `NULL` —
+    # a scan of that alone would see no cell at all.
+    printed <- paste(
+      c(
+        utils::capture.output(print(result)),
+        unlist(lapply(result$data, function(cell) {
+          utils::capture.output(print(cell))
+        }))
+      ),
+      collapse = "\n"
+    )
     expect_false(grepl("marginplyr", printed, fixed = TRUE), info = verb_name)
   }
 })
@@ -358,7 +378,7 @@ test_that("nesting keeps cardinality under both keep options", {
       .sort = "last",
       .keep = TRUE
     )
-    actual <- nested_cell_dims(kept)
+    actual <- sales_cell_shape(kept)
 
     expect_identical(actual$rows, expected$rows)
     expect_identical(actual$cols, rep(2L, length(expected$rows)))
@@ -366,13 +386,41 @@ test_that("nesting keeps cardinality under both keep options", {
       actual$names,
       rep(list(c("region", "store")), length(expected$rows))
     )
-    # `.keep = TRUE` nests pre-margin values, so the grand-total cell still
-    # holds the source keys rather than the Margin label.
-    total <- arrange_outer_keys(kept)$data[[3L]]
+    # `.keep = TRUE` nests pre-margin values, so the Grand total set's cell
+    # still holds the source keys rather than the Margin label.
+    total <- arrange_sales_keys(kept)$data[[3L]]
     expect_identical(
       sort(as.character(total$region)),
       c("East", "East", "West")
     )
+  }
+})
+
+test_that("nesting keeps cardinality when duplicate sets are dropped", {
+  # `.duplicates` is the other option the cardinality has to survive, and a
+  # dropped repeat must leave the surviving set's cells the size they were.
+  input <- keys_only_sales()
+  spec <- grouping_sets(rollup(region, store), grouping_set(region, store))
+  expected <- keys_only_expected()
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    expect_error(
+      verb(input, .grouping = spec, .sort = "last"),
+      "Duplicate grouping sets"
+    )
+
+    dropped <- verb(
+      input,
+      .grouping = spec,
+      .duplicates = "drop",
+      .sort = "last"
+    )
+    actual <- sales_cell_shape(dropped)
+
+    expect_identical(actual$region, expected$region)
+    expect_identical(actual$store, expected$store)
+    expect_identical(actual$rows, expected$rows)
+    expect_identical(actual$cols, rep(0L, length(expected$rows)))
   }
 })
 
@@ -381,72 +429,77 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
   # Both inputs are needed: whether a payload column remains is what selects
   # the cell expression, and a keys-only input alone would pass however that
   # choice was made.
-  inputs <- list(
-    keys_only = keys_only_sales(),
-    with_payload = payload_sales()
+  scenarios <- list(
+    list(input = keys_only_sales(), keep = FALSE, names = character()),
+    list(input = keys_only_sales(), keep = TRUE, names = c("region", "store")),
+    list(input = payload_sales(), keep = FALSE, names = "units"),
+    list(
+      input = payload_sales(),
+      keep = TRUE,
+      names = c("region", "store", "units")
+    )
   )
-  expected_names <- list(
-    keys_only = list(character(), c("region", "store")),
-    with_payload = list("units", c("region", "store", "units"))
-  )
 
-  for (input_name in names(inputs)) {
-    input <- inputs[[input_name]]
+  for (scenario in scenarios) {
+    query <- nest_with_margins(
+      dtplyr::lazy_dt(scenario$input),
+      .grouping = rollup(region, store),
+      .sort = "last",
+      .keep = scenario$keep
+    )
+    expect_s3_class(query, "dtplyr_step")
 
-    for (keep in c(FALSE, TRUE)) {
-      query <- nest_with_margins(
-        dtplyr::lazy_dt(input),
-        .grouping = rollup(region, store),
-        .sort = "last",
-        .keep = keep
-      )
-      expect_s3_class(query, "dtplyr_step")
+    local_result <- nest_with_margins(
+      scenario$input,
+      .grouping = rollup(region, store),
+      .sort = "last",
+      .keep = scenario$keep
+    )
+    lazy_result <- dplyr::collect(query)
 
-      local_result <- nest_with_margins(
-        input,
-        .grouping = rollup(region, store),
-        .sort = "last",
-        .keep = keep
-      )
-      lazy_result <- dplyr::collect(query)
+    # Reading the cell names back separately, because comparing the two
+    # backends only says they agree, not that either kept the payload.
+    expect_identical(
+      sales_cell_shape(lazy_result)$names[[1L]],
+      scenario$names
+    )
+    expect_equal(
+      sales_cells_as_tibble(lazy_result),
+      sales_cells_as_tibble(local_result)
+    )
 
-      # Reading the cell names back separately, because comparing the two
-      # backends only says they agree, not that either kept the payload.
-      expect_identical(
-        nested_cell_dims(lazy_result)$names[[1L]],
-        expected_names[[input_name]][[keep + 1L]]
-      )
-
-      # The element class follows the backend and is not part of the API, so
-      # compare the cells as tibbles; everything else must match exactly.
-      as_cells <- function(result) {
-        ordered <- arrange_outer_keys(result)
-        ordered$data <- lapply(ordered$data, dplyr::as_tibble)
-        dplyr::as_tibble(ordered)
-      }
-      expect_equal(as_cells(lazy_result), as_cells(local_result))
-
-      by_result <- nest_by_with_margins(
-        dtplyr::lazy_dt(input),
-        .grouping = rollup(region, store),
-        .sort = "last",
-        .keep = keep
-      )
-      expect_identical(
-        nested_cell_dims(by_result)$rows,
-        nested_cell_dims(local_result)$rows
-      )
-      expect_identical(
-        nested_cell_dims(by_result)$names[[1L]],
-        expected_names[[input_name]][[keep + 1L]]
-      )
-    }
+    # The row-wise verb collects before it groups, so its cells compare
+    # exactly as the other verb's do once the row-wise grouping is dropped.
+    lazy_by <- nest_by_with_margins(
+      dtplyr::lazy_dt(scenario$input),
+      .grouping = rollup(region, store),
+      .sort = "last",
+      .keep = scenario$keep
+    )
+    local_by <- nest_by_with_margins(
+      scenario$input,
+      .grouping = rollup(region, store),
+      .sort = "last",
+      .keep = scenario$keep
+    )
+    expect_identical(sales_cell_shape(lazy_by)$names[[1L]], scenario$names)
+    expect_equal(
+      sales_cells_as_tibble(lazy_by),
+      sales_cells_as_tibble(local_by)
+    )
   }
 })
 
 test_that("zero-column and empty nesting match an independent construction", {
   # A frame with rows and no columns at all: every cell is a payload-free
   # cell, and `dplyr::nest_by()` is the upstream verb that answers it.
+  #
+  # Local only, deliberately. A `dtplyr` input cannot reach this case as
+  # itself: `as.data.table()` cannot carry rows without columns, so
+  # `lazy_dt(rows_only)` is already empty, and a zero-column step then gains a
+  # row of its own when the Grouping set identifier is attached. That is the
+  # union adapter rather than nesting, it predates this behavior, and it is
+  # tracked in #184.
   rows_only <- data.frame(row.names = 1:3)
   expect_identical(dim(rows_only), c(3L, 0L))
 

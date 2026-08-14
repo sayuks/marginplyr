@@ -61,8 +61,10 @@
 #' When nesting leaves no payload column — every input column is a fixed key or
 #' a grouping dimension, and `.keep` does not put them back — each nested data
 #' frame still has one row per source row it stands for, as [dplyr::nest_by()]
-#' does. Such a cell is a tibble whatever the backend, since a `data.table`
-#' cannot hold rows without columns.
+#' does. That row count is promised. The class of such a cell is described
+#' rather than promised, as every element class is: on both backends it is what
+#' [dplyr::tibble()] produced, because a `data.table` cannot hold rows without
+#' columns at all.
 #'
 #' No input column name is reserved for internal bookkeeping. Temporary
 #' grouping-set and `.keep` columns are generated collision-free and removed
@@ -339,6 +341,10 @@ execute_margin_nest <- function(operation, .key, .keep) {
 # `data.table` cannot hold rows without columns — `dim()` reads its row count
 # from its first column, so a column-less one is always empty — and the element
 # class is documented as whatever the backend produced rather than promised.
+#
+# Both call sites spell `empty_payload` out, because the two expressions this
+# returns differ in what they read rather than in degree, and a bare `TRUE` at
+# a call site would not say which one it asked for.
 nest_cell_expr <- function(empty_payload) {
   if (empty_payload) {
     quote(dplyr::tibble(.rows = dplyr::n()))
@@ -385,7 +391,7 @@ nest_expanded_margins <- function(.data,
       get_col_names(.data, dplyr::everything()),
       outer_cols
     )
-    cell <- nest_cell_expr(length(payload_cols) == 0L)
+    cell <- nest_cell_expr(empty_payload = length(payload_cols) == 0L)
     result <- dplyr::summarize(
       .data,
       "{.key}" := list(!!cell),

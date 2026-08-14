@@ -362,8 +362,10 @@ containing the empty input when there are no grouping keys.
 When nesting leaves no payload column — every input column is a fixed key or
 a grouping dimension, and \code{.keep} does not put them back — each nested data
 frame still has one row per source row it stands for, as \code{\link[dplyr:nest_by]{dplyr::nest_by()}}
-does. Such a cell is a tibble whatever the backend, since a \code{data.table}
-cannot hold rows without columns.
+does. That row count is promised. The class of such a cell is described
+rather than promised, as every element class is: on both backends it is what
+\code{\link[dplyr:tibble]{dplyr::tibble()}} produced, because a \code{data.table} cannot hold rows without
+columns at all.
 
 No input column name is reserved for internal bookkeeping. Temporary
 grouping-set and \code{.keep} columns are generated collision-free and removed

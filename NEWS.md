@@ -75,7 +75,9 @@
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns. `.keep = TRUE` retains original pre-margin key values,
   and nesting rejects duplicate sets with `.duplicates = "keep"` because
-  their visible outer keys would be indistinguishable. A nesting that leaves
-  no payload column still nests one inner row per source row, on detail
-  groups, subtotals, and the Grand total set alike, and local and `dtplyr`
-  results agree once collected.
+  their visible outer keys would be indistinguishable.
+* A nesting that leaves no payload column now nests one inner row per source
+  row, on detail groups, subtotals, and the Grand total set alike, as
+  `dplyr::nest_by()` does. Local and `dtplyr` results agree once collected.
+  Such a cell is a tibble on both backends, because a `data.table` cannot hold
+  rows without columns.
