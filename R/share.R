@@ -2607,7 +2607,12 @@ share_expression_kind <- function(expr) {
   # share_of_total(units))` is a language object the caller is carrying, and
   # naming it a Total share written in the wrong position refused a call that
   # asks for no share at all (#179).
-  arguments <- evaluated_call_args(expr)
+  #
+  # The language the call evaluates is searched beside them, because that is a
+  # helper the call does use: `eval(quote(share_of_total(total)))` reaches the
+  # helper itself, which answers for a position it cannot see and names a
+  # Grouping plan the caller already has.
+  arguments <- c(evaluated_call_args(expr), searched_language_parts(expr))
   for (index in seq_along(arguments)) {
     kind <- share_expression_kind(arguments[[index]])
     if (!is.null(kind)) {
@@ -2785,7 +2790,7 @@ contains_selection_predicate <- function(expr) {
     return(TRUE)
   }
   any(vapply(
-    evaluated_call_args(expr),
+    c(evaluated_call_args(expr), searched_language_parts(expr)),
     contains_selection_predicate,
     logical(1)
   ))
@@ -3406,11 +3411,7 @@ deferred_call_symbols <- function(expr) {
 # list(a = 1))` reads the share. Which of the two an argument evaluates to is
 # not decidable here, so the node resolves toward over-reporting.
 evaluated_language_symbols <- function(expr, bound) {
-  argument <- call_formal_argument(expr, "expr")
-  if (length(argument) == 0L) {
-    return(character())
-  }
-  values <- static_language_values(argument[[1L]])
+  values <- evaluated_language_parts(expr)
   if (is.null(values)) {
     return(unresolved_lookup_name())
   }
@@ -3418,6 +3419,54 @@ evaluated_language_symbols <- function(expr, bound) {
     lapply(values, expression_data_symbols, bound = bound),
     use.names = FALSE
   ))
+}
+
+# Where in a call's arguments the language it evaluates sits, and `0L` for a
+# call that evaluates none. The searches and the rewrites open the argument the
+# dependency walk reads, so the three read its position once -- through
+# `static_callee_name()`, since a head that names the primitive without being a
+# symbol names it here as it does there.
+evaluated_language_index <- function(expr, call_name = static_call_name(expr)) {
+  callee_name <- call_name
+  if (is.null(callee_name)) {
+    callee_name <- static_callee_name(static_call_head(expr))
+  }
+  if (!is_reflective_evaluation(callee_name)) {
+    return(0L)
+  }
+  call_formal_index(static_call_args(expr), "expr")
+}
+
+# The language a call is statically known to evaluate: `list()` for a call that
+# evaluates none, and `NULL` where what it evaluates is not knowable. The two
+# empty answers are the ones `static_language_values()` separates, kept apart
+# because the walk turns one of them into the marker.
+evaluated_language_parts <- function(expr, call_name = static_call_name(expr)) {
+  index <- evaluated_language_index(expr, call_name = call_name)
+  if (index == 0L) {
+    return(list())
+  }
+  static_language_values(static_call_args(expr)[[index]])
+}
+
+# The same language as parts a search analyzes beside a call's own arguments.
+# `eval()` runs what it is handed in the data mask, so a helper written under a
+# capture there is one this call really does use, and the boundary #179 draws
+# must not hide it: without this, `eval(quote(cur_group_id()))` ran and
+# answered a branch-local identifier, which is the value that guard exists to
+# refuse (#179).
+#
+# What is not knowable contributes nothing rather than a marker. The dependency
+# walk has an alias set to compare an over-report against and turns an
+# unreadable one into a read of every alias; a search has nothing to compare,
+# so refusing on one would reject `eval(built)` wherever it appears, which is
+# legal code and always was.
+searched_language_parts <- function(expr, call_name = static_call_name(expr)) {
+  values <- evaluated_language_parts(expr, call_name = call_name)
+  if (is.null(values)) {
+    return(list())
+  }
+  values
 }
 
 # The language objects an expression is statically known to hand `eval()`, and

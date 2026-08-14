@@ -3097,3 +3097,156 @@ test_that("a lazy plan reads a quoted expression as data too", {
   )
   expect_false(inherits(planned, "marginplyr_error"))
 })
+
+# The boundary has two sides, and the first pass drew only one of them. A
+# capture stopped being analyzed everywhere, including where an `eval()`
+# evaluates it, so `eval(quote(cur_group_id()))` ran and answered a
+# branch-local identifier -- the value that guard exists to refuse, now
+# returned silently -- while `eval(quote(share_of_total(total)))` reached the
+# helper itself, which reports a Grouping plan the caller already has, and
+# `eval(quote(grouping_bit(region)))` stopped compiling to its branch constant
+# and reported that it works only inside the verb it was inside.
+#
+# The dependency walk never had that hole: #173 built `static_language_values()`
+# to recover the language `eval()` runs. The searches and the rewrites read the
+# same recovery now, so what a capture withholds from the analysis, evaluating
+# it gives back.
+
+test_that("a capture an `eval()` runs is analyzed as the code it becomes", {
+  proxy <- data.frame(value = double(), other = double())
+  env <- rlang::current_env()
+
+  # The three searches, over the language the call evaluates.
+  expect_identical(
+    find_summary_context_helpers(quote(eval(quote(dplyr::cur_group_id())))),
+    "cur_group_id"
+  )
+  expect_identical(
+    share_expression_kind(quote(eval(quote(share_of_total(total))))),
+    "total"
+  )
+  expect_true(contains_selection_predicate(quote(eval(quote(where(
+    is.numeric
+  ))))))
+
+  # Whatever the recovery can read reaches them, not only a capture: a name
+  # parsed from a string is language this call evaluates too, and a head that
+  # names `eval()` without being a symbol names it here as it does in the
+  # dependency walk.
+  expect_identical(
+    find_summary_context_helpers(quote(eval(str2lang("cur_group()")))),
+    "cur_group"
+  )
+  expect_identical(
+    find_summary_context_helpers(quote(eval(expression(cur_group())))),
+    "cur_group"
+  )
+  expect_identical(
+    find_summary_context_helpers(quote((eval)(quote(cur_group())))),
+    "cur_group"
+  )
+
+  # The rewrite reaches inside the capture the `eval()` runs, and only there:
+  # the selection is resolved as it would be without the `quote()`.
+  expect_identical(
+    rewrite_summary_selections(
+      quote(eval(quote(dplyr::across(value, mean)))),
+      env = env,
+      data_proxy = proxy,
+      normalize_across_names = FALSE
+    ),
+    quote(eval(quote(dplyr::across(dplyr::all_of("value"), mean))))
+  )
+})
+
+test_that("evaluating a captured helper reaches the rule it always did", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  context <- expect_error(
+    summarize_with_margins(
+      data,
+      gid = eval(quote(dplyr::cur_group_id())),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    ),
+    "does not support `cur_group_id()`",
+    fixed = TRUE
+  )
+  expect_s3_class(context, "marginplyr_error")
+
+  position <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      s = eval(quote(share_of_total(total))),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    ),
+    "must be the complete right-hand side of a named summary",
+    fixed = TRUE
+  )
+  expect_s3_class(position, "marginplyr_error")
+
+  # The grouping helpers are the case that must keep working rather than keep
+  # failing: the rewrite compiles the helper inside the capture, so the
+  # summary answers the branch constant it answered before this boundary
+  # existed.
+  compiled <- summarize_with_margins(
+    data,
+    bit = eval(quote(grouping_bit(region))),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(compiled$bit, c(0L, 0L, 1L))
+
+  # And on the lazy path the dialect gets its own `GROUPING()` rather than a
+  # call to a helper no backend can run.
+  postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+  query <- summarize_with_margins(
+    postgres,
+    total = sum(value),
+    bit = eval(quote(grouping_bit(region))),
+    .grouping = rollup(region)
+  )
+  sql <- as.character(dbplyr::sql_render(query))
+  expect_match(sql, "eval(quote(GROUPING(", fixed = TRUE)
+})
+
+test_that("`expression()` is one capture on both sides of the boundary", {
+  # `static_language_values()` has recovered `expression()` for `eval()` since
+  # #173, so reading it as ordinary code everywhere else made the two halves
+  # of one boundary disagree about the same call: it was language where an
+  # `eval()` ran it and a share helper written in the wrong position where
+  # nothing did.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(
+    expression_data_symbols(quote(expression(share))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(expression(share, units))),
+    character()
+  )
+  expect_null(share_expression_kind(quote(expression(share_of_total(x)))))
+  # The recovery is unchanged, and is now the only thing that reports it.
+  expect_identical(
+    expression_data_symbols(quote(eval(expression(share)))),
+    "share"
+  )
+
+  carried <- summarize_with_margins(
+    data,
+    total = sum(value),
+    e = deparse1(expression(share_of_total(total))),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(unique(carried$e), "expression(share_of_total(total))")
+})

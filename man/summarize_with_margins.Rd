@@ -299,12 +299,14 @@ positions, or columns would not have one global meaning. Use
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} to identify margin levels.
 
 Every rule above reads the expression the data mask evaluates. An expression
-captured as language data — the argument of \code{\link[base:quote]{base::quote()}} or of
-\code{\link[base:substitute]{base::substitute()}} — is a value the summary carries, so marginplyr neither
-analyzes nor rewrites what is inside it: a quoted helper name requests
-nothing, creates no dependency on an earlier summary, and reaches the
-backend as written. Evaluating one, as \code{\link[base:eval]{base::eval()}} does, performs the
-reads it holds and is analyzed accordingly.
+captured as language data — the argument of \code{\link[base:quote]{base::quote()}}, of
+\code{\link[base:substitute]{base::substitute()}}, or of \code{\link[base:expression]{base::expression()}} — is a value the summary
+carries, so marginplyr neither analyzes nor rewrites what is inside it: a
+captured helper name requests nothing, creates no dependency on an earlier
+summary, and reaches the backend as written. Evaluating one with
+\code{\link[base:eval]{base::eval()}} runs it in the data mask, so what it holds is analyzed as
+the code it becomes and every rule above applies to it, wherever the
+language it evaluates can be read without running the call.
 }
 
 \section{Contextual shares}{

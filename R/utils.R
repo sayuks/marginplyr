@@ -304,20 +304,33 @@ call_supplies_other_argument <- function(expr, formal, other_names) {
   sum(arg_names == "") > as.integer(!(formal %in% arg_names))
 }
 
-# The formal a language-capturing primitive takes its captured argument in, and
-# `NULL` for a call that captures nothing. R evaluates that argument nowhere:
-# `quote()` answers it unchanged, and `substitute()` answers it with names
-# replaced from an environment. Until something evaluates what either returns,
-# the expression under it is data the caller is carrying rather than code the
-# data mask runs, so no analysis here may read a helper, a selection, or a
-# column reference out of it, and no rewrite may replace what is inside it
-# (#179).
+# The formal a language-capturing primitive takes its captured argument in,
+# `NA_character_` where it captures every argument it is given, and `NULL` for
+# a call that captures nothing. R evaluates a captured argument nowhere:
+# `quote()` answers it unchanged, `substitute()` answers it with names replaced
+# from an environment, and `expression()` collects however many it is given.
+# Until something evaluates what one of them returns, the expression under it
+# is data the caller is carrying rather than code the data mask runs, so no
+# analysis here may read a helper, a selection, or a column reference out of
+# it, and no rewrite may replace what is inside it (#179).
+#
+# `expression()` is here because `static_language_values()` already recovers
+# it: the two halves of one boundary would otherwise disagree about the same
+# call, reading it as a language object where `eval()` runs it and as ordinary
+# code everywhere else.
 #
 # `evalq()` and `bquote()` are deliberately absent. `evalq()` captures its
 # first argument and then evaluates it, so the symbols under it are read;
 # `bquote()` evaluates whatever `.()` wraps in the enclosing frame, which under
 # a data mask is the mask, so `bquote(f(.(share)))` reads the share. Both stay
 # analyzed, which over-reports the parts of them that really are data.
+#
+# rlang's `expr()` and `quo()` are absent for a different reason, and it is the
+# asymmetry below rather than a claim about what they do. Recognizing a name
+# here is a decision to stop reporting what sits under it, and `expr` is a name
+# callers bind -- this package binds it in nearly every function -- so a bare
+# call to one is not evidence of rlang's. Reading them as ordinary code keeps
+# the pre-#179 answer, which is a false refusal at worst.
 language_capture_formal <- function(call_name) {
   if (is.null(call_name)) {
     return(NULL)
@@ -325,6 +338,7 @@ language_capture_formal <- function(call_name) {
   switch(call_name,
     quote = ,
     substitute = "expr",
+    expression = NA_character_,
     NULL
   )
 }
@@ -365,6 +379,9 @@ captured_call_parts <- function(expr, call_name = static_call_name(expr)) {
   if (!is.null(namespace) && !identical(namespace, "base")) {
     return(captured)
   }
+  if (is.na(formal)) {
+    return(rep(TRUE, length(args)))
+  }
   index <- call_formal_index(args, formal)
   if (index == 0L) {
     return(captured)
@@ -394,14 +411,42 @@ evaluated_call_args <- function(expr, call_name = static_call_name(expr)) {
 rewrite_evaluated_call_parts <- function(expr, rewrite) {
   parts <- static_call_args(expr)
   captured <- captured_call_parts(expr)
+  language_index <- evaluated_language_index(expr)
   rewritten <- lapply(
     seq_along(parts),
     function(index) {
       if (captured[[index]]) {
         return(parts[[index]])
       }
+      if (index == language_index) {
+        return(rewrite_evaluated_language(parts[[index]], rewrite))
+      }
       rewrite(parts[[index]])
     }
+  )
+  rebuild_static_call(expr, stats::setNames(rewritten, names(parts)))
+}
+
+# The argument an `eval()` runs, rewritten as the code it becomes. A capture
+# written there is opened, because the mask evaluates what it holds after all:
+# `eval(quote(grouping_bit(region)))` compiled to its branch constant before
+# the boundary was drawn, and leaving the capture closed sent the helper itself
+# to the caller, which reports that it can only be used inside the verb they
+# are already inside (#179).
+#
+# Only a capture written out can be opened. Language built at run time --
+# `eval(str2lang("grouping_bit(region)"))` -- has nothing in the source to
+# rewrite, and it reached the helper before this ticket exactly as it does
+# after: what a search can recover by parsing, a rewrite cannot put back.
+rewrite_evaluated_language <- function(expr, rewrite) {
+  captured <- captured_call_parts(expr)
+  if (!any(captured)) {
+    return(rewrite(expr))
+  }
+  parts <- static_call_args(expr)
+  rewritten <- lapply(
+    seq_along(parts),
+    function(index) rewrite(parts[[index]])
   )
   rebuild_static_call(expr, stats::setNames(rewritten, names(parts)))
 }

@@ -269,14 +269,20 @@ find_summary_context_helpers <- function(expr) {
     character()
   }
 
-  # The arguments the mask evaluates. A helper name the caller quoted describes
-  # no grouping this call has to combine -- nothing calls it -- and refusing
-  # the call over one refused a summary that only names the helper (#179).
+  # The arguments the mask evaluates, and the language the call evaluates. A
+  # helper name the caller quoted describes no grouping this call has to
+  # combine -- nothing calls it -- and refusing the call over one refused a
+  # summary that only names the helper. Handing one to `eval()` is the opposite
+  # case and needs the opposite answer: the helper runs, and it answers the
+  # branch-local identifier this guard exists to refuse (#179).
   c(
     found,
     unlist(
       lapply(
-        evaluated_call_args(expr, call_name = call_name),
+        c(
+          evaluated_call_args(expr, call_name = call_name),
+          searched_language_parts(expr, call_name = call_name)
+        ),
         find_summary_context_helpers
       ),
       use.names = FALSE
