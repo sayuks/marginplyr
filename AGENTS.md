@@ -320,9 +320,13 @@ structural rather than a list of test names (#93). One policy carries it:
 > No test may require more than one member of `optional_backends()`.
 
 While that holds, the `backend` jobs cover the whole suite by construction —
-each installs one backend and withholds the rest, so between them they execute
-every test that requires at most one. A test requiring two is executed by none
-of them and skips in all of them. Splitting such a test is the fix, and the
+each installs one backend, plus whatever companions its entry declares, and
+withholds everything else, so between them they execute every test that
+requires at most one. A test requiring two is executed by none of them and
+skips in all of them — including in a job that happens to hold both, because
+`verify-suite-coverage.R` hides all but one whatever a job installs, which is
+why the guarantee does not rest on a job's package count. Splitting such a test
+is the fix, and the
 idiom that makes it free is in `test-margin-order.R`: compare each backend
 against the **local** result, which needs no optional backend, so a backend
 cannot pass by being self-consistently wrong the way two agreeing backends can.
@@ -375,7 +379,12 @@ loudly:
    and gets no job, so nothing asserts it — which is the DBI case above, and
    the reason that value exists. `companions` names what the generated job
    installs alongside the backend, which is how `DBI` reaches the driver jobs
-   without a job of its own.
+   without a job of its own. It is also how a backend declares what its own
+   dependencies drag in, and there the companion is a tracked entry rather
+   than an untracked one: dtplyr declares `Imports: data.table`, so its job
+   installs data.table whichever way the entry is written, and leaving it
+   undeclared makes `verify-library-isolation.R` fail the job for a leak that
+   is really the requested backend's own closure.
 2. the `skip_if_backend_absent()` or `backend_available()` call in the tests.
    Doing only this errors immediately: those helpers refuse a package
    `optional_suggests()` does not name, since nothing would execute it and

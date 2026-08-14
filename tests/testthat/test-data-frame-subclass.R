@@ -16,6 +16,12 @@
 # that to the dplyr verb each Margin verb ends in, and pinning it for a subclass
 # would convert a described behavior into a promise.
 #
+# `summarise_with_margins()` is deliberately not swept alongside the verbs
+# below. "British and American summary spellings are synonyms" in
+# `test-grouping-interface.R` asserts it is the same object with the same
+# formals, so a copy here would restate that test rather than add a subclass it
+# does not already cover.
+#
 # `data.table` is guarded like any other optional Suggest, so these skip where
 # it is absent and the generated `data.table` job in `release-matrix.yaml` is
 # what executes them. dtplyr is not the guard even though it brings data.table:
@@ -33,75 +39,73 @@ subclass_data <- function() {
   )
 }
 
-# Values only, both sides flattened to a base data frame first.
-# `as.data.frame()` removes the one difference ADR 0016 refuses to promise
-# either way, and it removes nothing else: column classes, factor levels, and
-# row order all survive it, which is the whole of what these tests are about.
-expect_margin_agrees <- function(subclass_result, data_frame_result) {
+# Runs one Margin call twice -- over the raw `data.table` and over the same data
+# as a base `data.frame` -- and compares the results. The call is written once
+# and the input is the parameter, so the two sides cannot drift into comparing
+# different computations; it is `expect_margin_order_agrees()`'s shape in
+# `test-margin-order.R`, and so is the `all_of()` spelling of the dimensions,
+# because `codetools` cannot follow an NSE pronoun through the closure that a
+# `test_that()` block does not create.
+#
+# Both sides are flattened to a base data frame first. `as.data.frame()` removes
+# the one difference ADR 0016 refuses to promise either way, and it removes
+# nothing else: column classes, factor levels, and row order all survive it,
+# which is the whole of what these tests are about.
+expect_margin_agrees <- function(margin_call) {
+  data <- subclass_data()
   expect_equal(
-    as.data.frame(subclass_result),
-    as.data.frame(data_frame_result)
+    as.data.frame(margin_call(data.table::as.data.table(data))),
+    as.data.frame(margin_call(data))
   )
 }
 
 test_that("summarize_with_margins() accepts a raw data.table", {
   skip_if_backend_absent("data.table")
-  data <- subclass_data()
 
-  expect_margin_agrees(
+  expect_margin_agrees(function(input) {
     summarize_with_margins(
-      data.table::as.data.table(data),
+      input,
       total = sum(units),
       share = share_of_total(total),
-      .grouping = rollup(region, size),
-      .sort = "last"
-    ),
-    summarize_with_margins(
-      data,
-      total = sum(units),
-      share = share_of_total(total),
-      .grouping = rollup(region, size),
+      .grouping = rollup(dplyr::all_of(c("region", "size"))),
       .sort = "last"
     )
-  )
+  })
 })
 
 test_that("expand_with_margins() accepts a raw data.table", {
   skip_if_backend_absent("data.table")
-  data <- subclass_data()
 
-  expect_margin_agrees(
+  expect_margin_agrees(function(input) {
     expand_with_margins(
-      data.table::as.data.table(data),
-      .grouping = cube(region, size),
+      input,
+      .grouping = cube(dplyr::all_of(c("region", "size"))),
       .id = "set"
-    ),
-    expand_with_margins(data, .grouping = cube(region, size), .id = "set")
-  )
+    )
+  })
 })
 
 test_that("the nesting verbs accept a raw data.table", {
   skip_if_backend_absent("data.table")
-  data <- subclass_data()
 
-  expect_margin_agrees(
+  expect_margin_agrees(function(input) {
     nest_with_margins(
-      data.table::as.data.table(data),
-      .grouping = rollup(region, size)
-    ),
-    nest_with_margins(data, .grouping = rollup(region, size))
-  )
-  expect_margin_agrees(
+      input,
+      .grouping = rollup(dplyr::all_of(c("region", "size")))
+    )
+  })
+  expect_margin_agrees(function(input) {
     nest_by_with_margins(
-      data.table::as.data.table(data),
-      .grouping = rollup(region, size)
-    ),
-    nest_by_with_margins(data, .grouping = rollup(region, size))
-  )
+      input,
+      .grouping = rollup(dplyr::all_of(c("region", "size")))
+    )
+  })
 })
 
 test_that("inspect_grouping() accepts a raw data.table", {
   skip_if_backend_absent("data.table")
+  # Not through `expect_margin_agrees()`: this returns no data frame, and the
+  # plan it reports is one object to compare rather than two to flatten.
   data <- subclass_data()
 
   expect_identical(

@@ -30,10 +30,12 @@
 # into a false green. See `tests/testthat/helper-optional-backends.R`.
 #
 # Which contracts those jobs prove is settled by construction rather than by a
-# list (#93). Every `backend` job installs one optional backend and withholds
-# the rest, so between them they execute every test that requires at most one
-# backend; a test requiring two is executed by none of them and skips in all of
-# them, unnoticed. Three layers close that, and no one of them is enough:
+# list (#93). Every `backend` job installs one optional backend -- plus the
+# companions its entry declares, which may themselves be tracked backends when
+# one drags another in -- and withholds everything else, so between them they
+# execute every test that requires at most one backend; a test requiring two is
+# executed by none of them and skips in all of them, unnoticed. Three layers
+# close that, and no one of them is enough:
 #
 #   Structure    `structure`, against the working tree. Every test executes in
 #                some single-backend configuration and asserts something there.

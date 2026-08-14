@@ -156,7 +156,13 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # `data.table` is an entry of its own as well, because it is not only dtplyr's
 # dependency here: raw `data.table` input reaches the local backend as an
 # ordinary data frame subclass (#176), and it is genuinely absent under
-# `_R_CHECK_DEPENDS_ONLY_=true`, which is what `asserted` claims.
+# `_R_CHECK_DEPENDS_ONLY_=true`, which is what `asserted` claims. It is the
+# second entry to stretch the word "backend" -- `DBI` was the first -- since
+# what the table actually holds is every optional Suggest a guard may name, and
+# what a `backend` job proves for this one is an input class rather than a
+# translation target. The name is left alone deliberately: it is spelled into
+# four CI scripts, the workflow, and every guard, and renaming it would be a
+# larger change than any entry it holds.
 optional_backend_spec <- function() {
   list(
     arrow = list(asserted = TRUE, companions = character()),
