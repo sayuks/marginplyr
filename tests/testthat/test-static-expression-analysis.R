@@ -1784,3 +1784,504 @@ test_that("no analysed shape reaches the caller as an untyped condition", {
     expect_false(inherits(error, "missingArgError"))
   }
 })
+
+# The tests below all build the rejected call by injection rather than by
+# writing each shape out, because the shapes are what varies and the call
+# around them is not. Injecting a plain language object splices it into the
+# quosure exactly as writing it there would, so the walk sees the expression
+# under test and nothing else (#165 covers the quosure case).
+reflective_summary <- function(data, expr) {
+  # nolint start: object_usage_linter.
+  # `value` and `region` are columns of the data mask the verb builds, which
+  # `codetools` cannot follow into.
+  rlang::inject(summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    derived = !!expr,
+    .grouping = rollup(region)
+  ))
+  # nolint end
+}
+
+expect_share_dependency_error <- function(data, expr) {
+  error <- expect_error(
+    reflective_summary(data, expr),
+    "Ordinary summaries cannot use an earlier Total share (`share`)",
+    fixed = TRUE
+  )
+  expect_s3_class(error, "marginplyr_error")
+}
+
+test_that("a reflective lookup reads the name it is given", {
+  # `get("share")` and `share` reach the same binding: the primitives below
+  # resolve a name through ordinary lexical scope, which under a data mask
+  # starts at the mask. A name handed to one as a string is therefore a mask
+  # read exactly as the symbol is, and the guard against an ordinary summary
+  # using an earlier share owes the caller the same diagnostic for both. Only
+  # `get()` was read that way, so the other three reached the placeholder --
+  # silently for two of them, and as an untyped base condition for `mget()`
+  # (#173).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(expression_data_symbols(quote(get0("share"))), "share")
+  expect_identical(expression_data_symbols(quote(exists("share"))), "share")
+  # `mget()` takes a vector, so its names are recovered from one rather than
+  # from a lone literal: a `c()` of literals is as statically known as a
+  # literal is.
+  expect_identical(
+    expression_data_symbols(quote(mget(c("share", "units")))),
+    c("share", "units")
+  )
+  # A bound name shadows all four for the reason it shadows `get()`: each
+  # performs ordinary name resolution, which finds the binding first.
+  expect_identical(
+    expression_data_symbols(quote(get0("share")), bound = "share"),
+    character()
+  )
+
+  expect_share_dependency_error(data, quote(get0("share") * 100))
+  expect_share_dependency_error(data, quote(exists("share")))
+  expect_share_dependency_error(data, quote(mget("share")[[1L]] * 100))
+})
+
+test_that("an evaluated language object is read where it is built", {
+  # A name reaches the mask as a string here rather than as a symbol, so the
+  # walk sees no symbol to report: `as.name("share")` builds the read that
+  # `eval()` then performs. Recovering the language object is what puts these
+  # under the same rule as `share`, and parsing a literal is the whole of the
+  # recovery -- nothing evaluates the caller's code to find out what it reads.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(
+    expression_data_symbols(quote(eval(as.name("share")))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(as.symbol("share")))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(str2lang("share * 2")))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(parse(text = "share * 2")))),
+    "share"
+  )
+  # `quote()` needs no recovery of its own -- the general walk already reports
+  # the symbols under it -- but it reaches this branch too, so it is asserted
+  # beside the others rather than left to a walk the branch now shadows.
+  expect_identical(expression_data_symbols(quote(eval(quote(share)))), "share")
+  # A bound name shadows the recovered read as it shadows a symbol: what
+  # `eval()` resolves is the binding, not the column.
+  expect_identical(
+    expression_data_symbols(quote(eval(as.name("share"))), bound = "share"),
+    character()
+  )
+
+  expect_share_dependency_error(data, quote(eval(as.name("share")) * 100))
+  expect_share_dependency_error(data, quote(eval(as.symbol("share")) * 100))
+  expect_share_dependency_error(data, quote(eval(str2lang("share * 2"))))
+  expect_share_dependency_error(data, quote(eval(parse(text = "share * 2"))))
+})
+
+test_that("a lookup this walk cannot resolve reads every alias", {
+  # `get(name)` names whatever the string holds at run time, which is not
+  # decidable here and must not be found out by evaluating it. #130's contract
+  # resolves an undecidable shape toward over-reporting, so the walk reports a
+  # marker and the guard reads it as a read of every alias in scope: the call
+  # is refused wherever one exists, rather than silently computing against a
+  # staging placeholder.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  # nolint start: object_usage_linter.
+  # Read from the summary expressions below, which the linter cannot follow
+  # into a data mask.
+  name <- "share"
+  existing <- "units"
+  # nolint end
+
+  # The argument is walked as well as recovered, because a reflective call
+  # evaluates its arguments in the mask like any other call does.
+  expect_identical(
+    expression_data_symbols(quote(get(name))),
+    c("name", unresolved_lookup_name())
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(built))),
+    c("built", unresolved_lookup_name())
+  )
+
+  expect_share_dependency_error(data, quote(get(name) * 100))
+  expect_share_dependency_error(data, quote(eval(as.name(name)) * 100))
+  expect_share_dependency_error(data, quote(eval(str2lang(name)) * 100))
+
+  # Over-reporting is a claim about the aliases in scope, so a call holding
+  # none is untouched: a lookup this walk cannot resolve is not a fault of its
+  # own, and refusing it outright would reject legal code.
+  resolved <- summarize_with_margins(
+    data,
+    units = sum(value),
+    derived = get(existing),
+    .grouping = rollup(region)
+  )
+  expect_identical(resolved$derived, resolved$units)
+})
+
+test_that("a lookup constrained to an external environment reads no column", {
+  # The environment argument terminates the search: these four require an
+  # environment there and never fall back to the mask, so a call supplying one
+  # reads no column and must keep working beside a share of that name. The
+  # environment expression itself is still a mask read -- it is evaluated
+  # there like any argument is.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  # nolint start: object_usage_linter.
+  # Read from the summary expressions below, which the linter cannot follow
+  # into a data mask.
+  outside <- rlang::env(share = 2)
+  # nolint end
+
+  expect_identical(
+    expression_data_symbols(quote(get0("share", envir = outside))),
+    "outside"
+  )
+  expect_identical(
+    expression_data_symbols(quote(exists("share", where = outside))),
+    "outside"
+  )
+  # A second unnamed argument is the environment for each of them, whatever
+  # that argument is called in the primitive's own signature.
+  expect_identical(
+    expression_data_symbols(quote(mget("share", outside))),
+    "outside"
+  )
+
+  from_environment <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    got = get("share", envir = outside),
+    got0 = get0("share", envir = outside),
+    gotm = mget("share", envir = outside)[[1L]],
+    there = exists("share", where = outside),
+    .grouping = rollup(region)
+  )
+  expect_identical(unique(from_environment$got), 2)
+  expect_identical(unique(from_environment$got0), 2)
+  expect_identical(unique(from_environment$gotm), 2)
+  expect_identical(unique(from_environment$there), TRUE)
+})
+
+test_that("a parenthesized head is still the primitive it names", {
+  # `(get)("share")` calls the same primitive, and #130 recorded the shape it
+  # defeats: the head is a call to `(`, so a branch matching on the call's
+  # name does not see it. The parentheses are a mask read of their own --
+  # `(get)` is evaluated as a value rather than through function lookup -- so
+  # both answers are reported.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(
+    expression_data_symbols(quote((get)("share"))),
+    c("get", "share")
+  )
+  expect_identical(
+    expression_data_symbols(quote(((get))("share"))),
+    c("get", "share")
+  )
+
+  expect_share_dependency_error(data, quote((get)("share") * 100))
+})
+
+test_that("a primitive named through another primitive is still itself", {
+  # `match.fun("get")`, `getFunction("get")` and `get("get")` each evaluate to
+  # the same primitive, so a head spelled any of those ways performs the same
+  # lookup as `get("share")` and owes the caller the same diagnostic. Each was
+  # silently `NA` while the branch matched on the call's own name, which a
+  # call whose head is a call does not have.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  # The head is a read of its own wherever it is not a bare symbol, so the
+  # name it looks the function up under is reported beside the column.
+  expect_identical(
+    expression_data_symbols(quote(match.fun("get")("share"))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(get("get")("share"))),
+    c("get", "share")
+  )
+
+  expect_share_dependency_error(data, quote(match.fun("get")("share") * 100))
+  expect_share_dependency_error(data, quote(getFunction("get")("share") * 100))
+  expect_share_dependency_error(data, quote(get("get")("share") * 100))
+  expect_share_dependency_error(data, quote(get0("get0")("share") * 100))
+})
+
+test_that("`do.call()` of a reflective primitive is an unresolved lookup", {
+  # `do.call()` runs the call it builds in the caller's environment, which
+  # under a data mask is the mask, so a primitive it names looks a column up
+  # there. What that primitive is handed is a list built at run time, so the
+  # name is not recoverable and the marker is the answer -- as it is for any
+  # lookup this walk cannot resolve.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  expect_identical(
+    expression_data_symbols(quote(do.call("get", list("share")))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(do.call(get, list("share")))),
+    c("get", unresolved_lookup_name())
+  )
+  # A `do.call()` of anything else is left alone: its arguments are values by
+  # the time it runs, and the walk has reported the expressions that built
+  # them.
+  expect_identical(
+    expression_data_symbols(quote(do.call("sum", list(value)))),
+    "value"
+  )
+
+  expect_share_dependency_error(
+    data,
+    quote(do.call("get", list("share")) * 100)
+  )
+  expect_share_dependency_error(data, quote(do.call(get, list("share")) * 100))
+
+  legal <- summarize_with_margins(
+    data,
+    units = sum(value),
+    share = share_of_total(units),
+    doubled = do.call("sum", list(value)) * 2,
+    .grouping = rollup(region)
+  )
+  expect_identical(legal$doubled, c(8, 12, 20))
+})
+
+test_that("a primitive reached as a value is out of the walk's reach", {
+  # `sapply(c("share"), get)` hands the primitive on as a value, and the
+  # environment it then searches from is the frame inside `sapply()` rather
+  # than the mask -- so it raises instead of reading the placeholder, and the
+  # walk owes it nothing. This is asserted rather than assumed because the
+  # comment at `is_reflective_lookup()` rests on it: were it to reach the
+  # mask, the shape would be a silent miss of exactly the kind #173 removes.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      units = sum(value),
+      share = share_of_total(units),
+      derived = sapply(c("share"), get)[[1L]],
+      .grouping = rollup(region)
+    )
+  )
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_match(conditionMessage(error), "'share' not found")
+})
+
+test_that("a reflective alias of an earlier summary is not a share source", {
+  # The other direction of the same rule. A share source must be an ordinary
+  # summary that depends on nothing earlier, and an alias built reflectively
+  # depends on exactly what the spelled-out alias does: the dependency is the
+  # read, however the name reached the mask.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  # nolint start: object_usage_linter.
+  # Read from the summary expression below, which the linter cannot follow
+  # into a data mask.
+  name <- "units"
+  # nolint end
+  aliased <- function(expr) {
+    rlang::inject(summarize_with_margins(
+      data,
+      units = sum(value),
+      alias = !!expr,
+      share = share_of_total(alias),
+      .grouping = rollup(region)
+    ))
+  }
+
+  for (expr in list(
+    quote(get0("units")),
+    quote(mget("units")[[1L]]),
+    quote(eval(as.name("units"))),
+    quote(eval(parse(text = "units")))
+  )) {
+    error <- expect_error(
+      aliased(expr),
+      paste0(
+        "Total share `share` cannot use source summary `alias` because it ",
+        "depends on earlier summary alias `units`"
+      ),
+      fixed = TRUE
+    )
+    expect_s3_class(error, "marginplyr_error")
+  }
+
+  # An unresolvable lookup reaches the same refusal through the over-report:
+  # every alias in scope is a dependency, so the alias is no source.
+  unresolved <- expect_error(
+    aliased(quote(get(name))),
+    "cannot use source summary `alias`",
+    fixed = TRUE
+  )
+  expect_s3_class(unresolved, "marginplyr_error")
+})
+
+test_that("a lazy input is refused at planning like a local one", {
+  # The decision is made while the call is planned, before any backend sees a
+  # query, so the two paths owe the caller the same condition. A lazy frame
+  # that reached execution would raise whatever its backend makes of a
+  # placeholder instead, which is the difference this asserts away.
+  #
+  # No dialect is simulated and none is needed: nothing here renders SQL, so
+  # the test needs no optional driver package and runs in every configuration
+  # rather than skipping wherever one is absent.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  lazy <- dbplyr::tbl_lazy(data)
+
+  expect_share_dependency_error(lazy, quote(get0("share") * 100))
+
+  source <- expect_error(
+    rlang::inject(summarize_with_margins(
+      lazy,
+      units = sum(value),
+      alias = eval(as.name("units")),
+      share = share_of_total(alias),
+      .grouping = rollup(region)
+    )),
+    "cannot use source summary `alias`",
+    fixed = TRUE
+  )
+  expect_s3_class(source, "marginplyr_error")
+})
+
+test_that("a name the recovery cannot read fails closed, not through", {
+  # Each shape here is one the recovery does not read: a literal that is not a
+  # name, a vector holding something other than literals, text that does not
+  # parse, a constructor this walk does not recognize, a head with no name of
+  # its own. All of them resolve to the marker rather than to silence, which
+  # is the direction #130 fixed and the one the guard depends on.
+  expect_identical(
+    expression_data_symbols(quote(get(NA_character_))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(mget(c("share", name)))),
+    c("name", unresolved_lookup_name())
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(str2lang("share +")))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(as.name()))),
+    unresolved_lookup_name()
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(str2lang()))),
+    unresolved_lookup_name()
+  )
+  # `bquote()` substitutes an expression through `.()`, which this walk cannot
+  # see, so it is unrecognized rather than recovered -- and the symbols under
+  # it are still reported by the walk of the parts.
+  expect_identical(
+    expression_data_symbols(quote(eval(bquote(share)))),
+    c("share", unresolved_lookup_name())
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(fns$build()))),
+    c("fns", unresolved_lookup_name())
+  )
+})
+
+test_that("a name the recovery can read is read, however it is spelled", {
+  # The other half of the same table: shapes that are statically knowable, and
+  # the two that are knowable to read nothing at all.
+  expect_identical(
+    expression_data_symbols(quote(eval(expression(share)))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(str2expression("share * 2")))),
+    "share"
+  )
+  # A namespace qualifier under the parentheses names the same primitive, as
+  # it does without them.
+  expect_identical(
+    expression_data_symbols(quote((base::get)("share"))),
+    "share"
+  )
+  # A string is not a language object: `eval()` answers the string itself and
+  # looks nothing up.
+  expect_identical(expression_data_symbols(quote(eval("share"))), character())
+  # `c()` of nothing names nothing, so there is nothing to report and nothing
+  # unresolved either.
+  expect_identical(expression_data_symbols(quote(get(c()))), character())
+})
+
+test_that("a head that names no function leaves the call unrecognized", {
+  # A shape the analysis does not recognize falls through and evaluates, which
+  # is ADR-0015's answer wherever no fault of the analysis is involved: the
+  # walk reports the parts and claims nothing about what the call resolves.
+  expect_identical(
+    expression_data_symbols(quote(match.fun()("share"))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(match.fun(name)("share"))),
+    "name"
+  )
+  expect_identical(
+    expression_data_symbols(quote(do.call(1L, list("share")))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(do.call(args = list("share")))),
+    character()
+  )
+  expect_identical(
+    expression_data_symbols(quote(eval(envir = outside))),
+    "outside"
+  )
+})
+
+test_that("an unnamed argument list still answers one name per argument", {
+  # `rlang::call_args()` names every argument, empty where the caller passed
+  # one positionally, so the walk never reaches the fallback. It is what keeps
+  # the reading correct for a list that carries no names at all: `match("",
+  # NULL)` and `sum(NULL == "")` both answer 0 rather than failing, so a
+  # missing name vector would read as a call with no positional arguments and
+  # an environment argument beside a name would go unseen.
+  expect_identical(argument_names(list(1, 2)), c("", ""))
+  expect_identical(argument_names(list(a = 1, 2)), c("a", ""))
+})
