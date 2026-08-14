@@ -983,18 +983,26 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
     recognized_positions[recognized_positions > 0L]
   )
   forwarded_args <- call_args[forwarded_positions]
-  if (fns_index == 0L) {
+  # `parsed$fns` is `NULL` for a `.fns` the caller omitted, which is the
+  # identity lambda `across()` applies in its place. It answers the same for a
+  # `.fns` left empty, but no share reaches here with one:
+  # `preflight_share_across_syntax()` requires the helper itself in that
+  # position and refuses anything else, an empty argument included. Asking the
+  # value rather than the index is still what this is written on, because the
+  # index is a position and the position is a separate question -- the one the
+  # write-back below asks, where an empty `.fns` would be replaced in place and
+  # an absent one appended (#174).
+  if (is.null(parsed$fns)) {
     functions <- list(rlang::expr(~.x))
     function_names <- ""
     fns_is_list <- FALSE
   } else {
-    fns <- call_args[[fns_index]]
-    fns_is_list <- rlang::is_call(fns, "list")
+    fns_is_list <- rlang::is_call(parsed$fns, "list")
     if (fns_is_list) {
-      functions <- static_call_args(fns)
+      functions <- static_call_args(parsed$fns)
       function_names <- names(functions)
     } else {
-      functions <- list(fns)
+      functions <- list(parsed$fns)
       function_names <- ""
     }
   }
@@ -2827,7 +2835,12 @@ expression_alias_dependencies <- function(expr, aliases) {
 # bind to the statements after them. `local()` needs no case at all: it binds
 # nothing either, and whichever of these its argument is answers it (#162).
 expression_data_symbols <- function(expr, bound = character()) {
-  if (rlang::is_symbol(expr)) {
+  # `is_name_part()` rather than `rlang::is_symbol()`, because the walk
+  # descends into every part of a call and an empty argument is a symbol whose
+  # name is `""`: the read of a column by that name was reported to every
+  # caller of this list. An empty part is no call either, so it falls to the
+  # line below and names nothing, which is the answer (#174).
+  if (is_name_part(expr)) {
     name <- rlang::as_name(expr)
     if (name %in% bound) {
       return(character())
@@ -2939,16 +2952,19 @@ expression_data_symbols <- function(expr, bound = character()) {
       return(character())
     }
     if (identical(pronoun, ".data")) {
-      column <- expr[[3L]]
-      if (rlang::is_symbol(column)) {
-        return(rlang::as_name(column))
+      # By subscript, because `.data[[, 1]]` puts an empty argument in the
+      # index position: `column <- expr[[3L]]` binds R's missing marker there
+      # and raises `missingArgError` on the first read of that name (#174). It
+      # names no column, which is what an unreadable index already answers.
+      if (is_name_part(expr[[3L]])) {
+        return(rlang::as_name(expr[[3L]]))
       }
       if (
-        is.character(column) &&
-          length(column) == 1L &&
-          !is.na(column)
+        is.character(expr[[3L]]) &&
+          length(expr[[3L]]) == 1L &&
+          !is.na(expr[[3L]])
       ) {
-        return(column)
+        return(expr[[3L]])
       }
       return(character())
     }
@@ -3125,9 +3141,8 @@ statement_reads_and_bound <- function(expr, bound) {
     # reads no column `i`. The sequence is read before the index is bound, the
     # body after.
     inner <- bound
-    index <- expr[[2L]]
-    if (rlang::is_symbol(index)) {
-      inner <- unique(c(bound, rlang::as_name(index)))
+    if (is_name_part(expr[[2L]])) {
+      inner <- unique(c(bound, rlang::as_name(expr[[2L]])))
     }
     return(list(
       reads = unique(c(
@@ -3137,12 +3152,11 @@ statement_reads_and_bound <- function(expr, bound) {
       bound = inner
     ))
   }
-  target <- expr[[2L]]
   value <- expression_data_symbols(expr[[3L]], bound)
-  if (rlang::is_symbol(target)) {
+  if (is_name_part(expr[[2L]])) {
     return(list(
       reads = value,
-      bound = unique(c(bound, rlang::as_name(target)))
+      bound = unique(c(bound, rlang::as_name(expr[[2L]])))
     ))
   }
   # A replacement form -- `names(x) <- v` -- reads its target before it rebuilds
@@ -3151,7 +3165,7 @@ statement_reads_and_bound <- function(expr, bound) {
   # name a replacement call rebinds depends on the shape it is nested in, and
   # leaving it unbound over-reports.
   list(
-    reads = unique(c(expression_data_symbols(target, bound), value)),
+    reads = unique(c(expression_data_symbols(expr[[2L]], bound), value)),
     bound = bound
   )
 }
@@ -3168,11 +3182,16 @@ removal_retained_bound <- function(expr, bound) {
   arg_names <- argument_names(args)
   removed <- character()
   for (i in seq_along(args)) {
-    arg <- args[[i]]
-    literal <- if (rlang::is_symbol(arg)) {
-      rlang::as_name(arg)
-    } else if (is.character(arg) && !anyNA(arg)) {
-      arg
+    # By subscript throughout, and never `arg <- args[[i]]`: an argument the
+    # caller left empty is bound to that name as R's missing marker, and the
+    # first read of it raises `missingArgError` naming this frame's variable
+    # (#168, #174). Such an argument is no literal, so it empties the bound set
+    # like any other unreadable removal and the expression evaluates -- `rm(x,
+    # )` is refused by `rm()` itself, and that is the error the caller sees.
+    literal <- if (is_name_part(args[[i]])) {
+      rlang::as_name(args[[i]])
+    } else if (is.character(args[[i]]) && !anyNA(args[[i]])) {
+      args[[i]]
     } else {
       NULL
     }

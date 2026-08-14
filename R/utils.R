@@ -216,11 +216,29 @@ static_call_head <- function(expr) {
 # the loop variable rather than anything the caller wrote (#168). This is not a
 # contrived shape: every empty-index spelling has one, and `x[, "col"]` is
 # everyday R that `dplyr::summarise()` accepts.
+#
+# What `for` does is bind, so `part <- parts[[index]]` does it too: the rule is
+# about the binding rather than about the loop, and lifting one part into a
+# local is how the same condition reached an `across()` rebuild (#174). Read
+# the part where it is used, and ask `is_name_part()` below what it is.
+#
+# `test-utils.R` scans the namespace for both spellings.
 static_call_args <- function(expr) {
   if (rlang::is_quosure(expr)) {
     return(list(rlang::quo_get_expr(expr)))
   }
   as.list(expr)[-1L]
+}
+
+# Whether a call part names something: a symbol, and not the empty argument.
+# The second half is what `rlang::is_symbol()` cannot answer on its own, and
+# every site that reads a name out of a part needs it -- the empty argument is
+# a symbol whose name is `""`, so a bare symbol test reports a column, a
+# binding, or an output called `""`, which nothing the caller wrote can be
+# (#174). Asked of a part read by subscript, never of one bound to a name,
+# which is the rule above.
+is_name_part <- function(part) {
+  !rlang::is_missing(part) && rlang::is_symbol(part)
 }
 
 rebuild_static_call <- function(expr, args) {
