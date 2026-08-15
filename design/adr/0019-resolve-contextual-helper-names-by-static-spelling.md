@@ -224,7 +224,7 @@ rule under the conservative #130 policy.
 #178 asks for the parenthesized form to be recognized. This decision fixes its
 reading in advance so that it is a change to spelling normalization and not a
 first step toward environmental resolution. Parenthesis transparency is not
-implemented here.
+implemented here; the amendment at the end of this file is where it is.
 
 ### Recorded behaviour changes
 
@@ -319,4 +319,91 @@ it.
   rule — the gate above decides whether the argument is evaluated, and #190 is
   about what happens to the value once it is.
 - #178 is the parenthesized spelling, bounded by "Boundary for callable
-  identity" above.
+  identity" above and implemented in the amendment below.
+
+## Amendment: redundant parentheses are read through, in one place
+
+"Boundary for callable identity" above fixed the reading and left the
+transparency unimplemented. #178 implements it. Nothing the decision states
+changes: identity is still syntactic, a caller binding still cannot win, and a
+head that must be evaluated to know what it calls is still unresolved.
+
+**Both positions a caller can write a pair in.** `(grouping_id)(region)` is the
+pair around the head, which the decision above names. `(grouping_id(region))`
+is the pair around the whole call, which it does not, and the two are one
+question: `(` is the identity function, so all three writings of that call
+evaluate identically and R's own parser records the difference in the tree
+rather than in what runs. Both are read through, however many pairs deep.
+
+**One place, not one place per family.** The reading lives in the shared
+readers of `R/utils.R` — the name, the namespace, the head, and the arguments —
+so every analysis that reads an expression inherits it: the registry's four
+recognition sites, the constructor gate, the data-frame output-name
+prediction, the share dependency walk, and the two rewrites. That is what the
+ticket asks for over a fix at the sites that had been demonstrated, and it is
+the same argument the registry itself rests on. Name and operands are read
+through the same unwrapping, so no node is named as its content and
+subscripted as its wrapper — the split the quosure reading in that file already
+warns about, reached by a different route.
+
+`static_callee_name()` is brought under it rather than left beside it. That
+reader carried a pair-of-parentheses rule of its own from #130, written with a
+different arity test, so a `(` call built by hand with two arguments was a
+droppable pair to one reader and a call to `(` to every other. One rule now
+answers both.
+
+**Where the head unwrapping stops.** Only down to a name. `("sum")(1)` is not a
+call to `sum` — R raises "attempt to apply non-function" for it, while a bare
+`"sum"(1)` is parsed as the symbol — and `(function(x) x)(1)` names nothing
+either way. Unwrapping to either would make this package recognize, and
+rewrite, a call R refuses or cannot name.
+
+**The one place the two rules pull apart.** A capture is refused where the head
+names a binding the analysis can see, which is the one static reading here that
+answers to the calling environment. A parenthesized head is evaluated as a
+*value*, so R's function lookup never runs and any binding wins outright:
+`(quote)(share)` therefore claims no capture at all and the walk reports the
+read it would otherwise hide, while `(pick)(units)` is dplyr's `pick()`
+whatever the caller has bound. Reading the same pair of parentheses as a
+spelling in one place and as an unresolvable head in the other is the
+asymmetry the registry's exclusion of the capture primitives already records.
+
+**Every writing this makes recognized was previously an error**, so no result
+changes into a different result: a helper stub reporting it can only be used
+inside the verb, `object 'pick' not found` from the data mask, a tidyselect
+refusal of a specification object, or a share refused for not being the
+complete right-hand side. `DESCRIPTION`'s `Config/marginplyr/cran-status` reads
+`unpublished`.
+
+Two consequences reach expressions this does *not* make recognized, and both
+are recorded rather than avoided.
+
+*A caller's redundant parentheses do not survive into the rewritten
+expression.* The rewrites rebuild every call they descend into, and they
+rebuild it from the node the readers unwrapped, so a summary written
+`sum((a + b))` is staged as `sum(a + b)` and a diagnostic dplyr raises about
+that argument echoes it without the pair. What is evaluated is unchanged —
+the pair is redundant in the tree, not only on the page — and this is the
+normalization the decision above already performs far more visibly, since
+`across(v, mean)` reaches the same diagnostics as
+`dplyr::across(dplyr::all_of("v"), mean)`. Preserving the pair would mean
+rebuilding a node in a spelling the analysis had just been written not to
+distinguish.
+
+*A name written as a parenthesized literal is now resolved rather than
+over-reported.* `get(("share"))` reads the share it names; before, the string
+was unreadable through the pair, and the share dependency walk answered an
+unresolvable lookup by reporting a read of every alias in scope. Both refuse a
+summary that reads an earlier share, so the change is which summaries are
+refused *besides* that one, in the direction of the read the caller actually
+wrote.
+
+**Test strategy.** The writings are derived, as the spellings are. Each
+registered spelling is exercised bare and under every owner, and each of those
+with a pair around the head, two pairs around the head, and a pair around the
+whole call — locally and on a lazy input, with and without a caller binding of
+the same name. Two pairs are what says the reading is not one pair deep. The
+foreign-qualifier writings are asserted to *differ*, which is what stops the
+agreement being two calls that both fail the same way, and the unresolvable
+heads are asserted unrecognized so that the boundary is a case rather than a
+sentence.

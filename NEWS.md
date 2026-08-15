@@ -73,6 +73,12 @@
   lambda or a `function` body, which is the one position plain dplyr also lets
   it; and a `where()` qualified with a package that does not own it is no
   longer read as a selection predicate inside a contextual share's `across()`.
+  Redundant parentheses are transparent to all of this, around the name or
+  around the whole call, so `(pick)(units)` and `(pick(units))` are the same
+  request as `pick(units)`; a nested `(rollup(region))` is the specification it
+  is, and `(share_of_total(units))` is a Total share. A head that has to be
+  evaluated to know what it calls — `get("pick")(units)` — is an ordinary call
+  as it was.
   See *Relationship to dplyr summaries* in `?summarize_with_margins`.
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.

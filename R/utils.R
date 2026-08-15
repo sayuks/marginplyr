@@ -142,17 +142,19 @@ assert_lazy_table <- function(x) {
 # that expression as a part and analyses it there, where the operands are its
 # own.
 static_call_name <- function(expr) {
-  if (!is_nameable_call(expr)) {
+  named <- nameable_call(expr)
+  if (is.null(named)) {
     return(NULL)
   }
-  rlang::call_name(expr)
+  rlang::call_name(named)
 }
 
 static_call_ns <- function(expr) {
-  if (!is_nameable_call(expr)) {
+  named <- nameable_call(expr)
+  if (is.null(named)) {
     return(NULL)
   }
-  rlang::call_ns(expr)
+  rlang::call_ns(named)
 }
 
 # Whether `rlang::call_name()` and `rlang::call_ns()` may be asked about this
@@ -164,10 +166,130 @@ is_nameable_call <- function(expr) {
   rlang::is_call(expr) && !rlang::is_call(expr, "~")
 }
 
+# The node those two read a name from: this call with its redundant parentheses
+# removed, and `NULL` where there is no name to read. Where the parentheses were
+# around the head, the node is rebuilt without them, because that is the only
+# way to ask rlang about a head it would otherwise refuse to read -- and the
+# rebuilt node is used for naming alone, never handed back to a rewrite, so the
+# head a walk puts back is still the head the caller wrote.
+#
+# The shape test comes before anything is bound to a local, which is the rule
+# `static_call_args()` states, applied to the two readers every walk asks first.
+# `expr` here is a call part like any other, so it can be R's empty argument,
+# and `rlang::is_call()` answers that as the `FALSE` it always did while
+# `expr <- ...` would bind the missing marker and raise `missingArgError` on the
+# next read of it (#168, #174).
+nameable_call <- function(expr) {
+  if (!is_nameable_call(expr)) {
+    return(NULL)
+  }
+  unwrapped <- unparenthesized_call(expr)
+  head <- static_call_head(unwrapped)
+  spelled <- unparenthesized_name(head)
+  if (identical(spelled, head)) {
+    return(unwrapped)
+  }
+  rebuild_static_call(unwrapped, static_call_args(unwrapped), head = spelled)
+}
+
+# `(` is the identity function, so a redundant pair of parentheses changes
+# nothing about what a call calls or what it is given: `(grouping_id)(region)`,
+# `(grouping_id(region))`, and `grouping_id(region)` are one call written three
+# ways. The three readers below see through them, which is what gives every
+# analysis in the package the same answer for the three at once, rather than
+# each family recognizing whichever spellings someone thought to enumerate
+# (#178, ADR 0019).
+#
+# Identity here stays syntactic. `(get("grouping_id"))(region)` strips to a
+# call rather than to a name, so the head is unresolved and stays that way,
+# which is the conservative #130 policy these three are written not to weaken.
+#
+# Everything a pair of parentheses wraps, however many pairs deep. This is the
+# reading for a position holding a value -- a `.fns` argument, a name given to
+# `get()` -- where `(x)` is the value of `x` and nothing else.
+#
+# It stops at R's empty argument rather than unwrapping to it, so that nothing
+# below can bind the missing marker to a local: the first read of such a local
+# raises base R's untyped `missingArgError`, naming this frame's variable rather
+# than anything the caller wrote (#168, #174). A constructed `(` call holding
+# one wraps no value to read, which is the answer stopping gives.
+unparenthesized_value <- function(expr) {
+  while (is_redundant_parens(expr) && !rlang::is_missing(expr[[2L]])) {
+    expr <- expr[[2L]]
+  }
+  expr
+}
+
+# The name a head or a function reference spells. A head is unwrapped only down
+# to a name, because that is the only thing a head can be unwrapped to without
+# changing what R does with it: `("sum")(1)` is not a call to `sum` but the
+# error R raises for applying a non-function, and `(function(x) x)(1)` names
+# nothing either way. Both keep the answer they have always had.
+#
+# The early return is the other half of the missing-marker rule above. This is
+# asked of an argument a caller may have left empty -- an `across()` `.fns` is
+# one -- and an argument that is not a pair of parentheses is given straight
+# back rather than reaching the local below.
+unparenthesized_name <- function(expr) {
+  if (!is_redundant_parens(expr)) {
+    return(expr)
+  }
+  spelled <- unparenthesized_value(expr)
+  if (is_name_part(spelled) || rlang::is_call(spelled, c("::", ":::"))) {
+    return(spelled)
+  }
+  expr
+}
+
+# The call a node is, through parentheses wrapped around the whole of it. A
+# pair wrapping anything but a call is kept: `(share)` wraps a bare symbol, and
+# that symbol is a genuine data-mask read which the walks report by descending
+# into the `(` call as they descend into any other, so unwrapping it would hand
+# a walk a symbol where it has just tested for a call.
+#
+# `is_nameable_call()` rather than `rlang::is_call()` is what keeps an injected
+# quosure or formula wrapped. Both are calls to `~` carrying an environment and
+# a class, and a node reached through this is the node `rebuild_static_call()`
+# rebuilds around -- from the outer `(` call's attributes, which are none. That
+# is the identity loss #165 removed, arriving one pair of parentheses later.
+unparenthesized_call <- function(expr) {
+  if (!is_redundant_parens(expr)) {
+    return(expr)
+  }
+  spelled <- unparenthesized_value(expr)
+  if (is_nameable_call(spelled)) {
+    return(spelled)
+  }
+  expr
+}
+
+# A pair of parentheses R evaluates as itself: the call `(` really is, holding
+# the one argument the parser gives it. A constructed call to `(` holding any
+# other number is not a pair a reader may drop.
+is_redundant_parens <- function(expr) {
+  rlang::is_call(expr, "(") && length(expr) == 2L
+}
+
+# Whether unwrapping answers a different node, which is what a reader that
+# restarts on what the parentheses wrap has to know before it restarts. Asked
+# here rather than compared at each site so that the three walks that restart
+# share one test, and so that none of them binds the answer to a local: a call
+# part may be R's empty argument, and `unparenthesized_value()` stops at one
+# rather than answering it.
+is_parenthesized <- function(expr) {
+  !identical(unparenthesized_value(expr), expr)
+}
+
 # The head and the arguments of a call a walk descends into, and the node
 # rebuilt around rewritten arguments. `static_call_name()` above answers what a
 # walk asks of a node it does not descend into; these three are what it asks of
 # one it does.
+#
+# All three read through the parentheses the name read reads through, so a node
+# has one name and one set of operands rather than a name taken from
+# `(f(x))`'s content and operands taken from its wrapper. That split is the
+# defect the quosure paragraph below describes, and it is the same defect
+# whichever node the two readings disagree about.
 #
 # All three exist for the same node the name read exists for. A quosure is a
 # call to `~`, so a walk descends into it, and the spellings a walk reaches for
@@ -204,7 +326,7 @@ static_call_head <- function(expr) {
   if (rlang::is_quosure(expr)) {
     return(quote(`~`))
   }
-  expr[[1L]]
+  unparenthesized_call(expr)[[1L]]
 }
 
 # An element of what this returns can be R's empty argument, so a caller reads
@@ -227,7 +349,7 @@ static_call_args <- function(expr) {
   if (rlang::is_quosure(expr)) {
     return(list(rlang::quo_get_expr(expr)))
   }
-  as.list(expr)[-1L]
+  as.list(unparenthesized_call(expr))[-1L]
 }
 
 # Whether a call part names something: a symbol, and not the empty argument.
@@ -278,8 +400,13 @@ argument_names <- function(args) {
 # which is how R matches the primitives the analyses here read. Returned as a
 # list of length one or an empty list, so that an argument written as `NULL` is
 # not read as an absent one.
+#
+# Through the shared reader rather than `rlang::call_args()`, because every
+# caller asks this of a call it has just named: reading the arguments any other
+# way is what splits a name taken from `(quote(x))`'s content off the operands
+# of its wrapper.
 call_formal_argument <- function(expr, formal, positional = TRUE) {
-  args <- rlang::call_args(expr)
+  args <- static_call_args(expr)
   args[call_formal_index(args, formal, positional = positional)]
 }
 
@@ -302,7 +429,7 @@ call_formal_index <- function(args, formal, positional = TRUE) {
 # environment: `get()` and its siblings search the one they are given instead of
 # the mask, and `substitute()` substitutes from it.
 call_supplies_other_argument <- function(expr, formal, other_names) {
-  args <- rlang::call_args(expr)
+  args <- static_call_args(expr)
   arg_names <- argument_names(args)
   if (any(arg_names %in% other_names)) {
     return(TRUE)
@@ -383,6 +510,17 @@ language_capture_formal <- function(call_name) {
 # here, and answered in the direction that analyses rather than the one that
 # hides. A qualified head is out of reach of any binding and keeps its capture.
 #
+# A head written inside parentheses is refused a capture outright, whatever
+# `bound` holds, and it is the one place a parenthesized head is not read as the
+# name it spells. `(quote)(x)` evaluates its head as a value, so R's function
+# lookup never runs and *any* binding wins -- a column, a preceding summary, or
+# a caller's own function, none of which this can see. Claiming the capture
+# would stop reporting `x`, which is the silent miss #130 fixed this walk to
+# prevent, so the undecidable head resolves toward analysing as every other one
+# does. This is the asymmetry `R/contextual-helpers.R` records: a capture
+# answers to the environment, and a Contextual helper never does, which is why
+# recognizing one through the same parentheses is right there and wrong here.
+#
 # Only the share dependency walk passes a set, because it is the only analysis
 # that tracks bindings and the only one whose wrong answer is silence about a
 # wrong number (#130, #162). The searches and the rewrites pass none, and that
@@ -400,6 +538,9 @@ captured_call_parts <- function(expr,
     return(captured)
   }
   call_head <- static_call_head(expr)
+  if (is_redundant_parens(call_head)) {
+    return(captured)
+  }
   if (rlang::is_symbol(call_head) && rlang::as_name(call_head) %in% bound) {
     return(captured)
   }
@@ -531,7 +672,12 @@ rewrite_evaluated_language <- function(expr, rewrite) {
 #
 # A literal string is here for `do.call()`, which takes its function that way.
 static_callee_name <- function(callee) {
-  if (rlang::is_symbol(callee)) {
+  # `is_name_part()` rather than `rlang::is_symbol()`, for the reason that
+  # function gives: the empty argument is a symbol whose name is `""`, so a
+  # bare symbol test answers a callee named `""`, which nothing the caller
+  # wrote can be (#174). It answers no name instead, which is what an
+  # unreadable head already answers.
+  if (is_name_part(callee)) {
     return(rlang::as_name(callee))
   }
   if (!rlang::is_call(callee)) {
@@ -541,8 +687,13 @@ static_callee_name <- function(callee) {
     }
     return(named)
   }
-  if (rlang::is_call(callee, "(") && length(callee) >= 2L) {
-    return(static_callee_name(callee[[2L]]))
+  # Through the shared reading of a redundant pair rather than a test of its
+  # own. This branch is where #130 first recorded the shape, and it predates
+  # #178; leaving it written out kept two rules for one pair of parentheses,
+  # which disagreed about a `(` call built by hand with two arguments -- a node
+  # this dropped and every other reader kept.
+  if (is_parenthesized(callee)) {
+    return(static_callee_name(unparenthesized_value(callee)))
   }
   if (rlang::is_call(callee, c("::", ":::")) && length(callee) >= 3L) {
     return(static_callee_name(callee[[3L]]))
@@ -791,6 +942,13 @@ parsed_language_values <- function(argument) {
 # how a caller writes the vector `mget()` takes; anything else names a value
 # this walk cannot see without running it.
 static_character_value <- function(expr) {
+  # A literal is a value, so the parentheses a caller may have written around
+  # one are read through as they are everywhere else: `get(("share"))` names
+  # what `get("share")` names. Read by recursion rather than by rebinding
+  # `expr`, which is an argument a `c()` above may have left empty (#174).
+  if (is_redundant_parens(expr)) {
+    return(static_character_value(unparenthesized_value(expr)))
+  }
   if (is.character(expr)) {
     if (anyNA(expr)) {
       return(NULL)
@@ -800,7 +958,7 @@ static_character_value <- function(expr) {
   if (!rlang::is_call(expr, "c")) {
     return(NULL)
   }
-  values <- lapply(rlang::call_args(expr), static_character_value)
+  values <- lapply(static_call_args(expr), static_character_value)
   if (any(vapply(values, is.null, logical(1)))) {
     return(NULL)
   }

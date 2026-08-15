@@ -241,6 +241,11 @@
 #' so `dplyr::across()` is the same request as `across()` while
 #' `mypkg::across()` is an ordinary call to another package's function.
 #'
+#' Redundant parentheses change nothing, because `(` is the identity function:
+#' `(pick)(units)` and `(pick(units))` are the same request as `pick(units)`. A
+#' head that has to be evaluated to know what it calls is not a spelling at all,
+#' so `get("pick")(units)` is an ordinary call.
+#'
 #' Every other name follows ordinary lookup, [dplyr::n()] included, and so do
 #' the Grouping specification constructors: a nested `rollup(region)` is
 #' evaluated because of how it is spelled, but what runs is whatever `rollup`

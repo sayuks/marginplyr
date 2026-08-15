@@ -1448,7 +1448,7 @@ validate_share_direct_syntax <- function(expr, output_name) {
       )
     )
   }
-  args <- rlang::call_args(expr)
+  args <- static_call_args(expr)
   if (length(args) != 1L || !rlang::is_symbol(args[[1L]])) {
     abort_marginplyr(
       paste0(
@@ -2838,6 +2838,18 @@ expression_data_symbols <- function(expr, bound = character()) {
   if (!rlang::is_call(expr)) {
     return(character())
   }
+  # Redundant parentheses come off before any branch below reads the node. This
+  # walk reads shapes as well as names -- `length(expr)`, `expr[[2L]]`, the
+  # formals of a definition -- and the shared name read sees through a pair of
+  # them, so a `(f(x))` reaching a branch unwrapped would be named `f` and
+  # subscripted as the wrapper. Restarting once here keeps the two readings one
+  # reading for every branch at once (#178).
+  #
+  # It restarts rather than filters, so `(share)` re-enters at the top and is
+  # reported by the symbol branch above exactly as a bare `share` is.
+  if (is_parenthesized(expr)) {
+    return(expression_data_symbols(unparenthesized_value(expr), bound))
+  }
   # A call whose head is itself a call -- `fns$total(x)`, an inline lambda --
   # has no name, so `call_name()` returns `NULL`. Every comparison below is
   # written to be NULL-safe, since such a call is simply not the shape this
@@ -3113,16 +3125,20 @@ block_reads_and_bound <- function(expr, bound) {
 # One statement's reads together with the bound set the statement after it
 # sees. A node that binds nothing returns the set it was given.
 statement_reads_and_bound <- function(expr, bound) {
-  call_name <- static_call_name(expr)
   # A nested block and a redundant parenthesis are transparent here for the
   # reason the enclosing block is: neither opens a scope, and both always run,
   # so `{ { tmp <- share }; tmp }` and `{ (tmp <- share); tmp }` bind `tmp` for
   # what follows exactly as the unwrapped statement does.
+  #
+  # The parenthesis comes off through the shared reading rather than through a
+  # branch of its own, so that the name read below and the operands the branches
+  # read beside it are read from one node (#178).
+  if (is_parenthesized(expr)) {
+    return(statement_reads_and_bound(unparenthesized_value(expr), bound))
+  }
+  call_name <- static_call_name(expr)
   if (identical(call_name, "{")) {
     return(block_reads_and_bound(expr, bound))
-  }
-  if (identical(call_name, "(") && length(expr) >= 2L) {
-    return(statement_reads_and_bound(expr[[2L]], bound))
   }
   # `rm()` and its alias `remove()` are the only statements that take a name
   # out of scope again, and losing one from the set is the direction this walk
@@ -3182,7 +3198,7 @@ statement_reads_and_bound <- function(expr, bound) {
 # side, while ignoring them would hide a read of a column that came back into
 # view (#162).
 removal_retained_bound <- function(expr, bound) {
-  args <- rlang::call_args(expr)
+  args <- static_call_args(expr)
   arg_names <- argument_names(args)
   removed <- character()
   for (i in seq_along(args)) {

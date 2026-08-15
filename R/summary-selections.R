@@ -728,7 +728,12 @@ name_unnamed_by_position <- function(arg_names, prefix) {
 # it -- `for (part in parts)` as in #168, or `part <- parts[[index]]` as here --
 # raises base R's untyped `missingArgError` on the first read of that name.
 parse_across_arguments <- function(expr) {
-  call_args <- rlang::call_args(expr)
+  # Through the shared reader, so that the arguments parsed here are the
+  # arguments of the call recognized as `across()`. Both readings see through a
+  # redundant pair of parentheses, and a parse that did not would read
+  # `(across(v, sum))` as one argument -- the `across()` call itself -- and hand
+  # it to `eval_select()` as a selection (#178).
+  call_args <- static_call_args(expr)
   arg_names <- names(call_args)
   if (is.null(arg_names)) {
     arg_names <- rep("", length(call_args))

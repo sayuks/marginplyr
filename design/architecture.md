@@ -129,6 +129,23 @@ the node rebuilt around them, which arguments a call captures as language
 rather than evaluating, which primitives resolve a name or evaluate language,
 and which language object a call is statically known to build.
 
+It also owns the one reading of a redundant pair of parentheses. `(` is the
+identity function, so `(f)(x)`, `(f(x))`, and `f(x)` are one call written three
+ways, and the readers here answer the three alike — which is what gives every
+analysis above that property at once instead of each family recognizing
+whichever forms someone wrote out (#178, ADR 0019). Name and operands are read
+through the same unwrapping, so a node cannot be named as its content and
+subscripted as its wrapper.
+
+The unwrapping is syntactic and stops there: it reads a name that is written,
+never one that would have to be looked up. So `(get("f"))(x)`, `(function(x)
+x)(1)`, and `("f")(1)` carry no name for a spelling to be recognized by, under
+the conservative #130 policy. What this module does with an unnamed head is a
+separate question it answers separately — `static_callee_name()` resolves
+`get("f")` and its siblings to the primitive they name, because the share
+dependency walk has to over-report a lookup it cannot see through rather than
+recognize a helper by it.
+
 Four analyses read through it and each decides for itself — the share
 dependency walk, the two rewrites, and the three searches — so the module is
 shallow by design where the ones below it are deep. It is also why the
@@ -151,6 +168,12 @@ carry `quote`, `substitute`, and `expression` with a `base` namespace test of
 their own, and it is a different test: a capture is refused where the head
 names a binding the analysis can see, so it answers to the calling environment
 where every family in the registry refuses to.
+
+That difference is what makes the parenthesis reading above split at one point.
+A parenthesized head is a recognized spelling here and is *not* a capture there:
+`(quote)(share)` evaluates its head as a value, so any binding wins and the walk
+reports the read it would otherwise hide, while `(pick)(units)` is dplyr's
+`pick()` however the caller has bound the name.
 
 Two families derive their spellings from the module that owns them —
 contextual shares from `share_kind_rules()`, Grouping specification

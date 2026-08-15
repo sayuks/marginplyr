@@ -3003,6 +3003,31 @@ test_that("a capture the walk cannot name plainly is analyzed, not assumed", {
     expression_data_symbols(quote((quote)(share))),
     c("quote", "share")
   )
+  # It stays that answer under the parenthesis reading #178 added, and that is
+  # the one place two static rules read the same pair of parentheses
+  # differently. A Contextual helper is recognized through them because its
+  # meaning never comes from the calling environment; a capture is refused
+  # through them because its meaning does -- `(quote)` is evaluated as a value,
+  # so R's function lookup never runs and any binding wins, which is the head
+  # this walk may not claim.
+  expect_identical(
+    static_spelling_name(quote((pick)(units)), "selection"),
+    "pick"
+  )
+  expect_identical(
+    expression_data_symbols(quote(((base::quote))(share))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote((base::quote)(share))),
+    "share"
+  )
+  # And the pair around the *call* is not a head at all, so the capture inside
+  # it is still a capture.
+  expect_identical(
+    expression_data_symbols(quote((quote(share)))),
+    character()
+  )
   # A call carrying more arguments than the primitive takes is not the shape
   # this recognizes either: R refuses `quote(a, b)` when it runs, and the walk
   # reports the argument beyond the captured one rather than claiming it is

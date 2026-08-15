@@ -292,6 +292,11 @@ matches and it is written bare or qualified with the package that owns it,
 so \code{dplyr::across()} is the same request as \code{across()} while
 \code{mypkg::across()} is an ordinary call to another package's function.
 
+Redundant parentheses change nothing, because \code{(} is the identity function:
+\code{(pick)(units)} and \code{(pick(units))} are the same request as \code{pick(units)}. A
+head that has to be evaluated to know what it calls is not a spelling at all,
+so \code{get("pick")(units)} is an ordinary call.
+
 Every other name follows ordinary lookup, \code{\link[dplyr:n]{dplyr::n()}} included, and so do
 the Grouping specification constructors: a nested \code{rollup(region)} is
 evaluated because of how it is spelled, but what runs is whatever \code{rollup}

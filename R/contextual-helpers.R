@@ -220,7 +220,23 @@ is_any_static_spelling_call <- function(expr, families) {
 # written as `share_of_total` or as `marginplyr::share_of_total`. The namespace
 # rule is the same one calls follow, and reading it from the same table is what
 # keeps a reference position from drifting away from the call position.
+#
+# Redundant parentheses are read through here for the same reason they are read
+# through in a call head: `(share_of_total)` is the value `share_of_total` is,
+# so refusing it while accepting the call spelling would leave one position out
+# of the rule the rest of the registry follows (#178).
+#
+# By recursion rather than by rebinding `expr`, which is an argument the caller
+# may have left empty -- an `across()` written `across(units, )` reaches here
+# with R's missing marker, and assigning that to a local raises
+# `missingArgError` on the next read of it (#174).
 static_spelling_reference_name <- function(expr, family) {
+  if (is_redundant_parens(expr)) {
+    return(static_spelling_reference_name(
+      unparenthesized_value(expr),
+      family
+    ))
+  }
   if (rlang::is_symbol(expr)) {
     name <- rlang::as_name(expr)
   } else if (

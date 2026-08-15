@@ -369,6 +369,30 @@ test_that("the assignment scan detects the shape it is written to forbid", {
   expect_false(binds_call_parts_by_assign(quote(sum(value[]))))
 })
 
+test_that("every shared reader answers an empty call part", {
+  # The scans above forbid binding a call part to a local; this is the same
+  # rule read from the other end, at the readers a walk hands one to. An empty
+  # argument is a call part like any other -- `x[, "col"]` is everyday R that
+  # `dplyr::summarize()` accepts -- so each of these has to answer it rather
+  # than raise base R's untyped `missingArgError` from inside itself (#168,
+  # #174). The name readers are the ones this can be lost at: both unwrap the
+  # parentheses #178 made transparent, and unwrapping before the shape test
+  # binds the missing marker.
+  #
+  # Read by subscript throughout, since the parts being read are exactly the
+  # parts that may be empty.
+  parts <- static_call_args(quote(f(x, )))
+  expect_true(rlang::is_missing(parts[[2L]]))
+  expect_null(static_call_name(parts[[2L]]))
+  expect_null(static_call_ns(parts[[2L]]))
+  expect_null(static_spelling_name(parts[[2L]], "selection"))
+  expect_null(static_spelling_reference_name(parts[[2L]], "share"))
+  expect_null(static_character_value(parts[[2L]]))
+  expect_null(static_callee_name(parts[[2L]]))
+  expect_false(is_parenthesized(parts[[2L]]))
+  expect_identical(expression_data_symbols(parts[[2L]]), character())
+})
+
 test_that("lazy-table assertions use the package condition seam", {
   skip_if_backend_absent("arrow")
 

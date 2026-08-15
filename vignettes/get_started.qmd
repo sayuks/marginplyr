@@ -651,8 +651,10 @@ what marginplyr rewrites them into rather than what they are bound to:
 `across()`, `if_any()`, `if_all()`, `pick()`, `where()`, and the
 `cur_group*()` family are recognized bare or qualified with the package that
 owns them, and a binding of the same name in your own environment never
-changes what a Margin verb does with one. For `cur_group_id()` that is
-stricter than `dplyr::summarize()`, which resolves it by ordinary lookup;
+changes what a Margin verb does with one. Redundant parentheses are
+transparent to that, so `(pick)(units)` and `(pick(units))` ask for what
+`pick(units)` asks for. For `cur_group_id()` that is stricter than
+`dplyr::summarize()`, which resolves it by ordinary lookup;
 here it stays refused, because reading the binding would mean resolving a call
 head against the calling environment. Every other name, `n()` included,
 follows ordinary lookup.

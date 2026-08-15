@@ -98,9 +98,12 @@ A spelling whose meaning inside a Margin summary arises only through static
 rewriting, and which is therefore recognized by spelling and never resolved
 from the calling environment. It is recognized when the name matches and the
 namespace is absent or the owning package; any other qualifier is an ordinary
-call. A caller binding of the same name never changes what a Margin verb does
-with it, and the rewritten call names the owning package so that what executes
-is what was analyzed. Every other name in a summary expression follows
+call. Redundant parentheses are transparent to that reading, around the name
+or around the whole call, because `(` is the identity function; a head that
+must be evaluated to know what it calls is not recognized at all. A caller
+binding of the same name never changes what a Margin verb does with it, and
+the rewritten call names the owning package so that what executes is what was
+analyzed. Every other name in a summary expression follows
 ordinary lexical and data-mask lookup, including `dplyr::n()`. Grouping
 specification constructors are not Contextual helpers: their spelling decides
 only whether a nested argument is evaluated, and the caller's own function
