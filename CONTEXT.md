@@ -15,6 +15,21 @@ The semantic form of one node in a Grouping specification: grouping set,
 grouping-set union, rollup, cube, or Cartesian product.
 _Avoid_: Grouping specification type
 
+**Nested specification position**:
+An argument of a Grouping specification constructor, where a nested Grouping
+specification and a column selection are both allowed. Which one is meant is
+decided by how the argument is written: a call to a constructor, or a name
+bound to a specification, is a nested specification, and every other argument
+is a column selection. The position never evaluates an argument to find out,
+because a selection such as `starts_with("re")` has no meaning outside a
+selection context. A specification a caller's own function returns is
+therefore refused there, in marginplyr's own words and with the binding that
+works, while the same call is accepted as `.grouping` itself. The position
+answers for its own argument and not for a part of one: a specification
+written inside a selection is the wrong kind of object where it sits, and
+keeps the selection's own report.
+_Avoid_: Nested grouping, nested slot
+
 **Grouping plan**:
 The backend-independent grouping semantics obtained by fully expanding a
 grouping specification.

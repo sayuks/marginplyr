@@ -33,6 +33,15 @@ nested Grouping specification, and requires at least one argument.
 valid nested Grouping specification, and with no arguments represents the
 identity product (the empty grouping set).
 
+A nested Grouping specification is recognized by how it is written: a
+call to one of these constructors, or a name bound to a specification.
+Any other argument is a column selection, so a call of your own that
+returns a specification is refused where it is nested even though it is
+accepted as \code{.grouping} itself. Assign what it returns to a name and use
+that name: \code{s <- my_spec(region)}, then \code{grouping_sets(s, grade)}. A
+specification written inside a selection, as in \code{c(s, grade)}, is a
+selection containing something it cannot select, and is refused as one.
+
 A dimension is a column of the input, so a selection cannot rename it:
 \code{c(area = region)} is an error rather than a dimension named \code{area}.
 Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}

@@ -91,6 +91,23 @@ specifications are validated before their parent-child relationship. The
 registry is used only while compiling; neither it nor the source specification
 is retained in the resulting Grouping plan.
 
+A Nested specification position reads its argument by spelling, because the
+alternative reading is a column selection and evaluating every nested call
+would run a selection helper outside a selection context. A specification a
+caller's own function returns therefore reaches selection resolution, where
+tidyselect refuses it as an unusable subscript, and that one refusal is
+replaced by a Package condition naming the recognized forms and the binding
+that works. Being marginplyr's own report about a position of its own, it is
+parentless, as a share selection naming something ineligible is. The refused
+value is read from the condition rather than by evaluating the argument a
+second time to identify it, which is what keeps the number and timing of
+caller-quosure evaluations fixed. The replacement covers the argument the
+position owns and not a part of one: a specification written inside a
+selection keeps tidyselect's report, which names the sub-selection and is
+accurate about it. Every other selection failure is re-raised as it arrived,
+so an External condition still reaches the caller with its own class and
+provenance.
+
 ### Margin label (`R/margin-label.R`)
 
 Owns label normalization, factor/backend restrictions, optional collision

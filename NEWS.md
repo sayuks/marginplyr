@@ -4,6 +4,14 @@
 * Added `grouping_set()`, `grouping_sets()`, `rollup()`, `cube()`, and
   `grouping_spec()` for arbitrary SQL-style grouping plans, including empty
   sets, nesting, Cartesian products, and composite dimensions.
+* A nested Grouping specification is recognized by how it is written: a call to
+  one of those constructors, or a name bound to a specification. Anything else
+  is a column selection, which is why a function of your own returning a
+  specification is accepted as `.grouping` itself and refused inside another
+  specification. That refusal is now marginplyr's own diagnostic, naming the
+  recognized forms and the binding that works — `s <- my_spec(region)`, then
+  `grouping_sets(s, grade)` — rather than tidyselect reporting the
+  specification as an unusable column selection.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level
