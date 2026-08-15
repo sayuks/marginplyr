@@ -13,7 +13,10 @@
 #'   [dplyr::rename()].
 #' @param .grouping A Grouping specification created by [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
-#'   represents the empty grouping set.
+#'   represents the empty grouping set. Any expression returning a
+#'   specification can be written here, while a specification nested inside
+#'   another must be a constructor call or a name bound to one; see
+#'   [grouping_set()].
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping-set occurrences.
 #' @param .format `"text"` for compact display values or `"list"` for exact

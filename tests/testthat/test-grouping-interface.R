@@ -163,6 +163,70 @@ test_that("Grouping tidyselect conditions retain their provenance", {
   expect_match(conditionMessage(error), "Column `unknown` doesn't exist")
 })
 
+test_that("a nested specification from a caller's function names its verb", {
+  data <- data.frame(a = c("x", "y"), value = 1:2)
+  spec_from_caller <- function(...) rollup(...)
+  calls <- list(
+    summarize_with_margins = quote(
+      summarize_with_margins(
+        data,
+        n = dplyr::n(),
+        .grouping = grouping_sets(spec_from_caller(a), a)
+      )
+    ),
+    expand_with_margins = quote(
+      expand_with_margins(
+        data,
+        .grouping = grouping_sets(spec_from_caller(a), a)
+      )
+    ),
+    nest_with_margins = quote(
+      nest_with_margins(
+        data,
+        .grouping = grouping_sets(spec_from_caller(a), a)
+      )
+    ),
+    nest_by_with_margins = quote(
+      nest_by_with_margins(
+        data,
+        .grouping = grouping_sets(spec_from_caller(a), a)
+      )
+    )
+  )
+
+  for (verb in names(calls)) {
+    error <- expect_error(eval(calls[[verb]]))
+    expect_s3_class(error, "marginplyr_error")
+    expect_match(
+      conditionMessage(error),
+      paste0(
+        "`spec_from_caller(a)` is a grouping specification, but a nested ",
+        "position recognizes one only when it is a call to"
+      ),
+      fixed = TRUE
+    )
+    expect_identical(rlang::call_name(conditionCall(error)), verb)
+  }
+
+  # The workaround the diagnostic names executes, and it is the same plan the
+  # constructor spelling builds.
+  bound <- spec_from_caller(a)
+  expect_equal(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = grouping_sets(bound, a),
+      .duplicates = "drop"
+    ),
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = grouping_sets(rollup(a), a),
+      .duplicates = "drop"
+    )
+  )
+})
+
 test_that("fixed .by columns are never replaced", {
   data <- data.frame(
     year = c(2024L, 2024L, 2025L),

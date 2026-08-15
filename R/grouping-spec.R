@@ -38,6 +38,15 @@
 #'   valid nested Grouping specification, and with no arguments represents the
 #'   identity product (the empty grouping set).
 #'
+#'   A nested Grouping specification is recognized by how it is written: a
+#'   call to one of these constructors, or a name bound to a specification.
+#'   Any other argument is a column selection, so a call of your own that
+#'   returns a specification is refused where it is nested even though it is
+#'   accepted as `.grouping` itself. Assign what it returns to a name and use
+#'   that name: `s <- my_spec(region)`, then `grouping_sets(s, grade)`. A
+#'   specification written inside a selection, as in `c(s, grade)`, is a
+#'   selection containing something it cannot select, and is refused as one.
+#'
 #'   A dimension is a column of the input, so a selection cannot rename it:
 #'   `c(area = region)` is an error rather than a dimension named `area`.
 #'   Rename the result afterwards with [dplyr::rename()].

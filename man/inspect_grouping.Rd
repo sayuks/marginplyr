@@ -24,7 +24,10 @@ fixed key named \code{area}. Rename the result afterwards with
 
 \item{.grouping}{A Grouping specification created by \code{\link[=grouping_set]{grouping_set()}},
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
-represents the empty grouping set.}
+represents the empty grouping set. Any expression returning a
+specification can be written here, while a specification nested inside
+another must be a constructor call or a name bound to one; see
+\code{\link[=grouping_set]{grouping_set()}}.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping-set occurrences.}

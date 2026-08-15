@@ -735,8 +735,71 @@ grouping_arg_spec <- function(arg, data_vars) {
   NULL
 }
 
+# The gate above reads spellings, so a specification a caller's own function
+# returns arrives here, where a column selection is expected. tidyselect then
+# reports a `margin_grouping_spec` as the wrong kind of object for a position
+# where a specification is exactly what belongs, which is a diagnostic that
+# contradicts itself (#190). The contract the position actually has -- a
+# constructor spelling or a name -- is what the caller needs told, together
+# with the binding that makes their call work.
+#
+# The refused value is read from the condition rather than by evaluating the
+# quosure again to identify it: tidyselect has already evaluated it once, and
+# ADR 0008 fixes how often a caller's quosure runs. This is marginplyr's own
+# report about a position of its own, so it stays parentless, as
+# `abort_share_source_name()` does for the same reason. Every other failure is
+# an External condition and is re-raised as it arrived, class and provenance
+# intact.
 resolve_grouping_selection <- function(arg, data_proxy) {
-  resolve_column_selection(arg, data_proxy, labels = grouping_rename_labels())
+  tryCatch(
+    resolve_column_selection(
+      arg,
+      data_proxy,
+      labels = grouping_rename_labels()
+    ),
+    error = function(cnd) {
+      label <- rlang::as_label(rlang::quo_get_expr(arg))
+      if (!is_grouping_spec_subscript(cnd, label)) {
+        stop(cnd)
+      }
+      abort_nested_grouping_spec(label)
+    }
+  )
+}
+
+# The refused subscript travels in the condition's `i` field, and tidyselect
+# wraps a failure raised inside a selection helper, so the chain is walked as
+# `share_selection_missing_names()` walks it for the same reason.
+#
+# What the position can speak for is its own argument, so the refusal has to
+# name that argument and not a part of it: tidyselect reports the sub-selection
+# it refused, and in `c(spec, region)` a specification is genuinely the wrong
+# kind of object where it sits. Saying otherwise there would claim the whole
+# argument is a specification, which is false, and send a caller to a binding
+# they have already made. Comparing the labels is what separates the two, and
+# both are written by `rlang::as_label()` from the same expression when the
+# argument as a whole is what was refused.
+is_grouping_spec_subscript <- function(cnd, label) {
+  if (
+    inherits(cnd$i, "margin_grouping_spec") &&
+      identical(cnd$subscript_arg, label)
+  ) {
+    return(TRUE)
+  }
+  parent <- cnd$parent
+  inherits(parent, "condition") && is_grouping_spec_subscript(parent, label)
+}
+
+abort_nested_grouping_spec <- function(label) {
+  abort_marginplyr(
+    paste0(
+      "`", label, "` is a grouping specification, but a nested position ",
+      "recognizes one only when it is a call to ",
+      format_grouping_constructors(), ", or a name bound to a specification. ",
+      "Anything else is read as a column selection. Assign the specification ",
+      "to a name first, then use that name here."
+    )
+  )
 }
 
 # tidyselect reports a selection under the names the caller gave it, so

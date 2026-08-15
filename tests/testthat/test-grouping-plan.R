@@ -136,6 +136,173 @@ test_that("grouping specification kinds enforce the nesting grammar", {
   }
 })
 
+test_that("a nested specification position recognizes a spelling or a name", {
+  data_vars <- c("region", "grade", "value")
+  spec_from_caller <- function(...) rollup(...)
+  compile <- function(spec) {
+    compile_grouping_spec(
+      spec,
+      data_vars,
+      .duplicates = "keep",
+      duplicates_choices = margin_duplicates_choices
+    )
+  }
+
+  # The two recognized forms resolve to the same family, so the name is a
+  # complete substitute for the spelling and not a narrower one.
+  from_spelling <- compile(grouping_sets(rollup(region), grade))
+  bound <- rollup(region)
+  expect_equal(compile(grouping_sets(bound, grade))$sets, from_spelling$sets)
+
+  # A caller's own function is neither, so the value it returns arrives where a
+  # column selection is expected. The position says so itself rather than
+  # leaving tidyselect to report a specification as an unusable selection.
+  refused <- expect_error(
+    compile(grouping_sets(spec_from_caller(region), grade))
+  )
+  expect_s3_class(refused, "marginplyr_error")
+  expect_identical(
+    conditionMessage(refused),
+    paste0(
+      "`spec_from_caller(region)` is a grouping specification, but a nested ",
+      "position recognizes one only when it is a call to `grouping_set()`, ",
+      "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a ",
+      "name bound to a specification. Anything else is read as a column ",
+      "selection. Assign the specification to a name first, then use that ",
+      "name here."
+    )
+  )
+
+  # The workaround the diagnostic names is the one that works.
+  from_caller <- spec_from_caller(region)
+  expect_equal(
+    compile(grouping_sets(from_caller, grade))$sets,
+    from_spelling$sets
+  )
+
+  # Every constructor position reports the same rule, `grouping_set()`
+  # included, where the binding the diagnostic asks for then reaches the
+  # grammar error that position really has.
+  constructors <- c(
+    "grouping_set",
+    "grouping_sets",
+    "rollup",
+    "cube",
+    "grouping_spec"
+  )
+  for (constructor in constructors) {
+    error <- expect_error(compile(eval(rlang::call2(
+      constructor,
+      quote(spec_from_caller(region))
+    ))))
+    expect_s3_class(error, "marginplyr_error")
+    expect_match(
+      conditionMessage(error),
+      "is a grouping specification, but a nested position",
+      fixed = TRUE
+    )
+  }
+  bound_in_set <- expect_error(compile(grouping_set(from_caller)))
+  expect_identical(
+    conditionMessage(bound_in_set),
+    paste0(
+      "A `grouping_set()` can contain columns, not another ",
+      "grouping family."
+    )
+  )
+})
+
+test_that("a nested column selection is unaffected by the specification rule", {
+  data_vars <- c("region", "region_code", "grade", "value")
+  compile <- function(spec) {
+    compile_grouping_spec(
+      spec,
+      data_vars,
+      .duplicates = "keep",
+      duplicates_choices = margin_duplicates_choices
+    )
+  }
+  selected <- c("region", "grade")
+
+  expect_equal(
+    compile(grouping_sets(tidyselect::starts_with("region"), grade))$sets,
+    list(c("region", "region_code"), "grade")
+  )
+  expect_equal(
+    compile(grouping_sets(tidyselect::all_of(selected)))$sets,
+    list(c("region", "grade"))
+  )
+  expect_equal(
+    compile(grouping_sets(-c(region_code, value), grade))$sets,
+    list(c("region", "grade"), "grade")
+  )
+  expect_equal(
+    compile(grouping_spec(c(region, grade), tidyselect::last_col()))$sets,
+    list(c("region", "grade", "value"))
+  )
+
+  # A selection that fails is still tidyselect's own report, unchanged.
+  unknown <- expect_error(compile(grouping_sets(unknown, grade)))
+  expect_false(inherits(unknown, "marginplyr_error"))
+  expect_match(conditionMessage(unknown), "Column `unknown` doesn't exist")
+
+  # A specification inside a selection is not a nested specification, and the
+  # position does not speak for a part of an argument it did not refuse: a
+  # specification really is the wrong kind of object where `c()` puts it, and a
+  # caller who bound it to a name has already done what this rule would ask.
+  # tidyselect deprecates the bare external vector these three write, and it is
+  # not what they are here to show, so its warning is suppressed rather than
+  # asserted.
+  bound <- rollup(region)
+  embedded <- expect_error(
+    suppressWarnings(compile(grouping_sets(c(bound, grade), region)))
+  )
+  expect_false(inherits(embedded, "marginplyr_error"))
+  expect_match(conditionMessage(embedded), "Can't select columns with `bound`")
+  for (selection in list(quote(-bound), quote(tidyselect::all_of(bound)))) {
+    spec <- eval(rlang::call2("grouping_sets", selection, rlang::sym("grade")))
+    embedded_error <- expect_error(suppressWarnings(compile(spec)))
+    expect_false(inherits(embedded_error, "marginplyr_error"))
+  }
+})
+
+test_that("recognizing a nested specification adds no caller evaluation", {
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    grade = c("a", "b", "a"),
+    units = c(1, 3, 6)
+  )
+
+  # ADR 0008 fixes how often a caller's quosure is evaluated. The refused
+  # specification is read from the failed selection rather than evaluated a
+  # second time to identify it, so the caller's function still runs once.
+  refused_calls <- 0L
+  spec_from_caller <- function(...) {
+    refused_calls <<- refused_calls + 1L
+    rollup(...)
+  }
+  expect_error(summarize_with_margins(
+    data,
+    t = sum(units),
+    .grouping = grouping_sets(spec_from_caller(region), grade)
+  ))
+  expect_identical(refused_calls, 1L)
+
+  # A name-only selection is resolved once per compilation pass, and both
+  # passes run when the whole specification is settled by name alone.
+  selection_calls <- 0L
+  counted <- function(x) {
+    selection_calls <<- selection_calls + 1L
+    x
+  }
+  summarize_with_margins(
+    data,
+    t = sum(units),
+    .grouping = grouping_sets(tidyselect::all_of(counted("region")), grade)
+  )
+  expect_identical(selection_calls, 2L)
+})
+
 test_that("empty grouping rules preserve their phase and error precedence", {
   expect_equal(
     compile_grouping_spec(

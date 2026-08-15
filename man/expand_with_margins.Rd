@@ -28,7 +28,10 @@ named \code{area}. Rename the result afterwards with \code{\link[dplyr:rename]{d
 
 \item{.grouping}{A grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
-represents one empty grouping set.}
+represents one empty grouping set. Any expression returning a
+specification can be written here, while a specification nested inside
+another must be a constructor call or a name bound to one; see
+\code{\link[=grouping_set]{grouping_set()}}.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin

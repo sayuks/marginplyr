@@ -20,7 +20,10 @@
 #'   named `area`. Rename the result afterwards with [dplyr::rename()].
 #' @param .grouping A grouping specification made with [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
-#'   represents one empty grouping set.
+#'   represents one empty grouping set. Any expression returning a
+#'   specification can be written here, while a specification nested inside
+#'   another must be a constructor call or a name bound to one; see
+#'   [grouping_set()].
 #' @param .margin_label A display label for dimensions omitted from a grouping
 #'   set. An unnamed character scalar applies to every resolved Margin
 #'   dimension. A named character vector must name every resolved Margin
