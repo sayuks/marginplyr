@@ -2189,6 +2189,26 @@ test_that("a grouping helper reads an empty argument as a non-column", {
     error
   }
 
+  # The answer this has to reach, asserted first because it is the baseline and
+  # not a message of its own: what the same function already gives a non-column
+  # argument. Nothing asserted it before, which is how the empty argument came
+  # to be read as a column at all -- the branch that refuses a literal is one
+  # the suite never executed.
+  literal_id <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_id(1),
+      .grouping = rollup(region, store)
+    )
+  ))
+  literal_bit <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_bit("region"),
+      .grouping = rollup(region, store)
+    )
+  ))
+
   trailing <- refuse(expect_error(
     summarize_with_margins(
       data,
@@ -2230,6 +2250,16 @@ test_that("a grouping helper reads an empty argument as a non-column", {
       .grouping = rollup(region, store)
     )
   ))
+
+  # Each empty spelling reaches its own helper's baseline exactly, which is the
+  # whole of what was asked for: not a new diagnostic, but the one a caller
+  # writing anything else that is not a column already gets.
+  for (error in list(trailing, leading, both)) {
+    expect_identical(conditionMessage(error), conditionMessage(literal_id))
+  }
+  for (error in list(bit, bit_trailing)) {
+    expect_identical(conditionMessage(error), conditionMessage(literal_bit))
+  }
 
   # The column vector is what these diagnostics are built from, so a message
   # naming the empty name is the direct witness that an empty argument reached

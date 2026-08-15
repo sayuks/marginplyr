@@ -207,7 +207,7 @@ grouping_helper_vars <- function(args, helper, plan) {
   # about a column nobody wrote -- `grouping_id(region, )` named `` `` `` as
   # missing from the plan, and `grouping_id(, )` named it a duplicate, because
   # both empty arguments read as the same name (#181). `is_name_part()` is the
-  # actually being asked: a symbol, and not the empty argument.
+  # question actually being asked: a symbol, and not the empty argument.
   not_a_column_message <- sprintf(
     "`%s()` only accepts bare grouping columns.", helper
   )
