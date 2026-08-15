@@ -2162,6 +2162,127 @@ test_that("`parse_across_arguments()` answers an empty argument as omitted", {
   expect_identical(supplied$unpack, FALSE)
 })
 
+test_that("a grouping helper reads an empty argument as a non-column", {
+  # The third place an empty argument reaches, found by the same audit and
+  # reached by neither path above: a `grouping_id()` or `grouping_bit()` call is
+  # read by `grouping_helper_vars()` rather than by the `across()` rebuild #174
+  # fixed. That read tested each argument with `is.symbol()`, which the empty
+  # argument passes because it is a symbol whose name is `""`, so
+  # `as.character()` wrote that name into the column vector. A trailing empty
+  # argument was then refused for a column missing from the plan, and two empty
+  # arguments for a duplicate that exists only because both read as the same
+  # name. Both conditions were already Package conditions -- what the
+  # caller could not act on is a diagnostic naming a column they never wrote
+  # (#181).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    store = c("a", "b", "c"),
+    value = c(1, 3, 6)
+  )
+  refuse <- function(error) {
+    expect_s3_class(error, "marginplyr_error")
+    expect_match(
+      conditionMessage(error),
+      "only accepts bare grouping columns",
+      fixed = TRUE
+    )
+    error
+  }
+
+  # The answer this has to reach, asserted first because it is the baseline and
+  # not a message of its own: what the same function already gives a non-column
+  # argument. Nothing asserted it before, which is how the empty argument came
+  # to be read as a column at all -- the branch that refuses a literal is one
+  # the suite never executed.
+  literal_id <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_id(1),
+      .grouping = rollup(region, store)
+    )
+  ))
+  literal_bit <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_bit("region"),
+      .grouping = rollup(region, store)
+    )
+  ))
+
+  trailing <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_id(region, ),
+      .grouping = rollup(region, store)
+    )
+  ))
+  leading <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_id(, region),
+      .grouping = rollup(region, store)
+    )
+  ))
+  both <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_id(, ),
+      .grouping = rollup(region, store)
+    )
+  ))
+  # `grouping_bit()` is two arguments to the parser here, so its arity check is
+  # what caught this call before -- an answer that depended on which check ran
+  # first, and one describing a column count rather than either of the two
+  # things the caller wrote.
+  bit <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_bit(, ),
+      .grouping = rollup(region, store)
+    )
+  ))
+  # Its one-argument form was refused for the same wrong reason, and reaches
+  # the same answer now that the empty argument is read before the count is.
+  bit_trailing <- refuse(expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_bit(region, ),
+      .grouping = rollup(region, store)
+    )
+  ))
+
+  # Each empty spelling reaches its own helper's baseline exactly, which is the
+  # whole of what was asked for: not a new diagnostic, but the one a caller
+  # writing anything else that is not a column already gets.
+  for (error in list(trailing, leading, both)) {
+    expect_identical(conditionMessage(error), conditionMessage(literal_id))
+  }
+  for (error in list(bit, bit_trailing)) {
+    expect_identical(conditionMessage(error), conditionMessage(literal_bit))
+  }
+
+  # The column vector is what these diagnostics are built from, so a message
+  # naming the empty name is the direct witness that an empty argument reached
+  # it.
+  for (error in list(trailing, leading, both, bit, bit_trailing)) {
+    expect_no_match(conditionMessage(error), "``", fixed = TRUE)
+  }
+
+  # Only the empty argument moves ahead of the arity checks. A non-column that
+  # is not empty is still counted first, which is what a caller passing two of
+  # anything to `grouping_bit()` needs told.
+  arity <- expect_error(
+    summarize_with_margins(
+      data,
+      b = grouping_bit(1, 2),
+      .grouping = rollup(region, store)
+    ),
+    "requires exactly one column",
+    fixed = TRUE
+  )
+  expect_s3_class(arity, "marginplyr_error")
+})
+
 test_that("no analysed shape reaches the caller as an untyped condition", {
   # The classes below are what each site raised before #100, and before #168 in
   # `missingArgError`'s case. Asserting their absence together keeps a future
