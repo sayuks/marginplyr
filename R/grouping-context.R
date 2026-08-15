@@ -200,6 +200,29 @@ grouping_helper_name <- function(expr) {
 }
 
 grouping_helper_vars <- function(args, helper, plan) {
+  # Each argument is read as a value rather than bound to a name, for the reason
+  # `static_call_args()` gives: one of them may be R's empty argument, which is
+  # a symbol whose name is `""`. `is.symbol()` therefore read one as a bare
+  # column and `as.character()` wrote `""` into `vars`, so the caller was told
+  # about a column nobody wrote -- `grouping_id(region, )` named `` `` `` as
+  # missing from the plan, and `grouping_id(, )` named it a duplicate, because
+  # both empty arguments read as the same name (#181). `is_name_part()` is the
+  # actually being asked: a symbol, and not the empty argument.
+  not_a_column_message <- sprintf(
+    "`%s()` only accepts bare grouping columns.", helper
+  )
+
+  # The empty argument is refused ahead of the arity checks so that the answer
+  # does not depend on which check runs first. `grouping_bit(, )` is two
+  # arguments to the parser, so arity is what catches it today, and a message
+  # counting columns describes neither of the two things the caller wrote.
+  # Nothing else moves: a non-column that is not empty -- `grouping_bit(1, 2)`
+  # -- still reaches the arity diagnostic first, which is the one a caller
+  # passing two of anything needs.
+  if (any(vapply(args, rlang::is_missing, logical(1)))) {
+    abort_marginplyr(not_a_column_message)
+  }
+
   if (identical(helper, "grouping_bit") && length(args) != 1L) {
     abort_marginplyr(
       "`grouping_bit()` requires exactly one column."
@@ -211,11 +234,14 @@ grouping_helper_vars <- function(args, helper, plan) {
     )
   }
 
-  is_symbol <- vapply(args, is.symbol, logical(1))
-  if (!all(is_symbol)) {
-    abort_marginplyr(
-      sprintf("`%s()` only accepts bare grouping columns.", helper)
-    )
+  # The compound question, asked here even though the check above has already
+  # answered half of it: this is the test protecting `as.character()` below, and
+  # what it must be true of is the whole of what a column is. Narrowing it to
+  # `is.symbol()` on the grounds that nothing empty survives the pre-check would
+  # make the reordering above load-bearing for correctness rather than for which
+  # diagnostic a caller reads.
+  if (!all(vapply(args, is_name_part, logical(1)))) {
+    abort_marginplyr(not_a_column_message)
   }
 
   vars <- vapply(args, as.character, character(1))
