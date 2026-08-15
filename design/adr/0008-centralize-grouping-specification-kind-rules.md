@@ -137,3 +137,11 @@ independent module; they are the grammar used exclusively by Grouping plan
 compilation. Making the Grouping plan opaque at the same time was also
 deferred so rule consolidation is not mixed with changes to executor,
 adapter, and test access to plan fields.
+
+## Related decisions
+
+The constructor names this registry derives are also the spellings that gate
+evaluation of a nested specification argument. ADR 0019 registers every
+statically recognized spelling in one place and derives the constructor family
+from this table rather than restating it, and records why a constructor is not
+a Contextual helper even though its spelling is read before anything runs.

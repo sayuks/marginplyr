@@ -11,3 +11,8 @@ expose lifecycle helper calls. `nest_with_margins()` and
 `nest_by_with_margins()` capture independently at their public boundaries and
 pass those quosures to one private nest pipeline; neither public verb
 re-injects expressions through the other.
+
+This decision fixes where an expression is captured and whose environment it
+keeps. Which names *inside* a captured expression are resolved from that
+environment, and which are recognized by spelling and rewritten before
+anything runs, is ADR 0019.

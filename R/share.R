@@ -2545,34 +2545,15 @@ share_named_kind <- function(name) {
   kind
 }
 
+# A node that is no call, and a name no share helper carries, both answer
+# `NULL` from the shared reader, which is the answer a guard would have
+# returned.
 share_helper_call_kind <- function(expr) {
-  # A node that is no call answers `NULL` here, which the next line already
-  # turns into the answer a guard would have returned.
-  name <- static_call_name(expr)
-  if (is.null(name)) {
-    return(NULL)
-  }
-  namespace <- static_call_ns(expr)
-  if (!is.null(namespace) && !identical(namespace, "marginplyr")) {
-    return(NULL)
-  }
-  share_named_kind(name)
+  share_named_kind(static_spelling_name(expr, "share"))
 }
 
 share_helper_function_kind <- function(expr) {
-  name <- if (rlang::is_symbol(expr)) {
-    rlang::as_name(expr)
-  } else if (
-    rlang::is_call(expr, "::") &&
-      length(expr) == 3L &&
-      rlang::is_symbol(expr[[2L]], "marginplyr") &&
-      rlang::is_symbol(expr[[3L]])
-  ) {
-    rlang::as_name(expr[[3L]])
-  } else {
-    return(NULL)
-  }
-  share_named_kind(name)
+  share_named_kind(static_spelling_reference_name(expr, "share"))
 }
 
 is_share_helper_call <- function(expr) {
@@ -2645,9 +2626,7 @@ share_request_kinds <- function(requests) {
 is_across_call <- function(expr) {
   # Asked of any expression, not only of a call: a node that is no call has no
   # name, and no name matches.
-  identical(static_call_name(expr), "across") &&
-    (is.null(static_call_ns(expr)) ||
-       identical(static_call_ns(expr), "dplyr"))
+  is_static_spelling_call(expr, "selection", "across")
 }
 
 # `error_call` is the caller's own `across()` call rather than this frame,
@@ -2786,7 +2765,7 @@ contains_selection_predicate <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
-  if (identical(static_call_name(expr), "where")) {
+  if (is_static_spelling_call(expr, "predicate", "where")) {
     return(TRUE)
   }
   any(vapply(

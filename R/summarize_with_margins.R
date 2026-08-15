@@ -228,6 +228,24 @@
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
+#'
+#' A few spellings mean something only because marginplyr rewrites them before
+#' anything runs. Those are recognized by spelling and are never looked up in
+#' the environment the call was written in, so binding a function of your own
+#' to one of their names does not change what this verb does with it. They are
+#' [grouping_bit()] and [grouping_id()]; [share_of_parent()] and
+#' [share_of_total()]; [dplyr::across()], [dplyr::if_any()],
+#' [dplyr::if_all()], and [dplyr::pick()]; [tidyselect::where()]; and the
+#' branch-local helpers rejected below. A spelling is recognized when the name
+#' matches and it is written bare or qualified with the package that owns it,
+#' so `dplyr::across()` is the same request as `across()` while
+#' `mypkg::across()` is an ordinary call to another package's function.
+#'
+#' Every other name follows ordinary lookup, [dplyr::n()] included, and so do
+#' the Grouping specification constructors: a nested `rollup(region)` is
+#' evaluated because of how it is spelled, but what runs is whatever `rollup`
+#' is bound to where you wrote it.
+#'
 #' [dplyr::across()] and [dplyr::pick()] cannot select any column named in the
 #' complete grouping plan. This extends dplyr's grouping-column rule across
 #' every branch: a dimension remains excluded even in a grouping set from
@@ -245,7 +263,11 @@
 #' rejected. They describe one branch-local grouping or data mask, whereas a
 #' margin result combines several grouping sets and their identifiers, row
 #' positions, or columns would not have one global meaning. Use
-#' [grouping_bit()] and [grouping_id()] to identify margin levels.
+#' [grouping_bit()] and [grouping_id()] to identify margin levels. They are
+#' rejected by spelling like the rest, which is stricter than
+#' [dplyr::summarize()]: a caller who has bound `cur_group_id` to a function
+#' of their own still gets the refusal, because reading that binding would
+#' mean resolving a call head against the calling environment.
 #'
 #' Every rule above reads the expression the data mask evaluates. An expression
 #' captured as language data — the argument of a plainly written

@@ -93,6 +93,22 @@ fixed `.by` group, so a fixed key never contributes to another partition's
 denominator.
 _Avoid_: Percent of total, root share, grand total percentage
 
+**Contextual helper**:
+A spelling whose meaning inside a Margin summary arises only through static
+rewriting, and which is therefore recognized by spelling and never resolved
+from the calling environment. It is recognized when the name matches and the
+namespace is absent or the owning package; any other qualifier is an ordinary
+call. A caller binding of the same name never changes what a Margin verb does
+with it, and the rewritten call names the owning package so that what executes
+is what was analyzed. Every other name in a summary expression follows
+ordinary lexical and data-mask lookup, including `dplyr::n()`. Grouping
+specification constructors are not Contextual helpers: their spelling decides
+only whether a nested argument is evaluated, and the caller's own function
+runs when it is. A diagnostic refusing one tells the caller their spelling is
+*reserved*; that is this same fact addressed to someone who has not read this
+glossary, and not a second term.
+_Avoid_: Contextual function, masked helper, reserved argument
+
 **Package condition**:
 An error marginplyr itself raises, inheriting the `marginplyr_error` base
 class. It reports something the caller can avoid by rewriting the call within

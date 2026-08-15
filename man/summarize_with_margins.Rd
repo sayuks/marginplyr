@@ -279,6 +279,24 @@ package.
 \section{Relationship to dplyr summaries}{
 
 The \code{...} expressions use \code{\link[dplyr:summarize]{dplyr::summarize()}} data-masking semantics.
+
+A few spellings mean something only because marginplyr rewrites them before
+anything runs. Those are recognized by spelling and are never looked up in
+the environment the call was written in, so binding a function of your own
+to one of their names does not change what this verb does with it. They are
+\code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}}; \code{\link[=share_of_parent]{share_of_parent()}} and
+\code{\link[=share_of_total]{share_of_total()}}; \code{\link[dplyr:across]{dplyr::across()}}, \code{\link[dplyr:if_any]{dplyr::if_any()}},
+\code{\link[dplyr:if_all]{dplyr::if_all()}}, and \code{\link[dplyr:pick]{dplyr::pick()}}; \code{\link[tidyselect:where]{tidyselect::where()}}; and the
+branch-local helpers rejected below. A spelling is recognized when the name
+matches and it is written bare or qualified with the package that owns it,
+so \code{dplyr::across()} is the same request as \code{across()} while
+\code{mypkg::across()} is an ordinary call to another package's function.
+
+Every other name follows ordinary lookup, \code{\link[dplyr:n]{dplyr::n()}} included, and so do
+the Grouping specification constructors: a nested \code{rollup(region)} is
+evaluated because of how it is spelled, but what runs is whatever \code{rollup}
+is bound to where you wrote it.
+
 \code{\link[dplyr:across]{dplyr::across()}} and \code{\link[dplyr:pick]{dplyr::pick()}} cannot select any column named in the
 complete grouping plan. This extends dplyr's grouping-column rule across
 every branch: a dimension remains excluded even in a grouping set from
@@ -296,7 +314,11 @@ Use a new summary name, or rename the grouping column before this call.
 rejected. They describe one branch-local grouping or data mask, whereas a
 margin result combines several grouping sets and their identifiers, row
 positions, or columns would not have one global meaning. Use
-\code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} to identify margin levels.
+\code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} to identify margin levels. They are
+rejected by spelling like the rest, which is stricter than
+\code{\link[dplyr:summarize]{dplyr::summarize()}}: a caller who has bound \code{cur_group_id} to a function
+of their own still gets the refusal, because reading that binding would
+mean resolving a call head against the calling environment.
 
 Every rule above reads the expression the data mask evaluates. An expression
 captured as language data — the argument of a plainly written

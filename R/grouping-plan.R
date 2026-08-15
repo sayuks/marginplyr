@@ -711,13 +711,14 @@ grouping_arg_spec <- function(arg, data_vars) {
     return(NULL)
   }
 
-  constructors <- grouping_constructor_names()
-  call_name <- static_call_name(expr)
-  call_ns <- static_call_ns(expr)
+  # The spelling gates evaluation and nothing else: a nested argument is
+  # ambiguous between a tidyselect selection and a nested specification, and
+  # evaluating every nested call would run `starts_with("re")` outside a
+  # selection context. What runs once the gate opens is whatever the name is
+  # bound to, so a constructor is not a Contextual helper even though it is
+  # read statically (ADR 0019).
   is_constructor_call <-
-    !is.null(call_name) &&
-    call_name %in% constructors &&
-    (is.null(call_ns) || identical(call_ns, "marginplyr"))
+    !is.null(static_spelling_name(expr, "grouping_constructor"))
 
   should_evaluate <-
     is_constructor_call ||

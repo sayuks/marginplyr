@@ -241,7 +241,13 @@ is_name_part <- function(part) {
   !rlang::is_missing(part) && rlang::is_symbol(part)
 }
 
-rebuild_static_call <- function(expr, args) {
+# `head` defaults to the head the node already has, which is what every walk
+# wants: a rewrite of a call's arguments is not a rewrite of what it calls.
+# Passing one is how a recognized spelling is written back qualified
+# (`qualify_static_spelling()`), and it goes through this rather than through
+# `expr[[1L]] <-` so that the quosure and formula attributes are carried across
+# by the one function that knows to carry them.
+rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # An invariant, not a Package condition (ADR-0015): a quosure carries exactly
   # one expression, so rebuilding one around any other number of arguments
   # would attach its class to a `~` call that is not a quosure at all -- an
@@ -250,7 +256,7 @@ rebuild_static_call <- function(expr, args) {
   # arguments `static_call_args()` gave them one to one, and the ones that
   # change an argument count are named `across()` and `pick()` calls.
   stopifnot(!rlang::is_quosure(expr) || length(args) == 1L)
-  rebuilt <- rlang::call2(static_call_head(expr), !!!args)
+  rebuilt <- rlang::call2(head, !!!args)
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)

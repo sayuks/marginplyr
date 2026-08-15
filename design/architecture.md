@@ -136,6 +136,44 @@ dependency runs one way: a reader that lived in `R/share.R` would make the
 grouping-context rewrite reach into the contextual-share module for a fact
 that is not about shares (#179).
 
+### Recognized spellings (`R/contextual-helpers.R`)
+
+Owns which names a Margin verb recognizes before anything runs, and decides
+nothing about what recognition then does. One table keyed by family carries
+each family's spellings, the namespaces a recognized call may be qualified
+with, and whether its spellings are Contextual helpers; every site that reads
+one of those spellings derives from it, and their namespace test exists only
+here (ADR 0019).
+
+The language-capture primitives are read statically too and are deliberately
+not among them. `language_capture_formal()` and `captured_call_parts()` above
+carry `quote`, `substitute`, and `expression` with a `base` namespace test of
+their own, and it is a different test: a capture is refused where the head
+names a binding the analysis can see, so it answers to the calling environment
+where every family in the registry refuses to.
+
+Two families derive their spellings from the module that owns them —
+contextual shares from `share_kind_rules()`, Grouping specification
+constructors from `grouping_kind_rules()` — so a helper added to either is
+recognized without being written down twice. This module therefore reads two
+deep modules as well as `R/utils.R`, and both of those two read it back;
+stated baldly that is a cycle, and what keeps it from being one in practice is
+that every entry in the table is a function, so a family lookup evaluates that
+family's owner and no other. `R/utils.R` is not part of it: the dependency on
+it runs one way, as it does from everything else.
+
+That is the property worth checking rather than the layering, because the
+layering alone would not say which module reaches which. Under it, the only
+module that evaluates `share_kind_rules()` through this table is `R/share.R`
+itself, asking about the spellings it owns — a module reading its own table
+through a shared reader, which is what the section above describes rather than
+what it forbids. What it forbids is the grouping-context rewrite reaching into
+the contextual-share module for a fact that is not about shares, and a
+`grouping_helper_name()` lookup evaluates the grouping family alone. Built
+eagerly it would evaluate every family the table holds, which is that reach
+arriving one module further out; `test-contextual-helpers.R` asserts it does
+not.
+
 ### Contextual shares (`R/share.R`)
 
 One deep private module owns every contextual-share responsibility: request
