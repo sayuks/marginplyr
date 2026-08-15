@@ -645,6 +645,18 @@ retail_sales |>
   )
 ```
 
+That refusal is by spelling, as every recognized name here is. A few names mean
+what marginplyr rewrites them into rather than what they are bound to:
+`grouping_bit()`, `grouping_id()`, `share_of_parent()`, `share_of_total()`,
+`across()`, `if_any()`, `if_all()`, `pick()`, `where()`, and the
+`cur_group*()` family are recognized bare or qualified with the package that
+owns them, and a binding of the same name in your own environment never
+changes what a Margin verb does with one. For `cur_group_id()` that is
+stricter than `dplyr::summarize()`, which resolves it by ordinary lookup;
+here it stays refused, because reading the binding would mean resolving a call
+head against the calling environment. Every other name, `n()` included,
+follows ordinary lookup.
+
 Two familiar conveniences also behave differently. Row order is unspecified
 for local and lazy results alike unless `.sort` asks for a Margin order, which
 puts each margin row with the rows it summarizes; call `arrange()` for any

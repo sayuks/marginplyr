@@ -185,18 +185,13 @@ rewrite_grouping_expr <- function(expr,
   )
 }
 
+# Which grouping-context helper this call spells, or `NULL` for anything else.
+# It names the family this module rewrites, so the rewrite above asks a question
+# in its own vocabulary rather than quoting a registry key, and the one place
+# that key is written down is here. `test-static-expression-analysis.R` asserts
+# it by name, as one of the analyses that must read a formula as a `~` call.
 grouping_helper_name <- function(expr) {
-  name <- static_call_name(expr)
-  namespace <- static_call_ns(expr)
-  if (
-    !is.null(name) &&
-      name %in% c("grouping_bit", "grouping_id") &&
-      (is.null(namespace) || identical(namespace, "marginplyr"))
-  ) {
-    return(name)
-  }
-
-  NULL
+  static_spelling_name(expr, "grouping")
 }
 
 grouping_helper_vars <- function(args, helper, plan) {

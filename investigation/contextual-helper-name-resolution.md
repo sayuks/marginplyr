@@ -1,6 +1,7 @@
 # Contextual helper name resolution
 
 Investigated: 2026-08-15
+Revised: 2026-08-15 — investigation/contextual-helper-execution-mechanism.md
 
 Evidence gathered for #172, which asks whether an unqualified contextual
 helper spelling inside a Margin summary is reserved syntax or an ordinary
@@ -63,6 +64,21 @@ dplyr's semantics while the shadowed `across()` did not. Whatever the cause, it
 was not read out of the source during this investigation, and an implementation
 should establish it rather than assume the two paths differ only in the branch
 they take at `:364` and `:373`.
+
+## Revisions (2026-08-15)
+
+`investigation/contextual-helper-execution-mechanism.md` establishes the
+mechanism the section above records as "**not** established", and revisits one
+row of the plain-dplyr table.
+
+The asymmetry is decided inside dplyr, not by anything marginplyr writes: a
+`pick()` spelling is expanded syntactically wherever it appears except under a
+`~` or a `function`, while an `across()` spelling is expanded only in an
+unnamed top-level dot — and every summary a Margin verb stages is a named dot.
+The successor note also finds that this note's plain-dplyr `pick()` row holds
+at dplyr 1.2.1 only inside a `~` or a `function`, and that nine functions read
+a spelling rather than the four listed below, carrying eleven namespace tests
+between them.
 
 ## Nested constructor positions refuse a genuine specification
 

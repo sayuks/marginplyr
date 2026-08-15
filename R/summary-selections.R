@@ -126,12 +126,24 @@ check_summary_context_helpers <- function(dots) {
     return(invisible(NULL))
   }
 
+  # `does not support` opens the message deliberately. Six assertions match
+  # that phrase by regular expression rather than by condition class, and it is
+  # still what the message says; the sentence after it is the part #172 added,
+  # because a caller who had bound one of these names themselves was told only
+  # that the verb refused the helper and had no way to learn that their own
+  # function was never going to run (ADR 0019).
   abort_marginplyr(
     paste0(
       "`summarize_with_margins()` does not support ",
       paste0("`", unsupported, "()`", collapse = ", "),
-      ". These helpers describe one branch-local dplyr grouping or data mask, ",
-      "but a margin result combines multiple grouping sets. Use ",
+      if (length(unsupported) == 1L) {
+        ". This spelling is reserved inside a Margin summary and is not "
+      } else {
+        ". These spellings are reserved inside a Margin summary and are not "
+      },
+      "resolved from the calling environment. These helpers describe one ",
+      "branch-local dplyr grouping or data mask, but a margin result ",
+      "combines multiple grouping sets. Use ",
       "`grouping_bit()` or ",
       "`grouping_id()` when identifying margin levels."
     )
@@ -251,23 +263,8 @@ find_summary_context_helpers <- function(expr) {
   }
 
   call_name <- static_call_name(expr)
-  call_ns <- static_call_ns(expr)
-  unsupported <- c(
-    "cur_group",
-    "cur_group_id",
-    "cur_group_rows",
-    "cur_data",
-    "cur_data_all"
-  )
-  found <- if (
-    !is.null(call_name) &&
-      call_name %in% unsupported &&
-      (is.null(call_ns) || identical(call_ns, "dplyr"))
-  ) {
-    call_name
-  } else {
-    character()
-  }
+  refused <- static_spelling_name(expr, "refused")
+  found <- if (is.null(refused)) character() else refused
 
   # The arguments the mask evaluates, and the language the call evaluates. A
   # helper name the caller quoted describes no grouping this call has to
@@ -354,14 +351,21 @@ rewrite_summary_selections <- function(expr,
     }
   )
 
-  call_name <- static_call_name(expr)
-  call_ns <- static_call_ns(expr)
-  is_dplyr_call <- is.null(call_ns) || identical(call_ns, "dplyr")
-  if (!is_dplyr_call) {
+  call_name <- static_spelling_name(expr, "selection")
+  if (is.null(call_name)) {
     return(expr)
   }
 
-  if (!is.null(call_name) && call_name %in% c("across", "if_any", "if_all")) {
+  # The head is qualified before either branch reads the call, so every rebuild
+  # below inherits it through `rebuild_static_call()` and no branch has to
+  # remember. This is what makes the call that executes the call this function
+  # analyzed: an unqualified head reaches the data mask resolved by ordinary
+  # lexical lookup, and a caller's own `across` then ran underneath a
+  # grouping-column exclusion check that had already passed on dplyr's
+  # (#172, ADR 0019).
+  expr <- qualify_static_spelling(expr, "selection", call_name)
+
+  if (call_name %in% c("across", "if_any", "if_all")) {
     return(rewrite_across_selection(
       expr,
       env,
@@ -374,7 +378,17 @@ rewrite_summary_selections <- function(expr,
     return(rewrite_pick_selection(expr, env, data_proxy))
   }
 
-  expr
+  # An invariant, not a Package condition (ADR 0015): the branches above answer
+  # every name the `selection` family holds, so reaching this means a spelling
+  # was registered without a rewrite. Falling through to one of them instead
+  # would rewrite the new spelling as whichever helper happened to be last,
+  # which is a silently wrong selection rather than a missing one.
+  stop(
+    "No rewrite is registered for the selection helper `",
+    call_name,
+    "()`.",
+    call. = FALSE
+  )
 }
 
 # `call_name` is the caller's answer rather than one asked again here. Asking
@@ -514,16 +528,13 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     return(character())
   }
 
-  call_name <- static_call_name(expr)
-  call_ns <- static_call_ns(expr)
-  is_tibble_constructor <-
-    !is.null(call_name) &&
-    call_name %in% c("tibble", "data_frame") &&
-    (is.null(call_ns) || identical(call_ns, "tibble"))
-  is_data_frame_constructor <-
-    identical(call_name, "data.frame") &&
-    (is.null(call_ns) || identical(call_ns, "base"))
-  if (is_tibble_constructor || is_data_frame_constructor) {
+  # Two families rather than one, because the owner differs and the owner is
+  # what recognition tests: tibble owns `tibble()` and `data_frame()`, base
+  # owns `data.frame()`. Neither is a Contextual helper -- nothing rewrites
+  # them, and a caller who binds `tibble` gets their own function -- so what is
+  # read here is only which output names the summary is going to produce
+  # (ADR 0019).
+  if (is_any_static_spelling_call(expr, c("tibble_frame", "base_frame"))) {
     call_args <- static_call_args(expr)
     arg_names <- names(call_args)
     if (is.null(arg_names)) {
@@ -540,10 +551,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     ))
   }
 
-  if (
-    identical(call_name, "pick") &&
-      (is.null(call_ns) || identical(call_ns, "dplyr"))
-  ) {
+  if (is_static_spelling_call(expr, "selection", "pick")) {
     call_args <- static_call_args(expr)
     selection <- if (length(call_args) == 0L) {
       rlang::expr(dplyr::everything())
@@ -553,10 +561,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     return(names(resolve_summary_selection(selection, env, data_proxy)))
   }
 
-  if (
-    identical(call_name, "across") &&
-      (is.null(call_ns) || identical(call_ns, "dplyr"))
-  ) {
+  if (is_static_spelling_call(expr, "selection", "across")) {
     return(known_across_output_names(expr, env, data_proxy))
   }
 

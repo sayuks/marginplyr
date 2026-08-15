@@ -59,6 +59,21 @@
   overwrite grouping keys, always return ungrouped output, and reject
   branch-local `cur_group*()` helpers in favor of `grouping_bit()` and
   `grouping_id()`.
+* Summary expressions now resolve every contextual helper by spelling.
+  `grouping_bit()`, `grouping_id()`, `share_of_parent()`, `share_of_total()`,
+  `across()`, `if_any()`, `if_all()`, `pick()`, `where()`, and the rejected
+  `cur_group*()` helpers mean what marginplyr rewrites them into, whether they
+  are written bare or qualified with the package that owns them, and a binding
+  of the same name in the calling environment never changes what the verb does
+  with one. A qualifier naming any other package is an ordinary call, and every
+  other name — `dplyr::n()` included — follows ordinary lookup. Three
+  resolutions changed: `across()`, `if_any()`, and `if_all()` previously ran a
+  caller's binding while the rules that reject a selection were checked against
+  dplyr's helper; a shadowed `pick()` ran a caller's binding inside a `~`
+  lambda or a `function` body, which is the one position plain dplyr also lets
+  it; and a `where()` qualified with a package that does not own it is no
+  longer read as a selection predicate inside a contextual share's `across()`.
+  See *Relationship to dplyr summaries* in `?summarize_with_margins`.
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across
