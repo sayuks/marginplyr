@@ -1,16 +1,23 @@
-# The regression suite for ADR 0019. Every case below is derived from
+# The regression suite for ADR 0019 and #178. Every case below is derived from
 # `static_spelling_rules()` rather than written out, because the failure this
 # has to catch is a spelling nobody remembered: an enumeration records what
 # someone thought to add, and a registry entry with no coverage is exactly the
 # entry that reintroduces #172.
 #
+# The writings each spelling is exercised in are derived too, from the rule
+# rather than from the registry: a name is written bare or under each owner the
+# family declares, and each of those through the redundant parentheses #178
+# makes transparent. An enumeration of demonstrated spellings is what that
+# ticket found in the code, where four families recognized whichever forms
+# someone had written out, so an enumeration of them here would assert the
+# defect rather than its absence.
+#
 # Two layers, because they fail differently. The reader assertions run over
-# every registered spelling and every namespace form and need no data, so they
-# hold for a spelling whose end-to-end shape nobody has written yet. The
-# behaviour assertions need a call to write, which no rule can derive; the
-# probe table below supplies one per Contextual helper and is checked against
-# the registry, so a spelling added without a probe fails here rather than
-# going uncovered.
+# every registered spelling and every writing and need no data, so they hold
+# for a spelling whose end-to-end shape nobody has written yet. The behaviour
+# assertions need a call to write, which no rule can derive; the probe table
+# below supplies one per Contextual helper and is checked against the registry,
+# so a spelling added without a probe fails here rather than going uncovered.
 
 # A data frame every probe reads. Two numeric columns so that a selection can
 # select more than one, and two dimensions so that a rollup and a cube of them
@@ -33,36 +40,41 @@ contextual_probe_data <- function() {
 # binding, which is the shape a first draft of this file had and which passes
 # whatever the package does.
 #
-# `head` is how the three writings differ -- a bare symbol, a qualified call,
-# or a foreign qualifier -- and `.probe_data` is the symbol the input is bound
-# to in the evaluation environment.
+# `spell` is how the writings differ. A probe writes its helper's arguments
+# once and hands them to the writing, which decides how the name in front of
+# them is spelled -- bare, qualified, foreign, or wrapped in parentheses. A
+# probe that built the call itself would fix one writing per probe, which is
+# the enumeration this file exists not to be.
+#
+# `.probe_data` is the symbol the input is bound to in the evaluation
+# environment.
 #
 # Every name below sits inside a defused expression, so `codetools` reads the
 # input symbol and the grouping columns as undefined globals.
 # nolint start: object_usage_linter.
 contextual_probes <- function() {
   summary_probe <- function(build) {
-    function(head) {
+    function(spell) {
       rlang::expr(summarize_with_margins(
         .probe_data,
-        k = !!build(head),
+        k = !!build(spell),
         .grouping = rollup(region),
         .sort = "last"
       ))
     }
   }
-  share_probe <- function(head) {
+  share_probe <- function(spell) {
     rlang::expr(summarize_with_margins(
       .probe_data,
       t = sum(units),
-      k = !!rlang::call2(head, quote(t)),
+      k = !!spell(list(quote(t))),
       .grouping = rollup(region),
       .sort = "last"
     ))
   }
   arguments <- function(...) {
     args <- rlang::exprs(...)
-    function(head) rlang::call2(head, !!!args)
+    function(spell) spell(args)
   }
 
   list(
@@ -76,17 +88,17 @@ contextual_probes <- function() {
     # a scalar. A caller binding answering a string is then a different value
     # or an error rather than a differently shaped result, which is what makes
     # the two outcomes comparable.
-    across = summary_probe(function(head) {
-      rlang::expr(ncol(!!rlang::call2(head, quote(c(units, qty)), quote(sum))))
+    across = summary_probe(function(spell) {
+      rlang::expr(ncol(!!spell(list(quote(c(units, qty)), quote(sum)))))
     }),
-    pick = summary_probe(function(head) {
-      rlang::expr(ncol(!!rlang::call2(head, quote(units))))
+    pick = summary_probe(function(spell) {
+      rlang::expr(ncol(!!spell(list(quote(units)))))
     }),
-    if_any = summary_probe(function(head) {
-      rlang::expr(sum(!!rlang::call2(head, quote(units), quote(~ .x > 1))))
+    if_any = summary_probe(function(spell) {
+      rlang::expr(sum(!!spell(list(quote(units), quote(~ .x > 1)))))
     }),
-    if_all = summary_probe(function(head) {
-      rlang::expr(sum(!!rlang::call2(head, quote(units), quote(~ .x > 1))))
+    if_all = summary_probe(function(spell) {
+      rlang::expr(sum(!!spell(list(quote(units), quote(~ .x > 1)))))
     }),
     # A selection predicate in a contextual share's `across()` selection, which
     # is the one position the `predicate` family decides. It has to be the full
@@ -97,13 +109,13 @@ contextual_probes <- function() {
     #
     # The share is refused here, so this probe compares diagnostics rather than
     # values, which is the other half of what a Contextual helper promises.
-    where = function(head) {
+    where = function(spell) {
       rlang::expr(summarize_with_margins(
         .probe_data,
         t = sum(units),
         u = sum(qty),
         dplyr::across(
-          !!rlang::call2(head, quote(is.numeric)),
+          !!spell(list(quote(is.numeric))),
           share_of_total,
           .names = "{.col}_share"
         ),
@@ -119,6 +131,66 @@ contextual_probes <- function() {
   )
 }
 # nolint end
+
+# One writing of a spelling: a function from a call's arguments to the call,
+# labelled by what it produces so that a failure says which writing failed
+# rather than which loop index did. `wrap` is the parenthesis around the whole
+# call, as distinct from the one around its head; both are pairs R evaluates as
+# the identity function, and #178 is the ticket that made the two agree with the
+# call written without either.
+contextual_writing <- function(head, wrap = FALSE) {
+  spell <- function(args) {
+    call <- rlang::call2(head, !!!args)
+    if (wrap) {
+      return(rlang::call2("(", call))
+    }
+    call
+  }
+  list(label = rlang::as_label(spell(list(quote(...)))), spell = spell)
+}
+
+# Every writing of the head spellings it is given. Derived from the parenthesis
+# rule rather than listed: bare, one pair around the head, two pairs around it,
+# and one pair around the whole call. Two pairs are what says the reading is not
+# one pair deep, which a single-step unwrapping would pass while `((pick))(x)`
+# still went unrecognized.
+contextual_writings <- function(spellings) {
+  unlist(
+    lapply(
+      spellings,
+      function(spelling) {
+        parenthesized <- rlang::call2("(", spelling)
+        list(
+          contextual_writing(spelling),
+          contextual_writing(parenthesized),
+          contextual_writing(rlang::call2("(", parenthesized)),
+          contextual_writing(spelling, wrap = TRUE)
+        )
+      }
+    ),
+    recursive = FALSE
+  )
+}
+
+# The head spellings a family owns: the bare name, and the name under each
+# namespace the registry records as an owner of it.
+contextual_owned_spellings <- function(family, name) {
+  c(
+    list(rlang::sym(name)),
+    lapply(
+      static_spelling_namespaces(family),
+      function(namespace) {
+        rlang::call2("::", rlang::sym(namespace), rlang::sym(name))
+      }
+    )
+  )
+}
+
+# `stats` owns none of these names, so every writing of one qualified with it is
+# an ordinary call this package must not claim.
+contextual_foreign_spellings <- function(name) {
+  list(rlang::call2("::", quote(stats), rlang::sym(name)))
+}
 
 # Every spelling the registry holds, in one flat table of family and name, so
 # that a loop over it covers a family added later without being told about it.
@@ -153,16 +225,24 @@ contextual_probe_env <- function(data, shadow = NULL) {
 }
 
 # What a probe did, in a form two writings can be compared by. An error is
-# reported as its message rather than propagated, because a family that refuses
-# its spelling has to refuse all three writings identically, which is an
-# agreement between messages and not the absence of one.
+# reported rather than propagated, because a family that refuses its spelling
+# has to refuse every writing identically, which is an agreement between
+# refusals and not the absence of one.
+#
+# Its class is reported beside its message, so the agreement covers the typed
+# behaviour and not only the wording. That is what the writings need most: a
+# spelling recognition misses is not usually silent but reaches the data mask
+# and fails there, and `object 'pick' not found` is an untyped condition of the
+# class ADR 0015 separates from this package's own.
 contextual_probe_outcome <- function(expr, data, shadow = NULL) {
   env <- contextual_probe_env(data, shadow = shadow)
   tryCatch(
     list(value = as.data.frame(collect_probe_result(
       rlang::eval_bare(expr, env)
     ))),
-    error = function(cnd) list(error = conditionMessage(cnd))
+    error = function(cnd) {
+      list(error = conditionMessage(cnd), class = class(cnd))
+    }
   )
 }
 
@@ -193,23 +273,18 @@ test_that("the probe table covers exactly the Contextual helper spellings", {
   expect_gt(length(contextual_registry_table()), length(registered))
 })
 
-test_that("a registered spelling is recognized bare and under every owner", {
+test_that("a registered spelling is recognized however it is written", {
+  # Bare, under every owner, and through every arrangement of the parentheses
+  # R evaluates as the identity function. Each site reads the name through one
+  # shared reader, so a writing missed here is a writing missed by the
+  # recognition, the rewrite, and the refusal alike.
   for (entry in contextual_registry_table()) {
-    expect_identical(
-      static_spelling_name(rlang::call2(entry$name), entry$family),
-      entry$name,
-      info = paste(entry$family, entry$name)
-    )
-    for (namespace in static_spelling_namespaces(entry$family)) {
-      qualified <- rlang::call2(rlang::call2(
-        "::",
-        rlang::sym(namespace),
-        rlang::sym(entry$name)
-      ))
+    spellings <- contextual_owned_spellings(entry$family, entry$name)
+    for (writing in contextual_writings(spellings)) {
       expect_identical(
-        static_spelling_name(qualified, entry$family),
+        static_spelling_name(writing$spell(list()), entry$family),
         entry$name,
-        info = paste(entry$family, namespace, entry$name)
+        info = paste(entry$family, writing$label)
       )
     }
   }
@@ -218,15 +293,83 @@ test_that("a registered spelling is recognized bare and under every owner", {
 test_that("a foreign namespace passes a registered spelling through", {
   # `stats` owns none of these names, so every one of them qualified with it is
   # an ordinary call this package must not claim. Recognizing one would send a
-  # caller's `stats::pick()` down a rewrite written for dplyr's.
+  # caller's `stats::pick()` down a rewrite written for dplyr's. Parentheses
+  # change nothing about that: they are transparent to which name is written,
+  # not to whose it is.
   for (entry in contextual_registry_table()) {
-    foreign <- rlang::call2(rlang::call2(
-      "::",
-      quote(stats),
-      rlang::sym(entry$name)
-    ))
+    foreign <- contextual_writings(contextual_foreign_spellings(entry$name))
+    for (writing in foreign) {
+      expect_null(
+        static_spelling_name(writing$spell(list()), entry$family),
+        info = paste(entry$family, writing$label)
+      )
+    }
+  }
+})
+
+test_that("a head this cannot resolve statically is no spelling at all", {
+  # The boundary ADR 0019 draws for #178, asserted at the reader. Identity is
+  # syntactic: a pair of parentheses is read through because the name is still
+  # written inside it, while a head that has to be *evaluated* to know what it
+  # calls stays unresolved under the conservative #130 policy -- whether the
+  # evaluation is a lookup, a string R would refuse to apply, or a literal
+  # function.
+  for (entry in contextual_registry_table()) {
+    computed <- rlang::call2("get", entry$name)
+    # The string is written inside the parentheses rather than in front of them
+    # because R's parser reads a bare `"pick"(units)` as the symbol `pick` and
+    # calls it, while `("pick")(units)` keeps the string and raises "attempt to
+    # apply non-function". Recognizing the second would make this package accept
+    # a call R refuses.
+    unresolved <- list(
+      rlang::call2(computed),
+      rlang::call2(rlang::call2("(", computed)),
+      rlang::call2(rlang::call2("(", entry$name)),
+      rlang::call2(quote(function() NULL))
+    )
+    for (call in unresolved) {
+      expect_null(
+        static_spelling_name(call, entry$family),
+        info = paste(entry$family, rlang::as_label(call))
+      )
+    }
+  }
+})
+
+test_that("a helper reference is read through parentheses too", {
+  # The `.fns` position takes a helper by value rather than by call, and `(f)`
+  # is the value `f` is. It reads the same registry through the same namespace
+  # rule, so leaving it out would put one position back on a spelling of its
+  # own -- which is what #172 found at four sites and #178 finds at this one.
+  for (entry in contextual_registry_table()) {
+    references <- c(
+      contextual_owned_spellings(entry$family, entry$name),
+      lapply(
+        contextual_owned_spellings(entry$family, entry$name),
+        function(spelling) rlang::call2("(", rlang::call2("(", spelling))
+      )
+    )
+    for (reference in references) {
+      expect_identical(
+        static_spelling_reference_name(reference, entry$family),
+        entry$name,
+        info = paste(entry$family, rlang::as_label(reference))
+      )
+    }
+    for (foreign in contextual_foreign_spellings(entry$name)) {
+      expect_null(
+        static_spelling_reference_name(
+          rlang::call2("(", foreign),
+          entry$family
+        ),
+        info = paste(entry$family, entry$name)
+      )
+    }
     expect_null(
-      static_spelling_name(foreign, entry$family),
+      static_spelling_reference_name(
+        rlang::call2("(", rlang::call2("get", entry$name)),
+        entry$family
+      ),
       info = paste(entry$family, entry$name)
     )
   }
@@ -246,18 +389,25 @@ test_that("no registered spelling is recognized by another family", {
   }
 })
 
-test_that("a Contextual helper resolves the same bare and qualified", {
+test_that("a Contextual helper resolves the same however it is written", {
+  # What the reader assertions above say about one function, said about the
+  # verb: two writings R evaluates identically must produce identical results,
+  # or identical diagnostics for a spelling that is refused. Parentheses are in
+  # this loop rather than in one of their own because they are the same
+  # question the namespace forms are -- which written call this is -- and #178
+  # is the ticket that found them answered differently.
   data <- contextual_probe_data()
   probes <- contextual_probes()
   for (entry in contextual_registry_table(contextual_helper_families())) {
     probe <- probes[[entry$name]]
-    bare <- contextual_probe_outcome(probe(rlang::sym(entry$name)), data)
-    for (namespace in static_spelling_namespaces(entry$family)) {
-      head <- rlang::call2("::", rlang::sym(namespace), rlang::sym(entry$name))
+    plain <- contextual_writing(rlang::sym(entry$name))
+    bare <- contextual_probe_outcome(probe(plain$spell), data)
+    spellings <- contextual_owned_spellings(entry$family, entry$name)
+    for (writing in contextual_writings(spellings)) {
       expect_identical(
-        contextual_probe_outcome(probe(head), data),
+        contextual_probe_outcome(probe(writing$spell), data),
         bare,
-        info = paste(namespace, entry$name)
+        info = paste(entry$family, writing$label)
       )
     }
   }
@@ -279,14 +429,15 @@ test_that("a foreign qualifier is not the same request", {
   probes <- contextual_probes()
   for (entry in contextual_registry_table(contextual_helper_families())) {
     probe <- probes[[entry$name]]
-    foreign <- rlang::call2("::", quote(stats), rlang::sym(entry$name))
-    expect_false(
-      identical(
-        contextual_probe_outcome(probe(foreign), data),
-        contextual_probe_outcome(probe(rlang::sym(entry$name)), data)
-      ),
-      info = paste(entry$family, entry$name)
-    )
+    plain <- contextual_writing(rlang::sym(entry$name))
+    bare <- contextual_probe_outcome(probe(plain$spell), data)
+    foreign <- contextual_writings(contextual_foreign_spellings(entry$name))
+    for (writing in foreign) {
+      expect_false(
+        identical(contextual_probe_outcome(probe(writing$spell), data), bare),
+        info = paste(entry$family, writing$label)
+      )
+    }
   }
 })
 
@@ -351,15 +502,24 @@ test_that("a caller binding never changes a Contextual helper", {
   # Both halves of ADR 0019 are asserted at once: a spelling that runs must run
   # the owning package's function, and a spelling that is refused must stay
   # refused with the same message.
+  #
+  # Every writing is shadowed, not only the bare one. A parenthesized head is
+  # the writing where a binding is hardest to lose to: R evaluates `(pick)` as
+  # a value, so ordinary lookup would find the caller's function without even
+  # the function-lookup rule that skips a non-function binding (#178).
   data <- contextual_probe_data()
   probes <- contextual_probes()
   for (entry in contextual_registry_table(contextual_helper_families())) {
-    expr <- probes[[entry$name]](rlang::sym(entry$name))
-    expect_identical(
-      contextual_probe_outcome(expr, data, shadow = entry$name),
-      contextual_probe_outcome(expr, data),
-      info = paste(entry$family, entry$name)
-    )
+    probe <- probes[[entry$name]]
+    spellings <- contextual_owned_spellings(entry$family, entry$name)
+    for (writing in contextual_writings(spellings)) {
+      expr <- probe(writing$spell)
+      expect_identical(
+        contextual_probe_outcome(expr, data, shadow = entry$name),
+        contextual_probe_outcome(expr, data),
+        info = paste(entry$family, writing$label)
+      )
+    }
   }
 })
 
@@ -374,16 +534,27 @@ test_that("a caller binding never changes a helper on a lazy input", {
   data <- contextual_probe_data()
   probes <- contextual_probes()
   for (entry in contextual_registry_table(contextual_helper_families())) {
-    expr <- probes[[entry$name]](rlang::sym(entry$name))
-    expect_identical(
-      contextual_probe_outcome(
-        expr,
-        dtplyr::lazy_dt(data),
-        shadow = entry$name
-      ),
-      contextual_probe_outcome(expr, dtplyr::lazy_dt(data)),
-      info = paste(entry$family, entry$name)
-    )
+    probe <- probes[[entry$name]]
+    spellings <- contextual_owned_spellings(entry$family, entry$name)
+    for (writing in contextual_writings(spellings)) {
+      expr <- probe(writing$spell)
+      expect_identical(
+        contextual_probe_outcome(
+          expr,
+          dtplyr::lazy_dt(data),
+          shadow = entry$name
+        ),
+        contextual_probe_outcome(expr, dtplyr::lazy_dt(data)),
+        info = paste(entry$family, writing$label)
+      )
+      # And the lazy plan is the plan the local input produced, so a writing
+      # the rewrite reached locally has reached the backend's re-analysis too.
+      expect_identical(
+        contextual_probe_outcome(expr, dtplyr::lazy_dt(data)),
+        contextual_probe_outcome(expr, data),
+        info = paste("lazy", entry$family, writing$label)
+      )
+    }
   }
 })
 
@@ -452,6 +623,52 @@ test_that("a Grouping specification constructor is an ordinary name", {
   ))
 })
 
+test_that("a nested constructor is gated however it is written", {
+  # The constructor family is not a Contextual helper, so the probe loops above
+  # leave it out -- and it still reads its spelling statically, which is what
+  # puts it under the parenthesis rule (#178). What its gate decides is whether
+  # a nested argument is evaluated at all, so a writing the gate misses is not
+  # refused but *selected*: the specification reaches tidyselect as a column
+  # selection and the caller is told their `rollup()` is not a column.
+  data <- contextual_probe_data()
+  probe <- function(spell) {
+    rlang::expr(summarize_with_margins(
+      .probe_data,
+      k = sum(units),
+      .grouping = grouping_sets(
+        !!spell(list(quote(region), quote(grade)))
+      ),
+      .sort = "last"
+    ))
+  }
+  entries <- contextual_registry_table("grouping_constructor")
+  # Every loop iterates over this set, so a set that arrived empty is a set
+  # that passes.
+  expect_gt(length(entries), 0L)
+  for (entry in entries) {
+    plain <- contextual_writing(rlang::sym(entry$name))
+    bare <- contextual_probe_outcome(probe(plain$spell), data)
+    spellings <- contextual_owned_spellings(entry$family, entry$name)
+    for (writing in contextual_writings(spellings)) {
+      expect_identical(
+        contextual_probe_outcome(probe(writing$spell), data),
+        bare,
+        info = paste(entry$family, writing$label)
+      )
+    }
+    # And the gate really is what the agreement above rests on: a qualifier
+    # naming a package that owns none of these names does not open it, so those
+    # writings must not agree.
+    foreign <- contextual_writings(contextual_foreign_spellings(entry$name))
+    for (writing in foreign) {
+      expect_false(
+        identical(contextual_probe_outcome(probe(writing$spell), data), bare),
+        info = paste(entry$family, writing$label)
+      )
+    }
+  }
+})
+
 test_that("the refusal names the helper and keeps its opening", {
   data <- contextual_probe_data()
   # The opening phrase six other assertions match by regular expression. It is
@@ -483,5 +700,185 @@ test_that("the refusal names the helper and keeps its opening", {
       .by = region
     ),
     "These spellings are reserved"
+  )
+  # A prohibited context is a Package condition, and parentheses do not turn it
+  # into one of R's. Before #178 `(cur_group_id)()` reached the data mask and
+  # failed there with `object 'cur_group_id' not found`, which is an untyped
+  # condition of the class ADR 0015 separates -- and `(grouping_id)(region)`
+  # reached the exported stub, which reports that the helper can only be used
+  # inside the verb the caller is already inside.
+  parenthesized <- expect_error(
+    summarize_with_margins(data, k = (cur_group_id)(), .by = region),
+    "^`summarize_with_margins\\(\\)` does not support `cur_group_id\\(\\)`\\."
+  )
+  expect_s3_class(parenthesized, "marginplyr_error")
+  expect_identical(
+    summarize_with_margins(
+      data,
+      k = (grouping_id(region)),
+      j = (grouping_bit)(region),
+      .grouping = rollup(region),
+      .sort = "last"
+    ),
+    summarize_with_margins(
+      data,
+      k = grouping_id(region),
+      j = grouping_bit(region),
+      .grouping = rollup(region),
+      .sort = "last"
+    )
+  )
+})
+
+test_that("parentheses do not let a selection reach a grouping column", {
+  # The grouping-column exclusion is checked against the call the rewrite
+  # recognizes and applied by resolving the selection against a proxy the
+  # dimensions are not in, so a writing recognition missed would resolve
+  # somewhere else -- or, before #178, fail in the data mask with `object
+  # 'pick' not found`. `everything()` is what makes this an assertion rather
+  # than a restatement: a selection excluding nothing would take the grouping
+  # dimensions with it.
+  data <- contextual_probe_data()
+  selections <- list(
+    across = list(
+      probe = function(spell) {
+        rlang::expr(summarize_with_margins(
+          .probe_data,
+          !!spell(list(
+            quote(dplyr::everything()),
+            quote(sum),
+            .names = "{.col}_s"
+          )),
+          .grouping = rollup(region, grade),
+          .sort = "last"
+        ))
+      },
+      selected = function(outcome) names(outcome$value)
+    ),
+    pick = list(
+      probe = function(spell) {
+        rlang::expr(summarize_with_margins(
+          .probe_data,
+          k = ncol(!!spell(list(quote(dplyr::everything())))),
+          .grouping = rollup(region, grade),
+          .sort = "last"
+        ))
+      },
+      selected = function(outcome) outcome$value$k[[1L]]
+    )
+  )
+  expected <- list(
+    across = c("region", "grade", "units_s", "qty_s"),
+    pick = 2L
+  )
+  for (name in names(selections)) {
+    selection <- selections[[name]]
+    spellings <- contextual_owned_spellings("selection", name)
+    for (writing in contextual_writings(spellings)) {
+      outcome <- contextual_probe_outcome(selection$probe(writing$spell), data)
+      expect_identical(
+        selection$selected(outcome),
+        expected[[name]],
+        info = writing$label
+      )
+    }
+  }
+})
+
+test_that("a share `.fns` reference is the helper through parentheses", {
+  # The end-to-end half of the reference reading above, and the position whose
+  # refusal names what it is refusing: a `.fns` this does not recognize is
+  # reported as a formula, an anonymous function, or a function list, none of
+  # which `(share_of_total)` is.
+  data <- contextual_probe_data()
+  share_across <- function(fns) {
+    rlang::inject(summarize_with_margins(
+      data,
+      t = sum(units),
+      dplyr::across(t, !!fns, .names = "{.col}_share"),
+      .grouping = rollup(region),
+      .sort = "last"
+    ))
+  }
+  bare <- share_across(quote(share_of_total))
+  expect_identical(share_across(quote((share_of_total))), bare)
+  expect_identical(share_across(quote(((share_of_total)))), bare)
+  expect_identical(share_across(quote((marginplyr::share_of_total))), bare)
+  # And the reference really is read rather than run: a qualifier naming a
+  # package that does not own the helper is refused in the same position.
+  expect_error(
+    share_across(quote((stats::share_of_total))),
+    "`across\\(\\)` `.fns` must be"
+  )
+})
+
+test_that("a pair around an ordinary call changes nothing it evaluates", {
+  # The readers unwrap a redundant pair for every node, not only for a
+  # recognized one, and the rewrites rebuild each call they descend into from
+  # the node the readers gave them -- so a caller's pair does not survive into
+  # the staged expression. What has to survive is the value, and the reason it
+  # does is that R's parser has already recorded the grouping in the tree: a
+  # pair that is doing work is not a redundant pair, and unwrapping the node
+  # cannot move an operand from one operator to another.
+  data <- contextual_probe_data()
+  summarize <- function(expr) {
+    rlang::inject(summarize_with_margins(
+      data,
+      k = !!expr,
+      .grouping = rollup(region),
+      .sort = "last"
+    ))
+  }
+  expect_identical(
+    summarize(quote(sum((units + qty)))),
+    summarize(quote(sum(units + qty)))
+  )
+  expect_identical(summarize(quote((sum(units))))$k, c(3, 7, 10))
+  # A pair the parser needed keeps its meaning, and the assertion is that the
+  # two groupings still differ: `(units + qty) * 2` is not `units + qty * 2`.
+  expect_identical(summarize(quote(sum((units + qty) * 2)))$k, c(24, 40, 64))
+  expect_false(identical(
+    summarize(quote(sum((units + qty) * 2))),
+    summarize(quote(sum(units + qty * 2)))
+  ))
+})
+
+test_that("parentheses leave an injected quosure its own environment", {
+  # A quosure a caller injects carries the environment its expression resolves
+  # in, and the rewrites rebuild every call they descend into. Parentheses put
+  # one more node between the summary and the quosure, and unwrapping a node
+  # means rebuilding it: `rebuild_static_call()` takes the attributes of the
+  # node it was given, so unwrapping the pair *around* a quosure would rebuild
+  # a bare `~` call and hand dplyr a formula where the caller injected a
+  # quosure. That is the identity loss #165 removed, and #178 is where it could
+  # have come back.
+  data <- contextual_probe_data()
+  multiplier <- 10
+  injected <- rlang::quo(sum(units) * multiplier)
+  expect_identical(
+    rlang::inject(summarize_with_margins(
+      data,
+      k = (!!injected),
+      .grouping = rollup(region),
+      .sort = "last"
+    )),
+    rlang::inject(summarize_with_margins(
+      data,
+      k = !!injected,
+      .grouping = rollup(region),
+      .sort = "last"
+    ))
+  )
+  # And the environment really was needed: `multiplier` is bound nowhere the
+  # summary would find it without the quosure.
+  expect_false(exists("multiplier", envir = rlang::ns_env("marginplyr")))
+  expect_identical(
+    rlang::inject(summarize_with_margins(
+      data,
+      k = (!!injected),
+      .grouping = rollup(region),
+      .sort = "last"
+    ))$k,
+    c(30, 70, 100)
   )
 })

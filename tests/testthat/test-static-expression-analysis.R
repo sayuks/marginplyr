@@ -2607,6 +2607,16 @@ test_that("`do.call()` of a reflective primitive is an unresolved lookup", {
     expression_data_symbols(quote(do.call(get, list("share")))),
     c("get", unresolved_lookup_name())
   )
+  # Qualified, which is the one position left where a `::` names the primitive
+  # to the walk rather than to the call's own name read: a `base::get()` *call*
+  # is named `get` by the shared reader, through the parentheses #178 made
+  # transparent as well as without them, so it never reaches the callee
+  # reading. Handed to `do.call()` it is a value, and reading it is what makes
+  # this an unresolved lookup rather than a `do.call()` of something ordinary.
+  expect_identical(
+    expression_data_symbols(quote(do.call(base::get, list("share")))),
+    unresolved_lookup_name()
+  )
   # A `do.call()` of anything else is left alone: its arguments are values by
   # the time it runs, and the walk has reported the expressions that built
   # them.
@@ -2793,6 +2803,16 @@ test_that("a name the recovery can read is read, however it is spelled", {
   expect_identical(
     expression_data_symbols(quote((base::get)("share"))),
     "share"
+  )
+  # The name itself may be written inside parentheses, which is the value half
+  # of the reading #178 gives a head: `("share")` is the string it wraps, so
+  # the lookup resolves rather than being reported as a read of every alias in
+  # scope, which is what an unreadable name answers.
+  expect_identical(expression_data_symbols(quote(get(("share")))), "share")
+  expect_identical(expression_data_symbols(quote(get((("share"))))), "share")
+  expect_identical(
+    expression_data_symbols(quote(get((c("sha", "re"))))),
+    c("sha", "re")
   )
   # A string is not a language object: `eval()` answers the string itself and
   # looks nothing up.
@@ -3002,6 +3022,31 @@ test_that("a capture the walk cannot name plainly is analyzed, not assumed", {
   expect_identical(
     expression_data_symbols(quote((quote)(share))),
     c("quote", "share")
+  )
+  # It stays that answer under the parenthesis reading #178 added, and that is
+  # the one place two static rules read the same pair of parentheses
+  # differently. A Contextual helper is recognized through them because its
+  # meaning never comes from the calling environment; a capture is refused
+  # through them because its meaning does -- `(quote)` is evaluated as a value,
+  # so R's function lookup never runs and any binding wins, which is the head
+  # this walk may not claim.
+  expect_identical(
+    static_spelling_name(quote((pick)(units)), "selection"),
+    "pick"
+  )
+  expect_identical(
+    expression_data_symbols(quote(((base::quote))(share))),
+    "share"
+  )
+  expect_identical(
+    expression_data_symbols(quote((base::quote)(share))),
+    "share"
+  )
+  # And the pair around the *call* is not a head at all, so the capture inside
+  # it is still a capture.
+  expect_identical(
+    expression_data_symbols(quote((quote(share)))),
+    character()
   )
   # A call carrying more arguments than the primitive takes is not the shape
   # this recognizes either: R refuses `quote(a, b)` when it runs, and the walk

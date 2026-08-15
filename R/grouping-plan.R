@@ -294,7 +294,7 @@ is_name_only_expr <- function(expr, env, data_vars) {
     return(FALSE)
   }
 
-  args <- rlang::call_args(expr)
+  args <- static_call_args(expr)
   all(vapply(
     args,
     is_name_only_expr,
