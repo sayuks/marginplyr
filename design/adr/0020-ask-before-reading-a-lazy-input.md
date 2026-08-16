@@ -21,12 +21,23 @@ justification covering both would be false of one of them:
    `investigation/query-cost-across-lazy-backends.md` records that no vendor
    documentation exempts `LIMIT 0` from BigQuery's rule that a `LIMIT` does not
    reduce the bytes a non-clustered table is billed for.
-2. **One query per SQL dialect**, sent the first time a share is requested on
-   that dialect, asking whether the dialect converts non-numeric values to
-   numbers rather than refusing them. It references no table of the caller's —
-   `SELECT SUM('x') FROM (SELECT 1 AS z)` — so no reading of it touches their
-   data, and the answer is a property of the dialect and is reused for every
-   later connection sharing it.
+2. **At most two queries per SQL dialect**, sent the first time a share is
+   requested on that dialect, asking whether the dialect converts non-numeric
+   values to numbers rather than refusing them. Neither references a table of
+   the caller's — `SELECT SUM('x') FROM (SELECT 1 AS z)` — so no reading of
+   either touches their data, and the answer is a property of the dialect and
+   is reused for every later connection sharing it.
+
+   The second is a control, and it is sent only when the first raises. A
+   raised query is how a refusing dialect is recognized, but it is also what a
+   dialect whose scaffolding is invalid produces — `SELECT 1 AS z` has no
+   `FROM`, which Oracle and SAP HANA both reject — and what a dropped
+   connection or a permissions failure produces. Reading any of those as the
+   refusal records the verdict that *proceeds*, so the rule would be switched
+   off for the whole dialect precisely where it could not be applied. The
+   control asks the one thing no dialect can refuse, summing the number the
+   scaffolding already selects; a control that does not answer means the
+   question could not be put here, and the share is refused.
 
 The predicate for "no external system is involved" is `is.data.frame(.data)`,
 and it is exact rather than an approximation of cheapness. Nothing
@@ -112,7 +123,9 @@ obtain. ADR 0003 orders label validation relative to execution and is amended
 by this decision only in what it may run without asking. ADR 0010 introduced
 the one-row share-source read and is amended separately, since its decision
 stands and only its cost justification is withdrawn. ADR 0012's factor contract
-is what exemption 1 protects.
+is what exemption 1 protects. ADR 0014 selects the per-kind entry that reads
+the source, and is amended separately too: its two lookups stand, but the
+second no longer selects a sampler, because there is nothing left to sample.
 
 Evidence: `investigation/query-cost-across-lazy-backends.md` and
 `investigation/share-source-eligibility-on-coercing-dialects.md`.

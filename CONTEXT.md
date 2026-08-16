@@ -116,6 +116,20 @@ fixed `.by` group, so a fixed key never contributes to another partition's
 denominator.
 _Avoid_: Percent of total, root share, grand total percentage
 
+**Converting dialect**:
+A SQL dialect that answers an aggregate over a value of the wrong type by
+converting it to a number rather than raising. Its opposite is a *refusing*
+dialect, which rejects the same aggregate. Which of the two a dialect is
+decides whether the eligible-type rule for a share source can be left to the
+database: a refusing dialect applies it and reports an ineligible source in
+its own diagnostic, while a converting dialect applies nothing and returns a
+number whatever the source held, so a share over one is refused unless the
+caller establishes the source themselves. It is a property of the dialect and
+not of one connection, so it is established once and reused for every later
+connection carrying that dialect. A dialect that could not be asked is neither,
+and is refused as a converting one is.
+_Avoid_: Coercing backend, lenient database, permissive SQL
+
 **Contextual helper**:
 A spelling whose meaning inside a Margin summary arises only through static
 rewriting, and which is therefore recognized by spelling and never resolved

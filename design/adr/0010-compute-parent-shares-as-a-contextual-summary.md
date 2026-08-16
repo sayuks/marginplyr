@@ -505,7 +505,9 @@ that refusal is the answer and reaches the caller as the database's diagnostic
 at collection. Where the dialect converts instead of refusing, no answer is
 available and the share is refused rather than calculated —
 `.check_share_source = FALSE` calculates it anyway. Which case a dialect is in
-is measured once per dialect by a query that references none of the caller's
-tables, and the internal denominator column is named so that a database's own
-diagnostic reads without exposing an internal identifier, which was #106's
-DuckDB half.
+is measured once per dialect by at most two queries that reference none of the
+caller's tables — a probe, and a control sent only when the probe is rejected,
+so that a dialect which refuses is told apart from one whose scaffolding or
+connection failed — and the internal denominator column is named so that a
+database's own diagnostic reads without exposing an internal identifier, which
+was #106's DuckDB half.

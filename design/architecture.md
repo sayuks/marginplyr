@@ -295,9 +295,12 @@ The responsibilities divide as follows:
   rule itself and reports an ineligible summary at collection, unless its
   dialect converts a value of another type to a number instead of refusing it,
   in which case nothing applies the rule and the share is refused;
-  `share_dialect_verdict()` decides which, once per dialect, with a query
-  referencing none of the caller's tables, and `.check_share_source = FALSE`
-  calculates the share anyway. Arrow is rejected before any of this.
+  `share_dialect_verdict()` decides which, once per dialect, with at most two
+  queries referencing none of the caller's tables — a probe, and a control
+  sent only when the probe is rejected, so that a dialect which refuses is
+  told apart from one whose scaffolding or connection failed — and
+  `.check_share_source = FALSE` calculates the share anyway. Arrow is rejected
+  before any of this.
 - **Mapping** is the one responsibility a kind supplies for itself, through
   `share_denominator_rule()`: which occurrence each row's denominator comes
   from, and the denominator rows with the columns they are matched on. A

@@ -2059,34 +2059,75 @@ share_dialect_can_be_asked <- function(con) {
 }
 
 # Only the two outcomes the investigation measured are read as answers: a
-# number came back, which is the conversion, or executing the query raised,
-# which is the refusal the rule is then left to. Everything else -- a query
-# that cannot be built against this connection at all, an empty result, a
-# result of another shape or type -- is no reading of the dialect, and falls
+# number came back, which is the conversion, or the dialect rejected summing a
+# string, which is the refusal the rule is then left to. Everything else -- a
+# query that cannot be built against this connection at all, an empty result,
+# a result of another shape or type -- is no reading of the dialect, and falls
 # to "unknown", which refuses the share. Falling the other way would switch
 # the protection off wherever the question went unanswered and say nothing
 # about having done so.
 #
-# `vars` is what keeps this to the one query the answer needs: without it
-# dbplyr asks the connection for the query's fields before it can build a
-# `tbl`, which is a second query for a schema this frame already knows.
+# A raised query is not by itself the refusal, and reading it as one is how
+# the protection came to be switched off exactly where it was needed. The
+# scaffolding `SELECT 1 AS z` reaches the database verbatim -- `dbplyr::sql()`
+# is passed through untranslated -- and it has no `FROM`, which is a syntax
+# error on Oracle, which requires `FROM DUAL`, and on SAP HANA, which requires
+# `FROM DUMMY`. A dropped connection or a permissions failure raises just the
+# same. Every one of those would have been recorded as "this dialect refuses
+# an ineligible summary", which is the verdict that proceeds, so a share on
+# such a dialect was calculated with the rule silently off and the answer
+# cached for every later connection carrying it.
+#
+# The refusal is therefore only read from a query that raised where the same
+# scaffolding demonstrably works. The control asks the one thing no dialect
+# can refuse -- summing the number the scaffolding already selects -- so a
+# control that does not come back with that number says the question could
+# not be put here, whatever the reason, and "unknown" refuses the share. It is
+# only sent when the probe raised, so a dialect that converts still answers in
+# one query and the second is the price of telling the two failures apart.
+#
+# `vars` is what keeps each of them to the one query its answer needs: without
+# it dbplyr asks the connection for the query's fields before it can build a
+# `tbl`, which is a further query for a schema this frame already knows.
 probe_share_dialect <- function(con) {
-  probe <- tryCatch(
+  probe <- probe_share_dialect_answer(con, quote(sum("x", na.rm = TRUE)))
+  if (identical(probe$status, "unbuildable")) {
+    return("unknown")
+  }
+  if (identical(probe$status, "raised")) {
+    control <- probe_share_dialect_answer(con, quote(sum(z, na.rm = TRUE)))
+    if (!identical(control$status, "answered")) {
+      return("unknown")
+    }
+    return("refuses")
+  }
+  if (!identical(probe$status, "answered")) {
+    return("unknown")
+  }
+  "converts"
+}
+
+# One table-free question, and which of the three things happened to it: it
+# could not be built against this connection, executing it raised, or it came
+# back with exactly one number. Any other shape is not an answer, so it is not
+# reported as one.
+probe_share_dialect_answer <- function(con, expr) {
+  query <- tryCatch(
     dplyr::summarize(
       dplyr::tbl(con, dbplyr::sql("SELECT 1 AS z"), vars = "z"),
-      p = sum("x", na.rm = TRUE)
+      p = !!expr
     ),
     error = function(cnd) NULL
   )
-  if (is.null(probe)) {
-    return("unknown")
+  if (is.null(query)) {
+    return(list(status = "unbuildable"))
   }
   answer <- tryCatch(
-    list(value = suppressMessages(suppressWarnings(dplyr::collect(probe)))),
+    list(value = suppressMessages(suppressWarnings(dplyr::collect(query)))),
     error = function(cnd) NULL
   )
   if (is.null(answer)) {
-    return("refuses")
+    return(list(status = "raised"))
   }
   value <- answer$value
   if (
@@ -2095,9 +2136,9 @@ probe_share_dialect <- function(con) {
       ncol(value) != 1L ||
       !is_share_source_type(value[[1L]])
   ) {
-    return("unknown")
+    return(list(status = "unreadable"))
   }
-  "converts"
+  list(status = "answered", value = value[[1L]])
 }
 
 # The refusal names whichever helpers the caller wrote, as the Arrow one does

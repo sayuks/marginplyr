@@ -1264,6 +1264,65 @@ test_that("an answer of an unexpected shape is not read as a verdict", {
   expect_identical(verdict_for_answer(list(p = 1)), "unknown")
 })
 
+# Reading any raised query as the dialect's refusal is how the protection came
+# to be off exactly where it was needed: `"refuses"` is the verdict that
+# proceeds, so every unrelated reason a query can raise switched the rule off
+# and cached that for the dialect. The scaffolding `SELECT 1 AS z` reaches the
+# database verbatim and has no `FROM`, which Oracle and SAP HANA both reject,
+# and a dropped connection raises the same way. None of those may read as a
+# refusal.
+test_that("a query that raises for another reason is not read as a refusal", {
+  verdict_when_collect <- function(fn) {
+    local_mocked_bindings(collect = fn, .package = "dplyr")
+    probe_share_dialect(dbplyr::simulate_postgres())
+  }
+
+  # Nothing executes here, so the control cannot come back either.
+  expect_identical(
+    verdict_when_collect(function(x, ...) {
+      stop("ORA-00923: FROM keyword not found where expected")
+    }),
+    "unknown"
+  )
+  expect_identical(
+    verdict_when_collect(function(x, ...) stop("could not connect to server")),
+    "unknown"
+  )
+
+  # Rejecting the string while answering the control is the one shape that is
+  # a refusal, and it is what DuckDB does.
+  raised_first <- local({
+    calls <- 0L
+    function(x, ...) {
+      calls <<- calls + 1L
+      if (calls == 1L) {
+        stop("Binder Error: No function matches SUM(VARCHAR)")
+      }
+      data.frame(p = 1)
+    }
+  })
+  expect_identical(verdict_when_collect(raised_first), "refuses")
+})
+
+# The control is only the price of telling two failures apart, so a dialect
+# that answers the first question is never asked a second one.
+test_that("a converting dialect is asked exactly one query", {
+  queries <- 0L
+  verdict_counting <- function() {
+    local_mocked_bindings(
+      collect = function(x, ...) {
+        queries <<- queries + 1L
+        data.frame(p = 0)
+      },
+      .package = "dplyr"
+    )
+    probe_share_dialect(dbplyr::simulate_postgres())
+  }
+
+  expect_identical(verdict_counting(), "converts")
+  expect_identical(queries, 1L)
+})
+
 # An unrecognized kind is a marginplyr defect and not something a caller can
 # rewrite, so it stops bare rather than raising a Package condition
 # (ADR 0015). The class assertion is the load-bearing half: a defect caught by

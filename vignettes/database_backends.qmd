@@ -373,9 +373,11 @@ Where the dialect converts a value of another type to a number instead of
 refusing it — SQLite answers `sum()` of a text column with `0` rather than an
 error — nothing applies the rule at all, and marginplyr refuses the share
 rather than calculating one from values nothing has checked. Which of the two
-a dialect does is asked once per dialect, with a query referencing none of
-your tables. A connection that executes nothing, such as the simulators used
-above, cannot be asked and is refused for the same reason;
+a dialect does is asked once per dialect, with at most two queries referencing
+none of your tables: a probe, and — only when the probe is rejected — a
+control, which is what tells a dialect that genuinely refuses apart from one
+that could not answer at all. A connection that executes nothing, such as the
+simulators used above, cannot be asked and is refused for the same reason;
 `.check_share_source = FALSE` calculates the share from sources you have
 established yourself.
 

@@ -448,12 +448,14 @@
 #'   decomposition loses. It references your table but reads none of it, and
 #'   it is not a shape marginplyr introduced: [dplyr::tbl()] already sends an
 #'   equivalent zero-row read for any table reference, on any dbplyr backend.
-#' - **One query per SQL dialect**, sent once per dialect, the first time a
-#'   share is requested there with `.check_share_source` at its default of
-#'   `TRUE`, asking whether the dialect converts a non-numeric value to a
-#'   number rather than refusing it. It references none of your tables, so
-#'   reading it touches none of your data, and the answer is a property of
-#'   the dialect, reused for every later connection that shares it. A
+#' - **At most two queries per SQL dialect**, sent once per dialect, the first
+#'   time a share is requested there with `.check_share_source` at its default
+#'   of `TRUE`, asking whether the dialect converts a non-numeric value to a
+#'   number rather than refusing it. Neither references any of your tables, so
+#'   reading them touches none of your data, and the answer is a property of
+#'   the dialect, reused for every later connection that shares it. The second
+#'   is a control, sent only when the first is rejected, and it distinguishes
+#'   a dialect that refuses from one that could not be asked at all. A
 #'   connection that cannot be asked -- one built with a
 #'   `dbplyr::simulate_*()` constructor, which executes nothing -- is treated
 #'   as unable to answer, which refuses the share by default the same way a

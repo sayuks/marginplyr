@@ -19,9 +19,9 @@
        [9] "nest_by_with_margins"           "nest_margin_pipeline"          
       [11] "nest_with_margins"              "prepare_grouping_plan"         
       [13] "prepare_margin_operation"       "probe_share_dialect"           
-      [15] "share_dialect_verdict"          "summarise_with_margins"        
-      [17] "summarize_with_margins"         "validate_margin_label"         
-      [19] "validate_margin_operation"     
+      [15] "probe_share_dialect_answer"     "share_dialect_verdict"         
+      [17] "summarise_with_margins"         "summarize_with_margins"        
+      [19] "validate_margin_label"          "validate_margin_operation"     
 
 # backend kinds granted the collect_selection_proxy capability
 
