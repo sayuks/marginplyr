@@ -495,13 +495,19 @@ The test suite divides supporting contracts as follows:
   inspected without executing a Margin operation.
 - `test-execution-conditions.R` covers the Condition context of ADR 0021
   through `summarize_with_margins()`: a warning every grouping set raises
-  reported once with its count, branches raising different diagnostics
-  reported one by one, the caller's columns and verb in an error's context,
-  the propagated class and cause, ten keys substituted without corruption, a
-  Package condition raised beside them left alone, and the lazy non-goal. Its
-  two snapshots carry the rendered messages, because the deduplication key is
-  derived from rendered text and no structural assertion would see dplyr
-  reword it.
+  reported once with its count and under the caller's own column names,
+  branches raising different diagnostics reported one by one, the caller's
+  columns and verb in an error's context, the propagated class and cause, ten
+  keys substituted without corruption, a Package condition raised beside them
+  left alone, and the lazy non-goal. One case runs at four console widths,
+  because cli wraps a bullet it cannot fit and the identity may not depend on
+  where. Its two snapshots carry the rendered messages, because the
+  deduplication key is derived from rendered text and no structural assertion
+  would see dplyr reword it. Its one test of an internal helper is the
+  documented exception: the class half of a Repeated condition's identity, and
+  a message of no lines, are both unreachable through a verb, because dplyr
+  aggregates a branch's warnings into one condition of its own before
+  signalling.
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
   factor backend contracts.
 - `test-grouping-plan.R` covers the backend-independent Grouping

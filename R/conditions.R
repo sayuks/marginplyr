@@ -122,7 +122,9 @@ buffer_branch_warning <- function(cnd, conditions) {
 # collapse a warning that genuinely differs. Both bullet spellings are matched
 # because the leading symbol is cli's and follows `cli.unicode`.
 branch_warning_cause <- function(cnd) {
-  lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+  lines <- unwrap_message_lines(
+    strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+  )
   bullet <- "^[i\u2139] "
   varying <- grepl(paste0(bullet, "In group "), lines) |
     grepl(paste0(bullet, "Run `dplyr::last_dplyr_warnings\\(\\)`"), lines) |
@@ -134,6 +136,34 @@ branch_warning_cause <- function(cnd) {
     # nothing outside it promises either -- a cause rather than an error.
     (seq_along(lines) == 1L & grepl("^There (were|was) ", lines))
   paste(c(class(cnd), lines[!varying]), collapse = "\n")
+}
+
+# Every bullet as the one line it was written as. cli wraps a bullet it cannot
+# fit onto continuation lines indented by two spaces, so which lines a message
+# holds is a function of the console width and of how long the grouping values
+# are -- and a group bullet matched line by line then survives the removal
+# above from its second line on.
+#
+# Without this, the console width decides whether a Repeated condition is one
+# condition. Measured on the ticket's own `cube(region, grade)` reproduction,
+# whose values are one and four characters long: one warning at width 80,
+# three at 60, and four at 40. A `.by` key or a realistic value produces it at
+# any width.
+#
+# Rejoining can only lose text that cli indented under the line above it, which
+# is what a wrap is; a caller's own indented line is rejoined into the
+# diagnostic it follows and stays part of the cause.
+unwrap_message_lines <- function(lines) {
+  wrapped <- grepl("^  ", lines) & seq_along(lines) > 1L
+  if (!any(wrapped)) {
+    return(lines)
+  }
+  unname(vapply(
+    split(sub("^ +", "", lines), cumsum(!wrapped)),
+    paste,
+    character(1),
+    collapse = " "
+  ))
 }
 
 # Replays what the branches withheld: one report per distinct cause, each
@@ -162,16 +192,13 @@ report_branch_warnings <- function(conditions) {
 # Rewrites the internal grouping-column names dplyr built the context from into
 # the names the caller wrote. Finding one is a search for a literal marginplyr
 # planted rather than a parse of dplyr's format, which is why this half carries
-# none of the fragility `branch_warning_identity()` above does.
+# none of the fragility `branch_warning_cause()` above does.
 #
-# One pass over the text rather than one `gsub()` per key, so that neither
-# token can be found inside another's substitution: a fixed replacement of
-# `..marginplyr_key_1` corrupts the `..marginplyr_key_10` a plan of ten
-# grouping columns allocates, and a caller column whose own name looks like a
-# key -- which `new_margin_internal_names()` allocates around rather than
-# refuses -- would otherwise be substituted a second time. Longest token first,
-# because a Perl-compatible alternation matches the first branch that fits
-# rather than the longest.
+# One pass over the text rather than one `gsub()` per key, so that no token can
+# be found inside another: a fixed replacement of `..marginplyr_key_1` corrupts
+# the `..marginplyr_key_10` a plan of ten grouping columns allocates. Longest
+# token first, because a Perl-compatible alternation matches the first branch
+# that fits rather than the longest.
 restate_margin_keys <- function(text, keys) {
   if (length(keys) == 0L || length(text) == 0L) {
     return(text)

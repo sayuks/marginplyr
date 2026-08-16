@@ -10,6 +10,37 @@ coercion_frame <- function() {
   )
 }
 
+# The ticket's own reproduction: four grouping sets, each raising the same
+# coercion warning. Wrapped in a function so that the tests below share one
+# reading of it; the Margin verb is still the call each condition reports,
+# because a verb captures its own call rather than its caller's.
+summarize_coercion_cube <- function() {
+  # `region` and `grade` are columns of the frame, which codetools reads as
+  # undefined globals wherever a verb's arguments are written inside a
+  # function.
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    coercion_frame(),
+    total = sum(as.numeric(grade)),
+    .grouping = cube(region, grade)
+  )
+  # nolint end
+}
+
+# #108's reproduction: an error from the caller's own expression, which aborts
+# the first branch that raises it.
+summarize_failing_rollup <- function() {
+  # `g` is a column of the frame above it; see the note in
+  # `summarize_coercion_cube()`.
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    data.frame(g = c("a", "b"), v = c(1, 2)),
+    x = stop("my error"),
+    .grouping = rollup(g)
+  )
+  # nolint end
+}
+
 # Every warning a call raises, not just the first: the whole subject here is
 # how many times one condition reaches the caller, which `expect_warning()`
 # cannot report.
@@ -25,12 +56,16 @@ collect_warnings <- function(expr) {
   warnings
 }
 
+# `expr` is forced inside `collect_warnings()`, so it is rendered at the width
+# set here.
+collect_warnings_at_width <- function(width, expr) {
+  original <- options(cli.width = width)
+  on.exit(options(original), add = TRUE)
+  collect_warnings(expr)
+}
+
 test_that("a warning repeated across grouping sets is reported once", {
-  warnings <- collect_warnings(summarize_with_margins(
-    coercion_frame(),
-    total = sum(as.numeric(grade)),
-    .grouping = cube(region, grade)
-  ))
+  warnings <- collect_warnings(summarize_coercion_cube())
 
   expect_length(warnings, 1L)
   message <- conditionMessage(warnings[[1L]])
@@ -42,16 +77,31 @@ test_that("a warning repeated across grouping sets is reported once", {
 })
 
 test_that("a reported warning names the caller's own grouping columns", {
-  warnings <- collect_warnings(summarize_with_margins(
-    coercion_frame(),
-    total = sum(as.numeric(grade)),
-    .grouping = cube(region, grade)
-  ))
+  warnings <- collect_warnings(summarize_coercion_cube())
 
   message <- conditionMessage(warnings[[1L]])
   expect_match(message, "`region = \"East\"`", fixed = TRUE)
   expect_match(message, "`grade = \"a\"`", fixed = TRUE)
   expect_false(grepl("marginplyr_key", message, fixed = TRUE))
+})
+
+# cli wraps a bullet it cannot fit onto continuation lines, so how many lines a
+# warning message holds is a function of the console width and of how long the
+# grouping values are. Which grouping set raised a warning is no more part of
+# its identity when the bullet naming it wrapped: at 60 columns this reproduced
+# three reports of one condition, and at 40 it reproduced four.
+test_that("a repeated warning is one report at any console width", {
+  for (width in c(80L, 60L, 40L, 20L)) {
+    warnings <- collect_warnings_at_width(width, summarize_coercion_cube())
+
+    expect_length(warnings, 1L)
+    expect_match(
+      conditionMessage(warnings[[1L]]),
+      "3 further grouping sets",
+      fixed = TRUE,
+      info = paste("width", width)
+    )
+  }
 })
 
 # A test that only asserted collapsing would pass if everything collapsed, so
@@ -102,13 +152,7 @@ test_that("a warning's cause covers its class and admits an empty message", {
 # #108's reproduction. An error aborts the first branch that raises it, so
 # there is nothing to deduplicate; what it needs is the context.
 test_that("a branch error reports the caller's column, group, and verb", {
-  data <- data.frame(g = c("a", "b"), v = c(1, 2))
-
-  error <- expect_error(summarize_with_margins(
-    data,
-    x = stop("my error"),
-    .grouping = rollup(g)
-  ))
+  error <- expect_error(summarize_failing_rollup())
 
   message <- conditionMessage(error)
   expect_match(message, "In group 1: `g = \"a\"`", fixed = TRUE)
@@ -120,13 +164,7 @@ test_that("a branch error reports the caller's column, group, and verb", {
 })
 
 test_that("a propagated error keeps its class, diagnostic, and cause", {
-  data <- data.frame(g = c("a", "b"), v = c(1, 2))
-
-  error <- expect_error(summarize_with_margins(
-    data,
-    x = stop("my error"),
-    .grouping = rollup(g)
-  ))
+  error <- expect_error(summarize_failing_rollup())
 
   expect_s3_class(error, "rlang_error")
   expect_false(inherits(error, "marginplyr_error"))
@@ -156,7 +194,9 @@ test_that("ten grouping columns substitute without corrupting a name", {
     .grouping = grouping_sets(dplyr::all_of(columns))
   ))
 
-  message <- conditionMessage(error)
+  # Ten grouping values do not fit on one line at any ordinary width, and where
+  # cli wraps the bullet is not what this test is about.
+  message <- gsub("[[:space:]]+", " ", conditionMessage(error))
   expect_false(grepl("marginplyr_key", message, fixed = TRUE))
   for (column in columns) {
     expect_match(message, paste0("`", column, " = \"x\"`"), fixed = TRUE)
