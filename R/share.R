@@ -375,16 +375,16 @@
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. The eligible-type
 #' rule is also enforced on every backend, and no backend calculates a share
-#' from a source it has shown to be ineligible. What differs is when the
-#' source's type becomes readable, and whether the exactly-one-value
-#' cardinality rule can be read with it:
+#' from a source it has shown to be ineligible. None of it reads a row of your
+#' data. What differs is what establishes the rule, and whether the
+#' exactly-one-value cardinality rule is established with it:
 #'
-#' | Backend | Where source type and cardinality are checked |
+#' | Backend | What establishes the source rules |
 #' |---|---|
-#' | Local data frame | Before any share is calculated |
-#' | `dtplyr` step | At explicit execution, before an invalid row is emitted |
-#' | Arrow | Not reached; shares are rejected outright |
-#' | General dbplyr | Type only, from one input row, before the query returns |
+#' | Local data frame | Both, from the result, before any share |
+#' | `dtplyr` step | Both, at execution, before an invalid row |
+#' | Arrow | Neither; shares are rejected outright |
+#' | General dbplyr | Type only, by asking the dialect once |
 #'
 #' Arrow inputs reject both helpers after expression planning and common
 #' Margin-operation validation but before constructing a summary query. The
@@ -398,26 +398,30 @@
 #' diagnostics keep the share's output name, the source summary name, and
 #' the original public call, so they read like the local ones.
 #'
-#' A general dbplyr backend evaluates the source summary in the database, so
-#' its type is readable only from a value the database returns. marginplyr
-#' reads one: when a share is requested, it collects the ordinary summaries
-#' over a single input row and rejects an ineligible source before returning
-#' the query. The read is bounded in rows requested and returned, not in the
-#' work the input may have to do to produce that one row. It is the staged
-#' query that stays lazy — nothing else is executed, [dplyr::show_query()]
-#' remains non-executing, and no further query is run to improve an error.
+#' A general dbplyr backend evaluates the source summary itself, so the rule
+#' is the dialect's to apply rather than marginplyr's to read. Nothing of
+#' yours is read to establish it: the staged query stays lazy,
+#' [dplyr::show_query()] remains non-executing, and no query is run over your
+#' data to improve an error.
 #'
-#' A source the read cannot type is left alone rather than rejected. A dialect
-#' that types values rather than columns says nothing about a summary whose
-#' one sampled value is missing, and a summary the database refuses is
-#' reported by the database when [dplyr::collect()] executes the staged
-#' query, where its own diagnostic is the useful one. Cardinality is not read
-#' this way at all: a SQL aggregate returns one value per grouping row by
-#' construction, so there is nothing for the sample to disprove. What the
-#' sample cannot type and every non-scalar summary therefore remain
-#' runtime-only incompatibilities: errors the database reports for itself at
-#' [dplyr::collect()] rather than ones marginplyr raises before returning the
-#' query.
+#' Which of two things a dialect does is what decides the case, and it is
+#' settled by asking that dialect once, with a query referencing none of your
+#' tables. Where it refuses an ineligible summary, that refusal is the answer
+#' and reaches you as the database's own diagnostic when [dplyr::collect()]
+#' executes the staged query; the internal denominator column is named after
+#' the summary to rewrite so that diagnostic is actionable. Where it converts
+#' a value of another type to a number instead, it applies no rule at all and
+#' no reading of your data would recover one, so the share is refused rather
+#' than calculated from values nothing has checked —
+#' `.check_share_source = FALSE` calculates it from sources you have
+#' established yourself. A backend that cannot be asked, such as a
+#' `dbplyr::simulate_*()` connection, is refused the same way.
+#'
+#' Cardinality is not established this way at all: a SQL aggregate returns one
+#' value per grouping row by construction, so there is nothing for a dialect
+#' to convert. A non-scalar summary therefore remains a runtime-only
+#' incompatibility, reported by the database at [dplyr::collect()] rather than
+#' raised by marginplyr before the query is returned.
 #'
 #' The portable value guarantee covers finite numbers, missing values, and
 #' zero denominators. Infinite values and backend-specific `NaN`
@@ -639,19 +643,11 @@ abort_arrow_shares <- function(kinds) {
   abort_marginplyr(
     paste0(
       "Arrow backends do not support ",
-      paste(
-        vapply(kinds, function(kind) {
-          paste0(share_kind_label(kind), "s")
-        }, character(1)),
-        collapse = " and "
-      ),
+      share_kind_labels_phrase(kinds),
       " because marginplyr cannot enforce their scalar-summary contract ",
       "safely before an Arrow query is constructed. Other Arrow Margin ",
       "operations remain supported. Omit ",
-      paste(
-        vapply(kinds, share_kind_call, character(1)),
-        collapse = " and "
-      ),
+      share_kind_calls_phrase(kinds),
       " or explicitly collect the data before calling ",
       "`summarize_with_margins()`."
     )
@@ -2011,8 +2007,22 @@ share_dialect_verdict <- function(data, backend) {
     return(cached)
   }
   verdict <- probe_share_dialect(con)
+  # An invariant, not a Package condition (ADR 0015). Four sites branch on
+  # this string and none of them has a default, so one this frame does not
+  # recognise would reach the caller as `"unknown"`'s diagnostic -- that their
+  # backend could not be asked -- for a dialect that was asked and answered.
+  # Caching it would then repeat that for every later connection.
+  stopifnot(verdict %in% share_dialect_verdict_names())
   share_dialect_verdicts[[key]] <- verdict
   verdict
+}
+
+# The three answers the dialect question can have. `"refuses"` and
+# `"converts"` are the two outcomes
+# `investigation/share-source-eligibility-on-coercing-dialects.md` measured;
+# `"unknown"` is every case that read neither, and refuses the share.
+share_dialect_verdict_names <- function() {
+  c("refuses", "converts", "unknown")
 }
 
 # One entry per dialect class, written the first time a share is requested on a
@@ -2098,15 +2108,16 @@ probe_share_dialect <- function(con) {
 # answered by finding out why.
 abort_share_source_dialect <- function(kinds, verdict, call) {
   kinds <- intersect(share_kind_names(), kinds)
+  # An invariant, not a Package condition (ADR 0015), and the reason this
+  # branch is written as a check rather than an `else`: `"refuses"` never
+  # reaches here, so the only alternative to `"converts"` is `"unknown"`. An
+  # unrecognised verdict would otherwise be described to the caller as a
+  # backend that could not be asked, which is a different fact.
+  stopifnot(identical(verdict, "converts") || identical(verdict, "unknown"))
   abort_marginplyr(
     paste0(
       "marginplyr cannot establish that the source summaries of ",
-      paste(
-        vapply(kinds, function(kind) {
-          paste0(share_kind_label(kind), "s")
-        }, character(1)),
-        collapse = " and "
-      ),
+      share_kind_labels_phrase(kinds),
       " are plain integer or double scalars on this backend, because ",
       if (identical(verdict, "converts")) {
         paste0(
@@ -2122,14 +2133,32 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
         )
       },
       ". Set `.check_share_source = FALSE` to calculate ",
-      paste(
-        vapply(kinds, share_kind_call, character(1)),
-        collapse = " and "
-      ),
+      share_kind_calls_phrase(kinds),
       " from sources you have established yourself, or explicitly collect ",
       "the data before calling `summarize_with_margins()`."
     ),
     call = call
+  )
+}
+
+# The two list phrases every share refusal builds from the kinds a call used:
+# the pluralised labels it names the helpers by, and the calls it tells the
+# caller to omit or opt out of. Both refusals -- this file's dialect one and
+# the Arrow one -- assemble the same two, so they are written once here rather
+# than kept in step by eye.
+share_kind_labels_phrase <- function(kinds) {
+  paste(
+    vapply(kinds, function(kind) {
+      paste0(share_kind_label(kind), "s")
+    }, character(1)),
+    collapse = " and "
+  )
+}
+
+share_kind_calls_phrase <- function(kinds) {
+  paste(
+    vapply(kinds, share_kind_call, character(1)),
+    collapse = " and "
   )
 }
 

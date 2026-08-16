@@ -347,8 +347,10 @@
 #' Local data frames reject an ineligible source before any share is
 #' calculated. `dtplyr` steps stay lazy and report the same conditions during
 #' explicit execution, before an invalid grouping row is emitted. General
-#' dbplyr backends read the ordinary summaries over one input row and reject
-#' an ineligible source with the same condition; cardinality remains a
+#' dbplyr backends read none of your data to apply the rule: the dialect is
+#' asked once whether it converts a value of another type to a number rather
+#' than refusing it, and where it converts, the share is refused unless
+#' `.check_share_source = FALSE` asks for it anyway. Cardinality remains a
 #' local-and-`dtplyr` rule, because a SQL aggregate returns one value per
 #' grouping row by construction.
 #'

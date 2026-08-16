@@ -19,6 +19,14 @@
     Output
       [1] "marginplyr cannot establish that the source summaries of Parent shares are plain integer or double scalars on this backend, because it could not be asked whether its SQL dialect converts a value of another type to a number rather than refusing it, and a dialect that converts rejects nothing. Set `.check_share_source = FALSE` to calculate `share_of_parent()` from sources you have established yourself, or explicitly collect the data before calling `summarize_with_margins()`."
 
+# DuckDB reports an ineligible share source against its summary
+
+    Code
+      unique(unlist(regmatches(message, gregexpr("[.][.]marginplyr_[A-Za-z0-9_]+",
+        message))))
+    Output
+      [1] "..marginplyr_denominator_of_lab_1"
+
 # Arrow rejects Total shares before constructing a query
 
     Code

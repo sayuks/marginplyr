@@ -395,14 +395,14 @@ are requested.
 Syntax, source-name, written-order, and \code{across()} errors are always
 reported locally, before execution, on every backend. The eligible-type
 rule is also enforced on every backend, and no backend calculates a share
-from a source it has shown to be ineligible. What differs is when the
-source's type becomes readable, and whether the exactly-one-value
-cardinality rule can be read with it:\tabular{ll}{
-   Backend \tab Where source type and cardinality are checked \cr
-   Local data frame \tab Before any share is calculated \cr
-   \code{dtplyr} step \tab At explicit execution, before an invalid row is emitted \cr
-   Arrow \tab Not reached; shares are rejected outright \cr
-   General dbplyr \tab Type only, from one input row, before the query returns \cr
+from a source it has shown to be ineligible. None of it reads a row of your
+data. What differs is what establishes the rule, and whether the
+exactly-one-value cardinality rule is established with it:\tabular{ll}{
+   Backend \tab What establishes the source rules \cr
+   Local data frame \tab Both, from the result, before any share \cr
+   \code{dtplyr} step \tab Both, at execution, before an invalid row \cr
+   Arrow \tab Neither; shares are rejected outright \cr
+   General dbplyr \tab Type only, by asking the dialect once \cr
 }
 
 
@@ -418,26 +418,30 @@ added and nothing is collected on your behalf. Its execution-time
 diagnostics keep the share's output name, the source summary name, and
 the original public call, so they read like the local ones.
 
-A general dbplyr backend evaluates the source summary in the database, so
-its type is readable only from a value the database returns. marginplyr
-reads one: when a share is requested, it collects the ordinary summaries
-over a single input row and rejects an ineligible source before returning
-the query. The read is bounded in rows requested and returned, not in the
-work the input may have to do to produce that one row. It is the staged
-query that stays lazy — nothing else is executed, \code{\link[dplyr:show_query]{dplyr::show_query()}}
-remains non-executing, and no further query is run to improve an error.
+A general dbplyr backend evaluates the source summary itself, so the rule
+is the dialect's to apply rather than marginplyr's to read. Nothing of
+yours is read to establish it: the staged query stays lazy,
+\code{\link[dplyr:show_query]{dplyr::show_query()}} remains non-executing, and no query is run over your
+data to improve an error.
 
-A source the read cannot type is left alone rather than rejected. A dialect
-that types values rather than columns says nothing about a summary whose
-one sampled value is missing, and a summary the database refuses is
-reported by the database when \code{\link[dplyr:collect]{dplyr::collect()}} executes the staged
-query, where its own diagnostic is the useful one. Cardinality is not read
-this way at all: a SQL aggregate returns one value per grouping row by
-construction, so there is nothing for the sample to disprove. What the
-sample cannot type and every non-scalar summary therefore remain
-runtime-only incompatibilities: errors the database reports for itself at
-\code{\link[dplyr:collect]{dplyr::collect()}} rather than ones marginplyr raises before returning the
-query.
+Which of two things a dialect does is what decides the case, and it is
+settled by asking that dialect once, with a query referencing none of your
+tables. Where it refuses an ineligible summary, that refusal is the answer
+and reaches you as the database's own diagnostic when \code{\link[dplyr:collect]{dplyr::collect()}}
+executes the staged query; the internal denominator column is named after
+the summary to rewrite so that diagnostic is actionable. Where it converts
+a value of another type to a number instead, it applies no rule at all and
+no reading of your data would recover one, so the share is refused rather
+than calculated from values nothing has checked —
+\code{.check_share_source = FALSE} calculates it from sources you have
+established yourself. A backend that cannot be asked, such as a
+\verb{dbplyr::simulate_*()} connection, is refused the same way.
+
+Cardinality is not established this way at all: a SQL aggregate returns one
+value per grouping row by construction, so there is nothing for a dialect
+to convert. A non-scalar summary therefore remains a runtime-only
+incompatibility, reported by the database at \code{\link[dplyr:collect]{dplyr::collect()}} rather than
+raised by marginplyr before the query is returned.
 
 The portable value guarantee covers finite numbers, missing values, and
 zero denominators. Infinite values and backend-specific \code{NaN}

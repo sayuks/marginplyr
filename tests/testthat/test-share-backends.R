@@ -1022,6 +1022,61 @@ test_that("RSQLite refuses a share its dialect cannot establish", {
   expect_identical(local_error$source_summary, "lab")
 })
 
+# This test's predecessor guarded a probe query that no longer exists. That
+# probe collected the caller's own summaries, so `grouping_id()` and
+# `grouping_bit()` -- marginplyr's spellings, which no backend has functions
+# for -- failed it as a whole and the rule was lost for the measures written
+# beside them. The probe is gone, but the guarantee it protected is not: a call
+# that identifies its Margin levels must still reach the rule for its measures,
+# and must still calculate them once the caller takes that rule on themselves.
+test_that("RSQLite keeps the share rule beside Margin level helpers", {
+  skip_if_backend_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    store = c("s1", "s2", "s3"),
+    revenue = c(1, 3, 2)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_level_sqlite_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source, ...) {
+    summarize_with_margins(
+      source,
+      level = grouping_id(region, store),
+      bit = grouping_bit(store),
+      total = sum(revenue),
+      p = share_of_parent(total),
+      .grouping = rollup(region, store),
+      ...
+    )
+  }
+
+  refusal <- expect_error(summarize(remote), class = "marginplyr_error")
+  expect_match(conditionMessage(refusal), "cannot establish")
+
+  # Taken on by the caller, the helpers and the share are calculated together,
+  # and against the local result rather than against another backend, so this
+  # cannot pass by being self-consistently wrong.
+  expect_equal(
+    as.data.frame(dplyr::collect(dplyr::arrange(
+      summarize(remote, .check_share_source = FALSE),
+      region,
+      store
+    ))),
+    as.data.frame(dplyr::arrange(
+      summarize(data, .check_share_source = FALSE),
+      region,
+      store
+    ))
+  )
+})
+
 test_that("RSQLite calculates eligible shares a caller has established", {
   skip_if_backend_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
@@ -1263,6 +1318,22 @@ test_that("DuckDB reports an ineligible share source against its summary", {
     conditionMessage(remote_error),
     "denominator_of_lab",
     fixed = TRUE
+  )
+
+  # #196 asks for this diagnostic to be snapshotted, and what is snapshotted is
+  # the internal names it exposes rather than the message carrying them.
+  # DuckDB's own text is its version's wording, a `DECIMAL` precision, and a
+  # `LINE` marker with column offsets, none of which this assertion is about --
+  # snapshotting it whole would fail on a DuckDB upgrade while saying nothing
+  # about the property. The property is which marginplyr identifier a reader is
+  # left holding, and the whole of #106's DuckDB half was that it read
+  # `..marginplyr_share_value_1`, which names nothing the caller wrote.
+  message <- conditionMessage(remote_error)
+  expect_snapshot(
+    unique(unlist(regmatches(
+      message,
+      gregexpr("[.][.]marginplyr_[A-Za-z0-9_]+", message)
+    )))
   )
 })
 
