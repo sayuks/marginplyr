@@ -10,10 +10,14 @@
 # constructor case needs to tell a caller's own function from the package's,
 # and what gives a `rollup()` a parent level for a Parent share to divide by.
 #
-# A column added here reaches both suites, which is safe because no probe
-# selects by predicate over these columns: the widest selection either writes
-# names its columns, and the contextual share's `where()` probe selects among
-# preceding summaries rather than among the input's columns.
+# A column added here reaches both suites, and it is not free in either: this
+# input's column set is pinned. `test-contextual-helpers.R` selects
+# `where(is.numeric)` and `dplyr::everything()` over it and asserts the names
+# and the count that come back, which is what makes a caller binding of those
+# spellings visible at all, and the probes here take a `rollup()` of both
+# dimensions. Adding one means reading those expectations rather than only the
+# suite that wanted it -- which is the cost of one input, paid against a second
+# copy silently disagreeing with the first.
 contextual_probe_data <- function() {
   data.frame(
     region = c("E", "E", "W", "W"),
