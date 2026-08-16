@@ -478,6 +478,15 @@ accepts, and a clause is added naming the injection and what it carries:
 carries `.data$region`, which is not a bare name.
 ```
 
+What the clause is for is not correcting the headline, which is accurate here —
+what it refuses really is not a bare name, the case where it is one having been
+accepted above. It is that the expression the headline is about is not on the
+page the caller is reading: the source says `grouping_id(!!q)`, and nothing in
+`only accepts bare grouping columns` says what `q` turned out to hold. The
+written spellings need no clause because there the refused expression is
+written out. The reader who *did* write a bare name is answered by the rule
+rather than by any message, since their call now works.
+
 The clause is absent from a refusal that has nothing to do with an injection,
 which is what stops it describing a mistake in the other direction. It writes
 the carried expression with `deparse1()` rather than with `rlang::as_label()`,

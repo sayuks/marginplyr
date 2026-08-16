@@ -408,11 +408,14 @@ unwrap_injected_args <- function(args) {
   lapply(args, unwrap_injected_quosure)
 }
 
-# What a diagnostic adds when the part it refuses arrived by injection. The
-# caller wrote a bare name at their own call, so a message that says only what
-# the written spellings say describes a mistake they have not made, which is
-# the property #163 and #165 were each filed over. Naming the injection and
-# what it carries says which of the two spellings is being refused.
+# What a diagnostic adds when the part it refuses arrived by injection. What is
+# refused here really is not a bare name -- the case where it is one is accepted
+# above and reaches no diagnostic at all -- so the headline is accurate and the
+# clause is not there to correct it. It is there because the expression the
+# headline is about does not appear at the call the caller is reading: the
+# source says `grouping_id(!!q)`, and nothing in `only accepts bare grouping
+# columns` says what `q` turned out to hold. The written spellings need no such
+# clause, because there the refused expression is on the page (#169).
 #
 # It takes the whole argument list rather than one part, because the part that
 # arrived injected need not be the one a positional message would name. It says
