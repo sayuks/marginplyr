@@ -1470,7 +1470,7 @@ validate_share_direct_syntax <- function(expr, output_name) {
   # refused one layer on for an unknown preceding summary named `` -- a summary
   # nobody wrote, which is #181's defect reached in the share family. That is a
   # change to an un-injected spelling and is recorded as one in ADR 0019.
-  carried <- lapply(args, unwrap_injected_quosure)
+  carried <- unwrap_injected_args(args)
   if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
     abort_marginplyr(
       paste0(

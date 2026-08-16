@@ -395,6 +395,17 @@ unwrap_injected_quosure <- function(part) {
   unwrap_injected_quosure(rlang::quo_get_expr(part))
 }
 
+# The same reading over a whole argument list, which is how both helpers that
+# take a bare name use it. Named rather than spelled `lapply()` at each site so
+# that it is a *reader* like `static_call_args()`, whose result the empty-
+# argument scans in `test-utils.R` recognize by the name that produced it. Spelt
+# out at the call sites, those scans would have to recognize a mapping by the
+# function being mapped -- a listed spelling inside a gate that otherwise
+# derives, and one that says nothing about a list built any other way.
+unwrap_injected_args <- function(args) {
+  lapply(args, unwrap_injected_quosure)
+}
+
 # What a diagnostic adds when the part it refuses arrived by injection. The
 # caller wrote a bare name at their own call, so a message that says only what
 # the written spellings say describes a mistake they have not made, which is
@@ -405,6 +416,13 @@ unwrap_injected_quosure <- function(part) {
 # arrived injected need not be the one a positional message would name. It says
 # nothing where no argument is an injected non-name, which is what keeps it out
 # of a refusal that has nothing to do with an injection.
+#
+# And it takes the arguments as they were written rather than what
+# `unwrap_injected_args()` carried out of them, which is the one thing its
+# callers cannot pass instead: whether a part arrived injected is exactly the
+# fact the unwrapping discards, and it is the fact this reports. Unwrapping the
+# one part it names a second time is the price of that, over an argument list
+# whose length a caller typed.
 #
 # Which messages compose it is each caller's decision and not this function's,
 # and the two callers decide it differently on purpose. The share helper's

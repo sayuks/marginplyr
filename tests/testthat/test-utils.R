@@ -114,8 +114,9 @@ package_functions <- function() {
 }
 
 # Where a list of a call's arguments comes from: the shared reader, the rlang
-# function it wraps, or the `call_args` element of a parse this package builds
-# out of one, in either spelling of the element read.
+# function it wraps, the reader that unwraps each of them through an injected
+# quosure, or the `call_args` element of a parse this package builds out of one,
+# in either spelling of the element read.
 #
 # One matcher serves both scans below, because the hazard is one hazard: a list
 # reached this way holds elements that may be empty, whichever construct then
@@ -123,6 +124,14 @@ package_functions <- function() {
 # `static_call_args()` call alone, so the same loop over a local -- the shape
 # `removal_retained_bound()` sits one line away from -- passed both gates while
 # the prose above claimed otherwise.
+#
+# `unwrap_injected_args()` is here rather than recognized as an `lapply()` over
+# one of the others, which is what it is (#169): a mapping spelled out at each
+# call site would have to be matched by the function being mapped, and
+# `grouping_helper_vars()` is handed its arguments as a parameter, so nothing in
+# its body says the list it maps over is a call's arguments at all. A reader
+# with a name is what this list is written to hold, and adding one to it is how
+# the package says a list of parts came from somewhere new.
 reads_call_arguments <- function(expr) {
   if (!is.call(expr)) {
     return(FALSE)
@@ -130,7 +139,8 @@ reads_call_arguments <- function(expr) {
   head <- expr[[1L]]
   named_reader <-
     identical(head, quote(static_call_args)) ||
-    identical(head, quote(rlang::call_args))
+    identical(head, quote(rlang::call_args)) ||
+    identical(head, quote(unwrap_injected_args))
   if (named_reader) {
     return(TRUE)
   }
@@ -141,39 +151,8 @@ reads_call_arguments <- function(expr) {
        identical(expr[[3L]], "call_args"))
 }
 
-# A list built elementwise from such a list is one too. `lapply()` hands each
-# argument to a function and collects what comes back, so an empty argument that
-# went in is an empty argument that came out, and the hazard travels with it.
-# `grouping_helper_vars()` and `validate_share_direct_syntax()` both read their
-# arguments through one to see through an injected quosure (#169), so without
-# this the scans below would read a loop over what they carry as a loop over
-# something else -- the same under-reach the shared matcher above was written to
-# close, arriving through a second list rather than through a second spelling.
-#
-# Two ways to recognize one, and the second is what makes the first reach both
-# functions. Mapping over a list this already knows is a list of call arguments
-# covers `validate_share_direct_syntax()`, which reads one from
-# `static_call_args()` a line earlier -- but `grouping_helper_vars()` is handed
-# its arguments as a parameter, so nothing in its body says where they came
-# from and matching on the source would leave the walk with #181's history
-# uncovered. Mapping `unwrap_injected_quosure()` is the other way: it answers
-# for a call part and nothing else, so what a mapping of it collects is call
-# parts whatever it was handed.
-derives_call_arguments <- function(expr, locals) {
-  if (!is.call(expr) || !identical(expr[[1L]], quote(lapply))) {
-    return(FALSE)
-  }
-  mapped_reader <- length(expr) >= 3L &&
-    identical(expr[[3L]], quote(unwrap_injected_quosure))
-  mapped_reader ||
-    (length(expr) >= 2L && is_call_arguments(expr[[2L]], locals))
-}
-
 # The names a body binds to such a list, so that a loop over one, or a
-# subscript of one, is read as reaching the arguments themselves. Accumulated in
-# source order, which is what lets a list derived from an earlier local be
-# recognized: the assignment naming it is visited before the one deriving from
-# it.
+# subscript of one, is read as reaching the arguments themselves.
 call_argument_locals <- function(expr, found = character()) {
   if (!is.call(expr)) {
     return(found)
@@ -182,8 +161,7 @@ call_argument_locals <- function(expr, found = character()) {
     identical(expr[[1L]], quote(`<-`)) &&
       length(expr) == 3L &&
       is.symbol(expr[[2L]]) &&
-      (reads_call_arguments(expr[[3L]]) ||
-         derives_call_arguments(expr[[3L]], found))
+      reads_call_arguments(expr[[3L]])
   ) {
     found <- unique(c(found, as.character(expr[[2L]])))
   }
@@ -279,23 +257,22 @@ test_that("the walk scan detects the shape it is written to forbid", {
       part
     }
   }
-  # And over a list built elementwise from one, which is how both helpers now
-  # read through an injected quosure (#169). The empty argument survives the
-  # `lapply()` that unwraps, so the loop it would be read with is the same
-  # hazard one list further along.
+  # And over the reader that unwraps each argument through an injected quosure,
+  # whose result is a list of parts like any other: the empty argument goes into
+  # the unwrapping and comes out of it (#169). Once through a list the same body
+  # read, and once in a function handed its arguments -- the shape
+  # `grouping_helper_vars()` has, and the one the reader has to be recognized by
+  # its name for, since nothing else in such a body says where the list came
+  # from.
   through_derived <- function(expr) {
     args <- static_call_args(expr)
-    carried <- lapply(args, unwrap_injected_quosure)
+    carried <- unwrap_injected_args(args)
     for (part in carried) {
       part
     }
   }
-  # The same derivation in a function handed its arguments rather than reading
-  # them, which is `grouping_helper_vars()`'s shape: nothing in the body says
-  # where the list came from, so the unwrapper being mapped is the only thing
-  # that says the result holds call parts.
   through_derived_parameter <- function(args) {
-    carried <- lapply(args, unwrap_injected_quosure)
+    carried <- unwrap_injected_args(args)
     for (part in carried) {
       part
     }
@@ -403,18 +380,17 @@ test_that("the assignment scan detects the shape it is written to forbid", {
     part <- static_call_args(expr)[[1L]]
     part
   }
-  # The same subscript, one list along: what `lapply()` collected from a call's
-  # arguments holds an empty one wherever the arguments did (#169). Both ways of
-  # recognizing that list, since the second is what reaches a function handed
-  # its arguments rather than reading them.
+  # The same subscript, one list along: what the unwrapping reader collected
+  # from a call's arguments holds an empty one wherever the arguments did
+  # (#169). Read from a local and from a parameter, as above.
   through_derived <- function(expr) {
     args <- static_call_args(expr)
-    carried <- lapply(args, unwrap_injected_quosure)
+    carried <- unwrap_injected_args(args)
     part <- carried[[1L]]
     part
   }
   through_derived_parameter <- function(args) {
-    carried <- lapply(args, unwrap_injected_quosure)
+    carried <- unwrap_injected_args(args)
     part <- carried[[1L]]
     part
   }

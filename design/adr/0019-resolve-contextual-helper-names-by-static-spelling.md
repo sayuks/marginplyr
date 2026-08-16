@@ -483,19 +483,29 @@ the house spelling elsewhere: `as_label()` reads `.data$region` as `region`, so
 a message saying the part is not a bare name would quote it as one.
 
 **Where the reading lives.** `unwrap_injected_quosure()`,
-`injected_quosure_clause()`, and `call_part_label()` sit in `R/utils.R` beside
-`is_name_part()` and `static_call_args()`, which is where the shared readers of
-a call's parts already are, so the four helpers ask one question rather than
-four. The unwrapping is a recursion and not a `while` loop, because the loop
-form assigns the carried expression to a name and a quosure carrying the empty
-argument then raises base R's untyped `missingArgError` — the #168 hazard
-`static_call_args()` already documents, reached by a different route. The scan
-in `test-utils.R` that enforces that hazard is extended to follow a list built
-elementwise from a call's arguments, which is what both helpers now read
-through — and it recognizes such a list by the *unwrapper being mapped* as well
-as by the source list, because `grouping_helper_vars()` is handed its arguments
-as a parameter and nothing in its body says where they came from. Matching only
-the source would have left the walk with #181's history outside the gate.
+`unwrap_injected_args()`, `injected_quosure_clause()`, and `call_part_label()`
+sit in `R/utils.R` beside `is_name_part()` and `static_call_args()`, which is
+where the shared readers of a call's parts already are, so the four helpers ask
+one question rather than four. The unwrapping is a recursion and not a `while`
+loop, because the loop form assigns the carried expression to a name and a
+quosure carrying the empty argument then raises base R's untyped
+`missingArgError` — the #168 hazard `static_call_args()` already documents,
+reached by a different route.
+
+`unwrap_injected_args()` is a named reader over a whole argument list rather
+than an `lapply()` spelled out at each call site, and that is what keeps the
+same hazard's gate derived. The scans in `test-utils.R` recognize a list of call
+parts by the reader that produced it; a mapping written at the call sites would
+have to be recognized by the function being mapped instead, and
+`grouping_helper_vars()` is handed its arguments as a parameter, so nothing in
+its body says the list it maps over is a call's arguments at all — the walk with
+#181's own history would have sat outside the gate. Adding a reader to that list
+is how the package says a list of parts came from somewhere new.
+
+`injected_quosure_clause()` reads the arguments as written rather than what the
+unwrapping carried out of them, because whether a part arrived injected is
+precisely the fact the unwrapping discards and precisely the fact the clause
+reports.
 
 **The clause is composed by the message, not by the argument.** A caller can
 make two mistakes at once, and which diagnostic wins is each helper's own

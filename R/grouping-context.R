@@ -218,7 +218,7 @@ grouping_helper_vars <- function(args, helper, plan) {
   # the wrapper (#169). Only the carried expression decides: a quosure carrying
   # a bare name is one, and a quosure carrying anything else gets exactly the
   # answer that expression gets written without the injection.
-  carried <- lapply(args, unwrap_injected_quosure)
+  carried <- unwrap_injected_args(args)
   not_a_column_message <- paste0(
     sprintf("`%s()` only accepts bare grouping columns.", helper),
     injected_quosure_clause(args)
