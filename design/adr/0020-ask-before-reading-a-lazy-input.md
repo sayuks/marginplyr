@@ -1,0 +1,118 @@
+# Ask before reading a lazy input
+
+marginplyr sends no query that reads a lazy input's data unless the caller
+asked for one. A Margin verb applied to a lazy input builds a query and returns
+it unexecuted; `dplyr::show_query()` runs nothing, and no row is read until the
+caller executes the query themselves.
+
+Two queries are exempt, enumerated rather than derived from a shape. Neither
+reads the caller's data, and each is justified separately because a single
+justification covering both would be false of one of them:
+
+1. **The zero-row read of the input**, `collect(head(.data, 0L))` in
+   `grouping_selection_proxy()`, sent only to backends whose
+   `collect_selection_proxy` capability grants it. Granting that capability to
+   a further backend extends this exemption and is justified per backend at
+   that point. Its warrant is that marginplyr decomposed the factors it
+   restores — combining grouping sets by union forces one common type across
+   branches, so a factor dimension is converted to text — and the levels and
+   column prototypes it is rebuilt from have no other source. Returning no rows
+   is not the warrant: a zero-row read still references the caller's table, and
+   `investigation/query-cost-across-lazy-backends.md` records that no vendor
+   documentation exempts `LIMIT 0` from BigQuery's rule that a `LIMIT` does not
+   reduce the bytes a non-clustered table is billed for.
+2. **One query per SQL dialect**, sent the first time a share is requested on
+   that dialect, asking whether the dialect converts non-numeric values to
+   numbers rather than refusing them. It references no table of the caller's —
+   `SELECT SUM('x') FROM (SELECT 1 AS z)` — so no reading of it touches their
+   data, and the answer is a property of the dialect and is reused for every
+   later connection sharing it.
+
+The predicate for "no external system is involved" is `is.data.frame(.data)`,
+and it is exact rather than an approximation of cheapness. Nothing
+`grouping_backend()` reads distinguishes a local DuckDB file from a hosted
+DuckDB service, an in-memory Arrow table from a dataset in object storage, RDS
+PostgreSQL from Aurora Standard, or SQLite from BigQuery; the first of each
+pair charges nothing per query and the second may charge for every read.
+
+One rule sets every default: **a check that reads the caller's data is asked
+for, and a check that does not is not.**
+
+- `.check_margin_label` scans the grouping columns, so it defaults to
+  `is.data.frame(.data)`.
+- `.check_share_source` reads nothing on any backend, so it defaults to `TRUE`.
+
+The same rule splits the Margin-label collision check in two. A label equal to
+a *declared* factor level is found in metadata that ADR 0002 already acquires,
+so that collision is rejected on every backend whatever `.check_margin_label`
+says. A label equal to an *observed* value is found only by reading, so that
+collision is what `.check_margin_label` controls.
+
+## Considered options
+
+**A capability for backends whose queries are cheap.** Rejected: it cannot be
+computed. `kind = "duckdb"` covers a hosted service reached through the same
+driver, `kind = "arrow"` covers a dataset in object storage, and `kind = "sql"`
+covers both SQLite and BigQuery. A capability table encoding cost would be a
+table of guesses about which product a connection addresses.
+
+**Pricing the backends.** Rejected on maintenance grounds before correctness.
+`investigation/query-cost-across-lazy-backends.md` records four billing models
+in use across the backends dbplyr reaches — per byte scanned, per unit of time,
+per provisioned capacity with no per-query charge, and per I/O request — with
+two of them appearing under a single `grouping_backend()` kind. A rule that
+prices backends is a rule that tracks four vendors' pricing pages; a rule that
+asks the caller before reading their data tracks nothing.
+
+**An absolute rule with no exemption.** Rejected: withdrawing the zero-row read
+withdraws factor levels and column prototypes on every lazy backend that has
+them, so ADR 0012's factor contract stops holding on DuckDB and dtplyr by
+default, and the declared-collision rejection above stops being free there. The
+cost of the exemption is one query per operation that reads no rows; the cost of
+removing it is a contract.
+
+**Bounding reads by the rows they request.** Rejected as a cost argument, and
+recorded here because ADR 0010 rests on it. A read bounded in rows is not
+bounded in what it costs: a `LIMIT` does not reduce BigQuery's bytes billed on
+a non-clustered table, a one-row query that starts a Snowflake warehouse costs
+a minute of credits, every read on Aurora Standard is a billable I/O request,
+and Athena bills a failed query like a successful one. Rows are the wrong unit.
+
+## Documentation consequences
+
+The reference carries a *When marginplyr queries your data* section stating
+what is sent unrequested and what is not, because a caller cannot read it off
+the argument list: the two exemptions are invisible at the call site, and the
+differing defaults of the two `.check_*` arguments read as arbitrary without
+the rule that produces them.
+
+`vignettes/database_backends.qmd` states plainly what is given up when
+`.check_margin_label` is left at its lazy default: a grouping column holding
+the label yields two rows that cannot be told apart, and neither a reader nor
+downstream code can recover which is the margin. It also names the two things
+that reduce the exposure at no cost — the declared-level rejection, and keeping
+`grouping_bit()` or `grouping_id()` in the result.
+
+## Test strategy
+
+The rule is not readable from any one file, so it is asserted rather than
+described. A snapshot records the internal functions that reach an execution
+entry point, and a second snapshot records the set of entry points scanned for,
+so a scan that stopped covering `compute()` fails rather than reporting a clean
+result. A third records which backend kinds hold `collect_selection_proxy`, so
+extending exemption 1 is visible in a diff.
+
+Snapshots run only where `NOT_CRAN` is set, which is the `structure` job and
+the `backend` jobs; a plain CRAN check does not execute this gate.
+
+## Related decisions
+
+ADR 0002 acquires the typed metadata this decision's first exemption exists to
+obtain. ADR 0003 orders label validation relative to execution and is amended
+by this decision only in what it may run without asking. ADR 0010 introduced
+the one-row share-source read and is amended separately, since its decision
+stands and only its cost justification is withdrawn. ADR 0012's factor contract
+is what exemption 1 protects.
+
+Evidence: `investigation/query-cost-across-lazy-backends.md` and
+`investigation/share-source-eligibility-on-coercing-dialects.md`.

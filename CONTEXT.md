@@ -64,6 +64,14 @@ label represented by `NULL` use a typed missing value instead of a synthetic
 factor level.
 _Avoid_: Total value, missing-value replacement
 
+**Margin label collision**:
+A grouping dimension holding, as one of its own values, the Margin label
+chosen for it — so that a margin row and a row of the source data cannot be
+told apart by that column. A collision is *declared* when the colliding value
+is a factor level, which the column's type records, and *observed* when it
+appears only among the column's values.
+_Avoid_: Duplicate label, ambiguous margin
+
 **Margin order**:
 The row order a Margin operation produces when it is asked to order its
 result. Within each fixed key, every grouping dimension contributes its
