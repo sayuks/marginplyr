@@ -57,6 +57,14 @@
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
+#' A function of your own may forward the column its caller wrote by injecting
+#' it: `!!rlang::enquo(col)` is accepted wherever a bare column is, and so is
+#' `!!rlang::ensym(col)`. Only the name is read. It is resolved against the
+#' Grouping plan, as every bare column here is, so the environment
+#' [rlang::enquo()] captured is not consulted and an injection carrying
+#' anything but a name is refused exactly where writing that expression out
+#' would be.
+#'
 #' @param x A bare grouping column.
 #' @param ... Bare grouping columns.
 #'
@@ -203,8 +211,17 @@ grouping_helper_vars <- function(args, helper, plan) {
   # missing from the plan, and `grouping_id(, )` named it a duplicate, because
   # both empty arguments read as the same name (#181). `is_name_part()` is the
   # question actually being asked: a symbol, and not the empty argument.
-  not_a_column_message <- sprintf(
-    "`%s()` only accepts bare grouping columns.", helper
+  #
+  # An argument can also arrive as an injected quosure, which is what a
+  # tidy-eval wrapper forwarding a bare column has to hand, so every question
+  # below is asked of what `unwrap_injected_quosure()` carries rather than of
+  # the wrapper (#169). Only the carried expression decides: a quosure carrying
+  # a bare name is one, and a quosure carrying anything else gets exactly the
+  # answer that expression gets written without the injection.
+  carried <- lapply(args, unwrap_injected_quosure)
+  not_a_column_message <- paste0(
+    sprintf("`%s()` only accepts bare grouping columns.", helper),
+    injected_quosure_clause(args)
   )
 
   # The empty argument is refused ahead of the arity checks so that the answer
@@ -214,7 +231,7 @@ grouping_helper_vars <- function(args, helper, plan) {
   # Nothing else moves: a non-column that is not empty -- `grouping_bit(1, 2)`
   # -- still reaches the arity diagnostic first, which is the one a caller
   # passing two of anything needs.
-  if (any(vapply(args, rlang::is_missing, logical(1)))) {
+  if (any(vapply(carried, rlang::is_missing, logical(1)))) {
     abort_marginplyr(not_a_column_message)
   }
 
@@ -235,11 +252,11 @@ grouping_helper_vars <- function(args, helper, plan) {
   # `is.symbol()` on the grounds that nothing empty survives the pre-check would
   # make the reordering above load-bearing for correctness rather than for which
   # diagnostic a caller reads.
-  if (!all(vapply(args, is_name_part, logical(1)))) {
+  if (!all(vapply(carried, is_name_part, logical(1)))) {
     abort_marginplyr(not_a_column_message)
   }
 
-  vars <- vapply(args, as.character, character(1))
+  vars <- vapply(carried, as.character, character(1))
   if (anyDuplicated(vars)) {
     abort_marginplyr(
       sprintf("`%s()` does not accept duplicate columns.", helper)

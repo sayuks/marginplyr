@@ -13,6 +13,14 @@
   `grouping_sets(s, grade)` — rather than tidyselect reporting the
   specification as an unusable column selection.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
+* A contextual helper taking a bare name accepts one forwarded by injection, so
+  a function of your own can pass `!!rlang::enquo(col)` where it previously had
+  to reach for `rlang::ensym(col)` and was otherwise told it had not written a
+  bare name. Only the name is read: it is resolved against the Grouping plan or
+  among the preceding summaries, so the environment `rlang::enquo()` captured is
+  not consulted, and an injection carrying anything else is refused exactly
+  where writing that expression out would be — now saying what was injected
+  (#169).
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level
   up, partitioned by the fixed `.by` keys. Local data frames, dbplyr, and

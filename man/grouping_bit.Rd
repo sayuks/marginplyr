@@ -83,6 +83,14 @@ complete label, factor, and missing-value contract.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
 executable examples.
+
+A function of your own may forward the column its caller wrote by injecting
+it: \code{!!rlang::enquo(col)} is accepted wherever a bare column is, and so is
+\code{!!rlang::ensym(col)}. Only the name is read. It is resolved against the
+Grouping plan, as every bare column here is, so the environment
+\code{\link[rlang:enquo]{rlang::enquo()}} captured is not consulted and an injection carrying
+anything but a name is refused exactly where writing that expression out
+would be.
 }
 
 \examples{

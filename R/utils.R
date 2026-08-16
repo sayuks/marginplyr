@@ -363,6 +363,79 @@ is_name_part <- function(part) {
   !rlang::is_missing(part) && rlang::is_symbol(part)
 }
 
+# What an injected quosure carries, and the part itself where there is none.
+# `rlang::enquo()` is what the tidy-eval idiom hands the author of a wrapper, so
+# `!!rlang::enquo(col)` is the ordinary spelling for forwarding the bare column
+# that wrapper's own caller wrote. A quosure is not a symbol, so a helper
+# reading a bare name refused one while telling the caller they had not written
+# a bare name -- which they had, one call further out (#169). Read through this
+# before asking what a part is, and the injected spelling gets the answer the
+# written one gets, rather than a second answer of its own.
+#
+# The recursion is not defensive: a quosure can carry another, and one level of
+# unwrapping would hand the test back the shape it was written to see through.
+# It is written as a recursion rather than as a `while` loop for the reason
+# `static_call_args()` gives above: the loop form assigns the carried expression
+# to a name, so a quosure carrying the empty argument raised base R's untyped
+# `missingArgError` naming this function's own parameter. Handed on as an
+# argument the same value forces without error, and returned it stays a value.
+#
+# What this does not carry across is the environment, and that is the decision
+# rather than a limitation. A Contextual helper's argument is resolved against
+# the Grouping plan by spelling and is never looked up in an environment
+# (ADR 0019), so there is no lookup for a quosure's environment to answer. That
+# is the opposite of the answer #165 reached one layer out, where a walk keeps a
+# quosure's environment because a selection inside it really is evaluated there,
+# and both follow the one rule: the environment is honoured wherever evaluation
+# happens, and these arguments are never evaluated.
+unwrap_injected_quosure <- function(part) {
+  if (!rlang::is_quosure(part)) {
+    return(part)
+  }
+  unwrap_injected_quosure(rlang::quo_get_expr(part))
+}
+
+# What a diagnostic adds when the part it refuses arrived by injection. The
+# caller wrote a bare name at their own call, so a message that says only what
+# the written spellings say describes a mistake they have not made, which is
+# the property #163 and #165 were each filed over. Naming the injection and
+# what it carries says which of the two spellings is being refused.
+#
+# It takes the whole argument list rather than one part, so it stays silent
+# when the refusal is about something else -- an arity, or an expression
+# written with no injection at all -- and names the first injected quosure that
+# is not a name when it is not.
+injected_quosure_clause <- function(parts) {
+  injected <- vapply(
+    parts,
+    function(part) {
+      rlang::is_quosure(part) && !is_name_part(unwrap_injected_quosure(part))
+    },
+    logical(1)
+  )
+  if (!any(injected)) {
+    return("")
+  }
+  paste0(
+    " The injected quosure carries `",
+    static_part_label(unwrap_injected_quosure(parts[[which(injected)[[1L]]]])),
+    "`, which is not a bare name."
+  )
+}
+
+# How an expression is written back into a diagnostic that refuses it for not
+# being a name. `rlang::as_label()` is the house spelling elsewhere and is the
+# wrong one here: it reads `.data$region` as `region`, so a message saying the
+# part is not a bare name would quote it as one. `deparse1()` gives back what
+# the caller wrote. The empty argument deparses to nothing at all, and is named
+# as rlang names it rather than as an empty pair of backticks.
+static_part_label <- function(part) {
+  if (rlang::is_missing(part)) {
+    return("<empty>")
+  }
+  deparse1(part)
+}
+
 # `head` defaults to the head the node already has, which is what every walk
 # wants: a rewrite of a call's arguments is not a rewrite of what it calls.
 # Passing one is how a recognized spelling is written back qualified

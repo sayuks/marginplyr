@@ -432,6 +432,14 @@
 #' do not share one portable finite-value predicate. Normalize potentially
 #' non-finite summaries explicitly with operations supported by the backend.
 #'
+#' A function of your own may forward the name its caller wrote by injecting
+#' it: `!!rlang::enquo(name)` is accepted wherever a bare name is, and so is
+#' `!!rlang::ensym(name)`. Only the name is read. It is resolved among the
+#' preceding summaries, as every bare name here is, so the environment
+#' [rlang::enquo()] captured is not consulted and an injection carrying
+#' anything but a name is refused exactly where writing that expression out
+#' would be.
+#'
 #' @param x The bare name of one preceding eligible ordinary summary.
 #'
 #' @return A double vector when used inside [summarize_with_margins()].
@@ -1448,16 +1456,24 @@ validate_share_direct_syntax <- function(expr, output_name) {
     )
   }
   args <- static_call_args(expr)
-  if (length(args) != 1L || !rlang::is_symbol(args[[1L]])) {
+  # Read through an injected quosure for the reason `unwrap_injected_quosure()`
+  # gives, and asked with `is_name_part()` rather than `rlang::is_symbol()` so
+  # that the question here is the same question `grouping_helper_vars()` asks
+  # of a bare grouping column. One answer covers all four helpers, which is what
+  # #169 asks for; the empty argument the second half excludes cannot reach this
+  # arity anyway, since `f(, )` is two arguments to the parser.
+  carried <- lapply(args, unwrap_injected_quosure)
+  if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
     abort_marginplyr(
       paste0(
         "`", output_name, " = ", helper, "(...)` requires exactly one ",
         "bare name of a preceding ordinary summary. Define the scalar ",
-        "summary first, then pass its name directly to `", helper, "()`."
+        "summary first, then pass its name directly to `", helper, "()`.",
+        injected_quosure_clause(args)
       )
     )
   }
-  args
+  carried
 }
 
 plan_across_share <- function(expr,

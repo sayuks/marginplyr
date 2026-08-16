@@ -432,6 +432,258 @@ test_that("a selection inside a quosure resolves in the quosure's own env", {
   expect_identical(result$rows, c(2L, 1L, 3L))
 })
 
+# The four helpers that read a bare name, derived rather than listed: they are
+# the registered Contextual helpers marginplyr itself owns, and a fifth owned
+# spelling is one someone has to decide this question about rather than one
+# that inherits an answer silently. Both halves of the criterion do work. The
+# dplyr-owned families take selections, which tidyselect resolves and which are
+# not this question at all; and the Grouping specification constructors are
+# marginplyr's too but are not Contextual helpers (ADR 0019), so their
+# arguments are evaluated in the caller's environment rather than read against
+# the Grouping plan -- which is the answer #169 turns on.
+marginplyr_owned_spellings <- function() {
+  rules <- lapply(static_spelling_rules(), function(rule) rule())
+  owned <- Filter(
+    function(rule) {
+      identical(rule$namespaces, "marginplyr") && isTRUE(rule$contextual)
+    },
+    rules
+  )
+  sort(unlist(lapply(owned, `[[`, "names"), use.names = FALSE))
+}
+
+# A data frame every probe below reads: two dimensions so a `rollup()` of them
+# has a parent level for a Parent share to divide by, and a measure for the
+# preceding ordinary summary a share helper takes the name of.
+injection_probe_data <- function() {
+  data.frame(
+    region = c("E", "E", "W", "W"),
+    grade = c("a", "b", "a", "b"),
+    units = c(1, 2, 3, 4),
+    stringsAsFactors = FALSE
+  )
+}
+
+# One summary per helper, written as a function from the *argument* to the whole
+# call, because the argument is the only thing that varies between the written
+# spelling and the injected one. A probe that built its own argument would fix
+# one of the two and assert nothing about the other.
+#
+# `name` is the bare name that helper takes -- a grouping column for one family
+# and a preceding ordinary summary for the other -- and it is what every shape
+# below is derived from, so no shape is written out twice.
+#
+# `.probe_data` is the symbol the input is bound to in the evaluation
+# environment; the grouping columns and the preceding summary sit inside
+# defused expressions, which `codetools` cannot follow into.
+# nolint start: object_usage_linter.
+injection_probes <- function() {
+  summary_probe <- function(helper, name) {
+    list(
+      name = name,
+      call = function(argument) {
+        rlang::expr(summarize_with_margins(
+          .probe_data,
+          t = sum(units),
+          k = !!rlang::call2(helper, argument),
+          .grouping = rollup(region, grade),
+          .sort = "last"
+        ))
+      }
+    )
+  }
+
+  list(
+    grouping_bit = summary_probe("grouping_bit", quote(region)),
+    grouping_id = summary_probe("grouping_id", quote(region)),
+    share_of_parent = summary_probe("share_of_parent", quote(t)),
+    share_of_total = summary_probe("share_of_total", quote(t))
+  )
+}
+# nolint end
+
+run_injection_probe <- function(probe, argument) {
+  rlang::eval_bare(
+    probe$call(argument),
+    rlang::env(rlang::current_env(), .probe_data = injection_probe_data())
+  )
+}
+
+test_that("every helper reading a bare name has an injection probe", {
+  # The derivation is what decides coverage, so a spelling registered without a
+  # probe has to fail here rather than go unexercised -- the same reason
+  # `test-contextual-helpers.R` checks its own probe table against the
+  # registry.
+  expect_identical(
+    sort(names(injection_probes())),
+    marginplyr_owned_spellings()
+  )
+})
+
+test_that("a helper reading a bare name accepts one forwarded by injection", {
+  # `rlang::enquo()` is what the tidy-eval idiom hands the author of a wrapper,
+  # and a quosure is not a symbol, so all four helpers refused `!!enquo(col)`
+  # while telling the caller they had not written a bare name -- which they
+  # had, at their own call. The workaround was to reach for `rlang::ensym()`
+  # instead, and nothing in the diagnostic said so (#169).
+  for (helper in names(injection_probes())) {
+    probe <- injection_probes()[[helper]]
+    written <- run_injection_probe(probe, probe$name)
+
+    # The quosure is built on the empty environment, so the assertion carries
+    # the environment answer as well as the acceptance one: nothing there can
+    # answer a lookup, and the result is the same because the name is resolved
+    # against the Grouping plan rather than anywhere at all (ADR 0019).
+    injected <- run_injection_probe(
+      probe,
+      rlang::new_quosure(probe$name, env = rlang::empty_env())
+    )
+    expect_identical(injected, written, info = helper)
+
+    # A quosure can carry another, so the unwrapping is a loop; one step of it
+    # would hand the test back the shape it exists to see through.
+    nested <- run_injection_probe(
+      probe,
+      rlang::new_quosure(
+        rlang::new_quosure(probe$name, env = rlang::empty_env()),
+        env = rlang::empty_env()
+      )
+    )
+    expect_identical(nested, written, info = helper)
+  }
+})
+
+test_that("an injected quosure's environment does not decide the name", {
+  # The environment is discarded, and that is the decision rather than an
+  # oversight (#169): these helpers resolve a name against the Grouping plan by
+  # spelling, so there is no lookup for an environment to answer. A binding of
+  # the same name in the quosure's own environment is the case that would show
+  # one being consulted, and it is the reading #165 gives one layer out, where
+  # a selection inside an injected quosure really is evaluated there.
+  for (helper in names(injection_probes())) {
+    probe <- injection_probes()[[helper]]
+    shadow <- rlang::env()
+    rlang::env_bind(shadow, !!rlang::as_name(probe$name) := "grade")
+
+    expect_identical(
+      run_injection_probe(probe, rlang::new_quosure(probe$name, env = shadow)),
+      run_injection_probe(probe, probe$name),
+      info = helper
+    )
+  }
+})
+
+test_that("an injected quosure carrying no bare name is refused as written", {
+  # One answer for all four helpers, and the same answer the un-injected
+  # spelling already gives: only a quosure carrying a bare name is one, and a
+  # quosure carrying anything else is refused exactly where that expression is
+  # refused without the injection (#169). The message is what the equality
+  # asserts -- the injected form adds a clause naming the injection and stops
+  # there, rather than reporting a different fault.
+  for (helper in names(injection_probes())) {
+    probe <- injection_probes()[[helper]]
+    # Derived from the bare name the helper takes, so the three shapes are one
+    # rule rather than twelve written-out calls: the pronoun spelling, the
+    # string, and a call around the same name.
+    shapes <- list(
+      rlang::call2("$", quote(.data), probe$name),
+      rlang::as_string(probe$name),
+      rlang::call2("+", probe$name, 1)
+    )
+
+    for (index in seq_along(shapes)) {
+      written <- expect_error(run_injection_probe(probe, shapes[[index]]))
+      expect_s3_class(written, "marginplyr_error")
+      # The written spelling says nothing about an injection, which is what
+      # stops the clause leaking into a refusal that has nothing to do with one.
+      expect_false(grepl("injected", conditionMessage(written), fixed = TRUE))
+
+      injected <- expect_error(run_injection_probe(
+        probe,
+        rlang::new_quosure(shapes[[index]], env = rlang::empty_env())
+      ))
+      expect_s3_class(injected, "marginplyr_error")
+      expect_identical(
+        conditionMessage(injected),
+        paste0(
+          conditionMessage(written),
+          " The injected quosure carries `",
+          deparse1(shapes[[index]]),
+          "`, which is not a bare name."
+        ),
+        info = helper
+      )
+    }
+
+    # `rlang::as_label()` reads `.data$region` as `region`, so a clause written
+    # with it would quote the refused part as the bare name the message says it
+    # is not. Asserted on the shape that shows it rather than left to the
+    # equality above, which `deparse1()` on both sides would satisfy either way.
+    pronoun <- expect_error(run_injection_probe(
+      probe,
+      rlang::new_quosure(shapes[[1L]], env = rlang::empty_env())
+    ))
+    expect_match(
+      conditionMessage(pronoun),
+      paste0("carries `.data$", rlang::as_string(probe$name), "`"),
+      fixed = TRUE
+    )
+  }
+})
+
+test_that("an injected quosure carrying the empty argument is named as one", {
+  # The empty argument deparses to nothing at all, so a clause built from
+  # `deparse1()` alone would refuse it with an empty pair of backticks. It is
+  # reachable only by injection -- `f(, )` is two arguments to the parser, so
+  # the written spelling is caught by arity (#181) -- which is why the label is
+  # asserted here rather than beside the empty-argument cases.
+  probe <- injection_probes()$grouping_id
+  error <- expect_error(run_injection_probe(
+    probe,
+    rlang::new_quosure(rlang::missing_arg(), env = rlang::empty_env())
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error),
+    "The injected quosure carries `<empty>`",
+    fixed = TRUE
+  )
+})
+
+test_that("injection is transparent to the checks after the name test", {
+  # Unwrapping happens before every question `grouping_helper_vars()` asks, not
+  # only before the symbol test, so a name that arrives injected is the same
+  # name to the duplicate check and to the plan membership check. Reading one
+  # through and the others around it is the shape that would let an injected
+  # duplicate through.
+  data <- injection_probe_data()
+  injected <- rlang::new_quosure(quote(region), env = rlang::empty_env())
+
+  duplicated <- expect_error(rlang::inject(summarize_with_margins(
+    data,
+    k = grouping_id(region, !!injected),
+    .grouping = rollup(region, grade)
+  )))
+  expect_s3_class(duplicated, "marginplyr_error")
+  expect_match(
+    conditionMessage(duplicated),
+    "does not accept duplicate columns",
+    fixed = TRUE
+  )
+
+  unknown <- expect_error(rlang::inject(summarize_with_margins(
+    data,
+    k = grouping_id(!!rlang::new_quosure(quote(nowhere))),
+    .grouping = rollup(region, grade)
+  )))
+  expect_s3_class(unknown, "marginplyr_error")
+  expect_match(
+    conditionMessage(unknown),
+    "Column `nowhere` is not part of `.by` or `.grouping`.",
+    fixed = TRUE
+  )
+})
+
 # Runs `code` with rlang's soft deprecations raised as errors, restoring
 # whatever the checking environment had before. Written with `on.exit()` rather
 # than withr so the tests add no dependency beyond the ones DESCRIPTION
