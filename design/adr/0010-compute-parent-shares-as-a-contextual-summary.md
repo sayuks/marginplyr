@@ -508,6 +508,7 @@ available and the share is refused rather than calculated —
 is measured once per dialect by at most two queries that reference none of the
 caller's tables — a probe, and a control sent only when the probe is rejected,
 so that a dialect which refuses is told apart from one whose scaffolding or
-connection failed — and the internal denominator column is named so that a
-database's own diagnostic reads without exposing an internal identifier, which
+connection failed — and the internal denominator column is named after the
+summary to rewrite, so that a database's own diagnostic names something the
+caller wrote rather than an internal identifier alone, which
 was #106's DuckDB half.

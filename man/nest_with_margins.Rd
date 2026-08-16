@@ -373,7 +373,10 @@ because its row-wise return shape exists only locally; see its own
 documentation for when it collects.
 
 Two queries reach your connection without being asked for, and neither
-reads a row of your data:
+reads a row of your data. This is the rule for every Margin verb, so each
+is described against the inputs that can produce it: a verb accepting no
+lazy table, or no contextual share, simply never reaches the one that
+depends on it.
 \itemize{
 \item \strong{A zero-row read of the input}, sent only to a backend whose factor
 columns marginplyr must decompose and later restore -- currently

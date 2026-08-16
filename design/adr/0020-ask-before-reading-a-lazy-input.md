@@ -3,7 +3,11 @@
 marginplyr sends no query that reads a lazy input's data unless the caller
 asked for one. A Margin verb applied to a lazy input builds a query and returns
 it unexecuted; `dplyr::show_query()` runs nothing, and no row is read until the
-caller executes the query themselves.
+caller executes the query themselves. `nest_by_with_margins()` is the one
+exception, and it is one by its return type rather than by this decision: a
+row-wise data frame is a local object, so the verb collects to build one at
+all. It is documented as collecting, and it is not a lazy result that reads
+without being asked.
 
 Two queries are exempt, enumerated rather than derived from a shape. Neither
 reads the caller's data, and each is justified separately because a single
