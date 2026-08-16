@@ -55,7 +55,7 @@ with_branch_conditions <- function(expr, conditions) {
     withCallingHandlers(
       expr,
       warning = function(cnd) {
-        buffer_branch_warning(conditions, cnd)
+        buffer_branch_warning(cnd, conditions)
         invokeRestart("muffleWarning")
       }
     ),
@@ -91,17 +91,17 @@ restate_branch_error <- function(cnd, conditions) {
 # A warning arrives as one condition per branch whose message dplyr has already
 # aggregated, flattened, and rendered: `$parent` is `NULL` and there is no
 # `$body`, so the text is all there is to restate and all there is to compare.
-buffer_branch_warning <- function(conditions, cnd) {
+buffer_branch_warning <- function(cnd, conditions) {
   cnd$message <- restate_margin_keys(
     paste(conditionMessage(cnd), collapse = "\n"),
     conditions$keys
   )
-  identity <- branch_warning_identity(cnd$message)
+  cause <- branch_warning_cause(cnd)
 
   buffered <- conditions$warnings
-  seen <- match(identity, names(buffered))
+  seen <- match(cause, names(buffered))
   if (is.na(seen)) {
-    buffered[[identity]] <- list(condition = cnd, count = 1L)
+    buffered[[cause]] <- list(condition = cnd, count = 1L)
   } else {
     buffered[[seen]]$count <- buffered[[seen]]$count + 1L
   }
@@ -109,27 +109,31 @@ buffer_branch_warning <- function(conditions, cnd) {
   invisible(NULL)
 }
 
-# The identity of a Repeated condition is its cause, so what this removes is
-# exactly the parts that necessarily differ between grouping sets: which groups
-# raised the warning, how many of that branch's groups did, and dplyr's pointer
-# at the store holding the rest. What survives is the argument the warning is
-# attributed to and the diagnostic itself.
+# Two occurrences are repetitions of one condition when they agree on cause:
+# the class, the diagnostic, and the argument the warning is attributed to. The
+# class is read from the condition; the other two are what is left of the
+# message once the parts that necessarily differ between grouping sets are
+# removed -- which groups raised the warning, how many of that branch's groups
+# did, and dplyr's pointer at the store holding the rest.
 #
-# This reads a format dplyr does not promise, and is chosen for which way it
-# fails: wording dplyr changes stops matching, the keys stay distinct, and
-# every occurrence is reported, which is what happens today. It can never
+# The text half reads a format dplyr does not promise, and is chosen for which
+# way it fails: wording dplyr changes stops matching, the causes stay distinct,
+# and every occurrence is reported, which is what happens today. It can never
 # collapse a warning that genuinely differs. Both bullet spellings are matched
 # because the leading symbol is cli's and follows `cli.unicode`.
-branch_warning_identity <- function(message) {
-  lines <- strsplit(message, "\n", fixed = TRUE)[[1L]]
+branch_warning_cause <- function(cnd) {
+  lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
   bullet <- "^[i\u2139] "
   varying <- grepl(paste0(bullet, "In group "), lines) |
     grepl(paste0(bullet, "Run `dplyr::last_dplyr_warnings\\(\\)`"), lines) |
-    lines == "The first warning was:"
-  # The count sentence opens the message, and only there is it dplyr's rather
-  # than something the caller's own diagnostic happens to say.
-  varying[[1L]] <- varying[[1L]] | grepl("^There (were|was) ", lines[[1L]])
-  paste(lines[!varying], collapse = "\n")
+    lines == "The first warning was:" |
+    # The count sentence opens the message, and only there is it dplyr's rather
+    # than something the caller's own diagnostic happens to say. Indexing by
+    # the whole sequence rather than the first element is what leaves a message
+    # of no lines at all -- which dplyr's aggregation does not produce, but
+    # nothing outside it promises either -- a cause rather than an error.
+    (seq_along(lines) == 1L & grepl("^There (were|was) ", lines))
+  paste(c(class(cnd), lines[!varying]), collapse = "\n")
 }
 
 # Replays what the branches withheld: one report per distinct cause, each
@@ -137,10 +141,7 @@ branch_warning_identity <- function(message) {
 # in the order the branches raised them, and the reported occurrence is the
 # first, so a plan that raises nothing new reads as one branch's report.
 report_branch_warnings <- function(conditions) {
-  buffered <- conditions$warnings
-  conditions$warnings <- list()
-
-  for (entry in buffered) {
+  for (entry in conditions$warnings) {
     cnd <- entry$condition
     if (entry$count > 1L) {
       cnd$message <- paste0(

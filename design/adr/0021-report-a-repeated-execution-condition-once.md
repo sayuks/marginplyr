@@ -122,6 +122,16 @@ Margin verb raises while it runs.
 under the internal key names. That store belongs to dplyr and is written before
 marginplyr sees anything, so the substitution cannot reach it.
 
+A warning still names `dplyr::summarize()` as the call it arose in, where an
+error now names the Margin verb. The asymmetry follows from the same difference
+the mechanisms do: an error's blamed call is a field, and a warning's is a
+clause inside the sentence dplyr rendered before signalling. Rewriting that
+clause would be a second parse of dplyr's format, and one that fails the wrong
+way — it edits a sentence rather than choosing a key, so a wording change
+leaves it silently naming the wrong thing rather than falling back to what
+happens today. This is the *Condition context* entry's "a context it cannot
+restate in those terms it leaves as it found it".
+
 Because the deduplication key is derived from rendered text, a dplyr release can
 change it without failing a test that asserts on structure. The tests therefore
 assert on the rendered message, as #108 anticipated, and a plan whose branches

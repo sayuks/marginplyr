@@ -74,6 +74,31 @@ test_that("branches raising different diagnostics are reported separately", {
   expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
 })
 
+# Asserted on the seam rather than through a verb, because neither case can be
+# produced through one: dplyr aggregates a branch's warnings into one condition
+# of its own before signalling, so the class it carries is always
+# `rlang_warning` and its message is never empty. The identity is stated over
+# the class as well as the diagnostic (CONTEXT.md, *Repeated condition*), and a
+# warning that reached this without dplyr's aggregation must get a cause rather
+# than an error -- replacing an External condition with one of marginplyr's own
+# is the one outcome the contract rules out.
+test_that("a warning's cause covers its class and admits an empty message", {
+  text <- "There was 1 warning in `dplyr::summarize()`.\n! NAs introduced"
+
+  expect_false(identical(
+    branch_warning_cause(rlang::warning_cnd("one_class", message = text)),
+    branch_warning_cause(rlang::warning_cnd("other_class", message = text))
+  ))
+  expect_identical(
+    branch_warning_cause(rlang::warning_cnd("one_class", message = text)),
+    branch_warning_cause(rlang::warning_cnd("one_class", message = text))
+  )
+  expect_type(
+    branch_warning_cause(rlang::warning_cnd("one_class", message = "")),
+    "character"
+  )
+})
+
 # #108's reproduction. An error aborts the first branch that raises it, so
 # there is nothing to deduplicate; what it needs is the context.
 test_that("a branch error reports the caller's column, group, and verb", {
@@ -186,8 +211,6 @@ test_that("a lazy input leaves its execution warnings to the caller", {
 })
 
 test_that("the reported conditions read as they are written", {
-  skip_on_cran()
-
   data <- data.frame(g = c("a", "b"), v = c(1, 2))
   warnings <- collect_warnings(summarize_with_margins(
     coercion_frame(),
