@@ -144,8 +144,8 @@ analyzed. An argument one reads as a bare name is resolved the same way —
 against the Grouping plan, or among the preceding summaries — so a name
 forwarded by injection is read for the name it carries and the environment
 carried with it is not consulted, there being no lookup for one to answer.
-Every other name in a summary expression follows
-ordinary lexical and data-mask lookup, including `dplyr::n()`. Grouping
+Every other name in a summary expression follows ordinary lexical and data-mask
+lookup, including `dplyr::n()`. Grouping
 specification constructors are not Contextual helpers: their spelling decides
 only whether a nested argument is evaluated, and the caller's own function
 runs when it is. A diagnostic refusing one tells the caller their spelling is

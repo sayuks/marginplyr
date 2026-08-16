@@ -534,8 +534,9 @@ test_that("a helper reading a bare name accepts one forwarded by injection", {
     )
     expect_identical(injected, written, info = helper)
 
-    # A quosure can carry another, so the unwrapping is a loop; one step of it
-    # would hand the test back the shape it exists to see through.
+    # A quosure can carry another, so the unwrapping repeats until it reaches
+    # something that is not one; a single step would hand the test back the
+    # shape it exists to see through.
     nested <- run_injection_probe(
       probe,
       rlang::new_quosure(

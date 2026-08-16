@@ -214,10 +214,12 @@ grouping_helper_vars <- function(args, helper, plan) {
   #
   # An argument can also arrive as an injected quosure, which is what a
   # tidy-eval wrapper forwarding a bare column has to hand, so every question
-  # below is asked of what `unwrap_injected_quosure()` carries rather than of
-  # the wrapper (#169). Only the carried expression decides: a quosure carrying
-  # a bare name is one, and a quosure carrying anything else gets exactly the
-  # answer that expression gets written without the injection.
+  # below is asked of what `unwrap_injected_args()` carried out of them rather
+  # than of the wrappers (#169). Only the carried expression decides: a quosure
+  # carrying a bare name is one, and a quosure carrying anything else gets
+  # exactly the answer that expression gets written without the injection. The
+  # message reads the arguments as written, because whether one arrived injected
+  # is the fact the unwrapping discards.
   carried <- unwrap_injected_args(args)
   not_a_column_message <- paste0(
     sprintf("`%s()` only accepts bare grouping columns.", helper),

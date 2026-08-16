@@ -523,6 +523,10 @@ a better-worded refusal; no result changes into a different result.
 `DESCRIPTION`'s `Config/marginplyr/cran-status` reads `unpublished`, so no
 released version carried the old behaviour.
 
+Two are the rule and the diagnostic above: an injected quosure carrying a bare
+name is now accepted where all four helpers refused it, and one carrying
+anything else is refused with a clause naming the injection.
+
 The third is not about injection, and it is recorded here because it is a
 change to an un-injected spelling, which #169 fenced off as out of scope.
 Asking the name question once meant asking it with `is_name_part()` in the

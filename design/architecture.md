@@ -163,6 +163,17 @@ separate question it answers separately — `static_callee_name()` resolves
 dependency walk has to over-report a lookup it cannot see through rather than
 recognize a helper by it.
 
+Saying what a part is written as belongs here for the same reason as reading
+it. `call_part_label()` writes one back into a diagnostic and
+`injected_quosure_clause()` says which argument of a call arrived by injection
+and what it carries (#169) — both report what the expression says and neither
+decides anything about it, since which message composes the clause, and whether
+to refuse at all, stays with the analysis that asked. Two refusals in different
+modules describe the same written form, so the words for it are one module's
+rather than each caller's; `rlang::as_label()` reading `.data$region` as
+`region` is the kind of thing that would otherwise be got right in one of them
+and not the other.
+
 Four analyses read through it and each decides for itself — the share
 dependency walk, the two rewrites, and the three searches — so the module is
 shallow by design where the ones below it are deep. It is also why the
