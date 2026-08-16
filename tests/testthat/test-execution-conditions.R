@@ -173,6 +173,22 @@ test_that("a marker inside a value or a diagnostic decides nothing", {
     )),
     2L
   )
+  # cli renders the second line of a caller's diagnostic at column zero, where
+  # a marker on it is indistinguishable from one dplyr wrote.
+  expect_length(
+    collect_warnings(summarize_branch_diagnostics(
+      "bad value\ni In group A",
+      "bad value\ni In group B"
+    )),
+    2L
+  )
+  expect_length(
+    collect_warnings(summarize_branch_diagnostics(
+      "bad value\ni Run `dplyr::last_dplyr_warnings()` A",
+      "bad value\ni Run `dplyr::last_dplyr_warnings()` B"
+    )),
+    2L
+  )
 })
 
 # Withholding a warning and then leaving by a path that never replays it would

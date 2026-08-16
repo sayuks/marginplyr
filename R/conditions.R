@@ -103,12 +103,12 @@ restate_condition_names <- function(cnd, keys) {
 # `$body`, so the text is all there is to compare.
 buffer_branch_warning <- function(cnd, conditions) {
   cnd <- restate_condition_names(cnd, conditions$keys)
-  identity <- branch_warning_identity(cnd)
+  key <- branch_warning_identity(cnd)
 
   buffered <- conditions$warnings
-  seen <- match(identity, names(buffered))
+  seen <- match(key, names(buffered))
   if (is.na(seen)) {
-    buffered[[identity]] <- list(condition = cnd, count = 1L)
+    buffered[[key]] <- list(condition = cnd, count = 1L)
   } else {
     buffered[[seen]]$count <- buffered[[seen]]$count + 1L
   }
@@ -123,11 +123,14 @@ buffer_branch_warning <- function(cnd, conditions) {
 # are removed -- which groups raised the warning, how many of that branch's
 # groups did, and dplyr's pointer at the store holding the rest.
 #
-# Removal is anchored to the start of a line, because a bullet is only a bullet
-# there. An unanchored marker is found inside a grouping value as readily: a
-# region named `Hawaii Region` carries `i `, and a caller diagnostic reading
-# `i In group A is bad` carries the whole marker, so either would decide what
-# gets removed and the second would be removed itself.
+# Removal is confined to where dplyr writes those parts, and not merely to what
+# they say, because everything they say is also something a caller's own
+# diagnostic can say. A marker is only a marker at the start of a line, so an
+# unanchored match would find one inside a grouping value -- a region named
+# `Hawaii Region` carries `i `. A line is only dplyr's before its `Caused by`
+# line, since what follows that is the caller's diagnostic, whose second line
+# cli renders at column zero exactly as it renders a bullet. And the pointer at
+# the store is only dplyr's as the last line of the message.
 #
 # What is left reads a format dplyr does not promise, and is chosen for which
 # way it fails: wording dplyr changes stops matching, the identities stay
@@ -139,9 +142,19 @@ branch_warning_identity <- function(cnd) {
     strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
   ))
   bullet <- "^[i\u2139] "
-  varying <- grepl(paste0(bullet, "In group "), lines) |
+  causes <- which(grepl("^Caused by ", lines))
+  # No `Caused by` line is a message this cannot locate dplyr's own context in,
+  # so nothing is removed and the message is compared whole -- the reading that
+  # reports every occurrence rather than the one that collapses them.
+  attributed <- if (length(causes) == 0L) {
+    rep(FALSE, length(lines))
+  } else {
+    seq_along(lines) < causes[[1L]]
+  }
+  groups <- attributed & grepl(paste0(bullet, "In group "), lines)
+  pointer <- seq_along(lines) == length(lines) &
     grepl(paste0(bullet, "Run `dplyr::last_dplyr_warnings\\(\\)`"), lines)
-  paste(c(class(cnd), lines[!varying]), collapse = "\n")
+  paste(c(class(cnd), lines[!(groups | pointer)]), collapse = "\n")
 }
 
 # Every bullet as the one line it was written as. cli wraps a bullet it cannot

@@ -177,7 +177,7 @@ misdirects is still worth more than none.
 _Avoid_: Error context, provenance, backtrace
 
 **Repeated condition**:
-One External condition reported once per grouping set, because a Margin
+One External condition raised once per grouping set, because a Margin
 operation evaluates the caller's summary expression once per grouping set
 although the caller wrote it once. Two occurrences are repetitions of one
 condition when they agree on identity — the class, the diagnostic, and the

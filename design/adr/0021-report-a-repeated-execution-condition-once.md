@@ -118,6 +118,14 @@ where no marginplyr frame is on the stack. There is nothing to intercept, and
 the Repeated-condition contract says so directly by answering only for what a
 Margin verb raises while it runs.
 
+A `message()` is outside this, and is the one External condition kind left
+where it was. dplyr attaches no context to one and does not aggregate them, so
+a message from a summary expression is already emitted once per group rather
+than once per grouping set, in plain dplyr as here; there is no context to
+restate and nothing that would make two of them one. The contract is written
+over what a verb can identify, which the *External condition* entry enumerates
+as warnings and errors.
+
 `dplyr::last_dplyr_warnings()` continues to report the last branch's warnings
 under the internal key names. That store belongs to dplyr and is written before
 marginplyr sees anything, so the substitution cannot reach it.
