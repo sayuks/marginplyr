@@ -505,13 +505,10 @@ reached by a different route.
 
 `unwrap_injected_args()` is a named reader over a whole argument list rather
 than an `lapply()` spelled out at each call site, and that is what keeps the
-same hazard's gate derived. The scans in `test-utils.R` recognize a list of call
-parts by the reader that produced it; a mapping written at the call sites would
-have to be recognized by the function being mapped instead, and
-`grouping_helper_vars()` is handed its arguments as a parameter, so nothing in
-its body says the list it maps over is a call's arguments at all — the walk with
-#181's own history would have sat outside the gate. Adding a reader to that list
-is how the package says a list of parts came from somewhere new.
+same hazard's gate derived: the scans in `test-utils.R` recognize a list of call
+parts by the reader that produced it, so adding a reader to that list is how
+this package says a list of parts came from somewhere new. Why a mapping cannot
+be recognized in a reader's place is recorded beside that scan.
 
 `injected_quosure_clause()` reads the arguments as written rather than what the
 unwrapping carried out of them, because whether a part arrived injected is

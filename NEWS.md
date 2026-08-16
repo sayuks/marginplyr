@@ -13,16 +13,6 @@
   `grouping_sets(s, grade)` — rather than tidyselect reporting the
   specification as an unusable column selection.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
-* A contextual helper taking a bare name accepts one forwarded by injection, so
-  a function of your own can pass `!!rlang::enquo(col)` where it previously had
-  to reach for `rlang::ensym(col)` and was otherwise told it had not written a
-  bare name. Only the name is read: it is resolved against the Grouping plan or
-  among the preceding summaries, so the environment `rlang::enquo()` captured is
-  not consulted, and an injection carrying anything else is refused exactly
-  where writing that expression out would be — now saying what was injected
-  (#169). Asking that question once also settles an empty argument the share
-  helpers had admitted: `share_of_total(x = )` reported an unknown preceding
-  summary whose name was empty, and is now refused for not being a bare name.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level
   up, partitioned by the fixed `.by` keys. Local data frames, dbplyr, and
@@ -40,6 +30,13 @@
   denominator, so it accepts any Grouping specification whose plan contains a
   Grand total set — `rollup()`, `cube()`, and any `grouping_sets()` including
   an empty `grouping_set()`.
+* Each of those four contextual helpers takes a bare name, and accepts one
+  forwarded by injection: a function of your own can pass either
+  `!!rlang::enquo(col)` or `!!rlang::ensym(col)`. Only the name is read. It is
+  resolved against the Grouping plan or among the preceding summaries, so the
+  environment `rlang::enquo()` captured is not consulted, and an injection
+  carrying anything but a name is refused exactly where writing that expression
+  out would be, saying what was injected (#169).
 * Added `inspect_grouping()` for reading the resolved Grouping plan as an
   ordinary local tibble, without executing a Margin operation.
 * Added `.id` to every Margin verb for one-based Grouping set occurrence

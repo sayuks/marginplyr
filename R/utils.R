@@ -397,13 +397,14 @@ unwrap_injected_quosure <- function(part) {
 
 # The same reading over a whole argument list, which is how both validators of
 # a bare name use it -- `grouping_helper_vars()` for the two grouping helpers
-# and `validate_share_direct_syntax()` for the two share helpers. Named rather
-# than spelled `lapply()` at each site so
-# that it is a *reader* like `static_call_args()`, whose result the empty-
-# argument scans in `test-utils.R` recognize by the name that produced it. Spelt
-# out at the call sites, those scans would have to recognize a mapping by the
-# function being mapped -- a listed spelling inside a gate that otherwise
-# derives, and one that says nothing about a list built any other way.
+# and `validate_share_direct_syntax()` for the two share helpers.
+#
+# It is a named function rather than an `lapply()` spelled out at those two
+# sites, and that is load-bearing rather than tidiness: the empty-argument scans
+# in `test-utils.R` recognize a list of a call's parts by the reader that
+# produced it, so inlining this would put both callers outside the gate. Why a
+# mapping cannot be recognized in a reader's place is recorded there, beside the
+# scan that would have to do it.
 unwrap_injected_args <- function(args) {
   lapply(args, unwrap_injected_quosure)
 }
