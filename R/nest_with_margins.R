@@ -316,8 +316,8 @@ execute_margin_nest <- function(operation, .key, .keep) {
         plan = plan,
         margin_labels = operation$margin_labels,
         column_info = operation$column_info,
-        set_id_name = set_col,
-        backend = operation$backend
+        backend = operation$backend,
+        set_id_name = set_col
       )
 
       # Nesting always expands through the portable adapter and already carries

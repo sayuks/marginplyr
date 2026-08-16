@@ -223,12 +223,15 @@ summarize_margin_union <- function(.data,
   combine_margin_branches(branches)
 }
 
+# `backend` is the operation's own, and it sits among the required arguments
+# rather than after the optional one so that no positional call can reach a
+# different arrangement than the two callers write.
 expand_margin_union <- function(.data,
                                 plan,
                                 margin_labels,
                                 column_info,
-                                set_id_name = NULL,
-                                backend) {
+                                backend,
+                                set_id_name = NULL) {
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when
   # given a column needs to be told so by counting. Both halves are read from
