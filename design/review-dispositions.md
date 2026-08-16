@@ -233,7 +233,7 @@ ADR, comment, or contributor doc recorded the rule separating the migrated
 sites from the four surviving bare `stop()` calls. *Evidence:* ADR 0015 states
 the avoidability predicate; `R/conditions.R` carries it at the only
 constructor; `?marginplyr` documents the `marginplyr_error` contract for
-users; `design/architecture.md` has a Package conditions section.
+users; `design/architecture.md` has a Conditions section.
 
 **`match_margin_choice()` duplicates each option vocabulary** (Standards).
 **Fixed in #33.** `match.arg(x)` derived choices from the formal default;

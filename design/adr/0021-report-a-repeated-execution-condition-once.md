@@ -76,8 +76,10 @@ The `..marginplyr_key_N` token is a string marginplyr chose, so finding it in a
 rendered message is a search for a planted literal rather than a parse of
 dplyr's format. It is planted as a column name, which
 `new_margin_internal_names()` allocates clear of the caller's columns; a
-grouping *value* spelled the same way is rewritten along with it, which is the
-one thing the search cannot tell apart and is left where it is. That holds equally in the flat warning string and in the
+grouping *value* spelled the same way is rewritten along with it, as is a
+caller's own diagnostic that spells it. Both are the one thing the search
+cannot tell apart, and both are left where they are: what it takes to reach
+either is writing a name marginplyr allocated for itself. That holds equally in the flat warning string and in the
 structured error fields, and it is why this half of the fix carries none of the
 fragility the deduplication key does. Substitution runs longest token first:
 naively replacing `..marginplyr_key_1` first corrupts `..marginplyr_key_10`,
