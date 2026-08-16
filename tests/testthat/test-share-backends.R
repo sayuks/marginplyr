@@ -1158,6 +1158,70 @@ test_that("a connection that answers nothing records nothing for its dialect", {
   expect_identical(ls(share_dialect_verdicts, all.names = TRUE), character())
 })
 
+# `share_source_checker()` routes the `other` backend kind to the dialect
+# checker as well, and an input of that kind carries no connection to put the
+# question to. Answering "unknown" is what refuses the share there; failing
+# instead would turn a backend marginplyr merely does not recognize into a
+# crash. Each helper is asserted beside the verdict because each answers for a
+# different absence: no lazy table at all, and no connection behind one.
+test_that("an input carrying no connection is asked nothing", {
+  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+  backend <- grouping_backend(data)
+  recorded <- ls(share_dialect_verdicts, all.names = TRUE)
+
+  expect_null(share_dialect_connection(data))
+  expect_false(share_dialect_can_be_asked(NULL))
+  expect_identical(share_dialect_verdict(data, backend = backend), "unknown")
+  expect_identical(ls(share_dialect_verdicts, all.names = TRUE), recorded)
+})
+
+# The verdict is read from whether executing the probe raised, so a connection
+# no query can be built against at all has raised nothing to read. Falling to
+# "unknown" is what keeps that from being recorded as the refusal a live
+# dialect would have earned, which would switch the protection off for every
+# later connection carrying that dialect.
+test_that("a connection no query can be built against answers nothing", {
+  expect_identical(
+    probe_share_dialect(structure(list(), class = "not_a_connection")),
+    "unknown"
+  )
+})
+
+# Only a one-row, one-column number is the conversion. Any other answer --
+# more columns, no rows, a value of another type, or something that is not a
+# data frame -- is no reading of the dialect, and "unknown" refuses the share
+# rather than accept a shape nothing interpreted. The converting answer is
+# asserted in the same block as a control: without it, a mock that stopped
+# reaching `probe_share_dialect()` would report every shape unknown and pass.
+test_that("an answer of an unexpected shape is not read as a verdict", {
+  verdict_for_answer <- function(answer) {
+    local_mocked_bindings(
+      collect = function(x, ...) answer,
+      .package = "dplyr"
+    )
+    probe_share_dialect(dbplyr::simulate_postgres())
+  }
+
+  expect_identical(verdict_for_answer(data.frame(p = 0)), "converts")
+  expect_identical(verdict_for_answer(data.frame(a = 1, b = 2)), "unknown")
+  expect_identical(verdict_for_answer(data.frame(p = numeric(0))), "unknown")
+  expect_identical(verdict_for_answer(data.frame(p = "x")), "unknown")
+  expect_identical(verdict_for_answer(list(p = 1)), "unknown")
+})
+
+# An unrecognized kind is a marginplyr defect and not something a caller can
+# rewrite, so it stops bare rather than raising a Package condition
+# (ADR 0015). The class assertion is the load-bearing half: a defect caught by
+# `tryCatch(marginplyr_error = )` would reach a caller as though their own call
+# were the thing to fix.
+test_that("the source checker refuses an unrecognized backend kind", {
+  error <- expect_error(
+    share_source_checker("nonexistent"),
+    "Unknown contextual-share source-checker backend kind: nonexistent"
+  )
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
 # #106's DuckDB half. This dialect refuses an ineligible summary itself, so
 # marginplyr calculates the share and the database reports the refusal when the
 # caller executes the query — which is why the column it casts carries the name
