@@ -123,10 +123,20 @@
 * A nesting that leaves no payload column now nests one inner row per source
   row, on detail groups, subtotals, and the Grand total set alike, as
   `dplyr::nest_by()` does, and local and `dtplyr` results agree once collected.
-  An input with no columns at all is outside that agreement, because a
-  `data.table` cannot represent one. The class of such a cell is described
-  rather than promised, as every nested element class is: on both backends it
-  is what `dplyr::tibble()` produced.
+  An input with rows and no columns is outside that agreement, and the limit is
+  on what reaches the backend rather than on nesting: a `data.table` reads its
+  row count from its first column, so `dtplyr::lazy_dt()` cannot carry those
+  rows in and nothing here can restore them. The class of such a cell is
+  described rather than promised, as every nested element class is: on both
+  backends it is what `dplyr::tibble()` produced.
+* Attaching a Grouping set identifier to a `dtplyr` input with no columns no
+  longer invents a row. Because a `data.table` reads its row count from its
+  first column, giving a column-less one a column materialized exactly one
+  row, so every verb that adds an identifier reported a row no source row
+  produced: `expand_with_margins(.id = )`, both nesting verbs — which add one
+  internally whatever `.id` says — and any verb asked for a Margin order. A
+  column-less input now expands to the row count the local backend gives it,
+  and the lazy path stays lazy (#184).
 * A `data.frame` subclass whose `[` is not column selection — a raw
   `data.table` is the case — now reaches every Margin verb that accepts local
   data frames. Factor levels and the prototypes behind an absent Margin label

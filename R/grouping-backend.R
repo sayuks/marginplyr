@@ -54,7 +54,8 @@ backend_capabilities <- function(kind) {
     "can_encode_factor_missing_values",
     "native_grouping_sets",
     "native_duplicate_sets",
-    "records_window_order"
+    "records_window_order",
+    "invents_row_on_column_add"
   )
   enabled <- list(
     local = c(
@@ -66,7 +67,16 @@ backend_capabilities <- function(kind) {
       "collect_selection_proxy",
       "can_read_schema",
       "can_restore_factors",
-      "can_encode_factor_missing_values"
+      "can_encode_factor_missing_values",
+      # `data.table` reads a table's row count from its first column, so a
+      # column-less one is always empty; the consequence in the other
+      # direction is what this names -- giving a zero-column table a column
+      # materialises exactly one row (#184). No other kind does that: a local
+      # frame holds rows without columns natively, an arrow table gives a
+      # column-less one a column and stays empty, and a SQL table with no
+      # columns cannot be constructed at all. `other` is granted nothing, so
+      # an unrecognised backend keeps the ordinary attachment.
+      "invents_row_on_column_add"
     ),
     arrow = "can_read_schema",
     duckdb = c(

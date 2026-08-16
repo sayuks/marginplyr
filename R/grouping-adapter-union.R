@@ -101,7 +101,11 @@ summarize_margin_branch <- function(.data,
   )
 }
 
-add_grouping_set_id <- function(result, set_id_name, set_id) {
+add_grouping_set_id <- function(result,
+                                set_id_name,
+                                set_id,
+                                backend,
+                                stands_for_source_rows) {
   if (is.null(set_id_name)) {
     return(result)
   }
@@ -110,10 +114,50 @@ add_grouping_set_id <- function(result, set_id_name, set_id) {
   # would number every row from its own values instead of the branch's
   # grouping-set id. The `{set_id_name}` glue is evaluated in this environment
   # rather than the mask, so only the value needs injecting.
+  value <- set_id_expr(
+    as.integer(set_id),
+    result,
+    backend = backend,
+    stands_for_source_rows = stands_for_source_rows
+  )
   dplyr::mutate(
     result,
-    "{set_id_name}" := !!as.integer(set_id)
+    "{set_id_name}" := !!value
   )
+}
+
+# A literal recycles to whatever the branch holds, which is the whole of the
+# attachment on a backend that can say how many rows a column-less branch has.
+# `data.table` cannot: it reads a table's row count from its first column, so
+# giving a zero-column table a column materialises one row, and every
+# expansion branch of a zero-column `dtplyr` input used to arrive carrying a
+# row no source row produced (#184). Counting is what the literal cannot do
+# there -- dtplyr translates `n()` to `.N`, which is zero for that table -- so
+# the identifier lands on as many rows as the branch has and no more.
+#
+# Which branch this is decides whether that row is fabricated at all, and it is
+# the reason the count is asked for rather than always taken. An expansion
+# branch holds one row per source row, so a column-less one standing for no
+# rows must stay empty. A summary branch holds one row per group, and a
+# column-less summary branch is reachable only with no keys and no summaries --
+# one group, the Grand total -- so the single row `mutate()` materialises there
+# is the row local dplyr returns for the same call, and counting would drop it.
+#
+# The other two conditions guard the count itself. A backend that recycles
+# correctly must keep the literal: `n()` in a `mutate()` renders a window
+# function on SQL, and on arrow it is an unsupported expression that warns and
+# pulls the data into R -- the collection ADR 0020 forbids. And a branch that
+# has columns keeps it too, since that is every ordinary branch, on dtplyr as
+# much as anywhere.
+set_id_expr <- function(set_id, result, backend, stands_for_source_rows) {
+  needs_count <- stands_for_source_rows &&
+    backend$invents_row_on_column_add &&
+    length(get_col_names(result, dplyr::everything())) == 0L
+
+  if (!needs_count) {
+    return(set_id)
+  }
+  rlang::expr(rep(!!set_id, dplyr::n()))
 }
 
 summarize_margin_union <- function(.data,
@@ -123,7 +167,8 @@ summarize_margin_union <- function(.data,
                                    column_info,
                                    reserved_names,
                                    set_id_name = NULL,
-                                   set_id_is_internal = FALSE) {
+                                   set_id_is_internal = FALSE,
+                                   backend = grouping_backend(.data)) {
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -178,7 +223,13 @@ summarize_margin_union <- function(.data,
         factor_info = column_info$factors
       )
 
-      add_grouping_set_id(result, set_id_name, set_id)
+      add_grouping_set_id(
+        result,
+        set_id_name,
+        set_id,
+        backend = backend,
+        stands_for_source_rows = FALSE
+      )
     },
     plan$sets,
     plan$set_ids
@@ -191,7 +242,8 @@ expand_margin_union <- function(.data,
                                 plan,
                                 margin_labels,
                                 column_info,
-                                set_id_name = NULL) {
+                                set_id_name = NULL,
+                                backend = grouping_backend(.data)) {
   branches <- Map(
     function(grouping_set, set_id) {
       result <- label_margin_branch(
@@ -203,7 +255,13 @@ expand_margin_union <- function(.data,
         factor_info = column_info$factors
       )
 
-      add_grouping_set_id(result, set_id_name, set_id)
+      add_grouping_set_id(
+        result,
+        set_id_name,
+        set_id,
+        backend = backend,
+        stands_for_source_rows = TRUE
+      )
     },
     plan$sets,
     plan$set_ids

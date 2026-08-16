@@ -137,7 +137,8 @@ execute_margin_expand <- function(operation) {
       plan = operation$plan,
       margin_labels = operation$margin_labels,
       column_info = operation$column_info,
-      set_id_name = set_id_name
+      set_id_name = set_id_name,
+      backend = operation$backend
     ),
     sort_id = sort_id
   )

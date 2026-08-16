@@ -492,12 +492,13 @@ test_that("zero-column and empty nesting match an independent construction", {
   # A frame with rows and no columns at all: every cell is a payload-free
   # cell, and `dplyr::nest_by()` is the upstream verb that answers it.
   #
-  # Local only, deliberately. A `dtplyr` input cannot reach this case as
-  # itself: `as.data.table()` cannot carry rows without columns, so
-  # `lazy_dt(rows_only)` is already empty, and a zero-column step then gains a
-  # row of its own when the Grouping set identifier is attached. That is the
-  # union adapter rather than nesting, it predates this behavior, and it is
-  # tracked in #184.
+  # Local only, deliberately, and for one reason rather than two now.
+  # `as.data.table()` cannot carry rows without columns, so `lazy_dt(rows_only)`
+  # is already empty before marginplyr reads it and no backend comparison here
+  # is available to make. The zero-column step that used to gain a row of its
+  # own when the Grouping set identifier was attached was the union adapter
+  # rather than nesting, and it is fixed (#184); `test-branch-union.R` is where
+  # the two backends are compared on the input that does reach both.
   rows_only <- data.frame(row.names = 1:3)
   expect_identical(dim(rows_only), c(3L, 0L))
 
