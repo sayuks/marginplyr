@@ -196,6 +196,152 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
   expect_equal(remote_result, local_result)
 })
 
+# Attaching the Grouping set identifier is the one place a Margin verb adds a
+# column to the caller's own rows, and on `dtplyr` that used to invent a row
+# when the caller's table had no columns at all (#184): `data.table` reads a
+# table's row count from its first column, so a column-less one is always
+# empty, and giving it a column materialises exactly one row.
+#
+# Every verb is asserted against the local answer rather than against a row
+# count written here, because the defect was a disagreement between backends
+# and the local backend is the one that holds rows without columns natively.
+# Comparing to local also keeps this to one optional backend, as AGENTS.md
+# requires.
+test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
+  skip_if_backend_absent("dtplyr")
+
+  empty <- data.frame()
+  expect_identical(dim(empty), c(0L, 0L))
+
+  # The identifier is what the defect rode in on, so the verb that adds one and
+  # nothing else is where it is visible undisguised.
+  lazy_expanded <- expand_with_margins(dtplyr::lazy_dt(empty), .id = "s")
+  # The fix attaches the identifier to an unexecuted step, and collecting is
+  # still the caller's to ask for.
+  expect_s3_class(lazy_expanded, "dtplyr_step")
+  local_expanded <- expand_with_margins(empty, .id = "s")
+  expect_identical(nrow(local_expanded), 0L)
+  expect_identical(
+    dplyr::collect(lazy_expanded),
+    dplyr::as_tibble(local_expanded)
+  )
+
+  # Without `.id` no identifier column is added, so this half always agreed and
+  # is here to say the fix left it that way.
+  expect_identical(
+    nrow(dplyr::collect(expand_with_margins(dtplyr::lazy_dt(empty)))),
+    nrow(expand_with_margins(empty))
+  )
+
+  # Nesting reaches the same attachment through an internal identifier, so it
+  # diverged with no `.id` in sight. The whole collected result is compared, as
+  # above: the row count is what the defect changed, but the promise
+  # `nest_with_margins()` documents for a column-less input is the result.
+  expect_identical(
+    dplyr::collect(nest_with_margins(dtplyr::lazy_dt(empty))),
+    dplyr::as_tibble(nest_with_margins(empty))
+  )
+  expect_identical(
+    dplyr::collect(nest_with_margins(dtplyr::lazy_dt(empty), .id = "s")),
+    dplyr::as_tibble(nest_with_margins(empty, .id = "s"))
+  )
+
+  # `nest_by_with_margins()` keeps `dplyr::nest_by()`'s one row for an input
+  # with no keys, so what the fabricated row showed there was the cell: a
+  # `1 x 0` payload standing for a source row that never existed.
+  lazy_by <- nest_by_with_margins(dtplyr::lazy_dt(empty))
+  local_by <- nest_by_with_margins(empty)
+  expect_identical(nrow(lazy_by), nrow(local_by))
+  expect_identical(dim(lazy_by$data[[1L]]), dim(local_by$data[[1L]]))
+  expect_identical(dim(local_by$data[[1L]]), c(0L, 0L))
+
+  # Summarizing agreed by coincidence -- a Grand total set of an empty input is
+  # legitimately one row -- and the count it reports is what says the row is
+  # the grouping set's rather than a fabricated one.
+  lazy_summary <- dplyr::collect(
+    summarize_with_margins(dtplyr::lazy_dt(empty), n = dplyr::n(), .id = "s")
+  )
+  expect_identical(
+    lazy_summary,
+    dplyr::as_tibble(summarize_with_margins(empty, n = dplyr::n(), .id = "s"))
+  )
+  expect_identical(lazy_summary$n, 0L)
+
+  # A summary branch with no summaries either is the one column-less branch
+  # whose row is not fabricated: with no keys and nothing to calculate it is
+  # the Grand total group, which local dplyr also answers with one row. Fixing
+  # the expansion by counting rows would have taken this row away.
+  expect_identical(
+    dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(empty), .id = "s")),
+    dplyr::as_tibble(summarize_with_margins(empty, .id = "s"))
+  )
+})
+
+# The neighbour of the case above, and the boundary it runs into rather than a
+# second instance of the defect. Asked for no summaries and given no key,
+# `dtplyr` has no column to carry the Grand total row on, and a one-row,
+# zero-column `data.table` does not exist -- `dim()` reads the row count from
+# the first column. Nothing in the union adapter decides it: it is what
+# `dplyr::summarize()` already answers for the same lazy input, which is what
+# this compares against, so a dtplyr that gained the shape reports here.
+#
+# What the result holds decides this and not what the input held, which is why
+# a keyed frame is here beside the column-less one -- and why the limit is
+# documented on `summarize_with_margins()` rather than beside #184's
+# column-less input, whose other verbs now agree.
+test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
+  skip_if_backend_absent("dtplyr")
+
+  for (input in list(data.frame(), data.frame(a = 1:3, g = c("x", "x", "y")))) {
+    upstream <- dplyr::collect(dplyr::summarize(dtplyr::lazy_dt(input)))
+    expect_identical(dim(upstream), c(0L, 0L))
+    expect_identical(
+      dim(dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(input)))),
+      dim(upstream)
+    )
+    # The local answer is `dplyr::summarize()`'s there too, and it is one row.
+    expect_identical(
+      dim(summarize_with_margins(input)),
+      dim(dplyr::summarize(input))
+    )
+    expect_identical(nrow(dplyr::summarize(input)), 1L)
+  }
+
+  # Anything that puts a column in the result ends the disagreement, which is
+  # the escape the documentation offers and the reason this stays a boundary
+  # rather than a defect.
+  keyed <- data.frame(a = 1:3, g = c("x", "x", "y"))
+  expect_identical(
+    dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(keyed), .by = g)),
+    dplyr::as_tibble(summarize_with_margins(keyed, .by = g))
+  )
+  expect_identical(
+    dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(keyed), .id = "s")),
+    dplyr::as_tibble(summarize_with_margins(keyed, .id = "s"))
+  )
+})
+
+# The count-preserving attachment is asked for only where a backend needs it,
+# because `n()` in a `mutate()` is a window function on SQL and an unsupported
+# expression on arrow, where it warns and pulls the data into R. Arrow is the
+# other lazy backend that can be handed a zero-column table at all, and it
+# already answered the local count.
+test_that("a zero-column arrow input keeps the local row count", {
+  skip_if_backend_absent("arrow")
+
+  empty <- data.frame()
+  query <- expand_with_margins(
+    arrow::as_arrow_table(empty),
+    .id = "s"
+  )
+
+  result <- expect_no_warning(dplyr::collect(query))
+  expect_identical(
+    result,
+    dplyr::as_tibble(expand_with_margins(empty, .id = "s"))
+  )
+})
+
 # The third fold site: `build_lazy_parent_mapping()` unions one denominator
 # mapping per grouping set that has a coarser one. A Parent share needs a pure
 # `rollup()`, so that site never sees the branch counts the other two do -- it

@@ -142,6 +142,15 @@ Confirmed SQL backends use one \verb{GROUP BY GROUPING SETS} query. Other lazy
 backends use a portable \verb{UNION ALL} adapter with the same semantics.
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} and \code{\link[=summarise_with_margins]{summarise_with_margins()}} are synonyms,
 following \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[dplyr:summarise]{dplyr::summarise()}}.
+
+One result a \code{dtplyr} input cannot carry back is a summary with no columns
+in it: asked for no summaries and given no fixed key or grouping dimension,
+the answer is one row holding nothing, whatever the input held, and a
+\code{data.table} reads its row count from its first column. Such a call
+collects to zero rows where a local data frame returns one, as
+\code{\link[dplyr:summarize]{dplyr::summarize()}} itself does for that lazy input. Anything that puts a
+column in the result -- one summary, one fixed key, one grouping dimension,
+or \code{.id} -- ends the difference.
 }
 \section{Fixed columns and grouping dimensions}{
 
