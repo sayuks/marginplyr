@@ -152,10 +152,40 @@ _Avoid_: Contextual function, masked helper, reserved argument
 **Package condition**:
 An error marginplyr itself raises, inheriting the `marginplyr_error` base
 class. It reports something the caller can avoid by rewriting the call within
-the documented public interface.
+the documented public interface. It is always an error: marginplyr states what
+it will not do by refusing, and raises no warning of its own.
 _Avoid_: Package error, internal error, user-facing error
 
 **External condition**:
-An error raised by a user summary expression, tidyselect, dplyr, or a backend
-and propagated with its original class and provenance intact.
+A condition raised by a user summary expression, tidyselect, dplyr, or a
+backend, and propagated with its own class, its own diagnostic, and its own
+cause intact. Warnings and errors are alike External conditions. What a Margin
+verb may adjust is the Condition context; the condition itself is the caller's
+to receive unchanged.
 _Avoid_: Third-party error, foreign error
+
+**Condition context**:
+The lines an External condition carries naming where it arose — the argument
+it is attributed to, the grouping values in force when it did, and the call
+blamed for it. It is distinct from the condition's class and diagnostic. A
+Margin verb owes the caller a context written in names the caller can act on,
+so a grouping value is reported under the column the caller named and the
+blamed call is the Margin verb the caller wrote, rather than the columns and
+the calls marginplyr allocated to compute the grouping sets. A context it
+cannot restate in those terms it leaves as it found it, because a context that
+misdirects is still worth more than none.
+_Avoid_: Error context, provenance, backtrace
+
+**Repeated condition**:
+One External condition raised once per grouping set, because a Margin
+operation evaluates the caller's summary expression once per grouping set
+although the caller wrote it once. Two occurrences are repetitions of one
+condition when they agree on identity — the class, the diagnostic, and the
+argument they are attributed to — and are distinct conditions otherwise. Which
+grouping set produced an occurrence is never part of that identity, since it
+is the part that necessarily differs. A Margin verb reports a Repeated
+condition once, and says how many further grouping sets raised it. It answers
+only for the occurrences raised while it runs: a lazy input evaluates the
+caller's expression when the caller later collects the result, and that is the
+collecting call's to report.
+_Avoid_: Duplicate warning, redundant condition, repeated diagnostic

@@ -748,8 +748,8 @@ grouping_arg_spec <- function(arg, data_vars) {
 # ADR 0008 fixes how often a caller's quosure runs. This is marginplyr's own
 # report about a position of its own, so it stays parentless, as
 # `abort_share_source_name()` does for the same reason. Every other failure is
-# an External condition and is re-raised as it arrived, class and provenance
-# intact.
+# an External condition and is re-raised as it arrived, with its own class,
+# diagnostic, and cause.
 resolve_grouping_selection <- function(arg, data_proxy) {
   tryCatch(
     resolve_column_selection(

@@ -93,11 +93,11 @@ not inferred to be predicates".
 #32. `test-parent-share.R` "Parent-share execution preserves user-expression
 conditions".
 
-**Package-created errors need a stable base class, external ones their
-provenance** — #31, #32, #33. `test-grouping-interface.R` "the documented
+**Package-created errors need a stable base class, external ones their own
+class and cause** — #31, #32, #33. `test-grouping-interface.R` "the documented
 `marginplyr_error` handler catches conditions" and "Grouping tidyselect
-conditions retain their provenance", plus the "use the package condition seam"
-tests in six files.
+conditions retain their class and cause", plus the "use the package condition
+seam" tests in six files.
 
 **Local cardinality validation rescans the input once per Grouping set** —
 #27. Validation is wrapped into the ordinary summary by
@@ -187,8 +187,8 @@ with a marginplyr message. The criterion the reviewer applied governs
 package-created errors; a propagated tidyselect failure is an External
 condition, which #23 user story 27 and ADR 0015 both require to keep its
 original class. *Evidence:* `test-summarize-operation.R` "summary tidyselect
-conditions retain their provenance" and `test-grouping-interface.R` "Grouping
-tidyselect conditions retain their provenance" assert
+conditions retain their class and cause" and `test-grouping-interface.R`
+"Grouping tidyselect conditions retain their class and cause" assert
 `expect_identical(class(error), class(baseline))`.
 
 **`abort_dbplyr_representation()` should have stayed an internal assertion**
@@ -233,7 +233,7 @@ ADR, comment, or contributor doc recorded the rule separating the migrated
 sites from the four surviving bare `stop()` calls. *Evidence:* ADR 0015 states
 the avoidability predicate; `R/conditions.R` carries it at the only
 constructor; `?marginplyr` documents the `marginplyr_error` contract for
-users; `design/architecture.md` has a Package conditions section.
+users; `design/architecture.md` has a Conditions section.
 
 **`match_margin_choice()` duplicates each option vocabulary** (Standards).
 **Fixed in #33.** `match.arg(x)` derived choices from the formal default;

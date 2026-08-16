@@ -34,7 +34,7 @@
 #'   calculate a summary's ratio to its immediate rollup parent, or to the
 #'   grand total.
 #'
-#' @section Errors:
+#' @section Errors and warnings:
 #' Every error marginplyr raises for a call you can correct inherits the
 #' `"marginplyr_error"` class, so one handler catches them all:
 #'
@@ -57,10 +57,25 @@
 #'
 #' Two kinds of error deliberately fall outside the class. Errors raised by
 #' your own summary expressions, by tidyselect, by dplyr, or by a database
-#' backend propagate with their original class and call intact. So do
-#' marginplyr's internal invariant checks, which report a defect no change to
-#' your call can avoid; please report those at
+#' backend propagate with their original class, diagnostic, and cause intact.
+#' So do marginplyr's internal invariant checks, which report a defect no
+#' change to your call can avoid; please report those at
 #' <https://github.com/sayuks/marginplyr/issues>.
+#'
+#' marginplyr itself raises no warning: it states what it will not do by
+#' refusing. What a Margin verb does adjust, for an error and a warning alike,
+#' is the context reported around one, because a margin operation may summarize
+#' your expression once per grouping set. Such a condition reports its grouping
+#' values under the columns you named rather than under internal ones, and an
+#' error blames the Margin verb you wrote rather than the internal summary that
+#' ran it. A warning still names that internal summary, because the name is
+#' part of a sentence dplyr renders before marginplyr sees the warning at all.
+#'
+#' A warning that every grouping set raises is reported once, saying how many
+#' further grouping sets raised it; warnings that differ from each other are
+#' reported one by one. A lazy input is outside this, and visibly so: its
+#' summary expressions run when you collect the result rather than while the
+#' verb runs, so what they raise is the collecting call's to report.
 #'
 #' @section Guides:
 #' - [Get started][g1]

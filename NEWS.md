@@ -114,8 +114,21 @@
   `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
   all. It is the only promised class; narrower subclasses and message wording
   remain implementation details. Errors from your summary expressions,
-  tidyselect, dplyr, or a backend keep their original class and call, and so do
-  internal invariant checks that no change to the call can avoid.
+  tidyselect, dplyr, or a backend keep their original class, diagnostic, and
+  cause, and so do internal invariant checks that no change to the call can
+  avoid.
+* A condition raised while your summary expression runs now reports its
+  context in names you can act on. A margin operation summarizes that
+  expression once per grouping set, so the grouping values it reported were
+  those of internal `..marginplyr_key_N` columns; they now name the columns you
+  wrote, and an error blames the Margin verb you called rather than an internal
+  summary. A warning every grouping set raises is reported once and says how
+  many further grouping sets raised it, in place of one identical warning per
+  set — `2^k` of them for a `cube()` of `k` dimensions — while warnings that
+  differ from each other are still reported one by one. Only that context
+  changes: the class, the diagnostic, and the cause you receive are the ones
+  raised. A lazy input is unaffected, because its summary expressions run when
+  you collect the result rather than while the verb runs (#141, #108).
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns. `.keep = TRUE` retains original pre-margin key values,
   and nesting rejects duplicate sets with `.duplicates = "keep"` because

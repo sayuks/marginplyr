@@ -918,7 +918,8 @@ stage_margin_summaries <- function(operation,
           column_info = operation$column_info,
           reserved_names = reserved_names,
           set_id_name = set_id_name,
-          set_id_is_internal = set_id_is_internal
+          set_id_is_internal = set_id_is_internal,
+          call = operation$call
         )
       }
     },
