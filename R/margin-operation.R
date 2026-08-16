@@ -78,7 +78,12 @@ check_margin_operation <- function(operation) {
 }
 
 # Package conditions report the Margin verb the caller wrote rather than the
-# internal frame that raised them. Everything else keeps its own provenance.
+# internal frame that raised them. An External condition keeps its own class,
+# diagnostic, and cause here whatever its blamed call says: the one that
+# reaches a caller under an internal call is the one a grouping-set branch
+# raises, and `with_branch_conditions()` restates that Condition context where
+# the branch runs, which is the only frame that knows which columns the names
+# in it stand for.
 with_margin_error_call <- function(expr, call) {
   tryCatch(
     expr,

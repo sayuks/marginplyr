@@ -116,6 +116,14 @@ add_grouping_set_id <- function(result, set_id_name, set_id) {
   )
 }
 
+# This is the one function in the package that evaluates the caller's own
+# summary expressions more than once, so it is the one that can report an
+# External condition once per grouping set and in names the caller never wrote:
+# the branches group by the `..marginplyr_key_N` columns allocated below, and
+# dplyr builds every context it attaches out of those. `call` is the Margin
+# verb a Condition context is owed instead of the internal `summarize()` the
+# branch issues; a caller that reaches this directly has none to name and
+# leaves the blamed call alone.
 summarize_margin_union <- function(.data,
                                    dots,
                                    plan,
@@ -123,7 +131,8 @@ summarize_margin_union <- function(.data,
                                    column_info,
                                    reserved_names,
                                    set_id_name = NULL,
-                                   set_id_is_internal = FALSE) {
+                                   set_id_is_internal = FALSE,
+                                   call = NULL) {
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -138,6 +147,16 @@ summarize_margin_union <- function(.data,
     .data <- dplyr::mutate(.data, !!!key_exprs)
   }
 
+  conditions <- new_branch_conditions(
+    keys = rlang::set_names(group_vars, unname(key_names)),
+    call = call
+  )
+  # On exit rather than after the loop, so that the branches that ran before an
+  # error still report what they raised. Withholding a warning and then leaving
+  # by any path but the one that replays it would lose it outright, which no
+  # reading of the contract allows.
+  on.exit(report_branch_warnings(conditions), add = TRUE)
+
   branches <- Map(
     function(grouping_set, set_id) {
       branch_dots <- rewrite_grouping_dots(
@@ -147,10 +166,16 @@ summarize_margin_union <- function(.data,
         sql = FALSE
       )
 
-      result <- summarize_margin_branch(
-        .data = .data,
-        !!!branch_dots,
-        .by = unname(key_names[grouping_set])
+      # Only the caller's expressions are wrapped. The checks and the branch
+      # builders below raise Package conditions, which carry their own context
+      # and are never deduplicated.
+      result <- with_branch_conditions(
+        summarize_margin_branch(
+          .data = .data,
+          !!!branch_dots,
+          .by = unname(key_names[grouping_set])
+        ),
+        conditions = conditions
       )
 
       check_summary_output_names(

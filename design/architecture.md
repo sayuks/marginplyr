@@ -354,13 +354,13 @@ source summary, which both helpers share, so it names whichever helpers the
 caller wrote rather than a fixed one. Other Arrow Margin operations continue
 through the ordinary summary, expansion, and nesting paths.
 
-### Package conditions (`R/conditions.R`)
+### Conditions (`R/conditions.R`)
 
-`abort_marginplyr()` is the only constructor for a Package condition and the
-whole of this module. A Package condition is raised exactly when the caller
-can avoid it by rewriting the call within the documented public interface;
-unreachable invariants and upstream defects use bare `stop()` or
-`stopifnot()`, and External conditions propagate untouched. `marginplyr_error`
+`abort_marginplyr()` is the only constructor for a Package condition. A
+Package condition is raised exactly when the caller can avoid it by rewriting
+the call within the documented public interface; unreachable invariants and
+upstream defects use bare `stop()` or `stopifnot()`, and an External condition
+propagates with its class, diagnostic, and cause untouched. `marginplyr_error`
 is the only promised class. See
 [ADR 0015](adr/0015-separate-package-conditions-from-internal-invariants.md).
 
@@ -368,6 +368,16 @@ The rule is not mechanically enforced, so both directions of the boundary are
 review surface: a Package condition demoted to `stop()` silently leaves the
 public contract, and an invariant promoted to `abort_marginplyr()` silently
 enters it.
+
+The rest of the module owns the Condition context around an External condition
+one grouping-set branch raises. `with_branch_conditions()` restates the
+grouping values dplyr reports under the branch's internal key columns, and the
+blamed call, in the names the caller wrote; it withholds a branch warning as it
+is raised so that `report_branch_warnings()` can report a Repeated condition
+once, with a count of the further grouping sets that raised it. Only the
+portable adapter uses it, because it is the only path that evaluates a caller's
+summary expression more than once. See
+[ADR 0021](adr/0021-report-a-repeated-execution-condition-once.md).
 
 ### Native adapter (`R/grouping-adapter-native.R`)
 
@@ -384,6 +394,11 @@ summarizes each grouping set, checks dynamic names, restores visible grouping
 keys, and labels omitted dimensions. Expansion emits one labelled input branch
 per grouping set; nesting builds on that expansion in its verb executor. Like
 the native adapter, it consumes derived inputs and does not own the lifecycle.
+
+Because it is the one path that summarizes the caller's own expressions once
+per grouping set, it is also the one that owes a Condition context: it wraps
+the branch summary alone in `with_branch_conditions()`, so that the checks and
+builders around it keep raising their Package conditions unchanged.
 
 `combine_margin_branches()` is the one place the package combines a branch
 list, and the contextual-share module calls it for its denominator mappings
@@ -478,6 +493,15 @@ The test suite divides supporting contracts as follows:
 - `test-inspect-grouping.R` covers `inspect_grouping()` as an ordinary tibble
   per ADR 0013, including both formats, plan order, and that a lazy input is
   inspected without executing a Margin operation.
+- `test-execution-conditions.R` covers the Condition context of ADR 0021
+  through `summarize_with_margins()`: a warning every grouping set raises
+  reported once with its count, branches raising different diagnostics
+  reported one by one, the caller's columns and verb in an error's context,
+  the propagated class and cause, ten keys substituted without corruption, a
+  Package condition raised beside them left alone, and the lazy non-goal. Its
+  two snapshots carry the rendered messages, because the deduplication key is
+  derived from rendered text and no structural assertion would see dplyr
+  reword it.
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
   factor backend contracts.
 - `test-grouping-plan.R` covers the backend-independent Grouping
