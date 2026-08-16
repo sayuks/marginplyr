@@ -37,6 +37,25 @@ summarize_failing_rollup <- function() {
   )
 }
 
+# One plan whose two grouping sets raise whatever the caller asks them to.
+# `dplyr::n()` is 3 only in the grouping set that groups by nothing, which
+# `rollup()` runs second, so `whole` is the later branch and `fail` makes it
+# abort the operation after the earlier one has already warned.
+summarize_branch_diagnostics <- function(whole, detail, fail = FALSE) {
+  summarize_with_margins(
+    coercion_frame(),
+    total = {
+      if (dplyr::n() == 3L) {
+        if (fail) stop("aborting branch") else warning(whole)
+      } else {
+        warning(detail)
+      }
+      0
+    },
+    .grouping = rollup(dplyr::all_of("region"))
+  )
+}
+
 # Every warning a call raises, not just the first: the whole subject here is
 # how many times one condition reaches the caller, which `expect_warning()`
 # cannot report.
@@ -109,13 +128,9 @@ test_that("a repeated warning is one report at any console width", {
 # the plan whose branches raise genuinely different diagnostics is asserted
 # beside it. `dplyr::n()` is 3 only in the grouping set that groups by nothing.
 test_that("branches raising different diagnostics are reported separately", {
-  warnings <- collect_warnings(summarize_with_margins(
-    coercion_frame(),
-    total = {
-      if (dplyr::n() == 3L) warning("whole table") else warning("one region")
-      0
-    },
-    .grouping = rollup(region)
+  warnings <- collect_warnings(summarize_branch_diagnostics(
+    "whole table",
+    "one region"
   ))
 
   messages <- vapply(warnings, conditionMessage, character(1))
@@ -123,6 +138,60 @@ test_that("branches raising different diagnostics are reported separately", {
   expect_true(any(grepl("whole table", messages, fixed = TRUE)))
   expect_true(any(grepl("one region", messages, fixed = TRUE)))
   expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+})
+
+# What a grouping value or a caller diagnostic says is data, and none of it may
+# decide what gets removed from an identity. Each case below reproduced a
+# collapse or a split when the removal read a marker anywhere in the message
+# rather than at the start of a line: `Hawaii Region` carries `i `, and the
+# last pair are two diagnostics that differ only where a marker made the
+# difference invisible.
+test_that("a marker inside a value or a diagnostic decides nothing", {
+  regions <- c("Hawaii Region", "Hawaii Region", "West Region")
+  data <- coercion_frame()
+  data$region <- regions
+
+  expect_length(
+    collect_warnings(summarize_with_margins(
+      data,
+      total = sum(as.numeric(grade)),
+      .grouping = cube(region, grade)
+    )),
+    1L
+  )
+  expect_length(
+    collect_warnings(summarize_branch_diagnostics(
+      "i In group A is bad",
+      "i In group B is bad"
+    )),
+    2L
+  )
+  expect_length(
+    collect_warnings(summarize_branch_diagnostics(
+      "bad value\nin data",
+      "bad value in data"
+    )),
+    2L
+  )
+})
+
+# Withholding a warning and then leaving by a path that never replays it would
+# lose it outright, which is worse than the repetition this ticket is about.
+# `rollup()` runs the detail set before the Grand total set, so the warning is
+# raised and buffered before the error aborts the operation.
+test_that("a warning a branch raised survives a later branch's error", {
+  reported <- NULL
+  error <- expect_error(withCallingHandlers(
+    summarize_branch_diagnostics("unreached", "early warning", fail = TRUE),
+    warning = function(cnd) {
+      reported <<- c(reported, conditionMessage(cnd))
+      invokeRestart("muffleWarning")
+    }
+  ))
+
+  expect_match(conditionMessage(error), "aborting branch", fixed = TRUE)
+  expect_length(reported, 1L)
+  expect_match(reported[[1L]], "early warning", fixed = TRUE)
 })
 
 # Asserted on the seam rather than through a verb, because neither case can be
@@ -133,19 +202,19 @@ test_that("branches raising different diagnostics are reported separately", {
 # warning that reached this without dplyr's aggregation must get a cause rather
 # than an error -- replacing an External condition with one of marginplyr's own
 # is the one outcome the contract rules out.
-test_that("a warning's cause covers its class and admits an empty message", {
+test_that("a warning's identity covers its class and admits an empty message", {
   text <- "There was 1 warning in `dplyr::summarize()`.\n! NAs introduced"
 
   expect_false(identical(
-    branch_warning_cause(rlang::warning_cnd("one_class", message = text)),
-    branch_warning_cause(rlang::warning_cnd("other_class", message = text))
+    branch_warning_identity(rlang::warning_cnd("one_class", message = text)),
+    branch_warning_identity(rlang::warning_cnd("other_class", message = text))
   ))
   expect_identical(
-    branch_warning_cause(rlang::warning_cnd("one_class", message = text)),
-    branch_warning_cause(rlang::warning_cnd("one_class", message = text))
+    branch_warning_identity(rlang::warning_cnd("one_class", message = text)),
+    branch_warning_identity(rlang::warning_cnd("one_class", message = text))
   )
   expect_type(
-    branch_warning_cause(rlang::warning_cnd("one_class", message = "")),
+    branch_warning_identity(rlang::warning_cnd("one_class", message = "")),
     "character"
   )
 })

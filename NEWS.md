@@ -120,9 +120,9 @@
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were
-  those of internal `..marginplyr_key_N` columns and the call it blamed was an
-  internal summary; both now name the columns you wrote and the Margin verb you
-  called. A warning every grouping set raises is reported once and says how
+  those of internal `..marginplyr_key_N` columns; they now name the columns you
+  wrote, and an error blames the Margin verb you called rather than an internal
+  summary. A warning every grouping set raises is reported once and says how
   many further grouping sets raised it, in place of one identical warning per
   set — `2^k` of them for a `cube()` of `k` dimensions — while warnings that
   differ from each other are still reported one by one. The condition itself is

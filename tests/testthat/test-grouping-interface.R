@@ -143,7 +143,7 @@ test_that("Grouping plan errors use the package condition seam", {
   )
 })
 
-test_that("Grouping tidyselect conditions retain their provenance", {
+test_that("Grouping tidyselect conditions retain their class and cause", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
   selection <- rlang::quo(unknown)
   baseline <- expect_error(

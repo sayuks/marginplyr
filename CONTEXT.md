@@ -180,7 +180,7 @@ _Avoid_: Error context, provenance, backtrace
 One External condition reported once per grouping set, because a Margin
 operation evaluates the caller's summary expression once per grouping set
 although the caller wrote it once. Two occurrences are repetitions of one
-condition when they agree on cause — the class, the diagnostic, and the
+condition when they agree on identity — the class, the diagnostic, and the
 argument they are attributed to — and are distinct conditions otherwise. Which
 grouping set produced an occurrence is never part of that identity, since it
 is the part that necessarily differs. A Margin verb reports a Repeated

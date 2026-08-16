@@ -305,7 +305,7 @@ test_that("summary selection errors use the package condition seam", {
   }
 })
 
-test_that("summary tidyselect conditions retain their provenance", {
+test_that("summary tidyselect conditions retain their class and cause", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   baseline <- expect_error(
     tidyselect::eval_select(rlang::quo(unknown), data = data["value"])

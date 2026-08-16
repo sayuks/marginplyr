@@ -499,13 +499,15 @@ The test suite divides supporting contracts as follows:
   branches raising different diagnostics reported one by one, the caller's
   columns and verb in an error's context, the propagated class and cause, ten
   keys substituted without corruption, a Package condition raised beside them
-  left alone, and the lazy non-goal. One case runs at four console widths,
-  because cli wraps a bullet it cannot fit and the identity may not depend on
-  where. Its two snapshots carry the rendered messages, because the
-  deduplication key is derived from rendered text and no structural assertion
-  would see dplyr reword it. Its one test of an internal helper is the
-  documented exception: the class half of a Repeated condition's identity, and
-  a message of no lines, are both unreachable through a verb, because dplyr
+  left alone, and the lazy non-goal. Two of its cases hold the identity to what
+  a message says rather than to how it was laid out or what a value happens to
+  contain: one runs at five console widths, because cli wraps a bullet it
+  cannot fit, and one uses a grouping value and a caller diagnostic that carry
+  a bullet marker of their own. Its two snapshots carry the rendered messages,
+  because the identity is derived from rendered text and no structural
+  assertion would see dplyr reword it. Its one test of an internal helper is
+  the documented exception: the class half of a Repeated condition's identity,
+  and an empty message, are both unreachable through a verb, because dplyr
   aggregates a branch's warnings into one condition of its own before
   signalling.
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
@@ -525,7 +527,7 @@ Package conditions are not tested in one file. Each module's tests assert the
 package condition seam" tests in `test-grouping-interface.R`,
 `test-margin-label.R`, `test-summarize-operation.R`, `test-nest-operation.R`,
 `test-inspect-grouping.R`, and `test-utils.R` — while the matching
-"retain their provenance" and "preserve user-expression conditions" tests
+"retain their class and cause" and "preserve user-expression conditions" tests
 assert that an External condition keeps its original class. Keeping the two
 halves adjacent is what makes the boundary in ADR 0015 reviewable.
 
