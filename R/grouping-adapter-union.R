@@ -102,11 +102,10 @@ summarize_margin_branch <- function(.data,
 }
 
 # A literal recycles to whatever the branch holds, which is the whole of the
-# attachment on a backend that can say how many rows a column-less branch has.
-# `data.table` cannot: it reads a table's row count from its first column, so
-# giving a zero-column table a column materialises one row, and every
-# expansion branch of a zero-column `dtplyr` input used to arrive carrying a
-# row no source row produced (#184). Counting is what the literal cannot do
+# attachment wherever a column-less branch has a row count to recycle to. The
+# `invents_row_on_column_add` capability in `R/grouping-backend.R` is where a
+# backend says it has none, and every branch of such an input arrived carrying
+# a row no source row produced (#184). Counting is what the literal cannot do
 # there -- dtplyr translates `n()` to `.N`, which is zero for that table -- so
 # the identifier lands on as many rows as the branch has and no more.
 #
@@ -207,8 +206,9 @@ summarize_margin_union <- function(.data,
       # materialises there while the identifier column lasts is that group's,
       # so nothing is counted. What a `data.table` still cannot represent is
       # the result once the column goes away again -- a one-row, zero-column
-      # table -- which is dtplyr's own answer to such a summary and not
-      # something this attachment decides.
+      # table -- which is dtplyr's own answer to such a summary rather than
+      # something this attachment decides, and is documented as a limit on
+      # `summarize_with_margins()` where a caller meets it.
       add_grouping_set_id(
         result,
         set_id_name,
@@ -228,7 +228,7 @@ expand_margin_union <- function(.data,
                                 margin_labels,
                                 column_info,
                                 set_id_name = NULL,
-                                backend = grouping_backend(.data)) {
+                                backend) {
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when
   # given a column needs to be told so by counting. Both halves are read from

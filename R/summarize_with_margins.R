@@ -97,6 +97,19 @@
 #' [summarize_with_margins()] and [summarise_with_margins()] are synonyms,
 #' following [dplyr::summarize()] and [dplyr::summarise()].
 #'
+#' One result a `dtplyr` input cannot carry back is a summary with no columns
+#' in it. Asked for no summaries and given no fixed key or grouping dimension,
+#' the answer is the Grand total set's single row holding nothing, and a
+#' `data.table` cannot represent that -- `dim()` reads its row count from its
+#' first column, so a column-less one is always empty. Such a call collects to
+#' zero rows where the same call on a local data frame returns one, whatever
+#' columns the input itself had. It is what [dplyr::summarize()] answers for
+#' that lazy input rather than anything marginplyr decides, and no behavior
+#' here can restore the row, so summarize locally when it matters. Anything
+#' that puts a column in the result -- one summary, one fixed key, one
+#' grouping dimension, or `.id` -- brings the two backends back into
+#' agreement.
+#'
 #' @section Fixed columns and grouping dimensions:
 #' `.by` marks columns that are present in every grouping set, while
 #' `.grouping` describes dimensions that can be omitted to form margins.

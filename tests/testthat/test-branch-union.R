@@ -234,14 +234,16 @@ test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
   )
 
   # Nesting reaches the same attachment through an internal identifier, so it
-  # diverged with no `.id` in sight.
+  # diverged with no `.id` in sight. The whole collected result is compared, as
+  # above: the row count is what the defect changed, but the promise
+  # `nest_with_margins()` documents for a column-less input is the result.
   expect_identical(
-    nrow(dplyr::collect(nest_with_margins(dtplyr::lazy_dt(empty)))),
-    nrow(nest_with_margins(empty))
+    dplyr::collect(nest_with_margins(dtplyr::lazy_dt(empty))),
+    dplyr::as_tibble(nest_with_margins(empty))
   )
   expect_identical(
-    nrow(dplyr::collect(nest_with_margins(dtplyr::lazy_dt(empty), .id = "s"))),
-    nrow(nest_with_margins(empty, .id = "s"))
+    dplyr::collect(nest_with_margins(dtplyr::lazy_dt(empty), .id = "s")),
+    dplyr::as_tibble(nest_with_margins(empty, .id = "s"))
   )
 
   # `nest_by_with_margins()` keeps `dplyr::nest_by()`'s one row for an input
@@ -276,29 +278,47 @@ test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
 })
 
 # The neighbour of the case above, and the boundary it runs into rather than a
-# second instance of the defect. Asked for that same summary with no `.id`,
-# `dtplyr` has no column left to carry the Grand total row on, and a
-# one-row, zero-column `data.table` does not exist -- `dim()` reads the row
-# count from the first column. Nothing in the union adapter decides this: it is
-# what `dplyr::summarize()` already answers for the same lazy input, which is
-# what this compares against, so a dtplyr that gained the shape reports here.
+# second instance of the defect. Asked for no summaries and given no key,
+# `dtplyr` has no column to carry the Grand total row on, and a one-row,
+# zero-column `data.table` does not exist -- `dim()` reads the row count from
+# the first column. Nothing in the union adapter decides it: it is what
+# `dplyr::summarize()` already answers for the same lazy input, which is what
+# this compares against, so a dtplyr that gained the shape reports here.
+#
+# What the result holds decides this and not what the input held, which is why
+# a keyed frame is here beside the column-less one -- and why the limit is
+# documented on `summarize_with_margins()` rather than beside #184's
+# column-less input, whose other verbs now agree.
 test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
   skip_if_backend_absent("dtplyr")
 
-  empty <- data.frame()
-  upstream <- dplyr::collect(dplyr::summarize(dtplyr::lazy_dt(empty)))
-  expect_identical(dim(upstream), c(0L, 0L))
+  for (input in list(data.frame(), data.frame(a = 1:3, g = c("x", "x", "y")))) {
+    upstream <- dplyr::collect(dplyr::summarize(dtplyr::lazy_dt(input)))
+    expect_identical(dim(upstream), c(0L, 0L))
+    expect_identical(
+      dim(dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(input)))),
+      dim(upstream)
+    )
+    # The local answer is `dplyr::summarize()`'s there too, and it is one row.
+    expect_identical(
+      dim(summarize_with_margins(input)),
+      dim(dplyr::summarize(input))
+    )
+    expect_identical(nrow(dplyr::summarize(input)), 1L)
+  }
 
+  # Anything that puts a column in the result ends the disagreement, which is
+  # the escape the documentation offers and the reason this stays a boundary
+  # rather than a defect.
+  keyed <- data.frame(a = 1:3, g = c("x", "x", "y"))
   expect_identical(
-    dim(dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(empty)))),
-    dim(upstream)
+    dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(keyed), .by = g)),
+    dplyr::as_tibble(summarize_with_margins(keyed, .by = g))
   )
-  # The local answer is `dplyr::summarize()`'s there too, and it is one row.
   expect_identical(
-    dim(summarize_with_margins(empty)),
-    dim(dplyr::summarize(empty))
+    dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(keyed), .id = "s")),
+    dplyr::as_tibble(summarize_with_margins(keyed, .id = "s"))
   )
-  expect_identical(nrow(dplyr::summarize(empty)), 1L)
 })
 
 # The count-preserving attachment is asked for only where a backend needs it,
@@ -315,7 +335,7 @@ test_that("a zero-column arrow input keeps the local row count", {
     .id = "s"
   )
 
-  expect_warning(result <- dplyr::collect(query), NA)
+  result <- expect_no_warning(dplyr::collect(query))
   expect_identical(
     result,
     dplyr::as_tibble(expand_with_margins(empty, .id = "s"))

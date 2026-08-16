@@ -132,12 +132,19 @@
 * Attaching a Grouping set identifier to a `dtplyr` input with no columns no
   longer invents a row. Because a `data.table` reads its row count from its
   first column, giving a column-less one a column materialized exactly one
-  row, so every verb that adds an identifier reported a row no source row
-  produced: `expand_with_margins(.id = )`, both nesting verbs — which add one
-  internally whatever `.id` says — and any verb asked for a Margin order. A
-  column-less input that reaches the backend with the rows it had — one with
-  no rows either — now expands to the row count the local backend gives it,
-  and the lazy path stays lazy (#184).
+  row, and a verb whose result keeps that column reported it:
+  `expand_with_margins(.id = )`, and both nesting verbs, which add an
+  identifier internally whatever `.id` says. A column-less input that reaches
+  the backend with the rows it had — one with no rows either — now expands to
+  the row count the local backend gives it, and the lazy path stays lazy
+  (#184).
+* Documented the neighboring limit that has the same cause and no fix: a
+  `dtplyr` summary asked for no summaries and given no fixed key or grouping
+  dimension collects to zero rows where the same call on a local data frame
+  returns one, because its result is a single row holding no columns and a
+  `data.table` cannot represent one. It is what `dplyr::summarize()` answers
+  for that lazy input, and one summary, key, dimension, or `.id` in the result
+  ends the disagreement. See the details in `?summarize_with_margins`.
 * A `data.frame` subclass whose `[` is not column selection — a raw
   `data.table` is the case — now reaches every Margin verb that accepts local
   data frames. Factor levels and the prototypes behind an absent Margin label
