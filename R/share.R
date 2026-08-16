@@ -384,7 +384,7 @@
 #' | Local data frame | Both, from the result, before any share |
 #' | `dtplyr` step | Both, at execution, before an invalid row |
 #' | Arrow | Neither; shares are rejected outright |
-#' | General dbplyr | Type only, by asking the dialect once |
+#' | General dbplyr | Type only, by asking the dialect itself |
 #'
 #' Arrow inputs reject both helpers after expression planning and common
 #' Margin-operation validation but before constructing a summary query. The
@@ -405,8 +405,11 @@
 #' data to improve an error.
 #'
 #' Which of two things a dialect does is what decides the case, and it is
-#' settled by asking that dialect once, with a query referencing none of your
-#' tables. Where it refuses an ineligible summary, that refusal is the answer
+#' settled once per dialect, with at most two queries referencing none of your
+#' tables: a probe, and — only when the probe is rejected — a control, which is
+#' what tells a dialect that genuinely refuses apart from one whose connection
+#' or SQL scaffolding failed and could not answer at all. Where it refuses an
+#' ineligible summary, that refusal is the answer
 #' and reaches you as the database's own diagnostic when [dplyr::collect()]
 #' executes the staged query; the internal denominator column is named after
 #' the summary to rewrite so that diagnostic is actionable. Where it converts
@@ -1990,12 +1993,13 @@ check_dialect_share_sources <- function(operation,
 }
 
 # One question per dialect: does it convert a value of another type to a number
-# rather than refusing it? It is asked with a query referencing no table of the
-# caller's -- `SELECT SUM('x') FROM (SELECT 1 AS z)` -- so asking it reads none
-# of their data, which is what ADR 0020's second exemption rests on. What it
-# establishes is a property of the dialect and not of one connection, so it is
-# asked once and the answer is reused for every later connection carrying the
-# same dialect.
+# rather than refusing it? It is asked with at most two queries, neither
+# referencing a table of the caller's -- `SELECT SUM('x') FROM (SELECT 1 AS z)`
+# and, only where that is rejected, the control below -- so asking it reads
+# none of their data, which is what ADR 0020's second exemption rests on. What
+# it establishes is a property of the dialect and not of one connection, so it
+# is asked once and the answer is reused for every later connection carrying
+# the same dialect.
 share_dialect_verdict <- function(data, backend) {
   con <- share_dialect_connection(data)
   if (!share_dialect_can_be_asked(con)) {
@@ -2091,26 +2095,32 @@ share_dialect_can_be_asked <- function(con) {
 # `tbl`, which is a further query for a schema this frame already knows.
 probe_share_dialect <- function(con) {
   probe <- probe_share_dialect_answer(con, quote(sum("x", na.rm = TRUE)))
-  if (identical(probe$status, "unbuildable")) {
-    return("unknown")
-  }
-  if (identical(probe$status, "raised")) {
+  if (identical(probe, "raised")) {
     control <- probe_share_dialect_answer(con, quote(sum(z, na.rm = TRUE)))
-    if (!identical(control$status, "answered")) {
-      return("unknown")
+    if (identical(control, "answered")) {
+      return("refuses")
     }
-    return("refuses")
-  }
-  if (!identical(probe$status, "answered")) {
     return("unknown")
   }
-  "converts"
+  if (identical(probe, "answered")) {
+    return("converts")
+  }
+  "unknown"
 }
 
-# One table-free question, and which of the three things happened to it: it
-# could not be built against this connection, executing it raised, or it came
-# back with exactly one number. Any other shape is not an answer, so it is not
-# reported as one.
+# One table-free question, and which of three things happened to it: executing
+# it raised, it came back with exactly one number, or neither -- it could not
+# be built against this connection at all, or what came back was not one
+# number. The last two are one answer here because the only two callers treat
+# them alike: neither is a reading of the dialect.
+#
+# This vocabulary gets no guard, where `share_dialect_verdict_names()` does,
+# and the difference is what each mistake would cost. A wrong verdict is
+# cached under the dialect and described to the caller, so it misreports and
+# keeps misreporting. A status is read once, by the frame above, which sends
+# every value it does not recognise to `"unknown"` -- the answer that refuses
+# the share. An unrecognised status therefore fails closed by construction,
+# and that is the property worth writing down rather than asserting.
 probe_share_dialect_answer <- function(con, expr) {
   query <- tryCatch(
     dplyr::summarize(
@@ -2120,14 +2130,14 @@ probe_share_dialect_answer <- function(con, expr) {
     error = function(cnd) NULL
   )
   if (is.null(query)) {
-    return(list(status = "unbuildable"))
+    return("unanswerable")
   }
   answer <- tryCatch(
     list(value = suppressMessages(suppressWarnings(dplyr::collect(query)))),
     error = function(cnd) NULL
   )
   if (is.null(answer)) {
-    return(list(status = "raised"))
+    return("raised")
   }
   value <- answer$value
   if (
@@ -2136,9 +2146,9 @@ probe_share_dialect_answer <- function(con, expr) {
       ncol(value) != 1L ||
       !is_share_source_type(value[[1L]])
   ) {
-    return(list(status = "unreadable"))
+    return("unanswerable")
   }
-  list(status = "answered", value = value[[1L]])
+  "answered"
 }
 
 # The refusal names whichever helpers the caller wrote, as the Arrow one does

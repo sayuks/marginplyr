@@ -402,7 +402,7 @@ exactly-one-value cardinality rule is established with it:\tabular{ll}{
    Local data frame \tab Both, from the result, before any share \cr
    \code{dtplyr} step \tab Both, at execution, before an invalid row \cr
    Arrow \tab Neither; shares are rejected outright \cr
-   General dbplyr \tab Type only, by asking the dialect once \cr
+   General dbplyr \tab Type only, by asking the dialect itself \cr
 }
 
 
@@ -425,8 +425,11 @@ yours is read to establish it: the staged query stays lazy,
 data to improve an error.
 
 Which of two things a dialect does is what decides the case, and it is
-settled by asking that dialect once, with a query referencing none of your
-tables. Where it refuses an ineligible summary, that refusal is the answer
+settled once per dialect, with at most two queries referencing none of your
+tables: a probe, and — only when the probe is rejected — a control, which is
+what tells a dialect that genuinely refuses apart from one whose connection
+or SQL scaffolding failed and could not answer at all. Where it refuses an
+ineligible summary, that refusal is the answer
 and reaches you as the database's own diagnostic when \code{\link[dplyr:collect]{dplyr::collect()}}
 executes the staged query; the internal denominator column is named after
 the summary to rewrite so that diagnostic is actionable. Where it converts

@@ -19,11 +19,11 @@
   dtplyr are supported, and lazy inputs stay lazy; Arrow rejects Parent shares
   before a query is built. A share source must be a plain integer or double on
   every backend: where the type is not readable without asking, marginplyr
-  asks each SQL dialect once, with a query that reads none of your data,
-  whether it converts a non-numeric value to a number instead of refusing it,
-  and refuses the share rather than calculate one from a source nothing has
-  checked. `.check_share_source = FALSE` opts out for a source you have
-  established yourself (#195, #196).
+  asks each SQL dialect once, with at most two queries that read none of your
+  data, whether it converts a non-numeric value to a number instead of
+  refusing it, and refuses the share rather than calculate one from a source
+  nothing has checked. `.check_share_source = FALSE` opts out for a source you
+  have established yourself (#195, #196).
 * Added the contextual `share_of_total()` summary helper, which divides the
   same kind of source summary by the Grand total set within each fixed `.by`
   partition. It shares every rule of `share_of_parent()` except the

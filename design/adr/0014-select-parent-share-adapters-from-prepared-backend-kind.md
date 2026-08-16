@@ -21,7 +21,7 @@ Three things below therefore no longer describe the code:
   "reads the summaries a share reads … over one row of the input". Nothing
   reads a row of the caller's data to apply the eligible-type rule. Those
   kinds now reach `check_dialect_share_sources()`, which asks the dialect
-  itself, with a query referencing none of the caller's tables.
+  itself, with at most two queries referencing none of the caller's tables.
 - `unsampled_share_sources()`, now `check_wrapped_share_sources()`. Its
   assertion is unchanged and still load-bearing for the same reason: a kind
   may only be left unasked because `wrap_share_sources()` put the rule inside
