@@ -551,9 +551,10 @@ would leave the four helpers asking two different questions to preserve it.
 **Test strategy.** The four helpers are derived from `static_spelling_rules()`
 as the registered spellings marginplyr owns *and* declares Contextual, so a
 fifth owned Contextual helper fails the coverage assertion rather than
-inheriting an answer nobody decided. Both halves of that criterion do work: the
-dplyr-owned families take selections, and the constructors are owned but not
-Contextual. Each helper's probe is a function from the argument to the whole
+inheriting an answer nobody decided. Both halves of that criterion do work:
+none of the dplyr-owned families reads a bare name — a selection, a predicate
+function, and nothing at all, across the three — and the constructors are owned
+but not Contextual. Each helper's probe is a function from the argument to the whole
 call, since the argument is the only thing that varies, and the refused shapes
 are derived from the bare name that helper takes rather than written out. The
 acceptance case injects a quosure built on the *empty* environment, so it

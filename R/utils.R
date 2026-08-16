@@ -395,8 +395,10 @@ unwrap_injected_quosure <- function(part) {
   unwrap_injected_quosure(rlang::quo_get_expr(part))
 }
 
-# The same reading over a whole argument list, which is how both helpers that
-# take a bare name use it. Named rather than spelled `lapply()` at each site so
+# The same reading over a whole argument list, which is how both validators of
+# a bare name use it -- `grouping_helper_vars()` for the two grouping helpers
+# and `validate_share_direct_syntax()` for the two share helpers. Named rather
+# than spelled `lapply()` at each site so
 # that it is a *reader* like `static_call_args()`, whose result the empty-
 # argument scans in `test-utils.R` recognize by the name that produced it. Spelt
 # out at the call sites, those scans would have to recognize a mapping by the

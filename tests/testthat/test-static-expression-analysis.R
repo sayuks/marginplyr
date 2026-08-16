@@ -435,12 +435,14 @@ test_that("a selection inside a quosure resolves in the quosure's own env", {
 # The four helpers that read a bare name, derived rather than listed: they are
 # the registered Contextual helpers marginplyr itself owns, and a fifth owned
 # spelling is one someone has to decide this question about rather than one
-# that inherits an answer silently. Both halves of the criterion do work. The
-# dplyr-owned families take selections, which tidyselect resolves and which are
-# not this question at all; and the Grouping specification constructors are
-# marginplyr's too but are not Contextual helpers (ADR 0019), so their
-# arguments are evaluated in the caller's environment rather than read against
-# the Grouping plan -- which is the answer #169 turns on.
+# that inherits an answer silently. Both halves of the criterion do work. None
+# of the dplyr-owned families reads a bare name: `across()` and its siblings
+# take a selection, which tidyselect resolves, `where()` takes a predicate
+# function, and the refused `cur_*()` spellings take nothing at all. And the
+# Grouping specification constructors are marginplyr's too but are not
+# Contextual helpers (ADR 0019), so their arguments are evaluated in the
+# caller's environment rather than read against the Grouping plan -- which is
+# the answer #169 turns on.
 marginplyr_owned_spellings <- function() {
   owned <- Filter(
     function(family) {
@@ -588,6 +590,7 @@ test_that("an injected quosure carrying no bare name is refused as written", {
       rlang::call2("+", probe$name, 1)
     )
 
+    refusals <- list()
     for (index in seq_along(shapes)) {
       written <- expect_error(run_injection_probe(probe, shapes[[index]]))
       expect_s3_class(written, "marginplyr_error")
@@ -610,18 +613,17 @@ test_that("an injected quosure carrying no bare name is refused as written", {
         ),
         info = helper
       )
+      refusals[[index]] <- injected
     }
 
     # `rlang::as_label()` reads `.data$region` as `region`, so a clause written
     # with it would quote the refused part as the bare name the message says it
     # is not. Asserted on the shape that shows it rather than left to the
     # equality above, which `deparse1()` on both sides would satisfy either way.
-    pronoun <- expect_error(run_injection_probe(
-      probe,
-      rlang::new_quosure(shapes[[1L]], env = rlang::empty_env())
-    ))
+    # Read back from the refusal the loop already raised, since running the call
+    # again would assert about a second execution of it.
     expect_match(
-      conditionMessage(pronoun),
+      conditionMessage(refusals[[1L]]),
       paste0("carries `.data$", rlang::as_string(probe$name), "`"),
       fixed = TRUE
     )
@@ -630,10 +632,11 @@ test_that("an injected quosure carrying no bare name is refused as written", {
 
 test_that("an injected quosure carrying the empty argument is named as one", {
   # The empty argument deparses to nothing at all, so a clause built from
-  # `deparse1()` alone would refuse it with an empty pair of backticks. It is
-  # reachable only by injection -- `f(, )` is two arguments to the parser, so
-  # the written spelling is caught by arity (#181) -- which is why the label is
-  # asserted here rather than beside the empty-argument cases.
+  # `deparse1()` alone would refuse it with an empty pair of backticks. Only an
+  # injected one reaches the label at all: the clause is the sole caller of
+  # `call_part_label()` and it labels nothing that is not a quosure, so a
+  # written `grouping_id(, )` is refused without one -- which is why this sits
+  # here rather than beside the empty-argument cases #181 covers.
   probe <- injection_probes()$grouping_id
   error <- expect_error(run_injection_probe(
     probe,
@@ -671,8 +674,8 @@ test_that("a caller's two mistakes at once are reported by one message", {
   )
 
   # The share helpers' headline covers the arity and the name-ness together, so
-  # both halves describe this call and the clause says which argument is the
-  # one it is talking about.
+  # both halves describe this call, and the clause quotes what was injected --
+  # which is what tells the two arguments apart, there being no position in it.
   named <- expect_error(rlang::inject(summarize_with_margins(
     data,
     t = sum(units),

@@ -166,8 +166,8 @@ recognize a helper by it.
 
 Saying what a part is written as belongs here for the same reason as reading
 it. `call_part_label()` writes one back into a diagnostic and
-`injected_quosure_clause()` says which argument of a call arrived by injection
-and what it carries (#169) — both report what the expression says and neither
+`injected_quosure_clause()` says that an argument arrived by injection and what
+it carries (#169) — both report what the expression says and neither
 decides anything about it, since which message composes the clause, and whether
 to refuse at all, stays with the analysis that asked. Two refusals in different
 modules describe the same written form, so the words for it are one module's
