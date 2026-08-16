@@ -123,95 +123,78 @@ buffer_branch_warning <- function(cnd, conditions) {
 # are removed -- which groups raised the warning, how many of that branch's
 # groups did, and dplyr's pointer at the store holding the rest.
 #
-# Removal is confined to where dplyr writes those parts, and not merely to what
-# they say, because everything they say is also something a caller's own
-# diagnostic can say. A marker is only a marker at the start of a line, so an
-# unanchored match would find one inside a grouping value -- a region named
-# `Hawaii Region` carries `i `. A line is only dplyr's before its `Caused by`
-# line, since what follows that is the caller's diagnostic, whose second line
-# cli renders at column zero exactly as it renders a bullet. And the pointer at
-# the store is only dplyr's as the last line of the message.
+# What identifies a part as dplyr's is where it sits, not what it says, because
+# everything dplyr's aggregation says a caller's own diagnostic can say too: a
+# diagnostic can open `There were 3 warnings in ...`, and cli renders its second
+# line at column zero exactly as it renders a bullet. So the header is what
+# precedes the first bullet, a grouping-value bullet is one written before the
+# `Caused by` line that introduces the caller's own diagnostic, and the pointer
+# at the store is looked for only in a message whose header said there was more
+# than one warning to point at.
+#
+# Each part is matched as the line it was written as -- `message_line_runs()`
+# below -- so that the console width decides nothing, and removed as the lines
+# it was rendered onto. Every line kept is kept as it arrived: nothing a caller
+# wrote is rewritten into what another branch wrote.
 #
 # What is left reads a format dplyr does not promise, and is chosen for which
 # way it fails: wording dplyr changes stops matching, the identities stay
 # distinct, and every occurrence is reported, which is what happens today. It
-# can never collapse a warning that genuinely differs. Both bullet spellings
-# are matched because the leading symbol is cli's and follows `cli.unicode`.
+# can never collapse a warning that genuinely differs.
 branch_warning_identity <- function(cnd) {
-  lines <- drop_aggregation_preamble(unwrap_message_lines(
-    strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
-  ))
-  bullet <- "^[i\u2139] "
-  causes <- which(grepl("^Caused by ", lines))
-  # No `Caused by` line is a message this cannot locate dplyr's own context in,
-  # so nothing is removed and the message is compared whole -- the reading that
-  # reports every occurrence rather than the one that collapses them.
-  attributed <- if (length(causes) == 0L) {
-    rep(FALSE, length(lines))
-  } else {
-    seq_along(lines) < causes[[1L]]
-  }
-  groups <- attributed & grepl(paste0(bullet, "In group "), lines)
-  pointer <- seq_along(lines) == length(lines) &
-    grepl(paste0(bullet, "Run `dplyr::last_dplyr_warnings\\(\\)`"), lines)
-  paste(c(class(cnd), lines[!(groups | pointer)]), collapse = "\n")
-}
-
-# Every bullet as the one line it was written as. cli wraps a bullet it cannot
-# fit onto continuation lines indented by two spaces, so which lines a message
-# holds is a function of the console width and of how long the grouping values
-# are -- and a group bullet matched line by line would then survive the removal
-# above from its second line on. Measured on the ticket's own reproduction,
-# whose values are one and four characters long: three reports of one condition
-# at 60 columns, and four at 40.
-#
-# Rejoining can only lose text that cli indented under the line above it, which
-# is what a wrap is; a caller's own indented line is rejoined into the
-# diagnostic it follows and stays part of the identity.
-unwrap_message_lines <- function(lines) {
-  wrapped <- grepl("^  ", lines) & seq_along(lines) > 1L
-  if (!any(wrapped)) {
-    return(lines)
-  }
-  unname(vapply(
-    split(sub("^ +", "", lines), cumsum(!wrapped)),
-    paste,
-    character(1),
-    collapse = " "
-  ))
-}
-
-# dplyr's aggregation header: how many warnings that branch raised, in which
-# call, and -- where there was more than one -- that what follows is the first
-# of them. All of it precedes the first bullet, and the count is the part that
-# necessarily differs between grouping sets.
-#
-# It is dropped whole rather than edited because it is the one part of the
-# message cli wraps onto lines it does not indent, so unwrapping cannot restore
-# it and there is no reliable line to edit: at any width from 15 to 24 columns
-# the ticket's own reproduction wrapped it into `There were 3` against `There
-# was 1`, leaving `warnings in` against `in`, and reported two conditions for a
-# plan that raises one. What goes with the count is the call, which every
-# branch names identically.
-#
-# A message that does not open with the header, or that holds no bullet to stop
-# at, is left alone and compared whole -- the reading that reports every
-# occurrence rather than the one that collapses them.
-drop_aggregation_preamble <- function(lines) {
-  bullets <- which(grepl("^[i\u2139!] ", lines))
-  if (length(bullets) == 0L || bullets[[1L]] == 1L) {
-    return(lines)
-  }
-  # Read as one sentence however it was broken up, so that the match does not
-  # become another thing the width decides.
-  preamble <- paste(
-    sub("^ +", "", lines[seq_len(bullets[[1L]] - 1L)]),
-    collapse = " "
+  lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+  runs <- message_line_runs(lines)
+  written <- vapply(
+    runs,
+    function(run) paste(sub("^ +", "", lines[run]), collapse = " "),
+    character(1)
   )
-  if (!grepl("^There (were|was) [0-9]+ warnings? in ", preamble)) {
-    return(lines)
+  # `!` opens the caller's own diagnostic, so a message dplyr attributed to no
+  # argument still has a bullet where its header ends. Both spellings of the
+  # informational one are matched because the symbol is cli's and follows
+  # `cli.unicode`.
+  first_bullet <- match(TRUE, grepl("^[i\u2139!] ", written))
+  cause <- match(TRUE, grepl("^Caused by ", written))
+  removed <- rep(FALSE, length(runs))
+
+  aggregated <- !is.na(first_bullet) &&
+    first_bullet > 1L &&
+    grepl(
+      "^There (were|was) [0-9]+ warnings? in ",
+      paste(written[seq_len(first_bullet - 1L)], collapse = " ")
+    )
+  if (aggregated) {
+    removed[seq_len(first_bullet - 1L)] <- TRUE
   }
-  lines[seq(bullets[[1L]], length(lines))]
+  if (!is.na(cause)) {
+    removed <- removed |
+      (grepl("^[i\u2139] In group ", written) & seq_along(written) < cause)
+  }
+  # The pointer runs to the end of the message, so everything after it goes
+  # with it.
+  pointer <- which(
+    grepl("^[i\u2139] Run `dplyr::last_dplyr_warnings\\(\\)`", written)
+  )
+  if (aggregated && length(pointer) > 0L) {
+    removed[seq(max(pointer), length(runs))] <- TRUE
+  }
+
+  paste(
+    c(class(cnd), lines[unlist(runs[!removed])]),
+    collapse = "\n"
+  )
+}
+
+# The message as the lines it was written as, each one the indices of the lines
+# cli rendered it onto: a line it cannot fit is wrapped onto continuations it
+# indents by two spaces. Reading a part off the rendered lines instead would
+# make the console width and the length of the grouping values decide what gets
+# matched -- the ticket's own reproduction wrapped its grouping-value bullet at
+# 60 columns and dplyr's opening sentence at 24, and reported three and two
+# conditions for a plan that raises one.
+message_line_runs <- function(lines) {
+  wrapped <- grepl("^  ", lines) & seq_along(lines) > 1L
+  unname(split(seq_along(lines), cumsum(!wrapped)))
 }
 
 # Replays what the branches withheld: one report per distinct identity, each

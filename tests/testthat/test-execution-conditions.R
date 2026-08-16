@@ -135,8 +135,8 @@ test_that("branches raising different diagnostics are reported separately", {
 
   messages <- vapply(warnings, conditionMessage, character(1))
   expect_length(warnings, 2L)
-  expect_true(any(grepl("whole table", messages, fixed = TRUE)))
-  expect_true(any(grepl("one region", messages, fixed = TRUE)))
+  expect_match(messages, "whole table", fixed = TRUE, all = FALSE)
+  expect_match(messages, "one region", fixed = TRUE, all = FALSE)
   expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
 })
 
@@ -186,6 +186,16 @@ test_that("a marker inside a value or a diagnostic decides nothing", {
     collect_warnings(summarize_branch_diagnostics(
       "bad value\ni Run `dplyr::last_dplyr_warnings()` A",
       "bad value\ni Run `dplyr::last_dplyr_warnings()` B"
+    )),
+    2L
+  )
+  # An indented line of the caller's own is what a wrap looks like, so nothing
+  # may rejoin one: rewriting a line that is kept is what turns two diagnostics
+  # into one.
+  expect_length(
+    collect_warnings(summarize_branch_diagnostics(
+      "bad value\n  in data",
+      "bad value in data"
     )),
     2L
   )
@@ -329,11 +339,11 @@ test_that("a lazy input leaves its execution warnings to the caller", {
 
   collected <- collect_warnings(dplyr::collect(query))
   expect_gt(length(collected), 1L)
-  expect_true(all(vapply(
-    collected,
-    function(cnd) grepl("NAs introduced by coercion", conditionMessage(cnd)),
-    logical(1)
-  )))
+  expect_match(
+    vapply(collected, conditionMessage, character(1)),
+    "NAs introduced by coercion",
+    fixed = TRUE
+  )
 })
 
 test_that("the reported conditions read as they are written", {
