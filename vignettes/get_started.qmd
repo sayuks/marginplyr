@@ -492,9 +492,10 @@ retail_sales |>
   dplyr::as_tibble()
 ```
 
-`.margin_label = NULL` bypasses collision checks. `NA_character_` requests
-the same typed missing output but still checks for source missing values and
-factor NA levels when `.check_margin_label = TRUE`.
+`.margin_label = NULL` bypasses collision checks entirely. `NA_character_`
+requests the same typed missing output, but an existing factor NA level is
+always a structural conflict, and whether an actual missing value collides is
+checked only when `.check_margin_label = TRUE`.
 
 A factor NA level and a missing factor code are different even though both
 can print as `<NA>`. Here the second value uses the NA level and the third is
@@ -533,8 +534,9 @@ when `.check_margin_label = FALSE`.
 
 For local data, `.check_margin_label = TRUE` prevents an existing value such
 as `"Total"` from becoming visually ambiguous. Lazy inputs default to
-`.check_margin_label = FALSE` because checking would execute an additional
-query. Result row order is unspecified for both local and lazy inputs unless
+`.check_margin_label = FALSE` for that same check; a label equal to a
+declared factor level is rejected on every backend either way. Result row
+order is unspecified for both local and lazy inputs unless
 `.sort` asks for a Margin order; use `arrange()` for any other presentation
 order. [Put each subtotal with the rows it
 summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html)

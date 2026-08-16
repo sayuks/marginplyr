@@ -365,12 +365,12 @@
 #'
 #' Non-missing labels convert ordinary grouping dimensions to character. A
 #' factor or ordered factor is reconstructed after the Margin operation,
-#' preserving ordered status and placing the synthetic level last by default
-#' or first when `.margin_label_position = "first"`. With collision checking
-#' enabled, the complete factor domain is checked, including unused levels.
-#' With checking disabled, an existing level may be reused and is moved to the
-#' requested position. Reconstruction preserves the distinction between an
-#' observation that uses a factor NA level and an actually missing factor code.
+#' preserving ordered status and placing a new synthetic level last by default
+#' or first when `.margin_label_position = "first"`. A label equal to any
+#' declared level, used or unused, is rejected before any grouping set is
+#' built, whatever `.check_margin_label` says: see that argument above.
+#' Reconstruction preserves the distinction between an observation that uses a
+#' factor NA level and an actually missing factor code.
 #'
 #' `NA_character_` and `NULL` both create a typed missing Margin value and do
 #' not create a synthetic factor level. Position is therefore a no-op for
@@ -397,10 +397,12 @@
 #' identically, so keep a structural identity column when the difference
 #' matters: `.id` is available from every Margin verb, and
 #' [summarize_with_margins()] can additionally write [grouping_bit()] or
-#' [grouping_id()] as summaries. The eager default
-#' `.check_margin_label = TRUE` detects
-#' collisions for local data. Lazy tables default to `FALSE` because checking
-#' would execute an extra query; opt in when that scan is appropriate.
+#' [grouping_id()] as summaries. `.check_margin_label` controls only the
+#' observed row of this table -- whether `NA_character_` collides with an
+#' actual missing value when no NA level is declared; the declared rows above
+#' it are checked whatever this argument says. See `.check_margin_label`
+#' above for its default and *When marginplyr queries your data* for why the
+#' two halves differ.
 #'
 #' @section Backend extension design:
 #' Unlike [dplyr::summarize()], the public margin verbs are intentionally not
@@ -427,6 +429,51 @@
 #'
 #' Arrow and dtplyr are also tested lazy backends, but they are not SQL
 #' database connections.
+#'
+#' @section When marginplyr queries your data:
+#' Every Margin verb applied to a lazy input builds a query and returns it
+#' unexecuted. [dplyr::show_query()] runs nothing, and no row is read until
+#' you execute the query yourself -- [nest_by_with_margins()] excepted,
+#' because its row-wise return shape exists only locally; see its own
+#' documentation for when it collects.
+#'
+#' Two queries reach your connection without being asked for, and neither
+#' reads a row of your data:
+#'
+#' - **A zero-row read of the input**, sent only to a backend whose factor
+#'   columns marginplyr must decompose and later restore -- currently
+#'   `dtplyr` and DuckDB -- to recover the levels and column prototypes that
+#'   decomposition loses. It references your table but reads none of it, and
+#'   it is not a shape marginplyr introduced: [dplyr::tbl()] already sends an
+#'   equivalent zero-row read for any table reference, on any dbplyr backend.
+#' - **One query per SQL dialect**, sent once per dialect, the first time a
+#'   share is requested there with `.check_share_source` at its default of
+#'   `TRUE`, asking whether the dialect converts a non-numeric value to a
+#'   number rather than refusing it. It references none of your tables, so
+#'   reading it touches none of your data, and the answer is a property of
+#'   the dialect, reused for every later connection that shares it. A
+#'   connection that cannot be asked -- one built with a
+#'   `dbplyr::simulate_*()` constructor, which executes nothing -- is treated
+#'   as unable to answer, which refuses the share by default the same way a
+#'   dialect known to convert does; see `.check_share_source` on
+#'   [summarize_with_margins()].
+#'
+#' Neither query is safe merely because it returns no rows. A read bounded in
+#' rows is not bounded in what it costs: BigQuery states plainly that a
+#' `LIMIT` does not reduce the bytes billed for a non-clustered table, and no
+#' vendor documentation exempts `LIMIT 0` from that rule.
+#'
+#' marginplyr does not try to tell whether a backend bills for a query,
+#' because nothing it can read distinguishes a free connection from a billed
+#' one of the same kind -- a local DuckDB file from a hosted DuckDB service,
+#' or RDS PostgreSQL from Aurora Standard. `is.data.frame(.data)` is the only
+#' predicate that answers "no external system is involved" exactly rather
+#' than approximately, and it is what sets the default of every check that
+#' reads your data: a check that reads it is asked for, and a check that does
+#' not is not. `.check_margin_label` scans the grouping columns, so every
+#' Margin verb defaults it to `is.data.frame(.data)`.
+#' [summarize_with_margins()]'s `.check_share_source` reads nothing on any
+#' backend, so it defaults to `TRUE` there.
 #'
 #' @family summarize and expand data with margins
 #' @export
@@ -506,8 +553,9 @@
 #' ) |>
 #'   dplyr::as_tibble()
 #'
-#' # Ordered factors remain ordered. A disabled collision check can reuse an
-#' # unused level and move it to the requested position.
+#' # Ordered factors remain ordered, and a new label is placed by
+#' # `.margin_label_position`. An existing level -- used or unused -- is never
+#' # available for reuse: it is rejected whatever `.check_margin_label` says.
 #' priority_data <- data.frame(
 #'   priority = ordered(
 #'     c("standard", "premium"),
@@ -519,18 +567,42 @@
 #'   .data = priority_data,
 #'   total = sum(value),
 #'   .grouping = rollup(priority),
-#'   .margin_label = "unused"
+#'   .margin_label = "unused",
+#'   .check_margin_label = FALSE
 #' ))
 #' priority_result <- summarize_with_margins(
 #'   .data = priority_data,
 #'   total = sum(value),
 #'   .grouping = rollup(priority),
-#'   .margin_label = "unused",
-#'   .margin_label_position = "first",
-#'   .check_margin_label = FALSE
+#'   .margin_label = "All priorities",
+#'   .margin_label_position = "first"
 #' )
 #' is.ordered(priority_result$priority)
 #' levels(priority_result$priority)
+#'
+#' # `.check_margin_label = FALSE` still controls only the observed half of
+#' # the check: whether a missing value already in the column collides with
+#' # `NA_character_` when no NA level is declared. Disabled, the margin row
+#' # and the real missing-value row print alike; `grouping_bit()` tells them
+#' # apart.
+#' status_data <- data.frame(
+#'   status = factor(c("active", NA), levels = c("active", "inactive")),
+#'   value = c(1, 2)
+#' )
+#' try(summarize_with_margins(
+#'   .data = status_data,
+#'   total = sum(value),
+#'   .grouping = rollup(status),
+#'   .margin_label = NA_character_
+#' ))
+#' summarize_with_margins(
+#'   .data = status_data,
+#'   total = sum(value),
+#'   is_total = grouping_bit(status),
+#'   .grouping = rollup(status),
+#'   .margin_label = NA_character_,
+#'   .check_margin_label = FALSE
+#' )
 #'
 #' # A direct Parent share, multiple measures through two ordered across()
 #' # expressions, and a post-summary calculation.

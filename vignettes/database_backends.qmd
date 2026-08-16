@@ -212,6 +212,69 @@ leaves the omitted dimension as a typed SQL `NULL`; it never attempts to add
 an NA enum label. A non-missing label is added as an enum level and is placed
 last by default or first with `.margin_label_position = "first"`.
 
+## `.check_margin_label` on lazy inputs
+
+Lazy inputs default to `.check_margin_label = FALSE`, and what that default
+gives up is not free: an *observed* collision — a real value already in the
+data equal to `.margin_label` — goes undetected, so the result carries one
+row for that value and one row for the margin, and neither the row itself nor
+code reading the result afterward can tell which is which. *When marginplyr
+queries your data* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the rule this default follows and its two exemptions.
+
+Two protections hold regardless of `.check_margin_label`, at no added query.
+
+A label equal to a *declared* factor level is rejected on every backend,
+because the level is already known from the column's metadata and finding
+the collision reads nothing. The enum preservation above is what makes this
+visible on DuckDB: `region` below declares `"Total"` as an unused level, and
+`.margin_label = "Total"` is rejected before any query is built, even though
+`.check_margin_label` is left at its lazy default:
+
+```{r}
+#| eval: !expr has_duckdb
+
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+region_data <- data.frame(
+  region = factor(c("East", "West"), levels = c("East", "West", "Total")),
+  revenue = c(10, 20)
+)
+region_db <- copy_to(
+  con,
+  region_data,
+  name = "region_data",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+```
+
+```{r}
+#| label: declared-level-rejected
+#| eval: !expr has_duckdb
+#| must_error: marginplyr_error
+
+region_db |>
+  summarize_with_margins(
+    total = sum(revenue),
+    .grouping = rollup(region)
+  )
+```
+
+```{r}
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con)
+```
+
+Keeping `grouping_bit()` or `grouping_id()` in the result is the other free
+protection: either identifies every margin row structurally, so a source row
+and a margin row that print alike still stay distinguishable by position,
+whatever `.check_margin_label` finds or misses.
+
+Opt into `.check_margin_label = TRUE` when the extra scan for an observed
+collision is worth the query for your backend and workload.
+
 ## Portable fallback SQL
 
 marginplyr does not assume that every SQL dialect supports native grouping
@@ -318,7 +381,10 @@ established yourself.
 
 A refusing dialect is therefore shown against a live DuckDB table rather than
 the simulator used above. The diagnostic is DuckDB's own, and the column it
-names carries the name of the summary to rewrite:
+names carries the name of the summary to rewrite. It reaches you as a plain
+`rlang_error` with no marginplyr class in its `parent` chain — nothing here
+reads the row that used to make it a `marginplyr_error` — so the chunk below
+accepts any error rather than naming one:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -500,9 +566,10 @@ names every verified backend.
   one. Ask for a Margin order with `.sort`, or call `arrange()` for any other
   presentation order.
 
-- Lazy inputs default to `.check_margin_label = FALSE` because detecting an
-  existing label would require an additional query. Opt in only when that
-  extra scan is appropriate.
+- Lazy inputs default to `.check_margin_label = FALSE`, which skips only the
+  *observed* half of the collision check; a label equal to a *declared*
+  factor level is rejected either way. See *`.check_margin_label` on lazy
+  inputs* above.
 
 - A fallback query may repeat the source relation once per grouping set.
   Inspect the generated SQL and the database query plan for large workloads;

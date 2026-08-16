@@ -32,6 +32,7 @@
 #' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins Database backend coverage
+#' @inheritSection summarize_with_margins When marginplyr queries your data
 #' @inheritSection summarize_with_margins Backend extension design
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
 #'   class and attributes follow [dplyr::mutate()] combined with

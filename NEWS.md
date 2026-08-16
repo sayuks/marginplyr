@@ -19,8 +19,11 @@
   dtplyr are supported, and lazy inputs stay lazy; Arrow rejects Parent shares
   before a query is built. A share source must be a plain integer or double on
   every backend: where the type is not readable without asking, marginplyr
-  reads the ordinary summaries over one input row rather than leaving the rule
-  to the dialect.
+  asks each SQL dialect once, with a query that reads none of your data,
+  whether it converts a non-numeric value to a number instead of refusing it,
+  and refuses the share rather than calculate one from a source nothing has
+  checked. `.check_share_source = FALSE` opts out for a source you have
+  established yourself (#195, #196).
 * Added the contextual `share_of_total()` summary helper, which divides the
   same kind of source summary by the Grand total set within each fixed `.by`
   partition. It shares every rule of `share_of_parent()` except the
@@ -52,6 +55,18 @@
 * Added explicit duplicate-set policies: `"error"`, `"drop"`, and `"keep"`.
 * Changed the default display label to `"Total"`; `.margin_label = NULL`
   preserves grouping-column types and typed missing values.
+* `.check_margin_label` controls only the half of the Margin label collision
+  check that reads the data: whether an actual value of a Margin dimension
+  equals its display label. It defaults to `TRUE` for local data frames and
+  `FALSE` for lazy inputs, which are read only when asked. A label equal to a
+  declared factor level is rejected on every backend whatever this argument
+  says, because the level is already known from the column's metadata and
+  finding it sends no query (#122).
+* Added `.check_share_source` to `summarize_with_margins()`, `TRUE` by
+  default on every backend, including lazy ones, for the same reason: a share
+  source's eligibility can be established without reading your data, so the
+  check runs unless you opt out. See `share_of_parent()` and
+  `share_of_total()` above.
 * DuckDB and PostgreSQL use native `GROUPING SETS`; other backends use the
   portable `UNION ALL` adapter.
 * `summarize_with_margins()`, `summarise_with_margins()`,
