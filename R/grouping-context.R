@@ -235,12 +235,12 @@ grouping_helper_vars <- function(args, helper, plan) {
     abort_marginplyr(not_a_column_message)
   }
 
-  if (identical(helper, "grouping_bit") && length(args) != 1L) {
+  if (identical(helper, "grouping_bit") && length(carried) != 1L) {
     abort_marginplyr(
       "`grouping_bit()` requires exactly one column."
     )
   }
-  if (identical(helper, "grouping_id") && length(args) == 0L) {
+  if (identical(helper, "grouping_id") && length(carried) == 0L) {
     abort_marginplyr(
       "`grouping_id()` requires at least one column."
     )

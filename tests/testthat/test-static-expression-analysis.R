@@ -444,7 +444,7 @@ test_that("a selection inside a quosure resolves in the quosure's own env", {
 marginplyr_owned_spellings <- function() {
   owned <- Filter(
     function(family) {
-      identical(static_spelling_rule(family)$namespaces, "marginplyr")
+      identical(static_spelling_namespaces(family), "marginplyr")
     },
     contextual_helper_families()
   )

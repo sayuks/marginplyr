@@ -22,7 +22,7 @@
   where writing that expression out would be — now saying what was injected
   (#169). Asking that question once also settles an empty argument the share
   helpers had admitted: `share_of_total(x = )` reported an unknown preceding
-  summary named `` , and is now refused for not being a bare name.
+  summary whose name was empty, and is now refused for not being a bare name.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level
   up, partitioned by the fixed `.by` keys. Local data frames, dbplyr, and
