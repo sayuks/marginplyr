@@ -13,6 +13,7 @@ summarize_with_margins(
   .margin_label = "Total",
   .margin_label_position = c("last", "first"),
   .check_margin_label = is.data.frame(.data),
+  .check_share_source = TRUE,
   .duplicates = c("error", "drop", "keep"),
   .id = NULL,
   .sort = c("none", "last", "first")
@@ -26,6 +27,7 @@ summarise_with_margins(
   .margin_label = "Total",
   .margin_label_position = c("last", "first"),
   .check_margin_label = is.data.frame(.data),
+  .check_share_source = TRUE,
   .duplicates = c("error", "drop", "keep"),
   .id = NULL,
   .sort = c("none", "last", "first")
@@ -77,6 +79,17 @@ margin row and a source row that no grouping column tells apart; keeping
 \code{\link[=grouping_bit]{grouping_bit()}} or \code{\link[=grouping_id]{grouping_id()}} in the result distinguishes them at no
 added cost. See \emph{Display labels and grouping identity} for the factor
 missing-value contract.}
+
+\item{.check_share_source}{A logical scalar, \code{TRUE} by default on every
+backend, including lazy ones: establishing that a share's source summary
+is an eligible type reads none of your data. \code{FALSE} calculates a
+requested \code{\link[=share_of_parent]{share_of_parent()}} or \code{\link[=share_of_total]{share_of_total()}} from a source whose
+eligibility marginplyr could not establish, which is a SQL dialect that
+converts a value of another type to a number rather than refusing it, and
+a backend that could not be asked which of those it does. It changes
+nothing where the rule can be applied — a local data frame, a \code{dtplyr}
+step, and a database that refuses an ineligible summary itself all apply
+it whatever this argument says. See \emph{Contextual shares}.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}

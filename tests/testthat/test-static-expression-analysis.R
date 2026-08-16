@@ -3252,12 +3252,17 @@ test_that("a lazy plan reads a quoted expression as data too", {
   # `quote()` holds rather than carrying it, so a name no column has fails at
   # build time. Round-tripping language is a local guarantee; what holds on
   # every backend is that this package's analysis leaves the expression alone.
+  # A simulated connection answers no query, so it cannot say what its dialect
+  # does with an ineligible share source and the default refuses the share.
+  # What this asserts is the planning either side of that, so it asks for the
+  # share the connection cannot vouch for.
   shared <- summarize_with_margins(
     postgres,
     units = sum(value),
     share = share_of_total(units),
     label = deparse1(quote(value)),
-    .grouping = rollup(region)
+    .grouping = rollup(region),
+    .check_share_source = FALSE
   )
   expect_s3_class(shared, "tbl_lazy")
   expect_match(
@@ -3278,7 +3283,8 @@ test_that("a lazy plan reads a quoted expression as data too", {
       units = sum(value),
       share = share_of_total(units),
       label = deparse1(quote(share)),
-      .grouping = rollup(region)
+      .grouping = rollup(region),
+      .check_share_source = FALSE
     ),
     error = function(cnd) cnd
   )

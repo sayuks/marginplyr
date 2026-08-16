@@ -47,6 +47,16 @@
 #'   [grouping_bit()] or [grouping_id()] in the result distinguishes them at no
 #'   added cost. See *Display labels and grouping identity* for the factor
 #'   missing-value contract.
+#' @param .check_share_source A logical scalar, `TRUE` by default on every
+#'   backend, including lazy ones: establishing that a share's source summary
+#'   is an eligible type reads none of your data. `FALSE` calculates a
+#'   requested [share_of_parent()] or [share_of_total()] from a source whose
+#'   eligibility marginplyr could not establish, which is a SQL dialect that
+#'   converts a value of another type to a number rather than refusing it, and
+#'   a backend that could not be asked which of those it does. It changes
+#'   nothing where the rule can be applied — a local data frame, a `dtplyr`
+#'   step, and a database that refuses an ineligible summary itself all apply
+#'   it whatever this argument says. See *Contextual shares*.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping sets after expansion.
 #' @param .sort One of `"none"` (the default), `"last"`, or `"first"`. `"none"`
@@ -631,6 +641,7 @@ summarize_with_margins <- function(.data,
                                    .margin_label = "Total",
                                    .margin_label_position = c("last", "first"),
                                    .check_margin_label = is.data.frame(.data),
+                                   .check_share_source = TRUE,
                                    .duplicates = c("error", "drop", "keep"),
                                    .id = NULL,
                                    .sort = c("none", "last", "first")) {
@@ -652,6 +663,7 @@ summarize_with_margins <- function(.data,
         duplicates_choices = margin_duplicates_choices,
         .id = .id
       )
+      assert_logical_scalar(.check_share_source)
       check_option_named_summaries(dots)
       check_summary_context_helpers(dots)
       preflight_shares(dots)
@@ -673,11 +685,15 @@ summarize_with_margins <- function(.data,
     validate_grouping = share_grouping_spec_validator(share_kinds),
     call = call
   )
-  execution <- execute_margin_summary(operation, dots)
+  execution <- execute_margin_summary(
+    operation,
+    dots,
+    check_share_source = .check_share_source
+  )
   finalize_margin_operation(operation, execution)
 }
 
-execute_margin_summary <- function(operation, dots) {
+execute_margin_summary <- function(operation, dots, check_share_source) {
   check_margin_operation(operation)
   with_margin_error_call(
     {
@@ -742,7 +758,7 @@ execute_margin_summary <- function(operation, dots) {
             operation,
             staged_result = staged_result,
             requests = summary_plan$requests,
-            summary_dots = dots
+            check_share_source = check_share_source
           ),
           sort_id = margin_summary_stage_sort_id(staged_result)
         ))
