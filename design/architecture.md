@@ -142,7 +142,8 @@ collision query.
 
 Owns what a summary expression *says*, and decides nothing about it: the name
 and namespace a call carries, the head and arguments a walk descends into and
-the node rebuilt around them, which arguments a call captures as language
+the node rebuilt around them, the expression an argument carries when it
+arrived as an injected quosure, which arguments a call captures as language
 rather than evaluating, which primitives resolve a name or evaluate language,
 and which language object a call is statically known to build.
 

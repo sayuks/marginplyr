@@ -414,9 +414,11 @@ The decision above fixes how a Contextual helper's *spelling* is resolved and
 says nothing about the arguments it reads. #169 is that question, asked of the
 four helpers marginplyr owns, each of which takes a bare name —
 `grouping_bit()` and `grouping_id()` a grouping column, `share_of_parent()` and
-`share_of_total()` a preceding ordinary summary. All four tested for one with
-`rlang::is_symbol()`, and a quosure carrying a bare symbol is not a symbol, so
-each refused the standard tidy-eval wrapper:
+`share_of_total()` a preceding ordinary summary. All four asked whether the
+argument was a symbol — the grouping helpers through `is_name_part()`, which
+#181 had already given them, and the share helpers through
+`rlang::is_symbol()` — and a quosure carrying a bare symbol is not one, so each
+refused the standard tidy-eval wrapper:
 
 ```r
 level_by <- function(data, col) {
