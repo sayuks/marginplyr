@@ -212,16 +212,219 @@ test_that("factor collisions include unused levels and stay column-specific", {
     fixed = TRUE
   )
 
-  result <- summarize_with_margins(
-    data,
-    n = dplyr::n(),
-    .grouping = rollup(first, second),
-    .margin_label = c(first = "All first", second = "All second"),
-    .margin_label_position = "first",
-    .check_margin_label = FALSE
+  both <- expect_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = rollup(first, second),
+      .margin_label = c(first = "All first", second = "All second")
+    ),
+    "grouping columns `first`, `second`"
   )
-  expect_identical(levels(result$first), c("All first", "a", "b"))
-  expect_identical(levels(result$second), c("All second", "x", "y"))
+  expect_match(conditionMessage(both), "are already factor levels")
+})
+
+# The other half of the check reads the data and is what `.check_margin_label`
+# opts into; this half reads the levels marginplyr already holds, so there is
+# nothing to opt into and the argument does not reach it (ADR 0020).
+test_that("a declared collision is rejected however the label check is set", {
+  data <- data.frame(
+    group = factor(c("a", "b"), levels = c("a", "b", "All")),
+    value = 1:2
+  )
+
+  for (check in list(TRUE, FALSE)) {
+    error <- expect_error(
+      summarize_with_margins(
+        data,
+        n = dplyr::n(),
+        .grouping = rollup(group),
+        .margin_label = "All",
+        .check_margin_label = check
+      ),
+      "already a factor level in grouping column `group`",
+      fixed = TRUE
+    )
+    expect_s3_class(error, "marginplyr_error")
+    # Turning the read off is not a remedy for a collision no read found, so
+    # the diagnostic must not send a caller to that argument.
+    expect_no_match(
+      conditionMessage(error),
+      ".check_margin_label",
+      fixed = TRUE
+    )
+  }
+})
+
+test_that("a check with no column left to read contacts nothing", {
+  factor_info <- list(
+    list(
+      col = "group",
+      levels = c("a", "b"),
+      ordered = FALSE,
+      has_na_in_level = FALSE,
+      preserve_missing_value = TRUE
+    )
+  )
+  # A sentinel with no dplyr methods: any attempt to read it fails rather than
+  # aggregating a set of constants, which is what a factor-only check used to
+  # send to a lazy backend.
+  unreadable <- structure(list(), class = "marginplyr_unreadable_input")
+
+  expect_error(dplyr::select(unreadable, dplyr::all_of("group")))
+  expect_no_error(check_observed_label_collision(
+    unreadable,
+    margin_labels = list(group = "All"),
+    factor_info = factor_info
+  ))
+  expect_no_error(check_observed_label_collision(
+    unreadable,
+    margin_labels = list(group = NULL),
+    factor_info = list()
+  ))
+  # A missing label asks whether the column holds a missing value, which the
+  # levels do not record, so that one still reads.
+  expect_error(check_observed_label_collision(
+    unreadable,
+    margin_labels = list(group = NA_character_),
+    factor_info = factor_info
+  ))
+})
+
+test_that("dtplyr rejects a declared collision and stays silent on a value", {
+  skip_if_backend_absent("dtplyr")
+  data <- data.frame(
+    declared = factor(c("a", "b"), levels = c("a", "b", "Total")),
+    observed = c("Total", "x"),
+    value = 1:2
+  )
+
+  # `.check_margin_label` defaults to `FALSE` here, because the input is lazy.
+  error <- expect_error(
+    summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      n = dplyr::n(),
+      .grouping = rollup(declared)
+    ),
+    "already a factor level in grouping column `declared`",
+    fixed = TRUE
+  )
+  expect_s3_class(error, "marginplyr_error")
+
+  expect_no_error(
+    query <- summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      n = dplyr::n(),
+      bit = grouping_bit(observed),
+      .grouping = rollup(observed)
+    )
+  )
+  result <- dplyr::collect(query)
+  colliding <- result[result$observed == "Total", , drop = FALSE]
+  expect_identical(nrow(colliding), 2L)
+  expect_setequal(colliding$bit, c(0L, 1L))
+
+  expect_error(
+    summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      n = dplyr::n(),
+      .grouping = rollup(observed),
+      .check_margin_label = TRUE
+    ),
+    "already present in grouping column `observed`",
+    fixed = TRUE
+  )
+})
+
+# The reproduction #122 was filed with, on the backend it was filed against.
+# DuckDB carries a factor as an `ENUM`, so its levels arrive through the
+# zero-row read ADR 0020 exempts rather than as a factor column, which is a
+# different route to the same rejection than the one dtplyr takes above.
+test_that("DuckDB rejects a declared collision without being asked", {
+  skip_if_backend_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(
+      g = factor(c("a", "(all)", "b"), levels = c("a", "(all)", "b")),
+      v = c(1, 2, 3)
+    ),
+    "margin_label_declared",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  expect_error(
+    summarize_with_margins(
+      remote,
+      t = sum(v, na.rm = TRUE),
+      .grouping = rollup(g),
+      .margin_label = "(all)"
+    ),
+    "already a factor level in grouping column `g`",
+    fixed = TRUE
+  )
+
+  # A label that collides with nothing leaves the genuine level where it was.
+  result <- dplyr::collect(summarize_with_margins(
+    remote,
+    t = sum(v, na.rm = TRUE),
+    .grouping = rollup(g),
+    .margin_label = "Total"
+  ))
+  expect_identical(levels(result$g), c("a", "(all)", "b", "Total"))
+})
+
+# The silence is the contract, so it is asserted rather than left to the
+# absence of a failing expectation: a later change to `.check_margin_label`'s
+# default has to fail here instead of passing quietly. SQLite is where the
+# whole collision is observed -- it carries no factor type, so the level that
+# is declared in the source data frame reaches the database as text and the
+# check above it has nothing to read the collision off.
+test_that("RSQLite leaves an observed collision silent until it is asked", {
+  skip_if_backend_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(
+      group = factor(c("Total", "x"), levels = c("Total", "x")),
+      value = 1:2
+    ),
+    "margin_label_silence",
+    temporary = TRUE
+  )
+
+  expect_no_error(
+    query <- summarize_with_margins(
+      remote,
+      total = sum(value, na.rm = TRUE),
+      bit = grouping_bit(group),
+      .grouping = rollup(group)
+    )
+  )
+  result <- dplyr::collect(query)
+  colliding <- result[result$group == "Total", , drop = FALSE]
+
+  # What the silence costs: two rows the grouping column cannot tell apart,
+  # and a Grouping bit that can.
+  expect_identical(nrow(colliding), 2L)
+  expect_setequal(colliding$bit, c(0L, 1L))
+  expect_setequal(as.numeric(colliding$total), c(1, 3))
+
+  expect_error(
+    summarize_with_margins(
+      remote,
+      total = sum(value, na.rm = TRUE),
+      .grouping = rollup(group),
+      .check_margin_label = TRUE
+    ),
+    "already present in grouping column `group`",
+    fixed = TRUE
+  )
 })
 
 test_that("dtplyr applies mixed named labels lazily and restores factors", {

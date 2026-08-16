@@ -398,6 +398,8 @@ test_that("margin label checks handle missing and non-syntactic columns", {
     "grouping columns `first group`, `second group`"
   )
 
+  # A value of a factor column is a level of it, so this collision is declared
+  # and is reported as one.
   factors <- data.frame(
     group = factor(c("Total", "x")),
     value = 1:2
@@ -408,7 +410,7 @@ test_that("margin label checks handle missing and non-syntactic columns", {
       n = dplyr::n(),
       .grouping = rollup(group)
     ),
-    "already present"
+    "already a factor level"
   )
 
   empty <- missing[0, , drop = FALSE]

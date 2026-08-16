@@ -1,10 +1,14 @@
+# `x4` carries a level no value uses, which reconstruction has to keep. It used
+# to carry the Margin name itself, which `margin_factor_levels()` deduplicated
+# away and re-appended; that state is now rejected before anything executes
+# (ADR 0020), and the function asserts its absence rather than handling it.
 test_that("reconstruct_factor() works with data.frame", {
   x <- c("a", "b", "c", NA_character_)
   data <- data.frame(
     x1 = factor(x),
     x2 = factor(x, ordered = TRUE),
     x3 = factor(x, exclude = NULL),
-    x4 = factor(x, levels = c("a", "b", "c", "aaa"))
+    x4 = factor(x, levels = c("a", "b", "c", "d"))
   )
 
   l_info <- lapply(
@@ -53,7 +57,7 @@ test_that("reconstruct_factor() works with data.frame", {
       ),
       x4 = factor(
         c("a", "b", "c", NA),
-        levels = c("a", "b", "c", "aaa")
+        levels = c("a", "b", "c", "d", "aaa")
       )
     )
   )
@@ -67,7 +71,7 @@ test_that("reconstruct_factor() works with duckdb", {
     x1 = factor(x),
     x2 = factor(x, ordered = TRUE),
     x3 = factor(x, exclude = NULL),
-    x4 = factor(x, levels = c("a", "b", "c", "aaa"))
+    x4 = factor(x, levels = c("a", "b", "c", "d"))
   )
 
   con <- duckdb_test_connection()
@@ -115,7 +119,7 @@ test_that("reconstruct_factor() works with duckdb", {
       x1 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa")),
       x2 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa")),
       x3 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa")),
-      x4 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "aaa"))
+      x4 = factor(c("a", "b", "c", NA), levels = c("a", "b", "c", "d", "aaa"))
     )
   )
 })
@@ -128,7 +132,7 @@ test_that("reconstruct_factor() works with dtplyr_step", {
     x1 = factor(x),
     x2 = factor(x, ordered = TRUE),
     x3 = factor(x, exclude = NULL),
-    x4 = factor(x, levels = c("a", "b", "c", "aaa"))
+    x4 = factor(x, levels = c("a", "b", "c", "d"))
   )
 
   data <- dtplyr::lazy_dt(data)
@@ -182,7 +186,7 @@ test_that("reconstruct_factor() works with dtplyr_step", {
       ),
       x4 = factor(
         c("a", "b", "c", NA),
-        levels = c("a", "b", "c", "aaa")
+        levels = c("a", "b", "c", "d", "aaa")
       )
     )
   )
