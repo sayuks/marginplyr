@@ -141,8 +141,26 @@ reads_call_arguments <- function(expr) {
        identical(expr[[3L]], "call_args"))
 }
 
+# A list built elementwise from such a list is one too. `lapply()` hands each
+# argument to a function and collects what comes back, so an empty argument that
+# went in is an empty argument that came out, and the hazard travels with it.
+# `grouping_helper_vars()` and `validate_share_direct_syntax()` both read their
+# arguments through one to see through an injected quosure (#169), so without
+# this the scans below would read a loop over what they carry as a loop over
+# something else -- the same under-reach the shared matcher above was written to
+# close, arriving through a second list rather than through a second spelling.
+derives_call_arguments <- function(expr, locals) {
+  is.call(expr) &&
+    identical(expr[[1L]], quote(lapply)) &&
+    length(expr) >= 2L &&
+    is_call_arguments(expr[[2L]], locals)
+}
+
 # The names a body binds to such a list, so that a loop over one, or a
-# subscript of one, is read as reaching the arguments themselves.
+# subscript of one, is read as reaching the arguments themselves. Accumulated in
+# source order, which is what lets a list derived from an earlier local be
+# recognized: the assignment naming it is visited before the one deriving from
+# it.
 call_argument_locals <- function(expr, found = character()) {
   if (!is.call(expr)) {
     return(found)
@@ -151,7 +169,8 @@ call_argument_locals <- function(expr, found = character()) {
     identical(expr[[1L]], quote(`<-`)) &&
       length(expr) == 3L &&
       is.symbol(expr[[2L]]) &&
-      reads_call_arguments(expr[[3L]])
+      (reads_call_arguments(expr[[3L]]) ||
+         derives_call_arguments(expr[[3L]], found))
   ) {
     found <- unique(c(found, as.character(expr[[2L]])))
   }
@@ -247,6 +266,17 @@ test_that("the walk scan detects the shape it is written to forbid", {
       part
     }
   }
+  # And over a list built elementwise from one, which is how both helpers now
+  # read through an injected quosure (#169). The empty argument survives the
+  # `lapply()` that unwraps, so the loop it would be read with is the same
+  # hazard one list further along.
+  through_derived <- function(expr) {
+    args <- static_call_args(expr)
+    carried <- lapply(args, unwrap_injected_quosure)
+    for (part in carried) {
+      part
+    }
+  }
   compliant <- function(expr) {
     parts <- static_call_args(expr)
     for (index in seq_along(parts)) {
@@ -258,6 +288,7 @@ test_that("the walk scan detects the shape it is written to forbid", {
   expect_true(binds_call_parts_with_for(body(nested)))
   expect_true(binds_call_parts_with_for(body(through_local)))
   expect_true(binds_call_parts_with_for(body(through_parsed)))
+  expect_true(binds_call_parts_with_for(body(through_derived)))
   expect_false(binds_call_parts_with_for(body(compliant)))
   # An empty argument in the scanned code must not abort the scan, which is the
   # bug one level up.
@@ -348,6 +379,14 @@ test_that("the assignment scan detects the shape it is written to forbid", {
     part <- static_call_args(expr)[[1L]]
     part
   }
+  # The same subscript, one list along: what `lapply()` collected from a call's
+  # arguments holds an empty one wherever the arguments did (#169).
+  through_derived <- function(expr) {
+    args <- static_call_args(expr)
+    carried <- lapply(args, unwrap_injected_quosure)
+    part <- carried[[1L]]
+    part
+  }
   compliant_local <- function(expr) {
     parts <- static_call_args(expr)
     rlang::is_symbol(parts[[1L]])
@@ -362,6 +401,7 @@ test_that("the assignment scan detects the shape it is written to forbid", {
   expect_true(binds_call_parts_by_assign(body(through_parsed_local)))
   expect_true(binds_call_parts_by_assign(body(through_string_element)))
   expect_true(binds_call_parts_by_assign(body(through_reader)))
+  expect_true(binds_call_parts_by_assign(body(through_derived)))
   expect_false(binds_call_parts_by_assign(body(compliant_local)))
   # An ordinary list read is not the shape, or the scan would name most of the
   # package and mean nothing.

@@ -401,10 +401,21 @@ unwrap_injected_quosure <- function(part) {
 # the property #163 and #165 were each filed over. Naming the injection and
 # what it carries says which of the two spellings is being refused.
 #
-# It takes the whole argument list rather than one part, so it stays silent
-# when the refusal is about something else -- an arity, or an expression
-# written with no injection at all -- and names the first injected quosure that
-# is not a name when it is not.
+# It takes the whole argument list rather than one part, because the part that
+# arrived injected need not be the one a positional message would name. It says
+# nothing where no argument is an injected non-name, which is what keeps it out
+# of a refusal that has nothing to do with an injection.
+#
+# Which messages compose it is each caller's decision and not this function's,
+# and the two callers decide it differently on purpose. The share helper's
+# headline covers the arity and the name-ness together -- "exactly one bare
+# name" -- so a two-argument call carrying an injected non-name is described by
+# both halves and takes the clause. `grouping_bit()` counts columns in a message
+# of its own, deliberately reached before the non-column one (#181), and a
+# caller who passed two of anything needs that count rather than a remark about
+# one of them; so that message does not compose the clause and this cannot add
+# it. What is one answer across the four helpers is which injected forms are
+# accepted, not which diagnostic wins when a caller has made two mistakes.
 injected_quosure_clause <- function(parts) {
   injected <- vapply(
     parts,
@@ -418,18 +429,22 @@ injected_quosure_clause <- function(parts) {
   }
   paste0(
     " The injected quosure carries `",
-    static_part_label(unwrap_injected_quosure(parts[[which(injected)[[1L]]]])),
+    call_part_label(unwrap_injected_quosure(parts[[which(injected)[[1L]]]])),
     "`, which is not a bare name."
   )
 }
 
-# How an expression is written back into a diagnostic that refuses it for not
-# being a name. `rlang::as_label()` is the house spelling elsewhere and is the
-# wrong one here: it reads `.data$region` as `region`, so a message saying the
-# part is not a bare name would quote it as one. `deparse1()` gives back what
-# the caller wrote. The empty argument deparses to nothing at all, and is named
-# as rlang names it rather than as an empty pair of backticks.
-static_part_label <- function(part) {
+# How a call part is written back into a diagnostic that refuses it for not
+# being a name. Named for what it does rather than with the `static_` prefix the
+# readers above carry: those answer what a node *is*, and this one turns one
+# into text.
+#
+# `rlang::as_label()` is the house spelling elsewhere and is the wrong one here:
+# it reads `.data$region` as `region`, so a message saying the part is not a
+# bare name would quote it as one. `deparse1()` gives back what the caller
+# wrote. The empty argument deparses to nothing at all, and is named as rlang
+# names it rather than as an empty pair of backticks.
+call_part_label <- function(part) {
   if (rlang::is_missing(part)) {
     return("<empty>")
   }

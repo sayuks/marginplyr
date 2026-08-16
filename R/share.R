@@ -1458,10 +1458,18 @@ validate_share_direct_syntax <- function(expr, output_name) {
   args <- static_call_args(expr)
   # Read through an injected quosure for the reason `unwrap_injected_quosure()`
   # gives, and asked with `is_name_part()` rather than `rlang::is_symbol()` so
-  # that the question here is the same question `grouping_helper_vars()` asks
-  # of a bare grouping column. One answer covers all four helpers, which is what
-  # #169 asks for; the empty argument the second half excludes cannot reach this
-  # arity anyway, since `f(, )` is two arguments to the parser.
+  # that the question here is the same question `grouping_helper_vars()` asks of
+  # a bare grouping column. One answer covers all four helpers, which is what
+  # #169 asks for.
+  #
+  # The second half of that question is not inert here, and the arity is what
+  # makes it reachable: `share_of_total(, )` is two arguments to the parser and
+  # is refused for the count, but `share_of_total(x = )` is *one* argument and
+  # it is empty. `rlang::is_symbol()` answered `TRUE` for it, because the empty
+  # argument is a symbol whose name is `""`, so the call was admitted and
+  # refused one layer on for an unknown preceding summary named `` -- a summary
+  # nobody wrote, which is #181's defect reached in the share family. That is a
+  # change to an un-injected spelling and is recorded as one in ADR 0019.
   carried <- lapply(args, unwrap_injected_quosure)
   if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
     abort_marginplyr(

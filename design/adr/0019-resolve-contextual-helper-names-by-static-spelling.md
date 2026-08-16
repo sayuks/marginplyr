@@ -482,19 +482,52 @@ the carried expression with `deparse1()` rather than with `rlang::as_label()`,
 the house spelling elsewhere: `as_label()` reads `.data$region` as `region`, so
 a message saying the part is not a bare name would quote it as one.
 
-**Where the reading lives.** `unwrap_injected_quosure()` and
-`injected_quosure_clause()` sit in `R/utils.R` beside `is_name_part()` and
-`static_call_args()`, which is where the shared readers of a call's parts
-already are, so the four helpers ask one question rather than four. The
-unwrapping is a recursion and not a `while` loop, because the loop form assigns
-the carried expression to a name and a quosure carrying the empty argument then
-raises base R's untyped `missingArgError` — the #168 hazard `static_call_args()`
-already documents, reached by a different route.
+**Where the reading lives.** `unwrap_injected_quosure()`,
+`injected_quosure_clause()`, and `call_part_label()` sit in `R/utils.R` beside
+`is_name_part()` and `static_call_args()`, which is where the shared readers of
+a call's parts already are, so the four helpers ask one question rather than
+four. The unwrapping is a recursion and not a `while` loop, because the loop
+form assigns the carried expression to a name and a quosure carrying the empty
+argument then raises base R's untyped `missingArgError` — the #168 hazard
+`static_call_args()` already documents, reached by a different route. The scan
+in `test-utils.R` that enforces that hazard is extended to follow a list built
+elementwise from a call's arguments, which is what both helpers now read
+through.
 
-**Recorded behaviour change.** Two, both a refusal becoming an acceptance or a
-better-worded refusal; no result changes into a different result.
+**The clause is composed by the message, not by the argument.** A caller can
+make two mistakes at once, and which diagnostic wins is each helper's own
+decision rather than the clause's. The share helpers' headline covers the arity
+and the name-ness together — "exactly one bare name" — so a two-argument call
+carrying an injected non-name takes the clause. `grouping_bit()` counts columns
+in a message of its own, reached before the non-column one deliberately (#181),
+because a caller who passed two of anything needs the count rather than a
+remark about one of them; that message does not compose the clause. What #169
+requires to be one answer across the four helpers is *which injected forms are
+accepted*, and that is one answer.
+
+**Recorded behaviour change.** Three, each a refusal becoming an acceptance or
+a better-worded refusal; no result changes into a different result.
 `DESCRIPTION`'s `Config/marginplyr/cran-status` reads `unpublished`, so no
 released version carried the old behaviour.
+
+The third is not about injection, and it is recorded here because it is a
+change to an un-injected spelling, which #169 fenced off as out of scope.
+Asking the name question once meant asking it with `is_name_part()` in the
+share helpers too, where it had been `rlang::is_symbol()`. That is not
+behaviour-neutral: the empty argument is a symbol whose name is `""`, and
+`share_of_total(x = )` is *one* argument and empty, so it was admitted and
+refused one layer on as
+
+```
+Total share `k` refers to unknown preceding ordinary summary ``.
+```
+
+which names a summary nobody wrote — #181's defect, in the family that ticket
+did not reach. It is now the share helpers' own "exactly one bare name"
+refusal. Restoring `rlang::is_symbol()` on that branch was the alternative and
+was rejected: it would reinstate a diagnostic describing input the caller did
+not write, which is the property this whole amendment exists to remove, and it
+would leave the four helpers asking two different questions to preserve it.
 
 **Test strategy.** The four helpers are derived from `static_spelling_rules()`
 as the registered spellings marginplyr owns *and* declares Contextual, so a
@@ -508,3 +541,7 @@ acceptance case injects a quosure built on the *empty* environment, so it
 asserts the environment answer in the same expectation as the acceptance one,
 and the refusal case asserts message equality with the written spelling plus
 the clause, which is what stops the injected form reporting a different fault.
+A caller's two mistakes at once are a case of their own, since which message
+wins is a per-helper decision that no equality above would notice changing, and
+so is the named empty argument, which is the only writing that reaches the
+un-injected change recorded above.

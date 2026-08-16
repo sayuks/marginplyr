@@ -442,19 +442,24 @@ test_that("a selection inside a quosure resolves in the quosure's own env", {
 # arguments are evaluated in the caller's environment rather than read against
 # the Grouping plan -- which is the answer #169 turns on.
 marginplyr_owned_spellings <- function() {
-  rules <- lapply(static_spelling_rules(), function(rule) rule())
   owned <- Filter(
-    function(rule) {
-      identical(rule$namespaces, "marginplyr") && isTRUE(rule$contextual)
+    function(family) {
+      identical(static_spelling_rule(family)$namespaces, "marginplyr")
     },
-    rules
+    contextual_helper_families()
   )
-  sort(unlist(lapply(owned, `[[`, "names"), use.names = FALSE))
+  sort(unlist(lapply(owned, static_spelling_names), use.names = FALSE))
 }
 
 # A data frame every probe below reads: two dimensions so a `rollup()` of them
 # has a parent level for a Parent share to divide by, and a measure for the
 # preceding ordinary summary a share helper takes the name of.
+#
+# Its own fixture rather than the one `test-contextual-helpers.R` builds, which
+# is a near neighbour: that file varies the *head* spelling and needs a column
+# for a selection to pick more than one of, and this one varies the *argument*
+# and needs a parent level instead. Sharing one would make a column added for
+# either suite's next case appear in the other's.
 injection_probe_data <- function() {
   data.frame(
     region = c("E", "E", "W", "W"),
@@ -647,6 +652,77 @@ test_that("an injected quosure carrying the empty argument is named as one", {
     conditionMessage(error),
     "The injected quosure carries `<empty>`",
     fixed = TRUE
+  )
+})
+
+test_that("a caller's two mistakes at once are reported by one message", {
+  # An injected non-name in a call that also has the wrong arity. Which
+  # diagnostic wins is each helper's own decision rather than the clause's, and
+  # the two decide it differently on purpose, so it is asserted rather than left
+  # to the message equality above -- which compares one helper against itself
+  # and would not notice either decision changing.
+  data <- injection_probe_data()
+  injected <- rlang::new_quosure(quote(1 + 1), env = rlang::empty_env())
+
+  # `grouping_bit()` counts columns in a message of its own, reached before the
+  # non-column one deliberately (#181): a caller who passed two of anything
+  # needs the count, not a remark about one of them.
+  counted <- expect_error(rlang::inject(summarize_with_margins(
+    data,
+    k = grouping_bit(!!injected, region),
+    .grouping = rollup(region, grade)
+  )))
+  expect_s3_class(counted, "marginplyr_error")
+  expect_identical(
+    conditionMessage(counted),
+    "`grouping_bit()` requires exactly one column."
+  )
+
+  # The share helpers' headline covers the arity and the name-ness together, so
+  # both halves describe this call and the clause says which argument is the
+  # one it is talking about.
+  named <- expect_error(rlang::inject(summarize_with_margins(
+    data,
+    t = sum(units),
+    k = share_of_total(!!injected, t),
+    .grouping = rollup(region, grade)
+  )))
+  expect_s3_class(named, "marginplyr_error")
+  expect_match(
+    conditionMessage(named),
+    "The injected quosure carries `1 + 1`, which is not a bare name.",
+    fixed = TRUE
+  )
+})
+
+test_that("a share helper refuses a named empty argument as a non-name", {
+  # Not an injected spelling, and recorded in ADR 0019 as the one un-injected
+  # change asking the name question once produced. `share_of_total(, )` is two
+  # arguments to the parser and is refused for the count, but
+  # `share_of_total(x = )` is one argument and it is empty, and
+  # `rlang::is_symbol()` answered `TRUE` for it -- the empty argument is a
+  # symbol whose name is `""`. So the call was admitted and refused one layer on
+  # for a preceding summary named ``, which is a summary nobody wrote: #181's
+  # defect, in the family that ticket did not reach.
+  data <- injection_probe_data()
+
+  error <- expect_error(summarize_with_margins(
+    data,
+    t = sum(units),
+    k = share_of_total(x = ),
+    .grouping = rollup(region, grade)
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error),
+    "requires exactly one bare name of a preceding ordinary summary",
+    fixed = TRUE
+  )
+  # The old diagnostic named the summary it invented, which is what makes the
+  # regression readable: an assertion on the new wording alone would pass on any
+  # refusal at all.
+  expect_false(
+    grepl("unknown preceding", conditionMessage(error), fixed = TRUE)
   )
 })
 
