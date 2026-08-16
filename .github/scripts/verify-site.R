@@ -374,7 +374,12 @@ markers <- list(
     "Missing fixed and included keys",
     "where(is.numeric)",
     ".unpack = TRUE",
-    "runtime-only incompatibilities"
+    "runtime-only incompatibility",
+    # What a general dbplyr backend does instead of reading the caller's data
+    # (ADR 0020). This page is the canonical reference for both helpers'
+    # source contract, so it is the page that has to carry the count, and the
+    # count is the part a later edit is most likely to drift back to "one".
+    "at most two queries"
   ),
   "docs/man/nest_with_margins.html" = c(
     "Relationship to tidyr and dplyr",
