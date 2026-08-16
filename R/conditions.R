@@ -74,28 +74,35 @@ with_branch_conditions <- function(expr, conditions) {
 # run in sequence, so the first error aborts the operation and no second
 # occurrence is ever raised.
 restate_branch_error <- function(cnd, conditions) {
-  if (is.character(cnd$message)) {
-    cnd$message <- restate_margin_keys(cnd$message, conditions$keys)
-  }
-  # `$body` is a character vector of bullets here, but rlang also admits a
-  # function that renders them, which nothing can substitute into.
-  if (is.character(cnd$body)) {
-    cnd$body <- restate_margin_keys(cnd$body, conditions$keys)
-  }
+  cnd <- restate_condition_names(cnd, conditions$keys)
   if (!is.null(conditions$call)) {
     cnd$call <- conditions$call
   }
   cnd
 }
 
+# The grouping-value bullet is `$body` for an error and part of the rendered
+# `$message` for a warning, so both are rewritten in place rather than one
+# being rendered into the other: replacing a structured condition's `$message`
+# with everything `conditionMessage()` rendered would print its body and its
+# cause twice.
+restate_condition_names <- function(cnd, keys) {
+  if (is.character(cnd$message)) {
+    cnd$message <- restate_margin_keys(cnd$message, keys)
+  }
+  # `$body` is a character vector of bullets here, but rlang also admits a
+  # function that renders them, which nothing can substitute into.
+  if (is.character(cnd$body)) {
+    cnd$body <- restate_margin_keys(cnd$body, keys)
+  }
+  cnd
+}
+
 # A warning arrives as one condition per branch whose message dplyr has already
 # aggregated, flattened, and rendered: `$parent` is `NULL` and there is no
-# `$body`, so the text is all there is to restate and all there is to compare.
+# `$body`, so the text is all there is to compare.
 buffer_branch_warning <- function(cnd, conditions) {
-  cnd$message <- restate_margin_keys(
-    paste(conditionMessage(cnd), collapse = "\n"),
-    conditions$keys
-  )
+  cnd <- restate_condition_names(cnd, conditions$keys)
   cause <- branch_warning_cause(cnd)
 
   buffered <- conditions$warnings
@@ -112,58 +119,47 @@ buffer_branch_warning <- function(cnd, conditions) {
 # Two occurrences are repetitions of one condition when they agree on cause:
 # the class, the diagnostic, and the argument the warning is attributed to. The
 # class is read from the condition; the other two are what is left of the
-# message once the parts that necessarily differ between grouping sets are
-# removed -- which groups raised the warning, how many of that branch's groups
-# did, and dplyr's pointer at the store holding the rest.
+# rendered message once the parts that necessarily differ between grouping sets
+# are removed -- which groups raised the warning, how many of that branch's
+# groups did, and dplyr's pointer at the store holding the rest.
 #
-# The text half reads a format dplyr does not promise, and is chosen for which
+# The comparison runs on the message with every run of whitespace collapsed,
+# because how the message is laid out is not part of what it says: cli wraps a
+# bullet it cannot fit, indenting the continuation of one it recognizes and not
+# the continuation of dplyr's opening sentence, so matching by line made the
+# console width and the length of the grouping values decide whether a Repeated
+# condition was one condition. Measured on the ticket's own reproduction, whose
+# values are one and four characters long: three reports at 60 columns, four at
+# 40, and two anywhere in 15 to 24.
+#
+# What is left reads a format dplyr does not promise, and is chosen for which
 # way it fails: wording dplyr changes stops matching, the causes stay distinct,
 # and every occurrence is reported, which is what happens today. It can never
 # collapse a warning that genuinely differs. Both bullet spellings are matched
 # because the leading symbol is cli's and follows `cli.unicode`.
 branch_warning_cause <- function(cnd) {
-  lines <- unwrap_message_lines(
-    strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+  bullet <- "(?:i|\u2139) "
+  text <- gsub("[[:space:]]+", " ", conditionMessage(cnd))
+  # A grouping-value bullet runs to whatever opens the next part of the
+  # message, which after collapsing is the only boundary left to read.
+  text <- gsub(
+    paste0(bullet, "In group .*?(?=", bullet, "|! |Caused by |$)"),
+    "",
+    text,
+    perl = TRUE
   )
-  bullet <- "^[i\u2139] "
-  varying <- grepl(paste0(bullet, "In group "), lines) |
-    grepl(paste0(bullet, "Run `dplyr::last_dplyr_warnings\\(\\)`"), lines) |
-    lines == "The first warning was:" |
-    # The count sentence opens the message, and only there is it dplyr's rather
-    # than something the caller's own diagnostic happens to say. Indexing by
-    # the whole sequence rather than the first element is what leaves a message
-    # of no lines at all -- which dplyr's aggregation does not produce, but
-    # nothing outside it promises either -- a cause rather than an error.
-    (seq_along(lines) == 1L & grepl("^There (were|was) ", lines))
-  paste(c(class(cnd), lines[!varying]), collapse = "\n")
-}
-
-# Every bullet as the one line it was written as. cli wraps a bullet it cannot
-# fit onto continuation lines indented by two spaces, so which lines a message
-# holds is a function of the console width and of how long the grouping values
-# are -- and a group bullet matched line by line then survives the removal
-# above from its second line on.
-#
-# Without this, the console width decides whether a Repeated condition is one
-# condition. Measured on the ticket's own `cube(region, grade)` reproduction,
-# whose values are one and four characters long: one warning at width 80,
-# three at 60, and four at 40. A `.by` key or a realistic value produces it at
-# any width.
-#
-# Rejoining can only lose text that cli indented under the line above it, which
-# is what a wrap is; a caller's own indented line is rejoined into the
-# diagnostic it follows and stays part of the cause.
-unwrap_message_lines <- function(lines) {
-  wrapped <- grepl("^  ", lines) & seq_along(lines) > 1L
-  if (!any(wrapped)) {
-    return(lines)
-  }
-  unname(vapply(
-    split(sub("^ +", "", lines), cumsum(!wrapped)),
-    paste,
-    character(1),
-    collapse = " "
-  ))
+  text <- sub(
+    paste0(bullet, "Run `dplyr::last_dplyr_warnings\\(\\)`.*$"),
+    "",
+    text,
+    perl = TRUE
+  )
+  # Only the count is dropped from the opening sentence; the call it names is
+  # the same in every branch, and dropping the sentence whole would take a
+  # caller's own diagnostic with it whenever dplyr raised exactly one warning.
+  text <- sub("^There (?:was|were) [0-9]+ warnings? in ", "", text, perl = TRUE)
+  text <- sub("The first warning was: ", "", text, fixed = TRUE)
+  paste(c(class(cnd), trimws(text)), collapse = "\n")
 }
 
 # Replays what the branches withheld: one report per distinct cause, each

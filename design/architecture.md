@@ -105,8 +105,8 @@ caller-quosure evaluations fixed. The replacement covers the argument the
 position owns and not a part of one: a specification written inside a
 selection keeps tidyselect's report, which names the sub-selection and is
 accurate about it. Every other selection failure is re-raised as it arrived,
-so an External condition still reaches the caller with its own class and
-provenance.
+so an External condition still reaches the caller with its own class,
+diagnostic, and cause.
 
 ### Margin label (`R/margin-label.R`)
 

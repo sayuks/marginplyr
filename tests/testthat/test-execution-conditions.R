@@ -30,15 +30,11 @@ summarize_coercion_cube <- function() {
 # #108's reproduction: an error from the caller's own expression, which aborts
 # the first branch that raises it.
 summarize_failing_rollup <- function() {
-  # `g` is a column of the frame above it; see the note in
-  # `summarize_coercion_cube()`.
-  # nolint start: object_usage_linter.
   summarize_with_margins(
     data.frame(g = c("a", "b"), v = c(1, 2)),
     x = stop("my error"),
-    .grouping = rollup(g)
+    .grouping = rollup(dplyr::all_of("g"))
   )
-  # nolint end
 }
 
 # Every warning a call raises, not just the first: the whole subject here is
@@ -57,9 +53,13 @@ collect_warnings <- function(expr) {
 }
 
 # `expr` is forced inside `collect_warnings()`, so it is rendered at the width
-# set here.
+# set here. `cli.condition_width` is the one that has to be set: testthat's own
+# `local_reproducible_output()` sets it to `Inf` so that a snapshot does not
+# depend on the pane it was recorded in, and rlang consults it ahead of
+# `cli.width` -- so a test that set `cli.width` alone would render every case
+# unwrapped and pass whatever the code did.
 collect_warnings_at_width <- function(width, expr) {
-  original <- options(cli.width = width)
+  original <- options(cli.width = width, cli.condition_width = width)
   on.exit(options(original), add = TRUE)
   collect_warnings(expr)
 }
@@ -85,13 +85,14 @@ test_that("a reported warning names the caller's own grouping columns", {
   expect_false(grepl("marginplyr_key", message, fixed = TRUE))
 })
 
-# cli wraps a bullet it cannot fit onto continuation lines, so how many lines a
-# warning message holds is a function of the console width and of how long the
-# grouping values are. Which grouping set raised a warning is no more part of
-# its identity when the bullet naming it wrapped: at 60 columns this reproduced
-# three reports of one condition, and at 40 it reproduced four.
+# cli wraps a bullet it cannot fit, so how a warning message is laid out is a
+# function of the console width and of how long the grouping values are. Which
+# grouping set raised a warning is no more part of its identity when the bullet
+# naming it wrapped: this reproduction gave three reports of one condition at
+# 60 columns, four at 40, and two anywhere in 15 to 24, where dplyr's opening
+# sentence wraps and cli does not indent what it wraps it onto.
 test_that("a repeated warning is one report at any console width", {
-  for (width in c(80L, 60L, 40L, 20L)) {
+  for (width in c(80L, 60L, 40L, 20L, 16L)) {
     warnings <- collect_warnings_at_width(width, summarize_coercion_cube())
 
     expect_length(warnings, 1L)
@@ -242,7 +243,7 @@ test_that("a lazy input leaves its execution warnings to the caller", {
   )
 
   collected <- collect_warnings(dplyr::collect(query))
-  expect_true(length(collected) > 1L)
+  expect_gt(length(collected), 1L)
   expect_true(all(vapply(
     collected,
     function(cnd) grepl("NAs introduced by coercion", conditionMessage(cnd)),
@@ -251,17 +252,8 @@ test_that("a lazy input leaves its execution warnings to the caller", {
 })
 
 test_that("the reported conditions read as they are written", {
-  data <- data.frame(g = c("a", "b"), v = c(1, 2))
-  warnings <- collect_warnings(summarize_with_margins(
-    coercion_frame(),
-    total = sum(as.numeric(grade)),
-    .grouping = cube(region, grade)
-  ))
-  error <- expect_error(summarize_with_margins(
-    data,
-    x = stop("my error"),
-    .grouping = rollup(g)
-  ))
+  warnings <- collect_warnings(summarize_coercion_cube())
+  error <- expect_error(summarize_failing_rollup())
 
   # Targeted snapshots: a structural assertion would not catch a dplyr
   # formatting change, which is the whole reason the deduplication key is
