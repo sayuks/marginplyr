@@ -30,6 +30,13 @@
   denominator, so it accepts any Grouping specification whose plan contains a
   Grand total set — `rollup()`, `cube()`, and any `grouping_sets()` including
   an empty `grouping_set()`.
+* Each of those four contextual helpers takes a bare name, and accepts one
+  forwarded by injection: a function of your own can pass either
+  `!!rlang::enquo(col)` or `!!rlang::ensym(col)`. Only the name is read. It is
+  resolved against the Grouping plan or among the preceding summaries, so the
+  environment `rlang::enquo()` captured is not consulted, and an injection
+  carrying anything but a name is refused exactly where writing that expression
+  out would be, saying what was injected (#169).
 * Added `inspect_grouping()` for reading the resolved Grouping plan as an
   ordinary local tibble, without executing a Margin operation.
 * Added `.id` to every Margin verb for one-based Grouping set occurrence

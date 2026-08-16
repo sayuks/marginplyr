@@ -142,7 +142,8 @@ collision query.
 
 Owns what a summary expression *says*, and decides nothing about it: the name
 and namespace a call carries, the head and arguments a walk descends into and
-the node rebuilt around them, which arguments a call captures as language
+the node rebuilt around them, the expression an argument carries when it
+arrived as an injected quosure, which arguments a call captures as language
 rather than evaluating, which primitives resolve a name or evaluate language,
 and which language object a call is statically known to build.
 
@@ -162,6 +163,17 @@ separate question it answers separately — `static_callee_name()` resolves
 `get("f")` and its siblings to the primitive they name, because the share
 dependency walk has to over-report a lookup it cannot see through rather than
 recognize a helper by it.
+
+Saying what a part is written as belongs here for the same reason as reading
+it. `call_part_label()` writes one back into a diagnostic and
+`injected_quosure_clause()` says that an argument arrived by injection and what
+it carries (#169) — both report what the expression says and neither
+decides anything about it, since which message composes the clause, and whether
+to refuse at all, stays with the analysis that asked. Two refusals in different
+modules describe the same written form, so the words for it are one module's
+rather than each caller's; `rlang::as_label()` reading `.data$region` as
+`region` is the kind of thing that would otherwise be got right in one of them
+and not the other.
 
 Four analyses read through it and each decides for itself — the share
 dependency walk, the two rewrites, and the three searches — so the module is

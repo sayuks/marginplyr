@@ -114,8 +114,9 @@ package_functions <- function() {
 }
 
 # Where a list of a call's arguments comes from: the shared reader, the rlang
-# function it wraps, or the `call_args` element of a parse this package builds
-# out of one, in either spelling of the element read.
+# function it wraps, the reader that unwraps each of them through an injected
+# quosure, or the `call_args` element of a parse this package builds out of one,
+# in either spelling of the element read.
 #
 # One matcher serves both scans below, because the hazard is one hazard: a list
 # reached this way holds elements that may be empty, whichever construct then
@@ -123,6 +124,14 @@ package_functions <- function() {
 # `static_call_args()` call alone, so the same loop over a local -- the shape
 # `removal_retained_bound()` sits one line away from -- passed both gates while
 # the prose above claimed otherwise.
+#
+# `unwrap_injected_args()` is here rather than recognized as an `lapply()` over
+# one of the others, which is what it is (#169): a mapping spelled out at each
+# call site would have to be matched by the function being mapped, and
+# `grouping_helper_vars()` is handed its arguments as a parameter, so nothing in
+# its body says the list it maps over is a call's arguments at all. A reader
+# with a name is what this list is written to hold, and adding one to it is how
+# the package says a list of parts came from somewhere new.
 reads_call_arguments <- function(expr) {
   if (!is.call(expr)) {
     return(FALSE)
@@ -130,7 +139,8 @@ reads_call_arguments <- function(expr) {
   head <- expr[[1L]]
   named_reader <-
     identical(head, quote(static_call_args)) ||
-    identical(head, quote(rlang::call_args))
+    identical(head, quote(rlang::call_args)) ||
+    identical(head, quote(unwrap_injected_args))
   if (named_reader) {
     return(TRUE)
   }
@@ -247,6 +257,26 @@ test_that("the walk scan detects the shape it is written to forbid", {
       part
     }
   }
+  # And over the reader that unwraps each argument through an injected quosure,
+  # whose result is a list of parts like any other: the empty argument goes into
+  # the unwrapping and comes out of it (#169). Once through a list the same body
+  # read, and once in a function handed its arguments -- the shape
+  # `grouping_helper_vars()` has, and the one the reader has to be recognized by
+  # its name for, since nothing else in such a body says where the list came
+  # from.
+  through_derived <- function(expr) {
+    args <- static_call_args(expr)
+    carried <- unwrap_injected_args(args)
+    for (part in carried) {
+      part
+    }
+  }
+  through_derived_parameter <- function(args) {
+    carried <- unwrap_injected_args(args)
+    for (part in carried) {
+      part
+    }
+  }
   compliant <- function(expr) {
     parts <- static_call_args(expr)
     for (index in seq_along(parts)) {
@@ -258,6 +288,8 @@ test_that("the walk scan detects the shape it is written to forbid", {
   expect_true(binds_call_parts_with_for(body(nested)))
   expect_true(binds_call_parts_with_for(body(through_local)))
   expect_true(binds_call_parts_with_for(body(through_parsed)))
+  expect_true(binds_call_parts_with_for(body(through_derived)))
+  expect_true(binds_call_parts_with_for(body(through_derived_parameter)))
   expect_false(binds_call_parts_with_for(body(compliant)))
   # An empty argument in the scanned code must not abort the scan, which is the
   # bug one level up.
@@ -348,6 +380,20 @@ test_that("the assignment scan detects the shape it is written to forbid", {
     part <- static_call_args(expr)[[1L]]
     part
   }
+  # The same subscript, one list along: what the unwrapping reader collected
+  # from a call's arguments holds an empty one wherever the arguments did
+  # (#169). Read from a local and from a parameter, as above.
+  through_derived <- function(expr) {
+    args <- static_call_args(expr)
+    carried <- unwrap_injected_args(args)
+    part <- carried[[1L]]
+    part
+  }
+  through_derived_parameter <- function(args) {
+    carried <- unwrap_injected_args(args)
+    part <- carried[[1L]]
+    part
+  }
   compliant_local <- function(expr) {
     parts <- static_call_args(expr)
     rlang::is_symbol(parts[[1L]])
@@ -362,6 +408,8 @@ test_that("the assignment scan detects the shape it is written to forbid", {
   expect_true(binds_call_parts_by_assign(body(through_parsed_local)))
   expect_true(binds_call_parts_by_assign(body(through_string_element)))
   expect_true(binds_call_parts_by_assign(body(through_reader)))
+  expect_true(binds_call_parts_by_assign(body(through_derived)))
+  expect_true(binds_call_parts_by_assign(body(through_derived_parameter)))
   expect_false(binds_call_parts_by_assign(body(compliant_local)))
   # An ordinary list read is not the shape, or the scan would name most of the
   # package and mean nothing.

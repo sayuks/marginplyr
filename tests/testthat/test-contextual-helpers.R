@@ -19,19 +19,9 @@
 # below supplies one per Contextual helper and is checked against the registry,
 # so a spelling added without a probe fails here rather than going uncovered.
 
-# A data frame every probe reads. Two numeric columns so that a selection can
-# select more than one, and two dimensions so that a rollup and a cube of them
-# differ -- which is what the constructor case below needs to tell a caller's
-# own function from the package's.
-contextual_probe_data <- function() {
-  data.frame(
-    region = c("E", "E", "W", "W"),
-    grade = c("a", "b", "a", "b"),
-    units = c(1, 2, 3, 4),
-    qty = c(4, 5, 6, 7),
-    stringsAsFactors = FALSE
-  )
-}
+# The input every probe reads is `contextual_probe_data()`, in
+# `helper-contextual-probes.R` because the other suite probing these helpers
+# reads the same one.
 
 # One call per Contextual helper, as an expression rather than as a closure.
 # It has to be an expression because the shadow the assertions install is a

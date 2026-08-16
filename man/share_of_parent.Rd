@@ -451,6 +451,14 @@ zero denominators. Infinite values and backend-specific \code{NaN}
 representations are outside that guarantee because supported SQL dialects
 do not share one portable finite-value predicate. Normalize potentially
 non-finite summaries explicitly with operations supported by the backend.
+
+A function of your own may forward the name its caller wrote by injecting
+it: \code{!!rlang::enquo(name)} is accepted wherever a bare name is, and so is
+\code{!!rlang::ensym(name)}. Only the name is read. It is resolved among the
+preceding summaries, as every bare name here is, so the environment
+\code{\link[rlang:enquo]{rlang::enquo()}} captured is not consulted and an injection carrying
+anything but a name is refused exactly where writing that expression out
+would be.
 }
 
 \examples{

@@ -407,3 +407,167 @@ foreign-qualifier writings are asserted to *differ*, which is what stops the
 agreement being two calls that both fail the same way, and the unresolvable
 heads are asserted unrecognized so that the boundary is a case rather than a
 sentence.
+
+## Amendment: an injected name is read for the name it carries
+
+The decision above fixes how a Contextual helper's *spelling* is resolved and
+says nothing about the arguments it reads. #169 is that question, asked of the
+four helpers marginplyr owns, each of which takes a bare name —
+`grouping_bit()` and `grouping_id()` a grouping column, `share_of_parent()` and
+`share_of_total()` a preceding ordinary summary. All four asked whether the
+argument was a symbol — the grouping helpers through `is_name_part()`, which
+#181 had already given them, and the share helpers through
+`rlang::is_symbol()` — and a quosure carrying a bare symbol is not one, so each
+refused the standard tidy-eval wrapper:
+
+```r
+level_by <- function(data, col) {
+  q <- rlang::enquo(col)
+  summarize_with_margins(
+    data,
+    level = grouping_id(!!q),
+    .grouping = rollup(region)
+  )
+}
+level_by(d, region)
+#> Error: `grouping_id()` only accepts bare grouping columns.
+```
+
+The caller did write a bare grouping column, one call further out. That is the
+property #163 and #165 were each filed over: a diagnostic describing the
+caller's input incorrectly. There was a workaround — `!!rlang::ensym(col)`
+injects a symbol and has always worked — which is why the severity was low, and
+nothing in the message said so.
+
+**The rule.** An argument read as a bare name is read through an injected
+quosure, however many deep, and only what it carries decides the answer. A
+quosure carrying a bare name *is* one. A quosure carrying anything else —
+`.data$region`, a string, a call, the empty argument — is refused exactly where
+that expression is refused when it is written out, and by the same diagnostic.
+
+It is one rule for all four helpers, and it mirrors the un-injected spelling
+rather than adding a second grammar for the injected one. Accepting a string
+under injection was the alternative, and was rejected for that reason: it would
+make `share_of_total("t")` a refusal and `share_of_total(!!rlang::quo("t"))` an
+acceptance, which is a difference no caller can be told the reason for.
+
+**The environment is discarded, and that follows from the decision above rather
+than sitting beside it.** A Contextual helper's argument is resolved against
+the Grouping plan, or among the preceding summaries, *by spelling* — never
+looked up in an environment — so there is no lookup for a quosure's environment
+to answer. Consulting it is not declined here; it is not possible, and the
+statement is what stops that reading like an omission.
+
+That is the opposite of the answer #165 reached one layer out, where a walk
+keeps a quosure's environment because a selection inside it really is evaluated
+there, and the two are one rule seen from two sides: **the environment is
+honoured wherever evaluation happens, and these arguments are never
+evaluated.** A caller who injects a quosure built where `region` is bound to
+something else gets the column `region`, exactly as writing `grouping_id(region)`
+does. The Grouping specification constructors are the case that shows the rule
+is about the criterion and not about ownership: they are marginplyr's too, and
+they are not Contextual helpers, so their nested arguments *are* evaluated and
+the caller's environment decides.
+
+**The diagnostic changes for every form that stays refused.** The headline is
+unchanged, because it is still the right thing to say about what the helper
+accepts, and a clause is added naming the injection and what it carries:
+
+```
+`grouping_id()` only accepts bare grouping columns. The injected quosure
+carries `.data$region`, which is not a bare name.
+```
+
+What the clause is for is not correcting the headline, which is accurate here —
+what it refuses really is not a bare name, the case where it is one having been
+accepted above. It is that the expression the headline is about is not on the
+page the caller is reading: the source says `grouping_id(!!q)`, and nothing in
+`only accepts bare grouping columns` says what `q` turned out to hold. The
+written spellings need no clause because there the refused expression is
+written out. The reader who *did* write a bare name is answered by the rule
+rather than by any message, since their call now works.
+
+The clause is absent from a refusal that has nothing to do with an injection,
+which is what stops it describing a mistake in the other direction. It writes
+the carried expression with `deparse1()` rather than with `rlang::as_label()`,
+the house spelling elsewhere: `as_label()` reads `.data$region` as `region`, so
+a message saying the part is not a bare name would quote it as one.
+
+**Where the reading lives.** `unwrap_injected_quosure()`,
+`unwrap_injected_args()`, `injected_quosure_clause()`, and `call_part_label()`
+sit in `R/utils.R` beside `is_name_part()` and `static_call_args()`, which is
+where the shared readers of a call's parts already are, so the four helpers ask
+one question rather than four. The unwrapping is a recursion and not a `while`
+loop, because the loop form assigns the carried expression to a name and a
+quosure carrying the empty argument then raises base R's untyped
+`missingArgError` — the #168 hazard `static_call_args()` already documents,
+reached by a different route.
+
+`unwrap_injected_args()` is a named reader over a whole argument list rather
+than an `lapply()` spelled out at each call site, and that is what keeps the
+same hazard's gate derived: the scans in `test-utils.R` recognize a list of call
+parts by the reader that produced it, so adding a reader to that list is how
+this package says a list of parts came from somewhere new. Why a mapping cannot
+be recognized in a reader's place is recorded beside that scan.
+
+`injected_quosure_clause()` reads the arguments as written rather than what the
+unwrapping carried out of them, because whether a part arrived injected is
+precisely the fact the unwrapping discards and precisely the fact the clause
+reports.
+
+**The clause is composed by the message, not by the argument.** A caller can
+make two mistakes at once, and which diagnostic wins is each helper's own
+decision rather than the clause's. The share helpers' headline covers the arity
+and the name-ness together — "exactly one bare name" — so a two-argument call
+carrying an injected non-name takes the clause. `grouping_bit()` counts columns
+in a message of its own, reached before the non-column one deliberately (#181),
+because a caller who passed two of anything needs the count rather than a
+remark about one of them; that message does not compose the clause. What #169
+requires to be one answer across the four helpers is *which injected forms are
+accepted*, and that is one answer.
+
+**Recorded behaviour change.** Three, each a refusal becoming an acceptance or
+a better-worded refusal; no result changes into a different result.
+`DESCRIPTION`'s `Config/marginplyr/cran-status` reads `unpublished`, so no
+released version carried the old behaviour.
+
+Two are the rule and the diagnostic above: an injected quosure carrying a bare
+name is now accepted where all four helpers refused it, and one carrying
+anything else is refused with a clause naming the injection.
+
+The third is not about injection, and it is recorded here because it is a
+change to an un-injected spelling, which #169 fenced off as out of scope.
+Asking the name question once meant asking it with `is_name_part()` in the
+share helpers too, where it had been `rlang::is_symbol()`. That is not
+behaviour-neutral: the empty argument is a symbol whose name is `""`, and
+`share_of_total(x = )` is *one* argument and empty, so it was admitted and
+refused one layer on as
+
+```
+Total share `k` refers to unknown preceding ordinary summary ``.
+```
+
+which names a summary nobody wrote — #181's defect, in the family that ticket
+did not reach. It is now the share helpers' own "exactly one bare name"
+refusal. Restoring `rlang::is_symbol()` on that branch was the alternative and
+was rejected: it would reinstate a diagnostic describing input the caller did
+not write, which is the property this whole amendment exists to remove, and it
+would leave the four helpers asking two different questions to preserve it.
+
+**Test strategy.** The four helpers are derived from `static_spelling_rules()`
+as the registered spellings marginplyr owns *and* declares Contextual, so a
+fifth owned Contextual helper fails the coverage assertion rather than
+inheriting an answer nobody decided. Both halves of that criterion do work:
+none of the dplyr-owned families reads a bare name — a selection, a predicate
+function, and nothing at all, across the three — and the constructors are owned
+but not Contextual. Each helper's probe is a function from the argument to the whole
+call, since the argument is the only thing that varies, and the refused shapes
+are derived from the bare name that helper takes rather than written out. The
+acceptance case injects a quosure built on the *empty* environment, so it
+asserts the environment answer in the same expectation as the acceptance one,
+and the refusal case asserts message equality with the written spelling plus
+the clause, which is what stops the injected form reporting a different fault.
+A caller's two mistakes at once are a case of their own, since which message
+wins is a per-helper decision that no equality above would notice changing, and
+so is the named empty argument, which is the only writing that reaches the
+un-injected change recorded above.

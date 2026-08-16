@@ -363,6 +363,118 @@ is_name_part <- function(part) {
   !rlang::is_missing(part) && rlang::is_symbol(part)
 }
 
+# What an injected quosure carries, and the part itself where there is none.
+# `rlang::enquo()` is what the tidy-eval idiom hands the author of a wrapper, so
+# `!!rlang::enquo(col)` is the ordinary spelling for forwarding the bare column
+# that wrapper's own caller wrote. A quosure is not a symbol, so a helper
+# reading a bare name refused one while telling the caller they had not written
+# a bare name -- which they had, one call further out (#169). Read through this
+# before asking what a part is, and the injected spelling gets the answer the
+# written one gets, rather than a second answer of its own.
+#
+# The recursion is not defensive: a quosure can carry another, and one level of
+# unwrapping would hand the test back the shape it was written to see through.
+# It is written as a recursion rather than as a `while` loop for the reason
+# `static_call_args()` gives above: the loop form assigns the carried expression
+# to a name, so a quosure carrying the empty argument raised base R's untyped
+# `missingArgError` naming this function's own parameter. Handed on as an
+# argument the same value forces without error, and returned it stays a value.
+#
+# What this does not carry across is the environment, and that is the decision
+# rather than a limitation. A Contextual helper's argument is resolved against
+# the Grouping plan by spelling and is never looked up in an environment
+# (ADR 0019), so there is no lookup for a quosure's environment to answer. That
+# is the opposite of the answer #165 reached one layer out, where a walk keeps a
+# quosure's environment because a selection inside it really is evaluated there,
+# and both follow the one rule: the environment is honoured wherever evaluation
+# happens, and these arguments are never evaluated.
+unwrap_injected_quosure <- function(part) {
+  if (!rlang::is_quosure(part)) {
+    return(part)
+  }
+  unwrap_injected_quosure(rlang::quo_get_expr(part))
+}
+
+# The same reading over a whole argument list, which is how both validators of
+# a bare name use it -- `grouping_helper_vars()` for the two grouping helpers
+# and `validate_share_direct_syntax()` for the two share helpers.
+#
+# It is a named function rather than an `lapply()` spelled out at those two
+# sites, and that is load-bearing rather than tidiness: the empty-argument scans
+# in `test-utils.R` recognize a list of a call's parts by the reader that
+# produced it, so inlining this would put both callers outside the gate. Why a
+# mapping cannot be recognized in a reader's place is recorded there, beside the
+# scan that would have to do it.
+unwrap_injected_args <- function(args) {
+  lapply(args, unwrap_injected_quosure)
+}
+
+# What a diagnostic adds when the part it refuses arrived by injection. What is
+# refused here really is not a bare name -- the case where it is one is accepted
+# above and reaches no diagnostic at all -- so the headline is accurate and the
+# clause is not there to correct it. It is there because the expression the
+# headline is about does not appear at the call the caller is reading: the
+# source says `grouping_id(!!q)`, and nothing in `only accepts bare grouping
+# columns` says what `q` turned out to hold. The written spellings need no such
+# clause, because there the refused expression is on the page (#169).
+#
+# It takes the whole argument list rather than one part, because the part that
+# arrived injected need not be the one a positional message would name. It says
+# nothing where no argument is an injected non-name, which is what keeps it out
+# of a refusal that has nothing to do with an injection.
+#
+# And it takes the arguments as they were written rather than what
+# `unwrap_injected_args()` carried out of them, which is the one thing its
+# callers cannot pass instead: whether a part arrived injected is exactly the
+# fact the unwrapping discards, and it is the fact this reports. Unwrapping the
+# one part it names a second time is the price of that, over an argument list
+# whose length a caller typed.
+#
+# Which messages compose it is each caller's decision and not this function's,
+# and the two callers decide it differently on purpose. The share helper's
+# headline covers the arity and the name-ness together -- "exactly one bare
+# name" -- so a two-argument call carrying an injected non-name is described by
+# both halves and takes the clause. `grouping_bit()` counts columns in a message
+# of its own, deliberately reached before the non-column one (#181), and a
+# caller who passed two of anything needs that count rather than a remark about
+# one of them; so that message does not compose the clause and this cannot add
+# it. What is one answer across the four helpers is which injected forms are
+# accepted, not which diagnostic wins when a caller has made two mistakes.
+injected_quosure_clause <- function(parts) {
+  injected <- vapply(
+    parts,
+    function(part) {
+      rlang::is_quosure(part) && !is_name_part(unwrap_injected_quosure(part))
+    },
+    logical(1)
+  )
+  if (!any(injected)) {
+    return("")
+  }
+  paste0(
+    " The injected quosure carries `",
+    call_part_label(unwrap_injected_quosure(parts[[which(injected)[[1L]]]])),
+    "`, which is not a bare name."
+  )
+}
+
+# How a call part is written back into a diagnostic that refuses it for not
+# being a name. Named for what it does rather than with the `static_` prefix the
+# readers above carry: those answer what a node *is*, and this one turns one
+# into text.
+#
+# `rlang::as_label()` is the house spelling elsewhere and is the wrong one here:
+# it reads `.data$region` as `region`, so a message saying the part is not a
+# bare name would quote it as one. `deparse1()` gives back what the caller
+# wrote. The empty argument deparses to nothing at all, and is named as rlang
+# names it rather than as an empty pair of backticks.
+call_part_label <- function(part) {
+  if (rlang::is_missing(part)) {
+    return("<empty>")
+  }
+  deparse1(part)
+}
+
 # `head` defaults to the head the node already has, which is what every walk
 # wants: a rewrite of a call's arguments is not a rewrite of what it calls.
 # Passing one is how a recognized spelling is written back qualified
