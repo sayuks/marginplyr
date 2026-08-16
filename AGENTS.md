@@ -493,6 +493,28 @@ one job body also closed #73, which asked for an assertion that every job
 withholding optional backends checks a tarball: with a single body there is no
 second shape for such a job to have.
 
+### Queries against a lazy input
+
+marginplyr sends no query that reads a lazy input's data unless the caller
+asked for one, with the two exemptions ADR 0020 enumerates. A change that adds
+a `collect()`, `compute()`, or any other execution entry point to `R/` is
+therefore a change to a public contract, not an implementation detail, and is
+justified against that ADR in the same commit — or made conditional on an
+argument the caller sets.
+
+The snapshots in `test-query-policy.R` are what make such a change visible
+rather than assumed: one records the internal functions that reach an execution
+entry point, one records the set of entry points scanned for, and one records
+which backend kinds hold `collect_selection_proxy`. A scan that stopped
+covering an entry point would otherwise report a clean result, which reads
+exactly like a package that added none. They run only where `NOT_CRAN` is set.
+
+Deciding by billing model is the option that was rejected, and
+`investigation/query-cost-across-lazy-backends.md` records why: four models are
+in use across the backends dbplyr reaches, two of them appear under one
+`grouping_backend()` kind, and `is.data.frame()` is the only predicate that
+answers whether an external system is involved at all.
+
 ## Agent skills
 
 ### Issue tracker

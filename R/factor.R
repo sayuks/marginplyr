@@ -38,18 +38,25 @@ reconstruct_factor_vector <- function(x,
 }
 
 margin_factor_levels <- function(info, .margin_name, position) {
-  other_levels <- info$levels[vapply(
-    info$levels,
-    function(level) !identical(level, .margin_name),
-    logical(1)
-  )]
+  # An invariant, not a Package condition (ADR-0015). A label equal to a
+  # declared level is rejected before anything executes and whatever
+  # `.check_margin_label` says (ADR 0020): every Margin verb calls
+  # `validate_margin_operation()` before the `finalize_margin_operation()` that
+  # calls `restore_margin_factors()`, which is the only caller of this. A level
+  # equal to the label would otherwise be deduplicated away and re-appended,
+  # moving it to the end of the levels for no reason a caller could see.
+  stopifnot(
+    "A Margin label equal to a declared factor level reached execution." =
+      !(.margin_name %in% info$levels)
+  )
+
   # The assignment is this function's return value, which codetools reads as a
   # dead store.
   # nolint start: object_usage_linter.
   new_levels <- if (identical(position, "first")) {
-    c(.margin_name, other_levels)
+    c(.margin_name, info$levels)
   } else {
-    c(other_levels, .margin_name)
+    c(info$levels, .margin_name)
   }
   # nolint end
 }

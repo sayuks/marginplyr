@@ -472,3 +472,43 @@ parent-selection model exists. That deferral is about selecting a parent, and
 why it does not reach a denominator that is not selected: `share_of_total()`
 accepts any plan containing a Grand total set, while this restriction on
 `share_of_parent()` still stands.
+
+## Amendment: the eligible-type rule is established without reading a row
+
+The decision above stands: the eligible-type rule is enforced on every backend,
+and no backend calculates a share from a source shown to be ineligible. What is
+withdrawn is the read that established it and the reasoning that admitted the
+read.
+
+"One read bounded in rows requested and returned" was offered as a cost
+argument and is not one.
+`investigation/query-cost-across-lazy-backends.md` records that a `LIMIT` does
+not reduce the bytes BigQuery bills for a non-clustered table, that a one-row
+query starting a Snowflake warehouse costs a minute of credits, that every read
+on Aurora Standard is a billable I/O request, and that Athena bills a failed
+query like a successful one — and the read was wrapped in a handler that
+discards its error, so a query the caller pays for could produce nothing at
+all. ADR 0020 replaces the reasoning with a rule that does not price backends.
+
+The read also did not establish what it was taken to establish.
+`investigation/share-source-eligibility-on-coercing-dialects.md` measures
+`sum(<text column>)` returning a genuine `0` on RSQLite where DuckDB raises, so
+the eligible-type rule receives an eligible type for an ineligible source and
+accepts it; `share_of_total()` over such a source reproduces #106's own symptom
+on the dialect #106 was filed about. A read of one row cannot answer the
+question on a dialect that converts, and on a dialect that refuses, the
+database's own refusal already answers it.
+
+Eligibility is therefore established without reading a row of the caller's
+data. Where the backend evaluates the summary and refuses an ineligible one,
+that refusal is the answer and reaches the caller as the database's diagnostic
+at collection. Where the dialect converts instead of refusing, no answer is
+available and the share is refused rather than calculated —
+`.check_share_source = FALSE` calculates it anyway. Which case a dialect is in
+is measured once per dialect by at most two queries that reference none of the
+caller's tables — a probe, and a control sent only when the probe is rejected,
+so that a dialect which refuses is told apart from one whose scaffolding or
+connection failed — and the internal denominator column is named after the
+summary to rewrite, so that a database's own diagnostic names something the
+caller wrote rather than an internal identifier alone, which
+was #106's DuckDB half.

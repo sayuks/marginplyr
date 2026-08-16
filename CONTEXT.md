@@ -64,6 +64,14 @@ label represented by `NULL` use a typed missing value instead of a synthetic
 factor level.
 _Avoid_: Total value, missing-value replacement
 
+**Margin label collision**:
+A grouping dimension holding, as one of its own values, the Margin label
+chosen for it — so that a margin row and a row of the source data cannot be
+told apart by that column. A collision is *declared* when the colliding value
+is a factor level, which the column's type records, and *observed* when it
+appears only among the column's values.
+_Avoid_: Duplicate label, ambiguous margin
+
 **Margin order**:
 The row order a Margin operation produces when it is asked to order its
 result. Within each fixed key, every grouping dimension contributes its
@@ -107,6 +115,20 @@ that contains a Grand total set, and are calculated independently within each
 fixed `.by` group, so a fixed key never contributes to another partition's
 denominator.
 _Avoid_: Percent of total, root share, grand total percentage
+
+**Converting dialect**:
+A SQL dialect that answers an aggregate over a value of the wrong type by
+converting it to a number rather than raising. Its opposite is a *refusing*
+dialect, which rejects the same aggregate. Which of the two a dialect is
+decides whether the eligible-type rule for a share source can be left to the
+database: a refusing dialect applies it and reports an ineligible source in
+its own diagnostic, while a converting dialect applies nothing and returns a
+number whatever the source held, so a share over one is refused unless the
+caller establishes the source themselves. It is a property of the dialect and
+not of one connection, so it is established once and reused for every later
+connection carrying that dialect. A dialect that could not be asked is neither,
+and is refused as a converting one is.
+_Avoid_: Coercing backend, lenient database, permissive SQL
 
 **Contextual helper**:
 A spelling whose meaning inside a Margin summary arises only through static

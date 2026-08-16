@@ -6,6 +6,36 @@ chosen by looking up the backend kind that the Margin operation already
 prepared — never by inspecting the class of the staged ordinary-summary
 result, and never by a chain of capability predicates rebuilt at this seam.
 
+## Amendment: the samplers are source checkers, and none of them samples
+
+The decision above stands in full: there are still two lookups keyed on the
+prepared backend kind, still with no default, and the adapter table is
+unchanged. What is withdrawn is the second table's subject. It selected a
+*sampler*, whose job was to obtain source values to judge, and ADR 0020
+removed the reading those values came from.
+
+Three things below therefore no longer describe the code:
+
+- The sampler table's `Bounded probe` row — `duckdb`, `postgres`, `sql`,
+  `other`, reading "One input row" — and the paragraph explaining that it
+  "reads the summaries a share reads … over one row of the input". Nothing
+  reads a row of the caller's data to apply the eligible-type rule. Those
+  kinds now reach `check_dialect_share_sources()`, which asks the dialect
+  itself, with at most two queries referencing none of the caller's tables.
+- `unsampled_share_sources()`, now `check_wrapped_share_sources()`. Its
+  assertion is unchanged and still load-bearing for the same reason: a kind
+  may only be left unasked because `wrap_share_sources()` put the rule inside
+  its ordinary summary.
+- The sampler signature's final argument. It was "the planned ordinary
+  summaries", which a sampler needed to build its read; a checker does not
+  read, and takes the verb's `.check_share_source` instead. The rule that
+  every entry shares one signature is unchanged, and is still what lets an
+  entry ignore an argument it has no use for.
+
+`share_source_sampler()` is `share_source_checker()`, and the lookup's shape,
+its lack of a default, and its grouping of kinds are all as decided above.
+See ADR 0020, which also withdraws ADR 0010's cost justification for the read.
+
 ## Decision
 
 Parent mapping, ratio calculation, and temporary-name cleanup are shared by

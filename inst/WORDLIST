@@ -2,6 +2,7 @@ ADR
 CMD
 Codecov
 DuckDB
+DuckDB's
 HANA
 ODBC
 Pre
@@ -33,6 +34,7 @@ tibble
 tidyr
 tidyselect
 unclamped
+unexecuted
 ungrouped
 vctrs
 yaml

@@ -257,11 +257,9 @@ points, and no other:
   execute; and
 - `execute_shares()`, called by `execute_margin_summary()`, which
   receives the prepared Margin operation, the staged ordinary-summary result,
-  all planned requests, and the planned ordinary summaries together. It takes
-  the summaries as well as the result they produced because a backend that
-  evaluates them in the database can only be told their types by a value it
-  returns, which `probe_share_sources()` reads by running them over one input
-  row.
+  all planned requests, and the verb's `.check_share_source`. It needs the
+  argument because whether a backend can establish an eligible source is
+  settled here, and a backend that cannot is refused rather than read.
 
 Planning and wrapping are two calls rather than one because the summary
 selections have to be resolved between them: the plan names which summaries a
@@ -285,18 +283,24 @@ The responsibilities divide as follows:
   output-name collisions against fixed keys, dimensions, ordinary summaries,
   the Grouping set identifier, and other contextual shares.
 - **Validation** applies one eligible-type rule to every backend, and only
-  where its source values come from is a backend question.
-  `check_share_source_types()` runs once above adapter selection, over
-  whatever `share_source_sampler()` could sample: the staged result itself
-  when it is materialized, one bounded read of the ordinary summaries over a
-  single input row when the backend evaluates them elsewhere, and nothing for
-  the lazy backends that carry the rule inside the summary. Local and dtplyr
-  operations wrap the referenced source summaries in a type-and-cardinality
-  validator inside the ordinary summary itself, so validation costs no extra
-  pass over the input and no validation-only query, and cardinality stays
-  theirs alone — a SQL aggregate returns one value per grouping row by
-  construction. A sample that answers nothing rejects nothing. Arrow is
-  rejected before any of this.
+  where its answer comes from is a backend question — never from a row of the
+  caller's data, which is ADR 0020. `share_source_checker()` chooses among
+  three answers, once above adapter selection. A materialized result carries
+  its summaries' own types, so `check_share_source_types()` reads them off it.
+  Local and dtplyr operations additionally wrap the referenced source
+  summaries in a type-and-cardinality validator inside the ordinary summary
+  itself, so validation costs no extra pass over the input and no
+  validation-only query, and cardinality stays theirs alone — a SQL aggregate
+  returns one value per grouping row by construction. A database applies the
+  rule itself and reports an ineligible summary at collection, unless its
+  dialect converts a value of another type to a number instead of refusing it,
+  in which case nothing applies the rule and the share is refused;
+  `share_dialect_verdict()` decides which, once per dialect, with at most two
+  queries referencing none of the caller's tables — a probe, and a control
+  sent only when the probe is rejected, so that a dialect which refuses is
+  told apart from one whose scaffolding or connection failed — and
+  `.check_share_source = FALSE` calculates the share anyway. Arrow is rejected
+  before any of this.
 - **Mapping** is the one responsibility a kind supplies for itself, through
   `share_denominator_rule()`: which occurrence each row's denominator comes
   from, and the denominator rows with the columns they are matched on. A
@@ -405,20 +409,21 @@ Direct field reads are confined to:
 - the three dedicated verb executors, for their schema-aware preflight and
   calls into low-level adapters;
 - `execute_shares()`, which reads the prepared backend kind to select an
-  adapter and a source sampler, and the caller-visible Grouping set identifier
+  adapter and a source checker, and the caller-visible Grouping set identifier
   name to restore it after the join;
-- the contextual-share source samplers, which read the input the operation
-  prepared and, for the one that asserts it may sample nothing, the backend
-  kind; and
+- the contextual-share source checkers, which read the prepared backend — its
+  kind, for the one that asserts it may check nothing, and its dialect, for
+  the one that asks whether that dialect converts — and the input it prepared;
+  and
 - the two contextual-share adapters, which read the Grouping plan and
   nothing else.
 
 The native and portable Grouping adapters receive the specific derived values
 they need, not the Margin operation itself. The contextual-share adapters and
-samplers take it whole because they are dispatch targets of one signature
-rather than independent entry points. This boundary lets the operation,
-Grouping plan, and backend representations change without spreading field
-access through public verbs or adapters.
+source checkers take it whole because they are dispatch targets of one
+signature rather than independent entry points. This boundary lets the
+operation, Grouping plan, and backend representations change without spreading
+field access through public verbs or adapters.
 
 ## Test seams
 
@@ -537,8 +542,8 @@ A backend change should:
 3. reuse the existing portable adapter unless native `GROUPING SETS` support
    is confirmed and covered by the native adapter contract;
 4. name the new backend kind in `share_adapter()` and in
-   `share_source_sampler()`, choosing one of the existing contextual-share
-   adapters and one of the existing source samplers, or adding one. Neither
+   `share_source_checker()`, choosing one of the existing contextual-share
+   adapters and one of the existing source checkers, or adding one. Neither
    lookup has a default: an unnamed kind stops the operation rather than
    falling through to a plausible-looking join. Answer
    `wraps_share_sources_in_summary()` for it as well — it is the third

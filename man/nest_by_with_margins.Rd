@@ -48,13 +48,19 @@ This controls the position of a non-missing synthetic label in factor and
 ordered-factor levels. It does not sort result rows and has no effect for
 \code{NA_character_} or \code{NULL}.}
 
-\item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
-dimension independently for a value or factor level that collides with its
-display label. \code{.margin_label = NULL} opts out of these checks. See
-\emph{Display labels and grouping identity} for the factor missing-value
-contract. Every Margin verb uses the same default: \code{TRUE} for local data
-frames and \code{FALSE} for lazy inputs, where checking would require an
-additional query.}
+\item{.check_margin_label}{A logical scalar controlling the half of the
+Margin label collision check that reads the data: whether any \emph{value} of a
+Margin dimension is equal to that dimension's display label. Each
+dimension is checked independently, and \code{.margin_label = NULL} opts out.
+Every Margin verb uses the same default: \code{TRUE} for local data frames and
+\code{FALSE} for lazy inputs, which are read only when the caller asks. A label
+equal to a declared factor \emph{level} is rejected on every backend whatever
+this argument says, because the levels are already known and finding it
+sends no query. Left unchecked, a colliding value gives the result a
+margin row and a source row that no grouping column tells apart; keeping
+\code{\link[=grouping_bit]{grouping_bit()}} or \code{\link[=grouping_id]{grouping_id()}} in the result distinguishes them at no
+added cost. See \emph{Display labels and grouping identity} for the factor
+missing-value contract.}
 
 \item{.duplicates}{\code{"error"} or \code{"drop"}. Nesting does not support the
 \code{"keep"} policy available in \code{\link[=summarize_with_margins]{summarize_with_margins()}} and
@@ -274,12 +280,12 @@ are names from \code{.by}.
 
 Non-missing labels convert ordinary grouping dimensions to character. A
 factor or ordered factor is reconstructed after the Margin operation,
-preserving ordered status and placing the synthetic level last by default
-or first when \code{.margin_label_position = "first"}. With collision checking
-enabled, the complete factor domain is checked, including unused levels.
-With checking disabled, an existing level may be reused and is moved to the
-requested position. Reconstruction preserves the distinction between an
-observation that uses a factor NA level and an actually missing factor code.
+preserving ordered status and placing a new synthetic level last by default
+or first when \code{.margin_label_position = "first"}. A label equal to any
+declared level, used or unused, is rejected before any grouping set is
+built, whatever \code{.check_margin_label} says: see that argument above.
+Reconstruction preserves the distinction between an observation that uses a
+factor NA level and an actually missing factor code.
 
 \code{NA_character_} and \code{NULL} both create a typed missing Margin value and do
 not create a synthetic factor level. Position is therefore a no-op for
@@ -306,10 +312,65 @@ Source missing values and typed-missing Margin values may display
 identically, so keep a structural identity column when the difference
 matters: \code{.id} is available from every Margin verb, and
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} can additionally write \code{\link[=grouping_bit]{grouping_bit()}} or
-\code{\link[=grouping_id]{grouping_id()}} as summaries. The eager default
-\code{.check_margin_label = TRUE} detects
-collisions for local data. Lazy tables default to \code{FALSE} because checking
-would execute an extra query; opt in when that scan is appropriate.
+\code{\link[=grouping_id]{grouping_id()}} as summaries. \code{.check_margin_label} controls only the
+observed row of this table -- whether \code{NA_character_} collides with an
+actual missing value when no NA level is declared; the declared rows above
+it are checked whatever this argument says. See \code{.check_margin_label}
+above for its default and \emph{When marginplyr queries your data} for why the
+two halves differ.
+}
+
+\section{When marginplyr queries your data}{
+
+Every Margin verb applied to a lazy input builds a query and returns it
+unexecuted. \code{\link[dplyr:show_query]{dplyr::show_query()}} runs nothing, and no row is read until
+you execute the query yourself -- \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} excepted,
+because its row-wise return shape exists only locally; see its own
+documentation for when it collects.
+
+Two queries reach your connection without being asked for, and neither
+reads a row of your data. This is the rule for every Margin verb, so each
+is described against the inputs that can produce it: a verb accepting no
+lazy table, or no contextual share, simply never reaches the one that
+depends on it.
+\itemize{
+\item \strong{A zero-row read of the input}, sent only to a backend whose factor
+columns marginplyr must decompose and later restore -- currently
+\code{dtplyr} and DuckDB -- to recover the levels and column prototypes that
+decomposition loses. It references your table but reads none of it, and
+it is not a shape marginplyr introduced: \code{\link[dplyr:tbl]{dplyr::tbl()}} already sends an
+equivalent zero-row read for any table reference, on any dbplyr backend.
+\item \strong{At most two queries per SQL dialect}, sent once per dialect, the first
+time a share is requested there with \code{.check_share_source} at its default
+of \code{TRUE}, asking whether the dialect converts a non-numeric value to a
+number rather than refusing it. Neither references any of your tables, so
+reading them touches none of your data, and the answer is a property of
+the dialect, reused for every later connection that shares it. The second
+is a control, sent only when the first is rejected, and it distinguishes
+a dialect that refuses from one that could not be asked at all. A
+connection that cannot be asked -- one built with a
+\verb{dbplyr::simulate_*()} constructor, which executes nothing -- is treated
+as unable to answer, which refuses the share by default the same way a
+dialect known to convert does; see \code{.check_share_source} on
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}.
+}
+
+Neither query is safe merely because it returns no rows. A read bounded in
+rows is not bounded in what it costs: BigQuery states plainly that a
+\code{LIMIT} does not reduce the bytes billed for a non-clustered table, and no
+vendor documentation exempts \verb{LIMIT 0} from that rule.
+
+marginplyr does not try to tell whether a backend bills for a query,
+because nothing it can read distinguishes a free connection from a billed
+one of the same kind -- a local DuckDB file from a hosted DuckDB service,
+or RDS PostgreSQL from Aurora Standard. \code{is.data.frame(.data)} is the only
+predicate that answers "no external system is involved" exactly rather
+than approximately, and it is what sets the default of every check that
+reads your data: a check that reads it is asked for, and a check that does
+not is not. \code{.check_margin_label} scans the grouping columns, so every
+Margin verb defaults it to \code{is.data.frame(.data)}.
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}'s \code{.check_share_source} reads nothing on any
+backend, so it defaults to \code{TRUE} there.
 }
 
 \section{Backend extension design}{

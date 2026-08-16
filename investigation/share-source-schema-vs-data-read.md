@@ -1,6 +1,7 @@
 # Schema reads vs. data reads for share-source typing
 
 Investigated: 2026-08-08
+Revised: 2026-08-16 — investigation/share-source-eligibility-on-coercing-dialects.md
 
 This note follows up on `git show e08c3fa` (the one-row `probe_share_sources()`
 read) and the handoff that reopened it. The open question was whether some
@@ -180,3 +181,28 @@ return zero rows (cheap, no data computed, no data read by any reasonable
 reading of that phrase) or it can be made to report real computed-expression
 types (only by computing — and, on the methods tried, fully materializing —
 at least one row). No measured method gets both on this dialect.
+
+## Revisions (2026-08-16)
+
+`investigation/share-source-eligibility-on-coercing-dialects.md` establishes
+that the premise underneath the tradeoff above does not hold on RSQLite: the
+real computed-expression type, once obtained, is not evidence that a share
+source is eligible on that dialect.
+
+Measured there: `sum(txt)` over a text column returns a genuine `numeric` `0`
+on RSQLite and raises a binder error on DuckDB, so `is_share_source_type()`
+receives an eligible type for an ineligible source and accepts it. End to end,
+`share_of_total()` over such a source returns the #106 symptom — an all-missing
+share column with `1` on the grand total row — while the local backend raises.
+#106's own reproduction, `max(region)`, remains fixed, because a character
+result is a wrong type and this is not.
+
+Both branches of the tradeoff stated above therefore fail to answer the
+question the eligible-type rule exists to answer, on the one dialect this note
+was written about. The successor note records the question that is answerable
+instead — whether the dialect converts rather than refuses — which needs one
+query per dialect that reads none of the caller's data and references none of
+their tables.
+
+Nothing measured in this note was contradicted. What changed is what the
+measurements were taken to be evidence for.

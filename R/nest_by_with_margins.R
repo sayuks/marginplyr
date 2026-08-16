@@ -9,6 +9,7 @@
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
+#' @inheritSection summarize_with_margins When marginplyr queries your data
 #' @inheritSection summarize_with_margins Backend extension design
 #' @inheritSection nest_with_margins Relationship to tidyr and dplyr
 #' @param .key A non-missing string naming the list column. Unlike
