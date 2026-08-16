@@ -45,13 +45,19 @@ This controls the position of a non-missing synthetic label in factor and
 ordered-factor levels. It does not sort result rows and has no effect for
 \code{NA_character_} or \code{NULL}.}
 
-\item{.check_margin_label}{A logical scalar. If \code{TRUE}, check each Margin
-dimension independently for a value or factor level that collides with its
-display label. \code{.margin_label = NULL} opts out of these checks. See
-\emph{Display labels and grouping identity} for the factor missing-value
-contract. Every Margin verb uses the same default: \code{TRUE} for local data
-frames and \code{FALSE} for lazy inputs, where checking would require an
-additional query.}
+\item{.check_margin_label}{A logical scalar controlling the half of the
+Margin label collision check that reads the data: whether any \emph{value} of a
+Margin dimension is equal to that dimension's display label. Each
+dimension is checked independently, and \code{.margin_label = NULL} opts out.
+Every Margin verb uses the same default: \code{TRUE} for local data frames and
+\code{FALSE} for lazy inputs, which are read only when the caller asks. A label
+equal to a declared factor \emph{level} is rejected on every backend whatever
+this argument says, because the levels are already known and finding it
+sends no query. Left unchecked, a colliding value gives the result a
+margin row and a source row that no grouping column tells apart; keeping
+\code{\link[=grouping_bit]{grouping_bit()}} or \code{\link[=grouping_id]{grouping_id()}} in the result distinguishes them at no
+added cost. See \emph{Display labels and grouping identity} for the factor
+missing-value contract.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
 duplicate grouping sets after expansion.}

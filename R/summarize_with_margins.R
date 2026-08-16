@@ -34,13 +34,19 @@
 #'   This controls the position of a non-missing synthetic label in factor and
 #'   ordered-factor levels. It does not sort result rows and has no effect for
 #'   `NA_character_` or `NULL`.
-#' @param .check_margin_label A logical scalar. If `TRUE`, check each Margin
-#'   dimension independently for a value or factor level that collides with its
-#'   display label. `.margin_label = NULL` opts out of these checks. See
-#'   *Display labels and grouping identity* for the factor missing-value
-#'   contract. Every Margin verb uses the same default: `TRUE` for local data
-#'   frames and `FALSE` for lazy inputs, where checking would require an
-#'   additional query.
+#' @param .check_margin_label A logical scalar controlling the half of the
+#'   Margin label collision check that reads the data: whether any *value* of a
+#'   Margin dimension is equal to that dimension's display label. Each
+#'   dimension is checked independently, and `.margin_label = NULL` opts out.
+#'   Every Margin verb uses the same default: `TRUE` for local data frames and
+#'   `FALSE` for lazy inputs, which are read only when the caller asks. A label
+#'   equal to a declared factor *level* is rejected on every backend whatever
+#'   this argument says, because the levels are already known and finding it
+#'   sends no query. Left unchecked, a colliding value gives the result a
+#'   margin row and a source row that no grouping column tells apart; keeping
+#'   [grouping_bit()] or [grouping_id()] in the result distinguishes them at no
+#'   added cost. See *Display labels and grouping identity* for the factor
+#'   missing-value contract.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
 #'   duplicate grouping sets after expansion.
 #' @param .sort One of `"none"` (the default), `"last"`, or `"first"`. `"none"`

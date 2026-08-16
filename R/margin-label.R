@@ -142,51 +142,78 @@ validate_margin_label <- function(.data,
     }
   }
 
+  # A declared collision is read off the levels ADR 0002 already acquired, so
+  # finding it sends no query and nothing had to be asked for (ADR 0020). It
+  # sits above the gate for the reason the NA-level check above it does.
+  check_declared_label_collision(
+    margin_labels = margin_labels,
+    factor_info = factor_info
+  )
+
   if (!.check_margin_label) {
     return(invisible(NULL))
   }
 
-  check_margin_label_collision(
+  check_observed_label_collision(
     .data,
     margin_labels = margin_labels,
     factor_info = factor_info
   )
 }
 
-check_margin_label_collision <- function(data,
-                                         margin_labels,
-                                         factor_info = list()) {
-  col_names <- names(margin_labels)
-  stopifnot(is.character(col_names), !anyNA(col_names))
+check_declared_label_collision <- function(margin_labels,
+                                           factor_info = list()) {
+  stopifnot(is.character(names(margin_labels)), !anyNA(names(margin_labels)))
 
-  checked_labels <- Filter(function(label) !is.null(label), margin_labels)
-  if (length(checked_labels) == 0L) {
+  if (length(factor_info) == 0L) {
     return(invisible(NULL))
   }
 
-  factor_cols <- vapply(factor_info, function(info) info$col, character(1))
-  factor_levels <- stats::setNames(rep(FALSE, length(col_names)), col_names)
-  for (info in factor_info) {
-    label <- margin_labels[[info$col]]
-    if (!is.null(label) && !is.na(label)) {
-      factor_levels[[info$col]] <- label %in% info$levels
-    }
-  }
-  if (any(factor_levels)) {
-    abort_margin_label_collision(margin_labels, factor_levels)
+  declared <- vapply(
+    factor_info,
+    function(info) {
+      label <- margin_labels[[info$col]]
+      !is_missing_margin_label(label) && label %in% info$levels
+    },
+    logical(1)
+  )
+  names(declared) <- vapply(factor_info, function(info) info$col, character(1))
+  if (!any(declared)) {
+    return(invisible(NULL))
   }
 
-  data <- dplyr::select(.data = data, dplyr::all_of(col_names))
+  abort_margin_label_collision(margin_labels, declared, kind = "declared")
+}
+
+check_observed_label_collision <- function(data,
+                                           margin_labels,
+                                           factor_info = list()) {
+  col_names <- names(margin_labels)
+  stopifnot(is.character(col_names), !anyNA(col_names))
+
+  factor_cols <- vapply(factor_info, function(info) info$col, character(1))
+  # A factor dimension states its values in its levels, and a label equal to
+  # one of them was rejected above, so reading its column could only find a
+  # value the levels do not contain. A missing label is the exception: whether
+  # the column holds a missing value is not something the levels record.
+  read_cols <- Filter(
+    function(col) {
+      label <- margin_labels[[col]]
+      !is.null(label) && !(col %in% factor_cols && !is.na(label))
+    },
+    col_names
+  )
+  # No column left to read is no query, rather than a query selecting nothing:
+  # a lazy input is not contacted to aggregate a set of constants.
+  if (length(read_cols) == 0L) {
+    return(invisible(NULL))
+  }
+
+  data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
   checks <- lapply(
-    col_names,
+    read_cols,
     function(col) {
       margin_label <- margin_labels[[col]]
-      if (
-        is.null(margin_label) ||
-          (col %in% factor_cols && !is.na(margin_label))
-      ) {
-        return(rlang::expr(0L))
-      }
       column <- rlang::sym(col)
       condition <- if (is.na(margin_label)) {
         rlang::expr(is.na(!!column))
@@ -201,10 +228,10 @@ check_margin_label_collision <- function(data,
       )
     }
   )
-  names(checks) <- col_names
+  names(checks) <- read_cols
   found <- dplyr::collect(dplyr::summarize(data, !!!checks))
   found <- vapply(
-    col_names,
+    read_cols,
     function(col) {
       nrow(found) > 0L && isTRUE(found[[col]][[1L]] > 0)
     },
@@ -215,11 +242,15 @@ check_margin_label_collision <- function(data,
     return(invisible(NULL))
   }
 
-  abort_margin_label_collision(margin_labels, found)
+  abort_margin_label_collision(margin_labels, found, kind = "observed")
 }
 
-abort_margin_label_collision <- function(margin_labels, found) {
-  stopifnot(is.logical(found), any(found))
+abort_margin_label_collision <- function(margin_labels, found, kind) {
+  stopifnot(
+    is.logical(found),
+    any(found),
+    identical(kind, "declared") || identical(kind, "observed")
+  )
 
   bad_cols <- paste0("`", names(found)[found], "`", collapse = ", ")
   bad_labels <- margin_labels[names(found)[found]]
@@ -230,15 +261,31 @@ abort_margin_label_collision <- function(margin_labels, found) {
   )
   one_label <- length(unique(label_values)) == 1L
   label <- if (one_label) unique(label_values) else "Margin labels"
+  verb <- if (one_label) " is" else " are"
+  presence <- if (identical(kind, "declared")) {
+    if (one_label) " a factor level in" else " factor levels in"
+  } else {
+    " present in"
+  }
+  # `.check_margin_label = FALSE` is offered only where it is a remedy. It
+  # turns off the read, and a declared collision is not found by reading, so
+  # naming it there would send a caller to an argument that changes nothing.
+  remedy <- if (identical(kind, "declared")) {
+    "Choose another `.margin_label`."
+  } else {
+    "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
+  }
   abort_marginplyr(
     paste0(
       label,
-      if (one_label) " is" else " are",
-      " already present in grouping column",
+      verb,
+      " already",
+      presence,
+      " grouping column",
       if (sum(found) == 1L) " " else "s ",
       bad_cols,
-      ". Choose another `.margin_label` or set ",
-      "`.check_margin_label = FALSE`."
+      ". ",
+      remedy
     )
   )
 }
