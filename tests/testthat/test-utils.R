@@ -149,11 +149,24 @@ reads_call_arguments <- function(expr) {
 # this the scans below would read a loop over what they carry as a loop over
 # something else -- the same under-reach the shared matcher above was written to
 # close, arriving through a second list rather than through a second spelling.
+#
+# Two ways to recognize one, and the second is what makes the first reach both
+# functions. Mapping over a list this already knows is a list of call arguments
+# covers `validate_share_direct_syntax()`, which reads one from
+# `static_call_args()` a line earlier -- but `grouping_helper_vars()` is handed
+# its arguments as a parameter, so nothing in its body says where they came
+# from and matching on the source would leave the walk with #181's history
+# uncovered. Mapping `unwrap_injected_quosure()` is the other way: it answers
+# for a call part and nothing else, so what a mapping of it collects is call
+# parts whatever it was handed.
 derives_call_arguments <- function(expr, locals) {
-  is.call(expr) &&
-    identical(expr[[1L]], quote(lapply)) &&
-    length(expr) >= 2L &&
-    is_call_arguments(expr[[2L]], locals)
+  if (!is.call(expr) || !identical(expr[[1L]], quote(lapply))) {
+    return(FALSE)
+  }
+  mapped_reader <- length(expr) >= 3L &&
+    identical(expr[[3L]], quote(unwrap_injected_quosure))
+  mapped_reader ||
+    (length(expr) >= 2L && is_call_arguments(expr[[2L]], locals))
 }
 
 # The names a body binds to such a list, so that a loop over one, or a
@@ -277,6 +290,16 @@ test_that("the walk scan detects the shape it is written to forbid", {
       part
     }
   }
+  # The same derivation in a function handed its arguments rather than reading
+  # them, which is `grouping_helper_vars()`'s shape: nothing in the body says
+  # where the list came from, so the unwrapper being mapped is the only thing
+  # that says the result holds call parts.
+  through_derived_parameter <- function(args) {
+    carried <- lapply(args, unwrap_injected_quosure)
+    for (part in carried) {
+      part
+    }
+  }
   compliant <- function(expr) {
     parts <- static_call_args(expr)
     for (index in seq_along(parts)) {
@@ -289,6 +312,7 @@ test_that("the walk scan detects the shape it is written to forbid", {
   expect_true(binds_call_parts_with_for(body(through_local)))
   expect_true(binds_call_parts_with_for(body(through_parsed)))
   expect_true(binds_call_parts_with_for(body(through_derived)))
+  expect_true(binds_call_parts_with_for(body(through_derived_parameter)))
   expect_false(binds_call_parts_with_for(body(compliant)))
   # An empty argument in the scanned code must not abort the scan, which is the
   # bug one level up.
@@ -380,9 +404,16 @@ test_that("the assignment scan detects the shape it is written to forbid", {
     part
   }
   # The same subscript, one list along: what `lapply()` collected from a call's
-  # arguments holds an empty one wherever the arguments did (#169).
+  # arguments holds an empty one wherever the arguments did (#169). Both ways of
+  # recognizing that list, since the second is what reaches a function handed
+  # its arguments rather than reading them.
   through_derived <- function(expr) {
     args <- static_call_args(expr)
+    carried <- lapply(args, unwrap_injected_quosure)
+    part <- carried[[1L]]
+    part
+  }
+  through_derived_parameter <- function(args) {
     carried <- lapply(args, unwrap_injected_quosure)
     part <- carried[[1L]]
     part
@@ -402,6 +433,7 @@ test_that("the assignment scan detects the shape it is written to forbid", {
   expect_true(binds_call_parts_by_assign(body(through_string_element)))
   expect_true(binds_call_parts_by_assign(body(through_reader)))
   expect_true(binds_call_parts_by_assign(body(through_derived)))
+  expect_true(binds_call_parts_by_assign(body(through_derived_parameter)))
   expect_false(binds_call_parts_by_assign(body(compliant_local)))
   # An ordinary list read is not the shape, or the scan would name most of the
   # package and mean nothing.

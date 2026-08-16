@@ -451,23 +451,11 @@ marginplyr_owned_spellings <- function() {
   sort(unlist(lapply(owned, static_spelling_names), use.names = FALSE))
 }
 
-# A data frame every probe below reads: two dimensions so a `rollup()` of them
-# has a parent level for a Parent share to divide by, and a measure for the
-# preceding ordinary summary a share helper takes the name of.
-#
-# Its own fixture rather than the one `test-contextual-helpers.R` builds, which
-# is a near neighbour: that file varies the *head* spelling and needs a column
-# for a selection to pick more than one of, and this one varies the *argument*
-# and needs a parent level instead. Sharing one would make a column added for
-# either suite's next case appear in the other's.
-injection_probe_data <- function() {
-  data.frame(
-    region = c("E", "E", "W", "W"),
-    grade = c("a", "b", "a", "b"),
-    units = c(1, 2, 3, 4),
-    stringsAsFactors = FALSE
-  )
-}
+# The probes below read `contextual_probe_data()`, from
+# `helper-contextual-probes.R`: the other suite probing these helpers reads the
+# same input, and a copy here recorded nothing but which was written first. Its
+# two dimensions are what give a `rollup()` a parent level for a Parent share to
+# divide by, and `units` is the measure the preceding ordinary summary takes.
 
 # One summary per helper, written as a function from the *argument* to the whole
 # call, because the argument is the only thing that varies between the written
@@ -510,7 +498,7 @@ injection_probes <- function() {
 run_injection_probe <- function(probe, argument) {
   rlang::eval_bare(
     probe$call(argument),
-    rlang::env(rlang::current_env(), .probe_data = injection_probe_data())
+    rlang::env(rlang::current_env(), .probe_data = contextual_probe_data())
   )
 }
 
@@ -531,8 +519,9 @@ test_that("a helper reading a bare name accepts one forwarded by injection", {
   # while telling the caller they had not written a bare name -- which they
   # had, at their own call. The workaround was to reach for `rlang::ensym()`
   # instead, and nothing in the diagnostic said so (#169).
-  for (helper in names(injection_probes())) {
-    probe <- injection_probes()[[helper]]
+  probes <- injection_probes()
+  for (helper in names(probes)) {
+    probe <- probes[[helper]]
     written <- run_injection_probe(probe, probe$name)
 
     # The quosure is built on the empty environment, so the assertion carries
@@ -565,8 +554,9 @@ test_that("an injected quosure's environment does not decide the name", {
   # the same name in the quosure's own environment is the case that would show
   # one being consulted, and it is the reading #165 gives one layer out, where
   # a selection inside an injected quosure really is evaluated there.
-  for (helper in names(injection_probes())) {
-    probe <- injection_probes()[[helper]]
+  probes <- injection_probes()
+  for (helper in names(probes)) {
+    probe <- probes[[helper]]
     shadow <- rlang::env()
     rlang::env_bind(shadow, !!rlang::as_name(probe$name) := "grade")
 
@@ -585,8 +575,9 @@ test_that("an injected quosure carrying no bare name is refused as written", {
   # refused without the injection (#169). The message is what the equality
   # asserts -- the injected form adds a clause naming the injection and stops
   # there, rather than reporting a different fault.
-  for (helper in names(injection_probes())) {
-    probe <- injection_probes()[[helper]]
+  probes <- injection_probes()
+  for (helper in names(probes)) {
+    probe <- probes[[helper]]
     # Derived from the bare name the helper takes, so the three shapes are one
     # rule rather than twelve written-out calls: the pronoun spelling, the
     # string, and a call around the same name.
@@ -661,7 +652,7 @@ test_that("a caller's two mistakes at once are reported by one message", {
   # the two decide it differently on purpose, so it is asserted rather than left
   # to the message equality above -- which compares one helper against itself
   # and would not notice either decision changing.
-  data <- injection_probe_data()
+  data <- contextual_probe_data()
   injected <- rlang::new_quosure(quote(1 + 1), env = rlang::empty_env())
 
   # `grouping_bit()` counts columns in a message of its own, reached before the
@@ -704,7 +695,7 @@ test_that("a share helper refuses a named empty argument as a non-name", {
   # symbol whose name is `""`. So the call was admitted and refused one layer on
   # for a preceding summary named ``, which is a summary nobody wrote: #181's
   # defect, in the family that ticket did not reach.
-  data <- injection_probe_data()
+  data <- contextual_probe_data()
 
   error <- expect_error(summarize_with_margins(
     data,
@@ -732,7 +723,7 @@ test_that("injection is transparent to the checks after the name test", {
   # name to the duplicate check and to the plan membership check. Reading one
   # through and the others around it is the shape that would let an injected
   # duplicate through.
-  data <- injection_probe_data()
+  data <- contextual_probe_data()
   injected <- rlang::new_quosure(quote(region), env = rlang::empty_env())
 
   duplicated <- expect_error(rlang::inject(summarize_with_margins(

@@ -492,7 +492,10 @@ argument then raises base R's untyped `missingArgError` — the #168 hazard
 `static_call_args()` already documents, reached by a different route. The scan
 in `test-utils.R` that enforces that hazard is extended to follow a list built
 elementwise from a call's arguments, which is what both helpers now read
-through.
+through — and it recognizes such a list by the *unwrapper being mapped* as well
+as by the source list, because `grouping_helper_vars()` is handed its arguments
+as a parameter and nothing in its body says where they came from. Matching only
+the source would have left the walk with #181's history outside the gate.
 
 **The clause is composed by the message, not by the argument.** A caller can
 make two mistakes at once, and which diagnostic wins is each helper's own
