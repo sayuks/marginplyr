@@ -104,8 +104,7 @@ summarize_margin_branch <- function(.data,
 add_grouping_set_id <- function(result,
                                 set_id_name,
                                 set_id,
-                                backend,
-                                stands_for_source_rows) {
+                                count_branch_rows) {
   if (is.null(set_id_name)) {
     return(result)
   }
@@ -117,8 +116,7 @@ add_grouping_set_id <- function(result,
   value <- set_id_expr(
     as.integer(set_id),
     result,
-    backend = backend,
-    stands_for_source_rows = stands_for_source_rows
+    count_branch_rows = count_branch_rows
   )
   dplyr::mutate(
     result,
@@ -135,23 +133,16 @@ add_grouping_set_id <- function(result,
 # there -- dtplyr translates `n()` to `.N`, which is zero for that table -- so
 # the identifier lands on as many rows as the branch has and no more.
 #
-# Which branch this is decides whether that row is fabricated at all, and it is
-# the reason the count is asked for rather than always taken. An expansion
-# branch holds one row per source row, so a column-less one standing for no
-# rows must stay empty. A summary branch holds one row per group, and a
-# column-less summary branch is reachable only with no keys and no summaries --
-# one group, the Grand total -- so the single row `mutate()` materialises there
-# is the row local dplyr returns for the same call, and counting would drop it.
+# `count_branch_rows` is what each call site knows and this cannot: whether a
+# row this attachment materialises would be a row the branch does not stand
+# for. Both sites spell it out, because the two answers come from different
+# facts rather than from one being the default.
 #
-# The other two conditions guard the count itself. A backend that recycles
-# correctly must keep the literal: `n()` in a `mutate()` renders a window
-# function on SQL, and on arrow it is an unsupported expression that warns and
-# pulls the data into R -- the collection ADR 0020 forbids. And a branch that
-# has columns keeps it too, since that is every ordinary branch, on dtplyr as
-# much as anywhere.
-set_id_expr <- function(set_id, result, backend, stands_for_source_rows) {
-  needs_count <- stands_for_source_rows &&
-    backend$invents_row_on_column_add &&
+# A branch that has columns keeps the literal whatever the site says, since
+# that is every ordinary branch, on dtplyr as much as anywhere: the count is
+# for the case the literal cannot express, not a second way of writing it.
+set_id_expr <- function(set_id, result, count_branch_rows) {
+  needs_count <- count_branch_rows &&
     length(get_col_names(result, dplyr::everything())) == 0L
 
   if (!needs_count) {
@@ -167,8 +158,7 @@ summarize_margin_union <- function(.data,
                                    column_info,
                                    reserved_names,
                                    set_id_name = NULL,
-                                   set_id_is_internal = FALSE,
-                                   backend = grouping_backend(.data)) {
+                                   set_id_is_internal = FALSE) {
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -223,12 +213,19 @@ summarize_margin_union <- function(.data,
         factor_info = column_info$factors
       )
 
+      # A summary branch holds one row per group rather than one per source
+      # row, and a column-less summary branch is reachable only with no keys
+      # and no summaries: one group, the Grand total. The row `mutate()`
+      # materialises there while the identifier column lasts is that group's,
+      # so nothing is counted. What a `data.table` still cannot represent is
+      # the result once the column goes away again -- a one-row, zero-column
+      # table -- which is dtplyr's own answer to such a summary and not
+      # something this attachment decides.
       add_grouping_set_id(
         result,
         set_id_name,
         set_id,
-        backend = backend,
-        stands_for_source_rows = FALSE
+        count_branch_rows = FALSE
       )
     },
     plan$sets,
@@ -244,6 +241,12 @@ expand_margin_union <- function(.data,
                                 column_info,
                                 set_id_name = NULL,
                                 backend = grouping_backend(.data)) {
+  # An expansion branch is the input's own rows, so a column-less one standing
+  # for no rows has to stay empty, and only a backend that invents a row when
+  # given a column needs to be told so by counting. Read once rather than per
+  # branch, since the answer is the input's and a cube folds 2^n of them.
+  count_branch_rows <- backend$invents_row_on_column_add
+
   branches <- Map(
     function(grouping_set, set_id) {
       result <- label_margin_branch(
@@ -259,8 +262,7 @@ expand_margin_union <- function(.data,
         result,
         set_id_name,
         set_id,
-        backend = backend,
-        stands_for_source_rows = TRUE
+        count_branch_rows = count_branch_rows
       )
     },
     plan$sets,

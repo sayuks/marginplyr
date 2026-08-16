@@ -275,6 +275,32 @@ test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
   )
 })
 
+# The neighbour of the case above, and the boundary it runs into rather than a
+# second instance of the defect. Asked for that same summary with no `.id`,
+# `dtplyr` has no column left to carry the Grand total row on, and a
+# one-row, zero-column `data.table` does not exist -- `dim()` reads the row
+# count from the first column. Nothing in the union adapter decides this: it is
+# what `dplyr::summarize()` already answers for the same lazy input, which is
+# what this compares against, so a dtplyr that gained the shape reports here.
+test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
+  skip_if_backend_absent("dtplyr")
+
+  empty <- data.frame()
+  upstream <- dplyr::collect(dplyr::summarize(dtplyr::lazy_dt(empty)))
+  expect_identical(dim(upstream), c(0L, 0L))
+
+  expect_identical(
+    dim(dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(empty)))),
+    dim(upstream)
+  )
+  # The local answer is `dplyr::summarize()`'s there too, and it is one row.
+  expect_identical(
+    dim(summarize_with_margins(empty)),
+    dim(dplyr::summarize(empty))
+  )
+  expect_identical(nrow(dplyr::summarize(empty)), 1L)
+})
+
 # The count-preserving attachment is asked for only where a backend needs it,
 # because `n()` in a `mutate()` is a window function on SQL and an unsupported
 # expression on arrow, where it warns and pulls the data into R. Arrow is the
