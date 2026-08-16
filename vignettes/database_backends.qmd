@@ -259,14 +259,18 @@ sqlite_sales |>
 `share_of_parent()` needs a denominator from another Grouping-set row, so it
 cannot be translated as one ordinary aggregate expression. marginplyr first
 forms the ordinary Margin summaries, then builds one Parent mapping shared by
-every requested measure:
+every requested measure. `.check_share_source = FALSE` appears here because
+the simulated connection executes nothing and therefore cannot be asked what
+its dialect does with an ineligible source; the rule it opts out of is
+described below.
 
 ```{r}
 parent_query <- postgres_sales |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
     revenue_share = share_of_parent(revenue),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .check_share_source = FALSE
   )
 
 show_query(parent_query)
@@ -288,22 +292,33 @@ postgres_sales |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
     revenue_of_total = share_of_total(revenue),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .check_share_source = FALSE
   ) |>
   show_query()
 ```
 
 Syntax, source-name, written-order, and `across()` errors are validated before
 execution. A share source must still be a plain integer or double, and that
-rule holds here too. A general dbplyr backend exposes no metadata for an
-arbitrary aggregate's result type, so marginplyr reads the summaries a share
-reads over a single input row and rejects an ineligible source before
-returning the query. That read is bounded in the rows it asks for and gets
-back, not in the work the input may have to do to produce one row — the staged
-query above is still not executed, and `show_query()` runs nothing.
+rule holds here too — but marginplyr reads no row of your data to establish
+it. A database evaluates the source summary itself, so where the dialect
+refuses an ineligible summary that refusal is the answer, and it reaches you
+as the database's own diagnostic when you execute the query. The staged
+queries above are still not executed, and `show_query()` runs nothing.
 
-Sampling one row needs a connection that can execute one, so this refusal is
-shown against a live DuckDB table rather than the simulator used above:
+Where the dialect converts a value of another type to a number instead of
+refusing it — SQLite answers `sum()` of a text column with `0` rather than an
+error — nothing applies the rule at all, and marginplyr refuses the share
+rather than calculating one from values nothing has checked. Which of the two
+a dialect does is asked once per dialect, with a query referencing none of
+your tables. A connection that executes nothing, such as the simulators used
+above, cannot be asked and is refused for the same reason;
+`.check_share_source = FALSE` calculates the share from sources you have
+established yourself.
+
+A refusing dialect is therefore shown against a live DuckDB table rather than
+the simulator used above. The diagnostic is DuckDB's own, and the column it
+names carries the name of the summary to rewrite:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -321,14 +336,15 @@ sample_sales <- copy_to(
 ```{r}
 #| label: duckdb-ineligible-share-source
 #| eval: !expr has_duckdb
-#| must_error: marginplyr_error
+#| must_error: true
 
 sample_sales |>
   summarize_with_margins(
     last_channel = max(channel),
     last_channel_share = share_of_parent(last_channel),
     .grouping = rollup(region, store)
-  )
+  ) |>
+  collect()
 ```
 
 ```{r}
@@ -337,10 +353,10 @@ sample_sales |>
 DBI::dbDisconnect(sample_con)
 ```
 
-A source the sample cannot type is left alone rather than rejected — which is
-what the simulator above falls under, since it executes nothing at all. So a
-runtime-only incompatibility, and any non-scalar summary, can still surface
-from the database when the staged query executes.
+Cardinality is not established this way at all: a SQL aggregate returns one
+value per grouping row by construction, so there is nothing for a dialect to
+convert. A non-scalar summary, and any other runtime-only incompatibility,
+therefore still surfaces from the database when the staged query executes.
 
 The portable value contract covers finite numbers, missing values, and zero
 denominators. Backend-specific non-finite representations are outside that

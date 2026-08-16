@@ -1,3 +1,13 @@
+# `.check_share_source = FALSE` appears throughout this file wherever a share
+# is requested of a connection that executes nothing -- every `simulate_*()`
+# one, and every live SQLite one. Neither can establish that a share source is
+# eligible: a simulator answers no query at all, and SQLite's dialect converts
+# a value of another type to a number rather than refusing it, so it would
+# accept any source whatever. What each of those tests is about is the SQL the
+# staged share produces, or the values it produces from sources the test
+# itself defines, so opting out of the establishing rule is what leaves them
+# testing that. The rule itself is covered where it belongs, in the two tests
+# named for it below.
 test_that("Parent shares preserve columns, grouping, and laziness", {
   data <- data.frame(
     fixed = c("a", "a", "b"),
@@ -13,7 +23,8 @@ test_that("Parent shares preserve columns, grouping, and laziness", {
       .by = fixed,
       .grouping = rollup(group),
       .id = "set",
-      .margin_label = NULL
+      .margin_label = NULL,
+      .check_share_source = FALSE
     )
   }
   expected_names <- c("fixed", "group", "set", "total", "share", "rows")
@@ -644,7 +655,8 @@ test_that("PostgreSQL renders one staged Parent-share join for all measures", {
     revenue = sum(revenue),
     revenue_share = share_of_parent(revenue),
     .grouping = rollup(region, store),
-    .margin_label = NULL
+    .margin_label = NULL,
+    .check_share_source = FALSE
   )
   many <- summarize_with_margins(
     remote,
@@ -653,7 +665,8 @@ test_that("PostgreSQL renders one staged Parent-share join for all measures", {
     revenue_share = share_of_parent(revenue),
     units_share = share_of_parent(units),
     .grouping = rollup(region, store),
-    .margin_label = NULL
+    .margin_label = NULL,
+    .check_share_source = FALSE
   )
   one_sql <- dbplyr::sql_render(one)
   many_sql <- dbplyr::sql_render(many)
@@ -668,38 +681,44 @@ test_that("PostgreSQL renders one staged Parent-share join for all measures", {
   expect_match(many_sql, "CAST(", fixed = TRUE)
 })
 
-# This connection cannot collect at all, so it stands for a backend the type
-# sample learns nothing from: the read fails, the source goes unsampled, and
-# the staged query is returned for the caller to execute. The counters are
-# what hold the rest of the contract — nothing asks this connection for the
-# staged query's fields, its row count, or its results.
-test_that("general dbplyr leaves a source it cannot sample to execution", {
+# The counters are the contract: requesting a share reads none of the caller's
+# data, so nothing asks this connection for the staged query's fields, its row
+# count, or its results — whichever way `.check_share_source` is set, and
+# whether the call is answered with a query or with a refusal. The ineligible
+# source is what shows the second half: the share is not calculated from a
+# value marginplyr checked, it is left to the database, and this connection is
+# never asked to type it.
+test_that("general dbplyr builds a share without reading the caller's data", {
   remote <- new_parent_lazy_probe(
     data.frame(group = "x", label = "value")
   )
+  summarize <- function(...) {
+    summarize_with_margins(
+      remote,
+      label = min(label),
+      share = share_of_parent(label),
+      .grouping = rollup(group),
+      .margin_label = NULL,
+      ...
+    )
+  }
+  unread <- c(result_type = 0L, cardinality = 0L, collection = 0L)
 
-  query <- summarize_with_margins(
-    remote,
-    label = min(label),
-    share = share_of_parent(label),
-    .grouping = rollup(group),
-    .margin_label = NULL
-  )
+  query <- summarize(.check_share_source = FALSE)
   expect_s3_class(query, "tbl_lazy")
-  expect_identical(parent_lazy_probe_counts(), c(
-    result_type = 0L,
-    cardinality = 0L,
-    collection = 0L
-  ))
+  expect_identical(parent_lazy_probe_counts(), unread)
 
   sql <- dbplyr::sql_render(query)
-  expect_identical(parent_lazy_probe_counts(), c(
-    result_type = 0L,
-    cardinality = 0L,
-    collection = 0L
-  ))
+  expect_identical(parent_lazy_probe_counts(), unread)
   expect_match(sql, "CAST(", fixed = TRUE)
   expect_match(sql, "LEFT JOIN", fixed = TRUE)
+
+  # A connection that answers nothing cannot say whether its dialect converts,
+  # so the default refuses the share rather than calculating one nothing
+  # stands behind — and it refuses without reading the caller's data either.
+  refusal <- expect_error(summarize(), class = "marginplyr_error")
+  expect_match(conditionMessage(refusal), "could not be asked", fixed = TRUE)
+  expect_identical(parent_lazy_probe_counts(), unread)
 })
 
 test_that("general dbplyr reports static Parent-share errors without probing", {
@@ -790,7 +809,8 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
       share = share_of_parent(total),
       .by = fixed,
       .grouping = rollup(group),
-      .margin_label = NULL
+      .margin_label = NULL,
+      .check_share_source = FALSE
     )
     sql <- dbplyr::sql_render(query)
 
@@ -847,7 +867,8 @@ test_that("RSQLite executes portable Parent shares end to end", {
       .by = fixed,
       .grouping = rollup(group),
       .id = "set",
-      .margin_label = "Margin"
+      .margin_label = "Margin",
+      .check_share_source = FALSE
     )
   }
   arrange_result <- function(result) {
@@ -913,7 +934,8 @@ test_that("RSQLite Parent shares preserve runtime backend conditions", {
     bad = no_such_function(value),
     share = share_of_parent(bad),
     .grouping = rollup(group),
-    .margin_label = NULL
+    .margin_label = NULL,
+    .check_share_source = FALSE
   )
 
   expect_s3_class(query, "tbl_lazy")
@@ -923,12 +945,15 @@ test_that("RSQLite Parent shares preserve runtime backend conditions", {
   expect_false(inherits(error, "marginplyr_error"))
 })
 
-# The reproduction from #106. A weakly typed dialect used to answer it with an
-# all-missing share column plus the grand total's own-denominator `1`, because
-# the eligible-type rule was reached only from the local adapter. Comparing the
-# condition against the local one is what makes "the same rejection" checkable
-# without a second backend in this test.
-test_that("RSQLite rejects an ineligible share source like the local backend", {
+# The reproduction from #195, on the dialect #106 was filed about. SQLite
+# answers `sum(<text column>)` with a genuine `0` rather than refusing it, so
+# no reading of the result distinguishes an ineligible source from an eligible
+# one, and the share it used to produce — an all-missing column beside the
+# grand total's own-denominator `1` — reads as 100%. What is asserted here is
+# that the eligible source is refused too: eligibility is a question about the
+# dialect, and this dialect answers it the same way whatever the call
+# summarizes.
+test_that("RSQLite refuses a share its dialect cannot establish", {
   skip_if_backend_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -944,110 +969,60 @@ test_that("RSQLite rejects an ineligible share source like the local backend", {
     overwrite = TRUE,
     temporary = TRUE
   )
-  summarize <- function(source) {
+  summarize <- function(source, ...) {
     summarize_with_margins(
       source,
       lab = max(region),
       p = share_of_parent(lab),
-      .grouping = rollup(region, store)
+      .grouping = rollup(region, store),
+      ...
+    )
+  }
+  eligible <- function(source, ...) {
+    summarize_with_margins(
+      source,
+      total = sum(revenue),
+      p = share_of_total(total),
+      .grouping = rollup(region, store),
+      ...
     )
   }
 
-  local_error <- expect_error(summarize(data), "plain integer or double scalar")
-  remote_error <- expect_error(
-    summarize(remote),
-    "plain integer or double scalar"
-  )
-
-  expect_s3_class(remote_error, "marginplyr_error")
+  refusal <- expect_error(summarize(remote), class = "marginplyr_error")
+  expect_snapshot(conditionMessage(refusal))
   expect_identical(
-    conditionMessage(remote_error),
-    conditionMessage(local_error)
-  )
-  expect_identical(remote_error$share_output, "p")
-  expect_identical(remote_error$source_summary, "lab")
-  expect_identical(
-    rlang::call_name(conditionCall(remote_error)),
+    rlang::call_name(conditionCall(refusal)),
     "summarize_with_margins"
   )
-  # The internal denominator and match columns are marginplyr's own names for
-  # temporaries the caller never wrote and cannot act on.
-  expect_false(grepl(
-    "..marginplyr",
-    conditionMessage(remote_error),
-    fixed = TRUE
-  ))
-})
+  expect_error(eligible(remote), class = "marginplyr_error")
 
-test_that("RSQLite rejects an ineligible source beside a Margin level", {
-  skip_if_backend_absent("RSQLite", "DBI")
-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
-  on.exit(DBI::dbDisconnect(con), add = TRUE)
-  remote <- dplyr::copy_to(
-    con,
-    data.frame(
-      region = c("E", "E", "W"),
-      store = c("s1", "s2", "s3"),
-      revenue = c(1, 3, 2)
-    ),
-    "share_source_level_sqlite_data",
-    overwrite = TRUE,
-    temporary = TRUE
+  # Forced, the ineligible source is calculated from what the dialect converted
+  # it to, which is the answer #195 reported and is now the caller's own
+  # request. The eligible one agrees with the local result.
+  forced <- dplyr::collect(summarize(remote, .check_share_source = FALSE))
+  expect_true(all(is.na(forced$p[forced$lab != "W"]) | forced$p == 1))
+  expect_equal(
+    as.data.frame(dplyr::collect(
+      eligible(remote, .check_share_source = FALSE) |>
+        dplyr::arrange(region, store)
+    )),
+    as.data.frame(dplyr::arrange(
+      eligible(data, .check_share_source = FALSE),
+      region,
+      store
+    ))
   )
-
-  # `grouping_bit()` and `grouping_id()` are marginplyr's own summary-context
-  # helpers, so the backend has no such functions and the read that types the
-  # source summaries would fail on them as a whole. A call that identifies its
-  # Margin levels must not lose the rule for its measures.
-  error <- expect_error(
-    summarize_with_margins(
-      remote,
-      level = grouping_id(region, store),
-      bit = grouping_bit(store),
-      lab = max(region),
-      p = share_of_parent(lab),
-      .grouping = rollup(region, store)
-    ),
+  # The local backend holds its summaries' own types, so the rule applies there
+  # whatever this argument says, and it is the eligible-type diagnostic rather
+  # than this refusal that a local caller gets.
+  local_error <- expect_error(
+    summarize(data, .check_share_source = FALSE),
     "plain integer or double scalar"
   )
-  expect_s3_class(error, "marginplyr_error")
-  expect_identical(error$source_summary, "lab")
+  expect_identical(local_error$source_summary, "lab")
 })
 
-test_that("RSQLite types a share source past an unrelated failing summary", {
-  skip_if_backend_absent("RSQLite", "DBI")
-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
-  on.exit(DBI::dbDisconnect(con), add = TRUE)
-  remote <- dplyr::copy_to(
-    con,
-    data.frame(
-      region = c("E", "E", "W"),
-      store = c("s1", "s2", "s3"),
-      revenue = c(1, 3, 2)
-    ),
-    "share_source_scope_sqlite_data",
-    overwrite = TRUE,
-    temporary = TRUE
-  )
-
-  # A summary no share reads must not decide whether the rule runs. Reading it
-  # too would fail the whole read on this expression the backend refuses, and
-  # the source it was never asked about would go unchecked with it.
-  error <- expect_error(
-    summarize_with_margins(
-      remote,
-      unrelated = no_such_aggregate(revenue),
-      lab = max(region),
-      p = share_of_parent(lab),
-      .grouping = rollup(region, store)
-    ),
-    "plain integer or double scalar"
-  )
-  expect_s3_class(error, "marginplyr_error")
-  expect_identical(error$source_summary, "lab")
-})
-
-test_that("RSQLite keeps eligible share sources working after the probe", {
+test_that("RSQLite calculates eligible shares a caller has established", {
   skip_if_backend_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -1055,15 +1030,14 @@ test_that("RSQLite keeps eligible share sources working after the probe", {
     group = c("x", "x", "y"),
     revenue = c(1, 3, 2),
     units = c(1L, 3L, 0L),
-    # The first input row is missing, so a weakly typed dialect answers the
-    # type probe with a value carrying no type at all. That is not evidence of
-    # an ineligible source, and rejecting on it would break a working call.
+    # A source whose first values are missing is still a source: what the
+    # dialect converts is the type of a value, and a missing one carries none.
     sparse = c(NA_real_, 4, 5)
   )
   remote <- dplyr::copy_to(
     con,
     data,
-    "share_source_probe_sqlite_data",
+    "share_source_forced_sqlite_data",
     overwrite = TRUE,
     temporary = TRUE
   )
@@ -1077,7 +1051,8 @@ test_that("RSQLite keeps eligible share sources working after the probe", {
       units_share = share_of_total(units_total),
       sparse_share = share_of_parent(sparse_total),
       .grouping = rollup(group),
-      .margin_label = NULL
+      .margin_label = NULL,
+      .check_share_source = FALSE
     ) |>
       dplyr::arrange(is.na(group), group)
   }
@@ -1092,28 +1067,103 @@ test_that("RSQLite keeps eligible share sources working after the probe", {
   )
 })
 
-test_that("a lazy backend that answers nothing keeps its share source", {
+test_that("a lazy backend that answers nothing refuses to establish a share", {
   skip_if_no_sqlite_simulation()
-  # A simulated connection executes no query, so the type probe learns nothing
-  # and the call must stay lazy rather than reject a source it cannot read.
+  # A simulated connection executes no query, so it can say nothing about what
+  # its dialect does with an ineligible summary. Reading its failure as the
+  # refusal a live database of that dialect would make is what the default
+  # declines to do; asked to, it stays lazy and renders as any other.
   remote <- dbplyr::tbl_lazy(
     data.frame(group = c("x", "y"), value = 1:2),
     con = dbplyr::simulate_sqlite()
   )
+  summarize <- function(...) {
+    summarize_with_margins(
+      remote,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group),
+      .margin_label = NULL,
+      ...
+    )
+  }
 
-  query <- summarize_with_margins(
-    remote,
-    total = sum(value),
-    share = share_of_parent(total),
-    .grouping = rollup(group),
-    .margin_label = NULL
-  )
+  refusal <- expect_error(summarize(), class = "marginplyr_error")
+  expect_snapshot(conditionMessage(refusal))
 
+  query <- summarize(.check_share_source = FALSE)
   expect_s3_class(query, "tbl_lazy")
   expect_match(dbplyr::sql_render(query), "UNION ALL", fixed = TRUE)
 })
 
-test_that("DuckDB rejects an ineligible share source like the local backend", {
+# What the dialect does with an ineligible summary is a property of the
+# dialect, so it is asked once and reused — which is only observable across
+# calls, and only from an empty cache. The second half is why the question is
+# asked of the connection before it is put to it: a connection that executes
+# nothing answers for itself and not for its dialect, so nothing it does is
+# recorded where a live connection carrying that dialect would find it.
+test_that("a dialect is asked whether it converts at most once", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = c("x", "y"), value = c(1, 3)),
+    con = dbplyr::simulate_postgres()
+  )
+  backend <- grouping_backend(remote)
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  empty_verdicts <- function() {
+    rm(
+      list = ls(share_dialect_verdicts, all.names = TRUE),
+      envir = share_dialect_verdicts
+    )
+  }
+  on.exit(
+    {
+      empty_verdicts()
+      list2env(saved, envir = share_dialect_verdicts)
+    },
+    add = TRUE
+  )
+  probes <- 0L
+  local_mocked_bindings(
+    probe_share_dialect = function(con) {
+      probes <<- probes + 1L
+      "refuses"
+    }
+  )
+
+  empty_verdicts()
+  local_mocked_bindings(share_dialect_can_be_asked = function(con) TRUE)
+  expect_identical(share_dialect_verdict(remote, backend = backend), "refuses")
+  expect_identical(share_dialect_verdict(remote, backend = backend), "refuses")
+  expect_identical(probes, 1L)
+  expect_identical(
+    ls(share_dialect_verdicts, all.names = TRUE),
+    paste(class(backend$dialect), collapse = "\n")
+  )
+})
+
+test_that("a connection that answers nothing records nothing for its dialect", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = c("x", "y"), value = c(1, 3)),
+    con = dbplyr::simulate_postgres()
+  )
+  backend <- grouping_backend(remote)
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  on.exit(list2env(saved, envir = share_dialect_verdicts), add = TRUE)
+  rm(
+    list = ls(share_dialect_verdicts, all.names = TRUE),
+    envir = share_dialect_verdicts
+  )
+
+  expect_identical(share_dialect_verdict(remote, backend = backend), "unknown")
+  expect_identical(ls(share_dialect_verdicts, all.names = TRUE), character())
+})
+
+# #106's DuckDB half. This dialect refuses an ineligible summary itself, so
+# marginplyr calculates the share and the database reports the refusal when the
+# caller executes the query — which is why the column it casts carries the name
+# of the summary to rewrite. Nothing here is a marginplyr condition: the
+# diagnostic is the database's own, and the assertion is that it is usable.
+test_that("DuckDB reports an ineligible share source against its summary", {
   skip_if_backend_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1139,25 +1189,17 @@ test_that("DuckDB rejects an ineligible share source like the local backend", {
   }
 
   local_error <- expect_error(summarize(data), "plain integer or double scalar")
-  remote_error <- expect_error(
-    summarize(remote),
-    "plain integer or double scalar"
-  )
+  expect_identical(local_error$source_summary, "lab")
 
-  expect_s3_class(remote_error, "marginplyr_error")
-  expect_identical(
+  query <- summarize(remote)
+  expect_s3_class(query, "tbl_lazy")
+  remote_error <- expect_error(dplyr::collect(query))
+  expect_false(inherits(remote_error, "marginplyr_error"))
+  expect_match(
     conditionMessage(remote_error),
-    conditionMessage(local_error)
-  )
-  expect_identical(remote_error$share_output, "p")
-  expect_identical(remote_error$source_summary, "lab")
-  # The backend used to raise its own error here, naming the internal
-  # denominator column the join reserved.
-  expect_false(grepl(
-    "..marginplyr",
-    conditionMessage(remote_error),
+    "denominator_of_lab",
     fixed = TRUE
-  ))
+  )
 })
 
 test_that("DuckDB Parent shares agree across native, portable, local paths", {
@@ -1425,8 +1467,12 @@ test_that("DuckDB Parent shares skip duplicate grouping-set occurrences", {
 
 test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   group_name <- "..marginplyr_parent_key_1"
-  value_name <- "..marginplyr_share_value_1"
-  summary_name <- "..marginplyr_share_value_1_"
+  value_name <- "value"
+  summary_name <- "total"
+  # The name the join reserves for `total`'s denominator, written here as a
+  # summary of the caller's own so that it is already in the staged result when
+  # the allocator asks for it.
+  denominator_name <- "..marginplyr_denominator_of_total_1"
   share_name <- "..marginplyr_set_id_1_"
   id_name <- "..marginplyr_share_match_1_"
   data <- data.frame(
@@ -1447,10 +1493,12 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
     rlang::inject(summarize_with_margins(
       source,
       !!summary_name := sum(.data[[value_name]]),
+      !!denominator_name := sum(.data[[value_name]]),
       !!share_name := share_of_parent(!!rlang::sym(summary_name)),
       .grouping = rollup(dplyr::all_of(group_name)),
       .margin_label = group_name,
       .check_margin_label = FALSE,
+      .check_share_source = FALSE,
       .id = id_name
     )) |>
       dplyr::arrange(.data[[id_name]], .data[[group_name]])
@@ -1524,7 +1572,8 @@ test_that("RSQLite executes portable Total shares end to end", {
       .by = fixed,
       .grouping = rollup(group, item),
       .id = "set",
-      .margin_label = "Margin"
+      .margin_label = "Margin",
+      .check_share_source = FALSE
     )
   }
   arrange_result <- function(result) {

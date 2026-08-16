@@ -1946,27 +1946,79 @@ test_that("Total-share staging avoids adversarial user-name collisions", {
   # The fixed-key stand-in a Total share joins on when `.by` is empty is the
   # one internal name Parent shares never allocate.
   partition_name <- "..marginplyr_total_key_1"
-  denominator_name <- "..marginplyr_share_value_1"
+  # The name the join reserves for `total`'s denominator, written here as a
+  # summary output of the caller's own so that it is already in the result when
+  # the allocator asks for it.
+  denominator_name <- "..marginplyr_denominator_of_total_1"
   data <- data.frame(
     c("x", "y"),
     c(1, 3),
     c(2, 2),
     check.names = FALSE
   )
-  names(data) <- c("group", partition_name, denominator_name)
+  names(data) <- c("group", partition_name, "shadow")
 
-  result <- summarize_with_margins(
+  result <- rlang::inject(summarize_with_margins(
     data,
     total = sum(.data[[partition_name]]),
-    shadow = sum(.data[[denominator_name]]),
+    !!denominator_name := sum(shadow),
     whole = share_of_total(total),
     .grouping = rollup(group),
     .margin_label = NULL
-  )
+  ))
 
-  expect_identical(names(result), c("group", "total", "shadow", "whole"))
+  expect_identical(
+    names(result),
+    c("group", "total", denominator_name, "whole")
+  )
   expect_equal(result$whole, c(0.25, 0.75, 1))
-  expect_equal(result$shadow, c(2, 2, 4))
+  expect_equal(result[[denominator_name]], c(2, 2, 4))
+})
+
+# The denominator column is the one internal name a database quotes back at the
+# caller: a dialect that refuses an ineligible source refuses it while casting
+# this column, and #106's DuckDB half was that diagnostic naming
+# `..marginplyr_share_value_1`. Naming the summary is what makes it actionable,
+# so the names are asserted here rather than only through a backend that
+# happens to quote one.
+test_that("a share denominator is named after the summary it comes from", {
+  expect_identical(
+    share_denominator_names(
+      c("revenue", "units"),
+      used_names = c("region", "revenue", "units")
+    ),
+    c(
+      revenue = "..marginplyr_denominator_of_revenue_1",
+      units = "..marginplyr_denominator_of_units_1"
+    )
+  )
+  # A caller who already wrote the name gets the collision rule, not the name.
+  expect_identical(
+    share_denominator_names(
+      "revenue",
+      used_names = c("revenue", "..marginplyr_denominator_of_revenue_1")
+    ),
+    c(revenue = "..marginplyr_denominator_of_revenue_1_")
+  )
+})
+
+test_that("`.check_share_source` admits only a logical scalar", {
+  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+  summarize <- function(check) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      whole = share_of_total(total),
+      .grouping = rollup(group),
+      .check_share_source = check
+    )
+  }
+
+  expect_error(summarize("yes"), class = "marginplyr_error")
+  expect_error(summarize(NA), "`.check_share_source` must be a logical scalar")
+  # A local data frame holds its summaries' own types, so the eligible-type
+  # rule is applied there whichever way this is set.
+  expect_identical(summarize(TRUE), summarize(FALSE))
 })
 
 test_that("share_of_total reports its required context", {
