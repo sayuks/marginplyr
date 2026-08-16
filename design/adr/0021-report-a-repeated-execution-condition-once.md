@@ -55,13 +55,29 @@ That normalisation reads dplyr's rendered format, which is not a stable
 contract, and it is chosen anyway because of which way it fails. If dplyr
 changes its wording the patterns stop matching, the keys stay distinct, and
 every occurrence is reported — today's behaviour. The failure mode is the
-status quo, never a genuinely different warning silently collapsed into another.
+status quo, never a genuinely different rendered warning silently collapsed
+into another.
+
+*Rendered* is the bound, and it is dplyr's bound rather than one this adds. A
+branch that raises several distinct diagnostics has one of them rendered and
+the rest replaced by the pointer at `last_dplyr_warnings()`; the others are
+not conditions the caller ever receives, before this change or after. So two
+branches whose rendered diagnostic agrees are repetitions here even where what
+each hid behind that pointer differs, and the count says how many further
+grouping sets reported the diagnostic rather than how many raised something.
+Reading past the pointer is not available: what is behind it is a count that
+varies with repetition within a branch, which is the one thing an identity may
+not depend on. The reported occurrence keeps the pointer, so a caller reading
+a report that hides something is told so in the same terms dplyr tells them.
 
 ## Rewriting the names is safe for a reason that does not depend on dplyr
 
 The `..marginplyr_key_N` token is a string marginplyr chose, so finding it in a
 rendered message is a search for a planted literal rather than a parse of
-dplyr's format. That holds equally in the flat warning string and in the
+dplyr's format. It is planted as a column name, which
+`new_margin_internal_names()` allocates clear of the caller's columns; a
+grouping *value* spelled the same way is rewritten along with it, which is the
+one thing the search cannot tell apart and is left where it is. That holds equally in the flat warning string and in the
 structured error fields, and it is why this half of the fix carries none of the
 fragility the deduplication key does. Substitution runs longest token first:
 naively replacing `..marginplyr_key_1` first corrupts `..marginplyr_key_10`,

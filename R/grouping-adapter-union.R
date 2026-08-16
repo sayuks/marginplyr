@@ -148,7 +148,7 @@ summarize_margin_union <- function(.data,
   }
 
   conditions <- new_branch_conditions(
-    keys = rlang::set_names(group_vars, unname(key_names)),
+    keys = rlang::set_names(names(key_names), unname(key_names)),
     call = call
   )
   # On exit rather than after the loop, so that the branches that ran before an

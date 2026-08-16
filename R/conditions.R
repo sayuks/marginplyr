@@ -106,11 +106,11 @@ buffer_branch_warning <- function(cnd, conditions) {
   key <- branch_warning_identity(cnd)
 
   buffered <- conditions$warnings
-  seen <- match(key, names(buffered))
-  if (is.na(seen)) {
-    buffered[[key]] <- list(condition = cnd, count = 1L)
+  seen <- buffered[[key]]
+  buffered[[key]] <- if (is.null(seen)) {
+    list(condition = cnd, count = 1L)
   } else {
-    buffered[[seen]]$count <- buffered[[seen]]$count + 1L
+    list(condition = seen$condition, count = seen$count + 1L)
   }
   conditions$warnings <- buffered
   invisible(NULL)

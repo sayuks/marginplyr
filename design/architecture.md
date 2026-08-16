@@ -499,7 +499,8 @@ The test suite divides supporting contracts as follows:
   branches raising different diagnostics reported one by one, the caller's
   columns and verb in an error's context, the propagated class and cause, ten
   keys substituted without corruption, a Package condition raised beside them
-  left alone, and the lazy non-goal. Two of its cases hold the identity to what
+  left alone, a warning a branch raised surviving a later branch's error, and
+  the lazy non-goal. Two of its cases hold the identity to what
   a message says rather than to how it was laid out or what a value happens to
   contain: one runs at five console widths, because cli wraps a bullet it
   cannot fit, and one uses a grouping value and a caller diagnostic that carry
