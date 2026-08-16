@@ -135,7 +135,8 @@
   row, so every verb that adds an identifier reported a row no source row
   produced: `expand_with_margins(.id = )`, both nesting verbs — which add one
   internally whatever `.id` says — and any verb asked for a Margin order. A
-  column-less input now expands to the row count the local backend gives it,
+  column-less input that reaches the backend with the rows it had — one with
+  no rows either — now expands to the row count the local backend gives it,
   and the lazy path stays lazy (#184).
 * A `data.frame` subclass whose `[` is not column selection — a raw
   `data.table` is the case — now reaches every Margin verb that accepts local
