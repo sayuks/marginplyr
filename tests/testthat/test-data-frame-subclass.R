@@ -26,7 +26,7 @@
 # it is absent and the generated `data.table` job in `release-matrix.yaml` is
 # what executes them. dtplyr is not the guard even though it brings data.table:
 # guarding on a package other than the one used is the mistake `AGENTS.md`
-# names, and the two are separate entries in `optional_backend_spec()`.
+# names, and the two are separate entries in `optional_suggest_spec()`.
 
 subclass_data <- function() {
   data.frame(
@@ -60,7 +60,7 @@ expect_margin_agrees <- function(margin_call) {
 }
 
 test_that("summarize_with_margins() accepts a raw data.table", {
-  skip_if_backend_absent("data.table")
+  skip_if_suggest_absent("data.table")
 
   expect_margin_agrees(function(input) {
     summarize_with_margins(
@@ -74,7 +74,7 @@ test_that("summarize_with_margins() accepts a raw data.table", {
 })
 
 test_that("expand_with_margins() accepts a raw data.table", {
-  skip_if_backend_absent("data.table")
+  skip_if_suggest_absent("data.table")
 
   expect_margin_agrees(function(input) {
     expand_with_margins(
@@ -86,7 +86,7 @@ test_that("expand_with_margins() accepts a raw data.table", {
 })
 
 test_that("the nesting verbs accept a raw data.table", {
-  skip_if_backend_absent("data.table")
+  skip_if_suggest_absent("data.table")
 
   expect_margin_agrees(function(input) {
     nest_with_margins(
@@ -103,7 +103,7 @@ test_that("the nesting verbs accept a raw data.table", {
 })
 
 test_that("inspect_grouping() accepts a raw data.table", {
-  skip_if_backend_absent("data.table")
+  skip_if_suggest_absent("data.table")
   # Not through `expect_margin_agrees()`: this returns no data frame, and the
   # plan it reports is one object to compare rather than two to flatten.
   data <- subclass_data()
@@ -119,7 +119,7 @@ test_that("inspect_grouping() accepts a raw data.table", {
 })
 
 test_that("a factor dimension of a raw data.table keeps its typed metadata", {
-  skip_if_backend_absent("data.table")
+  skip_if_suggest_absent("data.table")
   # The narrower half of the agreement above, stated on its own because it is
   # the metadata the old `[` was reading: a Margin label arrives as a synthetic
   # level rather than coercing the column to character, and the missing value
@@ -137,7 +137,7 @@ test_that("a factor dimension of a raw data.table keeps its typed metadata", {
 })
 
 test_that("a Margin-label collision is found in a raw data.table", {
-  skip_if_backend_absent("data.table")
+  skip_if_suggest_absent("data.table")
   # The collision check reads the same columns, so a subclass that reached the
   # verbs without it would accept a label already present and silently merge
   # two meanings into one row.
@@ -162,7 +162,7 @@ test_that("a Margin-label collision is found in a raw data.table", {
 })
 
 test_that("a raw data.table is not modified by reference", {
-  skip_if_backend_absent("data.table")
+  skip_if_suggest_absent("data.table")
   # A data.table can be changed in place, so "the input still works afterwards"
   # is not the same claim as "the input is unchanged". Compared against an
   # independent copy taken before the call, which catches a column rewritten in

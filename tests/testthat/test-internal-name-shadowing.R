@@ -116,7 +116,7 @@ test_that("missing factor values survive a column named `missing_sentinel`", {
 })
 
 test_that("dtplyr factor restoration ignores columns named like its locals", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   for (name in factor_shadow_names) {
     result <- dplyr::collect(summarize_with_margins(
@@ -140,7 +140,7 @@ test_that("dtplyr factor restoration ignores columns named like its locals", {
 })
 
 test_that("duckdb factor restoration ignores a column named `sql_query`", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   data <- factor_shadow_data("sql_query")
   con <- duckdb_test_connection()

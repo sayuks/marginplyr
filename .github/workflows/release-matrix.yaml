@@ -31,7 +31,7 @@
 #
 # Which contracts those jobs prove is settled by construction rather than by a
 # list (#93). Every `backend` job installs one optional backend -- plus the
-# companions its entry declares, which may themselves be tracked backends when
+# companions its entry declares, which may themselves be tracked entries when
 # one drags another in -- and withholds everything else, so between them they
 # execute every test that requires at most one backend; a test requiring two is
 # executed by none of them and skips in all of them, unnoticed. Three layers
@@ -161,7 +161,7 @@ jobs:
 
   # The `backend` jobs below are one job body repeated per optional backend, and
   # every field that differed between them was a restatement of
-  # `optional_backend_spec()`. This job derives them from it instead, so a
+  # `optional_suggest_spec()`. This job derives them from it instead, so a
   # backend cannot be tracked by the tests and executed by nothing: the job is
   # the table. That is what retired the `coverage` job, which existed only to
   # read this file back against the same list (#71).

@@ -520,7 +520,7 @@ test_that("a caller binding never changes a helper on a lazy input", {
   # both re-analyze the call, and dbplyr's `partial_eval()` matches these names
   # without examining the qualifier at all, so a qualified head reaches the
   # translation an unqualified one did.
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- contextual_probe_data()
   probes <- contextual_probes()
   for (entry in contextual_registry_table(contextual_helper_families())) {

@@ -1,4 +1,4 @@
-# The release matrix relies on these helpers to tell a proved backend contract
+# The release matrix relies on these helpers to tell a proved contract
 # apart from a silently skipped one, so the helpers themselves need coverage:
 # a regression here would be invisible in every other test file.
 
@@ -38,13 +38,13 @@ with_hidden_suggests <- function(value, code) {
 
 # A name no CRAN package uses, so it is reliably absent from every checking
 # environment.
-absent_package <- "marginplyrNoSuchBackend"
+absent_package <- "marginplyrNoSuchSuggest"
 
 # The `known` tables the tests below inject. Neither name belongs in
 # `optional_suggests()` -- the sentinel is not a package, and `stats` is a base
-# package rather than an optional backend -- but between them they make both
-# sides of `backend_available()` reachable without depending on which optional
-# backends the checking environment happens to have.
+# package rather than an optional Suggest -- but between them they make both
+# sides of `suggest_available()` reachable without depending on which optional
+# Suggests the checking environment happens to have.
 known_absent <- stats::setNames(TRUE, absent_package)
 known_installed <- c(stats = TRUE)
 
@@ -69,9 +69,9 @@ test_that("required suggests are parsed from the environment variable", {
   )
 })
 
-test_that("an absent backend is skippable when no job promised it", {
+test_that("an absent package is skippable when no job promised it", {
   with_required_suggests("", {
-    expect_false(backend_available(
+    expect_false(suggest_available(
       absent_package,
       known = known_absent,
       suggests = suggests_absent
@@ -80,7 +80,7 @@ test_that("an absent backend is skippable when no job promised it", {
     # a skip condition escape an expectation and skip the whole test instead.
     skipped <- tryCatch(
       {
-        skip_if_backend_absent(
+        skip_if_suggest_absent(
           absent_package,
           known = known_absent,
           suggests = suggests_absent
@@ -94,10 +94,10 @@ test_that("an absent backend is skippable when no job promised it", {
   })
 })
 
-test_that("an absent backend fails when the job promised to prove it", {
+test_that("an absent package fails when the job promised to prove it", {
   with_required_suggests(absent_package, {
     expect_error(
-      backend_available(
+      suggest_available(
         absent_package,
         known = known_absent,
         suggests = suggests_absent
@@ -105,7 +105,7 @@ test_that("an absent backend fails when the job promised to prove it", {
       "MARGINPLYR_REQUIRED_SUGGESTS"
     )
     expect_error(
-      skip_if_backend_absent(
+      skip_if_suggest_absent(
         absent_package,
         known = known_absent,
         suggests = suggests_absent
@@ -115,30 +115,30 @@ test_that("an absent backend fails when the job promised to prove it", {
   })
 })
 
-test_that("promising one backend does not make an unrelated one required", {
-  with_required_suggests("duckdb", expect_false(backend_available(
+test_that("promising one package does not make an unrelated one required", {
+  with_required_suggests("duckdb", expect_false(suggest_available(
     absent_package,
     known = known_absent,
     suggests = suggests_absent
   )))
 })
 
-test_that("an installed backend is available whether or not it is required", {
+test_that("an installed package is available whether or not it is required", {
   with_required_suggests(
     "",
-    expect_true(backend_available(
+    expect_true(suggest_available(
       "stats",
       known = known_installed,
       suggests = suggests_installed
     ))
   )
   with_required_suggests("stats", {
-    expect_true(backend_available(
+    expect_true(suggest_available(
       "stats",
       known = known_installed,
       suggests = suggests_installed
     ))
-    expect_no_error(skip_if_backend_absent(
+    expect_no_error(skip_if_suggest_absent(
       "stats",
       known = known_installed,
       suggests = suggests_installed
@@ -148,18 +148,18 @@ test_that("an installed backend is available whether or not it is required", {
 
 test_that("a package outside the tracked list is refused rather than skipped", {
   with_required_suggests("", {
-    expect_error(backend_available(absent_package), "optional_suggests")
-    expect_error(skip_if_backend_absent(absent_package), "optional_suggests")
+    expect_error(suggest_available(absent_package), "optional_suggests")
+    expect_error(skip_if_suggest_absent(absent_package), "optional_suggests")
   })
 })
 
 test_that("an untracked package is refused even when it is installed", {
   # The refusal runs before `requireNamespace()`. Placed after it, this call
-  # would return TRUE, and a guard on an unregistered backend would go
+  # would return TRUE, and a guard on an unregistered package would go
   # unnoticed on every provisioned machine and in `R-CMD-check.yaml`.
   with_required_suggests(
     "",
-    expect_error(backend_available("stats"), "optional_suggests")
+    expect_error(suggest_available("stats"), "optional_suggests")
   )
 })
 
@@ -171,20 +171,20 @@ test_that("hidden suggests are parsed from the environment variable", {
   )
 })
 
-test_that("a hidden backend reports absent even though it is installed", {
+test_that("a hidden package reports absent even though it is installed", {
   # The whole of `verify-suite-coverage.R` rests on this one substitution: an
   # installed package has to answer the guards the way an absent one would, or
   # the simulation reports that every test runs in every configuration.
   with_required_suggests("", {
     with_hidden_suggests("stats", {
-      expect_false(backend_available(
+      expect_false(suggest_available(
         "stats",
         known = known_installed,
         suggests = suggests_installed
       ))
       skipped <- tryCatch(
         {
-          skip_if_backend_absent(
+          skip_if_suggest_absent(
             "stats",
             known = known_installed,
             suggests = suggests_installed
@@ -198,14 +198,14 @@ test_that("a hidden backend reports absent even though it is installed", {
   })
 })
 
-test_that("hiding a backend a job promised to prove is refused", {
+test_that("hiding a package a job promised to prove is refused", {
   # Nothing structural stops the two variables from naming the same package,
   # and if they did the hook would turn a `backend` job's proof into a skip and
   # the job would pass. This is the refusal that makes that impossible.
   with_required_suggests("stats", {
     with_hidden_suggests("stats", {
       expect_error(
-        backend_available(
+        suggest_available(
           "stats",
           known = known_installed,
           suggests = suggests_installed
@@ -213,7 +213,7 @@ test_that("hiding a backend a job promised to prove is refused", {
         "MARGINPLYR_HIDE_SUGGESTS"
       )
       expect_error(
-        skip_if_backend_absent(
+        skip_if_suggest_absent(
           "stats",
           known = known_installed,
           suggests = suggests_installed
@@ -224,19 +224,19 @@ test_that("hiding a backend a job promised to prove is refused", {
   })
 })
 
-test_that("hiding one backend leaves an unrelated promise alone", {
+test_that("hiding one package leaves an unrelated promise alone", {
   # Refusal is per queried package rather than per variable. Refusing whenever
   # the two lists intersected at all would fail every test in this file under
   # `verify-suite-coverage.R`, which hides real backends while these tests
   # promise sentinel ones.
   with_required_suggests("stats", {
     with_hidden_suggests("arrow", {
-      expect_true(backend_available(
+      expect_true(suggest_available(
         "stats",
         known = known_installed,
         suggests = suggests_installed
       ))
-      expect_false(backend_available(
+      expect_false(suggest_available(
         absent_package,
         known = known_absent,
         suggests = suggests_absent
@@ -245,18 +245,18 @@ test_that("hiding one backend leaves an unrelated promise alone", {
   })
 })
 
-test_that("a backend job installs its backend and its companions", {
+test_that("a backend job installs its entry and its companions", {
   # `generate-backend-matrix.R` builds each job's `required` list and its
   # `extra-packages` from this, so a driver backend that arrived without DBI
   # would install, run nothing, and report green.
-  expect_identical(backend_job_packages("duckdb"), c("duckdb", "DBI"))
-  expect_identical(backend_job_packages("RSQLite"), c("RSQLite", "DBI"))
+  expect_identical(suggest_job_packages("duckdb"), c("duckdb", "DBI"))
+  expect_identical(suggest_job_packages("RSQLite"), c("RSQLite", "DBI"))
   # dtplyr declares `Imports: data.table`, so the job installs it regardless;
   # naming it is what keeps `verify-library-isolation.R` from reading a
   # dependency of the requested backend as a cache leak.
-  expect_identical(backend_job_packages("dtplyr"), c("dtplyr", "data.table"))
-  expect_identical(backend_job_packages("data.table"), "data.table")
-  expect_error(backend_job_packages(absent_package), "optional_backend_spec")
+  expect_identical(suggest_job_packages("dtplyr"), c("dtplyr", "data.table"))
+  expect_identical(suggest_job_packages("data.table"), "data.table")
+  expect_error(suggest_job_packages(absent_package), "optional_suggest_spec")
 })
 
 test_that("every companion is itself a tracked Suggest", {
@@ -264,7 +264,7 @@ test_that("every companion is itself a tracked Suggest", {
   # refused by `verify-library-isolation.R`, which reads the same `required`
   # list and knows only what the table names.
   companions <- unlist(lapply(
-    optional_backend_spec(),
+    optional_suggest_spec(),
     function(entry) entry$companions
   ))
   expect_true(all(companions %in% names(optional_suggests())))
@@ -287,8 +287,8 @@ test_that("optional_backends() is the subset a job can be asked to withhold", {
 })
 
 test_that("every tracked Suggest is declared in DESCRIPTION", {
-  # A typo in `optional_suggests()` would make `backend_available()` refuse the
-  # real backend at every guard, which reads as a registration error rather
+  # A typo in `optional_suggests()` would make `suggest_available()` refuse the
+  # real package at every guard, which reads as a registration error rather
   # than as the typo it is.
   #
   # Read through the shipped guard's own reading of the field rather than a
@@ -307,7 +307,7 @@ test_that("DBI is untrackable because dbplyr puts it in the hard closure", {
   expect_false(optional_suggests()[["DBI"]])
 })
 
-# A guard that reports a backend usable now promises the version DESCRIPTION
+# A guard that reports a package usable now promises the version DESCRIPTION
 # requires, not only that the package is installed (#123). The two claims came
 # apart under `duckdb (>= 1.5.5)`, where the older `duckdb()` rejects the
 # `shared_home` argument outright: `requireNamespace()` answered TRUE, the
@@ -370,7 +370,7 @@ test_that("a package DESCRIPTION does not suggest is refused, not answered", {
   # version-blind question at exactly the call sites with no other registry: a
   # vignette or an example naming a typo, or a Suggest that moved to
   # `Config/Needs/website`, would guard on installation alone and read as
-  # protection. `backend_available()` refuses an unregistered backend for the
+  # protection. `suggest_available()` refuses an unregistered package for the
   # same reason, but nothing outside `tests/` reaches that refusal.
   guard <- suggest_guard()
   expect_error(
@@ -385,14 +385,14 @@ test_that("a package DESCRIPTION does not suggest is refused, not answered", {
   ))
 })
 
-test_that("an installed backend below its constraint is not available", {
+test_that("an installed package below its constraint is not available", {
   with_required_suggests("", {
-    expect_true(backend_available(
+    expect_true(suggest_available(
       "stats",
       known = known_installed,
       suggests = suggests_installed
     ))
-    expect_false(backend_available(
+    expect_false(suggest_available(
       "stats",
       known = known_installed,
       suggests = suggests_too_old
@@ -400,14 +400,14 @@ test_that("an installed backend below its constraint is not available", {
   })
 })
 
-test_that("a too-old backend skips with a reason that is not \"absent\"", {
+test_that("a too-old package skips with a reason that is not \"absent\"", {
   # Reported as absent, this skip would send a reader looking for a package
   # sitting in their library. It also has to stay distinguishable to
   # `verify-backend.R`, which attributes a skip by matching the absent wording.
   with_required_suggests("", {
     skipped <- tryCatch(
       {
-        skip_if_backend_absent(
+        skip_if_suggest_absent(
           "stats",
           known = known_installed,
           suggests = suggests_too_old
@@ -423,12 +423,12 @@ test_that("a too-old backend skips with a reason that is not \"absent\"", {
   })
 })
 
-test_that("a too-old backend fails when the job promised to prove it", {
+test_that("a too-old package fails when the job promised to prove it", {
   # A `backend` job installs the version DESCRIPTION asks for, so a job holding
   # an older one has not proved its contract and must not report that it did.
   with_required_suggests("stats", {
     expect_error(
-      backend_available(
+      suggest_available(
         "stats",
         known = known_installed,
         suggests = suggests_too_old
@@ -436,7 +436,7 @@ test_that("a too-old backend fails when the job promised to prove it", {
       "MARGINPLYR_REQUIRED_SUGGESTS"
     )
     expect_error(
-      backend_available(
+      suggest_available(
         "stats",
         known = known_installed,
         suggests = suggests_too_old
@@ -446,7 +446,7 @@ test_that("a too-old backend fails when the job promised to prove it", {
   })
 })
 
-test_that("a hidden backend reports absent whatever its version says", {
+test_that("a hidden package reports absent whatever its version says", {
   # `MARGINPLYR_HIDE_SUGGESTS` claims a package is gone, and both
   # `verify-suite-coverage.R` and `verify-depends-only.R` attribute the skip it
   # produces by matching the absent wording. A simulated absence that announced
@@ -454,7 +454,7 @@ test_that("a hidden backend reports absent whatever its version says", {
   with_required_suggests("", {
     with_hidden_suggests("stats", {
       expect_identical(
-        backend_absence_reason("stats", suggests = suggests_too_old),
+        suggest_absence_reason("stats", suggests = suggests_too_old),
         "{stats} is not installed"
       )
     })
@@ -465,7 +465,7 @@ test_that("the constraints the guard honors are the ones DESCRIPTION states", {
   # The mechanism before the conclusion: every test above supplies its own
   # `suggests`, so all of them would pass against a DESCRIPTION the guard reads
   # nothing out of. This is the one that reads the real field, and it fails if
-  # a tracked backend's constraint stops being found.
+  # a tracked Suggest's constraint stops being found.
   requirement <- suggest_guard()$marginplyr_suggest_requirement
   found <- Filter(
     Negate(is.null),
@@ -476,7 +476,7 @@ test_that("the constraints the guard honors are the ones DESCRIPTION states", {
     requirement("duckdb")$comparisons[[1]]$operator,
     ">="
   )
-  # Every tracked backend present in the checking environment satisfies what
+  # Every tracked Suggest present in the checking environment satisfies what
   # DESCRIPTION asks of it, which is what makes a skip elsewhere in the suite
   # attributable to absence rather than to this run's own library.
   for (package in names(optional_suggests())) {
@@ -490,7 +490,7 @@ test_that("the guard the tests read is the guard the vignettes source", {
   # `tests/`, so they reach `inst/suggests/guard.R` through `system.file()`.
   # These helpers source the same file, which is what makes one reading of
   # DESCRIPTION serve all of them; a second copy here is exactly the drift
-  # `AGENTS.md` keeps `optional_backend_spec()` single to prevent.
+  # `AGENTS.md` keeps `optional_suggest_spec()` single to prevent.
   expect_true(is.function(suggest_guard()$marginplyr_suggest_available))
   installed <- system.file("suggests", "guard.R", package = "marginplyr")
   expect_true(nzchar(installed))

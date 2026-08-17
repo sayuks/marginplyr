@@ -27,7 +27,7 @@ register_nest_proxy_methods <- function() {
 }
 
 test_that("nest rejects grouping before typed metadata acquisition", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_nest_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
   class(source) <- c("margin_nest_proxy_counter", class(source))
@@ -65,7 +65,7 @@ test_that("nest rejects grouping before typed metadata acquisition", {
 })
 
 test_that("dtplyr nesting reuses one typed snapshot and stays lazy", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_nest_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
@@ -128,7 +128,7 @@ test_that("nest verbs preserve their own quosure environments", {
 })
 
 test_that("nest preflight precedes semantic margin-label validation", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_nest_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("Total", "x"), value = 1:2))
   class(source) <- c("margin_nest_proxy_counter", class(source))
@@ -423,7 +423,7 @@ test_that("nesting keeps cardinality when duplicate sets are dropped", {
 })
 
 test_that("dtplyr nesting agrees with the local result and stays lazy", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   # Both inputs are needed: whether a payload column remains is what selects
   # the cell expression, and a keys-only input alone would pass however that
   # choice was made.

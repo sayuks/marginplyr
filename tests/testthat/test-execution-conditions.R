@@ -329,7 +329,7 @@ test_that("a Package condition raised while branches run is untouched", {
 # it -- and CONTEXT.md's *Repeated condition* says so: a verb answers only for
 # the occurrences raised while it runs.
 test_that("a lazy input leaves its execution warnings to the caller", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   query <- summarize_with_margins(
     dtplyr::lazy_dt(coercion_frame()),

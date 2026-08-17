@@ -130,7 +130,7 @@ test_that("an eager expansion over 512 branches keeps one branch per set", {
 })
 
 test_that("lazy branches nest logarithmically rather than linearly", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   # Folding 512 branches from the left builds 512 nested dtplyr steps, and
   # collecting that exhausts the C stack; pairing and halving bounds the depth
@@ -143,7 +143,7 @@ test_that("lazy branches nest logarithmically rather than linearly", {
 })
 
 test_that("a union-path query is one flat `UNION ALL` over every branch", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -208,7 +208,7 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
 # Comparing to local also keeps this to one optional backend, as AGENTS.md
 # requires.
 test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   empty <- data.frame()
   expect_identical(dim(empty), c(0L, 0L))
@@ -290,7 +290,7 @@ test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
 # documented on `summarize_with_margins()` rather than beside #184's
 # column-less input, whose other verbs now agree.
 test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   for (input in list(data.frame(), data.frame(a = 1:3, g = c("x", "x", "y")))) {
     upstream <- dplyr::collect(dplyr::summarize(dtplyr::lazy_dt(input)))
@@ -327,7 +327,7 @@ test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
 # other lazy backend that can be handed a zero-column table at all, and it
 # already answered the local count.
 test_that("a zero-column arrow input keeps the local row count", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   empty <- data.frame()
   query <- expand_with_margins(

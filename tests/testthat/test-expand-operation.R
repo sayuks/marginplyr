@@ -51,7 +51,7 @@ register_expand_proxy_methods <- function() {
 }
 
 test_that("expand rejects invalid grouping before typed metadata acquisition", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_expand_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
   class(source) <- c("margin_expand_proxy_counter", class(source))
@@ -132,7 +132,7 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
 })
 
 test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_expand_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
@@ -156,7 +156,7 @@ test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
 })
 
 test_that("Arrow expansion uses schema metadata without collecting", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   register_expand_proxy_methods()
   source <- arrow::Table$create(data.frame(
     group = c("x", "y"),
@@ -180,7 +180,7 @@ test_that("Arrow expansion uses schema metadata without collecting", {
 })
 
 test_that("DuckDB expansion acquires one typed selection proxy", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   register_expand_proxy_methods()
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -269,7 +269,7 @@ test_that("expand preserves duplicate grouping-set policies", {
 })
 
 test_that("expand rejects unsupported sources with a package condition", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   error <- expect_error(
     expand_with_margins(

@@ -1,8 +1,15 @@
-# Every backend behind these helpers is a Suggested package, so a check run
-# without it must skip rather than fail. That is right for CRAN's minimal
-# flavors, but it makes a skip indistinguishable from a proof: a release job
-# whose whole purpose is to execute DuckDB would pass green with fourteen
-# silently skipped tests if duckdb failed to install.
+# Every package behind these helpers is a Suggested one, so a check run without
+# it must skip rather than fail. That is right for CRAN's minimal flavors, but
+# it makes a skip indistinguishable from a proof: a release job whose whole
+# purpose is to execute DuckDB would pass green with fourteen silently skipped
+# tests if duckdb failed to install.
+#
+# Two words are in use here and they are not synonyms (#185). A *Suggest* is any
+# optional package a guard may name, which is what `optional_suggest_spec()`
+# below holds and what every helper taking a package name speaks of. A *backend*
+# is narrower -- a job the release matrix generates -- which is why
+# `optional_backends()` keeps its name for the subset those jobs iterate over
+# and no helper accepting an entry is named for one.
 #
 # Both variables below arrive as a comma-separated package list, and the CI
 # scripts read the same values through `env_list()` in `.github/scripts/`. That
@@ -15,7 +22,7 @@ suggests_env_list <- function(name) {
   declared[nzchar(declared)]
 }
 
-# `MARGINPLYR_REQUIRED_SUGGESTS` is how a job states which backends it exists
+# `MARGINPLYR_REQUIRED_SUGGESTS` is how a job states which Suggests it exists
 # to prove. A package named there must be installed, and its absence fails the
 # test instead of skipping it. Generic jobs leave the variable unset and keep
 # skipping. `.github/workflows/release-matrix.yaml` sets it per dedicated job.
@@ -31,7 +38,7 @@ required_suggests <- function() {
 #
 # Hiding is a claim about a package this process could otherwise see, so it is
 # deliberately not the same mechanism as `.libPaths()` surgery: a test that
-# reaches its backend through anything but these helpers would keep working and
+# reaches its package through anything but these helpers would keep working and
 # be reported as running, which is the honest answer -- the guards are what
 # decide whether a test skips, and the guards are what this reads.
 hidden_suggests <- function() {
@@ -54,7 +61,7 @@ hidden_suggests <- function() {
 #
 # The lookup is a function rather than a value because `.github/scripts/`
 # sources this file from a bare `Rscript` before marginplyr is installed --
-# `generate-backend-matrix.R` needs only `optional_backend_spec()` -- so
+# `generate-backend-matrix.R` needs only `optional_suggest_spec()` -- so
 # resolving a path at source time would fail a script that never asks a version
 # question. Both candidate paths are relative, and both possible working
 # directories are covered: the repository root under those scripts, and
@@ -85,7 +92,7 @@ declared_suggests <- function() {
   }
   suggests <- unname(read.dcf(path, fields = "Suggests")[1L, 1L])
   # A DESCRIPTION stating no Suggests would make every guard below report every
-  # backend unconstrained, which reads exactly like a package whose constraints
+  # package unconstrained, which reads exactly like a package whose constraints
   # are all satisfied.
   if (is.na(suggests)) {
     stop(sprintf("%s states no Suggests field.", path))
@@ -109,7 +116,7 @@ suggest_guard <- local({
     if (!nzchar(path) || !file.exists(path)) {
       stop(
         "`inst/suggests/guard.R` is not reachable, so no guard here can tell ",
-        "an installed backend from a usable one."
+        "an installed package from a usable one."
       )
     }
     loaded <<- new.env(parent = globalenv())
@@ -132,9 +139,15 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # tarball, and `.Rbuildignore` excludes `^\.github$` from that tarball, so a
 # table kept in `.github/scripts/` would not exist where the tests execute. The
 # CI scripts run from the checkout instead and can read this file, which makes
-# `tests/` the only placement both sides reach. Adding a backend starts here,
-# because `backend_available()` below refuses a name this table does not carry,
+# `tests/` the only placement both sides reach. Adding an entry starts here,
+# because `suggest_available()` below refuses a name this table does not carry,
 # and `release-matrix.yaml` generates its `backend` job from it.
+#
+# What the table holds is every optional Suggest a guard may name, and two of
+# its entries are why that is not the same set as the backends: `DBI` is a
+# companion no job proves on its own, and `data.table` is an input class rather
+# than a translation target. The other four are translation targets, and the
+# table is named for the wider set it holds rather than for them (#185).
 #
 # `asserted` answers whether the release matrix can assert the package absent by
 # name. `DBI` cannot. `dbplyr` is an Import and declares `Imports: DBI`, so DBI
@@ -143,28 +156,22 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # require a `{DBI} is not installed` line that no run can produce, and
 # `verify-library-isolation.R` would find DBI on `.libPaths()` in every job that
 # withheld it. An entry that is not `asserted` gets no job of its own; it
-# reaches CI as another backend's companion.
+# reaches CI as another entry's companion.
 #
-# `companions` names the packages a job proving this backend must install
-# alongside it. They are not the backend, so they are not what the job promises
-# to execute -- but a driver package without DBI installs and then does nothing.
-# It is also how a job declares what its backend drags in: dtplyr declares
-# `Imports: data.table`, so a job installing dtplyr installs data.table whether
-# it asked for it or not, and `verify-library-isolation.R` would read that as a
-# leak from a shared cache. Naming it here is the job saying it expected it.
+# `companions` names the packages a job proving this entry must install
+# alongside it. They are not what the job promises to execute -- but a driver
+# package without DBI installs and then does nothing. It is also how a job
+# declares what its own entry drags in: dtplyr declares `Imports: data.table`,
+# so a job installing dtplyr installs data.table whether it asked for it or not,
+# and `verify-library-isolation.R` would read that as a leak from a shared
+# cache. Naming it here is the job saying it expected it.
 #
 # `data.table` is an entry of its own as well, because it is not only dtplyr's
 # dependency here: raw `data.table` input reaches the local backend as an
 # ordinary data frame subclass (#176), and it is genuinely absent under
-# `_R_CHECK_DEPENDS_ONLY_=true`, which is what `asserted` claims. It is the
-# second entry to stretch the word "backend" -- `DBI` was the first -- since
-# what the table actually holds is every optional Suggest a guard may name, and
-# what a `backend` job proves for this one is an input class rather than a
-# translation target. The name is left alone deliberately and the choice is
-# #185's to make: it is spelled into four CI scripts, the workflow, and every
-# guard, so renaming it is a larger change than any entry it holds, and nothing
-# reads the table wrongly today.
-optional_backend_spec <- function() {
+# `_R_CHECK_DEPENDS_ONLY_=true`, which is what `asserted` claims. What its
+# `backend` job proves is that input class, not a translation.
+optional_suggest_spec <- function() {
   list(
     arrow = list(asserted = TRUE, companions = character()),
     duckdb = list(asserted = TRUE, companions = "DBI"),
@@ -177,47 +184,54 @@ optional_backend_spec <- function() {
 
 # The table's `asserted` column, in the shape every existing caller reads.
 optional_suggests <- function() {
-  vapply(optional_backend_spec(), function(entry) entry$asserted, logical(1))
+  vapply(optional_suggest_spec(), function(entry) entry$asserted, logical(1))
 }
 
 # The subset a job can be asked to withhold, which is what the release matrix's
 # absence assertions iterate over and what its `backend` matrix is generated
 # from. Keeps the name it had while it lived in `ci-helpers.R`, so
 # `verify-depends-only.R` and `verify-library-isolation.R` call it unchanged.
+#
+# #185 renamed the table and the guards around it without touching this, because
+# this is the one place the narrower word is the right one: what it returns is
+# exactly the set `backend` jobs are generated from, and it takes no package
+# name, so it cannot be read as a claim that any particular entry translates
+# queries. `suggest_job_packages()` below does take one, which is why that one
+# moved.
 optional_backends <- function() {
   asserted <- optional_suggests()
   names(asserted)[asserted]
 }
 
 # Every package a job proving `package` must install and name in
-# `MARGINPLYR_REQUIRED_SUGGESTS`. The backend leads, so a reader of the
-# generated matrix sees which entry a job is for before its companions.
-backend_job_packages <- function(package) {
-  spec <- optional_backend_spec()
+# `MARGINPLYR_REQUIRED_SUGGESTS`. The entry leads, so a reader of the
+# generated matrix sees which one a job is for before its companions.
+suggest_job_packages <- function(package) {
+  spec <- optional_suggest_spec()
   if (!package %in% names(spec)) {
     stop(sprintf(
-      "{%s} is not named in `optional_backend_spec()`.",
+      "{%s} is not named in `optional_suggest_spec()`.",
       package
     ))
   }
   unique(c(package, spec[[package]]$companions))
 }
 
-# Reports whether an optional backend can be used, and refuses to report FALSE
-# for a backend the running job promised to exercise. Callers that select among
-# several backends use this directly, because dropping one from a list records
+# Reports whether an optional Suggest can be used, and refuses to report FALSE
+# for one the running job promised to exercise. Callers that select among
+# several packages use this directly, because dropping one from a list records
 # no skip at all and would otherwise be invisible.
 #
 # "Can be used" includes the version DESCRIPTION requires, which is what
 # `requireNamespace()` here could not say (#123). An installed-but-too-old
-# backend now reports FALSE and skips, where it used to report TRUE and let the
+# package now reports FALSE and skips, where it used to report TRUE and let the
 # test call an API the installed version does not have.
 #
 # A package `known` does not name is an error rather than FALSE. Nothing in the
 # release matrix executes such a package and nothing asserts it absent, so a
 # guard on it would do nothing while reading as protection; erroring is what
-# makes this test suite the place a backend gets registered. The check runs
-# before the guard is consulted so that it fires the same way on a fully
+# makes this test suite the place an optional Suggest gets registered. The check
+# runs before the guard is consulted so that it fires the same way on a fully
 # provisioned developer machine, where the package is installed and a check
 # placed after it would never be reached.
 #
@@ -226,7 +240,7 @@ backend_job_packages <- function(package) {
 # package that is always installed, and a constraint no installed version can
 # satisfy; none of the three belongs in `optional_suggests()` or in DESCRIPTION.
 # Every other call site takes the defaults.
-backend_available <- function(package,
+suggest_available <- function(package,
                               known = optional_suggests(),
                               suggests = declared_suggests()) {
   if (!package %in% names(known)) {
@@ -234,7 +248,7 @@ backend_available <- function(package,
       paste0(
         "{%s} is not named in `optional_suggests()`, so no release-matrix job ",
         "executes it and no job asserts it is absent. Add it to ",
-        "`optional_backend_spec()`, which is what generates its job."
+        "`optional_suggest_spec()`, which is what generates its job."
       ),
       package
     ))
@@ -267,49 +281,49 @@ backend_available <- function(package,
     stop(sprintf(
       paste0(
         "%s, and it is named in MARGINPLYR_REQUIRED_SUGGESTS, so this job ",
-        "cannot prove its backend contract."
+        "cannot prove the contract it exists for."
       ),
-      backend_absence_reason(package, suggests = suggests)
+      suggest_absence_reason(package, suggests = suggests)
     ))
   }
   FALSE
 }
 
-# Why a backend is unusable, in the wording a skip carries.
+# Why a package is unusable, in the wording a skip carries.
 #
-# A hidden backend reports the absent wording rather than the guard's, because
+# A hidden package reports the absent wording rather than the guard's, because
 # `MARGINPLYR_HIDE_SUGGESTS` claims a package this process could otherwise see
 # is gone: `verify-suite-coverage.R` and `verify-depends-only.R` both attribute
 # a skip by matching `{pkg} is not installed`, and a simulated absence that
 # announced itself differently would be a skip neither could attribute.
 #
 # The too-old wording is deliberately not that phrase, and not because a
-# `backend` job needs it to be: a backend that job named is required, so
-# `backend_available()` above stops rather than skipping, and a backend it
-# withheld is not installed at all. What the distinction is for is the reader of
-# a skip -- "not installed" would send someone looking for a package sitting in
-# their library -- and for `verify-backend.R`, which fails a job on any skip it
+# `backend` job needs it to be: a package that job named is required, so
+# `suggest_available()` above stops rather than skipping, and one it withheld is
+# not installed at all. What the distinction is for is the reader of a skip --
+# "not installed" would send someone looking for a package sitting in their
+# library -- and for `verify-backend.R`, which fails a job on any skip it
 # cannot attribute. Sharing the absent wording would let a version failure pass
-# there as a withheld backend if one ever reached that path.
-backend_absence_reason <- function(package, suggests = declared_suggests()) {
+# there as a withheld package if one ever reached that path.
+suggest_absence_reason <- function(package, suggests = declared_suggests()) {
   if (package %in% hidden_suggests()) {
     return(sprintf("{%s} is not installed", package))
   }
   suggest_status(package, suggests = suggests)$reason
 }
 
-# Skips unless every named backend is usable, keeping testthat's own wording for
+# Skips unless every named package is usable, keeping testthat's own wording for
 # an absent package so the skip summary reads the same as it did under
 # `skip_if_not_installed()`.
 #
 # `known` and `suggests` sit after `...` and so can only be supplied by full
-# name, which keeps them from ever swallowing a backend argument.
-skip_if_backend_absent <- function(...,
+# name, which keeps them from ever swallowing a package argument.
+skip_if_suggest_absent <- function(...,
                                    known = optional_suggests(),
                                    suggests = declared_suggests()) {
   for (package in c(...)) {
-    if (!backend_available(package, known = known, suggests = suggests)) {
-      skip(backend_absence_reason(package, suggests = suggests))
+    if (!suggest_available(package, known = known, suggests = suggests)) {
+      skip(suggest_absence_reason(package, suggests = suggests))
     }
   }
   invisible(NULL)

@@ -738,7 +738,10 @@ The finding also missed the second reversed site,
 `tests/testthat/test-factor.R:63`. #69 reorders both for consistency, records
 the closure reason where the list now lives, and asserts it in
 `test-optional-backends.R`, so a future dbplyr that drops DBI fails a test
-rather than silently making the exclusion wrong.
+rather than silently making the exclusion wrong. The helper this entry quotes
+is `skip_if_suggest_absent()` since #185, which renamed it and the table behind
+it for the optional Suggests they actually hold; the finding is quoted as it
+was raised.
 
 ### Rejected
 

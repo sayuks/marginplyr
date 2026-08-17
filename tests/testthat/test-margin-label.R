@@ -292,7 +292,7 @@ test_that("a check with no column left to read contacts nothing", {
 })
 
 test_that("dtplyr rejects a declared collision and stays silent on a value", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     declared = factor(c("a", "b"), levels = c("a", "b", "Total")),
     observed = c("Total", "x"),
@@ -341,7 +341,7 @@ test_that("dtplyr rejects a declared collision and stays silent on a value", {
 # zero-row read ADR 0020 exempts rather than as a factor column, which is a
 # different route to the same rejection than the one dtplyr takes above.
 test_that("DuckDB rejects a declared collision without being asked", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -384,7 +384,7 @@ test_that("DuckDB rejects a declared collision without being asked", {
 # is declared in the source data frame reaches the database as text and the
 # check above it has nothing to read the collision off.
 test_that("RSQLite leaves an observed collision silent until it is asked", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -428,7 +428,7 @@ test_that("RSQLite leaves an observed collision silent until it is asked", {
 })
 
 test_that("dtplyr applies mixed named labels lazily and restores factors", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     first = factor(c("a", "b")),
     second = ordered(c("x", "y")),
@@ -453,7 +453,7 @@ test_that("dtplyr applies mixed named labels lazily and restores factors", {
 })
 
 test_that("Arrow applies mixed named labels lazily with typed missing values", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   data <- data.frame(
     first = c("a", "b"),
     second = c(1L, 2L),
@@ -495,7 +495,7 @@ test_that("portable SQL consumes named per-column labels lazily", {
 })
 
 test_that("DuckDB uses typed missing for a missing factor Margin label", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(

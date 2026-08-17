@@ -156,7 +156,7 @@ test_that("shared lifecycle options preserve user-expression conditions", {
 })
 
 test_that("summary rejects grouping before typed metadata acquisition", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_summary_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
   class(source) <- c("margin_summary_proxy_counter", class(source))
@@ -177,7 +177,7 @@ test_that("summary rejects grouping before typed metadata acquisition", {
 })
 
 test_that("removed .groups is rejected before typed metadata acquisition", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_summary_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
   class(source) <- c("margin_summary_proxy_counter", class(source))
@@ -198,7 +198,7 @@ test_that("removed .groups is rejected before typed metadata acquisition", {
 })
 
 test_that("dtplyr summary reuses one typed snapshot across selections", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_summary_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
@@ -230,7 +230,7 @@ test_that("dtplyr summary reuses one typed snapshot across selections", {
 })
 
 test_that("dtplyr unwraps a `.fns` list of one into the function it holds", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   # dtplyr is the only backend whose `across()` output names are normalized
   # before staging: the `.names` template is expanded into the selection, and
   # a `.fns` list holding one function is unwrapped to that function, since a

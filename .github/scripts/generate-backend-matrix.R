@@ -1,7 +1,7 @@
 # Generates `release-matrix.yaml`'s `backend` matrix from the one table.
 #
 # Those jobs used to be four hand-written entries, each repeating what
-# `optional_backend_spec()` in `tests/testthat/helper-optional-backends.R`
+# `optional_suggest_spec()` in `tests/testthat/helper-optional-backends.R`
 # already says: which package the job installs, which packages its absence must
 # fail on, and a `cache-version` spelled from its name. Repetition is what the
 # `coverage` job existed to police -- it read the workflow file back against the
@@ -40,7 +40,7 @@ if (length(backends) == 0L) {
 }
 
 entries <- lapply(backends, function(package) {
-  packages <- backend_job_packages(package)
+  packages <- suggest_job_packages(package)
   list(
     name = package,
     # What `setup-r-dependencies` installs on top of the hard dependencies.

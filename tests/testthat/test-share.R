@@ -1521,7 +1521,7 @@ parent_preflight_collect <- function(x, ...) {
 }
 
 test_that("Parent syntax and local execution errors precede typed metadata", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   registerS3method(
     "head",
     "parent_preflight_counter",

@@ -331,27 +331,27 @@ guard lives under `inst/` for the reason `must-error.R` does: the four
 vignettes, the four examples, and
 `tests/testthat/helper-optional-backends.R` each reach it in one `source()`
 call on a `system.file()` path, and a copy in `tests/` would be the copy the
-shipped sites drift from. Adding a backend still means editing the two places
-*Release matrix* names — a version is not a third place, because the guard
-reads it.
+shipped sites drift from. Adding an optional Suggest still means editing the
+two places *Release matrix* names — a version is not a third place, because the
+guard reads it.
 
-`backend_available()` consults the guard, so a too-old backend skips rather
+`suggest_available()` consults the guard, so a too-old package skips rather
 than running, unless the job named it in `MARGINPLYR_REQUIRED_SUGGESTS` — then
-it errors, exactly as an absent required backend does, and a `backend` job
+it errors, exactly as an absent required package does, and a `backend` job
 holding a stale version reds as a failure rather than passing on a skipped
 suite. The skip says which case it is: `{duckdb} 1.5.4.3 is installed, but
 marginplyr requires >= 1.5.5`, deliberately not the `{pkg} is not installed`
 wording, which would send a reader looking for a package sitting in their
-library. A `backend` job cannot produce that skip — a backend it named errors
+library. A `backend` job cannot produce that skip — a package it named errors
 and one it withheld is not installed — but the wording is still what stops
-`verify-backend.R` attributing a version failure to a withheld backend if one
+`verify-backend.R` attributing a version failure to a withheld package if one
 ever reached that path. A package hidden by `MARGINPLYR_HIDE_SUGGESTS` keeps
 the absent wording, because a simulated absence that announced a version is a
 skip neither `verify-suite-coverage.R` nor `verify-depends-only.R` could
 attribute.
 
 Guarding on a package DESCRIPTION does not suggest is an error, not an answer.
-`backend_available()` already refuses a backend `optional_suggests()` does not
+`suggest_available()` already refuses a package `optional_suggests()` does not
 name, but a vignette and an example have no such registry, and a typo or a
 dependency that moved to `Config/Needs/website` would otherwise guard on
 installation alone while reading as protection.
@@ -385,14 +385,22 @@ set that arrived empty is a set that passes.
 `.github/workflows/release-matrix.yaml` checks one built tarball rather than
 the working tree, because a check that passes on the development tree can be
 passing on a file the tarball does not ship. Its `backend` jobs each install a
-single optional backend and set `MARGINPLYR_REQUIRED_SUGGESTS`, which turns
-that backend's absence into a test failure instead of a skip.
+single member of `optional_backends()` and set `MARGINPLYR_REQUIRED_SUGGESTS`,
+which turns that package's absence into a test failure instead of a skip.
 
-That variable is what makes skipping safe everywhere else. Optional-backend
-tests skip when their package is missing, which is correct for CRAN's minimal
-flavors but means a green job proves nothing about the backend. Every such
-test therefore goes through `skip_if_backend_absent()` or `backend_available()`
-from `tests/testthat/helper-optional-backends.R` — never `skip_if_not_installed()`
+Two words are in use in this section and they name different sets (#185). A
+*Suggest* is any optional package a guard may name — what
+`optional_suggest_spec()` holds, and what every helper taking a package name
+speaks of. A *backend* is the narrower thing a generated job is: the subset
+`optional_backends()` returns, which is what these jobs iterate over. Most
+entries are both; `DBI` is neither a job nor a translation target, and
+`data.table` gets a job for an input class rather than a translation.
+
+That variable is what makes skipping safe everywhere else. A test behind an
+optional package skips when it is missing, which is correct for CRAN's minimal
+flavors but means a green job proves nothing about it. Every such test
+therefore goes through `skip_if_suggest_absent()` or `suggest_available()` from
+`tests/testthat/helper-optional-backends.R` — never `skip_if_not_installed()`
 or `rlang::is_installed()` directly, since those cannot be told to fail — and
 never `requireNamespace()` either, for the separate reason in
 *Optional-dependency guards* above. (`skip_if_not_installed("dbplyr")` is not
@@ -453,10 +461,10 @@ run: it fails the job when an optional backend the job did not declare in
 it rather than the workflow calling it as a step, so the assertion cannot be
 dropped from a job that still checks a tarball.
 
-Adding an optional backend means editing two places. Every partial edit fails
+Adding an optional Suggest means editing two places. Every partial edit fails
 loudly:
 
-1. `optional_backend_spec()` in `tests/testthat/helper-optional-backends.R`,
+1. `optional_suggest_spec()` in `tests/testthat/helper-optional-backends.R`,
    the one table every other consumer derives from — `optional_suggests()` for
    its `asserted` column, `optional_backends()` for the subset a job can be
    asked to withhold, and `verify-depends-only.R`,
@@ -470,14 +478,14 @@ loudly:
    entry claims no absence
    and gets no job, so nothing asserts it — which is the DBI case above, and
    the reason that value exists. `companions` names what the generated job
-   installs alongside the backend, which is how `DBI` reaches the driver jobs
-   without a job of its own. It is also how a backend declares what its own
+   installs alongside the entry, which is how `DBI` reaches the driver jobs
+   without a job of its own. It is also how an entry declares what its own
    dependencies drag in, and there the companion is a tracked entry rather
    than an untracked one: dtplyr declares `Imports: data.table`, so its job
    installs data.table whichever way the entry is written, and leaving it
    undeclared makes `verify-library-isolation.R` fail the job for a leak that
-   is really the requested backend's own closure.
-2. the `skip_if_backend_absent()` or `backend_available()` call in the tests.
+   is really the requested package's own closure.
+2. the `skip_if_suggest_absent()` or `suggest_available()` call in the tests.
    Doing only this errors immediately: those helpers refuse a package
    `optional_suggests()` does not name, since nothing would execute it and
    nothing would assert it absent.

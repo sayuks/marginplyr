@@ -45,7 +45,7 @@ test_that("Parent shares preserve columns, grouping, and laziness", {
     expect_no_error(dbplyr::sql_render(sql))
   }
 
-  if (backend_available("dtplyr")) {
+  if (suggest_available("dtplyr")) {
     lazy <- summarize(dtplyr::lazy_dt(data))
     expect_s3_class(lazy, "dtplyr_step")
     expect_identical(as.character(dplyr::tbl_vars(lazy)), expected_names)
@@ -61,7 +61,7 @@ test_that("Parent shares preserve columns, grouping, and laziness", {
 })
 
 test_that("dtplyr validates Parent-share source types during collection", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "y"),
     value = 1:2
@@ -90,7 +90,7 @@ test_that("dtplyr validates Parent-share source types during collection", {
 })
 
 test_that("dtplyr rejects every ineligible Parent-share source type", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "y"),
     value = 1:2,
@@ -132,7 +132,7 @@ test_that("dtplyr rejects every ineligible Parent-share source type", {
 })
 
 test_that("dtplyr rejects non-scalar Parent-share sources on collection", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "x", "y"),
     value = 1:3
@@ -173,7 +173,7 @@ test_that("dtplyr rejects non-scalar Parent-share sources on collection", {
 })
 
 test_that("dtplyr integer and double Parent shares match local results", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "x", "y"),
     integer_value = 1:3,
@@ -205,7 +205,7 @@ test_that("dtplyr integer and double Parent shares match local results", {
 })
 
 test_that("dtplyr validates each referenced source expanded by across", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "x", "y"),
     value = 1:3
@@ -234,7 +234,7 @@ test_that("dtplyr validates each referenced source expanded by across", {
 })
 
 test_that("dtplyr validates constant summaries expanded by across", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "y"),
     value = 1:2
@@ -268,7 +268,7 @@ test_that("dtplyr validates constant summaries expanded by across", {
 })
 
 test_that("dtplyr Parent validation preserves ordinary across arguments", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "x", "y"),
     value = c(1, NA, 3)
@@ -294,7 +294,7 @@ test_that("dtplyr Parent validation preserves ordinary across arguments", {
 })
 
 test_that("dtplyr preserves across arguments for unreferenced functions", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "x", "y"),
     value = c(1, NA, 3)
@@ -324,7 +324,7 @@ test_that("dtplyr preserves across arguments for unreferenced functions", {
 })
 
 test_that("dtplyr preserves an omitted across selection", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   # dtplyr takes the share `across()` apart and rebuilds it a second time, to
   # wrap each function in the validation the lazy backend needs, so an argument
   # the caller omitted has one more rebuild to survive (#174). Compared against
@@ -362,7 +362,7 @@ test_that("dtplyr preserves an omitted across selection", {
 })
 
 test_that("Arrow rejects Parent shares before constructing a query", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   source <- arrow::Table$create(data.frame(
     group = c("x", "y"),
     value = 1:2
@@ -420,7 +420,7 @@ test_that("Arrow rejects Parent shares before constructing a query", {
 })
 
 test_that("Arrow ordinary Margin summaries remain lazy and available", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   query <- summarize_with_margins(
     arrow::Table$create(data.frame(
       group = c("x", "x", "y"),
@@ -439,7 +439,7 @@ test_that("Arrow ordinary Margin summaries remain lazy and available", {
 })
 
 test_that("Arrow Parent-share planning errors precede backend rejection", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   source <- arrow::Table$create(data.frame(
     group = c("x", "y"),
     value = 1:2
@@ -514,7 +514,7 @@ test_that("Arrow Parent-share planning errors precede backend rejection", {
 })
 
 test_that("dtplyr batches Parent shares with missing-safe matching", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "a", "a"),
     group = c(NA_character_, "x", NA_character_, "x"),
@@ -553,7 +553,7 @@ parent_sql_count <- function(sql, pattern) {
 }
 
 test_that("dtplyr batches validated summaries and parent mapping", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "y"),
     revenue = c(1, 3),
@@ -830,7 +830,7 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
 })
 
 test_that("RSQLite executes portable Parent shares end to end", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   data <- data.frame(
@@ -913,7 +913,7 @@ test_that("RSQLite executes portable Parent shares end to end", {
 })
 
 test_that("RSQLite Parent shares preserve runtime backend conditions", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   remote <- dplyr::copy_to(
@@ -954,7 +954,7 @@ test_that("RSQLite Parent shares preserve runtime backend conditions", {
 # dialect, and this dialect answers it the same way whatever the call
 # summarizes.
 test_that("RSQLite refuses a share its dialect cannot establish", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   data <- data.frame(
@@ -1030,7 +1030,7 @@ test_that("RSQLite refuses a share its dialect cannot establish", {
 # that identifies its Margin levels must still reach the rule for its measures,
 # and must still calculate them once the caller takes that rule on themselves.
 test_that("RSQLite keeps the share rule beside Margin level helpers", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   data <- data.frame(
@@ -1078,7 +1078,7 @@ test_that("RSQLite keeps the share rule beside Margin level helpers", {
 })
 
 test_that("RSQLite calculates eligible shares a caller has established", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   data <- data.frame(
@@ -1342,7 +1342,7 @@ test_that("the source checker refuses an unrecognized backend kind", {
 # of the summary to rewrite. Nothing here is a marginplyr condition: the
 # diagnostic is the database's own, and the assertion is that it is usable.
 test_that("DuckDB reports an ineligible share source against its summary", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(
@@ -1397,7 +1397,7 @@ test_that("DuckDB reports an ineligible share source against its summary", {
 })
 
 test_that("DuckDB Parent shares agree across native, portable, local paths", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(
@@ -1516,7 +1516,7 @@ expect_empty_share_identities <- function(root, partitioned) {
 }
 
 test_that("dtplyr shares preserve empty-input grand total and partitions", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   source <- dtplyr::lazy_dt(empty_share_data())
 
   root <- summarize_with_margins(
@@ -1543,7 +1543,7 @@ test_that("dtplyr shares preserve empty-input grand total and partitions", {
 })
 
 test_that("DuckDB shares preserve empty-input grand total and partitions", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   source <- dplyr::copy_to(
@@ -1582,7 +1582,7 @@ duplicate_share_data <- function() {
 }
 
 test_that("dtplyr Parent shares skip duplicate grouping-set occurrences", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- duplicate_share_data()
   summarize <- function(source, include_id) {
     id_name <- if (include_id) "set" else NULL
@@ -1616,7 +1616,7 @@ test_that("dtplyr Parent shares skip duplicate grouping-set occurrences", {
 })
 
 test_that("DuckDB Parent shares skip duplicate grouping-set occurrences", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   data <- duplicate_share_data()
   summarize <- function(source, include_id) {
     id_name <- if (include_id) "set" else NULL
@@ -1711,7 +1711,7 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
     expect_no_error(dbplyr::sql_render(simulated))
   }
 
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
@@ -1728,7 +1728,7 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
 })
 
 test_that("RSQLite executes portable Total shares end to end", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   data <- data.frame(
@@ -1818,7 +1818,7 @@ test_that("RSQLite executes portable Total shares end to end", {
 })
 
 test_that("DuckDB Total shares agree across native, portable, local paths", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   data <- data.frame(
@@ -1904,7 +1904,7 @@ test_that("DuckDB Total shares agree across native, portable, local paths", {
 })
 
 test_that("dtplyr Total shares match local results", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     fixed = c("p", "p", "q", "q"),
     group = c("x", "y", "x", "y"),
@@ -1958,7 +1958,7 @@ test_that("dtplyr Total shares match local results", {
 })
 
 test_that("dtplyr rejects ineligible Total-share sources on collection", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   step <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
 
   query <- summarize_with_margins(
@@ -1999,7 +1999,7 @@ test_that("dtplyr rejects ineligible Total-share sources on collection", {
 })
 
 test_that("Arrow rejects Total shares before constructing a query", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   source <- arrow::Table$create(data.frame(
     group = c("x", "y"),
     value = 1:2
