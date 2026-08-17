@@ -2026,16 +2026,16 @@ check_dialect_share_sources <- function(operation,
   )
 }
 
-# One question per dialect: does it convert a value of another type to a number
-# rather than refusing it? It is asked with at most two queries, neither
+# One question about a dialect: does it convert a value of another type to a
+# number rather than refusing it? It is asked with at most two queries, neither
 # referencing a table of the caller's -- `SELECT SUM('x') FROM (SELECT 1 AS z)`
 # and, only where that is rejected, the control below -- so asking it reads
 # none of their data, which is what ADR 0020's second exemption rests on. What
 # an answered question establishes is a property of the dialect and not of one
 # connection, so the answer is reused for every later connection carrying the
-# same dialect and no dialect is asked twice. A question that went unanswered
-# established nothing, so it is asked again rather than reused -- see the cache
-# write below.
+# same dialect, and a dialect that answers is never asked again. A question that
+# went unanswered established nothing, so it is asked again rather than reused
+# -- see the cache write below.
 share_dialect_verdict <- function(data, backend) {
   con <- share_dialect_connection(data)
   if (!share_dialect_can_be_asked(con)) {

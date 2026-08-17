@@ -582,8 +582,8 @@ decomposition loses. It references your table but reads none of it, and
 it is not a shape marginplyr introduced: \code{\link[dplyr:tbl]{dplyr::tbl()}} already sends an
 equivalent zero-row read for any table reference, on any dbplyr backend.
 \item \strong{At most two queries per share request until the SQL dialect answers},
-sent the first time a share is requested there with \code{.check_share_source}
-at its default of \code{TRUE}, asking whether the dialect converts a
+sent when a share is requested there with \code{.check_share_source} at its
+default of \code{TRUE}, asking whether the dialect converts a
 non-numeric value to a number rather than refusing it. Neither references
 any of your tables, so reading them touches none of your data. The second
 is a control, sent only when the first is rejected, and it distinguishes

@@ -1151,10 +1151,12 @@ test_that("a lazy backend that answers nothing refuses to establish a share", {
   expect_match(dbplyr::sql_render(query), "UNION ALL", fixed = TRUE)
 })
 
-# The per-dialect verdict cache is package state, so every test below starts
-# from an empty one -- what it records is only observable from there -- and puts
-# back whatever the rest of the suite had recorded. Restoring empties first, so
-# that an entry the test itself wrote is not left beside the saved ones.
+# The per-dialect verdict cache is package state, so the three tests that read
+# what it records start from an empty one -- what a call records is only
+# observable from there -- and put back whatever the rest of the suite had
+# recorded. Restoring empties first, so that an entry the test itself wrote is
+# not left beside the saved ones. The tests after those three assert against
+# the cache as they found it, or do not touch it, and use neither helper.
 empty_share_dialect_verdicts <- function() {
   rm(
     list = ls(share_dialect_verdicts, all.names = TRUE),
