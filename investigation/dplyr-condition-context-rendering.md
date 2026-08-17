@@ -122,7 +122,9 @@ Measured on `main` with the ticket's own `cube(region, grade)` reproduction:
 The contract ADR 0021 states — one report, however many grouping sets raised it
 — therefore did not hold in a colour session at all. Nothing in #199's change
 introduced this and nothing in it fixes it; the ADR 0022 work inherits the same
-bound, since it reads the same rendered text.
+bound, since it reads the same rendered text. Filed as #217, which is
+authoritative for what to do about it; this note is authoritative only for the
+measurement above.
 
 **An aggregation without a cause line.** dplyr's aggregated warning normally
 introduces the caller's diagnostic with `Caused by`, and both the identity and

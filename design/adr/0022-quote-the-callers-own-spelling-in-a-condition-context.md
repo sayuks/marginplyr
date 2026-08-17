@@ -178,7 +178,8 @@ both features no-op: measured on `main`, the `cube(region, grade)`
 reproduction reports four times with `cli.num_colors` above one and once
 without. This decision rests on the same reading and therefore inherits the
 same bound; stripping the styling before either reading is what would lift it,
-for both, and belongs with ADR 0021's identity rather than here.
+for both, and belongs with ADR 0021's identity rather than here. Filed as
+#217.
 
 A restated bullet is one line where dplyr may have wrapped it over several. The
 alternative was re-wrapping text cli had already laid out, which would rewrite
