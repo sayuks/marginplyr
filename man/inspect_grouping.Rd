@@ -95,11 +95,30 @@ Margin order.
 
 An argument documented as taking one of a listed set of strings —
 \code{.duplicates}, \code{.margin_label_position}, and \code{.sort} on the Margin verbs,
-and \code{.format} on \code{\link[=inspect_grouping]{inspect_grouping()}} — takes one of those strings written
-out exactly. An abbreviation is not shorthand for the value it begins, and
+and \code{.format} on \code{\link[=inspect_grouping]{inspect_grouping()}} — takes one of those strings, spelled
+in full. An abbreviation is not shorthand for the value it begins, and
 \code{NULL} is not shorthand for the default: both are errors naming the values
-the argument accepts. An argument left out of the call takes its default,
-and a \code{NULL} is not another way of asking for one.
+the argument accepts.
+
+There are two ways to ask for the default, and a \code{NULL} is neither of them.
+One is to leave the argument out. The other is to pass the whole vocabulary
+as the signature spells it, which is what leaving the argument out already
+does — the default \emph{is} that vector — and what lets a function of your own
+repeat the signature and hand the argument on:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{my_report <- function(data, .sort = c("none", "last", "first")) \{
+  summarize_with_margins(
+    data, revenue = sum(revenue),
+    .grouping = rollup(region), .sort = .sort
+  )
+\}
+}\if{html}{\out{</div>}}
+
+Called without \code{.sort}, that function forwards the vector its own formal
+holds and the Margin verb reads it as the default, so the wrapper needs no
+matching call of its own. Only the spelling the signature gives is read this
+way: any other vector of more than one value is an error, a reordering of
+the vocabulary included.
 
 Elsewhere in this package \code{NULL} is a documented value, and what it means is
 stated with the argument that takes it: it is \code{.grouping}'s one empty

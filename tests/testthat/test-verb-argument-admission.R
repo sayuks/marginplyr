@@ -279,11 +279,19 @@ option_vocabulary_cases <- function() {
   ))
 }
 
-call_with_option <- function(verb, option, value) {
-  args <- list(quote(admission_data()), .grouping = quote(rollup(g)))
+# The arguments every case supplies whatever it is testing, so that a verb's
+# own requirements are stated once. A summary is added only where the verb
+# demands one.
+option_call_args <- function(verb, grouping = quote(rollup(g))) {
+  args <- list(quote(admission_data()), .grouping = grouping)
   if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
     args <- c(args, list(s = quote(sum(v))))
   }
+  args
+}
+
+call_with_option <- function(verb, option, value) {
+  args <- option_call_args(verb)
   # Single-bracket assignment from a list, because `args[[option]] <- NULL`
   # removes the element instead of writing one: the call would then omit the
   # option and exercise its default, which is the very thing the `NULL` case
@@ -292,8 +300,19 @@ call_with_option <- function(verb, option, value) {
   eval(rlang::call2(verb, !!!args))
 }
 
+# The same call with the option never written, which is what a forwarded
+# vocabulary has to agree with.
+call_without_option <- function(verb) {
+  eval(rlang::call2(verb, !!!option_call_args(verb)))
+}
+
 option_case_label <- function(case, value) {
-  paste0(case$verb, "(", case$option, " = \"", value, "\")")
+  written <- if (length(value) == 1L) {
+    paste0("\"", value, "\"")
+  } else {
+    paste0("c(", paste0("\"", value, "\"", collapse = ", "), ")")
+  }
+  paste0(case$verb, "(", case$option, " = ", written, ")")
 }
 
 # The one message a rejected value may produce, built from the vocabulary the
@@ -360,6 +379,94 @@ test_that("an abbreviation of an option value is rejected", {
   }
 })
 
+test_that("the case table reaches every option on every verb that takes it", {
+  # Every test below iterates that table and concludes something from what it
+  # found, so a table that arrived empty -- or one an option quietly dropped
+  # out of -- is a table that passes all of them. What this catches is an axis
+  # being dropped, and not an axis never added: each entry's vocabulary is read
+  # from the shared constants, while the verbs and the options are written out
+  # in `option_vocabulary_cases()` and written out again here.
+  cases <- option_vocabulary_cases()
+
+  expect_gt(length(cases), 0L)
+  expect_setequal(
+    unique(vapply(cases, function(case) case$option, character(1L))),
+    c(".duplicates", ".margin_label_position", ".sort", ".format")
+  )
+  expect_setequal(
+    unique(vapply(cases, function(case) case$verb, character(1L))),
+    c(
+      "summarize_with_margins",
+      "summarise_with_margins",
+      "expand_with_margins",
+      "nest_with_margins",
+      "nest_by_with_margins",
+      "inspect_grouping"
+    )
+  )
+  # A one-value vocabulary would make the reordering case below identical to
+  # the forwarded one, so it would assert acceptance and refusal at once.
+  for (case in cases) {
+    expect_true(
+      length(case$values) > 1L,
+      info = paste(case$verb, case$option)
+    )
+  }
+})
+
+test_that("a forwarded vocabulary resolves to the first value", {
+  # The public formals spell their vocabularies out, so an argument nobody
+  # wrote arrives as the whole vector and has to stand for its first entry.
+  # `match_margin_choice()` cannot tell that from a caller who typed the same
+  # vector, and the two are deliberately not told apart (#210): a function of
+  # the caller's own that repeats the signature forwards exactly this vector,
+  # and refusing it would break that wrapper while breaking nothing else.
+  #
+  # Asserted where the resolution happens, because a Margin result does not
+  # show it. On any one input most values of `.duplicates` and
+  # `.margin_label_position` produce the same result as each other, so a verb
+  # resolving a forwarded vocabulary to the wrong member would return the right
+  # answer anyway; the test below pairs this with what the verbs do.
+  for (case in option_vocabulary_cases()) {
+    expect_identical(
+      match_margin_choice(case$values, case$values, case$option),
+      case$values[[1L]],
+      info = option_case_label(case, case$values)
+    )
+  }
+})
+
+test_that("every verb accepts the vocabulary its own signature spells out", {
+  # The other half: that each verb hands its formal down far enough to be
+  # resolved, and answers as though the argument had never been written.
+  # Equality with the option left out is all this can assert -- see above --
+  # and it is what fails if a verb starts refusing the vector its own default
+  # supplies.
+  for (case in option_vocabulary_cases()) {
+    expect_identical(
+      call_with_option(case$verb, case$option, case$values),
+      call_without_option(case$verb),
+      info = option_case_label(case, case$values)
+    )
+  }
+})
+
+test_that("a reordering of the vocabulary is refused", {
+  # The vocabulary is read as the default because it is the spelling the
+  # signature gives, not because its members are the permitted values in some
+  # order. `rlang::arg_match()` and `rlang::arg_match0()` both accept any
+  # permutation and are looser here, which is recorded in
+  # investigation/rlang-arg-match-for-option-arguments.md.
+  for (case in option_vocabulary_cases()) {
+    reordered <- rev(case$values)
+    expect_identical(
+      option_rejection_message(case$verb, case$option, reordered),
+      expected_vocabulary_message(case),
+      info = option_case_label(case, reordered)
+    )
+  }
+})
+
 test_that("`NULL` is rejected by every option rather than taken as a default", {
   # `match.arg(NULL, choices)` returns `choices[1]`, so every option argument
   # used to read a `NULL` as a request for its own default. #110 stopped that
@@ -396,11 +503,7 @@ test_that("a diagnostic offering a `.duplicates` policy offers a real one", {
   duplicated_sets <- grouping_sets(grouping_set(g), grouping_set(g))
 
   refusal <- function(verb) {
-    fn <- get(verb, envir = asNamespace("marginplyr"))
-    args <- list(admission_data(), .grouping = duplicated_sets)
-    if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
-      args <- c(args, list(s = quote(sum(v))))
-    }
+    args <- option_call_args(verb, grouping = duplicated_sets)
     conditionMessage(rlang::catch_cnd(
       eval(rlang::call2(verb, !!!args)),
       classes = "marginplyr_error"
