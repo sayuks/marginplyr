@@ -204,7 +204,7 @@ summarize_margin_union <- function(.data,
           .by = unname(key_names[grouping_set])
         ),
         conditions = conditions,
-        argument_labels = branch_argument_map(branch_dots, summaries$labels)
+        restatements = branch_argument_map(branch_dots, summaries$labels)
       )
 
       check_summary_output_names(

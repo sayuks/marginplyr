@@ -253,6 +253,13 @@ test_that("the constant-rewrite collapse holds at any console width", {
 # equals no label marginplyr rendered, so the quotation stays as dplyr wrote it.
 # What goes away is the restoration, never the report.
 #
+# Asserting `+...` couples this to an abbreviation ADR 0022 declines to
+# reproduce, and does so deliberately: it is the fixture's premise rather than
+# a promise about dplyr. A dplyr that stopped abbreviating would restore the
+# spelling here and fail this loudly, which is the report that the case no
+# longer reproduces; a test asserting only the degradation would pass by then
+# while exercising nothing.
+#
 # The second case is why reproducing dplyr's abbreviation would buy nothing
 # (ADR 0022): the same truncation removes `grouping_bit()`'s branch constant,
 # so the branches agree on an identity without any restoration.
@@ -666,9 +673,9 @@ test_that("an ambiguous label is restored only where it is unique", {
     c(`dplyr::all_of("x")` = "c(x)")
   )
   expect_length(branch_argument_map(dots, c("c(x)", "any_of(\"x\")")), 0L)
-  # A dot no rewrite touched has nothing to restate, and `NULL` labels are
-  # what `new_summary_arguments()` records for a caller reaching the adapter
-  # directly.
+  # A dot no rewrite touched has nothing to restate, which is also what a
+  # caller reaching an adapter directly hands over: `new_summary_arguments()`
+  # defaults the labels to the dots' own, so absence needs no second value.
   expect_length(
     branch_argument_map(
       dots,
@@ -676,7 +683,10 @@ test_that("an ambiguous label is restored only where it is unique", {
     ),
     0L
   )
-  expect_length(branch_argument_map(dots, NULL), 0L)
+  expect_length(
+    branch_argument_map(dots, new_summary_arguments(dots)$labels),
+    0L
+  )
 })
 
 # The shared reading of a condition another package raised, asserted here

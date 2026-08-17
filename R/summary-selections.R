@@ -212,14 +212,19 @@ check_internal_summary_names <- function(output_names, internal_names) {
 # both halves are final -- after every rewrite -- so a pair that stops agreeing
 # in length cannot be built at all, which is an invariant rather than a Package
 # condition (ADR 0015): no call produces it, and a map built from a misaligned
-# pair would quote one argument's expression under another. `labels = NULL` is
-# a caller with no spelling to restore, as a direct call to an adapter is, and
-# restates nothing.
-new_summary_arguments <- function(dots, labels = NULL) {
+# pair would quote one argument's expression under another.
+#
+# The labels default to the dots' own, which is the truth for a caller reaching
+# an adapter directly: what it passed is what it wrote. Nothing is restated
+# there, because `branch_argument_map()` drops a label a rewrite left alone --
+# so "no spelling to restore" needs no representation of its own, and a length
+# is checked once rather than only when a second value says to.
+new_summary_arguments <- function(dots,
+                                  labels = summary_argument_labels(dots)) {
   stopifnot(
     is.list(dots),
-    is.null(labels) ||
-      (is.character(labels) && length(labels) == length(dots))
+    is.character(labels),
+    length(labels) == length(dots)
   )
   list(dots = dots, labels = labels)
 }
