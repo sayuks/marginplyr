@@ -273,13 +273,14 @@ report_branch_warnings <- function(conditions) {
 # `paste0(name, " = ", expr_as_label(expr))` for a named argument
 # (`error_label_named()`), and its `expr_as_label()` is `rlang::as_label()`
 # with rlang's infix labelling suppressed through an option neither package
-# documents, and with a `.data` pronoun deparsed rather than labelled. Plain
-# `as_label()` is what this uses, so the two disagree where dplyr abbreviates
-# a long infix expression -- `total = +...` -- and where an argument is itself
-# a bare pronoun. Neither disagreement is observable: a truncated label
-# renders the same whichever expression it came from, and a bare pronoun is
-# never rewritten, so its map entry is dropped as unchanged. ADR 0022
-# reproduces the convention and not the internals for that reason.
+# documents, and with a data pronoun -- `.data$x` -- deparsed rather than
+# labelled, where `as_label()` answers `x`. Plain `as_label()` is what this
+# uses, so the two disagree in those two places. Neither disagreement is
+# observable: a truncated label renders the same whichever expression it came
+# from, and a pronoun argument is spelled alike by the caller and the branch,
+# so the map drops it as unchanged. Both diverge in dplyr's direction only, so
+# neither can make dplyr's label of one argument equal this label of another.
+# ADR 0022 reproduces the convention and not the internals for that reason.
 summary_argument_labels <- function(dots) {
   arg_names <- names(dots)
   if (is.null(arg_names)) {

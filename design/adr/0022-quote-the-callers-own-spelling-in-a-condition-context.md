@@ -11,8 +11,8 @@ The rewriting is not one rewrite. Four layers separate what dplyr quotes from
 what the caller typed: `resolve_summary_selections()` turns a selection into
 `dplyr::all_of()` over resolved source names, `across()`'s `.names` is evaluated
 and its arguments normalised for dtplyr, `wrap_share_sources()` wraps the
-expressions a share reads, and `rewrite_grouping_dots()` replaces a Grouping
-helper with the branch's own constant. The contract is therefore written over
+expressions a share reads, and `rewrite_grouping_dots()` replaces
+`grouping_bit()` and `grouping_id()` with the branch's own constant. The contract is therefore written over
 expressions rather than over any one of those layers, and one mechanism covers
 all four.
 
@@ -60,12 +60,19 @@ Which part of a message may be restated at all is bounded positionally, as
 every reading of dplyr's format here is. A warning's rendered text carries the
 caller's own diagnostic after its `Caused by` line, and a diagnostic can spell
 anything -- including dplyr's bullet over a label a branch really handed dplyr
--- so only the runs before that line are dplyr's to restate, and a warning
-carrying no such line is not dplyr's aggregation and is left whole. An error
-needs no bound: its `$message` is dplyr's bullet alone, and the caller's
-diagnostic is `$parent`, which is never touched. Rewriting a caller's own text
-would be replacing an External condition's diagnostic, which ADR 0015 rules
-out.
+-- so only the runs before that line are dplyr's to restate, and a message
+carrying no such line is left whole. An error needs no bound: its `$message`
+is dplyr's bullet alone, and the caller's diagnostic is `$parent`, which is
+never touched. Rewriting a caller's own text would be replacing an External
+condition's diagnostic, which ADR 0015 rules out.
+
+*Left whole* covers one aggregation as well as every non-aggregation, and is
+stated as the bound rather than as a test for dplyr's involvement for that
+reason: a caller whose own diagnostic renders empty is aggregated into
+`There were 2 warnings in ...` with an argument bullet and no `Caused by`
+line at all. Such a message is not restated, which is this decision's ordinary
+degradation, and ADR 0021's identity does not collapse it either -- measured
+on `main`, that plan reports twice, so nothing here made it worse.
 
 A message in which nothing is restated is returned as the object that arrived,
 byte for byte, rather than rebuilt from its lines -- rebuilding dropped a
@@ -105,21 +112,25 @@ is left quoting the rewrite.
 dplyr labels an argument with `error_label_named()`, which is
 `paste0(name, " = ", expr_as_label(expr))` for a named argument, and
 `expr_as_label()` has two branches of its own: `rlang::as_label()` with
-rlang's infix labelling suppressed through an undocumented option, and a
-`.data` pronoun deparsed instead of labelled. marginplyr labels with plain
-`rlang::as_label()` and the same `name = ` convention, so the two disagree
-where dplyr abbreviates a long infix expression — `total = +...` where
-`as_label()` answers `sum(as.numeric(grade)) + ...` — and where an argument is
-itself a bare pronoun; in both places the span matches nothing and the
-quotation stands.
+rlang's infix labelling suppressed through an undocumented option, and a data
+pronoun — `.data$x`, `.data[["x"]]` — deparsed instead of labelled, where
+`as_label()` answers `x`. marginplyr labels with plain `rlang::as_label()` and
+the same `name = ` convention, so the two disagree in those two places, and in
+both the span matches nothing and the quotation stands.
 
 That costs nothing a caller can see. A label dplyr truncated renders the same
 whichever expression it came from, so substituting the caller's own would print
 the same `+...`; because the truncation removes what the branches differ in,
 the deduplication key already agrees across branches without any restoration;
-and a bare pronoun is an expression no rewrite touches, so it has no entry in
-the map to miss. Reproducing the internals would buy an unobservable
-substitution in exchange for depending on an internal name in two packages.
+and an argument written as a pronoun is one the caller and the branch spell
+alike, so the map drops it as unchanged and there is nothing to restore.
+Reproducing the internals would buy an unobservable substitution in exchange
+for depending on an internal name in two packages.
+
+Neither divergence can quote the *wrong* expression, which is the failure
+#199 rules out, and the reason is that they are divergences in dplyr's
+direction only: `as_label()` emits neither `+...` nor `.data$x`, so dplyr's
+label of one argument can never equal marginplyr's label of another.
 
 ## Considered Options
 
@@ -152,13 +163,22 @@ looked like the fragile parse that ADR describes. It is not that parse.
 
 A caller reading a restated context sees the expression they wrote, so the
 context no longer names `dplyr::all_of()` over resolved column names, a share
-wrapper, or a branch-local Grouping-helper constant.
+wrapper, or `grouping_bit()`'s branch-local constant.
 
 A warning that differs between branches only in `grouping_bit()`'s branch
 constant is now one report saying how many further grouping sets raised it,
 where it was one report per branch. That collapse holds at any console width,
 which is what reading the bullet as a written line rather than a rendered one
 buys; a test asserts it across the same widths as the one ADR 0021 added.
+
+Width is not the only thing a rendered message varies with, and the other one
+is inherited rather than introduced. In a session with colour, cli styles the
+markers, so every pattern read here and in ADR 0021's identity misses and
+both features no-op: measured on `main`, the `cube(region, grade)`
+reproduction reports four times with `cli.num_colors` above one and once
+without. This decision rests on the same reading and therefore inherits the
+same bound; stripping the styling before either reading is what would lift it,
+for both, and belongs with ADR 0021's identity rather than here.
 
 A restated bullet is one line where dplyr may have wrapped it over several. The
 alternative was re-wrapping text cli had already laid out, which would rewrite
