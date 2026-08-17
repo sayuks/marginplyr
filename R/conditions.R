@@ -77,23 +77,24 @@ new_branch_conditions <- function(keys, call = NULL) {
 # evaluated inside `expr`: a Package condition is raised by the branch builders
 # around it, which is what keeps this from reaching one.
 #
-# `arguments` is this branch's own map from what it handed dplyr to what the
-# caller wrote, and sits here rather than in `conditions` because a branch
-# rewrites a Grouping helper to its own constant, so no two branches
-# necessarily hand dplyr the same expressions.
+# `argument_labels` is this branch's own map from the label of what it handed
+# dplyr to the label of what the caller wrote, and sits here rather than in
+# `conditions` because a branch rewrites `grouping_bit()` and `grouping_id()`
+# to its own constants, so no two branches necessarily hand dplyr the same
+# expressions.
 with_branch_conditions <- function(expr,
                                    conditions,
-                                   arguments = character()) {
+                                   argument_labels = character()) {
   tryCatch(
     withCallingHandlers(
       expr,
       warning = function(cnd) {
-        buffer_branch_warning(cnd, conditions, arguments)
+        buffer_branch_warning(cnd, conditions, argument_labels)
         invokeRestart("muffleWarning")
       }
     ),
     error = function(cnd) {
-      stop(restate_branch_error(cnd, conditions, arguments))
+      stop(restate_branch_error(cnd, conditions, argument_labels))
     }
   )
 }
@@ -106,8 +107,8 @@ with_branch_conditions <- function(expr,
 # Errors are not deduplicated, and there is nothing to deduplicate: branches
 # run in sequence, so the first error aborts the operation and no second
 # occurrence is ever raised.
-restate_branch_error <- function(cnd, conditions, arguments) {
-  cnd <- restate_condition_arguments(cnd, arguments)
+restate_branch_error <- function(cnd, conditions, argument_labels) {
+  cnd <- restate_condition_arguments(cnd, argument_labels)
   cnd <- restate_condition_names(cnd, conditions$keys)
   if (!is.null(conditions$call)) {
     cnd$call <- conditions$call
@@ -135,12 +136,12 @@ restate_condition_names <- function(cnd, keys) {
 # A warning arrives as one condition per branch whose message dplyr has already
 # aggregated, flattened, and rendered: `$parent` is `NULL` and there is no
 # `$body`, so the text is all there is to compare.
-buffer_branch_warning <- function(cnd, conditions, arguments) {
+buffer_branch_warning <- function(cnd, conditions, argument_labels) {
   # The spelling is restored before the identity is read, so the identity is
-  # over the argument the caller wrote: a Grouping helper renders as a different
-  # constant in every branch, which split one written expression into one report
-  # per branch (ADR 0022).
-  cnd <- restate_condition_arguments(cnd, arguments)
+  # over the argument the caller wrote: `grouping_bit()` renders as a different
+  # constant in every branch, which split one written expression into one
+  # report per branch (ADR 0022).
+  cnd <- restate_condition_arguments(cnd, argument_labels)
   cnd <- restate_condition_names(cnd, conditions$keys)
   key <- branch_warning_identity(cnd)
 
@@ -183,11 +184,7 @@ buffer_branch_warning <- function(cnd, conditions, arguments) {
 branch_warning_identity <- function(cnd) {
   lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
   runs <- message_line_runs(lines)
-  written <- vapply(
-    runs,
-    function(run) paste(sub("^ +", "", lines[run]), collapse = " "),
-    character(1)
-  )
+  written <- written_message_lines(lines, runs)
   # `!` opens the caller's own diagnostic, so a message dplyr attributed to no
   # argument still has a bullet where its header ends. Both spellings of the
   # informational one are matched because the symbol is cli's and follows
@@ -236,6 +233,18 @@ message_line_runs <- function(lines) {
   unname(split(seq_along(lines), cumsum(!wrapped)))
 }
 
+# Each run rejoined to the one line it was written as. The identity and the
+# argument restatement both read messages through this, which is what keeps
+# the two readings one: a message the identity reads as three written lines is
+# a message the restatement reads as the same three.
+written_message_lines <- function(lines, runs) {
+  vapply(
+    runs,
+    function(run) paste(sub("^ +", "", lines[run]), collapse = " "),
+    character(1)
+  )
+}
+
 # Replays what the branches withheld: one report per distinct identity, each
 # saying how many further grouping sets raised it. The conditions are replayed
 # in the order the branches raised them, and the reported occurrence is the
@@ -262,13 +271,15 @@ report_branch_warnings <- function(conditions) {
 # The label dplyr quotes an argument by, reproduced so that the expression
 # marginplyr handed it can be recognised in a context it rendered. dplyr writes
 # `paste0(name, " = ", expr_as_label(expr))` for a named argument
-# (`error_label_named()`), and its `expr_as_label()` is `rlang::as_label()` with
-# rlang's infix labelling suppressed through an option neither package
-# documents. Plain `as_label()` is what this uses, so the two disagree exactly
-# where dplyr abbreviates a long infix expression -- `total = +...` -- and there
-# the caller's own label renders that same string. ADR 0022 reproduces the
-# convention and not the option for that reason: what the option covers is a
-# substitution nothing could observe.
+# (`error_label_named()`), and its `expr_as_label()` is `rlang::as_label()`
+# with rlang's infix labelling suppressed through an option neither package
+# documents, and with a `.data` pronoun deparsed rather than labelled. Plain
+# `as_label()` is what this uses, so the two disagree where dplyr abbreviates
+# a long infix expression -- `total = +...` -- and where an argument is itself
+# a bare pronoun. Neither disagreement is observable: a truncated label
+# renders the same whichever expression it came from, and a bare pronoun is
+# never rewritten, so its map entry is dropped as unchanged. ADR 0022
+# reproduces the convention and not the internals for that reason.
 summary_argument_labels <- function(dots) {
   arg_names <- names(dots)
   if (is.null(arg_names)) {
@@ -290,30 +301,33 @@ summary_argument_labels <- function(dots) {
   )
 }
 
-# What one branch hands dplyr, mapped to what the caller wrote. `origins` holds
-# the caller's label for each dot and is carried from
-# `plan_summary_expressions()`, because nothing between there and here preserves
-# position: share planning drops a dot and expands a placeholder into one dot
-# per output. A length that stops agreeing with the dots is an invariant rather
-# than a Package condition (ADR 0015) -- no call can produce it, and a map built
-# from a misaligned pair would quote one argument's expression under another.
+# What one branch hands dplyr, mapped to what the caller wrote. `caller_labels`
+# is the label half of what `new_summary_arguments()` built: the caller's label
+# for each dot, kept beside the dots since planning because nothing later
+# preserves position -- share planning drops a dot and expands a placeholder
+# into one dot per output. The lengths still agree or stop the operation, as an
+# invariant rather than a Package condition (ADR 0015): the constructor checked
+# the pair, so disagreeing here means a rewrite between it and this branch
+# changed the arity, and a map built from a misaligned pair would quote one
+# argument's expression under another. `NULL` is a caller with no spelling to
+# restore, and maps nothing.
 #
 # A label several dots share is kept only where the callers' own labels agree,
 # since the replacement is then the same whichever dot dplyr meant; where they
 # differ the entry is dropped and the quotation stays as dplyr wrote it. An
 # entry no rewrite changed is dropped as well, having nothing to restate.
-branch_argument_map <- function(dots, origins) {
-  if (length(origins) == 0L) {
+branch_argument_map <- function(dots, caller_labels) {
+  if (length(caller_labels) == 0L) {
     return(character())
   }
-  stopifnot(length(dots) == length(origins))
+  stopifnot(length(dots) == length(caller_labels))
 
   labels <- summary_argument_labels(dots)
   written <- unique(labels)
   restored <- vapply(
     written,
     function(label) {
-      candidates <- unique(origins[labels == label])
+      candidates <- unique(caller_labels[labels == label])
       if (length(candidates) == 1L) candidates else NA_character_
     },
     character(1),
@@ -330,15 +344,25 @@ branch_argument_map <- function(dots, origins) {
 # message whose format changed, and the whole of how this degrades (ADR 0022).
 # Only the span moves: the sentence around it is dplyr's, and rewriting a
 # sentence is what ADR 0021 refused for the blamed call.
-restate_condition_arguments <- function(cnd, arguments) {
-  if (length(arguments) == 0L || !is.character(cnd$message)) {
+#
+# Which part of the message *is* dplyr's differs by kind, and the bound is
+# positional, as every reading of dplyr's format here is. A warning's message
+# carries the caller's own diagnostic after a `Caused by` line, and a
+# diagnostic can spell anything -- including dplyr's bullet over a label a
+# branch really handed dplyr -- so only what precedes that line is dplyr's to
+# restate, and a warning without one is not dplyr's aggregation at all and is
+# left whole. An error's `$message` is dplyr's bullet alone, the caller's
+# diagnostic being `$parent`, so nothing bounds it.
+restate_condition_arguments <- function(cnd, argument_labels) {
+  if (length(argument_labels) == 0L || !is.character(cnd$message)) {
     return(cnd)
   }
   restated <- vapply(
     cnd$message,
     restate_argument_lines,
     character(1),
-    arguments = arguments,
+    argument_labels = argument_labels,
+    bounded = inherits(cnd, "warning"),
     USE.NAMES = FALSE
   )
   # The names carry the bullet markers of a structured condition, so they are
@@ -348,32 +372,61 @@ restate_condition_arguments <- function(cnd, arguments) {
   cnd
 }
 
-# An error's `$message` is the argument bullet and nothing else, while a
-# warning's is the whole text dplyr rendered before signalling, so both are read
-# as the lines they were written as -- `message_line_runs()`, the same reading
-# the identity uses, and for the same reason: cli wraps a bullet it cannot fit,
-# and a span read off the line a bullet opens is a prefix of the label at any
-# narrow width. Reading one line at a time restored the spelling at 80 columns
-# and not at 40, which made the console width decide how many conditions a
-# caller receives.
+# The message is read as the lines it was written as --
+# `written_message_lines()`, the same reading the identity uses, and for the
+# same reason: cli wraps a bullet it cannot fit, and a span read off the line
+# a bullet opens is a prefix of the label at any narrow width. Reading one
+# line at a time restored the spelling at 80 columns and not at 40, which made
+# the console width decide how many conditions a caller receives.
 #
-# A run that is restated collapses to the one line it was written as, since what
-# replaces it is a line of a different length and cli is no longer there to wrap
-# it. Every other run is given back exactly as it arrived.
-restate_argument_lines <- function(text, arguments) {
+# A run that is restated collapses to the one line it was written as, since
+# what replaces it is a line of a different length and cli is no longer there
+# to wrap it. A message in which nothing is restated is returned as the object
+# that arrived, not rebuilt from its lines: rebuilding dropped a trailing
+# newline, which is a byte the degradation contract says this may not touch.
+# The same guard restores a restated message's trailing newline, of which
+# splitting keeps all but one.
+restate_argument_lines <- function(text, argument_labels, bounded) {
   lines <- strsplit(text, "\n", fixed = TRUE)[[1L]]
   if (length(lines) == 0L) {
     return(text)
   }
-  restated <- lapply(
-    message_line_runs(lines),
-    function(run) {
-      written <- paste(sub("^ +", "", lines[run]), collapse = " ")
-      line <- restate_argument_line(written, arguments)
-      if (identical(line, written)) lines[run] else line
+  runs <- message_line_runs(lines)
+  written <- written_message_lines(lines, runs)
+
+  last <- length(runs)
+  if (bounded) {
+    cause <- match(TRUE, grepl("^Caused by ", written))
+    if (is.na(cause)) {
+      return(text)
     }
-  )
-  paste(unlist(restated, use.names = FALSE), collapse = "\n")
+    last <- cause - 1L
+  }
+
+  changed <- FALSE
+  pieces <- vector("list", length(runs))
+  for (i in seq_along(runs)) {
+    restated <- if (i <= last) {
+      restate_argument_bullet(written[[i]], argument_labels)
+    } else {
+      written[[i]]
+    }
+    if (identical(restated, written[[i]])) {
+      pieces[[i]] <- lines[runs[[i]]]
+    } else {
+      pieces[[i]] <- restated
+      changed <- TRUE
+    }
+  }
+  if (!changed) {
+    return(text)
+  }
+
+  restated <- paste(unlist(pieces, use.names = FALSE), collapse = "\n")
+  if (endsWith(text, "\n")) {
+    restated <- paste0(restated, "\n")
+  }
+  restated
 }
 
 # `In argument:` opens the bullet, carrying cli's informational marker in a
@@ -381,7 +434,7 @@ restate_argument_lines <- function(text, arguments) {
 # the name of the message vector rather than part of its text. The span is read
 # to the last backtick on the line, because a non-syntactic name the caller
 # wrote puts backticks inside it.
-restate_argument_line <- function(line, arguments) {
+restate_argument_bullet <- function(line, argument_labels) {
   found <- regmatches(
     line,
     regexec("^([i\u2139] )?In argument: `(.*)`\\.$", line)
@@ -389,7 +442,7 @@ restate_argument_line <- function(line, arguments) {
   if (length(found) == 0L) {
     return(line)
   }
-  restored <- unname(arguments[found[[3L]]])
+  restored <- unname(argument_labels[found[[3L]]])
   if (is.na(restored)) {
     return(line)
   }

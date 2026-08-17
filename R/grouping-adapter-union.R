@@ -145,7 +145,8 @@ add_grouping_set_id <- function(result,
 # dplyr builds every context it attaches out of those. `call` is the Margin
 # verb a Condition context is owed instead of the internal `summarize()` the
 # branch issues; a caller that reaches this directly has none to name and
-# leaves the blamed call alone.
+# leaves the blamed call alone, as empty `origins` are for the argument
+# spelling.
 summarize_margin_union <- function(.data,
                                    dots,
                                    plan,
@@ -193,9 +194,9 @@ summarize_margin_union <- function(.data,
       # builders below raise Package conditions, which carry their own context
       # and are never deduplicated.
       #
-      # The map is built per branch rather than once, because `branch_dots` is
-      # where a Grouping helper has become this branch's own constant, and that
-      # is the expression dplyr will quote.
+      # The map is built per branch rather than once, because `branch_dots`
+      # is where `grouping_bit()` has become this branch's own constant, and
+      # that is the expression dplyr will quote.
       result <- with_branch_conditions(
         summarize_margin_branch(
           .data = .data,
@@ -203,7 +204,7 @@ summarize_margin_union <- function(.data,
           .by = unname(key_names[grouping_set])
         ),
         conditions = conditions,
-        arguments = branch_argument_map(branch_dots, origins)
+        argument_labels = branch_argument_map(branch_dots, origins)
       )
 
       check_summary_output_names(

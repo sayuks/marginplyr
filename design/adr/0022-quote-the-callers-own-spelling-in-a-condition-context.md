@@ -44,16 +44,33 @@ sentence is what ADR 0021 refused for the blamed call, because a wording change
 would leave it silently naming the wrong thing rather than falling back.
 
 The bullet is read as the line it was *written* as rather than as the lines it
-was rendered onto, through the same `message_line_runs()` the deduplication key
-uses, and for the same reason. cli wraps a bullet it cannot fit, so a span read
-off the line a bullet opens is a prefix of the label at any narrow width: the
-Grouping-helper collapse below held at 80 columns and not at 40, which is the
-console width deciding how many conditions a caller receives. A run that is
-restated is emitted as the one line it was written as, since what replaces it
-is a line of another length and cli is no longer there to wrap it; every other
-run is given back exactly as it arrived. A wrap cli had to make inside a token
-rather than at a space does not rejoin to a label, and is left alone by the
-same rule as any other span that matches nothing.
+was rendered onto, through the same written-line reading the deduplication key
+uses -- one shared helper, so the two readings cannot drift. cli wraps a bullet
+it cannot fit, so a span read off the line a bullet opens is a prefix of the
+label at any narrow width: the constant-rewrite collapse below held at 80
+columns and not at 40, which is the console width deciding how many conditions
+a caller receives. A run that is restated is emitted as the one line it was
+written as, since what replaces it is a line of another length and cli is no
+longer there to wrap it; every other run is given back exactly as it arrived.
+A wrap cli had to make inside a token rather than at a space does not rejoin
+to a label, and is left alone by the same rule as any other span that matches
+nothing.
+
+Which part of a message may be restated at all is bounded positionally, as
+every reading of dplyr's format here is. A warning's rendered text carries the
+caller's own diagnostic after its `Caused by` line, and a diagnostic can spell
+anything -- including dplyr's bullet over a label a branch really handed dplyr
+-- so only the runs before that line are dplyr's to restate, and a warning
+carrying no such line is not dplyr's aggregation and is left whole. An error
+needs no bound: its `$message` is dplyr's bullet alone, and the caller's
+diagnostic is `$parent`, which is never touched. Rewriting a caller's own text
+would be replacing an External condition's diagnostic, which ADR 0015 rules
+out.
+
+A message in which nothing is restated is returned as the object that arrived,
+byte for byte, rather than rebuilt from its lines -- rebuilding dropped a
+trailing newline, and the degradation the constraint on #199 asks for is the
+absence of any edit, not an edit that happens to read the same.
 
 ## The restoration runs before the deduplication key is computed
 
@@ -87,19 +104,22 @@ is left quoting the rewrite.
 
 dplyr labels an argument with `error_label_named()`, which is
 `paste0(name, " = ", expr_as_label(expr))` for a named argument, and
-`expr_as_label()` calls `rlang::as_label()` with rlang's infix labelling
-suppressed through an undocumented option. marginplyr labels with plain
+`expr_as_label()` has two branches of its own: `rlang::as_label()` with
+rlang's infix labelling suppressed through an undocumented option, and a
+`.data` pronoun deparsed instead of labelled. marginplyr labels with plain
 `rlang::as_label()` and the same `name = ` convention, so the two disagree
-exactly where dplyr abbreviates a long infix expression — `total = +...` where
-`as_label()` answers `sum(as.numeric(grade)) + ...` — and there the span matches
-nothing and the quotation stands.
+where dplyr abbreviates a long infix expression — `total = +...` where
+`as_label()` answers `sum(as.numeric(grade)) + ...` — and where an argument is
+itself a bare pronoun; in both places the span matches nothing and the
+quotation stands.
 
 That costs nothing a caller can see. A label dplyr truncated renders the same
 whichever expression it came from, so substituting the caller's own would print
-the same `+...`; and because the truncation removes what the branches differ in,
-the deduplication key already agrees across branches without any restoration.
-Reproducing the option would buy an unobservable substitution in exchange for
-depending on an internal name in two packages.
+the same `+...`; because the truncation removes what the branches differ in,
+the deduplication key already agrees across branches without any restoration;
+and a bare pronoun is an expression no rewrite touches, so it has no entry in
+the map to miss. Reproducing the internals would buy an unobservable
+substitution in exchange for depending on an internal name in two packages.
 
 ## Considered Options
 
@@ -133,11 +153,11 @@ A caller reading a restated context sees the expression they wrote, so the
 context no longer names `dplyr::all_of()` over resolved column names, a share
 wrapper, or a branch-local Grouping-helper constant.
 
-A warning that differs between branches only in a Grouping helper's constant is
-now one report saying how many further grouping sets raised it, where it was
-one report per branch. That collapse holds at any console width, which is what
-reading the bullet as a written line rather than a rendered one buys; a test
-asserts it across the same widths as the one ADR 0021 added.
+A warning that differs between branches only in `grouping_bit()`'s branch
+constant is now one report saying how many further grouping sets raised it,
+where it was one report per branch. That collapse holds at any console width,
+which is what reading the bullet as a written line rather than a rendered one
+buys; a test asserts it across the same widths as the one ADR 0021 added.
 
 A restated bullet is one line where dplyr may have wrapped it over several. The
 alternative was re-wrapping text cli had already laid out, which would rewrite

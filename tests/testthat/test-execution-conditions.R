@@ -33,6 +33,9 @@ summarize_coercion_cube <- function() {
 # made a dimension, because the selection a Margin summary resolves is over the
 # columns no grouping set holds.
 summarize_across_coercion <- function() {
+  # `grade` and `region` are columns of the frame, which codetools reads as
+  # undefined globals wherever a verb's arguments are written inside a
+  # function.
   # nolint start: object_usage_linter.
   summarize_with_margins(
     coercion_frame(),
@@ -49,6 +52,8 @@ summarize_across_coercion <- function() {
 summarize_share_coercion <- function() {
   data <- coercion_frame()
   data$revenue <- c(2, 4, 8)
+  # `units`, `revenue`, `grade`, and `region` are columns of the frame, which
+  # codetools reads as undefined globals inside a function.
   # nolint start: object_usage_linter.
   summarize_with_margins(
     data,
@@ -63,8 +68,12 @@ summarize_share_coercion <- function() {
 # The rewrite that differs between branches rather than being shared by them:
 # `grouping_bit(region)` is `0L` in the detail set and `1L` in the Grand total
 # set, so dplyr quoted a different argument in each and the deduplication key
-# saw two conditions where the caller wrote one expression.
+# saw two conditions where the caller wrote one expression. `grouping_bit()`
+# is a Contextual helper, and the constant is the branch-local rewrite
+# `rewrite_grouping_dots()` gives it.
 summarize_helper_coercion <- function() {
+  # `grade` and `region` are columns of the frame, which codetools reads as
+  # undefined globals inside a function.
   # nolint start: object_usage_linter.
   summarize_with_margins(
     coercion_frame(),
@@ -78,6 +87,8 @@ summarize_helper_coercion <- function() {
 # the two paths share is the map; what they do not is where the bullet sits --
 # `$message` is the whole of it here, and one line of a rendered text there.
 summarize_across_failure <- function() {
+  # `grade` and `region` are columns of the frame, which codetools reads as
+  # undefined globals inside a function.
   # nolint start: object_usage_linter.
   summarize_with_margins(
     coercion_frame(),
@@ -196,9 +207,9 @@ test_that("a share does not shift which argument is restored", {
 
 # Restoring the spelling is what makes this one report, so the identity is read
 # after the restatement and not before (ADR 0022). Which grouping set produced
-# an occurrence is not part of an identity, and a Grouping helper's constant is
-# that same fact reaching the argument bullet.
-test_that("a warning is one report where only a Grouping helper differed", {
+# an occurrence is not part of an identity, and `grouping_bit()`'s branch
+# constant is that same fact reaching the argument bullet.
+test_that("a warning is one report where only a branch constant differed", {
   warnings <- collect_warnings(summarize_helper_coercion())
 
   expect_length(warnings, 1L)
@@ -220,11 +231,11 @@ test_that("a warning is one report where only a Grouping helper differed", {
 # The restatement has to read the bullet as the line it was written as, for the
 # same reason the identity does: cli wraps a bullet it cannot fit, and a span
 # read off the line the bullet opens is a prefix of the label at any narrow
-# width. Reading it that way reported the Grouping-helper case once at 80
+# width. Reading it that way reported the branch-constant case once at 80
 # columns and twice at 40, which is the console width deciding how many
 # conditions a caller receives.
-test_that("a Grouping helper's collapse holds at any console width", {
-  for (width in c(80L, 60L, 40L, 24L, 16L)) {
+test_that("the constant-rewrite collapse holds at any console width", {
+  for (width in c(80L, 60L, 40L, 20L, 16L)) {
     warnings <- collect_warnings_at_width(width, summarize_helper_coercion())
 
     expect_length(warnings, 1L)
@@ -243,8 +254,8 @@ test_that("a Grouping helper's collapse holds at any console width", {
 # What goes away is the restoration, never the report.
 #
 # The second case is why reproducing dplyr's abbreviation would buy nothing
-# (ADR 0022): the same truncation removes the Grouping helper's constant, so the
-# branches agree on an identity without any restoration.
+# (ADR 0022): the same truncation removes `grouping_bit()`'s branch constant,
+# so the branches agree on an identity without any restoration.
 test_that("an abbreviated argument keeps the quotation dplyr wrote", {
   data <- coercion_frame()
 
@@ -539,6 +550,11 @@ test_that("the reported conditions read as they are written", {
 # test of non-matches alone would pass just as well if nothing ever matched.
 test_that("a bullet this cannot read leaves the condition alone", {
   arguments <- c(`dplyr::all_of("x")` = "c(x)")
+  # A rendered warning always introduces the caller's own diagnostic with a
+  # `Caused by` line, so the fixtures carry one: it is what separates dplyr's
+  # region of the message from the caller's, and a warning without one is a
+  # case of its own below.
+  cause <- "\nCaused by warning:\n! boom"
   restated <- function(text) {
     conditionMessage(restate_condition_arguments(
       rlang::warning_cnd("test_warning", message = text),
@@ -547,18 +563,18 @@ test_that("a bullet this cannot read leaves the condition alone", {
   }
 
   expect_identical(
-    restated("i In argument: `dplyr::all_of(\"x\")`."),
-    "i In argument: `c(x)`."
+    restated(paste0("i In argument: `dplyr::all_of(\"x\")`.", cause)),
+    paste0("i In argument: `c(x)`.", cause)
   )
   # A wording dplyr could move to.
   expect_identical(
-    restated("i In summary: `dplyr::all_of(\"x\")`."),
-    "i In summary: `dplyr::all_of(\"x\")`."
+    restated(paste0("i In summary: `dplyr::all_of(\"x\")`.", cause)),
+    paste0("i In summary: `dplyr::all_of(\"x\")`.", cause)
   )
   # A span that is no label this branch handed dplyr.
   expect_identical(
-    restated("i In argument: `dplyr::all_of(\"y\")`."),
-    "i In argument: `dplyr::all_of(\"y\")`."
+    restated(paste0("i In argument: `dplyr::all_of(\"y\")`.", cause)),
+    paste0("i In argument: `dplyr::all_of(\"y\")`.", cause)
   )
   # A bullet cli wrapped is read as the line it was written as, so one that
   # rejoins to a label is restated -- as one line, which is what it was written
@@ -566,24 +582,74 @@ test_that("a bullet this cannot read leaves the condition alone", {
   wrapped <- conditionMessage(restate_condition_arguments(
     rlang::warning_cnd(
       "test_warning",
-      message = "i In argument: `dplyr::all_of(c(\"x\",\n  \"y\"))`."
+      message = paste0(
+        "i In argument: `dplyr::all_of(c(\"x\",\n  \"y\"))`.",
+        cause
+      )
     ),
     c(`dplyr::all_of(c("x", "y"))` = "c(x, y)")
   ))
-  expect_identical(wrapped, "i In argument: `c(x, y)`.")
+  expect_identical(wrapped, paste0("i In argument: `c(x, y)`.", cause))
   # A wrap that does not rejoin to a label is left alone, which is what happens
   # wherever cli had to break inside a token rather than at a space.
   expect_identical(
-    restated("i In argument: `dplyr::all_of(\n  \"x\")`."),
-    "i In argument: `dplyr::all_of(\n  \"x\")`."
+    restated(paste0("i In argument: `dplyr::all_of(\n  \"x\")`.", cause)),
+    paste0("i In argument: `dplyr::all_of(\n  \"x\")`.", cause)
   )
   # The structured shape, where the marker is the name of the message vector
-  # rather than part of its text, and has to survive the restatement.
+  # rather than part of its text, and has to survive the restatement. An
+  # error's `$message` is dplyr's bullet alone -- the caller's diagnostic
+  # lives in `$parent` -- so no `Caused by` line bounds it.
   restated_error <- restate_condition_arguments(
     rlang::error_cnd("test_error", message = c(i = "In argument: `x`.")),
     c(x = "c(x)")
   )
   expect_identical(restated_error$message, c(i = "In argument: `c(x)`."))
+})
+
+# The two halves of the degradation the issue's constraint rests on: what this
+# cannot attribute to dplyr's own region of the message it may not touch at
+# all, byte for byte. A caller's diagnostic can spell anything -- including a
+# line reading exactly like dplyr's bullet over a label a branch really handed
+# dplyr -- and rewriting one is replacing an External condition's diagnostic,
+# which ADR 0015 rules out.
+test_that("a caller's own text is never restated", {
+  arguments <- c(`dplyr::all_of("x")` = "c(x)")
+  restated <- function(text) {
+    conditionMessage(restate_condition_arguments(
+      rlang::warning_cnd("test_warning", message = text),
+      arguments
+    ))
+  }
+
+  # The caller's diagnostic sits after `Caused by`, and stays as written even
+  # where it spells dplyr's bullet over a matching label; the bullet before it
+  # is dplyr's and is restated.
+  bulletlike <- paste0(
+    "i In argument: `dplyr::all_of(\"x\")`.\n",
+    "Caused by warning:\n",
+    "! boom\n",
+    "In argument: `dplyr::all_of(\"x\")`."
+  )
+  expect_identical(
+    restated(bulletlike),
+    paste0(
+      "i In argument: `c(x)`.\n",
+      "Caused by warning:\n",
+      "! boom\n",
+      "In argument: `dplyr::all_of(\"x\")`."
+    )
+  )
+  # A warning without a `Caused by` line is not one dplyr aggregated, so all
+  # of it is the caller's and none of it is restated.
+  expect_identical(
+    restated("i In argument: `dplyr::all_of(\"x\")`."),
+    "i In argument: `dplyr::all_of(\"x\")`."
+  )
+  # A message this restates nothing in comes back byte-identical, trailing
+  # newlines included: rebuilding it from its lines silently dropped one.
+  expect_identical(restated("no match here\n"), "no match here\n")
+  expect_identical(restated("a\n\nb\n\n"), "a\n\nb\n\n")
 })
 
 # Two dots can hand dplyr one expression, and the span then says which
@@ -600,8 +666,8 @@ test_that("an ambiguous label is restored only where it is unique", {
     c(`dplyr::all_of("x")` = "c(x)")
   )
   expect_length(branch_argument_map(dots, c("c(x)", "any_of(\"x\")")), 0L)
-  # A dot no rewrite touched has nothing to restate, and an empty `origins` is
-  # what a caller reaching the adapter directly hands it.
+  # A dot no rewrite touched has nothing to restate, and `NULL` labels are
+  # what a caller reaching the adapter directly leaves behind.
   expect_length(
     branch_argument_map(
       dots,
@@ -609,7 +675,7 @@ test_that("an ambiguous label is restored only where it is unique", {
     ),
     0L
   )
-  expect_length(branch_argument_map(dots, character()), 0L)
+  expect_length(branch_argument_map(dots, NULL), 0L)
 })
 
 # The shared reading of a condition another package raised, asserted here
