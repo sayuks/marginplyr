@@ -859,7 +859,12 @@ plan_share_expressions <- function(dots,
   list(
     dots = planned_dots,
     requests = requests,
-    cardinality = cardinality
+    cardinality = cardinality,
+    # Which incoming dot each planned dot came from, for the same reason
+    # `flattened_positions` above exists: a share dot is dropped and a
+    # placeholder expands into one dot per output, so a consumer holding one
+    # value per dot the caller wrote cannot subscript it by position.
+    origin_positions = rep(which(keep), widths)
   )
 }
 

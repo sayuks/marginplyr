@@ -858,7 +858,8 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         set_id_name = operation$set_id_name,
         call = operation$call
       )
-      dots <- summary_plan$dots
+      summaries <- summary_plan$summaries
+      dots <- summaries$dots
       summary_selection_proxy <- dplyr::select(
         operation$data_proxy,
         dplyr::all_of(setdiff(
@@ -897,7 +898,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
 
       staged_result <- stage_margin_summaries(
         operation,
-        dots = dots,
+        summaries = summaries,
         reserved_names = reserved_names,
         keep_set_identity = has_shares
       )
@@ -922,8 +923,11 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
   )
 }
 
+# `summaries` is what `new_summary_arguments()` built: the caller's summary
+# dots beside the caller's label for each, one value because the pair may not
+# drift apart between the planning that built it and the adapter that reads it.
 stage_margin_summaries <- function(operation,
-                                   dots,
+                                   summaries,
                                    reserved_names,
                                    keep_set_identity) {
   plan <- operation$plan
@@ -971,9 +975,12 @@ stage_margin_summaries <- function(operation,
   result <- tryCatch(
     {
       if (use_native) {
+        # The labels stay behind: the native adapter issues one `summarize()`
+        # and repeats nothing, and the backends holding the capability are
+        # lazy, so no condition is raised while the verb runs (ADR 0022).
         summarize_margin_native(
           operation$data,
-          dots = dots,
+          dots = summaries$dots,
           plan = plan,
           margin_labels = operation$margin_labels,
           reserved_names = reserved_names,
@@ -983,7 +990,7 @@ stage_margin_summaries <- function(operation,
       } else {
         summarize_margin_union(
           operation$data,
-          dots = dots,
+          summaries = summaries,
           plan = plan,
           margin_labels = operation$margin_labels,
           column_info = operation$column_info,
