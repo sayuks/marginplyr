@@ -1155,8 +1155,10 @@ test_that("a lazy backend that answers nothing refuses to establish a share", {
 # what it records start from an empty one -- what a call records is only
 # observable from there -- and put back whatever the rest of the suite had
 # recorded. Restoring empties first, so that an entry the test itself wrote is
-# not left beside the saved ones. The tests after those three assert against
-# the cache as they found it, or do not touch it, and use neither helper.
+# not left beside the saved ones. Only those three need either helper: the
+# verdict tests after them call `probe_share_dialect()` directly or assert the
+# cache as they found it, and the live-backend tests further down write to it
+# through the verb without reading what it holds.
 empty_share_dialect_verdicts <- function() {
   rm(
     list = ls(share_dialect_verdicts, all.names = TRUE),

@@ -423,12 +423,12 @@
 #' `dbplyr::simulate_*()` connection, is refused the same way.
 #'
 #' A question left unanswered refuses the share the same way, but nothing about
-#' it is remembered. Neither outcome was read there — a dropped connection, a
-#' permissions failure, a dialect whose SQL scaffolding this question lacks, and
-#' a query that could not be built against the connection at all all end that
-#' way — so nothing was established about the dialect, and the next share
-#' request there asks again rather than inheriting one attempt's failure. A
-#' connection that has recovered gets the verdict its dialect earns.
+#' it is remembered. Neither outcome was read there, which is where a dropped
+#' connection, a permissions failure, a dialect whose SQL scaffolding this
+#' question lacks, and a query that could not be built against the connection
+#' all end up — so nothing was established about the dialect, and the next
+#' share request there asks again rather than inheriting one attempt's failure.
+#' A connection that has recovered gets the verdict its dialect earns.
 #'
 #' Cardinality is not established this way at all: a SQL aggregate returns one
 #' value per grouping row by construction, so there is nothing for a dialect
@@ -2047,13 +2047,15 @@ share_dialect_verdict <- function(data, backend) {
     return(cached)
   }
   verdict <- probe_share_dialect(con)
-  # An invariant, not a Package condition (ADR 0015). Four sites branch on
-  # this string and none of them has a default, so one this frame does not
-  # recognise would reach the caller as `"unknown"`'s diagnostic -- that their
-  # backend could not be asked -- for a dialect that was asked and answered.
-  # The cache write below records only the names it recognises, so such a
-  # verdict would also be re-asked on every later request while continuing to
-  # misreport; this assertion is what stops both.
+  # An invariant, not a Package condition (ADR 0015). Four sites act on this
+  # string -- refusing the share, or describing why -- and none of them has a
+  # default, so one this frame does not recognise would reach the caller as
+  # `"unknown"`'s diagnostic, that their backend could not be asked, for a
+  # dialect that was asked and answered. The cache write just below is the one
+  # site that does have a default, and it fails closed: a verdict it does not
+  # recognise is not recorded, so such a dialect would also be asked again on
+  # every later request while continuing to misreport. This assertion is what
+  # stops both.
   stopifnot(verdict %in% share_dialect_verdict_names())
   # Only a measured outcome is recorded, which is the whole of what makes
   # reuse sound: `"refuses"` and `"converts"` are facts about the dialect,
@@ -2082,7 +2084,7 @@ share_dialect_verdict <- function(data, backend) {
 # The two answers that are properties of the dialect, because
 # `investigation/share-source-eligibility-on-coercing-dialects.md` measured
 # both: the dialect rejected summing a string, or it converted it to a number.
-# These are the two the cache above holds.
+# These are the two the cache write above records.
 share_dialect_measured_names <- function() {
   c("refuses", "converts")
 }
