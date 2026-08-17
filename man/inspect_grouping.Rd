@@ -29,13 +29,14 @@ specification can be written here, while a specification nested inside
 another must be a constructor call or a name bound to one; see
 \code{\link[=grouping_set]{grouping_set()}}.}
 
-\item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
-duplicate grouping-set occurrences.}
+\item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
+else, controlling duplicate grouping-set occurrences; see \emph{Option
+arguments}.}
 
 \item{.format}{\code{"text"} for compact display values or \code{"list"} for exact
-character and integer vectors. Text values are display-only; use
-\code{"list"} when column names contain separators or other non-syntactic
-characters.}
+character and integer vectors, and nothing else; see \emph{Option arguments}.
+Text values are display-only; use \code{"list"} when column names contain
+separators or other non-syntactic characters.}
 }
 \value{
 A local, ungrouped tibble with columns \code{set_id}, \code{fixed},
@@ -88,6 +89,30 @@ plan to choose which grouping set to keep, and joins one against \code{.id} to
 name the set behind every row. Because the plan is local, that join needs a
 \code{copy} argument when the Margin result is lazy, and it does not preserve a
 Margin order.
+}
+
+\section{Option arguments}{
+
+An argument documented as taking one of a listed set of strings —
+\code{.duplicates}, \code{.margin_label_position}, and \code{.sort} on the Margin verbs,
+and \code{.format} on \code{\link[=inspect_grouping]{inspect_grouping()}} — takes one of those strings written
+out exactly. An abbreviation is not shorthand for the value it begins, and
+\code{NULL} is not shorthand for the default: both are errors naming the values
+the argument accepts. An argument left out of the call takes its default,
+and a \code{NULL} is not another way of asking for one.
+
+Elsewhere in this package \code{NULL} is a documented value, and what it means is
+stated with the argument that takes it: it is \code{.grouping}'s one empty
+grouping set, \code{.margin_label}'s typed missing value in place of a display
+label, \code{.id}'s absent identifier column, and, in \code{\link[=nest_with_margins]{nest_with_margins()}}, the
+\code{.key} that \code{\link[tidyr:nest]{tidyr::nest()}} reads as \code{"data"} — while
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} refuses a \code{NULL} \code{.key}, following
+\code{\link[dplyr:nest_by]{dplyr::nest_by()}}. That each of them answers for itself is the point. Those
+arguments name a value, a column, or a plan, and such a name has a natural
+absent case to give a \code{NULL}. A vocabulary of options has none — every option
+argument already has a default that does something — so a \code{NULL} arriving at
+one is far more often a variable that did not hold what its caller thought
+than a request for anything, and it is reported rather than resolved.
 }
 
 \examples{

@@ -40,7 +40,8 @@ dimension exactly once; order is irrelevant, and fixed \code{.by} columns must
 not be named. \code{NA_character_} and \code{NULL} use typed missing values instead
 of a display label. See \emph{Display labels and grouping identity}.}
 
-\item{.margin_label_position}{Either \code{"last"} (the default) or \code{"first"}.
+\item{.margin_label_position}{Either \code{"last"} (the default) or \code{"first"},
+and nothing else; see \emph{Option arguments}.
 This controls the position of a non-missing synthetic label in factor and
 ordered-factor levels. It does not sort result rows and has no effect for
 \code{NA_character_} or \code{NULL}.}
@@ -59,8 +60,9 @@ margin row and a source row that no grouping column tells apart; keeping
 added cost. See \emph{Display labels and grouping identity} for the factor
 missing-value contract.}
 
-\item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, controlling
-duplicate grouping sets after expansion.}
+\item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
+else, controlling duplicate grouping sets after expansion; see \emph{Option
+arguments}.}
 
 \item{.id}{\code{NULL}, or one non-missing, non-empty character string naming an
 integer output column of one-based Grouping set identifiers. Each value
@@ -68,7 +70,8 @@ identifies one occurrence in the resolved Grouping plan. The name must not
 collide with source columns, grouping keys, summary outputs, or a nesting
 \code{.key}.}
 
-\item{.sort}{One of \code{"none"} (the default), \code{"last"}, or \code{"first"}. \code{"none"}
+\item{.sort}{One of \code{"none"} (the default), \code{"last"}, or \code{"first"}, and
+nothing else; see \emph{Option arguments}. \code{"none"}
 leaves row order unspecified. The other two order the result by the
 structure of its Grouping plan: within each fixed \code{.by} key, every grouping
 dimension contributes its Grouping bit and its missingness before its own
@@ -160,6 +163,30 @@ hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
 all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
 Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+}
+
+\section{Option arguments}{
+
+An argument documented as taking one of a listed set of strings —
+\code{.duplicates}, \code{.margin_label_position}, and \code{.sort} on the Margin verbs,
+and \code{.format} on \code{\link[=inspect_grouping]{inspect_grouping()}} — takes one of those strings written
+out exactly. An abbreviation is not shorthand for the value it begins, and
+\code{NULL} is not shorthand for the default: both are errors naming the values
+the argument accepts. An argument left out of the call takes its default,
+and a \code{NULL} is not another way of asking for one.
+
+Elsewhere in this package \code{NULL} is a documented value, and what it means is
+stated with the argument that takes it: it is \code{.grouping}'s one empty
+grouping set, \code{.margin_label}'s typed missing value in place of a display
+label, \code{.id}'s absent identifier column, and, in \code{\link[=nest_with_margins]{nest_with_margins()}}, the
+\code{.key} that \code{\link[tidyr:nest]{tidyr::nest()}} reads as \code{"data"} — while
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} refuses a \code{NULL} \code{.key}, following
+\code{\link[dplyr:nest_by]{dplyr::nest_by()}}. That each of them answers for itself is the point. Those
+arguments name a value, a column, or a plan, and such a name has a natural
+absent case to give a \code{NULL}. A vocabulary of options has none — every option
+argument already has a default that does something — so a \code{NULL} arriving at
+one is far more often a variable that did not hold what its caller thought
+than a request for anything, and it is reported rather than resolved.
 }
 
 \section{Result class and attributes}{

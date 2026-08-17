@@ -284,7 +284,11 @@ call_with_option <- function(verb, option, value) {
   if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
     args <- c(args, list(s = quote(sum(v))))
   }
-  args[[option]] <- value
+  # Single-bracket assignment from a list, because `args[[option]] <- NULL`
+  # removes the element instead of writing one: the call would then omit the
+  # option and exercise its default, which is the very thing the `NULL` case
+  # below asserts is not what happens.
+  args[option] <- list(value)
   eval(rlang::call2(verb, !!!args))
 }
 
@@ -353,6 +357,23 @@ test_that("an abbreviation of an option value is rejected", {
         info = option_case_label(case, abbreviation)
       )
     }
+  }
+})
+
+test_that("`NULL` is rejected by every option rather than taken as a default", {
+  # `match.arg(NULL, choices)` returns `choices[1]`, so every option argument
+  # used to read a `NULL` as a request for its own default. #110 stopped that
+  # along with the abbreviations above, and #144 settled it as a decision: the
+  # *Option arguments* section on `?summarize_with_margins` says which
+  # arguments do give a `NULL` a meaning and why an option vocabulary is not
+  # among them. The untouched formal is what selects a default, and it arrives
+  # as the whole vocabulary rather than as a `NULL`.
+  for (case in option_vocabulary_cases()) {
+    expect_identical(
+      option_rejection_message(case$verb, case$option, NULL),
+      expected_vocabulary_message(case),
+      info = paste0(case$verb, "(", case$option, " = NULL)")
+    )
   }
 })
 

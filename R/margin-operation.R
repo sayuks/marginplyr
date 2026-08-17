@@ -115,6 +115,13 @@ margin_sort_choices <- c("none", "last", "first")
 # have redefined what an accepted abbreviation resolves to. The one
 # `match.arg()` behaviour the signatures rely on is kept: an untouched formal
 # default arrives as the whole vocabulary and stands for its first entry.
+#
+# `match.arg(NULL, choices)` returned that first entry too, so a `NULL` written
+# by a caller used to select the default silently. The `identical()` guard below
+# is the whole of what refuses one now, and refusing it is a documented contract
+# rather than a leftover of the rewrite (#144): the *Option arguments* section
+# on `?summarize_with_margins` states it and says why an option vocabulary is
+# the place `NULL` does not mean "use the default".
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
   if (identical(value, choices)) {

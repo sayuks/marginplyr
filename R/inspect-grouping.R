@@ -17,15 +17,18 @@
 #'   specification can be written here, while a specification nested inside
 #'   another must be a constructor call or a name bound to one; see
 #'   [grouping_set()].
-#' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
-#'   duplicate grouping-set occurrences.
+#' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
+#'   else, controlling duplicate grouping-set occurrences; see *Option
+#'   arguments*.
 #' @param .format `"text"` for compact display values or `"list"` for exact
-#'   character and integer vectors. Text values are display-only; use
-#'   `"list"` when column names contain separators or other non-syntactic
-#'   characters.
+#'   character and integer vectors, and nothing else; see *Option arguments*.
+#'   Text values are display-only; use `"list"` when column names contain
+#'   separators or other non-syntactic characters.
 #'
 #' @return A local, ungrouped tibble with columns `set_id`, `fixed`,
 #'   `included`, `omitted`, `grouping_bits`, and `grouping_id`.
+#'
+#' @inheritSection summarize_with_margins Option arguments
 #'
 #' @section Grouping identity:
 #' `set_id` is the one-based Grouping set identifier exposed by `.id` for the

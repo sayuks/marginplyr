@@ -6,6 +6,7 @@
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
+#' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
@@ -19,9 +20,9 @@
 #' @param .keep Should fixed `.by` columns and grouping dimensions also be kept
 #'   inside each nested data frame? If `TRUE`, the nested columns contain their
 #'   original, pre-margin values rather than `.margin_label`.
-#' @param .duplicates `"error"` or `"drop"`. Nesting does not support the
-#'   `"keep"` policy available in [summarize_with_margins()] and
-#'   [expand_with_margins()].
+#' @param .duplicates `"error"` or `"drop"`, and nothing else; see *Option
+#'   arguments*. Nesting does not support the `"keep"` policy available in
+#'   [summarize_with_margins()] and [expand_with_margins()].
 #'
 #' @section Relationship to tidyr and dplyr:
 #' These functions are margin-aware counterparts, not drop-in replacements,
