@@ -193,6 +193,15 @@ matching call of its own. Only the spelling the signature gives is read this
 way: any other vector of more than one value is an error, a reordering of
 the vocabulary included.
 
+What such a wrapper does hold is a copy of this vocabulary, read by exact
+match, so a change to the vocabulary refuses the wrapper's own default while
+leaving a value passed through it alone. A wrapper that
+would rather not track this signature resolves the value itself and passes
+the one string it chose, which no later widening or reordering of the
+vocabulary can invalidate. \code{\link[rlang:arg_match]{rlang::arg_match()}} refuses an abbreviation there
+as this package does, while \code{\link[base:match.arg]{base::match.arg()}} resolves one, so a wrapper
+built on that accepts spellings this package would not.
+
 Elsewhere in this package \code{NULL} is a documented value, and what it means is
 stated with the argument that takes it: it is \code{.grouping}'s one empty
 grouping set, \code{.margin_label}'s typed missing value in place of a display
