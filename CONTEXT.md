@@ -189,12 +189,13 @@ _Avoid_: Third-party error, foreign error
 The lines an External condition carries naming where it arose — the argument
 it is attributed to, the grouping values in force when it did, and the call
 blamed for it. It is distinct from the condition's class and diagnostic. A
-Margin verb owes the caller a context written in names the caller can act on,
-so a grouping value is reported under the column the caller named and the
-blamed call is the Margin verb the caller wrote, rather than the columns and
-the calls marginplyr allocated to compute the grouping sets. A context it
-cannot restate in those terms it leaves as it found it, because a context that
-misdirects is still worth more than none.
+Margin verb owes the caller a context written in the names and the expressions
+the caller can act on, so a grouping value is reported under the column the
+caller named, an argument is quoted as the caller spelled it, and the blamed
+call is the Margin verb the caller wrote, rather than the columns, the
+expressions, and the calls marginplyr allocated to compute the grouping sets. A
+context it cannot restate in those terms it leaves as it found it, because a
+context that misdirects is still worth more than none.
 _Avoid_: Error context, provenance, backtrace
 
 **Repeated condition**:
@@ -202,9 +203,11 @@ One External condition raised once per grouping set, because a Margin
 operation evaluates the caller's summary expression once per grouping set
 although the caller wrote it once. Two occurrences are repetitions of one
 condition when they agree on identity — the class, the diagnostic, and the
-argument they are attributed to — and are distinct conditions otherwise. Which
-grouping set produced an occurrence is never part of that identity, since it
-is the part that necessarily differs. A Margin verb reports a Repeated
+argument they are attributed to as the caller wrote it — and are distinct
+conditions otherwise. Which grouping set produced an occurrence is never part of
+that identity, since it is the part that necessarily differs, and neither is a
+rewrite that differs between grouping sets because the occurrences sit in
+different ones. A Margin verb reports a Repeated
 condition once, and says how many further grouping sets raised it. It answers
 only for the occurrences raised while it runs: a lazy input evaluates the
 caller's expression when the caller later collects the result, and that is the

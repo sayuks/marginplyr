@@ -122,6 +122,13 @@ deparse of the rewritten ones, which is the fragile-parse problem again, for the
 part of the context least likely to mislead. The caller wrote the expression;
 seeing it requoted is confusing rather than wrong.
 
+ADR 0022 decides it, on a mechanism this paragraph does not describe: what
+dplyr quoted is compared with marginplyr's own rendering of the expression it
+handed dplyr, rather than with the caller's spelling. It also measures a cost
+this paragraph missed — a rewrite that differs between branches splits one
+written expression into one report per branch, so the deduplication key above
+is affected and not only the spelling.
+
 ## Consequences
 
 Deduplication is observable, not silent: the surviving occurrence says how many
