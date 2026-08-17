@@ -153,6 +153,17 @@ runs when it is. A diagnostic refusing one tells the caller their spelling is
 glossary, and not a second term.
 _Avoid_: Contextual function, masked helper, reserved argument
 
+**Option argument**:
+An argument whose value is one of a fixed set of strings, written out exactly
+as documented. An abbreviation is not shorthand for the value it begins, and a
+`NULL` is not shorthand for the default; both are refused, and an argument left
+out of the call takes its default. Several arguments do give a `NULL` a
+meaning, each stating for itself what it is, and those name a value, a column,
+or a plan — such a name has a natural absent case for a `NULL` to mean.
+An Option argument has none, because it already has a default that does
+something, so a `NULL` reaching one is reported rather than resolved.
+_Avoid_: Choice argument, enum argument, flag argument, mode argument
+
 **Package condition**:
 An error marginplyr itself raises, inheriting the `marginplyr_error` base
 class. It reports something the caller can avoid by rewriting the call within
