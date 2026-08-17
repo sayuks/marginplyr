@@ -182,25 +182,6 @@ dependency runs one way: a reader that lived in `R/share.R` would make the
 grouping-context rewrite reach into the contextual-share module for a fact
 that is not about shares (#179).
 
-One reader here answers something other than an expression, and is named
-because the heading above would otherwise hide it. `condition_chain()` answers
-the conditions a raised condition's `parent` chain holds, outermost first.
-tidyselect wraps a failure raised inside a selection helper, so the two
-refusals that read such a failure — the contextual-share `across()` diagnostic
-and the Nested specification one — cannot count on the condition they caught
-carrying what they need: a bare subscript is refused at the top of the chain
-and one inside `all_of()` a layer below it. Each walked the chain for itself
-until this named it once (#193).
-
-It sits here for the property the rest of the module has rather than for the
-subject: it says what a chain holds and decides nothing, each caller keeps its
-own question of that answer — one collects the refused character subscripts,
-the other tests a class against an argument label — and the dependency runs one
-way from both. `R/conditions.R` owns marginplyr's own conditions, the one
-constructor for a Package condition and the Condition context a branch's
-External condition is restated in; both of those raise or rewrite a condition,
-where this only reads one another package raised.
-
 ### Recognized spellings (`R/contextual-helpers.R`)
 
 Owns which names a Margin verb recognizes before anything runs, and decides
@@ -400,6 +381,18 @@ review surface: a Package condition demoted to `stop()` silently leaves the
 public contract, and an invariant promoted to `abort_marginplyr()` silently
 enters it.
 
+It also owns the one reading of a condition another package raised.
+`condition_chain()` answers the conditions a `parent` chain holds, outermost
+first, and decides nothing about them. tidyselect wraps a failure raised inside
+a selection helper, so the two refusals that read such a failure — the
+contextual-share `across()` diagnostic and the Nested specification one —
+cannot count on the condition they caught carrying what they need: a bare
+subscript is refused at the top of the chain and one inside `all_of()` a layer
+below it. Each walked the chain for itself until this named it once (#193).
+Each keeps its own question of the answer — one collects the refused character
+subscripts, the other tests a class against an argument's label — because the
+traversal is the only part they share.
+
 The rest of the module owns the Condition context around an External condition
 one grouping-set branch raises. `with_branch_conditions()` restates the
 grouping values dplyr reports under the branch's internal key columns, and the
@@ -541,7 +534,12 @@ The test suite divides supporting contracts as follows:
   the documented exception: the class half of a Repeated condition's identity,
   and an empty message, are both unreachable through a verb, because dplyr
   aggregates a branch's warnings into one condition of its own before
-  signalling.
+  signalling. It also covers the shared condition-chain reader, which is the
+  module's and is reached without a verb: a chain arrives from a caller's own
+  selection failure, so the tests build one and take the two tidyselect shapes
+  from tidyselect itself. Neither consumer's diagnostic would report a
+  traversal that changed shape, which is why the reader is not asserted through
+  them alone.
 - `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
   factor backend contracts.
 - `test-grouping-plan.R` covers the backend-independent Grouping

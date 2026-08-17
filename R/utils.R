@@ -1082,25 +1082,6 @@ static_character_value <- function(expr) {
   recovered
 }
 
-# The conditions a chain holds, outermost first: the condition given, then each
-# `parent` that is a condition itself.
-#
-# tidyselect wraps a failure raised inside a selection helper, so the condition
-# a handler catches is not always the one carrying what a diagnostic has to
-# read. `all_of(s)` reports the refused subscript from a condition one level in,
-# under a wrapper that holds no `i` at all, while a bare `my_spec(region)`
-# raises it at the top; a reader that looked only at what it caught would answer
-# the first shape as if nothing had been refused. What to ask of these
-# conditions stays with the caller -- one collects the character subscripts in
-# `i`, another tests a class against an argument label -- because the chain is
-# the only part such readers share.
-condition_chain <- function(cnd) {
-  if (!inherits(cnd, "condition")) {
-    return(list())
-  }
-  c(list(cnd), condition_chain(cnd$parent))
-}
-
 # Required because dtplyr is an optional Suggest rather than an Import: it
 # brings data.table, which reads this flag from the calling namespace.
 # data.table fixes the spelling of this name, so it cannot follow the package's

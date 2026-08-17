@@ -20,6 +20,32 @@ abort_marginplyr <- function(message,
   )
 }
 
+# The conditions a chain holds, outermost first: the condition given, then each
+# `parent` that is a condition itself.
+#
+# The one reading of a condition another package raised, for the refusals that
+# have to look past the condition they caught. tidyselect wraps a failure
+# raised inside a selection helper, so what carries the refused subscript sits
+# at a depth the caught condition does not say: `all_of(s)` reports it from a
+# condition one level in, under a wrapper holding no `i` at all, while a bare
+# `my_spec(region)` reports it at the top. A reader of the caught condition
+# alone would answer the first shape as though nothing had been refused, which
+# is why two modules walked this for themselves before it was named once
+# (#193).
+#
+# What to ask of these conditions stays with the caller, because the chain is
+# the only part such readers share: `share_selection_missing_names()` collects
+# the character subscripts in `i`, and `is_grouping_spec_subscript()` tests a
+# class against an argument's own label. This one decides nothing, which is
+# what separates it from the rest of this module -- everything else here raises
+# a Package condition or restates one a branch raised.
+condition_chain <- function(cnd) {
+  if (!inherits(cnd, "condition")) {
+    return(list())
+  }
+  c(list(cnd), condition_chain(cnd$parent))
+}
+
 # What an External condition raised while one grouping-set branch runs is
 # reported with. `keys` maps each `..marginplyr_key_N` column the branch
 # grouped by to the column the caller named, and `call` is the Margin verb the
