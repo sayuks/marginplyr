@@ -499,11 +499,24 @@ test_that("a tidyselect selection failure chains as the reader walks it", {
     tidyselect::eval_select(rlang::quo(profit), data = proxy, strict = TRUE)
   )
 
-  expect_length(condition_chain(wrapped), 2L)
-  expect_null(condition_chain(wrapped)[[1L]]$i)
-  expect_identical(condition_chain(wrapped)[[2L]]$i, refused)
-  expect_length(condition_chain(direct), 1L)
-  expect_identical(condition_chain(direct)[[1L]]$i, refused)
+  wrapped_chain <- condition_chain(wrapped)
+  direct_chain <- condition_chain(direct)
+
+  # Deeper than one rather than tidyselect's current two, and the subscript
+  # found anywhere below the top rather than at a fixed depth: how many layers
+  # tidyselect wraps a helper's failure in is not promised, and a layer added
+  # upstream is not a defect here. What the consumers need is that the refusal
+  # is reachable from a condition that does not carry it, which is what these
+  # say. The order the chain is read in is pinned above, where it is this
+  # reader's own.
+  expect_gt(length(wrapped_chain), 1L)
+  expect_null(wrapped_chain[[1L]]$i)
+  expect_true(any(vapply(
+    wrapped_chain,
+    function(condition) identical(condition$i, refused),
+    logical(1)
+  )))
+  expect_identical(direct_chain[[1L]]$i, refused)
 })
 
 test_that("lazy-table assertions use the package condition seam", {

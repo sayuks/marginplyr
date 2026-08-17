@@ -182,6 +182,24 @@ dependency runs one way: a reader that lived in `R/share.R` would make the
 grouping-context rewrite reach into the contextual-share module for a fact
 that is not about shares (#179).
 
+One reader here answers something other than an expression, and is named
+because the heading above would otherwise hide it. `condition_chain()` answers
+the conditions a raised condition's `parent` chain holds, outermost first.
+tidyselect wraps a failure raised inside a selection helper, so the two
+refusals that read such a failure — the contextual-share `across()` diagnostic
+and the Nested specification one — cannot read what they need from the
+condition they caught, and each walked the chain for itself until this named it
+once (#193).
+
+It sits here for the property the rest of the module has rather than for the
+subject: it says what a chain holds and decides nothing, each caller keeps its
+own question of that answer — one collects the refused character subscripts,
+the other tests a class against an argument label — and the dependency runs one
+way from both. `R/conditions.R` owns marginplyr's own conditions, the one
+constructor for a Package condition and the Condition context a branch's
+External condition is restated in; both of those raise or rewrite a condition,
+where this only reads one another package raised.
+
 ### Recognized spellings (`R/contextual-helpers.R`)
 
 Owns which names a Margin verb recognizes before anything runs, and decides

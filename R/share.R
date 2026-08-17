@@ -2988,16 +2988,24 @@ abort_share_source_name <- function(source, preceding, context, kind) {
 # neither does the empty string, which `all_of(c(""))` puts in `i` where no
 # summary could answer it.
 share_selection_missing_names <- function(cnd) {
-  subscripts <- lapply(
-    condition_chain(cnd),
-    function(condition) {
-      if (is.character(condition$i)) condition$i else character()
-    }
+  subscripts <- unlist(
+    lapply(
+      condition_chain(cnd),
+      function(condition) {
+        if (is.character(condition$i)) condition$i else character()
+      }
+    ),
+    use.names = FALSE
   )
-  # Seeded with the empty answer, so that a chain naming nothing answers
-  # `character()` rather than the `NULL` `unlist()` gives an empty list.
-  named <- unlist(c(list(character()), subscripts), use.names = FALSE)
-  unique(named[nzchar(named)])
+  # `unlist()` answers `NULL` for a chain that held no condition at all, and
+  # this answers a character vector, as `expression_data_symbols()` does for
+  # the same reason: `length()` reads the two alike, so the caller's guard
+  # would pass either way, but a caller storing the answer would find one
+  # branch of the walk typeless.
+  if (is.null(subscripts)) {
+    return(character())
+  }
+  unique(subscripts[nzchar(subscripts)])
 }
 
 contains_selection_predicate <- function(expr) {
