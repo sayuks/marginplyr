@@ -145,18 +145,18 @@ add_grouping_set_id <- function(result,
 # dplyr builds every context it attaches out of those. `call` is the Margin
 # verb a Condition context is owed instead of the internal `summarize()` the
 # branch issues; a caller that reaches this directly has none to name and
-# leaves the blamed call alone, as empty `origins` are for the argument
-# spelling.
+# leaves the blamed call alone -- and `new_summary_arguments()` without labels
+# is the same statement about the argument spelling.
 summarize_margin_union <- function(.data,
-                                   dots,
+                                   summaries,
                                    plan,
                                    margin_labels,
                                    column_info,
                                    reserved_names,
                                    set_id_name = NULL,
                                    set_id_is_internal = FALSE,
-                                   call = NULL,
-                                   origins = character()) {
+                                   call = NULL) {
+  dots <- summaries$dots
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -204,7 +204,7 @@ summarize_margin_union <- function(.data,
           .by = unname(key_names[grouping_set])
         ),
         conditions = conditions,
-        argument_labels = branch_argument_map(branch_dots, origins)
+        argument_labels = branch_argument_map(branch_dots, summaries$labels)
       )
 
       check_summary_output_names(

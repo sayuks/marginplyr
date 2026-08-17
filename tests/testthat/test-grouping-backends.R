@@ -1545,7 +1545,7 @@ test_that("DuckDB native and UNION adapters agree", {
   dots <- rlang::quos(total = sum(value), gid = grouping_id(a, b))
   fallback <- summarize_margin_union(
     remote,
-    dots = dots,
+    summaries = new_summary_arguments(dots),
     plan = plan,
     margin_labels = resolve_margin_labels(
       "Total",

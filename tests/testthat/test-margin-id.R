@@ -399,7 +399,7 @@ test_that("DuckDB native and portable summaries agree on .id", {
   )
   portable <- summarize_margin_union(
     remote,
-    dots = rlang::quos(total = sum(value)),
+    summaries = new_summary_arguments(rlang::quos(total = sum(value))),
     plan = plan,
     margin_labels = resolve_margin_labels(
       "Total",

@@ -207,6 +207,23 @@ check_internal_summary_names <- function(output_names, internal_names) {
   )
 }
 
+# What execution carries for the caller's summary arguments: the dots to hand
+# dplyr, beside the caller's own label for each. Constructed at the one point
+# both halves are final -- after every rewrite -- so a pair that stops agreeing
+# in length cannot be built at all, which is an invariant rather than a Package
+# condition (ADR 0015): no call produces it, and a map built from a misaligned
+# pair would quote one argument's expression under another. `labels = NULL` is
+# a caller with no spelling to restore, as a direct call to an adapter is, and
+# restates nothing.
+new_summary_arguments <- function(dots, labels = NULL) {
+  stopifnot(
+    is.list(dots),
+    is.null(labels) ||
+      (is.character(labels) && length(labels) == length(dots))
+  )
+  list(dots = dots, labels = labels)
+}
+
 plan_summary_expressions <- function(dots,
                                      data_proxy,
                                      data_vars,
@@ -219,7 +236,7 @@ plan_summary_expressions <- function(dots,
   # Read before anything is rewritten, which is the whole of what makes these
   # the caller's own labels: every rewrite below runs after this line, and ADR
   # 0007 has already captured the dots at the public verb.
-  origins <- summary_argument_labels(dots)
+  caller_labels <- summary_argument_labels(dots)
   selection_proxy <- dplyr::select(
     data_proxy,
     dplyr::all_of(setdiff(
@@ -245,9 +262,7 @@ plan_summary_expressions <- function(dots,
   # Share planning is the one step that moves a dot, so it reports where each
   # dot it produced came from and the labels are subscripted by that. Every
   # other rewrite here answers one dot with one dot in place.
-  origins <- origins[summary_plan$origin_positions]
-  summary_plan$origin_positions <- NULL
-  summary_plan$origins <- origins
+  caller_labels <- caller_labels[summary_plan$origin_positions]
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
     data_proxy = data_proxy,
@@ -263,8 +278,10 @@ plan_summary_expressions <- function(dots,
       backend_kind = backend_kind
     )
   }
-  summary_plan$cardinality <- NULL
-  summary_plan
+  list(
+    summaries = new_summary_arguments(summary_plan$dots, caller_labels),
+    requests = summary_plan$requests
+  )
 }
 
 find_summary_context_helpers <- function(expr) {

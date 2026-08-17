@@ -667,7 +667,8 @@ test_that("an ambiguous label is restored only where it is unique", {
   )
   expect_length(branch_argument_map(dots, c("c(x)", "any_of(\"x\")")), 0L)
   # A dot no rewrite touched has nothing to restate, and `NULL` labels are
-  # what a caller reaching the adapter directly leaves behind.
+  # what `new_summary_arguments()` records for a caller reaching the adapter
+  # directly.
   expect_length(
     branch_argument_map(
       dots,

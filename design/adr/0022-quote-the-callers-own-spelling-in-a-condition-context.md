@@ -127,10 +127,11 @@ substitution in exchange for depending on an internal name in two packages.
 it fails. Four rewriters build fresh quosures, so each has to copy the
 attribute, and one that forgets restores nothing while reading as protection;
 whether an attribute survives `!!!` and dplyr's own `enquos()` is undocumented
-besides. The labels are carried as a parallel vector instead, remapped where
-`plan_share_expressions()` already remaps the cardinality positions, and a
-length that stops agreeing with the dots is an invariant that stops the
-operation (ADR 0015).
+besides. The labels travel beside the dots in one value instead, constructed
+at the single point both halves are final — after every rewrite, remapped
+where `plan_share_expressions()` already remaps the cardinality positions — so
+a pair whose lengths disagree cannot be built, and one that stops agreeing
+later is an invariant that stops the operation (ADR 0015).
 
 **Align the caller's dots with the rewritten ones by position.** Rejected on
 measurement: share planning drops a dot to `NULL` and expands a placeholder
