@@ -402,15 +402,26 @@ compile_grouping_spec_impl <- function(.grouping,
     data_proxy <- grouping_name_proxy(data_vars)
   }
 
+  # A backstop behind the resolutions that produce `.by`, not a Package
+  # condition: each of them binds every value to `data_vars` already, so no
+  # documented call reaches this (ADR 0015, #159). They are
+  # `dplyr::group_vars()` of a grouped input, whose values are columns of that
+  # input; a name-based selection resolved against
+  # `grouping_name_proxy(data_vars)`, this same set; and a selection column
+  # names alone cannot settle, resolved against the typed snapshot, whose
+  # columns are that set on every backend. A `.by` source that could invent a
+  # name is the thing that has to justify itself here — before #134 one did,
+  # and reported a column the caller never wrote. The `.by`/`.grouping` overlap
+  # check below is the opposite case and stays a Package condition: an ordinary
+  # call reaches it.
   unknown_by <- setdiff(.by, data_vars)
   if (length(unknown_by) > 0L) {
-    abort_marginplyr(
-      paste0(
-        "Unknown `.by` column",
-        if (length(unknown_by) == 1L) " " else "s ",
-        paste0("`", unknown_by, "`", collapse = ", "),
-        "."
-      )
+    stop(
+      "Unknown `.by` column",
+      if (length(unknown_by) == 1L) " " else "s ",
+      paste0("`", unknown_by, "`", collapse = ", "),
+      ".",
+      call. = FALSE
     )
   }
 
