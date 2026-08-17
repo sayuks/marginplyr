@@ -27,6 +27,66 @@ summarize_coercion_cube <- function() {
   # nolint end
 }
 
+# The rewrite #199 is about. `resolve_summary_selections()` turns the caller's
+# `c(grade)` into `dplyr::all_of("grade")` before either adapter runs, so dplyr
+# quotes a call the caller never typed. `grade` is summarized here rather than
+# made a dimension, because the selection a Margin summary resolves is over the
+# columns no grouping set holds.
+summarize_across_coercion <- function() {
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    coercion_frame(),
+    dplyr::across(c(grade), ~ sum(as.numeric(.x))),
+    .grouping = rollup(region)
+  )
+  # nolint end
+}
+
+# A share is where the labels slide. `plan_share_expressions()` replaces the
+# across-share dot with one dot per output, so the warning raised by the dot
+# after it sits at a position the caller's dots do not have -- and a label read
+# by position there describes another argument, or none.
+summarize_share_coercion <- function() {
+  data <- coercion_frame()
+  data$revenue <- c(2, 4, 8)
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    data,
+    dplyr::across(c(units, revenue), sum),
+    dplyr::across(c(units, revenue), share_of_parent, .names = "{.col}_share"),
+    dplyr::across(c(grade), ~ sum(as.numeric(.x))),
+    .grouping = rollup(region)
+  )
+  # nolint end
+}
+
+# The rewrite that differs between branches rather than being shared by them:
+# `grouping_bit(region)` is `0L` in the detail set and `1L` in the Grand total
+# set, so dplyr quoted a different argument in each and the deduplication key
+# saw two conditions where the caller wrote one expression.
+summarize_helper_coercion <- function() {
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    coercion_frame(),
+    total = sum(as.numeric(grade)) + grouping_bit(region),
+    .grouping = rollup(region)
+  )
+  # nolint end
+}
+
+# The same rewrite reaching the caller as an error rather than a warning. What
+# the two paths share is the map; what they do not is where the bullet sits --
+# `$message` is the whole of it here, and one line of a rendered text there.
+summarize_across_failure <- function() {
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    coercion_frame(),
+    dplyr::across(c(grade), ~ sum(nope(.x))),
+    .grouping = rollup(region)
+  )
+  # nolint end
+}
+
 # #108's reproduction: an error from the caller's own expression, which aborts
 # the first branch that raises it.
 summarize_failing_rollup <- function() {
@@ -104,12 +164,113 @@ test_that("a reported warning names the caller's own grouping columns", {
   expect_false(grepl("marginplyr_key", message, fixed = TRUE))
 })
 
+# The third part of #141's context leak (ADR 0022). What is quoted is
+# `rlang::as_label()`'s rendering of the expression the caller wrote rather than
+# their source text, because that is the rendering dplyr would have quoted had
+# nothing been rewritten -- the spelling restored is the caller's, not their
+# whitespace.
+test_that("a reported warning quotes the caller's own spelling", {
+  warnings <- collect_warnings(summarize_across_coercion())
+
+  message <- conditionMessage(warnings[[1L]])
+  expect_match(
+    message,
+    "`dplyr::across(c(grade), ~sum(as.numeric(.x)))`",
+    fixed = TRUE
+  )
+  expect_false(grepl("all_of", message, fixed = TRUE))
+})
+
+test_that("a share does not shift which argument is restored", {
+  warnings <- collect_warnings(summarize_share_coercion())
+
+  expect_length(warnings, 1L)
+  message <- conditionMessage(warnings[[1L]])
+  expect_match(
+    message,
+    "`dplyr::across(c(grade), ~sum(as.numeric(.x)))`",
+    fixed = TRUE
+  )
+  expect_false(grepl("all_of", message, fixed = TRUE))
+})
+
+# Restoring the spelling is what makes this one report, so the identity is read
+# after the restatement and not before (ADR 0022). Which grouping set produced
+# an occurrence is not part of an identity, and a Grouping helper's constant is
+# that same fact reaching the argument bullet.
+test_that("a warning is one report where only a Grouping helper differed", {
+  warnings <- collect_warnings(summarize_helper_coercion())
+
+  expect_length(warnings, 1L)
+  message <- conditionMessage(warnings[[1L]])
+  expect_match(
+    message,
+    "`total = sum(as.numeric(grade)) + grouping_bit(region)`",
+    fixed = TRUE
+  )
+  expect_match(message, "1 further grouping set", fixed = TRUE)
+})
+
 # cli wraps a bullet it cannot fit, so how a warning message is laid out is a
 # function of the console width and of how long the grouping values are. Which
 # grouping set raised a warning is no more part of its identity when the bullet
 # naming it wrapped: this reproduction gave three reports of one condition at
 # 60 columns, four at 40, and two anywhere in 15 to 24, where dplyr's opening
 # sentence wraps and cli does not indent what it wraps it onto.
+# The restatement has to read the bullet as the line it was written as, for the
+# same reason the identity does: cli wraps a bullet it cannot fit, and a span
+# read off the line the bullet opens is a prefix of the label at any narrow
+# width. Reading it that way reported the Grouping-helper case once at 80
+# columns and twice at 40, which is the console width deciding how many
+# conditions a caller receives.
+test_that("a Grouping helper's collapse holds at any console width", {
+  for (width in c(80L, 60L, 40L, 24L, 16L)) {
+    warnings <- collect_warnings_at_width(width, summarize_helper_coercion())
+
+    expect_length(warnings, 1L)
+    expect_match(
+      conditionMessage(warnings[[1L]]),
+      "grouping_bit(region)",
+      fixed = TRUE,
+      info = paste("width", width)
+    )
+  }
+})
+
+# The degradation the contract requires, exercised through a real call rather
+# than described: dplyr abbreviates a long infix expression to `+...`, which
+# equals no label marginplyr rendered, so the quotation stays as dplyr wrote it.
+# What goes away is the restoration, never the report.
+#
+# The second case is why reproducing dplyr's abbreviation would buy nothing
+# (ADR 0022): the same truncation removes the Grouping helper's constant, so the
+# branches agree on an identity without any restoration.
+test_that("an abbreviated argument keeps the quotation dplyr wrote", {
+  data <- coercion_frame()
+
+  plain <- collect_warnings(summarize_with_margins(
+    data,
+    total = sum(as.numeric(grade)) +
+      0 * (sum(units) + sum(units) + sum(units) + sum(units) + sum(units)),
+    .grouping = rollup(region)
+  ))
+  with_helper <- collect_warnings(summarize_with_margins(
+    data,
+    total = sum(as.numeric(grade)) + grouping_bit(region) +
+      0 * (sum(units) + sum(units) + sum(units) + sum(units) + sum(units)),
+    .grouping = rollup(region)
+  ))
+
+  expect_length(plain, 1L)
+  expect_match(conditionMessage(plain[[1L]]), "`total = +...`", fixed = TRUE)
+  expect_length(with_helper, 1L)
+  expect_match(
+    conditionMessage(with_helper[[1L]]),
+    "1 further grouping set",
+    fixed = TRUE
+  )
+})
+
 test_that("a repeated warning is one report at any console width", {
   for (width in c(80L, 60L, 40L, 20L, 16L)) {
     warnings <- collect_warnings_at_width(width, summarize_coercion_cube())
@@ -259,6 +420,20 @@ test_that("a branch error reports the caller's column, group, and verb", {
   )
 })
 
+test_that("a branch error quotes the caller's own spelling", {
+  error <- expect_error(summarize_across_failure())
+
+  message <- conditionMessage(error)
+  expect_match(
+    message,
+    "`dplyr::across(c(grade), ~sum(nope(.x)))`",
+    fixed = TRUE
+  )
+  expect_false(grepl("all_of", message, fixed = TRUE))
+  # The condition itself is still the caller's, restated context and all.
+  expect_s3_class(error$parent, "condition")
+})
+
 test_that("a propagated error keeps its class, diagnostic, and cause", {
   error <- expect_error(summarize_failing_rollup())
 
@@ -356,6 +531,85 @@ test_that("the reported conditions read as they are written", {
   # deliberately improved.
   expect_snapshot(cat(conditionMessage(warnings[[1L]])))
   expect_snapshot(cat(conditionMessage(error)))
+})
+
+# Asserted on the seam rather than through a verb, because what these stand in
+# for is a dplyr release: a bullet whose wording this cannot read leaves the
+# condition as it arrived. The matching case is asserted beside them, since a
+# test of non-matches alone would pass just as well if nothing ever matched.
+test_that("a bullet this cannot read leaves the condition alone", {
+  arguments <- c(`dplyr::all_of("x")` = "c(x)")
+  restated <- function(text) {
+    conditionMessage(restate_condition_arguments(
+      rlang::warning_cnd("test_warning", message = text),
+      arguments
+    ))
+  }
+
+  expect_identical(
+    restated("i In argument: `dplyr::all_of(\"x\")`."),
+    "i In argument: `c(x)`."
+  )
+  # A wording dplyr could move to.
+  expect_identical(
+    restated("i In summary: `dplyr::all_of(\"x\")`."),
+    "i In summary: `dplyr::all_of(\"x\")`."
+  )
+  # A span that is no label this branch handed dplyr.
+  expect_identical(
+    restated("i In argument: `dplyr::all_of(\"y\")`."),
+    "i In argument: `dplyr::all_of(\"y\")`."
+  )
+  # A bullet cli wrapped is read as the line it was written as, so one that
+  # rejoins to a label is restated -- as one line, which is what it was written
+  # as. cli breaks at a space, so this is the ordinary case at a narrow width.
+  wrapped <- conditionMessage(restate_condition_arguments(
+    rlang::warning_cnd(
+      "test_warning",
+      message = "i In argument: `dplyr::all_of(c(\"x\",\n  \"y\"))`."
+    ),
+    c(`dplyr::all_of(c("x", "y"))` = "c(x, y)")
+  ))
+  expect_identical(wrapped, "i In argument: `c(x, y)`.")
+  # A wrap that does not rejoin to a label is left alone, which is what happens
+  # wherever cli had to break inside a token rather than at a space.
+  expect_identical(
+    restated("i In argument: `dplyr::all_of(\n  \"x\")`."),
+    "i In argument: `dplyr::all_of(\n  \"x\")`."
+  )
+  # The structured shape, where the marker is the name of the message vector
+  # rather than part of its text, and has to survive the restatement.
+  restated_error <- restate_condition_arguments(
+    rlang::error_cnd("test_error", message = c(i = "In argument: `x`.")),
+    c(x = "c(x)")
+  )
+  expect_identical(restated_error$message, c(i = "In argument: `c(x)`."))
+})
+
+# Two dots can hand dplyr one expression, and the span then says which
+# expression raised the condition but not which argument did. The substitution
+# is made only where it does not depend on that answer.
+test_that("an ambiguous label is restored only where it is unique", {
+  dots <- list(
+    rlang::quo(dplyr::all_of("x")),
+    rlang::quo(dplyr::all_of("x"))
+  )
+
+  expect_identical(
+    branch_argument_map(dots, c("c(x)", "c(x)")),
+    c(`dplyr::all_of("x")` = "c(x)")
+  )
+  expect_length(branch_argument_map(dots, c("c(x)", "any_of(\"x\")")), 0L)
+  # A dot no rewrite touched has nothing to restate, and an empty `origins` is
+  # what a caller reaching the adapter directly hands it.
+  expect_length(
+    branch_argument_map(
+      dots,
+      c("dplyr::all_of(\"x\")", "dplyr::all_of(\"x\")")
+    ),
+    0L
+  )
+  expect_length(branch_argument_map(dots, character()), 0L)
 })
 
 # The shared reading of a condition another package raised, asserted here
