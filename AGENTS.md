@@ -335,6 +335,10 @@ shipped sites drift from. Adding an optional Suggest still means editing the
 two places *Release matrix* names — a version is not a third place, because the
 guard reads it.
 
+*Suggest* and *backend* are used below in the senses *Release matrix*
+separates them into, since the helpers this section names are shared with the
+jobs that section describes.
+
 `suggest_available()` consults the guard, so a too-old package skips rather
 than running, unless the job named it in `MARGINPLYR_REQUIRED_SUGGESTS` — then
 it errors, exactly as an absent required package does, and a `backend` job

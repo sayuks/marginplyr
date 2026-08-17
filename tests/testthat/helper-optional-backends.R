@@ -13,10 +13,10 @@
 # a backend; `data.table` is both, and what its job proves is an input class.
 #
 # This file and `test-optional-backends.R` keep the narrower word in their
-# names, which is the one place it is left standing: a testthat helper file is
-# addressed by path from `ci-helpers.R`, `release-matrix.yaml`, `guard.R`, and
-# three sections of `AGENTS.md`, and no reader reaches those names while writing
-# a guard.
+# names, which is the one place it stands without being accurate: a testthat
+# helper file is reached by path -- from the CI scripts, the workflow,
+# `inst/suggests/guard.R`, and the design documents, `grep` being the way to
+# find them all -- and no reader meets either name while writing a guard.
 #
 # Both variables below arrive as a comma-separated package list, and the CI
 # scripts read the same values through `env_list()` in `.github/scripts/`. That
@@ -160,12 +160,13 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # reaches CI as another entry's companion.
 #
 # `companions` names the packages a job proving this entry must install
-# alongside it. They are not what the job promises to execute -- but a driver
-# package without DBI installs and then does nothing. It is also how a job
-# declares what its own entry drags in: dtplyr declares `Imports: data.table`,
-# so a job installing dtplyr installs data.table whether it asked for it or not,
-# and `verify-library-isolation.R` would read that as a leak from a shared
-# cache. Naming it here is the job saying it expected it.
+# alongside it. They are not the entry the job is for, so they are not what it
+# promises to execute -- but a driver package without DBI installs and then does
+# nothing. It is also how a job declares what its own entry drags in: dtplyr
+# declares `Imports: data.table`, so a job installing dtplyr installs data.table
+# whether it asked for it or not, and `verify-library-isolation.R` would read
+# that as a leak from a shared cache. Naming it here is the job saying it
+# expected it.
 #
 # `data.table` is an entry of its own as well, because it is not only dtplyr's
 # dependency here: raw `data.table` input reaches the local backend as an
@@ -194,11 +195,10 @@ optional_suggests <- function() {
 # `verify-depends-only.R` and `verify-library-isolation.R` call it unchanged.
 #
 # #185 renamed the table and the guards around it without touching this, because
-# this is the one place the narrower word is the right one: what it returns is
-# exactly the set `backend` jobs are generated from, and it takes no package
-# name, so it cannot be read as a claim that any particular entry translates
-# queries. `suggest_job_packages()` below does take one, which is why that one
-# moved.
+# here the narrower word is the accurate one: what it returns is exactly the set
+# `backend` jobs are generated from, and it takes no package name, so it cannot
+# be read as a claim that any particular entry translates queries.
+# `suggest_job_packages()` below does take one, which is why that one moved.
 optional_backends <- function() {
   asserted <- optional_suggests()
   names(asserted)[asserted]
