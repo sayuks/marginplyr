@@ -898,6 +898,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       staged_result <- stage_margin_summaries(
         operation,
         dots = dots,
+        origins = summary_plan$origins,
         reserved_names = reserved_names,
         keep_set_identity = has_shares
       )
@@ -922,8 +923,13 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
   )
 }
 
+# `origins` is the caller's label for each dot, carried only so that the union
+# adapter can restate a Condition context in the caller's own spelling. It is
+# passed beside `dots` and never read here, because what a label describes is
+# one of those dots.
 stage_margin_summaries <- function(operation,
                                    dots,
+                                   origins,
                                    reserved_names,
                                    keep_set_identity) {
   plan <- operation$plan
@@ -990,7 +996,8 @@ stage_margin_summaries <- function(operation,
           reserved_names = reserved_names,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal,
-          call = operation$call
+          call = operation$call,
+          origins = origins
         )
       }
     },

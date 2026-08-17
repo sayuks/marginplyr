@@ -216,6 +216,10 @@ plan_summary_expressions <- function(dots,
                                      call) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
   group_vars <- c(plan$by, plan$dimensions)
+  # Read before anything is rewritten, which is the whole of what makes these
+  # the caller's own labels: every rewrite below runs after this line, and ADR
+  # 0007 has already captured the dots at the public verb.
+  origins <- summary_argument_labels(dots)
   selection_proxy <- dplyr::select(
     data_proxy,
     dplyr::all_of(setdiff(
@@ -238,6 +242,12 @@ plan_summary_expressions <- function(dots,
     set_id_name = set_id_name,
     validate_cardinality = wraps_share_sources_in_summary(backend_kind)
   )
+  # Share planning is the one step that moves a dot, so it reports where each
+  # dot it produced came from and the labels are subscripted by that. Every
+  # other rewrite here answers one dot with one dot in place.
+  origins <- origins[summary_plan$origin_positions]
+  summary_plan$origin_positions <- NULL
+  summary_plan$origins <- origins
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
     data_proxy = data_proxy,

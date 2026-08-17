@@ -154,7 +154,8 @@ summarize_margin_union <- function(.data,
                                    reserved_names,
                                    set_id_name = NULL,
                                    set_id_is_internal = FALSE,
-                                   call = NULL) {
+                                   call = NULL,
+                                   origins = character()) {
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -191,13 +192,18 @@ summarize_margin_union <- function(.data,
       # Only the caller's expressions are wrapped. The checks and the branch
       # builders below raise Package conditions, which carry their own context
       # and are never deduplicated.
+      #
+      # The map is built per branch rather than once, because `branch_dots` is
+      # where a Grouping helper has become this branch's own constant, and that
+      # is the expression dplyr will quote.
       result <- with_branch_conditions(
         summarize_margin_branch(
           .data = .data,
           !!!branch_dots,
           .by = unname(key_names[grouping_set])
         ),
-        conditions = conditions
+        conditions = conditions,
+        arguments = branch_argument_map(branch_dots, origins)
       )
 
       check_summary_output_names(

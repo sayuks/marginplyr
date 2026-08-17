@@ -76,17 +76,25 @@ new_branch_conditions <- function(keys, call = NULL) {
 # of the error that aborts it. Only the caller's own summary expressions are
 # evaluated inside `expr`: a Package condition is raised by the branch builders
 # around it, which is what keeps this from reaching one.
-with_branch_conditions <- function(expr, conditions) {
+#
+# `arguments` is this branch's own map from what it handed dplyr to what the
+# caller wrote, and sits here rather than in `conditions` because a branch
+# rewrites a Grouping helper to its own constant, so no two branches
+# necessarily hand dplyr the same expressions. Nothing reads it yet: what does
+# is the restatement in the commit after this one.
+with_branch_conditions <- function(expr,
+                                   conditions,
+                                   arguments = character()) {
   tryCatch(
     withCallingHandlers(
       expr,
       warning = function(cnd) {
-        buffer_branch_warning(cnd, conditions)
+        buffer_branch_warning(cnd, conditions, arguments)
         invokeRestart("muffleWarning")
       }
     ),
     error = function(cnd) {
-      stop(restate_branch_error(cnd, conditions))
+      stop(restate_branch_error(cnd, conditions, arguments))
     }
   )
 }
@@ -99,7 +107,7 @@ with_branch_conditions <- function(expr, conditions) {
 # Errors are not deduplicated, and there is nothing to deduplicate: branches
 # run in sequence, so the first error aborts the operation and no second
 # occurrence is ever raised.
-restate_branch_error <- function(cnd, conditions) {
+restate_branch_error <- function(cnd, conditions, arguments) {
   cnd <- restate_condition_names(cnd, conditions$keys)
   if (!is.null(conditions$call)) {
     cnd$call <- conditions$call
@@ -127,7 +135,7 @@ restate_condition_names <- function(cnd, keys) {
 # A warning arrives as one condition per branch whose message dplyr has already
 # aggregated, flattened, and rendered: `$parent` is `NULL` and there is no
 # `$body`, so the text is all there is to compare.
-buffer_branch_warning <- function(cnd, conditions) {
+buffer_branch_warning <- function(cnd, conditions, arguments) {
   cnd <- restate_condition_names(cnd, conditions$keys)
   key <- branch_warning_identity(cnd)
 
@@ -244,6 +252,70 @@ report_branch_warnings <- function(conditions) {
     warning(cnd)
   }
   invisible(NULL)
+}
+
+# The label dplyr quotes an argument by, reproduced so that the expression
+# marginplyr handed it can be recognised in a context it rendered. dplyr writes
+# `paste0(name, " = ", expr_as_label(expr))` for a named argument
+# (`error_label_named()`), and its `expr_as_label()` is `rlang::as_label()` with
+# rlang's infix labelling suppressed through an option neither package
+# documents. Plain `as_label()` is what this uses, so the two disagree exactly
+# where dplyr abbreviates a long infix expression -- `total = +...` -- and there
+# the caller's own label renders that same string. ADR 0022 reproduces the
+# convention and not the option for that reason: what the option covers is a
+# substitution nothing could observe.
+summary_argument_labels <- function(dots) {
+  arg_names <- names(dots)
+  if (is.null(arg_names)) {
+    arg_names <- rep("", length(dots))
+  }
+  vapply(
+    seq_along(dots),
+    function(i) {
+      dot <- dots[[i]]
+      expr <- if (rlang::is_quosure(dot)) rlang::quo_get_expr(dot) else dot
+      label <- rlang::as_label(expr)
+      if (nzchar(arg_names[[i]])) {
+        paste0(arg_names[[i]], " = ", label)
+      } else {
+        label
+      }
+    },
+    character(1)
+  )
+}
+
+# What one branch hands dplyr, mapped to what the caller wrote. `origins` holds
+# the caller's label for each dot and is carried from
+# `plan_summary_expressions()`, because nothing between there and here preserves
+# position: share planning drops a dot and expands a placeholder into one dot
+# per output. A length that stops agreeing with the dots is an invariant rather
+# than a Package condition (ADR 0015) -- no call can produce it, and a map built
+# from a misaligned pair would quote one argument's expression under another.
+#
+# A label several dots share is kept only where the callers' own labels agree,
+# since the replacement is then the same whichever dot dplyr meant; where they
+# differ the entry is dropped and the quotation stays as dplyr wrote it. An
+# entry no rewrite changed is dropped as well, having nothing to restate.
+branch_argument_map <- function(dots, origins) {
+  if (length(origins) == 0L) {
+    return(character())
+  }
+  stopifnot(length(dots) == length(origins))
+
+  labels <- summary_argument_labels(dots)
+  written <- unique(labels)
+  restored <- vapply(
+    written,
+    function(label) {
+      candidates <- unique(origins[labels == label])
+      if (length(candidates) == 1L) candidates else NA_character_
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
+  keep <- !is.na(restored) & restored != written
+  stats::setNames(restored[keep], written[keep])
 }
 
 # Rewrites the internal grouping-column names dplyr built the context from into
