@@ -622,6 +622,7 @@ test_that("a bullet this cannot read leaves the condition alone", {
 # which ADR 0015 rules out.
 test_that("a caller's own text is never restated", {
   arguments <- c(`dplyr::all_of("x")` = "c(x)")
+  cause <- "\nCaused by warning:\n! boom"
   restated <- function(text) {
     conditionMessage(restate_condition_arguments(
       rlang::warning_cnd("test_warning", message = text),
@@ -657,6 +658,16 @@ test_that("a caller's own text is never restated", {
   # newlines included: rebuilding it from its lines silently dropped one.
   expect_identical(restated("no match here\n"), "no match here\n")
   expect_identical(restated("a\n\nb\n\n"), "a\n\nb\n\n")
+  # A message this does restate keeps its trailing newline for the same
+  # reason, and needs saying separately: splitting drops it, so the restated
+  # path puts it back rather than inheriting the one the unchanged path never
+  # removed.
+  expect_identical(
+    restated(paste0("i In argument: `dplyr::all_of(\"x\")`.", cause, "\n")),
+    paste0("i In argument: `c(x)`.", cause, "\n")
+  )
+  # An empty message is neither restated nor rebuilt.
+  expect_identical(restated(""), "")
 })
 
 # Two dots can hand dplyr one expression, and the span then says which

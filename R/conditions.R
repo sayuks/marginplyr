@@ -404,10 +404,9 @@ dplyr_message_runs <- function(written, rendered) {
 # The same guard restores a restated message's trailing newline, of which
 # splitting keeps all but one.
 restate_argument_lines <- function(text, restatements, rendered) {
+  # An empty message needs no guard of its own: it splits into no lines, so
+  # there is no run to restate and the unchanged path below returns it.
   lines <- strsplit(text, "\n", fixed = TRUE)[[1L]]
-  if (length(lines) == 0L) {
-    return(text)
-  }
   runs <- message_line_runs(lines)
   written <- written_message_lines(lines, runs)
   restatable <- dplyr_message_runs(written, rendered)
