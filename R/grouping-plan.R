@@ -767,9 +767,8 @@ resolve_grouping_selection <- function(arg, data_proxy) {
   )
 }
 
-# The refused subscript travels in the condition's `i` field, and tidyselect
-# wraps a failure raised inside a selection helper, so the chain is walked as
-# `share_selection_missing_names()` walks it for the same reason.
+# The refused subscript travels in the condition's `i` field, at whatever depth
+# of the chain `condition_chain()` describes.
 #
 # What the position can speak for is its own argument, so the refusal has to
 # name that argument and not a part of it: tidyselect reports the sub-selection
@@ -780,14 +779,14 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # both are written by `rlang::as_label()` from the same expression when the
 # argument as a whole is what was refused.
 is_grouping_spec_subscript <- function(cnd, label) {
-  if (
-    inherits(cnd$i, "margin_grouping_spec") &&
-      identical(cnd$subscript_arg, label)
-  ) {
-    return(TRUE)
-  }
-  parent <- cnd$parent
-  inherits(parent, "condition") && is_grouping_spec_subscript(parent, label)
+  any(vapply(
+    condition_chain(cnd),
+    function(condition) {
+      inherits(condition$i, "margin_grouping_spec") &&
+        identical(condition$subscript_arg, label)
+    },
+    logical(1)
+  ))
 }
 
 abort_nested_grouping_spec <- function(label) {

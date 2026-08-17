@@ -357,3 +357,86 @@ test_that("the reported conditions read as they are written", {
   expect_snapshot(cat(conditionMessage(warnings[[1L]])))
   expect_snapshot(cat(conditionMessage(error)))
 })
+
+# The shared reading of a condition another package raised, asserted here
+# because it is this module's, and directly because neither consumer's
+# diagnostic would report a traversal that changed shape: the share-selection
+# reader answers the same empty vector for a chain read in the wrong order as
+# for one naming nothing, and the grouping-specification predicate the same
+# `FALSE`. Unlike the Condition context above, it is reached without a verb --
+# a chain is what a caller's own selection failure arrives as, and building one
+# is what states the shape the reader is written for.
+
+test_that("the condition-chain reader answers a chain outermost first", {
+  innermost <- rlang::error_cnd(message = "innermost")
+  middle <- rlang::error_cnd(message = "middle", parent = innermost)
+  outermost <- rlang::error_cnd(message = "outermost", parent = middle)
+
+  chain <- condition_chain(outermost)
+
+  expect_length(chain, 3L)
+  # Each condition's own message, since `conditionMessage()` of a chained rlang
+  # error already reports the parents underneath it and would pass whatever
+  # order the chain arrived in.
+  expect_identical(
+    vapply(chain, function(condition) condition$message, character(1)),
+    c("outermost", "middle", "innermost")
+  )
+  expect_length(condition_chain(innermost), 1L)
+})
+
+test_that("the condition-chain reader stops where the chain does", {
+  # rlang writes `parent = NULL` for an unchained condition, and refuses
+  # anything else in the field -- but the chains this walks are raised by other
+  # packages, so the field is read for what it holds rather than trusted to be
+  # a condition. Built with `structure()` here for that reason: `error_cnd()`
+  # cannot express the case.
+  foreign <- structure(
+    list(message = "x", call = NULL, parent = "not a condition"),
+    class = c("error", "condition")
+  )
+
+  expect_length(condition_chain(foreign), 1L)
+  expect_identical(condition_chain(NULL), list())
+  expect_identical(condition_chain("not a condition"), list())
+})
+
+test_that("a tidyselect selection failure chains as the reader walks it", {
+  # The two shapes the consumers exist to handle, taken from tidyselect rather
+  # than built here: a selection helper raises the refusal inside its own call,
+  # so what a `tryCatch()` handler catches is a wrapper holding no `i`, while a
+  # bare subscript raises it at the top. A reader of the caught condition alone
+  # would report the first as a failure that named nothing.
+  proxy <- list(sales = 1L)
+  refused <- "profit"
+
+  wrapped <- expect_error(
+    tidyselect::eval_select(
+      rlang::quo(tidyselect::all_of(refused)),
+      data = proxy,
+      strict = TRUE
+    )
+  )
+  direct <- expect_error(
+    tidyselect::eval_select(rlang::quo(profit), data = proxy, strict = TRUE)
+  )
+
+  wrapped_chain <- condition_chain(wrapped)
+  direct_chain <- condition_chain(direct)
+
+  # Deeper than one rather than tidyselect's current two, and the subscript
+  # found anywhere below the top rather than at a fixed depth: how many layers
+  # tidyselect wraps a helper's failure in is not promised, and a layer added
+  # upstream is not a defect here. What the consumers need is that the refusal
+  # is reachable from a condition that does not carry it, which is what these
+  # say. The order the chain is read in is pinned above, where it is this
+  # reader's own.
+  expect_gt(length(wrapped_chain), 1L)
+  expect_null(wrapped_chain[[1L]]$i)
+  expect_true(any(vapply(
+    wrapped_chain,
+    function(condition) identical(condition$i, refused),
+    logical(1)
+  )))
+  expect_identical(direct_chain[[1L]]$i, refused)
+})

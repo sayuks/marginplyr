@@ -2316,6 +2316,21 @@ test_that("a failed share selection keeps the original condition", {
   expect_s3_class(ordinary_error$parent, "my_user_error")
 })
 
+test_that("the share-selection reader answers a chain naming nothing", {
+  # Two empty answers, and they are not reached the same way. A chain whose
+  # conditions hold no character subscript is the case above -- a selection
+  # expression that raised on its own -- and arrives here from the verb. A
+  # chain holding no condition at all cannot: `abort_share_selection_error()`
+  # is handed the argument of a `tryCatch()` handler. The second is asserted
+  # anyway, because the branch keeping the answer a character vector rather
+  # than `NULL` is otherwise a branch nothing runs.
+  expect_identical(
+    share_selection_missing_names(rlang::error_cnd(message = "boom")),
+    character()
+  )
+  expect_identical(share_selection_missing_names(NULL), character())
+})
+
 test_that("an ineligible share selection raises a parentless condition", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 

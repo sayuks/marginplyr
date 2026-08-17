@@ -2983,13 +2983,35 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
 }
 
+# The names a failed selection gave, in the order the chain holds them. What
+# each one turns out to be -- a summary defined twice, one that is ineligible,
+# or a name no summary answers at all -- is `abort_share_source_name()`'s
+# question, so this says only what was named. A subscript that is not character
+# names nothing it can report, and neither does the empty string, which
+# `all_of(c(""))` puts in `i` where no summary could answer it.
 share_selection_missing_names <- function(cnd) {
-  current <- if (is.character(cnd$i)) cnd$i else character()
-  parent <- cnd$parent
-  if (inherits(parent, "condition")) {
-    current <- c(current, share_selection_missing_names(parent))
+  subscripts <- unlist(
+    lapply(
+      condition_chain(cnd),
+      function(condition) {
+        if (is.character(condition$i)) condition$i else character()
+      }
+    ),
+    use.names = FALSE
+  )
+  # `unlist()` answers `NULL` for a chain that held no condition at all, and
+  # this answers a character vector, as `expression_data_symbols()` and
+  # `static_character_value()` do for the same reason. A chain holding a
+  # condition that names nothing already answers `character()` on the line
+  # above, so only an argument that is no condition reaches this -- which
+  # `abort_share_selection_error()` cannot pass, its `cnd` being a
+  # `tryCatch()` handler's own argument. It is kept because a reader answering
+  # `NULL` on one branch is one a caller cannot store, and asserted directly in
+  # `test-share.R` rather than left as a branch nothing runs.
+  if (is.null(subscripts)) {
+    return(character())
   }
-  unique(current[nzchar(current)])
+  unique(subscripts[nzchar(subscripts)])
 }
 
 contains_selection_predicate <- function(expr) {
