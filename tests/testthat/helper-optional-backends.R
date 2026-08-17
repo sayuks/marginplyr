@@ -4,19 +4,20 @@
 # purpose is to execute DuckDB would pass green with fourteen silently skipped
 # tests if duckdb failed to install.
 #
-# Two words are in use here and they are not synonyms (#185). A *Suggest* is any
-# optional package a guard may name, which is what `optional_suggest_spec()`
-# below holds and what every helper taking a package name speaks of. A *backend*
-# is narrower -- an entry the release matrix generates a job for -- which is why
-# `optional_backends()` keeps its name for the subset those jobs iterate over
-# and no helper accepting an entry is named for one. `DBI` is a Suggest and not
-# a backend; `data.table` is both, and what its job proves is an input class.
+# Two words are in use here and they are not synonyms: a *Suggest* is any
+# optional package a guard may name, and a *backend* is the narrower thing the
+# release matrix generates a job for. `AGENTS.md`'s *Release matrix* section
+# states the distinction once, with the entries that turn on it; what follows
+# from it here is that `optional_suggest_spec()` below is named for what it
+# holds, `optional_backends()` for the subset those jobs iterate over, and no
+# helper accepting a package name is named for a backend (#185).
 #
 # This file and `test-optional-backends.R` keep the narrower word in their
-# names, which is the one place it stands without being accurate: a testthat
-# helper file is reached by path -- from the CI scripts, the workflow,
-# `inst/suggests/guard.R`, and the design documents, `grep` being the way to
-# find them all -- and no reader meets either name while writing a guard.
+# names, which is the one place it stands without being accurate: a file name
+# is reached by path, and a path is not a claim about what the file holds.
+# Renaming one moves a string in the CI scripts, the workflow,
+# `inst/suggests/guard.R`, and the design documents -- `grep` finds them --
+# without changing a word anyone writes when they write a guard.
 #
 # Both variables below arrive as a comma-separated package list, and the CI
 # scripts read the same values through `env_list()` in `.github/scripts/`. That

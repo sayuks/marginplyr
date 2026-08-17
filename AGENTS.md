@@ -325,6 +325,10 @@ example run interactively, and the site build — whose `Config/Needs/website`
 entries carry no versions, so a site job can legitimately install a version the
 package's own Suggests entry rejects.
 
+*Suggest* and *backend* are used from here on in the senses *Release matrix*
+below separates them into, since the helpers this section names are shared with
+the jobs that section describes.
+
 DESCRIPTION states each constraint and the guard is the only thing that reads
 one, so there is no version written down twice and nothing to keep in step. The
 guard lives under `inst/` for the reason `must-error.R` does: the four
@@ -334,10 +338,6 @@ call on a `system.file()` path, and a copy in `tests/` would be the copy the
 shipped sites drift from. Adding an optional Suggest still means editing the
 two places *Release matrix* names — a version is not a third place, because the
 guard reads it.
-
-*Suggest* and *backend* are used below in the senses *Release matrix*
-separates them into, since the helpers this section names are shared with the
-jobs that section describes.
 
 `suggest_available()` consults the guard, so a too-old package skips rather
 than running, unless the job named it in `MARGINPLYR_REQUIRED_SUGGESTS` — then
@@ -388,12 +388,15 @@ set that arrived empty is a set that passes.
 
 `.github/workflows/release-matrix.yaml` checks one built tarball rather than
 the working tree, because a check that passes on the development tree can be
-passing on a file the tarball does not ship. Its `backend` jobs each install a
-single member of `optional_backends()` and set `MARGINPLYR_REQUIRED_SUGGESTS`,
-which turns that package's absence into a test failure instead of a skip.
+passing on a file the tarball does not ship. Each of its `backend` jobs is for
+one member of `optional_backends()`, and installs that member plus the
+companions its entry declares. `MARGINPLYR_REQUIRED_SUGGESTS` names all of
+them, so any one of them failing to install fails the job instead of skipping
+its tests.
 
-Two words are in use in this section and they name different sets (#185). A
-*Suggest* is any optional package a guard may name — what
+Two words are in use in this section and in *Optional-dependency guards*
+above, and they name different sets (#185). A *Suggest* is any optional
+package a guard may name — what
 `optional_suggest_spec()` holds, and what every helper taking a package name
 speaks of. A *backend* is the narrower thing a generated job exists for: the
 subset `optional_backends()` returns, which is what those jobs iterate over.
