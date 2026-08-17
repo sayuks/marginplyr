@@ -335,9 +335,9 @@ guard lives under `inst/` for the reason `must-error.R` does: the four
 vignettes, the four examples, and
 `tests/testthat/helper-optional-backends.R` each reach it in one `source()`
 call on a `system.file()` path, and a copy in `tests/` would be the copy the
-shipped sites drift from. Adding an optional Suggest still means editing the
-two places *Release matrix* names — a version is not a third place, because the
-guard reads it.
+shipped sites drift from. Registering an optional Suggest with the test suite
+still means editing the two places *Release matrix* names — a version is not a
+third place, because the guard reads it.
 
 `suggest_available()` consults the guard, so a too-old package skips rather
 than running, unless the job named it in `MARGINPLYR_REQUIRED_SUGGESTS` — then
@@ -395,14 +395,16 @@ them, so any one of them failing to install fails the job instead of skipping
 its tests.
 
 Two words are in use in this section and in *Optional-dependency guards*
-above, and they name different sets (#185). A *Suggest* is any optional
-package a guard may name — what
-`optional_suggest_spec()` holds, and what every helper taking a package name
-speaks of. A *backend* is the narrower thing a generated job exists for: the
-subset `optional_backends()` returns, which is what those jobs iterate over.
-`DBI` is a Suggest and not a backend — it has no job of its own — while
-`data.table` is both, and what its job proves is an input class rather than a
-query translation.
+above, and they name different sets (#185). A *Suggest* is an optional package
+the test suite guards on — an entry in `optional_suggest_spec()`, which is what
+every helper taking a package name accepts and refuses anything else. A
+*backend* is the narrower thing a generated job exists for: the subset
+`optional_backends()` returns, which is what those jobs iterate over. `DBI` is
+a Suggest and not a backend — it has no job of its own — while `data.table` is
+both, and what its job proves is an input class rather than a query
+translation. A Suggest only a vignette or an example guards on is neither, and
+belongs in neither place: `tidyr` reaches `marginplyr_suggest_available()`
+directly, and DESCRIPTION is the whole of its registration.
 
 `MARGINPLYR_REQUIRED_SUGGESTS` is what makes skipping safe everywhere else. A
 test behind an optional package skips when it is missing, which is correct for
@@ -469,8 +471,8 @@ run: it fails the job when an optional backend the job did not declare in
 it rather than the workflow calling it as a step, so the assertion cannot be
 dropped from a job that still checks a tarball.
 
-Adding an optional Suggest means editing two places. Every partial edit fails
-loudly:
+Registering an optional Suggest with the test suite means editing two places.
+Every partial edit fails loudly:
 
 1. `optional_suggest_spec()` in `tests/testthat/helper-optional-backends.R`,
    the one table every other consumer derives from — `optional_suggests()` for

@@ -4,20 +4,20 @@
 # purpose is to execute DuckDB would pass green with fourteen silently skipped
 # tests if duckdb failed to install.
 #
-# Two words are in use here and they are not synonyms: a *Suggest* is any
-# optional package a guard may name, and a *backend* is the narrower thing the
-# release matrix generates a job for. `AGENTS.md`'s *Release matrix* section
-# states the distinction once, with the entries that turn on it; what follows
-# from it here is that `optional_suggest_spec()` below is named for what it
-# holds, `optional_backends()` for the subset those jobs iterate over, and no
-# helper accepting a package name is named for a backend (#185).
+# Two words are in use here and they are not synonyms: a *Suggest* is an
+# optional package the test suite guards on, and a *backend* is the narrower
+# thing the release matrix generates a job for. `AGENTS.md`'s *Release matrix*
+# section states the distinction once, with the entries that turn on it; what
+# follows from it here is that `optional_suggest_spec()` below is named for
+# what it holds, `optional_backends()` for the subset those jobs iterate over,
+# and no helper accepting a package name is named for a backend (#185).
 #
 # This file and `test-optional-backends.R` keep the narrower word in their
 # names, which is the one place it stands without being accurate: a file name
 # is reached by path, and a path is not a claim about what the file holds.
-# Renaming one moves a string in the CI scripts, the workflow,
-# `inst/suggests/guard.R`, and the design documents -- `grep` finds them --
-# without changing a word anyone writes when they write a guard.
+# Renaming one moves a string through the CI scripts, the workflow, and the
+# prose that names the path -- `grep` finds them -- without changing a word
+# anyone writes when they write a guard.
 #
 # Both variables below arrive as a comma-separated package list, and the CI
 # scripts read the same values through `env_list()` in `.github/scripts/`. That
