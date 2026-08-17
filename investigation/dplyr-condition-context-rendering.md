@@ -5,7 +5,7 @@ Investigated: 2026-08-18
 Measured while implementing #199, which asked for a Condition context quoting
 the caller's own spelling of a summary argument. ADR 0022 records the decision
 that came out of this; what follows is the evidence it rests on, including the
-parts that ruled options out and the two measurements that belong to ADR 0021's
+parts that ruled options out and the measurements that belong to ADR 0021's
 subject rather than to #199's.
 
 Everything below was run against dplyr 1.2.1 and rlang 1.3.0 on R 4.6.1.
@@ -99,10 +99,10 @@ neither the same length as the caller's nor in correspondence with them by
 index. Any per-dot value carried alongside has to be remapped where that
 function already remaps its cardinality positions.
 
-## Two measurements about ADR 0021's identity
+## Three measurements about ADR 0021's identity
 
-Both were taken on `main` — that is, they describe the deduplication ADR 0021
-shipped, before any of #199's work — and both are properties of reading a
+All were taken on `main` — that is, they describe the deduplication ADR 0021
+shipped, before any of #199's work — and all are properties of reading a
 *rendered* message.
 
 **Console width.** ADR 0021's identity reads a message as the lines it was
