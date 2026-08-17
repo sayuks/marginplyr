@@ -187,9 +187,10 @@ because the heading above would otherwise hide it. `condition_chain()` answers
 the conditions a raised condition's `parent` chain holds, outermost first.
 tidyselect wraps a failure raised inside a selection helper, so the two
 refusals that read such a failure — the contextual-share `across()` diagnostic
-and the Nested specification one — cannot read what they need from the
-condition they caught, and each walked the chain for itself until this named it
-once (#193).
+and the Nested specification one — cannot count on the condition they caught
+carrying what they need: a bare subscript is refused at the top of the chain
+and one inside `all_of()` a layer below it. Each walked the chain for itself
+until this named it once (#193).
 
 It sits here for the property the rest of the module has rather than for the
 subject: it says what a chain holds and decides nothing, each caller keeps its

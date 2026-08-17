@@ -2983,9 +2983,9 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
 }
 
-# The summary names a failed selection refused, in the order the chain holds
-# them. A subscript that is not character names nothing this can report, and
-# neither does the empty string, which `all_of(c(""))` puts in `i` where no
+# The names of the summaries a failed selection refused, in the order the chain
+# holds them. A subscript that is not character names nothing this can report,
+# and neither does the empty string, which `all_of(c(""))` puts in `i` where no
 # summary could answer it.
 share_selection_missing_names <- function(cnd) {
   subscripts <- unlist(
@@ -2998,10 +2998,14 @@ share_selection_missing_names <- function(cnd) {
     use.names = FALSE
   )
   # `unlist()` answers `NULL` for a chain that held no condition at all, and
-  # this answers a character vector, as `expression_data_symbols()` does for
-  # the same reason: `length()` reads the two alike, so the caller's guard
-  # would pass either way, but a caller storing the answer would find one
-  # branch of the walk typeless.
+  # this answers a character vector, as `expression_data_symbols()` and
+  # `static_character_value()` do for the same reason. A chain holding a
+  # condition that names nothing already answers `character()` on the line
+  # above, so only an argument that is no condition reaches this -- which
+  # `abort_share_selection_error()` cannot pass, its `cnd` being a
+  # `tryCatch()` handler's own argument. It is kept because a reader answering
+  # `NULL` on one branch is one a caller cannot store, and asserted directly in
+  # `test-share.R` rather than left as a branch nothing runs.
   if (is.null(subscripts)) {
     return(character())
   }
