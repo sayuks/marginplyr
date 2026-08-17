@@ -464,7 +464,7 @@ register_inspect_proxy_methods <- function() {
 }
 
 test_that("lazy inspection reads typed metadata once, executing no margins", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_inspect_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("Total", "x"),
@@ -490,7 +490,7 @@ test_that("a name-only grouping error precedes a .by predicate's read", {
   # puts its rejection before any backend read. Deferred fixed keys stand in as
   # none for that pass, so the read a predicate needs cannot be pulled ahead of
   # an error the names already decide.
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   register_inspect_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),

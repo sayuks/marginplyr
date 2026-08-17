@@ -62,7 +62,7 @@ if (length(backends) == 0L) {
 
 # Half one of the mechanism: this run's library holds every backend, at a
 # version DESCRIPTION accepts. Asked of the library rather than through
-# `backend_available()`, because the guards are the thing under test here --
+# `suggest_available()`, because the guards are the thing under test here --
 # `suggest_status()` reads DESCRIPTION and the installed version and knows
 # nothing of `MARGINPLYR_HIDE_SUGGESTS`, which is what the simulation drives.
 #
@@ -94,7 +94,7 @@ skip_messages <- function(expectations) {
 }
 
 # Skips read `Reason: {arrow} is not installed`, the wording
-# `skip_if_backend_absent()` writes. Parsing it is what lets a violation name
+# `skip_if_suggest_absent()` writes. Parsing it is what lets a violation name
 # the backends it requires rather than only the test.
 skipped_packages <- function(messages) {
   named <- regmatches(messages, regexpr("\\{[^}]+\\}", messages))
@@ -112,12 +112,12 @@ observe <- function(selected) {
   on.exit(Sys.unsetenv("MARGINPLYR_HIDE_SUGGESTS"), add = TRUE)
 
   # Half two of the mechanism, asserted inside the configuration it describes.
-  reported <- vapply(backends, backend_available, logical(1))
+  reported <- vapply(backends, suggest_available, logical(1))
   if (!isTRUE(reported[[selected]]) || any(reported[withheld])) {
     stop(call. = FALSE, sprintf(
       paste0(
         "The absence simulation is not working: with %s selected and %s ",
-        "hidden, `backend_available()` reports %s. Every conclusion below ",
+        "hidden, `suggest_available()` reports %s. Every conclusion below ",
         "would be vacuous."
       ),
       selected,
@@ -167,7 +167,7 @@ observations <- unlist(
   use.names = FALSE
 )
 
-# The wording `skip_if_backend_absent()` writes for a backend this run hid.
+# The wording `skip_if_suggest_absent()` writes for a backend this run hid.
 # Anything else is a skip a `backend` job could not attribute either.
 attributable <- sprintf("Reason: {%s} is not installed", backends)
 
@@ -256,7 +256,7 @@ if (length(unattributable) > 0L) {
     paste0(
       "These skip reasons name no optional backend, so a `backend` job ",
       "meeting one cannot attribute it to a package it withheld and fails: ",
-      "%s. Guard the test with `skip_if_backend_absent()` on the one backend ",
+      "%s. Guard the test with `skip_if_suggest_absent()` on the one backend ",
       "it needs, splitting it first if it selects among several."
     ),
     paste(sprintf("\"%s\"", unattributable), collapse = "; ")

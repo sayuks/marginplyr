@@ -68,7 +68,7 @@ normalized_contract_data <- function() {
 }
 
 test_that("dtplyr uses the normalized grouping contract", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- normalized_contract_data()
 
   expect_no_message(
@@ -92,7 +92,7 @@ test_that("dtplyr uses the normalized grouping contract", {
 })
 
 test_that("Arrow uses the normalized grouping contract", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   data <- normalized_contract_data()
 
   arrow_result <- summarize_with_margins(
@@ -116,7 +116,7 @@ test_that("Arrow uses the normalized grouping contract", {
 })
 
 test_that("Arrow schema metadata supports predicates and computed queries", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   data <- data.frame(
     group = c("x", "x", "y"),
@@ -166,7 +166,7 @@ test_that("Arrow schema metadata supports predicates and computed queries", {
 })
 
 test_that("Arrow metadata preserves ordered dictionaries without collecting", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   registerS3method(
     "head",
     "margin_selection_proxy_counter",
@@ -208,7 +208,7 @@ test_that("Arrow metadata preserves ordered dictionaries without collecting", {
 })
 
 test_that("dtplyr constructs one typed selection proxy for predicates", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   registerS3method(
     "head",
     "margin_selection_proxy_counter",
@@ -258,7 +258,7 @@ test_that("dtplyr constructs one typed selection proxy for predicates", {
 })
 
 test_that("DuckDB constructs one typed selection proxy for predicates", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   registerS3method(
     "head",
     "margin_selection_proxy_counter",
@@ -316,7 +316,7 @@ test_that("DuckDB constructs one typed selection proxy for predicates", {
 })
 
 test_that("public Arrow table classes are supported", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   data <- data.frame(group = c("x", "y"), value = 1:2)
   table <- arrow::Table$create(data)
@@ -417,7 +417,7 @@ test_that("a lazy .by selection is settled before the table is read", {
 # resolution of its own would look like, and it would still return the right
 # columns (ADR-0002).
 test_that("an Arrow .by predicate resolves against the typed snapshot", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   source <- arrow::Table$create(
     data.frame(region = c("x", "y"), area = c("p", "q"), value = 1:2)
@@ -465,7 +465,7 @@ margin_label_check_data <- function() {
 # out in each rather than wrapped in a shared expectation, because a closure
 # would put `first` and `second` somewhere `codetools` cannot follow them.
 test_that("dtplyr checks margin labels across all dimensions", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   expect_error(
     summarize_with_margins(
       dtplyr::lazy_dt(margin_label_check_data()),
@@ -478,7 +478,7 @@ test_that("dtplyr checks margin labels across all dimensions", {
 })
 
 test_that("Arrow checks margin labels across all dimensions", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   expect_error(
     summarize_with_margins(
       arrow::Table$create(margin_label_check_data()),
@@ -491,7 +491,7 @@ test_that("Arrow checks margin labels across all dimensions", {
 })
 
 test_that("DuckDB checks margin labels across all dimensions", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
@@ -648,7 +648,7 @@ test_that("local summaries reserve user columns that look internal", {
 })
 
 test_that("the dtplyr union adapter reserves user columns that look internal", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   result <- summarize_with_margins(
     dtplyr::lazy_dt(reserved_column_data()),
     total = sum(value),
@@ -660,7 +660,7 @@ test_that("the dtplyr union adapter reserves user columns that look internal", {
 })
 
 test_that("the Arrow union adapter reserves user columns that look internal", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   result <- summarize_with_margins(
     arrow::Table$create(reserved_column_data()),
     total = sum(value),
@@ -705,7 +705,7 @@ test_that("local summaries reserve generated summary names", {
 })
 
 test_that("the dtplyr union adapter reserves generated summary names", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   result <- summarize_with_margins(
     dtplyr::lazy_dt(generated_name_data()),
     dplyr::across(
@@ -721,7 +721,7 @@ test_that("the dtplyr union adapter reserves generated summary names", {
 })
 
 test_that("the Arrow union adapter reserves generated summary names", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   result <- summarize_with_margins(
     arrow::Table$create(generated_name_data()),
     dplyr::across(
@@ -809,7 +809,7 @@ test_that("native adapters reserve generated summary names", {
   expect_match(sql, "\"..marginplyr_grouping_1\"", fixed = TRUE)
   expect_match(sql, "\"..marginplyr_grouping_1__\"", fixed = TRUE)
 
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
@@ -880,7 +880,7 @@ test_that("native adapters reject a summary output shadowing a dimension", {
 })
 
 test_that("DuckDB rejects a summary output shadowing a dimension", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   # The reported failure, kept in the shape it was reported in: two dimensions
   # where the second is named for the first, so `across(all_of("x"), fns)` with
@@ -983,7 +983,7 @@ test_that("native adapters keep unpredictable names that collide with none", {
     fixed = TRUE
   )
 
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(
@@ -1013,7 +1013,7 @@ test_that("column-wise summaries share one lazy-backend selection", {
     value = c(1, 2, 3)
   )
 
-  if (backend_available("dtplyr")) {
+  if (suggest_available("dtplyr")) {
     dt_result <- summarize_with_margins(
       dtplyr::lazy_dt(data),
       dplyr::across(
@@ -1028,7 +1028,7 @@ test_that("column-wise summaries share one lazy-backend selection", {
     expect_setequal(dt_result$n_value, c(2L, 1L, 3L))
   }
 
-  if (backend_available("arrow")) {
+  if (suggest_available("arrow")) {
     arrow_result <- summarize_with_margins(
       arrow::Table$create(data),
       dplyr::across(
@@ -1096,7 +1096,7 @@ test_that("local summaries preserve margin values without implicit ordering", {
 })
 
 test_that("dtplyr preserves margin values without implicit ordering", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   result <- summarize_with_margins(
     dtplyr::lazy_dt(unordered_margin_data()),
     total = sum(value),
@@ -1107,7 +1107,7 @@ test_that("dtplyr preserves margin values without implicit ordering", {
 })
 
 test_that("Arrow preserves margin values without implicit ordering", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   result <- summarize_with_margins(
     arrow::Table$create(unordered_margin_data()),
     total = sum(value),
@@ -1118,7 +1118,7 @@ test_that("Arrow preserves margin values without implicit ordering", {
 })
 
 test_that("dtplyr nesting retains original keys and empty rowwise behavior", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("a", "a", "b"),
     item = c("x", "y", "z"),
@@ -1166,7 +1166,7 @@ grouped_lazy_values <- function() {
 }
 
 test_that("grouped dtplyr inputs use their groups as fixed keys", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   grouped_dt <- dtplyr::lazy_dt(grouped_lazy_data()) |>
     dplyr::group_by(year)
 
@@ -1200,7 +1200,7 @@ test_that("grouped dtplyr inputs use their groups as fixed keys", {
 })
 
 test_that("grouped Arrow inputs use their groups as fixed keys", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
   grouped_arrow <- arrow::Table$create(grouped_lazy_data()) |>
     dplyr::group_by(year)
 
@@ -1244,7 +1244,7 @@ test_that("grouped SQL inputs use their groups as fixed keys", {
 })
 
 test_that("DuckDB executes grouped lazy input as fixed keys", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1465,7 +1465,7 @@ test_that("PostgreSQL duplicate keep falls back conservatively", {
 })
 
 test_that("DuckDB executes native grouping sets with unambiguous bits", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1495,7 +1495,7 @@ test_that("DuckDB executes native grouping sets with unambiguous bits", {
 })
 
 test_that("DuckDB keeps input types available to summary expressions", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1519,7 +1519,7 @@ test_that("DuckDB keeps input types available to summary expressions", {
 })
 
 test_that("DuckDB native and UNION adapters agree", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1565,7 +1565,7 @@ test_that("DuckDB native and UNION adapters agree", {
 })
 
 test_that("DuckDB duplicate keep and downstream verbs remain lazy", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -1603,7 +1603,7 @@ test_that("DuckDB duplicate keep and downstream verbs remain lazy", {
 })
 
 test_that("DuckDB safely quotes factor identifiers and labels", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

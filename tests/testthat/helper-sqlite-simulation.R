@@ -3,11 +3,11 @@
 # Simulated SQLite queries therefore need the optional RSQLite package even
 # though nothing is executed.
 sqlite_simulation_available <- function() {
-  backend_available("RSQLite")
+  suggest_available("RSQLite")
 }
 
 skip_if_no_sqlite_simulation <- function() {
-  skip_if_backend_absent("RSQLite")
+  skip_if_suggest_absent("RSQLite")
 }
 
 # Drops the dialects whose SQL cannot be rendered without an optional driver

@@ -356,7 +356,7 @@ test_that("all Margin verbs eagerly check local margin-label collisions", {
 })
 
 test_that("Margin verbs skip label checks for lazy inputs by default", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   data <- data.frame(group = c("Total", "x"), value = 1:2)
   source <- dtplyr::lazy_dt(data)
 

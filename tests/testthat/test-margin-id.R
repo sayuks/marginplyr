@@ -363,7 +363,7 @@ test_that("non-syntactic .id names work across Margin verbs", {
 })
 
 test_that("DuckDB native and portable summaries agree on .id", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)

@@ -35,7 +35,7 @@ duckdb_storage_directories <- function(con) {
 }
 
 test_that("a test DuckDB connection stores its files under tempdir() alone", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
 

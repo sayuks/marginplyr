@@ -574,18 +574,19 @@ green job. A backend contract therefore has a second seam, in
 backend alone and fails if the contract did not execute.
 
 What this asks of a test is that it never decide on its own whether it may
-skip. Optional-backend tests route through `skip_if_backend_absent()` or
-`backend_available()` in `tests/testthat/helper-optional-backends.R` — never
-`skip_if_not_installed()` or `rlang::is_installed()` — because only the helper
-can be told, through `MARGINPLYR_REQUIRED_SUGGESTS`, that this job promised to
-prove the backend and an absence is a failure. `test-optional-backends.R`
-covers the helper itself. Snapshot expectations belong to the same seam:
-testthat skips them under CRAN semantics, so they run only in those jobs.
+skip. A test behind an optional package routes through
+`skip_if_suggest_absent()` or `suggest_available()` in
+`tests/testthat/helper-optional-backends.R` — never `skip_if_not_installed()`
+or `rlang::is_installed()` — because only the helper can be told, through
+`MARGINPLYR_REQUIRED_SUGGESTS`, that this job promised to prove that package
+and an absence is a failure. `test-optional-backends.R` covers the helper
+itself. Snapshot expectations belong to the same seam: testthat skips them
+under CRAN semantics, so they run only in those jobs.
 
 A test title is part of that contract, because each job names the titles it
 exists to execute. Renaming a contract test is expected to break its job.
 `AGENTS.md` is the operational reference for the jobs, the verifier scripts,
-and the sites an added backend has to touch.
+and the sites registering an optional Suggest has to touch.
 
 ## Extending backend support
 

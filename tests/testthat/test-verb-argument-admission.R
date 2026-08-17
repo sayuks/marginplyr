@@ -470,7 +470,7 @@ test_that("every entry point admits input the same way", {
 })
 
 test_that("admission does not widen what the nesting verbs accept", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   # Admitted by the shared rule, still refused by nesting's own constraint.
   expect_error(
@@ -498,7 +498,7 @@ test_that("supported backends are still admitted", {
     )
   )
 
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
   expect_no_error(
     dplyr::collect(summarize_with_margins(
       dtplyr::lazy_dt(admission_data()),
@@ -509,7 +509,7 @@ test_that("supported backends are still admitted", {
 })
 
 test_that("arrow input is still admitted", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   expect_no_error(
     dplyr::collect(summarize_with_margins(

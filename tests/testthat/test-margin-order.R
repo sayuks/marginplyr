@@ -669,7 +669,7 @@ expect_computed_margin_order <- function(as_input) {
 }
 
 test_that("DuckDB executes a Margin order on its native plan", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -742,7 +742,7 @@ test_that("DuckDB executes a Margin order on its native plan", {
 })
 
 test_that("DuckDB native and portable Margin orders agree", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -810,7 +810,7 @@ test_that("DuckDB native and portable Margin orders agree", {
 })
 
 test_that("DuckDB materializes a sorted Margin result with `compute()`", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -852,7 +852,7 @@ test_that("DuckDB materializes a sorted Margin result with `compute()`", {
 })
 
 test_that("DuckDB orders a factor dimension by its restored levels", {
-  skip_if_backend_absent("duckdb", "DBI")
+  skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -875,7 +875,7 @@ test_that("DuckDB orders a factor dimension by its restored levels", {
 })
 
 test_that("RSQLite executes a portable Margin order end to end", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -920,7 +920,7 @@ test_that("RSQLite executes a portable Margin order end to end", {
 })
 
 test_that("RSQLite materializes a portable Margin order with `compute()`", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -930,7 +930,7 @@ test_that("RSQLite materializes a portable Margin order with `compute()`", {
 })
 
 test_that("RSQLite places missing values where its own default would not", {
-  skip_if_backend_absent("RSQLite", "DBI")
+  skip_if_suggest_absent("RSQLite", "DBI")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -982,7 +982,7 @@ test_that("RSQLite places missing values where its own default would not", {
 })
 
 test_that("dtplyr executes a Margin order end to end", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   expect_margin_order_agrees(function(data, name) dtplyr::lazy_dt(data))
 
@@ -997,7 +997,7 @@ test_that("dtplyr executes a Margin order end to end", {
 })
 
 test_that("dtplyr orders a factor dimension by its restored levels", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   data <- margin_order_factor_data()
   result <- dplyr::collect(summarize_with_margins(
@@ -1024,7 +1024,7 @@ test_that("dtplyr orders a factor dimension by its restored levels", {
 })
 
 test_that("Arrow executes a Margin order end to end", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   expect_margin_order_agrees(function(data, name) arrow::as_arrow_table(data))
 

@@ -29,7 +29,7 @@
 # `"{.fn}"` names the output for the function alone, and `NULL` leaves
 # `across()`'s own `{.col}_{.fn}`.
 #
-# `predict` is a parameter for the same reason `backend_available()` takes
+# `predict` is a parameter for the same reason `suggest_available()` takes
 # `known`: this helper's own tests need to drive both outcomes, and the shape
 # that reaches the failing one is the shape this helper exists to avoid
 # building. Every other call site takes the default.

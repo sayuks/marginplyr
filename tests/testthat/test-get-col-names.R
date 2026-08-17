@@ -37,7 +37,7 @@ test_that("get_col_names reads dbplyr query metadata", {
 })
 
 test_that("get_col_names reads dtplyr step metadata", {
-  skip_if_backend_absent("dtplyr")
+  skip_if_suggest_absent("dtplyr")
 
   data <- data.frame(
     first = 1:2,
@@ -53,7 +53,7 @@ test_that("get_col_names reads dtplyr step metadata", {
 })
 
 test_that("get_col_names reads Arrow metadata", {
-  skip_if_backend_absent("arrow")
+  skip_if_suggest_absent("arrow")
 
   data <- data.frame(
     first = 1:2,
