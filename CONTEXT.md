@@ -154,10 +154,14 @@ glossary, and not a second term.
 _Avoid_: Contextual function, masked helper, reserved argument
 
 **Option argument**:
-An argument whose value is one of a fixed set of strings, written out exactly
-as documented. An abbreviation is not shorthand for the value it begins, and a
-`NULL` is not shorthand for the default; both are refused, and an argument left
-out of the call takes its default. Several arguments do give a `NULL` a
+An argument whose value is one of a fixed set of strings, spelled in full. An
+abbreviation is not shorthand for the value it begins, and a `NULL` is not
+shorthand for the default; both are refused. Its default is asked for by
+leaving the argument out, or by passing the vocabulary as the signature spells
+it — which is what leaving it out already does, and what lets a caller's own
+wrapper repeat the signature and hand the argument on. No other vector of more
+than one value is accepted, a reordering included. Several arguments do give a
+`NULL` a
 meaning, each stating for itself what it is, and those name a value, a column,
 or a plan — such a name has a natural absent case for a `NULL` to mean.
 An Option argument has none, because it already has a default that does

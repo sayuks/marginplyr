@@ -155,11 +155,31 @@
 #' @section Option arguments:
 #' An argument documented as taking one of a listed set of strings —
 #' `.duplicates`, `.margin_label_position`, and `.sort` on the Margin verbs,
-#' and `.format` on [inspect_grouping()] — takes one of those strings written
-#' out exactly. An abbreviation is not shorthand for the value it begins, and
+#' and `.format` on [inspect_grouping()] — takes one of those strings, spelled
+#' in full. An abbreviation is not shorthand for the value it begins, and
 #' `NULL` is not shorthand for the default: both are errors naming the values
-#' the argument accepts. An argument left out of the call takes its default,
-#' and a `NULL` is not another way of asking for one.
+#' the argument accepts.
+#'
+#' There are two ways to ask for the default, and a `NULL` is neither of them.
+#' One is to leave the argument out. The other is to pass the whole vocabulary
+#' as the signature spells it, which is what leaving the argument out already
+#' does — the default *is* that vector — and what lets a function of your own
+#' repeat the signature and hand the argument on:
+#'
+#' ```r
+#' my_report <- function(data, .sort = c("none", "last", "first")) {
+#'   summarize_with_margins(
+#'     data, revenue = sum(revenue),
+#'     .grouping = rollup(region), .sort = .sort
+#'   )
+#' }
+#' ```
+#'
+#' Called without `.sort`, that function forwards the vector its own formal
+#' holds and the Margin verb reads it as the default, so the wrapper needs no
+#' matching call of its own. Only the spelling the signature gives is read this
+#' way: any other vector of more than one value is an error, a reordering of
+#' the vocabulary included.
 #'
 #' Elsewhere in this package `NULL` is a documented value, and what it means is
 #' stated with the argument that takes it: it is `.grouping`'s one empty
