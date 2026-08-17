@@ -2983,10 +2983,12 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
 }
 
-# The names of the summaries a failed selection refused, in the order the chain
-# holds them. A subscript that is not character names nothing this can report,
-# and neither does the empty string, which `all_of(c(""))` puts in `i` where no
-# summary could answer it.
+# The names a failed selection gave, in the order the chain holds them. What
+# each one turns out to be -- a summary defined twice, one that is ineligible,
+# or a name no summary answers at all -- is `abort_share_source_name()`'s
+# question, so this says only what was named. A subscript that is not character
+# names nothing it can report, and neither does the empty string, which
+# `all_of(c(""))` puts in `i` where no summary could answer it.
 share_selection_missing_names <- function(cnd) {
   subscripts <- unlist(
     lapply(
