@@ -586,7 +586,7 @@ under CRAN semantics, so they run only in those jobs.
 A test title is part of that contract, because each job names the titles it
 exists to execute. Renaming a contract test is expected to break its job.
 `AGENTS.md` is the operational reference for the jobs, the verifier scripts,
-and the sites an added backend has to touch.
+and the sites an added optional Suggest has to touch.
 
 ## Extending backend support
 

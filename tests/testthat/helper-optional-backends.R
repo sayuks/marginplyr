@@ -7,9 +7,16 @@
 # Two words are in use here and they are not synonyms (#185). A *Suggest* is any
 # optional package a guard may name, which is what `optional_suggest_spec()`
 # below holds and what every helper taking a package name speaks of. A *backend*
-# is narrower -- a job the release matrix generates -- which is why
+# is narrower -- an entry the release matrix generates a job for -- which is why
 # `optional_backends()` keeps its name for the subset those jobs iterate over
-# and no helper accepting an entry is named for one.
+# and no helper accepting an entry is named for one. `DBI` is a Suggest and not
+# a backend; `data.table` is both, and what its job proves is an input class.
+#
+# This file and `test-optional-backends.R` keep the narrower word in their
+# names, which is the one place it is left standing: a testthat helper file is
+# addressed by path from `ci-helpers.R`, `release-matrix.yaml`, `guard.R`, and
+# three sections of `AGENTS.md`, and no reader reaches those names while writing
+# a guard.
 #
 # Both variables below arrive as a comma-separated package list, and the CI
 # scripts read the same values through `env_list()` in `.github/scripts/`. That
@@ -143,12 +150,6 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # because `suggest_available()` below refuses a name this table does not carry,
 # and `release-matrix.yaml` generates its `backend` job from it.
 #
-# What the table holds is every optional Suggest a guard may name, and two of
-# its entries are why that is not the same set as the backends: `DBI` is a
-# companion no job proves on its own, and `data.table` is an input class rather
-# than a translation target. The other four are translation targets, and the
-# table is named for the wider set it holds rather than for them (#185).
-#
 # `asserted` answers whether the release matrix can assert the package absent by
 # name. `DBI` cannot. `dbplyr` is an Import and declares `Imports: DBI`, so DBI
 # is inside the hard dependency closure and is installed in every job,
@@ -206,6 +207,12 @@ optional_backends <- function() {
 # Every package a job proving `package` must install and name in
 # `MARGINPLYR_REQUIRED_SUGGESTS`. The entry leads, so a reader of the
 # generated matrix sees which one a job is for before its companions.
+#
+# Defined over the whole table rather than over `optional_backends()`, because
+# an entry with no job of its own still has an answer -- `DBI` installs itself
+# and nothing else -- and refusing a name the table does not carry is the check
+# worth making here. `generate-backend-matrix.R` asks it only about entries a
+# job exists for.
 suggest_job_packages <- function(package) {
   spec <- optional_suggest_spec()
   if (!package %in% names(spec)) {

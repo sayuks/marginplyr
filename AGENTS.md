@@ -391,15 +391,16 @@ which turns that package's absence into a test failure instead of a skip.
 Two words are in use in this section and they name different sets (#185). A
 *Suggest* is any optional package a guard may name — what
 `optional_suggest_spec()` holds, and what every helper taking a package name
-speaks of. A *backend* is the narrower thing a generated job is: the subset
-`optional_backends()` returns, which is what these jobs iterate over. Most
-entries are both; `DBI` is neither a job nor a translation target, and
-`data.table` gets a job for an input class rather than a translation.
+speaks of. A *backend* is the narrower thing a generated job exists for: the
+subset `optional_backends()` returns, which is what those jobs iterate over.
+`DBI` is a Suggest and not a backend — it has no job of its own — while
+`data.table` is both, and what its job proves is an input class rather than a
+query translation.
 
-That variable is what makes skipping safe everywhere else. A test behind an
-optional package skips when it is missing, which is correct for CRAN's minimal
-flavors but means a green job proves nothing about it. Every such test
-therefore goes through `skip_if_suggest_absent()` or `suggest_available()` from
+`MARGINPLYR_REQUIRED_SUGGESTS` is what makes skipping safe everywhere else. A
+test behind an optional package skips when it is missing, which is correct for
+CRAN's minimal flavors but means a green job proves nothing about it. Every
+such test goes through `skip_if_suggest_absent()` or `suggest_available()` from
 `tests/testthat/helper-optional-backends.R` — never `skip_if_not_installed()`
 or `rlang::is_installed()` directly, since those cannot be told to fail — and
 never `requireNamespace()` either, for the separate reason in

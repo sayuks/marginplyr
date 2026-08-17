@@ -245,7 +245,7 @@ test_that("hiding one package leaves an unrelated promise alone", {
   })
 })
 
-test_that("a backend job installs its entry and its companions", {
+test_that("a backend job installs the package it is for and its companions", {
   # `generate-backend-matrix.R` builds each job's `required` list and its
   # `extra-packages` from this, so a driver backend that arrived without DBI
   # would install, run nothing, and report green.
