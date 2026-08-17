@@ -122,6 +122,16 @@ margin_sort_choices <- c("none", "last", "first")
 # rather than a leftover of the rewrite (#144): the *Option arguments* section
 # on `?summarize_with_margins` states it and says why an option vocabulary is
 # the place `NULL` does not mean "use the default".
+#
+# `rlang::arg_match()` and `rlang::arg_match0()` were measured against this
+# helper rather than adopted. They agree with it on every input but one -- both
+# accept a permutation of the vocabulary and return its first entry, where the
+# `identical()` guard requires the order too, so they are looser on exactly the
+# input #210 asks about. What they would add is a "Did you mean" suggestion,
+# and what they would cost is the `NULL` diagnostic naming the vocabulary,
+# which the help page promises, and ownership of a sentence the tests compare
+# whole. The measurements, the diagnostics, and what a migration would have to
+# carry are in investigation/rlang-arg-match-for-option-arguments.md.
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
   if (identical(value, choices)) {
