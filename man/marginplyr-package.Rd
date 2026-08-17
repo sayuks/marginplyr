@@ -77,10 +77,14 @@ marginplyr itself raises no warning: it states what it will not do by
 refusing. What a Margin verb does adjust, for an error and a warning alike,
 is the context reported around one, because a margin operation may summarize
 your expression once per grouping set. Such a condition reports its grouping
-values under the columns you named rather than under internal ones, and an
-error blames the Margin verb you wrote rather than the internal summary that
-ran it. A warning still names that internal summary, because the name is
-part of a sentence dplyr renders before marginplyr sees the warning at all.
+values under the columns you named rather than under internal ones, quotes
+the argument as you spelled it rather than as marginplyr rewrote it to
+compute the grouping sets, and an error blames the Margin verb you wrote
+rather than the internal summary that ran it. A warning still names that
+internal summary, because the name is part of a sentence dplyr renders
+before marginplyr sees the warning at all. Where the expression dplyr quoted
+cannot be matched -- a long one dplyr shortens to \code{+...}, or a diagnostic a
+later dplyr lays out differently -- the quotation stays as dplyr wrote it.
 
 A warning that every grouping set raises is reported once, saying how many
 further grouping sets raised it; warnings that differ from each other are
