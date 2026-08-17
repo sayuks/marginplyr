@@ -396,15 +396,15 @@ its tests.
 
 Two words are in use in this section and in *Optional-dependency guards*
 above, and they name different sets (#185). A *Suggest* is an optional package
-the test suite guards on — an entry in `optional_suggest_spec()`, which is what
-every helper taking a package name accepts and refuses anything else. A
-*backend* is the narrower thing a generated job exists for: the subset
+the test suite guards on — an entry in `optional_suggest_spec()`. A *backend*
+is the narrower thing a generated job exists for: the subset
 `optional_backends()` returns, which is what those jobs iterate over. `DBI` is
 a Suggest and not a backend — it has no job of its own — while `data.table` is
 both, and what its job proves is an input class rather than a query
-translation. A Suggest only a vignette or an example guards on is neither, and
-belongs in neither place: `tidyr` reaches `marginplyr_suggest_available()`
-directly, and DESCRIPTION is the whole of its registration.
+translation. A Suggested package only a vignette or an example guards on is
+neither, and belongs in neither place: `tidyr` reaches
+`marginplyr_suggest_available()` directly, and DESCRIPTION is the whole of its
+registration.
 
 `MARGINPLYR_REQUIRED_SUGGESTS` is what makes skipping safe everywhere else. A
 test behind an optional package skips when it is missing, which is correct for
