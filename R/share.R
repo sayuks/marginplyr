@@ -2983,13 +2983,21 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
 }
 
+# The summary names a failed selection refused, in the order the chain holds
+# them. A subscript that is not character names nothing this can report, and
+# neither does the empty string, which `all_of(c(""))` puts in `i` where no
+# summary could answer it.
 share_selection_missing_names <- function(cnd) {
-  current <- if (is.character(cnd$i)) cnd$i else character()
-  parent <- cnd$parent
-  if (inherits(parent, "condition")) {
-    current <- c(current, share_selection_missing_names(parent))
-  }
-  unique(current[nzchar(current)])
+  subscripts <- lapply(
+    condition_chain(cnd),
+    function(condition) {
+      if (is.character(condition$i)) condition$i else character()
+    }
+  )
+  # Seeded with the empty answer, so that a chain naming nothing answers
+  # `character()` rather than the `NULL` `unlist()` gives an empty list.
+  named <- unlist(c(list(character()), subscripts), use.names = FALSE)
+  unique(named[nzchar(named)])
 }
 
 contains_selection_predicate <- function(expr) {
