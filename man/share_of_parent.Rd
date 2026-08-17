@@ -442,11 +442,12 @@ than calculated from values nothing has checked —
 established yourself. A backend that cannot be asked, such as a
 \verb{dbplyr::simulate_*()} connection, is refused the same way.
 
-A question left unanswered — the control did not come back, which a dropped
-connection, a permissions failure, or a dialect whose scaffolding is invalid
-all produce — refuses the share the same way, but nothing about it is
-remembered. It established nothing about the dialect, so the next share
-request there asks again rather than inheriting one attempt's failure, and a
+A question left unanswered refuses the share the same way, but nothing about
+it is remembered. Neither outcome was read there — a dropped connection, a
+permissions failure, a dialect whose SQL scaffolding this question lacks, and
+a query that could not be built against the connection at all all end that
+way — so nothing was established about the dialect, and the next share
+request there asks again rather than inheriting one attempt's failure. A
 connection that has recovered gets the verdict its dialect earns.
 
 Cardinality is not established this way at all: a SQL aggregate returns one

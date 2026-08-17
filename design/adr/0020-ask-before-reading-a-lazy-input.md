@@ -30,7 +30,9 @@ justification covering both would be false of one of them:
    values to numbers rather than refusing them. Neither references a table of
    the caller's — `SELECT SUM('x') FROM (SELECT 1 AS z)` — so no reading of
    either touches their data, and the answer is a property of the dialect and
-   is reused for every later connection sharing it.
+   is reused for every later connection sharing it. The bound stated here is
+   amended below: only an answer is remembered, so it is per share request
+   until the dialect answers.
 
    The second is a control, and it is sent only when the first raises. A
    raised query is how a refusing dialect is recognized, but it is also what a

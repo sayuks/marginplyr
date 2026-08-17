@@ -469,7 +469,8 @@ calculated. \code{dtplyr} steps stay lazy and report the same conditions during
 explicit execution, before an invalid grouping row is emitted. General
 dbplyr backends read none of your data to apply the rule: the dialect is
 asked whether it converts a value of another type to a number rather than
-refusing it, once for as long as it answers, and where it converts, the
+refusing it — once, where it answers, and again on the next share request
+where the question could not be answered — and where it converts, the
 share is refused unless
 \code{.check_share_source = FALSE} asks for it anyway. Cardinality remains a
 local-and-\code{dtplyr} rule, because a SQL aggregate returns one value per
