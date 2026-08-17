@@ -30,7 +30,8 @@
 #'   dimension exactly once; order is irrelevant, and fixed `.by` columns must
 #'   not be named. `NA_character_` and `NULL` use typed missing values instead
 #'   of a display label. See *Display labels and grouping identity*.
-#' @param .margin_label_position Either `"last"` (the default) or `"first"`.
+#' @param .margin_label_position Either `"last"` (the default) or `"first"`,
+#'   and nothing else; see *Option arguments*.
 #'   This controls the position of a non-missing synthetic label in factor and
 #'   ordered-factor levels. It does not sort result rows and has no effect for
 #'   `NA_character_` or `NULL`.
@@ -57,9 +58,11 @@
 #'   nothing where the rule can be applied — a local data frame, a `dtplyr`
 #'   step, and a database that refuses an ineligible summary itself all apply
 #'   it whatever this argument says. See *Contextual shares*.
-#' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, controlling
-#'   duplicate grouping sets after expansion.
-#' @param .sort One of `"none"` (the default), `"last"`, or `"first"`. `"none"`
+#' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
+#'   else, controlling duplicate grouping sets after expansion; see *Option
+#'   arguments*.
+#' @param .sort One of `"none"` (the default), `"last"`, or `"first"`, and
+#'   nothing else; see *Option arguments*. `"none"`
 #'   leaves row order unspecified. The other two order the result by the
 #'   structure of its Grouping plan: within each fixed `.by` key, every grouping
 #'   dimension contributes its Grouping bit and its missingness before its own
@@ -148,6 +151,28 @@
 #' [nest_by_with_margins()] instead returns a row-wise data frame grouped by
 #' all visible fixed keys, grouping dimensions, and `.id` when supplied.
 #' Row-wise input is rejected; call [dplyr::ungroup()] first.
+#'
+#' @section Option arguments:
+#' An argument documented as taking one of a listed set of strings —
+#' `.duplicates`, `.margin_label_position`, and `.sort` on the Margin verbs,
+#' and `.format` on [inspect_grouping()] — takes one of those strings written
+#' out exactly. An abbreviation is not shorthand for the value it begins, and
+#' `NULL` is not shorthand for the default: both are errors naming the values
+#' the argument accepts. An argument left out of the call takes its default,
+#' and a `NULL` is not another way of asking for one.
+#'
+#' Elsewhere in this package `NULL` is a documented value, and what it means is
+#' stated with the argument that takes it: it is `.grouping`'s one empty
+#' grouping set, `.margin_label`'s typed missing value in place of a display
+#' label, `.id`'s absent identifier column, and, in [nest_with_margins()], the
+#' `.key` that [tidyr::nest()] reads as `"data"` — while
+#' [nest_by_with_margins()] refuses a `NULL` `.key`, following
+#' [dplyr::nest_by()]. That each of them answers for itself is the point. Those
+#' arguments name a value, a column, or a plan, and such a name has a natural
+#' absent case to give a `NULL`. A vocabulary of options has none — every option
+#' argument already has a default that does something — so a `NULL` arriving at
+#' one is far more often a variable that did not hold what its caller thought
+#' than a request for anything, and it is reported rather than resolved.
 #'
 #' @section Result class and attributes:
 #' Each Margin verb follows the same class and attribute rules as the dplyr
