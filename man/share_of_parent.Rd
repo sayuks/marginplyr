@@ -424,11 +424,13 @@ yours is read to establish it: the staged query stays lazy,
 \code{\link[dplyr:show_query]{dplyr::show_query()}} remains non-executing, and no query is run over your
 data to improve an error.
 
-Which of two things a dialect does is what decides the case, and it is
-settled once per dialect, with at most two queries referencing none of your
-tables: a probe, and — only when the probe is rejected — a control, which is
-what tells a dialect that genuinely refuses apart from one whose connection
-or SQL scaffolding failed and could not answer at all. Where it refuses an
+Which of two things a dialect does is what decides the case, and asking
+takes at most two queries referencing none of your tables: a probe, and —
+only when the probe is rejected — a control, which is what tells a dialect
+that genuinely refuses apart from one whose connection or SQL scaffolding
+failed and could not answer at all. An answer is a property of the dialect,
+so it settles the case once and is reused for every later connection
+carrying that dialect. Where it refuses an
 ineligible summary, that refusal is the answer
 and reaches you as the database's own diagnostic when \code{\link[dplyr:collect]{dplyr::collect()}}
 executes the staged query; the internal denominator column is named after
@@ -439,6 +441,14 @@ than calculated from values nothing has checked —
 \code{.check_share_source = FALSE} calculates it from sources you have
 established yourself. A backend that cannot be asked, such as a
 \verb{dbplyr::simulate_*()} connection, is refused the same way.
+
+A question left unanswered refuses the share the same way, but nothing about
+it is remembered. Neither outcome was read there, which is where a dropped
+connection, a permissions failure, a dialect whose SQL scaffolding this
+question lacks, and a query that could not be built against the connection
+all end up — so nothing was established about the dialect, and the next
+share request there asks again rather than inheriting one attempt's failure.
+A connection that has recovered gets the verdict its dialect earns.
 
 Cardinality is not established this way at all: a SQL aggregate returns one
 value per grouping row by construction, so there is nothing for a dialect

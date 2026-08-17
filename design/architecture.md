@@ -307,10 +307,13 @@ The responsibilities divide as follows:
   rule itself and reports an ineligible summary at collection, unless its
   dialect converts a value of another type to a number instead of refusing it,
   in which case nothing applies the rule and the share is refused;
-  `share_dialect_verdict()` decides which, once per dialect, with at most two
-  queries referencing none of the caller's tables — a probe, and a control
+  `share_dialect_verdict()` decides which, with at most two queries
+  referencing none of the caller's tables — a probe, and a control
   sent only when the probe is rejected, so that a dialect which refuses is
-  told apart from one whose scaffolding or connection failed — and
+  told apart from one whose scaffolding or connection failed. It caches only
+  the two measured answers, so a dialect that answers is asked once and a
+  question that could not be answered is asked again rather than refusing
+  every later share on that dialect (ADR 0020); and
   `.check_share_source = FALSE` calculates the share anyway. Arrow is rejected
   before any of this.
 - **Mapping** is the one responsibility a kind supplies for itself, through

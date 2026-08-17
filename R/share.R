@@ -404,11 +404,13 @@
 #' [dplyr::show_query()] remains non-executing, and no query is run over your
 #' data to improve an error.
 #'
-#' Which of two things a dialect does is what decides the case, and it is
-#' settled once per dialect, with at most two queries referencing none of your
-#' tables: a probe, and — only when the probe is rejected — a control, which is
-#' what tells a dialect that genuinely refuses apart from one whose connection
-#' or SQL scaffolding failed and could not answer at all. Where it refuses an
+#' Which of two things a dialect does is what decides the case, and asking
+#' takes at most two queries referencing none of your tables: a probe, and —
+#' only when the probe is rejected — a control, which is what tells a dialect
+#' that genuinely refuses apart from one whose connection or SQL scaffolding
+#' failed and could not answer at all. An answer is a property of the dialect,
+#' so it settles the case once and is reused for every later connection
+#' carrying that dialect. Where it refuses an
 #' ineligible summary, that refusal is the answer
 #' and reaches you as the database's own diagnostic when [dplyr::collect()]
 #' executes the staged query; the internal denominator column is named after
@@ -419,6 +421,14 @@
 #' `.check_share_source = FALSE` calculates it from sources you have
 #' established yourself. A backend that cannot be asked, such as a
 #' `dbplyr::simulate_*()` connection, is refused the same way.
+#'
+#' A question left unanswered refuses the share the same way, but nothing about
+#' it is remembered. Neither outcome was read there, which is where a dropped
+#' connection, a permissions failure, a dialect whose SQL scaffolding this
+#' question lacks, and a query that could not be built against the connection
+#' all end up — so nothing was established about the dialect, and the next
+#' share request there asks again rather than inheriting one attempt's failure.
+#' A connection that has recovered gets the verdict its dialect earns.
 #'
 #' Cardinality is not established this way at all: a SQL aggregate returns one
 #' value per grouping row by construction, so there is nothing for a dialect
@@ -2016,14 +2026,16 @@ check_dialect_share_sources <- function(operation,
   )
 }
 
-# One question per dialect: does it convert a value of another type to a number
-# rather than refusing it? It is asked with at most two queries, neither
+# One question about a dialect: does it convert a value of another type to a
+# number rather than refusing it? It is asked with at most two queries, neither
 # referencing a table of the caller's -- `SELECT SUM('x') FROM (SELECT 1 AS z)`
 # and, only where that is rejected, the control below -- so asking it reads
 # none of their data, which is what ADR 0020's second exemption rests on. What
-# it establishes is a property of the dialect and not of one connection, so it
-# is asked once and the answer is reused for every later connection carrying
-# the same dialect.
+# an answered question establishes is a property of the dialect and not of one
+# connection, so the answer is reused for every later connection carrying the
+# same dialect, and a dialect that answers is never asked again. A question that
+# went unanswered established nothing, so it is asked again rather than reused
+# -- see the cache write below.
 share_dialect_verdict <- function(data, backend) {
   con <- share_dialect_connection(data)
   if (!share_dialect_can_be_asked(con)) {
@@ -2035,26 +2047,61 @@ share_dialect_verdict <- function(data, backend) {
     return(cached)
   }
   verdict <- probe_share_dialect(con)
-  # An invariant, not a Package condition (ADR 0015). Four sites branch on
-  # this string and none of them has a default, so one this frame does not
-  # recognise would reach the caller as `"unknown"`'s diagnostic -- that their
-  # backend could not be asked -- for a dialect that was asked and answered.
-  # Caching it would then repeat that for every later connection.
+  # An invariant, not a Package condition (ADR 0015). Four sites act on this
+  # string -- refusing the share, or describing why -- and none of them has a
+  # default, so one this frame does not recognise would reach the caller as
+  # `"unknown"`'s diagnostic, that their backend could not be asked, for a
+  # dialect that was asked and answered. The cache write just below is the one
+  # site that does have a default, and it fails closed: a verdict it does not
+  # recognise is not recorded, so such a dialect would also be asked again on
+  # every later request while continuing to misreport. This assertion is what
+  # stops both.
   stopifnot(verdict %in% share_dialect_verdict_names())
-  share_dialect_verdicts[[key]] <- verdict
+  # Only a measured outcome is recorded, which is the whole of what makes
+  # reuse sound: `"refuses"` and `"converts"` are facts about the dialect,
+  # while `"unknown"` is a fact about one attempt. A dropped socket, a
+  # permissions blip, or a warehouse that was resuming produces it on a
+  # connection whose dialect would answer perfectly well, and recording it
+  # would refuse shares on that dialect for the rest of the session -- on
+  # every later connection carrying it, with `.check_share_source = FALSE`,
+  # which opts out of the rule entirely, the only way back.
+  #
+  # Leaving it unrecorded asks again on the next request, which is why ADR
+  # 0020's second exemption bounds the question per share request until the
+  # dialect answers rather than once per dialect. What pays that is a request
+  # that is refused anyway: a dialect that genuinely cannot answer -- Oracle
+  # and SAP HANA reject the probe's `FROM`-less scaffolding, needing
+  # `FROM DUAL` and `FROM DUMMY` -- is asked twice per refused request and
+  # never on a succeeding one. Whether an unanswered attempt was transient is
+  # not asked, because it cannot be read from a raised query; that is what the
+  # control query in `probe_share_dialect()` exists to work around.
+  if (verdict %in% share_dialect_measured_names()) {
+    share_dialect_verdicts[[key]] <- verdict
+  }
   verdict
 }
 
-# The three answers the dialect question can have. `"refuses"` and
-# `"converts"` are the two outcomes
-# `investigation/share-source-eligibility-on-coercing-dialects.md` measured;
-# `"unknown"` is every case that read neither, and refuses the share.
-share_dialect_verdict_names <- function() {
-  c("refuses", "converts", "unknown")
+# The two answers that are properties of the dialect, because
+# `investigation/share-source-eligibility-on-coercing-dialects.md` measured
+# both: the dialect rejected summing a string, or it converted it to a number.
+# These are the two the cache write above records.
+share_dialect_measured_names <- function() {
+  c("refuses", "converts")
 }
 
-# One entry per dialect class, written the first time a share is requested on a
-# connection carrying that dialect.
+# The three answers the dialect question can have: the two measured outcomes,
+# and `"unknown"` for every case that read neither, which refuses the share.
+# Written as the measured pair plus that one so the split the cache turns on is
+# structural -- a verdict added to this vocabulary alone is not recorded, and a
+# question asked again costs a query where a wrong fact cached against a
+# dialect costs every later connection carrying it.
+share_dialect_verdict_names <- function() {
+  c(share_dialect_measured_names(), "unknown")
+}
+
+# One entry per dialect class whose question was answered, written the first
+# time a share is requested on a connection carrying that dialect and the
+# dialect answers.
 share_dialect_verdicts <- new.env(parent = emptyenv())
 
 share_dialect_connection <- function(data) {

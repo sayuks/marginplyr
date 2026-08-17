@@ -124,10 +124,12 @@ decides whether the eligible-type rule for a share source can be left to the
 database: a refusing dialect applies it and reports an ineligible source in
 its own diagnostic, while a converting dialect applies nothing and returns a
 number whatever the source held, so a share over one is refused unless the
-caller establishes the source themselves. It is a property of the dialect and
-not of one connection, so it is established once and reused for every later
-connection carrying that dialect. A dialect that could not be asked is neither,
-and is refused as a converting one is.
+caller establishes the source themselves. Which of the two a dialect is, is a
+property of the dialect and not of one connection, so it is established once and
+reused for every later connection carrying that dialect. A dialect that could
+not be asked is neither, and is refused as a converting one is — but that is a
+fact about one attempt rather than about the dialect, so nothing is recorded and
+the next share request asks again.
 _Avoid_: Coercing backend, lenient database, permissive SQL
 
 **Contextual helper**:

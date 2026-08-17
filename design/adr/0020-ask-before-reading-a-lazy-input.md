@@ -30,7 +30,9 @@ justification covering both would be false of one of them:
    values to numbers rather than refusing them. Neither references a table of
    the caller's — `SELECT SUM('x') FROM (SELECT 1 AS z)` — so no reading of
    either touches their data, and the answer is a property of the dialect and
-   is reused for every later connection sharing it.
+   is reused for every later connection sharing it. The bound stated here is
+   amended below: only an answer is remembered, so it is per share request
+   until the dialect answers.
 
    The second is a control, and it is sent only when the first raises. A
    raised query is how a refusing dialect is recognized, but it is also what a
@@ -62,6 +64,41 @@ a *declared* factor level is found in metadata that ADR 0002 already acquires,
 so that collision is rejected on every backend whatever `.check_margin_label`
 says. A label equal to an *observed* value is found only by reading, so that
 collision is what `.check_margin_label` controls.
+
+## Amendment: only an answer is remembered, so the bound is per request
+
+Exemption 2's queries are unchanged, and so is which verdict refuses a share.
+What changed is its bound: **at most two queries per share request until the
+dialect answers**, not two per dialect.
+
+"The answer is a property of the dialect and is reused for every later
+connection sharing it" is true of the two outcomes
+`investigation/share-source-eligibility-on-coercing-dialects.md` measured —
+the dialect refused summing a string, or it converted it to a number — and each
+of those is still recorded and still asked only once per dialect. It is not
+true of a question that went unanswered, which is a fact about one attempt: a
+dropped socket, a permissions blip, or a warehouse that was resuming produces
+it on a connection whose dialect would answer perfectly well. Recording it
+refused shares on that dialect for the rest of the session, on every later
+connection carrying it, and left the caller only
+`.check_share_source = FALSE` — which opts out of the rule rather than retrying
+the question (#198). Nothing of that kind is recorded now, so the next share
+request asks again.
+
+Whether an unanswered attempt was transient is not asked, because it cannot be
+read from a raised query. That is the same fact the control query above exists
+because of, and it is why asking again is the whole of the remedy.
+
+The cost falls only where a request is refused anyway. A dialect that genuinely
+cannot answer — Oracle and SAP HANA, whose scaffolding this exemption's probe
+lacks a `FROM` for — is asked twice per refused request and never on one that
+succeeds, so no calculated share pays for it.
+
+This is the line the design already drew one step earlier, for the same reason.
+A connection that *cannot be asked* — a `dbplyr::simulate_*()` one, which
+executes nothing — records nothing, precisely so that a live connection
+carrying the same dialect does not inherit it. A transient failure on a live
+connection belongs on that side of the line.
 
 ## Considered options
 
