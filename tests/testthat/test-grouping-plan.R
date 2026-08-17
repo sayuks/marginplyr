@@ -713,6 +713,35 @@ test_that("invalid or ambiguous specifications fail early", {
   )
 })
 
+# The compiler's guard on this is an invariant rather than a Package condition
+# (#159; the reasoning is at its site). That demotion is only correct while the
+# selection is what a caller actually meets, so both halves are pinned here.
+# The public half would hold with the guard promoted back, since the public
+# path never reaches it, and the internal half is what records the demotion --
+# neither says enough alone. The upstream message stays loosely matched: ADR
+# 0015 propagates an external condition unchanged, so its wording is
+# tidyselect's to revise.
+test_that("an unknown `.by` column fails outside the public contract", {
+  data <- data.frame(region = "x", value = 1)
+
+  public <- expect_error(
+    inspect_grouping(data, .by = nope, .grouping = rollup(region))
+  )
+  expect_false(inherits(public, "marginplyr_error"))
+  expect_match(conditionMessage(public), "Column `nope` doesn't exist")
+
+  internal <- expect_error(
+    compile_grouping_spec(
+      rollup(region),
+      "region",
+      .by = "nope",
+      duplicates_choices = margin_duplicates_choices
+    )
+  )
+  expect_false(inherits(internal, "marginplyr_error"))
+  expect_identical(conditionMessage(internal), "Unknown `.by` column `nope`.")
+})
+
 # The plan compiler was reachable without going through
 # `compile_grouping_spec()`, so the preflight and the `.duplicates` matching
 # the wrapper performs were a second source of truth that production supplied
