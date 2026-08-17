@@ -505,10 +505,12 @@ that refusal is the answer and reaches the caller as the database's diagnostic
 at collection. Where the dialect converts instead of refusing, no answer is
 available and the share is refused rather than calculated —
 `.check_share_source = FALSE` calculates it anyway. Which case a dialect is in
-is measured once per dialect by at most two queries that reference none of the
-caller's tables — a probe, and a control sent only when the probe is rejected,
-so that a dialect which refuses is told apart from one whose scaffolding or
-connection failed — and the internal denominator column is named after the
+is measured by at most two queries that reference none of the caller's tables —
+a probe, and a control sent only when the probe is rejected, so that a dialect
+which refuses is told apart from one whose scaffolding or connection failed —
+asked once per dialect that answers and asked again where the question could
+not be answered, for the reasons ADR 0020 states; and the internal denominator
+column is named after the
 summary to rewrite, so that a database's own diagnostic names something the
 caller wrote rather than an internal identifier alone, which
 was #106's DuckDB half.

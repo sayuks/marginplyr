@@ -1213,6 +1213,61 @@ test_that("a connection that answers nothing records nothing for its dialect", {
   expect_identical(ls(share_dialect_verdicts, all.names = TRUE), character())
 })
 
+# `"refuses"` and `"converts"` are facts about the dialect, which is what makes
+# reusing them sound. `"unknown"` is a fact about one attempt: a dropped
+# socket, a permissions blip, or a warehouse that was resuming produces it on a
+# connection whose dialect would answer perfectly well. Recording it would
+# refuse shares on that dialect for the rest of the session, on every later
+# connection carrying it, with `.check_share_source = FALSE` -- opting out of
+# the rule entirely -- the only way back. So the question is asked again, and
+# the answer it then gives is the one that is recorded and reused.
+#
+# The third request is what keeps this from being satisfied by not caching at
+# all: the mock has no third answer, so a verdict that is asked again after
+# answering fails here rather than passing.
+test_that("a question that went unanswered is asked again", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = c("x", "y"), value = c(1, 3)),
+    con = dbplyr::simulate_postgres()
+  )
+  backend <- grouping_backend(remote)
+  key <- paste(class(backend$dialect), collapse = "\n")
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  empty_verdicts <- function() {
+    rm(
+      list = ls(share_dialect_verdicts, all.names = TRUE),
+      envir = share_dialect_verdicts
+    )
+  }
+  on.exit(
+    {
+      empty_verdicts()
+      list2env(saved, envir = share_dialect_verdicts)
+    },
+    add = TRUE
+  )
+  answers <- c("unknown", "refuses")
+  probes <- 0L
+  local_mocked_bindings(
+    share_dialect_can_be_asked = function(con) TRUE,
+    probe_share_dialect = function(con) {
+      probes <<- probes + 1L
+      answers[[probes]]
+    }
+  )
+
+  empty_verdicts()
+  expect_identical(share_dialect_verdict(remote, backend = backend), "unknown")
+  expect_identical(ls(share_dialect_verdicts, all.names = TRUE), character())
+
+  expect_identical(share_dialect_verdict(remote, backend = backend), "refuses")
+  expect_identical(probes, 2L)
+  expect_identical(share_dialect_verdicts[[key]], "refuses")
+
+  expect_identical(share_dialect_verdict(remote, backend = backend), "refuses")
+  expect_identical(probes, 2L)
+})
+
 # `share_source_checker()` routes the `other` backend kind to the dialect
 # checker as well, and an input of that kind carries no connection to put the
 # question to. Answering "unknown" is what refuses the share there; failing
