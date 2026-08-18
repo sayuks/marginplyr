@@ -1,10 +1,20 @@
-# The byte-exact record of every diagnostic that pluralizes its own noun, both
-# arms of each. It is one file rather than an addition to each site's own test
-# file because these pins are one artifact with one purpose: #223 re-authors
-# these messages in the cli idiom file by file, and each of those PRs diffs
-# against this baseline. Spread across the five files that raise them, a
-# dropped arm would read as an ordinary deletion; here the set is visible at
-# once, and a file-by-file re-authoring edits a contiguous block of it (#224).
+# The byte-exact record of the eight diagnostics that pluralize a noun by
+# suffixing it, both arms of each. It is one file rather than an addition to
+# each site's own test file because these pins are one artifact with one
+# purpose: #223 re-authors these messages in the cli idiom file by file, and
+# each of those PRs diffs against this baseline. Spread across the five files
+# that raise them, a dropped arm would read as an ordinary deletion; here the
+# set is visible at once, and a file-by-file re-authoring edits a contiguous
+# block of it (#224).
+#
+# Suffixing is what bounds the set, not pluralizing, and two diagnostics
+# pluralize by another construction. `abort_selection_rename()` picks between a
+# singular and a plural noun held in a labels list; all four of its messages
+# are already pinned exactly in `test-grouping-plan.R`, so recording them again
+# would buy nothing. The duplicate-grouping-set refusal switches a whole phrase
+# rather than suffixing one, and only its singular arm is pinned anywhere --
+# that gap is #225, kept separate because its plural arm needs a specification
+# shape none of these eight do.
 #
 # The pins already beside each site stay where they are. Most match a phrase
 # rather than a whole message, which is enough to assert that a caller reaches
@@ -197,44 +207,54 @@ test_that("the margin label collision pluralizes its grouping column noun", {
     )
   }
 
+  declared_singular <- expect_error(declare(rollup(a), "All"))
   expect_identical(
-    conditionMessage(expect_error(declare(rollup(a), "All"))),
+    conditionMessage(declared_singular),
     paste0(
       "\"All\" is already a factor level in grouping column `a`. ",
       "Choose another `.margin_label`."
     )
   )
+
+  declared_plural <- expect_error(declare(rollup(a, b), "All"))
   expect_identical(
-    conditionMessage(expect_error(declare(rollup(a, b), "All"))),
+    conditionMessage(declared_plural),
     paste0(
       "\"All\" is already a factor level in grouping columns `a`, `b`. ",
       "Choose another `.margin_label`."
     )
   )
+
+  declared_mixed <- expect_error(declare(rollup(a, b), mixed))
   expect_identical(
-    conditionMessage(expect_error(declare(rollup(a, b), mixed))),
+    conditionMessage(declared_mixed),
     paste0(
       "Margin labels are already factor levels in grouping columns `a`, ",
       "`b`. Choose another `.margin_label`."
     )
   )
 
+  observed_singular <- expect_error(observe(rollup(a), "All"))
   expect_identical(
-    conditionMessage(expect_error(observe(rollup(a), "All"))),
+    conditionMessage(observed_singular),
     paste0(
       "\"All\" is already present in grouping column `a`. ",
       "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
     )
   )
+
+  observed_plural <- expect_error(observe(rollup(a, b), "All"))
   expect_identical(
-    conditionMessage(expect_error(observe(rollup(a, b), "All"))),
+    conditionMessage(observed_plural),
     paste0(
       "\"All\" is already present in grouping columns `a`, `b`. ",
       "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
     )
   )
+
+  observed_mixed <- expect_error(observe(rollup(a, b), mixed))
   expect_identical(
-    conditionMessage(expect_error(observe(rollup(a, b), mixed))),
+    conditionMessage(observed_mixed),
     paste0(
       "Margin labels are already present in grouping columns `a`, `b`. ",
       "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
