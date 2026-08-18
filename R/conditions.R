@@ -208,9 +208,14 @@ branch_warning_identity <- function(cnd) {
       (grepl("^[i\u2139] In group ", written) & seq_along(written) < cause)
   }
   # The pointer runs to the end of the message, so everything after it goes
-  # with it.
+  # with it. Its backticks are optional because cli writes the call as an
+  # `x-r-run` hyperlink where the terminal takes one, and the backticks are what
+  # the link replaces -- so removing the escapes is necessary for this line and
+  # not sufficient (#217). That widens what a caller's own diagnostic can be
+  # mistaken for by exactly one spelling, which is the direction this reading is
+  # already chosen to fail in.
   pointer <- which(
-    grepl("^[i\u2139] Run `dplyr::last_dplyr_warnings\\(\\)`", written)
+    grepl("^[i\u2139] Run `?dplyr::last_dplyr_warnings\\(\\)`?", written)
   )
   if (aggregated && length(pointer) > 0L) {
     removed[seq(max(pointer), length(runs))] <- TRUE
@@ -234,11 +239,38 @@ message_line_runs <- function(lines) {
   unname(split(seq_along(lines), cumsum(!wrapped)))
 }
 
-# Each run rejoined to the one line it was written as. The identity and the
-# argument restatement both read messages through this, which is what keeps
-# the two readings one: a message the identity reads as three written lines is
-# a message the restatement reads as the same three.
+# Each run rejoined to the one line it was written as, with cli's rendering
+# taken back off it. The identity and the argument restatement both read
+# messages through this, which is what keeps the two readings one: a message the
+# identity reads as three written lines is a message the restatement reads as
+# the same three.
+#
+# Every pattern either reader matches is anchored at the start of a line, so
+# this is the one place cli's rendering has to be undone, and undoing it here is
+# what makes ADR 0021's contract hold in a session that renders one. cli wraps,
+# styles, and links; the wrapping is what the runs above already undid, and the
+# other two each split an identity on their own (#217). ADR 0021's *No rendering
+# decision takes part in the identity* is authoritative for which and why.
+# `link` is spelled although it is the default, because stripping the hyperlink
+# is half of what this call is here for rather than incidental to it.
+#
+# This is a *reading*. `branch_warning_identity()` assembles its key from the
+# lines as they arrived, so nothing here can make two diagnostics that differ
+# only by an escape sequence into one identity. The restatement is the one
+# reader that puts a line it read back into a message, and a restated line is
+# therefore rendered plain -- accepted rather than worked around, and recorded
+# in ADR 0022 beside the wrapping such a line already loses.
+#
+# cli needs no availability guard and its Suggests entry carries no version.
+# It is an Import of both dplyr and tidyselect, so it is in the hard dependency
+# closure and can never be absent: the `DBI = FALSE` case in `AGENTS.md`'s
+# dependency metadata, as `share_dialect_can_be_asked()` is. `ansi_strip()`
+# learned `link` in cli 3.3.0, which is tidyselect's own floor and below
+# dplyr's, so a constraint written here could never bind -- and
+# `marginplyr_suggest_available()`, the only thing that reads one, is never
+# asked about a package that cannot be absent.
 written_message_lines <- function(lines, runs) {
+  lines <- cli::ansi_strip(lines, link = TRUE)
   vapply(
     runs,
     function(run) paste(sub("^ +", "", lines[run]), collapse = " "),

@@ -1,6 +1,7 @@
 # How dplyr renders the context of a condition from a summary expression
 
 Investigated: 2026-08-18
+Revised: 2026-08-18 — ADR 0021
 
 Measured while implementing #199, which asked for a Condition context quoting
 the caller's own spelling of a summary argument. ADR 0022 records the decision
@@ -142,6 +143,58 @@ i Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.
 Measured on `main`, that plan reported twice. So a message with no `Caused by`
 line is not evidence that dplyr did not aggregate it — only that the boundary
 cannot be found in it.
+
+## Revisions (2026-08-18)
+
+Two corrections, both established while #217 was implemented. ADR 0021's *No
+rendering decision takes part in the identity* section is the artifact that
+records the decision they led to; what follows is the evidence.
+
+**A fourth rendering variable, missed above.** *Three measurements about ADR
+0021's identity* names console width, colour, and the aggregation without a
+cause line, and says of the second that stripping the styling would fix it. It
+would not, on its own. cli also renders a call it names as an OSC-8 hyperlink
+when the terminal advertises support — `cli.hyperlink_run`, which cli sets for
+itself in RStudio and in iTerm2 — and dplyr's pointer at
+`last_dplyr_warnings()` is such a call. Measured on `main` with the same
+`cube(region, grade)` reproduction:
+
+| session | reports |
+|---|---|
+| `cli.num_colors = 1`, `cli.hyperlink_run = TRUE` | 3 |
+
+So the contract failed at `cli.num_colors = 1` as well, and colour was not the
+whole of it. The pointer line renders as
+
+```
+ℹ Run \033]8;;x-r-run:dplyr::last_dplyr_warnings()\adplyr::last_dplyr_warnings()\033]8;;\a to see the 2 remaining warnings.
+```
+
+and the count inside it varies with how many warnings a branch raised, which is
+why the surviving line splits the identity.
+
+`cli::ansi_strip(link = TRUE)` removes the escape but does **not** restore the
+backticks dplyr writes around the call when it does not link it — the stripped
+line reads `ℹ Run dplyr::last_dplyr_warnings() to see the 2 remaining
+warnings.` — so a pattern requiring them still misses. Stripping is necessary
+for that line and not sufficient.
+
+**The closure claim above the measurement named the wrong package.** #217's
+body, written from this note, said cli reaches the dependency closure through
+rlang. On this date `packageDescription("rlang")$Imports` read `utils` alone,
+while `packageDescription("dplyr")$Imports` read `cli (>= 3.6.2)` and
+`packageDescription("tidyselect")$Imports` read `cli (>= 3.3.0)`. Which of
+marginplyr's own dependencies those are is `DESCRIPTION`'s to say, and what
+follows for the guard is `R/conditions.R`'s and ADR 0021's; the readings above
+are what this note establishes.
+
+Two things measured at the same time and found **not** to need changing.
+Continuation lines began with two literal spaces ahead of any escape at
+`cli.width = 40` with `cli.num_colors = 256`, so the run splitting that reads
+`^  ` was unaffected by styling. And a structured error carried no styling at
+all in `$message` or `$body` — rlang holds the bare bullets and cli formats
+them at print — so a reading that removes styling was a no-op on the error
+path.
 
 ## Searched for and not found
 
