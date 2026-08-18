@@ -588,8 +588,8 @@ under CRAN semantics, so they run only in those jobs.
 
 What the seam does not ask is that a test keep its title: no job names the
 tests it executes (#93). Coverage is structural instead, resting on a policy
-about what a test may require — no test may require more than one member of
-`optional_backends()` — rather than on a list of what each job must run.
+about what a test may require, whose one home is `AGENTS.md`'s *Release matrix*
+section, rather than on a list of what each job must run.
 
 `AGENTS.md` is the operational reference for the jobs, the verifier scripts,
 and the sites registering an optional Suggest has to touch.

@@ -429,6 +429,21 @@ structural rather than a list of test names (#93). One policy carries it:
 
 > No test may require more than one member of `optional_backends()`.
 
+That sentence has one home, and this is it. `design/architecture.md` names the
+policy without restating it, because what its test chapter needs is the
+architectural property and not the rule's text.
+`.github/scripts/verify-suite-coverage.R` quotes it in full and attributes it
+here, because the argument its header makes cannot be read without the sentence
+in front of it. Nothing asserts that the two spellings stay in step, which is
+deliberate rather than an omission. The rule is restated as a consequence
+wherever the coverage argument is made, and individual tests state it for their
+own sections; those restatements outnumber the verbatim copies. So a scan over
+the copies would itself be the incomplete gate, reporting a clean result for
+every site it did not read — and which sites those are is not something this
+paragraph could be trusted to keep current, which is the objection it would be
+built to answer. What cannot drift from the gate is not prose at all, but the
+remedies `verify-suite-coverage.R` prints when it fires (#220).
+
 While that holds, the `backend` jobs cover the whole suite by construction —
 each installs one backend, plus whatever companions its entry declares, and
 withholds everything else, so between them they execute every test that
