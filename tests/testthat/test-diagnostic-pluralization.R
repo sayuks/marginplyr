@@ -12,9 +12,9 @@
 # singular and a plural noun held in a labels list; all four of its messages
 # are already pinned exactly in `test-grouping-plan.R`, so recording them again
 # would buy nothing. The duplicate-grouping-set refusal switches a whole phrase
-# rather than suffixing one, and only its singular arm is pinned anywhere --
-# that gap is #225, kept separate because its plural arm needs a specification
-# shape none of these eight do.
+# rather than suffixing one; both of its arms are pinned in
+# `test-grouping-plan.R`, the plural one separately from this file because it
+# needs a specification shape none of these eight do (#225).
 #
 # The pins already beside each site stay where they are. Most match a phrase
 # rather than a whole message, which is enough to assert that a caller reaches

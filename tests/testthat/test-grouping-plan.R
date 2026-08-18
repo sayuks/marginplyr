@@ -677,6 +677,45 @@ test_that("duplicate grouping sets have explicit policies", {
   expect_identical(kept$set_ids, 1:2)
 })
 
+# This diagnostic does not pluralize by suffixing a noun the way the eight
+# builders enumerated in #206 do: it switches a whole phrase on the number of
+# *groups* of duplicated positions, so the arms share no wording to pin once.
+# The singular arm is pinned by "compile_grouping_spec() reads a narrowed
+# duplicates vocabulary" below, which asserts it for the vocabulary's sake
+# rather than the phrase's; the plural arm has this test, and nothing else in
+# the suite tells the arms apart — every other expectation reaching this
+# diagnostic matches the prefix alone, which both arms satisfy (#225).
+test_that("duplicated grouping sets in more than one group name their groups", {
+  # Two *distinct* duplicated sets rather than one set duplicated twice, which
+  # is what makes `split()` return more than one group and selects the plural
+  # arm.
+  spec <- grouping_sets(
+    grouping_set(a),
+    grouping_set(b),
+    grouping_set(a),
+    grouping_set(b)
+  )
+
+  duplicated <- expect_error(
+    compile_grouping_spec(
+      spec,
+      c("a", "b"),
+      duplicates_choices = margin_duplicates_choices
+    )
+  )
+  expect_s3_class(duplicated, "marginplyr_error")
+  # The groups arrive in `split()`'s order, which is by key and not by first
+  # position, so `2, 4` precedes `1, 3`. This records what the code emits;
+  # whether that ordering is what a reader wants belongs to #223.
+  expect_identical(
+    conditionMessage(duplicated),
+    paste0(
+      "Duplicate grouping sets were produced at position groups 2, 4; 1, 3. ",
+      "Use `.duplicates = \"drop\"` or `\"keep\"`."
+    )
+  )
+})
+
 test_that("invalid or ambiguous specifications fail early", {
   expect_error(
     compile_grouping_spec(
