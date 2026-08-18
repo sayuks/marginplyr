@@ -19,6 +19,8 @@
 # succeeds while executing nothing. A page absent from `markers` still gets
 # everything above. A `markers` key naming no derived page is an error, so
 # renaming a vignette cannot quietly drop its markers instead of moving them.
+# A marker is matched with whitespace normalized on both sides, for the reason
+# `normalize_whitespace()` below records.
 
 source(".github/scripts/ci-helpers.R")
 
@@ -222,9 +224,45 @@ forbidden <- c(
   "union_all_with_margins"
 )
 
+# Runs of whitespace collapsed to one space, which is what makes a marker
+# insensitive to where a line broke.
+#
+# marginplyr signals through `cli::cli_abort()`, which wraps a diagnostic at
+# retrieval time to whatever width the renderer had (ADR 0023) -- so a sentence
+# this package authors reaches the page broken across lines, with a bullet's
+# continuation indented by two spaces, where the source holds one line. Markers
+# are also chosen from a run of uninterpolated prose, per that ADR's third line
+# condition, and the two are not the same protection: the choice keeps a marker
+# short enough that it is unlikely to span a break, and this keeps it matching
+# when it does anyway.
+#
+# Applied to both sides, so a marker written with a break in it matches too, and
+# so that nothing this accepts depends on how the marker was typed. It can only
+# widen what matches: a marker that matched the raw page still matches the
+# normalized one.
+#
+# `assert_no_match()`'s two scans below deliberately keep reading the raw page.
+# A wrap cannot split what either of them looks for: cli breaks a line at
+# whitespace and not inside a token -- measured at width 30 against a
+# 68-character path, which stayed whole on a line of its own -- and every
+# pattern written out here is whitespace-free, the home-directory one excluding
+# whitespace explicitly.
+#
+# The one pattern that is not written out here is the `\Q<home>\E` built below
+# from the checking machine's own home directory, and it carries a space when
+# that directory does. A wrap at that space would evade this scan, and
+# normalizing would close it. It is left raw because that gap is neither this
+# commit's nor cli's -- a rendered page has wrapped in a dozen other ways since
+# #99, and the pattern only carries a space on a machine whose home does --
+# while a leak scan reporting the text it matched is worth keeping exact.
+normalize_whitespace <- function(text) {
+  gsub("[[:space:]]+", " ", text)
+}
+
 assert_markers <- function(text, markers, page) {
+  text <- normalize_whitespace(text)
   absent <- markers[!vapply(
-    markers,
+    normalize_whitespace(markers),
     grepl,
     logical(1),
     x = text,

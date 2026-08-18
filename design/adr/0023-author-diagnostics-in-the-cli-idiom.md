@@ -23,7 +23,9 @@ package ships, so after publication these texts harden into something closer to
 a contract.
 
 The measurements this rests on are in
-`investigation/diagnostic-wrapping-under-rlang-and-cli.md`. They are cited
+`investigation/diagnostic-wrapping-under-rlang-and-cli.md` and, for what was
+measured once every site had moved,
+`investigation/retrieval-time-formatting-of-a-cli-diagnostic.md`. They are cited
 rather than restated because each is a fact about rlang, cli, or testthat, and
 ages when one of those moves rather than when `R/` does.
 
@@ -36,8 +38,9 @@ vignettes, where `.github/scripts/verify-site.R` matches seven of them as
 `fixed = TRUE` substrings of the built HTML.
 
 So this is not a re-formatting whose cost is churn in pinned texts. It puts
-line breaks into shipped pages and into byte-exact pins where none existed.
-Three conditions are what an author writes against:
+line breaks into shipped pages where none existed. Not into the byte-exact
+pins: *Consequences* below records the option that keeps the test suite from
+seeing a wrap at all. Three conditions are what an author writes against:
 
 1. The authored prose of a line, with interpolation excluded, fits in 80
    columns.
@@ -225,19 +228,59 @@ unaddressed in the files that also splice and keeps `report_branch_warnings()`
 ## Consequences
 
 The byte-exact pins stay byte-exact and stay out of snapshots. Inside
-`test_that()`, `local_reproducible_output()` fixes the width at 80 and turns
-colours off, so `conditionMessage()` of a `cli_abort()` condition is
-deterministic across runs; retrieval-time formatting varies with a reader's
-session, not between two runs of the suite. Snapshots would be skipped under
-CRAN semantics, which is where `test-diagnostic-pluralization.R` says its
-sixteen arms hold, so moving them there would silently retire the baseline the
-re-authoring is measured against. What changes is that a re-authored text
-carries newlines the flat sentence did not.
+`test_that()`, `local_reproducible_output()` sets `cli.condition_width` to
+`Inf` and rlang consults that ahead of `cli.width` and `width`, so
+`conditionMessage()` of a `cli_abort()` condition is not wrapped at all in the
+test suite, and is therefore deterministic across runs; retrieval-time
+formatting varies with a reader's session, not between two runs of the suite.
+Snapshots would be skipped under CRAN semantics, which is where
+`test-diagnostic-pluralization.R` says its sixteen arms hold, so moving them
+there would silently retire the baseline the re-authoring is measured against.
 
-The phrase-level pins — the several hundred `expect_error()` and
-`expect_match()` patterns — need a whitespace-normalizing comparison, since a
-phrase can now be split by a wrap. `verify-site.R`'s marker matching needs the
-same, on top of condition 3 above.
+That same option is why the phrase-level pins — the several hundred
+`expect_error()` and `expect_match()` patterns — need no normalizing
+comparison: a phrase cannot be split by a wrap that does not happen. The one
+newline such a pin can still meet is the structural break between a re-authored
+message's main line and each of its `i` bullets, and normalization would not
+rescue a phrase spanning that either, because the bullet marker sits in the gap.
+A pin spanning that boundary is a pin whose sentence the re-authoring has split,
+which is what the phase rewriting that file re-pins anyway. `verify-site.R`'s
+marker matching is where the normalization is needed, because a vignette is
+rendered outside `test_that()` and does wrap; it is needed on top of condition 3
+above rather than instead of it.
+
+The first version of this section read `width` rather than
+`cli.condition_width` and asked for a test-side normalizing helper on that
+basis. The measurements correcting it, and the two site markers that only match
+once normalized, are in
+`investigation/retrieval-time-formatting-of-a-cli-diagnostic.md`.
+
+Wrapping is not the whole of what retrieval-time formatting costs. The
+formatter collapses every run of whitespace in the stored message, including
+inside a value the template interpolated, so a subject whose spelling a caller
+chose is shown re-spelled: a `.margin_label` dimension named `` `bad  name` ``
+is stored with its two spaces and shown with one, where `rlang::abort()` showed
+the caller's bytes. Column names, label values, `.id`, and `.key` can all
+legally carry such a run, so this reaches the sixty-six sites that splice caller
+data — and reaches them identically after re-authoring, since it follows from
+signalling through `cli_abort()` rather than from any shim. `format_inline()`
+has `keep_whitespace`; `cli_abort()` exposes no equivalent, so preserving the
+spelling would mean not signalling through it, which is the whole of this
+decision. Whether that trade is right is left open in #230 rather than settled
+here, and nothing pins such a name, which is why this is recorded and not
+caught.
+
+Until the re-authoring is finished, a fourth path holds the flat form, and it is
+not one of the three the opening section names. Every site not yet re-authored
+passes through a transitional `abort_marginplyr_flat()`, which hands its
+already-assembled string to `abort_marginplyr()` as an interpolated value; cli
+interprets the template and not the values, so *Caller text is a value* holds
+across the whole corpus from the day the switch lands rather than file by file.
+That is also what bounds the gate's reach: it reads `abort_marginplyr()`'s own
+argument, so a site still calling the sibling is outside its view, and the
+snapshot beside it in `test-diagnostic-authoring.R` is what stops a new one
+appearing. The sibling is deleted with the last of those sites, and the gate
+then covers every diagnostic this package raises.
 
 `marginplyr_error` survives, so the `must_error` hook and its twenty vignette
 chunks are untouched: `cli_abort()`'s `class` argument carries it through, and

@@ -3,7 +3,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
     return(invisible(NULL))
   }
   if (!inherits(grouping_spec, "margin_grouping_spec")) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`.grouping` must be created with ",
         format_grouping_constructors(),
@@ -32,7 +32,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
 }
 
 abort_invalid_grouping_spec <- function() {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     "Invalid grouping specification."
   )
 }
@@ -41,13 +41,13 @@ normalize_grouping_input <- function(.data, by_quo) {
   stopifnot(rlang::is_quosure(by_quo))
 
   if (inherits(.data, "rowwise_df")) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`rowwise()` input is not supported. Call `dplyr::ungroup()` first."
     )
   }
 
   if (!dplyr::group_by_drop_default(.data)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "Grouped input created with `.drop = FALSE` is not supported. ",
         "Call `dplyr::ungroup()` first."
@@ -57,7 +57,7 @@ normalize_grouping_input <- function(.data, by_quo) {
 
   input_groups <- dplyr::group_vars(.data)
   if (length(input_groups) > 0L && !rlang::quo_is_null(by_quo)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "Can't supply `.by` when `.data` is grouped. ",
         "Call `dplyr::ungroup()` first."
@@ -194,13 +194,13 @@ prepare_grouping_plan <- function(.data,
 }
 
 abort_empty_grouping_units <- function(kind) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     sprintf("`%s()` requires at least one dimension.", kind)
   )
 }
 
 abort_empty_composite <- function() {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     "An empty `grouping_set()` cannot be a composite dimension."
   )
 }
@@ -211,7 +211,7 @@ allow_empty_grouping <- function(spec) {
 
 validate_empty_grouping_sets <- function(spec) {
   if (length(spec$args) == 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
         "for the empty grouping set."
@@ -229,7 +229,7 @@ validate_empty_grouping_units <- function(spec) {
 }
 
 reject_nested_in_set <- function(parent, nested) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "A `grouping_set()` can contain columns, not another ",
       "grouping family."
@@ -243,7 +243,7 @@ allow_nested_grouping <- function(parent, nested) {
 
 validate_nested_grouping_units <- function(parent, nested) {
   if (!identical(nested$type, "set")) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf(
         paste0(
           "`%s()` only accepts columns or `grouping_set()` ",
@@ -436,7 +436,7 @@ compile_grouping_spec_impl <- function(.grouping,
 
   overlap <- intersect(.by, dimensions)
   if (length(overlap) > 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "Columns cannot appear in both `.by` and `.grouping`: ",
         paste0("`", overlap, "`", collapse = ", "),
@@ -466,7 +466,7 @@ compile_grouping_spec_impl <- function(.grouping,
     alternatives <- setdiff(duplicates_choices, .duplicates)
     offered <- paste0("`\"", alternatives, "\"`")
     offered[[1L]] <- paste0("`.duplicates = \"", alternatives[[1L]], "\"`")
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "Duplicate grouping sets were produced at position",
         if (length(groups) == 1L) "s " else " groups ",
@@ -801,7 +801,7 @@ is_grouping_spec_subscript <- function(cnd, label) {
 }
 
 abort_nested_grouping_spec <- function(label) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "`", label, "` is a grouping specification, but a nested position ",
       "recognizes one only when it is a call to ",
@@ -863,7 +863,7 @@ by_rename_labels <- function() {
 }
 
 abort_selection_rename <- function(selected_names, source_names, labels) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "Can't rename ",
       if (length(selected_names) == 1L) labels$singular else labels$plural,

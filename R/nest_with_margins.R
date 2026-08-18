@@ -218,12 +218,12 @@ nest_margin_pipeline <- function(.data,
       assert_logical_scalar(.keep)
       assert_string_scalar(.key)
       if (is.na(.key)) {
-        abort_marginplyr(
+        abort_marginplyr_flat(
           "`.key` must not be missing."
         )
       }
       if (!nzchar(.key)) {
-        abort_marginplyr(
+        abort_marginplyr_flat(
           "`.key` must not be empty."
         )
       }
@@ -275,7 +275,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
       if (.key %in% group_cols) {
-        abort_marginplyr(
+        abort_marginplyr_flat(
           sprintf("`.key` (`%s`) must not be a grouping column.", .key)
         )
       }

@@ -3,7 +3,7 @@ normalize_margin_label <- function(.margin_label) {
     return(NULL)
   }
   if (!is.character(.margin_label) || length(.margin_label) == 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`.margin_label` must be `NULL`, an unnamed character scalar, or a ",
         "named character vector."
@@ -13,24 +13,24 @@ normalize_margin_label <- function(.margin_label) {
   label_names <- names(.margin_label)
   if (is.null(label_names)) {
     if (length(.margin_label) != 1L) {
-      abort_marginplyr(
+      abort_marginplyr_flat(
         "An unnamed `.margin_label` must be a character vector of length 1."
       )
     }
     return(.margin_label)
   }
   if (anyNA(label_names)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`.margin_label` names must not be missing."
     )
   }
   if (any(!nzchar(label_names))) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`.margin_label` names must not be empty."
     )
   }
   if (anyDuplicated(label_names)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`.margin_label` names must not be duplicated."
     )
   }
@@ -62,7 +62,7 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
   label_names <- names(.margin_label)
   fixed_names <- intersect(label_names, by)
   if (length(fixed_names) > 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`.margin_label` must not name fixed `.by` column",
         if (length(fixed_names) == 1L) " " else "s ",
@@ -73,7 +73,7 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
   }
   unknown_names <- setdiff(label_names, dimensions)
   if (length(unknown_names) > 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`.margin_label` has unknown dimension name",
         if (length(unknown_names) == 1L) " " else "s ",
@@ -84,7 +84,7 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
   }
   missing_names <- setdiff(dimensions, label_names)
   if (length(missing_names) > 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`.margin_label` must name every Margin dimension; missing ",
         paste0("`", missing_names, "`", collapse = ", "),
@@ -130,7 +130,7 @@ validate_margin_label <- function(.data,
     )
     na_level_cols <- vapply(na_level_cols, function(x) x$col, character(1))
     if (length(na_level_cols) > 0L) {
-      abort_marginplyr(
+      abort_marginplyr_flat(
         paste0(
           "`NA_character_` is already a factor level in grouping column",
           if (length(na_level_cols) == 1L) " " else "s ",
@@ -275,7 +275,7 @@ abort_margin_label_collision <- function(margin_labels, found, kind) {
   } else {
     "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
   }
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       label,
       verb,

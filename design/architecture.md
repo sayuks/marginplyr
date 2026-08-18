@@ -384,6 +384,21 @@ review surface: a Package condition demoted to `stop()` silently leaves the
 public contract, and an invariant promoted to `abort_marginplyr()` silently
 enters it.
 
+It is also the interpolating entry point. A call site passes an unexpanded cli
+template and `cli::cli_abort()` expands it in the site's own frame, so the
+constructor owns the message's shape as well as its class: a short refusal plus
+`i` bullets, one inline style per subject, `{?}` for every plural, and
+caller-derived text interpolated as a value rather than concatenated into the
+template. See
+[ADR 0023](adr/0023-author-diagnostics-in-the-cli-idiom.md).
+`test-diagnostic-authoring.R` gates the last two of those together, by failing
+any `abort_marginplyr()` call whose message argument is not a literal in the
+source: an assembled template and an `if`-spelled noun are one violation seen
+from two sides.
+Sites that still assemble their own string pass through
+`abort_marginplyr_flat()`, which interpolates it as a value; that function is
+transitional, and the snapshot beside the gate is what is left of #223.
+
 It also owns the one reading of a condition another package raised.
 `condition_chain()` answers the conditions a `parent` chain holds, outermost
 first, and decides nothing about them. tidyselect wraps a failure raised inside

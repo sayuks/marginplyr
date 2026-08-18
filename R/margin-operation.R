@@ -140,7 +140,7 @@ match_margin_choice <- function(value, choices, arg_name) {
   if (rlang::is_string(value) && value %in% choices) {
     return(value)
   }
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "`", arg_name, "` must be one of ",
       paste0("\"", choices, "\"", collapse = ", "),
@@ -196,7 +196,7 @@ normalize_margin_id <- function(.id) {
       is.na(.id) ||
       !nzchar(.id)
   ) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`.id` must be `NULL` or one non-missing, non-empty character string."
     )
   }
@@ -205,7 +205,7 @@ normalize_margin_id <- function(.id) {
 
 check_margin_id_collision <- function(.id, names, where) {
   if (!is.null(.id) && .id %in% names) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf("`.id` (`%s`) conflicts with %s.", .id, where)
     )
   }

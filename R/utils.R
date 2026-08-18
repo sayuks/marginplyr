@@ -16,7 +16,7 @@ margin_column_pronoun <- function(name) {
 assert_logical_scalar <- function(x) {
   nm <- deparse(substitute(x))
   if (!(isTRUE(x) || isFALSE(x))) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf("`%s` must be a logical scalar (`TRUE` or `FALSE`).", nm)
     )
   }
@@ -26,7 +26,7 @@ assert_logical_scalar <- function(x) {
 assert_string_scalar <- function(x) {
   nm <- deparse(substitute(x))
   if (!(is.character(x) && length(x) == 1)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf("`%s` must be a character vector of length 1.", nm)
     )
   }
@@ -36,7 +36,7 @@ assert_nest_possible <- function(x) {
   nm <- deparse(substitute(x))
   valid_classes <- c("data.frame", "dtplyr_step")
   if (!inherits(x, valid_classes)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf(
         "`%s` must be one of the following classes, which can be nested: %s",
         nm,
@@ -80,7 +80,7 @@ assert_margin_input <- function(x) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr(
+  abort_marginplyr_flat(
     sprintf(
       paste0(
         "`%s` must be a data frame or a lazy table that supports dplyr ",
@@ -97,7 +97,7 @@ assert_lazy_table <- function(x) {
   nm <- deparse(substitute(x))
   invalid_lazy_table_names <- "RecordBatchReader"
   if (inherits(x, invalid_lazy_table_names)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf(
         "`%s` must not be an object of the following classes: %s",
         nm,
