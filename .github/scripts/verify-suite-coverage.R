@@ -14,7 +14,8 @@
 # "regenerate the list and commit it" records a change rather than refusing one.
 # So this script makes naming unnecessary instead of making it better (#93).
 #
-# The policy it enforces is one sentence:
+# The policy it enforces is one sentence, whose home is `AGENTS.md`'s *Release
+# matrix* section:
 #
 #     No test may require more than one member of `optional_backends()`.
 #
