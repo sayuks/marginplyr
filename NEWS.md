@@ -139,7 +139,7 @@
   differ from each other are still reported one by one. Only that context
   changes: the class, the diagnostic, and the cause you receive are the ones
   raised. A lazy input is unaffected, because its summary expressions run when
-  you collect the result rather than while the verb runs (#141, #108, #217).
+  you collect the result rather than while the verb runs (#141, #108).
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns. `.keep = TRUE` retains original pre-margin key values,
   and nesting rejects duplicate sets with `.duplicates = "keep"` because

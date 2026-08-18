@@ -261,10 +261,14 @@ message_line_runs <- function(lines) {
 # therefore rendered plain -- accepted rather than worked around, and recorded
 # in ADR 0022 beside the wrapping such a line already loses.
 #
-# cli needs no availability guard. It is an Import of both dplyr and
-# tidyselect, so it is in the hard dependency closure and can never be absent:
-# the `DBI = FALSE` case in `AGENTS.md`'s dependency metadata, as
-# `share_dialect_can_be_asked()` is.
+# cli needs no availability guard and its Suggests entry carries no version.
+# It is an Import of both dplyr and tidyselect, so it is in the hard dependency
+# closure and can never be absent: the `DBI = FALSE` case in `AGENTS.md`'s
+# dependency metadata, as `share_dialect_can_be_asked()` is. `ansi_strip()`
+# learned `link` in cli 3.3.0, which is tidyselect's own floor and below
+# dplyr's, so a constraint written here could never bind -- and
+# `marginplyr_suggest_available()`, the only thing that reads one, is never
+# asked about a package that cannot be absent.
 written_message_lines <- function(lines, runs) {
   lines <- cli::ansi_strip(lines, link = TRUE)
   vapply(

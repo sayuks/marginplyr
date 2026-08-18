@@ -161,8 +161,18 @@ rendering_configurations <- function() {
     KEEP.OUT.ATTRS = FALSE,
     stringsAsFactors = FALSE
   )
-  configs <- split(grid, seq_len(nrow(grid)))
+  configs <- lapply(
+    split(grid, seq_len(nrow(grid))),
+    function(row) rendering_config(row$width, row$num_colors, row$hyperlink)
+  )
   stats::setNames(configs, vapply(configs, rendering_label, character(1)))
+}
+
+# The one shape a configuration has, so that a test naming a rendering the grid
+# does not cover -- a width wide enough that nothing wraps -- builds the same
+# thing the grid does rather than a second shape the helpers must also accept.
+rendering_config <- function(width, num_colors, hyperlink) {
+  list(width = width, num_colors = num_colors, hyperlink = hyperlink)
 }
 
 rendering_label <- function(config) {
@@ -514,7 +524,7 @@ test_that("a marker inside a value or a diagnostic decides nothing", {
 # The width is set wide enough that nothing wraps, so a line here is a line as
 # dplyr wrote it.
 test_that("only the line a restatement rewrote is rendered plain", {
-  config <- list(width = 200L, num_colors = 256L, hyperlink = FALSE)
+  config <- rendering_config(200L, 256L, FALSE)
   warnings <- collect_warnings_rendered(config, summarize_helper_coercion())
   lines <- strsplit(conditionMessage(warnings[[1L]]), "\n", fixed = TRUE)[[1L]]
   styled <- grepl("\033[", lines, fixed = TRUE)
