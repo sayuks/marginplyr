@@ -218,16 +218,24 @@ warnings_under_every_rendering <- function(expr) {
   )
 }
 
-# The reported message under each configuration, or `""` where a configuration
-# reported nothing -- the count is asserted separately, and reading past the end
-# of an empty result would replace that assertion's failure with an error.
-first_reported_messages <- function(collected) {
+# Whether each configuration's reported message carries a literal, keyed by the
+# configuration, so that what a failure names is the rendering and not the
+# expectation's position in a loop. A configuration that reported nothing reads
+# as `""` rather than raising: the count is asserted separately, and reading
+# past the end of an empty result would replace that assertion's failure with an
+# error.
+reported_contains <- function(collected, text) {
   vapply(
     collected,
     function(warnings) {
-      if (length(warnings) == 0L) "" else conditionMessage(warnings[[1L]])
+      message <- if (length(warnings) == 0L) {
+        ""
+      } else {
+        conditionMessage(warnings[[1L]])
+      }
+      grepl(text, message, fixed = TRUE)
     },
-    character(1)
+    logical(1)
   )
 }
 
@@ -263,17 +271,6 @@ for_every_rendering <- function(value) {
   stats::setNames(rep(value, length(configs)), names(configs))
 }
 
-# Whether each configuration's reported message carries a literal, keyed by the
-# configuration, so that what a failure names is the rendering and not the
-# expectation's position in a loop.
-reported_contains <- function(collected, text) {
-  vapply(
-    first_reported_messages(collected),
-    function(message) grepl(text, message, fixed = TRUE),
-    logical(1)
-  )
-}
-
 test_that("a warning repeated across grouping sets is reported once", {
   warnings <- collect_warnings(summarize_coercion_cube())
 
@@ -293,23 +290,6 @@ test_that("a reported warning names the caller's own grouping columns", {
   expect_match(message, "`region = \"East\"`", fixed = TRUE)
   expect_match(message, "`grade = \"a\"`", fixed = TRUE)
   expect_false(grepl("marginplyr_key", message, fixed = TRUE))
-})
-
-# The third part of #141's context leak (ADR 0022). What is quoted is
-# `rlang::as_label()`'s rendering of the expression the caller wrote rather than
-# their source text, because that is the rendering dplyr would have quoted had
-# nothing been rewritten -- the spelling restored is the caller's, not their
-# whitespace.
-test_that("a reported warning quotes the caller's own spelling", {
-  warnings <- collect_warnings(summarize_across_coercion())
-
-  message <- conditionMessage(warnings[[1L]])
-  expect_match(
-    message,
-    "`dplyr::across(c(grade), ~sum(as.numeric(.x)))`",
-    fixed = TRUE
-  )
-  expect_false(grepl("all_of", message, fixed = TRUE))
 })
 
 test_that("a share does not shift which argument is restored", {
@@ -342,23 +322,12 @@ test_that("a warning is one report where only a branch constant differed", {
   expect_match(message, "1 further grouping set", fixed = TRUE)
 })
 
-# Three rendering variables, one property. cli wraps a bullet it cannot fit,
-# styles the markers it writes, and turns dplyr's pointer into a hyperlink, and
-# each of the three defeated a reading of the rendered text on its own:
-#
-# - Width. This reproduction gave three reports of one condition at 60 columns,
-#   four at 40, and two anywhere in 15 to 24, where dplyr's opening sentence
-#   wraps and cli does not indent what it wraps it onto. Reading the bullet off
-#   the line it opens rather than the line it was written as restored the
-#   spelling at 80 columns and not at 40.
-# - Colour. Every marker carries an SGR escape above `cli.num_colors = 1`, so
-#   every pattern missed and this reproduction reported twice while quoting the
-#   branch constant `0L` the caller never wrote (#217).
-# - Hyperlinks. `cli.hyperlink_run` turns the pointer at
-#   `last_dplyr_warnings()` into an OSC-8 link carrying a per-branch remaining
-#   count, which split the identity at `cli.num_colors = 1` -- so this is not
-#   the colour case in another spelling, and stripping the escapes is not on its
-#   own enough: the link renders without the backticks dplyr writes otherwise.
+# Three rendering variables, one property, which ADR 0021's *No rendering
+# decision takes part in the identity* is authoritative for. What this fixture
+# contributes is the counts each variable produced on it: three reports of one
+# condition at 60 columns, four at 40, and two anywhere in 15 to 24; two above
+# `cli.num_colors = 1`, quoting the branch constant `0L` the caller never
+# wrote; and two again under `cli.hyperlink_run` at `cli.num_colors = 1`.
 #
 # Asserting the restoration here as well as the collapse is what says #199's
 # restatement is covered rather than leaving it inferred from the count: the two
@@ -385,6 +354,14 @@ test_that("the constant-rewrite collapse holds under every rendering", {
 # split an identity -- which is why it needs its own assertion. A colour session
 # quoted the rewrite here while reporting the expected single condition, and a
 # test reading the count alone would have called that green.
+#
+# The third part of #141's context leak (ADR 0022). What is quoted is
+# `rlang::as_label()`'s rendering of the expression the caller wrote rather than
+# their source text, because that is the rendering dplyr would have quoted had
+# nothing been rewritten -- the spelling restored is the caller's, not their
+# whitespace. This subsumes the single-rendering assertion that stood here
+# before, which read the same fixture for the same two facts under one
+# rendering.
 test_that("the selection rewrite is restored under every rendering", {
   spelled <- "`dplyr::across(c(grade), ~sum(as.numeric(.x)))`"
   collected <- warnings_under_every_rendering(summarize_across_coercion())
@@ -528,6 +505,28 @@ test_that("a marker inside a value or a diagnostic decides nothing", {
     )),
     2L
   )
+})
+
+# ADR 0022's contract for a restated line, asserted line by line rather than in
+# aggregate. `expect_rendering_markers()` above says only that some marker
+# survived somewhere, which a message that had lost the styling on one other
+# line would still satisfy; what the contract promises is which line is plain.
+# The width is set wide enough that nothing wraps, so a line here is a line as
+# dplyr wrote it.
+test_that("only the line a restatement rewrote is rendered plain", {
+  config <- list(width = 200L, num_colors = 256L, hyperlink = FALSE)
+  warnings <- collect_warnings_rendered(config, summarize_helper_coercion())
+  lines <- strsplit(conditionMessage(warnings[[1L]]), "\n", fixed = TRUE)[[1L]]
+  styled <- grepl("\033[", lines, fixed = TRUE)
+
+  restated <- grepl("In argument:", lines, fixed = TRUE)
+  expect_identical(sum(restated), 1L)
+  expect_false(any(styled[restated]))
+  # Every other bullet dplyr wrote keeps the styling it arrived with, including
+  # the two the identity removed from its key -- what a key drops is not what a
+  # caller stops being shown.
+  expect_true(all(styled[grepl("In group ", lines, fixed = TRUE)]))
+  expect_true(all(styled[grepl("last_dplyr_warnings", lines, fixed = TRUE)]))
 })
 
 # Removing the styling is a change to a *reading*, and only to a reading: the

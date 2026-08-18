@@ -251,6 +251,8 @@ message_line_runs <- function(lines) {
 # styles, and links; the wrapping is what the runs above already undid, and the
 # other two each split an identity on their own (#217). ADR 0021's *No rendering
 # decision takes part in the identity* is authoritative for which and why.
+# `link` is spelled although it is the default, because stripping the hyperlink
+# is half of what this call is here for rather than incidental to it.
 #
 # This is a *reading*. `branch_warning_identity()` assembles its key from the
 # lines as they arrived, so nothing here can make two diagnostics that differ
@@ -264,7 +266,7 @@ message_line_runs <- function(lines) {
 # the `DBI = FALSE` case in `AGENTS.md`'s dependency metadata, as
 # `share_dialect_can_be_asked()` is.
 written_message_lines <- function(lines, runs) {
-  lines <- cli::ansi_strip(lines)
+  lines <- cli::ansi_strip(lines, link = TRUE)
   vapply(
     runs,
     function(run) paste(sub("^ +", "", lines[run]), collapse = " "),

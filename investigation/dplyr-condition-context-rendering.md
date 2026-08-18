@@ -179,21 +179,22 @@ line reads `ℹ Run dplyr::last_dplyr_warnings() to see the 2 remaining
 warnings.` — so a pattern requiring them still misses. Stripping is necessary
 for that line and not sufficient.
 
-**The closure claim above the measurement was wrong about which package
-supplies cli.** #217's body, written from this note, said cli reaches the
-dependency closure through rlang. It does not: `packageDescription("rlang")
-$Imports` is `utils` alone. cli arrives through **dplyr** (`Imports: cli
-(>= 3.6.2)`) and **tidyselect** (`Imports: cli (>= 3.3.0)`), both hard Imports
-of marginplyr. The conclusion the claim was made in support of — that cli needs
-no availability guard — holds and is stronger for it, since neither route is
-conditional.
+**The closure claim above the measurement named the wrong package.** #217's
+body, written from this note, said cli reaches the dependency closure through
+rlang. On this date `packageDescription("rlang")$Imports` read `utils` alone,
+while `packageDescription("dplyr")$Imports` read `cli (>= 3.6.2)` and
+`packageDescription("tidyselect")$Imports` read `cli (>= 3.3.0)`. Which of
+marginplyr's own dependencies those are is `DESCRIPTION`'s to say, and what
+follows for the guard is `R/conditions.R`'s and ADR 0021's; the readings above
+are what this note establishes.
 
 Two things measured at the same time and found **not** to need changing.
-Continuation lines still begin with two literal spaces ahead of any escape at
+Continuation lines began with two literal spaces ahead of any escape at
 `cli.width = 40` with `cli.num_colors = 256`, so the run splitting that reads
-`^  ` is unaffected by styling. And a structured error carries no styling at
+`^  ` was unaffected by styling. And a structured error carried no styling at
 all in `$message` or `$body` — rlang holds the bare bullets and cli formats
-them at print — so a reading that removes styling is a no-op on the error path.
+them at print — so a reading that removes styling was a no-op on the error
+path.
 
 ## Searched for and not found
 
