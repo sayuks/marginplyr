@@ -19,11 +19,13 @@
 # The pins already beside each site stay where they are. Most match a phrase
 # rather than a whole message, which is enough to assert that a caller reaches
 # the diagnostic -- a different question from what it says -- and which
-# survives the re-wording this file exists to make visible. Three are already
-# exact: the singular arms of the `.by` invariant, the summary-overwrite
-# refusal, and the grouping-helper refusal. Those three are recorded again
-# here, because a baseline with holes in it is one a reader has to reassemble
-# from five files before trusting it.
+# survives the re-wording this file exists to make visible. Two are already
+# identities: the singular arms of the `.by` invariant and of the
+# summary-overwrite refusal. A third, the grouping-helper refusal's singular
+# arm, matches its whole message but as a substring, so a re-wording fails it
+# while an addition to the end would not. All three are recorded again here,
+# because a baseline with holes in it is one a reader has to reassemble from
+# five files before trusting it.
 #
 # Each Package condition is reached through the public verb that raises it, so
 # a message that stops being reachable fails here rather than passing on an
@@ -35,10 +37,10 @@
 # `marginplyr_error` assertions next to the behaviour that raises them, paired
 # with the External-condition half, so that the ADR 0015 boundary stays
 # reviewable; collecting them here would be the single file that section rules
-# out. Nothing is lost, because an exact message identifies a condition more
-# narrowly than its class does. What the invariants assert is the absence of
-# that class, which is the promise their own sites make and which #224 asks for
-# by name.
+# out. Leaving them out loses nothing, because each of those assertions is
+# still at its own site, which is where the boundary is read. The invariants
+# assert the absence of that class rather than its presence; their own sites
+# assert it too, and #224 asks for it here by name.
 #
 # Plain expectations rather than snapshots: snapshots are skipped under CRAN
 # semantics, and these hold there too. Nothing here needs an optional backend,
