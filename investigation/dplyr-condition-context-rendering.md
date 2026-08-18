@@ -1,7 +1,7 @@
 # How dplyr renders the context of a condition from a summary expression
 
 Investigated: 2026-08-18
-Revised: 2026-08-18 — design/adr/0021-report-a-repeated-execution-condition-once.md
+Revised: 2026-08-18 — ADR 0021
 
 Measured while implementing #199, which asked for a Condition context quoting
 the caller's own spelling of a summary argument. ADR 0022 records the decision

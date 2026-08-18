@@ -195,6 +195,15 @@ collect_warnings_rendered <- function(config, expr) {
   collect_warnings(expr)
 }
 
+# The styling on its own, for the two properties below that are about the
+# reading rather than about a rendering: neither varies with the width or the
+# hyperlinks, so crossing them would assert one thing twenty times.
+at_num_colors <- function(num_colors, expr) {
+  original <- options(cli.num_colors = num_colors)
+  on.exit(options(original), add = TRUE)
+  expr
+}
+
 # One call's warnings under each configuration, keyed by the configuration.
 # `expr` is quoted rather than taken as a promise, because a promise forces
 # once and every configuration has to render the call again.
@@ -236,18 +245,13 @@ first_reported_messages <- function(collected) {
 # unstyled would mean the whole message had been rewritten.
 expect_rendering_markers <- function(collected) {
   configs <- rendering_configurations()
-  messages <- first_reported_messages(collected)
-
-  carries <- function(marker) {
-    vapply(messages, function(m) grepl(marker, m, fixed = TRUE), logical(1))
-  }
 
   expect_identical(
-    carries("\033["),
+    reported_contains(collected, "\033["),
     vapply(configs, function(config) config$num_colors > 1L, logical(1))
   )
   expect_identical(
-    carries("\033]8;;"),
+    reported_contains(collected, "\033]8;;"),
     vapply(configs, function(config) config$hyperlink, logical(1))
   )
 }
@@ -363,8 +367,8 @@ test_that("a warning is one report where only a branch constant differed", {
 test_that("the constant-rewrite collapse holds under every rendering", {
   collected <- warnings_under_every_rendering(summarize_helper_coercion())
 
-  expect_identical(lengths(collected), for_every_rendering(1L))
   expect_rendering_markers(collected)
+  expect_identical(lengths(collected), for_every_rendering(1L))
   expect_identical(
     reported_contains(collected, "grouping_bit(region)"),
     for_every_rendering(TRUE)
@@ -385,8 +389,8 @@ test_that("the selection rewrite is restored under every rendering", {
   spelled <- "`dplyr::across(c(grade), ~sum(as.numeric(.x)))`"
   collected <- warnings_under_every_rendering(summarize_across_coercion())
 
-  expect_identical(lengths(collected), for_every_rendering(1L))
   expect_rendering_markers(collected)
+  expect_identical(lengths(collected), for_every_rendering(1L))
   expect_identical(
     reported_contains(collected, spelled),
     for_every_rendering(TRUE)
@@ -441,8 +445,8 @@ test_that("an abbreviated argument keeps the quotation dplyr wrote", {
 test_that("a repeated warning is one report under every rendering", {
   collected <- warnings_under_every_rendering(summarize_coercion_cube())
 
-  expect_identical(lengths(collected), for_every_rendering(1L))
   expect_rendering_markers(collected)
+  expect_identical(lengths(collected), for_every_rendering(1L))
   expect_identical(
     reported_contains(collected, "3 further grouping sets"),
     for_every_rendering(TRUE)
@@ -536,11 +540,8 @@ test_that("a diagnostic differing only by an escape sequence stays distinct", {
   reports <- vapply(
     c("1" = 1L, "256" = 256L),
     function(num_colors) {
-      original <- options(cli.num_colors = num_colors)
-      on.exit(options(original), add = TRUE)
-      length(collect_warnings(summarize_branch_diagnostics(
-        "bad \033[36mvalue\033[39m",
-        "bad value"
+      at_num_colors(num_colors, length(collect_warnings(
+        summarize_branch_diagnostics("bad \033[36mvalue\033[39m", "bad value")
       )))
     },
     integer(1)
@@ -560,9 +561,10 @@ test_that("a branch error's restatement carries no styling and does not vary", {
   restated <- vapply(
     c("1" = 1L, "256" = 256L),
     function(num_colors) {
-      original <- options(cli.num_colors = num_colors)
-      on.exit(options(original), add = TRUE)
-      error <- tryCatch(summarize_across_failure(), error = function(cnd) cnd)
+      error <- at_num_colors(
+        num_colors,
+        tryCatch(summarize_across_failure(), error = function(cnd) cnd)
+      )
       unname(error$message)
     },
     character(1)

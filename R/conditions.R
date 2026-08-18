@@ -245,16 +245,12 @@ message_line_runs <- function(lines) {
 # identity reads as three written lines is a message the restatement reads as
 # the same three.
 #
-# Every pattern either reader matches is matched here, so this is the one place
-# a rendering decision has to be undone, and undoing it here is what makes the
-# contract hold in a session that has one. cli styles the markers it writes and
-# links the calls it names, and either defeats a pattern anchored at the start
-# of a line: at `cli.num_colors` above 1 nothing was removed from an identity
-# and every branch's key differed by its own grouping values, and
-# `cli.hyperlink_run` -- which cli sets for itself in an OSC-8 terminal -- did
-# the same at `cli.num_colors = 1`, so this is not the styling in another
-# spelling (#217). ADR 0021 records the decision; the wrapping this already
-# undid is the same property in the variable that was noticed first.
+# Every pattern either reader matches is anchored at the start of a line, so
+# this is the one place cli's rendering has to be undone, and undoing it here is
+# what makes ADR 0021's contract hold in a session that renders one. cli wraps,
+# styles, and links; the wrapping is what the runs above already undid, and the
+# other two each split an identity on their own (#217). ADR 0021's *No rendering
+# decision takes part in the identity* is authoritative for which and why.
 #
 # This is a *reading*. `branch_warning_identity()` assembles its key from the
 # lines as they arrived, so nothing here can make two diagnostics that differ
