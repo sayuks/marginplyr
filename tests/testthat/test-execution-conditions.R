@@ -142,16 +142,132 @@ collect_warnings <- function(expr) {
   warnings
 }
 
-# `expr` is forced inside `collect_warnings()`, so it is rendered at the width
-# set here. `cli.condition_width` is the one that has to be set: testthat's own
-# `local_reproducible_output()` sets it to `Inf` so that a snapshot does not
-# depend on the pane it was recorded in, and rlang consults it ahead of
-# `cli.width` -- so a test that set `cli.width` alone would render every case
-# unwrapped and pass whatever the code did.
-collect_warnings_at_width <- function(width, expr) {
-  original <- options(cli.width = width, cli.condition_width = width)
+# Every rendering decision cli makes for itself, as the configurations they
+# combine into. The identity is over the message as written, so none of them may
+# change how many conditions a caller receives -- and a suite green under one of
+# them says nothing about the others, which is the whole of #217: the width was
+# the only one asserted, and the contract held under neither of the other two.
+#
+# Generated rather than listed, so a fourth variable is one column here and
+# every assertion below picks it up rather than being extended to meet it.
+# Each configuration is named for itself, because these are asserted as one
+# named vector per property: a failure then says which renderings broke and
+# which held, where twenty separate expectations would say only that one did.
+rendering_configurations <- function() {
+  grid <- expand.grid(
+    width = c(80L, 60L, 40L, 20L, 16L),
+    num_colors = c(1L, 256L),
+    hyperlink = c(FALSE, TRUE),
+    KEEP.OUT.ATTRS = FALSE,
+    stringsAsFactors = FALSE
+  )
+  configs <- split(grid, seq_len(nrow(grid)))
+  stats::setNames(configs, vapply(configs, rendering_label, character(1)))
+}
+
+rendering_label <- function(config) {
+  sprintf(
+    "width %d, num_colors %d, hyperlink %s",
+    config$width,
+    config$num_colors,
+    config$hyperlink
+  )
+}
+
+# `expr` is forced inside `collect_warnings()`, so it is rendered under the
+# options set here. `cli.condition_width` is the one that has to be set for the
+# width: testthat's own `local_reproducible_output()` sets it to `Inf` so that a
+# snapshot does not depend on the pane it was recorded in, and rlang consults it
+# ahead of `cli.width` -- so a test setting `cli.width` alone would render every
+# case unwrapped and pass whatever the code did. `cli.hyperlink_run` is the one
+# dplyr's pointer at `last_dplyr_warnings()` follows; `cli.hyperlink` is set
+# beside it because a terminal advertising one advertises the other, so a
+# configuration separating them would name a session nobody runs.
+collect_warnings_rendered <- function(config, expr) {
+  original <- options(
+    cli.width = config$width,
+    cli.condition_width = config$width,
+    cli.num_colors = config$num_colors,
+    cli.hyperlink = config$hyperlink,
+    cli.hyperlink_run = config$hyperlink
+  )
   on.exit(options(original), add = TRUE)
   collect_warnings(expr)
+}
+
+# One call's warnings under each configuration, keyed by the configuration.
+# `expr` is quoted rather than taken as a promise, because a promise forces
+# once and every configuration has to render the call again.
+warnings_under_every_rendering <- function(expr) {
+  quoted <- substitute(expr)
+  env <- parent.frame()
+  lapply(
+    rendering_configurations(),
+    function(config) {
+      collect_warnings_rendered(config, eval(quoted, env))
+    }
+  )
+}
+
+# The reported message under each configuration, or `""` where a configuration
+# reported nothing -- the count is asserted separately, and reading past the end
+# of an empty result would replace that assertion's failure with an error.
+first_reported_messages <- function(collected) {
+  vapply(
+    collected,
+    function(warnings) {
+      if (length(warnings) == 0L) "" else conditionMessage(warnings[[1L]])
+    },
+    character(1)
+  )
+}
+
+# What stops a configuration passing by not being the configuration it claims.
+# cli decides for itself whether to style and whether to link, so an environment
+# that refused would turn every colour row into a second unstyled one: a suite
+# still green while asserting nothing about the case those rows exist for. This
+# is asserted beside the collapse rather than inferred from it, for the reason
+# `verify-suite-coverage.R` asserts its own mechanism before concluding
+# anything.
+#
+# It is also what pins the other half of ADR 0022's contract: only a restated
+# line is rendered plain, so a reported message still carries the styling of
+# every line the restatement did not touch, and a colour row that arrived
+# unstyled would mean the whole message had been rewritten.
+expect_rendering_markers <- function(collected) {
+  configs <- rendering_configurations()
+  messages <- first_reported_messages(collected)
+
+  carries <- function(marker) {
+    vapply(messages, function(m) grepl(marker, m, fixed = TRUE), logical(1))
+  }
+
+  expect_identical(
+    carries("\033["),
+    vapply(configs, function(config) config$num_colors > 1L, logical(1))
+  )
+  expect_identical(
+    carries("\033]8;;"),
+    vapply(configs, function(config) config$hyperlink, logical(1))
+  )
+}
+
+# The value every configuration has to agree on, shaped like the vectors the
+# assertions compare against it.
+for_every_rendering <- function(value) {
+  configs <- rendering_configurations()
+  stats::setNames(rep(value, length(configs)), names(configs))
+}
+
+# Whether each configuration's reported message carries a literal, keyed by the
+# configuration, so that what a failure names is the rendering and not the
+# expectation's position in a loop.
+reported_contains <- function(collected, text) {
+  vapply(
+    first_reported_messages(collected),
+    function(message) grepl(text, message, fixed = TRUE),
+    logical(1)
+  )
 }
 
 test_that("a warning repeated across grouping sets is reported once", {
@@ -222,30 +338,63 @@ test_that("a warning is one report where only a branch constant differed", {
   expect_match(message, "1 further grouping set", fixed = TRUE)
 })
 
-# cli wraps a bullet it cannot fit, so how a warning message is laid out is a
-# function of the console width and of how long the grouping values are. Which
-# grouping set raised a warning is no more part of its identity when the bullet
-# naming it wrapped: this reproduction gave three reports of one condition at
-# 60 columns, four at 40, and two anywhere in 15 to 24, where dplyr's opening
-# sentence wraps and cli does not indent what it wraps it onto.
-# The restatement has to read the bullet as the line it was written as, for the
-# same reason the identity does: cli wraps a bullet it cannot fit, and a span
-# read off the line the bullet opens is a prefix of the label at any narrow
-# width. Reading it that way reported the branch-constant case once at 80
-# columns and twice at 40, which is the console width deciding how many
-# conditions a caller receives.
-test_that("the constant-rewrite collapse holds at any console width", {
-  for (width in c(80L, 60L, 40L, 20L, 16L)) {
-    warnings <- collect_warnings_at_width(width, summarize_helper_coercion())
+# Three rendering variables, one property. cli wraps a bullet it cannot fit,
+# styles the markers it writes, and turns dplyr's pointer into a hyperlink, and
+# each of the three defeated a reading of the rendered text on its own:
+#
+# - Width. This reproduction gave three reports of one condition at 60 columns,
+#   four at 40, and two anywhere in 15 to 24, where dplyr's opening sentence
+#   wraps and cli does not indent what it wraps it onto. Reading the bullet off
+#   the line it opens rather than the line it was written as restored the
+#   spelling at 80 columns and not at 40.
+# - Colour. Every marker carries an SGR escape above `cli.num_colors = 1`, so
+#   every pattern missed and this reproduction reported twice while quoting the
+#   branch constant `0L` the caller never wrote (#217).
+# - Hyperlinks. `cli.hyperlink_run` turns the pointer at
+#   `last_dplyr_warnings()` into an OSC-8 link carrying a per-branch remaining
+#   count, which split the identity at `cli.num_colors = 1` -- so this is not
+#   the colour case in another spelling, and stripping the escapes is not on its
+#   own enough: the link renders without the backticks dplyr writes otherwise.
+#
+# Asserting the restoration here as well as the collapse is what says #199's
+# restatement is covered rather than leaving it inferred from the count: the two
+# read the same message through the same helper, and in a colour session both
+# no-opped.
+test_that("the constant-rewrite collapse holds under every rendering", {
+  collected <- warnings_under_every_rendering(summarize_helper_coercion())
 
-    expect_length(warnings, 1L)
-    expect_match(
-      conditionMessage(warnings[[1L]]),
-      "grouping_bit(region)",
-      fixed = TRUE,
-      info = paste("width", width)
-    )
-  }
+  expect_identical(lengths(collected), for_every_rendering(1L))
+  expect_rendering_markers(collected)
+  expect_identical(
+    reported_contains(collected, "grouping_bit(region)"),
+    for_every_rendering(TRUE)
+  )
+  expect_identical(
+    reported_contains(collected, "+ 0L"),
+    for_every_rendering(FALSE)
+  )
+})
+
+# The other rewrite #199 restores, under the same configurations: a selection
+# the caller wrote as `c(grade)` reaches dplyr as `dplyr::all_of("grade")`.
+# Unlike the branch constant, this one is shared by every branch, so it never
+# split an identity -- which is why it needs its own assertion. A colour session
+# quoted the rewrite here while reporting the expected single condition, and a
+# test reading the count alone would have called that green.
+test_that("the selection rewrite is restored under every rendering", {
+  spelled <- "`dplyr::across(c(grade), ~sum(as.numeric(.x)))`"
+  collected <- warnings_under_every_rendering(summarize_across_coercion())
+
+  expect_identical(lengths(collected), for_every_rendering(1L))
+  expect_rendering_markers(collected)
+  expect_identical(
+    reported_contains(collected, spelled),
+    for_every_rendering(TRUE)
+  )
+  expect_identical(
+    reported_contains(collected, "all_of"),
+    for_every_rendering(FALSE)
+  )
 })
 
 # The degradation the contract requires, exercised through a real call rather
@@ -289,18 +438,15 @@ test_that("an abbreviated argument keeps the quotation dplyr wrote", {
   )
 })
 
-test_that("a repeated warning is one report at any console width", {
-  for (width in c(80L, 60L, 40L, 20L, 16L)) {
-    warnings <- collect_warnings_at_width(width, summarize_coercion_cube())
+test_that("a repeated warning is one report under every rendering", {
+  collected <- warnings_under_every_rendering(summarize_coercion_cube())
 
-    expect_length(warnings, 1L)
-    expect_match(
-      conditionMessage(warnings[[1L]]),
-      "3 further grouping sets",
-      fixed = TRUE,
-      info = paste("width", width)
-    )
-  }
+  expect_identical(lengths(collected), for_every_rendering(1L))
+  expect_rendering_markers(collected)
+  expect_identical(
+    reported_contains(collected, "3 further grouping sets"),
+    for_every_rendering(TRUE)
+  )
 })
 
 # A test that only asserted collapsing would pass if everything collapsed, so
@@ -377,6 +523,58 @@ test_that("a marker inside a value or a diagnostic decides nothing", {
       "bad value in data"
     )),
     2L
+  )
+})
+
+# Removing the styling is a change to a *reading*, and only to a reading: the
+# identity is still assembled from the lines as they arrived. Two diagnostics
+# differing only by an escape sequence read alike once the styling is off, so an
+# identity computed over the stripped text would collapse them -- a caller's own
+# diagnostic losing the difference between two conditions, which is the one
+# outcome the removal may not produce.
+test_that("a diagnostic differing only by an escape sequence stays distinct", {
+  reports <- vapply(
+    c("1" = 1L, "256" = 256L),
+    function(num_colors) {
+      original <- options(cli.num_colors = num_colors)
+      on.exit(options(original), add = TRUE)
+      length(collect_warnings(summarize_branch_diagnostics(
+        "bad \033[36mvalue\033[39m",
+        "bad value"
+      )))
+    },
+    integer(1)
+  )
+
+  expect_identical(reports, c("1" = 2L, "256" = 2L))
+})
+
+# The reading is shared between the two condition kinds, so changing it for the
+# warning path changes the error path too. An error's context is separately
+# addressable and carries no styling at all -- rlang holds the bare bullets and
+# cli formats them at print -- so the removal is a no-op here. That is asserted
+# rather than left to the warning tests, for the reason those tests now cross
+# the rendering variables at all: a green result under one styling says nothing
+# about the other.
+test_that("a branch error's restatement carries no styling and does not vary", {
+  restated <- vapply(
+    c("1" = 1L, "256" = 256L),
+    function(num_colors) {
+      original <- options(cli.num_colors = num_colors)
+      on.exit(options(original), add = TRUE)
+      error <- tryCatch(summarize_across_failure(), error = function(cnd) cnd)
+      unname(error$message)
+    },
+    character(1)
+  )
+
+  expect_identical(restated[["1"]], restated[["256"]])
+  expect_false(any(grepl("\033", restated, fixed = TRUE)))
+  expect_match(
+    restated,
+    "`dplyr::across(c(grade), ~sum(nope(.x)))`",
+    fixed = TRUE,
+    all = TRUE
   )
 })
 

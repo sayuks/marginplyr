@@ -208,9 +208,14 @@ branch_warning_identity <- function(cnd) {
       (grepl("^[i\u2139] In group ", written) & seq_along(written) < cause)
   }
   # The pointer runs to the end of the message, so everything after it goes
-  # with it.
+  # with it. Its backticks are optional because cli writes the call as an
+  # `x-r-run` hyperlink where the terminal takes one, and the backticks are what
+  # the link replaces -- so removing the escapes is necessary for this line and
+  # not sufficient (#217). That widens what a caller's own diagnostic can be
+  # mistaken for by exactly one spelling, which is the direction this reading is
+  # already chosen to fail in.
   pointer <- which(
-    grepl("^[i\u2139] Run `dplyr::last_dplyr_warnings\\(\\)`", written)
+    grepl("^[i\u2139] Run `?dplyr::last_dplyr_warnings\\(\\)`?", written)
   )
   if (aggregated && length(pointer) > 0L) {
     removed[seq(max(pointer), length(runs))] <- TRUE
@@ -234,11 +239,36 @@ message_line_runs <- function(lines) {
   unname(split(seq_along(lines), cumsum(!wrapped)))
 }
 
-# Each run rejoined to the one line it was written as. The identity and the
-# argument restatement both read messages through this, which is what keeps
-# the two readings one: a message the identity reads as three written lines is
-# a message the restatement reads as the same three.
+# Each run rejoined to the one line it was written as, with cli's rendering
+# taken back off it. The identity and the argument restatement both read
+# messages through this, which is what keeps the two readings one: a message the
+# identity reads as three written lines is a message the restatement reads as
+# the same three.
+#
+# Every pattern either reader matches is matched here, so this is the one place
+# a rendering decision has to be undone, and undoing it here is what makes the
+# contract hold in a session that has one. cli styles the markers it writes and
+# links the calls it names, and either defeats a pattern anchored at the start
+# of a line: at `cli.num_colors` above 1 nothing was removed from an identity
+# and every branch's key differed by its own grouping values, and
+# `cli.hyperlink_run` -- which cli sets for itself in an OSC-8 terminal -- did
+# the same at `cli.num_colors = 1`, so this is not the styling in another
+# spelling (#217). ADR 0021 records the decision; the wrapping this already
+# undid is the same property in the variable that was noticed first.
+#
+# This is a *reading*. `branch_warning_identity()` assembles its key from the
+# lines as they arrived, so nothing here can make two diagnostics that differ
+# only by an escape sequence into one identity. The restatement is the one
+# reader that puts a line it read back into a message, and a restated line is
+# therefore rendered plain -- accepted rather than worked around, and recorded
+# in ADR 0022 beside the wrapping such a line already loses.
+#
+# cli needs no availability guard. It is an Import of both dplyr and
+# tidyselect, so it is in the hard dependency closure and can never be absent:
+# the `DBI = FALSE` case in `AGENTS.md`'s dependency metadata, as
+# `share_dialect_can_be_asked()` is.
 written_message_lines <- function(lines, runs) {
+  lines <- cli::ansi_strip(lines)
   vapply(
     runs,
     function(run) paste(sub("^ +", "", lines[run]), collapse = " "),

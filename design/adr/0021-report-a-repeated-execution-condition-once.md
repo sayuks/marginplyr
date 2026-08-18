@@ -70,6 +70,45 @@ varies with repetition within a branch, which is the one thing an identity may
 not depend on. The reported occurrence keeps the pointer, so a caller reading
 a report that hides something is told so in the same terms dplyr tells them.
 
+## No rendering decision takes part in the identity
+
+*Rendered* bounds what can be read; it does not license the reading to depend
+on how it was rendered. Which grouping set produced an occurrence is excluded
+from the identity because it necessarily differs between branches, and the
+session a caller happens to be sitting in is excluded for the stronger reason
+that it does not differ between branches at all: it is not a property of the
+condition. So the identity is computed from the message as it was *written*,
+and cli's decisions about how to lay that message out are undone before any
+pattern is matched against it.
+
+cli makes three such decisions, and each defeated a pattern on its own. It
+**wraps** a line it cannot fit, onto continuations it indents by two spaces, so
+a part read off a rendered line is a prefix of it at any narrow width. It
+**styles** the markers it writes, so above `cli.num_colors = 1` every pattern
+anchored at the start of a line missed, nothing was removed, and every branch's
+key differed by its own grouping values. And it **links** the calls it names,
+so `cli.hyperlink_run` — which cli sets for itself in a terminal advertising
+OSC-8 — replaced the backticks around the `last_dplyr_warnings()` pointer with
+an escape sequence carrying a per-branch count, splitting the identity at
+`cli.num_colors = 1`.
+
+Only the first was undone when this was written, which is why the property is
+now stated as the rule rather than as three repairs (#217). The contract this
+ADR states did not hold in a session with colour, and most interactive sessions
+have colour; a fix for the styling alone would have left the hyperlink case,
+and both were found only because the second was looked for after the first.
+Undoing the styling is also not sufficient by itself for the pointer: the
+stripped link renders the call without the backticks dplyr writes around it
+otherwise, so that pattern admits both spellings.
+
+Two properties bound this. The removal is a *reading* — the key is still
+assembled from the lines as they arrived, so two caller diagnostics differing
+only by an escape sequence remain two identities, and a caller's own text can
+no more be collapsed by the removal than by the reading it feeds. And a green
+suite under one rendering says nothing about another, so the fixtures cross the
+variables rather than sampling them, and each asserts that the markers it
+exists to exercise are actually present before it asserts the collapse.
+
 ## Rewriting the names is safe for a reason that does not depend on dplyr
 
 The `..marginplyr_key_N` token is a string marginplyr chose, so finding it in a

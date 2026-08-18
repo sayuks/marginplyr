@@ -79,6 +79,19 @@ byte for byte, rather than rebuilt from its lines -- rebuilding dropped a
 trailing newline, and the degradation the constraint on #199 asks for is the
 absence of any edit, not an edit that happens to read the same.
 
+A restated line is rendered plain, and that is the contract rather than a
+defect. The reading this shares with ADR 0021's identity undoes cli's rendering
+before matching anything, so the text a restatement puts back carries neither
+the styling nor the hyperlinks the line arrived with. The alternative was to
+match against the reading and splice the replacement into the raw line, and it
+was rejected: locating the span there rests on dplyr and cli not styling the
+backticks around it, an undocumented property of exactly the kind that produced
+#217 in the first place. Nothing is lost that a restated line was keeping
+anyway -- such a line already collapses to the one line it was written as,
+because what replaces it is a length cli is no longer there to wrap -- and
+every line the restatement does not touch reaches the caller as it arrived, so
+a caller in a colour session still receives a coloured warning.
+
 ## The restoration runs before the deduplication key is computed
 
 This is not only a matter of spelling. `total = sum(as.numeric(grade)) +
