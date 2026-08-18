@@ -586,8 +586,11 @@ and an absence is a failure. `test-optional-backends.R` covers the helper
 itself. Snapshot expectations belong to the same seam: testthat skips them
 under CRAN semantics, so they run only in those jobs.
 
-A test title is part of that contract, because each job names the titles it
-exists to execute. Renaming a contract test is expected to break its job.
+What the seam does not ask is that a test keep its title: no job names the
+tests it executes (#93). Coverage is structural instead, resting on a policy
+about what a test may require — no test may require more than one member of
+`optional_backends()` — rather than on a list of what each job must run.
+
 `AGENTS.md` is the operational reference for the jobs, the verifier scripts,
 and the sites registering an optional Suggest has to touch.
 
