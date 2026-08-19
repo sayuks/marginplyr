@@ -70,11 +70,33 @@ diagnostic_message_arguments <- function(expr, name) {
 # A bare character literal is the common case. `c()` is admitted because it is
 # how a cli message vector is spelled -- `c("Refusal.", i = "Bullet.")` -- and
 # admitting it costs nothing: the recursion requires each of its arguments to be
-# authored too, so `c(paste0(...), i = "...")` fails exactly as a bare
-# `paste0()` does. Nothing else is admitted, because everything else computes
-# text, and computed text is what both gated rules forbid. That includes a
-# constant bound elsewhere in the package: a template has to be readable beside
-# the call that raises it, or the injection rule cannot be reviewed at the site.
+# authored too, so `c(paste0(x), i = "...")` fails exactly as a bare `paste0(x)`
+# does. Nothing else is admitted, because everything else computes text, and
+# computed text is what both gated rules forbid. That includes a constant bound
+# elsewhere in the package: a template has to be readable beside the call that
+# raises it, or the injection rule cannot be reviewed at the site.
+#
+# `paste()` and `paste0()` are admitted on the same terms, and for a reason that
+# only appeared once #223's phase 3 began re-authoring a file. A template has to
+# be one string literal per message element, because `abort_marginplyr()`
+# expands it with `cli::format_inline()`, whose `keep_whitespace = TRUE` is what
+# ADR 0024 keeps a caller's spelling with -- so a source line break inside a
+# template is a line break in the refusal, and glue's `\` continuation is part
+# of the trimming that flag turns off. Meanwhile ADR 0023's amendment demoted
+# its 80-column condition to style advice, so the shipped sentences are 83 to
+# 119 characters before markup. Those two facts leave a re-authored element with
+# no spelling that fits `line_length_linter()`, and the alternatives were a
+# `.lintr` that stops measuring 3600 lines of real code, a `# nolint` at half
+# the elements in the package, or rewording the sentences #223 says to preserve.
+#
+# Nothing about either gated rule is weaker for it, because the recursion is
+# what enforces them and not the name of the call. Caller-derived text is a
+# symbol rather than a literal wherever it appears, so
+# `paste0("Unknown column `", columns, "`.")` is refused exactly as before, and
+# an `if` spelling a noun is refused wherever it sits, `paste0()` included. What
+# is admitted is a sentence the author wrote, split at a space to fit the
+# margin, and still readable beside the call that raises it -- which is the
+# property the paragraph above asks a template for.
 authored_template <- function(expr) {
   if (is.character(expr)) {
     return(TRUE)
@@ -82,7 +104,7 @@ authored_template <- function(expr) {
   if (
     is.call(expr) &&
       is.name(expr[[1]]) &&
-      identical(as.character(expr[[1]]), "c")
+      as.character(expr[[1]]) %in% c("c", "paste", "paste0")
   ) {
     return(all(vapply(as.list(expr)[-1], authored_template, logical(1))))
   }
@@ -123,14 +145,21 @@ test_that("the reading finds a site wherever it is written", {
       abort_marginplyr(message = c("A refusal.", i = "A bullet."))
     }
     inner()
+    abort_marginplyr(c(
+      paste0("A refusal too long to ", "spell on one source line."),
+      i = paste0("A bullet in the same ", "position.")
+    ))
   }
 
   found <- diagnostic_message_arguments(body(fixture), "abort_marginplyr")
 
   # One nested inside an `if`, one inside a closure and named `message =`. A
   # walk that stopped descending, or one that only read the first argument,
-  # loses one of the two.
-  expect_length(found, 2L)
+  # loses one of the two. The third is the shape a re-authored site actually
+  # takes, and it is here so that the admitting branch for `paste0()` is
+  # executed by something other than the package -- the refusing branch has six
+  # fixtures below and would otherwise be the only one this file runs.
+  expect_length(found, 3L)
   expect_identical(found[[1]], "A refusal.")
   expect_true(all(vapply(found, authored_template, logical(1))))
 })
@@ -142,6 +171,7 @@ test_that("the reading refuses every shape ADR 0023's gated rules forbid", {
     abort_marginplyr(sprintf("Unknown column `%s`.", columns))
     abort_marginplyr(if (n == 1L) "One column." else "Several columns.")
     abort_marginplyr(c("A refusal.", i = paste0("Drop ", columns, ".")))
+    abort_marginplyr(paste0("One column", if (n == 1L) "" else "s", "."))
     abort_marginplyr(template)
     abort_marginplyr(class = "marginplyr_nothing")
   }
@@ -149,11 +179,14 @@ test_that("the reading refuses every shape ADR 0023's gated rules forbid", {
   found <- diagnostic_message_arguments(body(fixture), "abort_marginplyr")
 
   # An assembled template, twice; an `if` spelling a noun; a `c()` whose bullet
-  # is assembled, which is the case admitting `c()` has to keep refusing; a
-  # template bound elsewhere, which is readable nowhere near the refusal; and a
-  # call carrying no message at all, which reads as `NULL` and is the site an
-  # appending idiom that deletes on `NULL` would drop.
-  expect_length(found, 6L)
+  # is assembled, which is the case admitting `c()` has to keep refusing; an
+  # `if` spelling a noun inside a `paste0()`, which is the case admitting
+  # `paste0()` has to keep refusing, and the one both gated rules would be lost
+  # through if the recursion stopped at the admitted call; a template bound
+  # elsewhere, which is readable nowhere near the refusal; and a call carrying
+  # no message at all, which reads as `NULL` and is the site an appending idiom
+  # that deletes on `NULL` would drop.
+  expect_length(found, 7L)
   expect_false(any(vapply(found, authored_template, logical(1))))
 })
 

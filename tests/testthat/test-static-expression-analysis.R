@@ -603,14 +603,26 @@ test_that("an injected quosure carrying no bare name is refused as written", {
         rlang::new_quosure(shapes[[index]], env = rlang::empty_env())
       ))
       expect_s3_class(injected, "marginplyr_error")
+      # The clause lands at the end of the refusal rather than at the end of
+      # the message, which is a distinction only a re-authored helper draws:
+      # `share_of_parent()` and `share_of_total()` carry their remedy in an `i`
+      # bullet after it (#223), while the grouping helpers are still one line
+      # and the two positions coincide. Written over the lines so that both
+      # shapes are the one rule, and byte-exact either way.
+      written_lines <- strsplit(
+        conditionMessage(written),
+        "\n",
+        fixed = TRUE
+      )[[1L]]
+      written_lines[[1L]] <- paste0(
+        written_lines[[1L]],
+        " The injected quosure carries `",
+        deparse1(shapes[[index]]),
+        "`, which is not a bare name."
+      )
       expect_identical(
         conditionMessage(injected),
-        paste0(
-          conditionMessage(written),
-          " The injected quosure carries `",
-          deparse1(shapes[[index]]),
-          "`, which is not a bare name."
-        ),
+        paste(written_lines, collapse = "\n"),
         info = helper
       )
       refusals[[index]] <- injected
@@ -1911,7 +1923,8 @@ test_that("an unnamed `across()` argument is numbered by its own position", {
   )
   # dplyr names an argument passed on to the function by its position among
   # those arguments, so the unnamed one here -- second of the two -- is `..2`.
-  expect_match(conditionMessage(error), "`na.rm`, `..2`", fixed = TRUE)
+  # The `and` is cli's serial join, which ADR 0023 adopts unchanged.
+  expect_match(conditionMessage(error), "`na.rm` and `..2`", fixed = TRUE)
 })
 
 test_that("`across()` argument numbering holds without a mix of names", {
@@ -1942,7 +1955,7 @@ test_that("`across()` argument numbering holds without a mix of names", {
     )),
     "does not accept additional function arguments"
   )
-  expect_match(conditionMessage(all_unnamed), "`..1`, `..2`", fixed = TRUE)
+  expect_match(conditionMessage(all_unnamed), "`..1` and `..2`", fixed = TRUE)
 
   all_named <- expect_error(
     base_call(dplyr::across(
