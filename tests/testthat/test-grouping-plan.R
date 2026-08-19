@@ -419,6 +419,57 @@ test_that("invalid grouping input lists every supported constructor", {
   )
 })
 
+# The one refusal in `R/grouping-plan.R` that nothing executed. #223's phase 3
+# is what made it visible rather than what left it unrun: re-authoring gave the
+# body its own line, where the flat form spread one dead call over three.
+#
+# It is a second line of defence behind the test above, which refuses an object
+# that is not a specification at all. This one refuses an object that says it
+# is: `new_grouping_spec()` is the only constructor, so a specification whose
+# `type` is not one name, or is a name no rule answers, reaches the compiler
+# only from a hand-built object. That is why the guard is here, and why nothing
+# had run it. It is not promoted to a bare `stop()` -- that would move a site
+# across ADR 0015's boundary, which #223's phase 3 may not do -- so what is
+# left is to run it.
+#
+# Both guards are reached. They read different things, the shape of the
+# specification's own fields and whether its kind names a rule, and answer with
+# the same sentence, so either one running alone would leave the other unrun
+# and report nothing about it.
+test_that("a malformed grouping specification is refused by both guards", {
+  compile <- function(spec) {
+    compile_grouping_spec(
+      spec,
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    )
+  }
+  malformed <- list(
+    # A `type` that is not one name, and `args` that are not a list: the two
+    # halves of the first guard's condition, which no single object fails both
+    # of while still reaching the second.
+    structure(
+      list(type = character(), args = list()),
+      class = "margin_grouping_spec"
+    ),
+    structure(
+      list(type = "set", args = "not a list"),
+      class = "margin_grouping_spec"
+    ),
+    # One name, and every field the right shape, but no rule answers it.
+    structure(
+      list(type = "pivot", args = list()),
+      class = "margin_grouping_spec"
+    )
+  )
+
+  for (spec in malformed) {
+    error <- expect_error(compile(spec))
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(conditionMessage(error), "Invalid grouping specification.")
+  }
+})
+
 test_that("selectors and fixed .by columns are resolved once", {
   selected <- c("a", "b")
   plan <- compile_grouping_spec(
