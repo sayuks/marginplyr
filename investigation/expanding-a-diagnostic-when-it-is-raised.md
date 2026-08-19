@@ -1,6 +1,7 @@
 # Expanding a cli template when the condition is raised
 
 Investigated: 2026-08-19
+Revised: 2026-08-19 — investigation/a-no-break-space-inside-the-assertion-itself.md
 
 `investigation/retrieval-time-formatting-of-a-cli-diagnostic.md` established
 that `cli::cli_abort()`'s retrieval-time formatting collapses a run of
@@ -150,3 +151,20 @@ over codepoints given as escapes, which is unambiguous, and both directions of
 the pin were then mutation-checked: moving a preserved spelling into the
 rewritten set fails the rewritten test, and moving a rewritten spelling into the
 preserved set fails the preserved test.
+
+## Revisions (2026-08-19)
+
+The cause the section above could not find was established later the same day
+in `investigation/a-no-break-space-inside-the-assertion-itself.md`. The two
+evaluations were not of the same expression: the assertion's `gsub()` character
+class in the test file held a raw U+00A0 — bytes `5B 5C 6E C2 A0 5D` — so the
+`gsub()` rewrote the no-break space to an ordinary space and the expectation
+passed because it was true, while the `cat()` one line above had been typed
+with an ordinary space in its class and was evaluating a different expression.
+The code block above cannot show this, because quoting the assertion is what
+normalized the byte away; the spelling it renders, a newline and an ordinary
+space, is true of the quotation and was false of the file. The successor note
+holds the byte-level evidence and flips the anomaly in both directions on that
+one byte pair. Nothing about the `chartr()` rewrite changes: it was adopted for
+being unambiguous and is mutation-checked, and the finding vindicates rather
+than replaces it.
