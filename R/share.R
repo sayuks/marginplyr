@@ -584,26 +584,32 @@
 #'   .grouping = grouping_sets(grouping_set(region), grouping_set(store))
 #' ))
 share_of_parent <- function(x) {
-  abort_marginplyr_flat(
+  abort_marginplyr(c(
     paste0(
-      "`share_of_parent()` can only be used inside ",
-      "`summarize_with_margins()` with a `rollup()`. To derive a value from ",
-      "an existing Parent share, use a following `dplyr::mutate()`."
+      "{.fun share_of_parent} can only be used inside ",
+      "{.fun summarize_with_margins} with a {.fun rollup}."
+    ),
+    i = paste0(
+      "To derive a value from an existing Parent share, use a following ",
+      "{.fun dplyr::mutate}."
     )
-  )
+  ))
 }
 
 #' @rdname share_of_parent
 #' @export
 share_of_total <- function(x) {
-  abort_marginplyr_flat(
+  abort_marginplyr(c(
     paste0(
-      "`share_of_total()` can only be used inside ",
-      "`summarize_with_margins()` with a Grouping plan that contains the ",
-      "Grand total set. To derive a value from an existing Total share, use ",
-      "a following `dplyr::mutate()`."
+      "{.fun share_of_total} can only be used inside ",
+      "{.fun summarize_with_margins} with a Grouping plan that contains the ",
+      "Grand total set."
+    ),
+    i = paste0(
+      "To derive a value from an existing Total share, use a following ",
+      "{.fun dplyr::mutate}."
     )
-  )
+  ))
 }
 
 # Returns the share kinds the call requests, which is what the verb needs to
@@ -640,19 +646,34 @@ preflight_shares <- function(dots) {
 }
 
 abort_share_helper_position <- function(kind, complete) {
-  abort_marginplyr_flat(
-    paste0(
-      share_kind_call(kind), " must be the complete right-hand side of a ",
-      "named summary, or the direct `.fns` argument of `across()`.",
-      if (complete) {
-        paste0(
-          " Create the ", share_kind_label(kind), " as its own named ",
-          "summary, then use a following `dplyr::mutate()` for derived ",
-          "values."
-        )
-      }
-    )
-  )
+  # The first of four sites in this file that raise from two calls rather than
+  # one, and the shape is the same at each: what varies between the two is a
+  # whole element of the message vector, or a whole clause inside one. The
+  # alternatives are both worse. An `if` inside the template is a branch the
+  # structural gate never sees, since what it reads is the source expression
+  # and this one would be inside a string; a message vector assembled around an
+  # `if` is a computed template, which the gate does see and refuses; and an
+  # `i` bullet whose content is sometimes empty renders as a bullet marker with
+  # nothing after it. What the shape costs is the element the two calls share,
+  # written out in each.
+  if (complete) {
+    abort_marginplyr(c(
+      paste0(
+        "{.fun {share_helper_name(kind)}} must be the complete right-hand ",
+        "side of a named summary, or the direct {.arg .fns} argument of ",
+        "{.fun across}."
+      ),
+      i = paste0(
+        "Create the {share_kind_label(kind)} as its own named summary, then ",
+        "use a following {.fun dplyr::mutate} for derived values."
+      )
+    ))
+  }
+  abort_marginplyr(paste0(
+    "{.fun {share_helper_name(kind)}} must be the complete right-hand side ",
+    "of a named summary, or the direct {.arg .fns} argument of ",
+    "{.fun across}."
+  ))
 }
 
 # Arrow rejects every contextual share for one reason — the numerator's source
@@ -661,18 +682,18 @@ abort_share_helper_position <- function(kind, complete) {
 # vocabulary lives here; the executor decides when to raise it.
 abort_arrow_shares <- function(kinds) {
   kinds <- intersect(share_kind_names(), kinds)
-  abort_marginplyr_flat(
+  abort_marginplyr(c(
     paste0(
-      "Arrow backends do not support ",
-      share_kind_labels_phrase(kinds),
-      " because marginplyr cannot enforce their scalar-summary contract ",
-      "safely before an Arrow query is constructed. Other Arrow Margin ",
-      "operations remain supported. Omit ",
-      share_kind_calls_phrase(kinds),
-      " or explicitly collect the data before calling ",
-      "`summarize_with_margins()`."
+      "Arrow backends do not support {share_kind_label_plurals(kinds)} ",
+      "because marginplyr cannot enforce their scalar-summary contract ",
+      "safely before an Arrow query is constructed."
+    ),
+    i = "Other Arrow Margin operations remain supported.",
+    i = paste0(
+      "Omit {.fun {share_helper_names(kinds)}} or explicitly collect the ",
+      "data before calling {.fun summarize_with_margins}."
     )
-  )
+  ))
 }
 
 # Only a Parent share can be refused from the Grouping specification alone.
@@ -689,16 +710,41 @@ share_grouping_spec_validator <- function(kinds) {
 check_parent_grouping_spec <- function(grouping_spec) {
   kind <- if (is.null(grouping_spec)) NULL else grouping_spec$type
   if (!identical(kind, "rollup")) {
-    abort_marginplyr_flat(
-      paste0(
-        "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
-        "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
-        "specifications do not define one unambiguous parent. Rewrite ",
-        "`.grouping` as one `rollup()` or omit the Parent share."
-      )
-    )
+    abort_ambiguous_parent()
   }
   invisible(NULL)
+}
+
+# One refusal with two raising sites, because a Parent share can be refused
+# from the Grouping specification alone and again from the compiled plan, and
+# the caller has made one mistake either way. The flat form wrote the sentence
+# out at both; nothing required that, and nothing requires it now. The
+# structural gate reads the message argument of every `abort_marginplyr()` call
+# in the namespace, so a literal at this call is in its view exactly as a
+# literal at each site would be -- what the gate refuses is a template computed
+# or bound elsewhere, which this is not.
+#
+# `call` defaults to the call of this function's own caller, so the refusal
+# blames the site rather than this constructor, which is what raising it at
+# each site does and what `abort_marginplyr_flat()` did for the same reason.
+abort_ambiguous_parent <- function(call = rlang::caller_call()) {
+  abort_marginplyr(
+    c(
+      paste0(
+        "{.fun share_of_parent} requires {.arg .grouping} to be one pure ",
+        "{.fun rollup}."
+      ),
+      i = paste0(
+        "{.fun grouping_sets}, {.fun cube}, {.fun grouping_spec}, and other ",
+        "grouping specifications do not define one unambiguous parent."
+      ),
+      i = paste0(
+        "Rewrite {.arg .grouping} as one {.fun rollup} or omit the Parent ",
+        "share."
+      )
+    ),
+    call = call
+  )
 }
 
 plan_share_expressions <- function(dots,
@@ -792,19 +838,25 @@ plan_share_expressions <- function(dots,
       preceding_shares$names
     )
     if (length(share_dependency) > 0L) {
-      abort_marginplyr_flat(
+      dependency <- share_dependency[[1L]]
+      # Read only from the cli template below, which codetools cannot see.
+      # Bound rather than written there because the expression does not fit a
+      # template line, and splitting one across the `paste0()` that keeps the
+      # line inside the margin would hide it from the reader entirely.
+      # nolint start: object_usage_linter.
+      dependency_label <- share_kind_label(share_name_kind(
+        preceding_shares,
+        dependency
+      ))
+      # nolint end
+      abort_marginplyr(c(
         paste0(
-          "Ordinary summaries cannot use an earlier ",
-          share_kind_label(share_name_kind(
-            preceding_shares,
-            share_dependency[[1L]]
-          )),
-          " (`",
-          share_dependency[[1L]],
-          "`) in the same `summarize_with_margins()` call. Use a following ",
-          "`dplyr::mutate()` for derived values."
-        )
-      )
+          "Ordinary summaries cannot use an earlier {dependency_label} ",
+          "({.var {dependency}}) in the same {.fun summarize_with_margins} ",
+          "call."
+        ),
+        i = "Use a following {.fun dplyr::mutate} for derived values."
+      ))
     }
     preceding_ordinary <- c(preceding_ordinary, analyses[[i]]$records)
   }
@@ -1240,15 +1292,19 @@ check_share_scalar <- function(value,
                                source_summary,
                                share_kind,
                                call) {
-  label <- share_kind_label(share_kind)
   if (length(value) != 1L) {
-    abort_marginplyr_flat(
-      paste0(
-        label, " `", share_output, "` requires source summary `",
-        source_summary, "` to return exactly one value per grouping row. ",
-        "Define `", source_summary, "` as one scalar summary; for multiple ",
-        "statistics, create separate named summaries and a ", label, " for ",
-        "each one."
+    abort_marginplyr(
+      c(
+        paste0(
+          "{share_kind_label(share_kind)} {.var {share_output}} requires ",
+          "source summary {.var {source_summary}} to return exactly one ",
+          "value per grouping row."
+        ),
+        i = paste0(
+          "Define {.var {source_summary}} as one scalar summary; for ",
+          "multiple statistics, create separate named summaries and a ",
+          "{share_kind_label(share_kind)} for each one."
+        )
       ),
       class = "marginplyr_share_cardinality_error",
       share_output = share_output,
@@ -1281,15 +1337,33 @@ abort_share_source_type <- function(value,
                                     source_summary,
                                     share_kind,
                                     call) {
-  detected_type <- if (is.object(value)) class(value) else typeof(value)
-  abort_marginplyr_flat(
-    paste0(
-      share_kind_label(share_kind), " `", share_output,
-      "` requires source summary `",
-      source_summary,
-      "` to be a plain integer or double scalar; detected type ",
-      paste(detected_type, collapse = "/"),
-      ". Convert it explicitly in the ordinary summary."
+  # Joined here rather than interpolated as a vector, because the slash is how
+  # a class vector is spelled rather than a list of subjects cli's defaults
+  # would serialise with an `and`.
+  #
+  # Bound rather than written in the template for a reason the structural gate
+  # cannot enforce: an `if` inside a template is a branch the gate never sees,
+  # because what it reads is the source expression and this one would be inside
+  # a string. Keeping the branch in R is what leaves it reviewable at all.
+  # Read only from the template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  detected_type <- paste(
+    if (is.object(value)) class(value) else typeof(value),
+    collapse = "/"
+  )
+  # nolint end
+  abort_marginplyr(
+    c(
+      paste0(
+        "{share_kind_label(share_kind)} {.var {share_output}} requires ",
+        "source summary {.var {source_summary}} to be a plain integer or ",
+        "double scalar."
+      ),
+      # Alone in a bullet per ADR 0023's surviving line condition: a class
+      # vector is as long as the value's class chain, which the caller's data
+      # decides.
+      i = "Detected type {detected_type}.",
+      i = "Convert it explicitly in the ordinary summary."
     ),
     share_output = share_output,
     source_summary = source_summary,
@@ -1461,14 +1535,17 @@ plan_direct_share <- function(expr,
 }
 
 validate_share_direct_syntax <- function(expr, output_name) {
+  # Read only from the cli templates below, which codetools cannot see. Bound
+  # rather than written in them because the expression does not fit beside the
+  # output name in a template line.
+  # nolint start: object_usage_linter.
   helper <- share_helper_name(share_helper_call_kind(expr))
+  # nolint end
   if (!nzchar(output_name)) {
-    abort_marginplyr_flat(
-      paste0(
-        "A direct `", helper, "()` summary must have an explicit output ",
-        "name. Rewrite it as `name = ", helper, "(source)`."
-      )
-    )
+    abort_marginplyr(c(
+      "A direct {.fun {helper}} summary must have an explicit output name.",
+      i = "Rewrite it as {.code name = {helper}(source)}."
+    ))
   }
   args <- static_call_args(expr)
   # Read through an injected quosure for the reason `unwrap_injected_quosure()`
@@ -1487,14 +1564,28 @@ validate_share_direct_syntax <- function(expr, output_name) {
   # change to an un-injected spelling and is recorded as one in ADR 0019.
   carried <- unwrap_injected_args(args)
   if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
-    abort_marginplyr_flat(
+    # `injected_quosure_clause()` is a whole sentence assembled around a
+    # deparsed caller expression, so it stays an interpolated value and gains
+    # no markup: ADR 0023's injection rule is what makes a caller's braces
+    # inert, and it holds because cli reads the template and not the value.
+    #
+    # It carries its own leading space and is empty at a call that injected
+    # nothing, so it follows the remedy inside that bullet rather than taking
+    # one of its own, which would sometimes be a bullet marker with nothing
+    # after it. That is also where the flat form put it, so the clause still
+    # ends the message and every pin reading it composes as it did.
+    # `R/utils.R` re-authors it in a later group of #223's phase 3.
+    abort_marginplyr(c(
       paste0(
-        "`", output_name, " = ", helper, "(...)` requires exactly one ",
-        "bare name of a preceding ordinary summary. Define the scalar ",
-        "summary first, then pass its name directly to `", helper, "()`.",
-        injected_quosure_clause(args)
+        "{.code {output_name} = {helper}(...)} requires exactly one bare ",
+        "name of a preceding ordinary summary."
+      ),
+      i = paste0(
+        "Define the scalar summary first, then pass its name directly to ",
+        "{.fun {helper}}.",
+        "{injected_quosure_clause(args)}"
       )
-    )
+    ))
   }
   carried
 }
@@ -1571,13 +1662,10 @@ validate_share_across_syntax <- function(expr, env, output_name) {
       length(names_template) != 1L ||
       is.na(names_template)
   ) {
-    abort_marginplyr_flat(
-      paste0(
-        share_kind_modifier(kind),
-        " `across()` `.names` must be one non-missing character ",
-        "template."
-      )
-    )
+    abort_marginplyr(paste0(
+      "{share_kind_modifier(kind)} {.fun across} {.arg .names} must be one ",
+      "non-missing character template."
+    ))
   }
   list(args = args, names_template = names_template)
 }
@@ -1585,44 +1673,56 @@ validate_share_across_syntax <- function(expr, env, output_name) {
 preflight_share_across_syntax <- function(expr, output_name) {
   kind <- share_across_kind(expr)
   if (nzchar(output_name)) {
-    abort_marginplyr_flat(
+    abort_marginplyr(c(
       paste0(
-        "An `across()` ", share_kind_modifier(kind), " expression must be ",
-        "unnamed; use its required `.names` argument to name the output ",
-        "columns."
-      )
-    )
+        "An {.fun across} {share_kind_modifier(kind)} expression must be ",
+        "unnamed."
+      ),
+      i = "Use its required {.arg .names} argument to name the output columns."
+    ))
   }
   args <- parse_across_arguments(expr)
   if (!is_share_helper_function(args$fns)) {
+    # Read only from the cli template below, which codetools cannot see. Bound
+    # rather than written there because the template names it twice, once
+    # qualified, and neither spelling fits beside the other on a line.
+    # nolint start: object_usage_linter.
     helper <- share_helper_name(kind)
-    abort_marginplyr_flat(
+    # nolint end
+    abort_marginplyr(c(
       paste0(
-        "For ", share_kind_label(kind), "s, `across()` `.fns` must be `",
-        helper, "` or `marginplyr::", helper, "` directly. Use two ordered ",
-        "`across()` expressions instead of a formula, anonymous function, ",
-        "or function list."
+        "For {share_kind_label(kind)}s, {.fun across} {.arg .fns} must be ",
+        "{.code {helper}} or {.code marginplyr::{helper}} directly."
+      ),
+      i = paste0(
+        "Use two ordered {.fun across} expressions instead of a formula, ",
+        "anonymous function, or function list."
       )
-    )
+    ))
   }
   if (length(args$additional) > 0L) {
-    abort_marginplyr_flat(
+    # The arguments arrive alone in an `i` bullet, per ADR 0023's surviving
+    # line condition: how many of them there are is the caller's decision.
+    abort_marginplyr(c(
       paste0(
-        share_kind_modifier(kind),
-        " `across()` does not accept additional function arguments: ",
-        paste0("`", args$additional, "`", collapse = ", "),
-        ". Put missing-value handling in the preceding ordinary summary."
-      )
-    )
+        "{share_kind_modifier(kind)} {.fun across} does not accept ",
+        "additional function arguments:"
+      ),
+      i = "{.arg {args$additional}}.",
+      i = "Put missing-value handling in the preceding ordinary summary."
+    ))
   }
   if (is.null(args$names)) {
-    abort_marginplyr_flat(
+    # `{{` is glue's escape for a literal brace. The example names a `.names`
+    # template, and cli would otherwise read `{.col}` as inline markup of its
+    # own and refuse the refusal.
+    abort_marginplyr(c(
       paste0(
-        share_kind_modifier(kind),
-        " `across()` requires an explicit `.names` argument, ",
-        "for example `.names = \"{.col}_share\"`."
-      )
-    )
+        "{share_kind_modifier(kind)} {.fun across} requires an explicit ",
+        "{.arg .names} argument."
+      ),
+      i = "For example {.code .names = \"{{.col}}_share\"}."
+    ))
   }
   if (!is.null(args$unpack) && is.logical(args$unpack)) {
     if (length(args$unpack) != 1L || !isFALSE(args$unpack)) {
@@ -1636,13 +1736,10 @@ preflight_share_across_syntax <- function(expr, output_name) {
 }
 
 abort_share_across_unpack <- function(kind) {
-  abort_marginplyr_flat(
-    paste0(
-      share_kind_modifier(kind),
-      " `across()` requires `.unpack = FALSE` or an ",
-      "omitted `.unpack` argument."
-    )
-  )
+  abort_marginplyr(paste0(
+    "{share_kind_modifier(kind)} {.fun across} requires ",
+    "{.code .unpack = FALSE} or an omitted {.arg .unpack} argument."
+  ))
 }
 
 validate_share_request <- function(outputs,
@@ -1655,19 +1752,18 @@ validate_share_request <- function(outputs,
     return(invisible(NULL))
   }
   if (any(!nzchar(outputs))) {
-    abort_marginplyr_flat(
-      paste0(share_kind_modifier(kind), " output names must not be empty.")
+    abort_marginplyr(
+      "{share_kind_modifier(kind)} output names must not be empty."
     )
   }
   if (anyDuplicated(outputs)) {
-    abort_marginplyr_flat(
-      paste0(
-        share_kind_modifier(kind),
-        " output names must be unique; duplicate name `",
-        outputs[[anyDuplicated(outputs)]],
-        "` was generated."
+    abort_marginplyr(c(
+      "{share_kind_modifier(kind)} output names must be unique.",
+      i = paste0(
+        "Duplicate name {.var {outputs[[anyDuplicated(outputs)]]}} was ",
+        "generated."
       )
-    )
+    ))
   }
 
   preceding_names <- vapply(preceding, `[[`, character(1), "name")
@@ -1682,41 +1778,38 @@ validate_share_request <- function(outputs,
     source <- sources[[i]]
     output <- outputs[[i]]
     if (source %in% shares$names) {
-      abort_marginplyr_flat(
-        paste0(
-          label, " `", output, "` cannot use ",
-          share_kind_label(share_name_kind(shares, source)), " `", source,
-          "` as its source."
-        )
-      )
+      abort_marginplyr(paste0(
+        "{label} {.var {output}} cannot use ",
+        "{share_kind_label(share_name_kind(shares, source))} ",
+        "{.var {source}} as its source."
+      ))
     }
     if (!source %in% preceding_names) {
       if (source %in% all_names) {
-        abort_marginplyr_flat(
+        abort_marginplyr(c(
           paste0(
-            label, " `", output, "` must refer to an ordinary summary ",
-            "defined before it; `", source, "` is a forward reference."
-          )
-        )
+            "{label} {.var {output}} must refer to an ordinary summary ",
+            "defined before it."
+          ),
+          i = "{.var {source}} is a forward reference."
+        ))
       }
-      abort_marginplyr_flat(
-        paste0(
-          label, " `", output, "` refers to unknown preceding ordinary ",
-          "summary `", source, "`."
-        )
-      )
+      abort_marginplyr(paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ))
     }
     if (
       !is.na(context$ordinary_counts[[source]]) &&
         context$ordinary_counts[[source]] != 1L
     ) {
-      abort_marginplyr_flat(
+      abort_marginplyr(c(
         paste0(
-          label, " `", output, "` requires source summary `", source,
-          "` to be defined exactly once. Use one uniquely named ordinary ",
-          "summary."
-        )
-      )
+          "{label} {.var {output}} requires source summary {.var {source}} ",
+          "to be defined exactly once."
+        ),
+        i = "Use one uniquely named ordinary summary."
+      ))
     }
     record <- preceding[[max(which(preceding_names == source))]]
     if (!identical(record$eligibility, "eligible")) {
@@ -1728,14 +1821,14 @@ validate_share_request <- function(outputs,
       )
     }
     if (length(record$dependencies) > 0L) {
-      abort_marginplyr_flat(
+      abort_marginplyr(c(
         paste0(
-          label, " `", output, "` cannot use source summary `", source,
-          "` because it depends on earlier summary alias `",
-          record$dependencies[[1L]],
-          "`. Combine the calculation into one ordinary summary expression."
-        )
-      )
+          "{label} {.var {output}} cannot use source summary {.var {source}} ",
+          "because it depends on earlier summary alias ",
+          "{.var {record$dependencies[[1L]]}}."
+        ),
+        i = "Combine the calculation into one ordinary summary expression."
+      ))
     }
   }
 
@@ -1748,13 +1841,11 @@ validate_share_request <- function(outputs,
     ))
   )
   if (length(conflicts) > 0L) {
-    abort_marginplyr_flat(
-      paste0(
-        share_kind_modifier(kind), " output name `", conflicts[[1L]],
-        "` conflicts with a grouping key, `.id`, ordinary summary, source ",
-        "summary, or earlier contextual share."
-      )
-    )
+    abort_marginplyr(paste0(
+      "{share_kind_modifier(kind)} output name {.var {conflicts[[1L]]}} ",
+      "conflicts with a grouping key, {.arg .id}, ordinary summary, source ",
+      "summary, or earlier contextual share."
+    ))
   }
   invisible(NULL)
 }
@@ -1767,21 +1858,32 @@ validate_share_request <- function(outputs,
 # it. Telling the second caller to add a top-level name would name the summary
 # they already named (#105).
 abort_ineligible_share_source <- function(label, output, source, eligibility) {
-  advice <- if (identical(eligibility, "named_across")) {
-    paste0(
-      "a named `across()` packs its outputs into one data-frame-valued ",
-      "column. Drop the `", source, " =` name so each selected column is ",
-      "named on its own, or define `", source, "` as a top-level summary."
-    )
-  } else {
-    paste0(
-      "it was expanded from a data-frame-valued summary. Rewrite it as a ",
-      "top-level named summary or a preceding `across()` output."
-    )
+  # Two calls, in the shape `abort_share_helper_position()` records. Here the
+  # two cases differ in the refusal and in the remedy alike, and the source
+  # summary is named in both, so a clause assembled around it would carry a
+  # subject flat where the same name takes `{.var}` everywhere else.
+  if (identical(eligibility, "named_across")) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} cannot use {.var {source}} because a named ",
+        "{.fun across} packs its outputs into one data-frame-valued column."
+      ),
+      i = paste0(
+        "Drop the {.code {source} =} name so each selected column is named ",
+        "on its own, or define {.var {source}} as a top-level summary."
+      )
+    ))
   }
-  abort_marginplyr_flat(
-    paste0(label, " `", output, "` cannot use `", source, "` because ", advice)
-  )
+  abort_marginplyr(c(
+    paste0(
+      "{label} {.var {output}} cannot use {.var {source}} because it was ",
+      "expanded from a data-frame-valued summary."
+    ),
+    i = paste0(
+      "Rewrite it as a top-level named summary or a preceding ",
+      "{.fun across} output."
+    )
+  ))
 }
 
 # Each kind states what the compiled plan must provide. A call requesting both
@@ -1796,14 +1898,7 @@ check_share_grouping_kinds <- function(plan, kinds) {
 
 check_parent_grouping_kind <- function(plan) {
   if (!identical(plan$kind, "rollup")) {
-    abort_marginplyr_flat(
-      paste0(
-        "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
-        "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
-        "specifications do not define one unambiguous parent. Rewrite ",
-        "`.grouping` as one `rollup()` or omit the Parent share."
-      )
-    )
+    abort_ambiguous_parent()
   }
   invisible(NULL)
 }
@@ -1812,14 +1907,17 @@ check_total_grouping_kind <- function(plan) {
   if (length(grand_total_occurrence_ids(plan)) > 0L) {
     return(invisible(NULL))
   }
-  abort_marginplyr_flat(
+  abort_marginplyr(c(
     paste0(
-      "`share_of_total()` requires `.grouping` to produce the Grand total ",
-      "set, in which every grouping dimension is omitted. `rollup()` and ",
-      "`cube()` always produce it. Add an empty `grouping_set()` to the ",
-      "`grouping_sets()` specification, or omit the Total share."
+      "{.fun share_of_total} requires {.arg .grouping} to produce the Grand ",
+      "total set, in which every grouping dimension is omitted."
+    ),
+    i = "{.fun rollup} and {.fun cube} always produce it.",
+    i = paste0(
+      "Add an empty {.fun grouping_set} to the {.fun grouping_sets} ",
+      "specification, or omit the Total share."
     )
-  )
+  ))
 }
 
 execute_shares <- function(operation,
@@ -2241,52 +2339,80 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
   # unrecognised verdict would otherwise be described to the caller as a
   # backend that could not be asked, which is a different fact.
   stopifnot(identical(verdict, "converts") || identical(verdict, "unknown"))
-  abort_marginplyr_flat(
-    paste0(
-      "marginplyr cannot establish that the source summaries of ",
-      share_kind_labels_phrase(kinds),
-      " are plain integer or double scalars on this backend, because ",
-      if (identical(verdict, "converts")) {
+  # Read only from the cli templates below, which codetools cannot see. Both
+  # verdicts name both of them, so writing them there would put four copies of
+  # an expression in the sentences this re-authoring exists to make readable.
+  # nolint start: object_usage_linter.
+  labels <- share_kind_label_plurals(kinds)
+  helpers <- share_helper_names(kinds)
+  # nolint end
+  # Two calls, in the shape `abort_share_helper_position()` records. Here the
+  # verdicts differ in the whole subordinate clause naming what could not be
+  # established, so what they share is the opening of the refusal and the
+  # remedy that follows it.
+  #
+  # Binding the clause in R and interpolating it would remove that repetition,
+  # and it is what `abort_share_source_type()` does twenty lines up -- but what
+  # it binds there is a *value*, the class the data turned out to hold. This
+  # clause is prose marginplyr wrote, and prose belongs in the template, where
+  # the idiom ADR 0023 states applies to it and a reviewer reads it beside the
+  # refusal it completes. A sentence half in a template and half in an R string
+  # is authored in neither.
+  if (identical(verdict, "converts")) {
+    abort_marginplyr(
+      c(
         paste0(
-          "its SQL dialect converts a value of another type to a number ",
-          "rather than refusing it, so an ineligible source summary is ",
-          "indistinguishable from an eligible one"
+          "marginplyr cannot establish that the source summaries of {labels} ",
+          "are plain integer or double scalars on this backend, because its ",
+          "SQL dialect converts a value of another type to a number rather ",
+          "than refusing it, so an ineligible source summary is ",
+          "indistinguishable from an eligible one."
+        ),
+        i = paste0(
+          "Set {.code .check_share_source = FALSE} to calculate ",
+          "{.fun {helpers}} from sources you have established yourself, or ",
+          "explicitly collect the data before calling ",
+          "{.fun summarize_with_margins}."
         )
-      } else {
-        paste0(
-          "it could not be asked whether its SQL dialect converts a value of ",
-          "another type to a number rather than refusing it, and a dialect ",
-          "that converts rejects nothing"
-        )
-      },
-      ". Set `.check_share_source = FALSE` to calculate ",
-      share_kind_calls_phrase(kinds),
-      " from sources you have established yourself, or explicitly collect ",
-      "the data before calling `summarize_with_margins()`."
+      ),
+      call = call
+    )
+  }
+  abort_marginplyr(
+    c(
+      paste0(
+        "marginplyr cannot establish that the source summaries of {labels} ",
+        "are plain integer or double scalars on this backend, because it ",
+        "could not be asked whether its SQL dialect converts a value of ",
+        "another type to a number rather than refusing it, and a dialect ",
+        "that converts rejects nothing."
+      ),
+      i = paste0(
+        "Set {.code .check_share_source = FALSE} to calculate ",
+        "{.fun {helpers}} from sources you have established yourself, or ",
+        "explicitly collect the data before calling ",
+        "{.fun summarize_with_margins}."
+      )
     ),
     call = call
   )
 }
 
-# The two list phrases every share refusal builds from the kinds a call used:
-# the pluralised labels it names the helpers by, and the calls it tells the
+# The two lists every share refusal builds from the kinds a call used: the
+# pluralised labels it names the helpers by, and the helpers it tells the
 # caller to omit or opt out of. Both refusals -- this file's dialect one and
-# the Arrow one -- assemble the same two, so they are written once here rather
+# the Arrow one -- name the same two, so they are written once here rather
 # than kept in step by eye.
-share_kind_labels_phrase <- function(kinds) {
-  paste(
-    vapply(kinds, function(kind) {
-      paste0(share_kind_label(kind), "s")
-    }, character(1)),
-    collapse = " and "
-  )
+#
+# Each answers a vector and leaves the joining to cli, which serialises one
+# with `and` at the site (ADR 0023). The joined phrases these replaced spelled
+# that `and` themselves, and for two kinds the bytes are the same either way.
+share_kind_label_plurals <- function(kinds) {
+  paste0(vapply(kinds, share_kind_label, character(1)), "s")
 }
 
-share_kind_calls_phrase <- function(kinds) {
-  paste(
-    vapply(kinds, share_kind_call, character(1)),
-    collapse = " and "
-  )
+share_helper_names <- function(kinds) {
+  vapply(kinds, share_helper_name, character(1))
 }
 
 # The internal column carrying each source summary's denominator, named after
@@ -2814,10 +2940,6 @@ share_kind_modifier <- function(kind) {
   share_kind_rule(kind)$modifier
 }
 
-share_kind_call <- function(kind) {
-  paste0("`", share_helper_name(kind), "()`")
-}
-
 # The kind a written helper name resolves to, or `NULL` when it names no
 # helper.
 share_named_kind <- function(name) {
@@ -2962,10 +3084,10 @@ resolve_share_selection <- function(expr,
 abort_share_selection_error <- function(cnd, preceding, context, kind) {
   missing <- share_selection_missing_names(cnd)
   if (length(missing) == 0L) {
-    abort_marginplyr_flat(
-      paste0(
-        "Invalid ", share_kind_modifier(kind), " `across()` selection. ",
-        "Select only eligible preceding ordinary summaries by name."
+    abort_marginplyr(
+      c(
+        "Invalid {share_kind_modifier(kind)} {.fun across} selection.",
+        i = "Select only eligible preceding ordinary summaries by name."
       ),
       parent = cnd
     )
@@ -2975,7 +3097,10 @@ abort_share_selection_error <- function(cnd, preceding, context, kind) {
 }
 
 abort_share_source_name <- function(source, preceding, context, kind) {
-  helper <- share_kind_call(kind)
+  # Read only from the four cli templates below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  helper <- share_helper_name(kind)
+  # nolint end
   all_names <- vapply(
     context$all_records,
     `[[`,
@@ -2984,27 +3109,35 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
   occurrences <- sum(all_names == source)
   if (occurrences > 1L) {
-    abort_marginplyr_flat(
-      paste0(
-        "`across()` can't select source summary `", source,
-        "` for ", helper, " because summary `", source,
-        "` was defined more than once. Define it once with a complete ",
-        "ordinary summary expression, then select that unique preceding ",
-        "summary by name."
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} can't select source summary {.var {source}} for ",
+          "{.fun {helper}} because summary {.var {source}} was defined more ",
+          "than once."
+        ),
+        i = paste0(
+          "Define it once with a complete ordinary summary expression, then ",
+          "select that unique preceding summary by name."
+        )
       ),
       class = "marginplyr_share_source_duplicate_error",
       source_summary = source
     )
   }
   if (occurrences == 1L) {
-    abort_marginplyr_flat(
-      paste0(
-        "`across()` can't select source summary `", source,
-        "` for ", helper, " because summary `", source,
-        "` is not available as a unique, preceding, self-contained ordinary ",
-        "summary. Define it as a top-level named summary or a statically ",
-        "named output from a preceding `across()`. Select only eligible ",
-        "preceding ordinary summaries by name."
+    abort_marginplyr(
+      c(
+        paste0(
+          "{.fun across} can't select source summary {.var {source}} for ",
+          "{.fun {helper}} because summary {.var {source}} is not available ",
+          "as a unique, preceding, self-contained ordinary summary."
+        ),
+        i = paste0(
+          "Define it as a top-level named summary or a statically named ",
+          "output from a preceding {.fun across}."
+        ),
+        i = "Select only eligible preceding ordinary summaries by name."
       ),
       class = "marginplyr_share_source_unavailable_error",
       source_summary = source
@@ -3017,18 +3150,33 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     character(1),
     "name"
   ))
-  abort_marginplyr_flat(
-    paste0(
-      "`across()` refers to unknown summary `", source,
-      "` for ", helper, ". Select only eligible preceding ordinary ",
-      "summaries by name",
-      if (length(preceding_candidates) > 0L) {
+  # Two calls, in the shape `abort_share_helper_position()` records. Here what
+  # varies is whether the remedy can name a summary the caller could have
+  # selected; a call with none is answered by the same sentence without its
+  # example.
+  if (length(preceding_candidates) > 0L) {
+    abort_marginplyr(
+      c(
         paste0(
-          ", such as `", preceding_candidates[[1L]], "`."
+          "{.fun across} refers to unknown summary {.var {source}} for ",
+          "{.fun {helper}}."
+        ),
+        i = paste0(
+          "Select only eligible preceding ordinary summaries by name, such ",
+          "as {.var {preceding_candidates[[1L]]}}."
         )
-      } else {
-        "."
-      }
+      ),
+      class = "marginplyr_share_source_unknown_error",
+      source_summary = source
+    )
+  }
+  abort_marginplyr(
+    c(
+      paste0(
+        "{.fun across} refers to unknown summary {.var {source}} for ",
+        "{.fun {helper}}."
+      ),
+      i = "Select only eligible preceding ordinary summaries by name."
     ),
     class = "marginplyr_share_source_unknown_error",
     source_summary = source
@@ -3083,13 +3231,16 @@ contains_selection_predicate <- function(expr) {
 }
 
 abort_share_predicate <- function(kind) {
-  abort_marginplyr_flat(
+  abort_marginplyr(c(
     paste0(
-      share_kind_modifier(kind),
-      " `across()` only supports name-based tidyselect. Replace ",
-      "`where()` or another type/value predicate with explicit summary names."
+      "{share_kind_modifier(kind)} {.fun across} only supports name-based ",
+      "tidyselect."
+    ),
+    i = paste0(
+      "Replace {.fun where} or another type/value predicate with explicit ",
+      "summary names."
     )
-  )
+  ))
 }
 
 # A lookup the walk could not resolve is reported as a read of every alias in

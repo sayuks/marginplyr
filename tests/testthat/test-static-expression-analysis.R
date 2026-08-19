@@ -1911,7 +1911,8 @@ test_that("an unnamed `across()` argument is numbered by its own position", {
   )
   # dplyr names an argument passed on to the function by its position among
   # those arguments, so the unnamed one here -- second of the two -- is `..2`.
-  expect_match(conditionMessage(error), "`na.rm`, `..2`", fixed = TRUE)
+  # The `and` is cli's serial join, which ADR 0023 adopts unchanged.
+  expect_match(conditionMessage(error), "`na.rm` and `..2`", fixed = TRUE)
 })
 
 test_that("`across()` argument numbering holds without a mix of names", {
@@ -1942,7 +1943,7 @@ test_that("`across()` argument numbering holds without a mix of names", {
     )),
     "does not accept additional function arguments"
   )
-  expect_match(conditionMessage(all_unnamed), "`..1`, `..2`", fixed = TRUE)
+  expect_match(conditionMessage(all_unnamed), "`..1` and `..2`", fixed = TRUE)
 
   all_named <- expect_error(
     base_call(dplyr::across(
