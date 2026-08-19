@@ -2379,3 +2379,126 @@ test_that("a share selection tidyselect rejects keeps tidyselect's condition", {
   )
   expect_s3_class(renamed$parent, class(rejected))
 })
+
+# The five refusals in `R/share.R` that nothing executed. #223's phase 3 is what
+# made them visible rather than what left them unrun: re-authoring split each
+# into its own lines, so a branch that had always been dead started being
+# counted as one. Three are reachable from the verb and were simply never
+# written down. Two are second lines of defence, and are asserted by calling the
+# function that holds them, the way `share_selection_missing_names()`'s empty
+# answer is above -- the objection is the one this repository makes everywhere,
+# that a branch nothing runs is a branch nothing has ever checked.
+test_that("an `across()` share is named by `.names`, not by the caller", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  named <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      out = dplyr::across(
+        total,
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(named),
+    "An `across()` Parent-share expression must be unnamed.",
+    fixed = TRUE
+  )
+  expect_match(
+    conditionMessage(named),
+    "Use its required `.names` argument",
+    fixed = TRUE
+  )
+})
+
+test_that("a direct share names a source no summary in the call defines", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  # Neither a forward reference nor an ineligible source: `absent` is defined
+  # nowhere in the call, which is the branch under both of those.
+  unknown <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(absent),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(unknown),
+    paste0(
+      "Parent share `share` refers to unknown preceding ordinary ",
+      "summary `absent`."
+    ),
+    fixed = TRUE
+  )
+})
+
+test_that("an unknown selection with nothing to offer names no example", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  # The sibling branch names a summary the caller could have selected instead.
+  # This one cannot, the call defining no ordinary summary before the
+  # `across()`, and the difference is the whole reason there are two.
+  bare <- expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(
+        missing,
+        share_of_parent,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_share_source_unknown_error"
+  )
+  expect_match(
+    conditionMessage(bare),
+    "refers to unknown summary `missing`",
+    fixed = TRUE
+  )
+  expect_false(grepl("such as", conditionMessage(bare), fixed = TRUE))
+  expect_identical(bare$source_summary, "missing")
+})
+
+test_that("the two share refusals a verb reaches only as a second line", {
+  # `summarize_with_margins()` runs `preflight_shares()` before it plans, and
+  # that raises the complete form of this refusal for the same expression. The
+  # incomplete form is what would answer a caller who reached planning without
+  # it, and it differs by withholding the rewrite -- there being nothing to
+  # rewrite when the share is not the whole right-hand side.
+  incomplete <- expect_error(
+    abort_share_helper_position("parent", complete = FALSE),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(incomplete),
+    "must be the complete right-hand side",
+    fixed = TRUE
+  )
+  expect_false(grepl(
+    "as its own named summary",
+    conditionMessage(incomplete),
+    fixed = TRUE
+  ))
+
+  # A Parent share installs `check_parent_grouping_spec()` as the Grouping
+  # specification's validator, which refuses anything but a pure `rollup()`
+  # before a plan is compiled. So this refuses a plan no accepted
+  # specification could have produced.
+  plan_kind <- expect_error(
+    check_parent_grouping_kind(list(kind = "cube")),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(plan_kind),
+    "do not define one unambiguous parent",
+    fixed = TRUE
+  )
+})
