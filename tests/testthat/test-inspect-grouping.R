@@ -230,8 +230,9 @@ renaming_grouping_data <- function() {
 
 renaming_grouping_message <- function() {
   paste0(
-    "Can't rename grouping dimension `area = region`. ",
-    "Grouping dimensions must name existing columns."
+    "Can't rename grouping dimension:\n",
+    "i `area = region`.\n",
+    "i Grouping dimensions must name existing columns."
   )
 }
 
@@ -312,8 +313,9 @@ renaming_by_data <- function() {
 
 renaming_by_message <- function() {
   paste0(
-    "Can't rename `.by` column `area = region`. ",
-    "Fixed `.by` keys must name existing columns."
+    "Can't rename `.by` column:\n",
+    "i `area = region`.\n",
+    "i Fixed `.by` keys must name existing columns."
   )
 }
 

@@ -167,9 +167,9 @@ test_that("a nested specification position recognizes a spelling or a name", {
       "`spec_from_caller(region)` is a grouping specification, but a nested ",
       "position recognizes one only when it is a call to `grouping_set()`, ",
       "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a ",
-      "name bound to a specification. Anything else is read as a column ",
-      "selection. Assign the specification to a name first, then use that ",
-      "name here."
+      "name bound to a specification.\n",
+      "i Anything else is read as a column selection.\n",
+      "i Assign the specification to a name first, then use that name here."
     )
   )
 
@@ -340,8 +340,8 @@ test_that("empty grouping rules preserve their phase and error precedence", {
   expect_identical(
     conditionMessage(sets_error),
     paste0(
-      "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
-      "for the empty grouping set."
+      "`grouping_sets()` requires at least one set.\n",
+      "i Use `grouping_set()` for the empty grouping set."
     )
   )
 
@@ -439,8 +439,9 @@ test_that("selectors and fixed .by columns are resolved once", {
 test_that("a renaming grouping selection is refused by every constructor", {
   data_vars <- c("region", "year", "value")
   renamed_message <- paste0(
-    "Can't rename grouping dimension `area = region`. ",
-    "Grouping dimensions must name existing columns."
+    "Can't rename grouping dimension:\n",
+    "i `area = region`.\n",
+    "i Grouping dimensions must name existing columns."
   )
   renaming_calls <- list(
     quote(tidyselect::all_of(c(area = "region"))),
@@ -488,8 +489,9 @@ test_that("a renaming grouping selection is refused by every constructor", {
   expect_identical(
     conditionMessage(several),
     paste0(
-      "Can't rename grouping dimensions `area = region`, `when = year`. ",
-      "Grouping dimensions must name existing columns."
+      "Can't rename grouping dimensions:\n",
+      "i `area = region` and `when = year`.\n",
+      "i Grouping dimensions must name existing columns."
     )
   )
 })
@@ -548,8 +550,9 @@ by_rename_vars <- function() {
 
 by_rename_message <- function() {
   paste0(
-    "Can't rename `.by` column `area = region`. ",
-    "Fixed `.by` keys must name existing columns."
+    "Can't rename `.by` column:\n",
+    "i `area = region`.\n",
+    "i Fixed `.by` keys must name existing columns."
   )
 }
 
@@ -588,8 +591,9 @@ test_that("a renaming .by selection is refused", {
   expect_identical(
     conditionMessage(several),
     paste0(
-      "Can't rename `.by` columns `area = region`, `size = value`. ",
-      "Fixed `.by` keys must name existing columns."
+      "Can't rename `.by` columns:\n",
+      "i `area = region` and `size = value`.\n",
+      "i Fixed `.by` keys must name existing columns."
     )
   )
 })
@@ -710,8 +714,9 @@ test_that("duplicated grouping sets in more than one group name their groups", {
   expect_identical(
     conditionMessage(duplicated),
     paste0(
-      "Duplicate grouping sets were produced at position groups 2, 4; 1, 3. ",
-      "Use `.duplicates = \"drop\"` or `\"keep\"`."
+      "Duplicate grouping sets were produced at position groups:\n",
+      "i 2, 4; 1, 3.\n",
+      "i Use `.duplicates = \"drop\"` or `\"keep\"`."
     )
   )
 })
@@ -856,8 +861,9 @@ test_that("compile_grouping_spec() reads a narrowed duplicates vocabulary", {
   expect_identical(
     conditionMessage(duplicated),
     paste0(
-      "Duplicate grouping sets were produced at positions 1, 2. ",
-      "Use `.duplicates = \"drop\"`."
+      "Duplicate grouping sets were produced at positions:\n",
+      "i 1, 2.\n",
+      "i Use `.duplicates = \"drop\"`."
     )
   )
 

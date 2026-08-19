@@ -7,11 +7,13 @@
 # set is visible at once, and a file-by-file re-authoring edits a contiguous
 # block of it (#224).
 #
-# Suffixing is what bounds the set, not pluralizing, and two diagnostics
-# pluralize by another construction. `abort_selection_rename()` picks between a
-# singular and a plural noun held in a labels list; all four of its messages
-# are already pinned exactly in `test-grouping-plan.R`, so recording them again
-# would buy nothing. The duplicate-grouping-set refusal switches a whole phrase
+# Suffixing is what bounds the set, not pluralizing, and two diagnostics stay
+# out of it for their own reasons. The two renaming-selection refusals suffix
+# their noun as well, but all four of their messages are already pinned exactly
+# in `test-grouping-plan.R`, so recording them again would buy nothing. They
+# reached that spelling from a singular/plural pair a labels list held, which
+# `{?s}` dissolved when #223 re-authored `R/grouping-plan.R`. The
+# duplicate-grouping-set refusal switches a whole phrase
 # rather than suffixing one; both of its arms are pinned in
 # `test-grouping-plan.R`, the plural one separately from this file because it
 # needs a specification shape none of these eight do (#225).

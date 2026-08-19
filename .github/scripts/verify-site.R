@@ -294,7 +294,7 @@ markers <- list(
     "Error in `summarize_with_margins()`",
     "Error in `nest_with_margins()`",
     "does not support `cur_group_id()`",
-    "Duplicate grouping sets were produced at positions",
+    "Duplicate grouping sets were produced at",
     "Can't supply `.by` when `.data` is grouped",
     "Grouped input created with `.drop = FALSE` is not supported",
     "do not define one unambiguous parent",
