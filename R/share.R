@@ -646,11 +646,16 @@ preflight_shares <- function(dots) {
 }
 
 abort_share_helper_position <- function(kind, complete) {
-  # Two calls rather than one carrying a computed bullet. The refusal is the
-  # same either way and only the remedy is conditional, so the alternative
-  # spellings are an `if` inside the template, which the structural gate
-  # refuses, or an `i` bullet whose content is sometimes empty, which renders
-  # as a bullet marker with nothing after it.
+  # The first of four sites in this file that raise from two calls rather than
+  # one, and the shape is the same at each: what varies between the two is a
+  # whole element of the message vector, or a whole clause inside one. The
+  # alternatives are both worse. An `if` inside the template is a branch the
+  # structural gate never sees, since what it reads is the source expression
+  # and this one would be inside a string; a message vector assembled around an
+  # `if` is a computed template, which the gate does see and refuses; and an
+  # `i` bullet whose content is sometimes empty renders as a bullet marker with
+  # nothing after it. What the shape costs is the element the two calls share,
+  # written out in each.
   if (complete) {
     abort_marginplyr(c(
       paste0(
@@ -685,7 +690,7 @@ abort_arrow_shares <- function(kinds) {
     ),
     i = "Other Arrow Margin operations remain supported.",
     i = paste0(
-      "Omit {.fun {share_kind_helpers(kinds)}} or explicitly collect the ",
+      "Omit {.fun {share_helper_names(kinds)}} or explicitly collect the ",
       "data before calling {.fun summarize_with_margins}."
     )
   ))
@@ -1320,10 +1325,13 @@ abort_share_source_type <- function(value,
                                     call) {
   # Joined here rather than interpolated as a vector, because the slash is how
   # a class vector is spelled rather than a list of subjects cli's defaults
-  # would serialise with an `and`. It is also why this is bound rather than
-  # written in the template: it spells a branch, and a branch inside a template
-  # is the shape ADR 0023's `{?}` rule forbids, whatever it chooses between.
-  # Read only from that template, which codetools cannot see.
+  # would serialise with an `and`.
+  #
+  # Bound rather than written in the template for a reason the structural gate
+  # cannot enforce: an `if` inside a template is a branch the gate never sees,
+  # because what it reads is the source expression and this one would be inside
+  # a string. Keeping the branch in R is what leaves it reviewable at all.
+  # Read only from the template below, which codetools cannot see.
   # nolint start: object_usage_linter.
   detected_type <- paste(
     if (is.object(value)) class(value) else typeof(value),
@@ -1335,8 +1343,12 @@ abort_share_source_type <- function(value,
       paste0(
         "{share_kind_label(share_kind)} {.var {share_output}} requires ",
         "source summary {.var {source_summary}} to be a plain integer or ",
-        "double scalar; detected type {detected_type}."
+        "double scalar."
       ),
+      # Alone in a bullet per ADR 0023's surviving line condition: a class
+      # vector is as long as the value's class chain, which the caller's data
+      # decides.
+      i = "Detected type {detected_type}.",
       i = "Convert it explicitly in the ordinary summary."
     ),
     share_output = share_output,
@@ -1541,20 +1553,23 @@ validate_share_direct_syntax <- function(expr, output_name) {
     # `injected_quosure_clause()` is a whole sentence assembled around a
     # deparsed caller expression, so it stays an interpolated value and gains
     # no markup: ADR 0023's injection rule is what makes a caller's braces
-    # inert, and it holds because cli reads the template and not the value. It
-    # carries its own leading space and is empty at a call that injected
-    # nothing, which is why it sits at the end of the refusal rather than in an
-    # `i` bullet that would sometimes be empty. `R/utils.R` re-authors it in a
-    # later group of #223's phase 3.
+    # inert, and it holds because cli reads the template and not the value.
+    #
+    # It carries its own leading space and is empty at a call that injected
+    # nothing, so it follows the remedy inside that bullet rather than taking
+    # one of its own, which would sometimes be a bullet marker with nothing
+    # after it. That is also where the flat form put it, so the clause still
+    # ends the message and every pin reading it composes as it did.
+    # `R/utils.R` re-authors it in a later group of #223's phase 3.
     abort_marginplyr(c(
       paste0(
         "{.code {output_name} = {helper}(...)} requires exactly one bare ",
-        "name of a preceding ordinary summary.",
-        "{injected_quosure_clause(args)}"
+        "name of a preceding ordinary summary."
       ),
       i = paste0(
         "Define the scalar summary first, then pass its name directly to ",
-        "{.fun {helper}}."
+        "{.fun {helper}}.",
+        "{injected_quosure_clause(args)}"
       )
     ))
   }
@@ -1649,9 +1664,7 @@ preflight_share_across_syntax <- function(expr, output_name) {
         "An {.fun across} {share_kind_modifier(kind)} expression must be ",
         "unnamed."
       ),
-      i = paste0(
-        "Use its required {.arg .names} argument to name the output columns."
-      )
+      i = "Use its required {.arg .names} argument to name the output columns."
     ))
   }
   args <- parse_across_arguments(expr)
@@ -1746,10 +1759,7 @@ validate_share_request <- function(outputs,
     character(1),
     "name"
   )
-  # Read only from the six cli templates below, which codetools cannot see.
-  # nolint start: object_usage_linter.
   label <- share_kind_label(kind)
-  # nolint end
   for (i in seq_along(sources)) {
     source <- sources[[i]]
     output <- outputs[[i]]
@@ -1803,9 +1813,7 @@ validate_share_request <- function(outputs,
           "because it depends on earlier summary alias ",
           "{.var {record$dependencies[[1L]]}}."
         ),
-        i = paste0(
-          "Combine the calculation into one ordinary summary expression."
-        )
+        i = "Combine the calculation into one ordinary summary expression."
       ))
     }
   }
@@ -1836,10 +1844,10 @@ validate_share_request <- function(outputs,
 # it. Telling the second caller to add a top-level name would name the summary
 # they already named (#105).
 abort_ineligible_share_source <- function(label, output, source, eligibility) {
-  # Two calls rather than one interpolating a chosen clause: the two cases
-  # differ in the refusal and in the remedy alike, and the source summary is
-  # named in both halves, so a clause assembled here would carry a subject the
-  # style table asks for `{.var}` while the same name took it elsewhere.
+  # Two calls, in the shape `abort_share_helper_position()` records. Here the
+  # two cases differ in the refusal and in the remedy alike, and the source
+  # summary is named in both, so a clause assembled around it would carry a
+  # subject flat where the same name takes `{.var}` everywhere else.
   if (identical(eligibility, "named_across")) {
     abort_marginplyr(c(
       paste0(
@@ -2337,13 +2345,12 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
   # an expression in the sentences this re-authoring exists to make readable.
   # nolint start: object_usage_linter.
   labels <- share_kind_label_plurals(kinds)
-  helpers <- share_kind_helpers(kinds)
+  helpers <- share_helper_names(kinds)
   # nolint end
-  # Two calls, because the two verdicts differ in the whole subordinate clause
-  # naming what could not be established. What they share is the refusal they
-  # begin with and the remedy they end with, and those are written out in each
-  # rather than assembled, for the reason `check_parent_grouping_spec()`
-  # records: the gate reads this call's own argument.
+  # Two calls, in the shape `abort_share_helper_position()` records. Here the
+  # verdicts differ in the whole subordinate clause naming what could not be
+  # established, so what they share is the opening of the refusal and the
+  # remedy that follows it.
   if (identical(verdict, "converts")) {
     abort_marginplyr(
       c(
@@ -2397,7 +2404,7 @@ share_kind_label_plurals <- function(kinds) {
   paste0(vapply(kinds, share_kind_label, character(1)), "s")
 }
 
-share_kind_helpers <- function(kinds) {
+share_helper_names <- function(kinds) {
   vapply(kinds, share_helper_name, character(1))
 }
 
@@ -3136,10 +3143,10 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     character(1),
     "name"
   ))
-  # Two calls, because what varies is whether the remedy can name a summary the
-  # caller could have selected. A call with none is answered by the same
-  # sentence without its example, and an `i` bullet built to carry the example
-  # conditionally would be a computed template.
+  # Two calls, in the shape `abort_share_helper_position()` records. Here what
+  # varies is whether the remedy can name a summary the caller could have
+  # selected; a call with none is answered by the same sentence without its
+  # example.
   if (length(preceding_candidates) > 0L) {
     abort_marginplyr(
       c(

@@ -1121,7 +1121,7 @@ test_that("semantic and nonnumeric classes are not Parent-share sources", {
     expect_s3_class(error, "marginplyr_error")
     expect_match(
       conditionMessage(error),
-      paste0("detected type ", source_type)
+      paste0("Detected type ", source_type)
     )
   }
 })

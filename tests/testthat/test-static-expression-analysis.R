@@ -603,26 +603,14 @@ test_that("an injected quosure carrying no bare name is refused as written", {
         rlang::new_quosure(shapes[[index]], env = rlang::empty_env())
       ))
       expect_s3_class(injected, "marginplyr_error")
-      # The clause lands at the end of the refusal rather than at the end of
-      # the message, which is a distinction only a re-authored helper draws:
-      # `share_of_parent()` and `share_of_total()` carry their remedy in an `i`
-      # bullet after it (#223), while the grouping helpers are still one line
-      # and the two positions coincide. Written over the lines so that both
-      # shapes are the one rule, and byte-exact either way.
-      written_lines <- strsplit(
-        conditionMessage(written),
-        "\n",
-        fixed = TRUE
-      )[[1L]]
-      written_lines[[1L]] <- paste0(
-        written_lines[[1L]],
-        " The injected quosure carries `",
-        deparse1(shapes[[index]]),
-        "`, which is not a bare name."
-      )
       expect_identical(
         conditionMessage(injected),
-        paste(written_lines, collapse = "\n"),
+        paste0(
+          conditionMessage(written),
+          " The injected quosure carries `",
+          deparse1(shapes[[index]]),
+          "`, which is not a bare name."
+        ),
         info = helper
       )
       refusals[[index]] <- injected

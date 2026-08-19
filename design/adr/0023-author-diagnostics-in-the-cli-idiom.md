@@ -74,6 +74,43 @@ commit: rebuilding the site after ADR 0024 shows seven rendered diagnostics with
 no wrap in them, and both markers matching raw again. What survives of that
 argument is condition 3's second sentence, above.
 
+## Amendment: a template may be split at a space, and the gate says so
+
+*Two rules are gated* below reads "fail any whose message argument is not a
+literal in the source", and gives `paste0()` as one of the two faces of a single
+violation. The gate admits `paste()` and `paste0()` as of #223's phase 3, on the
+same terms it already admitted `c()`: by recursion over their arguments. The
+sentence that goes is the parenthetical treating the call itself as the
+violation. What the gate refuses is unchanged, because the recursion and not the
+name of the call is what enforces both rules — caller-derived text is a symbol
+rather than a literal wherever it appears, so `paste0("Unknown column `",
+columns, "`.")` is refused exactly as before, and an `if` spelling a noun is
+refused inside an admitted call too. Both are fixtures in
+`test-diagnostic-authoring.R`.
+
+The reason is a measurement neither this ADR nor #223 had taken, and it binds
+every file phase 3 reaches. A template has to be one string literal per message
+element, because ADR 0024 expands it with `cli::format_inline()`, whose
+`keep_whitespace = TRUE` is the whole of how a caller's spelling survives — so a
+source line break inside a template is a line break in the refusal, and glue's
+`\` continuation is part of the trimming that flag turns off. Meanwhile the
+amendment above demoted condition 1 to style advice, and the shipped sentences
+measure 83 to 119 characters before any markup is added. `lintr`'s default
+`line_length_linter(80)` therefore has no spelling to accept, and this
+repository has no `.lintr`.
+
+The alternatives were all worse, which is why this is the amendment rather than
+one of them. A `.lintr` raising or excluding the limit stops it measuring
+thousands of lines of real code, for a property only diagnostics have. A
+suppression reaches about half the message elements in the package, and
+`AGENTS.md` asks each `# nolint` to record a fact about *one* expression, which
+a reason repeated eighty times is not. Rewording is what #223 exists to forbid.
+
+What is genuinely lost is small and worth naming: a template is no longer one
+literal a reader's eye lands on whole, but a sentence split at a space. It is
+still written beside the call that raises it, which is the property *Two rules
+are gated* asks a template for — a constant bound elsewhere stays refused.
+
 ## The migration introduces wrapping, so a line is authored to survive it
 
 `rlang::abort()` wraps nothing. `cli_abort()` wraps at retrieval time, at
