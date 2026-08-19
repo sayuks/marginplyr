@@ -446,19 +446,19 @@ compile_grouping_spec_impl <- function(.grouping,
     # from the vocabulary is what keeps the nesting verbs, whose `.duplicates`
     # excludes `"keep"`, from being offered it here (#110).
     alternatives <- setdiff(duplicates_choices, .duplicates)
-    # Both are read only from the cli template below, which codetools cannot
-    # see. `positions` is joined here rather than interpolated as a vector,
-    # because a group is itself a comma-joined list of positions, so cli's
-    # defaults would serialise the groups with an `and` inside one -- the
-    # reason `R/share.R` joins a class vector on its own slash.
+    # Joined here rather than interpolated as a vector, because a group is
+    # itself a comma-joined list of positions, so cli's defaults would
+    # serialise the groups with an `and` inside one -- the reason `R/share.R`
+    # joins a class vector on its own slash. Read only from the cli template
+    # below, which codetools cannot see.
     # nolint start: object_usage_linter.
     positions <- paste(
       vapply(groups, paste, collapse = ", ", character(1)),
       collapse = "; "
     )
+    # nolint end
     offered <- paste0("\"", alternatives, "\"")
     offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
-    # nolint end
     abort_marginplyr(c(
       paste0(
         "Duplicate grouping sets were produced at ",

@@ -7,16 +7,21 @@
 # set is visible at once, and a file-by-file re-authoring edits a contiguous
 # block of it (#224).
 #
-# Suffixing is what bounds the set, not pluralizing, and two diagnostics stay
-# out of it for their own reasons. The two renaming-selection refusals suffix
-# their noun as well, but all four of their messages are already pinned exactly
-# in `test-grouping-plan.R`, so recording them again would buy nothing. They
-# reached that spelling from a singular/plural pair a labels list held, which
-# `{?s}` dissolved when #223 re-authored `R/grouping-plan.R`. The
-# duplicate-grouping-set refusal switches a whole phrase
-# rather than suffixing one; both of its arms are pinned in
-# `test-grouping-plan.R`, the plural one separately from this file because it
-# needs a specification shape none of these eight do (#225).
+# Suffixing is what chose the eight, and two diagnostics were left out of them.
+# One is still out for the reason it was: the duplicate-grouping-set refusal
+# switches a whole phrase rather than suffixing one; both of its arms are
+# pinned in `test-grouping-plan.R`, the plural one separately from this file
+# because it needs a specification shape none of these eight do (#225).
+#
+# The other no longer has the construction it was described by. The
+# renaming-selection refusal -- one caller mistake, written out once for
+# `.grouping` and once for `.by` -- picked between a singular and a plural noun
+# held in a labels list, and #223 dissolved that pair into `{?s}` when it
+# re-authored `R/grouping-plan.R`, so it suffixes now as these eight do. Its
+# reason for being out is untouched by that: all four of its messages are
+# already pinned exactly in `test-grouping-plan.R`, so recording them again
+# would buy nothing. Suffixing is therefore where this set came from rather
+# than a test a ninth diagnostic is admitted by.
 #
 # The pins already beside each site stay where they are. Most match a phrase
 # rather than a whole message, which is enough to assert that a caller reaches
