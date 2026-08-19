@@ -10,23 +10,49 @@
 # public class.
 #
 # It is also the interpolating entry point: `message` is a cli template a call
-# site passes unexpanded, and `.envir` is what lets cli evaluate the template's
+# site passes unexpanded, and `env` is what lets cli evaluate the template's
 # `{}` expressions in that site's own frame. ADR 0023 is authoritative for the
 # idiom every template is authored in -- the short refusal plus `i` bullets, the
 # inline style each subject takes, `{?}` for every plural, and the rule that
 # caller-derived text is interpolated as a value and never concatenated into the
 # template. ADR 0015's boundary is untouched by that: this still owns the class
-# and the blamed call, and `cli_abort()` carries `marginplyr_error` through.
+# and the blamed call.
+#
+# The template is expanded here, as the condition is raised, rather than by
+# `cli::cli_abort()` when the condition is read. That is what keeps a subject
+# spelled the way the caller spelled it: `cli_abort()` sets `use_cli_format`,
+# and the retrieval-time formatting collapses a run of whitespace inside an
+# interpolated value as readily as inside the template, so a column named
+# `a  b` was named `a b` in the refusal. ADR 0024 records the decision and what
+# it costs -- there is no wrapping to a reader's width any more, and styling is
+# fixed by the raising session rather than the reading one.
+#
+# `format_inline()` is the inline half of cli and does not consult the width, so
+# every element comes back as the one line it was written as. Names carry the
+# bullet markers and are reattached, `vapply()` having dropped them.
 abort_marginplyr <- function(message,
                              ...,
                              class = NULL,
                              call = rlang::caller_call()) {
-  cli::cli_abort(
-    message = message,
+  env <- rlang::caller_env()
+  expanded <- vapply(
+    message,
+    cli::format_inline,
+    character(1),
+    .envir = env,
+    USE.NAMES = FALSE
+  )
+  names(expanded) <- names(message)
+  rlang::abort(
+    message = expanded,
     ...,
     class = c(class, "marginplyr_error"),
     call = call,
-    .envir = rlang::caller_env()
+    # Spelled although `rlang::abort()` has a default, because the default is
+    # this function's own caller as seen from `abort()` -- one frame deeper than
+    # the site -- which leaves the raising call in the backtrace that
+    # `cli_abort(.envir =)` trimmed.
+    .frame = env
   )
 }
 
@@ -35,13 +61,10 @@ abort_marginplyr <- function(message,
 # injection surface rather than a formatting choice: the braces cli would
 # interpret do not come from the source literals -- an AST walk over `R/` found
 # none -- they come from caller data, and a column named `a{b}` is legal.
-# Against an assembled string `cli_abort()` answers `Could not evaluate cli {}
-# expression` instead of the refusal, so every not-yet-re-authored site passes
-# through here, where the string is interpolated as a *value*, which is what
-# makes a caller's braces inert. Inert is not untouched: cli's formatter
-# collapses a run of whitespace inside a value as it does inside the template,
-# which is a property of signalling through `cli_abort()` at all rather than of
-# this sibling, and is recorded in ADR 0023's consequences.
+# Against an assembled string cli answers `Could not evaluate cli {} expression`
+# instead of the refusal, so every not-yet-re-authored site passes through here,
+# where the string is interpolated as a *value*, which is what makes a caller's
+# braces inert.
 #
 # This exists to be deleted. #223's phase 3 re-authors `R/` file by file, and
 # each of those pull requests drops this for its own sites; the last one removes
@@ -311,10 +334,10 @@ message_line_runs <- function(lines) {
 # in ADR 0022 beside the wrapping such a line already loses.
 #
 # cli needs no availability guard: it is an Import of this package, and every
-# error path crosses it since `abort_marginplyr()` above signals through
-# `cli_abort()`. That is a change of mechanism rather than of fact -- it was
-# already unable to be absent as an Import of both dplyr and tidyselect, the
-# `DBI = FALSE` case in `AGENTS.md`'s dependency metadata that
+# error path crosses it, `abort_marginplyr()` above expanding its template
+# through `cli::format_inline()`. That is a change of mechanism rather than of
+# fact -- it was already unable to be absent as an Import of both dplyr and
+# tidyselect, the `DBI = FALSE` case in `AGENTS.md`'s dependency metadata that
 # `share_dialect_can_be_asked()` still is -- and the difference is that the
 # floor now binds. DESCRIPTION states `cli (>= 3.4.0)`, which the installer
 # reads, where a Suggests floor would have been read only by

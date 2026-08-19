@@ -29,6 +29,51 @@ measured once every site had moved,
 rather than restated because each is a fact about rlang, cli, or testthat, and
 ages when one of those moves rather than when `R/` does.
 
+## Amendment: the template is expanded when the condition is raised
+
+[ADR 0024](0024-spell-a-callers-subject-as-the-caller-wrote-it.md) found that
+`cli_abort()`'s retrieval-time formatting collapses a run of whitespace inside
+an interpolated value as readily as inside the template — so a column the caller
+named `a  b` was named `a b` in the refusal. Every sentence below that names
+`cli_abort()` as the call, or rests on the wrapping it did, is superseded by it.
+What stands is the whole of the idiom: the style table, the injection rule, the
+`{?}` rule, the vector defaults, cli as an Import with its floor, and the
+structural gate. The template is the same template; what moved is when it is
+expanded.
+
+**Every naming of the call** goes: "signalled through `cli::cli_abort()`" and
+"it wraps `cli::cli_abort()` with `.envir = rlang::caller_env()`" in the opening
+section, and "`cli_abort()`'s `class` argument carries it through" in
+*Consequences*. `abort_marginplyr()` expands its template with
+`cli::format_inline()` and raises through `rlang::abort()`, whose `class`
+argument carries `marginplyr_error` exactly as `cli_abort()`'s did — the
+`must_error` hook and its twenty vignette chunks are untouched either way.
+
+**The line conditions** were written against wrapping that no longer happens,
+and two of them go with it. Condition 1, that the authored prose of a line fits
+in 80 columns, is now style advice rather than a requirement. So is the first
+sentence of condition 3, that no pin and no marker spans a wrap point — there
+are no wrap points. Condition 2 survives whole and matters more than it did: a
+part whose length the caller decides goes alone in an `i` bullet, which without
+wrapping is the only thing between a long vector and a very long line. So does
+the second sentence of condition 3, that a marker is chosen from a run of
+uninterpolated prose, which was never about wrapping — a marker quoting an
+interpolated part varies with the data at any width.
+
+**The paragraph in *Consequences* beginning "Wrapping is not the whole of what
+retrieval-time formatting costs"** recorded the collapsing and left the trade
+open in #230. It is settled: the collapsing is a defect, and ADR 0024 is the
+remedy. Two spellings survive neither route and are stated in `?marginplyr` — a
+line break and a no-break space inside a name are shown as an ordinary space.
+
+**The normalization *Consequences* asks of `verify-site.R`** is removed with the
+wrapping that needed it. The paragraph saying the marker matching "is where a
+whitespace-normalizing comparison is needed", and the one citing two site
+markers that "only match once normalized", both describe a state that lasted one
+commit: rebuilding the site after ADR 0024 shows seven rendered diagnostics with
+no wrap in them, and both markers matching raw again. What survives of that
+argument is condition 3's second sentence, above.
+
 ## The migration introduces wrapping, so a line is authored to survive it
 
 `rlang::abort()` wraps nothing. `cli_abort()` wraps at retrieval time, at

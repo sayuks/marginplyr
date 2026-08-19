@@ -55,6 +55,12 @@
 #' can change without a deprecation cycle, so match on the class rather than on
 #' message text.
 #'
+#' The wording is marginplyr's to change; the columns, values, and arguments a
+#' message quotes are yours, and a marginplyr error spells them as you spelled
+#' them. Two spellings it cannot keep: a line break and a no-break space inside
+#' a name are both shown as an ordinary space. This says nothing about the
+#' errors below, which marginplyr does not write.
+#'
 #' Two kinds of error deliberately fall outside the class. Errors raised by
 #' your own summary expressions, by tidyselect, by dplyr, or by a database
 #' backend propagate with their original class, diagnostic, and cause intact.

@@ -124,10 +124,12 @@
 * Every error marginplyr raises for a correctable call now inherits the
   `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
   all. It is the only promised class; narrower subclasses and message wording
-  remain implementation details. Errors from your summary expressions,
-  tidyselect, dplyr, or a backend keep their original class, diagnostic, and
-  cause, and so do internal invariant checks that no change to the call can
-  avoid.
+  remain implementation details. The columns, values, and arguments such an
+  error quotes are yours, though, and it spells them as you spelled them —
+  except that a line break and a no-break space inside a name are both shown as
+  an ordinary space. Errors from your summary expressions, tidyselect, dplyr,
+  or a backend keep their original class, diagnostic, and cause, and so do
+  internal invariant checks that no change to the call can avoid.
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were

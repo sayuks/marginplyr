@@ -248,3 +248,79 @@ test_that("a caller's braces reach a diagnostic as text", {
     fixed = TRUE
   )
 })
+
+# The promise `?marginplyr` makes about a subject the caller supplied: a Package
+# condition names it as the caller spelled it. ADR 0024 decides it and records
+# why `abort_marginplyr()` expands its template when the condition is raised
+# rather than when it is read -- `cli::cli_abort()` collapses a run of
+# whitespace inside an interpolated value at retrieval, which named a column
+# `a b` that the caller had named `a  b`.
+#
+# Both directions are pinned, in the shape `test-diagnostic-pluralization.R`
+# uses for a pluralizing diagnostic's two arms. Only asserting the preserved
+# spellings would pass a package that stopped expanding at raise time in some
+# future where nothing wrapped anyway; only asserting the residue would pass one
+# that lost the promise entirely. `?marginplyr` states the residue rather than
+# claiming more than it keeps, so a spelling moving from one list to the other
+# is a documentation change and fails here first.
+#
+# The subject is a `.margin_label` dimension name, because that is a name the
+# caller writes directly into the call and the shortest path to a refusal that
+# quotes it.
+unknown_dimension_message <- function(name) {
+  data <- data.frame(region = "E", n = 1)
+  # `region` is a column of the frame, which codetools reads as an undefined
+  # global wherever a verb's arguments are written inside a function.
+  # nolint start: object_usage_linter.
+  conditionMessage(expect_error(
+    expand_with_margins(
+      data,
+      .grouping = rollup(region),
+      .margin_label = stats::setNames(c("A", "A"), c("region", name))
+    ),
+    # The class, because the tests below read the message for a name they put
+    # into the call: an unrelated error quoting that name back would satisfy
+    # them, and the promise is about a Package condition rather than about any
+    # error that happens to mention the subject.
+    class = "marginplyr_error"
+  ))
+  # nolint end
+}
+
+test_that("a Package condition spells a subject as the caller spelled it", {
+  preserved <- c(
+    "two  spaces",
+    "a\ttab",
+    "a\rcarriage return",
+    " leading",
+    "trailing ",
+    "an\u3000ideographic space",
+    "a\u2009thin space",
+    "a{brace}",
+    "a`backtick"
+  )
+
+  for (name in preserved) {
+    expect_true(
+      grepl(name, unknown_dimension_message(name), fixed = TRUE),
+      label = sprintf("the refusal quotes %s", encodeString(name, quote = '"'))
+    )
+  }
+})
+
+test_that("the two spellings a Package condition cannot keep", {
+  # cli's glue pass turns both of these into an ordinary space before any
+  # marginplyr code sees the result, so the refusal names a subject one
+  # character different from the one the caller wrote. `?marginplyr` says so
+  # rather than promising more than it keeps.
+  newline_and_nbsp <- c("\n", "\u00a0")
+  rewritten <- paste0("a", newline_and_nbsp, "spelling")
+  newline_and_nbsp <- paste(newline_and_nbsp, collapse = "")
+
+  for (name in rewritten) {
+    quoted <- unknown_dimension_message(name)
+    as_spaces <- chartr(newline_and_nbsp, "  ", name)
+    expect_false(grepl(name, quoted, fixed = TRUE))
+    expect_true(grepl(as_spaces, quoted, fixed = TRUE))
+  }
+})

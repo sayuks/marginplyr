@@ -174,7 +174,11 @@ _Avoid_: Choice argument, enum argument, flag argument, mode argument
 An error marginplyr itself raises, inheriting the `marginplyr_error` base
 class. It reports something the caller can avoid by rewriting the call within
 the documented public interface. It is always an error: marginplyr states what
-it will not do by refusing, and raises no warning of its own.
+it will not do by refusing, and raises no warning of its own. A subject it
+names that the caller supplied — a column, a value, an argument — is spelled as
+the caller spelled it, up to the two whitespace characters `?marginplyr` names,
+so that what a reader searches for is what they wrote. The wording around that
+subject is marginplyr's own and carries no promise.
 _Avoid_: Package error, internal error, user-facing error
 
 **External condition**:
