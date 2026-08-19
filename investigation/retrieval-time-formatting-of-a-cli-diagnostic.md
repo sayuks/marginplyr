@@ -1,6 +1,7 @@
 # What happens to a cli diagnostic between raising it and reading it
 
 Investigated: 2026-08-19
+Revised: 2026-08-19 — investigation/expanding-a-diagnostic-when-it-is-raised.md
 
 `investigation/diagnostic-wrapping-under-rlang-and-cli.md` established, earlier
 the same day, that `rlang::abort()` wraps nothing and `cli::cli_abort()` wraps
@@ -72,6 +73,26 @@ the shipped unknown-dimension refusal, a `.margin_label` dimension named
 for an equivalent and has none — and the collapsing happens in rlang's
 retrieval formatting rather than in the interpolation, so that argument would
 not reach it in any case.
+
+## Revisions (2026-08-19)
+
+`investigation/expanding-a-diagnostic-when-it-is-raised.md` was taken later the
+same day, to answer what #230 should do about the section above. It sharpens
+that section and settles the question.
+
+What the section established was that a run of whitespace collapses. The
+successor measures which spellings, to the codepoint, and the answer is narrower
+than "whitespace": U+000A and U+00A0 are rewritten to U+0020, while a tab, a
+carriage return, a leading or trailing space, U+2009, U+200B, and U+3000 all
+survive.
+
+What it settles: no cli inline style avoids the collapsing, `cli_abort()` cannot
+be told to skip its retrieval pass, and expanding the template with
+`cli::format_inline()` at raise time keeps the caller's spelling and the whole
+authoring idiom at the cost of wrapping. ADR 0024 is the decision, and it also
+retires the wrapping this note's last two sections measured: a diagnostic this
+package writes reaches a rendered vignette unwrapped again, and
+`.github/scripts/verify-site.R`'s marker normalization is removed with it.
 
 ## cli breaks at whitespace, not inside a token
 

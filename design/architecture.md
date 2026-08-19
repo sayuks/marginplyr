@@ -385,16 +385,26 @@ public contract, and an invariant promoted to `abort_marginplyr()` silently
 enters it.
 
 It is also the interpolating entry point. A call site passes an unexpanded cli
-template and `cli::cli_abort()` expands it in the site's own frame, so the
-constructor owns the message's shape as well as its class: a short refusal plus
-`i` bullets, one inline style per subject, `{?}` for every plural, and
-caller-derived text interpolated as a value rather than concatenated into the
-template. See
+template and the constructor expands it in the site's own frame, so it owns the
+message's shape as well as its class: a short refusal plus `i` bullets, one
+inline style per subject, `{?}` for every plural, and caller-derived text
+interpolated as a value rather than concatenated into the template. See
 [ADR 0023](adr/0023-author-diagnostics-in-the-cli-idiom.md).
-`test-diagnostic-authoring.R` gates the last two of those together, by failing
-any `abort_marginplyr()` call whose message argument is not a literal in the
-source: an assembled template and an `if`-spelled noun are one violation seen
-from two sides.
+
+The expansion happens as the condition is raised — `cli::format_inline()` per
+element, then `rlang::abort()` — rather than when it is read.
+`cli::cli_abort()` would format at retrieval, and that pass collapses a run of
+whitespace inside an interpolated value as readily as inside the template, so a
+column the caller named `a  b` was named `a b` in the refusal. Raising expanded
+keeps the caller's spelling, at the cost of wrapping to the reader's width. See
+[ADR 0024](adr/0024-spell-a-callers-subject-as-the-caller-wrote-it.md), which
+also records the two spellings no route keeps.
+
+`test-diagnostic-authoring.R` gates the injection and plural rules together, by
+failing any `abort_marginplyr()` call whose message argument is not a literal in
+the source: an assembled template and an `if`-spelled noun are one violation
+seen from two sides. It pins the spelling promise beside them, in both
+directions.
 Sites that still assemble their own string pass through
 `abort_marginplyr_flat()`, which interpolates it as a value; that function is
 transitional, and the snapshot beside the gate is what is left of #223.
