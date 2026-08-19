@@ -20,8 +20,12 @@
 # re-authored `R/grouping-plan.R`, so it suffixes now as these eight do. Its
 # reason for being out is untouched by that: all four of its messages are
 # already pinned exactly in `test-grouping-plan.R`, so recording them again
-# would buy nothing. Suffixing is therefore where this set came from rather
-# than a test a ninth diagnostic is admitted by.
+# would buy nothing. That is a thinner reason than the one the paragraph below
+# gives for recording three of these eight at both sites, and it is #224's to
+# revisit: re-authoring how a diagnostic is spelled is not where the question
+# of which diagnostics this baseline covers gets decided. Suffixing is
+# therefore where this set came from rather than a test a ninth diagnostic is
+# admitted by.
 #
 # The pins already beside each site stay where they are. Most match a phrase
 # rather than a whole message, which is enough to assert that a caller reaches
