@@ -106,7 +106,7 @@
 #'   .margin_label = NULL
 #' )
 grouping_bit <- function(x) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     "`grouping_bit()` can only be used inside `summarize_with_margins()`."
   )
 }
@@ -114,7 +114,7 @@ grouping_bit <- function(x) {
 #' @rdname grouping_bit
 #' @export
 grouping_id <- function(...) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     "`grouping_id()` can only be used inside `summarize_with_margins()`."
   )
 }
@@ -234,16 +234,16 @@ grouping_helper_vars <- function(args, helper, plan) {
   # -- still reaches the arity diagnostic first, which is the one a caller
   # passing two of anything needs.
   if (any(vapply(carried, rlang::is_missing, logical(1)))) {
-    abort_marginplyr(not_a_column_message)
+    abort_marginplyr_flat(not_a_column_message)
   }
 
   if (identical(helper, "grouping_bit") && length(carried) != 1L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`grouping_bit()` requires exactly one column."
     )
   }
   if (identical(helper, "grouping_id") && length(carried) == 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`grouping_id()` requires at least one column."
     )
   }
@@ -255,24 +255,24 @@ grouping_helper_vars <- function(args, helper, plan) {
   # make the reordering above load-bearing for correctness rather than for which
   # diagnostic a caller reads.
   if (!all(vapply(carried, is_name_part, logical(1)))) {
-    abort_marginplyr(not_a_column_message)
+    abort_marginplyr_flat(not_a_column_message)
   }
 
   vars <- vapply(carried, as.character, character(1))
   if (anyDuplicated(vars)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf("`%s()` does not accept duplicate columns.", helper)
     )
   }
   if (identical(helper, "grouping_id") && length(vars) > 31L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       "`grouping_id()` supports at most 31 columns."
     )
   }
   allowed <- unique(c(plan$by, plan$dimensions))
   unknown <- setdiff(vars, allowed)
   if (length(unknown) > 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       sprintf(
         "Column%s %s %s not part of `.by` or `.grouping`.",
         if (length(unknown) == 1L) "" else "s",

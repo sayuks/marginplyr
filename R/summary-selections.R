@@ -97,11 +97,11 @@ check_option_named_summaries <- function(dots) {
           "and neither is the `", matched, "` it resembles"
         )
       }
-      abort_marginplyr(
+      abort_marginplyr_flat(
         paste0(opening, "; ", removed_summary_options[[matched]])
       )
     }
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`", name, "` is not an argument of `summarize_with_margins()`, so ",
         "it was captured as a summary named `", name, "`. Did you mean `",
@@ -132,7 +132,7 @@ check_summary_context_helpers <- function(dots) {
   # because a caller who had bound one of these names themselves was told only
   # that the verb refused the helper and had no way to learn that their own
   # function was never going to run (ADR 0019).
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "`summarize_with_margins()` does not support ",
       paste0("`", unsupported, "()`", collapse = ", "),
@@ -156,7 +156,7 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "Summary results cannot overwrite grouping column",
       if (length(overwritten_groups) == 1L) " " else "s ",
@@ -197,7 +197,7 @@ check_internal_summary_names <- function(output_names, internal_names) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "Dynamically generated summary output names conflict with ",
       "internal grouping columns: ",
@@ -697,7 +697,7 @@ check_across_name_count <- function(expanded, template, column) {
     return(expanded)
   }
 
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "The `across()` `.names` template `", template, "` must produce one ",
       "name per column, but it produced ", length(expanded),

@@ -1,6 +1,7 @@
 # How marginplyr's diagnostics render under rlang and cli
 
 Investigated: 2026-08-19
+Revised: 2026-08-19 — investigation/retrieval-time-formatting-of-a-cli-diagnostic.md
 
 #223 decided to re-author every shipped diagnostic in the cli idiom and asked
 ADR 0023 to settle three things it left open: cli's vector-formatting defaults,
@@ -90,6 +91,28 @@ The consequence is the one #223's re-pinning strategy turns on:
 `conditionMessage()` of a `cli_abort()` condition is deterministic inside the
 test suite. Retrieval-time formatting varies with the session, but not between
 two runs of the same test.
+
+## Revisions (2026-08-19)
+
+`investigation/retrieval-time-formatting-of-a-cli-diagnostic.md` corrects the
+section above and answers *What was not established* at the end of this note.
+It was taken later the same day, while #223's phase 2b moved all 83
+`abort_marginplyr()` sites onto `cli_abort()` at once, which is what made both
+measurable against real diagnostics.
+
+What it corrects: `width` and `cli.width` are not what governs a condition
+inside `test_that()`. `local_reproducible_output()` sets `cli.condition_width`
+to `Inf` and rlang consults that first, so the test suite sees no wrap at all —
+not the narrower deterministic one this note concluded. The conclusion drawn
+from it, that `conditionMessage()` is deterministic inside the suite, survives
+and is stronger. `tests/testthat/test-execution-conditions.R` already held the
+correction before it was measured.
+
+What it adds: retrieval-time formatting also collapses a run of whitespace
+inside an interpolated value, so a caller's own spelling of a column name is not
+preserved the way `rlang::abort()` preserved it; cli breaks a line at
+whitespace and not inside a token; and the rendered vignettes carry the
+diagnostics wrapped, with no markup and no escapes inside the sentence.
 
 ## cli's inline vector defaults
 

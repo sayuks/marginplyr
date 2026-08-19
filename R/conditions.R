@@ -8,16 +8,65 @@
 # `class` adds a narrower subclass for handlers marginplyr itself needs. Those
 # subclasses stay implementation details; `marginplyr_error` is the promised
 # public class.
+#
+# It is also the interpolating entry point: `message` is a cli template a call
+# site passes unexpanded, and `.envir` is what lets cli evaluate the template's
+# `{}` expressions in that site's own frame. ADR 0023 is authoritative for the
+# idiom every template is authored in -- the short refusal plus `i` bullets, the
+# inline style each subject takes, `{?}` for every plural, and the rule that
+# caller-derived text is interpolated as a value and never concatenated into the
+# template. ADR 0015's boundary is untouched by that: this still owns the class
+# and the blamed call, and `cli_abort()` carries `marginplyr_error` through.
 abort_marginplyr <- function(message,
                              ...,
                              class = NULL,
                              call = rlang::caller_call()) {
-  rlang::abort(
+  cli::cli_abort(
     message = message,
     ...,
     class = c(class, "marginplyr_error"),
-    call = call
+    call = call,
+    .envir = rlang::caller_env()
   )
+}
+
+# Transitional. A site that has not been re-authored yet still assembles its own
+# string, and handing that string to `abort_marginplyr()` as a template is an
+# injection surface rather than a formatting choice: the braces cli would
+# interpret do not come from the source literals -- an AST walk over `R/` found
+# none -- they come from caller data, and a column named `a{b}` is legal.
+# Against an assembled string `cli_abort()` answers `Could not evaluate cli {}
+# expression` instead of the refusal, so every not-yet-re-authored site passes
+# through here, where the string is interpolated as a *value*, which is what
+# makes a caller's braces inert. Inert is not untouched: cli's formatter
+# collapses a run of whitespace inside a value as it does inside the template,
+# which is a property of signalling through `cli_abort()` at all rather than of
+# this sibling, and is recorded in ADR 0023's consequences.
+#
+# This exists to be deleted. #223's phase 3 re-authors `R/` file by file, and
+# each of those pull requests drops this for its own sites; the last one removes
+# the function. Until then the snapshot in `test-diagnostic-authoring.R` is the
+# visible measure of how much is left, and it is also what stops a new flat site
+# appearing -- the structural gate beside it cannot see one, because what it
+# reads is `abort_marginplyr()`'s own argument, which here is a literal.
+abort_marginplyr_flat <- function(message,
+                                  ...,
+                                  class = NULL,
+                                  call = rlang::caller_call()) {
+  # An invariant rather than a Package condition (ADR 0015), and the one thing
+  # interpolating a whole message as a value cannot express: cli joins a longer
+  # vector with a serial `and`, and it drops the names a message vector carries
+  # its bullet markers in, so either would be silently rewritten rather than
+  # refused. Both are checked, because they fail independently -- a one-element
+  # `c(i = "...")` keeps its length and loses its `i`. Every site here assembles
+  # one unnamed string; the structural gate cannot see this, because what it
+  # reads is the template above.
+  stopifnot(
+    is.character(message),
+    length(message) == 1L,
+    is.null(names(message))
+  )
+  abort_marginplyr("{message}", ..., class = class, call = call)
 }
 
 # The conditions a chain holds, outermost first: the condition given, then each
@@ -261,14 +310,17 @@ message_line_runs <- function(lines) {
 # therefore rendered plain -- accepted rather than worked around, and recorded
 # in ADR 0022 beside the wrapping such a line already loses.
 #
-# cli needs no availability guard and its Suggests entry carries no version.
-# It is an Import of both dplyr and tidyselect, so it is in the hard dependency
-# closure and can never be absent: the `DBI = FALSE` case in `AGENTS.md`'s
-# dependency metadata, as `share_dialect_can_be_asked()` is. `ansi_strip()`
-# learned `link` in cli 3.3.0, which is tidyselect's own floor and below
-# dplyr's, so a constraint written here could never bind -- and
-# `marginplyr_suggest_available()`, the only thing that reads one, is never
-# asked about a package that cannot be absent.
+# cli needs no availability guard: it is an Import of this package, and every
+# error path crosses it since `abort_marginplyr()` above signals through
+# `cli_abort()`. That is a change of mechanism rather than of fact -- it was
+# already unable to be absent as an Import of both dplyr and tidyselect, the
+# `DBI = FALSE` case in `AGENTS.md`'s dependency metadata that
+# `share_dialect_can_be_asked()` still is -- and the difference is that the
+# floor now binds. DESCRIPTION states `cli (>= 3.4.0)`, which the installer
+# reads, where a Suggests floor would have been read only by
+# `marginplyr_suggest_available()`, which is never asked about a package that
+# cannot be absent (ADR 0023). `ansi_strip()` learned `link` in cli 3.3.0, so
+# this reader is satisfied by anything the floor admits.
 written_message_lines <- function(lines, runs) {
   lines <- cli::ansi_strip(lines, link = TRUE)
   vapply(
@@ -282,6 +334,18 @@ written_message_lines <- function(lines, runs) {
 # saying how many further grouping sets raised it. The conditions are replayed
 # in the order the branches raised them, and the reported occurrence is the
 # first, so a plan that raises nothing new reads as one branch's report.
+#
+# The count line is marginplyr's own sentence and is inside ADR 0023's rule,
+# even though everything else this module writes is outside it: the only value
+# interpolated is an integer marginplyr counted, so there is no caller text to
+# splice and `{?s}` is what spells the plural. It gains no markup and no width
+# dependence -- `pluralize()` does not consult the width -- and it is measured
+# byte-identical to the `sprintf()` and the `if` it replaces, which is why no
+# pin moves with it. `format_error_bullets()` stays around it: this is appended
+# to a rendered message rather than raised, so the `i` has to be rendered here.
+#
+# ADR 0021's contract is untouched. The warning's identity is computed when a
+# branch buffers it, before this line exists.
 report_branch_warnings <- function(conditions) {
   for (entry in conditions$warnings) {
     cnd <- entry$condition
@@ -289,10 +353,8 @@ report_branch_warnings <- function(conditions) {
       cnd$message <- paste0(
         cnd$message,
         "\n",
-        rlang::format_error_bullets(c(i = sprintf(
-          "%d further grouping %s raised this warning.",
-          entry$count - 1L,
-          if (entry$count == 2L) "set" else "sets"
+        rlang::format_error_bullets(c(i = cli::pluralize(
+          "{entry$count - 1L} further grouping set{?s} raised this warning."
         )))
       )
     }

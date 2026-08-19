@@ -584,7 +584,7 @@
 #'   .grouping = grouping_sets(grouping_set(region), grouping_set(store))
 #' ))
 share_of_parent <- function(x) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "`share_of_parent()` can only be used inside ",
       "`summarize_with_margins()` with a `rollup()`. To derive a value from ",
@@ -596,7 +596,7 @@ share_of_parent <- function(x) {
 #' @rdname share_of_parent
 #' @export
 share_of_total <- function(x) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "`share_of_total()` can only be used inside ",
       "`summarize_with_margins()` with a Grouping plan that contains the ",
@@ -640,7 +640,7 @@ preflight_shares <- function(dots) {
 }
 
 abort_share_helper_position <- function(kind, complete) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       share_kind_call(kind), " must be the complete right-hand side of a ",
       "named summary, or the direct `.fns` argument of `across()`.",
@@ -661,7 +661,7 @@ abort_share_helper_position <- function(kind, complete) {
 # vocabulary lives here; the executor decides when to raise it.
 abort_arrow_shares <- function(kinds) {
   kinds <- intersect(share_kind_names(), kinds)
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "Arrow backends do not support ",
       share_kind_labels_phrase(kinds),
@@ -689,7 +689,7 @@ share_grouping_spec_validator <- function(kinds) {
 check_parent_grouping_spec <- function(grouping_spec) {
   kind <- if (is.null(grouping_spec)) NULL else grouping_spec$type
   if (!identical(kind, "rollup")) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
         "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
@@ -792,7 +792,7 @@ plan_share_expressions <- function(dots,
       preceding_shares$names
     )
     if (length(share_dependency) > 0L) {
-      abort_marginplyr(
+      abort_marginplyr_flat(
         paste0(
           "Ordinary summaries cannot use an earlier ",
           share_kind_label(share_name_kind(
@@ -1242,7 +1242,7 @@ check_share_scalar <- function(value,
                                call) {
   label <- share_kind_label(share_kind)
   if (length(value) != 1L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         label, " `", share_output, "` requires source summary `",
         source_summary, "` to return exactly one value per grouping row. ",
@@ -1282,7 +1282,7 @@ abort_share_source_type <- function(value,
                                     share_kind,
                                     call) {
   detected_type <- if (is.object(value)) class(value) else typeof(value)
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       share_kind_label(share_kind), " `", share_output,
       "` requires source summary `",
@@ -1463,7 +1463,7 @@ plan_direct_share <- function(expr,
 validate_share_direct_syntax <- function(expr, output_name) {
   helper <- share_helper_name(share_helper_call_kind(expr))
   if (!nzchar(output_name)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "A direct `", helper, "()` summary must have an explicit output ",
         "name. Rewrite it as `name = ", helper, "(source)`."
@@ -1487,7 +1487,7 @@ validate_share_direct_syntax <- function(expr, output_name) {
   # change to an un-injected spelling and is recorded as one in ADR 0019.
   carried <- unwrap_injected_args(args)
   if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`", output_name, " = ", helper, "(...)` requires exactly one ",
         "bare name of a preceding ordinary summary. Define the scalar ",
@@ -1571,7 +1571,7 @@ validate_share_across_syntax <- function(expr, env, output_name) {
       length(names_template) != 1L ||
       is.na(names_template)
   ) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         share_kind_modifier(kind),
         " `across()` `.names` must be one non-missing character ",
@@ -1585,7 +1585,7 @@ validate_share_across_syntax <- function(expr, env, output_name) {
 preflight_share_across_syntax <- function(expr, output_name) {
   kind <- share_across_kind(expr)
   if (nzchar(output_name)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "An `across()` ", share_kind_modifier(kind), " expression must be ",
         "unnamed; use its required `.names` argument to name the output ",
@@ -1596,7 +1596,7 @@ preflight_share_across_syntax <- function(expr, output_name) {
   args <- parse_across_arguments(expr)
   if (!is_share_helper_function(args$fns)) {
     helper <- share_helper_name(kind)
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "For ", share_kind_label(kind), "s, `across()` `.fns` must be `",
         helper, "` or `marginplyr::", helper, "` directly. Use two ordered ",
@@ -1606,7 +1606,7 @@ preflight_share_across_syntax <- function(expr, output_name) {
     )
   }
   if (length(args$additional) > 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         share_kind_modifier(kind),
         " `across()` does not accept additional function arguments: ",
@@ -1616,7 +1616,7 @@ preflight_share_across_syntax <- function(expr, output_name) {
     )
   }
   if (is.null(args$names)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         share_kind_modifier(kind),
         " `across()` requires an explicit `.names` argument, ",
@@ -1636,7 +1636,7 @@ preflight_share_across_syntax <- function(expr, output_name) {
 }
 
 abort_share_across_unpack <- function(kind) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       share_kind_modifier(kind),
       " `across()` requires `.unpack = FALSE` or an ",
@@ -1655,12 +1655,12 @@ validate_share_request <- function(outputs,
     return(invisible(NULL))
   }
   if (any(!nzchar(outputs))) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(share_kind_modifier(kind), " output names must not be empty.")
     )
   }
   if (anyDuplicated(outputs)) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         share_kind_modifier(kind),
         " output names must be unique; duplicate name `",
@@ -1682,7 +1682,7 @@ validate_share_request <- function(outputs,
     source <- sources[[i]]
     output <- outputs[[i]]
     if (source %in% shares$names) {
-      abort_marginplyr(
+      abort_marginplyr_flat(
         paste0(
           label, " `", output, "` cannot use ",
           share_kind_label(share_name_kind(shares, source)), " `", source,
@@ -1692,14 +1692,14 @@ validate_share_request <- function(outputs,
     }
     if (!source %in% preceding_names) {
       if (source %in% all_names) {
-        abort_marginplyr(
+        abort_marginplyr_flat(
           paste0(
             label, " `", output, "` must refer to an ordinary summary ",
             "defined before it; `", source, "` is a forward reference."
           )
         )
       }
-      abort_marginplyr(
+      abort_marginplyr_flat(
         paste0(
           label, " `", output, "` refers to unknown preceding ordinary ",
           "summary `", source, "`."
@@ -1710,7 +1710,7 @@ validate_share_request <- function(outputs,
       !is.na(context$ordinary_counts[[source]]) &&
         context$ordinary_counts[[source]] != 1L
     ) {
-      abort_marginplyr(
+      abort_marginplyr_flat(
         paste0(
           label, " `", output, "` requires source summary `", source,
           "` to be defined exactly once. Use one uniquely named ordinary ",
@@ -1728,7 +1728,7 @@ validate_share_request <- function(outputs,
       )
     }
     if (length(record$dependencies) > 0L) {
-      abort_marginplyr(
+      abort_marginplyr_flat(
         paste0(
           label, " `", output, "` cannot use source summary `", source,
           "` because it depends on earlier summary alias `",
@@ -1748,7 +1748,7 @@ validate_share_request <- function(outputs,
     ))
   )
   if (length(conflicts) > 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         share_kind_modifier(kind), " output name `", conflicts[[1L]],
         "` conflicts with a grouping key, `.id`, ordinary summary, source ",
@@ -1779,7 +1779,7 @@ abort_ineligible_share_source <- function(label, output, source, eligibility) {
       "top-level named summary or a preceding `across()` output."
     )
   }
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(label, " `", output, "` cannot use `", source, "` because ", advice)
   )
 }
@@ -1796,7 +1796,7 @@ check_share_grouping_kinds <- function(plan, kinds) {
 
 check_parent_grouping_kind <- function(plan) {
   if (!identical(plan$kind, "rollup")) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`share_of_parent()` requires `.grouping` to be one pure `rollup()`. ",
         "`grouping_sets()`, `cube()`, `grouping_spec()`, and other grouping ",
@@ -1812,7 +1812,7 @@ check_total_grouping_kind <- function(plan) {
   if (length(grand_total_occurrence_ids(plan)) > 0L) {
     return(invisible(NULL))
   }
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "`share_of_total()` requires `.grouping` to produce the Grand total ",
       "set, in which every grouping dimension is omitted. `rollup()` and ",
@@ -2241,7 +2241,7 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
   # unrecognised verdict would otherwise be described to the caller as a
   # backend that could not be asked, which is a different fact.
   stopifnot(identical(verdict, "converts") || identical(verdict, "unknown"))
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "marginplyr cannot establish that the source summaries of ",
       share_kind_labels_phrase(kinds),
@@ -2962,7 +2962,7 @@ resolve_share_selection <- function(expr,
 abort_share_selection_error <- function(cnd, preceding, context, kind) {
   missing <- share_selection_missing_names(cnd)
   if (length(missing) == 0L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "Invalid ", share_kind_modifier(kind), " `across()` selection. ",
         "Select only eligible preceding ordinary summaries by name."
@@ -2984,7 +2984,7 @@ abort_share_source_name <- function(source, preceding, context, kind) {
   )
   occurrences <- sum(all_names == source)
   if (occurrences > 1L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`across()` can't select source summary `", source,
         "` for ", helper, " because summary `", source,
@@ -2997,7 +2997,7 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     )
   }
   if (occurrences == 1L) {
-    abort_marginplyr(
+    abort_marginplyr_flat(
       paste0(
         "`across()` can't select source summary `", source,
         "` for ", helper, " because summary `", source,
@@ -3017,7 +3017,7 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     character(1),
     "name"
   ))
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       "`across()` refers to unknown summary `", source,
       "` for ", helper, ". Select only eligible preceding ordinary ",
@@ -3083,7 +3083,7 @@ contains_selection_predicate <- function(expr) {
 }
 
 abort_share_predicate <- function(kind) {
-  abort_marginplyr(
+  abort_marginplyr_flat(
     paste0(
       share_kind_modifier(kind),
       " `across()` only supports name-based tidyselect. Replace ",
