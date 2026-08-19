@@ -76,16 +76,30 @@ argument is condition 3's second sentence, above.
 
 ## Amendment: a template may be split at a space, and the gate says so
 
-*Two rules are gated* below reads "fail any whose message argument is not a
-literal in the source", and gives `paste0()` as one of the two faces of a single
-violation. The gate admits `paste()` and `paste0()` as of #223's phase 3, on the
-same terms it already admitted `c()`: by recursion over their arguments. The
-sentence that goes is the parenthetical treating the call itself as the
-violation. What the gate refuses is unchanged, because the recursion and not the
-name of the call is what enforces both rules — caller-derived text is a symbol
-rather than a literal wherever it appears, so `paste0("Unknown column `",
-columns, "`.")` is refused exactly as before, and an `if` spelling a noun is
-refused inside an admitted call too. Both are fixtures in
+The gate admits `paste()` and `paste0()` as of #223's phase 3, on the same terms
+it already admitted `c()`: by recursion over their arguments. Two sentences of
+*Two rules are gated* below go with that.
+
+"Fail any whose message argument is not a literal in the source" is replaced by
+*fail any whose message argument is not authored in the source* — a literal, or
+a `c()`, `paste()`, or `paste0()` over arguments that are each authored in turn.
+`authored_template()` in `test-diagnostic-authoring.R` is the definition, and
+this ADR does not restate it, because a rule about which calls are admitted ages
+with the code and not with a decision.
+
+"A `paste0()`-assembled template and an `if`-spelled noun are the same violation
+seen from two sides, because neither can be written without computing the
+argument" goes whole. Its reasoning was sound and its example is no longer one:
+`paste0("a ", "b")` computes nothing a reader cannot see. What survives is the
+claim it was making, which the replacement above still supports — an `if`
+spelling a noun cannot be written without computing the argument, and neither
+can a template splicing caller text.
+
+What the gate refuses is unchanged, because the recursion and not the name of
+the call is what enforces both rules — caller-derived text is a symbol rather
+than a literal wherever it appears, so `paste0("Unknown column `", columns,
+"`.")` is refused exactly as before, and an `if` spelling a noun is refused
+inside an admitted call too. Both are fixtures in
 `test-diagnostic-authoring.R`.
 
 The reason is a measurement neither this ADR nor #223 had taken, and it binds
@@ -100,11 +114,12 @@ measure 83 to 119 characters before any markup is added. `lintr`'s default
 repository has no `.lintr`.
 
 The alternatives were all worse, which is why this is the amendment rather than
-one of them. A `.lintr` raising or excluding the limit stops it measuring
-thousands of lines of real code, for a property only diagnostics have. A
-suppression reaches about half the message elements in the package, and
-`AGENTS.md` asks each `# nolint` to record a fact about *one* expression, which
-a reason repeated eighty times is not. Rewording is what #223 exists to forbid.
+one of them. A `.lintr` is repository-wide, so raising or excluding the limit
+stops it measuring every line of `R/` and `tests/`, for a property only
+diagnostics have. A suppression reaches about half the message elements in the
+package, and `AGENTS.md` asks each `# nolint` to record a fact about *one*
+expression, which a reason repeated eighty times is not. Rewording is what #223
+exists to forbid.
 
 What is genuinely lost is small and worth naming: a template is no longer one
 literal a reader's eye lands on whole, but a sentence split at a space. It is

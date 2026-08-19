@@ -710,12 +710,26 @@ share_grouping_spec_validator <- function(kinds) {
 check_parent_grouping_spec <- function(grouping_spec) {
   kind <- if (is.null(grouping_spec)) NULL else grouping_spec$type
   if (!identical(kind, "rollup")) {
-    # Written out here and again in `check_parent_grouping_kind()`, which
-    # refuses the same call from the compiled plan. A shared constructor would
-    # read better and is what the flat form had, but the structural gate reads
-    # `abort_marginplyr()`'s own argument and refuses a template bound
-    # elsewhere, so factoring this out would put both sites outside its view.
-    abort_marginplyr(c(
+    abort_ambiguous_parent()
+  }
+  invisible(NULL)
+}
+
+# One refusal with two raising sites, because a Parent share can be refused
+# from the Grouping specification alone and again from the compiled plan, and
+# the caller has made one mistake either way. The flat form wrote the sentence
+# out at both; nothing required that, and nothing requires it now. The
+# structural gate reads the message argument of every `abort_marginplyr()` call
+# in the namespace, so a literal at this call is in its view exactly as a
+# literal at each site would be -- what the gate refuses is a template computed
+# or bound elsewhere, which this is not.
+#
+# `call` defaults to the call of this function's own caller, so the refusal
+# blames the site rather than this constructor, which is what raising it at
+# each site does and what `abort_marginplyr_flat()` did for the same reason.
+abort_ambiguous_parent <- function(call = rlang::caller_call()) {
+  abort_marginplyr(
+    c(
       paste0(
         "{.fun share_of_parent} requires {.arg .grouping} to be one pure ",
         "{.fun rollup}."
@@ -728,9 +742,9 @@ check_parent_grouping_spec <- function(grouping_spec) {
         "Rewrite {.arg .grouping} as one {.fun rollup} or omit the Parent ",
         "share."
       )
-    ))
-  }
-  invisible(NULL)
+    ),
+    call = call
+  )
 }
 
 plan_share_expressions <- function(dots,
@@ -1884,22 +1898,7 @@ check_share_grouping_kinds <- function(plan, kinds) {
 
 check_parent_grouping_kind <- function(plan) {
   if (!identical(plan$kind, "rollup")) {
-    # The same refusal `check_parent_grouping_spec()` raises, written out for
-    # the reason recorded there.
-    abort_marginplyr(c(
-      paste0(
-        "{.fun share_of_parent} requires {.arg .grouping} to be one pure ",
-        "{.fun rollup}."
-      ),
-      i = paste0(
-        "{.fun grouping_sets}, {.fun cube}, {.fun grouping_spec}, and other ",
-        "grouping specifications do not define one unambiguous parent."
-      ),
-      i = paste0(
-        "Rewrite {.arg .grouping} as one {.fun rollup} or omit the Parent ",
-        "share."
-      )
-    ))
+    abort_ambiguous_parent()
   }
   invisible(NULL)
 }
@@ -2351,6 +2350,14 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
   # verdicts differ in the whole subordinate clause naming what could not be
   # established, so what they share is the opening of the refusal and the
   # remedy that follows it.
+  #
+  # Binding the clause in R and interpolating it would remove that repetition,
+  # and it is what `abort_share_source_type()` does twenty lines up -- but what
+  # it binds there is a *value*, the class the data turned out to hold. This
+  # clause is prose marginplyr wrote, and prose belongs in the template, where
+  # the idiom ADR 0023 states applies to it and a reviewer reads it beside the
+  # refusal it completes. A sentence half in a template and half in an R string
+  # is authored in neither.
   if (identical(verdict, "converts")) {
     abort_marginplyr(
       c(

@@ -1,7 +1,8 @@
 # ADR 0023 states how every Package condition is authored. Two of its rules are
 # gated, and one structural reading catches both: walk every
-# `abort_marginplyr()` call and fail any whose message argument is not a literal
-# in the source.
+# `abort_marginplyr()` call and fail any whose message argument is not authored
+# in the source -- a literal, or a call over arguments that are each authored in
+# turn, which `authored_template()` below defines exactly.
 #
 # The two rules are one violation seen from two sides. *Caller text is a value,
 # never part of the template* fails when a template is assembled -- a
@@ -86,8 +87,10 @@ diagnostic_message_arguments <- function(expr, name) {
 # its 80-column condition to style advice, so the shipped sentences are 83 to
 # 119 characters before markup. Those two facts leave a re-authored element with
 # no spelling that fits `line_length_linter()`, and the alternatives were a
-# `.lintr` that stops measuring 3600 lines of real code, a `# nolint` at half
-# the elements in the package, or rewording the sentences #223 says to preserve.
+# `.lintr`, which is repository-wide and would stop measuring every line of
+# `R/` and `tests/` for a property only diagnostics have, a `# nolint` at about
+# half the message elements in the package, or rewording the sentences #223
+# says to preserve.
 #
 # Nothing about either gated rule is weaker for it, because the recursion is
 # what enforces them and not the name of the call. Caller-derived text is a
@@ -157,8 +160,8 @@ test_that("the reading finds a site wherever it is written", {
   # walk that stopped descending, or one that only read the first argument,
   # loses one of the two. The third is the shape a re-authored site actually
   # takes, and it is here so that the admitting branch for `paste0()` is
-  # executed by something other than the package -- the refusing branch has six
-  # fixtures below and would otherwise be the only one this file runs.
+  # executed by something other than the package -- every fixture in the test
+  # below is a refusal, so without this one only that branch would run.
   expect_length(found, 3L)
   expect_identical(found[[1]], "A refusal.")
   expect_true(all(vapply(found, authored_template, logical(1))))
