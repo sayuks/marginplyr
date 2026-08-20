@@ -15,9 +15,6 @@
       check_summary_context_helpers(): 1
       check_summary_group_overwrite(): 1
       execute_margin_nest(): 1
-      grouping_bit(): 1
-      grouping_helper_vars(): 7
-      grouping_id(): 1
       match_margin_choice(): 1
       nest_margin_pipeline(): 2
       normalize_margin_id(): 1

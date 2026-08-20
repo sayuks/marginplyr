@@ -750,7 +750,7 @@ test_that("injection is transparent to the checks after the name test", {
   expect_s3_class(unknown, "marginplyr_error")
   expect_match(
     conditionMessage(unknown),
-    "Column `nowhere` is not part of `.by` or `.grouping`.",
+    "Column is not part of `.by` or `.grouping`:\ni `nowhere`.",
     fixed = TRUE
   )
 })

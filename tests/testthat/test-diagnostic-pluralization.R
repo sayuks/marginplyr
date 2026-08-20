@@ -312,7 +312,10 @@ test_that("the grouping helper refusal pluralizes its noun and its verb", {
   ))
   expect_identical(
     conditionMessage(singular),
-    "Column `nowhere` is not part of `.by` or `.grouping`."
+    paste0(
+      "Column is not part of `.by` or `.grouping`:\n",
+      "i `nowhere`."
+    )
   )
 
   plural <- expect_error(summarize_with_margins(
@@ -322,7 +325,10 @@ test_that("the grouping helper refusal pluralizes its noun and its verb", {
   ))
   expect_identical(
     conditionMessage(plural),
-    "Columns `nowhere`, `nor` are not part of `.by` or `.grouping`."
+    paste0(
+      "Columns are not part of `.by` or `.grouping`:\n",
+      "i `nowhere` and `nor`."
+    )
   )
 })
 
