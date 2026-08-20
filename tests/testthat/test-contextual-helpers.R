@@ -664,9 +664,17 @@ test_that("the refusal names the helper and keeps its opening", {
   # The opening phrase six other assertions match by regular expression. It is
   # asserted here as well so that a rewording is caught where the wording is
   # decided rather than only where it is relied on.
+  #
+  # Anchored at both ends of the split #223 gave the refusal: the phrase closes
+  # the main line and the helper opens the bullet under it, so a re-wording
+  # that moved either back across the break fails here. The six read across it
+  # instead, matching the phrase alone or reaching the helper with `.*`.
   expect_error(
     summarize_with_margins(data, k = dplyr::cur_group_id(), .by = region),
-    "^`summarize_with_margins\\(\\)` does not support `cur_group_id\\(\\)`\\."
+    paste0(
+      "^`summarize_with_margins\\(\\)` does not support:\n",
+      "i `cur_group_id\\(\\)`\\."
+    )
   )
   expect_error(
     summarize_with_margins(data, k = dplyr::cur_group_id(), .by = region),
@@ -699,7 +707,10 @@ test_that("the refusal names the helper and keeps its opening", {
   # inside the verb the caller is already inside.
   parenthesized <- expect_error(
     summarize_with_margins(data, k = (cur_group_id)(), .by = region),
-    "^`summarize_with_margins\\(\\)` does not support `cur_group_id\\(\\)`\\."
+    paste0(
+      "^`summarize_with_margins\\(\\)` does not support:\n",
+      "i `cur_group_id\\(\\)`\\."
+    )
   )
   expect_s3_class(parenthesized, "marginplyr_error")
   expect_identical(

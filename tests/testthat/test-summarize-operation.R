@@ -283,7 +283,7 @@ test_that("summary selection errors use the package condition seam", {
         id = dplyr::cur_group_id(),
         .grouping = rollup(group)
       )),
-      message = "does not support `cur_group_id\\(\\)`"
+      message = "does not support:\ni `cur_group_id\\(\\)`\\."
     ),
     group_overwrite = list(
       expr = rlang::expr(summarize_with_margins(
@@ -291,7 +291,7 @@ test_that("summary selection errors use the package condition seam", {
         group = sum(value),
         .grouping = rollup(group)
       )),
-      message = "cannot overwrite grouping column `group`"
+      message = "cannot overwrite grouping column:\ni `group`\\."
     )
   )
 

@@ -89,25 +89,46 @@ check_option_named_summaries <- function(dots) {
     # the option they were reaching for leaves them looking for a word that is
     # not in their code.
     if (matched %in% names(removed_summary_options)) {
-      opening <- if (identical(name, matched)) {
-        paste0("`summarize_with_margins()` has no `", matched, "` argument")
-      } else {
-        paste0(
-          "`", name, "` is not an argument of `summarize_with_margins()`, ",
-          "and neither is the `", matched, "` it resembles"
-        )
+      # Two calls rather than the one opening this branch used to bind and
+      # hand to a single call, because the structural gate reads
+      # `abort_marginplyr()`'s own argument and refuses a template bound
+      # elsewhere -- the reason `R/share.R`'s two Parent-share refusals are
+      # written out twice. What the branch chooses is a whole main line, which
+      # is the shape ADR 0023's third amendment admits; the cost is the `i`
+      # bullet the two arms share, written out in each.
+      #
+      # That bullet is the option's own guidance, which is written in the
+      # table above rather than beside either call, so it arrives interpolated
+      # as a value -- a template may not be bound elsewhere, and a value may.
+      # It names no subject, so it loses no markup by arriving that way, and
+      # the `;` the flat form joined it with is now the break between the
+      # refusal and its bullet.
+      if (identical(name, matched)) {
+        abort_marginplyr(c(
+          "{.fun summarize_with_margins} has no {.arg {matched}} argument.",
+          i = "{removed_summary_options[[matched]]}"
+        ))
       }
-      abort_marginplyr_flat(
-        paste0(opening, "; ", removed_summary_options[[matched]])
-      )
+      abort_marginplyr(c(
+        paste0(
+          "{.arg {name}} is not an argument of ",
+          "{.fun summarize_with_margins}, and neither is the ",
+          "{.arg {matched}} it resembles."
+        ),
+        i = "{removed_summary_options[[matched]]}"
+      ))
     }
-    abort_marginplyr_flat(
+    # The captured summary is a column the caller can see in the result, so it
+    # is `{.var}` where the name they meant to write is `{.arg}`. Both spell
+    # the same string, which is the point the two styles are separated over.
+    abort_marginplyr(c(
       paste0(
-        "`", name, "` is not an argument of `summarize_with_margins()`, so ",
-        "it was captured as a summary named `", name, "`. Did you mean `",
-        matched, "`? Rename the summary if the column is intended."
-      )
-    )
+        "{.arg {name}} is not an argument of {.fun summarize_with_margins}, ",
+        "so it was captured as a summary named {.var {name}}."
+      ),
+      i = "Did you mean {.arg {matched}}?",
+      i = "Rename the summary if the column is intended."
+    ))
   }
   invisible(NULL)
 }
@@ -126,28 +147,45 @@ check_summary_context_helpers <- function(dots) {
     return(invisible(NULL))
   }
 
-  # `does not support` opens the message deliberately. Six assertions match
-  # that phrase by regular expression rather than by condition class, and it is
-  # still what the message says; the sentence after it is the part #172 added,
-  # because a caller who had bound one of these names themselves was told only
-  # that the verb refused the helper and had no way to learn that their own
-  # function was never going to run (ADR 0019).
-  abort_marginplyr_flat(
-    paste0(
-      "`summarize_with_margins()` does not support ",
-      paste0("`", unsupported, "()`", collapse = ", "),
-      if (length(unsupported) == 1L) {
-        ". This spelling is reserved inside a Margin summary and is not "
-      } else {
-        ". These spellings are reserved inside a Margin summary and are not "
-      },
-      "resolved from the calling environment. These helpers describe one ",
-      "branch-local dplyr grouping or data mask, but a margin result ",
-      "combines multiple grouping sets. Use ",
-      "`grouping_bit()` or ",
-      "`grouping_id()` when identifying margin levels."
+  # `does not support` still opens the message deliberately, which is what ADR
+  # 0019 asks of it: six assertions match that phrase by regular expression
+  # rather than by condition class.
+  #
+  # What no longer follows it in the same line is the helpers, which arrive
+  # alone in an `i` bullet, per ADR 0023's condition 2: how many of them the
+  # caller wrote is the caller's decision. Five of those six read across the
+  # break unchanged -- four join the phrase to a helper name with `.*`, which
+  # spans a newline in R's default regular expressions, and one matches the
+  # phrase alone. Four assertions spelled the two as one run and could not, so
+  # each is re-pinned across the break where it sits: the sixth of that census,
+  # in `test-summarize-operation.R`; a `fixed = TRUE` match in
+  # `test-static-expression-analysis.R`; and the two in
+  # `test-contextual-helpers.R`, which is where the opening is asserted at the
+  # site the wording is decided.
+  #
+  # The sentence after the helpers is the part #172 added, because a caller who
+  # had bound one of these names themselves was told only that the verb refused
+  # the helper and had no way to learn that their own function was never going
+  # to run (ADR 0019). It inflects a demonstrative, a noun, and two verbs, and
+  # `cli::qty()` is what carries the count to all four: the vector deciding it
+  # is no longer in the line they sit in.
+  abort_marginplyr(c(
+    "{.fun summarize_with_margins} does not support:",
+    i = "{.fun {unsupported}}.",
+    i = paste0(
+      "{cli::qty(length(unsupported))}{?This/These} spelling{?s} {?is/are} ",
+      "reserved inside a Margin summary and {?is/are} not resolved from the ",
+      "calling environment."
+    ),
+    i = paste0(
+      "These helpers describe one branch-local dplyr grouping or data mask, ",
+      "but a margin result combines multiple grouping sets."
+    ),
+    i = paste0(
+      "Use {.fun grouping_bit} or {.fun grouping_id} when identifying margin ",
+      "levels."
     )
-  )
+  ))
 }
 
 check_summary_group_overwrite <- function(output_names, group_vars) {
@@ -156,14 +194,17 @@ check_summary_group_overwrite <- function(output_names, group_vars) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr_flat(
+  # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2: how
+  # many of them there are is the caller's decision. `cli::qty()` is what
+  # carries the count across that split, the noun it inflects no longer sitting
+  # beside the vector.
+  abort_marginplyr(c(
     paste0(
-      "Summary results cannot overwrite grouping column",
-      if (length(overwritten_groups) == 1L) " " else "s ",
-      paste0("`", overwritten_groups, "`", collapse = ", "),
-      "."
-    )
-  )
+      "{cli::qty(length(overwritten_groups))}Summary results cannot ",
+      "overwrite grouping column{?s}:"
+    ),
+    i = "{.var {overwritten_groups}}."
+  ))
 }
 
 # The three questions to ask of the names a summary really produced, which the
@@ -197,14 +238,18 @@ check_internal_summary_names <- function(output_names, internal_names) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr_flat(
+  # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2: how
+  # many of them there are is the caller's decision. The `:` the flat form
+  # already introduced them with is the break they arrive across, so the noun
+  # ahead of it needs no inflection -- it was written plural whatever arrived.
+  abort_marginplyr(c(
     paste0(
-      "Dynamically generated summary output names conflict with ",
-      "internal grouping columns: ",
-      paste0("`", conflicting_names, "`", collapse = ", "),
-      ". Use different summary output names."
-    )
-  )
+      "Dynamically generated summary output names conflict with internal ",
+      "grouping columns:"
+    ),
+    i = "{.var {conflicting_names}}.",
+    i = "Use different summary output names."
+  ))
 }
 
 # What execution carries for the caller's summary arguments: the dots to hand
@@ -697,14 +742,19 @@ check_across_name_count <- function(expanded, template, column) {
     return(expanded)
   }
 
-  abort_marginplyr_flat(
+  # The template and the column both stay in the main line, under ADR 0023's
+  # element-count reading of its condition 2: each is one caller subject rather
+  # than a part the caller decides the count of, however long a template
+  # renders. `{.code}` is what a spelling the caller typed takes, and the
+  # braces inside one are inert because it arrives interpolated as a value.
+  abort_marginplyr(c(
     paste0(
-      "The `across()` `.names` template `", template, "` must produce one ",
-      "name per column, but it produced ", length(expanded),
-      " for column `", column,
-      "`. Use a template that expands to a single name."
-    )
-  )
+      "The {.fun across} {.arg .names} template {.code {template}} must ",
+      "produce one name per column, but it produced {length(expanded)} for ",
+      "column {.var {column}}."
+    ),
+    i = "Use a template that expands to a single name."
+  ))
 }
 
 known_across_source_names <- function(expr, env, data_proxy) {

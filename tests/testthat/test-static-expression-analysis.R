@@ -3689,7 +3689,7 @@ test_that("evaluating a captured helper reaches the rule it always did", {
       .grouping = rollup(region),
       .margin_label = NULL
     ),
-    "does not support `cur_group_id()`",
+    "does not support:\ni `cur_group_id()`.",
     fixed = TRUE
   )
   expect_s3_class(context, "marginplyr_error")

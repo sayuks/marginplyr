@@ -293,7 +293,15 @@ markers <- list(
     # so all of them hold wherever the page is built.
     "Error in `summarize_with_margins()`",
     "Error in `nest_with_margins()`",
-    "does not support `cur_group_id()`",
+    # The `cur_group*()` refusal, quoted one sentence further in than it used
+    # to be. #223's re-authoring moved the helper the caller wrote into an `i`
+    # bullet of its own, so the opening phrase and the helper name are no
+    # longer one run of this page, and the bullets around the sentence below
+    # each carry something the call decides -- the helper, or the plural its
+    # count chooses. This sentence is the longest run of that refusal no data
+    # reaches, which is what ADR 0023's condition 3 asks a marker to be chosen
+    # from.
+    "These helpers describe one branch-local dplyr grouping or data mask",
     "Duplicate grouping sets were produced at",
     "Can't supply `.by` when `.data` is grouped",
     "Grouped input created with `.drop = FALSE` is not supported",

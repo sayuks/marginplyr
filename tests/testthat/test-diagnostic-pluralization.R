@@ -342,7 +342,10 @@ test_that("the summary overwrite refusal pluralizes its column noun", {
   ))
   expect_identical(
     conditionMessage(singular),
-    "Summary results cannot overwrite grouping column `region`."
+    paste0(
+      "Summary results cannot overwrite grouping column:\n",
+      "i `region`."
+    )
   )
 
   plural <- expect_error(summarize_with_margins(
@@ -353,6 +356,9 @@ test_that("the summary overwrite refusal pluralizes its column noun", {
   ))
   expect_identical(
     conditionMessage(plural),
-    "Summary results cannot overwrite grouping columns `region`, `grade`."
+    paste0(
+      "Summary results cannot overwrite grouping columns:\n",
+      "i `region` and `grade`."
+    )
   )
 })
