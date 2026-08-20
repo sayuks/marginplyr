@@ -45,6 +45,12 @@ assert_string_scalar <- function(x) {
 # `<data.frame/dtplyr_step>` -- which is not what a list of alternatives means.
 # ADR 0023's fourth amendment records the measurement and puts both spellings
 # in the style table.
+#
+# `{.or}` is the join, which is the other half of what a list of alternatives
+# is: `must be one of` asks the reader to pick one, so the serial `and` cli
+# joins a vector with by default would read as a conjunction. This is the same
+# call `match_margin_choice()` makes about an option vocabulary, and the
+# `toString()` comma both replace was neutral between the two readings.
 assert_nest_possible <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
@@ -52,7 +58,7 @@ assert_nest_possible <- function(x) {
   if (!inherits(x, valid_classes)) {
     abort_marginplyr(paste0(
       "{.arg {nm}} must be one of the following classes, which can be ",
-      "nested: {.code {valid_classes}}."
+      "nested: {.or {.code {valid_classes}}}."
     ))
   }
 }
@@ -126,6 +132,12 @@ assert_margin_input <- function(x) {
 # `assert_nest_possible()` above records: the vector is this function's own
 # constant. `{.code}` is that function's style for the same subject, and it is
 # what keeps a second entry from rendering as one object's class chain.
+#
+# The join is cli's default `and` rather than that function's `{.or}`, and the
+# difference is what the sentence asks of the list. A whitelist offers
+# alternatives to pick one of; a blacklist refuses every entry at once, so a
+# second name would be refused alongside the first and not instead of it.
+# Nothing renders today, the vector holding one name.
 assert_lazy_table <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.

@@ -208,8 +208,17 @@ normalize_margin_id <- function(.id) {
 
 # `where` names what the identifier collided with, and it arrives interpolated
 # as a value: each caller writes its own phrase, so a template built from it
-# would be a template bound elsewhere, which the structural gate refuses. It
-# names no subject of its own, so it loses no markup by arriving that way.
+# would be a template bound elsewhere, which the structural gate refuses.
+#
+# Three of the four phrases name no subject -- `a summary output` twice and
+# `a source column` -- and lose no markup by arriving that way. The nesting one
+# does name one, and spells it in backticks it typed itself:
+# ``nesting `.key` ``. cli does not interpret a value, so those bytes are what
+# a reader sees, which are the bytes `{.arg .key}` would have rendered. What is
+# lost is that the style table stops deciding it -- a later cli styling
+# `{.arg}` differently would style the three subjects in this sentence's own
+# template and not that one. Recorded rather than fixed: what a caller passes
+# has to stay a value.
 #
 # `{(.id)}` for the reason `execute_margin_nest()` records: cli reads a `{}`
 # expression opening with a dot as one of its own styles.

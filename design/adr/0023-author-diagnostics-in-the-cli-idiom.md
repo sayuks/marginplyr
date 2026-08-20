@@ -243,6 +243,18 @@ reads a `{}` expression opening with a dot as one of its own styles, and from
 outright rather than guessing. `{(.key)}` is the spelling, and it is the one
 cli's own diagnostic names.
 
+**The transitional paragraph in *Consequences* goes with the same pull
+request**, that group being the last of them. It opens "Until the re-authoring
+is finished, a fourth path holds the flat form", and the re-authoring is
+finished: `abort_marginplyr_flat()` and the snapshot counting its remaining
+sites are deleted, so the gate reads every diagnostic this package raises and
+the fourth path is not one a reader can still find. What the paragraph argued
+stands and is why the shim existed — *Caller text is a value* held across the
+whole corpus from the day the switch landed rather than file by file — and its
+own last sentence is what has now happened. ADR 0024's "`abort_marginplyr_flat()`
+is untouched" is left alone deliberately: that sentence bounds what ADR 0024
+changed on the day it was decided, and it was true.
+
 ## The migration introduces wrapping, so a line is authored to survive it
 
 `rlang::abort()` wraps nothing. `cli_abort()` wraps at retrieval time, at
