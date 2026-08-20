@@ -286,23 +286,22 @@ grouping_helper_vars <- function(args, helper, plan) {
 # refuses a template bound elsewhere -- the reason `R/share.R`'s two
 # Parent-share refusals are written out twice.
 #
-# `injected_quosure_clause()` is a whole sentence assembled around a deparsed
-# caller expression, so it stays an interpolated value and gains no markup: ADR
-# 0023's injection rule is what makes a caller's braces inert, and it holds
-# because cli reads the template and not the value. It carries its own leading
-# space and is empty at a call that injected nothing, so it follows the refusal
-# in the same line rather than taking a bullet of its own, which would sometimes
-# be a bullet marker with nothing after it. That is also where the flat form put
-# it, so every pin reading it composes as it did.
+# `injected_quosure_clause()` reaches the template as an interpolated value
+# carrying no markup, for the reasons `R/share.R` states above the other site
+# that appends it: cli reads the template and not the value, so the caller's
+# braces are inert, and the clause is empty at a call that injected nothing, so
+# it follows prose already in a line rather than taking a bullet that would
+# sometimes hold a marker and nothing after it. The line it follows here is the
+# refusal, this refusal having no bullet to follow instead -- which is where the
+# flat form put it too, so every pin reading it composes as it did.
 #
-# ADR 0023's surviving line condition does not move it either, and reading it as
-# though it did would cost the sentence its subject. What that condition governs
-# is a part whose *length* the caller decides -- a vector whose element count
-# they chose, which is why the plan-membership refusal above splits -- and this
-# is one clause about one expression, as `{.var {output}}` in `R/share.R` and
-# `{.code {label}}` in `R/grouping-plan.R` are single caller subjects standing
-# in a main line. The bullet it would move to is not available in any case: this
-# refusal offers no remedy to attach it to, and #223 forbids inventing one.
+# ADR 0023's surviving line condition does not move it, and reading it as though
+# it did would cost the sentence its subject. What that condition governs is a
+# part whose *length* the caller decides -- a vector whose element count they
+# chose, which is what splits the plan-membership refusal above. This is one
+# clause about one expression, the shape `{.code {label}}` already has in
+# `R/grouping-plan.R`'s nested-specification refusal, where an arbitrary
+# deparsed caller expression stands in a main line with two bullets beside it.
 #
 # `call` is forwarded rather than left to its default, because
 # `abort_marginplyr()` blames its own caller: defaulted here it would name this
