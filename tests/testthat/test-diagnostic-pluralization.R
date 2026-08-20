@@ -200,8 +200,8 @@ test_that("the NA-level refusal pluralizes its grouping column noun", {
   )
 })
 
-# Both `kind` values are pinned, and #223's re-authoring of this file made the
-# reason a stronger one rather than retiring it. The pluralized noun sat
+# Both collision kinds are pinned, and #223's re-authoring of this file made
+# the reason a stronger one rather than retiring it. The pluralized noun sat
 # between words the kind chose, so reading the whole sentence was what a
 # re-wording called for; now each kind is a template of its own, and the
 # pluralized column noun, the clause naming the collision, and the remedy are

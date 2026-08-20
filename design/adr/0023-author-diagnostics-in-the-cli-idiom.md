@@ -137,22 +137,32 @@ below forbids an R branch to do.
 
 It is admitted, and what the boundary turns on is what the two arms differ by
 rather than what the branch reads. `{?a/b}` chooses between two literal
-alternatives, and the alternative it picks is never re-read as a template:
-measured on 2026-08-20 with cli 3.6.6,
-`{cli::qty(n)}{?{.val {lab}}/Margin labels}` renders its singular arm as the
-uninterpolated text `{.val {lab}}`. The two arms here name different subjects —
+alternatives, and the alternative it picks is never re-read as a template, so
+nothing can be interpolated into it —
+`investigation/a-pluralization-alternative-is-literal-text.md` measures that,
+and records that cli documents `{?}` over word forms only, so it is a
+behaviour rather than a promise. The two arms here name different subjects —
 the one colliding label, which is interpolated, against the words `Margin
 labels` standing in for several distinct ones, which is not — so no single
 template can write both. The count is how that subject gets chosen; it is not
 something being inflected.
 
-So the rule stands where it bites, and `design/architecture.md`'s "`{?}` for
-every plural" stays literally true. A noun that inflects still goes through
-`{?}`, as `column{?s}` behind `cli::qty()` does in each of the four arms rather
-than being branched on. What an R branch may choose is a whole element or a
-whole clause, which is what `R/share.R`'s helper-position refusal and
-`R/grouping-plan.R`'s two renaming refusals already do; that those two read a
-boolean and this one reads a count is not a distinction this ADR draws.
+So the rule stands where it bites. What an R branch may choose is a whole
+element or a whole clause, which is what `R/share.R`'s helper-position refusal
+and `R/grouping-plan.R`'s two renaming refusals already do; that those two read
+a boolean and this one reads a count is not a distinction this ADR draws. What
+it may not do is leave a plural inside a template for an `if` to spell, and none
+of the four arms does: the noun still free once an arm has been chosen —
+`column{?s}`, on the number of colliding columns — goes through `{?}` behind
+`cli::qty()` in every one of them.
+
+`design/architecture.md`'s "`{?}` for every plural" is therefore read as a
+property of a template rather than of a diagnostic, and on that reading it needs
+no edit. Read of the diagnostic it would be false here, and saying so is the
+honest form of this amendment: `is`/`are` and `a factor level`/`factor levels`
+do vary with the data, and the branch is what picks them. What stays true, and
+what the structural gate can check, is that no template contains a plural an
+`if` decides.
 
 **The inventory in that section** is what goes: "`{?s}` covers the nine sites
 that suffix one, `{?is/are}` the one that also inflects a verb, and `{?a/b}`
