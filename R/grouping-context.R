@@ -297,10 +297,10 @@ grouping_helper_vars <- function(args, helper, plan) {
 #
 # ADR 0023's surviving line condition does not move it, under the element-count
 # reading its first amendment records: this is one clause about one expression
-# and not a part whose count the caller decides. That is the shape
-# `{.code {label}}` already has in `R/grouping-plan.R`'s nested-specification
-# refusal, where an arbitrary deparsed caller expression stands in a main line
-# with two bullets beside it.
+# and not a part the caller decides the count of -- the shape `{.code {label}}`
+# already has in `R/grouping-plan.R`'s nested-specification refusal, where an
+# arbitrary deparsed caller expression stands in a main line with two `i`
+# bullets beside it.
 #
 # `call` is forwarded rather than left to its default, because
 # `abort_marginplyr()` blames its own caller: defaulted here it would name this
