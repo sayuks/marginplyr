@@ -113,7 +113,10 @@ test_that("the fixed `.by` label refusal pluralizes its column noun", {
   ))
   expect_identical(
     conditionMessage(singular),
-    "`.margin_label` must not name fixed `.by` column `region`."
+    paste0(
+      "`.margin_label` must not name fixed `.by` column:\n",
+      "i `region`."
+    )
   )
 
   plural <- expect_error(expand_with_margins(
@@ -124,7 +127,10 @@ test_that("the fixed `.by` label refusal pluralizes its column noun", {
   ))
   expect_identical(
     conditionMessage(plural),
-    "`.margin_label` must not name fixed `.by` columns `region`, `grade`."
+    paste0(
+      "`.margin_label` must not name fixed `.by` columns:\n",
+      "i `region` and `grade`."
+    )
   )
 })
 
@@ -137,13 +143,19 @@ test_that("the unknown label dimension refusal pluralizes its name noun", {
   singular <- expect_error(operation(c(region = "A", u = "A")))
   expect_identical(
     conditionMessage(singular),
-    "`.margin_label` has unknown dimension name `u`."
+    paste0(
+      "`.margin_label` has unknown dimension name:\n",
+      "i `u`."
+    )
   )
 
   plural <- expect_error(operation(c(region = "A", u = "A", v = "A")))
   expect_identical(
     conditionMessage(plural),
-    "`.margin_label` has unknown dimension names `u`, `v`."
+    paste0(
+      "`.margin_label` has unknown dimension names:\n",
+      "i `u` and `v`."
+    )
   )
 })
 
@@ -169,8 +181,9 @@ test_that("the NA-level refusal pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(singular),
     paste0(
-      "`NA_character_` is already a factor level in grouping column `g`. ",
-      "Use `NULL` for a typed-missing Margin label while preserving the NA ",
+      "`NA_character_` is already a factor level in grouping column:\n",
+      "i `g`.\n",
+      "i Use `NULL` for a typed-missing Margin label while preserving the NA ",
       "level."
     )
   )
@@ -179,21 +192,26 @@ test_that("the NA-level refusal pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(plural),
     paste0(
-      "`NA_character_` is already a factor level in grouping columns `g`, ",
-      "`h`. Use `NULL` for a typed-missing Margin label while preserving ",
-      "the NA level."
+      "`NA_character_` is already a factor level in grouping columns:\n",
+      "i `g` and `h`.\n",
+      "i Use `NULL` for a typed-missing Margin label while preserving the NA ",
+      "level."
     )
   )
 })
 
-# Both `kind` values are pinned, because the pluralized noun sits between words
-# the kind chooses and a re-authoring reads the whole sentence rather than the
-# branch it came from. The mixed cases are the builder's other subject arm:
-# labels that are not all one value replace the quoted label with a plural
-# subject carrying its own verb, and under the declared kind a second noun
-# pluralizes with it. That arm exists under both kinds and is plural-only,
-# since two distinct label values need two columns, so both are recorded and
-# neither stands in for the other.
+# Both `kind` values are pinned, and #223's re-authoring of this file made the
+# reason a stronger one rather than retiring it. The pluralized noun sat
+# between words the kind chose, so reading the whole sentence was what a
+# re-wording called for; now each kind is a template of its own, and the
+# pluralized column noun, the clause naming the collision, and the remedy are
+# each written out once per kind, so neither arm's pin reads the other's words
+# at all. The mixed cases are each builder's other subject arm: labels that are
+# not all one value replace the quoted label with a plural subject carrying its
+# own verb, and under the declared kind a second noun pluralizes with it. That
+# arm exists under both kinds and is plural-only, since two distinct label
+# values need two columns, so both are recorded and neither stands in for the
+# other.
 test_that("the margin label collision pluralizes its grouping column noun", {
   declared <- data.frame(
     a = factor(c("All", "x")),
@@ -224,8 +242,9 @@ test_that("the margin label collision pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(declared_singular),
     paste0(
-      "\"All\" is already a factor level in grouping column `a`. ",
-      "Choose another `.margin_label`."
+      "\"All\" is already a factor level in grouping column:\n",
+      "i `a`.\n",
+      "i Choose another `.margin_label`."
     )
   )
 
@@ -233,8 +252,9 @@ test_that("the margin label collision pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(declared_plural),
     paste0(
-      "\"All\" is already a factor level in grouping columns `a`, `b`. ",
-      "Choose another `.margin_label`."
+      "\"All\" is already a factor level in grouping columns:\n",
+      "i `a` and `b`.\n",
+      "i Choose another `.margin_label`."
     )
   )
 
@@ -242,8 +262,9 @@ test_that("the margin label collision pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(declared_mixed),
     paste0(
-      "Margin labels are already factor levels in grouping columns `a`, ",
-      "`b`. Choose another `.margin_label`."
+      "Margin labels are already factor levels in grouping columns:\n",
+      "i `a` and `b`.\n",
+      "i Choose another `.margin_label`."
     )
   )
 
@@ -251,8 +272,10 @@ test_that("the margin label collision pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(observed_singular),
     paste0(
-      "\"All\" is already present in grouping column `a`. ",
-      "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
+      "\"All\" is already present in grouping column:\n",
+      "i `a`.\n",
+      "i Choose another `.margin_label` or set ",
+      "`.check_margin_label = FALSE`."
     )
   )
 
@@ -260,8 +283,10 @@ test_that("the margin label collision pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(observed_plural),
     paste0(
-      "\"All\" is already present in grouping columns `a`, `b`. ",
-      "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
+      "\"All\" is already present in grouping columns:\n",
+      "i `a` and `b`.\n",
+      "i Choose another `.margin_label` or set ",
+      "`.check_margin_label = FALSE`."
     )
   )
 
@@ -269,8 +294,10 @@ test_that("the margin label collision pluralizes its grouping column noun", {
   expect_identical(
     conditionMessage(observed_mixed),
     paste0(
-      "Margin labels are already present in grouping columns `a`, `b`. ",
-      "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
+      "Margin labels are already present in grouping columns:\n",
+      "i `a` and `b`.\n",
+      "i Choose another `.margin_label` or set ",
+      "`.check_margin_label = FALSE`."
     )
   )
 })

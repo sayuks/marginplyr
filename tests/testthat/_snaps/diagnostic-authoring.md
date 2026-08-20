@@ -3,7 +3,6 @@
     Code
       cat(sprintf("%s(): %d", names(counts), counts), sep = "\n")
     Output
-      abort_margin_label_collision(): 1
       assert_lazy_table(): 1
       assert_logical_scalar(): 1
       assert_margin_input(): 1
@@ -22,7 +21,4 @@
       match_margin_choice(): 1
       nest_margin_pipeline(): 2
       normalize_margin_id(): 1
-      normalize_margin_label(): 5
-      validate_margin_label(): 1
-      validate_margin_label_names(): 3
 
