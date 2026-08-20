@@ -140,12 +140,14 @@ match_margin_choice <- function(value, choices, arg_name) {
   if (rlang::is_string(value) && value %in% choices) {
     return(value)
   }
-  abort_marginplyr_flat(
-    paste0(
-      "`", arg_name, "` must be one of ",
-      paste0("\"", choices, "\"", collapse = ", "),
-      "."
-    ),
+  # The vocabulary is a list of alternatives, which is the case ADR 0023 gives
+  # `{.or}`: the bare comma this used to join with was one of the three
+  # spellings that ADR converged, and `"error", "drop", or "keep"` is what the
+  # defaults answer for three entries and `"error" or "drop"` for two. It stays
+  # in the line that offers it, the vocabulary being the verb's own and not
+  # something the caller decides the length of.
+  abort_marginplyr(
+    "{.arg {arg_name}} must be one of {.or {.val {choices}}}.",
     call = call
   )
 }
@@ -196,18 +198,33 @@ normalize_margin_id <- function(.id) {
       is.na(.id) ||
       !nzchar(.id)
   ) {
-    abort_marginplyr_flat(
-      "`.id` must be `NULL` or one non-missing, non-empty character string."
-    )
+    abort_marginplyr(paste0(
+      "{.arg .id} must be {.code NULL} or one non-missing, non-empty ",
+      "character string."
+    ))
   }
   .id
 }
 
+# `where` names what the identifier collided with, and it arrives interpolated
+# as a value: each caller writes its own phrase, so a template built from it
+# would be a template bound elsewhere, which the structural gate refuses.
+#
+# Three of the four phrases name no subject -- `a summary output` twice and
+# `a source column` -- and lose no markup by arriving that way. The nesting one
+# does name one, and spells it in backticks it typed itself:
+# ``nesting `.key` ``. cli does not interpret a value, so those bytes are what
+# a reader sees, which are the bytes `{.arg .key}` would have rendered. What is
+# lost is that the style table stops deciding it -- a later cli styling
+# `{.arg}` differently would style the three subjects in this sentence's own
+# template and not that one. Recorded rather than fixed: what a caller passes
+# has to stay a value.
+#
+# `{(.id)}` for the reason `execute_margin_nest()` records: cli reads a `{}`
+# expression opening with a dot as one of its own styles.
 check_margin_id_collision <- function(.id, names, where) {
   if (!is.null(.id) && .id %in% names) {
-    abort_marginplyr_flat(
-      sprintf("`.id` (`%s`) conflicts with %s.", .id, where)
-    )
+    abort_marginplyr("{.arg .id} ({.var {(.id)}}) conflicts with {where}.")
   }
   invisible(NULL)
 }

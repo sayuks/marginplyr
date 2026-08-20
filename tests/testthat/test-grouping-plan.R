@@ -895,7 +895,7 @@ test_that("compile_grouping_spec() reads a narrowed duplicates vocabulary", {
   expect_s3_class(refused, "marginplyr_error")
   expect_identical(
     conditionMessage(refused),
-    "`.duplicates` must be one of \"error\", \"drop\"."
+    "`.duplicates` must be one of \"error\" or \"drop\"."
   )
 
   # An untouched `.duplicates` stands for the first entry of the list the

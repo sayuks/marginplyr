@@ -726,7 +726,7 @@ check_parent_grouping_spec <- function(grouping_spec) {
 #
 # `call` defaults to the call of this function's own caller, so the refusal
 # blames the site rather than this constructor, which is what raising it at
-# each site does and what `abort_marginplyr_flat()` did for the same reason.
+# each site does.
 abort_ambiguous_parent <- function(call = rlang::caller_call()) {
   abort_marginplyr(
     c(

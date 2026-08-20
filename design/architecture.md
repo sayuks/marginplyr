@@ -408,9 +408,10 @@ are each authored in turn. So a template splicing a computed value and an
 at a space to fit the margin is not one — ADR 0023's second amendment records
 why that split is unavoidable. It pins the spelling promise beside them, in
 both directions.
-Sites that still assemble their own string pass through
-`abort_marginplyr_flat()`, which interpolates it as a value; that function is
-transitional, and the snapshot beside the gate is what is left of #223.
+The gate reaches every diagnostic this package raises: #223's phase 3 finished
+re-authoring `R/` file by file, so the transitional sibling that let a
+not-yet-re-authored site hand an assembled string across as a value is gone,
+and with it the snapshot that counted what was left.
 
 It also owns the one reading of a condition another package raised.
 `condition_chain()` answers the conditions a `parent` chain holds, outermost

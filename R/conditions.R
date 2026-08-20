@@ -56,42 +56,6 @@ abort_marginplyr <- function(message,
   )
 }
 
-# Transitional. A site that has not been re-authored yet still assembles its own
-# string, and handing that string to `abort_marginplyr()` as a template is an
-# injection surface rather than a formatting choice: the braces cli would
-# interpret do not come from the source literals -- an AST walk over `R/` found
-# none -- they come from caller data, and a column named `a{b}` is legal.
-# Against an assembled string cli answers `Could not evaluate cli {} expression`
-# instead of the refusal, so every not-yet-re-authored site passes through here,
-# where the string is interpolated as a *value*, which is what makes a caller's
-# braces inert.
-#
-# This exists to be deleted. #223's phase 3 re-authors `R/` file by file, and
-# each of those pull requests drops this for its own sites; the last one removes
-# the function. Until then the snapshot in `test-diagnostic-authoring.R` is the
-# visible measure of how much is left, and it is also what stops a new flat site
-# appearing -- the structural gate beside it cannot see one, because what it
-# reads is `abort_marginplyr()`'s own argument, which here is a literal.
-abort_marginplyr_flat <- function(message,
-                                  ...,
-                                  class = NULL,
-                                  call = rlang::caller_call()) {
-  # An invariant rather than a Package condition (ADR 0015), and the one thing
-  # interpolating a whole message as a value cannot express: cli joins a longer
-  # vector with a serial `and`, and it drops the names a message vector carries
-  # its bullet markers in, so either would be silently rewritten rather than
-  # refused. Both are checked, because they fail independently -- a one-element
-  # `c(i = "...")` keeps its length and loses its `i`. Every site here assembles
-  # one unnamed string; the structural gate cannot see this, because what it
-  # reads is the template above.
-  stopifnot(
-    is.character(message),
-    length(message) == 1L,
-    is.null(names(message))
-  )
-  abort_marginplyr("{message}", ..., class = class, call = call)
-}
-
 # The conditions a chain holds, outermost first: the condition given, then each
 # `parent` that is a condition itself.
 #
