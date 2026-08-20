@@ -295,13 +295,12 @@ grouping_helper_vars <- function(args, helper, plan) {
 # refusal, this refusal having no bullet to follow instead -- which is where the
 # flat form put it too, so every pin reading it composes as it did.
 #
-# ADR 0023's surviving line condition does not move it, and reading it as though
-# it did would cost the sentence its subject. What that condition governs is a
-# part whose *length* the caller decides -- a vector whose element count they
-# chose, which is what splits the plan-membership refusal above. This is one
-# clause about one expression, the shape `{.code {label}}` already has in
-# `R/grouping-plan.R`'s nested-specification refusal, where an arbitrary
-# deparsed caller expression stands in a main line with two bullets beside it.
+# ADR 0023's surviving line condition does not move it, under the element-count
+# reading its first amendment records: this is one clause about one expression
+# and not a part whose count the caller decides. That is the shape
+# `{.code {label}}` already has in `R/grouping-plan.R`'s nested-specification
+# refusal, where an arbitrary deparsed caller expression stands in a main line
+# with two bullets beside it.
 #
 # `call` is forwarded rather than left to its default, because
 # `abort_marginplyr()` blames its own caller: defaulted here it would name this
