@@ -832,8 +832,8 @@ test_that("summary expressions reject the removed .groups argument", {
       .groups = "drop"
     ),
     paste0(
-      "`summarize_with_margins\\(\\)` has no `\\.groups` argument; ",
-      "Margin-summary results are always ungrouped\\."
+      "`summarize_with_margins\\(\\)` has no `\\.groups` argument\\.\n",
+      "i Margin-summary results are always ungrouped\\."
     ),
     class = "marginplyr_error"
   )

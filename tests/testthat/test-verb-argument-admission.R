@@ -27,7 +27,13 @@ test_that("every removed option answers its near misses the same way", {
   # caller who wrote `.groupss` never wrote `.groups`, and an error naming only
   # the option they were reaching for sends them looking for a word that is not
   # in their code.
-  guidance <- "Margin-summary results are always ungrouped\\."
+  #
+  # The `;` that joined the guidance to each refusal is the break between the
+  # main line and its `i` bullet since #223 re-authored this file, so both
+  # patterns below read across it. That is what keeps them assertions about one
+  # message rather than two: the guidance is asserted where the refusal that
+  # carries it is, not merely somewhere in the corpus.
+  guidance <- "\ni Margin-summary results are always ungrouped\\."
 
   expect_error(
     summarize_with_margins(
@@ -37,7 +43,7 @@ test_that("every removed option answers its near misses the same way", {
       .groups = "drop"
     ),
     paste0(
-      "`summarize_with_margins\\(\\)` has no `\\.groups` argument; ", guidance
+      "`summarize_with_margins\\(\\)` has no `\\.groups` argument\\.", guidance
     ),
     class = "marginplyr_error"
   )
@@ -51,7 +57,7 @@ test_that("every removed option answers its near misses the same way", {
     ),
     paste0(
       "`\\.groupss` is not an argument.+neither is the `\\.groups` it ",
-      "resembles; ", guidance
+      "resembles\\.", guidance
     ),
     class = "marginplyr_error"
   )

@@ -716,7 +716,10 @@ test_that("a Package condition raised while branches run is untouched", {
   expect_s3_class(error, "marginplyr_error")
   expect_identical(
     conditionMessage(error),
-    "Summary results cannot overwrite grouping column `region`."
+    paste0(
+      "Summary results cannot overwrite grouping column:\n",
+      "i `region`."
+    )
   )
   expect_identical(
     rlang::call_name(conditionCall(error)),
