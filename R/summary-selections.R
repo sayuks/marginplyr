@@ -159,11 +159,13 @@ check_summary_context_helpers <- function(dots) {
   # break unchanged -- four join the phrase to a helper name with `.*`, which
   # spans a newline in R's default regular expressions, and one matches the
   # phrase alone. Four assertions spelled the two as one run and could not, so
-  # each is re-pinned across the break where it sits: the sixth of that census,
-  # in `test-summarize-operation.R`; a `fixed = TRUE` match in
-  # `test-static-expression-analysis.R`; and the two in
-  # `test-contextual-helpers.R`, which is where the opening is asserted at the
-  # site the wording is decided.
+  # each is re-pinned where it sits: the sixth of that census, in
+  # `test-summarize-operation.R`, and a `fixed = TRUE` match in
+  # `test-static-expression-analysis.R`, both now spelling the break; and the
+  # two in `test-contextual-helpers.R`, which is where the opening is asserted
+  # at the site the wording is decided, as byte-exact identities of each arm --
+  # one of them against the other, since what it asserts is that a
+  # parenthesized spelling reaches the same refusal.
   #
   # The sentence after the helpers is the part #172 added, because a caller who
   # had bound one of these names themselves was told only that the verb refused

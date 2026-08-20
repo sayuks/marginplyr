@@ -670,18 +670,21 @@ test_that("the refusal names the helper and keeps its opening", {
   # plural's stopped at `These spellings are reserved`. Read together they
   # covered every inflection once and no arm at all.
   #
-  # Here rather than in `test-diagnostic-pluralization.R`, whose header keeps
-  # that file to the eight diagnostics that pluralize by suffixing and says
-  # re-authoring a message is not where the question of which ones it covers
-  # gets decided. This refusal switches whole words instead, which is the same
-  # reason the duplicate-grouping-set refusal is pinned at its own site.
+  # Here rather than in `test-diagnostic-pluralization.R`, on that file's own
+  # sentence that re-authoring a message is not where the question of which
+  # diagnostics its baseline covers gets decided. Not on its selection rule:
+  # this refusal does suffix a noun, so admitting it would be a defensible
+  # call -- it is just not this pull request's to make, any more than the
+  # duplicate-grouping-set refusal's exclusion was, which is pinned at its own
+  # site for a reason that file states and revisits.
   #
   # Each identity also asserts the opening phrase six other assertions match
   # by regular expression, so a rewording is caught where the wording is
   # decided rather than only where it is relied on -- and it asserts both ends
   # of the split #223 gave the refusal, the phrase closing the main line and
-  # the helper opening the bullet under it. The six read across that break
-  # instead, matching the phrase alone or reaching the helper with `.*`.
+  # the helper opening the bullet under it. Five of those six read across that
+  # break instead, matching the phrase alone or reaching the helper with `.*`;
+  # the sixth spells the break, having been re-pinned with these.
   singular <- expect_error(
     summarize_with_margins(data, k = dplyr::cur_group_id(), .by = region)
   )
