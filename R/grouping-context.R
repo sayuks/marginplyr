@@ -260,8 +260,8 @@ grouping_helper_vars <- function(args, helper, plan) {
   allowed <- unique(c(plan$by, plan$dimensions))
   unknown <- setdiff(vars, allowed)
   if (length(unknown) > 0L) {
-    # The columns arrive alone in an `i` bullet, per ADR 0023's surviving line
-    # condition: how many of them there are is the caller's decision.
+    # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2:
+    # how many of them there are is the caller's decision.
     #
     # The refusal left behind inflects both its noun and its verb, which is the
     # one site ADR 0023's `{?}` rule describes that way. `cli::qty()` is what
@@ -295,12 +295,12 @@ grouping_helper_vars <- function(args, helper, plan) {
 # refusal, this refusal having no bullet to follow instead -- which is where the
 # flat form put it too, so every pin reading it composes as it did.
 #
-# ADR 0023's surviving line condition does not move it, under the element-count
-# reading its first amendment records: this is one clause about one expression
-# and not a part the caller decides the count of -- the shape `{.code {label}}`
-# already has in `R/grouping-plan.R`'s nested-specification refusal, where an
-# arbitrary deparsed caller expression stands in a main line with two `i`
-# bullets beside it.
+# ADR 0023's condition 2 does not move it, under the element-count reading its
+# first amendment records: this is one clause about one expression and not a
+# part the caller decides the count of -- the shape `{.code {label}}` already
+# has in `R/grouping-plan.R`'s nested-specification refusal, where an arbitrary
+# deparsed caller expression stands in a main line with two `i` bullets beside
+# it.
 #
 # `call` is forwarded rather than left to its default, because
 # `abort_marginplyr()` blames its own caller: defaulted here it would name this
