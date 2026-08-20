@@ -132,10 +132,14 @@ marginplyr_diagnostic_sites <- function(name, ns = asNamespace("marginplyr")) {
 # asserted here rather than left to the scan below, because the scan's verdict
 # over a corpus that satisfies the rule is the same verdict a scan that read
 # nothing returns -- which is the objection this repository makes to any gate
-# whose failing branch nothing executes. While #223's phase 3 is unfinished the
-# point is sharper still: `abort_marginplyr()` has one call site in the
-# namespace, so without these fixtures neither the descent nor
-# `authored_template()`'s refusal would ever run.
+# whose failing branch nothing executes.
+#
+# That is sharper now than it was while #223's phase 3 ran, not softer. The
+# transitional sibling is gone, so the scan reads every diagnostic this package
+# raises -- and every one of them satisfies the rule, which is precisely why
+# `authored_template()`'s refusing branch is executed by nothing but the
+# fixtures below. A corpus that stopped violating the rule and a predicate that
+# stopped refusing anything are the same green run without them.
 #
 # The fixtures are functions that are parsed and never called. Each one is read
 # through `body()`, exactly as the namespace scan reads a real function.
@@ -221,35 +225,6 @@ test_that("every `abort_marginplyr()` message is a literal in the source", {
   )
 
   expect_identical(as.character(assembled), character())
-})
-
-# What is left of #223's phase 3, as the functions still handing an assembled
-# string to `abort_marginplyr_flat()`. The counts are part of the record because
-# a function can hold more than one site, and a snapshot of names alone would
-# accept a second one appearing inside a function already listed.
-#
-# This only ever shrinks. Each phase-3 pull request re-authors one file and
-# removes its entries; the last one empties this and deletes
-# `abort_marginplyr_flat()` with it. A new entry is a site written in the idiom
-# the gate above exists to retire, which the gate itself cannot see -- what it
-# reads is `abort_marginplyr()`'s own argument, and inside the transitional
-# sibling that argument is a literal.
-#
-# One line per function rather than a printed vector: this record is read as a
-# diff across every phase-3 pull request, and a named vector's column layout
-# reflows on any change, which would show a file's worth of removals as a
-# rewrite of the whole snapshot.
-#
-# The gate above reads the source and this reads the namespace, so between them
-# they cover what a reviewer would check by eye. Neither one runs a diagnostic,
-# which is what the test below is for.
-test_that("the sites still assembling their own diagnostic", {
-  sites <- marginplyr_diagnostic_sites("abort_marginplyr_flat")
-  counts <- lengths(sites)
-  counts <- counts[counts > 0L]
-  expect_snapshot(
-    cat(sprintf("%s(): %d", names(counts), counts), sep = "\n")
-  )
 })
 
 # The runtime half of *Caller text is a value*, which the source-level gate

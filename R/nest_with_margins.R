@@ -218,14 +218,10 @@ nest_margin_pipeline <- function(.data,
       assert_logical_scalar(.keep)
       assert_string_scalar(.key)
       if (is.na(.key)) {
-        abort_marginplyr_flat(
-          "`.key` must not be missing."
-        )
+        abort_marginplyr("{.arg .key} must not be missing.")
       }
       if (!nzchar(.key)) {
-        abort_marginplyr_flat(
-          "`.key` must not be empty."
-        )
+        abort_marginplyr("{.arg .key} must not be empty.")
       }
       options <- normalize_margin_options(
         .margin_label = .margin_label,
@@ -275,9 +271,15 @@ execute_margin_nest <- function(operation, .key, .keep) {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
       if (.key %in% group_cols) {
-        abort_marginplyr_flat(
-          sprintf("`.key` (`%s`) must not be a grouping column.", .key)
-        )
+        # `{(.key)}` rather than `{.key}`: cli reads a `{}` expression opening
+        # with a dot as one of its own styles, and refuses the literal outright
+        # from 3.4.0 -- the floor DESCRIPTION states. The parentheses are the
+        # spelling cli's own diagnostic names, and every argument this package
+        # refuses is spelled with a leading dot.
+        abort_marginplyr(paste0(
+          "{.arg .key} ({.var {(.key)}}) must not be a ",
+          "grouping column."
+        ))
       }
 
       internal_names <- new_margin_internal_names(

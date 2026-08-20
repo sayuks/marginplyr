@@ -325,12 +325,21 @@ option_case_label <- function(case, value) {
 # case says the verb accepts. Asserting the whole sentence rather than a
 # pattern is what holds a verb to its own vocabulary: a message enumerating one
 # value more or fewer is a different string.
+#
+# The `{.or}` join is written out rather than produced by cli, although the
+# refusal is now authored as `{.or {.val {choices}}}` (#223, ADR 0023). What
+# this asserts is the vocabulary a verb offers, and an expectation built by the
+# call under test's own joiner would agree with it however it joined -- so the
+# sentence has to be spelled here to be an assertion at all.
 expected_vocabulary_message <- function(case) {
-  paste0(
-    "`", case$option, "` must be one of ",
-    paste0("\"", case$values, "\"", collapse = ", "),
-    "."
-  )
+  offered <- paste0("\"", case$values, "\"")
+  joined <- if (length(offered) < 3L) {
+    paste(offered, collapse = " or ")
+  } else {
+    last <- length(offered)
+    paste0(paste(offered[-last], collapse = ", "), ", or ", offered[[last]])
+  }
+  paste0("`", case$option, "` must be one of ", joined, ".")
 }
 
 option_rejection_message <- function(verb, option, value) {
@@ -549,7 +558,7 @@ test_that("the nesting verbs answer `.duplicates = \"keep\"` in their terms", {
   for (verb in c("nest_with_margins", "nest_by_with_margins")) {
     expect_identical(
       option_rejection_message(verb, ".duplicates", "keep"),
-      "`.duplicates` must be one of \"error\", \"drop\".",
+      "`.duplicates` must be one of \"error\" or \"drop\".",
       info = verb
     )
   }

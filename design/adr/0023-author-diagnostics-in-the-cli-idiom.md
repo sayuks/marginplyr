@@ -211,6 +211,38 @@ beside it, and the remedy that follows. The structural gate is what leaves no
 cheaper spelling — a template hoisted out of the arms is a template bound
 elsewhere, which it refuses.
 
+## Amendment: a class is a subject, and `{.cls}` names only one object's
+
+`R/utils.R`, re-authored in #223's phase 3, is the first file whose refusals
+name a class. The style table below has no row for one, and three sites need
+it: the admission refusal says what was supplied — `a <matrix>`, bytes this
+package has always shipped — while the nesting whitelist and the lazy-table
+blacklist each offer a list of class *names*.
+
+The table gains one row, `class of an object` taking `{.cls}`, and the two
+lists do not take it. cli renders a vector under `{.cls}` as one object's class
+chain, which is what the style is for and is not what a list of alternatives
+means — measured on 2026-08-21, R 4.6.1, cli 3.6.6:
+
+| template | renders as |
+| --- | --- |
+| `{.cls {class(matrix(1))[[1L]]}}` | `<matrix>` |
+| `{.cls {c("data.frame", "dtplyr_step")}}` | `<data.frame/dtplyr_step>` |
+| `{.code {c("data.frame", "dtplyr_step")}}` | `` `data.frame` and `dtplyr_step` `` |
+
+So the subject decides the style here as it does everywhere else in the table:
+`{.cls}` is the class an object *has*, and a class name offered as one of
+several spellings a caller may write is a code fragment, which is the row
+`{.code}` already holds. Nothing is lost by the split — the one site naming an
+object's class names exactly one.
+
+One spelling rule belongs beside it, because every argument this package
+refuses is named with a leading dot. `{.key}` is not the value of `.key`: cli
+reads a `{}` expression opening with a dot as one of its own styles, and from
+3.4.0 — the floor *cli becomes an Import* sets below — refuses the literal
+outright rather than guessing. `{(.key)}` is the spelling, and it is the one
+cli's own diagnostic names.
+
 ## The migration introduces wrapping, so a line is authored to survive it
 
 `rlang::abort()` wraps nothing. `cli_abort()` wraps at retrieval time, at
@@ -261,6 +293,7 @@ the site gate.
 | code fragment, assignment included | `{.code}` | `` `.duplicates = "error"` `` |
 | constructor or function | `{.fun}` | `` `rollup()` `` |
 | value the data holds | `{.val}` | `"All"` |
+| class of an object | `{.cls}` | `<matrix>` |
 
 `{.var}`, `{.arg}`, and `{.code}` were measured to render identical bytes for a
 character vector. Separating them is still the decision, because the

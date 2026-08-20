@@ -14,35 +14,46 @@ margin_column_pronoun <- function(name) {
 }
 
 assert_logical_scalar <- function(x) {
-  nm <- deparse(substitute(x))
+  # Read only from the cli template below, which codetools cannot see.
+  nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   if (!(isTRUE(x) || isFALSE(x))) {
-    abort_marginplyr_flat(
-      sprintf("`%s` must be a logical scalar (`TRUE` or `FALSE`).", nm)
-    )
+    abort_marginplyr(paste0(
+      "{.arg {nm}} must be a logical scalar ",
+      "({.code TRUE} or {.code FALSE})."
+    ))
   }
 }
 
 # NA_character_ is allowed
 assert_string_scalar <- function(x) {
-  nm <- deparse(substitute(x))
+  # Read only from the cli template below, which codetools cannot see.
+  nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   if (!(is.character(x) && length(x) == 1)) {
-    abort_marginplyr_flat(
-      sprintf("`%s` must be a character vector of length 1.", nm)
-    )
+    abort_marginplyr("{.arg {nm}} must be a character vector of length 1.")
   }
 }
 
+# The classes stay in the line that offers them, and that is ADR 0023's
+# condition 2 read as the element count it is: the vector is this function's own
+# constant, so the caller decides neither how many entries arrive nor how long
+# they render. A bullet is what stands between a *caller's* vector and a very
+# long line, and there is no caller's vector here.
+#
+# `{.code}` rather than `{.cls}` for the same reason `assert_margin_input()`
+# below uses `{.cls}`: that one names the class an object has, and cli renders
+# a vector under `{.cls}` as one object's class chain --
+# `<data.frame/dtplyr_step>` -- which is not what a list of alternatives means.
+# ADR 0023's fourth amendment records the measurement and puts both spellings
+# in the style table.
 assert_nest_possible <- function(x) {
-  nm <- deparse(substitute(x))
+  # Read only from the cli template below, which codetools cannot see.
+  nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   valid_classes <- c("data.frame", "dtplyr_step")
   if (!inherits(x, valid_classes)) {
-    abort_marginplyr_flat(
-      sprintf(
-        "`%s` must be one of the following classes, which can be nested: %s",
-        nm,
-        toString(valid_classes)
-      )
-    )
+    abort_marginplyr(paste0(
+      "{.arg {nm}} must be one of the following classes, which can be ",
+      "nested: {.code {valid_classes}}."
+    ))
   }
 }
 
@@ -60,7 +71,8 @@ assert_nest_possible <- function(x) {
 # default method, so an object no registered method matches is exactly the
 # object the generic cannot dispatch on.
 assert_margin_input <- function(x) {
-  nm <- deparse(substitute(x))
+  # Read only from the cli template below, which codetools cannot see.
+  nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   dispatches <- any(vapply(
     class(x),
     function(cls) {
@@ -80,30 +92,49 @@ assert_margin_input <- function(x) {
     return(invisible(NULL))
   }
 
-  abort_marginplyr_flat(
-    sprintf(
+  # Two calls rather than the one clause an `if` used to choose between and
+  # splice, because the structural gate reads `abort_marginplyr()`'s own
+  # argument and refuses a computed template. What the branch picks is a whole
+  # element, which is what ADR 0023's third amendment admits; the cost is the
+  # refusal and the remedy, written out in each arm.
+  #
+  # `NULL` is a spelling the caller typed, so it is `{.code}`; the other arm
+  # names the class the object supplied actually has, which is `{.cls}` --
+  # rendering the `<matrix>` this refusal has always shown, and the reason the
+  # style table has that row at all (ADR 0023's fourth amendment).
+  if (is.null(x)) {
+    abort_marginplyr(c(
       paste0(
-        "`%s` must be a data frame or a lazy table that supports dplyr ",
-        "verbs; %s was supplied. Convert it with `as.data.frame()` or ",
-        "`dplyr::tbl()` first."
+        "{.arg {nm}} must be a data frame or a lazy table that supports ",
+        "dplyr verbs."
       ),
-      nm,
-      if (is.null(x)) "`NULL`" else sprintf("a <%s>", class(x)[[1L]])
-    )
-  )
+      i = "{.code NULL} was supplied.",
+      i = "Convert it with {.fun as.data.frame} or {.fun dplyr::tbl} first."
+    ))
+  }
+  abort_marginplyr(c(
+    paste0(
+      "{.arg {nm}} must be a data frame or a lazy table that supports ",
+      "dplyr verbs."
+    ),
+    i = "A {.cls {class(x)[[1L]]}} was supplied.",
+    i = "Convert it with {.fun as.data.frame} or {.fun dplyr::tbl} first."
+  ))
 }
 
+# The refused classes stay in the line that names them, for the reason
+# `assert_nest_possible()` above records: the vector is this function's own
+# constant. `{.code}` is that function's style for the same subject, and it is
+# what keeps a second entry from rendering as one object's class chain.
 assert_lazy_table <- function(x) {
-  nm <- deparse(substitute(x))
+  # Read only from the cli template below, which codetools cannot see.
+  nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   invalid_lazy_table_names <- "RecordBatchReader"
   if (inherits(x, invalid_lazy_table_names)) {
-    abort_marginplyr_flat(
-      sprintf(
-        "`%s` must not be an object of the following classes: %s",
-        nm,
-        toString(invalid_lazy_table_names)
-      )
-    )
+    abort_marginplyr(paste0(
+      "{.arg {nm}} must not be an object of the following classes: ",
+      "{.code {invalid_lazy_table_names}}."
+    ))
   }
 }
 

@@ -307,7 +307,15 @@ markers <- list(
     "Grouped input created with `.drop = FALSE` is not supported",
     "do not define one unambiguous parent",
     "Add an empty `grouping_set()` to the `grouping_sets()` specification",
-    "`.duplicates` must be one of \"error\", \"drop\""
+    # The narrowed `.duplicates` vocabulary, quoted by the only run of that
+    # refusal no data reaches. #223's re-authoring made both of its subjects
+    # interpolated -- the argument name and the vocabulary the verb offers, the
+    # latter now joined by cli's `{.or}` -- and ADR 0023's condition 3 asks a
+    # marker to be chosen from uninterpolated prose, which leaves this phrase
+    # alone. It is the weakest marker on this page for that reason, and the
+    # nest_with_margins() error header above stands beside it: this guide has
+    # one `must_error` chunk calling that verb, so the pair is this chunk's.
+    "must be one of"
   ),
   "docs/vignettes/recipes.html" = c(
     "Put each subtotal with the rows it summarizes",
@@ -365,7 +373,13 @@ markers <- list(
     # they render nothing where their package is absent and can carry no
     # marker — the same reason only three of `recipes.qmd`'s are listed above.
     "Error in `nest_with_margins()`",
-    "which can be nested: data.frame, dtplyr_step"
+    # The nesting whitelist, quoted short of the classes it offers. Those were
+    # `toString(valid_classes)` before #223 re-authored the refusal and are
+    # `{.code {valid_classes}}` after it -- interpolated either way, which is
+    # what ADR 0023's condition 3 keeps out of a marker. #223's phase 3 left
+    # this marker in place deliberately until the file behind it was
+    # re-authored, since moving it is the same edit.
+    "which can be nested"
   ),
   "docs/man/summarize_with_margins.html" = c(
     "summarise_with_margins",

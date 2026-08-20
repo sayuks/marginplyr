@@ -59,7 +59,7 @@ test_that("nest rejects grouping before typed metadata acquisition", {
   nest_proxy_capture$n <- 0L
   expect_error(
     nest_with_margins(source, .duplicates = "keep"),
-    "`\\.duplicates` must be one of \"error\", \"drop\"\\."
+    "`\\.duplicates` must be one of \"error\" or \"drop\"\\."
   )
   expect_identical(nest_proxy_capture$n, 0L)
 })
@@ -192,7 +192,7 @@ test_that("nesting option errors use the package condition seam", {
       # second guard, so it reads like any other value outside it (#110).
       # test-verb-argument-admission.R asserts the whole message; what this
       # case adds is that it reaches the caller through the condition seam.
-      message = "`\\.duplicates` must be one of \"error\", \"drop\"\\."
+      message = "`\\.duplicates` must be one of \"error\" or \"drop\"\\."
     ),
     key_grouping_column = list(
       expr = quote(nest_with_margins(

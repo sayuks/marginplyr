@@ -148,7 +148,7 @@ test_that("`.sort` is validated with the common Margin choice matcher", {
     # writes; the three choices have to be in the error they get back.
     error <- expect_error(
       operations[[verb]](TRUE),
-      "`\\.sort` must be one of \"none\", \"last\", \"first\"\\.",
+      "`\\.sort` must be one of \"none\", \"last\", or \"first\"\\.",
       class = "marginplyr_error"
     )
     expect_identical(rlang::call_name(conditionCall(error)), verb)
