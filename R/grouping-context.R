@@ -106,19 +106,17 @@
 #'   .margin_label = NULL
 #' )
 grouping_bit <- function(x) {
-  abort_marginplyr(paste0(
-    "{.fun grouping_bit} can only be used inside ",
-    "{.fun summarize_with_margins}."
-  ))
+  abort_marginplyr(
+    "{.fun grouping_bit} can only be used inside {.fun summarize_with_margins}."
+  )
 }
 
 #' @rdname grouping_bit
 #' @export
 grouping_id <- function(...) {
-  abort_marginplyr(paste0(
-    "{.fun grouping_id} can only be used inside ",
-    "{.fun summarize_with_margins}."
-  ))
+  abort_marginplyr(
+    "{.fun grouping_id} can only be used inside {.fun summarize_with_margins}."
+  )
 }
 
 rewrite_grouping_dots <- function(dots,
@@ -296,6 +294,15 @@ grouping_helper_vars <- function(args, helper, plan) {
 # in the same line rather than taking a bullet of its own, which would sometimes
 # be a bullet marker with nothing after it. That is also where the flat form put
 # it, so every pin reading it composes as it did.
+#
+# ADR 0023's surviving line condition does not move it either, and reading it as
+# though it did would cost the sentence its subject. What that condition governs
+# is a part whose *length* the caller decides -- a vector whose element count
+# they chose, which is why the plan-membership refusal above splits -- and this
+# is one clause about one expression, as `{.var {output}}` in `R/share.R` and
+# `{.code {label}}` in `R/grouping-plan.R` are single caller subjects standing
+# in a main line. The bullet it would move to is not available in any case: this
+# refusal offers no remedy to attach it to, and #223 forbids inventing one.
 #
 # `call` is forwarded rather than left to its default, because
 # `abort_marginplyr()` blames its own caller: defaulted here it would name this
