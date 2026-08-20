@@ -296,11 +296,11 @@ markers <- list(
     # The `cur_group*()` refusal, quoted one sentence further in than it used
     # to be. #223's re-authoring moved the helper the caller wrote into an `i`
     # bullet of its own, so the opening phrase and the helper name are no
-    # longer one run of this page, and the bullets around the sentence below
-    # each carry something the call decides -- the helper, or the plural its
-    # count chooses. This sentence is the longest run of that refusal no data
-    # reaches, which is what ADR 0023's condition 3 asks a marker to be chosen
-    # from.
+    # longer one run of this page. The sentence below is the longest run of
+    # that refusal no data reaches, which is what ADR 0023's condition 3 asks
+    # a marker to be chosen from; the two bullets above it each carry
+    # something the call decides -- the helper, or the plural its count
+    # chooses.
     "These helpers describe one branch-local dplyr grouping or data mask",
     "Duplicate grouping sets were produced at",
     "Can't supply `.by` when `.data` is grouped",

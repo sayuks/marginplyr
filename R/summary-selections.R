@@ -92,10 +92,11 @@ check_option_named_summaries <- function(dots) {
       # Two calls rather than the one opening this branch used to bind and
       # hand to a single call, because the structural gate reads
       # `abort_marginplyr()`'s own argument and refuses a template bound
-      # elsewhere -- the reason `R/share.R`'s two Parent-share refusals are
-      # written out twice. What the branch chooses is a whole main line, which
-      # is the shape ADR 0023's third amendment admits; the cost is the `i`
-      # bullet the two arms share, written out in each.
+      # elsewhere -- the shape `abort_share_helper_position()` records in
+      # `R/share.R` and three further sites in that file cite. What the branch
+      # chooses is a whole main line, which is what ADR 0023's third amendment
+      # admits; the cost is the `i` bullet the two arms share, written out in
+      # each.
       #
       # That bullet is the option's own guidance, which is written in the
       # table above rather than beside either call, so it arrives interpolated
@@ -118,9 +119,10 @@ check_option_named_summaries <- function(dots) {
         i = "{removed_summary_options[[matched]]}"
       ))
     }
-    # The captured summary is a column the caller can see in the result, so it
-    # is `{.var}` where the name they meant to write is `{.arg}`. Both spell
-    # the same string, which is the point the two styles are separated over.
+    # One string under two styles: `{.arg}` where the caller wrote it as an
+    # argument name, `{.var}` for the column it became instead. The two render
+    # alike, which is the point the style table separates them over -- what
+    # the sentence is made of is what each one records.
     abort_marginplyr(c(
       paste0(
         "{.arg {name}} is not an argument of {.fun summarize_with_margins}, ",

@@ -661,24 +661,42 @@ test_that("a nested constructor is gated however it is written", {
 
 test_that("the refusal names the helper and keeps its opening", {
   data <- contextual_probe_data()
-  # The opening phrase six other assertions match by regular expression. It is
-  # asserted here as well so that a rewording is caught where the wording is
-  # decided rather than only where it is relied on.
+  # Both arms byte-exactly, and #223's re-authoring is what they are worth
+  # writing out for. The sentence #172 added inflects a demonstrative, a noun,
+  # and two verbs, and all four now go through `{?}` behind one `cli::qty()`
+  # rather than through an `if` spelling each arm. What stood here before was
+  # a substring per arm, and neither covered its own arm whole: the singular's
+  # reached `is not resolved` but opened after `This spelling is`, and the
+  # plural's stopped at `These spellings are reserved`. Read together they
+  # covered every inflection once and no arm at all.
   #
-  # Anchored at both ends of the split #223 gave the refusal: the phrase closes
-  # the main line and the helper opens the bullet under it, so a re-wording
-  # that moved either back across the break fails here. The six read across it
+  # Here rather than in `test-diagnostic-pluralization.R`, whose header keeps
+  # that file to the eight diagnostics that pluralize by suffixing and says
+  # re-authoring a message is not where the question of which ones it covers
+  # gets decided. This refusal switches whole words instead, which is the same
+  # reason the duplicate-grouping-set refusal is pinned at its own site.
+  #
+  # Each identity also asserts the opening phrase six other assertions match
+  # by regular expression, so a rewording is caught where the wording is
+  # decided rather than only where it is relied on -- and it asserts both ends
+  # of the split #223 gave the refusal, the phrase closing the main line and
+  # the helper opening the bullet under it. The six read across that break
   # instead, matching the phrase alone or reaching the helper with `.*`.
-  expect_error(
-    summarize_with_margins(data, k = dplyr::cur_group_id(), .by = region),
-    paste0(
-      "^`summarize_with_margins\\(\\)` does not support:\n",
-      "i `cur_group_id\\(\\)`\\."
-    )
+  singular <- expect_error(
+    summarize_with_margins(data, k = dplyr::cur_group_id(), .by = region)
   )
-  expect_error(
-    summarize_with_margins(data, k = dplyr::cur_group_id(), .by = region),
-    "reserved inside a Margin summary and is not resolved from the calling"
+  expect_identical(
+    conditionMessage(singular),
+    paste0(
+      "`summarize_with_margins()` does not support:\n",
+      "i `cur_group_id()`.\n",
+      "i This spelling is reserved inside a Margin summary and is not ",
+      "resolved from the calling environment.\n",
+      "i These helpers describe one branch-local dplyr grouping or data ",
+      "mask, but a margin result combines multiple grouping sets.\n",
+      "i Use `grouping_bit()` or `grouping_id()` when identifying margin ",
+      "levels."
+    )
   )
   # A caller who bound the name themselves is the reader that sentence was
   # added for, so it has to survive the shadow that motivates it.
@@ -689,15 +707,28 @@ test_that("the refusal names the helper and keeps its opening", {
     }),
     "is not resolved from the calling environment"
   )
-  # More than one refused spelling in one call reads as a list.
-  expect_error(
+  # More than one refused spelling in one call reads as a list, joined with
+  # cli's serial `and` since #223 adopted its vector defaults.
+  plural <- expect_error(
     summarize_with_margins(
       data,
       k = dplyr::cur_group_id(),
       j = list(dplyr::cur_group()),
       .by = region
-    ),
-    "These spellings are reserved"
+    )
+  )
+  expect_identical(
+    conditionMessage(plural),
+    paste0(
+      "`summarize_with_margins()` does not support:\n",
+      "i `cur_group_id()` and `cur_group()`.\n",
+      "i These spellings are reserved inside a Margin summary and are not ",
+      "resolved from the calling environment.\n",
+      "i These helpers describe one branch-local dplyr grouping or data ",
+      "mask, but a margin result combines multiple grouping sets.\n",
+      "i Use `grouping_bit()` or `grouping_id()` when identifying margin ",
+      "levels."
+    )
   )
   # A prohibited context is a Package condition, and parentheses do not turn it
   # into one of R's. Before #178 `(cur_group_id)()` reached the data mask and
@@ -706,11 +737,14 @@ test_that("the refusal names the helper and keeps its opening", {
   # reached the exported stub, which reports that the helper can only be used
   # inside the verb the caller is already inside.
   parenthesized <- expect_error(
-    summarize_with_margins(data, k = (cur_group_id)(), .by = region),
-    paste0(
-      "^`summarize_with_margins\\(\\)` does not support:\n",
-      "i `cur_group_id\\(\\)`\\."
-    )
+    summarize_with_margins(data, k = (cur_group_id)(), .by = region)
+  )
+  # Against the singular arm above rather than a pattern of its own, which is
+  # the whole of what this asserts: the parenthesized spelling reaches the same
+  # refusal, not merely one that opens alike.
+  expect_identical(
+    conditionMessage(parenthesized),
+    conditionMessage(singular)
   )
   expect_s3_class(parenthesized, "marginplyr_error")
   expect_identical(
