@@ -395,7 +395,7 @@ test_that("margin label checks handle missing and non-syntactic columns", {
       .grouping = rollup(`first group`, `second group`),
       .margin_label = NA_character_
     ),
-    "grouping columns `first group`, `second group`"
+    "grouping columns:\ni `first group` and `second group`"
   )
 
   # A value of a factor column is a level of it, so this collision is declared

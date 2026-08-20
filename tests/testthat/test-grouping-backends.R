@@ -475,7 +475,7 @@ test_that("dtplyr checks margin labels across all dimensions", {
       .grouping = rollup(first, second),
       .check_margin_label = TRUE
     ),
-    "grouping columns `first`, `second`"
+    "grouping columns:\ni `first` and `second`"
   )
 })
 
@@ -488,7 +488,7 @@ test_that("Arrow checks margin labels across all dimensions", {
       .grouping = rollup(first, second),
       .check_margin_label = TRUE
     ),
-    "grouping columns `first`, `second`"
+    "grouping columns:\ni `first` and `second`"
   )
 })
 
@@ -510,7 +510,7 @@ test_that("DuckDB checks margin labels across all dimensions", {
       .grouping = rollup(first, second),
       .check_margin_label = TRUE
     ),
-    "grouping columns `first`, `second`"
+    "grouping columns:\ni `first` and `second`"
   )
 })
 

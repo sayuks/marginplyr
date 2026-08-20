@@ -3,36 +3,29 @@ normalize_margin_label <- function(.margin_label) {
     return(NULL)
   }
   if (!is.character(.margin_label) || length(.margin_label) == 0L) {
-    abort_marginplyr_flat(
-      paste0(
-        "`.margin_label` must be `NULL`, an unnamed character scalar, or a ",
-        "named character vector."
-      )
-    )
+    abort_marginplyr(paste0(
+      "{.arg .margin_label} must be {.code NULL}, an unnamed character ",
+      "scalar, or a named character vector."
+    ))
   }
   label_names <- names(.margin_label)
   if (is.null(label_names)) {
     if (length(.margin_label) != 1L) {
-      abort_marginplyr_flat(
-        "An unnamed `.margin_label` must be a character vector of length 1."
-      )
+      abort_marginplyr(paste0(
+        "An unnamed {.arg .margin_label} must be a character vector of ",
+        "length 1."
+      ))
     }
     return(.margin_label)
   }
   if (anyNA(label_names)) {
-    abort_marginplyr_flat(
-      "`.margin_label` names must not be missing."
-    )
+    abort_marginplyr("{.arg .margin_label} names must not be missing.")
   }
   if (any(!nzchar(label_names))) {
-    abort_marginplyr_flat(
-      "`.margin_label` names must not be empty."
-    )
+    abort_marginplyr("{.arg .margin_label} names must not be empty.")
   }
   if (anyDuplicated(label_names)) {
-    abort_marginplyr_flat(
-      "`.margin_label` names must not be duplicated."
-    )
+    abort_marginplyr("{.arg .margin_label} names must not be duplicated.")
   }
   .margin_label
 }
@@ -60,37 +53,35 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
   }
 
   label_names <- names(.margin_label)
+  # Each refusal below names whichever names it is refusing, and each carries
+  # them in an `i` bullet rather than in its main line, per ADR 0023's
+  # surviving line condition: how many of them arrive is the caller's decision.
   fixed_names <- intersect(label_names, by)
   if (length(fixed_names) > 0L) {
-    abort_marginplyr_flat(
+    abort_marginplyr(c(
       paste0(
-        "`.margin_label` must not name fixed `.by` column",
-        if (length(fixed_names) == 1L) " " else "s ",
-        paste0("`", fixed_names, "`", collapse = ", "),
-        "."
-      )
-    )
+        "{.arg .margin_label} must not name fixed {.arg .by} ",
+        "{cli::qty(length(fixed_names))}column{?s}:"
+      ),
+      i = "{.var {fixed_names}}."
+    ))
   }
   unknown_names <- setdiff(label_names, dimensions)
   if (length(unknown_names) > 0L) {
-    abort_marginplyr_flat(
+    abort_marginplyr(c(
       paste0(
-        "`.margin_label` has unknown dimension name",
-        if (length(unknown_names) == 1L) " " else "s ",
-        paste0("`", unknown_names, "`", collapse = ", "),
-        "."
-      )
-    )
+        "{.arg .margin_label} has unknown dimension ",
+        "{cli::qty(length(unknown_names))}name{?s}:"
+      ),
+      i = "{.var {unknown_names}}."
+    ))
   }
   missing_names <- setdiff(dimensions, label_names)
   if (length(missing_names) > 0L) {
-    abort_marginplyr_flat(
-      paste0(
-        "`.margin_label` must name every Margin dimension; missing ",
-        paste0("`", missing_names, "`", collapse = ", "),
-        "."
-      )
-    )
+    abort_marginplyr(c(
+      "{.arg .margin_label} must name every Margin dimension.",
+      i = "Missing {.var {missing_names}}."
+    ))
   }
   invisible(NULL)
 }
@@ -130,15 +121,17 @@ validate_margin_label <- function(.data,
     )
     na_level_cols <- vapply(na_level_cols, function(x) x$col, character(1))
     if (length(na_level_cols) > 0L) {
-      abort_marginplyr_flat(
+      abort_marginplyr(c(
         paste0(
-          "`NA_character_` is already a factor level in grouping column",
-          if (length(na_level_cols) == 1L) " " else "s ",
-          paste0("`", na_level_cols, "`", collapse = ", "),
-          ". Use `NULL` for a typed-missing Margin label while preserving ",
-          "the NA level."
+          "{.code NA_character_} is already a factor level in grouping ",
+          "{cli::qty(length(na_level_cols))}column{?s}:"
+        ),
+        i = "{.var {na_level_cols}}.",
+        i = paste0(
+          "Use {.code NULL} for a typed-missing Margin label while ",
+          "preserving the NA level."
         )
-      )
+      ))
     }
   }
 
@@ -182,7 +175,11 @@ check_declared_label_collision <- function(margin_labels,
     return(invisible(NULL))
   }
 
-  abort_margin_label_collision(margin_labels, declared, kind = "declared")
+  abort_margin_label_collision(
+    margin_labels,
+    declared,
+    on_collision = abort_declared_label_collision
+  )
 }
 
 check_observed_label_collision <- function(data,
@@ -242,52 +239,97 @@ check_observed_label_collision <- function(data,
     return(invisible(NULL))
   }
 
-  abort_margin_label_collision(margin_labels, found, kind = "observed")
+  abort_margin_label_collision(
+    margin_labels,
+    found,
+    on_collision = abort_observed_label_collision
+  )
 }
 
-abort_margin_label_collision <- function(margin_labels, found, kind) {
-  stopifnot(
-    is.logical(found),
-    any(found),
-    identical(kind, "declared") || identical(kind, "observed")
-  )
+# The columns a collision was found in and the labels that collided with them,
+# which is what both refusals below name. Each caller hands in the refusal that
+# speaks for its own kind rather than a word naming that kind -- the shape
+# `R/grouping-plan.R`'s two renaming refusals take, since a discriminator this
+# function would only translate back into a call is one neither caller needs to
+# compute.
+abort_margin_label_collision <- function(margin_labels, found, on_collision) {
+  stopifnot(is.logical(found), any(found), is.function(on_collision))
 
-  bad_cols <- paste0("`", names(found)[found], "`", collapse = ", ")
-  bad_labels <- margin_labels[names(found)[found]]
-  label_values <- vapply(
-    bad_labels,
-    function(label) if (is.na(label)) "NA" else paste0('"', label, '"'),
-    character(1)
+  bad_cols <- names(found)[found]
+  bad_labels <- vapply(
+    margin_labels[bad_cols],
+    identity,
+    character(1),
+    USE.NAMES = FALSE
   )
-  one_label <- length(unique(label_values)) == 1L
-  label <- if (one_label) unique(label_values) else "Margin labels"
-  verb <- if (one_label) " is" else " are"
-  presence <- if (identical(kind, "declared")) {
-    if (one_label) " a factor level in" else " factor levels in"
-  } else {
-    " present in"
+  on_collision(bad_cols, bad_labels)
+}
+
+# Four arms across the two refusals below, rather than one template with two
+# branches inside it. Both branches choose a whole clause: the kind chooses how
+# the collision is named, and under the declared kind that clause pluralizes
+# with the subject, so one template would have to pick between two noun pairs;
+# and the subject is either the one colliding label, which is interpolated, or
+# the words standing in for several distinct ones, which is not, so `{?}`
+# cannot write both -- the arm it picks is literal text and is never re-read as
+# a template. ADR 0023's third amendment records the measurement and why a
+# branch on a count is still inside its `{?}` rule.
+#
+# What the shape costs is every element the arms share, written out in each:
+# the bullet carrying the columns four times, the noun `column{?s}` inflects
+# four times, and each remedy twice. The structural gate is what leaves no
+# cheaper spelling, since a template hoisted out of the arms is a template
+# bound elsewhere and it refuses one.
+#
+# `.check_margin_label = FALSE` is offered only where it is a remedy. It turns
+# off the read, and a declared collision is not found by reading, so naming it
+# here would send a caller to an argument that changes nothing.
+abort_declared_label_collision <- function(bad_cols, bad_labels) {
+  if (length(unique(bad_labels)) == 1L) {
+    abort_marginplyr(c(
+      paste0(
+        "{.val {unique(bad_labels)}} is already a factor level in grouping ",
+        "{cli::qty(length(bad_cols))}column{?s}:"
+      ),
+      i = "{.var {bad_cols}}.",
+      i = "Choose another {.arg .margin_label}."
+    ))
   }
-  # `.check_margin_label = FALSE` is offered only where it is a remedy. It
-  # turns off the read, and a declared collision is not found by reading, so
-  # naming it there would send a caller to an argument that changes nothing.
-  remedy <- if (identical(kind, "declared")) {
-    "Choose another `.margin_label`."
-  } else {
-    "Choose another `.margin_label` or set `.check_margin_label = FALSE`."
-  }
-  abort_marginplyr_flat(
+  abort_marginplyr(c(
     paste0(
-      label,
-      verb,
-      " already",
-      presence,
-      " grouping column",
-      if (sum(found) == 1L) " " else "s ",
-      bad_cols,
-      ". ",
-      remedy
+      "Margin labels are already factor levels in grouping ",
+      "{cli::qty(length(bad_cols))}column{?s}:"
+    ),
+    i = "{.var {bad_cols}}.",
+    i = "Choose another {.arg .margin_label}."
+  ))
+}
+
+abort_observed_label_collision <- function(bad_cols, bad_labels) {
+  if (length(unique(bad_labels)) == 1L) {
+    abort_marginplyr(c(
+      paste0(
+        "{.val {unique(bad_labels)}} is already present in grouping ",
+        "{cli::qty(length(bad_cols))}column{?s}:"
+      ),
+      i = "{.var {bad_cols}}.",
+      i = paste0(
+        "Choose another {.arg .margin_label} or set ",
+        "{.code .check_margin_label = FALSE}."
+      )
+    ))
+  }
+  abort_marginplyr(c(
+    paste0(
+      "Margin labels are already present in grouping ",
+      "{cli::qty(length(bad_cols))}column{?s}:"
+    ),
+    i = "{.var {bad_cols}}.",
+    i = paste0(
+      "Choose another {.arg .margin_label} or set ",
+      "{.code .check_margin_label = FALSE}."
     )
-  )
+  ))
 }
 
 label_margin_branch <- function(.data,

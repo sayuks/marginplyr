@@ -126,6 +126,63 @@ literal a reader's eye lands on whole, but a sentence split at a space. It is
 still written beside the call that raises it, which is the property *Two rules
 are gated* asks a template for — a constant bound elsewhere stays refused.
 
+## Amendment: a branch on a count may choose a subject `{?}` cannot write
+
+`R/margin-label.R`'s collision refusal, re-authored in #223's phase 3, branches
+on a count. `length(unique(bad_labels)) == 1L` picks between two
+`abort_marginplyr()` calls — one saying `{.val {...}} is already a factor
+level`, the other `Margin labels are already factor levels` — and both arms
+spell a noun, which *Every singular/plural choice goes through cli's `{?}`*
+below forbids an R branch to do.
+
+It is admitted, and what the boundary turns on is what the two arms differ by
+rather than what the branch reads. `{?a/b}` chooses between two literal
+alternatives, and the alternative it picks is never re-read as a template, so
+nothing can be interpolated into it —
+`investigation/a-pluralization-alternative-is-literal-text.md` measures that,
+and records that cli documents `{?}` over word forms only, so it is a
+behaviour rather than a promise. The two arms here name different subjects —
+the one colliding label, which is interpolated, against the words `Margin
+labels` standing in for several distinct ones, which is not — so no single
+template can write both. The count is how that subject gets chosen; it is not
+something being inflected.
+
+So the rule stands where it bites. What an R branch may choose is a whole
+element or a whole clause, which is what `R/share.R`'s helper-position refusal
+and `R/grouping-plan.R`'s two renaming refusals already do; that those two read
+a boolean and this one reads a count is not a distinction this ADR draws. What
+it may not do is leave a plural inside a template for an `if` to spell, and none
+of the four arms does: the noun still free once an arm has been chosen —
+`column{?s}`, on the number of colliding columns — goes through `{?}` behind
+`cli::qty()` in every one of them.
+
+`design/architecture.md`'s "`{?}` for every plural" is therefore read as a
+property of a template rather than of a diagnostic, and on that reading it needs
+no edit. Read of the diagnostic it would be false here, and saying so is the
+honest form of this amendment: `is`/`are` and `a factor level`/`factor levels`
+do vary with the data, and the branch is what picks them. What stays true, and
+what the structural gate can check, is that no template contains a plural an
+`if` decides.
+
+**The inventory in that section** is what goes: "`{?s}` covers the nine sites
+that suffix one, `{?is/are}` the one that also inflects a verb, and `{?a/b}`
+the two that switch a whole phrase or pick between two different nouns." It is
+a census of the corpus taken before any of it was re-authored, it already
+undercounted — the collision refusal switches a whole phrase and sits in none
+of its three columns — and #223's phase 3 moves the rest of it, since #235
+dissolved `abort_selection_rename()`'s noun pair into `{?s}`. Nothing reads the
+sentence, so nothing failed either time. It is struck rather than recounted,
+because the rule is deliberately stated over the construction and a recount
+would be stale again by the next file. Whether anything should count these
+sites is left open in [#236](https://github.com/sayuks/marginplyr/issues/236).
+
+The cost is the one those two precedents already pay, doubled, because the
+subject and the collision kind are two branches rather than one: four arms,
+each repeating the bullet that carries the columns, the noun that inflects
+beside it, and the remedy that follows. The structural gate is what leaves no
+cheaper spelling — a template hoisted out of the arms is a template bound
+elsewhere, which it refuses.
+
 ## The migration introduces wrapping, so a line is authored to survive it
 
 `rlang::abort()` wraps nothing. `cli_abort()` wraps at retrieval time, at

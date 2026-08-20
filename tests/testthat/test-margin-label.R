@@ -167,14 +167,14 @@ test_that("named Margin labels require exact dimension coverage", {
     )
   }
 
-  expect_error(operation(c(first = "All")), "missing `second`")
+  expect_error(operation(c(first = "All")), "Missing `second`")
   expect_error(
     operation(c(first = "All", second = "All", unknown = "All")),
-    "unknown dimension name `unknown`"
+    "unknown dimension name:\ni `unknown`"
   )
   expect_error(
     operation(c(fixed = "All", first = "All", second = "All")),
-    "fixed `.by` column `fixed`"
+    "fixed `.by` column:\ni `fixed`"
   )
   expect_error(
     operation(stats::setNames(c("All", "All"), c("first", ""))),
@@ -204,7 +204,7 @@ test_that("factor collisions include unused levels and stay column-specific", {
       .grouping = rollup(first, second),
       .margin_label = c(first = "All first", second = "New second")
     ),
-    "grouping column `first`"
+    "grouping column:\ni `first`"
   )
   expect_match(
     deparse1(conditionCall(error)),
@@ -219,7 +219,7 @@ test_that("factor collisions include unused levels and stay column-specific", {
       .grouping = rollup(first, second),
       .margin_label = c(first = "All first", second = "All second")
     ),
-    "grouping columns `first`, `second`"
+    "grouping columns:\ni `first` and `second`"
   )
   expect_match(conditionMessage(both), "are already factor levels")
 })
@@ -242,7 +242,7 @@ test_that("a declared collision is rejected however the label check is set", {
         .margin_label = "All",
         .check_margin_label = check
       ),
-      "already a factor level in grouping column `group`",
+      "already a factor level in grouping column:\ni `group`",
       fixed = TRUE
     )
     expect_s3_class(error, "marginplyr_error")
@@ -306,7 +306,7 @@ test_that("dtplyr rejects a declared collision and stays silent on a value", {
       n = dplyr::n(),
       .grouping = rollup(declared)
     ),
-    "already a factor level in grouping column `declared`",
+    "already a factor level in grouping column:\ni `declared`",
     fixed = TRUE
   )
   expect_s3_class(error, "marginplyr_error")
@@ -331,7 +331,7 @@ test_that("dtplyr rejects a declared collision and stays silent on a value", {
       .grouping = rollup(observed),
       .check_margin_label = TRUE
     ),
-    "already present in grouping column `observed`",
+    "already present in grouping column:\ni `observed`",
     fixed = TRUE
   )
 })
@@ -363,7 +363,7 @@ test_that("DuckDB rejects a declared collision without being asked", {
       .grouping = rollup(g),
       .margin_label = "(all)"
     ),
-    "already a factor level in grouping column `g`",
+    "already a factor level in grouping column:\ni `g`",
     fixed = TRUE
   )
 
@@ -422,7 +422,7 @@ test_that("RSQLite leaves an observed collision silent until it is asked", {
       .grouping = rollup(group),
       .check_margin_label = TRUE
     ),
-    "already present in grouping column `group`",
+    "already present in grouping column:\ni `group`",
     fixed = TRUE
   )
 })
@@ -682,15 +682,15 @@ test_that("Margin label option errors use the package condition seam", {
     ),
     list(
       label = c(fixed = "All", first = "All", second = "All"),
-      message = "must not name fixed `\\.by` column `fixed`"
+      message = "must not name fixed `\\.by` column:\ni `fixed`"
     ),
     list(
       label = c(first = "All", second = "All", unknown = "All"),
-      message = "unknown dimension name `unknown`"
+      message = "unknown dimension name:\ni `unknown`"
     ),
     list(
       label = c(first = "All"),
-      message = "must name every Margin dimension; missing `second`"
+      message = "must name every Margin dimension\\.\ni Missing `second`"
     )
   )
 
