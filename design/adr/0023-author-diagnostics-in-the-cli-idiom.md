@@ -201,8 +201,17 @@ of its three columns — and #223's phase 3 moves the rest of it, since #235
 dissolved `abort_selection_rename()`'s noun pair into `{?s}`. Nothing reads the
 sentence, so nothing failed either time. It is struck rather than recounted,
 because the rule is deliberately stated over the construction and a recount
-would be stale again by the next file. Whether anything should count these
-sites is left open in [#236](https://github.com/sayuks/marginplyr/issues/236).
+would be stale again by the next file.
+
+[#236](https://github.com/sayuks/marginplyr/issues/236) settled what that left
+open, and the answer is that nothing counts these sites: what is counted
+instead is whether each one is *covered*.
+`test-diagnostic-pluralization.R` derives every pluralizing site from the
+namespace — a `{?}` in an `abort_marginplyr()` template, the one
+`cli::pluralize()` sentence, and the `if` a bare `stop()` invariant spells a
+plural with — and fails any the file's coverage table does not say is pinned at
+both arms. A census is a number someone maintains and nobody reads, which is how
+the inventory above drifted twice; a derivation is neither.
 
 The cost is the one those two precedents already pay, doubled, because the
 subject and the collision kind are two branches rather than one: four arms,
