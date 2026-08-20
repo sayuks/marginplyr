@@ -60,6 +60,35 @@ the second sentence of condition 3, that a marker is chosen from a run of
 uninterpolated prose, which was never about wrapping — a marker quoting an
 interpolated part varies with the data at any width.
 
+**The length condition 2 speaks of is an element count**, not a character
+count. Read literally, "a part whose length the caller decides" covers any
+caller-derived text, and on that reading a single caller subject — one column
+name, one deparsed expression — leaves every main line it appears in. The
+condition's own glosses say otherwise, and they are what settle it: the
+statement below explains the fixed-`.by` refusal by saying "its length is a
+function of how many columns the caller passed", and the paragraph above — as
+does ADR 0024's *Consequences*, restating the surviving condition — calls the
+bullet the only thing between a long vector and a very long line. All of them
+are about how many parts arrive, not how many characters one part has. So what
+takes a bullet is a part the caller decides the count of, and a single caller
+subject stays where the sentence needs it however long its text renders.
+
+Phase 3 of #223 had already decided it that way three times before it was
+written down here. `R/share.R`'s helper-position refusal and
+`R/grouping-context.R`'s not-a-bare-column refusal each append
+`injected_quosure_clause()` — a whole sentence built around a deparsed caller
+expression — to prose already in a line, and `R/grouping-plan.R`'s
+nested-specification refusal puts `{.code {label}}`, an arbitrary deparsed
+caller expression, in a main line with two `i` bullets beside it. All three are
+correct under this reading and none under the literal one, `R/utils.R`
+re-authors a fourth site appending that clause, and only one of them says so —
+in a code comment, where it governs one file and the others re-derive it. That
+is the whole reason this is a paragraph in the amendment rather than a comment:
+which parts a line may hold is a decision, and it holds for every file the
+re-authoring reaches. Nothing gates it, for the reason *Two rules are gated*
+gives about the line conditions generally — the distinction is between what a
+part *is* and what it measures, which no scan over the templates can see.
+
 **The paragraph in *Consequences* beginning "Wrapping is not the whole of what
 retrieval-time formatting costs"** recorded the collapsing and left the trade
 open in #230. It is settled: the collapsing is a defect, and ADR 0024 is the
