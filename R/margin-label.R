@@ -175,7 +175,11 @@ check_declared_label_collision <- function(margin_labels,
     return(invisible(NULL))
   }
 
-  abort_margin_label_collision(margin_labels, declared, kind = "declared")
+  abort_margin_label_collision(
+    margin_labels,
+    declared,
+    on_collision = abort_declared_label_collision
+  )
 }
 
 check_observed_label_collision <- function(data,
@@ -235,42 +239,47 @@ check_observed_label_collision <- function(data,
     return(invisible(NULL))
   }
 
-  abort_margin_label_collision(margin_labels, found, kind = "observed")
+  abort_margin_label_collision(
+    margin_labels,
+    found,
+    on_collision = abort_observed_label_collision
+  )
 }
 
-abort_margin_label_collision <- function(margin_labels, found, kind) {
-  stopifnot(
-    is.logical(found),
-    any(found),
-    identical(kind, "declared") || identical(kind, "observed")
-  )
+# The columns a collision was found in and the labels that collided with them,
+# which is what both refusals below name. Each caller hands in the refusal that
+# speaks for its own kind rather than a word naming that kind -- the shape
+# `R/grouping-plan.R`'s two renaming refusals take, since a discriminator this
+# function would only translate back into a call is one neither caller needs to
+# compute.
+abort_margin_label_collision <- function(margin_labels, found, on_collision) {
+  stopifnot(is.logical(found), any(found), is.function(on_collision))
 
   bad_cols <- names(found)[found]
-  # `vapply()` rather than `unlist()`, which would silently drop a `NULL` and
-  # leave the arms below reading a shorter vector. No caller can pass one --
-  # a missing label is filtered out before either collision is looked for --
-  # so the shape it would arrive in is a defect, and this stops on it.
   bad_labels <- vapply(
     margin_labels[bad_cols],
     identity,
     character(1),
     USE.NAMES = FALSE
   )
-  if (identical(kind, "declared")) {
-    abort_declared_label_collision(bad_cols, bad_labels)
-  }
-  abort_observed_label_collision(bad_cols, bad_labels)
+  on_collision(bad_cols, bad_labels)
 }
 
-# The two kinds are written out rather than shared, in the shape `R/share.R`
-# uses wherever two calls differ by a whole clause: the kind chooses how the
-# collision is named, and under the declared kind that clause pluralizes with
-# the subject, so one template would have to pick between two noun pairs. The
-# subject is the same shape one level down -- either the one colliding label or
-# a plural noun standing in for several distinct ones -- which is a whole
-# element rather than a plural of one word, and `{?}` cannot interpolate a
-# value into the arm it picks. What the shape costs is the bullet the two arms
-# share, written out in each.
+# Four arms across the two refusals below, rather than one template with two
+# branches inside it. Both branches choose a whole clause: the kind chooses how
+# the collision is named, and under the declared kind that clause pluralizes
+# with the subject, so one template would have to pick between two noun pairs;
+# and the subject is either the one colliding label, which is interpolated, or
+# the words standing in for several distinct ones, which is not, so `{?}`
+# cannot write both -- the arm it picks is literal text and is never re-read as
+# a template. ADR 0023's third amendment records the measurement and why a
+# branch on a count is still inside its `{?}` rule.
+#
+# What the shape costs is every element the arms share, written out in each:
+# the bullet carrying the columns four times, the noun `column{?s}` inflects
+# four times, and each remedy twice. The structural gate is what leaves no
+# cheaper spelling, since a template hoisted out of the arms is a template
+# bound elsewhere and it refuses one.
 #
 # `.check_margin_label = FALSE` is offered only where it is a remedy. It turns
 # off the read, and a declared collision is not found by reading, so naming it
