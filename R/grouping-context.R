@@ -106,17 +106,19 @@
 #'   .margin_label = NULL
 #' )
 grouping_bit <- function(x) {
-  abort_marginplyr_flat(
-    "`grouping_bit()` can only be used inside `summarize_with_margins()`."
-  )
+  abort_marginplyr(paste0(
+    "{.fun grouping_bit} can only be used inside ",
+    "{.fun summarize_with_margins}."
+  ))
 }
 
 #' @rdname grouping_bit
 #' @export
 grouping_id <- function(...) {
-  abort_marginplyr_flat(
-    "`grouping_id()` can only be used inside `summarize_with_margins()`."
-  )
+  abort_marginplyr(paste0(
+    "{.fun grouping_id} can only be used inside ",
+    "{.fun summarize_with_margins}."
+  ))
 }
 
 rewrite_grouping_dots <- function(dots,
@@ -221,10 +223,6 @@ grouping_helper_vars <- function(args, helper, plan) {
   # message reads the arguments as written, because whether one arrived injected
   # is the fact the unwrapping discards.
   carried <- unwrap_injected_args(args)
-  not_a_column_message <- paste0(
-    sprintf("`%s()` only accepts bare grouping columns.", helper),
-    injected_quosure_clause(args)
-  )
 
   # The empty argument is refused ahead of the arity checks so that the answer
   # does not depend on which check runs first. `grouping_bit(, )` is two
@@ -234,18 +232,14 @@ grouping_helper_vars <- function(args, helper, plan) {
   # -- still reaches the arity diagnostic first, which is the one a caller
   # passing two of anything needs.
   if (any(vapply(carried, rlang::is_missing, logical(1)))) {
-    abort_marginplyr_flat(not_a_column_message)
+    abort_not_a_grouping_column(helper, args)
   }
 
   if (identical(helper, "grouping_bit") && length(carried) != 1L) {
-    abort_marginplyr_flat(
-      "`grouping_bit()` requires exactly one column."
-    )
+    abort_marginplyr("{.fun grouping_bit} requires exactly one column.")
   }
   if (identical(helper, "grouping_id") && length(carried) == 0L) {
-    abort_marginplyr_flat(
-      "`grouping_id()` requires at least one column."
-    )
+    abort_marginplyr("{.fun grouping_id} requires at least one column.")
   }
 
   # The compound question, asked here even though the check above has already
@@ -255,34 +249,68 @@ grouping_helper_vars <- function(args, helper, plan) {
   # make the reordering above load-bearing for correctness rather than for which
   # diagnostic a caller reads.
   if (!all(vapply(carried, is_name_part, logical(1)))) {
-    abort_marginplyr_flat(not_a_column_message)
+    abort_not_a_grouping_column(helper, args)
   }
 
   vars <- vapply(carried, as.character, character(1))
   if (anyDuplicated(vars)) {
-    abort_marginplyr_flat(
-      sprintf("`%s()` does not accept duplicate columns.", helper)
-    )
+    abort_marginplyr("{.fun {helper}} does not accept duplicate columns.")
   }
   if (identical(helper, "grouping_id") && length(vars) > 31L) {
-    abort_marginplyr_flat(
-      "`grouping_id()` supports at most 31 columns."
-    )
+    abort_marginplyr("{.fun grouping_id} supports at most 31 columns.")
   }
   allowed <- unique(c(plan$by, plan$dimensions))
   unknown <- setdiff(vars, allowed)
   if (length(unknown) > 0L) {
-    abort_marginplyr_flat(
-      sprintf(
-        "Column%s %s %s not part of `.by` or `.grouping`.",
-        if (length(unknown) == 1L) "" else "s",
-        paste0("`", unknown, "`", collapse = ", "),
-        if (length(unknown) == 1L) "is" else "are"
-      )
-    )
+    # The columns arrive alone in an `i` bullet, per ADR 0023's surviving line
+    # condition: how many of them there are is the caller's decision.
+    #
+    # The refusal left behind inflects both its noun and its verb, which is the
+    # one site ADR 0023's `{?}` rule describes that way. `cli::qty()` is what
+    # carries the count across the split: both markers would otherwise read the
+    # vector, and the split is what took it out of the line they sit in.
+    abort_marginplyr(c(
+      paste0(
+        "{cli::qty(length(unknown))}Column{?s} {?is/are} not part of ",
+        "{.arg .by} or {.arg .grouping}:"
+      ),
+      i = "{.var {unknown}}."
+    ))
   }
 
   vars
+}
+
+# The one refusal both of the name checks above reach: an argument that is not a
+# bare column, whether it is R's empty argument or something else entirely.
+# Written as a function rather than as a message bound once and passed twice,
+# because the structural gate reads `abort_marginplyr()`'s own argument and
+# refuses a template bound elsewhere -- the reason `R/share.R`'s two
+# Parent-share refusals are written out twice.
+#
+# `injected_quosure_clause()` is a whole sentence assembled around a deparsed
+# caller expression, so it stays an interpolated value and gains no markup: ADR
+# 0023's injection rule is what makes a caller's braces inert, and it holds
+# because cli reads the template and not the value. It carries its own leading
+# space and is empty at a call that injected nothing, so it follows the refusal
+# in the same line rather than taking a bullet of its own, which would sometimes
+# be a bullet marker with nothing after it. That is also where the flat form put
+# it, so every pin reading it composes as it did.
+#
+# `call` is forwarded rather than left to its default, because
+# `abort_marginplyr()` blames its own caller: defaulted here it would name this
+# helper rather than the frame the checks above are in, which is the call the
+# flat form blamed.
+abort_not_a_grouping_column <- function(helper,
+                                        args,
+                                        call = rlang::caller_call()) {
+  abort_marginplyr(
+    paste0(
+      "{.fun {helper}} only accepts bare grouping ",
+      "columns.{injected_quosure_clause(args)}"
+    ),
+    call = call
+  )
 }
 
 grouping_sql_expr <- function(var, con) {
