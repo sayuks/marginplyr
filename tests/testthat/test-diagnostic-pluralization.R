@@ -7,14 +7,25 @@
 # set is visible at once, and a file-by-file re-authoring edits a contiguous
 # block of it (#224).
 #
-# Suffixing is what bounds the set, not pluralizing, and two diagnostics
-# pluralize by another construction. `abort_selection_rename()` picks between a
-# singular and a plural noun held in a labels list; all four of its messages
-# are already pinned exactly in `test-grouping-plan.R`, so recording them again
-# would buy nothing. The duplicate-grouping-set refusal switches a whole phrase
-# rather than suffixing one; both of its arms are pinned in
-# `test-grouping-plan.R`, the plural one separately from this file because it
-# needs a specification shape none of these eight do (#225).
+# Suffixing is what chose the eight, and two diagnostics were left out of them.
+# One is still out for the reason it was: the duplicate-grouping-set refusal
+# switches a whole phrase rather than suffixing one; both of its arms are
+# pinned in `test-grouping-plan.R`, the plural one separately from this file
+# because it needs a specification shape none of these eight do (#225).
+#
+# The other no longer has the construction it was described by. The
+# renaming-selection refusal -- one caller mistake, written out once for
+# `.grouping` and once for `.by` -- picked between a singular and a plural noun
+# held in a labels list, and #223 dissolved that pair into `{?s}` when it
+# re-authored `R/grouping-plan.R`, so it suffixes now as these eight do. Its
+# reason for being out is untouched by that: all four of its messages are
+# already pinned exactly in `test-grouping-plan.R`, so recording them again
+# would buy nothing. That is a thinner reason than the one the paragraph below
+# gives for recording three of these eight at both sites, and it is #224's to
+# revisit: re-authoring how a diagnostic is spelled is not where the question
+# of which diagnostics this baseline covers gets decided. Suffixing is
+# therefore where this set came from rather than a test a ninth diagnostic is
+# admitted by.
 #
 # The pins already beside each site stay where they are. Most match a phrase
 # rather than a whole message, which is enough to assert that a caller reaches

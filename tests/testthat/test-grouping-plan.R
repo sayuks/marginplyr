@@ -167,9 +167,9 @@ test_that("a nested specification position recognizes a spelling or a name", {
       "`spec_from_caller(region)` is a grouping specification, but a nested ",
       "position recognizes one only when it is a call to `grouping_set()`, ",
       "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a ",
-      "name bound to a specification. Anything else is read as a column ",
-      "selection. Assign the specification to a name first, then use that ",
-      "name here."
+      "name bound to a specification.\n",
+      "i Anything else is read as a column selection.\n",
+      "i Assign the specification to a name first, then use that name here."
     )
   )
 
@@ -340,8 +340,8 @@ test_that("empty grouping rules preserve their phase and error precedence", {
   expect_identical(
     conditionMessage(sets_error),
     paste0(
-      "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
-      "for the empty grouping set."
+      "`grouping_sets()` requires at least one set.\n",
+      "i Use `grouping_set()` for the empty grouping set."
     )
   )
 
@@ -419,6 +419,57 @@ test_that("invalid grouping input lists every supported constructor", {
   )
 })
 
+# The one refusal in `R/grouping-plan.R` that nothing executed. #223's phase 3
+# is what made it visible rather than what left it unrun: re-authoring gave the
+# body its own line, where the flat form spread one dead call over three.
+#
+# It is a second line of defence behind the test above, which refuses an object
+# that is not a specification at all. This one refuses an object that says it
+# is: `new_grouping_spec()` is the only constructor, so a specification whose
+# `type` is not one name, or is a name no rule answers, reaches the compiler
+# only from a hand-built object. That is why the guard is here, and why nothing
+# had run it. It is not promoted to a bare `stop()` -- that would move a site
+# across ADR 0015's boundary, which #223's phase 3 may not do -- so what is
+# left is to run it.
+#
+# Both guards are reached. They read different things, the shape of the
+# specification's own fields and whether its kind names a rule, and answer with
+# the same sentence, so either one running alone would leave the other unrun
+# and report nothing about it.
+test_that("a malformed grouping specification is refused by both guards", {
+  compile <- function(spec) {
+    compile_grouping_spec(
+      spec,
+      "a",
+      duplicates_choices = margin_duplicates_choices
+    )
+  }
+  malformed <- list(
+    # A `type` that is not one name, and `args` that are not a list: the two
+    # halves of the first guard's condition, which no single object fails both
+    # of while still reaching the second.
+    structure(
+      list(type = character(), args = list()),
+      class = "margin_grouping_spec"
+    ),
+    structure(
+      list(type = "set", args = "not a list"),
+      class = "margin_grouping_spec"
+    ),
+    # One name, and every field the right shape, but no rule answers it.
+    structure(
+      list(type = "pivot", args = list()),
+      class = "margin_grouping_spec"
+    )
+  )
+
+  for (spec in malformed) {
+    error <- expect_error(compile(spec))
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(conditionMessage(error), "Invalid grouping specification.")
+  }
+})
+
 test_that("selectors and fixed .by columns are resolved once", {
   selected <- c("a", "b")
   plan <- compile_grouping_spec(
@@ -439,8 +490,9 @@ test_that("selectors and fixed .by columns are resolved once", {
 test_that("a renaming grouping selection is refused by every constructor", {
   data_vars <- c("region", "year", "value")
   renamed_message <- paste0(
-    "Can't rename grouping dimension `area = region`. ",
-    "Grouping dimensions must name existing columns."
+    "Can't rename grouping dimension:\n",
+    "i `area = region`.\n",
+    "i Grouping dimensions must name existing columns."
   )
   renaming_calls <- list(
     quote(tidyselect::all_of(c(area = "region"))),
@@ -488,8 +540,9 @@ test_that("a renaming grouping selection is refused by every constructor", {
   expect_identical(
     conditionMessage(several),
     paste0(
-      "Can't rename grouping dimensions `area = region`, `when = year`. ",
-      "Grouping dimensions must name existing columns."
+      "Can't rename grouping dimensions:\n",
+      "i `area = region` and `when = year`.\n",
+      "i Grouping dimensions must name existing columns."
     )
   )
 })
@@ -548,8 +601,9 @@ by_rename_vars <- function() {
 
 by_rename_message <- function() {
   paste0(
-    "Can't rename `.by` column `area = region`. ",
-    "Fixed `.by` keys must name existing columns."
+    "Can't rename `.by` column:\n",
+    "i `area = region`.\n",
+    "i Fixed `.by` keys must name existing columns."
   )
 }
 
@@ -588,8 +642,9 @@ test_that("a renaming .by selection is refused", {
   expect_identical(
     conditionMessage(several),
     paste0(
-      "Can't rename `.by` columns `area = region`, `size = value`. ",
-      "Fixed `.by` keys must name existing columns."
+      "Can't rename `.by` columns:\n",
+      "i `area = region` and `size = value`.\n",
+      "i Fixed `.by` keys must name existing columns."
     )
   )
 })
@@ -710,8 +765,9 @@ test_that("duplicated grouping sets in more than one group name their groups", {
   expect_identical(
     conditionMessage(duplicated),
     paste0(
-      "Duplicate grouping sets were produced at position groups 2, 4; 1, 3. ",
-      "Use `.duplicates = \"drop\"` or `\"keep\"`."
+      "Duplicate grouping sets were produced at position groups:\n",
+      "i 2, 4; 1, 3.\n",
+      "i Use `.duplicates = \"drop\"` or `\"keep\"`."
     )
   )
 })
@@ -856,8 +912,9 @@ test_that("compile_grouping_spec() reads a narrowed duplicates vocabulary", {
   expect_identical(
     conditionMessage(duplicated),
     paste0(
-      "Duplicate grouping sets were produced at positions 1, 2. ",
-      "Use `.duplicates = \"drop\"`."
+      "Duplicate grouping sets were produced at positions:\n",
+      "i 1, 2.\n",
+      "i Use `.duplicates = \"drop\"`."
     )
   )
 

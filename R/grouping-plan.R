@@ -3,13 +3,10 @@ validate_grouping_spec_early <- function(grouping_spec) {
     return(invisible(NULL))
   }
   if (!inherits(grouping_spec, "margin_grouping_spec")) {
-    abort_marginplyr_flat(
-      paste0(
-        "`.grouping` must be created with ",
-        format_grouping_constructors(),
-        "."
-      )
-    )
+    abort_marginplyr(paste0(
+      "{.arg .grouping} must be created with ",
+      "{.or {.fun {grouping_constructor_names()}}}."
+    ))
   }
 
   kind <- grouping_spec$type
@@ -32,37 +29,32 @@ validate_grouping_spec_early <- function(grouping_spec) {
 }
 
 abort_invalid_grouping_spec <- function() {
-  abort_marginplyr_flat(
-    "Invalid grouping specification."
-  )
+  abort_marginplyr("Invalid grouping specification.")
 }
 
 normalize_grouping_input <- function(.data, by_quo) {
   stopifnot(rlang::is_quosure(by_quo))
 
   if (inherits(.data, "rowwise_df")) {
-    abort_marginplyr_flat(
-      "`rowwise()` input is not supported. Call `dplyr::ungroup()` first."
-    )
+    abort_marginplyr(c(
+      "{.fun rowwise} input is not supported.",
+      i = "Call {.fun dplyr::ungroup} first."
+    ))
   }
 
   if (!dplyr::group_by_drop_default(.data)) {
-    abort_marginplyr_flat(
-      paste0(
-        "Grouped input created with `.drop = FALSE` is not supported. ",
-        "Call `dplyr::ungroup()` first."
-      )
-    )
+    abort_marginplyr(c(
+      "Grouped input created with {.code .drop = FALSE} is not supported.",
+      i = "Call {.fun dplyr::ungroup} first."
+    ))
   }
 
   input_groups <- dplyr::group_vars(.data)
   if (length(input_groups) > 0L && !rlang::quo_is_null(by_quo)) {
-    abort_marginplyr_flat(
-      paste0(
-        "Can't supply `.by` when `.data` is grouped. ",
-        "Call `dplyr::ungroup()` first."
-      )
-    )
+    abort_marginplyr(c(
+      "Can't supply {.arg .by} when {.arg .data} is grouped.",
+      i = "Call {.fun dplyr::ungroup} first."
+    ))
   }
 
   .data <- dplyr::ungroup(.data)
@@ -101,7 +93,11 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
 # `get_col_names()`'s other callers read back names dplyr assigned on purpose,
 # so the check belongs on this resolution rather than in that helper.
 resolve_by_selection <- function(by_quo, data_proxy) {
-  resolve_column_selection(by_quo, data_proxy, labels = by_rename_labels())
+  resolve_column_selection(
+    by_quo,
+    data_proxy,
+    on_rename = abort_by_rename
+  )
 }
 
 prepare_grouping_plan <- function(.data,
@@ -194,14 +190,12 @@ prepare_grouping_plan <- function(.data,
 }
 
 abort_empty_grouping_units <- function(kind) {
-  abort_marginplyr_flat(
-    sprintf("`%s()` requires at least one dimension.", kind)
-  )
+  abort_marginplyr("{.fun {kind}} requires at least one dimension.")
 }
 
 abort_empty_composite <- function() {
-  abort_marginplyr_flat(
-    "An empty `grouping_set()` cannot be a composite dimension."
+  abort_marginplyr(
+    "An empty {.fun grouping_set} cannot be a composite dimension."
   )
 }
 
@@ -211,12 +205,10 @@ allow_empty_grouping <- function(spec) {
 
 validate_empty_grouping_sets <- function(spec) {
   if (length(spec$args) == 0L) {
-    abort_marginplyr_flat(
-      paste0(
-        "`grouping_sets()` requires at least one set. Use `grouping_set()` ",
-        "for the empty grouping set."
-      )
-    )
+    abort_marginplyr(c(
+      "{.fun grouping_sets} requires at least one set.",
+      i = "Use {.fun grouping_set} for the empty grouping set."
+    ))
   }
   invisible(NULL)
 }
@@ -229,11 +221,8 @@ validate_empty_grouping_units <- function(spec) {
 }
 
 reject_nested_in_set <- function(parent, nested) {
-  abort_marginplyr_flat(
-    paste0(
-      "A `grouping_set()` can contain columns, not another ",
-      "grouping family."
-    )
+  abort_marginplyr(
+    "A {.fun grouping_set} can contain columns, not another grouping family."
   )
 }
 
@@ -243,15 +232,10 @@ allow_nested_grouping <- function(parent, nested) {
 
 validate_nested_grouping_units <- function(parent, nested) {
   if (!identical(nested$type, "set")) {
-    abort_marginplyr_flat(
-      sprintf(
-        paste0(
-          "`%s()` only accepts columns or `grouping_set()` ",
-          "composite dimensions."
-        ),
-        parent$type
-      )
-    )
+    abort_marginplyr(paste0(
+      "{.fun {parent$type}} only accepts columns or {.fun grouping_set} ",
+      "composite dimensions."
+    ))
   }
   if (length(nested$args) == 0L) {
     abort_empty_composite()
@@ -436,13 +420,12 @@ compile_grouping_spec_impl <- function(.grouping,
 
   overlap <- intersect(.by, dimensions)
   if (length(overlap) > 0L) {
-    abort_marginplyr_flat(
-      paste0(
-        "Columns cannot appear in both `.by` and `.grouping`: ",
-        paste0("`", overlap, "`", collapse = ", "),
-        "."
-      )
-    )
+    # The columns arrive alone in an `i` bullet, per ADR 0023's surviving line
+    # condition: how many of them there are is the caller's decision.
+    abort_marginplyr(c(
+      "Columns cannot appear in both {.arg .by} and {.arg .grouping}:",
+      i = "{.var {overlap}}."
+    ))
   }
 
   normalized <- lapply(
@@ -458,24 +441,32 @@ compile_grouping_spec_impl <- function(.grouping,
 
   if (any(duplicate_keys) && identical(.duplicates, "error")) {
     groups <- split(which(duplicate_keys), keys[duplicate_keys])
-    positions <- vapply(groups, paste, collapse = ", ", character(1))
     # The policies this caller could have asked for instead, which is every
     # value of its own vocabulary but the one that raised this. Reading them
     # from the vocabulary is what keeps the nesting verbs, whose `.duplicates`
     # excludes `"keep"`, from being offered it here (#110).
     alternatives <- setdiff(duplicates_choices, .duplicates)
-    offered <- paste0("`\"", alternatives, "\"`")
-    offered[[1L]] <- paste0("`.duplicates = \"", alternatives[[1L]], "\"`")
-    abort_marginplyr_flat(
-      paste0(
-        "Duplicate grouping sets were produced at position",
-        if (length(groups) == 1L) "s " else " groups ",
-        paste(positions, collapse = "; "),
-        ". Use ",
-        paste(offered, collapse = " or "),
-        "."
-      )
+    # Joined here rather than interpolated as a vector, because a group is
+    # itself a comma-joined list of positions, so cli's defaults would
+    # serialise the groups with an `and` inside one -- the reason `R/share.R`
+    # joins a class vector on its own slash. Read only from the cli template
+    # below, which codetools cannot see.
+    # nolint start: object_usage_linter.
+    positions <- paste(
+      vapply(groups, paste, collapse = ", ", character(1)),
+      collapse = "; "
     )
+    # nolint end
+    offered <- paste0("\"", alternatives, "\"")
+    offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
+    abort_marginplyr(c(
+      paste0(
+        "Duplicate grouping sets were produced at ",
+        "{cli::qty(length(groups))}{?positions/position groups}:"
+      ),
+      i = "{positions}.",
+      i = "Use {.or {.code {offered}}}."
+    ))
   }
 
   if (identical(.duplicates, "drop")) {
@@ -699,16 +690,6 @@ grouping_constructor_names <- function() {
   ))
 }
 
-format_grouping_constructors <- function() {
-  constructors <- paste0("`", grouping_constructor_names(), "()`")
-  last <- length(constructors)
-  paste0(
-    paste(constructors[-last], collapse = ", "),
-    ", or ",
-    constructors[[last]]
-  )
-}
-
 grouping_arg_spec <- function(arg, data_vars) {
   expr <- rlang::quo_get_expr(arg)
   if (
@@ -766,7 +747,7 @@ resolve_grouping_selection <- function(arg, data_proxy) {
     resolve_column_selection(
       arg,
       data_proxy,
-      labels = grouping_rename_labels()
+      on_rename = abort_grouping_rename
     ),
     error = function(cnd) {
       label <- rlang::as_label(rlang::quo_get_expr(arg))
@@ -801,15 +782,16 @@ is_grouping_spec_subscript <- function(cnd, label) {
 }
 
 abort_nested_grouping_spec <- function(label) {
-  abort_marginplyr_flat(
+  abort_marginplyr(c(
     paste0(
-      "`", label, "` is a grouping specification, but a nested position ",
+      "{.code {label}} is a grouping specification, but a nested position ",
       "recognizes one only when it is a call to ",
-      format_grouping_constructors(), ", or a name bound to a specification. ",
-      "Anything else is read as a column selection. Assign the specification ",
-      "to a name first, then use that name here."
-    )
-  )
+      "{.or {.fun {grouping_constructor_names()}}}, or a name bound to a ",
+      "specification."
+    ),
+    i = "Anything else is read as a column selection.",
+    i = "Assign the specification to a name first, then use that name here."
+  ))
 }
 
 # tidyselect reports a selection under the names the caller gave it, so
@@ -821,7 +803,7 @@ abort_nested_grouping_spec <- function(label) {
 # diagnostic says only that renaming is disallowed and never names the pair the
 # caller has to fix. A name that repeats its own column renames nothing and is
 # left alone.
-resolve_column_selection <- function(arg, data_proxy, labels) {
+resolve_column_selection <- function(arg, data_proxy, on_rename) {
   selected <- tidyselect::eval_select(
     arg,
     data = data_proxy,
@@ -834,46 +816,46 @@ resolve_column_selection <- function(arg, data_proxy, labels) {
   source_names <- names(tidyselect::tidyselect_data_proxy(data_proxy))[selected]
   renamed <- selected_names != source_names
   if (any(renamed)) {
-    abort_selection_rename(
-      selected_names[renamed],
-      source_names[renamed],
-      labels = labels
-    )
+    on_rename(selected_names[renamed], source_names[renamed])
   }
   selected_names
 }
 
 # One caller mistake, one diagnostic: `.grouping` and `.by` refuse a renaming
 # selection for the same reason, and only the noun and the rule it states
-# differ.
-grouping_rename_labels <- function() {
-  list(
-    singular = "grouping dimension",
-    plural = "grouping dimensions",
-    rule = "Grouping dimensions must name existing columns."
-  )
+# differ. That difference used to be a labels list the refusal read a singular
+# or a plural noun out of; it is now two refusals, and the resolution above is
+# handed whichever one speaks for its selection.
+#
+# Written out rather than kept as one template with the noun interpolated,
+# because the noun is what pluralizes. `{?s}` reads the quantity beside it, so
+# a shared template would have to choose between two noun pairs, which is the
+# branch ADR 0023's `{?}` rule dissolves rather than relocates. Writing them
+# out also keeps both inside the structural gate, which reads
+# `abort_marginplyr()`'s own argument and refuses a template bound elsewhere --
+# the reason `R/share.R`'s two Parent-share refusals are written out twice.
+#
+# The pairs arrive alone in an `i` bullet, per ADR 0023's surviving line
+# condition: how many of them there are is the caller's decision.
+abort_grouping_rename <- function(selected_names, source_names) {
+  abort_marginplyr(c(
+    "Can't rename {cli::qty(length(selected_names))}grouping dimension{?s}:",
+    i = "{.code {selection_rename_pairs(selected_names, source_names)}}.",
+    i = "Grouping dimensions must name existing columns."
+  ))
 }
 
-by_rename_labels <- function() {
-  list(
-    singular = "`.by` column",
-    plural = "`.by` columns",
-    rule = "Fixed `.by` keys must name existing columns."
-  )
+abort_by_rename <- function(selected_names, source_names) {
+  abort_marginplyr(c(
+    "Can't rename {cli::qty(length(selected_names))}{.arg .by} column{?s}:",
+    i = "{.code {selection_rename_pairs(selected_names, source_names)}}.",
+    i = "Fixed {.arg .by} keys must name existing columns."
+  ))
 }
 
-abort_selection_rename <- function(selected_names, source_names, labels) {
-  abort_marginplyr_flat(
-    paste0(
-      "Can't rename ",
-      if (length(selected_names) == 1L) labels$singular else labels$plural,
-      " ",
-      paste0(
-        "`", selected_names, " = ", source_names, "`",
-        collapse = ", "
-      ),
-      ". ",
-      labels$rule
-    )
-  )
+# The renaming a selection asked for, in the spelling the caller would write to
+# fix it. Both halves are caller text, so this is an interpolated value and
+# carries no markup of its own; the templates above give it `{.code}`.
+selection_rename_pairs <- function(selected_names, source_names) {
+  paste0(selected_names, " = ", source_names)
 }

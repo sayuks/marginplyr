@@ -374,16 +374,18 @@ test_that("a lazy selection proxy resolves renames against its columns", {
   expect_identical(
     conditionMessage(error),
     paste0(
-      "Can't rename grouping dimension `area = region`. ",
-      "Grouping dimensions must name existing columns."
+      "Can't rename grouping dimension:\n",
+      "i `area = region`.\n",
+      "i Grouping dimensions must name existing columns."
     )
   )
 })
 
 backend_by_rename_message <- function() {
   paste0(
-    "Can't rename `.by` column `area = region`. ",
-    "Fixed `.by` keys must name existing columns."
+    "Can't rename `.by` column:\n",
+    "i `area = region`.\n",
+    "i Fixed `.by` keys must name existing columns."
   )
 }
 
