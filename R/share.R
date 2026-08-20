@@ -1359,9 +1359,8 @@ abort_share_source_type <- function(value,
         "source summary {.var {source_summary}} to be a plain integer or ",
         "double scalar."
       ),
-      # Alone in a bullet per ADR 0023's surviving line condition: a class
-      # vector is as long as the value's class chain, which the caller's data
-      # decides.
+      # Alone in a bullet per ADR 0023's condition 2: a class vector is as long
+      # as the value's class chain, which the caller's data decides.
       i = "Detected type {detected_type}.",
       i = "Convert it explicitly in the ordinary summary."
     ),
@@ -1701,8 +1700,8 @@ preflight_share_across_syntax <- function(expr, output_name) {
     ))
   }
   if (length(args$additional) > 0L) {
-    # The arguments arrive alone in an `i` bullet, per ADR 0023's surviving
-    # line condition: how many of them there are is the caller's decision.
+    # The arguments arrive alone in an `i` bullet, per ADR 0023's condition 2:
+    # how many of them there are is the caller's decision.
     abort_marginplyr(c(
       paste0(
         "{share_kind_modifier(kind)} {.fun across} does not accept ",

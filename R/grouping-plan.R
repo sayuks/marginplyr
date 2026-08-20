@@ -420,8 +420,8 @@ compile_grouping_spec_impl <- function(.grouping,
 
   overlap <- intersect(.by, dimensions)
   if (length(overlap) > 0L) {
-    # The columns arrive alone in an `i` bullet, per ADR 0023's surviving line
-    # condition: how many of them there are is the caller's decision.
+    # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2:
+    # how many of them there are is the caller's decision.
     abort_marginplyr(c(
       "Columns cannot appear in both {.arg .by} and {.arg .grouping}:",
       i = "{.var {overlap}}."
@@ -835,8 +835,8 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
 # `abort_marginplyr()`'s own argument and refuses a template bound elsewhere --
 # the reason `R/share.R`'s two Parent-share refusals are written out twice.
 #
-# The pairs arrive alone in an `i` bullet, per ADR 0023's surviving line
-# condition: how many of them there are is the caller's decision.
+# The pairs arrive alone in an `i` bullet, per ADR 0023's condition 2: how many
+# of them there are is the caller's decision.
 abort_grouping_rename <- function(selected_names, source_names) {
   abort_marginplyr(c(
     "Can't rename {cli::qty(length(selected_names))}grouping dimension{?s}:",

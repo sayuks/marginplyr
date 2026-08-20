@@ -54,8 +54,8 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
 
   label_names <- names(.margin_label)
   # Each refusal below names whichever names it is refusing, and each carries
-  # them in an `i` bullet rather than in its main line, per ADR 0023's
-  # surviving line condition: how many of them arrive is the caller's decision.
+  # them in an `i` bullet rather than in its main line, per
+  # ADR 0023's condition 2: how many of them arrive is the caller's decision.
   fixed_names <- intersect(label_names, by)
   if (length(fixed_names) > 0L) {
     abort_marginplyr(c(
