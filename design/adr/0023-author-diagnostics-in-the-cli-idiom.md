@@ -74,20 +74,19 @@ takes a bullet is a part the caller decides the count of, and a single caller
 subject stays where the sentence needs it however long its text renders.
 
 Phase 3 of #223 had already decided it that way three times before it was
-written down here. `R/share.R`'s helper-position refusal and
-`R/grouping-context.R`'s not-a-bare-column refusal each append
-`injected_quosure_clause()` — a whole sentence built around a deparsed caller
-expression — to prose already in a line, and `R/grouping-plan.R`'s
-nested-specification refusal puts `{.code {label}}`, an arbitrary deparsed
-caller expression, in a main line with two `i` bullets beside it. All three are
-correct under this reading and none under the literal one, `R/utils.R`
-re-authors a fourth site appending that clause, and only one of them says so —
-in a code comment, where it governs one file and the others re-derive it. That
-is the whole reason this is a paragraph in the amendment rather than a comment:
-which parts a line may hold is a decision, and it holds for every file the
-re-authoring reaches. Nothing gates it, for the reason *Two rules are gated*
-gives about the line conditions generally — the distinction is between what a
-part *is* and what it measures, which no scan over the templates can see.
+written down here. `R/share.R`'s refusal of a direct-syntax call carrying
+anything but one bare name appends `injected_quosure_clause()` — a whole
+sentence built around a deparsed caller expression — to the remedy inside its
+`i` bullet, and `R/grouping-context.R`'s not-a-bare-column refusal appends the
+same clause to its main line; `R/grouping-plan.R`'s nested-specification
+refusal puts `{.code {label}}`, an arbitrary deparsed caller expression, in a
+main line with two `i` bullets beside it. All three are correct under this
+reading and none under the literal one, and only one of them said so — in a
+code comment, where it governed one file while the other two re-derived it.
+`R/utils.R`, which composes that clause, is re-authored in phase 3's last
+group and would have to re-derive it a third time. That is why this is a
+paragraph in the amendment: which parts a line may hold is a decision, and it
+holds for every file the re-authoring reaches.
 
 **The paragraph in *Consequences* beginning "Wrapping is not the whole of what
 retrieval-time formatting costs"** recorded the collapsing and left the trade
