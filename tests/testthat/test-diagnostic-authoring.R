@@ -20,51 +20,10 @@
 # the property is about every call site rather than about any one file, so it is
 # asserted over the loaded namespace rather than described in prose. It needs
 # the package loaded through `pkgload::load_all()` or an installed dev build.
-
-# Every call to `name` below `expr`, as the expression each passed as its
-# message argument -- the first argument, or `message =` where a site names it.
 #
-# The recursion goes through `lapply()` and never a bare `for` over a call's
-# elements, for the reason `test-query-policy.R` records: a parsed call can hold
-# the missing-argument placeholder as one of its own elements, and a `for`
-# loop's assignment preserves the internal missing flag, so reading it raises
-# "argument is missing, with no default" the moment the loop variable is looked
-# up.
-diagnostic_message_arguments <- function(expr, name) {
-  found <- list()
-  walk <- function(e) {
-    if (!is.call(e)) {
-      return(invisible(NULL))
-    }
-    head <- e[[1]]
-    if (is.name(head) && identical(as.character(head), name)) {
-      args <- as.list(e)[-1]
-      arg_names <- names(args)
-      # R's own matching for `abort_marginplyr(message, ..., class, call)`:
-      # `message =` by name, otherwise the first argument supplied without one.
-      # Reading `args[[1]]` instead would take `class` for the message at a
-      # site that named every argument it passed, and report that site clean
-      # because a class is a literal too.
-      positional <- if (is.null(arg_names)) args else args[!nzchar(arg_names)]
-      message <- if (!is.null(arg_names) && "message" %in% arg_names) {
-        args[["message"]]
-      } else if (length(positional) > 0L) {
-        positional[[1]]
-      } else {
-        NULL
-      }
-      # `c()` rather than `found[[length(found) + 1L]] <-`, which deletes
-      # instead of appending when the value is `NULL`. A call written with no
-      # message at all -- `abort_marginplyr(class = "x")` -- is exactly the
-      # site the gate must report, and that spelling would drop it.
-      found <<- c(found, list(message))
-    }
-    lapply(as.list(e)[-1], walk)
-    invisible(NULL)
-  }
-  walk(expr)
-  found
-}
+# The namespace walk itself is in `helper-diagnostic-sites.R`, which
+# `test-diagnostic-pluralization.R`'s coverage gate reads too. Only the
+# predicate below is this gate's own.
 
 # Whether every string a message argument contributes is written in the source.
 #
@@ -112,20 +71,6 @@ authored_template <- function(expr) {
     return(all(vapply(as.list(expr)[-1], authored_template, logical(1))))
   }
   FALSE
-}
-
-# Every function bound in the namespace, which is where the call sites are:
-# `R/` is not installed, so a scan of the shipped package would find no source
-# to read.
-marginplyr_diagnostic_sites <- function(name, ns = asNamespace("marginplyr")) {
-  functions <- Filter(
-    function(binding) is.function(get(binding, envir = ns)),
-    ls(ns, all.names = TRUE)
-  )
-  sites <- lapply(functions, function(binding) {
-    diagnostic_message_arguments(body(get(binding, envir = ns)), name)
-  })
-  stats::setNames(sites, functions)
 }
 
 # The reading, driven over source `R/` does not contain. Both halves of it are

@@ -413,6 +413,18 @@ re-authoring `R/` file by file, so the transitional sibling that let a
 not-yet-re-authored site hand an assembled string across as a value is gone,
 and with it the snapshot that counted what was left.
 
+`test-diagnostic-pluralization.R` gates the other half of the plural rule, and
+it is a coverage question rather than an authoring one: every diagnostic this
+package pluralizes has both arms reached by a test, with the inflected span
+asserted in each. The set is derived from the namespace rather than listed —
+a `{?}` in an `abort_marginplyr()` template, the one `cli::pluralize()`
+sentence `report_branch_warnings()` writes, and the `if` a bare `stop()`
+invariant spells a plural with, ADR 0023 excluding those from the idiom — and
+the file's coverage table says where each one is pinned. Both directions fail:
+a derived site the table does not name, and a table entry naming no site. It
+replaced a hand-authored census that had drifted twice without failing
+anything (#236). Neither gate runs a diagnostic; the pins beside them do.
+
 It also owns the one reading of a condition another package raised.
 `condition_chain()` answers the conditions a `parent` chain holds, outermost
 first, and decides nothing about them. tidyselect wraps a failure raised inside
