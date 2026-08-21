@@ -283,8 +283,10 @@ grouping_helper_vars <- function(args, helper, plan) {
 # bare column, whether it is R's empty argument or something else entirely.
 # Written as a function rather than as a message bound once and passed twice,
 # because the structural gate reads `abort_marginplyr()`'s own argument and
-# refuses a template bound elsewhere -- the reason `R/share.R`'s two
-# Parent-share refusals are written out twice.
+# refuses a template bound elsewhere -- the shape `abort_ambiguous_parent()`
+# takes in `R/share.R`. What the gate rules out is the bound template; a
+# literal inside a helper it reads exactly as it reads one at each raising
+# site, which is what leaves the choice between one helper and two copies open.
 #
 # `injected_quosure_clause()` reaches the template as an interpolated value
 # carrying no markup, for the reasons `R/share.R` states above the other site
