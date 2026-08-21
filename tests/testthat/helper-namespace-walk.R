@@ -3,15 +3,28 @@
 # body.
 #
 # A structural gate asserts a property of every call site rather than of any one
-# call -- that no function unquotes inside the `.data` pronoun, that only
-# `compile_grouping_spec()` reaches the plan compiler, that every
-# `abort_marginplyr()` template is authored in the source, that every walk over
-# a call's arguments reads them by subscript, that every pluralizing diagnostic
-# is pinned. Each of those reads the loaded namespace, because `R/` is not
-# installed beside the tests and a scan of the shipped package would find no
-# source to read; each therefore needs the package loaded through
-# `pkgload::load_all()` or an installed dev build. Why a gate reads the
-# namespace at all is the gate's own to state, and each of them states it.
+# call, so it reads the loaded namespace: `R/` is not installed beside the
+# tests, and a scan of the shipped package would find no source to read. Every
+# such gate therefore needs the package loaded through `pkgload::load_all()` or
+# an installed dev build. Why a gate reads the namespace at all is the gate's
+# own to state, and each of them states it.
+#
+# The gates reading this file, which is what a header here can say and
+# `design/architecture.md`'s *Structural gates* section deliberately does not:
+#
+# - `test-data-pronoun.R`, that no function unquotes inside `.data`;
+# - `test-grouping-plan.R`, that only `compile_grouping_spec()` reaches the
+#   plan compiler -- the one that decides by deparsing, so it takes the
+#   enumeration and not the visitor;
+# - `test-query-policy.R`, ADR 0020's rule about which functions reach an
+#   execution entry point, and the capability table read out of the source;
+# - `test-utils.R`, that no walk over a call's arguments binds one to a name,
+#   in either the `for` spelling or the `<-` spelling;
+# - `helper-diagnostic-sites.R`, for the two diagnostics gates it serves.
+#
+# That list is a courtesy and not the record: `test-namespace-walk.R` derives
+# the set from the sources, so a gate missing from here still cannot hold a
+# second copy of the enumeration.
 #
 # They live here rather than in whichever gate was written first because
 # testthat gives each test file its own environment: a second gate cannot see a

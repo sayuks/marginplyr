@@ -1,9 +1,11 @@
 # `helper-namespace-walk.R` holds the two readings every structural gate in
 # this suite shares, and this file is what keeps them there. A gate that
 # enumerated the namespace itself would be a second copy of the reading, and
-# the copy is what drifts: the walk over a call's elements was independently
-# re-derived three times before it was shared, and two of the three carried
-# defensive code the third did not need.
+# the copy is what drifts: the recursion over a call's elements was
+# independently re-derived three times before it was shared, and the three
+# answered the missing-argument hazard three different ways -- two by
+# construction, and one with a guard against a placeholder it never had to
+# look at, beside a `tryCatch()` for a `get()` that fails on no binding.
 #
 # The enumeration is what is scanned for, rather than the recursion. It has one
 # spelling -- a function test over a listing that includes the hidden names --

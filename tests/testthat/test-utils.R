@@ -201,7 +201,7 @@ test_that("no walk binds a call's parts with `for`", {
 
   # Named rather than counted, so the failure says which walk to rewrite.
   expect_equal(
-    unname(functions[offenders]),
+    functions[offenders],
     character(),
     info = paste(
       "Read the parts by subscript instead --",
@@ -318,7 +318,7 @@ test_that("no walk binds a call's parts with `<-`", {
   )
 
   expect_equal(
-    unname(functions[offenders]),
+    functions[offenders],
     character(),
     info = paste(
       "Read the argument at the point of use --",

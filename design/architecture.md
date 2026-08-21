@@ -612,13 +612,12 @@ byte-for-byte SQL formatting.
 ### Structural gates
 
 Some properties this package holds itself to are properties of every call site
-rather than of any one call, so no run of the verbs can observe them: that no
-function unquotes inside the `.data` pronoun, that only
-`compile_grouping_spec()` reaches the plan compiler, that every walk over a
-call's arguments reads them by subscript. A test asserting one of these is a
-*structural gate*: it reads the package's own expressions instead of its
-results, so a violation fails it wherever it is written, including in code no
-test executes.
+rather than of any one call, so no run of the verbs can observe them: that a
+hazardous shape is written nowhere in the package, that a shape which must have
+one home has exactly one, that everything of a kind is covered. A test
+asserting one of these is a *structural gate*: it reads the package's own
+expressions instead of its results, so a violation fails it wherever it is
+written, including in code no test executes.
 
 A gate reads the loaded namespace rather than the sources under `R/`, because
 `R/` is not installed beside the tests — under `R CMD check` the sources sit
@@ -635,7 +634,8 @@ recursion is shared rather than rewritten because it has a hazard in it: a
 parsed call can hold the missing-argument placeholder as one of its own
 elements, and a walk that binds an element to a name raises "argument is
 missing, with no default" on a body as ordinary as `sum(value[])` (#168, #174).
-Written three times, it was defended three different ways.
+Written three times, it answered that hazard three different ways, one of them
+with a guard the shape it was written in never needed (#229).
 
 `test-namespace-walk.R` is what holds that state: it scans the test sources and
 fails unless the enumeration appears in the shared helper alone. It does not
