@@ -35,8 +35,12 @@
 #
 # Names rather than the functions themselves, because `body()` is all a gate
 # reads and `get()` is one call away, while two shapes would be two things to
-# keep in step. The default is the package's own namespace; a gate proving its
-# matcher works passes a synthetic one instead.
+# keep in step.
+#
+# Parameterized rather than fixed on marginplyr's namespace, because
+# `test-data-pronoun.R`'s self-witness runs its matcher over a synthetic one.
+# Every other caller passes the package's own explicitly, needing it again for
+# the `get()` that follows, so the default names what none of them leaves out.
 namespace_functions <- function(ns = asNamespace("marginplyr")) {
   Filter(
     function(binding) is.function(get(binding, envir = ns)),

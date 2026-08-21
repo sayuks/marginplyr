@@ -43,11 +43,11 @@ call_targets <- function(expr) {
 # reads the same table the package reads, rather than a copy of it kept here
 # by hand.
 #
-# The last such assignment in the body, since the visitor reaches every one of
-# them. A body assigning the name twice would be a body with two tables in it,
-# which is the state this reading exists to make impossible to have quietly:
-# the assertion below evaluates what it returns, so the wrong one of two would
-# show up as a changed snapshot rather than as a silent pass.
+# Whichever such assignment the walk reaches last, the visitor stopping at
+# none of them. `backend_capabilities()` holds exactly one, and a body that
+# held two would be a body with two tables in it -- a state this reading does
+# not have to resolve, because the assertion below evaluates what it returns,
+# so the wrong one of two shows up as a changed snapshot and not as a pass.
 find_local_assignment <- function(fn, var_name) {
   found <- NULL
   visit_calls(body(fn), function(node) {

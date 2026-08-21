@@ -861,7 +861,7 @@ test_that("compile_grouping_spec() is the only caller of the plan compiler", {
     },
     logical(1)
   )
-  expect_identical(unname(objects[calls_impl]), "compile_grouping_spec")
+  expect_identical(objects[calls_impl], "compile_grouping_spec")
 
   # The namespace scan cannot see a test, and a test reaching the
   # implementation with `:::` is the half of #119 that was actually there. The

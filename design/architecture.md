@@ -619,13 +619,14 @@ asserting one of these is a *structural gate*: it reads the package's own
 expressions instead of its results, so a violation fails it wherever it is
 written, including in code no test executes.
 
-A gate reads the loaded namespace rather than the sources under `R/`, because
-`R/` is not installed beside the tests — under `R CMD check` the sources sit
-outside the `.Rcheck` directory, and in a CRAN-style installed copy they are
-gone. That is why every gate needs the package loaded through
-`pkgload::load_all()` or an installed dev build, and it is also what keeps a
+Such a gate reads the loaded namespace rather than the sources under `R/`,
+because `R/` is not installed beside the tests — under `R CMD check` the
+sources sit outside the `.Rcheck` directory, and in a CRAN-style installed copy
+they are gone. That is why a gate reading it needs the package loaded through
+`pkgload::load_all()` or an installed dev build, and it is also what keeps the
 gate free of a `skip_if()` that `verify-backend.R` would read as a job skipping
-for a reason other than a withheld backend.
+for a reason other than a withheld backend. A gate whose subject is the test
+sources rather than the package reads those instead, and needs neither.
 
 Reading a namespace that way is two operations — enumerating the functions it
 binds, and recursing over one parsed body — and both live in
@@ -634,13 +635,17 @@ recursion is shared rather than rewritten because it has a hazard in it: a
 parsed call can hold the missing-argument placeholder as one of its own
 elements, and a walk that binds an element to a name raises "argument is
 missing, with no default" on a body as ordinary as `sum(value[])` (#168, #174).
-Written three times, it answered that hazard three different ways, one of them
-with a guard the shape it was written in never needed (#229).
+Written in three spellings across four sources, it answered that hazard three
+different ways, one of them with a guard the shape it was written in never
+needed (#229).
 
 `test-namespace-walk.R` is what holds that state: it scans the test sources and
-fails unless the enumeration appears in the shared helper alone. It does not
-enumerate the gates, and neither does this section — the gate derives that set,
-and a list of walks is a list the next walk is not on.
+fails unless the enumeration appears in the shared helper alone. The
+enumeration and not the recursion, because the enumeration has one spelling and
+a recursion has any number — and a gate that enumerates is a gate that will
+walk, so the one it can see is enough to put every walker in front of the
+shared visitor. Which sources those are is derived there and listed neither
+here nor anywhere else: a list of walks is a list the next walk is not on.
 
 ### Release gates
 
