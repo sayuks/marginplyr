@@ -168,28 +168,33 @@ is_call_arguments <- function(expr, locals) {
     (is.symbol(expr) && as.character(expr) %in% locals)
 }
 
-# The scan both gates below are, once the predicate is taken out of it: the
-# names of the namespace's functions whose body matches, named rather than
-# counted so a failure says which walk to rewrite. It reads the enumeration
-# through `namespace_functions()` like every other structural gate, and takes
-# the already-enumerated set so a gate can assert its witness against exactly
-# the set the scan iterated over.
+# The scan both gates below are, once the predicate is taken out of it: of the
+# functions a namespace binds, the names of those whose body the predicate
+# matches. Every predicate handed to it here matches a walk, which is what the
+# name says; what it returns is a set of names, named rather than counted so a
+# failure says which walk to rewrite.
 #
-# The predicate is the only thing it takes, and the two things it deliberately
-# does not take are the witness and the message. Each gate's witness is chosen
-# for what that gate reads -- `static_call_args` for the `for` scan,
+# The predicate is the only thing it takes for itself. The two it deliberately
+# does not take are the witness and the message: each gate's witness names what
+# that gate reads -- `static_call_args` for the `for` scan,
 # `parse_across_arguments` for the `<-` scan -- and each remedy is written for
-# its own spelling, so an argument for either would exist only to be different
+# its own spelling, so an argument for either would exist only to be different,
 # and would make the two look interchangeable. They stay in the `test_that()`
 # block that means them.
 #
-# It is local to this source rather than in `helper-namespace-walk.R`, because
-# that file exists for readings two test files need and testthat gives each file
-# its own environment. Both gates are here, so a shared home would be a home
-# nothing needed.
-walks_matching <- function(predicate,
-                           functions = namespace_functions(ns),
-                           ns = asNamespace("marginplyr")) {
+# The enumeration and the namespace come from the caller rather than from
+# defaults here. A gate then asserts its witness against the very set this
+# iterates, the two arguments cannot come to describe different namespaces, and
+# `namespace_functions()` keeps being passed the namespace its caller reads
+# bodies from -- which is what that function's own default is written around.
+#
+# Local to this source rather than in `helper-namespace-walk.R`: that file
+# exists because testthat gives each test file its own environment, so one
+# file's gate cannot see a reader another defined, and both gates here are in
+# one file. The other scan of this shape, in `test-grouping-plan.R`, decides by
+# deparsing rather than by walking and says so where it stands, so a shared home
+# would be a home for one caller.
+walks_matching <- function(predicate, functions, ns) {
   matched <- vapply(
     functions,
     function(name) predicate(body(get(name, envir = ns))),
@@ -216,14 +221,15 @@ binds_call_parts_with_for <- function(expr) {
 }
 
 test_that("no walk binds a call's parts with `for`", {
-  functions <- namespace_functions()
+  ns <- asNamespace("marginplyr")
+  functions <- namespace_functions(ns)
   # The scan iterates over this set, so a set that arrived empty is a set that
   # passes. `static_call_args()` itself is the cheapest witness that the
   # namespace was read.
   expect_true("static_call_args" %in% functions)
 
   expect_equal(
-    walks_matching(binds_call_parts_with_for, functions),
+    walks_matching(binds_call_parts_with_for, functions, ns),
     character(),
     info = paste(
       "Read the parts by subscript instead --",
@@ -329,11 +335,12 @@ binds_call_parts_by_assign <- function(expr) {
 }
 
 test_that("no walk binds a call's parts with `<-`", {
-  functions <- namespace_functions()
+  ns <- asNamespace("marginplyr")
+  functions <- namespace_functions(ns)
   expect_true("parse_across_arguments" %in% functions)
 
   expect_equal(
-    walks_matching(binds_call_parts_by_assign, functions),
+    walks_matching(binds_call_parts_by_assign, functions, ns),
     character(),
     info = paste(
       "Read the argument at the point of use --",
