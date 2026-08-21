@@ -168,6 +168,36 @@ is_call_arguments <- function(expr, locals) {
     (is.symbol(expr) && as.character(expr) %in% locals)
 }
 
+# The scan both gates below are, once the predicate is taken out of it: the
+# names of the namespace's functions whose body matches, named rather than
+# counted so a failure says which walk to rewrite. It reads the enumeration
+# through `namespace_functions()` like every other structural gate, and takes
+# the already-enumerated set so a gate can assert its witness against exactly
+# the set the scan iterated over.
+#
+# The predicate is the only thing it takes, and the two things it deliberately
+# does not take are the witness and the message. Each gate's witness is chosen
+# for what that gate reads -- `static_call_args` for the `for` scan,
+# `parse_across_arguments` for the `<-` scan -- and each remedy is written for
+# its own spelling, so an argument for either would exist only to be different
+# and would make the two look interchangeable. They stay in the `test_that()`
+# block that means them.
+#
+# It is local to this source rather than in `helper-namespace-walk.R`, because
+# that file exists for readings two test files need and testthat gives each file
+# its own environment. Both gates are here, so a shared home would be a home
+# nothing needed.
+walks_matching <- function(predicate,
+                           functions = namespace_functions(ns),
+                           ns = asNamespace("marginplyr")) {
+  matched <- vapply(
+    functions,
+    function(name) predicate(body(get(name, envir = ns))),
+    logical(1)
+  )
+  functions[matched]
+}
+
 # By subscript throughout, since the code being scanned is exactly the code that
 # may hold an empty argument.
 binds_call_parts_with_for <- function(expr) {
@@ -186,22 +216,14 @@ binds_call_parts_with_for <- function(expr) {
 }
 
 test_that("no walk binds a call's parts with `for`", {
-  ns <- asNamespace("marginplyr")
-  functions <- namespace_functions(ns)
+  functions <- namespace_functions()
   # The scan iterates over this set, so a set that arrived empty is a set that
   # passes. `static_call_args()` itself is the cheapest witness that the
   # namespace was read.
   expect_true("static_call_args" %in% functions)
 
-  offenders <- vapply(
-    functions,
-    function(name) binds_call_parts_with_for(body(get(name, envir = ns))),
-    logical(1)
-  )
-
-  # Named rather than counted, so the failure says which walk to rewrite.
   expect_equal(
-    functions[offenders],
+    walks_matching(binds_call_parts_with_for, functions),
     character(),
     info = paste(
       "Read the parts by subscript instead --",
@@ -307,18 +329,11 @@ binds_call_parts_by_assign <- function(expr) {
 }
 
 test_that("no walk binds a call's parts with `<-`", {
-  ns <- asNamespace("marginplyr")
-  functions <- namespace_functions(ns)
+  functions <- namespace_functions()
   expect_true("parse_across_arguments" %in% functions)
 
-  offenders <- vapply(
-    functions,
-    function(name) binds_call_parts_by_assign(body(get(name, envir = ns))),
-    logical(1)
-  )
-
   expect_equal(
-    functions[offenders],
+    walks_matching(binds_call_parts_by_assign, functions),
     character(),
     info = paste(
       "Read the argument at the point of use --",
