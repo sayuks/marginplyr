@@ -1,8 +1,8 @@
-# The readers two gates share, over the source `R/` does not ship: the
-# structural gate in `test-diagnostic-authoring.R`, which asks whether every
-# `abort_marginplyr()` template is authored in the source, and the coverage
-# gate in `test-diagnostic-pluralization.R`, which asks whether every diagnostic
-# this package pluralizes has both of its arms pinned.
+# The diagnostics-specific readers two gates share, over the source `R/` does
+# not ship: the structural gate in `test-diagnostic-authoring.R`, which asks
+# whether every `abort_marginplyr()` template is authored in the source, and the
+# coverage gate in `test-diagnostic-pluralization.R`, which asks whether every
+# diagnostic this package pluralizes has both of its arms pinned.
 #
 # They live here rather than in either file because testthat gives each test
 # file its own environment, so the second gate could not see a walker the first
@@ -10,67 +10,50 @@
 # testthat looks before it runs anything, which is also what lets both gates be
 # read against a package loaded with `pkgload::load_all()` or an installed dev
 # build.
+#
+# What the readers below have in common with every other structural gate -- the
+# enumeration of the namespace's functions, and the recursion over one parsed
+# body -- comes from `helper-namespace-walk.R` and is not repeated here.
 
 # Every call to `name` below `expr`, as the expression each passed as its
 # message argument -- the first argument, or `message =` where a site names it.
-#
-# The recursion goes through `lapply()` and never a bare `for` over a call's
-# elements, for the reason `test-query-policy.R` records: a parsed call can hold
-# the missing-argument placeholder as one of its own elements, and a `for`
-# loop's assignment preserves the internal missing flag, so reading it raises
-# "argument is missing, with no default" the moment the loop variable is looked
-# up.
 diagnostic_message_arguments <- function(expr, name) {
   found <- list()
-  walk <- function(e) {
-    if (!is.call(e)) {
+  visit_calls(expr, function(node) {
+    head <- node[[1]]
+    if (!is.name(head) || !identical(as.character(head), name)) {
       return(invisible(NULL))
     }
-    head <- e[[1]]
-    if (is.name(head) && identical(as.character(head), name)) {
-      args <- as.list(e)[-1]
-      arg_names <- names(args)
-      # R's own matching for `abort_marginplyr(message, ..., class, call)`:
-      # `message =` by name, otherwise the first argument supplied without one.
-      # Reading `args[[1]]` instead would take `class` for the message at a
-      # site that named every argument it passed, and report that site clean
-      # because a class is a literal too.
-      positional <- if (is.null(arg_names)) args else args[!nzchar(arg_names)]
-      message <- if (!is.null(arg_names) && "message" %in% arg_names) {
-        args[["message"]]
-      } else if (length(positional) > 0L) {
-        positional[[1]]
-      } else {
-        NULL
-      }
-      # `c()` rather than `found[[length(found) + 1L]] <-`, which deletes
-      # instead of appending when the value is `NULL`. A call written with no
-      # message at all -- `abort_marginplyr(class = "x")` -- is exactly the
-      # site the gate must report, and that spelling would drop it.
-      found <<- c(found, list(message))
+    args <- as.list(node)[-1]
+    arg_names <- names(args)
+    # R's own matching for `abort_marginplyr(message, ..., class, call)`:
+    # `message =` by name, otherwise the first argument supplied without one.
+    # Reading `args[[1]]` instead would take `class` for the message at a
+    # site that named every argument it passed, and report that site clean
+    # because a class is a literal too.
+    positional <- if (is.null(arg_names)) args else args[!nzchar(arg_names)]
+    message <- if (!is.null(arg_names) && "message" %in% arg_names) {
+      args[["message"]]
+    } else if (length(positional) > 0L) {
+      positional[[1]]
+    } else {
+      NULL
     }
-    lapply(as.list(e)[-1], walk)
-    invisible(NULL)
-  }
-  walk(expr)
+    # `c()` rather than `found[[length(found) + 1L]] <-`, which deletes
+    # instead of appending when the value is `NULL`. A call written with no
+    # message at all -- `abort_marginplyr(class = "x")` -- is exactly the
+    # site the gate must report, and that spelling would drop it.
+    found <<- c(found, list(message))
+  })
   found
 }
 
-# Every function bound in the namespace, which is where the call sites are:
-# `R/` is not installed, so a scan of the shipped package would find no source
-# to read.
-marginplyr_namespace_functions <- function(ns = asNamespace("marginplyr")) {
-  Filter(
-    function(binding) is.function(get(binding, envir = ns)),
-    ls(ns, all.names = TRUE)
-  )
-}
-
 marginplyr_diagnostic_sites <- function(name, ns = asNamespace("marginplyr")) {
-  sites <- lapply(marginplyr_namespace_functions(ns), function(binding) {
+  bindings <- namespace_functions(ns)
+  sites <- lapply(bindings, function(binding) {
     diagnostic_message_arguments(body(get(binding, envir = ns)), name)
   })
-  stats::setNames(sites, marginplyr_namespace_functions(ns))
+  stats::setNames(sites, bindings)
 }
 
 # Whether a call is to `name`, however the source spells the head: bare, or
@@ -99,15 +82,17 @@ is_call_to <- function(expr, name) {
 # a branch a pluralization is that the two arms are fixed text the count picks
 # between, which is the same property ADR 0023's `{?}` rule is stated over.
 has_literal_branch <- function(expr) {
-  if (!is.call(expr)) {
-    return(FALSE)
-  }
-  chosen <- is_call_to(expr, "if") &&
-    length(expr) == 4L &&
-    is.character(expr[[3]]) &&
-    is.character(expr[[4]])
-  chosen ||
-    any(vapply(as.list(expr)[-1], has_literal_branch, logical(1)))
+  found <- FALSE
+  visit_calls(expr, function(node) {
+    chosen <- is_call_to(node, "if") &&
+      length(node) == 4L &&
+      is.character(node[[3]]) &&
+      is.character(node[[4]])
+    if (chosen) {
+      found <<- TRUE
+    }
+  })
+  found
 }
 
 # Whether a template pluralizes through cli, which is `{?}` wherever it sits --
@@ -138,7 +123,7 @@ has_cli_plural <- function(expr) {
 # the two label-collision constructors hold two arms each.
 marginplyr_pluralizing_sites <- function(ns = asNamespace("marginplyr")) {
   counts <- vapply(
-    marginplyr_namespace_functions(ns),
+    namespace_functions(ns),
     function(binding) {
       expr <- body(get(binding, envir = ns))
       templates <- c(
@@ -157,17 +142,11 @@ marginplyr_pluralizing_sites <- function(ns = asNamespace("marginplyr")) {
 # positionally at the one site that calls it.
 pluralize_templates <- function(expr) {
   found <- list()
-  walk <- function(e) {
-    if (!is.call(e)) {
-      return(invisible(NULL))
+  visit_calls(expr, function(node) {
+    if (is_call_to(node, "pluralize") && length(node) > 1L) {
+      found <<- c(found, list(node[[2]]))
     }
-    if (is_call_to(e, "pluralize") && length(e) > 1L) {
-      found <<- c(found, list(e[[2]]))
-    }
-    lapply(as.list(e)[-1], walk)
-    invisible(NULL)
-  }
-  walk(expr)
+  })
   found
 }
 
@@ -176,16 +155,10 @@ pluralize_templates <- function(expr) {
 # inflecting a noun and a verb in one message is one site and not two.
 invariant_plural_sites <- function(expr) {
   found <- 0L
-  walk <- function(e) {
-    if (!is.call(e)) {
-      return(invisible(NULL))
-    }
-    if (is_call_to(e, "stop") && has_literal_branch(e)) {
+  visit_calls(expr, function(node) {
+    if (is_call_to(node, "stop") && has_literal_branch(node)) {
       found <<- found + 1L
     }
-    lapply(as.list(e)[-1], walk)
-    invisible(NULL)
-  }
-  walk(expr)
+  })
   found
 }

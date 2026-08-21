@@ -5,48 +5,34 @@
 # -- so this file asserts it structurally instead of describing it.
 #
 # `R/` is not installed, so scanning the shipped package would find nothing
-# to grep. The helpers below walk `body()` of every function bound in the
+# to grep. The readers below walk `body()` of every function bound in the
 # loaded marginplyr namespace instead, which is why every test here needs the
 # package loaded via `pkgload::load_all()` or an installed dev build, not a
-# CRAN-style installed copy of a release.
+# CRAN-style installed copy of a release. The enumeration of those functions
+# and the recursion over one body are shared with every other structural gate
+# and come from `helper-namespace-walk.R`.
 
-# A parsed call can hold the missing-argument placeholder as one of its own
-# elements -- a `switch()` fallthrough branch such as
-# `switch(x, a = , b = foo())`, or a subsetting call such as `x[i, ]` both
-# produce one. Reading that placeholder through an ordinary `for` loop raises
-# "argument is missing, with no default" the moment the loop variable is
-# looked up, even though nothing about the walk is actually missing an
-# argument: a `for` loop's own assignment preserves the internal missing flag,
-# and normal symbol lookup checks for it. Binding the same value through a
-# function argument does not carry the flag forward, which is why the
-# recursion below goes through `lapply()` and never through a bare `for` over
-# a call's elements.
+# The name each call below `expr` is to. A head that is not a symbol names no
+# target of its own, and the shared visitor reaches the call it holds anyway.
 call_targets <- function(expr) {
   targets <- character()
-  walk <- function(e) {
-    if (!is.call(e)) {
+  visit_calls(expr, function(node) {
+    head <- node[[1]]
+    if (!is.name(head)) {
       return(invisible(NULL))
     }
-    head <- e[[1]]
-    if (is.name(head)) {
-      head_chr <- as.character(head)
-      if (
-        (identical(head_chr, "::") || identical(head_chr, ":::")) &&
-          length(e) == 3
-      ) {
-        targets[[length(targets) + 1L]] <<- paste0(
-          as.character(e[[2]]), "::", as.character(e[[3]])
-        )
-      } else {
-        targets[[length(targets) + 1L]] <<- head_chr
-      }
+    head_chr <- as.character(head)
+    if (
+      (identical(head_chr, "::") || identical(head_chr, ":::")) &&
+        length(node) == 3
+    ) {
+      targets[[length(targets) + 1L]] <<- paste0(
+        as.character(node[[2]]), "::", as.character(node[[3]])
+      )
     } else {
-      walk(head)
+      targets[[length(targets) + 1L]] <<- head_chr
     }
-    lapply(as.list(e)[-1], walk)
-    invisible(NULL)
-  }
-  walk(expr)
+  })
   unique(targets)
 }
 
@@ -56,31 +42,25 @@ call_targets <- function(expr) {
 # literal, so finding that assignment's right-hand side and evaluating it
 # reads the same table the package reads, rather than a copy of it kept here
 # by hand.
+#
+# Whichever such assignment the walk reaches last, the visitor stopping at
+# none of them. `backend_capabilities()` holds exactly one, and a body that
+# held two would be a body with two tables in it -- a state this reading does
+# not have to resolve, because the assertion below evaluates what it returns,
+# so the wrong one of two shows up as a changed snapshot and not as a pass.
 find_local_assignment <- function(fn, var_name) {
   found <- NULL
-  walk <- function(e) {
-    if (!is.call(e)) {
-      return(invisible(NULL))
-    }
+  visit_calls(body(fn), function(node) {
     if (
-      identical(as.character(e[[1]]), "<-") &&
-        length(e) == 3 &&
-        is.symbol(e[[2]]) &&
-        identical(as.character(e[[2]]), var_name)
+      identical(as.character(node[[1]]), "<-") &&
+        length(node) == 3 &&
+        is.symbol(node[[2]]) &&
+        identical(as.character(node[[2]]), var_name)
     ) {
-      found <<- e[[3]]
-      return(invisible(NULL))
+      found <<- node[[3]]
     }
-    lapply(as.list(e), walk)
-    invisible(NULL)
-  }
-  walk(body(fn))
+  })
   found
-}
-
-marginplyr_internal_functions <- function(ns = asNamespace("marginplyr")) {
-  all_names <- ls(ns, all.names = TRUE)
-  Filter(function(name) is.function(get(name, envir = ns)), all_names)
 }
 
 # Enumerated rather than derived from a shape, exactly as ADR 0020 enumerates
@@ -130,7 +110,7 @@ test_that("the scanned entry-point set is the ADR 0020 execution catalog", {
 
 test_that("marginplyr functions reaching an execution entry point", {
   ns <- asNamespace("marginplyr")
-  internal_functions <- marginplyr_internal_functions(ns)
+  internal_functions <- namespace_functions(ns)
   call_graph <- stats::setNames(
     lapply(internal_functions, function(name) {
       call_targets(body(get(name, envir = ns)))

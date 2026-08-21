@@ -104,14 +104,9 @@ test_that("shared argument assertions use the package condition seam", {
 # than `R/`, so it holds under `R CMD check` too, where the sources sit beside
 # the `.Rcheck` directory rather than inside it -- and so it needs no
 # `skip_if()` that `verify-backend.R` would then read as a job skipping for a
-# reason other than a withheld backend.
-package_functions <- function() {
-  namespace <- asNamespace("marginplyr")
-  names <- ls(namespace, all.names = TRUE)
-  objects <- lapply(names, get, envir = namespace)
-  keep <- vapply(objects, is.function, logical(1))
-  stats::setNames(objects[keep], names[keep])
-}
+# reason other than a withheld backend. `namespace_functions()` and
+# `visit_calls()` are that reading, shared with every other structural gate from
+# `helper-namespace-walk.R`.
 
 # Where a list of a call's arguments comes from: the shared reader, the rlang
 # function it wraps, the reader that unwraps each of them through an injected
@@ -153,21 +148,18 @@ reads_call_arguments <- function(expr) {
 
 # The names a body binds to such a list, so that a loop over one, or a
 # subscript of one, is read as reaching the arguments themselves.
-call_argument_locals <- function(expr, found = character()) {
-  if (!is.call(expr)) {
-    return(found)
-  }
-  if (
-    identical(expr[[1L]], quote(`<-`)) &&
-      length(expr) == 3L &&
-      is.symbol(expr[[2L]]) &&
-      reads_call_arguments(expr[[3L]])
-  ) {
-    found <- unique(c(found, as.character(expr[[2L]])))
-  }
-  for (index in seq_along(expr)) {
-    found <- call_argument_locals(expr[[index]], found)
-  }
+call_argument_locals <- function(expr) {
+  found <- character()
+  visit_calls(expr, function(node) {
+    if (
+      identical(node[[1L]], quote(`<-`)) &&
+        length(node) == 3L &&
+        is.symbol(node[[2L]]) &&
+        reads_call_arguments(node[[3L]])
+    ) {
+      found <<- unique(c(found, as.character(node[[2L]])))
+    }
+  })
   found
 }
 
@@ -178,45 +170,38 @@ is_call_arguments <- function(expr, locals) {
 
 # By subscript throughout, since the code being scanned is exactly the code that
 # may hold an empty argument.
-binds_call_parts_with_for <- function(body) {
-  locals <- call_argument_locals(body)
-  scan <- function(expr) {
-    if (!is.call(expr)) {
-      return(FALSE)
-    }
+binds_call_parts_with_for <- function(expr) {
+  locals <- call_argument_locals(expr)
+  found <- FALSE
+  visit_calls(expr, function(node) {
     if (
-      identical(expr[[1L]], quote(`for`)) &&
-        length(expr) >= 3L &&
-        is_call_arguments(expr[[3L]], locals)
+      identical(node[[1L]], quote(`for`)) &&
+        length(node) >= 3L &&
+        is_call_arguments(node[[3L]], locals)
     ) {
-      return(TRUE)
+      found <<- TRUE
     }
-    for (index in seq_along(expr)) {
-      if (scan(expr[[index]])) {
-        return(TRUE)
-      }
-    }
-    FALSE
-  }
-  scan(body)
+  })
+  found
 }
 
 test_that("no walk binds a call's parts with `for`", {
-  functions <- package_functions()
+  ns <- asNamespace("marginplyr")
+  functions <- namespace_functions(ns)
   # The scan iterates over this set, so a set that arrived empty is a set that
   # passes. `static_call_args()` itself is the cheapest witness that the
   # namespace was read.
-  expect_true("static_call_args" %in% names(functions))
+  expect_true("static_call_args" %in% functions)
 
   offenders <- vapply(
     functions,
-    function(f) binds_call_parts_with_for(body(f)),
+    function(name) binds_call_parts_with_for(body(get(name, envir = ns))),
     logical(1)
   )
 
   # Named rather than counted, so the failure says which walk to rewrite.
   expect_equal(
-    names(functions)[offenders],
+    functions[offenders],
     character(),
     info = paste(
       "Read the parts by subscript instead --",
@@ -304,46 +289,36 @@ test_that("the walk scan detects the shape it is written to forbid", {
 # `x <- y[[i]]` in the package, most of which read an ordinary list. Those sites
 # are covered by behaviour instead, in `test-static-expression-analysis.R`,
 # where each shape is compared against what `dplyr::summarise()` does with it.
-binds_call_parts_by_assign <- function(body) {
-  locals <- call_argument_locals(body)
-  scan <- function(expr) {
-    if (!is.call(expr)) {
-      return(FALSE)
+binds_call_parts_by_assign <- function(expr) {
+  locals <- call_argument_locals(expr)
+  found <- FALSE
+  visit_calls(expr, function(node) {
+    assigns_element <- identical(node[[1L]], quote(`<-`)) &&
+      length(node) == 3L &&
+      is.symbol(node[[2L]]) &&
+      is.call(node[[3L]]) &&
+      identical(node[[3L]][[1L]], quote(`[[`)) &&
+      length(node[[3L]]) >= 2L
+    if (assigns_element && is_call_arguments(node[[3L]][[2L]], locals)) {
+      found <<- TRUE
     }
-    if (
-      identical(expr[[1L]], quote(`<-`)) &&
-        length(expr) == 3L &&
-        is.symbol(expr[[2L]]) &&
-        is.call(expr[[3L]]) &&
-        identical(expr[[3L]][[1L]], quote(`[[`)) &&
-        length(expr[[3L]]) >= 2L
-    ) {
-      if (is_call_arguments(expr[[3L]][[2L]], locals)) {
-        return(TRUE)
-      }
-    }
-    for (index in seq_along(expr)) {
-      if (scan(expr[[index]])) {
-        return(TRUE)
-      }
-    }
-    FALSE
-  }
-  scan(body)
+  })
+  found
 }
 
 test_that("no walk binds a call's parts with `<-`", {
-  functions <- package_functions()
-  expect_true("parse_across_arguments" %in% names(functions))
+  ns <- asNamespace("marginplyr")
+  functions <- namespace_functions(ns)
+  expect_true("parse_across_arguments" %in% functions)
 
   offenders <- vapply(
     functions,
-    function(f) binds_call_parts_by_assign(body(f)),
+    function(name) binds_call_parts_by_assign(body(get(name, envir = ns))),
     logical(1)
   )
 
   expect_equal(
-    names(functions)[offenders],
+    functions[offenders],
     character(),
     info = paste(
       "Read the argument at the point of use --",

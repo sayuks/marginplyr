@@ -21,9 +21,10 @@
 # asserted over the loaded namespace rather than described in prose. It needs
 # the package loaded through `pkgload::load_all()` or an installed dev build.
 #
-# The namespace walk itself is in `helper-diagnostic-sites.R`, which
-# `test-diagnostic-pluralization.R`'s coverage gate reads too. Only the
-# predicate below is this gate's own.
+# The reading of the message arguments is in `helper-diagnostic-sites.R`, which
+# `test-diagnostic-pluralization.R`'s coverage gate reads too, over the
+# enumeration and the recursion in `helper-namespace-walk.R` that every
+# structural gate shares. Only the predicate below is this gate's own.
 
 # Whether every string a message argument contributes is written in the source.
 #

@@ -849,19 +849,19 @@ test_that("compile_grouping_spec() is the only caller of the plan compiler", {
   # report this file for holding the name it searches for.
   impl <- paste0("compile_grouping_spec", "_impl")
   ns <- asNamespace("marginplyr")
-  objects <- ls(ns, all.names = TRUE)
+  # Reads the loaded namespace rather than `R/`, which is not installed beside
+  # the tests. `namespace_functions()` is the enumeration every structural gate
+  # shares; this one decides by deparsing rather than by walking, so it is the
+  # one that takes nothing else from `helper-namespace-walk.R`.
+  objects <- namespace_functions(ns)
   calls_impl <- vapply(
     objects,
     function(name) {
-      object <- get(name, envir = ns)
-      if (!is.function(object)) {
-        return(FALSE)
-      }
-      any(grepl(impl, deparse(body(object)), fixed = TRUE))
+      any(grepl(impl, deparse(body(get(name, envir = ns))), fixed = TRUE))
     },
     logical(1)
   )
-  expect_identical(unname(objects[calls_impl]), "compile_grouping_spec")
+  expect_identical(objects[calls_impl], "compile_grouping_spec")
 
   # The namespace scan cannot see a test, and a test reaching the
   # implementation with `:::` is the half of #119 that was actually there. The
