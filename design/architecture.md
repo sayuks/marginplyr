@@ -609,6 +609,39 @@ Backend tests may instrument a backend seam or inspect semantic query shape,
 but should not couple to the Margin operation representation or require
 byte-for-byte SQL formatting.
 
+### Structural gates
+
+Some properties this package holds itself to are properties of every call site
+rather than of any one call, so no run of the verbs can observe them: that no
+function unquotes inside the `.data` pronoun, that only
+`compile_grouping_spec()` reaches the plan compiler, that every walk over a
+call's arguments reads them by subscript. A test asserting one of these is a
+*structural gate*: it reads the package's own expressions instead of its
+results, so a violation fails it wherever it is written, including in code no
+test executes.
+
+A gate reads the loaded namespace rather than the sources under `R/`, because
+`R/` is not installed beside the tests — under `R CMD check` the sources sit
+outside the `.Rcheck` directory, and in a CRAN-style installed copy they are
+gone. That is why every gate needs the package loaded through
+`pkgload::load_all()` or an installed dev build, and it is also what keeps a
+gate free of a `skip_if()` that `verify-backend.R` would read as a job skipping
+for a reason other than a withheld backend.
+
+Reading a namespace that way is two operations — enumerating the functions it
+binds, and recursing over one parsed body — and both live in
+`tests/testthat/helper-namespace-walk.R`, which every gate takes them from. The
+recursion is shared rather than rewritten because it has a hazard in it: a
+parsed call can hold the missing-argument placeholder as one of its own
+elements, and a walk that binds an element to a name raises "argument is
+missing, with no default" on a body as ordinary as `sum(value[])` (#168, #174).
+Written three times, it was defended three different ways.
+
+`test-namespace-walk.R` is what holds that state: it scans the test sources and
+fails unless the enumeration appears in the shared helper alone. It does not
+enumerate the gates, and neither does this section — the gate derives that set,
+and a list of walks is a list the next walk is not on.
+
 ### Release gates
 
 One property of this suite is not observable from any single run of it: an
