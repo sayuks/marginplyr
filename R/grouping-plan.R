@@ -833,7 +833,9 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
 # branch ADR 0023's `{?}` rule dissolves rather than relocates. Writing them
 # out also keeps both inside the structural gate, which reads
 # `abort_marginplyr()`'s own argument and refuses a template bound elsewhere --
-# the reason `R/share.R`'s two Parent-share refusals are written out twice.
+# the shape `abort_share_helper_position()` records in `R/share.R`, where what
+# two calls share is written out in each for that reason. ADR 0023's third
+# amendment names that refusal and this pair together.
 #
 # The pairs arrive alone in an `i` bullet, per ADR 0023's condition 2: how many
 # of them there are is the caller's decision.
