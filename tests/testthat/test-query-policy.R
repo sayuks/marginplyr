@@ -126,6 +126,143 @@ test_that("marginplyr functions reaching an execution entry point", {
   expect_snapshot(reach)
 })
 
+# ADR 0020's subject is a read marginplyr *causes*, not one it issues. Every
+# reading above walks `R/`, so all of them are structurally blind to a read
+# another package performs on marginplyr's behalf -- and one such read exists:
+# an Arrow input absorbs an expression its own engine cannot evaluate by
+# collecting the whole input while the verb runs. The scans above reported a
+# clean result throughout, which reads exactly like a package that causes no
+# such read, and is the failure mode this gate closes (#254).
+#
+# Watching the reads as they happen is what the question needs. Nothing
+# marginplyr holds afterwards says whether a row was read: an absorbed summary
+# answers with a local frame, and so does a summary the caller collected
+# themselves. The trace is installed around one expression and removed on exit,
+# so a failure here leaves nothing behind for the rest of the file.
+#
+# Derived from the catalog above rather than listed again, and traced at the
+# *generic* rather than at a backend's methods. `trace()` rewrites a namespace
+# binding, while S3 dispatch reaches the copy `registerS3method()` left in the
+# methods table, so tracing `arrow:::collect.ArrowTabular` sees only Arrow's own
+# by-name call and misses every `dplyr::collect()` a caller or `R/` makes --
+# which is the read this gate exists to see. Measured on arrow 25.0.1: a plain
+# `dplyr::collect()` of an Arrow table counted 0 that way and counts 1 this way.
+#
+# Only the qualified entries are traced. `as.data.frame` is a base generic that
+# unrelated code calls while any expression runs, so counting it would report a
+# read that never reached a backend; the `DBI::` entries are traced although no
+# Arrow input can reach one, because deriving the set is what keeps it in step
+# with the catalog and skipping them would be a second list.
+traced_execution_entry_points <- function() {
+  catalog <- lazy_execution_entry_points()
+  qualified <- catalog[grepl("::", catalog, fixed = TRUE)]
+  parts <- strsplit(qualified, "::", fixed = TRUE)
+  Filter(
+    function(entry) {
+      isNamespaceLoaded(entry$package) &&
+        exists(entry$name, envir = asNamespace(entry$package))
+    },
+    lapply(parts, function(part) list(package = part[[1L]], name = part[[2L]]))
+  )
+}
+
+# A function tracer rather than `quote()`, which is the difference between
+# counting and silently counting nothing: an expression tracer is evaluated in
+# the traced function's own frame, so its `<<-` walks the traced package's
+# namespace and assigns into the global environment instead of into this
+# counter.
+count_backend_reads <- function(expr) {
+  count <- 0L
+  entries <- traced_execution_entry_points()
+  # Registered before the first trace is installed rather than after the last.
+  # `trace()` failing part-way through the loop would otherwise leave every
+  # trace already installed in place for the rest of the run -- a whole suite,
+  # not a file -- each one incrementing a counter in a frame that has gone.
+  # `untrace()` on a function that was never traced is a no-op, so removing
+  # more than was installed is safe and removing less is not.
+  on.exit(
+    for (entry in entries) {
+      suppressMessages(untrace(entry$name, where = asNamespace(entry$package)))
+    },
+    add = TRUE
+  )
+  for (entry in entries) {
+    suppressMessages(trace(
+      entry$name,
+      where = asNamespace(entry$package),
+      tracer = function() count <<- count + 1L,
+      print = FALSE
+    ))
+  }
+  force(expr)
+  count
+}
+
+test_that("no Arrow read happens while a Margin verb runs", {
+  skip_if_suggest_absent("arrow")
+  data <- data.frame(
+    k = c("E", "E", "W"),
+    v = c(1, 2, 3),
+    s = c("a", "b", "c"),
+    stringsAsFactors = FALSE
+  )
+  table <- arrow::Table$create(data)
+
+  # The mechanism, asserted before anything is concluded from it. Every
+  # expectation below is a zero, so a counter that counted nothing would report
+  # exactly what a package that reads nothing reports -- which is the shape
+  # `AGENTS.md` rules out for every derived gate, and the shape this counter
+  # had while it traced Arrow's methods.
+  expect_gt(count_backend_reads(dplyr::collect(table)), 0L)
+
+  # A summary Arrow evaluates itself: the verb builds a query and returns it.
+  expect_identical(
+    count_backend_reads(summarize_with_margins(
+      table,
+      total = sum(v),
+      .grouping = rollup(k)
+    )),
+    0L
+  )
+
+  # An expansion carries no caller expression at all, so it cannot reach an
+  # absorbed one. Asserted rather than assumed, since that is a property of
+  # the signature and signatures change.
+  expect_identical(
+    count_backend_reads(expand_with_margins(table, .grouping = rollup(k))),
+    0L
+  )
+
+  # And the refusing path reads nothing, which is the criterion the refuse
+  # disposition of #254 is held to. Over every input class that absorbs rather
+  # than over the one: what raises the refusal before the read is a class check,
+  # so a class it stopped recognising would be read by Arrow and caught only
+  # afterwards by the guard -- a difference invisible in the condition the
+  # caller receives, both arms raising the same refusal, and visible only here.
+  # `try()` keeps the refusal from leaving before the count is read.
+  batch <- arrow::record_batch(data)
+  absorbing <- list(
+    table = table,
+    record_batch = batch,
+    table_query = dplyr::select(table, dplyr::all_of(names(data))),
+    batch_query = dplyr::select(batch, dplyr::all_of(names(data)))
+  )
+  for (shape in names(absorbing)) {
+    expect_identical(
+      count_backend_reads(try(
+        summarize_with_margins(
+          absorbing[[shape]],
+          joined = paste(s, collapse = ","),
+          .grouping = rollup(k)
+        ),
+        silent = TRUE
+      )),
+      0L,
+      info = shape
+    )
+  }
+})
+
 test_that("backend kinds granted the collect_selection_proxy capability", {
   ns <- asNamespace("marginplyr")
   enabled_expr <- find_local_assignment(

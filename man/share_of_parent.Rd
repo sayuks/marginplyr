@@ -410,8 +410,10 @@ Arrow inputs reject both helpers after expression planning and common
 Margin-operation validation but before constructing a summary query. The
 reason belongs to the source summary they share, so it applies to both, and
 the diagnostic names whichever helpers the call used. Other Arrow Margin
-operations remain supported and lazy. Explicitly collect an Arrow input
-first when local share execution is appropriate.
+operations remain supported and lazy, apart from a summary Arrow's own
+engine cannot evaluate, which is refused for its own reason and before any
+row is read; see \code{\link[=summarize_with_margins]{summarize_with_margins()}}. Explicitly collect an Arrow
+input first when local share execution is appropriate.
 
 A \code{dtplyr} step remains a native lazy query: no validation-only query is
 added and nothing is collected on your behalf. Its execution-time

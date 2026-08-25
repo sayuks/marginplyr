@@ -86,6 +86,12 @@
 # blunt, and a key in a table is not a call.
 pluralizing_coverage <- function() {
   list(
+    # Both arms sit with the Arrow contracts rather than here, because what
+    # each asserts is which summaries the refusal names, and that is decided
+    # by whether Arrow's warning could be placed -- a property of the
+    # behaviour, not of the wording. The plural arm is the backstop's, which
+    # has no warning to read.
+    abort_absorbed_summary = "test-grouping-backends.R:197 and :540",
     abort_by_rename = "test-grouping-plan.R:604 and :645",
     abort_declared_label_collision = rep("this file, the collision block", 2L),
     abort_grouping_rename = "test-grouping-plan.R:493 and :543",

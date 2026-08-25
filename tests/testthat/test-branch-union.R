@@ -380,3 +380,48 @@ test_that("Parent shares combine their denominator mappings the same way", {
     by_channel$total / unname(region_totals[by_channel$region])
   )
 })
+
+# The second arm of the branch guard ADR 0025 adds. Its first arm refuses an
+# Arrow input that absorbed a summary, which is a Package condition because the
+# caller can rewrite the call; this one covers every other lazy backend, where
+# a local branch from a lazy input is a defect no rewrite of theirs avoids and
+# is therefore an internal invariant (ADR 0015).
+#
+# It has no path through a public verb by construction -- that is what makes it
+# an invariant, and why the two invariants in `test-diagnostic-pluralization.R`
+# are called directly too. The backend below is fabricated for the same reason:
+# no backend marginplyr supports answers a lazy input with a local frame, and
+# one that started to is exactly what this reports. It is also what
+# `combine_margin_branches()` does not catch on its own -- a branch list that is
+# part lazy and part local is accepted in the lazy-first order and collects to
+# the combined rows.
+local_answering_summarise <- function(.data, ..., .by = NULL) {
+  data.frame(k = "E", out = 1)
+}
+
+test_that("a lazy input answering with a local branch is an invariant", {
+  registerS3method(
+    "summarise",
+    "marginplyr_test_local_answering",
+    local_answering_summarise,
+    envir = asNamespace("dplyr")
+  )
+  lazy <- structure(list(), class = "marginplyr_test_local_answering")
+
+  raised <- expect_error(
+    summarize_margin_branch(
+      lazy,
+      out = 1,
+      .by = character(),
+      caller_labels = "out = 1"
+    ),
+    "A lazy input produced a local summary branch"
+  )
+
+  # Not a Package condition: the caller cannot rewrite their way out of it, and
+  # it must not be reported as the Arrow refusal, which names a remedy that
+  # would not apply.
+  expect_false(inherits(raised, "marginplyr_error"))
+  expect_no_match(conditionMessage(raised), "Arrow", fixed = TRUE)
+  expect_match(conditionMessage(raised), "data.frame", fixed = TRUE)
+})

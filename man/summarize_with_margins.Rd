@@ -154,6 +154,23 @@ collects to zero rows where a local data frame returns one, as
 \code{\link[dplyr:summarize]{dplyr::summarize()}} itself does for that lazy input. Anything that puts a
 column in the result -- one summary, one fixed key, one grouping dimension,
 or \code{.id} -- ends the difference.
+
+One summary an Arrow table or record batch cannot carry -- or a query built
+on either -- is one Arrow's own engine cannot evaluate. Arrow answers such an
+expression by reading the whole input -- every column of it, not only the
+ones the summary names -- and computing it in R. marginplyr refuses it
+instead, before a row is read, and names the two rewrites that compute it:
+collect the input first, and select the columns the summary needs before
+collecting, which is the narrowing Arrow's own route cannot do for you.
+
+Which expressions those are is Arrow's to decide and moves with its version,
+so they are not listed here. Among the shapes refused are a group collapsed
+into a single value, such as pasting one, a subset written inside an
+aggregate, and a statistic over two columns at once; ordinary numeric
+summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
+An Arrow dataset, and a query built on one, raise Arrow's own refusal for
+the same expressions instead, because a dataset never reads itself into R;
+they are otherwise unaffected.
 }
 \section{Fixed columns and grouping dimensions}{
 
@@ -450,8 +467,10 @@ the same values and are interchangeable.
 
 Arrow inputs reject both after expression planning and common
 Margin-operation validation but before constructing a summary query. Other
-Arrow Margin operations remain supported and lazy. Explicitly collect an
-Arrow input first when local share execution is appropriate.
+Arrow Margin operations remain supported and lazy, apart from a summary
+Arrow's own engine cannot evaluate, which is refused for its own reason and
+before any row is read. Explicitly collect an Arrow input first when local
+share execution is appropriate.
 
 A row that is its own denominator receives \code{1.0}. Missing numerators or
 denominators and zero denominators receive \code{NA_real_}; other finite ratios

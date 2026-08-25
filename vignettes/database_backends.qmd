@@ -500,10 +500,39 @@ january_sales |>
   collect()
 ```
 
-Arrow summaries and expansions are supported and lazy, but `share_of_parent()`
-and `share_of_total()` are both rejected outright, before any Arrow query is
-constructed: the reason is the source summary they share. Collect the Arrow
-table first when you need either.
+Arrow summaries and expansions are supported and lazy wherever Arrow can
+evaluate the summary itself. Two things are refused instead, for two unrelated
+reasons.
+
+The first is a summary Arrow's own engine cannot evaluate. Arrow answers one of
+those by reading the whole input — every column, not just the ones the summary
+names — and computing it in R, so marginplyr refuses it before a row is read
+and tells you the two ways to get it computed:
+
+```{r}
+#| label: arrow-absorbed-summary
+#| eval: !expr has_arrow
+#| must_error: marginplyr_error
+
+arrow::arrow_table(january_sales) |>
+  summarize_with_margins(
+    channels = paste(sort(unique(channel)), collapse = "/"),
+    .grouping = rollup(region, store)
+  )
+```
+
+Collecting first is one rewrite; selecting the columns the summary needs before
+collecting is the other, and it is the one Arrow's own route cannot take for
+you. Which expressions this reaches is Arrow's to decide and changes with its
+version, so the shapes are described in one place rather than repeated here —
+see the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+An Arrow dataset answers the same expressions with Arrow's own error rather
+than this one, because a dataset never reads itself into R.
+
+The second is contextual shares. `share_of_parent()` and `share_of_total()` are
+both rejected outright, before any Arrow query is constructed: the reason is the
+source summary they share. Collect the Arrow table first when you need either.
 
 ```{r}
 #| label: arrow-parent-share

@@ -132,6 +132,25 @@ fact about one attempt rather than about the dialect, so nothing is recorded and
 the next share request asks again.
 _Avoid_: Coercing backend, lenient database, permissive SQL
 
+**Absorbing backend**:
+A backend that answers a summary expression its own engine cannot evaluate by
+reading the caller's input into R and evaluating it there, rather than
+refusing it. Its opposite is a *refusing* backend, which reports the
+expression as unsupported and leaves the input unread. Which of the two a
+backend is, is a property of the input's class and not of the expression: an
+Arrow table, an Arrow record batch, and a query over either absorb, while an
+Arrow dataset and a query over one refuse, and every SQL backend refuses at
+the caller's own execution. It is therefore finer-grained than a backend kind,
+one kind holding both, which is why it is established from the input rather
+than looked up. Which expressions it applies to cannot be read from the
+call — a composition of translatable operations is translatable however it is
+spelled and whoever wrote the function around it — and the boundary moves with
+the backend's own version, so it is described rather than enumerated. A Margin
+verb refuses on the caller's behalf wherever a backend would absorb, because
+absorbing reads every column of the input while a caller who is told can read
+fewer.
+_Avoid_: Pulling backend, fallback backend, collecting backend
+
 **Contextual helper**:
 A spelling whose meaning inside a Margin summary arises only through static
 rewriting, and which is therefore recognized by spelling and never resolved
@@ -183,10 +202,19 @@ _Avoid_: Package error, internal error, user-facing error
 
 **External condition**:
 A condition raised by a user summary expression, tidyselect, dplyr, or a
-backend, and propagated with its own class, its own diagnostic, and its own
-cause intact. Warnings and errors are alike External conditions. What a Margin
-verb may adjust is the Condition context; the condition itself is the caller's
-to receive unchanged.
+backend *as its answer to the question put to it*, and propagated with its own
+class, its own diagnostic, and its own cause intact. Warnings and errors are
+alike External conditions. What a Margin verb may adjust is the Condition
+context; the condition itself is the caller's to receive unchanged.
+
+An answer is what the qualification is for. A backend that reports an
+expression as unsupported has answered; a backend that violates one of its own
+invariants while working out what to answer has not, and the condition that
+escapes is neither its answer nor a defect the caller can act on. Passing one
+on unchanged satisfies every word of the first paragraph and still tells the
+caller nothing they can use, which is how such a condition reads as
+contract-abiding while being the shape ADR 0015 removes from marginplyr's own
+code.
 _Avoid_: Third-party error, foreign error
 
 **Condition context**:
