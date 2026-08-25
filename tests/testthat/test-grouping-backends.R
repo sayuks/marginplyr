@@ -122,13 +122,14 @@ test_that("Arrow uses the normalized grouping contract", {
 # Both halves are asserted, because what the decision turns on is that the two
 # are told apart (#254).
 #
-# The two expressions are chosen for how long they will keep being absorbed
-# rather than for how the defect was found. A group collapsed to one string and
-# a subset inside an aggregate are the shapes least likely to gain an Arrow
-# kernel; `first()` and `last()` are absorbed today and deliberately unused
-# here, being the likeliest of the absorbed set to stop being so. The block
-# below asserts they are still absorbed, so an Arrow release that translates
-# one fails there, naming the drift, rather than here.
+# The expressions are chosen for how long they will keep being absorbed rather
+# than for how the defect was found. A group collapsed to one string, a subset
+# inside an aggregate, and a statistic over two columns are the shapes least
+# likely to gain an Arrow kernel, and are the three the reference names;
+# `first()` and `last()` are absorbed today and deliberately unused here and
+# there, being the likeliest of the absorbed set to stop being so. The block
+# below asserts all three are still absorbed, so an Arrow release that
+# translates one fails there, naming the drift, rather than here.
 absorbed_summary_data <- function() {
   data.frame(
     k = c("E", "E", "W"),
@@ -174,27 +175,33 @@ test_that("Arrow refuses a summary it would otherwise absorb", {
       .grouping = rollup(k)
     ), label = shape)
 
-    expect_s3_class(raised, "marginplyr_error")
+    # Every expectation carries the shape, so a failure on one input class
+    # does not read as a failure on the three beside it.
+    expect_true(inherits(raised, "marginplyr_error"), label = shape)
     # The condition this ticket exists to remove, named so that a regression
     # to it fails as itself rather than as a missing class.
-    expect_false(inherits(raised, "notSubsettableError"))
-    message <- conditionMessage(raised)
+    expect_false(inherits(raised, "notSubsettableError"), label = shape)
+    text <- conditionMessage(raised)
     # The argument as the caller spelled it, not the expression Arrow blamed
     # inside it and not the internal key columns the branch grouped by.
     expect_match(
-      message,
+      text,
       "joined = paste(s, collapse = \",\")",
-      fixed = TRUE
+      fixed = TRUE,
+      info = shape
     )
     # The singular arm of this diagnostic, both inflections of it; the plural
     # one is the guard block below, which names every summary argument because
     # it has no warning to place one from.
-    expect_match(message, "Arrow cannot evaluate this summary", fixed = TRUE)
-    expect_match(message, "to compute it:", fixed = TRUE)
+    expect_match(
+      text, "Arrow cannot evaluate this summary",
+      fixed = TRUE, info = shape
+    )
+    expect_match(text, "to compute it:", fixed = TRUE, info = shape)
     # Both rewrites. The second is the whole reason refusing beats absorbing:
     # Arrow reads every column, and a caller who is told can read fewer.
-    expect_match(message, "collect", fixed = TRUE)
-    expect_match(message, "column", fixed = TRUE)
+    expect_match(text, "collect", fixed = TRUE, info = shape)
+    expect_match(text, "column", fixed = TRUE, info = shape)
   }
 })
 
@@ -272,12 +279,13 @@ test_that("an Arrow Dataset keeps Arrow's own refusal", {
     # marginplyr's only part in it is the context it carries. The diagnostic
     # is asserted as well as the class, since propagating one without the
     # other is what ADR 0015 forbids.
-    expect_s3_class(raised, "arrow_not_supported")
-    expect_false(inherits(raised, "marginplyr_error"))
+    expect_true(inherits(raised, "arrow_not_supported"), label = shape)
+    expect_false(inherits(raised, "marginplyr_error"), label = shape)
     expect_match(
       conditionMessage(raised),
       "Call collect() first",
-      fixed = TRUE
+      fixed = TRUE,
+      info = shape
     )
   }
 })
@@ -309,6 +317,7 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
   skip_if_suggest_absent("arrow")
   table <- arrow::Table$create(absorbed_summary_data())
   marker <- absorbing_warning_marker()
+  raised <- NULL
   # One per shape the shipped pages describe, so a page that stops being true
   # fails here rather than being re-read. `first()` and `last()` are absorbed
   # too and are in none of them: they are the likeliest of the absorbed set to
@@ -329,6 +338,7 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
       warning = function(cnd) {
         if (grepl(marker, conditionMessage(cnd), ignore.case = TRUE)) {
           marked <<- TRUE
+          raised <<- cnd
         }
         invokeRestart("muffleWarning")
       }
@@ -352,6 +362,24 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
     dplyr::summarize(table, out = sum(v) / dplyr::n(), .by = k)
   )
   expect_s3_class(translated, "arrow_dplyr_query")
+
+  # The second undocumented Arrow text the refusal reads: the `In <expr>: `
+  # header the blamed summary is placed from. Asserted against the warning the
+  # installed Arrow actually raised, because a rewording of it would silently
+  # degrade every refusal to naming all of a call's summaries, and the suite
+  # would stay green -- every other assertion here passes a single summary,
+  # where naming the blamed one and naming them all are the same answer.
+  #
+  # Two answers are correct and a third is not. From Arrow 17.0.0 the header is
+  # present and carries Arrow's own deparse of the expression; through 16.0.0
+  # there is no header and `NA` is right, that being the degradation the
+  # refusal is designed around. A header this reading half-recognises would
+  # return some other string, and that is what fails here.
+  placed <- absorbing_warning_label(raised)
+  expect_true(
+    is.na(placed) || identical(placed, "stats::weighted.mean(v, v)"),
+    label = paste0("the label placed from Arrow's warning (", placed, ")")
+  )
 })
 
 # The backstop, reached by taking the marker away -- which is what an Arrow

@@ -139,11 +139,15 @@ them fails the first, which names the drift, rather than the second, which would
 read as marginplyr having stopped refusing.
 
 The expressions are chosen for how long they will keep being absorbed rather than
-for how the defect was found: a group collapsed to one string, and a subset inside
-an aggregate. `first()` and `last()` are absorbed too and deliberately unused,
-being the likeliest of that set to gain a kernel — and the shipped pages name
-neither for the same reason, since a page and a test that both claim a shape have
-to move together.
+for how the defect was found: a group collapsed to one string, a subset inside an
+aggregate, and a statistic over two columns — the three shapes the reference
+names, so that a page and the gate move together. `first()` and `last()` are
+absorbed too and deliberately unused in both, being the likeliest of that set to
+gain a kernel.
+
+The refusal itself is asserted over the first two. The third is in the gate
+because the reference claims it, which is the point: what the gate covers is
+derived from what is claimed, not from what the refusal happens to use.
 
 Neither part may skip. `verify-backend.R` fails a job for a skip naming no
 withheld backend, so a test that stepped aside when the boundary moved would fail

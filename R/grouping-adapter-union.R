@@ -135,10 +135,10 @@ is_absorbing_backend_warning <- function(cnd, .data) {
   if (!inherits(.data, arrow_input_classes())) {
     return(FALSE)
   }
-  message <- conditionMessage(cnd)
-  is.character(message) &&
-    length(message) == 1L &&
-    grepl(absorbing_warning_marker(), message, ignore.case = TRUE)
+  text <- conditionMessage(cnd)
+  is.character(text) &&
+    length(text) == 1L &&
+    grepl(absorbing_warning_marker(), text, ignore.case = TRUE)
 }
 
 # The label Arrow writes an absorbed expression by, reproduced so that the
@@ -284,16 +284,28 @@ summarize_margin_branch <- function(.data,
     }
   )
 
-  # Scoped as the handler is, and for the same reason: the refusal names Arrow,
-  # so an input Arrow does not hold must not reach it. A lazy input of another
-  # backend that answered with a local frame would be a defect in that backend
-  # or in this adapter, not an absorption, and misattributing it to Arrow is
-  # the one thing worse than not reporting it -- the shape ADR 0015 removes.
-  absorbed <- inherits(.data, arrow_input_classes()) &&
-    !is.data.frame(.data) &&
-    is.data.frame(result)
-  if (absorbed) {
-    abort_absorbed_summary(caller_labels)
+  # A lazy input whose branch came back local was read, and both arms of this
+  # are that one fact. Which arm depends on who did the reading, because ADR
+  # 0015 sorts a condition by what the caller can do about it rather than by
+  # what happened: an Arrow input absorbing is something they can rewrite, and
+  # the refusal names the rewrites; any other backend answering a lazy input
+  # with a local frame is a defect here or there, which no rewrite of their
+  # call avoids. Attributing the second to Arrow would be worse than not
+  # reporting it -- a diagnostic that misdirects, over a defect.
+  #
+  # The second arm is also what catches a branch list that is part local and
+  # part lazy, which `combine_margin_branches()` does not: a lazy-first mix is
+  # accepted by `union_all()` and collects to the combined rows.
+  if (!is.data.frame(.data) && is.data.frame(result)) {
+    if (inherits(.data, arrow_input_classes())) {
+      abort_absorbed_summary(caller_labels)
+    }
+    stop(
+      "A lazy input produced a local summary branch, which no backend does.\n",
+      "Branch class: ",
+      toString(class(result)),
+      call. = FALSE
+    )
   }
   result
 }
