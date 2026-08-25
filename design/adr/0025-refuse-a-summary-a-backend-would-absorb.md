@@ -115,9 +115,16 @@ the caller, who would be handed a bug report in place of a remedy they have.
 
 The pages that claim Arrow summaries are supported and lazy say what is refused
 and why, and say that which expressions are affected is decided by the backend's
-version. They do not enumerate them. A list would be a claim about one version of
-Arrow, and `DESCRIPTION` admits a range; the same reasoning keeps every other
-gate in `AGENTS.md` derived rather than listed.
+version.
+
+They do not name the functions. A list of those would be a claim about one
+version of Arrow, and `DESCRIPTION` admits a range; the same reasoning keeps
+every other gate in `AGENTS.md` derived rather than listed. What the reference
+does describe is the *shapes* refused, which is what a caller can recognise
+their own expression in, and every shape it names is covered by the gate above —
+a page that stopped being true fails a test rather than being re-read. The
+vignette and `NEWS.md` point at the reference rather than repeating the
+description, so an Arrow release that moves one shape is a one-page edit.
 
 `?marginplyr` is unchanged. Nothing a caller catches is new: an absorbed summary
 raises the promised `marginplyr_error`, and an Arrow dataset's refusal keeps
@@ -153,3 +160,9 @@ the route ruled out above. ADR 0021 governs what a condition raised once per
 grouping set reports, and is untouched: the refusal stops at the first branch, so
 there is nothing repeated to report. ADR 0022 and ADR 0024 are what the refusal
 spells its subject by, and ADR 0023 is the idiom it is authored in.
+
+Evidence: `investigation/what-arrow-does-with-an-untranslatable-summary.md`.
+Everything this decision asserts about Arrow was measured there, including the
+one fact the mechanism turns on that is not visible from the newest release:
+Arrow reworded the warning between 16.0.0 and 17.0.0, and `DESCRIPTION` admits
+both sides of that change.

@@ -145,10 +145,12 @@ absorbed_summary_data <- function() {
 # helpers readable by `object_usage_linter()`.
 absorbing_arrow_inputs <- function(data) {
   table <- arrow::Table$create(data)
+  batch <- arrow::record_batch(data)
   list(
     table = table,
-    record_batch = arrow::record_batch(data),
-    query = dplyr::select(table, dplyr::all_of(names(data)))
+    record_batch = batch,
+    table_query = dplyr::select(table, dplyr::all_of(names(data))),
+    batch_query = dplyr::select(batch, dplyr::all_of(names(data)))
   )
 }
 
@@ -183,15 +185,36 @@ test_that("Arrow refuses a summary it would otherwise absorb", {
       "joined = paste(s, collapse = \",\")",
       fixed = TRUE
     )
-    # The singular arm of this diagnostic; the plural one is the guard block
-    # below, which names every summary argument because it has no warning to
-    # place one from.
-    expect_match(message, "is not a summary Arrow can evaluate", fixed = TRUE)
+    # The singular arm of this diagnostic, both inflections of it; the plural
+    # one is the guard block below, which names every summary argument because
+    # it has no warning to place one from.
+    expect_match(message, "Arrow cannot evaluate this summary", fixed = TRUE)
+    expect_match(message, "to compute it:", fixed = TRUE)
     # Both rewrites. The second is the whole reason refusing beats absorbing:
     # Arrow reads every column, and a caller who is told can read fewer.
     expect_match(message, "collect", fixed = TRUE)
     expect_match(message, "column", fixed = TRUE)
   }
+})
+
+# The refusal names the summary Arrow blamed rather than every summary in the
+# call, which is only observable where the call holds more than one. Without
+# this, a reading of Arrow's warning that always failed would still pass the
+# block above: the fallback there is to name them all, and there is only one.
+test_that("Arrow names the summary it absorbed and not its neighbours", {
+  skip_if_suggest_absent("arrow")
+
+  raised <- expect_error(summarize_with_margins(
+    arrow::Table$create(absorbed_summary_data()),
+    total = sum(v),
+    joined = paste(s, collapse = ","),
+    .grouping = rollup(k)
+  ))
+
+  message <- conditionMessage(raised)
+  expect_match(message, "joined = paste(s, collapse = \",\")", fixed = TRUE)
+  expect_false(grepl("total = sum(v)", message, fixed = TRUE))
+  expect_match(message, "Arrow cannot evaluate this summary", fixed = TRUE)
 })
 
 test_that("Arrow refuses a subset inside an aggregate", {
@@ -256,14 +279,22 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
   skip_if_suggest_absent("arrow")
   table <- arrow::Table$create(absorbed_summary_data())
   marker <- absorbing_warning_marker()
-  absorbed <- list(quote(paste(s, collapse = ",")), quote(sum(v[v > 1])))
+  # One per shape the shipped pages describe, so a page that stops being true
+  # fails here. The refusal itself is asserted over the first two only; the
+  # other two are covered because they are claimed, not because they are used.
+  absorbed <- list(
+    collapsed = quote(paste(s, collapse = ",")),
+    subset = quote(sum(v[v > 1])),
+    ordered = quote(dplyr::first(v)),
+    two_column = quote(stats::weighted.mean(v, v))
+  )
 
   for (expression in absorbed) {
     marked <- FALSE
     result <- withCallingHandlers(
       rlang::inject(dplyr::summarize(table, out = !!expression, .by = k)),
       warning = function(cnd) {
-        if (grepl(marker, conditionMessage(cnd), fixed = TRUE)) {
+        if (grepl(marker, conditionMessage(cnd), ignore.case = TRUE)) {
           marked <<- TRUE
         }
         invokeRestart("muffleWarning")
@@ -275,6 +306,12 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
     # with once it has pulled the input into R.
     expect_s3_class(result, "data.frame")
   }
+
+  # And the ordinary numeric summaries the same pages call unaffected.
+  translated <- suppressWarnings(
+    dplyr::summarize(table, out = sum(v) / dplyr::n(), .by = k)
+  )
+  expect_s3_class(translated, "arrow_dplyr_query")
 })
 
 # The backstop, reached by taking the marker away -- which is what an Arrow
@@ -305,7 +342,9 @@ test_that("the branch guard refuses an absorbed summary the handler missed", {
   message <- conditionMessage(raised)
   expect_match(message, "joined = paste(s, collapse = \",\")", fixed = TRUE)
   expect_match(message, "kept = sum(v[v > 1])", fixed = TRUE)
-  expect_match(message, "summaries Arrow can evaluate", fixed = TRUE)
+  # The plural arm, both inflections of it.
+  expect_match(message, "Arrow cannot evaluate these summaries", fixed = TRUE)
+  expect_match(message, "to compute them:", fixed = TRUE)
 })
 
 test_that("Arrow schema metadata supports predicates and computed queries", {

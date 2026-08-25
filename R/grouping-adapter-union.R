@@ -1,5 +1,9 @@
-# The `UNION ALL` composition every branch list ends in, and the one place the
-# package combines branches. `Reduce(dplyr::union_all, branches)` is
+# The portable adapter: the `UNION ALL` composition every branch list ends in,
+# the one place the package combines branches, and -- because it is also the one
+# place the caller's own summary expressions are handed to a backend once per
+# grouping set -- where a backend that would absorb one is refused (ADR 0025).
+#
+# `Reduce(dplyr::union_all, branches)` is
 # quadratic in the number of branches (#111): on an eager backend each step
 # re-copies the accumulated frame, and on a lazy one dbplyr re-aligns every
 # branch already folded in against the branch being added. The count is 2^n for
@@ -96,7 +100,17 @@ union_margin_branches <- function(branches) {
 # class of its own, no `$parent`, and no `$call` -- it is an `rlang_warning`
 # holding one rendered string -- so there is nothing else to key on.
 #
-# That is undocumented behaviour of another package, and it is depended on the
+# It is matched without regard to case, and that is a version range rather than
+# caution. `DESCRIPTION` admits `arrow (>= 13.0.0)`, and Arrow rewrote this
+# warning between 16.0.0 and 17.0.0: through 16.0.0 it was
+# `warning(msg, "; pulling data into R")`, and from 17.0.0 it is an rlang
+# warning whose body ends `"Pulling data into R"`. What survived the rewrite is
+# the phrase and not its capitalisation, so matching the capitalised spelling
+# alone left the refusal switched off for four of the versions this package
+# says it supports, where Arrow absorbs exactly as it does on the newest
+# (`investigation/what-arrow-does-with-an-untranslatable-summary.md`).
+#
+# This is undocumented behaviour of another package, and it is depended on the
 # way `AGENTS.md` depends on roxygen's treatment of a markdown table row: by
 # gating it. `test-grouping-backends.R` asserts that Arrow still absorbs the two
 # expressions the refusal is asserted over and still marks the absorption with
@@ -105,14 +119,14 @@ union_margin_branches <- function(branches) {
 # the marker the handler reads, and so that taking it away is how the backstop
 # below is reached in a test.
 absorbing_warning_marker <- function() {
-  "Pulling data into R"
+  "pulling data into R"
 }
 
 is_absorbing_backend_warning <- function(cnd) {
   message <- conditionMessage(cnd)
   is.character(message) &&
     length(message) == 1L &&
-    grepl(absorbing_warning_marker(), message, fixed = TRUE)
+    grepl(absorbing_warning_marker(), message, ignore.case = TRUE)
 }
 
 # The label Arrow writes an absorbed expression by, reproduced so that the
@@ -132,8 +146,12 @@ absorbed_expression_label <- function(expr) {
   if (length(lines) > 1L) paste0(lines[[1L]], "...") else lines[[1L]]
 }
 
-# The expression Arrow blamed, read off the line its warning opens with.
-absorbing_warning_expression <- function(cnd) {
+# The label Arrow blamed, read off the line its warning opens with. `NA` where
+# the warning does not open with one, which is not a hypothetical: the phrasing
+# through Arrow 16.0.0 named the offending expression inside a sentence rather
+# than on a line of its own, so every version below 17.0.0 takes the degradation
+# below rather than placing the blame on one argument.
+absorbing_warning_label <- function(cnd) {
   lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
   if (length(lines) == 0L) {
     return(NA_character_)
@@ -147,7 +165,7 @@ absorbing_warning_expression <- function(cnd) {
 # from names one argument; a warning it cannot names them all, which is also
 # what the backstop below has to do, having no warning to read.
 absorbed_summary_labels <- function(cnd, dots, caller_labels) {
-  blamed <- absorbing_warning_expression(cnd)
+  blamed <- absorbing_warning_label(cnd)
   if (is.na(blamed) || length(dots) == 0L) {
     return(caller_labels)
   }
@@ -169,12 +187,20 @@ absorbed_summary_labels <- function(cnd, dots, caller_labels) {
 # whole of what refusing buys the caller: an absorbed summary reads every
 # column of the input, including the ones it does not use, and a caller who is
 # told can read fewer. A caller who is not told cannot.
+#
+# The summaries arrive alone in an `i` bullet, per ADR 0023's condition 2: how
+# many of them there are is the caller's decision, since a warning Arrow's
+# older phrasing cannot be placed from names every summary argument rather than
+# one. `cli::qty()` is what carries the count across the split, the refusal
+# left behind inflecting both its noun and its pronoun with the vector gone
+# from the line they sit in -- the same shape as `grouping_helper_vars()`.
 abort_absorbed_summary <- function(labels) {
   abort_marginplyr(c(
     paste0(
-      "{.code {labels}} {?is/are} not {?a summary/summaries} Arrow can ",
-      "evaluate, so Arrow would read the whole input to compute {?it/them}."
+      "{cli::qty(length(labels))}Arrow cannot evaluate {?this summary/these ",
+      "summaries}, so Arrow would read the whole input to compute {?it/them}:"
     ),
+    i = "{.code {labels}}.",
     i = paste0(
       "Collect the Arrow input first, then call ",
       "{.fun summarize_with_margins}."
@@ -196,9 +222,9 @@ abort_absorbed_summary <- function(labels) {
 #
 # `caller_labels` is `new_summary_arguments()`'s, parallel to `dots`, and is
 # what makes the refusal name what the caller wrote rather than what the branch
-# rewrote. A direct call passing none is answered from the branch's own dots,
-# which is the same statement `summarize_margin_union()` makes by leaving the
-# blamed call alone when it has no verb to name.
+# rewrote. It is required rather than defaulted: the branch's own dots are the
+# rewritten ones, so a default computed from them would answer with a spelling
+# ADR 0024 forbids, silently, at whichever call site forgot to pass the labels.
 #
 # Two things can raise the refusal and they fail in opposite directions, which
 # is why both are here. The handler reads Arrow's warning, which is raised
@@ -218,13 +244,8 @@ abort_absorbed_summary <- function(labels) {
 summarize_margin_branch <- function(.data,
                                     ...,
                                     .by,
-                                    caller_labels = NULL) {
+                                    caller_labels) {
   dots <- rlang::enquos(...)
-  labels <- if (is.null(caller_labels)) {
-    summary_argument_labels(dots)
-  } else {
-    caller_labels
-  }
 
   result <- withCallingHandlers(
     rlang::inject(dplyr::summarize(
@@ -234,13 +255,15 @@ summarize_margin_branch <- function(.data,
     )),
     warning = function(cnd) {
       if (is_absorbing_backend_warning(cnd)) {
-        abort_absorbed_summary(absorbed_summary_labels(cnd, dots, labels))
+        abort_absorbed_summary(
+          absorbed_summary_labels(cnd, dots, caller_labels)
+        )
       }
     }
   )
 
   if (!is.data.frame(.data) && is.data.frame(result)) {
-    abort_absorbed_summary(labels)
+    abort_absorbed_summary(caller_labels)
   }
   result
 }
