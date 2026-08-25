@@ -91,14 +91,158 @@ union_margin_branches <- function(branches) {
   branches[[1L]]
 }
 
+# The text an Absorbing backend marks an absorption with, which is the whole of
+# what a backend can be recognised as absorbing by. Arrow's warning carries no
+# class of its own, no `$parent`, and no `$call` -- it is an `rlang_warning`
+# holding one rendered string -- so there is nothing else to key on.
+#
+# That is undocumented behaviour of another package, and it is depended on the
+# way `AGENTS.md` depends on roxygen's treatment of a markdown table row: by
+# gating it. `test-grouping-backends.R` asserts that Arrow still absorbs the two
+# expressions the refusal is asserted over and still marks the absorption with
+# this text, so a re-wording fails there rather than silently switching the
+# refusal off. It is a function rather than a constant so that the gate reads
+# the marker the handler reads, and so that taking it away is how the backstop
+# below is reached in a test.
+absorbing_warning_marker <- function() {
+  "Pulling data into R"
+}
+
+is_absorbing_backend_warning <- function(cnd) {
+  message <- conditionMessage(cnd)
+  is.character(message) &&
+    length(message) == 1L &&
+    grepl(absorbing_warning_marker(), message, fixed = TRUE)
+}
+
+# The label Arrow writes an absorbed expression by, reproduced so that the
+# expression marginplyr handed it can be recognised in the warning it rendered.
+# Arrow deparses the expression, keeps the first line, and marks a longer one
+# with a trailing ellipsis -- which is neither `rlang::as_label()` nor a whole
+# `deparse()`.
+#
+# The convention is reproduced rather than the internal called, which is ADR
+# 0022's rule and its reason: an internal that changed would disagree silently,
+# while a convention that changed stops matching, and a label that matches
+# nothing is what sends the refusal to name every summary argument instead of
+# one. That degradation is the same one ADR 0022 accepts for a span it cannot
+# place.
+absorbed_expression_label <- function(expr) {
+  lines <- deparse(expr)
+  if (length(lines) > 1L) paste0(lines[[1L]], "...") else lines[[1L]]
+}
+
+# The expression Arrow blamed, read off the line its warning opens with.
+absorbing_warning_expression <- function(cnd) {
+  lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+  if (length(lines) == 0L) {
+    return(NA_character_)
+  }
+  matched <- regmatches(lines[[1L]], regexec("^In (.*): *$", lines[[1L]]))[[1L]]
+  if (length(matched) == 2L) matched[[2L]] else NA_character_
+}
+
+# Which summaries the refusal names, spelled as the caller spelled them (ADR
+# 0024). Arrow blames one expression at a time, so a warning it can be placed
+# from names one argument; a warning it cannot names them all, which is also
+# what the backstop below has to do, having no warning to read.
+absorbed_summary_labels <- function(cnd, dots, caller_labels) {
+  blamed <- absorbing_warning_expression(cnd)
+  if (is.na(blamed) || length(dots) == 0L) {
+    return(caller_labels)
+  }
+  labels <- vapply(
+    dots,
+    function(dot) {
+      expr <- if (rlang::is_quosure(dot)) rlang::quo_get_expr(dot) else dot
+      absorbed_expression_label(expr)
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
+  matched <- which(labels == blamed)
+  if (length(matched) == 1L) caller_labels[matched] else caller_labels
+}
+
+# The refusal an Absorbing backend earns, and the reason ADR 0025 chose it over
+# letting the backend absorb. Both rewrites are given because the second is the
+# whole of what refusing buys the caller: an absorbed summary reads every
+# column of the input, including the ones it does not use, and a caller who is
+# told can read fewer. A caller who is not told cannot.
+abort_absorbed_summary <- function(labels) {
+  abort_marginplyr(c(
+    paste0(
+      "{.code {labels}} {?is/are} not {?a summary/summaries} Arrow can ",
+      "evaluate, so Arrow would read the whole input to compute {?it/them}."
+    ),
+    i = paste0(
+      "Collect the Arrow input first, then call ",
+      "{.fun summarize_with_margins}."
+    ),
+    i = paste0(
+      "Select the columns you need before collecting. Arrow reads every ",
+      "column of the input, including the ones a summary does not use."
+    )
+  ))
+}
+
+# The caller's expressions are spliced into the `summarize()` call rather than
+# forwarded through `...`, which is the shape `grouping-adapter-native.R`
+# already uses. Arrow recovers the originating call from its own frame with
+# `match.call()`, and a `...`-forwarding wrapper is the one shape it cannot be
+# recovered from: the lookup falls through to `base::call`, and subsetting an
+# object of type `"special"` raises an untyped error where the backend's own
+# answer belonged (#254).
+#
+# `caller_labels` is `new_summary_arguments()`'s, parallel to `dots`, and is
+# what makes the refusal name what the caller wrote rather than what the branch
+# rewrote. A direct call passing none is answered from the branch's own dots,
+# which is the same statement `summarize_margin_union()` makes by leaving the
+# blamed call alone when it has no verb to name.
+#
+# Two things can raise the refusal and they fail in opposite directions, which
+# is why both are here. The handler reads Arrow's warning, which is raised
+# before the collect, so nothing is read; if the marker ever stops matching it
+# does not fire at all. The guard reads the result's class, which cannot stop
+# matching, but only after the branch has run. Between them the contract holds
+# whichever way Arrow moves: the handler is what keeps the read from happening,
+# and the guard is what keeps an absorbed result from ever being returned --
+# bounded at one branch, because a Margin operation evaluates the caller's
+# expression once per grouping set and this stops at the first.
+#
+# The guard raises the refusal rather than an internal invariant (ADR 0015),
+# although what it reports is a defect. A caller reaching it can act on it, and
+# the action is the one the refusal already names; making them read a bug report
+# instead would move the cost of marginplyr's drift onto them. The maintainer's
+# signal is `test-query-policy.R`, which fails when a read happens at all.
 summarize_margin_branch <- function(.data,
                                     ...,
-                                    .by) {
-  dplyr::summarize(
-    .data = .data,
-    ...,
-    .by = dplyr::all_of(.by)
+                                    .by,
+                                    caller_labels = NULL) {
+  dots <- rlang::enquos(...)
+  labels <- if (is.null(caller_labels)) {
+    summary_argument_labels(dots)
+  } else {
+    caller_labels
+  }
+
+  result <- withCallingHandlers(
+    rlang::inject(dplyr::summarize(
+      .data = .data,
+      !!!dots,
+      .by = dplyr::all_of(.by)
+    )),
+    warning = function(cnd) {
+      if (is_absorbing_backend_warning(cnd)) {
+        abort_absorbed_summary(absorbed_summary_labels(cnd, dots, labels))
+      }
+    }
   )
+
+  if (!is.data.frame(.data) && is.data.frame(result)) {
+    abort_absorbed_summary(labels)
+  }
+  result
 }
 
 # A literal recycles to whatever the branch holds, which is the whole of the
@@ -201,7 +345,8 @@ summarize_margin_union <- function(.data,
         summarize_margin_branch(
           .data = .data,
           !!!branch_dots,
-          .by = unname(key_names[grouping_set])
+          .by = unname(key_names[grouping_set]),
+          caller_labels = summaries$labels
         ),
         conditions = conditions,
         restatements = branch_argument_map(branch_dots, summaries$labels)

@@ -121,6 +121,18 @@
 * Backend detection now validates the documented Arrow and dtplyr minimum
   versions, centralizes backend capabilities, and reports incompatible dbplyr
   query representations explicitly.
+* A summary Arrow's own engine cannot evaluate is now refused, before any row
+  is read, instead of failing with `object of type 'special' is not
+  subsettable`. Arrow answers such an expression by reading the whole input —
+  every column, not only the ones the summary names — and computing it in R;
+  the refusal names the argument you wrote and the two rewrites that compute
+  it, collecting first and selecting the columns you need before you collect.
+  Which expressions this reaches is Arrow's to decide and moves with its
+  version, so no list is given: today it is a group collapsed into a single
+  value, an extraction that depends on row order, a subset inside an aggregate,
+  and a statistic over two columns at once. Ordinary numeric summaries, and
+  arithmetic over them, are unaffected and stay lazy, and an Arrow dataset
+  keeps raising Arrow's own error for the same expressions.
 * Every error marginplyr raises for a correctable call now inherits the
   `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
   all. It is the only promised class; narrower subclasses and message wording

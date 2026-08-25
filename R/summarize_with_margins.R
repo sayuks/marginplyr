@@ -109,6 +109,22 @@
 #' column in the result -- one summary, one fixed key, one grouping dimension,
 #' or `.id` -- ends the difference.
 #'
+#' One summary an Arrow table or record batch cannot carry is one Arrow's own
+#' engine cannot evaluate. Arrow answers such an expression by reading the
+#' whole input -- every column of it, not only the ones the summary names --
+#' and computing it in R. marginplyr refuses it instead, before a row is read,
+#' and names the two rewrites that compute it: collect the input first, and
+#' select the columns the summary needs before collecting, which is the
+#' narrowing Arrow's own route cannot do for you.
+#'
+#' Which expressions those are is Arrow's to decide and moves with its version,
+#' so they are not listed here. The shapes refused today are a group collapsed
+#' into a single value, such as pasting one, an extraction that depends on row
+#' order, a subset written inside an aggregate, and a statistic over two
+#' columns at once; ordinary numeric summaries, and arithmetic over them, are
+#' evaluated by Arrow and stay lazy. An Arrow dataset raises Arrow's own
+#' refusal for the same expressions, and is otherwise unaffected.
+#'
 #' @section Fixed columns and grouping dimensions:
 #' `.by` marks columns that are present in every grouping set, while
 #' `.grouping` describes dimensions that can be omitted to form margins.
@@ -393,8 +409,10 @@
 #'
 #' Arrow inputs reject both after expression planning and common
 #' Margin-operation validation but before constructing a summary query. Other
-#' Arrow Margin operations remain supported and lazy. Explicitly collect an
-#' Arrow input first when local share execution is appropriate.
+#' Arrow Margin operations remain supported and lazy, apart from a summary
+#' Arrow's own engine cannot evaluate, which is refused for its own reason and
+#' before any row is read. Explicitly collect an Arrow input first when local
+#' share execution is appropriate.
 #'
 #' A row that is its own denominator receives `1.0`. Missing numerators or
 #' denominators and zero denominators receive `NA_real_`; other finite ratios

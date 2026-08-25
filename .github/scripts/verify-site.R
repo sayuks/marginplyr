@@ -367,6 +367,10 @@ markers <- list(
     "DuckDB covers native SQL end to end",
     "dozen-plus fallback dialects",
     "Arrow and dtplyr are tested for the lazy",
+    # The unconditional half of the absorbed-summary section. Its `must_error`
+    # chunk is behind `has_arrow` like the two share refusals below it, so the
+    # prose introducing it is what a marker can reach.
+    "a summary Arrow's own engine cannot evaluate",
     # The one `must_error` chunk on this page that needs no optional Suggest:
     # nesting a SQL table, refused through the dbplyr simulator. The guide's
     # DuckDB, dtplyr, and Arrow refusals are behind availability guards, so

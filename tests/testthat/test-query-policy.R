@@ -126,6 +126,92 @@ test_that("marginplyr functions reaching an execution entry point", {
   expect_snapshot(reach)
 })
 
+# ADR 0020's subject is a read marginplyr *causes*, not one it issues. Every
+# reading above walks `R/`, so all of them are structurally blind to a read
+# another package performs on marginplyr's behalf -- and one such read exists:
+# an Arrow input absorbs an expression its own engine cannot evaluate by
+# collecting the whole input while the verb runs. The scans above reported a
+# clean result throughout, which reads exactly like a package that causes no
+# such read, and is the failure mode this gate closes (#254).
+#
+# Tracing Arrow's own methods is what the question needs. Nothing marginplyr
+# holds afterwards says whether a row was read: an absorbed summary answers
+# with a local frame, and so does a summary the caller collected themselves.
+# The trace is installed around one expression and removed on exit, so a
+# failure here leaves nothing behind for the rest of the file.
+arrow_collect_methods <- function() {
+  c("collect.ArrowTabular", "collect.arrow_dplyr_query", "collect.Dataset")
+}
+
+# A function tracer rather than `quote()`, which is the difference between
+# counting and silently counting nothing: an expression tracer is evaluated in
+# the traced function's own frame, so its `<<-` walks Arrow's namespace and
+# assigns into the global environment instead of into this counter.
+count_arrow_collects <- function(expr) {
+  count <- 0L
+  ns <- asNamespace("arrow")
+  for (method in arrow_collect_methods()) {
+    suppressMessages(trace(
+      method,
+      where = ns,
+      tracer = function() count <<- count + 1L,
+      print = FALSE
+    ))
+  }
+  on.exit(
+    for (method in arrow_collect_methods()) {
+      suppressMessages(untrace(method, where = ns))
+    },
+    add = TRUE
+  )
+  force(expr)
+  count
+}
+
+test_that("no Arrow read happens while a Margin verb runs", {
+  skip_if_suggest_absent("arrow")
+  data <- data.frame(
+    k = c("E", "E", "W"),
+    v = c(1, 2, 3),
+    s = c("a", "b", "c"),
+    stringsAsFactors = FALSE
+  )
+  table <- arrow::Table$create(data)
+
+  # A summary Arrow evaluates itself: the verb builds a query and returns it.
+  expect_identical(
+    count_arrow_collects(summarize_with_margins(
+      table,
+      total = sum(v),
+      .grouping = rollup(k)
+    )),
+    0L
+  )
+
+  # An expansion carries no caller expression at all, so it cannot reach an
+  # absorbed one. Asserted rather than assumed, since that is a property of
+  # the signature and signatures change.
+  expect_identical(
+    count_arrow_collects(expand_with_margins(table, .grouping = rollup(k))),
+    0L
+  )
+
+  # And the refusing path reads nothing, which is the criterion the refuse
+  # disposition of #254 is held to. `try()` keeps the refusal from leaving
+  # before the count is read.
+  expect_identical(
+    count_arrow_collects(try(
+      summarize_with_margins(
+        table,
+        joined = paste(s, collapse = ","),
+        .grouping = rollup(k)
+      ),
+      silent = TRUE
+    )),
+    0L
+  )
+})
+
 test_that("backend kinds granted the collect_selection_proxy capability", {
   ns <- asNamespace("marginplyr")
   enabled_expr <- find_local_assignment(

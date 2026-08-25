@@ -115,6 +115,199 @@ test_that("Arrow uses the normalized grouping contract", {
   expect_true("Total" %in% factor_result$a)
 })
 
+# CONTEXT.md's *Absorbing backend*, asserted at the seam ADR 0025 draws it at.
+# An Arrow `Table`, `RecordBatch`, or query over either answers an expression
+# its own engine cannot evaluate by reading the whole input into R; a `Dataset`
+# and a query over one refuse instead, and that refusal is Arrow's to raise.
+# Both halves are asserted, because what the decision turns on is that the two
+# are told apart (#254).
+#
+# The two expressions are chosen for how long they will keep being absorbed
+# rather than for how the defect was found. A group collapsed to one string and
+# a subset inside an aggregate are the shapes least likely to gain an Arrow
+# kernel; `first()` and `last()` are absorbed today and deliberately unused
+# here, being the likeliest of the absorbed set to stop being so. The block
+# below asserts they are still absorbed, so an Arrow release that translates
+# one fails there, naming the drift, rather than here.
+absorbed_summary_data <- function() {
+  data.frame(
+    k = c("E", "E", "W"),
+    v = c(1, 2, 3),
+    s = c("a", "b", "c"),
+    stringsAsFactors = FALSE
+  )
+}
+
+# A query rather than the object itself is the third shape, because
+# `arrow_dplyr_query` is the one class that appears on both sides of the
+# division: over a table it absorbs, over a dataset it refuses. `select()`
+# builds one without a data-masked column reference, which keeps these
+# helpers readable by `object_usage_linter()`.
+absorbing_arrow_inputs <- function(data) {
+  table <- arrow::Table$create(data)
+  list(
+    table = table,
+    record_batch = arrow::record_batch(data),
+    query = dplyr::select(table, dplyr::all_of(names(data)))
+  )
+}
+
+refusing_arrow_inputs <- function(data) {
+  dataset <- arrow::InMemoryDataset$create(arrow::Table$create(data))
+  list(
+    dataset = dataset,
+    query = dplyr::select(dataset, dplyr::all_of(names(data)))
+  )
+}
+
+test_that("Arrow refuses a summary it would otherwise absorb", {
+  skip_if_suggest_absent("arrow")
+  data <- absorbed_summary_data()
+
+  for (input in absorbing_arrow_inputs(data)) {
+    raised <- expect_error(summarize_with_margins(
+      input,
+      joined = paste(s, collapse = ","),
+      .grouping = rollup(k)
+    ))
+
+    expect_s3_class(raised, "marginplyr_error")
+    # The condition this ticket exists to remove, named so that a regression
+    # to it fails as itself rather than as a missing class.
+    expect_false(inherits(raised, "notSubsettableError"))
+    message <- conditionMessage(raised)
+    # The argument as the caller spelled it, not the expression Arrow blamed
+    # inside it and not the internal key columns the branch grouped by.
+    expect_match(
+      message,
+      "joined = paste(s, collapse = \",\")",
+      fixed = TRUE
+    )
+    # The singular arm of this diagnostic; the plural one is the guard block
+    # below, which names every summary argument because it has no warning to
+    # place one from.
+    expect_match(message, "is not a summary Arrow can evaluate", fixed = TRUE)
+    # Both rewrites. The second is the whole reason refusing beats absorbing:
+    # Arrow reads every column, and a caller who is told can read fewer.
+    expect_match(message, "collect", fixed = TRUE)
+    expect_match(message, "column", fixed = TRUE)
+  }
+})
+
+test_that("Arrow refuses a subset inside an aggregate", {
+  skip_if_suggest_absent("arrow")
+
+  raised <- expect_error(summarize_with_margins(
+    arrow::Table$create(absorbed_summary_data()),
+    kept = sum(v[v > 1]),
+    .grouping = rollup(k)
+  ))
+
+  expect_s3_class(raised, "marginplyr_error")
+  expect_match(
+    conditionMessage(raised),
+    "kept = sum(v[v > 1])",
+    fixed = TRUE
+  )
+})
+
+test_that("an Arrow Dataset keeps Arrow's own refusal", {
+  skip_if_suggest_absent("arrow")
+  data <- absorbed_summary_data()
+
+  for (input in refusing_arrow_inputs(data)) {
+    raised <- expect_error(summarize_with_margins(
+      input,
+      joined = paste(s, collapse = ","),
+      .grouping = rollup(k)
+    ))
+
+    # An External condition: Arrow's answer to the question put to it, and
+    # marginplyr's only part in it is the context it carries.
+    expect_s3_class(raised, "arrow_not_supported")
+    expect_false(inherits(raised, "marginplyr_error"))
+  }
+})
+
+test_that("an Arrow summary Arrow can evaluate is unchanged and stays lazy", {
+  skip_if_suggest_absent("arrow")
+
+  result <- summarize_with_margins(
+    arrow::Table$create(absorbed_summary_data()),
+    total = sum(v),
+    .grouping = rollup(k)
+  )
+
+  expect_s3_class(result, "arrow_dplyr_query")
+  expect_setequal(dplyr::collect(result)$total, c(3, 3, 6))
+})
+
+# Part one of the two-part regression. The refusal above asserts what
+# marginplyr does with an absorbed expression; this asserts that Arrow still
+# absorbs the two expressions it is asserted over, and that Arrow still marks
+# the absorption with the text the handler keys on.
+#
+# The text dependency is what makes this block load-bearing rather than
+# redundant. Arrow's fallback warning carries no class, no `$parent`, and no
+# `$call`, so its message is the only thing to recognise it by; that is
+# undocumented behaviour, and this is what keeps it honest, the way
+# `document.yaml` keeps the roxygen table-row exception honest.
+test_that("Arrow still absorbs the expressions the refusal is asserted over", {
+  skip_if_suggest_absent("arrow")
+  table <- arrow::Table$create(absorbed_summary_data())
+  marker <- absorbing_warning_marker()
+  absorbed <- list(quote(paste(s, collapse = ",")), quote(sum(v[v > 1])))
+
+  for (expression in absorbed) {
+    marked <- FALSE
+    result <- withCallingHandlers(
+      rlang::inject(dplyr::summarize(table, out = !!expression, .by = k)),
+      warning = function(cnd) {
+        if (grepl(marker, conditionMessage(cnd), fixed = TRUE)) {
+          marked <<- TRUE
+        }
+        invokeRestart("muffleWarning")
+      }
+    )
+
+    expect_true(marked)
+    # Absorbed rather than translated: a local frame is what Arrow answers
+    # with once it has pulled the input into R.
+    expect_s3_class(result, "data.frame")
+  }
+})
+
+# The backstop, reached by taking the marker away -- which is what an Arrow
+# release that rewords the warning would do. The handler then does not fire,
+# Arrow absorbs, and the branch result is a local frame the input was not: the
+# guard raises the same refusal, so the caller sees what they should have seen
+# and only the CI gate below records the drift.
+#
+# Two summaries rather than one, because the guard names every summary
+# argument where the handler names the one Arrow blamed. That is also the
+# plural arm of this diagnostic; the singular arm is the refusal above.
+test_that("the branch guard refuses an absorbed summary the handler missed", {
+  skip_if_suggest_absent("arrow")
+  testthat::local_mocked_bindings(
+    absorbing_warning_marker = function() {
+      "no Arrow warning is written with this text"
+    }
+  )
+
+  raised <- expect_error(suppressWarnings(summarize_with_margins(
+    arrow::Table$create(absorbed_summary_data()),
+    joined = paste(s, collapse = ","),
+    kept = sum(v[v > 1]),
+    .grouping = rollup(k)
+  )))
+
+  expect_s3_class(raised, "marginplyr_error")
+  message <- conditionMessage(raised)
+  expect_match(message, "joined = paste(s, collapse = \",\")", fixed = TRUE)
+  expect_match(message, "kept = sum(v[v > 1])", fixed = TRUE)
+  expect_match(message, "summaries Arrow can evaluate", fixed = TRUE)
+})
+
 test_that("Arrow schema metadata supports predicates and computed queries", {
   skip_if_suggest_absent("arrow")
 

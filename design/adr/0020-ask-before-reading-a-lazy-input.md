@@ -46,11 +46,12 @@ justification covering both would be false of one of them:
    question could not be put here, and the share is refused.
 
 The predicate for "no external system is involved" is `is.data.frame(.data)`,
-and it is exact rather than an approximation of cheapness. Nothing
+and it is conservative rather than an approximation of cheapness. Nothing
 `grouping_backend()` reads distinguishes a local DuckDB file from a hosted
-DuckDB service, an in-memory Arrow table from a dataset in object storage, RDS
-PostgreSQL from Aurora Standard, or SQLite from BigQuery; the first of each
-pair charges nothing per query and the second may charge for every read.
+DuckDB service, RDS PostgreSQL from Aurora Standard, or SQLite from BigQuery;
+the first of each pair charges nothing per query and the second may charge for
+every read. It was written "exact" and given a fourth pair that does not hold;
+the amendment below corrects both.
 
 One rule sets every default: **a check that reads the caller's data is asked
 for, and a check that does not is not.**
@@ -99,6 +100,36 @@ A connection that *cannot be asked* — a `dbplyr::simulate_*()` one, which
 executes nothing — records nothing, precisely so that a live connection
 carrying the same dialect does not inherit it. A transient failure on a live
 connection belongs on that side of the line.
+
+## Amendment: the predicate is conservative, and one Arrow pair was wrong
+
+The rule, the exemptions, and the predicate are unchanged. What is withdrawn is
+a claim made in support of the predicate: that nothing `grouping_backend()`
+reads tells an in-memory Arrow table from a dataset in object storage. It does.
+`inherits()` already separates `Table` and `RecordBatch` from `Dataset` there,
+and Arrow's own reading of a query's source separates a query over one from a
+query over the other, so all five Arrow shapes are told apart from the object
+alone (#254). A `Table` is in this process's memory by definition, and there is
+no remote one for it to be confused with.
+
+The consequence is that "exact" was too strong for the predicate as a whole.
+`is.data.frame(.data)` is `FALSE` for an in-memory Arrow table, where no
+external system is involved, so it answers conservatively there rather than
+exactly. Conservative is the right direction and the predicate stands: the
+three pairs left above are genuinely indistinguishable, a rule that tracks four
+vendors' pricing pages is the option this ADR already rejected, and widening
+the predicate to admit a class as local would be a claim about a vendor's
+product made from an R class.
+
+What the correction costs is an argument, not a rule. ADR 0025 refuses a summary
+an Absorbing backend would read the caller's input to compute, and it cannot be
+justified by this ADR's cost reasoning, because the inputs that absorb are
+exactly the ones no external system is involved in. It rests on this ADR's other
+half instead — that when the caller's data is read is the caller's to decide —
+and on what absorbing takes from them: every column of the input, chosen by
+nobody. Leaving the sentence uncorrected would have made that argument look
+available when it is not, which is the whole reason a supporting claim is worth
+correcting on its own.
 
 ## Considered options
 
@@ -167,6 +198,8 @@ stands and only its cost justification is withdrawn. ADR 0012's factor contract
 is what exemption 1 protects. ADR 0014 selects the per-kind entry that reads
 the source, and is amended separately too: its two lookups stand, but the
 second no longer selects a sampler, because there is nothing left to sample.
+ADR 0025 applies this decision's other half to a read this package does not
+issue, and is what the amendment above was written for.
 
 Evidence: `investigation/query-cost-across-lazy-backends.md` and
 `investigation/share-source-eligibility-on-coercing-dialects.md`.
