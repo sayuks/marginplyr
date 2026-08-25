@@ -134,10 +134,9 @@
   What this replaces depends on your Arrow. From arrow 17.0.0 such a call
   aborted with `object of type 'special' is not subsettable`, an error carrying
   no class of its own and naming nothing you wrote. Through arrow 16.0.0 it
-  returned the right answer,
-  having read the whole input to get it — so on those versions this is a
-  breaking change, and the rewrites the refusal names reproduce the old result
-  while letting you choose what is read.
+  returned the right answer, having read the whole input to get it — so on
+  those versions this is a breaking change, and the rewrites the refusal names
+  reproduce the old result while letting you choose what is read.
 * Every error marginplyr raises for a correctable call now inherits the
   `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
   all. It is the only promised class; narrower subclasses and message wording

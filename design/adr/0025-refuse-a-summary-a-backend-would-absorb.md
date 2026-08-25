@@ -106,10 +106,34 @@ refusal off silently.
 The **guard** reads the branch result's class — a local data frame from an input
 that was not one — which cannot stop matching, but only answers after the branch
 has run. It bounds a missed absorption at one branch rather than one per grouping
-set, and it raises the same refusal rather than an internal invariant: a caller
-who reaches it can act on it, and the action is the one the refusal already
-names. ADR 0015's third category would be right about the defect and wrong about
-the caller, who would be handed a bug report in place of a remedy they have.
+set.
+
+Over an Arrow input it raises the same refusal rather than an internal invariant:
+a caller who reaches it can act on it, and the action is the one the refusal
+already names. ADR 0015's third category would be right about the defect and
+wrong about the caller, who would be handed a bug report in place of a remedy
+they have.
+
+Over any other lazy input it raises an internal invariant, and this is where the
+decision departs from the wording #254 was accepted with — "raises **the same
+refusal**, not an internal-invariant error" — which reads the guard as having one
+arm. It has two, because ADR 0015 sorts a condition by what the caller can do
+about it and not by what happened. What the guard detects is one fact, that a
+lazy input's branch came back local; who did the reading decides the rest. An
+Arrow input absorbing is something the caller can rewrite. Any other backend
+answering a lazy input with a local frame is a defect here or there that no
+rewrite of their call avoids, and the refusal's remedies are Arrow's — so raising
+it there would name a backend that was not involved and offer a rewrite that
+does not apply. A diagnostic that misdirects is worse than the bug report ADR
+0015 asks for, which is the one case where that category is right about the
+caller too.
+
+The two arms differ in reach as well as in category. The first becomes reachable
+through a supported backend the day Arrow rewords its warning, which is the whole
+reason it exists, and `test-grouping-backends.R` reaches it by simulating that
+day. The second is reachable through no backend this package supports;
+`test-branch-union.R` reaches it through a fabricated one, which is what makes it
+an invariant rather than a refusal.
 
 ## Documentation consequences
 
@@ -135,8 +159,10 @@ propagating as any backend's does.
 The regression is in two parts, because a single one would fail without saying
 why. The first asserts that the backend still absorbs the expressions the second
 is written over; the second asserts the refusal. A release that translates one of
-them fails the first, which names the drift, rather than the second, which would
-read as marginplyr having stopped refusing.
+them fails the first, which names the drift, as well as the second, which on its
+own would read as marginplyr having stopped refusing. Both is the point rather
+than either: the second reports that a refusal stopped arriving, and only the
+first says why.
 
 The expressions are chosen for how long they will keep being absorbed rather than
 for how the defect was found: a group collapsed to one string, a subset inside an

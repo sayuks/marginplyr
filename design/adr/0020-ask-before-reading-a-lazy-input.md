@@ -110,12 +110,17 @@ connection belongs on that side of the line.
 The rule, the exemptions, and the predicate are unchanged. What is withdrawn is
 a claim made in support of the predicate, in the paragraph above beginning "The
 predicate for": that nothing `grouping_backend()` reads tells an in-memory Arrow
-table from a dataset in object storage. It does.
-`inherits()` already separates `Table` and `RecordBatch` from `Dataset` there,
-and Arrow's own reading of a query's source separates a query over one from a
-query over the other, so all five Arrow shapes are told apart from the object
-alone (#254). A `Table` is in this process's memory by definition, and there is
-no remote one for it to be confused with.
+table from a dataset in object storage. It does — what it reads is the class
+attribute, and `Table` and `RecordBatch` are different values of it from
+`Dataset`. What that site does with them is a separate matter, and the reason
+this is a withdrawn claim rather than a changed line: `grouping_backend()`
+collapses all four into one `is_arrow`, because one backend kind is the right
+answer for the question it asks. The distinction is available to it and it
+declines to draw it, which is not the same as its being unavailable. Arrow's own
+reading of a query's source separates a query over a table from a query over a
+dataset, so all five Arrow shapes are told apart from the object alone (#254). A
+`Table` is in this process's memory by definition, and there is no remote one
+for it to be confused with.
 
 The consequence is that "exact" was too strong for the predicate as a whole.
 `is.data.frame(.data)` is `FALSE` for an in-memory Arrow table, where no

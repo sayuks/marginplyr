@@ -266,10 +266,13 @@ abort_absorbed_summary <- function(labels) {
 # bounded at one branch, because a Margin operation evaluates the caller's
 # expression once per grouping set and this stops at the first.
 #
-# The guard raises the refusal rather than an internal invariant (ADR 0015),
-# although what it reports is a defect. A caller reaching it can act on it, and
-# the action is the one the refusal already names; making them read a bug report
-# instead would move the cost of marginplyr's drift onto them. The maintainer's
+# Over an Arrow input the guard raises the refusal rather than an internal
+# invariant (ADR 0015), although what it reports is a defect. A caller reaching
+# it can act on it, and the action is the one the refusal already names; making
+# them read a bug report instead would move the cost of marginplyr's drift onto
+# them. It has a second arm, for every other lazy backend, where that reasoning
+# inverts and an invariant is what the caller should get; the comment on the
+# guard itself is where that sits, and ADR 0025 records both. The maintainer's
 # signal is `test-query-policy.R`, which fails when a read happens at all.
 summarize_margin_branch <- function(.data,
                                     ...,
