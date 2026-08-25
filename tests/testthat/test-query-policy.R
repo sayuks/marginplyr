@@ -139,8 +139,18 @@ test_that("marginplyr functions reaching an execution entry point", {
 # with a local frame, and so does a summary the caller collected themselves.
 # The trace is installed around one expression and removed on exit, so a
 # failure here leaves nothing behind for the rest of the file.
+# Filtered against the namespace rather than assumed: `DESCRIPTION` admits
+# `arrow (>= 13.0.0)`, and `trace()` errors on a name a version does not bind,
+# which would fail this gate for a reason that is not a read. What matters is
+# that whichever of them the installed Arrow has are watched -- a version
+# missing one cannot reach it either.
 arrow_collect_methods <- function() {
-  c("collect.ArrowTabular", "collect.arrow_dplyr_query", "collect.Dataset")
+  candidates <- c(
+    "collect.ArrowTabular",
+    "collect.arrow_dplyr_query",
+    "collect.Dataset"
+  )
+  intersect(candidates, ls(asNamespace("arrow"), all.names = TRUE))
 }
 
 # A function tracer rather than `quote()`, which is the difference between

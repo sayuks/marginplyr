@@ -166,12 +166,13 @@ test_that("Arrow refuses a summary it would otherwise absorb", {
   skip_if_suggest_absent("arrow")
   data <- absorbed_summary_data()
 
-  for (input in absorbing_arrow_inputs(data)) {
+  inputs <- absorbing_arrow_inputs(data)
+  for (shape in names(inputs)) {
     raised <- expect_error(summarize_with_margins(
-      input,
+      inputs[[shape]],
       joined = paste(s, collapse = ","),
       .grouping = rollup(k)
-    ))
+    ), label = shape)
 
     expect_s3_class(raised, "marginplyr_error")
     # The condition this ticket exists to remove, named so that a regression
@@ -197,11 +198,12 @@ test_that("Arrow refuses a summary it would otherwise absorb", {
   }
 })
 
-# The refusal names the summary Arrow blamed rather than every summary in the
-# call, which is only observable where the call holds more than one. Without
-# this, a reading of Arrow's warning that always failed would still pass the
-# block above: the fallback there is to name them all, and there is only one.
-test_that("Arrow names the summary it absorbed and not its neighbours", {
+# The refusal names the summary Arrow blamed, which is only observable where
+# the call holds more than one. Only the naming is asserted through the verb:
+# *which* summaries are named is a function of how the installed Arrow phrases
+# its warning, and both phrasings are inside the range `DESCRIPTION` admits, so
+# the split is asserted at the reading instead, below.
+test_that("Arrow names the summary it absorbed", {
   skip_if_suggest_absent("arrow")
 
   raised <- expect_error(summarize_with_margins(
@@ -211,10 +213,45 @@ test_that("Arrow names the summary it absorbed and not its neighbours", {
     .grouping = rollup(k)
   ))
 
-  message <- conditionMessage(raised)
-  expect_match(message, "joined = paste(s, collapse = \",\")", fixed = TRUE)
-  expect_false(grepl("total = sum(v)", message, fixed = TRUE))
-  expect_match(message, "Arrow cannot evaluate this summary", fixed = TRUE)
+  expect_match(
+    conditionMessage(raised),
+    "joined = paste(s, collapse = \",\")",
+    fixed = TRUE
+  )
+})
+
+# Both phrasings, over synthesised warnings, because no session holds both
+# Arrows at once and `verify-backend.R` fails a job for a skip naming no
+# withheld backend -- so a version-gated assertion is not available and would
+# leave whichever half CI does not install unasserted.
+#
+# From Arrow 17.0.0 the warning opens `In <expr>: `, which places the blame on
+# one argument. Through 16.0.0 it names the expression inside a sentence, which
+# places it on none, and the refusal then names every summary argument rather
+# than guessing. Only the second is a claim about a version this package cannot
+# install here; both are claims about this reading.
+test_that("an absorbed summary is placed from the warning that carries it", {
+  dots <- rlang::quos(total = sum(v), joined = paste(s, collapse = ","))
+  labels <- c("total = sum(v)", "joined = paste(s, collapse = \",\")")
+  placed <- function(message) {
+    absorbed_summary_labels(
+      rlang::warning_cnd(message = message),
+      dots = dots,
+      caller_labels = labels
+    )
+  }
+
+  expect_identical(
+    placed("In paste(s, collapse = \",\"): \nPulling data into R"),
+    labels[[2L]]
+  )
+  expect_identical(
+    placed("object of type 'closure'; pulling data into R"),
+    labels
+  )
+  # An expression that matches no argument places nothing either, which is the
+  # degradation ADR 0022 accepts for a span it cannot recognise.
+  expect_identical(placed("In nothing_written_here(): \nx"), labels)
 })
 
 test_that("Arrow refuses a subset inside an aggregate", {
@@ -238,17 +275,25 @@ test_that("an Arrow Dataset keeps Arrow's own refusal", {
   skip_if_suggest_absent("arrow")
   data <- absorbed_summary_data()
 
-  for (input in refusing_arrow_inputs(data)) {
+  inputs <- refusing_arrow_inputs(data)
+  for (shape in names(inputs)) {
     raised <- expect_error(summarize_with_margins(
-      input,
+      inputs[[shape]],
       joined = paste(s, collapse = ","),
       .grouping = rollup(k)
-    ))
+    ), label = shape)
 
     # An External condition: Arrow's answer to the question put to it, and
-    # marginplyr's only part in it is the context it carries.
+    # marginplyr's only part in it is the context it carries. The diagnostic
+    # is asserted as well as the class, since propagating one without the
+    # other is what ADR 0015 forbids.
     expect_s3_class(raised, "arrow_not_supported")
     expect_false(inherits(raised, "marginplyr_error"))
+    expect_match(
+      conditionMessage(raised),
+      "Call collect() first",
+      fixed = TRUE
+    )
   }
 })
 

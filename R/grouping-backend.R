@@ -1,10 +1,16 @@
+# Named because two readings need it and a second copy of the vector is what
+# would drift: the kind below, and the branch summary's Absorbing-backend
+# handler, which has only `.data` to decide from and must not answer for a
+# warning some other backend raised (ADR 0025). `RecordBatchReader` is
+# deliberately absent, as it is from the kind: no verb accepts one.
+arrow_input_classes <- function() {
+  c("arrow_dplyr_query", "Table", "RecordBatch", "Dataset")
+}
+
 grouping_backend <- function(.data) {
   is_local <- is.data.frame(.data)
   is_dtplyr <- inherits(.data, "dtplyr_step")
-  is_arrow <- inherits(
-    .data,
-    c("arrow_dplyr_query", "Table", "RecordBatch", "Dataset")
-  )
+  is_arrow <- inherits(.data, arrow_input_classes())
   is_sql <- inherits(.data, "tbl_lazy") && !is_dtplyr && !is_arrow
 
   dialect <- if (is_sql) {

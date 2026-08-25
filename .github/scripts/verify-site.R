@@ -369,8 +369,13 @@ markers <- list(
     "Arrow and dtplyr are tested for the lazy",
     # The unconditional half of the absorbed-summary section. Its `must_error`
     # chunk is behind `has_arrow` like the two share refusals below it, so the
-    # prose introducing it is what a marker can reach.
-    "a summary Arrow's own engine cannot evaluate",
+    # prose introducing it is what a marker can reach. Chosen from a run of
+    # that prose holding no apostrophe: pandoc's `smart` extension renders one
+    # as U+2019 in prose, where the straight form survives only inside a code
+    # span, so a marker quoting one matches nothing. Every apostrophe-bearing
+    # marker in this file quotes a diagnostic, which reaches the page as a
+    # code span.
+    "refuses it before a row is read",
     # The one `must_error` chunk on this page that needs no optional Suggest:
     # nesting a SQL table, refused through the dbplyr simulator. The guide's
     # DuckDB, dtplyr, and Arrow refusals are behind availability guards, so

@@ -109,8 +109,9 @@
 #' column in the result -- one summary, one fixed key, one grouping dimension,
 #' or `.id` -- ends the difference.
 #'
-#' One summary an Arrow table or record batch cannot carry is one Arrow's own
-#' engine cannot evaluate. Arrow answers such an expression by reading the
+#' One summary an Arrow table or record batch cannot carry -- or a query built
+#' on either -- is one Arrow's own engine cannot evaluate. Arrow answers such
+#' an expression by reading the
 #' whole input -- every column of it, not only the ones the summary names --
 #' and computing it in R. marginplyr refuses it instead, before a row is read,
 #' and names the two rewrites that compute it: collect the input first, and
@@ -122,8 +123,9 @@
 #' into a single value, such as pasting one, an extraction that depends on row
 #' order, a subset written inside an aggregate, and a statistic over two
 #' columns at once; ordinary numeric summaries, and arithmetic over them, are
-#' evaluated by Arrow and stay lazy. An Arrow dataset raises Arrow's own
-#' refusal for the same expressions, and is otherwise unaffected.
+#' evaluated by Arrow and stay lazy. An Arrow dataset, and a query built on
+#' one, raise Arrow's own refusal for the same expressions instead, because a
+#' dataset never reads itself into R; they are otherwise unaffected.
 #'
 #' @section Fixed columns and grouping dimensions:
 #' `.by` marks columns that are present in every grouping set, while

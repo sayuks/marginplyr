@@ -122,7 +122,19 @@ absorbing_warning_marker <- function() {
   "pulling data into R"
 }
 
-is_absorbing_backend_warning <- function(cnd) {
+# `.data` decides as well as the text, because the text alone answers for a
+# warning marginplyr did not cause: a caller's own summary expression may spell
+# anything, and a refusal naming Arrow raised over a `dtplyr` input would be
+# wrong twice over. The class list is `R/grouping-backend.R`'s, so the two
+# readings cannot disagree about what an Arrow input is.
+#
+# `conditionMessage()` is checked for shape before it is matched: a condition
+# class of another package's may carry a message method returning anything, and
+# `grepl()` over a vector would answer for whichever element matched.
+is_absorbing_backend_warning <- function(cnd, .data) {
+  if (!inherits(.data, arrow_input_classes())) {
+    return(FALSE)
+  }
   message <- conditionMessage(cnd)
   is.character(message) &&
     length(message) == 1L &&
@@ -165,10 +177,20 @@ absorbing_warning_label <- function(cnd) {
 # from names one argument; a warning it cannot names them all, which is also
 # what the backstop below has to do, having no warning to read.
 absorbed_summary_labels <- function(cnd, dots, caller_labels) {
+  # The same invariant `branch_argument_map()` opens with, for the same reason
+  # (ADR-0015): the pair is parallel, and a misaligned one would quote one
+  # argument's expression under another argument's name -- which is the ADR
+  # 0024 failure this plumbing exists to prevent, arriving silently.
+  stopifnot(length(dots) == length(caller_labels))
+
   blamed <- absorbing_warning_label(cnd)
   if (is.na(blamed) || length(dots) == 0L) {
     return(caller_labels)
   }
+  # Not `summary_argument_labels()`, which spells `name = expr` with
+  # `rlang::as_label()`. What has to be recognised here is Arrow's spelling of
+  # the expression alone, and the two conventions disagree in exactly the
+  # places ADR 0022 records.
   labels <- vapply(
     dots,
     function(dot) {
@@ -254,7 +276,7 @@ summarize_margin_branch <- function(.data,
       .by = dplyr::all_of(.by)
     )),
     warning = function(cnd) {
-      if (is_absorbing_backend_warning(cnd)) {
+      if (is_absorbing_backend_warning(cnd, .data)) {
         abort_absorbed_summary(
           absorbed_summary_labels(cnd, dots, caller_labels)
         )
