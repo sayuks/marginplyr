@@ -255,6 +255,10 @@ test_that("an absorbed summary is placed from the warning that carries it", {
   # An expression that matches no argument places nothing either, which is the
   # degradation ADR 0022 accepts for a span it cannot recognise.
   expect_identical(placed("In nothing_written_here(): \nx"), labels)
+  # And a message holding no lines at all takes that route rather than a guard
+  # of its own. The handler cannot deliver one, an empty message matching no
+  # marker, so the reading answers for it by indexing rather than by branching.
+  expect_identical(placed(""), labels)
 })
 
 # Arrow's convention for the label it blames, which the refusal reproduces

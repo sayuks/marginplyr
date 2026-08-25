@@ -171,12 +171,16 @@ absorbed_expression_label <- function(expr) {
 # through Arrow 16.0.0 named the offending expression inside a sentence rather
 # than on a line of its own, so every version below 17.0.0 takes the degradation
 # below rather than placing the blame on one argument.
+#
+# `[1L]` and not `[[1L]]`, which is what lets a message holding no lines at all
+# take that same route rather than a guard of its own: `character(0)[1L]` is
+# `NA_character_`, and the pattern matches that no better than it matches a
+# sentence. A guard would have been a branch nothing reaches, the handler being
+# unable to deliver an empty message -- it matches no marker -- and a branch
+# nothing executes is one nothing asserts.
 absorbing_warning_label <- function(cnd) {
-  lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
-  if (length(lines) == 0L) {
-    return(NA_character_)
-  }
-  matched <- regmatches(lines[[1L]], regexec("^In (.*): *$", lines[[1L]]))[[1L]]
+  first <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]][1L]
+  matched <- regmatches(first, regexec("^In (.*): *$", first))[[1L]]
   if (length(matched) == 2L) matched[[2L]] else NA_character_
 }
 

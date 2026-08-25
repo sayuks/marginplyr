@@ -91,7 +91,7 @@ pluralizing_coverage <- function() {
     # by whether Arrow's warning could be placed -- a property of the
     # behaviour, not of the wording. The plural arm is the backstop's, which
     # has no warning to read.
-    abort_absorbed_summary = "test-grouping-backends.R:197 and :536",
+    abort_absorbed_summary = "test-grouping-backends.R:197 and :540",
     abort_by_rename = "test-grouping-plan.R:604 and :645",
     abort_declared_label_collision = rep("this file, the collision block", 2L),
     abort_grouping_rename = "test-grouping-plan.R:493 and :543",
