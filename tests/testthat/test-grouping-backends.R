@@ -198,28 +198,13 @@ test_that("Arrow refuses a summary it would otherwise absorb", {
   }
 })
 
-# The refusal names the summary Arrow blamed, which is only observable where
-# the call holds more than one. Only the naming is asserted through the verb:
-# *which* summaries are named is a function of how the installed Arrow phrases
-# its warning, and both phrasings are inside the range `DESCRIPTION` admits, so
-# the split is asserted at the reading instead, below.
-test_that("Arrow names the summary it absorbed", {
-  skip_if_suggest_absent("arrow")
-
-  raised <- expect_error(summarize_with_margins(
-    arrow::Table$create(absorbed_summary_data()),
-    total = sum(v),
-    joined = paste(s, collapse = ","),
-    .grouping = rollup(k)
-  ))
-
-  expect_match(
-    conditionMessage(raised),
-    "joined = paste(s, collapse = \",\")",
-    fixed = TRUE
-  )
-})
-
+# Which summaries the refusal names is a function of how the installed Arrow
+# phrases its warning, and both phrasings are inside the range `DESCRIPTION`
+# admits, so it is asserted at the reading rather than through a verb: a
+# verb-level assertion would either hold on one half of that range only, or --
+# by asserting the blamed summary appears, which it does on both halves --
+# pass whatever the reading answered.
+#
 # Both phrasings, over synthesised warnings, because no session holds both
 # Arrows at once and `verify-backend.R` fails a job for a skip naming no
 # withheld backend -- so a version-gated assertion is not available and would
@@ -325,19 +310,22 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
   table <- arrow::Table$create(absorbed_summary_data())
   marker <- absorbing_warning_marker()
   # One per shape the shipped pages describe, so a page that stops being true
-  # fails here. The refusal itself is asserted over the first two only; the
-  # other two are covered because they are claimed, not because they are used.
+  # fails here rather than being re-read. `first()` and `last()` are absorbed
+  # too and are in none of them: they are the likeliest of the absorbed set to
+  # gain an Arrow kernel, so a page naming them and a test asserting them would
+  # both be claims with a short life.
   absorbed <- list(
     collapsed = quote(paste(s, collapse = ",")),
     subset = quote(sum(v[v > 1])),
-    ordered = quote(dplyr::first(v)),
     two_column = quote(stats::weighted.mean(v, v))
   )
 
-  for (expression in absorbed) {
+  for (shape in names(absorbed)) {
     marked <- FALSE
     result <- withCallingHandlers(
-      rlang::inject(dplyr::summarize(table, out = !!expression, .by = k)),
+      rlang::inject(
+        dplyr::summarize(table, out = !!absorbed[[shape]], .by = k)
+      ),
       warning = function(cnd) {
         if (grepl(marker, conditionMessage(cnd), ignore.case = TRUE)) {
           marked <<- TRUE
@@ -346,10 +334,17 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
       }
     )
 
-    expect_true(marked)
+    # Labelled, because this is the assertion an Arrow release moving the
+    # boundary is meant to fail: it has to name which shape moved.
+    expect_true(marked, label = paste("Arrow marks the absorbed", shape))
     # Absorbed rather than translated: a local frame is what Arrow answers
-    # with once it has pulled the input into R.
-    expect_s3_class(result, "data.frame")
+    # with once it has pulled the input into R. `expect_true()` rather than
+    # `expect_s3_class()`, which takes no label, and a label is what tells a
+    # reader which shape moved.
+    expect_true(
+      inherits(result, "data.frame"),
+      label = paste("Arrow answers the absorbed", shape, "with a local frame")
+    )
   }
 
   # And the ordinary numeric summaries the same pages call unaffected.

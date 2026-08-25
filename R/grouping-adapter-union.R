@@ -284,7 +284,15 @@ summarize_margin_branch <- function(.data,
     }
   )
 
-  if (!is.data.frame(.data) && is.data.frame(result)) {
+  # Scoped as the handler is, and for the same reason: the refusal names Arrow,
+  # so an input Arrow does not hold must not reach it. A lazy input of another
+  # backend that answered with a local frame would be a defect in that backend
+  # or in this adapter, not an absorption, and misattributing it to Arrow is
+  # the one thing worse than not reporting it -- the shape ADR 0015 removes.
+  absorbed <- inherits(.data, arrow_input_classes()) &&
+    !is.data.frame(.data) &&
+    is.data.frame(result)
+  if (absorbed) {
     abort_absorbed_summary(caller_labels)
   }
   result

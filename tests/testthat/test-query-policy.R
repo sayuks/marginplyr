@@ -134,43 +134,57 @@ test_that("marginplyr functions reaching an execution entry point", {
 # clean result throughout, which reads exactly like a package that causes no
 # such read, and is the failure mode this gate closes (#254).
 #
-# Tracing Arrow's own methods is what the question needs. Nothing marginplyr
-# holds afterwards says whether a row was read: an absorbed summary answers
-# with a local frame, and so does a summary the caller collected themselves.
-# The trace is installed around one expression and removed on exit, so a
-# failure here leaves nothing behind for the rest of the file.
-# Filtered against the namespace rather than assumed: `DESCRIPTION` admits
-# `arrow (>= 13.0.0)`, and `trace()` errors on a name a version does not bind,
-# which would fail this gate for a reason that is not a read. What matters is
-# that whichever of them the installed Arrow has are watched -- a version
-# missing one cannot reach it either.
-arrow_collect_methods <- function() {
-  candidates <- c(
-    "collect.ArrowTabular",
-    "collect.arrow_dplyr_query",
-    "collect.Dataset"
+# Watching the reads as they happen is what the question needs. Nothing
+# marginplyr holds afterwards says whether a row was read: an absorbed summary
+# answers with a local frame, and so does a summary the caller collected
+# themselves. The trace is installed around one expression and removed on exit,
+# so a failure here leaves nothing behind for the rest of the file.
+#
+# Derived from the catalog above rather than listed again, and traced at the
+# *generic* rather than at a backend's methods. `trace()` rewrites a namespace
+# binding, while S3 dispatch reaches the copy `registerS3method()` left in the
+# methods table, so tracing `arrow:::collect.ArrowTabular` sees only Arrow's own
+# by-name call and misses every `dplyr::collect()` a caller or `R/` makes --
+# which is the read this gate exists to see. Measured on arrow 25.0.1: a plain
+# `dplyr::collect()` of an Arrow table counted 0 that way and counts 1 this way.
+#
+# Only the qualified entries are traced. `as.data.frame` is a base generic that
+# unrelated code calls while any expression runs, so counting it would report a
+# read that never reached a backend; the `DBI::` entries are traced although no
+# Arrow input can reach one, because deriving the set is what keeps it in step
+# with the catalog and skipping them would be a second list.
+traced_execution_entry_points <- function() {
+  catalog <- lazy_execution_entry_points()
+  qualified <- catalog[grepl("::", catalog, fixed = TRUE)]
+  parts <- strsplit(qualified, "::", fixed = TRUE)
+  Filter(
+    function(entry) {
+      isNamespaceLoaded(entry$package) &&
+        exists(entry$name, envir = asNamespace(entry$package))
+    },
+    lapply(parts, function(part) list(package = part[[1L]], name = part[[2L]]))
   )
-  intersect(candidates, ls(asNamespace("arrow"), all.names = TRUE))
 }
 
 # A function tracer rather than `quote()`, which is the difference between
 # counting and silently counting nothing: an expression tracer is evaluated in
-# the traced function's own frame, so its `<<-` walks Arrow's namespace and
-# assigns into the global environment instead of into this counter.
-count_arrow_collects <- function(expr) {
+# the traced function's own frame, so its `<<-` walks the traced package's
+# namespace and assigns into the global environment instead of into this
+# counter.
+count_backend_reads <- function(expr) {
   count <- 0L
-  ns <- asNamespace("arrow")
-  for (method in arrow_collect_methods()) {
+  entries <- traced_execution_entry_points()
+  for (entry in entries) {
     suppressMessages(trace(
-      method,
-      where = ns,
+      entry$name,
+      where = asNamespace(entry$package),
       tracer = function() count <<- count + 1L,
       print = FALSE
     ))
   }
   on.exit(
-    for (method in arrow_collect_methods()) {
-      suppressMessages(untrace(method, where = ns))
+    for (entry in entries) {
+      suppressMessages(untrace(entry$name, where = asNamespace(entry$package)))
     },
     add = TRUE
   )
@@ -188,9 +202,16 @@ test_that("no Arrow read happens while a Margin verb runs", {
   )
   table <- arrow::Table$create(data)
 
+  # The mechanism, asserted before anything is concluded from it. Every
+  # expectation below is a zero, so a counter that counted nothing would report
+  # exactly what a package that reads nothing reports -- which is the shape
+  # `AGENTS.md` rules out for every derived gate, and the shape this counter
+  # had while it traced Arrow's methods.
+  expect_gt(count_backend_reads(dplyr::collect(table)), 0L)
+
   # A summary Arrow evaluates itself: the verb builds a query and returns it.
   expect_identical(
-    count_arrow_collects(summarize_with_margins(
+    count_backend_reads(summarize_with_margins(
       table,
       total = sum(v),
       .grouping = rollup(k)
@@ -202,7 +223,7 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # absorbed one. Asserted rather than assumed, since that is a property of
   # the signature and signatures change.
   expect_identical(
-    count_arrow_collects(expand_with_margins(table, .grouping = rollup(k))),
+    count_backend_reads(expand_with_margins(table, .grouping = rollup(k))),
     0L
   )
 
@@ -210,7 +231,7 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # disposition of #254 is held to. `try()` keeps the refusal from leaving
   # before the count is read.
   expect_identical(
-    count_arrow_collects(try(
+    count_backend_reads(try(
       summarize_with_margins(
         table,
         joined = paste(s, collapse = ","),

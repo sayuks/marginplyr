@@ -46,12 +46,16 @@ justification covering both would be false of one of them:
    question could not be put here, and the share is refused.
 
 The predicate for "no external system is involved" is `is.data.frame(.data)`,
-and it is conservative rather than an approximation of cheapness. Nothing
+and it is exact rather than an approximation of cheapness. Nothing
 `grouping_backend()` reads distinguishes a local DuckDB file from a hosted
-DuckDB service, RDS PostgreSQL from Aurora Standard, or SQLite from BigQuery;
-the first of each pair charges nothing per query and the second may charge for
-every read. It was written "exact" and given a fourth pair that does not hold;
-the amendment below corrects both.
+DuckDB service, an in-memory Arrow table from a dataset in object storage, RDS
+PostgreSQL from Aurora Standard, or SQLite from BigQuery; the first of each
+pair charges nothing per query and the second may charge for every read.
+
+*Two claims in that paragraph no longer describe the code: "exact", and the
+Arrow pair. The amendment* Two of the four pairs, and the word exact *below
+corrects them; the paragraph is left as it was written, as ADR 0014's amendment
+leaves the text it supersedes.*
 
 One rule sets every default: **a check that reads the caller's data is asked
 for, and a check that does not is not.**
@@ -101,11 +105,12 @@ executes nothing — records nothing, precisely so that a live connection
 carrying the same dialect does not inherit it. A transient failure on a live
 connection belongs on that side of the line.
 
-## Amendment: the predicate is conservative, and one Arrow pair was wrong
+## Amendment: two of the four pairs, and the word exact
 
 The rule, the exemptions, and the predicate are unchanged. What is withdrawn is
-a claim made in support of the predicate: that nothing `grouping_backend()`
-reads tells an in-memory Arrow table from a dataset in object storage. It does.
+a claim made in support of the predicate, in the paragraph above beginning "The
+predicate for": that nothing `grouping_backend()` reads tells an in-memory Arrow
+table from a dataset in object storage. It does.
 `inherits()` already separates `Table` and `RecordBatch` from `Dataset` there,
 and Arrow's own reading of a query's source separates a query over one from a
 query over the other, so all five Arrow shapes are told apart from the object

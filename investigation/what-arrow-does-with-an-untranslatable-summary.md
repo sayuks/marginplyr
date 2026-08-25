@@ -97,6 +97,20 @@ is reachable only from 17.0.0. And the older wording names the offending
 expression inside a sentence rather than on an `In <expr>: ` line, so the label
 cannot be placed from it and the refusal names every summary argument.
 
+What did not change across the rewrite is the order, which is what a refusal
+raised from the warning depends on. At 13.0.0 through 16.0.0 the body reads
+
+```r
+warning(msg, "; pulling data into R", immediate. = TRUE, call. = FALSE)
+call$.data <- dplyr::collect(.data)
+```
+
+and from 17.0.0 the `rlang::warn()` call sits in the same position. The warning
+precedes the collect on every version `DESCRIPTION` admits, so stopping from a
+calling handler reads no rows on any of them. That was measured directly on
+25.0.1 and read from the source at the other tags, there being no way to install
+four Arrows in one session.
+
 No option controls any of this: all 23 `arrow.*` options referenced in the
 arrow namespace were enumerated and none of them does, and arrow's `NEWS.md`
 carries no entry for the behaviour.

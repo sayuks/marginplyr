@@ -468,6 +468,17 @@ per grouping set, it is also the one that owes a Condition context: it wraps
 the branch summary alone in `with_branch_conditions()`, so that the checks and
 builders around it keep raising their Package conditions unchanged.
 
+The same fact gives it a second responsibility, and ADR 0025 is where the
+decision behind it sits. An Absorbing backend answers an expression its own
+engine cannot evaluate by reading the caller's input into R, and the branch
+summary is where that would happen, so it is where the expression is refused
+instead. Two readings raise the refusal and they fail in opposite directions:
+a handler on the backend's own warning, which is raised before it reads, and a
+guard on the branch result's class, which cannot stop matching but answers only
+after the branch has run. Both are scoped by `arrow_input_classes()` from
+`R/grouping-backend.R`, Arrow being the only Absorbing backend and the refusal
+naming it.
+
 `combine_margin_branches()` is the one place the package combines a branch
 list, and the contextual-share module calls it for its denominator mappings
 rather than folding its own. It chooses its strategy from the branches, not
@@ -553,7 +564,11 @@ The test suite divides supporting contracts as follows:
   empty, and that each diagnostic names the helper the caller wrote.
 - `test-grouping-backends.R` covers Arrow and dtplyr metadata behavior,
   native and portable SQL strategy, lazy query composition, collision checks,
-  internal-name safety, and live DuckDB equivalence.
+  internal-name safety, and live DuckDB equivalence. It also carries the
+  Absorbing-backend contract of ADR 0025 in two parts, since one alone would
+  fail without saying why: that Arrow still absorbs the expressions the refusal
+  is asserted over, and that the refusal is raised for them across every Arrow
+  input class.
 - `test-share-backends.R` covers contextual-share adapter behavior for both
   denominators, including targeted pre-query Arrow rejection, dtplyr
   execution-time validation, lazy SQL composition, live SQLite portable
