@@ -112,12 +112,20 @@ union_margin_branches <- function(branches) {
 #
 # This is undocumented behaviour of another package, and it is depended on the
 # way `AGENTS.md` depends on roxygen's treatment of a markdown table row: by
-# gating it. `test-grouping-backends.R` asserts that Arrow still absorbs the two
+# gating it. `test-grouping-backends.R` asserts that Arrow still absorbs the
 # expressions the refusal is asserted over and still marks the absorption with
 # this text, so a re-wording fails there rather than silently switching the
-# refusal off. It is a function rather than a constant so that the gate reads
-# the marker the handler reads, and so that taking it away is how the backstop
-# below is reached in a test.
+# refusal off. It is a function rather than a constant so that taking it away
+# is how the backstop below is reached in a test.
+#
+# The gate calls `is_absorbing_backend_warning()` rather than matching this
+# marker a second time of its own, and that is the difference between gating
+# the reading and gating a copy of it: a second match answers for its own
+# spelling, so it would go on reporting Arrow as marking the absorption after
+# the handler had stopped recognising it. Which leaves one thing the gate
+# cannot see, since it holds one Arrow and the case difference above spans two
+# -- so the reading is asserted on both phrasings beside it, over synthesised
+# warnings.
 absorbing_warning_marker <- function() {
   "pulling data into R"
 }

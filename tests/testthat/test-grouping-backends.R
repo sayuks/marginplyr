@@ -198,10 +198,21 @@ test_that("Arrow refuses a summary it would otherwise absorb", {
       fixed = TRUE, info = shape
     )
     expect_match(text, "to compute it:", fixed = TRUE, info = shape)
-    # Both rewrites. The second is the whole reason refusing beats absorbing:
-    # Arrow reads every column, and a caller who is told can read fewer.
-    expect_match(text, "collect", fixed = TRUE, info = shape)
-    expect_match(text, "column", fixed = TRUE, info = shape)
+    # Both rewrites, each matched on a span the other does not carry. The
+    # second bullet holds the words `collect` and `column` between them, so a
+    # pair of assertions on those alone is satisfied by that bullet by itself
+    # and passes with the first rewrite deleted -- which is the half a caller
+    # who cannot narrow their input still needs.
+    expect_match(
+      text, "Collect the Arrow input first",
+      fixed = TRUE, info = shape
+    )
+    # The second is the whole reason refusing beats absorbing: Arrow reads
+    # every column, and a caller who is told can read fewer.
+    expect_match(
+      text, "Select the columns you need before collecting",
+      fixed = TRUE, info = shape
+    )
   }
 })
 
@@ -244,6 +255,112 @@ test_that("an absorbed summary is placed from the warning that carries it", {
   # An expression that matches no argument places nothing either, which is the
   # degradation ADR 0022 accepts for a span it cannot recognise.
   expect_identical(placed("In nothing_written_here(): \nx"), labels)
+})
+
+# Arrow's convention for the label it blames, which the refusal reproduces
+# rather than calling the internal that writes it (ADR 0022). What makes the
+# reproduction worth asserting on its own is that it agrees with both obvious
+# alternatives everywhere except one place: an expression that deparses to a
+# single line is spelled identically by `deparse()`, `rlang::as_label()`, and
+# Arrow. Every other expression in this file is one of those, so without the
+# long case here the convention could be swapped for `as_label()` and the whole
+# suite would stay green -- and the refusal would then place nothing on any
+# expression long enough to be worth reading, silently naming every summary
+# argument instead of the blamed one.
+#
+# Asserted as properties rather than against `arrow:::format_expr()`: an
+# assertion on another package's internal is the coupling ADR 0022 declines,
+# and it would make this reachable only where Arrow is installed, where its
+# siblings above run everywhere.
+test_that("an absorbed expression is labelled by Arrow's convention", {
+  short <- quote(paste(s, collapse = ","))
+  expect_length(deparse(short), 1L)
+  expect_identical(
+    absorbed_expression_label(short),
+    "paste(s, collapse = \",\")"
+  )
+
+  # Past the deparse width the three spellings part company: Arrow keeps the
+  # first line and marks the loss, while `as_label()` abbreviates the arguments
+  # away to `stats::weighted.mean(...)`, which matches no line Arrow writes.
+  long <- quote(stats::weighted.mean(
+    value_column_with_a_long_name,
+    weight_column_with_a_long_name,
+    na.rm = TRUE
+  ))
+  expect_gt(length(deparse(long)), 1L)
+
+  labelled <- absorbed_expression_label(long)
+  expect_length(labelled, 1L)
+  expect_true(startsWith(labelled, deparse(long)[[1L]]))
+  expect_true(endsWith(labelled, "..."))
+  expect_false(identical(labelled, rlang::as_label(long)))
+})
+
+# The other half of the handler's reading, asserted the same way and for the
+# same reason. Which text marks an absorption is a function of the installed
+# Arrow, both phrasings are inside the range `DESCRIPTION` admits, and no
+# session holds both -- so the live gate below sees whichever one CI installed
+# and cannot answer for the other. Left to that gate alone, capitalising the
+# marker and dropping `ignore.case` stays green on every Arrow this package can
+# be tested against while switching the refusal off for four versions it
+# claims, which is not hypothetical: that is the state this branch found the
+# handler in (#254).
+#
+# The inputs carry a class attribute rather than being Arrow objects, which is
+# the whole of what `inherits()` reads, so this runs wherever the suite does --
+# a claim about a reading, like its sibling above, and not about a backend.
+test_that("an absorption is recognised on every phrasing and only on Arrow", {
+  # Built with `structure()` for the reason `test-execution-conditions.R` gives
+  # about its own foreign condition: `warning_cnd()` cannot express the case.
+  # It collapses a vector `message` to one string, which is exactly the shape
+  # the reading guards against, so the guard could not be reached through it.
+  warned <- function(message) {
+    structure(
+      list(message = message, call = NULL),
+      class = c("warning", "condition")
+    )
+  }
+  # Every class the handler scopes itself by, not one of them. `Dataset` is in
+  # the vector and does not absorb; what the loop asserts is the scoping
+  # contract -- that the reading answers for an Arrow input and no other -- and
+  # deriving it is what makes the R-side claim that the two readings share one
+  # class list an assertion rather than a sentence.
+  for (cls in arrow_input_classes()) {
+    input <- structure(list(), class = cls)
+    marked <- function(message) {
+      is_absorbing_backend_warning(warned(message), input)
+    }
+
+    # From Arrow 17.0.0, and through 16.0.0, which differ in the case of the
+    # phrase and in nothing else the reading depends on. `info` rather than
+    # `label`, which would replace the expression and leave a reader knowing
+    # which class failed but not which of the four readings did.
+    expect_true(
+      marked("In paste(s, collapse = \",\"): \nPulling data into R"),
+      info = cls
+    )
+    expect_true(
+      marked("object of type 'closure'; pulling data into R"),
+      info = cls
+    )
+    expect_false(marked("Expression not supported in Arrow"), info = cls)
+
+    # A condition class of another package's may carry a message method
+    # answering with a vector, and `grepl()` over one answers for whichever
+    # element matched. Hence the shape check ahead of the match.
+    expect_false(marked(c("Pulling data into R", "x")), info = cls)
+  }
+
+  # `.data` decides as well as the text. A caller's own summary expression may
+  # spell anything, so the same text over an input that is not Arrow's is some
+  # other backend's warning, and a refusal naming Arrow would be wrong twice
+  # over.
+  not_arrow <- function(.data) {
+    is_absorbing_backend_warning(warned("Pulling data into R"), .data)
+  }
+  expect_false(not_arrow(data.frame(k = 1)))
+  expect_false(not_arrow(structure(list(), class = "dtplyr_step")))
 })
 
 test_that("Arrow refuses a subset inside an aggregate", {
@@ -313,10 +430,15 @@ test_that("an Arrow summary Arrow can evaluate is unchanged and stays lazy", {
 # `$call`, so its message is the only thing to recognise it by; that is
 # undocumented behaviour, and this is what keeps it honest, the way
 # `document.yaml` keeps the roxygen table-row exception honest.
+#
+# The absorption is recognised by calling the handler's own reading rather than
+# by matching the marker again here. A second match would answer for its own
+# spelling and not the handler's: it would report Arrow as still marking the
+# absorption while the handler had stopped recognising it, which is exactly the
+# drift this block exists to catch.
 test_that("Arrow still absorbs the expressions the refusal is asserted over", {
   skip_if_suggest_absent("arrow")
   table <- arrow::Table$create(absorbed_summary_data())
-  marker <- absorbing_warning_marker()
   raised <- NULL
   # One per shape the shipped pages describe, so a page that stops being true
   # fails here rather than being re-read. `first()` and `last()` are absorbed
@@ -336,7 +458,7 @@ test_that("Arrow still absorbs the expressions the refusal is asserted over", {
         dplyr::summarize(table, out = !!absorbed[[shape]], .by = k)
       ),
       warning = function(cnd) {
-        if (grepl(marker, conditionMessage(cnd), ignore.case = TRUE)) {
+        if (is_absorbing_backend_warning(cnd, table)) {
           marked <<- TRUE
           raised <<- cnd
         }

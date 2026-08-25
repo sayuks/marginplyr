@@ -174,6 +174,18 @@ traced_execution_entry_points <- function() {
 count_backend_reads <- function(expr) {
   count <- 0L
   entries <- traced_execution_entry_points()
+  # Registered before the first trace is installed rather than after the last.
+  # `trace()` failing part-way through the loop would otherwise leave every
+  # trace already installed in place for the rest of the run -- a whole suite,
+  # not a file -- each one incrementing a counter in a frame that has gone.
+  # `untrace()` on a function that was never traced is a no-op, so removing
+  # more than was installed is safe and removing less is not.
+  on.exit(
+    for (entry in entries) {
+      suppressMessages(untrace(entry$name, where = asNamespace(entry$package)))
+    },
+    add = TRUE
+  )
   for (entry in entries) {
     suppressMessages(trace(
       entry$name,
@@ -182,12 +194,6 @@ count_backend_reads <- function(expr) {
       print = FALSE
     ))
   }
-  on.exit(
-    for (entry in entries) {
-      suppressMessages(untrace(entry$name, where = asNamespace(entry$package)))
-    },
-    add = TRUE
-  )
   force(expr)
   count
 }
@@ -228,19 +234,33 @@ test_that("no Arrow read happens while a Margin verb runs", {
   )
 
   # And the refusing path reads nothing, which is the criterion the refuse
-  # disposition of #254 is held to. `try()` keeps the refusal from leaving
-  # before the count is read.
-  expect_identical(
-    count_backend_reads(try(
-      summarize_with_margins(
-        table,
-        joined = paste(s, collapse = ","),
-        .grouping = rollup(k)
-      ),
-      silent = TRUE
-    )),
-    0L
+  # disposition of #254 is held to. Over every input class that absorbs rather
+  # than over the one: what raises the refusal before the read is a class check,
+  # so a class it stopped recognising would be read by Arrow and caught only
+  # afterwards by the guard -- a difference invisible in the condition the
+  # caller receives, both arms raising the same refusal, and visible only here.
+  # `try()` keeps the refusal from leaving before the count is read.
+  batch <- arrow::record_batch(data)
+  absorbing <- list(
+    table = table,
+    record_batch = batch,
+    table_query = dplyr::select(table, dplyr::all_of(names(data))),
+    batch_query = dplyr::select(batch, dplyr::all_of(names(data)))
   )
+  for (shape in names(absorbing)) {
+    expect_identical(
+      count_backend_reads(try(
+        summarize_with_margins(
+          absorbing[[shape]],
+          joined = paste(s, collapse = ","),
+          .grouping = rollup(k)
+        ),
+        silent = TRUE
+      )),
+      0L,
+      info = shape
+    )
+  }
 })
 
 test_that("backend kinds granted the collect_selection_proxy capability", {

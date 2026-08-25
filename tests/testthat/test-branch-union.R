@@ -409,7 +409,7 @@ test_that("a lazy input answering with a local branch is an invariant", {
   lazy <- structure(list(), class = "marginplyr_test_local_answering")
 
   raised <- expect_error(
-    marginplyr:::summarize_margin_branch(
+    summarize_margin_branch(
       lazy,
       out = 1,
       .by = character(),
