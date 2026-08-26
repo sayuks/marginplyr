@@ -313,6 +313,7 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   for (arg in grouping_spec$args) {
     nested <- grouping_arg_spec(arg, data_vars)
     if (is.null(nested)) {
+      check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
       name_only <- name_only && is_name_only_selection(arg, data_vars)
       next
     }
@@ -323,6 +324,181 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   }
   list(spec = grouping_spec, name_only = name_only)
 }
+
+# The one argument that has two readings available: a bare name that is a
+# column of the input and is bound to a specification of a kind this position
+# admits. The gate above answers it as a selection, because a selection is what
+# tidyselect's own precedence makes of a name the data holds -- so the caller
+# who meant the binding they wrote gets a well-formed plan of the other reading,
+# and nothing says so (#255). Refusing is what keeps a nested position's reading
+# decided by the spelling rather than by the input, without deciding it the
+# other way and leaving the same silence behind (ADR 0026).
+#
+# Available, not disagreeing: whether the two readings would produce different
+# grouping sets cannot be known without resolving the specification against this
+# input, and deciding by the input is the defect. So a name whose two readings
+# happen to agree is refused with the rest.
+#
+# Reading the binding is what the answer costs, and there is no cheaper
+# question: which kind a name is bound to cannot be known without reading it.
+# So a colliding name in a position that admits any kind is read once, where it
+# was read not at all -- once for each argument it is written as, and whether or
+# not its reading then changes, since what the read decides is whether it
+# changes. No argument outside a collision is read any more often than it was,
+# and a position that admits no kind reads nothing.
+#
+# It sits in the preflight rather than in the gate because the preflight runs
+# once for a whole operation and is handed to both compilation passes, where
+# the gate runs again on each.
+#
+# More than the count moves. Where the refusal fires, the arguments written
+# after it are not read at all, and this refusal is reported in place of
+# whatever the call would have been rejected for further along -- which is
+# every diagnostic reachable past this point and not one of them: a missing
+# column, a duplicate grouping set, a `.by` overlap, each nesting-grammar
+# rejection, and #190's own refusal among them. Where that displaced rejection
+# was an External condition, a caller who was receiving tidyselect's class and
+# tidyselect's blamed call now receives a `marginplyr_error` blamed on the
+# Margin verb.
+#
+# ADR 0008's compatibility list holds all of that, and not on the same terms.
+# The number and timing of evaluations are held "without a separately accepted
+# decision", which is the decision ADR 0026 makes. Condition classes, complete
+# messages, public call contexts, and detection order are one bullet carrying
+# no such clause, and this moves every item in it, so ADR 0026 amends that
+# bullet whole rather than naming a part of it.
+#
+# What that costs a caller is the forcing itself, not only the count: a
+# specification bound to a wrapper's own lazy argument is forced here for a
+# call whose answer may not depend on it, so a warning or a message it raises
+# reaches the caller, and R's own `restarting interrupted promise evaluation`
+# does where such a binding raises and the name is written more than once. ADR
+# 0026 accepts that rather than hiding it, since the alternative to reading the
+# binding is deciding by the input, which is the defect.
+#
+# The two conditions on the name below are the two that made the gate answer
+# "selection" for a symbol, asked again here because the gate reports which
+# reading it took and not why. A name nothing binds has no second reading, and
+# a name the data does not hold is resolved by the gate itself.
+#
+# The kinds this position admits are asked before the binding is read, so a
+# position that admits none -- `grouping_set()`, which holds columns -- reads
+# nothing. Nothing there could make the name ambiguous, and reading a caller's
+# binding to establish that would force a promise for an answer that was
+# already known.
+#
+# The shape test comes before anything is bound to a local, and it is
+# `is_name_part()` rather than a bare symbol test. Both halves are the rule
+# `R/utils.R` states for every reader a walk asks first: `expr <- ...` would
+# bind R's empty argument and raise `missingArgError` on the next read of it,
+# and the empty argument is itself a symbol whose name is `""` (#168, #174,
+# #261).
+#
+# A binding that raises when it is read is not a specification, so the
+# selection reading stands where it raises. Both catches are narrow in what
+# they decide and not in what they swallow: everything they hide is a failure
+# to produce a specification of an admitted kind, which is a specification
+# reading that is not available.
+check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
+  if (!is_name_part(rlang::quo_get_expr(arg))) {
+    return(invisible(NULL))
+  }
+  name <- rlang::as_string(rlang::quo_get_expr(arg))
+  if (
+    !name %in% data_vars ||
+      !rlang::env_has(rlang::quo_get_env(arg), name, inherit = TRUE)
+  ) {
+    return(invisible(NULL))
+  }
+  admitted <- admitted_nested_kinds(parent, rule)
+  if (length(admitted) == 0L) {
+    return(invisible(NULL))
+  }
+
+  value <- tryCatch(rlang::eval_tidy(arg), error = function(cnd) NULL)
+  if (!inherits(value, "margin_grouping_spec")) {
+    return(invisible(NULL))
+  }
+  kind <- tryCatch(value$type, error = function(cnd) NULL)
+  if (
+    !is.character(kind) ||
+      length(kind) != 1L ||
+      !kind %in% admitted
+  ) {
+    return(invisible(NULL))
+  }
+  abort_ambiguous_nested_name(name)
+}
+
+# Which nested kinds this position admits: `grouping_set()` none, `rollup()`
+# and `cube()` a `grouping_set()`, `grouping_sets()` and `grouping_spec()` all
+# of them. It is the other half of "both readings are available", and the half
+# the input may not answer.
+#
+# The kind is where the line sits, and nothing further. A specification of an
+# admitted kind that is invalid on its own terms -- one with no arguments, one
+# holding a family its own constructor forbids -- makes the name ambiguous just
+# the same, because what is wrong with it is a property of what the caller
+# wrote and `!!` is what reports it. What the refusal's advice promises is the
+# reading, not that the reading succeeds: a caller who meant that specification
+# receives the diagnostic about it, which is what the silent column selection
+# withheld. Drawing the line further in would put arity and validity on the
+# same footing as the input, and one of those is not like the others.
+#
+# Derived by asking each kind's own parent rule rather than by a second list of
+# which kinds nest inside which (ADR 0008), so a sixth kind is admitted or
+# refused here by the rule that decides it everywhere else. The rule answers
+# about an instance, so it is asked about one that differs from a caller's only
+# where it must not decide here -- each kind is offered carrying one argument,
+# which is what keeps an empty `grouping_set()` binding from being read as a
+# kind `rollup()` does not admit.
+#
+# Asking costs a raised Package condition for every kind the parent refuses,
+# which is four of five under `rollup()` and `cube()` and every one of them
+# under `grouping_set()` -- a cli expansion and a backtrace apiece, for
+# conditions no caller sees. So the answer is kept, and the key is the parent's
+# kind. What that key rests on is that no rule reads anything of the parent but
+# its kind: of the three the five kinds share, two ignore the parent entirely
+# and the third reads its type, to name it in a message. It does not rest on
+# the nested side, where arity is read and where the stand-in above is what
+# fixes it -- a stand-in carrying no argument would answer `{}` for `rollup()`
+# and `cube()`, turning the refusal off in two of the five positions. A rule
+# reading more of a parent than its kind would need this key widened; the first
+# computation for a kind is made with the real parent, so no parent asked about
+# here is a specification that was not written.
+#
+# Memoized as `grouping_kind_rules()` is, and for the same reason: the table it
+# derives from is fixed for the session.
+admitted_nested_kinds <- local({
+  admitted <- list()
+
+  function(parent, rule) {
+    parent_kind <- parent$type
+    known <- admitted[[parent_kind]]
+    if (!is.null(known)) {
+      return(known)
+    }
+    kinds <- names(grouping_kind_rules())
+    accepted <- vapply(
+      kinds,
+      function(kind) {
+        tryCatch(
+          {
+            rule$validate_nested(
+              parent,
+              new_grouping_spec(kind, list(rlang::quo(NULL)))
+            )
+            TRUE
+          },
+          error = function(cnd) FALSE
+        )
+      },
+      logical(1)
+    )
+    admitted[[parent_kind]] <<- unname(kinds[accepted])
+    admitted[[parent_kind]]
+  }
+})
 
 # The one way to turn a Grouping specification into a plan: preflight the
 # specification, then compile what the preflight resolved. Every call site is
@@ -709,6 +885,12 @@ grouping_arg_spec <- function(arg, data_vars) {
   # selection context. What runs once the gate opens is whatever the name is
   # bound to, so a constructor is not a Contextual helper even though it is
   # read statically (ADR 0019).
+  #
+  # It is not the only thing that evaluates a nested argument any more.
+  # `check_ambiguous_nested_name()` reads only names this gate declined, and
+  # only those it declined because the data holds them, in a position admitting
+  # a nested kind (ADR 0026). So no name is read twice, and a reader auditing
+  # when a caller's nested quosure is forced has that read to count as well.
   is_constructor_call <-
     !is.null(static_spelling_name(expr, "grouping_constructor"))
 
@@ -770,6 +952,12 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # they have already made. Comparing the labels is what separates the two, and
 # both are written by `rlang::as_label()` from the same expression when the
 # argument as a whole is what was refused.
+#
+# Where a column shares the name, tidyselect refuses nothing and none of this
+# runs: `c(s, region)` selects the column `s`, which is the one reading a
+# selection has for a name the data holds. The ambiguity refusal does not reach
+# inside a selection either, and deliberately -- the caller wrote a selection,
+# so the specification reading was never available to that argument.
 is_grouping_spec_subscript <- function(cnd, label) {
   any(vapply(
     condition_chain(cnd),
@@ -778,6 +966,43 @@ is_grouping_spec_subscript <- function(cnd, label) {
         identical(condition$subscript_arg, label)
     },
     logical(1)
+  ))
+}
+
+# The name as a caller writes it in code, which is the name itself wherever R
+# parses it as one and a backtick-quoted spelling everywhere else.
+# `expr_deparse()` answers which of the two it is -- a syntactic name should
+# not pay backticks it does not need -- and `encodeString()` writes the quoted
+# form, because `expr_deparse()`'s own is `` `a`b` `` for a name holding a
+# backtick, which does not parse.
+quoted_name_spelling <- function(name) {
+  deparsed <- rlang::expr_deparse(rlang::sym(name), width = Inf)
+  if (identical(deparsed, name)) {
+    return(name)
+  }
+  encodeString(name, quote = "`")
+}
+
+# Both bullets are spellings the caller can run rather than descriptions of
+# one, so each is built as a value and interpolated as one: the quoting a
+# non-syntactic name needs is different inside `all_of()` and after `!!`, and
+# neither the name nor the template carries either.
+#
+# The two are read only from the cli template below, which codetools cannot
+# see.
+abort_ambiguous_nested_name <- function(name) {
+  # nolint start: object_usage_linter.
+  column <- paste0("all_of(", encodeString(name, quote = "\""), ")")
+  specification <- paste0("!!", quoted_name_spelling(name))
+  # nolint end
+  abort_marginplyr(c(
+    paste0(
+      "{.var {name}} is both a column of the input and a name bound to a ",
+      "grouping specification, so a nested position cannot tell which one ",
+      "you mean."
+    ),
+    i = "For the column, write {.code {column}}.",
+    i = "For the specification, write {.code {specification}}."
   ))
 }
 
