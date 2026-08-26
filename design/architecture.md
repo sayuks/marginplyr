@@ -101,12 +101,29 @@ that works. Being marginplyr's own report about a position of its own, it is
 parentless, as a share selection naming something ineligible is. The refused
 value is read from the condition rather than by evaluating the argument a
 second time to identify it, which is what keeps the number and timing of
-caller-quosure evaluations fixed. The replacement covers the argument the
-position owns and not a part of one: a specification written inside a
-selection keeps tidyselect's report, which names the sub-selection and is
-accurate about it. Every other selection failure is re-raised as it arrived,
-so an External condition still reaches the caller with its own class,
-diagnostic, and cause.
+caller-quosure evaluations fixed for every argument whose reading it does not
+decide. The replacement covers the argument the position owns and not a part
+of one: a specification written inside a selection keeps tidyselect's report,
+which names the sub-selection and is accurate about it — and where the input
+has a column of that name, tidyselect refuses nothing at all, because the
+column is what a selection means by a name the data holds. Every other
+selection failure is re-raised as it arrived, so an External condition still
+reaches the caller with its own class, diagnostic, and cause.
+
+One argument has both readings available, and it is decided in the structural
+preflight rather than by the spelling gate: a bare name that is a column of
+the input and is bound to a specification of a kind the position admits. It is
+refused, naming both readings and the spelling that settles each, because
+either precedence would decide by the input what the spelling decides
+everywhere else, and would decide it silently
+([ADR 0026](adr/0026-refuse-a-nested-name-two-readings-claim.md)). Which kinds
+a position admits is derived by asking that position's own rule from the kind
+registry, so there is no second list of what nests inside what, and it is
+asked before the binding is read: a position admitting no kind reads nothing.
+Where the binding is read it is read once, in the preflight, which runs once
+for an operation and is handed to both compilation passes — the one place from
+which the answer is not recomputed per pass. That read is the one caller
+evaluation this position adds, and ADR 0026 records what it costs.
 
 ### Margin label (`R/margin-label.R`)
 
@@ -604,6 +621,11 @@ The test suite divides supporting contracts as follows:
 - `test-grouping-plan.R` covers the backend-independent Grouping
   specification compiler directly, including the complete kind-nesting
   grammar, phase-sensitive empty rules, error precedence, and expansion order.
+  Two of its contracts are asserted below the public seam because nothing
+  above it can see them: the nested kinds each parent kind admits, since a
+  derivation that stopped working and a position that admits nothing answer
+  the same empty set, and the number of times a colliding name's binding is
+  read, which is counted through an active binding.
 - `test-documentation.R` covers the reference documentation's own contracts:
   that an italicised section cross-reference resolves in the topic it
   promises, that every user-facing topic offers related-topic links, and that

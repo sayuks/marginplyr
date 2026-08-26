@@ -40,7 +40,20 @@ returns a specification is refused where it is nested even though it is
 accepted as \code{.grouping} itself. Assign what it returns to a name and use
 that name: \code{s <- my_spec(region)}, then \code{grouping_sets(s, grade)}. A
 specification written inside a selection, as in \code{c(s, grade)}, is a
-selection containing something it cannot select, and is refused as one.
+selection containing something it cannot select, and is refused as one —
+unless the input has a column named \code{s}, when the selection takes that
+column, as any selection does with a name the data holds.
+
+A name both readings claim is refused rather than guessed. Where the
+input has a column named \code{s} and \code{s} is also bound to a nested Grouping
+specification the position accepts, the call names both readings and the
+spelling that settles each: \code{all_of("s")} selects the column whatever is
+bound, and \code{!!s} uses the specification whatever columns the input has.
+What a position accepts is what decides whether there are two readings,
+so a colliding name is refused in \code{\link[=grouping_sets]{grouping_sets()}} and \code{\link[=grouping_spec]{grouping_spec()}}
+whatever it is bound to, in \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}} only when it is bound
+to a \code{\link[=grouping_set]{grouping_set()}}, and never in \code{\link[=grouping_set]{grouping_set()}}, which takes no
+nested Grouping specification at all.
 
 A dimension is a column of the input, so a selection cannot rename it:
 \code{c(area = region)} is an error rather than a dimension named \code{area}.

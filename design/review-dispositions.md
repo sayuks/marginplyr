@@ -829,6 +829,74 @@ adapter used to.
 
 ---
 
+## 10. The repository-wide review (produced #254 and #255)
+
+A review of the whole tree, run after the ticket work of §8 had landed. Both
+findings below were reproduced from a clean session before they were filed, and
+each ticket carries the evidence; what is dispositioned here is the outcome.
+Both are behavioural defects rather than evidence-layer ones, which is what
+separates this section from §8: each changed what a caller receives, and each
+was answered with an accepted decision rather than with a documentation fix.
+
+**A Margin summary over an in-memory Arrow input surfaces an upstream internal
+failure as its answer** (Spec). **Fixed — #254, PR #258.** A summary expression
+Arrow cannot translate reached `arrow:::try_arrow_dplyr()`, whose call recovery
+finds `base::call` by inheriting lookup when it is reached through a
+`...`-forwarding wrapper, and aborted with `object of type 'special' is not
+subsettable` — carrying `notSubsettableError/error/condition`, naming nothing
+the caller wrote and offering no rewrite. The disposition recorded on the ticket
+is **refuse**: such a summary is now a `marginplyr_error` naming the argument as
+the caller spelled it and both rewrites, raised before any row is read. ADR 0025
+records why refusing cannot be justified by ADR 0020's cost reasoning — an input
+that absorbs is by class already in this process's memory — and rests it on ADR
+0020's other half instead. ADR 0020's own claim that an in-memory Arrow table
+cannot be told from a dataset in object storage is withdrawn in that ADR's
+second amendment, since it was what the predicate's exactness was argued from.
+*Evidence:* `test-grouping-backends.R` "Arrow refuses a summary it would
+otherwise absorb", "Arrow still absorbs the expressions the refusal is asserted
+over" — the two halves that fail in opposite directions — "an Arrow Dataset
+keeps Arrow's own refusal", "an Arrow summary Arrow can evaluate is unchanged
+and stays lazy", and "the branch guard refuses an absorbed summary the handler
+missed"; `test-query-policy.R` "no Arrow read happens while a Margin verb runs".
+
+**A nested Grouping specification position reads a bound specification as a
+column selection when a column shares its name** (Spec). **Fixed — #255.** The
+position is documented to decide what an argument means by how it is written,
+and decided it by what columns the input happened to have: a bare name bound to
+a specification became a selection of the same-named column, with no condition
+raised and a well-formed plan, so `.id`, `grouping_bit()`, `grouping_id()`, and
+the parent a Parent share divides by all followed it. The disposition recorded
+on the ticket is **refuse the ambiguity**, and ADR 0026 records it together with
+the two rejected alternatives: *Honour the rule* and *Record the exception* both
+keep the silence and only move which reading is silently wrong. Availability of
+the second reading is decided by the kind of the bound specification and never
+by the input, so `grouping_set()` — which admits no nested kind — keeps the
+column reading and does not read the binding at all. ADR 0008's compatibility
+list is amended there in two bullets: the evaluation count, which its own text
+admits a separately accepted decision for, and the condition-and-detection-order
+bullet, which carries no such clause and which the refusal moves whole.
+*Evidence:* `test-grouping-plan.R` "a nested name the input and a binding both
+claim is refused", which derives its cells from the kind registry and covers the
+narrowing as well as the refusal; "a nested position admits nested kinds by its
+own parent rule", which pins the admitted set per parent kind because no
+behavioural test can tell an empty answer from a derivation that stopped
+working; "a colliding nested name is read once, in the preflight", which asserts
+its counter before concluding a count; "the ambiguity refusal names a spelling
+that works for each reading", which executes both spellings read back out of the
+diagnostic; "a nested name only one reading claims keeps that reading"; and "a
+Margin verb refuses an ambiguous nested name".
+
+Two of the ticket's own premises were measured false and are corrected on it
+rather than carried into the work: top-level `.grouping` has no column-selection
+reading at all, so the symmetry its fifth acceptance criterion asks for was
+already true and needed nothing; and a specification written inside a selection
+does *not* keep tidyselect's report where a column shares the name — the
+selection takes the column and raises nothing. That second sentence stood in
+five places, and correcting them is part of this entry rather than a separate
+finding.
+
+---
+
 ## Status
 
 Every observation from every recorded review is dispositioned above. The

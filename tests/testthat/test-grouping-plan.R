@@ -250,9 +250,10 @@ test_that("a nested column selection is unaffected by the specification rule", {
   # position does not speak for a part of an argument it did not refuse: a
   # specification really is the wrong kind of object where `c()` puts it, and a
   # caller who bound it to a name has already done what this rule would ask.
-  # tidyselect deprecates the bare external vector these three write, and it is
-  # not what they are here to show, so its warning is suppressed rather than
-  # asserted.
+  # That is what a selection makes of a name the data does not hold; the other
+  # half is below. tidyselect deprecates the bare external vector these three
+  # write, and it is not what they are here to show, so its warning is
+  # suppressed rather than asserted.
   bound <- rollup(region)
   embedded <- expect_error(
     suppressWarnings(compile(grouping_sets(c(bound, grade), region)))
@@ -264,6 +265,390 @@ test_that("a nested column selection is unaffected by the specification rule", {
     embedded_error <- expect_error(suppressWarnings(compile(spec)))
     expect_false(inherits(embedded_error, "marginplyr_error"))
   }
+
+  # Where a column shares the name, tidyselect refuses nothing at all and the
+  # column is what a selection means by it. The ambiguity refusal does not
+  # reach inside a selection either (ADR 0026): the caller wrote a selection,
+  # so the specification reading was never available to that argument.
+  colliding <- rlang::env(rlang::current_env(), region = rollup(value))
+  inside <- eval(quote(grouping_sets(c(region, grade))), envir = colliding)
+  expect_equal(compile(inside)$sets, list(c("region", "grade")))
+})
+
+test_that("a nested position admits nested kinds by its own parent rule", {
+  # The half of "both readings are available" that the input may not answer,
+  # and the one thing no behavioural test reaches: an empty answer reads as a
+  # position that admits nothing rather than as a derivation that stopped
+  # working, and the two are the same silence.
+  kinds <- names(grouping_kind_rules())
+  expect_identical(kinds, c("set", "sets", "rollup", "cube", "product"))
+
+  # `rollup` and `cube` are what pin the stand-in's arity. Both read a
+  # composite's arity as well as its kind, so a stand-in carrying no argument
+  # answers `character()` for them and turns the refusal off in two of the
+  # five positions.
+  admitted <- list(
+    set = character(),
+    sets = kinds,
+    rollup = "set",
+    cube = "set",
+    product = kinds
+  )
+  for (kind in kinds) {
+    expect_identical(
+      admitted_nested_kinds(
+        new_grouping_spec(kind, list(rlang::quo(NULL))),
+        find_grouping_kind_rule(kind)
+      ),
+      admitted[[kind]]
+    )
+  }
+
+  # The answer is kept rather than recomputed, because asking costs a raised
+  # Package condition for every kind the parent refuses. A memo that stopped
+  # working reports nothing, so the derivation is counted directly, through a
+  # rule that admits everything and a parent kind no session has asked about.
+  asked <- 0L
+  probe_rule <- list(
+    validate_nested = function(parent, nested) {
+      asked <<- asked + 1L
+      invisible(NULL)
+    }
+  )
+  probe_parent <- list(type = basename(tempfile("probe-kind-")))
+  expect_identical(admitted_nested_kinds(probe_parent, probe_rule), kinds)
+  expect_identical(asked, length(kinds))
+  expect_identical(admitted_nested_kinds(probe_parent, probe_rule), kinds)
+  expect_identical(asked, length(kinds))
+})
+
+test_that("a nested name the input and a binding both claim is refused", {
+  data_vars <- c("s", "grade", "value")
+  ambiguous_message <- paste0(
+    "`s` is both a column of the input and a name bound to a grouping ",
+    "specification, so a nested position cannot tell which one you mean.\n",
+    "i For the column, write `all_of(\"s\")`.\n",
+    "i For the specification, write `!!s`."
+  )
+  # Derived from the kind table, so a sixth kind arrives here as a cell rather
+  # than as a case nothing covers.
+  bindings <- list(
+    set = grouping_set(value),
+    sets = grouping_sets(value),
+    rollup = rollup(value),
+    cube = cube(value),
+    product = grouping_spec(value)
+  )
+  expect_identical(names(bindings), names(grouping_kind_rules()))
+  admitted <- list(
+    set = character(),
+    sets = names(bindings),
+    rollup = "set",
+    cube = "set",
+    product = names(bindings)
+  )
+  compile_bound <- function(parent, binding) {
+    env <- rlang::env(rlang::caller_env(), s = binding)
+    spec <- eval(
+      rlang::call2(
+        grouping_kind_rules()[[parent]]$constructor,
+        rlang::sym("s")
+      ),
+      envir = env
+    )
+    compile_grouping_spec(
+      spec,
+      data_vars,
+      .duplicates = "keep",
+      duplicates_choices = margin_duplicates_choices
+    )
+  }
+
+  for (parent in names(bindings)) {
+    for (child in names(bindings)) {
+      if (child %in% admitted[[parent]]) {
+        error <- expect_error(compile_bound(parent, bindings[[child]]))
+        expect_s3_class(error, "marginplyr_error")
+        expect_identical(conditionMessage(error), ambiguous_message)
+        next
+      }
+
+      # The narrowing, which is the half a later reader is likeliest to
+      # "fix": where the position takes no nested specification of that kind,
+      # there is nothing to be ambiguous about and the column reading stands.
+      expect_identical(compile_bound(parent, bindings[[child]])$sets[[1L]], "s")
+    }
+  }
+
+  # The line is the kind and nothing further. A specification of an admitted
+  # kind that is invalid on its own terms is still what the caller wrote, so
+  # the name is ambiguous just the same and `!!` is what reports what is wrong
+  # with it. Reading arity or validity here would put them on the same footing
+  # as the input, and only one of those is the caller's spelling.
+  invalid <- list(grouping_sets(), rollup(), cube())
+  for (parent in c("sets", "product")) {
+    for (binding in invalid) {
+      error <- expect_error(compile_bound(parent, binding))
+      expect_s3_class(error, "marginplyr_error")
+      expect_identical(conditionMessage(error), ambiguous_message)
+    }
+  }
+  for (parent in c("rollup", "cube")) {
+    empty_composite <- expect_error(compile_bound(parent, grouping_set()))
+    expect_s3_class(empty_composite, "marginplyr_error")
+    expect_identical(conditionMessage(empty_composite), ambiguous_message)
+  }
+
+  # Availability is derived from the parent's own rule and from nothing
+  # recursive. Preflighting the bound specification instead would let an
+  # ambiguity inside it swallow the refusal outside it -- a binding that
+  # raises is a binding that is not a specification -- and #255 would be
+  # reachable again one level further in.
+  nested <- rlang::env(rlang::current_env(), inner = rollup(value))
+  nested$outer <- eval(quote(grouping_sets(inner)), envir = nested)
+  swallowed <- expect_error(compile_grouping_spec(
+    eval(quote(grouping_sets(outer)), envir = nested),
+    c("inner", "outer", "value"),
+    .duplicates = "keep",
+    duplicates_choices = margin_duplicates_choices
+  ))
+  expect_s3_class(swallowed, "marginplyr_error")
+  expect_match(
+    conditionMessage(swallowed),
+    "`outer` is both a column of the input",
+    fixed = TRUE
+  )
+})
+
+test_that("the ambiguity refusal names a working spelling for each reading", {
+  # Both spellings are executed rather than described, and they are read back
+  # out of the diagnostic that printed them, so an advice line that stopped
+  # parsing fails here. The non-syntactic names are what execute the quoting:
+  # `rlang::expr_deparse()` alone writes `` `a`b` `` for the last of them,
+  # which does not parse.
+  spelled <- function(line) {
+    gsub("^`+ ?| ?`+$", "", sub("\\.$", "", sub("^i [^,]+, write ", "", line)))
+  }
+  for (name in c("s", "a b", "a`b")) {
+    data_vars <- c(name, "value")
+    compile <- function(spec) {
+      compile_grouping_spec(
+        spec,
+        data_vars,
+        .duplicates = "keep",
+        duplicates_choices = margin_duplicates_choices
+      )
+    }
+    env <- rlang::env(rlang::current_env())
+    rlang::env_bind(env, !!name := rollup(value))
+    nested_call <- function(spelling) {
+      eval(
+        rlang::call2("grouping_sets", rlang::parse_expr(spelling)),
+        envir = env
+      )
+    }
+
+    refused <- expect_error(compile(nested_call(quoted_name_spelling(name))))
+    expect_s3_class(refused, "marginplyr_error")
+    lines <- strsplit(conditionMessage(refused), "\n", fixed = TRUE)[[1L]]
+    expect_length(lines, 3L)
+
+    column <- compile(nested_call(spelled(lines[[2L]])))
+    expect_identical(column$sets, list(name))
+    specification <- compile(nested_call(spelled(lines[[3L]])))
+    expect_identical(specification$sets, list("value", character()))
+  }
+})
+
+test_that("a nested name only one reading claims keeps that reading", {
+  data_vars <- c("s", "grade", "value")
+  compile <- function(spec) {
+    compile_grouping_spec(
+      spec,
+      data_vars,
+      .duplicates = "keep",
+      duplicates_choices = margin_duplicates_choices
+    )
+  }
+
+  # The two readings the position has always had, neither of them touched: a
+  # binding the input has no column for, and a column nothing binds.
+  bound_elsewhere <- rollup(value)
+  expect_identical(
+    compile(grouping_sets(bound_elsewhere))$sets,
+    list("value", character())
+  )
+  expect_identical(compile(grouping_sets(s))$sets, list("s"))
+
+  # A constructor call is read by its spelling and never by what a name is
+  # bound to, so a column of that name changes nothing.
+  colliding <- rlang::env(rlang::current_env(), s = rollup(value))
+  expect_identical(
+    compile(eval(quote(grouping_sets(rollup(value))), envir = colliding))$sets,
+    list("value", character())
+  )
+
+  # A colliding name whose binding is not a specification, and one whose
+  # binding raises when it is read: neither has a second reading available, so
+  # the column reading stands. Both catches are narrow in what they decide and
+  # not in what they swallow.
+  not_a_spec <- rlang::env(rlang::current_env(), s = 1)
+  expect_identical(
+    compile(eval(quote(grouping_sets(s)), envir = not_a_spec))$sets,
+    list("s")
+  )
+  raising <- rlang::env(rlang::current_env())
+  delayedAssign(
+    "s",
+    stop("this binding is not a specification"),
+    assign.env = raising
+  )
+  from_raising <- eval(quote(grouping_sets(s)), envir = raising)
+  expect_identical(suppressWarnings(compile(from_raising))$sets, list("s"))
+
+  # Top-level `.grouping` is evaluated in the caller's environment with no
+  # data mask, so it has no column-selection reading to be ambiguous with and
+  # a colliding column changes nothing there.
+  data <- data.frame(s = c("x", "y"), value = c(1, 2))
+  top_level <- eval(
+    quote(inspect_grouping(data, .grouping = s)),
+    envir = colliding
+  )
+  expect_identical(top_level$included, c("(value)", "()"))
+})
+
+test_that("a colliding nested name is read once, in the preflight", {
+  data <- data.frame(
+    s = c("x", "y"),
+    grade = c("a", "b"),
+    value = c(1, 2)
+  )
+  reads <- 0L
+  count_reads <- function(name, value, expr) {
+    reads <<- 0L
+    env <- rlang::env(rlang::caller_env())
+    makeActiveBinding(
+      name,
+      function() {
+        reads <<- reads + 1L
+        value
+      },
+      env
+    )
+    result <- tryCatch(eval(expr, envir = env), error = function(cnd) cnd)
+    list(reads = reads, result = result)
+  }
+
+  # The counter first: an active binding reports every read of the name, so a
+  # zero below is a read that did not happen rather than a mechanism that
+  # stopped counting.
+  probe <- count_reads("s", 1, quote(s))
+  expect_identical(probe$result, 1)
+  expect_identical(probe$reads, 1L)
+
+  # Reading the binding is what deciding costs, and there is no cheaper
+  # question: which kind a name is bound to cannot be known without reading
+  # it.
+  refused <- count_reads(
+    "s",
+    rollup(value),
+    quote(inspect_grouping(data, .grouping = grouping_sets(s)))
+  )
+  expect_s3_class(refused$result, "marginplyr_error")
+  expect_identical(refused$reads, 1L)
+
+  # The kinds a position admits are asked before the binding is read, so
+  # `grouping_set()`, which admits none, reads nothing.
+  in_set <- count_reads(
+    "s",
+    rollup(value),
+    quote(inspect_grouping(data, .grouping = grouping_set(s)))
+  )
+  expect_identical(in_set$reads, 0L)
+  expect_identical(in_set$result$included, "(s)")
+
+  # The check sits in the preflight, which runs once for an operation and is
+  # handed to both compilation passes, where the gate runs again on each.
+  # Moving it into the gate would read this binding three times instead of
+  # once, and make three of whatever forcing it does visible to the caller.
+  not_a_spec <- count_reads(
+    "s",
+    1,
+    quote(inspect_grouping(data, .grouping = grouping_sets(s)))
+  )
+  expect_identical(not_a_spec$reads, 1L)
+  expect_identical(not_a_spec$result$included, "(s)")
+
+  # Once for each argument the name is written as.
+  twice <- count_reads(
+    "s",
+    1,
+    quote(inspect_grouping(
+      data,
+      .grouping = grouping_sets(s, s),
+      .duplicates = "keep"
+    ))
+  )
+  expect_identical(twice$reads, 2L)
+
+  # Outside a collision nothing moves: a bound name the input holds no column
+  # for is read in the preflight and once per compilation pass, as it was
+  # before this refusal existed.
+  unchanged <- count_reads(
+    "t",
+    rollup(value),
+    quote(inspect_grouping(data, .grouping = grouping_sets(t)))
+  )
+  expect_identical(unchanged$reads, 3L)
+  expect_identical(unchanged$result$included, c("(value)", "()"))
+})
+
+test_that("a Margin verb refuses an ambiguous nested name", {
+  # What a caller sees is a result with the wrong grouping columns rather than
+  # a plan object, so the defect as it was reported gets one verb case.
+  data <- data.frame(s = c("x", "y"), value = c(1, 2))
+  colliding <- rlang::env(rlang::current_env(), s = rollup(value))
+
+  error <- expect_error(eval(
+    quote(summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = grouping_sets(s)
+    )),
+    envir = colliding
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(
+    conditionMessage(error),
+    paste0(
+      "`s` is both a column of the input and a name bound to a grouping ",
+      "specification, so a nested position cannot tell which one you mean.\n",
+      "i For the column, write `all_of(\"s\")`.\n",
+      "i For the specification, write `!!s`."
+    )
+  )
+
+  bound <- eval(
+    quote(summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = grouping_sets(!!s)
+    )),
+    envir = colliding
+  )
+  expect_identical(names(bound), c("value", "n"))
+  expect_identical(nrow(bound), 3L)
+
+  column <- eval(
+    quote(summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = grouping_sets(tidyselect::all_of("s"))
+    )),
+    envir = colliding
+  )
+  expect_identical(names(column), c("s", "n"))
+  expect_identical(nrow(column), 2L)
 })
 
 test_that("recognizing a nested specification adds no caller evaluation", {

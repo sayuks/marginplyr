@@ -45,7 +45,20 @@
 #'   accepted as `.grouping` itself. Assign what it returns to a name and use
 #'   that name: `s <- my_spec(region)`, then `grouping_sets(s, grade)`. A
 #'   specification written inside a selection, as in `c(s, grade)`, is a
-#'   selection containing something it cannot select, and is refused as one.
+#'   selection containing something it cannot select, and is refused as one —
+#'   unless the input has a column named `s`, when the selection takes that
+#'   column, as any selection does with a name the data holds.
+#'
+#'   A name both readings claim is refused rather than guessed. Where the
+#'   input has a column named `s` and `s` is also bound to a nested Grouping
+#'   specification the position accepts, the call names both readings and the
+#'   spelling that settles each: `all_of("s")` selects the column whatever is
+#'   bound, and `!!s` uses the specification whatever columns the input has.
+#'   What a position accepts is what decides whether there are two readings,
+#'   so a colliding name is refused in [grouping_sets()] and [grouping_spec()]
+#'   whatever it is bound to, in [rollup()] and [cube()] only when it is bound
+#'   to a [grouping_set()], and never in [grouping_set()], which takes no
+#'   nested Grouping specification at all.
 #'
 #'   A dimension is a column of the input, so a selection cannot rename it:
 #'   `c(area = region)` is an error rather than a dimension named `area`.
