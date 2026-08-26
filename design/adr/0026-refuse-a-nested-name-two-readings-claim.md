@@ -93,9 +93,12 @@ which is deciding by the input.
 
 In the structural preflight, on the branch where the spelling gate answered
 "selection", and not in the gate itself. The preflight runs once for a whole
-operation and is handed to both compilation passes, where the gate runs again on
-each. Deciding in the gate would read a colliding binding three times instead of
-once and make three of whatever forcing it does visible to the caller.
+operation and is handed to the compilation passes, where the gate runs again on
+each. Deciding in the gate would read a colliding binding once per pass instead
+of once in all — three times where the plan is settled by names alone, since
+such a plan is compiled against the names first so that a plan error need not
+wait for a backend read, and twice where it is not — and make that many of
+whatever forcing it does visible to the caller.
 
 The derivation is not recursive. Asking the preflight about the bound
 specification would let an ambiguity inside it swallow the refusal outside it —
@@ -179,9 +182,11 @@ handling, Grouping identifiers, backend behaviour, metadata acquisition counts,
 laziness, and the Grouping plan representation.
 
 **The cost accepted.** What the read costs a caller is the forcing itself and
-not only the count. A specification bound to a wrapper's own lazy argument is
-forced here for a call whose answer may not depend on it, so a warning or a
-message it raises reaches that wrapper's caller, and R's own `restarting
+not only the count, and it is not confined to the bindings that turn out to be
+specifications: the read is what establishes which those are, so a wrapper's own
+lazy argument is forced here whenever its name collides, whatever it holds. That
+is for a call whose answer may not depend on it, so a warning or a message the
+argument raises reaches that wrapper's caller, and R's own `restarting
 interrupted promise evaluation` does where such a binding raises and the name is
 written more than once. This decision accepts that rather than hiding it, since
 the alternative to reading the binding is deciding by the input, which is the

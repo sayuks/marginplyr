@@ -1,3 +1,41 @@
+# The refusal a colliding `s` receives, asserted in full wherever it is
+# asserted: the compiler tests below and the Margin verb one, which is the same
+# diagnostic reaching a caller by the route they meet it on.
+ambiguous_s_message <- paste0(
+  "`s` is both a column of the input and a name bound to a grouping ",
+  "specification, so a nested position cannot tell which one you mean.\n",
+  "i For the column, write `all_of(\"s\")`.\n",
+  "i For the specification, write `!!s`."
+)
+
+# One compilation, so that a test varying the specification varies nothing
+# else. `.duplicates = "keep"` is what keeps a union of agreeing readings from
+# being rejected for the agreement.
+compile_against <- function(spec, data_vars) {
+  compile_grouping_spec(
+    spec,
+    data_vars,
+    .duplicates = "keep",
+    duplicates_choices = margin_duplicates_choices
+  )
+}
+
+# The nested kinds each parent kind admits, written out rather than derived, so
+# that the derivation has something to be wrong against. Two tests read it for
+# different purposes -- one against the derivation itself, one against the
+# behaviour that follows from it -- and a wrong table fails the first, which is
+# what makes sharing it safe.
+admitted_nested_kinds_table <- function() {
+  kinds <- names(grouping_kind_rules())
+  list(
+    set = character(),
+    sets = kinds,
+    rollup = "set",
+    cube = "set",
+    product = kinds
+  )
+}
+
 test_that("rollup and cube compile to concrete grouping sets", {
   rollup_plan <- compile_grouping_spec(
     rollup(a, b, c),
@@ -287,13 +325,7 @@ test_that("a nested position admits nested kinds by its own parent rule", {
   # composite's arity as well as its kind, so a stand-in carrying no argument
   # answers `character()` for them and turns the refusal off in two of the
   # five positions.
-  admitted <- list(
-    set = character(),
-    sets = kinds,
-    rollup = "set",
-    cube = "set",
-    product = kinds
-  )
+  admitted <- admitted_nested_kinds_table()
   for (kind in kinds) {
     expect_identical(
       admitted_nested_kinds(
@@ -322,28 +354,6 @@ test_that("a nested position admits nested kinds by its own parent rule", {
   expect_identical(asked, length(kinds))
 })
 
-# The refusal a colliding `s` receives, asserted in full wherever it is
-# asserted: the compiler tests below and the Margin verb one, which is the same
-# diagnostic reaching a caller by the route they meet it on.
-ambiguous_s_message <- paste0(
-  "`s` is both a column of the input and a name bound to a grouping ",
-  "specification, so a nested position cannot tell which one you mean.\n",
-  "i For the column, write `all_of(\"s\")`.\n",
-  "i For the specification, write `!!s`."
-)
-
-# One compilation, so that a test varying the specification varies nothing
-# else. `.duplicates = "keep"` is what keeps a union of agreeing readings from
-# being rejected for the agreement.
-compile_against <- function(spec, data_vars) {
-  compile_grouping_spec(
-    spec,
-    data_vars,
-    .duplicates = "keep",
-    duplicates_choices = margin_duplicates_choices
-  )
-}
-
 test_that("a nested name the input and a binding both claim is refused", {
   data_vars <- c("s", "grade", "value")
   # Derived from the kind table, so a sixth kind arrives here as a cell rather
@@ -356,13 +366,7 @@ test_that("a nested name the input and a binding both claim is refused", {
     product = grouping_spec(value)
   )
   expect_identical(names(bindings), names(grouping_kind_rules()))
-  admitted <- list(
-    set = character(),
-    sets = names(bindings),
-    rollup = "set",
-    cube = "set",
-    product = names(bindings)
-  )
+  admitted <- admitted_nested_kinds_table()
   compile_bound <- function(parent, binding) {
     env <- rlang::env(rlang::caller_env(), s = binding)
     spec <- eval(
@@ -417,11 +421,9 @@ test_that("a nested name the input and a binding both claim is refused", {
   # reachable again one level further in.
   nested <- rlang::env(rlang::current_env(), inner = rollup(value))
   nested$outer <- eval(quote(grouping_sets(inner)), envir = nested)
-  swallowed <- expect_error(compile_grouping_spec(
+  swallowed <- expect_error(compile_against(
     eval(quote(grouping_sets(outer)), envir = nested),
-    c("inner", "outer", "value"),
-    .duplicates = "keep",
-    duplicates_choices = margin_duplicates_choices
+    c("inner", "outer", "value")
   ))
   expect_s3_class(swallowed, "marginplyr_error")
   expect_match(
@@ -442,14 +444,7 @@ test_that("the ambiguity refusal names a working spelling for each reading", {
   }
   for (name in c("s", "a b", "a`b")) {
     data_vars <- c(name, "value")
-    compile <- function(spec) {
-      compile_grouping_spec(
-        spec,
-        data_vars,
-        .duplicates = "keep",
-        duplicates_choices = margin_duplicates_choices
-      )
-    }
+    compile <- function(spec) compile_against(spec, data_vars)
     env <- rlang::env(rlang::current_env())
     rlang::env_bind(env, !!name := rollup(value))
     nested_call <- function(spelling) {
@@ -596,9 +591,11 @@ test_that("a colliding nested name is read once, in the preflight", {
   expect_identical(in_set$result$included, "(s)")
 
   # The check sits in the preflight, which runs once for an operation and is
-  # handed to both compilation passes, where the gate runs again on each.
-  # Moving it into the gate would read this binding three times instead of
-  # once, and make three of whatever forcing it does visible to the caller.
+  # handed to the compilation passes, where the gate runs again on each.
+  # Moving it into the gate would read this binding once per pass instead of
+  # once in all -- three times here, by the count the last assertion in this
+  # test pins -- and make that many of whatever forcing it does visible to the
+  # caller.
   not_a_spec <- count_reads(
     "s",
     1,

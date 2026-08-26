@@ -368,12 +368,14 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 # no such clause, and this moves every item in it, so ADR 0026 amends that
 # bullet whole rather than naming a part of it.
 #
-# What that costs a caller is the forcing itself, not only the count: a
-# specification bound to a wrapper's own lazy argument is forced here for a
-# call whose answer may not depend on it, so a warning or a message it raises
-# reaches the caller, and R's own `restarting interrupted promise evaluation`
-# does where such a binding raises and the name is written more than once. ADR
-# 0026 accepts that rather than hiding it, since the alternative to reading the
+# What that costs a caller is the forcing itself, not only the count, and it
+# reaches every colliding binding rather than the ones that turn out to be
+# specifications -- the read is what establishes which those are. So a
+# wrapper's own lazy argument is forced here, whatever it holds, for a call
+# whose answer may not depend on it: a warning or a message it raises reaches
+# the caller, and R's own `restarting interrupted promise evaluation` does
+# where such a binding raises and the name is written more than once. ADR 0026
+# accepts that rather than hiding it, since the alternative to reading the
 # binding is deciding by the input, which is the defect.
 #
 # The two conditions on the name below are the two that made the gate answer
@@ -389,10 +391,13 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 #
 # The shape test comes before anything is bound to a local, and it is
 # `is_name_part()` rather than a bare symbol test. Both halves are the rule
-# `R/utils.R` states for every reader a walk asks first: `expr <- ...` would
-# bind R's empty argument and raise `missingArgError` on the next read of it,
-# and the empty argument is itself a symbol whose name is `""` (#168, #174,
-# #261).
+# `R/utils.R` states for every reader a walk asks first: binding R's empty
+# argument raises `missingArgError` on the next read of it, and the empty
+# argument is itself a symbol whose name is `""` (#168, #174). No empty
+# argument reaches this function today, because `grouping_arg_spec()` binds
+# one a line earlier and raises there, which is #261; following the rule here
+# is what keeps this from becoming a second site of it once that one is
+# fixed.
 #
 # A binding that raises when it is read is not a specification, so the
 # selection reading stands where it raises, and so does an object carrying the

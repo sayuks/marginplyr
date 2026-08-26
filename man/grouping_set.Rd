@@ -51,9 +51,10 @@ spelling that settles each: \code{all_of("s")} selects the column whatever is
 bound, and \code{!!s} uses the specification whatever columns the input has.
 What a position accepts is what decides whether there are two readings,
 so a colliding name is refused in \code{\link[=grouping_sets]{grouping_sets()}} and \code{\link[=grouping_spec]{grouping_spec()}}
-whatever it is bound to, in \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}} only when it is bound
-to a \code{\link[=grouping_set]{grouping_set()}}, and never in \code{\link[=grouping_set]{grouping_set()}}, which takes no
-nested Grouping specification at all.
+whatever specification it is bound to, in \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}} only
+when it is bound to a \code{\link[=grouping_set]{grouping_set()}}, and never in \code{\link[=grouping_set]{grouping_set()}},
+which takes no nested Grouping specification at all. A name bound to
+anything that is not a specification is a column, as it always was.
 
 A dimension is a column of the input, so a selection cannot rename it:
 \code{c(area = region)} is an error rather than a dimension named \code{area}.

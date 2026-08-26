@@ -56,9 +56,10 @@
 #'   bound, and `!!s` uses the specification whatever columns the input has.
 #'   What a position accepts is what decides whether there are two readings,
 #'   so a colliding name is refused in [grouping_sets()] and [grouping_spec()]
-#'   whatever it is bound to, in [rollup()] and [cube()] only when it is bound
-#'   to a [grouping_set()], and never in [grouping_set()], which takes no
-#'   nested Grouping specification at all.
+#'   whatever specification it is bound to, in [rollup()] and [cube()] only
+#'   when it is bound to a [grouping_set()], and never in [grouping_set()],
+#'   which takes no nested Grouping specification at all. A name bound to
+#'   anything that is not a specification is a column, as it always was.
 #'
 #'   A dimension is a column of the input, so a selection cannot rename it:
 #'   `c(area = region)` is an error rather than a dimension named `area`.
