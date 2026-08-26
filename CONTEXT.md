@@ -27,7 +27,8 @@ returns is therefore refused there, in marginplyr's own words and with the
 binding that works, while the same call is accepted as `.grouping` itself. The
 position answers for its own argument and not for a part of one: a
 specification written inside a selection is the wrong kind of object where it
-sits, and the selection's own report is what says so.
+sits, and where the input has no column of that name the selection's own
+report is what says so.
 
 A bare name is the one argument both readings can claim, where the input has a
 column of that name and the caller's environment binds that name to a
@@ -44,7 +45,6 @@ binding is read, it is read once, because what kind a name is bound to cannot
 be learned any other way. Inside a selection no second reading arises at all:
 a selection takes the column, which is what a selection means by a name the
 data holds.
-
 _Avoid_: Nested grouping, nested slot
 
 **Grouping plan**:

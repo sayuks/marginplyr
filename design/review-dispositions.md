@@ -881,8 +881,8 @@ narrowing as well as the refusal; "a nested position admits nested kinds by its
 own parent rule", which pins the admitted set per parent kind because no
 behavioural test can tell an empty answer from a derivation that stopped
 working; "a colliding nested name is read once, in the preflight", which asserts
-its counter before concluding a count; "the ambiguity refusal names a spelling
-that works for each reading", which executes both spellings read back out of the
+its counter before concluding a count; "the ambiguity refusal names a working
+spelling for each reading", which executes both spellings read back out of the
 diagnostic; "a nested name only one reading claims keeps that reading"; and "a
 Margin verb refuses an ambiguous nested name".
 

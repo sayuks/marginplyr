@@ -322,14 +322,30 @@ test_that("a nested position admits nested kinds by its own parent rule", {
   expect_identical(asked, length(kinds))
 })
 
+# The refusal a colliding `s` receives, asserted in full wherever it is
+# asserted: the compiler tests below and the Margin verb one, which is the same
+# diagnostic reaching a caller by the route they meet it on.
+ambiguous_s_message <- paste0(
+  "`s` is both a column of the input and a name bound to a grouping ",
+  "specification, so a nested position cannot tell which one you mean.\n",
+  "i For the column, write `all_of(\"s\")`.\n",
+  "i For the specification, write `!!s`."
+)
+
+# One compilation, so that a test varying the specification varies nothing
+# else. `.duplicates = "keep"` is what keeps a union of agreeing readings from
+# being rejected for the agreement.
+compile_against <- function(spec, data_vars) {
+  compile_grouping_spec(
+    spec,
+    data_vars,
+    .duplicates = "keep",
+    duplicates_choices = margin_duplicates_choices
+  )
+}
+
 test_that("a nested name the input and a binding both claim is refused", {
   data_vars <- c("s", "grade", "value")
-  ambiguous_message <- paste0(
-    "`s` is both a column of the input and a name bound to a grouping ",
-    "specification, so a nested position cannot tell which one you mean.\n",
-    "i For the column, write `all_of(\"s\")`.\n",
-    "i For the specification, write `!!s`."
-  )
   # Derived from the kind table, so a sixth kind arrives here as a cell rather
   # than as a case nothing covers.
   bindings <- list(
@@ -356,12 +372,7 @@ test_that("a nested name the input and a binding both claim is refused", {
       ),
       envir = env
     )
-    compile_grouping_spec(
-      spec,
-      data_vars,
-      .duplicates = "keep",
-      duplicates_choices = margin_duplicates_choices
-    )
+    compile_against(spec, data_vars)
   }
 
   for (parent in names(bindings)) {
@@ -369,7 +380,7 @@ test_that("a nested name the input and a binding both claim is refused", {
       if (child %in% admitted[[parent]]) {
         error <- expect_error(compile_bound(parent, bindings[[child]]))
         expect_s3_class(error, "marginplyr_error")
-        expect_identical(conditionMessage(error), ambiguous_message)
+        expect_identical(conditionMessage(error), ambiguous_s_message)
         next
       }
 
@@ -390,13 +401,13 @@ test_that("a nested name the input and a binding both claim is refused", {
     for (binding in invalid) {
       error <- expect_error(compile_bound(parent, binding))
       expect_s3_class(error, "marginplyr_error")
-      expect_identical(conditionMessage(error), ambiguous_message)
+      expect_identical(conditionMessage(error), ambiguous_s_message)
     }
   }
   for (parent in c("rollup", "cube")) {
     empty_composite <- expect_error(compile_bound(parent, grouping_set()))
     expect_s3_class(empty_composite, "marginplyr_error")
-    expect_identical(conditionMessage(empty_composite), ambiguous_message)
+    expect_identical(conditionMessage(empty_composite), ambiguous_s_message)
   }
 
   # Availability is derived from the parent's own rule and from nothing
@@ -462,14 +473,7 @@ test_that("the ambiguity refusal names a working spelling for each reading", {
 
 test_that("a nested name only one reading claims keeps that reading", {
   data_vars <- c("s", "grade", "value")
-  compile <- function(spec) {
-    compile_grouping_spec(
-      spec,
-      data_vars,
-      .duplicates = "keep",
-      duplicates_choices = margin_duplicates_choices
-    )
-  }
+  compile <- function(spec) compile_against(spec, data_vars)
 
   # The two readings the position has always had, neither of them touched: a
   # binding the input has no column for, and a column nothing binds.
@@ -488,10 +492,26 @@ test_that("a nested name only one reading claims keeps that reading", {
     list("value", character())
   )
 
-  # A colliding name whose binding is not a specification, and one whose
-  # binding raises when it is read: neither has a second reading available, so
-  # the column reading stands. Both catches are narrow in what they decide and
-  # not in what they swallow.
+  # A caller's own function is neither of the two recognized spellings, and a
+  # call is never a bare name, so a column sharing the function's name reaches
+  # nothing: #190's refusal is still what the position reports.
+  spec_from_caller <- rlang::env(rlang::current_env())
+  spec_from_caller$grade <- function(...) rollup(...)
+  from_caller <- expect_error(
+    compile(eval(quote(grouping_sets(grade(value))), envir = spec_from_caller))
+  )
+  expect_s3_class(from_caller, "marginplyr_error")
+  expect_match(
+    conditionMessage(from_caller),
+    "is a grouping specification, but a nested position",
+    fixed = TRUE
+  )
+
+  # A colliding name whose binding is not a specification, one whose binding
+  # raises when it is read, and one carrying the class with no kind to read:
+  # none of the three has a second reading available, so the column reading
+  # stands. All three catches are narrow in what they decide and not in what
+  # they swallow.
   not_a_spec <- rlang::env(rlang::current_env(), s = 1)
   expect_identical(
     compile(eval(quote(grouping_sets(s)), envir = not_a_spec))$sets,
@@ -505,6 +525,14 @@ test_that("a nested name only one reading claims keeps that reading", {
   )
   from_raising <- eval(quote(grouping_sets(s)), envir = raising)
   expect_identical(suppressWarnings(compile(from_raising))$sets, list("s"))
+  kindless <- rlang::env(
+    rlang::current_env(),
+    s = structure(list(args = list()), class = "margin_grouping_spec")
+  )
+  expect_identical(
+    compile(eval(quote(grouping_sets(s)), envir = kindless))$sets,
+    list("s")
+  )
 
   # Top-level `.grouping` is evaluated in the caller's environment with no
   # data mask, so it has no column-selection reading to be ambiguous with and
@@ -593,14 +621,30 @@ test_that("a colliding nested name is read once, in the preflight", {
 
   # Outside a collision nothing moves: a bound name the input holds no column
   # for is read in the preflight and once per compilation pass, as it was
-  # before this refusal existed.
-  unchanged <- count_reads(
+  # before this refusal existed. Both counts are here because the number of
+  # passes is what differs -- a plan settled by name alone is compiled against
+  # the names first, so that a plan error need not wait for a backend read.
+  name_only <- count_reads(
     "t",
     rollup(value),
     quote(inspect_grouping(data, .grouping = grouping_sets(t)))
   )
-  expect_identical(unchanged$reads, 3L)
-  expect_identical(unchanged$result$included, c("(value)", "()"))
+  expect_identical(name_only$reads, 3L)
+  expect_identical(name_only$result$included, c("(value)", "()"))
+  with_predicate <- count_reads(
+    "t",
+    rollup(value),
+    quote(inspect_grouping(
+      data,
+      .grouping = grouping_sets(t, tidyselect::where(is.character)),
+      .duplicates = "keep"
+    ))
+  )
+  expect_identical(with_predicate$reads, 2L)
+  expect_identical(
+    with_predicate$result$included,
+    c("(value)", "()", "(s, grade)")
+  )
 })
 
 test_that("a Margin verb refuses an ambiguous nested name", {
@@ -618,15 +662,7 @@ test_that("a Margin verb refuses an ambiguous nested name", {
     envir = colliding
   ))
   expect_s3_class(error, "marginplyr_error")
-  expect_identical(
-    conditionMessage(error),
-    paste0(
-      "`s` is both a column of the input and a name bound to a grouping ",
-      "specification, so a nested position cannot tell which one you mean.\n",
-      "i For the column, write `all_of(\"s\")`.\n",
-      "i For the specification, write `!!s`."
-    )
-  )
+  expect_identical(conditionMessage(error), ambiguous_s_message)
 
   bound <- eval(
     quote(summarize_with_margins(
@@ -639,6 +675,9 @@ test_that("a Margin verb refuses an ambiguous nested name", {
   expect_identical(names(bound), c("value", "n"))
   expect_identical(nrow(bound), 3L)
 
+  # Namespace-qualified here only because a test file is linted as package
+  # code; the bare spelling the diagnostic prints is the one executed above,
+  # where it is read back out of the message.
   column <- eval(
     quote(summarize_with_margins(
       data,

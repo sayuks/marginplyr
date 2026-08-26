@@ -395,10 +395,23 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 # #261).
 #
 # A binding that raises when it is read is not a specification, so the
-# selection reading stands where it raises. Both catches are narrow in what
-# they decide and not in what they swallow: everything they hide is a failure
-# to produce a specification of an admitted kind, which is a specification
-# reading that is not available.
+# selection reading stands where it raises, and so does an object carrying the
+# class with no kind to read -- an atomic vector given the class answers `$`
+# with a condition of its own, and a list without the field answers `NULL`,
+# neither of which is a kind this position could admit. Both catches are narrow
+# in what they decide and not in what they swallow: everything they hide is a
+# failure to produce a specification of an admitted kind, which is a
+# specification reading that is not available. That is where the ADR-0015 line
+# falls too, because nothing here is deciding what such an object is -- a list
+# carrying the class and no kind, bound to a name nothing shadows, still
+# reaches `validate_grouping_spec_early()` and is refused in its own words.
+# Where that guard reads a field too early to reach its own refusal is #262,
+# which reproduces at top level and so is not this position's to answer.
+#
+# `rule` is the parent's own, which the caller already holds because it
+# validates nested arguments with it; deriving it again here would be the same
+# lookup twice. That it is the parent's own is also what makes the memo below
+# sound, since the key is the parent's kind and nothing reads the pair apart.
 check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
   if (!is_name_part(rlang::quo_get_expr(arg))) {
     return(invisible(NULL))
@@ -987,10 +1000,9 @@ quoted_name_spelling <- function(name) {
 # one, so each is built as a value and interpolated as one: the quoting a
 # non-syntactic name needs is different inside `all_of()` and after `!!`, and
 # neither the name nor the template carries either.
-#
-# The two are read only from the cli template below, which codetools cannot
-# see.
 abort_ambiguous_nested_name <- function(name) {
+  # Both are read only from the cli template below, which codetools cannot
+  # see.
   # nolint start: object_usage_linter.
   column <- paste0("all_of(", encodeString(name, quote = "\""), ")")
   specification <- paste0("!!", quoted_name_spelling(name))
