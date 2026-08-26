@@ -138,11 +138,12 @@ prepare_grouping_plan <- function(.data,
       if (!is.null(validate_names)) {
         validate_names(data_vars)
       }
-      # Preflighted once and handed to both compilation passes. Preflight is
-      # not a free re-run: `grouping_arg_spec()` evaluates a symbol or a nested
-      # constructor argument, so preflighting per pass would evaluate a
-      # caller's quosure twice, and ADR-0008 holds the number and timing of
-      # evaluations fixed.
+      # Preflighted once and handed to every compilation pass -- both of them
+      # where the plan is settled by names alone, and the one below otherwise.
+      # Preflight is not a free re-run: `grouping_arg_spec()` evaluates a
+      # symbol or a nested constructor argument, so preflighting per pass would
+      # evaluate a caller's quosure once per pass rather than once, and
+      # ADR-0008 holds the number and timing of evaluations fixed.
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The
