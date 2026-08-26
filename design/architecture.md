@@ -121,7 +121,7 @@ a position admits is derived by asking that position's own rule from the kind
 registry, so there is no second list of what nests inside what, and it is
 asked before the binding is read: a position admitting no kind reads nothing.
 Where the binding is read it is read once, in the preflight, which runs once
-for an operation and is handed to both compilation passes — the one place from
+for an operation and is handed to the compilation passes — the one place from
 which the answer is not recomputed per pass. That read is the one caller
 evaluation this position adds, and ADR 0026 records what it costs.
 
@@ -621,11 +621,12 @@ The test suite divides supporting contracts as follows:
 - `test-grouping-plan.R` covers the backend-independent Grouping
   specification compiler directly, including the complete kind-nesting
   grammar, phase-sensitive empty rules, error precedence, and expansion order.
-  Two of its contracts are asserted below the public seam because nothing
-  above it can see them: the nested kinds each parent kind admits, since a
-  derivation that stopped working and a position that admits nothing answer
-  the same empty set, and the number of times a colliding name's binding is
-  read, which is counted through an active binding.
+  One of its contracts is asserted below the public seam because nothing above
+  it can see them: the nested kinds each parent kind admits, since a derivation
+  that stopped working and a position that admits nothing answer the same empty
+  set. A second is asserted through the seam with an observation from below it
+  — the number of times a colliding name's binding is read, counted through an
+  active binding, which reports every read where a promise reports the first.
 - `test-documentation.R` covers the reference documentation's own contracts:
   that an italicised section cross-reference resolves in the topic it
   promises, that every user-facing topic offers related-topic links, and that

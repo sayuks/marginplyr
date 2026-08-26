@@ -348,7 +348,7 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 # and a position that admits no kind reads nothing.
 #
 # It sits in the preflight rather than in the gate because the preflight runs
-# once for a whole operation and is handed to both compilation passes, where
+# once for a whole operation and is handed to the compilation passes, where
 # the gate runs again on each.
 #
 # More than the count moves. Where the refusal fires, the arguments written

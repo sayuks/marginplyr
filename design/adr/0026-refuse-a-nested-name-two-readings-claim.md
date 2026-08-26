@@ -218,19 +218,20 @@ a constructor call, a caller's own function, a specification inside a selection,
 and top-level `.grouping`, which has no column-selection reading at all and so
 cannot be ambiguous.
 
-Two contracts are asserted below the public seam because nothing above it can
-see them.
+Two contracts need more than the public seam gives, and in different ways.
 
-The **admitted set per parent kind**, because an empty answer reads as a
-position that admits nothing rather than as a derivation that stopped working,
-and those two are the same silence. The `rollup()` and `cube()` entries are what
-pin the stand-in's arity.
+The **admitted set per parent kind** is asserted below it, against the
+derivation directly, because an empty answer reads as a position that admits
+nothing rather than as a derivation that stopped working, and those two are the
+same silence. The `rollup()` and `cube()` entries are what pin the stand-in's
+arity.
 
-The **number of reads**, counted through an active binding, which reports every
-read of a name where a promise reports only the first. The counter is asserted
-to work before any zero is concluded from it, for the reason ADR 0025's
-absorption gate asserts its own mechanism: a count of zero from a mechanism that
-stopped counting reads exactly like a read that did not happen.
+The **number of reads** is asserted through the seam like everything else; what
+sits below it is the observation. An active binding reports every read of a
+name where a promise reports only the first. The counter is asserted to work
+before any zero is concluded from it, for the reason ADR 0025's absorption gate
+asserts its own mechanism: a count of zero from a mechanism that stopped
+counting reads exactly like a read that did not happen.
 
 Both printed spellings are executed and asserted to produce the reading they
 name, and they are read back out of the diagnostic that printed them, over a

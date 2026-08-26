@@ -528,6 +528,19 @@ test_that("a nested name only one reading claims keeps that reading", {
     compile(eval(quote(grouping_sets(s)), envir = kindless))$sets,
     list("s")
   )
+  # The other shape a kind cannot be read from, and the one that raises rather
+  # than answering `NULL`: `$` is invalid for an atomic vector, so reading the
+  # kind is guarded as reading the binding is. Without that guard this call
+  # raises `$ operator is invalid for atomic vectors`, which is #262 arriving
+  # one position lower.
+  atomic <- rlang::env(
+    rlang::current_env(),
+    s = structure(1L, class = "margin_grouping_spec")
+  )
+  expect_identical(
+    compile(eval(quote(grouping_sets(s)), envir = atomic))$sets,
+    list("s")
+  )
 
   # Top-level `.grouping` is evaluated in the caller's environment with no
   # data mask, so it has no column-selection reading to be ambiguous with and
