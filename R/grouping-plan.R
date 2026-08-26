@@ -9,8 +9,11 @@ validate_grouping_spec_early <- function(grouping_spec) {
     ))
   }
 
-  kind <- grouping_spec$type
-  args <- grouping_spec$args
+  kind <- grouping_spec_kind(grouping_spec)
+  # A catch of its own, because the two fields are not read together: an object
+  # can refuse one while answering the other, and this is the only reader of
+  # `args` before the guard below has run.
+  args <- tryCatch(grouping_spec$args, error = function(cnd) NULL)
   if (
     !is.character(kind) ||
       length(kind) != 1L ||
@@ -30,6 +33,37 @@ validate_grouping_spec_early <- function(grouping_spec) {
 
 abort_invalid_grouping_spec <- function() {
   abort_marginplyr("Invalid grouping specification.")
+}
+
+# The kind an object carrying the specification class says it is, or `NULL`
+# where it cannot be asked for one at all. Reading a field is a question not
+# every object a class can sit on answers: `$` is invalid for an atomic vector,
+# a closure is not subsettable, and an S4 class that defines no method for it
+# refuses it. Asking before establishing that much is what answered a forged
+# `.grouping` with base R's own untyped error, in place of the refusal the
+# guard above is written for (#262).
+#
+# The read is `$` itself and the catch is the whole of what is new, so nothing
+# here decides what a specification may be stored as. Two narrower readings
+# look equivalent and are not: `is.list()` refuses an environment whose fields
+# read, and `[[` with `exact = FALSE` bypasses a `$` method the object defines.
+#
+# The two readers that can be handed an object nothing has validated share
+# this one, because they ask the same question of the same field, and the
+# colliding and the non-colliding spelling answering that question differently
+# is the asymmetry #262 was found through. Every other reader of a kind in this
+# file sits behind the guard above, which is what establishes there is one to
+# read. The one reader anywhere that does not is
+# `print.margin_grouping_spec()`, in `R/grouping-spec.R`, and it is #264.
+#
+# The catch is narrow in what it decides and not in what it swallows, exactly
+# as the evaluation catch in `check_ambiguous_nested_name()` is: an object that
+# cannot produce a kind is not a specification of a readable one, whatever
+# stopped it producing one. Deciding that is not deciding what the object is,
+# which is where ADR 0015 puts the line -- the guard above says what it is, in
+# marginplyr's words.
+grouping_spec_kind <- function(spec) {
+  tryCatch(spec$type, error = function(cnd) NULL)
 }
 
 normalize_grouping_input <- function(.data, by_quo) {
@@ -402,17 +436,21 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 #
 # A binding that raises when it is read is not a specification, so the
 # selection reading stands where it raises, and so does an object carrying the
-# class with no kind to read -- an atomic vector given the class answers `$`
-# with a condition of its own, and a list without the field answers `NULL`,
-# neither of which is a kind this position could admit. Both catches are narrow
+# class with no kind to read -- an atomic vector given the class offers no
+# field to read at all, which `grouping_spec_kind()` answers with `NULL`, and
+# a list without the field answers `NULL` too, neither of which is a kind this
+# position could admit. That reading is the guard's own, so the two cannot
+# disagree about what a kind is readable off. Both catches are narrow
 # in what they decide and not in what they swallow: everything they hide is a
 # failure to produce a specification of an admitted kind, which is a
 # specification reading that is not available. That is where the ADR-0015 line
 # falls too, because nothing here is deciding what such an object is -- a list
 # carrying the class and no kind, bound to a name nothing shadows, still
 # reaches `validate_grouping_spec_early()` and is refused in its own words.
-# Where that guard reads a field too early to reach its own refusal is #262,
-# which reproduces at top level and so is not this position's to answer.
+# So does an atomic vector carrying it, since #262 stopped that guard reading
+# a field before it had established the object can be read: what a colliding
+# name withholds here is a Package condition in either shape, not an untyped
+# one.
 #
 # `rule` is the parent's own, which the caller already holds because it
 # validates nested arguments with it; deriving it again here would be the same
@@ -438,7 +476,7 @@ check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
   if (!inherits(value, "margin_grouping_spec")) {
     return(invisible(NULL))
   }
-  kind <- tryCatch(value$type, error = function(cnd) NULL)
+  kind <- grouping_spec_kind(value)
   if (
     !is.character(kind) ||
       length(kind) != 1L ||

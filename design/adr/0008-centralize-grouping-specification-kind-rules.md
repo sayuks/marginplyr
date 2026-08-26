@@ -98,8 +98,8 @@ stands, and the registry this ADR centralizes is what that refusal derives
 availability from: it asks the parent's own `validate_nested()` rule rather than
 carrying a second list of which kinds nest inside which.
 
-**Evaluations.** The third constraint holds the number and timing of
-evaluations "without a separately accepted decision", and ADR 0026 is that
+**Evaluations.** The constraint holding the number and timing of evaluations
+does so "without a separately accepted decision", and ADR 0026 is that
 decision, for that one argument. Deciding whether the two readings differ is a
 property of the bound value, so the binding is read — once, in the structural
 preflight, where it was read not at all. No argument outside such a collision is
@@ -107,14 +107,45 @@ read more often than before, quosure environments are unchanged, and a position
 admitting no nested kind reads nothing. Timing moves with the count: where the
 refusal fires, the arguments written after it are not read.
 
-**Conditions and detection order.** The second constraint carries no such
-clause, and the refusal moves every item in it, so ADR 0026 amends it whole
-rather than naming a part of it. The refusal is reported in place of whatever
-the call would have been rejected for further along — a missing column, a
-duplicate grouping set, a `.by` overlap, each nesting-grammar rejection above,
-and #190's refusal among them — and where that displaced rejection was an
-External condition, the caller now receives a `marginplyr_error` blamed on the
-Margin verb instead of tidyselect's class and tidyselect's blamed call.
+**Conditions and detection order.** The constraint holding error condition
+classes, complete messages, public call contexts, and detection order carries
+no such clause, and the refusal moves every item in it, so ADR 0026 amends it
+whole rather than naming a part of it. The refusal is reported in place of
+whatever the call would have been rejected for further along — a missing
+column, a duplicate grouping set, a `.by` overlap, each nesting-grammar
+rejection above, and #190's refusal among them — and where that displaced
+rejection was an External condition, the caller now receives a
+`marginplyr_error` blamed on the Margin verb instead of tidyselect's class and
+tidyselect's blamed call.
+
+## Amendment: the condition class of a specification the guard could not read
+
+The constraint holding error condition classes fixed is amended by #262, in one
+direction and for one thing: an object carrying `margin_grouping_spec` that
+cannot answer for a field the guard reads. `validate_grouping_spec_early()`
+read those fields having established only the class, so whatever the object
+raised when it was asked came out of that line rather than reaching
+`abort_invalid_grouping_spec()` below it. Some such objects cannot be asked at
+all — an atomic vector, a closure — and others can be asked and raise, per
+field: an object that answers for its kind and raises on its arguments is why
+the two fields are read through a catch each. The class such a call raises
+therefore moves to `marginplyr_error`, from whatever base R or the object
+itself raised — `simpleError` for an atomic vector, `notSubsettableError` for
+a closure, and a class of the object's own where the object is what raised.
+
+This is the guard's own answer arriving rather than a new one being chosen, and
+that is what separates it from ADR 0026's amendment above, which moves the same
+constraint by deciding something. ADR 0015 already assigns a malformed
+specification reaching this guard a Package condition, and the refusal that
+raises it was already written for an object whose fields do not read as a
+specification's; what reading one too early did was keep the object from
+getting there. Nothing else in the constraint moves with it: every object that
+reached the refusal reaches it with the same message, the same call context,
+and at the same point, and no specification that compiled stops compiling —
+the reading is `$` itself, so an object is refused for what it says it is and
+never for how it is stored. The constraint on the number and timing of
+evaluations is not reached, since no field is read any earlier or later for a
+well-formed specification.
 
 ## Test strategy
 
@@ -175,4 +206,6 @@ a Contextual helper even though its spelling is read before anything runs.
 
 ADR 0026 refuses the one nested argument whose reading a spelling does not
 settle, deriving which kinds each position admits from this registry's own
-nesting rules, and is what the amendment above was written for.
+nesting rules, and is what the amendment *one nested argument, whose reading
+the spelling does not settle* was written for. There are two amendments above
+as of #262, and this names the one it means.
