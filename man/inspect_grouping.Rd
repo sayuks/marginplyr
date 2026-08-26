@@ -26,8 +26,9 @@ fixed key named \code{area}. Rename the result afterwards with
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
 represents the empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
-another must be a constructor call or a name bound to one; see
-\code{\link[=grouping_set]{grouping_set()}}.}
+another must be a constructor call or a name bound to one, and a nested
+name the input also has a column for is refused rather than read either
+way; see \code{\link[=grouping_set]{grouping_set()}}.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
 else, controlling duplicate grouping-set occurrences; see \emph{Option

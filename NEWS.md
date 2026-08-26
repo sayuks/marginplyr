@@ -11,7 +11,11 @@
   specification. That refusal is now marginplyr's own diagnostic, naming the
   recognized forms and the binding that works — `s <- my_spec(region)`, then
   `grouping_sets(s, grade)` — rather than tidyselect reporting the
-  specification as an unusable column selection.
+  specification as an unusable column selection. A name both readings claim —
+  a column of your input that is also bound to a nested specification the
+  position accepts — is refused rather than resolved by whichever the data
+  happens to have, and the refusal names the spelling for each reading:
+  `all_of("s")` for the column, `!!s` for the specification.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level

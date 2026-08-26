@@ -89,6 +89,33 @@ The implementation must not change:
   or
 - the Grouping plan representation or its consumers.
 
+## Amendment: one nested argument, whose reading the spelling does not settle
+
+Two of the constraints above are amended by ADR 0026, which refuses a bare name
+in a Nested specification position that is both a column of the input and bound
+to a specification of a kind the position admits. Everything else in the list
+stands, and the registry this ADR centralizes is what that refusal derives
+availability from: it asks the parent's own `validate_nested()` rule rather than
+carrying a second list of which kinds nest inside which.
+
+**Evaluations.** The third constraint holds the number and timing of
+evaluations "without a separately accepted decision", and ADR 0026 is that
+decision, for that one argument. Deciding whether the two readings differ is a
+property of the bound value, so the binding is read — once, in the structural
+preflight, where it was read not at all. No argument outside such a collision is
+read more often than before, quosure environments are unchanged, and a position
+admitting no nested kind reads nothing. Timing moves with the count: where the
+refusal fires, the arguments written after it are not read.
+
+**Conditions and detection order.** The second constraint carries no such
+clause, and the refusal moves every item in it, so ADR 0026 amends it whole
+rather than naming a part of it. The refusal is reported in place of whatever
+the call would have been rejected for further along — a missing column, a
+duplicate grouping set, a `.by` overlap, each nesting-grammar rejection above,
+and #190's refusal among them — and where that displaced rejection was an
+External condition, the caller now receives a `marginplyr_error` blamed on the
+Margin verb instead of tidyselect's class and tidyselect's blamed call.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:
@@ -145,3 +172,7 @@ evaluation of a nested specification argument. ADR 0019 registers every
 statically recognized spelling in one place and derives the constructor family
 from this table rather than restating it, and records why a constructor is not
 a Contextual helper even though its spelling is read before anything runs.
+
+ADR 0026 refuses the one nested argument whose reading a spelling does not
+settle, deriving which kinds each position admits from this registry's own
+nesting rules, and is what the amendment above was written for.

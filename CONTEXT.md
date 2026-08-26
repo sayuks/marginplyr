@@ -20,14 +20,31 @@ An argument of a Grouping specification constructor, where a nested Grouping
 specification and a column selection are both allowed. Which one is meant is
 decided by how the argument is written: a call to a constructor, or a name
 bound to a specification, is a nested specification, and every other argument
-is a column selection. The position never evaluates an argument to find out,
-because a selection such as `starts_with("re")` has no meaning outside a
-selection context. A specification a caller's own function returns is
-therefore refused there, in marginplyr's own words and with the binding that
-works, while the same call is accepted as `.grouping` itself. The position
-answers for its own argument and not for a part of one: a specification
-written inside a selection is the wrong kind of object where it sits, and
-keeps the selection's own report.
+is a column selection. A spelling the position does not recognize is never
+evaluated to find out, because a selection such as `starts_with("re")` has no
+meaning outside a selection context. A specification a caller's own function
+returns is therefore refused there, in marginplyr's own words and with the
+binding that works, while the same call is accepted as `.grouping` itself. The
+position answers for its own argument and not for a part of one: a
+specification written inside a selection is the wrong kind of object where it
+sits, and where the input has no column of that name the selection's own
+report is what says so.
+
+A bare name is the one argument both readings can claim, where the input has a
+column of that name and the caller's environment binds that name to a
+specification the position admits. Such a name is refused rather than
+resolved, naming both readings and the spelling that settles each —
+`all_of("s")` for the column, `!!s` for the specification — because either
+precedence would decide by the input what the spelling is supposed to decide,
+and would decide it silently. Which kinds a position admits is what makes the
+second reading available, and the input never is: `grouping_sets()` and
+`grouping_spec()` admit every kind, `rollup()` and `cube()` admit a
+`grouping_set()` composite dimension, and `grouping_set()` admits none, so a
+colliding name there is a column and its binding is never read. Where the
+binding is read, it is read once, because what kind a name is bound to cannot
+be learned any other way. Inside a selection no second reading arises at all:
+a selection takes the column, which is what a selection means by a name the
+data holds.
 _Avoid_: Nested grouping, nested slot
 
 **Grouping plan**:

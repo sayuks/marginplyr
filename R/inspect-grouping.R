@@ -15,8 +15,9 @@
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
 #'   represents the empty grouping set. Any expression returning a
 #'   specification can be written here, while a specification nested inside
-#'   another must be a constructor call or a name bound to one; see
-#'   [grouping_set()].
+#'   another must be a constructor call or a name bound to one, and a nested
+#'   name the input also has a column for is refused rather than read either
+#'   way; see [grouping_set()].
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
 #'   else, controlling duplicate grouping-set occurrences; see *Option
 #'   arguments*.
