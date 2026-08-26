@@ -897,17 +897,87 @@ finding.
 
 ---
 
+## 11. The review of #255's branch (produced #262)
+
+A two-axis review of the branch §10's second entry landed on, run in three
+rounds and answered on the branch in `def830e`, `8d074c2`, and `59bb476`, each
+of whose messages names the round it answers and what that round found. Those
+messages are what recorded the review, which is the header's definition of a
+recorded one, so the rest of what it raised is owed entries here and does not
+have them — the exemption above does not cover it, since the findings were
+answered in later commits and pushed rather than folded into the commit they
+were about. #266 is that gap, and the *Status* section below is qualified for
+it. This section dispositions the one finding that left the branch as a ticket
+of its own.
+
+**A malformed Grouping specification whose class sits on an atomic vector
+raises an untyped base-R error** (Standards). **Fixed — #262.**
+`validate_grouping_spec_early()` read `grouping_spec$type` having established
+only the class, so an object carrying `margin_grouping_spec` over something
+`$` cannot be asked raised base R's own error — `simpleError` for an atomic
+vector, `notSubsettableError` for a closure — from that line, instead of
+reaching the `Invalid grouping specification.` refusal below it, which was
+already written for an object whose fields do not read as a specification's.
+It reproduced through the public verbs at top level and in a nested position.
+The same held of `args`, which an object can raise on while answering for its
+kind, so the two fields are now read through a catch each. The kind is read
+through `grouping_spec_kind()`, which `check_ambiguous_nested_name()` reads
+through as well: one hazard, which only the colliding path had a catch for,
+and that asymmetry is what the finding was made from. The read is `$` itself,
+so no object is refused for how it is stored; `is.list()` and `[[` with
+`exact = FALSE` were both tried and both narrow, the first refusing an
+environment carrying the class with readable fields and the second bypassing a
+`$` method the object defines. ADR 0008's condition-class bullet is amended
+there, for these shapes and in the direction ADR 0015 had already chosen.
+*Evidence:*
+`test-grouping-plan.R` "a malformed grouping specification is refused by both
+guards", which writes each malformed object in both positions the guard is
+reachable from, and "a specification is read for what it says, not how it is
+stored", which fails if the reading narrows to `is.list()` — the narrowing a
+rewrite most easily becomes, and the one an environment separates from `$`.
+
+Two more findings came from #262's own review. Neither is this ticket's to
+answer and both are filed, so they are dispositioned here as §8 dispositions an
+open ticket, by naming the reproduction rather than a test that does not exist
+yet.
+
+**`print.margin_grouping_spec()` reads the kind off an object that may have
+none** (Standards). **Not fixed — open, #264.** The same too-early read as
+above, at the other site that reads a kind, and the only reader of one that
+does not sit behind `validate_grouping_spec_early()`. #262's scope was the
+guard, which has a refusal to reach; a print method has none, so the answer is
+not the same one and is that ticket's to choose. *Evidence:*
+`print(structure(1:3, class = "margin_grouping_spec"))` raises
+`$ operator is invalid for atomic vectors`, of class
+`simpleError/error/condition`.
+
+**A specification stored as a function is read by tidyselect as a predicate,
+so #190's refusal never fires** (Spec). **Not fixed — open, #265.** A nested
+position derives #190's diagnostic from tidyselect's own refusal of the
+subscript, and tidyselect does not refuse a function — it calls it. The caller
+is then told about a call they did not write, about an object carrying the
+class the position exists to recognize. *Evidence:* with
+`f <- function() structure(function() 1, class = "margin_grouping_spec")`,
+`inspect_grouping(d, .grouping = grouping_sets(f()))` raises
+`unused argument (X[[i]])`, of class `simpleError/error/condition`, where the
+same position takes #190's refusal for an object of any other storage.
+
+---
+
 ## Status
 
-Every observation from every recorded review is dispositioned above. The
-release gate #23 sets is not met by this file alone: it also requires a fresh
-two-axis review and Docs & Tests audit with no unresolved findings, which is
-#40. New findings from that review are dispositioned here as they arrive.
+Every observation from every recorded review is dispositioned above, but for
+the one §11 names: the review of #255's branch has entries here only for the
+finding that left the branch as a ticket, and #266 is what tracks the rest.
+Until #266 closes, this file does not meet its own bar, and the release gate
+#23 sets is not met by this file even where it does: the gate also requires a
+fresh two-axis review and Docs & Tests audit with no unresolved findings, which
+is #40. New findings from that review are dispositioned here as they arrive.
 
 **The gate is not met as of #40's review.** Local checks, the release matrix,
-and the two-axis review of package behaviour are clean, and no finding above
-changes a result marginplyr returns. What is not clean is the evidence layer
-the gate is written in terms of. One of its three tickets is still open:
+and the two-axis review of package behaviour are clean, and no finding of that
+review changes a result marginplyr returns. What is not clean is the evidence
+layer the gate is written in terms of. One of its three tickets is still open:
 `cran-comments.md` states counts the tree no longer produces (#65). Of the
 seven smaller standards and spec findings, six were #66 and are fixed above;
 the seventh, the skip-helper argument order, moved to #69, which took it
@@ -915,4 +985,10 @@ because the finding as written was factually wrong about why the gate passes
 and correcting it belongs with the list it names. The third ticket, #64, is
 fixed — the release matrix now withholds the optional backends it documents
 withholding, and a gate fails the workflow if it stops doing so. #40 stays open
-until #65 closes, and no submission is made before then.
+until #65 closes, and no submission is made before then. #266 is of that
+evidence layer too, and bears on the gate the same way: it changes no result
+marginplyr returns, and it is a review whose outcome this file cannot yet be
+read for. §11's other two open findings are not of that layer — #264 and #265
+each change what a caller receives, and each reproduces today. Whether a gate
+written for #40's review reaches findings from a later one is that ticket's to
+decide; what this file records is that they are open and behavioural.

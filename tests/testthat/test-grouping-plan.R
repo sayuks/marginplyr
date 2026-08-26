@@ -870,14 +870,14 @@ test_that("invalid grouping input lists every supported constructor", {
 # specification's own fields and whether its kind names a rule, and answer with
 # the same sentence, so either one running alone would leave the other unrun
 # and report nothing about it.
+#
+# Every object is written in both positions a specification is reachable in,
+# because the guard is reached by a different route from each -- the top-level
+# object the caller passed as `.grouping`, and an argument of a well-formed
+# parent, which `grouping_arg_spec()` evaluates and the preflight recurses into.
+# #262 reproduced at both, and a fix holding at one and not the other would
+# read as a fix.
 test_that("a malformed grouping specification is refused by both guards", {
-  compile <- function(spec) {
-    compile_grouping_spec(
-      spec,
-      "a",
-      duplicates_choices = margin_duplicates_choices
-    )
-  }
   malformed <- list(
     # A `type` that is not one name, and `args` that are not a list: the two
     # halves of the first guard's condition, which no single object fails both
@@ -894,14 +894,67 @@ test_that("a malformed grouping specification is refused by both guards", {
     structure(
       list(type = "pivot", args = list()),
       class = "margin_grouping_spec"
-    )
+    ),
+    # The class over something with no field to read at all, which a guard
+    # reading `type` before establishing that much answered with base R's own
+    # untyped error from that line instead of the refusal below it (#262).
+    # Both, because what raises differs -- `$` is invalid for an atomic vector
+    # and a closure is not subsettable, one a `simpleError` and the other a
+    # `notSubsettableError` -- and the guard's answer does not.
+    structure(1:3, class = "margin_grouping_spec"),
+    structure(function() 1, class = "margin_grouping_spec"),
+    # An object that answers for one field and raises on the other, which is
+    # why the two are read through separate catches rather than one decision
+    # about whether the object can be read at all. An active binding is what
+    # writes it without a `$` method: nothing here is a shape a caller is
+    # expected to build, and what it pins is that the guard's answer comes from
+    # what the object could say, field by field.
+    local({
+      spec <- rlang::new_environment(list(type = "set"))
+      raise <- function() {
+        rlang::abort("reading args raises", class = "grouping_spec_field_error")
+      }
+      makeActiveBinding("args", raise, spec)
+      structure(spec, class = "margin_grouping_spec")
+    })
   )
 
+  # `identity` is the top-level position and `grouping_sets` the nested one.
+  positions <- list(identity, grouping_sets)
   for (spec in malformed) {
-    error <- expect_error(compile(spec))
-    expect_s3_class(error, "marginplyr_error")
-    expect_identical(conditionMessage(error), "Invalid grouping specification.")
+    for (position in positions) {
+      error <- expect_error(compile_against(position(spec), "a"))
+      expect_s3_class(error, "marginplyr_error")
+      expect_identical(
+        conditionMessage(error),
+        "Invalid grouping specification."
+      )
+    }
   }
+})
+
+# The other half of #262, and the half nothing above would report. Establishing
+# that a field can be read is not the same question as requiring a list, and
+# the narrower reading passes every test above: `new_grouping_spec()` builds a
+# list, so every specification a caller can construct is one, and the object
+# the reading would newly refuse is one no test had reason to write. It is
+# still a specification that says what it is when it is asked -- the guard
+# reads fields, and this object answers for both of them -- so refusing it
+# would be the guard deciding by storage what it is written to decide by
+# content, and a caller whose specification arrived from somewhere else would
+# be refused for how it got here.
+#
+# One storage form carries it, because `is.list()` is what a rewrite of that
+# reading most easily becomes and an environment is what separates it from `$`.
+# A pairlist would not: `is.list()` is already true of one.
+test_that("a specification is read for what it says, not how it is stored", {
+  fields <- list(type = "set", args = list(rlang::quo(a)))
+  as_spec <- function(x) structure(x, class = "margin_grouping_spec")
+
+  expect_identical(
+    compile_against(as_spec(rlang::new_environment(fields)), "a"),
+    compile_against(as_spec(fields), "a")
+  )
 })
 
 test_that("selectors and fixed .by columns are resolved once", {
