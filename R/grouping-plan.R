@@ -440,40 +440,17 @@ check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
   abort_ambiguous_nested_name(name)
 }
 
-# Which nested kinds this position admits: `grouping_set()` none, `rollup()`
-# and `cube()` a `grouping_set()`, `grouping_sets()` and `grouping_spec()` all
-# of them. It is the other half of "both readings are available", and the half
-# the input may not answer.
+# Which kinds a nested position under `parent` admits. `rule` is `parent`'s own
+# kind rule, which the caller holds. What this answer decides and how it is
+# derived is ADR 0026's; the registry the kinds are enumerated from is
+# ADR 0008's.
 #
-# The kind is where the line sits, and nothing further. A specification of an
-# admitted kind that is invalid on its own terms -- one with no arguments, one
-# holding a family its own constructor forbids -- makes the name ambiguous just
-# the same, because what is wrong with it is a property of what the caller
-# wrote and `!!` is what reports it. What the refusal's advice promises is the
-# reading, not that the reading succeeds: a caller who meant that specification
-# receives the diagnostic about it, which is what the silent column selection
-# withheld. Drawing the line further in would put arity and validity on the
-# same footing as the input, and one of those is not like the others.
+# Two things that derivation needs are the code below's to carry. `rule` is put
+# to a stand-in of each kind, and the stand-in is built with one argument --
+# `list(rlang::quo(NULL))`, not an empty list -- which is the arity the ADR
+# requires. And the memo's key is `parent$type`, the field a kind is read off.
 #
-# Derived by asking each kind's own parent rule rather than by a second list of
-# which kinds nest inside which (ADR 0008), so a sixth kind is admitted or
-# refused here by the rule that decides it everywhere else. The rule answers
-# about an instance, so it is asked about one that differs from a caller's only
-# where it must not decide here -- each kind is offered carrying one argument,
-# which is what keeps an empty `grouping_set()` binding from being read as a
-# kind `rollup()` does not admit.
-#
-# Asking costs a raised Package condition for every kind the parent refuses,
-# which is four of five under `rollup()` and `cube()` and every one of them
-# under `grouping_set()` -- a cli expansion and a backtrace apiece, for
-# conditions no caller sees. So the answer is kept, and the key is the parent's
-# kind. What that key rests on is that no rule reads anything of the parent but
-# its kind: of the three the five kinds share, two ignore the parent entirely
-# and the third reads its type, to name it in a message. It does not rest on
-# the nested side, where arity is read and where the stand-in above is what
-# fixes it -- a stand-in carrying no argument would answer `{}` for `rollup()`
-# and `cube()`, turning the refusal off in two of the five positions. A rule
-# reading more of a parent than its kind would need this key widened; the first
+# The invariant that is this memo's own rather than the ADR's: the first
 # computation for a kind is made with the real parent, so no parent asked about
 # here is a specification that was not written.
 #
