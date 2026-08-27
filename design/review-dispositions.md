@@ -15,11 +15,22 @@ the record.
 An observation reaches this file when its disposition is not already readable
 from what the branch produced: every rejection, and every fix whose evidence is
 not named by the commit that made it. A fix whose commit names the finding and
-the test that now covers it has already left the record this file exists to
-make, and listing it again is the second copy. Rejections carry no such
-exemption, and that asymmetry is deliberate: a fix is held up by something that
-runs, where a rejection is held up only by the sentence explaining it, so the
-rejection is the one a reader cannot reconstruct.
+a test that fails without the fix has already left the record this file exists
+to make, and listing it again is the second copy.
+
+The test has to fail without the fix rather than merely exist, because a commit
+naming one that does not is how a fix escapes both records at once. `def830e`
+is that commit: it said two shapes a kind cannot be read from "now have a test"
+when only the list one did, and mutating the guard around the other read left
+the whole suite green. `59bb476` is what found that out, a round later. An
+exemption resting on a claim would have taken `def830e` at its word; one
+resting on a test that fails without the fix could not have been claimed there
+at all.
+
+Rejections carry no such exemption, and that asymmetry is deliberate: a fix is
+held up by something that runs, where a rejection is held up only by the
+sentence explaining it, so the rejection is the one a reader cannot
+reconstruct.
 
 Rejecting an observation is a normal outcome. A review suggestion is a
 hypothesis about the code, and several of the ones below were disproved by
@@ -1015,7 +1026,10 @@ The bar that sentence measures against narrowed when the scope rule at the top
 of this file was written down, so #266 is re-read against that rule rather than
 closed by it: which of its items are entries this file still owes is the
 question it now asks, and each is answered by looking at whether the commit
-that fixed it names the finding and the test.
+that fixed it names the finding and a test that fails without the fix. #266
+put that choice as its option 2 and argued against it from `59bb476`; the
+scope rule answers that argument rather than waiving it, and whether any
+entries remain owed is what closing #266 decides.
 Until #266 closes, this file does not meet its own bar, and the release gate
 #23 sets is not met by this file even where it does: the gate also requires a
 fresh two-axis review and Docs & Tests audit with no unresolved findings, which
