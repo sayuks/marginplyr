@@ -936,20 +936,53 @@ reachable from, and "a specification is read for what it says, not how it is
 stored", which fails if the reading narrows to `is.list()` — the narrowing a
 rewrite most easily becomes, and the one an environment separates from `$`.
 
-Two more findings came from #262's own review. Neither is this ticket's to
-answer and both are filed, so they are dispositioned here as §8 dispositions an
-open ticket, by naming the reproduction rather than a test that does not exist
-yet.
+Two more findings came from #262's own review. Neither was this ticket's to
+answer and both were filed. The first below has since been answered by the
+ticket it was filed as, and is dispositioned as any fixed finding is; the
+second is still open, and is dispositioned as §8 dispositions an open ticket,
+by naming the reproduction rather than a test that does not exist yet.
 
 **`print.margin_grouping_spec()` reads the kind off an object that may have
-none** (Standards). **Not fixed — open, #264.** The same too-early read as
-above, at the other site that reads a kind, and the only reader of one that
-does not sit behind `validate_grouping_spec_early()`. #262's scope was the
-guard, which has a refusal to reach; a print method has none, so the answer is
-not the same one and is that ticket's to choose. *Evidence:*
-`print(structure(1:3, class = "margin_grouping_spec"))` raises
-`$ operator is invalid for atomic vectors`, of class
-`simpleError/error/condition`.
+none** (Standards). **Fixed — #264.** The same too-early read as above, at the
+third site that can be handed an object nothing has validated, and the one that
+did not share the reader the other two were given. It sits behind no guard
+because a print method has none to sit behind, which is why #262's answer was
+not available here: a guard has a refusal to reach and a print method has only
+a line to print. What it prints for an object it cannot ask is the line an
+object answering with no kind already printed, naming no constructor, rather
+than a new line reporting the object unreadable. The fallback that covered an
+absent kind covers one that cannot be read, and telling the two apart would be a
+printed line saying what the object is — the guard's sentence to say, and the
+distinction `grouping_spec_kind()` already declines to draw. That reader is
+what the kind is now read through, so all three readers that can be handed an
+unvalidated object share one. ADR 0008's condition-class bullet is amended
+again for it — a third time, after ADR 0026 and #262 — because the amendment
+#262 made is scoped to a field the guard reads and this site is not a guard:
+what a forged object raised there moves to raising nothing, which is the
+direction a print method's version of this defect has. What the fix does not
+reach is a field that answers with a value `cat()` refuses, which raises from
+that call having already written the opening of the line: the read succeeded
+there, so it is not this finding, and it printed the same way before the
+fix — #268.
+
+The ticket's "wording unchanged for every object that prints today" is
+qualified, and the qualification is load-bearing rather than cautious: reading
+through a shared function rather than in place is visible to a `$` that does
+something other than answer. ADR 0008's printed-line amendment is where that
+property is written, in place of a list of exceptions, and every object a
+constructor builds satisfies it.
+
+*Evidence:* `test-grouping-interface.R` "a printed Grouping specification asks
+for a kind it may not have", which prints the class over an atomic vector, over
+a closure, and over an environment whose `type` raises on being read, and pins
+the unchanged line against the object that answers with no kind; "a printed
+Grouping specification renders a kind that is no name", which is what fails if
+the new reader narrows to a character scalar and takes the wording of a
+printing object with it; "a printed Grouping specification asks for its kind
+once", which counts the reads on both branches and asserts its counter through
+the helper the counts come from, since a second read leaves no other trace; and
+"a printed Grouping specification names the constructor called", which is what
+fails if the shared reader changes what a well-formed specification prints.
 
 **A specification stored as a function is read by tidyselect as a predicate,
 so #190's refusal never fires** (Spec). **Not fixed — open, #265.** A nested
@@ -988,7 +1021,8 @@ withholding, and a gate fails the workflow if it stops doing so. #40 stays open
 until #65 closes, and no submission is made before then. #266 is of that
 evidence layer too, and bears on the gate the same way: it changes no result
 marginplyr returns, and it is a review whose outcome this file cannot yet be
-read for. §11's other two open findings are not of that layer — #264 and #265
-each change what a caller receives, and each reproduces today. Whether a gate
-written for #40's review reaches findings from a later one is that ticket's to
-decide; what this file records is that they are open and behavioural.
+read for. §11's one other open finding is not of that layer — #265 changes what
+a caller receives, and reproduces today; #264 was of that kind too, and is
+fixed above. Whether a gate written for #40's review reaches findings from a
+later one is that ticket's to decide; what this file records is that one is
+open and behavioural.

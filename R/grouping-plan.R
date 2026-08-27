@@ -48,13 +48,14 @@ abort_invalid_grouping_spec <- function() {
 # look equivalent and are not: `is.list()` refuses an environment whose fields
 # read, and `[[` with `exact = FALSE` bypasses a `$` method the object defines.
 #
-# The two readers that can be handed an object nothing has validated share
-# this one, because they ask the same question of the same field, and the
-# colliding and the non-colliding spelling answering that question differently
-# is the asymmetry #262 was found through. Every other reader of a kind in this
-# file sits behind the guard above, which is what establishes there is one to
-# read. The one reader anywhere that does not is
-# `print.margin_grouping_spec()`, in `R/grouping-spec.R`, and it is #264.
+# Every reader that can be handed an object nothing has validated shares this
+# one, because they ask the same question of the same field, and the colliding
+# and the non-colliding spelling answering that question differently is the
+# asymmetry #262 was found through. Every other reader of a kind in this file
+# sits behind the guard above, which is what establishes there is one to read.
+# The third sharer is `print.margin_grouping_spec()`, in `R/grouping-spec.R`,
+# which sits behind no guard because a print method has none to sit behind: it
+# joined the two this comment was written for in #264.
 #
 # The catch is narrow in what it decides and not in what it swallows, exactly
 # as the evaluation catch in `check_ambiguous_nested_name()` is: an object that

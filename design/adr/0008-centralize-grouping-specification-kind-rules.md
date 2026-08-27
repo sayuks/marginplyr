@@ -147,6 +147,89 @@ never for how it is stored. The constraint on the number and timing of
 evaluations is not reached, since no field is read any earlier or later for a
 well-formed specification.
 
+"No specification that compiled stops compiling" is a claim about what the
+object says, and reading through a shared function has a cost of its own that
+the amendment below states as a property. It is the same reader, so the same
+cost is paid here: a `$` doing something other than answer can be refused where
+it compiled. The property is written out once, below.
+
+## Amendment: the printed line for a specification the printer could not read
+
+The constraint holding error condition classes fixed is amended again by #264 —
+a third time, after ADR 0026 moved it whole and #262 moved it for the guard —
+at the site the amendment above does not reach. That one is scoped to
+"a field the guard reads", and `print.margin_grouping_spec()` is not a guard.
+It read the kind having established only the class, so an object carrying
+`margin_grouping_spec` over something `$` cannot be asked raised from that line
+— `simpleError` for an atomic vector, `notSubsettableError` for a closure —
+with no refusal below it to reach. What such a call raises therefore moves to
+raising nothing at all: the object prints, on the line an object answering no
+kind already printed.
+
+The move is over the read and not over the whole line. A field that answers
+with a value `cat()` cannot render still raises from that call, having written
+the opening of the line first, so this method is not one that never raises;
+what it no longer does is raise for an object it could not ask. That remainder
+is #268, and it is named here because a decision record saying a class of
+errors moved should say which errors did not.
+
+The direction differs from the amendment above and the reason it is admissible
+is the same. There, the guard's own refusal was being kept from arriving; here
+there is no refusal to arrive, because a print method has none, and a print
+method that raises for an object it was asked to print is the defect rather
+than the diagnostic. Nothing else in this constraint moves with it: every
+object that printed before reaches the same line, with the same wording, at the
+same point, for every object whose `$` is an ordinary field read — one that
+answers from the object and the same way each time it is asked, returns rather
+than signalling, does nothing else while answering, and does not consult the
+call stack. That is every object a constructor builds, since one builds a list
+with base R's `$`.
+
+The qualification is written as a property rather than as a list of exceptions
+because what falls outside it is a class of behaviours and not a fixed number
+of them: reading through a shared function rather than in place is visible to
+any `$` that does something other than answer. Three are known and are recorded
+below, the last two of which are `grouping_spec_kind()`'s rather than this
+site's — chosen by #262 for the two guards, and inherited here rather than
+decided again. None of the three is a property of a specification.
+
+**Evaluations.** The constraint holding the number and timing of evaluations
+does so "without a separately accepted decision", and this is that decision,
+for one branch of one line. Where no rule answered the kind, the field was read
+twice — once to ask the registry, once to print the field itself — and it is
+read once now. The branch a rule answers read once before and reads once now,
+so no well-formed specification is affected: no kind a constructor produces
+takes the other branch. For an object whose `$` does not answer the same way
+twice, the count decides which answer is printed — the answer that chose the
+branch, rather than a second one asked for after it — and, where the second
+answer would have raised, whether a line is printed at all. For one whose `$`
+does something while answering, it decides how many times that is done, whether
+or not the line changes.
+
+**The frame the read is made on.** The read moved behind
+`grouping_spec_kind()`, which reads inside a `tryCatch()`, so a `$` method that
+answers from the call stack rather than from the object answers differently:
+`sys.nframe()` and the bindings of `parent.frame()` are not what they were.
+The frame is deeper as well as different, which is a fact about the answer such
+a method gives and not about what the printer can do: the depth at which a
+printed specification exhausts `getOption("expressions")` was measured
+unchanged, and the shared reader was measured never to answer `NULL` for a
+well-formed specification at any depth below it. This is not a constraint the
+list above holds, and it is recorded here because the qualification above
+excludes it and would otherwise read as an omission. Preserving it would mean
+choosing a call depth as a public contract, which nothing in this package
+promises and no specification depends on.
+
+**The handler the read is wrapped in.** `tryCatch(error = )` is an exiting
+handler, so a `$` that signals a condition inheriting `error` without stopping
+— returning an answer afterwards, as `signalCondition()` allows — is now
+unwound where it used to resume, and a calling handler the caller established
+for that class no longer runs. This is the same trade `grouping_spec_kind()`
+already made at both guards, and it is what catching by class costs anywhere:
+a condition is caught for what it says it is. Not catching it is the
+alternative that was rejected in #262, since an object that cannot answer for
+its kind is the case the reader exists for.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:
