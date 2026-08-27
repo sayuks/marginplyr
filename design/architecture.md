@@ -760,7 +760,33 @@ source packages. Internal architecture is not duplicated into the README or
 vignettes.
 
 `review-dispositions.md` is the ledger that gives "review complete" an
-auditable meaning: every observation from a recorded review is listed there as
-fixed or rejected, with a test, command, or reproduction behind it. An ADR
-records what was decided; the ledger records what was reviewed and what
-happened to it.
+auditable meaning: an observation from a recorded review is listed there as
+fixed or rejected, with a test, command, or reproduction behind it, and that
+file states which observations reach it. An ADR records what was decided; the
+ledger records what was reviewed and what happened to it.
+
+An ADR is amended when its decision changed observably, and the amendment
+records what the decision now is and what moved with it. The argument for
+changing it is the ticket's, and the ticket is what the amendment cites: an
+amendment that makes the case again is a second copy of the ticket's, and it
+goes stale the way a comment re-deriving an ADR does — see *Code comments* in
+`AGENTS.md`.
+
+## Answering a review
+
+An answer lands with the thing that makes it checkable. A finding answered in
+code lands with the test that fails without it; a finding answered in prose
+lands with the citation, the command, or the reproduction the next reader runs.
+An answer that lands as prose alone is a claim the next round has to check, and
+that round is what `59bb476` is: it found that the previous answer's "now have
+a test" covered one of the two shapes it named, and that the uncovered one was
+reachable from the public interface.
+
+Each finding is dispositioned before it is answered — the code, a test, a
+workflow or verifier script, an ADR, another repository document, or a
+rejection with evidence. Naming which one is what the disposition does, and a
+comment is not among them: a finding a comment would answer is one of the
+others.
+
+Where code is misread without a comment, the finding is the naming or the
+decomposition that allowed the misreading, and it is reported as that.
