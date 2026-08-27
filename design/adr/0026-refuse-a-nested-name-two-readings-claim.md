@@ -194,13 +194,19 @@ defect.
 
 ## Documentation consequences
 
-`CONTEXT.md`'s *Nested specification position* states the refusal and the
-narrowing by kind, and two of its sentences stop being true as written: that the
-position never evaluates an argument to find out, and that a specification
-written inside a selection keeps the selection's own report. The second was
-never true where a column shares the name — `grouping_sets(c(s, grade))` selects
-the column and raises nothing — and the same sentence stood in `?grouping_set`,
-`design/architecture.md`, and two code comments.
+`CONTEXT.md`'s *Nested specification position* defines the term and names the
+refusal as the one argument its spelling rule does not settle; the admitted
+kinds and what the read costs are cited to this ADR rather than restated there
+(#271). This decision narrowed one sentence it keeps: what is never evaluated
+to find out is a spelling the position does not recognize, where the entry
+once said the position never evaluates an argument at all.
+
+A second sentence stopped being true outright — that a specification written
+inside a selection keeps the selection's own report. It was never true where a
+column shares the name — `grouping_sets(c(s, grade))` selects the column and
+raises nothing — and the same sentence stood in `?grouping_set`,
+`design/architecture.md`, and the header of `is_grouping_spec_subscript()`.
+The glossary no longer carries it at all.
 
 `?grouping_set` carries the same rule in a caller's terms, with both spellings,
 and the `.grouping` parameter documentation points at it. Inside a selection the
