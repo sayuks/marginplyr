@@ -1,16 +1,25 @@
 # Review disposition ledger
 
-Every observation from a recorded review of the 0.1.0 stabilization work is
-listed here as **fixed** or **rejected**, with a test name, command, or
-reproduction result behind it. This is what makes "review complete" mean
-something other than "the reviewer stopped talking": a suggestion that was not
-implemented has to say why, in a form the next reader can check.
+An observation from a recorded review of the 0.1.0 stabilization work is listed
+here as **fixed** or **rejected**, with a test name, command, or reproduction
+result behind it. This is what makes "review complete" mean something other
+than "the reviewer stopped talking": a suggestion that was not implemented has
+to say why, in a form the next reader can check.
 
 A recorded review is one whose findings were written down in the issue tracker
 — an issue comment, a pull-request body, or a commit message that names what
 review found. Findings raised and fixed inside one commit before it was pushed
 are not separately listed; they left no trace to reconcile and the commit is
 the record.
+
+An observation reaches this file when its disposition is not already readable
+from what the branch produced: every rejection, and every fix whose evidence is
+not named by the commit that made it. A fix whose commit names the finding and
+the test that now covers it has already left the record this file exists to
+make, and listing it again is the second copy. Rejections carry no such
+exemption, and that asymmetry is deliberate: a fix is held up by something that
+runs, where a rejection is held up only by the sentence explaining it, so the
+rejection is the one a reader cannot reconstruct.
 
 Rejecting an observation is a normal outcome. A review suggestion is a
 hypothesis about the code, and several of the ones below were disproved by
@@ -1002,6 +1011,11 @@ same position takes #190's refusal for an object of any other storage.
 Every observation from every recorded review is dispositioned above, but for
 the one §11 names: the review of #255's branch has entries here only for the
 finding that left the branch as a ticket, and #266 is what tracks the rest.
+The bar that sentence measures against narrowed when the scope rule at the top
+of this file was written down, so #266 is re-read against that rule rather than
+closed by it: which of its items are entries this file still owes is the
+question it now asks, and each is answered by looking at whether the commit
+that fixed it names the finding and the test.
 Until #266 closes, this file does not meet its own bar, and the release gate
 #23 sets is not met by this file even where it does: the gate also requires a
 fresh two-axis review and Docs & Tests audit with no unresolved findings, which

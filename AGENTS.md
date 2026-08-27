@@ -548,6 +548,48 @@ in use across the backends dbplyr reaches, two of them appear under one
 `grouping_backend()` kind, and `is.data.frame()` is the only predicate that
 answers whether an external system is involved at all.
 
+### Code comments
+
+`R/` carries two kinds of comment, and they answer different questions.
+
+A **header** sits above a definition and documents it. An internal name has no
+roxygen, so its header is the only place its contract is written: for a
+function, what it answers and what its caller holds before calling it.
+
+An **inline** comment states what only that location knows — an invariant
+established upstream and not re-checked here, an ordering constraint and what
+breaks if the line moves, an R, dplyr, dbplyr, or backend behaviour the code
+cannot show, or the reason a `# nolint` names.
+
+Either may cite a decision, and a citation does one job: it names where the
+decision lives, which is what keeps the comment true after the ADR is amended.
+What a citation cannot say is which way *this* site falls under it — that this
+guard stays a bare `stop()` because no call rewrite avoids it (ADR 0015) — so
+say that, and stop there. Re-deriving the ADR's own argument beside the
+citation is the second copy: it reads as support for the citation while nothing
+compares the two, so an amendment leaves it standing and wrong. ADR 0023
+settled this once already, for a rule that governed one file while two others
+re-derived it.
+
+A comment describes the code it sits beside, in the present tense. What a
+review found, which round answered it, and what a test elsewhere now covers are
+things the code does not hold — the ledger, the commit message, and the test
+are where each of those is read.
+
+No scan enforces any of this, and that is a decision rather than a gap. What
+makes a comment wrong is that a paragraph re-derives an argument another file
+owns, which is a semantic property: a scan over `R/` either fires on comments
+that are correct or finds almost nothing, and a bound on a block's length is
+answered by one blank `#` line. A structural gate cannot reach it either: those
+gates read a loaded namespace, per *Structural gates* in
+`design/architecture.md`, and a comment is not in one the way a name and a body
+are. A `srcref` opens at `function(`, so no header is inside any of them, and
+an installed package carries no `srcref` at all, `keep.source.pkgs` being
+`FALSE`. Such a gate would have to skip where every existing one runs, and
+`verify-backend.R` fails a job for a skip naming no withheld backend. This is a
+hand audit for the reason *Dependency metadata* above is one: what defeats the
+scan is what a scanner can express, not missing configuration.
+
 ## Agent skills
 
 ### Issue tracker
