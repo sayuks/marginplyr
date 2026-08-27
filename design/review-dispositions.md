@@ -14,22 +14,69 @@ the record.
 
 An observation reaches this file when its disposition is not already readable
 from what the branch produced: every rejection, and every fix whose evidence is
-not named by the commit that made it. A fix whose commit names the finding and
-a test that fails without the fix has already left the record this file exists
-to make, and listing it again is the second copy.
+not carried by the commit that made it. Two kinds of fix are carried that way,
+and the paragraphs below take them in turn. The unit throughout is the fix and
+not the commit: a commit answering a round answers several findings at once, so
+each is read on the hunks that answer it.
+
+A fix whose commit names the finding and a test that fails without the fix has
+left the record this file exists to make, and listing it again is the second
+copy.
 
 The test has to fail without the fix rather than merely exist, because a commit
 naming one that does not is how a fix escapes both records at once. `def830e`
 is that commit: it said two shapes a kind cannot be read from "now have a test"
 when only the list one did, and mutating the guard around the other read left
-the whole suite green. `59bb476` is what found that out, a round later. An
+the whole suite green. `59bb476` is what found that out, two rounds later. An
 exemption resting on a claim would have taken `def830e` at its word; one
 resting on a test that fails without the fix could not have been claimed there
 at all.
 
-Rejections carry no such exemption, and that asymmetry is deliberate: a fix is
-held up by something that runs, where a rejection is held up only by the
-sentence explaining it, so the rejection is the one a reader cannot
+A fix whose commit names the finding and whose own hunks change only prose — a
+document, a source comment, an ADR's wording — carries it too. A prose
+artifact's correctness is its text, so the diff that changes the text is the
+fix and the whole of it, and a reader who opens the diff has checked it. Most
+of what a review raises is answered that way, and an entry for one of those
+records nothing that reading does not, so without this leg the file fills with
+the observations it is least able to use.
+
+No executable line is exempt here, a test's included. A test's correctness is
+what it does when the code is wrong, and no diff shows that — the property
+`0b190b1` narrowed the first leg for, seen from the other side.
+`def830e` is the demonstration as well as the case: the assertion it added for
+the list shape still passes with `grouping_spec_kind()` mutated to a bare
+`spec$type`, so its presence in that diff established nothing. A fix that
+changes an executable line therefore reaches this file unless the first leg
+exempts it, wherever the line sits — and a comment does not, wherever it sits,
+so the line runs through `R/` and through a test file rather than between them.
+
+The line is drawn at the executable and not at what a particular diff turns out
+to show, which admits a test refactor whose diff does show the whole of it.
+That is deliberate. Deciding per fix whether a test change is "only a refactor"
+would rest the exemption on a judgement nobody can check, which is the shape
+`0b190b1` took the first leg off, and a blunt line costs entries where a soft
+one costs the rule.
+
+The reading is of the commit and not of the current tree, and that is the
+difference between a record and a coincidence. `def830e` qualified a sentence
+in `CONTEXT.md` that `2678da2` later removed altogether for an unrelated
+reason; a reader opening `CONTEXT.md` today cannot tell whether that fix
+landed, was reverted, or was superseded, while `git show def830e -- CONTEXT.md`
+says so and goes on saying so. Nor does this leg rest on a claim the way the
+one `0b190b1` narrowed did: a diff is the change itself rather than an account
+of one, and a fix that did not land is absent from the same reading that shows
+one that did.
+
+Neither leg reaches an observation where more than the fix became of it. A
+premise measured false, an alternative weighed and rejected, a site
+deliberately left alone: no diff holds any of these, and each is what an entry
+is for. §8 holds the first and the third: its `skip_if_backend_absent()` entry
+records a finding whose premise was measured false, and its banned-term entry
+records a non-change and the reason for it, which is written down nowhere else.
+
+Rejections carry neither exemption, and that asymmetry is deliberate: a fix is
+held up by something a reader can run or read, where a rejection is held up
+only by the sentence explaining it, so the rejection is the one a reader cannot
 reconstruct.
 
 Rejecting an observation is a normal outcome. A review suggestion is a
@@ -923,12 +970,99 @@ A two-axis review of the branch §10's second entry landed on, run in three
 rounds and answered on the branch in `def830e`, `8d074c2`, and `59bb476`, each
 of whose messages names the round it answers and what that round found. Those
 messages are what recorded the review, which is the header's definition of a
-recorded one, so the rest of what it raised is owed entries here and does not
-have them — the exemption above does not cover it, since the findings were
-answered in later commits and pushed rather than folded into the commit they
-were about. #266 is that gap, and the *Status* section below is qualified for
-it. This section dispositions the one finding that left the branch as a ticket
-of its own.
+recorded one. `f0dfc52` sits with them on the branch, after all three, and is
+not one of them: it names no round. It narrows the last copy of a count the
+rounds had narrowed elsewhere, reversing a non-change `59bb476` had recorded
+deliberately. Nothing is owed either way: read as answering the leftover of a
+round's finding, its diff is a source comment and the second leg exempts it;
+read as a correction its author initiated, it is not an observation of the
+review at all, and no leg has to reach it.
+
+What the rounds raised reaches this file in three kinds. Two rejections, which
+carry neither exemption. Five fixes that changed an executable line, which the
+second leg does not reach and the first does not exempt, no round having named
+a test that fails without one of them. The shared-table entry is the near case:
+`8d074c2` named a test a wrong table fails, which is a different counterfactual
+from the deduplication's absence. And the finding that left the branch as a
+ticket of its own, for which the branch produced no commit at all.
+
+Everything else was answered in prose and the second leg exempts it. No
+executable line the review moved falls outside the entries below — five as
+fixes, and the two cases the second rejection carries. The three commits
+changed no executable line of `R/` at all, only comments and one roxygen block,
+so the whole of it is in one test file. That file carries prose-only hunks too,
+`8d074c2` having rewritten the comment above the read-count assertions to
+narrow the same claim it narrowed in the ADR, and those are exempt on the same
+footing as the comments in `R/`.
+
+**`rule` need not travel beside `parent`** (Standards). **Rejected**, on two
+grounds. The caller already holds it, because it validates nested arguments
+with it, so deriving it again in the callee would be the same lookup twice. And
+it is the parent's own rule, derived from the parent's kind, which is what makes
+the pair handed to the memo below carry nothing that memo's key does not.
+*Evidence:* the comment above `check_ambiguous_nested_name()` in
+`R/grouping-plan.R`, which is where both grounds are written for the next
+reader of the call; `git show def830e` is where the observation was raised and
+first answered.
+
+**The catches around reading a bound value's kind are speculative**
+(Standards). **Rejected — and the rejection's evidence was over-claimed once
+before it held.** Neither catch is speculative: an atomic vector carrying the
+class answers `$` with a condition, and a list without the field answers
+`NULL`. `def830e` rejected the observation on the ground that both shapes "now
+have a test", and that held of the list shape alone; `59bb476` measured the gap
+in round three and covered it. The correction is what this entry holds — a
+reader of the two commit messages has to notice that the second withdraws
+something the first asserted, and nothing in the first says so. *Evidence:*
+`test-grouping-plan.R` "a nested name only one reading claims keeps that
+reading", whose colliding atomic-vector case fails without the guard —
+mutating `grouping_spec_kind()` to a bare `spec$type` fails it with
+`$ operator is invalid for atomic vectors`.
+
+**Two new tests repeat a compilation helper and the refusal's complete
+message** (Standards). **Fixed.** Both are one value at file scope in
+`test-grouping-plan.R`: `compile_against()`, so that a test varying the
+specification varies nothing else, and `ambiguous_s_message`, so that the
+refusal a colliding `s` receives is asserted in full wherever it is asserted.
+*Evidence:* `git show def830e -- tests/`, where each replaces the copies it was
+extracted from. It placed both above the first test that uses them; `8d074c2`
+moved them to the file head, which is where the tree has them.
+
+**The compilation helper round one extracted is applied at half the sites that
+could use it** (Standards). **Fixed.** The branch under review wrote four sites
+inline in `27983f1`; round one converted two of them when it extracted the
+helper, and round two converted the other two. *Evidence:* `git show 8d074c2 --
+tests/`, whose two conversions are the ones round one left. The count is of
+that branch's own sites. Grepping `test-grouping-plan.R` for
+`compile_grouping_spec(` still returns older tests writing the call out, some
+of them after the converted ones in the file, and neither round raised any.
+
+**The table of which nested kinds each parent kind admits is written twice**
+(Standards). **Fixed.** It is `admitted_nested_kinds_table()` at file scope,
+read by the two tests the branch under review had written a copy each for in
+`27983f1`. *Evidence:* `test-grouping-plan.R` "a nested position admits nested
+kinds by its own parent rule", which is what a wrong table fails; the table's
+own comment is where that argument is written. A third copy, `allowed_nested`
+in "grouping specification kinds enforce the nesting grammar", is older than
+the branch and neither round raised it, so the file still holds two spellings
+of the table.
+
+**ADR 0026 claims coverage of a caller's own function among the unchanged
+readings, and nothing exercises one against a colliding column** (Spec).
+**Fixed.** A call is never a bare name, so the position claims neither reading
+and #190's refusal is what a caller still receives. *Evidence:*
+`test-grouping-plan.R` "a nested name only one reading claims keeps that
+reading", whose `spec_from_caller` case binds a function to a name the input
+has a column for and asserts the #190 diagnostic rather than the ambiguity
+refusal.
+
+**The read-count test pins the name-only path's three reads and not the two a
+plan carrying a predicate makes** (Spec). **Fixed.** It pins both and says what
+differs: the name-only path compiles against the names first, so a plan error
+need not wait for a backend read, and a plan carrying a predicate makes one
+pass rather than two. *Evidence:* `test-grouping-plan.R` "a colliding nested
+name is read once, in the preflight", which asserts 3 reads on the first path
+and 2 on the second.
 
 **A malformed Grouping specification whose class sits on an atomic vector
 raises an untyped base-R error** (Standards). **Fixed — #262.**
@@ -1019,21 +1153,12 @@ same position takes #190's refusal for an object of any other storage.
 
 ## Status
 
-Every observation from every recorded review is dispositioned above, but for
-the one §11 names: the review of #255's branch has entries here only for the
-finding that left the branch as a ticket, and #266 is what tracks the rest.
-The bar that sentence measures against narrowed when the scope rule at the top
-of this file was written down, so #266 is re-read against that rule rather than
-closed by it: which of its items are entries this file still owes is the
-question it now asks, and each is answered by looking at whether the commit
-that fixed it names the finding and a test that fails without the fix. #266
-put that choice as its option 2 and argued against it from `59bb476`; the
-scope rule answers that argument rather than waiving it, and whether any
-entries remain owed is what closing #266 decides.
-Until #266 closes, this file does not meet its own bar, and the release gate
-#23 sets is not met by this file even where it does: the gate also requires a
-fresh two-axis review and Docs & Tests audit with no unresolved findings, which
-is #40. New findings from that review are dispositioned here as they arrive.
+Every observation from every recorded review is dispositioned above, or is
+exempt under the scope rule at the top of this file and readable where that
+rule says to read it. The release gate #23 sets is still not met by this file:
+the gate also requires a fresh two-axis review and Docs & Tests audit with no
+unresolved findings, which is #40. New findings from that review are
+dispositioned here as they arrive.
 
 **The gate is not met as of #40's review.** Local checks, the release matrix,
 and the two-axis review of package behaviour are clean, and no finding of that
@@ -1046,11 +1171,8 @@ because the finding as written was factually wrong about why the gate passes
 and correcting it belongs with the list it names. The third ticket, #64, is
 fixed — the release matrix now withholds the optional backends it documents
 withholding, and a gate fails the workflow if it stops doing so. #40 stays open
-until #65 closes, and no submission is made before then. #266 is of that
-evidence layer too, and bears on the gate the same way: it changes no result
-marginplyr returns, and it is a review whose outcome this file cannot yet be
-read for. §11's one other open finding is not of that layer — #265 changes what
-a caller receives, and reproduces today; #264 was of that kind too, and is
-fixed above. Whether a gate written for #40's review reaches findings from a
-later one is that ticket's to decide; what this file records is that one is
-open and behavioural.
+until #65 closes, and no submission is made before then. §11's one open finding
+is not of that layer — #265 changes what a caller receives, and reproduces
+today; #264 was of that kind too, and is fixed above. Whether a gate written
+for #40's review reaches findings from a later one is that ticket's to decide;
+what this file records is that one is open and behavioural.
