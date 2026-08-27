@@ -361,69 +361,21 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   list(spec = grouping_spec, name_only = name_only)
 }
 
-# The one argument that has two readings available: a bare name that is a
-# column of the input and is bound to a specification of a kind this position
-# admits. The gate above answers it as a selection, because a selection is what
-# tidyselect's own precedence makes of a name the data holds -- so the caller
-# who meant the binding they wrote gets a well-formed plan of the other reading,
-# and nothing says so (#255). Refusing is what keeps a nested position's reading
-# decided by the spelling rather than by the input, without deciding it the
-# other way and leaving the same silence behind (ADR 0026).
-#
-# Available, not disagreeing: whether the two readings would produce different
-# grouping sets cannot be known without resolving the specification against this
-# input, and deciding by the input is the defect. So a name whose two readings
-# happen to agree is refused with the rest.
-#
-# Reading the binding is what the answer costs, and there is no cheaper
-# question: which kind a name is bound to cannot be known without reading it.
-# So a colliding name in a position that admits any kind is read once, where it
-# was read not at all -- once for each argument it is written as, and whether or
-# not its reading then changes, since what the read decides is whether it
-# changes. No argument outside a collision is read any more often than it was,
-# and a position that admits no kind reads nothing.
-#
-# It sits in the preflight rather than in the gate because the preflight runs
-# once for a whole operation and is handed to the compilation passes, where
-# the gate runs again on each.
-#
-# More than the count moves. Where the refusal fires, the arguments written
-# after it are not read at all, and this refusal is reported in place of
-# whatever the call would have been rejected for further along -- which is
-# every diagnostic reachable past this point and not one of them: a missing
-# column, a duplicate grouping set, a `.by` overlap, each nesting-grammar
-# rejection, and #190's own refusal among them. Where that displaced rejection
-# was an External condition, a caller who was receiving tidyselect's class and
-# tidyselect's blamed call now receives a `marginplyr_error` blamed on the
-# Margin verb.
-#
-# ADR 0008's compatibility list holds all of that, and not on the same terms.
-# The number and timing of evaluations are held "without a separately accepted
-# decision", which is the decision ADR 0026 makes. Condition classes, complete
-# messages, public call contexts, and detection order are one bullet carrying
-# no such clause, and this moves every item in it, so ADR 0026 amends that
-# bullet whole rather than naming a part of it.
-#
-# What that costs a caller is the forcing itself, not only the count, and it
-# reaches every colliding binding rather than the ones that turn out to be
-# specifications -- the read is what establishes which those are. So a
-# wrapper's own lazy argument is forced here, whatever it holds, for a call
-# whose answer may not depend on it: a warning or a message it raises reaches
-# the caller, and R's own `restarting interrupted promise evaluation` does
-# where such a binding raises and the name is written more than once. ADR 0026
-# accepts that rather than hiding it, since the alternative to reading the
-# binding is deciding by the input, which is the defect.
+# Refuses the one argument both readings claim: a bare name that is a column of
+# the input and is bound to a specification of a kind this position admits.
+# ADR 0026 holds that decision -- why such a name is refused rather than
+# resolved either way, what makes the second reading available, and what
+# reading the binding costs a caller. This is the site it names: the preflight,
+# on the branch where the gate above answered "selection".
 #
 # The two conditions on the name below are the two that made the gate answer
 # "selection" for a symbol, asked again here because the gate reports which
 # reading it took and not why. A name nothing binds has no second reading, and
 # a name the data does not hold is resolved by the gate itself.
 #
-# The kinds this position admits are asked before the binding is read, so a
-# position that admits none -- `grouping_set()`, which holds columns -- reads
-# nothing. Nothing there could make the name ambiguous, and reading a caller's
-# binding to establish that would force a promise for an answer that was
-# already known.
+# The kinds this position admits are asked before the binding is read: where a
+# position admits none, the answer is already known, and reading a caller's
+# binding to establish it would force a promise for nothing.
 #
 # The shape test comes before anything is bound to a local, and it is
 # `is_name_part()` rather than a bare symbol test. Both halves are the rule
@@ -455,8 +407,8 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 #
 # `rule` is the parent's own, which the caller already holds because it
 # validates nested arguments with it; deriving it again here would be the same
-# lookup twice. That it is the parent's own is also what makes the memo below
-# sound, since the key is the parent's kind and nothing reads the pair apart.
+# lookup twice. It is derived from the parent's kind, so the pair handed to the
+# memo below carries nothing that memo's key does not.
 check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
   if (!is_name_part(rlang::quo_get_expr(arg))) {
     return(invisible(NULL))

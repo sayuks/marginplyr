@@ -32,9 +32,11 @@ Choosing either precedence keeps that property and only moves which reading is
 silently wrong. Preferring the binding makes the documented sentence true as
 written, and silently changes what an existing call returns for a caller who
 has a column and an unrelated binding of that name in scope. Preferring the
-column is what the position does today. Refusing is the only disposition that
-removes the silence in both directions, and it removes nothing else: a caller
-who meant either reading has a spelling for it, and had one before.
+column is what the position does today, because a selection is what
+tidyselect's own precedence makes of a name the data holds. Refusing is the
+only disposition that removes the silence in both directions, and it removes
+nothing else: a caller who meant either reading has a spelling for it, and had
+one before.
 
 It is also what this position already does with the other argument it cannot
 read. #190 could have been answered by evaluating every nested argument and
