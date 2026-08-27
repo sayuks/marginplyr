@@ -211,8 +211,40 @@ print.margin_grouping_spec <- function(x, ...) {
   # without an edit. A kind with no rule is not constructible through the
   # package, and printing one falls back to what it stores rather than
   # reporting no name at all.
-  rule <- find_grouping_kind_rule(x$type)
-  name <- if (is.null(rule)) x$type else rule$constructor
+  #
+  # The kind is read through `grouping_spec_kind()`, the reader the two guards
+  # that can be handed an unvalidated object share, because this site asks
+  # their question of the same field: whether the object can be asked for a
+  # kind at all. It is not every object a class can sit on that answers, and
+  # reading `$` before establishing that much printed no line at all -- base
+  # R's own error from this line instead (#264). #262 fixed the guards and left
+  # this site, because a guard has a refusal to reach and a print method has
+  # none, so the answer there was not available here.
+  #
+  # What is printed instead is the line an object answering `NULL` already
+  # prints: the fallback below names nothing for a kind that is absent, and a
+  # read that raised is absent for this line's purposes, whatever raised it.
+  # Reporting which of the two it was would be a printed line saying what the
+  # object is, and that is the guards' sentence to say -- the same distinction
+  # `grouping_spec_kind()` itself declines to draw.
+  #
+  # Binding the kind is what makes the read one, where the fallback below used
+  # to print the field by asking for it a second time. ADR 0008's printed-line
+  # amendment decides that count, and states what reading through a shared
+  # function costs as a property rather than as a list: the wording is
+  # unchanged for every object whose `$` is an ordinary field read, and it is a
+  # `$` doing something other than answer that can see the difference. The
+  # count is the part of that a test can hold to a number, and one counts it
+  # rather than describing it.
+  #
+  # What is decided here is the read and nothing after it. A field that answers
+  # with a value `cat()` refuses is not this fallback's case -- the read
+  # succeeded, and the value is what the line then cannot be finished from --
+  # so it is left where #264's scope left it, printing exactly what it printed
+  # before, and it is #268.
+  kind <- grouping_spec_kind(x)
+  rule <- find_grouping_kind_rule(kind)
+  name <- if (is.null(rule)) kind else rule$constructor
   cat("<marginplyr grouping specification: ", name, ">\n", sep = "")
   invisible(x)
 }

@@ -1140,3 +1140,150 @@ test_that("a printed Grouping specification names the constructor called", {
     "<marginplyr grouping specification: nonesuch>"
   )
 })
+
+# The last reader of a kind that can be handed an object nothing has validated,
+# and the one #262 left. A guard has a refusal to reach, so reading the kind
+# too early there answered a forged `.grouping` with the wrong error; `print()`
+# has no refusal at all, so the same too-early read answered it with no printed
+# line (#264).
+#
+# Three shapes, because what stops the read differs and the printed line does
+# not: `$` is invalid for an atomic vector, a closure is not subsettable, and a
+# field can raise on being read rather than being absent. The third is written
+# with an active binding because it is the shape where one field raises while
+# the object answers for another, and nothing produces that without a binding
+# or a `$` method of the object's own -- an S4 class defining no `$` method
+# refuses every field, which is the first shape again. None of the three is a
+# shape a caller is expected to build; what they pin is that the line comes
+# from what the object could say.
+test_that("a printed Grouping specification asks for a kind it may not have", {
+  # The line an object that answers with no kind prints today, which the
+  # objects below join rather than change: one that cannot be asked names no
+  # constructor for the same reason one that answers `NULL` names none.
+  kindless <- structure(list(args = list()), class = "margin_grouping_spec")
+  expect_identical(
+    utils::capture.output(print(kindless)),
+    "<marginplyr grouping specification: >"
+  )
+
+  unreadable <- list(
+    `an atomic vector` = structure(1:3, class = "margin_grouping_spec"),
+    `a closure` = structure(function() 1, class = "margin_grouping_spec"),
+    `a raising field` = local({
+      spec <- rlang::new_environment(list(args = list()))
+      raise <- function() {
+        rlang::abort("reading type raises", class = "grouping_spec_field_error")
+      }
+      makeActiveBinding("type", raise, spec)
+      structure(spec, class = "margin_grouping_spec")
+    })
+  )
+  for (shape in names(unreadable)) {
+    spec <- unreadable[[shape]]
+    expect_identical(
+      utils::capture.output(returned <- withVisible(print(spec))),
+      "<marginplyr grouping specification: >",
+      info = shape
+    )
+    # A print method returns its argument invisibly whatever it printed, so an
+    # object it could not read is still the object the caller passed.
+    expect_identical(
+      returned,
+      list(value = spec, visible = FALSE),
+      info = shape
+    )
+  }
+})
+
+# The other half of what the reading decides, and the half only this asserts:
+# routing the kind through `grouping_spec_kind()` put a new function in front
+# of a line whose wording #264 fixed for every object that printed before it.
+# A kind that is read and is not one name is where that could be lost, because
+# `find_grouping_kind_rule()` answers `NULL` for it and the fallback then
+# prints the kind itself -- so a reader narrowed to a character scalar, the
+# narrowing this most easily becomes, would print the empty name here and fail
+# nothing. The character kind no rule answers is pinned above; this is the kind
+# no rule answers for the other reason.
+#
+# `cat()` is what prints the fallback, so what these shapes pin is its
+# rendering and not a wording marginplyr chose. That is also the boundary the
+# fix reached: a kind `cat()` refuses raises from that call, having already
+# written the opening of the line, and belongs to #268 rather than to this
+# ticket -- the read succeeded there, and #264's scope reaches the read.
+test_that("a printed Grouping specification renders a kind that is no name", {
+  as_kind <- function(type) {
+    structure(list(type = type, args = list()), class = "margin_grouping_spec")
+  }
+
+  expect_identical(
+    utils::capture.output(print(as_kind(1:3))),
+    "<marginplyr grouping specification: 123>"
+  )
+  expect_identical(
+    utils::capture.output(print(as_kind(c("a", "b")))),
+    "<marginplyr grouping specification: ab>"
+  )
+  expect_identical(
+    utils::capture.output(print(as_kind(NA_character_))),
+    "<marginplyr grouping specification: NA>"
+  )
+})
+
+# What the reading did not leave alone, in the part of it that can be held to a
+# number. ADR 0008's printed-line amendment states the rest as a property --
+# the wording is unchanged for every object whose `$` is an ordinary field read
+# -- and illustrates it with the ways a `$` doing something else can see the
+# difference. This is what holds the tree to the count: the field is read once
+# on both branches, where the fallback used to ask a second time to print what
+# it had already been given.
+#
+# Counting is the whole of the evidence, because a second read leaves no other
+# trace. Only an object whose `$` answers differently on successive reads could
+# see one, only on the branch that made it -- the fallback, per the amendment
+# -- and no object a constructor builds is such an object. Both branches are
+# counted even so, since what the amendment fixes is the count on each and not
+# the difference between them.
+test_that("a printed Grouping specification asks for its kind once", {
+  count_reads <- function(kind, read = print) {
+    reads <- 0L
+    spec <- rlang::new_environment(list(args = list()))
+    makeActiveBinding(
+      "type",
+      function() {
+        reads <<- reads + 1L
+        kind
+      },
+      spec
+    )
+    line <- utils::capture.output(
+      read(structure(spec, class = "margin_grouping_spec"))
+    )
+    list(reads = reads, line = line)
+  }
+
+  # The counter first, through the helper the counts below come from rather
+  # than a copy of it: a reader that asks twice reports two. A one below is
+  # then a second read that did not happen, and not a counter that cannot
+  # report more than one -- which is the failure a zero would not reveal,
+  # since a counter that stopped entirely reports zero and the assertions
+  # below already refuse that.
+  twice <- count_reads("set", read = function(x) cat(x$type, x$type, "\n"))
+  expect_identical(twice$line, "set set ")
+  expect_identical(twice$reads, 2L)
+
+  # The branch a rule answers, which read once before and reads once now.
+  with_rule <- count_reads("set")
+  expect_identical(
+    with_rule$line,
+    "<marginplyr grouping specification: grouping_set>"
+  )
+  expect_identical(with_rule$reads, 1L)
+
+  # The branch that printed the field, which is where the second read was.
+  without_rule <- count_reads("nonesuch")
+  expect_identical(
+    without_rule$line,
+    "<marginplyr grouping specification: nonesuch>"
+  )
+  expect_identical(without_rule$reads, 1L)
+})
