@@ -79,7 +79,7 @@ is itself a new finding about R.
 ## Pointers
 
 Pointers run one way. An artifact cites a note by repo-relative path, as
-`R-CMD-check.yaml` and `design/review-dispositions.md` already do. A note does
+`R-CMD-check.yaml` and `AGENTS.md` already do. A note does
 not list the artifacts that cite it: that list would have to be edited every
 time a new citation appeared, and a stale consumer list is worse than none
 because it is trusted.

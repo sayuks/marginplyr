@@ -27,7 +27,7 @@ So the record says what the round raised and what became of each finding, and st
 | a premise measured false | a dated note under `investigation/` |
 | a site deliberately left alone | a comment at the site, or the ADR that leaves it |
 
-Nine of the thirteen rejections in `design/review-dispositions.md` point at column two rather than holding anything themselves, which is what the table is derived from. While that file exists it takes whatever column two does not; #288 asks whether anything does not.
+The table is what the second column of a ledger's entries turned out to be. `design/review-dispositions.md` recorded review dispositions for a second time until #288 retired it: of its thirteen rejections, nine pointed at a test, a command, an issue, or a comment rather than holding anything, and of the rest, one moved to the site it was about and one was about a helper that no longer exists. Nothing there routes anywhere the table does not, which is why the file has no successor and this section is not one.
 
 ## What the skill looks for, and what is here
 

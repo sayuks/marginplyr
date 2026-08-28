@@ -322,6 +322,10 @@ abort_not_a_grouping_column <- function(helper,
 
 grouping_sql_expr <- function(var, con) {
   if (is.null(con)) {
+    # "grouping expressions" is the `GROUPING()` SQL built below, not a
+    # Grouping specification, so `CONTEXT.md`'s *Avoid: Grouping expression*
+    # does not reach this line. It is the one use of the term the glossary
+    # bans that is not a use of the term the glossary means, and it stands.
     stop("A database connection is required for SQL grouping expressions.")
   }
   dbplyr::sql_glue2(con, "GROUPING({.id var})")

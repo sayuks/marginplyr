@@ -583,8 +583,8 @@ re-derived it.
 
 A comment describes the code it sits beside, in the present tense. What a
 review found, which round answered it, and what a test elsewhere now covers are
-things the code does not hold — the ledger, the commit message, and the test
-are where each of those is read.
+things the code does not hold — the commit message and the test are where each
+of those is read.
 
 Every sentence a comment carries is a claim, so its length is a liability and
 not thoroughness: a paragraph nobody needed is a paragraph a later reader has
