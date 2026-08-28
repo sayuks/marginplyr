@@ -1,3 +1,6 @@
+# ADR 0013 owns the decision that a Grouping plan is inspected as an ordinary
+# tibble, which is what these assert through `inspect_grouping()`.
+
 test_that("inspect_grouping describes a rollup in Grouping plan order", {
   data <- data.frame(
     fixed = 1L,

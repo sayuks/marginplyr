@@ -15,6 +15,21 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Here rather than in a workflow of its own because it is repository hygiene
+  # on the same trigger, and beside `lint` rather than inside it because it
+  # needs no package installed: a byte count over `CLAUDE.md`'s closure runs on
+  # a bare R, so it reports before the dependency install that job waits on.
+  context-budget:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+
+      - name: Verify the always-loaded context is within its baseline
+        run: Rscript .github/scripts/verify-context-budget.R
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 20

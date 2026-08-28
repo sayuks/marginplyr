@@ -545,103 +545,17 @@ rows, columns, types, grouping, errors, laziness, and SQL semantics through
 those interfaces. They must not assert the Margin operation class, fields,
 constructor shape, or internal helper order.
 
-The test suite divides supporting contracts as follows:
+The test suite divides supporting contracts by module; `tests/testthat/` is
+what says which file holds which.
 
-- `test-grouping-interface.R` covers shared local behavior through the public
-  verbs, including Grouping plans, labels, factors, duplicate policies,
-  persistent groups, result grouping, summary selections, nesting, and the
-  documented `marginplyr_error` handler.
-- `test-margin-id.R` covers Grouping set occurrence identifiers across all
-  public verbs, including local, native, portable, duplicate, nesting,
-  collision, missing-value, zero-row, and laziness semantics.
-- `test-margin-order.R` covers `.sort` across all four public verbs per ADR
-  0018: the key and what follows from it, `"first"` reversing the Grouping
-  bits alone, factor level order, missing values last, fixed-key contiguity,
-  composite dimensions, duplicate occurrences, the `"none"` default, and the
-  vocabulary error. It asserts rows rather than the key builder, because the
-  ADR leaves each adapter to resolve the key in what its own query can name;
-  its two rendered-SQL tests carry only what rows cannot show.
-- `test-margin-label.R` covers Margin labels through the public verbs: named
-  per-dimension labels, the eight-case factor NA contract of ADR 0012, label
-  placement, collisions including unused factor levels, and typed missing
-  values on dtplyr, Arrow, portable SQL, and DuckDB.
-- `test-summarize-operation.R`, `test-expand-operation.R`, and
-  `test-nest-operation.R` cover lifecycle ordering and the single typed
-  metadata snapshot through public calls. `test-nest-operation.R` also covers
-  the nesting duplicate-drop policy and quosure environments of both nesting
-  verbs.
-- `test-share.R` covers contextual-share semantics through
-  `summarize_with_margins()`: rollup levels, typed grouping identity against
-  the default Margin label, missing keys separated from displayed margins,
-  the direct and `across()` grammar, source type and cardinality, output-name
-  collisions, dependency provenance, single evaluation of captured
-  expressions, and error precedence. Its Total-share tests state only what is
-  the second denominator's own — which plans it accepts, interchangeable
-  duplicate Grand total occurrences, the fixed-key stand-in used when `.by` is
-  empty, and that each diagnostic names the helper the caller wrote.
-- `test-grouping-backends.R` covers Arrow and dtplyr metadata behavior,
-  native and portable SQL strategy, lazy query composition, collision checks,
-  internal-name safety, and live DuckDB equivalence. It also carries the
-  Absorbing-backend contract of ADR 0025 in two parts, since one alone would
-  fail without saying why: that Arrow still absorbs the expressions the refusal
-  is asserted over, and that the refusal is raised for them across every Arrow
-  input class.
-- `test-share-backends.R` covers contextual-share adapter behavior for both
-  denominators, including targeted pre-query Arrow rejection, dtplyr
-  execution-time validation, lazy SQL composition, live SQLite portable
-  execution, and live DuckDB native-versus-portable results.
-- `test-inspect-grouping.R` covers `inspect_grouping()` as an ordinary tibble
-  per ADR 0013, including both formats, plan order, and that a lazy input is
-  inspected without executing a Margin operation.
-- `test-execution-conditions.R` covers the Condition context of ADR 0021
-  through `summarize_with_margins()`: a warning every grouping set raises
-  reported once with its count and under the caller's own column names,
-  branches raising different diagnostics reported one by one, the caller's
-  columns and verb in an error's context, the propagated class and cause, ten
-  keys substituted without corruption, a Package condition raised beside them
-  left alone, a warning a branch raised surviving a later branch's error, and
-  the lazy non-goal. Two of its cases hold the identity to what
-  a message says rather than to how it was laid out or what a value happens to
-  contain: one runs at five console widths, because cli wraps a bullet it
-  cannot fit, and one uses a grouping value and a caller diagnostic that carry
-  a bullet marker of their own. Its two snapshots carry the rendered messages,
-  because the identity is derived from rendered text and no structural
-  assertion would see dplyr reword it. Its one test of an internal helper is
-  the documented exception: the class half of a Repeated condition's identity,
-  and an empty message, are both unreachable through a verb, because dplyr
-  aggregates a branch's warnings into one condition of its own before
-  signalling. It also covers the shared condition-chain reader, which is the
-  module's and is reached without a verb: a chain arrives from a caller's own
-  selection failure, so the tests build one and take the two tidyselect shapes
-  from tidyselect itself. Neither consumer's diagnostic would report a
-  traversal that changed shape, which is why the reader is not asserted through
-  them alone.
-- `test-get-col-names.R` and `test-factor.R` cover the focused metadata and
-  factor backend contracts.
-- `test-grouping-plan.R` covers the backend-independent Grouping
-  specification compiler directly, including the complete kind-nesting
-  grammar, phase-sensitive empty rules, error precedence, and expansion order.
-  One of its contracts is asserted below the public seam because nothing above
-  it can see them: the nested kinds each parent kind admits, since a derivation
-  that stopped working and a position that admits nothing answer the same empty
-  set. A second is asserted through the seam with an observation from below it
-  — the number of times a colliding name's binding is read, counted through an
-  active binding, which reports every read where a promise reports the first.
-- `test-documentation.R` covers the reference documentation's own contracts:
-  that an italicised section cross-reference resolves in the topic it
-  promises, that every user-facing topic offers related-topic links, and that
-  the Grouping-identity comparison has exactly one canonical home.
-- `test-utils.R` and `test-retail-sales.R` cover the shared assertion helpers
-  and the documented properties of the bundled dataset.
+A test asserting below the seam, or through it on an observation from below,
+says why in its own file, beside the assertion that reason licenses.
 
 Package conditions are not tested in one file. Each module's tests assert the
-`marginplyr_error` class next to the behavior that raises it — the "use the
-package condition seam" tests in `test-grouping-interface.R`,
-`test-margin-label.R`, `test-summarize-operation.R`, `test-nest-operation.R`,
-`test-inspect-grouping.R`, and `test-utils.R` — while the matching
-"retain their class and cause" and "preserve user-expression conditions" tests
-assert that an External condition keeps its original class. Keeping the two
-halves adjacent is what makes the boundary in ADR 0015 reviewable.
+`marginplyr_error` class next to the behavior that raises it, while the
+matching tests assert that an External condition keeps its original class.
+Keeping the two halves adjacent is what makes the boundary in ADR 0015
+reviewable.
 
 Backend tests may instrument a backend seam or inspect semantic query shape,
 but should not couple to the Margin operation representation or require
@@ -787,6 +701,17 @@ workflow or verifier script, an ADR, another repository document, or a
 rejection with evidence. Naming which one is what the disposition does, and a
 comment is not among them: a finding a comment would answer is one of the
 others.
+
+A finding about prose is one of four: the prose is false, it duplicates an
+argument another file owns and can drift from it, it breaks a rule a repository
+document states, or something a repository document is required to hold is
+missing from it. How prose reads is not one, and the ledger records no finding
+that is.
+
+Two answers join the list above when a finding is about prose. A claim found
+false is deleted rather than restated, as *Code comments* in `AGENTS.md`
+requires of a comment. A finding this branch's Acceptance does not reach
+becomes a ticket rather than prose added here.
 
 Where code is misread without a comment, the finding is the naming or the
 decomposition that allowed the misreading, and it is reported as that.
