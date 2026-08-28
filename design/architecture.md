@@ -788,5 +788,16 @@ rejection with evidence. Naming which one is what the disposition does, and a
 comment is not among them: a finding a comment would answer is one of the
 others.
 
+A finding about prose is one of four: the prose is false, it duplicates an
+argument another file owns and can drift from it, it breaks a rule a repository
+document states, or something a repository document is required to hold is
+missing from it. How prose reads is not one, and the ledger records no finding
+that is.
+
+Two answers join the list above when a finding is about prose. A claim found
+false is deleted rather than restated, as *Code comments* in `AGENTS.md`
+requires of a comment. A finding this branch's Acceptance does not reach
+becomes a ticket rather than prose added here.
+
 Where code is misread without a comment, the finding is the naming or the
 decomposition that allowed the misreading, and it is reported as that.

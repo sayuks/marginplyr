@@ -614,6 +614,10 @@ Triage uses the five standard roles: `needs-triage`, `needs-info`, `ready-for-ag
 
 This is a single-context repo. Read the root `CONTEXT.md` and relevant ADRs under `design/adr/`. See `design/agents/domain.md`.
 
+### Code review
+
+Reviews run through `mattpocock-skills:code-review`. See `design/agents/code-review.md`.
+
 ### Investigation notes
 
 `investigation/` holds dated research notes. A note records what was
