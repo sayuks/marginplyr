@@ -1,5 +1,15 @@
 ## Local checks
 
+### Always-loaded context
+
+`CLAUDE.md` and the files its `@` references pull in are read before every task,
+whether or not the task reaches what they say, so that closure carries a byte
+budget. Run it with `Rscript .github/scripts/verify-context-budget.R`; the
+script holds the baseline and `lint.yaml` fails when the closure passes it.
+When it fires, move the argument to the file that owns the decision and cite it
+from here. Move the baseline only in the commit that spends it, saying there
+what was added and what paid for it.
+
 ### Linting
 
 Load the package before linting, so the local run matches `.github/workflows/lint.yaml`:
