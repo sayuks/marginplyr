@@ -834,12 +834,17 @@ grouping_kind_rules <- local({
   }
 })
 
+# Whether a kind read off an object is a name at all: one string, and not the
+# missing one. The lookup below needs this much before it can be made, and
+# answers `NULL` both for a kind that fails it and for a name it does not know,
+# so a caller that has to tell those apart asks this instead of reading that
+# answer.
+is_grouping_kind_name <- function(kind) {
+  is.character(kind) && length(kind) == 1L && !is.na(kind)
+}
+
 find_grouping_kind_rule <- function(kind) {
-  if (
-    !is.character(kind) ||
-      length(kind) != 1L ||
-      is.na(kind)
-  ) {
+  if (!is_grouping_kind_name(kind)) {
     return(NULL)
   }
   grouping_kind_rules()[[kind]]

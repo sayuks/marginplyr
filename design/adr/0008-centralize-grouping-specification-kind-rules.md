@@ -230,6 +230,99 @@ a condition is caught for what it says it is. Not catching it is the
 alternative that was rejected in #262, since an object that cannot answer for
 its kind is the case the reader exists for.
 
+## Amendment: the printed line for a kind that is no name
+
+The amendment above says which errors did not move, and #268 is that remainder:
+a field that answers with a value `cat()` cannot render. Deciding it moves two
+things, and only one of them is the constraint the amendments above move.
+
+**Condition classes.** The constraint holding error condition classes fixed is
+amended a fourth time, in the same direction as the amendment above and at the
+same site. A kind `cat()` refuses — a list, a closure, or an environment with
+something in it — raised `simpleError` from that call, and now raises nothing.
+It raised having already written the opening of the line, so what the reader
+was left with was an unterminated line as well.
+
+The same amendment covers the question between those two, which is asked of the
+same unvalidated value and can be answered the same way. Deciding whether a
+character kind is one name reaches the value's own `is.na()` and `length()`
+methods, both of which an object carrying the class can define, and either can
+raise instead of answering — before `cat()` is reached, so this half raised no
+partial line and was never visible as one. It is caught for the reason the read
+is, in a catch of the printer's own rather than the reader's, and that catch is
+narrow in what it decides and not in what it swallows, as
+`grouping_spec_kind()`'s is: a value no name can be got out of has none,
+whatever stopped it. It is `tryCatch(error = )` again, so the trade the
+amendment above records under *the handler the read is wrapped in* is made a
+second time on this line.
+
+With that, `print.margin_grouping_spec()` completes a line for every object
+carrying the class whose fields and methods either answer or raise an error.
+Three questions are asked of a value nothing has validated — the field is read,
+what the read produced is classified, and the classification is rendered — and
+the first two are caught, while the third cannot raise on what the second
+answers with: every branch of it answers with a character — the empty string, a
+constructor name the registry holds, or the kind itself, which
+`is.character()` has answered for.
+
+The qualification is the read's as much as this one's. `tryCatch(error = )`
+catches a condition for what it says it is, so a condition raised with `stop()`
+whose class does not inherit `error` is caught by neither and reaches the
+caller. Widening either to `condition` is the rewrite #268 rejects, since it
+would take a warning signalled on the way to answering for a failure to answer,
+and a test holds that direction. Under `options(warn = 2)` a warning is an
+error and is caught, which is R's semantics for the option rather than
+something decided here.
+
+A completed line is also not always one line. A kind that is one name and
+contains a newline prints across two, exactly as it did before this change: it
+reaches `cat()` through the fallback that names a kind the registry does not
+know, since no constructor this registry holds is spelled with one.
+
+The guards read the same field and reach the same methods, and this leaves them
+alone, in #280. What a guard does about a raising method is a change to the
+condition a call raises rather than to a printed line.
+
+**The printed line.** The claim the amendment above makes — the wording is
+unchanged for every object whose `$` is an ordinary field read — is what moves
+here, and it moves for exactly the three shapes #264 pinned against it: `1:3`
+printed `123`, `c("a", "b")` printed `ab`, and `NA_character_` printed `NA`.
+Each prints the empty name now: `is_grouping_kind_name()` is asked before the
+registry is — the predicate `find_grouping_kind_rule()` asks, so that what may
+be printed and what may be looked up remain one question — and a kind that is
+no name answers nothing without reaching the fallback at all.
+
+What those lines were evidence of goes with them. #264 pinned them because this
+printed line was where a reader narrowed to a character scalar could be seen —
+the shared reader answering with what the field held rather than with a name —
+and the line no longer varies with that narrowing. No test distinguishes it
+now, since a guard refuses an object no rule answers for and is given no rule
+whichever way the reader answers. One behaviour still does, and it is the one
+#280 is filed for: a kind whose classification raises reaches a guard as an
+error rather than as a value. Until that ticket decides, the reader's contract
+is recorded here rather than observed.
+
+The line printed instead is not new: an object answering no kind prints it, an
+object whose kind cannot be read prints it per the amendment above, and a kind
+of no length printed it before this change — `character()` and an empty
+environment among them — `cat()` rendering anything of no length as nothing.
+Which of them a given object is goes unreported, for the reason the amendment
+above gives.
+
+Rendering the field rather than dropping it is the alternative, and it was
+rejected for what it would have to promise. A rendering that always works is
+one marginplyr chooses for objects it never builds: `deparse()` and `format()`
+are both unbounded in length, and `format()` dispatches, so a `format()` method
+of the value's own raises exactly where the rendering is supposed to save the
+line. Guarding the `cat()` call is not an alternative at all, since the opening
+of the line is written by the time it raises.
+
+Nothing a constructor builds is affected, here as in the amendment above: every
+kind one stores is one name, so the branch is not reached. The constraint on
+the number and timing of evaluations is not reached either — the kind is read
+once, as the amendment above left it, and the predicate reads the value that
+read returned rather than the field again.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:

@@ -205,13 +205,6 @@ new_grouping_spec <- function(type, args) {
 #' @exportS3Method
 #' @noRd
 print.margin_grouping_spec <- function(x, ...) {
-  # The kind stored on the object is internal; three of the five kinds are not
-  # the name of any function a caller can write. The kind rules already carry
-  # each kind's public constructor, so a new kind names itself correctly here
-  # without an edit. A kind with no rule is not constructible through the
-  # package, and printing one falls back to what it stores rather than
-  # reporting no name at all.
-  #
   # The kind is read through `grouping_spec_kind()`, the reader the two guards
   # that can be handed an unvalidated object share, because this site asks
   # their question of the same field: whether the object can be asked for a
@@ -221,30 +214,55 @@ print.margin_grouping_spec <- function(x, ...) {
   # this site, because a guard has a refusal to reach and a print method has
   # none, so the answer there was not available here.
   #
-  # What is printed instead is the line an object answering `NULL` already
-  # prints: the fallback below names nothing for a kind that is absent, and a
-  # read that raised is absent for this line's purposes, whatever raised it.
-  # Reporting which of the two it was would be a printed line saying what the
-  # object is, and that is the guards' sentence to say -- the same distinction
-  # `grouping_spec_kind()` itself declines to draw.
+  # What is printed for an object that cannot be asked is the line an object
+  # answering `NULL` already prints: the naming below answers nothing for a
+  # kind that is absent, and a read that raised is absent for this line's
+  # purposes, whatever raised it. Reporting which of the two it was would be a
+  # printed line saying what the object is, and that is the guards' sentence to
+  # say -- the same distinction `grouping_spec_kind()` itself declines to draw.
   #
-  # Binding the kind is what makes the read one, where the fallback below used
-  # to print the field by asking for it a second time. ADR 0008's printed-line
-  # amendment decides that count, and states what reading through a shared
-  # function costs as a property rather than as a list: the wording is
-  # unchanged for every object whose `$` is an ordinary field read, and it is a
-  # `$` doing something other than answer that can see the difference. The
-  # count is the part of that a test can hold to a number, and one counts it
-  # rather than describing it.
-  #
-  # What is decided here is the read and nothing after it. A field that answers
-  # with a value `cat()` refuses is not this fallback's case -- the read
-  # succeeded, and the value is what the line then cannot be finished from --
-  # so it is left where #264's scope left it, printing exactly what it printed
-  # before, and it is #268.
+  # Binding the kind is what makes the read one: what is named below is the
+  # value the read returned, not the field asked a second time. ADR 0008's
+  # amendment for a specification the printer could not read decides that
+  # count, and states what reading through a shared function costs.
   kind <- grouping_spec_kind(x)
-  rule <- find_grouping_kind_rule(kind)
-  name <- if (is.null(rule)) kind else rule$constructor
-  cat("<marginplyr grouping specification: ", name, ">\n", sep = "")
+  cat(
+    "<marginplyr grouping specification: ",
+    grouping_kind_printed_name(kind),
+    ">\n",
+    sep = ""
+  )
   invisible(x)
+}
+
+# The name a kind prints under, or the empty string where it has none. The
+# caller holds a kind some object answered with, or `NULL` where none could be
+# read; nothing about it has been established.
+#
+# The kind stored on a specification is internal, and three of the five are not
+# the name of any function a caller can write, so the rules' own constructor
+# names them: a new kind names itself correctly here without an edit. The three
+# answers are a kind a rule names, a kind that is one name no rule knows and so
+# names itself, and a kind that is no name at all. ADR 0008's amendment for a
+# kind that is no name decides the last, which falls here as the empty string
+# (#268).
+#
+# `is.na()` and `length()` are generic, so deciding which of the three a
+# character kind takes reaches methods of the value's own, and either can raise
+# instead of answering; a kind of another type is refused by `is.character()`,
+# which does not dispatch, before they are reached. That the catch is the
+# answer to that is the same amendment's. Its extent is what only this site
+# knows: the registry lookup is inside it, since its own guard asks those two
+# again, and the caller's `cat()` is outside, taking a character whichever
+# answer this returns.
+grouping_kind_printed_name <- function(kind) {
+  tryCatch(
+    if (!is_grouping_kind_name(kind)) {
+      ""
+    } else {
+      rule <- find_grouping_kind_rule(kind)
+      if (is.null(rule)) kind else rule$constructor
+    },
+    error = function(cnd) ""
+  )
 }

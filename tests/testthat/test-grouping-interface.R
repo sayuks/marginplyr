@@ -1141,6 +1141,25 @@ test_that("a printed Grouping specification names the constructor called", {
   )
 })
 
+# The line a specification with no name to print prints, and the invisible
+# return a print method makes whatever it printed. The three tests below assert
+# it of shapes that reach it for four different reasons -- a kind that is
+# absent, a kind that cannot be read, a kind that is no name, a kind that
+# raises on being classified -- and that one line covers them all is the
+# decision itself, so those tests ask
+# for it in one place. The counting test further down spells the line out
+# instead, having a read count to assert beside it. A shape that raises fails
+# here as an error, since the raise leaves `capture.output()` with nothing to
+# return and the comparison below is never made.
+expect_empty_name_line <- function(spec, info = NULL) {
+  expect_identical(
+    utils::capture.output(returned <- withVisible(print(spec))),
+    "<marginplyr grouping specification: >",
+    info = info
+  )
+  expect_identical(returned, list(value = spec, visible = FALSE), info = info)
+}
+
 # The last reader of a kind that can be handed an object nothing has validated,
 # and the one #262 left. A guard has a refusal to reach, so reading the kind
 # too early there answered a forged `.grouping` with the wrong error; `print()`
@@ -1161,10 +1180,7 @@ test_that("a printed Grouping specification asks for a kind it may not have", {
   # objects below join rather than change: one that cannot be asked names no
   # constructor for the same reason one that answers `NULL` names none.
   kindless <- structure(list(args = list()), class = "margin_grouping_spec")
-  expect_identical(
-    utils::capture.output(print(kindless)),
-    "<marginplyr grouping specification: >"
-  )
+  expect_empty_name_line(kindless)
 
   unreadable <- list(
     `an atomic vector` = structure(1:3, class = "margin_grouping_spec"),
@@ -1179,70 +1195,111 @@ test_that("a printed Grouping specification asks for a kind it may not have", {
     })
   )
   for (shape in names(unreadable)) {
-    spec <- unreadable[[shape]]
-    expect_identical(
-      utils::capture.output(returned <- withVisible(print(spec))),
-      "<marginplyr grouping specification: >",
-      info = shape
-    )
-    # A print method returns its argument invisibly whatever it printed, so an
-    # object it could not read is still the object the caller passed.
-    expect_identical(
-      returned,
-      list(value = spec, visible = FALSE),
+    expect_empty_name_line(unreadable[[shape]], info = shape)
+  }
+})
+
+# The other reason no rule answers, and the one the printed field came from.
+# `find_grouping_kind_rule()` refuses two different things: a kind that is one
+# name the registry does not know, which is pinned above and prints itself, and
+# a kind that is no name at all, which is every shape below. Nothing is named
+# for the second, and it is refused before the registry is asked, so the line
+# it prints is the line an object answering no kind prints (#268).
+#
+# The first three shapes are #264's pin, and this test is where the decision
+# that moved them is visible rather than in a line nothing asserts. ADR 0008's
+# amendment for a kind that is no name is where the decision lives.
+#
+# What the shapes vary is why the kind is no name -- its type, its length, its
+# missingness -- against a line that does not vary, which is why they are
+# asserted together rather than one by one. None of them reaches `cat()`:
+# `is_grouping_kind_name()` refuses each first -- four for their type, and the
+# three character ones for their length or their missingness.
+test_that("a printed Grouping specification omits a kind that is no name", {
+  no_name <- list(
+    `a longer vector` = 1:3,
+    `two names` = c("a", "b"),
+    `a missing name` = NA_character_,
+    `no name at all` = character(),
+    `a list` = list("a"),
+    `a closure` = function() 1,
+    `an environment` = rlang::new_environment(list(x = 1))
+  )
+
+  for (shape in names(no_name)) {
+    expect_empty_name_line(
+      new_grouping_spec(no_name[[shape]], list()),
       info = shape
     )
   }
 })
 
-# The other half of what the reading decides, and the half only this asserts:
-# routing the kind through `grouping_spec_kind()` put a new function in front
-# of a line whose wording #264 fixed for every object that printed before it.
-# A kind that is read and is not one name is where that could be lost, because
-# `find_grouping_kind_rule()` answers `NULL` for it and the fallback then
-# prints the kind itself -- so a reader narrowed to a character scalar, the
-# narrowing this most easily becomes, would print the empty name here and fail
-# nothing. The character kind no rule answers is pinned above; this is the kind
-# no rule answers for the other reason.
+# The last question this line asks of a value nothing has validated. Deciding
+# whether a kind is one name asks the value's own `is.na()` and `length()`,
+# both of which an object carrying the class can answer by raising, so the
+# printed line is at the mercy of a method of the object's the way it was of a
+# `$` of the object's until #264. Every shape here holds `set` underneath, so
+# a classification that answers names `grouping_set`: the empty name is what
+# says the catch fired, and the named line is what says it did not.
 #
-# `cat()` is what prints the fallback, so what these shapes pin is its
-# rendering and not a wording marginplyr chose. That is also the boundary the
-# fix reached: a kind `cat()` refuses raises from that call, having already
-# written the opening of the line, and belongs to #268 rather than to this
-# ticket -- the read succeeded there, and #264's scope reaches the read.
-test_that("a printed Grouping specification renders a kind that is no name", {
-  as_kind <- function(type) {
-    structure(list(type = type, args = list()), class = "margin_grouping_spec")
+# The guards read the same field and reach the same methods, and are left
+# alone: the amendment says why, and #280 is where they are filed.
+test_that("a printed Grouping specification classifies a kind that may raise", {
+  kind_answering <- function(generic, suffix, method) {
+    class_name <- paste0("marginplyr_kind_", suffix)
+    registerS3method(generic, class_name, method, envir = asNamespace("base"))
+    structure("set", class = class_name)
   }
 
-  expect_identical(
-    utils::capture.output(print(as_kind(1:3))),
-    "<marginplyr grouping specification: 123>"
+  raises <- function(x, ...) rlang::abort("classifying this kind raises")
+  for (generic in c("is.na", "length")) {
+    suffix <- paste0(sub(".", "_", generic, fixed = TRUE), "_raises")
+    expect_empty_name_line(
+      new_grouping_spec(kind_answering(generic, suffix, raises), list()),
+      info = generic
+    )
+  }
+
+  # An error is caught and nothing else is, which is a choice rather than the
+  # limit of one: a method may signal a warning on its way to answering, and a
+  # kind that warns is still a kind. Catching `condition` would take the
+  # warning for a failure to answer and name nothing, so this is what fails if
+  # the catch is ever widened to one. The warnings are read as a set because
+  # classifying asks the method more than once -- the predicate asks, and the
+  # registry lookup's own guard asks again -- and no decision fixes that count
+  # the way ADR 0008 fixes the count of field reads.
+  warns <- kind_answering("is.na", "is_na_warns", function(x, ...) {
+    warning("classifying this kind warns")
+    FALSE
+  })
+  raised <- character()
+  line <- withCallingHandlers(
+    utils::capture.output(print(new_grouping_spec(warns, list()))),
+    warning = function(cnd) {
+      raised <<- c(raised, conditionMessage(cnd))
+      invokeRestart("muffleWarning")
+    }
   )
-  expect_identical(
-    utils::capture.output(print(as_kind(c("a", "b")))),
-    "<marginplyr grouping specification: ab>"
-  )
-  expect_identical(
-    utils::capture.output(print(as_kind(NA_character_))),
-    "<marginplyr grouping specification: NA>"
-  )
+  expect_identical(line, "<marginplyr grouping specification: grouping_set>")
+  expect_setequal(raised, "classifying this kind warns")
 })
 
 # What the reading did not leave alone, in the part of it that can be held to a
-# number. ADR 0008's printed-line amendment states the rest as a property --
-# the wording is unchanged for every object whose `$` is an ordinary field read
-# -- and illustrates it with the ways a `$` doing something else can see the
-# difference. This is what holds the tree to the count: the field is read once
-# on both branches, where the fallback used to ask a second time to print what
-# it had already been given.
+# number. ADR 0008's amendment for a specification the printer could not read
+# states the rest as a property, which its amendment for a kind that is no name
+# then narrows -- for the three shapes "omits a kind that is no name" pins from
+# #264, and no others.
+# This is what holds the tree to the count: the field is read once on each of
+# the three branches, none of them asking again for what it has already been
+# given.
 #
 # Counting is the whole of the evidence, because a second read leaves no other
 # trace. Only an object whose `$` answers differently on successive reads could
 # see one, only on the branch that made it -- the fallback, per the amendment
-# -- and no object a constructor builds is such an object. Both branches are
+# -- and no object a constructor builds is such an object. Every branch is
 # counted even so, since what the amendment fixes is the count on each and not
-# the difference between them.
+# the difference between them. The third branch is #268's, and it reads once as
+# the two the amendment was written for do.
 test_that("a printed Grouping specification asks for its kind once", {
   count_reads <- function(kind, read = print) {
     reads <- 0L
@@ -1286,4 +1343,13 @@ test_that("a printed Grouping specification asks for its kind once", {
     "<marginplyr grouping specification: nonesuch>"
   )
   expect_identical(without_rule$reads, 1L)
+
+  # The branch that names nothing, which classifies the value it was given
+  # rather than asking for it again.
+  without_name <- count_reads(1:3)
+  expect_identical(
+    without_name$line,
+    "<marginplyr grouping specification: >"
+  )
+  expect_identical(without_name$reads, 1L)
 })

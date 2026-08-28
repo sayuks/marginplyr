@@ -1122,9 +1122,9 @@ fix — #268.
 The ticket's "wording unchanged for every object that prints today" is
 qualified, and the qualification is load-bearing rather than cautious: reading
 through a shared function rather than in place is visible to a `$` that does
-something other than answer. ADR 0008's printed-line amendment is where that
-property is written, in place of a list of exceptions, and every object a
-constructor builds satisfies it.
+something other than answer. ADR 0008's amendment for a specification the
+printer could not read is where that property is written, in place of a list of
+exceptions, and every object a constructor builds satisfies it.
 
 *Evidence:* `test-grouping-interface.R` "a printed Grouping specification asks
 for a kind it may not have", which prints the class over an atomic vector, over
@@ -1137,6 +1137,12 @@ once", which counts the reads on both branches and asserts its counter through
 the helper the counts come from, since a second read leaves no other trace; and
 "a printed Grouping specification names the constructor called", which is what
 fails if the shared reader changes what a well-formed specification prints.
+
+One name in that evidence has moved: #268 renamed "renders a kind that is no
+name" to "omits a kind that is no name" when it decided what those shapes
+print, and gave the counting test named beside it a third branch to count. ADR
+0008's amendment for a kind that is no name records what became of the
+narrowing the renamed test held.
 
 **A specification stored as a function is read by tidyselect as a predicate,
 so #190's refusal never fires** (Spec). **Not fixed — open, #265.** A nested
