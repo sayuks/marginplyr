@@ -576,6 +576,16 @@ review found, which round answered it, and what a test elsewhere now covers are
 things the code does not hold — the ledger, the commit message, and the test
 are where each of those is read.
 
+Every sentence a comment carries is a claim, so its length is a liability and
+not thoroughness: a paragraph nobody needed is a paragraph a later reader has
+to measure, and one that measures false is a comment asserting something the
+code does not do. Write what the site needs and stop, and delete a claim found
+false rather than restate it — a restatement is a new claim about the same
+thing and the next reading has it to measure too, which is how a fix's prose
+grows past the fix. Neither reaches a sentence carrying what this file requires
+to be written down, a header's contract here or the reason a `# nolint` in R
+code names under *Linting*: that one is kept, and corrected where it is wrong.
+
 No scan enforces any of this, and that is a decision rather than a gap. What
 makes a comment wrong is that a paragraph re-derives an argument another file
 owns, which is a semantic property: a scan over `R/` either fires on comments
