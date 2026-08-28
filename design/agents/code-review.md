@@ -4,6 +4,8 @@ Reviews here run through that skill. It reviews the diff since a fixed point on 
 
 What may be a finding, and how one is answered, is not here. `design/architecture.md`'s *Answering a review* governs that, for this reviewer and for any other.
 
+That section binds a reviewer only if the reviewer is handed it. This skill composes its own sub-agent prompts (`SKILL.md`, step 4), so pass what a finding about prose may be alongside the standards sources, in the same call.
+
 ## What the skill looks for, and what is here
 
 | The skill looks for | Here |
