@@ -1,3 +1,6 @@
+# Margin labels through the public verbs. ADR 0012 owns the contract separating
+# a factor's NA level from a missing Margin value, which these assert.
+
 test_that("named Margin labels apply per dimension and default to last", {
   data <- data.frame(
     first = factor(c("a", "b"), levels = c("a", "b")),
