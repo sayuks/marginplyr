@@ -2,17 +2,15 @@
 
 Reviews here run through that skill. It reviews the diff since a fixed point on two axes — Standards and Spec — as parallel sub-agents. This file maps what it expects onto what this repository has.
 
-What may be a finding, and how one is answered, is not here. `design/architecture.md`'s *Answering a review* governs that, for this reviewer and for any other.
-
-That section binds a reviewer only if the reviewer is handed it. This skill composes its own sub-agent prompts (`SKILL.md`, step 4), so pass what a finding about prose may be alongside the standards sources, in the same call.
+What may be a finding, and how one is answered, is not here. `design/architecture.md`'s *Answering a review* governs that, for this reviewer and for any other. `AGENTS.md` carries what the invocation has to hand this skill, because `SKILL.md` step 4 composes both sub-agent prompts from the standards sources the call names and nothing else reaches them.
 
 ## What is reviewed, and where the record goes
 
 The subject is a diff, so the record goes where the diff is: the pull request. An issue gets a pointer and not a copy — the issue is where the ticket is argued, and a second copy of the record is one more thing to keep in step.
 
-So the branch is pushed and the pull request is open *before* the record is written. A record names the snapshot it read, and a SHA on an unpushed branch resolves for nobody: #280's review was posted to the issue while its branch was still local, so every SHA in it cited a commit no reader could open, and the record had to be moved (PR #286). For the same reason, rebase before the review and not after — a rebase rewrites the SHAs a published record already named.
+A record names the snapshot it read, which is why `AGENTS.md` has the branch pushed and the pull request open before one is written: a SHA on an unpushed branch resolves for nobody. #280's review was posted to the issue while its branch was still local, so every SHA in it cited a commit no reader could open, and the record had to be moved (PR #286). For the same reason, rebase before the review and not after — a rebase rewrites the SHAs a published record already named.
 
-The fixed point is the merge-base with `main`, which is what the three-dot form `git diff <base>...HEAD` computes. Reviewing against a `main` the branch has fallen behind reports that gap as though it were the branch's.
+`git diff <base>...HEAD` is the three-dot form that computes the merge-base `AGENTS.md` names as the fixed point. Reviewing against a `main` the branch has fallen behind reports that gap as though it were the branch's.
 
 What the record carries is small, because most of a review is recorded by what it produced. A finding answered in code is recorded by the code and by the test that fails without it; one answered in prose is recorded by the diff that changed the prose. Restating either is a second copy nothing compares against the first, which is what *Code comments* in `AGENTS.md` refuses for a comment, on an argument that does not stop at comments.
 
