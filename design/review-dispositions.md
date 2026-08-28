@@ -1157,6 +1157,75 @@ same position takes #190's refusal for an object of any other storage.
 
 ---
 
+## 12. The review of #280's branch
+
+A two-axis review of the branch implementing #280, run in one round and
+answered on the branch in `9195644`, whose message names each finding it
+answers. The pull request carries the round in full — snapshot, finding, line,
+contract, counterexample, scope, disposition, evidence — and is the record;
+the issue holds a pointer to it.
+
+Seven findings, and five of them leave nothing owed here. The correctness
+finding both axes raised independently is exempt under the first leg:
+`9195644` names it and lands the test that fails without it, which is where
+this file stops and the diff starts. Four more moved only prose — two source
+comments re-deriving ADR 0008's own argument or narrating the rounds that
+produced them, and two sentences of that ADR measured false — and the second
+leg exempts each.
+
+What reaches this file is what a reader of the diff cannot check by reading
+it: one test refactor, whose executable lines no counterfactual covers; one
+assertion that passes with or without the change it was added for; and one
+alternative weighed and rejected, which no diff holds at all.
+
+**The forged-kind fixture is built three times** (Standards, Fowler
+*Duplicated Code*). **Fixed**, and the entry is here because the fix changes
+executable lines that no test fails without — the blunt line this file draws
+at the executable rather than at what a diff happens to show. The duplication
+is not cosmetic: nothing unregisters an S3 method, so two sites spelling one
+class name each get whichever was registered last, in whichever order testthat
+ran their files. *Evidence:* the hazard reproduces in two lines —
+`registerS3method("is.na", "shared_name", function(x, ...) stop("site A"),
+envir = asNamespace("base"))` followed by the same call binding
+`function(x, ...) FALSE` answers `FALSE`, the first method unreachable.
+`tests/testthat/helper-forged-kinds.R` now holds `kind_answering()`, deriving
+the class name from a per-site `purpose` and the generics, and the five call
+sites in `test-grouping-interface.R` and `test-grouping-plan.R` take it from
+there; `git show 9195644 -- tests/` is the change, and the full suite under
+`NOT_CRAN=true` is green across it.
+
+**The acceptance's blame clause is unasserted** (Spec). **Fixed, and it was
+never broken** — which is why it is here rather than exempt. #280 asks for
+`marginplyr_error` "blamed on the call the caller wrote", and the branch's
+first commit asserted the class and the message alone. The blame was already
+correct, so the assertion added for it passes against the code before the fix
+as well as after, and its diff establishes nothing a reader could check.
+*Evidence:* `test-grouping-plan.R` "a grouping specification kind that raises
+is refused by the guard" now asserts
+`rlang::call_name(conditionCall(error))` for both public routes; the measured
+value before the assertion was written was
+`inspect_grouping(d, .grouping = spec)`. The neighbouring test this one was
+told to sit beside still omits it, and that is left alone: the guard it covers
+is reached from the compiler, which has no call a caller wrote.
+
+**Stripping the class before classifying, rather than after** (raised in
+answering the correctness finding). **Rejected.** It is the stronger fix on its
+face: `is.character()` and `unclass()` can be intercepted by neither S3 nor S4,
+so a classification that strips first cannot reach a method of the value's own
+and is total by construction, with no catch and none of the exiting-handler
+trade ADR 0008 records. It was rejected because being total that way means
+never asking the value's own methods, which is the question #268 decided the
+printed line asks. *Evidence:* `setMethod("is.character", ...)` and
+`setMethod("unclass", ...)` both refuse with *must supply a function skeleton*,
+which is the half that makes the alternative total; and substituting it for
+`grouping_kind_name()`'s body fails seven assertions —
+`test-grouping-interface.R:1255` and `:1282`, which are #268's, and
+`test-grouping-plan.R:452`, `:1064`, `:1065`, `:1066`, which are this
+ticket's. Reversing a decision recorded in ADR 0008 is a ticket's to do, and
+this branch's acceptance does not reach it.
+
+---
+
 ## Status
 
 Every observation from every recorded review is dispositioned above, or is

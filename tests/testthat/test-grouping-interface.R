@@ -1213,8 +1213,8 @@ test_that("a printed Grouping specification asks for a kind it may not have", {
 # What the shapes vary is why the kind is no name -- its type, its length, its
 # missingness -- against a line that does not vary, which is why they are
 # asserted together rather than one by one. None of them reaches `cat()`:
-# `is_grouping_kind_name()` refuses each first -- four for their type, and the
-# three character ones for their length or their missingness.
+# `grouping_kind_name()` answers nothing for each first -- four for their type,
+# and the three character ones for their length or their missingness.
 test_that("a printed Grouping specification omits a kind that is no name", {
   no_name <- list(
     `a longer vector` = 1:3,
@@ -1242,22 +1242,17 @@ test_that("a printed Grouping specification omits a kind that is no name", {
 # a classification that answers names `grouping_set`: the empty name is what
 # says the catch fired, and the named line is what says it did not.
 #
-# The guards read the same field and reach the same methods, and are left
-# alone: the amendment says why, and #280 is where they are filed.
+# The guards read the same field and reach the same methods, and #280 gave them
+# the same answer, which is what moved the catch into `grouping_kind_name()`.
+# What that leaves here is this line, which is where the catch firing is
+# visible as a printed line rather than as a condition class.
 test_that("a printed Grouping specification classifies a kind that may raise", {
-  kind_answering <- function(generic, suffix, method) {
-    class_name <- paste0("marginplyr_kind_", suffix)
-    registerS3method(generic, class_name, method, envir = asNamespace("base"))
-    structure("set", class = class_name)
-  }
-
-  raises <- function(x, ...) rlang::abort("classifying this kind raises")
   for (generic in c("is.na", "length")) {
-    suffix <- paste0(sub(".", "_", generic, fixed = TRUE), "_raises")
-    expect_empty_name_line(
-      new_grouping_spec(kind_answering(generic, suffix, raises), list()),
-      info = generic
+    kind <- kind_answering(
+      stats::setNames(list(raising_kind_method), generic),
+      "printed_raising"
     )
+    expect_empty_name_line(new_grouping_spec(kind, list()), info = generic)
   }
 
   # An error is caught and nothing else is, which is a choice rather than the
@@ -1265,13 +1260,16 @@ test_that("a printed Grouping specification classifies a kind that may raise", {
   # kind that warns is still a kind. Catching `condition` would take the
   # warning for a failure to answer and name nothing, so this is what fails if
   # the catch is ever widened to one. The warnings are read as a set because
-  # classifying asks the method more than once -- the predicate asks, and the
-  # registry lookup's own guard asks again -- and no decision fixes that count
-  # the way ADR 0008 fixes the count of field reads.
-  warns <- kind_answering("is.na", "is_na_warns", function(x, ...) {
-    warning("classifying this kind warns")
-    FALSE
-  })
+  # nothing fixes how often classifying asks the method the way ADR 0008 fixes
+  # the count of field reads -- the registry lookup asked it a second time
+  # before #280 handed that lookup a classified name.
+  warns <- kind_answering(
+    list(is.na = function(x, ...) {
+      warning("classifying this kind warns")
+      FALSE
+    }),
+    "printed_warning"
+  )
   raised <- character()
   line <- withCallingHandlers(
     utils::capture.output(print(new_grouping_spec(warns, list()))),

@@ -247,22 +247,16 @@ print.margin_grouping_spec <- function(x, ...) {
 # kind that is no name decides the last, which falls here as the empty string
 # (#268).
 #
-# `is.na()` and `length()` are generic, so deciding which of the three a
-# character kind takes reaches methods of the value's own, and either can raise
-# instead of answering; a kind of another type is refused by `is.character()`,
-# which does not dispatch, before they are reached. That the catch is the
-# answer to that is the same amendment's. Its extent is what only this site
-# knows: the registry lookup is inside it, since its own guard asks those two
-# again, and the caller's `cat()` is outside, taking a character whichever
-# answer this returns.
+# Deciding which of the three a kind takes is `grouping_kind_name()`'s, which
+# every reader of an unvalidated kind shares: a value whose own `is.na()` or
+# `length()` raises is no name there rather than an error here. What this site
+# holds afterwards is a name or nothing, so the `cat()` below takes a character
+# whichever branch answers.
 grouping_kind_printed_name <- function(kind) {
-  tryCatch(
-    if (!is_grouping_kind_name(kind)) {
-      ""
-    } else {
-      rule <- find_grouping_kind_rule(kind)
-      if (is.null(rule)) kind else rule$constructor
-    },
-    error = function(cnd) ""
-  )
+  name <- grouping_kind_name(kind)
+  if (is.null(name)) {
+    return("")
+  }
+  rule <- find_grouping_kind_rule(name)
+  if (is.null(rule)) name else rule$constructor
 }

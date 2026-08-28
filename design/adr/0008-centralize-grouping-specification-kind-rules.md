@@ -287,10 +287,10 @@ condition a call raises rather than to a printed line.
 unchanged for every object whose `$` is an ordinary field read — is what moves
 here, and it moves for exactly the three shapes #264 pinned against it: `1:3`
 printed `123`, `c("a", "b")` printed `ab`, and `NA_character_` printed `NA`.
-Each prints the empty name now: `is_grouping_kind_name()` is asked before the
-registry is — the predicate `find_grouping_kind_rule()` asks, so that what may
-be printed and what may be looked up remain one question — and a kind that is
-no name answers nothing without reaching the fallback at all.
+Each prints the empty name now: the value is classified before the registry is
+asked — by the same classification `find_grouping_kind_rule()` makes, so that
+what may be printed and what may be looked up remain one question — and a kind
+that is no name answers nothing without reaching the fallback at all.
 
 What those lines were evidence of goes with them. #264 pinned them because this
 printed line was where a reader narrowed to a character scalar could be seen —
@@ -299,8 +299,8 @@ and the line no longer varies with that narrowing. No test distinguishes it
 now, since a guard refuses an object no rule answers for and is given no rule
 whichever way the reader answers. One behaviour still does, and it is the one
 #280 is filed for: a kind whose classification raises reaches a guard as an
-error rather than as a value. Until that ticket decides, the reader's contract
-is recorded here rather than observed.
+error rather than as a value. The amendment below decides it, and the tests it
+names are where the reader's contract is observed.
 
 The line printed instead is not new: an object answering no kind prints it, an
 object whose kind cannot be read prints it per the amendment above, and a kind
@@ -322,6 +322,92 @@ kind one stores is one name, so the branch is not reached. The constraint on
 the number and timing of evaluations is not reached either — the kind is read
 once, as the amendment above left it, and the predicate reads the value that
 read returned rather than the field again.
+
+## Amendment: the condition class of a kind the guard could not classify
+
+The amendment above says the guards are left alone and why, and #280 is where
+that was reconsidered. The constraint holding error condition classes fixed is
+amended a fifth time, at the two guards in `validate_grouping_spec_early()`,
+and in the direction #262 already chose for the read there.
+
+A kind that was read still has to be classified, and deciding whether it is one
+name asks the value's own `is.na()` and `length()` methods. Either can raise
+instead of answering, and what came out of the guard was then whatever the
+object raised — `simpleError` for a `stop()` in the method, a class of the
+object's own where it aborted with one — in place of the
+`Invalid grouping specification.` refusal below it. The class such a call
+raises therefore moves to `marginplyr_error`, for the same reason #262 gives:
+this is the guard's own answer arriving rather than a new one being chosen,
+since ADR 0015 already assigns a malformed specification reaching this guard a
+Package condition and the refusal was already written for an object whose
+fields do not read as a specification's.
+
+Nothing else in the constraint moves with it. Every object that reached the
+refusal reaches it with the same message, the same call context, and at the
+same point, and no specification that compiled stops compiling: a kind that is
+one name and not the missing one is classified as it was and looked up as it
+was.
+
+**Where the classification is made.** The amendment above put a catch on this
+question in `print.margin_grouping_spec()`, and said its extent was what only
+that site knew. Giving the guards the same answer makes that false, so the
+catch moves down into `grouping_kind_name()`, which every reader of an
+unvalidated kind now shares as they already share `grouping_spec_kind()`. One
+function reads the field, one classifies what the read returned, and neither
+site can disagree with the other about what a kind is. The printer keeps no
+catch of its own: what it holds after classifying is a name or nothing.
+
+**What the classification answers with.** `grouping_kind_name()` answers with
+the name rather than with whether there is one, and the class is stripped from
+that answer. The class is what carries the raising methods, and the questions
+asked of a kind are not done being asked when it has been classified: `%in%`
+reaches `as.character()`, which dispatches too. A caller that classified a kind
+and then matched what it classified would raise on the line after the catch,
+which is what `check_ambiguous_nested_name()` did. The registry lookup needs no
+such protection — `[[` dispatches on the list and not on the index — and is
+inside the shared function anyway, so that one place asks a kind anything.
+
+The answer is then classified a second time, and that is not the first
+repeated. Catching what a method raises answers only the method that fails to
+answer; a method that answers wrongly passes the catch, and `length()`
+reporting `1` over two strings is such an answer. The first classification is
+put to the value the caller holds, so it is the value's own methods that
+answer it; the second is put to the answer, which has no class left to
+dispatch on, so it is R's reading of a character vector and cannot be a
+method's. What the function returns is therefore one string because nothing it
+returns has been taken on a method's word — not because the object was
+believed and then trusted. Whether the object *said* it was one string is what
+the first classification decides, and it decides it for the printed line, per
+the amendment above.
+
+**The nested-name site.** That site is not a guard and its answer is not a
+guard's: a kind it cannot classify is not a kind the position admits, so the
+column reading stands, which is the answer a binding that raises when it is
+read already gets. Three behaviours move there. A kind whose `length()` raises
+reached the caller as an untyped error and now decides nothing. A kind whose
+`as.character()` raises reached them the same way and is now classified, the
+class coming off before `%in%` is reached, so it is refused as ambiguous —
+which is what a kind spelling `set` in that position is for, and the raising
+method never bore on it. And a kind whose `is.na()` raises was refused as
+ambiguous, because that site never asked `is.na()`, and now declines.
+Classifying in one place is what removes the last, and an accidental difference
+between two sites reading one field is what this ADR centralizes kinds to
+avoid.
+
+**Evaluations.** The constraint holding the number and timing of evaluations is
+not reached. The field is read once, as the amendments above left it. How often
+classifying asks the value's own methods is fixed by no decision, which the
+amendment above already records, and it moves in both directions: it falls at
+the guards and at the printed line, where the registry lookup's own guard asked
+them a second time and is now handed a plain string; and it is unchanged in
+number at the nested-name site, which asks `is.na()` where it did not and
+reaches `as.character()` where it no longer does.
+
+**The handler the classification is wrapped in.** `tryCatch(error = )` a third
+time, so the trade the amendment for a specification the printer could not read
+records under *the handler the read is wrapped in* is made once more. An error
+is caught and a condition is not, so a method that warns on its way to
+answering still answers.
 
 ## Test strategy
 
