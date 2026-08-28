@@ -30,10 +30,9 @@ baseline_note <- "this gate, its entry in AGENTS.md, and #283's paragraph"
 entry <- "CLAUDE.md"
 
 # Reads `@path` references the way the harness does: one per line, leading
-# whitespace allowed, the rest of the line taken as the path. A reference inside
-# a fenced block is still a reference for this purpose -- the budget is what the
-# file costs, and a reader that resolves it costs that whether the fence was
-# meant to quote it or not.
+# whitespace allowed. A reference inside a fenced block is still a reference for
+# this purpose -- the budget is what the file costs, and a reader that resolves
+# it costs that whether the fence was meant to quote it or not.
 references <- function(path) {
   lines <- readLines(path, warn = FALSE)
   found <- regmatches(lines, regexpr("^\\s*@\\S+", lines))
