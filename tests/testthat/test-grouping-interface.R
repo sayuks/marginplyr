@@ -1213,8 +1213,8 @@ test_that("a printed Grouping specification asks for a kind it may not have", {
 # What the shapes vary is why the kind is no name -- its type, its length, its
 # missingness -- against a line that does not vary, which is why they are
 # asserted together rather than one by one. None of them reaches `cat()`:
-# `is_grouping_kind_name()` refuses each first -- four for their type, and the
-# three character ones for their length or their missingness.
+# `grouping_kind_name()` answers nothing for each first -- four for their type,
+# and the three character ones for their length or their missingness.
 test_that("a printed Grouping specification omits a kind that is no name", {
   no_name <- list(
     `a longer vector` = 1:3,
@@ -1242,8 +1242,10 @@ test_that("a printed Grouping specification omits a kind that is no name", {
 # a classification that answers names `grouping_set`: the empty name is what
 # says the catch fired, and the named line is what says it did not.
 #
-# The guards read the same field and reach the same methods, and are left
-# alone: the amendment says why, and #280 is where they are filed.
+# The guards read the same field and reach the same methods, and #280 gave them
+# the same answer, which is what moved the catch into `grouping_kind_name()`.
+# What that leaves here is this line, which is where the catch firing is
+# visible as a printed line rather than as a condition class.
 test_that("a printed Grouping specification classifies a kind that may raise", {
   kind_answering <- function(generic, suffix, method) {
     class_name <- paste0("marginplyr_kind_", suffix)
@@ -1265,9 +1267,9 @@ test_that("a printed Grouping specification classifies a kind that may raise", {
   # kind that warns is still a kind. Catching `condition` would take the
   # warning for a failure to answer and name nothing, so this is what fails if
   # the catch is ever widened to one. The warnings are read as a set because
-  # classifying asks the method more than once -- the predicate asks, and the
-  # registry lookup's own guard asks again -- and no decision fixes that count
-  # the way ADR 0008 fixes the count of field reads.
+  # nothing fixes how often classifying asks the method the way ADR 0008 fixes
+  # the count of field reads -- the registry lookup asked it a second time
+  # before #280 handed that lookup a classified name.
   warns <- kind_answering("is.na", "is_na_warns", function(x, ...) {
     warning("classifying this kind warns")
     FALSE

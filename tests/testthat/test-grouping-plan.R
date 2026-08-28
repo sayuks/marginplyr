@@ -433,6 +433,51 @@ test_that("a nested name the input and a binding both claim is refused", {
   )
 })
 
+# The other reader of a kind nothing has validated, and the one where the
+# guards' answer is not the answer: this site declines rather than refuses, so
+# what a method raising took from it was a compiled call rather than a
+# diagnostic (#280).
+#
+# Three methods, because this site asks one the guards do not. `is.na()` and
+# `length()` are the guards' pair, and a kind neither can classify is not a
+# kind this position admits, so the column reading stands -- the answer a
+# binding that raises when it is read already gets. `as.character()` is the
+# third: `%in%` dispatches through it, so a kind that classified was matched
+# with the class it carries still on it. Every shape holds `set` underneath,
+# which this position admits, so the third is refused as ambiguous and the
+# first two would be if they could be classified.
+test_that("a colliding binding whose kind may raise loses its reading", {
+  raises <- function(x, ...) rlang::abort("classifying this kind raises")
+  kind_answering <- function(generic) {
+    class_name <- paste0(
+      "marginplyr_nested_kind_",
+      sub(".", "_", generic, fixed = TRUE),
+      "_raises"
+    )
+    registerS3method(generic, class_name, raises, envir = asNamespace("base"))
+    structure("set", class = class_name)
+  }
+  compile_colliding <- function(kind) {
+    env <- rlang::env(rlang::caller_env(), s = new_grouping_spec(kind, list()))
+    compile_against(
+      eval(quote(grouping_sets(s)), envir = env),
+      c("s", "value")
+    )
+  }
+
+  for (generic in c("is.na", "length")) {
+    expect_identical(
+      compile_colliding(kind_answering(generic))$sets,
+      list("s"),
+      info = generic
+    )
+  }
+
+  refused <- expect_error(compile_colliding(kind_answering("as.character")))
+  expect_s3_class(refused, "marginplyr_error")
+  expect_identical(conditionMessage(refused), ambiguous_s_message)
+})
+
 test_that("the ambiguity refusal names a working spelling for each reading", {
   # Both spellings are executed rather than described, and they are read back
   # out of the diagnostic that printed them, so an advice line that stopped
@@ -928,6 +973,57 @@ test_that("a malformed grouping specification is refused by both guards", {
       expect_identical(
         conditionMessage(error),
         "Invalid grouping specification."
+      )
+    }
+  }
+})
+
+# The second hazard the read left, and #262's answer for the read applied to it
+# (#280). A kind that was read still has to be classified, and deciding whether
+# it is one name asks the value's own `is.na()` and `length()` methods; either
+# can raise instead of answering, and what came out of the guard was then
+# whatever the object raised, in place of the refusal below it.
+#
+# `set` underneath every shape, so nothing here is refused for the name it
+# holds: a classification that answered would compile. Both positions, for the
+# reason the test above writes every object in both, and the public routes as
+# well, because that is where the defect was reported and a guard is reached
+# from them through the whole lifecycle rather than the compiler alone.
+test_that("a grouping specification kind that raises is refused by the guard", {
+  raises <- function(x, ...) rlang::abort("classifying this kind raises")
+  kinds <- lapply(c("is.na", "length"), function(generic) {
+    class_name <- paste0(
+      "marginplyr_guard_kind_",
+      sub(".", "_", generic, fixed = TRUE),
+      "_raises"
+    )
+    registerS3method(generic, class_name, raises, envir = asNamespace("base"))
+    structure("set", class = class_name)
+  })
+  data <- data.frame(a = 1)
+  public <- list(
+    inspect_grouping = function(spec) inspect_grouping(data, .grouping = spec),
+    summarize_with_margins = function(spec) {
+      summarize_with_margins(data, n = dplyr::n(), .grouping = spec)
+    }
+  )
+
+  for (kind in kinds) {
+    spec <- new_grouping_spec(kind, list())
+    calls <- c(
+      list(
+        top = function(spec) compile_against(spec, "a"),
+        nested = function(spec) compile_against(grouping_sets(spec), "a")
+      ),
+      public
+    )
+    for (route in names(calls)) {
+      error <- expect_error(calls[[route]](spec))
+      expect_s3_class(error, "marginplyr_error")
+      expect_identical(
+        conditionMessage(error),
+        "Invalid grouping specification.",
+        info = route
       )
     }
   }

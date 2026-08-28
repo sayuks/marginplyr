@@ -9,16 +9,14 @@ validate_grouping_spec_early <- function(grouping_spec) {
     ))
   }
 
-  kind <- grouping_spec_kind(grouping_spec)
+  # Classified where it is read, so that what this guard holds from here on is
+  # a name and not a value that might still refuse to be one (#280).
+  kind <- grouping_kind_name(grouping_spec_kind(grouping_spec))
   # A catch of its own, because the two fields are not read together: an object
   # can refuse one while answering the other, and this is the only reader of
   # `args` before the guard below has run.
   args <- tryCatch(grouping_spec$args, error = function(cnd) NULL)
-  if (
-    !is.character(kind) ||
-      length(kind) != 1L ||
-      !is.list(args)
-  ) {
+  if (is.null(kind) || !is.list(args)) {
     abort_invalid_grouping_spec()
   }
 
@@ -392,8 +390,10 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 # class with no kind to read -- an atomic vector given the class offers no
 # field to read at all, which `grouping_spec_kind()` answers with `NULL`, and
 # a list without the field answers `NULL` too, neither of which is a kind this
-# position could admit. That reading is the guard's own, so the two cannot
-# disagree about what a kind is readable off. Both catches are narrow
+# position could admit. So is a kind that raises on being classified, which
+# `grouping_kind_name()` answers with `NULL` (#280). Both that reading and that
+# classification are the guard's own, so the two cannot disagree about what a
+# kind is or about what one is readable off. All three catches are narrow
 # in what they decide and not in what they swallow: everything they hide is a
 # failure to produce a specification of an admitted kind, which is a
 # specification reading that is not available. That is where the ADR-0015 line
@@ -429,12 +429,8 @@ check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
   if (!inherits(value, "margin_grouping_spec")) {
     return(invisible(NULL))
   }
-  kind <- grouping_spec_kind(value)
-  if (
-    !is.character(kind) ||
-      length(kind) != 1L ||
-      !kind %in% admitted
-  ) {
+  kind <- grouping_kind_name(grouping_spec_kind(value))
+  if (is.null(kind) || !kind %in% admitted) {
     return(invisible(NULL))
   }
   abort_ambiguous_nested_name(name)
@@ -834,20 +830,44 @@ grouping_kind_rules <- local({
   }
 })
 
-# Whether a kind read off an object is a name at all: one string, and not the
-# missing one. The lookup below needs this much before it can be made, and
-# answers `NULL` both for a kind that fails it and for a name it does not know,
-# so a caller that has to tell those apart asks this instead of reading that
-# answer.
-is_grouping_kind_name <- function(kind) {
-  is.character(kind) && length(kind) == 1L && !is.na(kind)
+# The name a kind read off an object is, or `NULL` where it is none: a name is
+# one string, and not the missing one. Every caller holds a value nothing has
+# validated, which is why this answers with the name rather than with whether
+# there is one. Deciding reaches the value's own `is.na()` and `length()`
+# methods, and either can raise instead of answering; a raise is no answer, so
+# the value is no name, exactly as a value answering with two of them is none
+# (#280).
+#
+# The class is stripped from the answer because it is what carries those
+# methods, and the questions asked of a name are not done being asked here:
+# `%in%` reaches `as.character()`, which dispatches too, so a caller that
+# classified a kind and then matched what it classified would raise on the line
+# after this catch. The registry lookup below dispatches on the list and not on
+# the index, so it is inside for the other reason -- one place asks a kind
+# anything.
+#
+# The catch is narrow in what it decides and not in what it swallows, exactly
+# as the read's in `grouping_spec_kind()` is: a value no name can be got out of
+# has none, whatever stopped it. It catches an error and not a condition, so a
+# method that warns on its way to answering still answers.
+grouping_kind_name <- function(kind) {
+  tryCatch(
+    if (is.character(kind) && length(kind) == 1L && !is.na(kind)) {
+      unclass(kind)
+    },
+    error = function(cnd) NULL
+  )
 }
 
+# `NULL` both for a kind that is no name and for a name the registry does not
+# know, so a caller that has to tell those apart asks `grouping_kind_name()`
+# instead of reading this answer.
 find_grouping_kind_rule <- function(kind) {
-  if (!is_grouping_kind_name(kind)) {
+  name <- grouping_kind_name(kind)
+  if (is.null(name)) {
     return(NULL)
   }
-  grouping_kind_rules()[[kind]]
+  grouping_kind_rules()[[name]]
 }
 
 grouping_constructor_names <- function() {
