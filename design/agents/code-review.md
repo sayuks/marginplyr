@@ -6,6 +6,18 @@ What may be a finding, and how one is answered, is not here. `design/architectur
 
 That section binds a reviewer only if the reviewer is handed it. This skill composes its own sub-agent prompts (`SKILL.md`, step 4), so pass what a finding about prose may be alongside the standards sources, in the same call.
 
+## What is reviewed, and where the record goes
+
+The subject is a diff, so the record goes where the diff is: the pull request. An issue gets a pointer and not a copy — the issue is where the ticket is argued, and a second copy of the record is one more thing to keep in step.
+
+So the branch is pushed and the pull request is open *before* the record is written. A record names the snapshot it read, and a SHA on an unpushed branch resolves for nobody: #280's review was posted to the issue while its branch was still local, so every SHA in it cited a commit no reader could open, and the record had to be moved (PR #286). For the same reason, rebase before the review and not after — a rebase rewrites the SHAs a published record already named.
+
+The fixed point is the merge-base with `main`, which is what the three-dot form `git diff <base>...HEAD` computes. Reviewing against a `main` the branch has fallen behind reports that gap as though it were the branch's.
+
+The record names, per finding: the snapshot SHA, the finding's ID, the line, the contract it violates, the counterexample, whether it is in scope, the disposition, and the evidence. The disposition list is *Answering a review*'s, and a comment is not on it.
+
+`design/review-dispositions.md` is where a disposition goes that reading the diff cannot settle, and that file states which ones those are. It is named here because the skill knows nothing about it and will not raise it: a review answered entirely in prose, or by fixes whose commits name a test that fails without them, owes it nothing, while one that refactored a test, added an assertion that passes either way, or rejected an alternative owes it an entry. #280's review owed three and was written without them until the omission was noticed by hand.
+
 ## What the skill looks for, and what is here
 
 | The skill looks for | Here |
