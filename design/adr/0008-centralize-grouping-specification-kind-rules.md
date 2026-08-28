@@ -367,21 +367,41 @@ which is what `check_ambiguous_nested_name()` did. The registry lookup needs no
 such protection — `[[` dispatches on the list and not on the index — and is
 inside the shared function anyway, so that one place asks a kind anything.
 
+The answer is then classified a second time, and that is not the first
+repeated. Catching what a method raises answers only the method that fails to
+answer; a method that answers wrongly passes the catch, and `length()`
+reporting `1` over two strings is such an answer. The first classification is
+put to the value the caller holds, so it is the value's own methods that
+answer it; the second is put to the answer, which has no class left to
+dispatch on, so it is R's reading of a character vector and cannot be a
+method's. What the function returns is therefore one string because nothing it
+returns has been taken on a method's word — not because the object was
+believed and then trusted. Whether the object *said* it was one string is what
+the first classification decides, and it decides it for the printed line, per
+the amendment above.
+
 **The nested-name site.** That site is not a guard and its answer is not a
 guard's: a kind it cannot classify is not a kind the position admits, so the
 column reading stands, which is the answer a binding that raises when it is
-read already gets. Two behaviours move there. A kind whose `length()` or
-`as.character()` raises reached the caller as an untyped error and now decides
-nothing; and a kind whose `is.na()` raises was refused as ambiguous, because
-that site never asked `is.na()`, and now declines. Classifying in one place is
-what removes the second, and an accidental difference between two sites reading
-one field is what this ADR centralizes kinds to avoid.
+read already gets. Three behaviours move there. A kind whose `length()` raises
+reached the caller as an untyped error and now decides nothing. A kind whose
+`as.character()` raises reached them the same way and is now classified, the
+class coming off before `%in%` is reached, so it is refused as ambiguous —
+which is what a kind spelling `set` in that position is for, and the raising
+method never bore on it. And a kind whose `is.na()` raises was refused as
+ambiguous, because that site never asked `is.na()`, and now declines.
+Classifying in one place is what removes the last, and an accidental difference
+between two sites reading one field is what this ADR centralizes kinds to
+avoid.
 
 **Evaluations.** The constraint holding the number and timing of evaluations is
 not reached. The field is read once, as the amendments above left it. How often
-classifying asks the value's own methods falls rather than rises — the registry
-lookup's own guard asked them a second time and is now handed a plain string —
-and no decision fixes that count, which the amendment above already records.
+classifying asks the value's own methods is fixed by no decision, which the
+amendment above already records, and it moves in both directions: it falls at
+the guards and at the printed line, where the registry lookup's own guard asked
+them a second time and is now handed a plain string; and it is unchanged in
+number at the nested-name site, which asks `is.na()` where it did not and
+reaches `as.character()` where it no longer does.
 
 **The handler the classification is wrapped in.** `tryCatch(error = )` a third
 time, so the trade the amendment for a specification the printer could not read

@@ -832,31 +832,30 @@ grouping_kind_rules <- local({
 
 # The name a kind read off an object is, or `NULL` where it is none: a name is
 # one string, and not the missing one. Every caller holds a value nothing has
-# validated, which is why this answers with the name rather than with whether
-# there is one. Deciding reaches the value's own `is.na()` and `length()`
-# methods, and either can raise instead of answering; a raise is no answer, so
-# the value is no name, exactly as a value answering with two of them is none
-# (#280).
-#
-# The class is stripped from the answer because it is what carries those
-# methods, and the questions asked of a name are not done being asked here:
-# `%in%` reaches `as.character()`, which dispatches too, so a caller that
-# classified a kind and then matched what it classified would raise on the line
-# after this catch. The registry lookup below dispatches on the list and not on
-# the index, so it is inside for the other reason -- one place asks a kind
-# anything.
-#
-# The catch is narrow in what it decides and not in what it swallows, exactly
-# as the read's in `grouping_spec_kind()` is: a value no name can be got out of
-# has none, whatever stopped it. It catches an error and not a condition, so a
-# method that warns on its way to answering still answers.
+# validated, and every reader of one shares this, as they share the read in
+# `grouping_spec_kind()`. What it decides, why it answers with the name rather
+# than with whether there is one, and what the class coming off that answer
+# costs are ADR 0008's, in its amendment for a kind the guard could not
+# classify.
 grouping_kind_name <- function(kind) {
-  tryCatch(
+  # `is.na()` and `length()` are generic, so these are the value's own methods
+  # and one may raise instead of answering. A raise is no answer, so the value
+  # is no name -- the reading that leaves the guards their own refusal (#280).
+  name <- tryCatch(
     if (is.character(kind) && length(kind) == 1L && !is.na(kind)) {
       unclass(kind)
     },
     error = function(cnd) NULL
   )
+  # Asked again of the answer, which has no class left to dispatch on, so this
+  # is R's own reading and not a method's. The questions above were put to the
+  # classed value, and a method that answers wrongly rather than by raising
+  # passes them: `length()` reporting `1` over two strings returned two, and
+  # `%in%` at the caller in `check_ambiguous_nested_name()` raised on it.
+  if (!is.character(name) || length(name) != 1L || is.na(name)) {
+    return(NULL)
+  }
+  name
 }
 
 # `NULL` both for a kind that is no name and for a name the registry does not

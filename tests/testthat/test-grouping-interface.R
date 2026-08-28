@@ -1247,19 +1247,12 @@ test_that("a printed Grouping specification omits a kind that is no name", {
 # What that leaves here is this line, which is where the catch firing is
 # visible as a printed line rather than as a condition class.
 test_that("a printed Grouping specification classifies a kind that may raise", {
-  kind_answering <- function(generic, suffix, method) {
-    class_name <- paste0("marginplyr_kind_", suffix)
-    registerS3method(generic, class_name, method, envir = asNamespace("base"))
-    structure("set", class = class_name)
-  }
-
-  raises <- function(x, ...) rlang::abort("classifying this kind raises")
   for (generic in c("is.na", "length")) {
-    suffix <- paste0(sub(".", "_", generic, fixed = TRUE), "_raises")
-    expect_empty_name_line(
-      new_grouping_spec(kind_answering(generic, suffix, raises), list()),
-      info = generic
+    kind <- kind_answering(
+      stats::setNames(list(raising_kind_method), generic),
+      "printed_raising"
     )
+    expect_empty_name_line(new_grouping_spec(kind, list()), info = generic)
   }
 
   # An error is caught and nothing else is, which is a choice rather than the
@@ -1270,10 +1263,13 @@ test_that("a printed Grouping specification classifies a kind that may raise", {
   # nothing fixes how often classifying asks the method the way ADR 0008 fixes
   # the count of field reads -- the registry lookup asked it a second time
   # before #280 handed that lookup a classified name.
-  warns <- kind_answering("is.na", "is_na_warns", function(x, ...) {
-    warning("classifying this kind warns")
-    FALSE
-  })
+  warns <- kind_answering(
+    list(is.na = function(x, ...) {
+      warning("classifying this kind warns")
+      FALSE
+    }),
+    "printed_warning"
+  )
   raised <- character()
   line <- withCallingHandlers(
     utils::capture.output(print(new_grouping_spec(warns, list()))),

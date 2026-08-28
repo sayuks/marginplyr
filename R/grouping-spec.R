@@ -247,13 +247,11 @@ print.margin_grouping_spec <- function(x, ...) {
 # kind that is no name decides the last, which falls here as the empty string
 # (#268).
 #
-# `is.na()` and `length()` are generic, so deciding which of the three a
-# character kind takes reaches methods of the value's own, and either can raise
-# instead of answering. `grouping_kind_name()` is where that is caught, for the
-# guards as much as for this line: #268 caught it here alone, and #280 moved
-# the catch to the classifier when it gave the guards the same answer. What
-# this site holds afterwards is a name or nothing, so the `cat()` below takes a
-# character whichever branch answers.
+# Deciding which of the three a kind takes is `grouping_kind_name()`'s, which
+# every reader of an unvalidated kind shares: a value whose own `is.na()` or
+# `length()` raises is no name there rather than an error here. What this site
+# holds afterwards is a name or nothing, so the `cat()` below takes a character
+# whichever branch answers.
 grouping_kind_printed_name <- function(kind) {
   name <- grouping_kind_name(kind)
   if (is.null(name)) {
