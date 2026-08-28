@@ -6,6 +6,8 @@ What may be a finding, and how one is answered, is not here. `design/architectur
 
 That section binds a reviewer only if the reviewer is handed it. This skill composes its own sub-agent prompts (`SKILL.md`, step 4), so pass what a finding about prose may be alongside the standards sources, in the same call.
 
+`.claude/hooks/code-review-contract.sh` puts this file in front of the session that invokes the skill, so editing it changes what every later review is handed.
+
 ## What is reviewed, and where the record goes
 
 The subject is a diff, so the record goes where the diff is: the pull request. An issue gets a pointer and not a copy — the issue is where the ticket is argued, and a second copy of the record is one more thing to keep in step.

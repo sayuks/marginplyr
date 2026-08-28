@@ -57,3 +57,7 @@ _quarto/*
 sandbox/
 /doc/
 /Meta/
+
+# Worktrees created under the project directory; the settings and hooks beside
+# them are tracked.
+.claude/worktrees/

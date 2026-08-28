@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "r=$(git rev-parse --show-toplevel 2>/dev/null) && exec \"$r/.claude/hooks/code-review-contract.sh\" || true",
+            "timeout": 10,
+            "statusMessage": "Reading design/agents/code-review.md"
+          }
+        ]
+      }
+    ]
+  }
+}
