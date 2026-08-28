@@ -14,9 +14,20 @@ So the branch is pushed and the pull request is open *before* the record is writ
 
 The fixed point is the merge-base with `main`, which is what the three-dot form `git diff <base>...HEAD` computes. Reviewing against a `main` the branch has fallen behind reports that gap as though it were the branch's.
 
-The record names, per finding: the snapshot SHA, the finding's ID, the line, the contract it violates, the counterexample, whether it is in scope, the disposition, and the evidence. The disposition list is *Answering a review*'s, and a comment is not on it.
+What the record carries is small, because most of a review is recorded by what it produced. A finding answered in code is recorded by the code and by the test that fails without it; one answered in prose is recorded by the diff that changed the prose. Restating either is a second copy nothing compares against the first, which is what *Code comments* in `AGENTS.md` refuses for a comment, on an argument that does not stop at comments.
 
-`design/review-dispositions.md` is where a disposition goes that reading the diff cannot settle, and that file states which ones those are. It is named here because the skill knows nothing about it and will not raise it: a review answered entirely in prose, or by fixes whose commits name a test that fails without them, owes it nothing, while one that refactored a test, added an assertion that passes either way, or rejected an alternative owes it an entry. #280's review owed three and was written without them until the omission was noticed by hand.
+So the record says what the round raised and what became of each finding, and stops. What a disposition needs beyond that is decided by its kind, and every kind already has a home:
+
+| the disposition | what records it |
+|---|---|
+| fixed in code | the commit that names the finding, and the test that fails without the fix |
+| fixed in prose | the diff that changed the prose |
+| rejected, where a test, a comment, or a runnable command already answers it | that test, comment, or command |
+| an alternative weighed and rejected | *Considered options* in the ADR holding the decision it would have changed |
+| a premise measured false | a dated note under `investigation/` |
+| a site deliberately left alone | a comment at the site, or the ADR that leaves it |
+
+Nine of the thirteen rejections in `design/review-dispositions.md` point at column two rather than holding anything themselves, which is what the table is derived from. While that file exists it takes whatever column two does not; #288 asks whether anything does not.
 
 ## What the skill looks for, and what is here
 
