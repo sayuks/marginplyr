@@ -666,18 +666,20 @@ plan, or bypass common finalization.
 
 ## Repository placement
 
-This file, `CONTEXT.md`, the ADRs, and
-[`review-dispositions.md`](review-dispositions.md) are human-maintained
-contributor material. They are separate from the generated package site in
-`docs/`; `^CONTEXT\.md$` and `^design$` in `.Rbuildignore` exclude them from
-source packages. Internal architecture is not duplicated into the README or
+This file, `CONTEXT.md`, and the ADRs are human-maintained contributor
+material. They are separate from the generated package site in `docs/`;
+`^CONTEXT\.md$` and `^design$` in `.Rbuildignore` exclude them from source
+packages. Internal architecture is not duplicated into the README or
 vignettes.
 
-`review-dispositions.md` is the ledger that gives "review complete" an
-auditable meaning: an observation from a recorded review is listed there as
-fixed or rejected, with a test, command, or reproduction behind it, and that
-file states which observations reach it. An ADR records what was decided; the
-ledger records what was reviewed and what happened to it.
+A review is not written down a second time. What a review produced records it:
+the commit that names a finding, the test that fails without the fix, the diff
+that changed the prose. What a review decided without producing anything goes
+where that kind of decision lives — an ADR's *Considered options* for an
+alternative weighed and rejected, a dated `investigation/` note for a premise
+measured false, a comment at the site for a site deliberately left alone.
+`design/agents/code-review.md` routes them, and #288 is where a ledger holding
+the same dispositions a third time was retired.
 
 An ADR is amended when its decision changed observably, and the amendment
 records what the decision now is and what moved with it. The argument for
@@ -705,8 +707,8 @@ others.
 A finding about prose is one of four: the prose is false, it duplicates an
 argument another file owns and can drift from it, it breaks a rule a repository
 document states, or something a repository document is required to hold is
-missing from it. How prose reads is not one, and the ledger records no finding
-that is.
+missing from it. How prose reads is not one, and no record holds a finding that
+is.
 
 Two answers join the list above when a finding is about prose. A claim found
 false is deleted rather than restated, as *Code comments* in `AGENTS.md`
