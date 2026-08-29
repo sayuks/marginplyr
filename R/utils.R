@@ -315,8 +315,8 @@ is_redundant_parens <- function(expr) {
 
 # Whether unwrapping answers a different node, which is what a reader that
 # restarts on what the parentheses wrap has to know before it restarts. Asked
-# here rather than compared at each site so that the three walks that restart
-# share one test, and so that none of them binds the answer to a local: a call
+# here rather than compared at each site so that every reader that restarts
+# shares one test, and so that none of them binds the answer to a local: a call
 # part may be R's empty argument, and `unparenthesized_value()` stops at one
 # rather than answering it.
 is_parenthesized <- function(expr) {

@@ -571,3 +571,89 @@ A caller's two mistakes at once are a case of their own, since which message
 wins is a per-helper decision that no equality above would notice changing, and
 so is the named empty argument, which is the only writing that reaches the
 un-injected change recorded above.
+
+## Amendment: the read-through reaches a reading, not an expression
+
+"Redundant parentheses are read through, in one place" above put the reading in
+`R/utils.R`'s shared readers and said that every analysis inherits it, naming
+the constructor gate among them. That is true of what those readers answer — a
+name, a namespace, a head, a set of arguments — and it is not true of a site
+that puts a shape test to the caller's own expression instead of asking one of
+them. Such a site inherits nothing, and there is no reading for it to inherit:
+`is.symbol()` is R's, and `(s)` is a call to `(`.
+
+Three sites in `R/grouping-plan.R` were of that kind, and #259 brings them
+under the rule. `grouping_arg_spec()` recognized a nested constructor call
+through a pair of parentheses, because it reads that call's name through
+`static_spelling_name()`, while asking `is.symbol()` about a name and
+`is.language()` about an injected object — so `(rollup(region))` was the
+specification it is and `(s)` was a column selection. An injected object was
+reached by the second pair rather than the first, `rlang::enquos()` dropping
+one pair around `!!` as it captures: `((!!s))` was a selection where `(!!s)`
+was already the specification.
+`check_ambiguous_nested_name()` asked `is_name_part()`, so ADR 0026's refusal
+of a name two readings claim was withheld from `(s)`, which selected a
+colliding column silently — the reading that ADR exists to remove, reached by a
+pair of parentheses. And `resolve_grouping_selection()` compared
+`rlang::as_label()` of the caller's expression against the subscript tidyselect
+refused; tidyselect descends into a `(` call before refusing anything, so the
+two labels could not match and #190's diagnostic was withheld from
+`(f(region))`.
+
+**What the amendment above establishes still stands**, and the correction is to
+its reach rather than to its argument. Identity is still syntactic, a caller
+binding still cannot win, and the reading still lives in one place: these three
+sites now *ask* for it, through `nested_arg_expr()`, which is
+`unparenthesized_value()` put to a quosure; the gate additionally restarts on
+the argument the pair wraps, because what follows its shape test is an
+evaluation of that argument. Nothing is re-implemented, which is what "one
+place, not one place per family" means for a caller.
+
+**The refusal names the argument the pair wraps, and that is decided here
+rather than by ADR 0024.** `resolve_grouping_selection()` writes one label, and
+it is both the key compared against tidyselect's subscript and the subject
+`abort_nested_grouping_spec()` names, so `grouping_sets((f(region)))` is
+refused in the words `grouping_sets(f(region))` is refused in. Splitting the
+two would let the refusal name `(f(region))`, which is closer to what ADR 0024
+asks of a Package condition's subject. It is not taken, for the reason the
+first amendment already accepts of a rewritten expression — "a diagnostic dplyr
+raises about that argument echoes it without the pair" — and because a caller
+who wrote one spelling and read the other's diagnostic would be reading a
+difference this whole amendment exists to say does not exist. What ADR 0024
+protects is a spelling a reader searches their source for, and a redundant pair
+is one they find their argument inside of; what it was written for is a value
+whose bytes cli would otherwise collapse, which no parenthesis rule touches.
+
+**What a read-through argument gains is the reading of the argument it wraps,
+evaluation count included.** Measured against the pre-#259 package through
+`inspect_grouping()`, with the binding an active binding and the caller's
+function counting its own calls: no *bare* argument's count moves, and a
+parenthesized name gains what the bare name costs. `grouping_sets((s))` reads
+`s` once before and three times after, which is what `grouping_sets(s)` read
+before and reads still — whether the binding is a specification the gate then
+recognizes or something else it then declines, since the gate has to read one
+to tell them apart.
+
+That is a cost, and it is the decision rather than an oversight: a spelling
+read as another spelling costs what that spelling costs, and a parenthesis
+rule that stopped short of the evaluation would be the two readings this
+amendment exists to remove, moved one step down. A pair around a *call* is free
+by comparison, the gate having recognized `(f(x))` all along.
+
+#259's sixth acceptance criterion asks for an unchanged count "for every
+argument whose reading does not change", and blesses the recognized `(s)` that
+gains one. The shape between the two is a parenthesized name bound to
+something that is *not* a specification: the plan is what it was, and the gate
+now reads the binding to establish that. It is the same read on the same line,
+so it is accepted with the criterion's second sentence rather than against its
+first.
+
+Pinning each form's number is #260's, so what #259 asserts is the equality of
+the two spellings' counts: neither can drift from the other without the
+assertion failing, and nothing pins the same number twice.
+
+**Where a pair is not around the argument, nothing changes.** `c((s), region)`
+is a selection containing a specification, which tidyselect refuses and reports
+for itself; the label the position compares is the whole argument's, which is
+not the sub-selection tidyselect refused. That separation is the reason the
+comparison exists, and reading through does not touch it.

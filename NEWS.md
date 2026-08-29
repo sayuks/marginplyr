@@ -15,7 +15,11 @@
   a column of your input that is also bound to a nested specification the
   position accepts — is refused rather than resolved by whichever the data
   happens to have, and the refusal names the spelling for each reading:
-  `all_of("s")` for the column, `!!s` for the specification.
+  `all_of("s")` for the column, `!!s` for the specification. Redundant
+  parentheses are transparent to every one of these readings, as they are
+  elsewhere, because `(` is the identity function: `(s)`, `(!!s)`, and
+  `(rollup(region))` are the arguments they wrap, however many pairs deep, and
+  both refusals reach a parenthesized argument as they reach a bare one.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level

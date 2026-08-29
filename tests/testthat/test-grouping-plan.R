@@ -313,6 +313,191 @@ test_that("a nested column selection is unaffected by the specification rule", {
   expect_equal(compile(inside)$sets, list(c("region", "grade")))
 })
 
+test_that("a nested argument is read through its redundant parentheses", {
+  data_vars <- c("region", "grade", "value")
+  bound <- rollup(value)
+  env <- rlang::env(rlang::current_env(), s = bound)
+  env$spec_from_caller <- function(...) rollup(...)
+  parenthesized <- function(argument) rlang::call2("(", argument)
+
+  # What the position did with an argument, as one comparable value: the whole
+  # Grouping plan where it compiled, since the criterion is the plan and not
+  # its sets alone, and the condition where it did not. A refusal is as much a
+  # reading as a plan is, and the two spellings have to agree about which
+  # refusal as well: an argument read as a selection carries tidyselect's own
+  # condition, and comparing the class with the message is what keeps that from
+  # passing as marginplyr's.
+  #
+  # Warnings are suppressed rather than compared. tidyselect deprecates the
+  # bare external vector two of the arguments below write, and lifecycle
+  # throttles that warning to once a session, so which spelling is warned about
+  # is decided by which ran first.
+  outcome <- function(constructor, argument) {
+    tryCatch(
+      compile_against(
+        eval(rlang::call2(constructor, argument), envir = env),
+        data_vars
+      ),
+      error = function(cnd) list(class(cnd), conditionMessage(cnd))
+    )
+  }
+
+  # Every spelling a nested argument can have, so that the rule is one rule
+  # rather than one per shape: the two recognized forms, the injected object
+  # the ambiguity refusal tells a caller to write, a caller's own function, a
+  # column, two selections, and a literal. Each is compared against itself
+  # wrapped in one pair and in two, since `(` is the identity function however
+  # many times it is applied (#178).
+  arguments <- list(
+    name = quote(s),
+    constructor_call = quote(rollup(value)),
+    injected_object = bound,
+    caller_call = quote(spec_from_caller(value)),
+    column = quote(value),
+    selection = quote(c(value, grade)),
+    spec_in_selection = quote(c(s, grade)),
+    literal = 1L
+  )
+
+  # Derived from the registry, so a sixth constructor arrives here as a
+  # position the rule has to hold in rather than as one nothing covers.
+  for (rule in grouping_kind_rules()) {
+    for (argument in arguments) {
+      bare <- suppressWarnings(outcome(rule$constructor, argument))
+      expect_identical(
+        suppressWarnings(outcome(rule$constructor, parenthesized(argument))),
+        bare
+      )
+      expect_identical(
+        suppressWarnings(
+          outcome(rule$constructor, parenthesized(parenthesized(argument)))
+        ),
+        bare
+      )
+    }
+  }
+
+  # The two readings the ticket reproduced, asserted on what a caller sees
+  # rather than on the agreement above: a name bound to a specification
+  # resolves to the plan the bare name resolves to, and a caller's own function
+  # gets #190's diagnostic, on the complete message.
+  data <- data.frame(region = c("a", "b"), value = c(1, 2))
+  expect_identical(
+    eval(quote(inspect_grouping(data, .grouping = grouping_sets((s)))), env),
+    eval(quote(inspect_grouping(data, .grouping = grouping_sets(s))), env)
+  )
+  refused <- expect_error(eval(
+    quote(inspect_grouping(
+      data,
+      .grouping = grouping_sets((spec_from_caller(region)))
+    )),
+    env
+  ))
+  expect_s3_class(refused, "marginplyr_error")
+  expect_identical(
+    conditionMessage(refused),
+    paste0(
+      "`spec_from_caller(region)` is a grouping specification, but a nested ",
+      "position recognizes one only when it is a call to `grouping_set()`, ",
+      "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a ",
+      "name bound to a specification.\n",
+      "i Anything else is read as a column selection.\n",
+      "i Assign the specification to a name first, then use that name here."
+    )
+  )
+
+  # A pair the caller wrote inside a selection is not a pair around the
+  # argument, so tidyselect keeps the sub-selection it refused and the position
+  # does not speak for it. This is the property the label comparison exists for
+  # and the one a change to it can break, so both spellings are written out.
+  for (selection in list(quote(c(s, region)), quote(c((s), region)))) {
+    spec <- eval(rlang::call2("grouping_sets", selection), envir = env)
+    embedded <- expect_error(suppressWarnings(compile_against(spec, data_vars)))
+    expect_false(inherits(embedded, "marginplyr_error"))
+    expect_match(conditionMessage(embedded), "Can't select columns with `s`")
+  }
+
+  # A colliding column is what ADR 0026 refuses, and a pair of parentheses was
+  # enough to withhold that refusal: `s` was refused while `(s)` selected the
+  # column, silently, which is the reading the ADR exists to remove.
+  for (argument in list(quote(s), quote((s)), quote(((s))))) {
+    spec <- eval(rlang::call2("grouping_sets", argument), envir = env)
+    ambiguous <- expect_error(compile_against(spec, c("s", data_vars)))
+    expect_s3_class(ambiguous, "marginplyr_error")
+    expect_identical(conditionMessage(ambiguous), ambiguous_s_message)
+  }
+})
+
+test_that("a parenthesized nested argument is read as often as a bare one", {
+  data_vars <- c("region", "grade", "value")
+
+  # How often a caller's quosure runs for each recognized form is what #260
+  # pins. What belongs here is the property that survives whatever it pins:
+  # reading through a pair of parentheses gives an argument the count of the
+  # argument it wraps, so neither spelling can drift from the other without
+  # this failing. An absolute counted here would pin the same numbers twice.
+  #
+  # `s` is an active binding and `spec_from_caller()` counts its own calls, so
+  # what is counted is every read a caller can observe. A spelling the position
+  # evaluates that reads neither -- a literal, an injected object -- evaluates
+  # a constant, which is why the shapes below are the ones that can be counted
+  # at all.
+  count_reads <- function(argument, value) {
+    reads <- 0L
+    env <- rlang::env(rlang::current_env())
+    makeActiveBinding(
+      "s",
+      function() {
+        reads <<- reads + 1L
+        value
+      },
+      env
+    )
+    env$spec_from_caller <- function(...) {
+      reads <<- reads + 1L
+      rollup(...)
+    }
+    spec <- eval(rlang::call2("grouping_sets", argument), envir = env)
+    tryCatch(
+      suppressWarnings(compile_against(spec, data_vars)),
+      error = function(cnd) NULL
+    )
+    reads
+  }
+
+  # The counter first: a zero below has to be a read that did not happen rather
+  # than a mechanism that stopped counting, and a count that moves has to be
+  # this mechanism reporting a read rather than a constant it returns.
+  expect_gt(count_reads(quote(s), rollup(value)), 0L)
+  expect_identical(count_reads(quote(value), rollup(value)), 0L)
+
+  # Both branches the gate evaluates on and both it declines on, since the
+  # equality has to hold where the pair changed the reading and where it did
+  # not: a name bound to a specification, a name bound to something else, a
+  # caller's own function, and a specification inside a selection.
+  arguments <- list(
+    list(quote(s), rollup(value)),
+    list(quote(s), "region"),
+    list(quote(spec_from_caller(value)), NULL),
+    list(quote(c(s, grade)), rollup(value))
+  )
+  for (argument in arguments) {
+    bare <- count_reads(argument[[1L]], argument[[2L]])
+    expect_gt(bare, 0L)
+    expect_identical(
+      count_reads(rlang::call2("(", argument[[1L]]), argument[[2L]]),
+      bare
+    )
+    expect_identical(
+      count_reads(
+        rlang::call2("(", rlang::call2("(", argument[[1L]])),
+        argument[[2L]]
+      ),
+      bare
+    )
+  }
+})
+
 test_that("a nested position admits nested kinds by its own parent rule", {
   # The half of "both readings are available" that the input may not answer,
   # and the one thing no behavioural test reaches: an empty answer reads as a

@@ -117,6 +117,13 @@ serial `and` and drops the names bullets are carried in.
 The measurements are in
 `investigation/expanding-a-diagnostic-when-it-is-raised.md`.
 
+What this decision is about is the bytes of a subject surviving from the raise
+to the read. It is not about an expression a static reading has already
+normalized before any condition is built: ADR 0019's third amendment decides
+that a nested position refuses `(f(region))` in the words `f(region)`, and
+scopes this decision there rather than here, where the subject is a value cli
+would otherwise collapse.
+
 ## Considered Options
 
 **Accept the collapsing and document it** — the option #230 opened with, and the
