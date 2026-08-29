@@ -958,6 +958,12 @@ test_that("a plan records its kind as a bare name", {
 # because a comparison that stopped discriminating passes the accepted half
 # alone.
 #
+# The empty composite beside each accepted shape is the one refusal this change
+# moves rather than removes: the guard admits it now, so the empty-composite
+# refusal one line on is what it meets. It is asserted against the message the
+# bare `set` receives rather than against that sentence, which is what makes it
+# the same reading and not a second one.
+#
 # The last loop is what the parent's kind decides, which is the diagnostic and
 # not the comparison: the sentence names the parent, so a parent whose own kind
 # carries an attribute has to render the same one.
@@ -988,15 +994,18 @@ test_that("a nested set kind is one whatever attribute it carries", {
       "composite dimensions."
     )
   }
-  refused <- function(spec, parent, shape) {
-    error <- expect_error(totals(spec), info = paste(parent, shape))
+  refused <- function(spec, message, where) {
+    error <- expect_error(totals(spec), info = where)
     expect_s3_class(error, "marginplyr_error")
-    expect_identical(conditionMessage(error), refusal(parent), info = shape)
+    expect_identical(conditionMessage(error), message, info = where)
   }
 
   for (parent in names(parents)) {
     build <- parents[[parent]]
     expected <- totals(build(grouping_set(a, b)))
+    empty <- conditionMessage(
+      expect_error(totals(build(!!new_grouping_spec("set", list()))))
+    )
 
     admitted <- decorated("set")
     for (shape in names(admitted)) {
@@ -1005,11 +1014,20 @@ test_that("a nested set kind is one whatever attribute it carries", {
         expected,
         info = paste(parent, shape)
       )
+      refused(
+        build(!!new_grouping_spec(admitted[[shape]], list())),
+        empty,
+        paste(parent, shape, "empty")
+      )
     }
 
     rejected <- decorated("cube")
     for (shape in names(rejected)) {
-      refused(build(!!composite(rejected[[shape]])), parent, shape)
+      refused(
+        build(!!composite(rejected[[shape]])),
+        refusal(parent),
+        paste(parent, shape)
+      )
     }
 
     naming <- decorated(parent)
@@ -1019,8 +1037,8 @@ test_that("a nested set kind is one whatever attribute it carries", {
           naming[[shape]],
           list(rlang::quo(!!composite("cube")))
         ),
-        parent,
-        shape
+        refusal(parent),
+        paste(parent, shape)
       )
     }
   }

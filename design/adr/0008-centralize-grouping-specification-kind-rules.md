@@ -675,11 +675,16 @@ a `stopifnot()` message, which is the untyped condition the guard exists to
 replace.
 
 **What moves.** A nested specification whose kind spells `set` under any
-attribute goes from refused to accepted inside `rollup()` and `cube()`, at one
-guard. No refusal changes its condition class, its message, its call context, or
-its position in the detection order, and no specification that was accepted is
-refused. Nothing a constructor builds is affected: `grouping_set()` stores the
-string `"set"`.
+attribute reads inside `rollup()` and `cube()` as the same specification with a
+bare `set` does, at one guard. A non-empty one is accepted where it was refused.
+An empty one is refused still, and by the refusal the bare spelling already
+receives — `abort_empty_composite()`, the line after the comparison — rather
+than by the nesting refusal that used to stand in front of it. That
+sub-population is the one place this amendment moves a refusal instead of
+removing one, so its message and its position in the detection order both
+change; its condition class does not. No other refusal changes in any respect,
+and no specification that was accepted is refused. Nothing a constructor builds
+is affected: `grouping_set()` stores the string `"set"`.
 
 **Evaluations.** The constraint holding the number and timing of evaluations is
 not reached. The guard reads its field once, as every reader above does, and
@@ -700,6 +705,14 @@ its sentence either way. Classifying where the field is read is what the
 amendments above left in place at every other reader, and it is what makes the
 two guards over a caller's specification agree by construction rather than by
 convention.
+
+A `grouping_kind_is(kind, name)` predicate over the three sites that now spell
+`identical(grouping_kind_name(x), <name>)` was rejected. It would not make the
+classification unforgettable, which is the only thing that would buy: a site
+written later can still compare the field as read, and what stops one is this
+ADR and the review that reads it against the code. What it would add is a second
+name restating `grouping_kind_name()`'s contract, for three comparisons that are
+against different literals, in two files, for three different decisions.
 
 ## Test strategy
 

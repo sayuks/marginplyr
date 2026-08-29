@@ -278,8 +278,8 @@ allow_nested_grouping <- function(parent, nested) {
 validate_nested_grouping_units <- function(parent, nested) {
   # Classified rather than compared as read (#324, ADR 0008): what this reader
   # holds is a nested specification the caller wrote and not a plan. The
-  # diagnostic keeps the parent's field as read: `cli::format_inline()` renders
-  # a vector's values and reaches no method an attribute could carry.
+  # diagnostic below keeps the parent's field as read, which the same amendment
+  # decides.
   if (!identical(grouping_kind_name(nested$type), "set")) {
     abort_marginplyr(paste0(
       "{.fun {parent$type}} only accepts columns or {.fun grouping_set} ",
