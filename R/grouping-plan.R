@@ -225,6 +225,17 @@ abort_empty_grouping_units <- function(kind) {
   abort_marginplyr("{.fun {kind}} requires at least one dimension.")
 }
 
+# The refusal of an argument the caller left empty. It names the position
+# because that is all there is to name: the argument has no spelling for
+# ADR 0024's rule to quote, so the count of arguments before it is the only
+# thing that points at the comma the caller wrote (#261).
+abort_empty_grouping_arg <- function(constructor, position) {
+  abort_marginplyr(c(
+    "Argument {position} of {.fun {constructor}} is empty.",
+    i = "Remove the comma, or write the columns that position selects."
+  ))
+}
+
 abort_empty_composite <- function() {
   abort_marginplyr(
     "An empty {.fun grouping_set} cannot be a composite dimension."
@@ -356,6 +367,14 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
     arg <- grouping_spec$args[[i]]
+    # Asked of the quosure, which is an object like any other, and before
+    # anything reads the expression out of it -- the rule `R/utils.R` states
+    # for every reader a walk asks first (#168, #174). The refusal is here
+    # rather than in the reader below because this is the frame holding what
+    # the diagnostic names: the constructor and the argument's position (#261).
+    if (rlang::quo_is_missing(arg)) {
+      abort_empty_grouping_arg(rule$constructor, i)
+    }
     nested <- grouping_arg_spec(arg, data_vars)
     if (is.null(nested)) {
       check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
@@ -406,11 +425,10 @@ nested_arg_expr <- function(arg) {
 # `is_name_part()` rather than a bare symbol test. Both halves are the rule
 # `R/utils.R` states for every reader a walk asks first: binding R's empty
 # argument raises `missingArgError` on the next read of it, and the empty
-# argument is itself a symbol whose name is `""` (#168, #174). No empty
-# argument reaches this function today, because `grouping_arg_spec()` binds
-# one a line earlier and raises there, which is #261; following the rule here
-# is what keeps this from becoming a second site of it once that one is
-# fixed.
+# argument is itself a symbol whose name is `""` (#168, #174). The caller
+# refuses an empty argument before either reader is reached (#261), so the rule
+# is followed here for what a caller could stop holding rather than for what one
+# arrives with.
 #
 # A binding that raises when it is read is not a specification, so the
 # selection reading stands where it raises, and so does an object carrying the
@@ -914,6 +932,11 @@ grouping_constructor_names <- function() {
   ))
 }
 
+# The specification a nested argument is, or `NULL` where it is a column
+# selection. Every caller holds that `arg` carries an expression rather than R's
+# empty argument -- `preflight_grouping_spec()` by refusing one (#261), the
+# restart below by the reading its own comment gives -- which is what lets the
+# local hold what the quosure carries without the missing marker reaching it.
 grouping_arg_spec <- function(arg, data_vars) {
   expr <- rlang::quo_get_expr(arg)
   # A redundantly parenthesized argument is read as the argument it wraps, as

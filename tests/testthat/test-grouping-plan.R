@@ -618,6 +618,100 @@ test_that("a nested name the input and a binding both claim is refused", {
   )
 })
 
+# The refusal an empty argument gets, over every constructor and both positions
+# `rlang::enquos(...)` captures one for. `inspect_grouping()` is the seam
+# because the diagnostic's whole point is what a caller reads, and the caller
+# meets it through a verb (ADR 0013).
+#
+# The message is asserted in full rather than matched, because what #261 found
+# was not a missing refusal but a diagnostic naming `expr` -- the local
+# `grouping_arg_spec()` bound the missing marker to -- and blaming that
+# function's own call. A match on the part that is right cannot see either.
+empty_grouping_arg_message <- function(constructor, position) {
+  paste0(
+    "Argument ", position, " of `", constructor, "()` is empty.\n",
+    "i Remove the comma, or write the columns that position selects."
+  )
+}
+
+test_that("a leading or interior empty argument is refused in every kind", {
+  data <- data.frame(
+    region = c("a", "b"),
+    grade = c("x", "y"),
+    value = c(1, 2)
+  )
+  # Derived from the kind table, so a sixth constructor arrives here as a case
+  # the loop covers rather than as one nothing does. The loop iterates over this
+  # set, so a set that arrived empty is a set that passes.
+  constructors <- grouping_constructor_names()
+  expect_true("grouping_sets" %in% constructors)
+
+  # The two shapes, with the argument number each leaves empty. A trailing one
+  # is not among them: `rlang::enquos(...)` captures no argument for it, which
+  # is the reading the test below holds unchanged.
+  shapes <- list(
+    list(position = 1L, args = list(rlang::missing_arg(), quote(region))),
+    list(
+      position = 2L,
+      args = list(quote(region), rlang::missing_arg(), quote(grade))
+    )
+  )
+
+  for (constructor in constructors) {
+    for (shape in shapes) {
+      spec <- eval(rlang::call2(constructor, !!!shape$args))
+      error <- expect_error(inspect_grouping(data, .grouping = spec))
+      expect_s3_class(error, "marginplyr_error")
+      expect_identical(
+        conditionMessage(error),
+        empty_grouping_arg_message(constructor, shape$position)
+      )
+      # The call the caller wrote, not the reader that found the empty
+      # argument. `conditionCall()` was `grouping_arg_spec(arg, data_vars)`.
+      expect_identical(conditionCall(error)[[1L]], quote(inspect_grouping))
+    }
+  }
+
+  # One level in, where the constructor the refusal names is the inner one:
+  # that is the call holding the comma the caller wrote.
+  nested <- expect_error(inspect_grouping(
+    data,
+    .grouping = grouping_sets(grouping_set(, region))
+  ))
+  expect_s3_class(nested, "marginplyr_error")
+  expect_identical(
+    conditionMessage(nested),
+    empty_grouping_arg_message("grouping_set", 1L)
+  )
+})
+
+test_that("an empty slot the package already had a reading for keeps it", {
+  data <- data.frame(region = c("a", "b"), value = c(1, 2))
+  region_only <- inspect_grouping(data, .grouping = grouping_sets(region))
+  grand_total <- inspect_grouping(data)
+
+  # A trailing empty argument, which the refusal above cannot reach and must
+  # not start reaching: `rlang::enquos(...)` captures one argument for
+  # `f(region, )` and two for `f(, region)`.
+  expect_identical(
+    inspect_grouping(data, .grouping = grouping_sets(region, )),
+    region_only
+  )
+  # An empty `.by` and an empty `.grouping` are arguments of the verb rather
+  # than of a constructor, so neither reaches the loop the refusal sits in.
+  expect_identical(
+    inspect_grouping(data, .by = , .grouping = grouping_sets(region)),
+    region_only
+  )
+  expect_identical(inspect_grouping(data, .grouping = ), grand_total)
+  # `grouping_set()` with no arguments at all is the empty grouping set, which
+  # is documented and is not an empty argument.
+  expect_identical(
+    inspect_grouping(data, .grouping = grouping_sets(grouping_set())),
+    grand_total
+  )
+})
+
 # The other reader of a kind nothing has validated, and the one where the
 # guards' answer is not the answer: this site declines rather than refuses, so
 # what a method raising took from it was a compiled call rather than a

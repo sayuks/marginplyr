@@ -19,7 +19,12 @@
   parentheses are transparent to every one of these readings, as they are
   elsewhere, because `(` is the identity function: `(s)`, `(!!s)`, and
   `(rollup(region))` are the arguments they wrap, however many pairs deep, and
-  both refusals reach a parenthesized argument as they reach a bare one.
+  both refusals reach a parenthesized argument as they reach a bare one. An
+  argument you left empty gets neither reading, and is refused naming the
+  constructor and the position — `grouping_sets(, region)` reports that its
+  first argument is empty — rather than reporting an internal name you never
+  wrote. A trailing comma is not an empty argument, because R captures no
+  argument for it.
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level

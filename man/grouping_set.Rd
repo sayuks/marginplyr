@@ -47,6 +47,13 @@ selection containing something it cannot select, and is refused as one —
 unless the input has a column named \code{s}, when the selection takes that
 column, as any selection does with a name the data holds.
 
+An argument left empty gets neither reading, and is refused naming the
+constructor and the position: \code{grouping_sets(, region)} reports that its
+first argument is empty. A trailing comma is not an empty argument,
+because R captures no argument for it, so \code{grouping_sets(region, )} is
+\code{grouping_sets(region)}, and passing no arguments at all means what the
+first paragraph above says it means for each constructor.
+
 A name both readings claim is refused rather than guessed. Where the
 input has a column named \code{s} and \code{s} is also bound to a nested Grouping
 specification the position accepts, the call names both readings and the

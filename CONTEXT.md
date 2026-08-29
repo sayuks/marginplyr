@@ -24,12 +24,15 @@ is a column selection. Redundant parentheses are transparent to that reading,
 around the name or around the whole call, because `(` is the identity
 function. A spelling the position does not recognize is never
 evaluated to find out, because a selection such as `starts_with("re")` has no
-meaning outside a selection context. Both readings claim one argument at once:
-a bare name that is a column of the input and is also bound, in the caller's
-environment, to a specification of a kind the position admits — which kinds
-those are varies by constructor. How that name is written settles neither
-reading, so it is refused rather than resolved. ADR 0026 decides that, and
-holds the admitted kinds and what the read costs a caller.
+meaning outside a selection context. An argument the caller left empty gets
+neither reading, and is refused naming the constructor and the position; a
+trailing comma is not one, because R captures no argument for it. Both
+readings claim one argument at once: a bare name that is a column of the
+input and is also bound, in the caller's environment, to a specification of a
+kind the position admits — which kinds those are varies by constructor. How
+that name is written settles neither reading, so it is refused rather than
+resolved. ADR 0026 decides that, and holds the admitted kinds and what the
+read costs a caller.
 _Avoid_: Nested grouping, nested slot
 
 **Grouping plan**:
