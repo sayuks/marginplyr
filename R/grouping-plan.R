@@ -714,7 +714,11 @@ compile_grouping_spec_impl <- function(preflight,
 
   structure(
     list(
-      kind = preflight$spec$type,
+      # The name the field spells, not the field as read, so that a consumer
+      # comparing this with `identical()` compares what the specification said
+      # and no attribute it carried (#317, ADR 0008). The preflight above ran
+      # the guard, so the field is one name and this is never `NULL`.
+      kind = grouping_kind_name(preflight$spec$type),
       by = unique(.by),
       dimensions = dimensions,
       sets = normalized,
@@ -900,24 +904,26 @@ grouping_kind_rules <- local({
 })
 
 # The name a kind read off an object is, or `NULL` where it is none: one
-# character element with the class off, and not the missing one. Every caller
+# character element carrying no attribute, and not the missing one. Every caller
 # holds a value nothing has validated, and every reader of one shares this, as
 # they share the read in `grouping_spec_kind()`. What it decides, why it answers
-# with the name rather than with whether there is one, and why nothing here is
-# asked of the object's own methods are ADR 0008's, in its amendment for a kind
-# classified with its class off.
+# with the name rather than with whether there is one, and why the answer
+# carries no attribute are ADR 0008's, in its amendments for a kind classified
+# with its class off and for a kind read as a name and compared as a value.
 grouping_kind_name <- function(kind) {
   # `is.character()` and `unclass()` are primitives that dispatch on neither S3
   # nor S4, so neither reaches a method the value carries: the type test is R's
   # own, and stripping is what puts the two questions below to a character
   # vector with no class rather than to whatever the class defines for them
-  # (#289). Only the class comes off, so a name and any other attribute the
-  # value carried survive onto the answer; `%in%` and `[[` are what the callers
-  # put it to, and neither reads one.
+  # (#289). Every remaining attribute comes off with it, because `identical()`
+  # reads them all and that is what a consumer compares this answer with (#317).
+  # `attributes<-` is a primitive too, and by then there is no class left for
+  # anything to dispatch on.
   if (!is.character(kind)) {
     return(NULL)
   }
   name <- unclass(kind)
+  attributes(name) <- NULL
   if (length(name) != 1L || is.na(name)) {
     return(NULL)
   }

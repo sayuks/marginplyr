@@ -921,6 +921,30 @@ test_that("a kind whose classification lies is no more a name for it", {
   }
 })
 
+# The plan's own copy of the kind, which `check_parent_grouping_kind()` compares
+# with `identical()`. It is the name the compilation classified and not the
+# field as read, so that comparison reads what the specification said and no
+# attribute the caller's value carried (#317, ADR 0008).
+#
+# The attributes are written one per case rather than together, because
+# `identical()` fails on any one of them: a strip that took the class and left
+# the names would pass a case carrying both.
+test_that("a plan records its kind as a bare name", {
+  decorated <- list(
+    c(nm = "rollup"),
+    structure("rollup", class = "decorated_grouping_kind"),
+    structure("rollup", dim = 1L)
+  )
+  for (kind in decorated) {
+    plan <- compile_against(
+      new_grouping_spec(kind, list(rlang::quo(a), rlang::quo(b))),
+      c("a", "b")
+    )
+    expect_identical(plan$kind, "rollup")
+    expect_equal(plan$sets, list(c("a", "b"), "a", character()))
+  }
+})
+
 test_that("the ambiguity refusal names a working spelling for each reading", {
   # Both spellings are executed rather than described, and they are read back
   # out of the diagnostic that printed them, so an advice line that stopped
@@ -1620,7 +1644,9 @@ test_that("a malformed grouping specification is refused by both guards", {
 # `set` underneath every shape, so what each route answers is what it answers
 # for the name underneath, and that is what the comparison asserts: a plain
 # `set` is the same call with nothing carrying a method, in every part of the
-# answer the classification decides. Both positions, for
+# answer the classification decides. The compiled plan's own kind field is one
+# of those parts since #317, where it stopped recording the field as read and
+# started recording the name. Both positions, for
 # the reason the test above writes every object in both, and the public routes
 # as well, because that is where the defect was reported and a guard is reached
 # from them through the whole lifecycle rather than the compiler alone.
@@ -1645,21 +1671,12 @@ test_that("a grouping specification kind is classified with its class off", {
 
   for (kind in kinds) {
     spec <- new_grouping_spec(kind, list())
-    # A compiled plan records the kind field as it was read, class and all, so
-    # the plan compiled from this specification holds the object where the one
-    # compiled from a plain `set` holds the string. That field is asserted here
-    # and set aside below rather than compared; #317 is where what a plan
-    # should record is decided.
-    expect_identical(calls$top(spec)$kind, kind)
-
     for (route in names(calls)) {
-      answered <- calls[[route]](spec)
-      expected <- calls[[route]](plain)
-      if (inherits(answered, "margin_grouping_plan")) {
-        answered$kind <- NULL
-        expected$kind <- NULL
-      }
-      expect_identical(answered, expected, info = route)
+      expect_identical(
+        calls[[route]](spec),
+        calls[[route]](plain),
+        info = route
+      )
     }
   }
 })

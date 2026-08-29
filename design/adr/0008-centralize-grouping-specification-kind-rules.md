@@ -574,6 +574,76 @@ not reached. The field is read once at each reader, as those two amendments
 left it. How often classifying asks the value's own methods is fixed by no
 decision, and it is now none, at every reader.
 
+## Amendment: a kind read as a name and compared as a value
+
+The amendment above decides what comes off a kind while it is classified, and
+leaves everything but the class on. That answer is enough for what read it then
+— `%in%`, `[[`, and the `cat()` a printed line ends at — and it is not enough
+for `identical()`, which is what a share compares a kind with. The constraint
+holding the Grouping plan representation and its consumers fixed is amended by
+#317, for the one field a plan records a kind in.
+
+`grouping_kind_name()` answers with a bare name: every attribute comes off, not
+only the class. The name a kind is does not depend on what the value carrying it
+was labelled with, which is the same argument the class came off under, made
+about the rest of the attributes. `unclass()` takes the class and
+`attributes<-` takes what is left. The second is a primitive like the first
+two, so `setMethod()` refuses a method for it with the same "must supply a
+function skeleton" the amendment above records — and by the time it is called
+there is no class left for anything to dispatch on in any case, an S4 object
+extending `character` having unclassed to a character whose `class()` is
+`"character"`.
+
+**What a plan records.** The name, rather than the field as read. Every plan is
+compiled from a preflighted specification, so the field is one name by the time
+it is recorded and the classification never answers `NULL` there — what it
+removes is the attributes a caller's kind carried onto the plan. Putting the
+question here rather than at each consumer is what makes a plan's kind one
+string by construction: `identical()` on it then reads what the specification
+said and nothing about how it was stored, for every consumer this plan reaches
+and every one written later.
+
+**What the share readers ask.** `check_parent_grouping_kind()` compares
+`plan$kind` directly, because a plan holds a name. `check_parent_grouping_spec()`
+runs before a plan exists — it is installed as the specification validator, and
+`validate_grouping_spec_early()` has already established there is a kind to read
+— so it classifies the field it read and compares that. The two readers agree
+because both compare a name, and not because both were written to remember to.
+
+**What moves.** A specification whose kind spells `rollup` under any attribute
+compiled as a rollup and was refused by `share_of_parent()` as though it were
+not one, which is the defect. It is accepted now, in both shapes: a kind
+carrying names, which reached the field before the amendment above, and a kind
+carrying a class, which reaches it because that amendment stopped a class on a
+kind being a reason to refuse the specification. No refusal changes its
+condition class, its message, its call context, or its position in the detection
+order, and no specification that was accepted is refused — the change is one
+population moving from refused to accepted, at one guard.
+
+**Evaluations.** The constraint holding the number and timing of evaluations is
+not reached. Each site reads its field once, as the amendments above left it,
+and classifying asks the value's own methods nothing.
+
+**What does not move.** Nothing a constructor builds: `rollup()` stores the
+string `"rollup"`, so stripping is the identity for every kind marginplyr
+writes, and grouping-set membership, ordering, duplicate handling, and Grouping
+identifiers are untouched for every specification. The other consumers of a
+classified kind read no attribute either: `%in%` compares values, `[[` indexes
+a list by one, and the printed line reaches `cat()`, which renders a vector's
+values and not what it is labelled with — so a kind no rule knows prints the
+same line as it did, under a name, a class, or a dimension.
+
+**Considered options.** Classifying at each consumer of `plan$kind` instead was
+rejected: it leaves the plan holding a value whose attributes decide nothing,
+puts the same question at every reader present and future, and makes the two
+share readers agree by convention. Normalizing the specification object rather
+than the plan was rejected because the specification is the caller's object and
+this package rewrites none — the amendment *one reading of a recognized nested
+argument* above records the specification tree as unnormalized on purpose.
+Recording the name without widening what `grouping_kind_name()` strips was
+tried on #289's branch and reverted: `unclass()` removes the class and nothing
+else, so it does not close the defect for a kind carrying names.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:

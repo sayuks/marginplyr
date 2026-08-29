@@ -396,6 +396,54 @@ test_that("Parent shares require one pure rollup", {
   }
 })
 
+# A kind is one name, and what the value carrying it was labelled with is no
+# part of that name. Such a specification compiled as a rollup and was refused
+# by the Parent share as though it were not one (#317), which is why the
+# accepted half compares against the plain `rollup()` result rather than
+# asserting that the call returns: a Parent share that compiled against the
+# wrong sets would return too.
+#
+# Both shapes reach the kind field. A name always did; a class reaches it
+# because #289 stopped a class on a kind being a reason to refuse the
+# specification. The refused half is over the same two shapes, because a
+# comparison that stopped discriminating passes the accepted half alone.
+#
+# Asserted through `share_of_parent()` rather than through `plan$kind`, because
+# the field is internal and the refusal is what a caller sees.
+test_that("a rollup kind is one whatever attribute it carries", {
+  data <- data.frame(a = c("x", "x", "y"), b = c("p", "q", "p"), value = 1:3)
+  decorated <- function(kind) {
+    list(
+      named = c(nm = kind),
+      classed = structure(kind, class = "decorated_grouping_kind")
+    )
+  }
+  share <- function(spec) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = spec
+    )
+  }
+  spec <- function(kind) {
+    new_grouping_spec(kind, list(rlang::quo(a), rlang::quo(b)))
+  }
+
+  expected <- share(rollup(a, b))
+  for (kind in decorated("rollup")) {
+    expect_equal(share(spec(kind)), expected)
+  }
+
+  for (kind in decorated("cube")) {
+    error <- expect_error(
+      share(spec(kind)),
+      "requires `.grouping` to be one pure `rollup\\(\\)`"
+    )
+    expect_s3_class(error, "marginplyr_error")
+  }
+})
+
 test_that("direct Parent-share syntax and dependency errors are targeted", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 
