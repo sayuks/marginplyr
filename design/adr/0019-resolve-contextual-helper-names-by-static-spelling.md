@@ -587,7 +587,10 @@ under the rule. `grouping_arg_spec()` recognized a nested constructor call
 through a pair of parentheses, because it reads that call's name through
 `static_spelling_name()`, while asking `is.symbol()` about a name and
 `is.language()` about an injected object — so `(rollup(region))` was the
-specification it is and `(s)` and `(!!s)` were column selections.
+specification it is and `(s)` was a column selection. An injected object was
+reached by the second pair rather than the first, `rlang::enquos()` dropping
+one pair around `!!` as it captures: `((!!s))` was a selection where `(!!s)`
+was already the specification.
 `check_ambiguous_nested_name()` asked `is_name_part()`, so ADR 0026's refusal
 of a name two readings claim was withheld from `(s)`, which selected a
 colliding column silently — the reading that ADR exists to remove, reached by a
