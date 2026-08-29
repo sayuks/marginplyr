@@ -386,7 +386,7 @@ test_that("no Arrow read happens while a Margin verb runs", {
 # query-build time, so marginplyr's handler never fires and what holds the zero
 # is Arrow refusing before it scans -- a claim about a shape whose rows need
 # not be in this process's memory, which is the distinction ADR 0020's
-# amendment draws a `Table` against and the shape where a read costs money.
+# amendment draws a `Table` against.
 #
 # The drift this sees is that refusal moving to after a scan: same
 # `arrow_not_supported` class, same text, raised later. The refusal test in
