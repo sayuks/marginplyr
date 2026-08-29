@@ -409,6 +409,58 @@ records under *the handler the read is wrapped in* is made once more. An error
 is caught and a condition is not, so a method that warns on its way to
 answering still answers.
 
+## Amendment: one reading of a recognized nested argument
+
+The constraint holding the number and timing of evaluations does so "without a
+separately accepted decision", and this is that decision, for every argument a
+Nested specification position recognizes as a specification. It accepts what
+*Considered options* below defers — "a normalized or validated specification
+tree was deferred because caching nested interpretation can change quosure or
+symbol evaluation counts" — in the narrow form that sentence describes, and
+changes those counts on purpose. Nothing else about the specification tree is
+normalized: the caller's own quosures are what the passes still resolve a
+column selection from.
+
+The structural preflight was already the first reader of every nested argument,
+and it now records what each one resolved to alongside the specification it
+returns. Expansion reads that record instead of asking `grouping_arg_spec()`
+again, so the compilation passes read no nested argument at all — the deferred
+cache, kept to one call rather than held across calls.
+
+**Evaluations.** Four shapes reach a nested position, and this is where their
+counts are written down. Each is a count per call, not per pass.
+
+| The argument | Evaluations | Where |
+| --- | --- | --- |
+| A nested constructor call, and a bare name bound to a specification | 1 | the preflight |
+| A bare name that is a column and is bound to a specification of an admitted kind | 1 | the preflight, per ADR 0026, and then refused |
+| A column selection | 1 per compilation pass — 2 where the plan is settled by names alone, 1 otherwise | each pass, against that pass's own proxy |
+| A call the spelling declines to evaluate, such as a caller's own function | 1 | the selection resolution that refuses it (#190) |
+
+The first row is what moves, from 3 and 2 to 1 and 1 (#260): a recognized
+argument was read by the preflight and then again by each pass, so its count
+followed the number of passes, which is decided by whether names alone settle
+the plan — a property of the whole specification and not of that argument. It
+no longer does. The other three rows are unchanged, and the second and fourth
+are stated here because a table of what a nested position costs that named only
+some of its arguments would be read as naming all of them.
+
+**Timing.** The first reading of every argument is where it was: the preflight
+still reads in argument order, and still stops at the first argument it
+refuses. What moves is that the later readings do not happen, so whatever
+forcing a recognized argument does is done before typed metadata is acquired
+and not again after it.
+
+**What does not move.** Which arguments are recognized, and by what spelling,
+are untouched — the gate is the same function, called from one site instead of
+five. So are grouping-set membership, ordering, duplicate handling, and
+Grouping identifiers; error condition classes, messages, public call contexts,
+and detection order; laziness and metadata acquisition counts; and the Grouping
+plan and its consumers. A specification that compiled compiles to the same
+plan, because a reading taken once and a reading taken three times differ only
+where the argument answers differently each time, and an argument that does
+that is one whose count this amendment is about.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:
@@ -450,7 +502,9 @@ different while merely moving the dispatch into `UseMethod()`.
 A normalized or validated specification tree was deferred because caching
 nested interpretation can change quosure or symbol evaluation counts. It is
 not required to centralize the rules and would broaden the compatibility
-surface of this change.
+surface of this change. The amendment *one reading of a recognized nested
+argument* above accepts it, in the narrow form this paragraph describes and
+with the counts it changes stated.
 
 A separate rules file was rejected for now because the rules do not form an
 independent module; they are the grammar used exclusively by Grouping plan

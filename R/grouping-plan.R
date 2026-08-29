@@ -173,10 +173,11 @@ prepare_grouping_plan <- function(.data,
       }
       # Preflighted once and handed to every compilation pass -- both of them
       # where the plan is settled by names alone, and the one below otherwise.
-      # Preflight is not a free re-run: `grouping_arg_spec()` evaluates a
-      # symbol or a nested constructor argument, so preflighting per pass would
-      # evaluate a caller's quosure once per pass rather than once, and
-      # ADR-0008 holds the number and timing of evaluations fixed.
+      # This is the only reading of a nested argument the call makes, so a
+      # recognized one is evaluated once however many passes run; preflighting
+      # per pass would evaluate it once per pass. ADR-0008 holds the number and
+      # timing of evaluations fixed, and its amendment for a recognized nested
+      # argument is what sets it at one.
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The
@@ -334,17 +335,30 @@ grouping_name_proxy <- function(data_vars) {
   stats::setNames(as.list(seq_along(data_vars)), data_vars)
 }
 
+# The one site that reads a nested argument. What it returns is the
+# specification together with the reading each argument got, so the compilation
+# passes below take none of their own: `args` is parallel to `spec$args`, and
+# holds this function's own answer for a nested specification and `NULL` for a
+# column selection. ADR 0008's amendment for a recognized nested argument is
+# what accepts the reading moving here, and states the counts that hold.
+#
+# An empty `args` beside a non-`NULL` `spec` is a specification with no
+# arguments, not a specification nothing was read for: the two are told apart
+# by `spec`, which is `NULL` only for the absent `.grouping` that
+# `compile_grouping_spec_impl()` fills in.
 preflight_grouping_spec <- function(grouping_spec, data_vars) {
   stopifnot(is.character(data_vars), !anyNA(data_vars))
   validate_grouping_spec_early(grouping_spec)
   if (is.null(grouping_spec)) {
-    return(list(spec = NULL, name_only = TRUE))
+    return(list(spec = NULL, args = list(), name_only = TRUE))
   }
 
   rule <- find_grouping_kind_rule(grouping_spec$type)
   stopifnot(!is.null(rule))
   name_only <- TRUE
-  for (arg in grouping_spec$args) {
+  args <- vector("list", length(grouping_spec$args))
+  for (i in seq_along(grouping_spec$args)) {
+    arg <- grouping_spec$args[[i]]
     nested <- grouping_arg_spec(arg, data_vars)
     if (is.null(nested)) {
       check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
@@ -355,8 +369,9 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
     nested_preflight <- preflight_grouping_spec(nested, data_vars)
     rule$validate_nested(grouping_spec, nested_preflight$spec)
     name_only <- name_only && nested_preflight$name_only
+    args[[i]] <- nested_preflight
   }
-  list(spec = grouping_spec, name_only = name_only)
+  list(spec = grouping_spec, args = args, name_only = name_only)
 }
 
 # The spelling a nested position reads an argument by: the caller's expression
@@ -519,9 +534,12 @@ admitted_nested_kinds <- local({
 # which keeps `match_margin_choice()`'s "an untouched formal stands for its
 # first entry" idiom working for a narrowed vocabulary.
 #
-# `preflight` lets a caller running more than one pass over one specification
-# hand the same preflight to each, rather than paying a second evaluation of
-# the caller's quosures for a result that cannot differ (ADR-0008).
+# `preflight` carries the reading each nested argument got, so a caller running
+# more than one pass over one specification hands the same preflight to each
+# and no pass reads a caller's nested quosure at all. A recognized nested
+# argument is therefore evaluated once per call, whichever passes run
+# (ADR-0008). A column selection is not: each pass resolves one for itself,
+# against its own proxy.
 compile_grouping_spec <- function(
   .grouping,
   data_vars,
@@ -538,7 +556,7 @@ compile_grouping_spec <- function(
   )
   stopifnot(identical(preflight$spec, .grouping))
   compile_grouping_spec_impl(
-    preflight$spec,
+    preflight,
     data_vars = data_vars,
     data_proxy = data_proxy,
     .by = .by,
@@ -547,7 +565,9 @@ compile_grouping_spec <- function(
   )
 }
 
-compile_grouping_spec_impl <- function(.grouping,
+# `preflight` rather than a specification, because expansion below reads each
+# nested argument's reading off it instead of taking one (ADR 0008).
+compile_grouping_spec_impl <- function(preflight,
                                        data_vars,
                                        data_proxy,
                                        .by,
@@ -582,13 +602,17 @@ compile_grouping_spec_impl <- function(.grouping,
     )
   }
 
-  if (is.null(.grouping)) {
-    .grouping <- new_grouping_spec("set", list())
+  # The absent `.grouping`, which stands for the empty grouping set. It has no
+  # arguments, so there is nothing for the preflight to have read and the
+  # substitute is complete.
+  if (is.null(preflight$spec)) {
+    preflight <- preflight_grouping_spec(
+      new_grouping_spec("set", list()),
+      data_vars
+    )
   }
 
-  expanded <- unname(
-    expand_grouping_family(.grouping, data_vars, data_proxy)
-  )
+  expanded <- unname(expand_grouping_family(preflight, data_proxy))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
   overlap <- intersect(.by, dimensions)
@@ -662,7 +686,7 @@ compile_grouping_spec_impl <- function(.grouping,
 
   structure(
     list(
-      kind = .grouping$type,
+      kind = preflight$spec$type,
       by = unique(.by),
       dimensions = dimensions,
       sets = normalized,
@@ -674,30 +698,36 @@ compile_grouping_spec_impl <- function(.grouping,
   )
 }
 
-expand_grouping_family <- function(spec, data_vars, data_proxy) {
-  rule <- find_grouping_kind_rule(spec$type)
+# Expansion takes a preflight rather than a specification, so that a nested
+# argument's reading is read off `preflight$args` rather than taken again
+# (ADR 0008). `data_vars` is gone from the whole chain with the reading: it was
+# what `grouping_arg_spec()` decided a bare name against, and nothing else here
+# asked for it. A column selection is still resolved per pass, against the
+# proxy the pass was given.
+expand_grouping_family <- function(preflight, data_proxy) {
+  rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
     stop("Unknown grouping specification kind.", call. = FALSE)
   }
-  rule$expand(spec, data_vars, data_proxy)
+  rule$expand(preflight, data_proxy)
 }
 
-expand_single_grouping_set <- function(spec, data_vars, data_proxy) {
-  list(resolve_grouping_set(spec, data_vars, data_proxy))
+expand_single_grouping_set <- function(preflight, data_proxy) {
+  list(resolve_grouping_set(preflight, data_proxy))
 }
 
-resolve_grouping_set <- function(spec, data_vars, data_proxy) {
-  if (length(spec$args) == 0L) {
+resolve_grouping_set <- function(preflight, data_proxy) {
+  args <- preflight$spec$args
+  if (length(args) == 0L) {
     return(character())
   }
 
   cols <- unlist(
     lapply(
-      spec$args,
-      function(arg) {
-        nested <- grouping_arg_spec(arg, data_vars)
-        stopifnot(is.null(nested))
-        resolve_grouping_selection(arg, data_proxy)
+      seq_along(args),
+      function(i) {
+        stopifnot(is.null(preflight$args[[i]]))
+        resolve_grouping_selection(args[[i]], data_proxy)
       }
     ),
     use.names = FALSE
@@ -705,34 +735,36 @@ resolve_grouping_set <- function(spec, data_vars, data_proxy) {
   unique(cols)
 }
 
-expand_grouping_sets <- function(spec, data_vars, data_proxy) {
+expand_grouping_sets <- function(preflight, data_proxy) {
+  args <- preflight$spec$args
   unlist(
     lapply(
-      spec$args,
-      function(arg) {
-        nested <- grouping_arg_spec(arg, data_vars)
+      seq_along(args),
+      function(i) {
+        nested <- preflight$args[[i]]
         if (is.null(nested)) {
-          return(list(resolve_grouping_selection(arg, data_proxy)))
+          return(list(resolve_grouping_selection(args[[i]], data_proxy)))
         }
-        expand_grouping_family(nested, data_vars, data_proxy)
+        expand_grouping_family(nested, data_proxy)
       }
     ),
     recursive = FALSE
   )
 }
 
-resolve_grouping_units <- function(spec, data_vars, data_proxy) {
+resolve_grouping_units <- function(preflight, data_proxy) {
+  args <- preflight$spec$args
   units <- unlist(
     lapply(
-      spec$args,
-      function(arg) {
-        nested <- grouping_arg_spec(arg, data_vars)
+      seq_along(args),
+      function(i) {
+        nested <- preflight$args[[i]]
         if (is.null(nested)) {
-          cols <- resolve_grouping_selection(arg, data_proxy)
+          cols <- resolve_grouping_selection(args[[i]], data_proxy)
           return(lapply(cols, function(col) col))
         }
-        stopifnot(identical(nested$type, "set"))
-        cols <- resolve_grouping_set(nested, data_vars, data_proxy)
+        stopifnot(identical(nested$spec$type, "set"))
+        cols <- resolve_grouping_set(nested, data_proxy)
         if (length(cols) == 0L) {
           abort_empty_composite()
         }
@@ -743,13 +775,13 @@ resolve_grouping_units <- function(spec, data_vars, data_proxy) {
   )
 
   if (length(units) == 0L) {
-    abort_empty_grouping_units(spec$type)
+    abort_empty_grouping_units(preflight$spec$type)
   }
   units
 }
 
-expand_rollup <- function(spec, data_vars, data_proxy) {
-  units <- resolve_grouping_units(spec, data_vars, data_proxy)
+expand_rollup <- function(preflight, data_proxy) {
+  units <- resolve_grouping_units(preflight, data_proxy)
   lapply(
     rev(seq.int(0L, length(units))),
     function(n) {
@@ -758,8 +790,8 @@ expand_rollup <- function(spec, data_vars, data_proxy) {
   )
 }
 
-expand_cube <- function(spec, data_vars, data_proxy) {
-  units <- resolve_grouping_units(spec, data_vars, data_proxy)
+expand_cube <- function(preflight, data_proxy) {
+  units <- resolve_grouping_units(preflight, data_proxy)
   n <- length(units)
   indices <- unlist(
     lapply(
@@ -777,18 +809,19 @@ expand_cube <- function(spec, data_vars, data_proxy) {
   )
 }
 
-expand_grouping_product <- function(spec, data_vars, data_proxy) {
+expand_grouping_product <- function(preflight, data_proxy) {
   product <- list(character())
-  if (length(spec$args) == 0L) {
+  args <- preflight$spec$args
+  if (length(args) == 0L) {
     return(product)
   }
 
-  for (arg in spec$args) {
-    nested <- grouping_arg_spec(arg, data_vars)
+  for (i in seq_along(args)) {
+    nested <- preflight$args[[i]]
     family <- if (is.null(nested)) {
-      list(resolve_grouping_selection(arg, data_proxy))
+      list(resolve_grouping_selection(args[[i]], data_proxy))
     } else {
-      expand_grouping_family(nested, data_vars, data_proxy)
+      expand_grouping_family(nested, data_proxy)
     }
 
     product <- unlist(
