@@ -323,6 +323,16 @@ is_parenthesized <- function(expr) {
   !identical(unparenthesized_value(expr), expr)
 }
 
+# Whether a pair of parentheses wraps R's empty argument. This is the question
+# `unparenthesized_value()` stopping cannot be read as an answer to: it stops
+# both at a pair holding the empty argument and at everything that is not a
+# pair, and a reader that has to tell an empty argument from an expression
+# needs those apart. Asked of what that function answered, so however many
+# pairs a caller wrapped, one is what arrives here (#261).
+wraps_empty_argument <- function(expr) {
+  is_redundant_parens(expr) && rlang::is_missing(expr[[2L]])
+}
+
 # The head and the arguments of a call a walk descends into, and the node
 # rebuilt around rewritten arguments. `static_call_name()` above answers what a
 # walk asks of a node it does not descend into; these three are what it asks of

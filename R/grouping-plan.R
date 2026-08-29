@@ -225,10 +225,12 @@ abort_empty_grouping_units <- function(kind) {
   abort_marginplyr("{.fun {kind}} requires at least one dimension.")
 }
 
-# The refusal of an argument the caller left empty. It names the position
-# because that is all there is to name: the argument has no spelling for
-# ADR 0024's rule to quote, so the count of arguments before it is the only
-# thing that points at the comma the caller wrote (#261).
+# The refusal of an argument the caller left empty. `position` is the
+# argument's index in the specification's `args`, which is the position the
+# caller wrote it at: every constructor takes `...` alone, so
+# `rlang::enquos(...)` captures one element per written argument. The index is
+# what the diagnostic points with because the argument has no spelling for
+# ADR 0024's rule to quote (#261).
 abort_empty_grouping_arg <- function(constructor, position) {
   abort_marginplyr(c(
     "Argument {position} of {.fun {constructor}} is empty.",
@@ -367,12 +369,24 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
     arg <- grouping_spec$args[[i]]
-    # Asked of the quosure, which is an object like any other, and before
-    # anything reads the expression out of it -- the rule `R/utils.R` states
-    # for every reader a walk asks first (#168, #174). The refusal is here
-    # rather than in the reader below because this is the frame holding what
-    # the diagnostic names: the constructor and the argument's position (#261).
-    if (rlang::quo_is_missing(arg)) {
+    # The first test is asked of the quosure, which is an object like any
+    # other, and before anything reads the expression out of it -- the rule
+    # `R/utils.R` states for every reader a walk asks first (#168, #174). The
+    # refusal is here rather than in the reader below because this is the frame
+    # holding what the diagnostic names: the constructor and the argument's
+    # position (#261).
+    #
+    # The second is the same argument written inside redundant parentheses,
+    # which every other reading here sees through (#178, #259) and which this
+    # one has to see through for the same reason: `(` is the identity function,
+    # so the pair wraps nothing to read either. Only an injection or a
+    # constructed call spells it, since the parser rejects `f((), x)`.
+    # Unrefused it reaches `is_name_only_expr()`, where the empty argument is a
+    # symbol whose name is `""` and `rlang::env_has()` raises an untyped
+    # condition for a zero-length variable name.
+    if (
+      rlang::quo_is_missing(arg) || wraps_empty_argument(nested_arg_expr(arg))
+    ) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
     nested <- grouping_arg_spec(arg, data_vars)
@@ -392,9 +406,11 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 }
 
 # The spelling a nested position reads an argument by: the caller's expression
-# with its redundant parentheses removed (#178, #259). The argument may be one
-# a caller left empty, so the answer may be R's empty argument, and a reader
-# passes it on as a value rather than binding it (#168, #174).
+# with its redundant parentheses removed (#178, #259). It answers the pair
+# wrapping R's empty argument rather than unwrapping to the marker
+# (#168, #174), and that pair is what `preflight_grouping_spec()` reads to
+# refuse an empty argument (#261). Every other caller runs downstream of that
+# refusal and is handed no empty argument at all.
 nested_arg_expr <- function(arg) {
   unparenthesized_value(rlang::quo_get_expr(arg))
 }
@@ -934,9 +950,11 @@ grouping_constructor_names <- function() {
 
 # The specification a nested argument is, or `NULL` where it is a column
 # selection. Every caller holds that `arg` carries an expression rather than R's
-# empty argument -- `preflight_grouping_spec()` by refusing one (#261), the
-# restart below by the reading its own comment gives -- which is what lets the
-# local hold what the quosure carries without the missing marker reaching it.
+# empty argument, wrapped in parentheses or not: `preflight_grouping_spec()`
+# refuses one (#261), and the restart below cannot make one, because
+# `is_parenthesized()` answers `FALSE` for the pair that would hold it. That is
+# what lets the local hold what the quosure carries without the missing marker
+# reaching it.
 grouping_arg_spec <- function(arg, data_vars) {
   expr <- rlang::quo_get_expr(arg)
   # A redundantly parenthesized argument is read as the argument it wraps, as

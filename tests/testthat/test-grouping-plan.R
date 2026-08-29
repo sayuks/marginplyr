@@ -646,14 +646,36 @@ test_that("a leading or interior empty argument is refused in every kind", {
   constructors <- grouping_constructor_names()
   expect_true("grouping_sets" %in% constructors)
 
-  # The two shapes, with the argument number each leaves empty. A trailing one
-  # is not among them: `rlang::enquos(...)` captures no argument for it, which
-  # is the reading the test below holds unchanged.
+  # A pair of redundant parentheses around an argument, built rather than
+  # written: the parser rejects `f((), x)`, so a constructed call is how a pair
+  # holding the empty argument is spelled at all.
+  parens <- function(expr) as.call(list(as.name("("), expr))
+
+  # The shapes, with the argument number each leaves empty. A trailing empty
+  # argument is not among them: `rlang::enquos(...)` captures no argument for
+  # it, which is the reading the test below holds unchanged.
+  #
+  # The parenthesized spellings are here because `(` is the identity function,
+  # so a pair wraps nothing to read either, and every other reading this
+  # position takes sees through one (#178, #259). One pair and two, since what
+  # sees through them unwraps until it stops. Unrefused, such an argument
+  # reaches `is_name_only_expr()`, where the empty argument is a symbol whose
+  # name is `""` and `rlang::env_has()` raises an untyped condition for a
+  # zero-length variable name -- #261's own defect at the spelling #259 made
+  # transparent.
   shapes <- list(
     list(position = 1L, args = list(rlang::missing_arg(), quote(region))),
     list(
       position = 2L,
       args = list(quote(region), rlang::missing_arg(), quote(grade))
+    ),
+    list(
+      position = 1L,
+      args = list(parens(rlang::missing_arg()), quote(region))
+    ),
+    list(
+      position = 2L,
+      args = list(quote(region), parens(parens(rlang::missing_arg())))
     )
   )
 
@@ -685,7 +707,7 @@ test_that("a leading or interior empty argument is refused in every kind", {
   )
 })
 
-test_that("an empty slot the package already had a reading for keeps it", {
+test_that("the empty spellings that already had a reading keep it", {
   data <- data.frame(region = c("a", "b"), value = c(1, 2))
   region_only <- inspect_grouping(data, .grouping = grouping_sets(region))
   grand_total <- inspect_grouping(data)
