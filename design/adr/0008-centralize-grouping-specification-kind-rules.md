@@ -644,6 +644,63 @@ Recording the name without widening what `grouping_kind_name()` strips was
 tried on #289's branch and reverted: `unclass()` removes the class and nothing
 else, so it does not close the defect for a kind carrying names.
 
+## Amendment: a nested kind read as a name
+
+The amendment above scoped its answer to the one field a plan records a kind in
+and left every other `identical()` on a kind field where it stood.
+`validate_nested_grouping_units()` is the other one: it decides whether a nested
+argument is the composite dimension `rollup()` and `cube()` admit, and it
+compared the field as read. So a nested `grouping_set` spelling `set` under an
+attribute was refused where the same specification with a bare `set` compiled,
+which is the defect. The constraint holding error condition classes, messages,
+and detection order fixed is amended by #324, for that guard.
+
+**What the guard compares.** The name, classified where it reads. What this
+reader holds is the caller's own nested specification and not a plan, so it
+classifies the field it read, as `check_parent_grouping_spec()` does above.
+
+**What the diagnostic renders.** Unchanged, and it reads the parent's field as
+read. `abort_marginplyr()` expands a message through `cli::format_inline()`,
+which renders a vector's values: it drops names and `dim`, and reaches neither
+an `as.character()` nor a `format()` method a class on the kind defines, so
+`{.fun {parent$type}}` already spells the name. That is the argument the
+amendment above made about `cat()` for the printed line, made about the writer a
+diagnostic goes through.
+
+**What moves with the guard.** `resolve_grouping_units()` asserts the same
+field one pass later, and it is classified too. The assert was unreachable while
+the guard refused this population; admitting the population is what makes it
+reachable, and left as read it would refuse exactly that population again — with
+a `stopifnot()` message, which is the untyped condition the guard exists to
+replace.
+
+**What moves.** A nested specification whose kind spells `set` under any
+attribute goes from refused to accepted inside `rollup()` and `cube()`, at one
+guard. No refusal changes its condition class, its message, its call context, or
+its position in the detection order, and no specification that was accepted is
+refused. Nothing a constructor builds is affected: `grouping_set()` stores the
+string `"set"`.
+
+**Evaluations.** The constraint holding the number and timing of evaluations is
+not reached. The guard reads its field once, as every reader above does, and
+classifying asks the value's own methods nothing.
+
+**What does not move.** The remaining reads of a kind field.
+`abort_empty_grouping_units()` takes one for a message alone, which renders the
+name for the reason above; `admitted_nested_kinds()` keys its memo on one, and
+`[[` indexes a list by a value, so every spelling of a parent's kind reaches the
+same entry; `find_grouping_kind_rule()` classifies already.
+
+**Considered options.** Having the preflight hand the rule the name it already
+classified was rejected. `validate_nested` is one contract across the five kind
+rules, and `admitted_nested_kinds()` puts each rule to a stand-in specification
+built per kind, so the parameter would be a name at one caller and a
+specification at the other; the guard also needs the parent specification for
+its sentence either way. Classifying where the field is read is what the
+amendments above left in place at every other reader, and it is what makes the
+two guards over a caller's specification agree by construction rather than by
+convention.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:

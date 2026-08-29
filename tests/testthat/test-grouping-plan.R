@@ -945,6 +945,87 @@ test_that("a plan records its kind as a bare name", {
   }
 })
 
+# The other kind field an `identical()` reads: the one a nested argument's
+# specification carries, which the guard admitting a composite dimension
+# compares (#324, ADR 0008). A nested `grouping_set` spelling `set` under an
+# attribute was refused inside `rollup()` and `cube()` while the same
+# specification with a bare `set` compiled.
+#
+# Both parents, because they share the guard, and both halves of what it
+# decides. The accepted half compares against the plain `grouping_set()` result
+# rather than asserting that the call returns, because an argument admitted and
+# then resolved wrongly returns too; the refused half is over the same shapes,
+# because a comparison that stopped discriminating passes the accepted half
+# alone.
+#
+# The last loop is what the parent's kind decides, which is the diagnostic and
+# not the comparison: the sentence names the parent, so a parent whose own kind
+# carries an attribute has to render the same one.
+#
+# Asserted through a Margin verb rather than through the guard, because the
+# guard is internal and the refusal is what a caller sees. That route is also
+# what reaches the assert in `resolve_grouping_units()`, which the guard's
+# refusal stood in front of.
+test_that("a nested set kind is one whatever attribute it carries", {
+  data <- data.frame(a = c("x", "x", "y"), b = c("p", "q", "p"), value = 1:3)
+  parents <- list(rollup = rollup, cube = cube)
+  decorated <- function(kind) {
+    list(
+      named = c(nm = kind),
+      classed = structure(kind, class = "decorated_grouping_kind"),
+      dimmed = structure(kind, dim = 1L)
+    )
+  }
+  composite <- function(kind) {
+    new_grouping_spec(kind, list(rlang::quo(a), rlang::quo(b)))
+  }
+  totals <- function(spec) {
+    summarize_with_margins(data, total = sum(value), .grouping = spec)
+  }
+  refusal <- function(parent) {
+    paste0(
+      "`", parent, "()` only accepts columns or `grouping_set()` ",
+      "composite dimensions."
+    )
+  }
+  refused <- function(spec, parent, shape) {
+    error <- expect_error(totals(spec), info = paste(parent, shape))
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(conditionMessage(error), refusal(parent), info = shape)
+  }
+
+  for (parent in names(parents)) {
+    build <- parents[[parent]]
+    expected <- totals(build(grouping_set(a, b)))
+
+    admitted <- decorated("set")
+    for (shape in names(admitted)) {
+      expect_equal(
+        totals(build(!!composite(admitted[[shape]]))),
+        expected,
+        info = paste(parent, shape)
+      )
+    }
+
+    rejected <- decorated("cube")
+    for (shape in names(rejected)) {
+      refused(build(!!composite(rejected[[shape]])), parent, shape)
+    }
+
+    naming <- decorated(parent)
+    for (shape in names(naming)) {
+      refused(
+        new_grouping_spec(
+          naming[[shape]],
+          list(rlang::quo(!!composite("cube")))
+        ),
+        parent,
+        shape
+      )
+    }
+  }
+})
+
 test_that("the ambiguity refusal names a working spelling for each reading", {
   # Both spellings are executed rather than described, and they are read back
   # out of the diagnostic that printed them, so an advice line that stopped

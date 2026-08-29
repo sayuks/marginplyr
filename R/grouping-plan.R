@@ -276,7 +276,11 @@ allow_nested_grouping <- function(parent, nested) {
 }
 
 validate_nested_grouping_units <- function(parent, nested) {
-  if (!identical(nested$type, "set")) {
+  # Classified rather than compared as read (#324, ADR 0008): what this reader
+  # holds is a nested specification the caller wrote and not a plan. The
+  # diagnostic keeps the parent's field as read: `cli::format_inline()` renders
+  # a vector's values and reaches no method an attribute could carry.
+  if (!identical(grouping_kind_name(nested$type), "set")) {
     abort_marginplyr(paste0(
       "{.fun {parent$type}} only accepts columns or {.fun grouping_set} ",
       "composite dimensions."
@@ -790,7 +794,10 @@ resolve_grouping_units <- function(preflight, data_proxy) {
           cols <- resolve_grouping_selection(arg$quo, data_proxy)
           return(lapply(cols, function(col) col))
         }
-        stopifnot(identical(arg$nested$spec$type, "set"))
+        # Classified as the guard that admitted this argument classifies
+        # (#324): a comparison on the field as read fires here, untyped, for
+        # exactly the population that guard now admits.
+        stopifnot(identical(grouping_kind_name(arg$nested$spec$type), "set"))
         cols <- resolve_grouping_set(arg$nested, data_proxy)
         if (length(cols) == 0L) {
           abort_empty_composite()
