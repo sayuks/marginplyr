@@ -138,11 +138,19 @@ test_that("the Grouping-identity comparison has exactly one canonical home", {
 # Both names the *Release matrix* section forbids are scanned, not only the one
 # #123 found. The rlang spelling even takes a version argument of its own,
 # which makes it the likelier of the two to arrive looking correct.
+#
+# The scan is deliberately blunt: prose that needs to name a version-blind call
+# has to spell it some other way.
 version_blind_guards <- c("requireNamespace", "is_installed")
 
 # Both halves of the README are pages: `README.Rmd` is where a claim is
 # written, and `README.md` is what a reader on GitHub is shown and what the
 # website's home page includes.
+#
+# The README is in the set because it is installation documentation, which is
+# where a version-blind test is likeliest to be written in the first place --
+# the same reason `verify-site.R` forbids `installed.packages` anywhere on the
+# rendered site.
 #
 # A repository run reads both. A check run reads whichever half R installed,
 # and that is a question about the R running the check, not about this package:
