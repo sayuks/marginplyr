@@ -237,7 +237,7 @@ is_lazy_backend_input <- function(x) {
   !grouping_backend(x)$kind %in% c("local", "other")
 }
 
-# One installation per entry, in a frame of its own.
+# One installation per entry binding, in a frame of its own.
 #
 # The tracer has to be a function *literal* written at the `trace()` call, and a
 # variable holding the same closure is not the same thing. `trace()` substitutes
@@ -249,12 +249,12 @@ is_lazy_backend_input <- function(x) {
 # rather than from a loop variable, which every tracer would read after the loop
 # had stopped on its last entry. This frame outlives the call because the
 # installed literal holds it.
-install_read_tracer <- function(entry, counter) {
+install_read_tracer <- function(entry, counter, where) {
   subject <- entry$subject
   if (is.null(subject)) {
     suppressMessages(trace(
       entry$name,
-      where = asNamespace(entry$package),
+      where = where,
       tracer = function() counter$count <- counter$count + 1L,
       print = FALSE
     ))
@@ -262,13 +262,20 @@ install_read_tracer <- function(entry, counter) {
   }
   suppressMessages(trace(
     entry$name,
-    where = asNamespace(entry$package),
+    where = where,
     tracer = function() {
       # Read into a name of its own first. `parent.frame()` answers from the
       # call stack, so writing it as an argument to a call this frame does not
       # make would answer for whichever frame forced the promise.
       frame <- parent.frame()
-      value <- get(subject, envir = frame, inherits = FALSE)
+      value <- local({
+        # `.doTrace()` disables tracing while a tracer runs. Re-enable it only
+        # while this promise is forced, so an entry point in the argument is
+        # observed without counting calls made by the classifier below.
+        was_tracing <- base::tracingState(TRUE)
+        on.exit(base::tracingState(was_tracing), add = TRUE)
+        get(subject, envir = frame, inherits = FALSE)
+      })
       if (is_lazy_backend_input(value)) {
         counter$count <- counter$count + 1L
       }
@@ -284,6 +291,26 @@ count_backend_reads <- function(expr) {
   counter <- new.env(parent = emptyenv())
   counter$count <- 0L
   entries <- traced_execution_entry_points()
+  # A namespace trace updates imports but not an attached `package:*` binding.
+  # Trace each distinct attached binding holding the same function too, since a
+  # bare call can reach it through either its owner or a re-exporting package.
+  traces <- unlist(lapply(entries, function(entry) {
+    locations <- list(asNamespace(entry$package))
+    target <- get(entry$name, envir = locations[[1L]])
+    attached_names <- grep("^package:", search(), value = TRUE)
+    for (attached_name in attached_names) {
+      attached <- as.environment(attached_name)
+      holds_target <- exists(entry$name, envir = attached, inherits = FALSE) &&
+        identical(get(entry$name, envir = attached), target)
+      already_recorded <- any(vapply(locations, function(location) {
+        identical(location, attached)
+      }, logical(1)))
+      if (holds_target && !already_recorded) {
+        locations[[length(locations) + 1L]] <- attached
+      }
+    }
+    lapply(locations, function(where) list(entry = entry, where = where))
+  }), recursive = FALSE)
   # Registered before the first trace is installed rather than after the last.
   # `trace()` failing part-way through the loop would otherwise leave every
   # trace already installed in place for the rest of the run -- a whole suite,
@@ -291,13 +318,16 @@ count_backend_reads <- function(expr) {
   # `untrace()` on a function that was never traced is a no-op, so removing
   # more than was installed is safe and removing less is not.
   on.exit(
-    for (entry in entries) {
-      suppressMessages(untrace(entry$name, where = asNamespace(entry$package)))
+    for (installed in traces) {
+      suppressMessages(untrace(
+        installed$entry$name,
+        where = installed$where
+      ))
     },
     add = TRUE
   )
-  for (entry in entries) {
-    install_read_tracer(entry, counter)
+  for (installed in traces) {
+    install_read_tracer(installed$entry, counter, installed$where)
   }
   force(expr)
   counter$count
@@ -426,12 +456,6 @@ test_that("no Arrow Dataset read happens while a Margin verb runs", {
 # The conversion path the catalog's `tibble::as_tibble` entry exists for, and
 # the backend that takes it.
 #
-# Every expectation here names the package it calls into. `trace()` rewrites a
-# namespace binding and the copy an importing package's imports environment
-# holds, but not the one the attached `package:tibble` environment holds, which
-# is where a bare `as_tibble()` written here would resolve -- so that spelling
-# counts nothing while reading exactly as these do (#303).
-#
 # The two deprecated spellings are asserted because one entry covering all three
 # is the reason there is one entry: both delegate to the generic from inside
 # tibble's own namespace, so the caller's spelling does not decide whether the
@@ -463,6 +487,35 @@ test_that("a dtplyr materialization through the as_tibble family is counted", {
   # above: a subject test answering `TRUE` for everything leaves every zero in
   # this file reading exactly as it does now.
   expect_identical(count_backend_reads(tibble::as_tibble(data)), 0L)
+})
+
+test_that("an attached execution entry point is counted", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(k = c("E", "E", "W"), v = c(1, 2, 3))
+  was_attached <- "package:dplyr" %in% search()
+  if (!was_attached) {
+    suppressPackageStartupMessages(library("dplyr", character.only = TRUE))
+    on.exit(detach("package:dplyr", unload = FALSE), add = TRUE)
+  }
+
+  # This asserts below the public-verb seam because a namespace-only trace
+  # reports a false-clean zero while this attached re-export materializes its
+  # input.
+  expect_gt(count_backend_reads(as_tibble(dtplyr::lazy_dt(data))), 0L)
+})
+
+test_that("an execution entry point in a subject argument is counted", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(k = c("E", "E", "W"), v = c(1, 2, 3))
+
+  # This asserts below the public-verb seam because the outer subject test can
+  # hide the inner materialization and leave the counter at a false-clean zero.
+  expect_gt(
+    count_backend_reads(
+      as.data.frame(tibble::as_tibble(dtplyr::lazy_dt(data)))
+    ),
+    0L
+  )
 })
 
 test_that("backend kinds granted the collect_selection_proxy capability", {

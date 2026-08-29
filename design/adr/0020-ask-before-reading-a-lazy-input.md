@@ -171,6 +171,13 @@ a non-clustered table, a one-row query that starts a Snowflake warehouse costs
 a minute of credits, every read on Aurora Standard is a billable I/O request,
 and Athena bills a failed query like a successful one. Rows are the wrong unit.
 
+**Require the runtime gate's controls to use qualified calls.** Rejected: the
+catalog identifies an execution entry point by package and name, not by how a
+caller reaches its binding. A qualified-only rule would leave the counter blind
+to the attached `package:*` binding and make that blindness a condition every
+later control has to remember. The gate traces both the namespace binding and
+any distinct attached binding instead (#303).
+
 ## Documentation consequences
 
 The reference carries a *When marginplyr queries your data* section stating
@@ -194,6 +201,11 @@ entry point, and a second snapshot records the set of entry points scanned for,
 so a scan that stopped covering `compute()` fails rather than reporting a clean
 result. A third records which backend kinds hold `collect_selection_proxy`, so
 extending exemption 1 is visible in a diff.
+
+The runtime counter traces every binding a qualified or bare call can reach.
+When a subject-tested entry forces its caller's promise, tracing is re-enabled
+for that force alone, so an execution entry point nested in the argument remains
+visible. Positive controls cover both shapes (#303).
 
 Snapshots run only where `NOT_CRAN` is set, which is the `structure` job and
 the `backend` jobs; a plain CRAN check does not execute this gate.
