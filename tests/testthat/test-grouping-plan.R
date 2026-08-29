@@ -250,6 +250,95 @@ test_that("a nested specification position recognizes a spelling or a name", {
   )
 })
 
+# tidyselect refuses a specification it cannot use as a subscript, and #190's
+# refusal is written from that condition. It refuses no function: it calls one,
+# as the predicate form of a selection, so a specification stored as a function
+# took the same position with no condition naming it and the caller got base
+# R's untyped complaint about the call tidyselect made (#265).
+test_that("a nested specification stored as a function is refused", {
+  data_vars <- c("region", "grade", "value")
+  refusal <- paste0(
+    "is a grouping specification, but a nested position recognizes one only ",
+    "when it is a call to `grouping_set()`, `grouping_sets()`, `rollup()`, ",
+    "`cube()`, or `grouping_spec()`, or a name bound to a specification.\n",
+    "i Anything else is read as a column selection.\n",
+    "i Assign the specification to a name first, then use that name here."
+  )
+
+  # Three functions, because what a caller sees depended on the signature the
+  # specification happened to be stored with and not on the position: tidyselect
+  # cannot call the first, calls the second and is aborted by it, and calls the
+  # third and rejects what it returned. Each carries the class the position
+  # exists to recognize, so each gets the one refusal.
+  stored_as <- function(fn) structure(fn, class = "margin_grouping_spec")
+  stored <- list(
+    uncallable = function() stored_as(function() 1),
+    aborting = function() stored_as(function(x) stop("inside")),
+    unusable = function() stored_as(function(x) "no")
+  )
+  for (name in names(stored)) {
+    spec_from_caller <- stored[[name]]
+    refused <- expect_error(compile_against(
+      grouping_sets(spec_from_caller(), grade),
+      data_vars
+    ))
+    expect_s3_class(refused, "marginplyr_error")
+    expect_identical(
+      conditionMessage(refused),
+      paste0("`spec_from_caller()` ", refusal)
+    )
+  }
+
+  # The parenthesized spelling is the argument it wraps here too, as it is for
+  # every other reading a nested position takes (#178, #259).
+  spec_from_caller <- stored$uncallable
+  parenthesized <- expect_error(compile_against(
+    grouping_sets((spec_from_caller()), grade),
+    data_vars
+  ))
+  expect_identical(
+    conditionMessage(parenthesized),
+    paste0("`spec_from_caller()` ", refusal)
+  )
+
+  # The position does not speak for a part of an argument it did not refuse,
+  # which is the rule a value tidyselect does refuse is held to as well. An
+  # argument written with an operator tidyselect walks in parts keeps
+  # tidyselect's own report, whatever the part turned out to be.
+  for (selection in list(quote(c(spec_from_caller(), grade)),
+                         quote(-spec_from_caller()))) {
+    spec <- eval(
+      rlang::call2("grouping_sets", selection),
+      envir = rlang::current_env()
+    )
+    embedded <- expect_error(compile_against(spec, data_vars))
+    expect_false(inherits(embedded, "marginplyr_error"))
+  }
+
+  # A selection that fails for a reason of its own is untouched.
+  unknown <- expect_error(
+    compile_against(grouping_sets(unknown, grade), data_vars)
+  )
+  expect_false(inherits(unknown, "marginplyr_error"))
+
+  # What a caller sees, on the reproduction the ticket was filed with, and
+  # beside it the selection whose value really is a predicate -- the one the
+  # refusal has to leave alone, and the one that made a function unreadable
+  # from the condition in the first place.
+  data <- data.frame(region = c("a", "b"), value = c(1, 2))
+  end_to_end <- expect_error(
+    inspect_grouping(data, .grouping = grouping_sets(spec_from_caller()))
+  )
+  expect_s3_class(end_to_end, "marginplyr_error")
+  expect_equal(
+    inspect_grouping(
+      data,
+      .grouping = grouping_sets(tidyselect::where(is.character))
+    ),
+    inspect_grouping(data, .grouping = grouping_sets(region))
+  )
+})
+
 test_that("a nested column selection is unaffected by the specification rule", {
   data_vars <- c("region", "region_code", "grade", "value")
   compile <- function(spec) {

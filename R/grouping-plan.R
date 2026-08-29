@@ -990,21 +990,136 @@ grouping_arg_spec <- function(arg, data_vars) {
 # `abort_share_source_name()` does for the same reason. Every other failure is
 # an External condition and is re-raised as it arrived, with its own class,
 # diagnostic, and cause.
+#
+# A specification stored as a function is refused from the frames instead,
+# because tidyselect refuses no function: it calls one, as the predicate form
+# of a selection, so the caller was left with base R's untyped complaint about
+# the call tidyselect made and no condition named the object (#265). The two
+# readings answer one question and reach one refusal. Which of them is
+# available is decided by how the object is stored and not by what it is, which
+# is why neither is written as the other's fallback.
+#
+# The frames are read as the error unwinds and the condition after it, because
+# a predicate is applied inside `resolve_column_selection()` and the frames
+# that applied it are gone once it returns.
 resolve_grouping_selection <- function(arg, data_proxy) {
+  selection <- sys.nframe()
+  predicate <- FALSE
   tryCatch(
-    resolve_column_selection(
-      arg,
-      data_proxy,
-      on_rename = abort_grouping_rename
+    withCallingHandlers(
+      resolve_column_selection(
+        arg,
+        data_proxy,
+        on_rename = abort_grouping_rename
+      ),
+      error = function(cnd) {
+        if (is_grouping_spec_predicate(selection, nested_arg_expr(arg))) {
+          predicate <<- TRUE
+        }
+      }
     ),
     error = function(cnd) {
       label <- rlang::as_label(nested_arg_expr(arg))
-      if (!is_grouping_spec_subscript(cnd, label)) {
+      if (!predicate && !is_grouping_spec_subscript(cnd, label)) {
         stop(cnd)
       }
       abort_nested_grouping_spec(label)
     }
   )
+}
+
+# Whether the failure now unwinding is a specification tidyselect took for a
+# predicate, in a position that can speak for it.
+#
+# The label comparison `is_grouping_spec_subscript()` makes has no counterpart
+# here, since a condition tidyselect raised about a predicate names no
+# subscript, so the same distinction is drawn from the caller's own expression:
+# tidyselect walks the operators below in parts and evaluates everything else
+# whole. A part is what it applied under one of them, and the position does not
+# speak for a part of an argument, for the reason recorded above
+# `is_grouping_spec_subscript()`.
+#
+# The operators are the ones tidyselect's walk descends into -- its documented
+# selection grammar, `c()`, `-`, `:`, `!`, `&`, `|`, and the `/` it reads as a
+# set difference -- together with the scalar-boolean and arithmetic spellings
+# it refuses in place of one of them, which cost nothing to name and are
+# refused before anything under them is walked. `(` is not among them because
+# `nested_arg_expr()` has already dropped a redundant pair, and a quosure is
+# not, because `is_nameable_call()` declines the call to `~` that one is.
+is_grouping_spec_predicate <- function(selection, expr) {
+  operators <- c("c", "-", ":", "!", "&", "|", "&&", "||", "*", "/", "^")
+  if (!is_nameable_call(expr)) {
+    return(FALSE)
+  }
+  name <- static_call_name(expr)
+  if (!is.null(name) && name %in% operators) {
+    return(FALSE)
+  }
+  any(vapply(
+    selection_frames(selection),
+    holds_grouping_spec_function,
+    logical(1)
+  ))
+}
+
+# The frames tidyselect opened under this selection, outermost first.
+#
+# A frame is tidyselect's by the namespace its function closes over, never by
+# name: reading a private name is what `:::` is, and a namespace that stopped
+# opening these frames answers with none rather than raising, which leaves a
+# caller the untyped diagnostic they had before this refusal existed.
+selection_frames <- function(selection) {
+  namespace <- asNamespace("tidyselect")
+  frames <- list()
+  for (index in seq_len(sys.nframe())) {
+    if (index <= selection) {
+      next
+    }
+    if (identical(environment(sys.function(index)), namespace)) {
+      frames <- c(frames, list(sys.frame(index)))
+    }
+  }
+  frames
+}
+
+# Whether a frame holds a specification stored as a function.
+#
+# This is where the object is read, because tidyselect holds the value it is
+# applying in a binding of the frame that applies it, and that binding outlives
+# the call: a predicate whose output tidyselect rejects has already returned.
+# What was measured of that frame, and of the shapes a specification stored as
+# a function reaches it in, is in
+# `investigation/reading-a-specification-tidyselect-called.md`.
+#
+# A specification stored as anything else is not looked for here. That one
+# tidyselect refuses rather than calls, so it arrives in a condition that names
+# both the object and the subscript refused, and reading it from a frame
+# instead would answer for a sub-selection the position does not speak for.
+#
+# Nothing is forced to answer. A binding tidyselect has not forced is skipped,
+# because forcing one can evaluate the caller's argument a second time
+# (ADR 0008); an active binding is skipped because reading one runs a function;
+# and `...` is skipped because it is not a binding a value can be read out of.
+# What is left can still raise -- a formal a caller of tidyselect left missing
+# is bound and unreadable -- and a value that cannot be read is not one
+# carrying the class.
+holds_grouping_spec_function <- function(frame) {
+  names <- setdiff(ls(frame, all.names = TRUE), "...")
+  if (length(names) == 0L) {
+    return(FALSE)
+  }
+  readable <- !rlang::env_binding_are_lazy(frame, names) &
+    !rlang::env_binding_are_active(frame, names)
+  for (name in names[readable]) {
+    value <- tryCatch(
+      get(name, envir = frame, inherits = FALSE),
+      error = function(cnd) NULL
+    )
+    if (is.function(value) && inherits(value, "margin_grouping_spec")) {
+      return(TRUE)
+    }
+  }
+  FALSE
 }
 
 # The refused subscript travels in the condition's `i` field, at whatever depth

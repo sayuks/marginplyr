@@ -11,7 +11,10 @@
   specification. That refusal is now marginplyr's own diagnostic, naming the
   recognized forms and the binding that works — `s <- my_spec(region)`, then
   `grouping_sets(s, grade)` — rather than tidyselect reporting the
-  specification as an unusable column selection. A name both readings claim —
+  specification as an unusable column selection. It is the diagnostic whatever
+  the specification is stored as, including a function, which tidyselect calls
+  as a column predicate rather than refusing: that case reported an error about
+  a call you never wrote (#265). A name both readings claim —
   a column of your input that is also bound to a nested specification the
   position accepts — is refused rather than resolved by whichever the data
   happens to have, and the refusal names the spelling for each reading:
