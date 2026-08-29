@@ -710,8 +710,14 @@ share_grouping_spec_validator <- function(kinds) {
 }
 
 check_parent_grouping_spec <- function(grouping_spec) {
+  # The field is read bare rather than through `grouping_spec_kind()`, because
+  # `validate_grouping_spec_early()` has run by the time this validator is
+  # called and is what establishes there is a kind to read.
   kind <- if (is.null(grouping_spec)) NULL else grouping_spec$type
-  if (!identical(kind, "rollup")) {
+  # Classified rather than compared as read (#317, ADR 0008): what this reader
+  # holds is the caller's own specification and not a plan, whose kind field is
+  # already the name.
+  if (!identical(grouping_kind_name(kind), "rollup")) {
     abort_ambiguous_parent()
   }
   invisible(NULL)
@@ -1898,6 +1904,8 @@ check_share_grouping_kinds <- function(plan, kinds) {
 }
 
 check_parent_grouping_kind <- function(plan) {
+  # A plan records the name its compilation classified, so this comparison is
+  # against a bare string and needs no classification of its own (#317).
   if (!identical(plan$kind, "rollup")) {
     abort_ambiguous_parent()
   }
