@@ -292,13 +292,20 @@ count_backend_reads <- function(expr) {
   counter$count <- 0L
   entries <- traced_execution_entry_points()
   # A namespace trace updates imports but not an attached `package:*` binding.
-  # Trace each distinct binding a qualified or bare call can reach.
+  # Trace each distinct attached binding holding the same function too, since a
+  # bare call can reach it through either its owner or a re-exporting package.
   traces <- unlist(lapply(entries, function(entry) {
     locations <- list(asNamespace(entry$package))
-    attached_name <- paste0("package:", entry$package)
-    if (attached_name %in% search()) {
+    target <- get(entry$name, envir = locations[[1L]])
+    attached_names <- grep("^package:", search(), value = TRUE)
+    for (attached_name in attached_names) {
       attached <- as.environment(attached_name)
-      if (!identical(attached, locations[[1L]])) {
+      holds_target <- exists(entry$name, envir = attached, inherits = FALSE) &&
+        identical(get(entry$name, envir = attached), target)
+      already_recorded <- any(vapply(locations, function(location) {
+        identical(location, attached)
+      }, logical(1)))
+      if (holds_target && !already_recorded) {
         locations[[length(locations) + 1L]] <- attached
       }
     }
@@ -485,12 +492,15 @@ test_that("a dtplyr materialization through the as_tibble family is counted", {
 test_that("an attached execution entry point is counted", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(k = c("E", "E", "W"), v = c(1, 2, 3))
-  was_attached <- "package:tibble" %in% search()
+  was_attached <- "package:dplyr" %in% search()
   if (!was_attached) {
-    suppressPackageStartupMessages(library("tibble", character.only = TRUE))
-    on.exit(detach("package:tibble", unload = FALSE), add = TRUE)
+    suppressPackageStartupMessages(library("dplyr", character.only = TRUE))
+    on.exit(detach("package:dplyr", unload = FALSE), add = TRUE)
   }
 
+  # This asserts below the public-verb seam because a namespace-only trace
+  # reports a false-clean zero while this attached re-export materializes its
+  # input.
   expect_gt(count_backend_reads(as_tibble(dtplyr::lazy_dt(data))), 0L)
 })
 
@@ -498,6 +508,8 @@ test_that("an execution entry point in a subject argument is counted", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(k = c("E", "E", "W"), v = c(1, 2, 3))
 
+  # This asserts below the public-verb seam because the outer subject test can
+  # hide the inner materialization and leave the counter at a false-clean zero.
   expect_gt(
     count_backend_reads(
       as.data.frame(tibble::as_tibble(dtplyr::lazy_dt(data)))
