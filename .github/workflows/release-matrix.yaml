@@ -56,6 +56,14 @@
 # before pushing: `Rscript .github/scripts/verify-suite-coverage.R` gives the
 # same verdict locally that the job gives in CI.
 #
+# Snapshot expectations run only where `NOT_CRAN` is set: testthat skips them
+# under CRAN semantics, so a snapshot never fails in a job that emulates CRAN.
+# That is the `backend` jobs, which set it in the workflow, and the `structure`
+# job, whose script sets it so a local run matches CI. `structure` takes no
+# `needs`, so in practice it is the first job to report a stale snapshot -- but
+# it runs against the working tree, and a `backend` job is still what proves
+# the snapshot inside `R CMD check`.
+#
 # The `backend` matrix is generated rather than written out because every field
 # in it was a restatement of the same table -- which package to install, which
 # absence must fail the job, what to call the cache. The cost is that this file
