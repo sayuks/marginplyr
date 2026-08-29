@@ -4,7 +4,9 @@
 # between them they execute every test that requires at most one backend. A test
 # that requires two is executed by none of them: it skips in every job, and
 # every job still reports success. Nothing about a green workflow says which
-# case a test is in.
+# case a test is in. It skips in a job that happens to hold both as well,
+# because this script hides all but one whatever the run's library holds, which
+# is why the guarantee does not rest on a job's package count.
 #
 # `release-matrix.yaml` used to answer that by naming contract tests in a
 # `proves` list per job. Naming catches a deleted test, which is also the most
