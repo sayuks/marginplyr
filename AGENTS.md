@@ -626,13 +626,12 @@ This is a single-context repo. Read the root `CONTEXT.md` and relevant ADRs unde
 
 ### Code review
 
-Reviews run through `mattpocock-skills:code-review`, which composes its own
-sub-agent prompts, so what an invocation does not carry does not reach either
-axis. Pass what a finding about prose may be — *Answering a review* in
-`design/architecture.md` — alongside the standards sources. Review against the
-merge-base with `main`, and push the branch and open the pull request before
-writing the record, which goes there. `design/agents/code-review.md` maps the
-rest of what the skill expects onto this repository.
+Reviews run through `mattpocock-skills:code-review`. Pass what a finding about
+prose may be — *Answering a review* in `design/architecture.md` — alongside the
+standards sources. Review against the merge-base with `main`, and push the
+branch and open the pull request before writing the record, which goes there. A
+branch that ran no review records that instead. `design/agents/code-review.md`
+maps the rest of what the skill expects onto this repository.
 
 ### Investigation notes
 

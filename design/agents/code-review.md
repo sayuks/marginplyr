@@ -2,11 +2,13 @@
 
 Reviews here run through that skill. It reviews the diff since a fixed point on two axes — Standards and Spec — as parallel sub-agents. This file maps what it expects onto what this repository has.
 
-What may be a finding, and how one is answered, is not here. `design/architecture.md`'s *Answering a review* governs that, for this reviewer and for any other. `AGENTS.md` carries what the invocation has to hand this skill, because `SKILL.md` step 4 composes both sub-agent prompts from the standards sources the call names and nothing else reaches them.
+What may be a finding, and how one is answered, is not here. `design/architecture.md`'s *Answering a review* governs that, for this reviewer and for any other. `AGENTS.md` carries what the invocation has to hand this skill, because `SKILL.md` step 4 composes both sub-agent prompts from the standards sources the call names.
 
 ## What is reviewed, and where the record goes
 
 The subject is a diff, so the record goes where the diff is: the pull request. An issue gets a pointer and not a copy — the issue is where the ticket is argued, and a second copy of the record is one more thing to keep in step.
+
+`AGENTS.md` has a branch that ran no review record that, because a missing record reads exactly like a round that raised nothing. #300 merged two test files with no round run and no record; #305, of the same shape, ran one that raised three findings and posted them. Nothing in #300 tells the two apart, and it opened 81 minutes after #299 put the review instructions in the always-loaded closure — so what it was missing was a clause and not the reach to find one. One sentence is the whole record when no round ran, and it is what makes a skipped review a decision rather than the absence of one.
 
 A record names the snapshot it read, which is why `AGENTS.md` has the branch pushed and the pull request open before one is written: a SHA on an unpushed branch resolves for nobody. #280's review was posted to the issue while its branch was still local, so every SHA in it cited a commit no reader could open, and the record had to be moved (PR #286). For the same reason, rebase before the review and not after — a rebase rewrites the SHAs a published record already named.
 

@@ -672,14 +672,10 @@ material. They are separate from the generated package site in `docs/`;
 packages. Internal architecture is not duplicated into the README or
 vignettes.
 
-A review is not written down a second time. What a review produced records it:
-the commit that names a finding, the test that fails without the fix, the diff
-that changed the prose. What a review decided without producing anything goes
-where that kind of decision lives — an ADR's *Considered options* for an
-alternative weighed and rejected, a dated `investigation/` note for a premise
-measured false, a comment at the site for a site deliberately left alone.
-`design/agents/code-review.md` routes them, and #288 is where a ledger holding
-the same dispositions a third time was retired.
+A review gets no file here. What a review produced records it, and what it
+decided without producing anything goes where that kind of decision already
+lives; `design/agents/code-review.md` routes both by kind, and #288 is where a
+ledger holding the same dispositions again was retired.
 
 An ADR is amended when its decision changed observably, and the amendment
 records what the decision now is and what moved with it. The argument for
