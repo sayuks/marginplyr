@@ -303,15 +303,14 @@ count_backend_reads <- function(expr) {
   counter$count
 }
 
+# The two blocks below take their Arrow inputs from `helper-arrow-shapes.R`,
+# which is where `test-grouping-backends.R` takes the shapes it asserts the
+# conditions over (#313).
 test_that("no Arrow read happens while a Margin verb runs", {
   skip_if_suggest_absent("arrow")
-  data <- data.frame(
-    k = c("E", "E", "W"),
-    v = c(1, 2, 3),
-    s = c("a", "b", "c"),
-    stringsAsFactors = FALSE
-  )
-  table <- arrow::Table$create(data)
+  data <- absorbed_summary_data()
+  absorbing <- absorbing_arrow_inputs(data)
+  table <- absorbing$table
 
   # The mechanism, asserted before anything is concluded from it. Every
   # expectation below is a zero, so a counter that counted nothing would report
@@ -355,13 +354,6 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # afterwards by the guard -- a difference invisible in the condition the
   # caller receives, both arms raising the same refusal, and visible only here.
   # `try()` keeps the refusal from leaving before the count is read.
-  batch <- arrow::record_batch(data)
-  absorbing <- list(
-    table = table,
-    record_batch = batch,
-    table_query = dplyr::select(table, dplyr::all_of(names(data))),
-    batch_query = dplyr::select(batch, dplyr::all_of(names(data)))
-  )
   for (shape in names(absorbing)) {
     expect_identical(
       count_backend_reads(try(
@@ -403,17 +395,11 @@ test_that("no Arrow read happens while a Margin verb runs", {
 # Datasets, the likely form of the move, is counted.
 test_that("no Arrow Dataset read happens while a Margin verb runs", {
   skip_if_suggest_absent("arrow")
-  data <- data.frame(
-    k = c("E", "E", "W"),
-    v = c(1, 2, 3),
-    s = c("a", "b", "c"),
-    stringsAsFactors = FALSE
-  )
-  # `InMemoryDataset` reaches the class with no file I/O. What a `Dataset` may
-  # be behind is not what is asserted here; that it is told apart from a
-  # `Table` is, and the class is what tells it apart.
-  dataset <- arrow::InMemoryDataset$create(arrow::Table$create(data))
-  query <- dplyr::select(dataset, dplyr::all_of(names(data)))
+  # What a `Dataset` may be behind is not what is asserted here; that it is
+  # told apart from a `Table` is, and the class is what tells it apart.
+  refusing <- refusing_arrow_inputs(absorbed_summary_data())
+  dataset <- refusing$dataset
+  query <- refusing$query
 
   # The mechanism on this shape, asserted before anything is concluded from it,
   # for the reason the readings above assert it on a `Table`: those controls
@@ -422,7 +408,6 @@ test_that("no Arrow Dataset read happens while a Margin verb runs", {
   expect_gt(count_backend_reads(dplyr::collect(dataset)), 0L)
   expect_gt(count_backend_reads(dplyr::collect(query)), 0L)
 
-  refusing <- list(dataset = dataset, query = query)
   for (shape in names(refusing)) {
     expect_identical(
       count_backend_reads(try(

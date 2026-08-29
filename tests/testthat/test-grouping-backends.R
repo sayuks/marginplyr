@@ -122,6 +122,11 @@ test_that("Arrow uses the normalized grouping contract", {
 # Both halves are asserted, because what the decision turns on is that the two
 # are told apart (#254).
 #
+# The three input builders come from `helper-arrow-shapes.R`, which
+# `test-query-policy.R` also builds its shapes from: the comments there
+# argue from what this file asserts, and that holds only while the two
+# suites take the same objects (#313).
+#
 # The expressions are chosen for how long they will keep being absorbed rather
 # than for how the defect was found. A group collapsed to one string, a subset
 # inside an aggregate, and a statistic over two columns are the shapes least
@@ -130,39 +135,6 @@ test_that("Arrow uses the normalized grouping contract", {
 # there, being the likeliest of the absorbed set to stop being so. The block
 # below asserts all three are still absorbed, so an Arrow release that
 # translates one fails there, naming the drift, rather than here.
-absorbed_summary_data <- function() {
-  data.frame(
-    k = c("E", "E", "W"),
-    v = c(1, 2, 3),
-    s = c("a", "b", "c"),
-    stringsAsFactors = FALSE
-  )
-}
-
-# A query rather than the object itself is the third shape, because
-# `arrow_dplyr_query` is the one class that appears on both sides of the
-# division: over a table it absorbs, over a dataset it refuses. `select()`
-# builds one without a data-masked column reference, which keeps these
-# helpers readable by `object_usage_linter()`.
-absorbing_arrow_inputs <- function(data) {
-  table <- arrow::Table$create(data)
-  batch <- arrow::record_batch(data)
-  list(
-    table = table,
-    record_batch = batch,
-    table_query = dplyr::select(table, dplyr::all_of(names(data))),
-    batch_query = dplyr::select(batch, dplyr::all_of(names(data)))
-  )
-}
-
-refusing_arrow_inputs <- function(data) {
-  dataset <- arrow::InMemoryDataset$create(arrow::Table$create(data))
-  list(
-    dataset = dataset,
-    query = dplyr::select(dataset, dplyr::all_of(names(data)))
-  )
-}
-
 test_that("Arrow refuses a summary it would otherwise absorb", {
   skip_if_suggest_absent("arrow")
   data <- absorbed_summary_data()
