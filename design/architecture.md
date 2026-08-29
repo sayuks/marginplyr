@@ -53,6 +53,11 @@ on a verb kind.
 
 ## Module responsibilities
 
+Each subsection here writes down what one module owns and what it leaves to
+another, which its file does not show on its own; the section covers the
+modules where that has been needed, and not the contents of `R/`, which is
+what says which files exist.
+
 ### Margin operation (`R/margin-operation.R`)
 
 Owns the shared prepare and finalize lifecycle, common option normalization,
