@@ -287,7 +287,7 @@ install_read_tracer <- function(entry, counter, where) {
 
 # An environment rather than a local integer, because the count is written from
 # a frame that is not this one.
-count_backend_reads <- function(expr) {
+count_entry_point_invocations <- function(expr) {
   counter <- new.env(parent = emptyenv())
   counter$count <- 0L
   entries <- traced_execution_entry_points()
@@ -333,6 +333,26 @@ count_backend_reads <- function(expr) {
   counter$count
 }
 
+test_that("the counter reports entry-point invocations rather than reads", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  table <- dplyr::copy_to(
+    con,
+    data.frame(k = c("E", "W"), v = c(1, 2)),
+    "entry_point_invocations",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  # This asserts below the public-verb seam because a materialized result says
+  # only that one read finished, not how many traced entry points it crossed.
+  expect_gt(
+    count_entry_point_invocations(dplyr::collect(table)),
+    1L
+  )
+})
+
 # The Arrow inputs the two blocks below take come from
 # `helper-arrow-shapes.R`.
 test_that("no Arrow read happens while a Margin verb runs", {
@@ -346,7 +366,7 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # exactly what a package that reads nothing reports -- which is the shape
   # `AGENTS.md` rules out for every derived gate, and the shape this counter
   # had while it traced Arrow's methods.
-  expect_gt(count_backend_reads(dplyr::collect(table)), 0L)
+  expect_gt(count_entry_point_invocations(dplyr::collect(table)), 0L)
 
   # The same mechanism for the one entry counted by what it was applied to. Both
   # directions are asserted, because a subject test that answered `TRUE` for
@@ -354,13 +374,16 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # zeroes below reading exactly as they do now. The negative control converts
   # what `grouping_selection_proxy()` converts, so the call it must not count is
   # one the package actually makes.
-  expect_gt(count_backend_reads(as.data.frame(table)), 0L)
-  expect_identical(count_backend_reads(as.data.frame(arrow::schema(table))), 0L)
-  expect_identical(count_backend_reads(as.data.frame(data)), 0L)
+  expect_gt(count_entry_point_invocations(as.data.frame(table)), 0L)
+  expect_identical(
+    count_entry_point_invocations(as.data.frame(arrow::schema(table))),
+    0L
+  )
+  expect_identical(count_entry_point_invocations(as.data.frame(data)), 0L)
 
   # A summary Arrow evaluates itself: the verb builds a query and returns it.
   expect_identical(
-    count_backend_reads(summarize_with_margins(
+    count_entry_point_invocations(summarize_with_margins(
       table,
       total = sum(v),
       .grouping = rollup(k)
@@ -372,7 +395,9 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # absorbed one. Asserted rather than assumed, since that is a property of
   # the signature and signatures change.
   expect_identical(
-    count_backend_reads(expand_with_margins(table, .grouping = rollup(k))),
+    count_entry_point_invocations(
+      expand_with_margins(table, .grouping = rollup(k))
+    ),
     0L
   )
 
@@ -385,7 +410,7 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # `try()` keeps the refusal from leaving before the count is read.
   for (shape in names(absorbing)) {
     expect_identical(
-      count_backend_reads(try(
+      count_entry_point_invocations(try(
         summarize_with_margins(
           absorbing[[shape]],
           joined = paste(s, collapse = ","),
@@ -434,12 +459,12 @@ test_that("no Arrow Dataset read happens while a Margin verb runs", {
   # for the reason the readings above assert it on a `Table`: those controls
   # were measured against a different class, and a counter blind to this one
   # would report exactly what a shape that was not read reports.
-  expect_gt(count_backend_reads(dplyr::collect(dataset)), 0L)
-  expect_gt(count_backend_reads(dplyr::collect(query)), 0L)
+  expect_gt(count_entry_point_invocations(dplyr::collect(dataset)), 0L)
+  expect_gt(count_entry_point_invocations(dplyr::collect(query)), 0L)
 
   for (shape in names(refusing)) {
     expect_identical(
-      count_backend_reads(try(
+      count_entry_point_invocations(try(
         summarize_with_margins(
           refusing[[shape]],
           joined = paste(s, collapse = ","),
@@ -468,16 +493,26 @@ test_that("a dtplyr materialization through the as_tibble family is counted", {
     stringsAsFactors = FALSE
   )
 
-  expect_gt(count_backend_reads(tibble::as_tibble(dtplyr::lazy_dt(data))), 0L)
-  expect_gt(count_backend_reads(dplyr::as_tibble(dtplyr::lazy_dt(data))), 0L)
   expect_gt(
-    count_backend_reads(
+    count_entry_point_invocations(
+      tibble::as_tibble(dtplyr::lazy_dt(data))
+    ),
+    0L
+  )
+  expect_gt(
+    count_entry_point_invocations(
+      dplyr::as_tibble(dtplyr::lazy_dt(data))
+    ),
+    0L
+  )
+  expect_gt(
+    count_entry_point_invocations(
       suppressWarnings(tibble::as.tibble(dtplyr::lazy_dt(data)))
     ),
     0L
   )
   expect_gt(
-    count_backend_reads(
+    count_entry_point_invocations(
       suppressWarnings(tibble::as_data_frame(dtplyr::lazy_dt(data)))
     ),
     0L
@@ -486,7 +521,10 @@ test_that("a dtplyr materialization through the as_tibble family is counted", {
   # The other direction, for the reason the `as.data.frame` controls give
   # above: a subject test answering `TRUE` for everything leaves every zero in
   # this file reading exactly as it does now.
-  expect_identical(count_backend_reads(tibble::as_tibble(data)), 0L)
+  expect_identical(
+    count_entry_point_invocations(tibble::as_tibble(data)),
+    0L
+  )
 })
 
 test_that("an attached execution entry point is counted", {
@@ -501,7 +539,10 @@ test_that("an attached execution entry point is counted", {
   # This asserts below the public-verb seam because a namespace-only trace
   # reports a false-clean zero while this attached re-export materializes its
   # input.
-  expect_gt(count_backend_reads(as_tibble(dtplyr::lazy_dt(data))), 0L)
+  expect_gt(
+    count_entry_point_invocations(as_tibble(dtplyr::lazy_dt(data))),
+    0L
+  )
 })
 
 test_that("an execution entry point in a subject argument is counted", {
@@ -511,7 +552,7 @@ test_that("an execution entry point in a subject argument is counted", {
   # This asserts below the public-verb seam because the outer subject test can
   # hide the inner materialization and leave the counter at a false-clean zero.
   expect_gt(
-    count_backend_reads(
+    count_entry_point_invocations(
       as.data.frame(tibble::as_tibble(dtplyr::lazy_dt(data)))
     ),
     0L
