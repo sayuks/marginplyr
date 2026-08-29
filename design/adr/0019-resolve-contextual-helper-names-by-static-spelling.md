@@ -600,18 +600,38 @@ two labels could not match and #190's diagnostic was withheld from
 **What the amendment above establishes still stands**, and the correction is to
 its reach rather than to its argument. Identity is still syntactic, a caller
 binding still cannot win, and the reading still lives in one place: these three
-sites now *ask* for it — the first by restarting on the argument the pair wraps,
-the other two through `nested_arg_expr()`, which is `unparenthesized_value()`
-put to a quosure. Nothing is re-implemented, which is what "one place, not one
-place per family" means for a caller.
+sites now *ask* for it, through `nested_arg_expr()`, which is
+`unparenthesized_value()` put to a quosure; the gate additionally restarts on
+the argument the pair wraps, because what follows its shape test is an
+evaluation of that argument. Nothing is re-implemented, which is what "one
+place, not one place per family" means for a caller.
 
-**What a read-through argument costs is the reading of the argument it wraps,
-including how often it is evaluated.** A `(s)` that becomes a recognized name
-is evaluated as a recognized name is, and a `(1)` is evaluated as `1` is, which
-for a literal is one `eval_tidy()` that was not made before. Pinning that
-number is #260's, so what #259 asserts is the equality of the two spellings'
-counts: neither can drift from the other without the assertion failing, and
-nothing pins the same number twice.
+**The refusal names the argument the pair wraps, and that is decided here
+rather than by ADR 0024.** `resolve_grouping_selection()` writes one label, and
+it is both the key compared against tidyselect's subscript and the subject
+`abort_nested_grouping_spec()` names, so `grouping_sets((f(region)))` is
+refused in the words `grouping_sets(f(region))` is refused in. Splitting the
+two would let the refusal name `(f(region))`, which is closer to what ADR 0024
+asks of a Package condition's subject. It is not taken, for the reason the
+first amendment already accepts of a rewritten expression — "a diagnostic dplyr
+raises about that argument echoes it without the pair" — and because a caller
+who wrote one spelling and read the other's diagnostic would be reading a
+difference this whole amendment exists to say does not exist. What ADR 0024
+protects is a spelling a reader searches their source for, and a redundant pair
+is one they find their argument inside of; what it was written for is a value
+whose bytes cli would otherwise collapse, which no parenthesis rule touches.
+
+**What a read-through argument gains is the reading of the argument it wraps,
+and not a further evaluation of it.** A `(s)` that becomes a recognized name is
+evaluated as a recognized name is. No count moves: measured against the
+pre-#259 package over eight argument shapes, each written bare and wrapped in
+one pair and two, with the binding an active binding and the caller's function
+counting its own calls, every count is the count it was. What the gate now
+evaluates and did not recognize — a literal, an injected object — is a
+constant, so nothing a caller wrote runs there to be counted.
+Pinning each form's number is #260's, so what #259 asserts is the equality of
+the two spellings' counts: neither can drift from the other without the
+assertion failing, and nothing pins the same number twice.
 
 **Where a pair is not around the argument, nothing changes.** `c((s), region)`
 is a selection containing a specification, which tidyselect refuses and reports

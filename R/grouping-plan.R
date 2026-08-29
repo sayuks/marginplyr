@@ -893,25 +893,21 @@ grouping_constructor_names <- function() {
 
 grouping_arg_spec <- function(arg, data_vars) {
   expr <- rlang::quo_get_expr(arg)
-  # A pair of redundant parentheses is read through here as it is everywhere
-  # else (#178, ADR 0019): `(` is the identity function, so `(s)` and `s` are
-  # one argument written two ways and every reading below answers the two
-  # alike. The shared readers give a *call* that property already, which is why
-  # `(rollup(region))` was recognized while `(s)` and `(!!s)` were not -- a
-  # shape test put to the caller's own expression reaches none of them (#259).
+  # A redundantly parenthesized argument is read as the argument it wraps, as
+  # it is wherever a reading is taken from `R/utils.R`'s readers (#178,
+  # ADR 0019). The tests below take none: they ask `is.symbol()` and
+  # `is.language()` about the caller's own expression, so this site restarts on
+  # what the pair wraps rather than inheriting the reading (#259).
   #
-  # By restarting on the argument the pair wraps rather than by rebinding
-  # `expr`, which is the rule `R/utils.R` states and
-  # `static_spelling_reference_name()` follows: what the pair wraps may be R's
-  # empty argument, and binding the missing marker raises `missingArgError` on
-  # the next read of it (#168, #174). `is_parenthesized()` answers `FALSE` for
-  # a constructed pair holding one, so the restart cannot repeat.
+  # By restart rather than by rebinding `expr`, which is the rule `R/utils.R`
+  # states and `static_spelling_reference_name()` follows: what a pair wraps
+  # may be R's empty argument, and binding the missing marker raises
+  # `missingArgError` on the next read of it (#168, #174). `is_parenthesized()`
+  # answers `FALSE` for a constructed pair holding one, so the restart cannot
+  # repeat.
   if (is_parenthesized(expr)) {
     return(grouping_arg_spec(
-      rlang::new_quosure(
-        unparenthesized_value(expr),
-        rlang::quo_get_env(arg)
-      ),
+      rlang::new_quosure(nested_arg_expr(arg), rlang::quo_get_env(arg)),
       data_vars
     ))
   }
@@ -1001,14 +997,18 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # argument as a whole is what was refused.
 #
 # Both sides of that comparison are unparenthesized, which is what makes them
-# comparable at all. tidyselect descends into a `(` call before it refuses
-# anything, so `(f(region))` reaches here reported as `f(region)`, and a label
-# taken from the caller's expression matched neither itself nor the argument it
-# wraps -- so #190's diagnostic was withheld from the parenthesized spelling
-# and the caller received the tidyselect report this exists to replace (#259).
-# `nested_arg_expr()` is what the label is written from for that reason. The
-# sub-selection case is unaffected: `c((s), region)` labels the whole argument,
-# which is not the `s` tidyselect refused inside it.
+# comparable. tidyselect descends into a `(` call before it refuses anything,
+# so `(f(region))` arrives here reported as `f(region)`, and a label written
+# from the caller's expression matches neither that nor the argument it wraps
+# (#259). `nested_arg_expr()` is what the label is written from for that
+# reason.
+#
+# The refusal then names that same label, so `(f(region))` is refused in the
+# words `f(region)` is. ADR 0019's third amendment holds that against
+# ADR 0024's spelling rule.
+#
+# The sub-selection case is unaffected: `c((s), region)` labels the whole
+# argument, which is not the `s` tidyselect refused inside it.
 #
 # Where a column shares the name, tidyselect refuses nothing and none of this
 # runs: `c(s, region)` selects the column `s`, which is the one reading a

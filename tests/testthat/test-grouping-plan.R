@@ -320,17 +320,24 @@ test_that("a nested argument is read through its redundant parentheses", {
   env$spec_from_caller <- function(...) rollup(...)
   parenthesized <- function(argument) rlang::call2("(", argument)
 
-  # What the position did with an argument, as one comparable value. A refusal
-  # is as much a reading as a plan is, and the two spellings have to agree
-  # about which refusal as well: an argument read as a selection carries
-  # tidyselect's own condition, and comparing the class with the message is
-  # what keeps that from passing as marginplyr's.
+  # What the position did with an argument, as one comparable value: the whole
+  # Grouping plan where it compiled, since the criterion is the plan and not
+  # its sets alone, and the condition where it did not. A refusal is as much a
+  # reading as a plan is, and the two spellings have to agree about which
+  # refusal as well: an argument read as a selection carries tidyselect's own
+  # condition, and comparing the class with the message is what keeps that from
+  # passing as marginplyr's.
+  #
+  # Warnings are suppressed rather than compared. tidyselect deprecates the
+  # bare external vector two of the arguments below write, and lifecycle
+  # throttles that warning to once a session, so which spelling is warned about
+  # is decided by which ran first.
   outcome <- function(constructor, argument) {
     tryCatch(
       compile_against(
         eval(rlang::call2(constructor, argument), envir = env),
         data_vars
-      )$sets,
+      ),
       error = function(cnd) list(class(cnd), conditionMessage(cnd))
     )
   }
@@ -421,23 +428,28 @@ test_that("a nested argument is read through its redundant parentheses", {
   }
 })
 
-test_that("a parenthesized nested argument is evaluated as its own count", {
+test_that("a parenthesized nested argument is read as often as a bare one", {
   data_vars <- c("region", "grade", "value")
-  bound <- rollup(value)
 
-  # How often a caller's quosure runs is what #260 pins for each recognized
-  # form. What belongs here is the weaker property that survives whatever it
-  # pins: reading through a pair of parentheses gives the argument the count of
-  # the argument it wraps, so neither spelling can drift from the other without
-  # this failing. Counting an absolute here would pin the same numbers twice.
-  count_reads <- function(argument) {
+  # How often a caller's quosure runs for each recognized form is what #260
+  # pins. What belongs here is the property that survives whatever it pins:
+  # reading through a pair of parentheses gives an argument the count of the
+  # argument it wraps, so neither spelling can drift from the other without
+  # this failing. An absolute counted here would pin the same numbers twice.
+  #
+  # `s` is an active binding and `spec_from_caller()` counts its own calls, so
+  # what is counted is every read a caller can observe. A spelling the position
+  # evaluates that reads neither -- a literal, an injected object -- evaluates
+  # a constant, which is why the shapes below are the ones that can be counted
+  # at all.
+  count_reads <- function(argument, value) {
     reads <- 0L
     env <- rlang::env(rlang::current_env())
     makeActiveBinding(
       "s",
       function() {
         reads <<- reads + 1L
-        bound
+        value
       },
       env
     )
@@ -453,17 +465,34 @@ test_that("a parenthesized nested argument is evaluated as its own count", {
     reads
   }
 
-  # The counter first: a zero below has to be a read that did not happen
-  # rather than a mechanism that stopped counting.
-  expect_identical(count_reads(quote(s)), 2L)
-  expect_identical(count_reads(quote(value)), 0L)
+  # The counter first: a zero below has to be a read that did not happen rather
+  # than a mechanism that stopped counting, and a count that moves has to be
+  # this mechanism reporting a read rather than a constant it returns.
+  expect_gt(count_reads(quote(s), rollup(value)), 0L)
+  expect_identical(count_reads(quote(value), rollup(value)), 0L)
 
-  for (argument in list(quote(s), quote(spec_from_caller(value)))) {
-    bare <- count_reads(argument)
+  # Both branches the gate evaluates on and both it declines on, since the
+  # equality has to hold where the pair changed the reading and where it did
+  # not: a name bound to a specification, a name bound to something else, a
+  # caller's own function, and a specification inside a selection.
+  arguments <- list(
+    list(quote(s), rollup(value)),
+    list(quote(s), "region"),
+    list(quote(spec_from_caller(value)), NULL),
+    list(quote(c(s, grade)), rollup(value))
+  )
+  for (argument in arguments) {
+    bare <- count_reads(argument[[1L]], argument[[2L]])
     expect_gt(bare, 0L)
-    expect_identical(count_reads(rlang::call2("(", argument)), bare)
     expect_identical(
-      count_reads(rlang::call2("(", rlang::call2("(", argument))),
+      count_reads(rlang::call2("(", argument[[1L]]), argument[[2L]]),
+      bare
+    )
+    expect_identical(
+      count_reads(
+        rlang::call2("(", rlang::call2("(", argument[[1L]])),
+        argument[[2L]]
+      ),
       bare
     )
   }
