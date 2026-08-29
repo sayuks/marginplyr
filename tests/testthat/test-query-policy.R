@@ -69,18 +69,40 @@ find_local_assignment <- function(fn, var_name) {
 # a result, and no static property of a function distinguishes one from an
 # ordinary query-building call. `dplyr::show_query()` is deliberately absent
 # -- ADR 0020 states that it runs nothing.
+#
+# `subject_test` says whether counting an invocation requires knowing what the
+# call was applied to, and it is enumerated for the same reason the membership
+# is. `as.data.frame` needs one because its name is also how unrelated code
+# converts unrelated objects -- a verb reads its input's schema through it
+# repeatedly, and no such conversion reaches a backend. No `DBI::` entry takes
+# one: invoking it is itself a read, and its first argument is a connection
+# rather than the caller's data, so a subject test there would count nothing at
+# all.
 lazy_execution_entry_points <- function() {
-  c(
-    "dplyr::collect",
-    "dplyr::compute",
-    "dplyr::pull",
-    "as.data.frame",
-    "DBI::dbGetQuery",
-    "DBI::dbSendQuery",
-    "DBI::dbSendStatement",
-    "DBI::dbFetch",
-    "DBI::dbReadTable"
+  data.frame(
+    package = c(
+      "dplyr", "dplyr", "dplyr", "base",
+      "DBI", "DBI", "DBI", "DBI", "DBI"
+    ),
+    name = c(
+      "collect", "compute", "pull", "as.data.frame",
+      "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable"
+    ),
+    subject_test = c(
+      FALSE, FALSE, FALSE, TRUE,
+      FALSE, FALSE, FALSE, FALSE, FALSE
+    ),
+    stringsAsFactors = FALSE
   )
+}
+
+# Both spellings of every entry, because a call target is whatever `R/` wrote.
+# `as.data.frame` is spelled bare there and `dplyr::collect` qualified, so a
+# derivation producing one form would stop matching the other -- and which form
+# a call site uses is not a property this catalog knows.
+entry_point_targets <- function() {
+  catalog <- lazy_execution_entry_points()
+  unique(c(catalog$name, paste0(catalog$package, "::", catalog$name)))
 }
 
 # The functions reaching an entry point directly, plus every function calling
@@ -120,7 +142,7 @@ test_that("marginplyr functions reaching an execution entry point", {
 
   reach <- functions_reaching_entry_point(
     call_graph,
-    lazy_execution_entry_points()
+    entry_point_targets()
   )
 
   expect_snapshot(reach)
@@ -148,31 +170,107 @@ test_that("marginplyr functions reaching an execution entry point", {
 # which is the read this gate exists to see. Measured on arrow 25.0.1: a plain
 # `dplyr::collect()` of an Arrow table counted 0 that way and counts 1 this way.
 #
-# Only the qualified entries are traced. `as.data.frame` is a base generic that
-# unrelated code calls while any expression runs, so counting it would report a
-# read that never reached a backend; the `DBI::` entries are traced although no
-# Arrow input can reach one, because deriving the set is what keeps it in step
-# with the catalog and skipping them would be a second list.
+# Every entry the catalog names is traced, including the base one; what varies
+# is whether its tracer counts unconditionally or asks what the call was applied
+# to. The subject is read from the traced function's signature rather than
+# recorded beside it, so a formal is written down once, in the package that
+# defines it. An entry asking for a subject test on a function with no formals
+# is an error: it would otherwise install a tracer that counts nothing and reads
+# as one that found nothing.
 traced_execution_entry_points <- function() {
   catalog <- lazy_execution_entry_points()
-  qualified <- catalog[grepl("::", catalog, fixed = TRUE)]
-  parts <- strsplit(qualified, "::", fixed = TRUE)
-  Filter(
-    function(entry) {
-      isNamespaceLoaded(entry$package) &&
-        exists(entry$name, envir = asNamespace(entry$package))
+  reachable <- vapply(
+    seq_len(nrow(catalog)),
+    function(row) {
+      package <- catalog$package[[row]]
+      isNamespaceLoaded(package) &&
+        exists(catalog$name[[row]], envir = asNamespace(package))
     },
-    lapply(parts, function(part) list(package = part[[1L]], name = part[[2L]]))
+    logical(1)
   )
+  available <- catalog[reachable, , drop = FALSE]
+  # The flag is resolved into a subject here and not carried onto the record:
+  # `$subject` partially matches `subject_test`, so a record holding both sends
+  # an unfiltered entry down the filtered branch with `FALSE` for a name.
+  lapply(seq_len(nrow(available)), function(row) {
+    package <- available$package[[row]]
+    name <- available$name[[row]]
+    subject <- NULL
+    if (available$subject_test[[row]]) {
+      formal_names <- names(formals(get(name, envir = asNamespace(package))))
+      if (length(formal_names) == 0L) {
+        stop("No subject to test on ", package, "::", name, call. = FALSE)
+      }
+      subject <- formal_names[[1L]]
+    }
+    list(package = package, name = name, subject = subject)
+  })
 }
 
-# A function tracer rather than `quote()`, which is the difference between
-# counting and silently counting nothing: an expression tracer is evaluated in
-# the traced function's own frame, so its `<<-` walks the traced package's
-# namespace and assigns into the global environment instead of into this
-# counter.
+# Whether an object is a lazy input marginplyr accepts, asked of the package's
+# classifier rather than of the classes it reads.
+#
+# `local` is excluded because no external system is involved, and `other`
+# because it is where every unrelated conversion lands -- an `arrow::schema()`,
+# a list, an integer. Both kind names are spelled here rather than derived, and
+# the two negative controls below hold them: renaming either starts counting
+# what it excludes. An unrecognised lazy object materialised this way goes
+# uncounted, which is a bound this gate states rather than one it hides.
+#
+# Nothing on this path is caught, here or at the subject read below. Every
+# assertion either serves expects a zero, so answering "not a backend" for an
+# object that could not be read or classified is the one wrong answer
+# available: it turns a read this gate exists to see into a passing test.
+is_lazy_backend_input <- function(x) {
+  !grouping_backend(x)$kind %in% c("local", "other")
+}
+
+# One installation per entry, in a frame of its own.
+#
+# The tracer has to be a function *literal* written at the `trace()` call, and a
+# variable holding the same closure is not the same thing. `trace()` substitutes
+# this argument: a literal is inserted as the expression it is and resolves
+# where it was installed, while a variable is inserted as its bare name and
+# looked up in the traced function's own namespace, where it does not exist.
+#
+# A literal cannot be parameterized, so per-entry state comes from this frame
+# rather than from a loop variable, which every tracer would read after the loop
+# had stopped on its last entry. This frame outlives the call because the
+# installed literal holds it.
+install_read_tracer <- function(entry, counter) {
+  subject <- entry$subject
+  if (is.null(subject)) {
+    suppressMessages(trace(
+      entry$name,
+      where = asNamespace(entry$package),
+      tracer = function() counter$count <- counter$count + 1L,
+      print = FALSE
+    ))
+    return(invisible(NULL))
+  }
+  suppressMessages(trace(
+    entry$name,
+    where = asNamespace(entry$package),
+    tracer = function() {
+      # Read into a name of its own first. `parent.frame()` answers from the
+      # call stack, so writing it as an argument to a call this frame does not
+      # make would answer for whichever frame forced the promise.
+      frame <- parent.frame()
+      value <- get(subject, envir = frame, inherits = FALSE)
+      if (is_lazy_backend_input(value)) {
+        counter$count <- counter$count + 1L
+      }
+    },
+    print = FALSE
+  ))
+  invisible(NULL)
+}
+
+# An environment rather than a local integer, because the count is written from
+# a frame that is not this one.
 count_backend_reads <- function(expr) {
-  count <- 0L
+  counter <- new.env(parent = emptyenv())
+  counter$count <- 0L
   entries <- traced_execution_entry_points()
   # Registered before the first trace is installed rather than after the last.
   # `trace()` failing part-way through the loop would otherwise leave every
@@ -187,15 +285,10 @@ count_backend_reads <- function(expr) {
     add = TRUE
   )
   for (entry in entries) {
-    suppressMessages(trace(
-      entry$name,
-      where = asNamespace(entry$package),
-      tracer = function() count <<- count + 1L,
-      print = FALSE
-    ))
+    install_read_tracer(entry, counter)
   }
   force(expr)
-  count
+  counter$count
 }
 
 test_that("no Arrow read happens while a Margin verb runs", {
@@ -214,6 +307,16 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # `AGENTS.md` rules out for every derived gate, and the shape this counter
   # had while it traced Arrow's methods.
   expect_gt(count_backend_reads(dplyr::collect(table)), 0L)
+
+  # The same mechanism for the one entry counted by what it was applied to. Both
+  # directions are asserted, because a subject test that answered `TRUE` for
+  # everything and one that answered `FALSE` for everything would each leave the
+  # zeroes below reading exactly as they do now. The negative control converts
+  # what `grouping_selection_proxy()` converts, so the call it must not count is
+  # one the package actually makes.
+  expect_gt(count_backend_reads(as.data.frame(table)), 0L)
+  expect_identical(count_backend_reads(as.data.frame(arrow::schema(table))), 0L)
+  expect_identical(count_backend_reads(as.data.frame(data)), 0L)
 
   # A summary Arrow evaluates itself: the verb builds a query and returns it.
   expect_identical(

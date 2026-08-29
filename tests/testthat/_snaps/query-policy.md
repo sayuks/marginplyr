@@ -3,9 +3,16 @@
     Code
       lazy_execution_entry_points()
     Output
-      [1] "dplyr::collect"       "dplyr::compute"       "dplyr::pull"         
-      [4] "as.data.frame"        "DBI::dbGetQuery"      "DBI::dbSendQuery"    
-      [7] "DBI::dbSendStatement" "DBI::dbFetch"         "DBI::dbReadTable"    
+        package            name subject_test
+      1   dplyr         collect        FALSE
+      2   dplyr         compute        FALSE
+      3   dplyr            pull        FALSE
+      4    base   as.data.frame         TRUE
+      5     DBI      dbGetQuery        FALSE
+      6     DBI     dbSendQuery        FALSE
+      7     DBI dbSendStatement        FALSE
+      8     DBI         dbFetch        FALSE
+      9     DBI     dbReadTable        FALSE
 
 # marginplyr functions reaching an execution entry point
 
