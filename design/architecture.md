@@ -100,10 +100,9 @@ replaced by a Package condition naming the recognized forms and the binding
 that works. Being marginplyr's own report about a position of its own, it is
 parentless, as a share selection naming something ineligible is. The refused
 value is read from the condition rather than by evaluating the argument a
-second time to identify it, so such an argument is evaluated once: by the
-selection resolution that refuses it. What every shape of nested argument costs
-a caller is written down in one place, the *one reading of a recognized nested
-argument* amendment to
+second time to identify it, so identifying it adds no evaluation. What each
+shape of nested argument costs a caller is written down in one place, the *one
+reading of a recognized nested argument* amendment to
 [ADR 0008](adr/0008-centralize-grouping-specification-kind-rules.md). The
 replacement covers the argument the position owns and not a part
 of one: a specification written inside a selection keeps tidyselect's report,

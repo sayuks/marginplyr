@@ -1021,8 +1021,7 @@ test_that("an unrecognized nested argument is evaluated as a selection is", {
 # The two shapes the test above does not reach, which are the two a nested
 # position recognizes as a specification. Each is read in the preflight and
 # nowhere else, so it is evaluated once per call however many compilation
-# passes run -- the count ADR 0008's amendment for a recognized nested argument
-# accepts, and what #260 moved it to from three.
+# passes run (ADR 0008, #260).
 #
 # The counted selection travels beside it in every specification below, because
 # a count of one would also be what a call that compiled nothing produced. It
@@ -1089,28 +1088,32 @@ test_that("a recognized nested specification is evaluated once", {
     list(forced = forced, selected = selected, result = result)
   }
 
-  # Which parent positions admit a nested specification, and which kind each
-  # admits, are derived from the kind registry rather than listed, so a sixth
-  # kind is covered without editing this test (ADR 0008). The parent handed to
-  # the derivation is a specification a caller could have written, which is
-  # what `admitted_nested_kinds()`'s memo expects of the first ask for a kind.
-  positions <- Filter(Negate(is.null), lapply(
-    names(grouping_kind_rules()),
-    function(parent_kind) {
-      rule <- grouping_kind_rules()[[parent_kind]]
-      admitted <- admitted_nested_kinds(
-        eval(rlang::call2(rule$constructor, quote(region))),
-        rule
-      )
-      if (length(admitted) == 0L) {
-        return(NULL)
+  # Every parent position, against every nested kind that position admits,
+  # derived from the kind registry rather than listed: a sixth kind is covered
+  # as a parent and as a nested argument without editing this test (ADR 0008).
+  # A position admitting no kind contributes none, which is `grouping_set()`.
+  # The parent handed to the derivation is a specification a caller could have
+  # written, which is what `admitted_nested_kinds()`'s memo expects of the
+  # first ask for a kind.
+  positions <- unlist(
+    lapply(
+      names(grouping_kind_rules()),
+      function(parent_kind) {
+        rule <- grouping_kind_rules()[[parent_kind]]
+        admitted <- admitted_nested_kinds(
+          eval(rlang::call2(rule$constructor, quote(region))),
+          rule
+        )
+        lapply(admitted, function(nested_kind) {
+          list(
+            parent = rule$constructor,
+            nested = grouping_kind_rules()[[nested_kind]]$constructor
+          )
+        })
       }
-      list(
-        parent = rule$constructor,
-        nested = grouping_kind_rules()[[admitted[[1L]]]]$constructor
-      )
-    }
-  ))
+    ),
+    recursive = FALSE
+  )
   # Every count below is taken once per position, so a set that arrived empty
   # is a set that passes.
   expect_gt(length(positions), 0L)
@@ -1143,22 +1146,32 @@ test_that("a recognized nested specification is evaluated once", {
   )
   predicate <- rlang::call2("where", quote(is.character), .ns = "tidyselect")
 
-  for (position in positions) {
-    forms <- list(
+  # The parent is namespace-qualified and the nested argument is not. Where a
+  # position nests a kind inside itself -- `grouping_sets(grouping_sets(...))`
+  # -- one shadow would otherwise intercept the caller's own parent call too
+  # and count it. The nested spelling stays bare, which is the spelling the
+  # gate reads, and the parent is not what is being counted.
+  parent_call <- function(position, ...) {
+    rlang::call2(position$parent, ..., .ns = "marginplyr")
+  }
+  position_forms <- function(position) {
+    list(
       list(bind = bind_name(position$nested), arg = quote(s)),
       list(
         bind = bind_constructor(position$nested),
         arg = rlang::call2(position$nested, quote(region))
       )
     )
+  }
 
-    for (form in forms) {
+  for (position in positions) {
+    for (form in position_forms(position)) {
       # Settled by name alone, so the plan is compiled against the names first
       # and against the typed snapshot after, and the selection is resolved in
       # each.
       name_only <- measure(
         form$bind,
-        rlang::call2(position$parent, form$arg, selection)
+        parent_call(position, form$arg, selection)
       )
       expect_identical(name_only$forced, 1L)
       expect_identical(name_only$selected, 2L)
@@ -1168,7 +1181,7 @@ test_that("a recognized nested specification is evaluated once", {
       # recognized argument is read the same once.
       withheld <- measure(
         form$bind,
-        rlang::call2(position$parent, form$arg, selection, predicate)
+        parent_call(position, form$arg, selection, predicate)
       )
       expect_identical(withheld$forced, 1L)
       expect_identical(withheld$selected, 1L)
@@ -1183,13 +1196,15 @@ test_that("a recognized nested specification is evaluated once", {
   # reaches both paths.
   remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
   for (position in positions) {
-    lazy <- measure(
-      bind_name(position$nested),
-      rlang::call2(position$parent, quote(s), selection),
-      input = quote(remote)
-    )
-    expect_identical(lazy$forced, 1L)
-    expect_identical(lazy$selected, 2L)
+    for (form in position_forms(position)) {
+      lazy <- measure(
+        form$bind,
+        parent_call(position, form$arg, selection),
+        input = quote(remote)
+      )
+      expect_identical(lazy$forced, 1L)
+      expect_identical(lazy$selected, 2L)
+    }
   }
 })
 
