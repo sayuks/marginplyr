@@ -86,7 +86,11 @@
 # `test-grouping-plan.R` fails any test file whose source spells it as a call
 # -- the scan behind "the only caller of the plan compiler" is deliberately
 # blunt, and a key in a table is not a call.
-pluralizing_test_location <- function(file, ..., .additional = character()) {
+pluralizing_test_location <- function(
+  file,
+  ...,
+  .local_locations = character()
+) {
   blocks <- c(...)
   label <- paste0(
     file,
@@ -94,7 +98,7 @@ pluralizing_test_location <- function(file, ..., .additional = character()) {
     paste0("`", blocks, "`", collapse = " then ")
   )
   structure(
-    c(label, .additional),
+    c(label, .local_locations),
     class = c("pluralizing_test_location", "character"),
     file = file,
     blocks = blocks
@@ -132,7 +136,7 @@ pluralizing_coverage <- function() {
       "test-grouping-plan.R",
       "compile_grouping_spec() reads a narrowed duplicates vocabulary",
       "duplicated grouping sets in more than one group name their groups",
-      .additional = "this file, the unknown `.by` invariant block"
+      .local_locations = "this file, the unknown `.by` invariant block"
     ),
     grouping_helper_vars = "this file, the grouping-helper block",
     proxy_columns = "this file, the selection proxy invariant block",
