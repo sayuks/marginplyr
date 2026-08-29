@@ -622,13 +622,29 @@ is one they find their argument inside of; what it was written for is a value
 whose bytes cli would otherwise collapse, which no parenthesis rule touches.
 
 **What a read-through argument gains is the reading of the argument it wraps,
-and not a further evaluation of it.** A `(s)` that becomes a recognized name is
-evaluated as a recognized name is. No count moves: measured against the
-pre-#259 package over eight argument shapes, each written bare and wrapped in
-one pair and two, with the binding an active binding and the caller's function
-counting its own calls, every count is the count it was. What the gate now
-evaluates and did not recognize — a literal, an injected object — is a
-constant, so nothing a caller wrote runs there to be counted.
+evaluation count included.** Measured against the pre-#259 package through
+`inspect_grouping()`, with the binding an active binding and the caller's
+function counting its own calls: no *bare* argument's count moves, and a
+parenthesized name gains what the bare name costs. `grouping_sets((s))` reads
+`s` once before and three times after, which is what `grouping_sets(s)` read
+before and reads still — whether the binding is a specification the gate then
+recognizes or something else it then declines, since the gate has to read one
+to tell them apart.
+
+That is a cost, and it is the decision rather than an oversight: a spelling
+read as another spelling costs what that spelling costs, and a parenthesis
+rule that stopped short of the evaluation would be the two readings this
+amendment exists to remove, moved one step down. A pair around a *call* is free
+by comparison, the gate having recognized `(f(x))` all along.
+
+#259's sixth acceptance criterion asks for an unchanged count "for every
+argument whose reading does not change", and blesses the recognized `(s)` that
+gains one. The shape between the two is a parenthesized name bound to
+something that is *not* a specification: the plan is what it was, and the gate
+now reads the binding to establish that. It is the same read on the same line,
+so it is accepted with the criterion's second sentence rather than against its
+first.
+
 Pinning each form's number is #260's, so what #259 asserts is the equality of
 the two spellings' counts: neither can drift from the other without the
 assertion failing, and nothing pins the same number twice.
