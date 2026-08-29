@@ -926,9 +926,9 @@ test_that("a kind whose classification lies is no more a name for it", {
 # field as read, so that comparison reads what the specification said and no
 # attribute the caller's value carried (#317, ADR 0008).
 #
-# The attributes are written one per case rather than together, because
-# `identical()` fails on any one of them: a strip that took the class and left
-# the names would pass a case carrying both.
+# One attribute per case, so that a strip taking one and not another fails
+# naming which. A case carrying several would catch the same partial strip and
+# report only that something survived.
 test_that("a plan records its kind as a bare name", {
   decorated <- list(
     c(nm = "rollup"),

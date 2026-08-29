@@ -714,9 +714,9 @@ check_parent_grouping_spec <- function(grouping_spec) {
   # `validate_grouping_spec_early()` has run by the time this validator is
   # called and is what establishes there is a kind to read.
   kind <- if (is.null(grouping_spec)) NULL else grouping_spec$type
-  # Classified rather than compared as read: `identical()` reads every
-  # attribute, so a kind spelling `rollup` under a name or a class was refused
-  # here while compiling as a rollup plan (#317).
+  # Classified rather than compared as read (#317, ADR 0008): what this reader
+  # holds is the caller's own specification and not a plan, whose kind field is
+  # already the name.
   if (!identical(grouping_kind_name(kind), "rollup")) {
     abort_ambiguous_parent()
   }

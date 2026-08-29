@@ -714,10 +714,9 @@ compile_grouping_spec_impl <- function(preflight,
 
   structure(
     list(
-      # The name the field spells, not the field as read, so that a consumer
-      # comparing this with `identical()` compares what the specification said
-      # and no attribute it carried (#317, ADR 0008). The preflight above ran
-      # the guard, so the field is one name and this is never `NULL`.
+      # The name the field spells, not the field as read (#317, ADR 0008). The
+      # preflight above ran the guard, so the field is one name and this is
+      # never `NULL`.
       kind = grouping_kind_name(preflight$spec$type),
       by = unique(.by),
       dimensions = dimensions,
