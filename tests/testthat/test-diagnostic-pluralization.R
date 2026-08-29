@@ -71,8 +71,10 @@
 # verify-site.R` draws about its markers and `AGENTS.md` explains there: the
 # set of things that must be covered is derived, and the table only says where
 # each one went, so a table that fell behind fails rather than shrinking the
-# question. What it cannot check is that a line reference still points at the
-# assertion it names -- that is review surface, as a marker's text is.
+# question. An external location names the `test_that()` block holding each
+# arm, in singular-then-plural order; one name means that one block holds both.
+# The coverage gate parses each named file and requires each block name to
+# resolve exactly once, so a moved or renamed pin makes this table fail.
 #
 # A binding holding more than one is why the value is a vector. The plan
 # compiler's implementation, named as a key below, raises the
@@ -84,6 +86,21 @@
 # `test-grouping-plan.R` fails any test file whose source spells it as a call
 # -- the scan behind "the only caller of the plan compiler" is deliberately
 # blunt, and a key in a table is not a call.
+pluralizing_test_location <- function(file, ..., .additional = character()) {
+  blocks <- c(...)
+  label <- paste0(
+    file,
+    ": ",
+    paste0("`", blocks, "`", collapse = " then ")
+  )
+  structure(
+    c(label, .additional),
+    class = c("pluralizing_test_location", "character"),
+    file = file,
+    blocks = blocks
+  )
+}
+
 pluralizing_coverage <- function() {
   list(
     # Both arms sit with the Arrow contracts rather than here, because what
@@ -91,16 +108,31 @@ pluralizing_coverage <- function() {
     # by whether Arrow's warning could be placed -- a property of the
     # behaviour, not of the wording. The plural arm is the backstop's, which
     # has no warning to read.
-    abort_absorbed_summary = "test-grouping-backends.R:197 and :540",
-    abort_by_rename = "test-grouping-plan.R:604 and :645",
+    abort_absorbed_summary = pluralizing_test_location(
+      "test-grouping-backends.R",
+      "Arrow refuses a summary it would otherwise absorb",
+      "the branch guard refuses an absorbed summary the handler missed"
+    ),
+    abort_by_rename = pluralizing_test_location(
+      "test-grouping-plan.R",
+      "a renaming .by selection is refused"
+    ),
     abort_declared_label_collision = rep("this file, the collision block", 2L),
-    abort_grouping_rename = "test-grouping-plan.R:493 and :543",
+    abort_grouping_rename = pluralizing_test_location(
+      "test-grouping-plan.R",
+      "a renaming grouping selection is refused by every constructor"
+    ),
     abort_observed_label_collision = rep("this file, the collision block", 2L),
-    check_summary_context_helpers = "test-contextual-helpers.R:696 and :728",
+    check_summary_context_helpers = pluralizing_test_location(
+      "test-contextual-helpers.R",
+      "the refusal names the helper and keeps its opening"
+    ),
     check_summary_group_overwrite = "this file, the summary-overwrite block",
-    compile_grouping_spec_impl = c(
-      "test-grouping-plan.R:915 and :768",
-      "this file, the unknown `.by` invariant block"
+    compile_grouping_spec_impl = pluralizing_test_location(
+      "test-grouping-plan.R",
+      "compile_grouping_spec() reads a narrowed duplicates vocabulary",
+      "duplicated grouping sets in more than one group name their groups",
+      .additional = "this file, the unknown `.by` invariant block"
     ),
     grouping_helper_vars = "this file, the grouping-helper block",
     proxy_columns = "this file, the selection proxy invariant block",
@@ -111,7 +143,11 @@ pluralizing_coverage <- function() {
     # are: what the fragments assert is the inflected noun and the count in
     # each arm, which is what the rule asks for, and an identity would pin the
     # aggregation dplyr rendered around it (#236).
-    report_branch_warnings = "test-execution-conditions.R:332 and :291",
+    report_branch_warnings = pluralizing_test_location(
+      "test-execution-conditions.R",
+      "a warning is one report where only a branch constant differed",
+      "a warning repeated across grouping sets is reported once"
+    ),
     validate_margin_label = "this file, the NA-level block",
     validate_margin_label_names = c(
       "this file, the fixed `.by` label block",
@@ -185,6 +221,51 @@ test_that("every pluralizing diagnostic is covered somewhere", {
     lengths(declared[names(sites)]),
     sites
   )
+
+  external <- Filter(
+    function(location) {
+      is.character(location) &&
+        length(location) > 0L &&
+        grepl("^test-.*[.]R:", location[[1L]])
+    },
+    declared
+  )
+  expect_gt(length(external), 0L)
+
+  for (location in external) {
+    expect_s3_class(location, "pluralizing_test_location")
+    if (!inherits(location, "pluralizing_test_location")) {
+      next
+    }
+
+    path <- testthat::test_path(attr(location, "file"))
+    expect_true(file.exists(path), info = location)
+    if (!file.exists(path)) {
+      next
+    }
+
+    expressions <- as.list(parse(path))
+    test_calls <- Filter(
+      function(expr) is.call(expr) && identical(expr[[1L]], quote(test_that)),
+      expressions
+    )
+    block_names <- vapply(
+      test_calls,
+      function(expr) expr[[2L]],
+      character(1)
+    )
+    blocks <- attr(location, "blocks")
+    resolved <- vapply(
+      blocks,
+      function(block) sum(block_names == block),
+      integer(1)
+    )
+    expect_identical(
+      unname(resolved),
+      rep(1L, length(blocks)),
+      info = location
+    )
+  }
 })
 
 test_that("the selection proxy invariant pluralizes its column noun", {
