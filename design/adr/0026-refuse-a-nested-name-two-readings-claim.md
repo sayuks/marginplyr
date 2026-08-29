@@ -194,6 +194,25 @@ written more than once. This decision accepts that rather than hiding it, since
 the alternative to reading the binding is deciding by the input, which is the
 defect.
 
+## Amendment: the spelling gate no longer runs per pass
+
+*Where the decision is made* and *Decide in the spelling gate* above both reject
+the gate on a count the gate no longer has. #260 moved the reading of every
+recognized nested argument into the preflight, which records it for the
+compilation passes, so the gate runs once for an operation rather than once per
+pass. Deciding a collision there would now read a colliding binding once too,
+and the two placements cost the same.
+
+What the placement rests on after that is the rest of those sections, which is
+untouched: the gate reports which reading it took and not why, so the check
+re-asks the two conditions on the branch the gate answered "selection" on, and
+the refusal has to fire before `grouping_selection_proxy()`. Nothing asks it to
+move, and it stays.
+
+The count this ADR sets is unchanged — 1 for a colliding name, from 0 — and it
+is now one row of the table in ADR 0008's amendment for a recognized nested
+argument, which is where the counts of all four shapes are written down.
+
 ## Documentation consequences
 
 `CONTEXT.md`'s *Nested specification position* defines the term and names the

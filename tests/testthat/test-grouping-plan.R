@@ -885,12 +885,9 @@ test_that("a colliding nested name is read once, in the preflight", {
   expect_identical(in_set$reads, 0L)
   expect_identical(in_set$result$included, "(s)")
 
-  # The check sits in the preflight, which runs once for an operation and is
-  # handed to the compilation passes, where the gate runs again on each.
-  # Moving it into the gate would read this binding once per pass instead of
-  # once in all -- three times here, by the count the last assertion in this
-  # test pins -- and make that many of whatever forcing it does visible to the
-  # caller.
+  # The check sits in the preflight, beside the gate whose answer it re-asks.
+  # The preflight runs once for an operation and is handed to the compilation
+  # passes, so this binding is read once whichever passes run.
   not_a_spec <- count_reads(
     "s",
     1,
@@ -911,17 +908,19 @@ test_that("a colliding nested name is read once, in the preflight", {
   )
   expect_identical(twice$reads, 2L)
 
-  # Outside a collision nothing moves: a bound name the input holds no column
-  # for is read in the preflight and once per compilation pass, as it was
-  # before this refusal existed. Both counts are here because the number of
-  # passes is what differs -- a plan settled by name alone is compiled against
-  # the names first, so that a plan error need not wait for a backend read.
+  # Outside a collision the count is the same one: a bound name the input holds
+  # no column for is a nested specification the position recognizes, and every
+  # such argument is read in the preflight and nowhere else. Both paths are
+  # here because the number of compilation passes is what differs between them
+  # -- a plan settled by name alone is compiled against the names first, so
+  # that a plan error need not wait for a backend read -- and the count no
+  # longer moves with it (#260).
   name_only <- count_reads(
     "t",
     rollup(value),
     quote(inspect_grouping(data, .grouping = grouping_sets(t)))
   )
-  expect_identical(name_only$reads, 3L)
+  expect_identical(name_only$reads, 1L)
   expect_identical(name_only$result$included, c("(value)", "()"))
   with_predicate <- count_reads(
     "t",
@@ -932,7 +931,7 @@ test_that("a colliding nested name is read once, in the preflight", {
       .duplicates = "keep"
     ))
   )
-  expect_identical(with_predicate$reads, 2L)
+  expect_identical(with_predicate$reads, 1L)
   expect_identical(
     with_predicate$result$included,
     c("(value)", "()", "(s, grade)")
@@ -982,7 +981,7 @@ test_that("a Margin verb refuses an ambiguous nested name", {
   expect_identical(nrow(column), 2L)
 })
 
-test_that("recognizing a nested specification adds no caller evaluation", {
+test_that("an unrecognized nested argument is evaluated as a selection is", {
   data <- data.frame(
     region = c("E", "E", "W"),
     grade = c("a", "b", "a"),
@@ -1017,6 +1016,196 @@ test_that("recognizing a nested specification adds no caller evaluation", {
     .grouping = grouping_sets(tidyselect::all_of(counted("region")), grade)
   )
   expect_identical(selection_calls, 2L)
+})
+
+# The two shapes the test above does not reach, which are the two a nested
+# position recognizes as a specification. Each is read in the preflight and
+# nowhere else, so it is evaluated once per call however many compilation
+# passes run (ADR 0008, #260).
+#
+# The counted selection travels beside it in every specification below, because
+# a count of one would also be what a call that compiled nothing produced. It
+# is name-only, so it is resolved once per pass, and the two paths differ in
+# how many passes run.
+test_that("a recognized nested specification is evaluated once", {
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    grade = c("a", "b", "a"),
+    units = c(1, 3, 6)
+  )
+
+  forced <- 0L
+  selected <- 0L
+  counted <- function(x) {
+    selected <<- selected + 1L
+    x
+  }
+
+  # A name bound to a specification. The name is not a column of the input, so
+  # ADR 0026's refusal is not in play and the position reads the binding.
+  bind_name <- function(nested_constructor) {
+    nested_spec <- eval(rlang::call2(nested_constructor, quote(region)))
+    function(env) {
+      makeActiveBinding(
+        "s",
+        function() {
+          forced <<- forced + 1L
+          nested_spec
+        },
+        env
+      )
+    }
+  }
+
+  # A nested constructor call. The spelling is what opens the gate, and what
+  # runs once it is open is the caller's own binding (ADR 0019), so shadowing
+  # the constructor counts the evaluations.
+  bind_constructor <- function(nested_constructor) {
+    real <- getExportedValue("marginplyr", nested_constructor)
+    shadow <- function(...) {
+      forced <<- forced + 1L
+      real(...)
+    }
+    function(env) {
+      assign(nested_constructor, shadow, envir = env)
+    }
+  }
+
+  measure <- function(bind, spec_call, input = quote(data)) {
+    forced <<- 0L
+    selected <<- 0L
+    env <- rlang::env(rlang::current_env())
+    bind(env)
+    result <- eval(
+      rlang::call2(
+        "inspect_grouping",
+        input,
+        .grouping = spec_call,
+        .duplicates = "keep"
+      ),
+      envir = env
+    )
+    list(forced = forced, selected = selected, result = result)
+  }
+
+  # Every parent position, against every nested kind that position admits,
+  # derived from the kind registry rather than listed: a sixth kind is covered
+  # as a parent and as a nested argument without editing this test (ADR 0008).
+  # A position admitting no kind contributes none, which is `grouping_set()`.
+  # The parent handed to the derivation is a specification a caller could have
+  # written, which is what `admitted_nested_kinds()`'s memo expects of the
+  # first ask for a kind.
+  positions <- unlist(
+    lapply(
+      names(grouping_kind_rules()),
+      function(parent_kind) {
+        rule <- grouping_kind_rules()[[parent_kind]]
+        admitted <- admitted_nested_kinds(
+          eval(rlang::call2(rule$constructor, quote(region))),
+          rule
+        )
+        lapply(admitted, function(nested_kind) {
+          list(
+            parent = rule$constructor,
+            nested = grouping_kind_rules()[[nested_kind]]$constructor
+          )
+        })
+      }
+    ),
+    recursive = FALSE
+  )
+  # Every count below is taken once per position, so a set that arrived empty
+  # is a set that passes.
+  expect_gt(length(positions), 0L)
+
+  # The mechanism, before any count is concluded from it: a counter that
+  # stopped counting reports the same clean run as a package that stopped
+  # evaluating, so each binding is shown to report the one reading it is about
+  # to be asked for.
+  for (position in positions) {
+    probe <- rlang::env(rlang::current_env())
+
+    forced <- 0L
+    bind_name(position$nested)(probe)
+    expect_s3_class(probe$s, "margin_grouping_spec")
+    expect_identical(forced, 1L)
+
+    forced <- 0L
+    bind_constructor(position$nested)(probe)
+    expect_s3_class(
+      eval(rlang::call2(position$nested, quote(region)), envir = probe),
+      "margin_grouping_spec"
+    )
+    expect_identical(forced, 1L)
+  }
+
+  selection <- rlang::call2(
+    "all_of",
+    rlang::call2("counted", "grade"),
+    .ns = "tidyselect"
+  )
+  predicate <- rlang::call2("where", quote(is.character), .ns = "tidyselect")
+
+  # The parent is namespace-qualified and the nested argument is not. Where a
+  # position nests a kind inside itself -- `grouping_sets(grouping_sets(...))`
+  # -- one shadow would otherwise intercept the caller's own parent call too
+  # and count it. The nested spelling stays bare, which is the spelling the
+  # gate reads, and the parent is not what is being counted.
+  parent_call <- function(position, ...) {
+    rlang::call2(position$parent, ..., .ns = "marginplyr")
+  }
+  position_forms <- function(position) {
+    list(
+      list(bind = bind_name(position$nested), arg = quote(s)),
+      list(
+        bind = bind_constructor(position$nested),
+        arg = rlang::call2(position$nested, quote(region))
+      )
+    )
+  }
+
+  for (position in positions) {
+    for (form in position_forms(position)) {
+      # Settled by name alone, so the plan is compiled against the names first
+      # and against the typed snapshot after, and the selection is resolved in
+      # each.
+      name_only <- measure(
+        form$bind,
+        parent_call(position, form$arg, selection)
+      )
+      expect_identical(name_only$forced, 1L)
+      expect_identical(name_only$selected, 2L)
+
+      # A predicate elsewhere in the specification withholds the name-only
+      # pass. One pass fewer resolves the selection one time fewer, and the
+      # recognized argument is read the same once.
+      withheld <- measure(
+        form$bind,
+        parent_call(position, form$arg, selection, predicate)
+      )
+      expect_identical(withheld$forced, 1L)
+      expect_identical(withheld$selected, 1L)
+    }
+  }
+
+  # A lazy input reaches the name-only path, where the two passes read
+  # different proxies and the count is still one. It reaches no further: the
+  # `postgres` kind holds no `collect_selection_proxy`, so a specification
+  # carrying a predicate is refused there before a count could be taken. No
+  # optional backend is needed for either, and a local data frame above
+  # reaches both paths.
+  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+  for (position in positions) {
+    for (form in position_forms(position)) {
+      lazy <- measure(
+        form$bind,
+        parent_call(position, form$arg, selection),
+        input = quote(remote)
+      )
+      expect_identical(lazy$forced, 1L)
+      expect_identical(lazy$selected, 2L)
+    }
+  }
 })
 
 test_that("empty grouping rules preserve their phase and error precedence", {
