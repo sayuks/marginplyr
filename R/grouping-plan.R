@@ -714,11 +714,7 @@ compile_grouping_spec_impl <- function(preflight,
 
   structure(
     list(
-      # The classified name rather than the field, so that what a reader of the
-      # plan compares is the name the guard admitted. `share.R` asks
-      # `identical(plan$kind, "rollup")`, which a kind carrying a class answers
-      # `FALSE` to while compiling as one (#289).
-      kind = grouping_kind_name(preflight$spec$type),
+      kind = preflight$spec$type,
       by = unique(.by),
       dimensions = dimensions,
       sets = normalized,
@@ -903,18 +899,21 @@ grouping_kind_rules <- local({
   }
 })
 
-# The name a kind read off an object is, or `NULL` where it is none: a name is
-# one string, and not the missing one. Every caller holds a value nothing has
-# validated, and every reader of one shares this, as they share the read in
-# `grouping_spec_kind()`. What it decides, why it answers with the name rather
-# than with whether there is one, and why nothing here is asked of the object's
-# own methods are ADR 0008's, in its amendment for a kind classified with its
-# class off.
+# The name a kind read off an object is, or `NULL` where it is none: one
+# character element with the class off, and not the missing one. Every caller
+# holds a value nothing has validated, and every reader of one shares this, as
+# they share the read in `grouping_spec_kind()`. What it decides, why it answers
+# with the name rather than with whether there is one, and why nothing here is
+# asked of the object's own methods are ADR 0008's, in its amendment for a kind
+# classified with its class off.
 grouping_kind_name <- function(kind) {
   # `is.character()` and `unclass()` are primitives that dispatch on neither S3
   # nor S4, so neither reaches a method the value carries: the type test is R's
-  # own, and stripping is what puts the two questions below to a plain character
-  # vector rather than to whatever the class defines for them (#289).
+  # own, and stripping is what puts the two questions below to a character
+  # vector with no class rather than to whatever the class defines for them
+  # (#289). Only the class comes off, so a name and any other attribute the
+  # value carried survive onto the answer; `%in%` and `[[` are what the callers
+  # put it to, and neither reads one.
   if (!is.character(kind)) {
     return(NULL)
   }

@@ -530,14 +530,17 @@ does not move.
 
 `grouping_kind_name()` strips the class before it classifies rather than after.
 `is.character()` answers for the type, `unclass()` takes the class off, and
-`length()` and `is.na()` are then put to a plain character vector. Neither call
-of the first pair can be intercepted: both are primitives that dispatch on
-neither S3 nor S4, so `setMethod()` refuses a method for either — "must supply
-a function skeleton" — and a `registerS3method()` into `base` is ignored, with
-`is.character()` answering `TRUE` for a classed character that has registered
-one. An S4 object extending `character` unclasses to a character whose
-`class()` is `"character"`, so an S4 `length()` or `is.na()` method the object
-carried is not found on the answer either.
+`length()` and `is.na()` are then put to a character vector with no class.
+Only the class comes off — a name and any other attribute the value carried
+survive onto the answer, and `%in%` and `[[`, which are what the callers put it
+to, read neither. Neither call of the first pair can be intercepted: both are
+primitives that dispatch on neither S3 nor S4, so `setMethod()` refuses a
+method for either — "must supply a function skeleton" — and a
+`registerS3method()` into `base` is ignored, with `is.character()` answering
+`TRUE` for a classed character that has registered one. An S4 object extending
+`character` unclasses to a character whose `class()` is `"character"`, so an S4
+`length()` or `is.na()` method the object carried is not found on the answer
+either.
 
 What that buys is the removal of the mechanism those two put in. The
 `tryCatch(error = )` goes, and with it a third making of the trade recorded
@@ -565,14 +568,6 @@ because the first is already R's own reading of a character vector: a
   reached — those two and the `as.character()` that `%in%` dispatches through —
   are unreachable, so a kind spelling `set` there is refused for spelling `set`,
   which is what the refusal is for.
-
-**The Grouping plan's kind.** The constraint holding the plan representation
-fixed is reached, in the `kind` field alone: it records the classified name
-rather than the field it was read off. No plan a caller can construct changes,
-every kind a constructor stores being one name already. What it decides is what
-a plan built from a forged kind holds, which is newly a question because such a
-kind now compiles: `R/share.R` asks `identical(plan$kind, "rollup")`, and the
-field would answer `FALSE` for a plan that compiled as a rollup.
 
 **Evaluations.** The constraint holding the number and timing of evaluations is
 not reached. The field is read once at each reader, as those two amendments

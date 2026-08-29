@@ -1236,11 +1236,11 @@ test_that("a printed Grouping specification omits a kind that is no name", {
 # The last question this line asks of a value nothing has validated, and the
 # one that stopped being asked of the object. Deciding whether a kind is one
 # name is put to the kind with its class off, so no method the class carries is
-# reached: `is.character()` and `unclass()` dispatch on neither S3 nor S4, and
-# `length()` and `is.na()` are then asked of a plain character vector (#289).
-# Every shape here holds `set` underneath, so the named line is what says the
-# method went unasked, and the empty name is what would say the classification
-# put its questions to the object and got no answer.
+# reached; ADR 0008's amendment for a kind classified with its class off is
+# where that holds and what makes it total. Every shape here holds `set`
+# underneath, so the named line is what says the method went unasked, and the
+# empty name is what would say the classification put its questions to the
+# object and got no answer.
 test_that("a printed Grouping specification never asks a kind's methods", {
   for (generic in c("is.na", "length")) {
     kind <- kind_answering(

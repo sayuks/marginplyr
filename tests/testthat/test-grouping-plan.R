@@ -1619,7 +1619,8 @@ test_that("a malformed grouping specification is refused by both guards", {
 #
 # `set` underneath every shape, so what each route answers is what it answers
 # for the name underneath, and that is what the comparison asserts: a plain
-# `set` is the same call with nothing carrying a method. Both positions, for
+# `set` is the same call with nothing carrying a method, in every part of the
+# answer the classification decides. Both positions, for
 # the reason the test above writes every object in both, and the public routes
 # as well, because that is where the defect was reported and a guard is reached
 # from them through the whole lifecycle rather than the compiler alone.
@@ -1644,12 +1645,21 @@ test_that("a grouping specification kind is classified with its class off", {
 
   for (kind in kinds) {
     spec <- new_grouping_spec(kind, list())
+    # A compiled plan records the kind field as it was read, class and all, so
+    # the plan compiled from this specification holds the object where the one
+    # compiled from a plain `set` holds the string. That field is asserted here
+    # and set aside below rather than compared; #317 is where what a plan
+    # should record is decided.
+    expect_identical(calls$top(spec)$kind, kind)
+
     for (route in names(calls)) {
-      expect_identical(
-        calls[[route]](spec),
-        calls[[route]](plain),
-        info = route
-      )
+      answered <- calls[[route]](spec)
+      expected <- calls[[route]](plain)
+      if (inherits(answered, "margin_grouping_plan")) {
+        answered$kind <- NULL
+        expected$kind <- NULL
+      }
+      expect_identical(answered, expected, info = route)
     }
   }
 })
