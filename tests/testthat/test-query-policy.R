@@ -378,6 +378,67 @@ test_that("no Arrow read happens while a Margin verb runs", {
   }
 })
 
+# The fifth Arrow shape and the query over it, which the loop above cannot
+# reach: a `Dataset` does not absorb, so appending it to a list named for
+# absorption would make that name and its comment false (#302).
+#
+# The zero is the same and the claim is not. Arrow refuses the expression at
+# query-build time, so marginplyr's handler never fires and what holds the zero
+# is Arrow refusing before it scans -- a claim about a shape whose rows need
+# not be in this process's memory, which is the distinction ADR 0020's
+# amendment draws a `Table` against and the shape where a read costs money.
+#
+# The drift this sees is that refusal moving to after a scan: same
+# `arrow_not_supported` class, same text, raised later. The refusal test in
+# `test-grouping-backends.R` asserts the condition and passes unchanged through
+# such a move, and so does the block asserting Arrow still absorbs, which takes
+# a `Table`. Nothing else in the suite is positioned to see it.
+#
+# The bound, which the zero does not state on its own: every reading here is an
+# R-level entry point, so a scan Arrow performs without pulling into R reaches
+# none of them and goes uncounted. What makes the assertion worth having anyway
+# is that Arrow's existing mechanism for evaluating what it cannot translate is
+# a fallback into R -- measured on arrow 25.0.1, an absorbed summary on a
+# `Table` counts 1 through it -- so a release extending that fallback to
+# Datasets, the likely form of the move, is counted.
+test_that("no Arrow Dataset read happens while a Margin verb runs", {
+  skip_if_suggest_absent("arrow")
+  data <- data.frame(
+    k = c("E", "E", "W"),
+    v = c(1, 2, 3),
+    s = c("a", "b", "c"),
+    stringsAsFactors = FALSE
+  )
+  # `InMemoryDataset` reaches the class with no file I/O. What a `Dataset` may
+  # be behind is not what is asserted here; that it is told apart from a
+  # `Table` is, and the class is what tells it apart.
+  dataset <- arrow::InMemoryDataset$create(arrow::Table$create(data))
+  query <- dplyr::select(dataset, dplyr::all_of(names(data)))
+
+  # The mechanism on this shape, asserted before anything is concluded from it,
+  # for the reason the readings above assert it on a `Table`: those controls
+  # were measured against a different class, and a counter blind to this one
+  # would report exactly what a shape that was not read reports.
+  expect_gt(count_backend_reads(dplyr::collect(dataset)), 0L)
+  expect_gt(count_backend_reads(dplyr::collect(query)), 0L)
+
+  refusing <- list(dataset = dataset, query = query)
+  for (shape in names(refusing)) {
+    expect_identical(
+      count_backend_reads(try(
+        summarize_with_margins(
+          refusing[[shape]],
+          joined = paste(s, collapse = ","),
+          .grouping = rollup(k)
+        ),
+        silent = TRUE
+      )),
+      0L,
+      info = shape
+    )
+  }
+})
+
 # The conversion path the catalog's `tibble::as_tibble` entry exists for, and
 # the backend that takes it.
 #
