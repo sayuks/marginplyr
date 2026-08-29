@@ -20,7 +20,9 @@ An argument of a Grouping specification constructor, where a nested Grouping
 specification and a column selection are both allowed. Which one is meant is
 decided by how the argument is written: a call to a constructor, or a name
 bound to a specification, is a nested specification, and every other argument
-is a column selection. A spelling the position does not recognize is never
+is a column selection. Redundant parentheses are transparent to that reading,
+around the name or around the whole call, because `(` is the identity
+function. A spelling the position does not recognize is never
 evaluated to find out, because a selection such as `starts_with("re")` has no
 meaning outside a selection context. Both readings claim one argument at once:
 a bare name that is a column of the input and is also bound, in the caller's

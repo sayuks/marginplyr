@@ -35,6 +35,9 @@ identity product (the empty grouping set).
 
 A nested Grouping specification is recognized by how it is written: a
 call to one of these constructors, or a name bound to a specification.
+Redundant parentheses are transparent to that reading, because \code{(} is the
+identity function: \code{(s)} is the specification \code{s} is, and
+\code{(rollup(region))} is the call it wraps, however many pairs deep.
 Any other argument is a column selection, so a call of your own that
 returns a specification is refused where it is nested even though it is
 accepted as \code{.grouping} itself. Assign what it returns to a name and use

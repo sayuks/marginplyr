@@ -571,3 +571,50 @@ A caller's two mistakes at once are a case of their own, since which message
 wins is a per-helper decision that no equality above would notice changing, and
 so is the named empty argument, which is the only writing that reaches the
 un-injected change recorded above.
+
+## Amendment: the read-through reaches a reading, not an expression
+
+"Redundant parentheses are read through, in one place" above put the reading in
+`R/utils.R`'s shared readers and said that every analysis inherits it, naming
+the constructor gate among them. That is true of what those readers answer — a
+name, a namespace, a head, a set of arguments — and it is not true of a site
+that puts a shape test to the caller's own expression instead of asking one of
+them. Such a site inherits nothing, and there is no reading for it to inherit:
+`is.symbol()` is R's, and `(s)` is a call to `(`.
+
+Three sites in `R/grouping-plan.R` were of that kind, and #259 brings them
+under the rule. `grouping_arg_spec()` recognized a nested constructor call
+through a pair of parentheses, because it reads that call's name through
+`static_spelling_name()`, while asking `is.symbol()` about a name and
+`is.language()` about an injected object — so `(rollup(region))` was the
+specification it is and `(s)` and `(!!s)` were column selections.
+`check_ambiguous_nested_name()` asked `is_name_part()`, so ADR 0026's refusal
+of a name two readings claim was withheld from `(s)`, which selected a
+colliding column silently — the reading that ADR exists to remove, reached by a
+pair of parentheses. And `resolve_grouping_selection()` compared
+`rlang::as_label()` of the caller's expression against the subscript tidyselect
+refused; tidyselect descends into a `(` call before refusing anything, so the
+two labels could not match and #190's diagnostic was withheld from
+`(f(region))`.
+
+**What the amendment above establishes still stands**, and the correction is to
+its reach rather than to its argument. Identity is still syntactic, a caller
+binding still cannot win, and the reading still lives in one place: these three
+sites now *ask* for it — the first by restarting on the argument the pair wraps,
+the other two through `nested_arg_expr()`, which is `unparenthesized_value()`
+put to a quosure. Nothing is re-implemented, which is what "one place, not one
+place per family" means for a caller.
+
+**What a read-through argument costs is the reading of the argument it wraps,
+including how often it is evaluated.** A `(s)` that becomes a recognized name
+is evaluated as a recognized name is, and a `(1)` is evaluated as `1` is, which
+for a literal is one `eval_tidy()` that was not made before. Pinning that
+number is #260's, so what #259 asserts is the equality of the two spellings'
+counts: neither can drift from the other without the assertion failing, and
+nothing pins the same number twice.
+
+**Where a pair is not around the argument, nothing changes.** `c((s), region)`
+is a selection containing a specification, which tidyselect refuses and reports
+for itself; the label the position compares is the whole argument's, which is
+not the sub-selection tidyselect refused. That separation is the reason the
+comparison exists, and reading through does not touch it.

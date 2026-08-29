@@ -40,6 +40,9 @@
 #'
 #'   A nested Grouping specification is recognized by how it is written: a
 #'   call to one of these constructors, or a name bound to a specification.
+#'   Redundant parentheses are transparent to that reading, because `(` is the
+#'   identity function: `(s)` is the specification `s` is, and
+#'   `(rollup(region))` is the call it wraps, however many pairs deep.
 #'   Any other argument is a column selection, so a call of your own that
 #'   returns a specification is refused where it is nested even though it is
 #'   accepted as `.grouping` itself. Assign what it returns to a name and use

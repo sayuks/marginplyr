@@ -359,6 +359,14 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   list(spec = grouping_spec, name_only = name_only)
 }
 
+# The spelling a nested position reads an argument by: the caller's expression
+# with its redundant parentheses removed (#178, #259). The argument may be one
+# a caller left empty, so the answer may be R's empty argument, and a reader
+# passes it on as a value rather than binding it (#168, #174).
+nested_arg_expr <- function(arg) {
+  unparenthesized_value(rlang::quo_get_expr(arg))
+}
+
 # Refuses the one argument both readings claim: a bare name that is a column of
 # the input and is bound to a specification of a kind this position admits.
 # ADR 0026 holds that decision -- why such a name is refused rather than
@@ -370,6 +378,12 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 # "selection" for a symbol, asked again here because the gate reports which
 # reading it took and not why. A name nothing binds has no second reading, and
 # a name the data does not hold is resolved by the gate itself.
+#
+# The name is read through the gate's own parenthesis reading, so a refusal
+# `s` gets is a refusal `(s)` gets. Reading the caller's expression here
+# instead would withhold it from the parenthesized spelling, which is the
+# reading ADR 0026 refuses reached by a pair the gate has already dropped
+# (#259).
 #
 # The kinds this position admits are asked before the binding is read: where a
 # position admits none, the answer is already known, and reading a caller's
@@ -410,10 +424,10 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 # lookup twice. It is derived from the parent's kind, so the pair handed to the
 # memo below carries nothing that memo's key does not.
 check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
-  if (!is_name_part(rlang::quo_get_expr(arg))) {
+  if (!is_name_part(nested_arg_expr(arg))) {
     return(invisible(NULL))
   }
-  name <- rlang::as_string(rlang::quo_get_expr(arg))
+  name <- rlang::as_string(nested_arg_expr(arg))
   if (
     !name %in% data_vars ||
       !rlang::env_has(rlang::quo_get_env(arg), name, inherit = TRUE)
@@ -879,6 +893,28 @@ grouping_constructor_names <- function() {
 
 grouping_arg_spec <- function(arg, data_vars) {
   expr <- rlang::quo_get_expr(arg)
+  # A pair of redundant parentheses is read through here as it is everywhere
+  # else (#178, ADR 0019): `(` is the identity function, so `(s)` and `s` are
+  # one argument written two ways and every reading below answers the two
+  # alike. The shared readers give a *call* that property already, which is why
+  # `(rollup(region))` was recognized while `(s)` and `(!!s)` were not -- a
+  # shape test put to the caller's own expression reaches none of them (#259).
+  #
+  # By restarting on the argument the pair wraps rather than by rebinding
+  # `expr`, which is the rule `R/utils.R` states and
+  # `static_spelling_reference_name()` follows: what the pair wraps may be R's
+  # empty argument, and binding the missing marker raises `missingArgError` on
+  # the next read of it (#168, #174). `is_parenthesized()` answers `FALSE` for
+  # a constructed pair holding one, so the restart cannot repeat.
+  if (is_parenthesized(expr)) {
+    return(grouping_arg_spec(
+      rlang::new_quosure(
+        unparenthesized_value(expr),
+        rlang::quo_get_env(arg)
+      ),
+      data_vars
+    ))
+  }
   if (
     is.symbol(expr) &&
       is_name_only_expr(
@@ -943,7 +979,7 @@ resolve_grouping_selection <- function(arg, data_proxy) {
       on_rename = abort_grouping_rename
     ),
     error = function(cnd) {
-      label <- rlang::as_label(rlang::quo_get_expr(arg))
+      label <- rlang::as_label(nested_arg_expr(arg))
       if (!is_grouping_spec_subscript(cnd, label)) {
         stop(cnd)
       }
@@ -963,6 +999,16 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # they have already made. Comparing the labels is what separates the two, and
 # both are written by `rlang::as_label()` from the same expression when the
 # argument as a whole is what was refused.
+#
+# Both sides of that comparison are unparenthesized, which is what makes them
+# comparable at all. tidyselect descends into a `(` call before it refuses
+# anything, so `(f(region))` reaches here reported as `f(region)`, and a label
+# taken from the caller's expression matched neither itself nor the argument it
+# wraps -- so #190's diagnostic was withheld from the parenthesized spelling
+# and the caller received the tidyselect report this exists to replace (#259).
+# `nested_arg_expr()` is what the label is written from for that reason. The
+# sub-selection case is unaffected: `c((s), region)` labels the whole argument,
+# which is not the `s` tidyselect refused inside it.
 #
 # Where a column shares the name, tidyselect refuses nothing and none of this
 # runs: `c(s, region)` selects the column `s`, which is the one reading a

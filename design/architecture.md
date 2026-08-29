@@ -170,7 +170,9 @@ ways, and the readers here answer the three alike — which is what gives every
 analysis above that property at once instead of each family recognizing
 whichever forms someone wrote out (#178, ADR 0019). Name and operands are read
 through the same unwrapping, so a node cannot be named as its content and
-subscripted as its wrapper.
+subscripted as its wrapper. What inherits the reading is an answer taken from
+these readers; a site that puts a shape test to the caller's own expression
+asks for it instead, which is ADR 0019's third amendment (#259).
 
 The unwrapping is syntactic and stops there: it reads a name that is written,
 never one that would have to be looked up. So `(get("f"))(x)`, `(function(x)

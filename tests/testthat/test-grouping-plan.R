@@ -313,6 +313,162 @@ test_that("a nested column selection is unaffected by the specification rule", {
   expect_equal(compile(inside)$sets, list(c("region", "grade")))
 })
 
+test_that("a nested argument is read through its redundant parentheses", {
+  data_vars <- c("region", "grade", "value")
+  bound <- rollup(value)
+  env <- rlang::env(rlang::current_env(), s = bound)
+  env$spec_from_caller <- function(...) rollup(...)
+  parenthesized <- function(argument) rlang::call2("(", argument)
+
+  # What the position did with an argument, as one comparable value. A refusal
+  # is as much a reading as a plan is, and the two spellings have to agree
+  # about which refusal as well: an argument read as a selection carries
+  # tidyselect's own condition, and comparing the class with the message is
+  # what keeps that from passing as marginplyr's.
+  outcome <- function(constructor, argument) {
+    tryCatch(
+      compile_against(
+        eval(rlang::call2(constructor, argument), envir = env),
+        data_vars
+      )$sets,
+      error = function(cnd) list(class(cnd), conditionMessage(cnd))
+    )
+  }
+
+  # Every spelling a nested argument can have, so that the rule is one rule
+  # rather than one per shape: the two recognized forms, the injected object
+  # the ambiguity refusal tells a caller to write, a caller's own function, a
+  # column, two selections, and a literal. Each is compared against itself
+  # wrapped in one pair and in two, since `(` is the identity function however
+  # many times it is applied (#178).
+  arguments <- list(
+    name = quote(s),
+    constructor_call = quote(rollup(value)),
+    injected_object = bound,
+    caller_call = quote(spec_from_caller(value)),
+    column = quote(value),
+    selection = quote(c(value, grade)),
+    spec_in_selection = quote(c(s, grade)),
+    literal = 1L
+  )
+
+  # Derived from the registry, so a sixth constructor arrives here as a
+  # position the rule has to hold in rather than as one nothing covers.
+  for (rule in grouping_kind_rules()) {
+    for (argument in arguments) {
+      bare <- suppressWarnings(outcome(rule$constructor, argument))
+      expect_identical(
+        suppressWarnings(outcome(rule$constructor, parenthesized(argument))),
+        bare
+      )
+      expect_identical(
+        suppressWarnings(
+          outcome(rule$constructor, parenthesized(parenthesized(argument)))
+        ),
+        bare
+      )
+    }
+  }
+
+  # The two readings the ticket reproduced, asserted on what a caller sees
+  # rather than on the agreement above: a name bound to a specification
+  # resolves to the plan the bare name resolves to, and a caller's own function
+  # gets #190's diagnostic, on the complete message.
+  data <- data.frame(region = c("a", "b"), value = c(1, 2))
+  expect_identical(
+    eval(quote(inspect_grouping(data, .grouping = grouping_sets((s)))), env),
+    eval(quote(inspect_grouping(data, .grouping = grouping_sets(s))), env)
+  )
+  refused <- expect_error(eval(
+    quote(inspect_grouping(
+      data,
+      .grouping = grouping_sets((spec_from_caller(region)))
+    )),
+    env
+  ))
+  expect_s3_class(refused, "marginplyr_error")
+  expect_identical(
+    conditionMessage(refused),
+    paste0(
+      "`spec_from_caller(region)` is a grouping specification, but a nested ",
+      "position recognizes one only when it is a call to `grouping_set()`, ",
+      "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a ",
+      "name bound to a specification.\n",
+      "i Anything else is read as a column selection.\n",
+      "i Assign the specification to a name first, then use that name here."
+    )
+  )
+
+  # A pair the caller wrote inside a selection is not a pair around the
+  # argument, so tidyselect keeps the sub-selection it refused and the position
+  # does not speak for it. This is the property the label comparison exists for
+  # and the one a change to it can break, so both spellings are written out.
+  for (selection in list(quote(c(s, region)), quote(c((s), region)))) {
+    spec <- eval(rlang::call2("grouping_sets", selection), envir = env)
+    embedded <- expect_error(suppressWarnings(compile_against(spec, data_vars)))
+    expect_false(inherits(embedded, "marginplyr_error"))
+    expect_match(conditionMessage(embedded), "Can't select columns with `s`")
+  }
+
+  # A colliding column is what ADR 0026 refuses, and a pair of parentheses was
+  # enough to withhold that refusal: `s` was refused while `(s)` selected the
+  # column, silently, which is the reading the ADR exists to remove.
+  for (argument in list(quote(s), quote((s)), quote(((s))))) {
+    spec <- eval(rlang::call2("grouping_sets", argument), envir = env)
+    ambiguous <- expect_error(compile_against(spec, c("s", data_vars)))
+    expect_s3_class(ambiguous, "marginplyr_error")
+    expect_identical(conditionMessage(ambiguous), ambiguous_s_message)
+  }
+})
+
+test_that("a parenthesized nested argument is evaluated as its own count", {
+  data_vars <- c("region", "grade", "value")
+  bound <- rollup(value)
+
+  # How often a caller's quosure runs is what #260 pins for each recognized
+  # form. What belongs here is the weaker property that survives whatever it
+  # pins: reading through a pair of parentheses gives the argument the count of
+  # the argument it wraps, so neither spelling can drift from the other without
+  # this failing. Counting an absolute here would pin the same numbers twice.
+  count_reads <- function(argument) {
+    reads <- 0L
+    env <- rlang::env(rlang::current_env())
+    makeActiveBinding(
+      "s",
+      function() {
+        reads <<- reads + 1L
+        bound
+      },
+      env
+    )
+    env$spec_from_caller <- function(...) {
+      reads <<- reads + 1L
+      rollup(...)
+    }
+    spec <- eval(rlang::call2("grouping_sets", argument), envir = env)
+    tryCatch(
+      suppressWarnings(compile_against(spec, data_vars)),
+      error = function(cnd) NULL
+    )
+    reads
+  }
+
+  # The counter first: a zero below has to be a read that did not happen
+  # rather than a mechanism that stopped counting.
+  expect_identical(count_reads(quote(s)), 2L)
+  expect_identical(count_reads(quote(value)), 0L)
+
+  for (argument in list(quote(s), quote(spec_from_caller(value)))) {
+    bare <- count_reads(argument)
+    expect_gt(bare, 0L)
+    expect_identical(count_reads(rlang::call2("(", argument)), bare)
+    expect_identical(
+      count_reads(rlang::call2("(", rlang::call2("(", argument))),
+      bare
+    )
+  }
+})
+
 test_that("a nested position admits nested kinds by its own parent rule", {
   # The half of "both readings are available" that the input may not answer,
   # and the one thing no behavioural test reaches: an empty answer reads as a
