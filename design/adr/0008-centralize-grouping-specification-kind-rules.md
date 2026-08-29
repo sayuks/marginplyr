@@ -515,6 +515,65 @@ constructs has that shape, since a constructor builds a list. It is recorded
 here because an amendment saying a class of errors moved should say which
 errors were not there to move.
 
+## Amendment: a kind classified with its class off
+
+The amendments *the printed line for a kind that is no name* and *the condition
+class of a kind the guard could not classify* decide what a reader does when
+classifying a kind raises. This one decides that classifying a kind does not
+raise, which reverses both of them (#289). The constraint holding error
+condition classes fixed is amended a seventh time, and in the opposite
+direction to the fifth: a guard that raised `marginplyr_error` for a kind
+carrying a raising method now compiles it, and the nested-name site raises one
+where it raised nothing. Every kind that is no name still gets the same
+refusal, with the same message and the same call context, and detection order
+does not move.
+
+`grouping_kind_name()` strips the class before it classifies rather than after.
+`is.character()` answers for the type, `unclass()` takes the class off, and
+`length()` and `is.na()` are then put to a character vector with no class.
+Only the class comes off — a name and any other attribute the value carried
+survive onto the answer, and `%in%` and `[[`, which are what the callers put it
+to, read neither. Neither call of the first pair can be intercepted: both are
+primitives that dispatch on neither S3 nor S4, so `setMethod()` refuses a
+method for either — "must supply a function skeleton" — and a
+`registerS3method()` into `base` is ignored, with `is.character()` answering
+`TRUE` for a classed character that has registered one. An S4 object extending
+`character` unclasses to a character whose `class()` is `"character"`, so an S4
+`length()` or `is.na()` method the object carried is not found on the answer
+either.
+
+What that buys is the removal of the mechanism those two put in. The
+`tryCatch(error = )` goes, and with it a third making of the trade recorded
+above under *the handler the read is wrapped in*: an exiting handler unwinds a
+condition that a calling handler of the caller's would otherwise have resumed
+from, and a `signalCondition()` inheriting `error` without stopping is caught
+rather than resumed. That trade is still made wherever a field is read, and no
+longer where a kind is classified. The second classification goes with it,
+because the first is already R's own reading of a character vector: a
+`length()` answering `1` over two strings is an answer nothing takes now.
+
+**What a raising method decides.** Nothing, at any of the four readers.
+
+- The printed line names the constructor of the kind underneath, where it
+  printed the empty name. `structure("set", class = "raises")` prints
+  `grouping_set`, the kind being `set` and the class carrying a method that was
+  never relevant to it.
+- The guards in `validate_grouping_spec_early()` admit it, where they refused
+  it. The `Invalid grouping specification.` refusal still answers every kind
+  that is no name — two strings, none, or the missing one — and answers it on
+  the stripped value, so a `length()` claiming `1` over two strings does not
+  reach the decision.
+- The nested-name site refuses it as ambiguous, where a raising `is.na()` or
+  `length()` left the column reading standing. All three methods that site ever
+  reached — those two and the `as.character()` that `%in%` dispatches through —
+  are unreachable, so a kind spelling `set` there is refused for spelling `set`,
+  which is what the refusal is for.
+
+**Evaluations.** The constraint holding the number and timing of evaluations is
+not reached. The field is read once at each reader, as those two amendments
+left it. How often classifying asks the value's own methods is fixed by no
+decision, and it is now none, at every reader.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:
