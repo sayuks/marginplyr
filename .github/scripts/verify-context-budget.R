@@ -24,10 +24,10 @@ source(".github/scripts/ci-helpers.R")
 # What the closure measured when it was last set, and the commit that set it.
 # Moving this means saying in the same commit what was added and what paid for
 # it.
-baseline_bytes <- 39223L
+baseline_bytes <- 34839L
 baseline_note <- paste(
-  "#292 adding the verifier-invocation rule, paid for by nothing:",
-  "the gate it names is what makes every other one here undeletable"
+  "#294 deleting the argument *Optional-dependency guards* restated:",
+  "`inst/suggests/guard.R` already held it, so nothing paid for this"
 )
 
 entry <- "CLAUDE.md"

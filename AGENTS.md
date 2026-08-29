@@ -317,82 +317,16 @@ as it stood.
 ### Optional-dependency guards
 
 Every guard deciding whether optional code runs goes through
-`marginplyr_suggest_available()` in `inst/suggests/guard.R`. Never
-`requireNamespace()` and never `rlang::is_installed()`, which answer "is it
-installed" and not "is it new enough" — the question DESCRIPTION actually asks,
-since several Suggests carry a version constraint. An installed-but-too-old
-package passes an installation check, the guarded code runs, and it fails at
-the feature instead of skipping (#123). `duckdb (>= 1.5.5)` is the case that
-showed it: under 1.5.4.x `duckdb::duckdb(shared_home = FALSE)` is a hard error
-rather than a degraded result.
+`marginplyr_suggest_available()` in `inst/suggests/guard.R`. That file's header
+is authoritative for why the guard exists and why it is reached by `source()`
+rather than exported.
 
-`R CMD check` is not the exposure. It stops at `checking package dependencies`
-with "required and available but unsuitable version" before any test, example,
-or vignette runs, so CRAN, the release matrix, and any local check were always
-safe. What the guard covers is everything that is not `R CMD check`:
-`devtools::test()`, `pkgload::load_all()` plus `testthat::test_local()`, an
-example run interactively, and the site build — whose `Config/Needs/website`
-entries carry no versions, so a site job can legitimately install a version the
-package's own Suggests entry rejects.
-
-*Suggest* and *backend* are used from here on in the senses *Release matrix*
-below separates them into, since the helpers this section names are shared with
-the jobs that section describes.
-
-DESCRIPTION states each constraint and the guard is the only thing that reads
-one, so there is no version written down twice and nothing to keep in step. The
-guard lives under `inst/` for the reason `must-error.R` does: the four
-vignettes, the four examples, and
-`tests/testthat/helper-optional-backends.R` each reach it in one `source()`
-call on a `system.file()` path, and a copy in `tests/` would be the copy the
-shipped sites drift from. Registering an optional Suggest with the test suite
-still means editing the two places *Release matrix* names — a version is not a
-third place, because the guard reads it.
-
-`suggest_available()` consults the guard, so a too-old package skips rather
-than running, unless the job named it in `MARGINPLYR_REQUIRED_SUGGESTS` — then
-it errors, exactly as an absent required package does, and a `backend` job
-holding a stale version reds as a failure rather than passing on a skipped
-suite. The skip says which case it is: `{duckdb} 1.5.4.3 is installed, but
-marginplyr requires >= 1.5.5`, deliberately not the `{pkg} is not installed`
-wording, which would send a reader looking for a package sitting in their
-library. A `backend` job cannot produce that skip — a package it named errors
-and one it withheld is not installed — but the wording is still what stops
-`verify-backend.R` attributing a version failure to a withheld package if one
-ever reached that path. A package hidden by `MARGINPLYR_HIDE_SUGGESTS` keeps
-the absent wording, because a simulated absence that announced a version is a
-skip neither `verify-suite-coverage.R` nor `verify-depends-only.R` could
-attribute.
-
-Guarding on a package DESCRIPTION does not suggest is an error, not an answer.
-`suggest_available()` already refuses a package `optional_suggests()` does not
-name, but a vignette and an example have no such registry, and a typo or a
-dependency that moved to `Config/Needs/website` would otherwise guard on
-installation alone while reading as protection.
-
-Two scans in `test-documentation.R` are what keep this from decaying, and they
-scan rather than list, for the reason every other gate here derives rather than
-lists. Each runs over three sources — the Rd topics, the vignette sources, and
-both halves of the README: no page may name a version-blind guard, and a page
-using the guard must source it and vice versa. The Rd half reads `man/` when it
-is present and `tools::Rd_db("marginplyr")` otherwise, so it holds under
-`R CMD check` too; the vignette half is repository-only, because `R CMD check`
-unpacks the tarball beside the `.Rcheck` directory rather than inside it; the
-README is read from the repository where there is one, and otherwise from the
-installed `README.md`, which exists only from R 4.6.0 — "Package `README.md`
-files are now installed and featured in HTML help" — while `DESCRIPTION`
-supports 4.1.0, so an oldrel job checking a tarball reaches neither half. The
-README is in the set because it is installation documentation, which is where a
-version-blind test is likeliest to be written in the first place — the same
-reason `verify-site.R` forbids `installed.packages` anywhere on the rendered
-site. Prose that needs to name a version-blind call has to spell it some other
-way — the scan is deliberately blunt.
-
-A source is added where it is reachable rather than skipped for where it is
-not, since a skip naming no withheld backend is what `verify-backend.R` fails a
-job over. Reaching nothing at all is the other case, and
-`documentation_sources()` stops on it: every scan iterates over that set, so a
-set that arrived empty is a set that passes.
+Two files assert it, and each states its own reasons. Two scans in
+`tests/testthat/test-documentation.R` hold every shipped page to the rule, over
+the Rd topics, the vignette sources, and both halves of the README.
+`tests/testthat/helper-optional-backends.R` is where a test reaches the guard,
+through `skip_if_suggest_absent()` or `suggest_available()`, and where the
+wording of the resulting skip is fixed for `verify-backend.R`.
 
 ### Release matrix
 
@@ -404,8 +338,7 @@ companions its entry declares. `MARGINPLYR_REQUIRED_SUGGESTS` names all of
 them, so any one of them failing to install fails the job instead of skipping
 its tests.
 
-Two words are in use in this section and in *Optional-dependency guards*
-above, and they name different sets (#185). A *Suggest* is an optional package
+Two words are in use in this section, and they name different sets (#185). A *Suggest* is an optional package
 the test suite guards on — an entry in `optional_suggest_spec()`. A *backend*
 is the narrower thing a generated job exists for: the subset
 `optional_backends()` returns, which is what those jobs iterate over. `DBI` is
@@ -422,8 +355,8 @@ CRAN's minimal flavors but means a green job proves nothing about it. Every
 such test goes through `skip_if_suggest_absent()` or `suggest_available()` from
 `tests/testthat/helper-optional-backends.R` — never `skip_if_not_installed()`
 or `rlang::is_installed()` directly, since those cannot be told to fail — and
-never `requireNamespace()` either, for the separate reason in
-*Optional-dependency guards* above. (`skip_if_not_installed("dbplyr")` is not
+never `requireNamespace()` either, for the separate reason
+`inst/suggests/guard.R` gives. (`skip_if_not_installed("dbplyr")` is not
 an exception: dbplyr is an Import, so it is never absent.)
 
 Snapshot expectations run only where `NOT_CRAN` is set: testthat skips them
