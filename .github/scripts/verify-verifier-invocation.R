@@ -33,24 +33,30 @@ workflows_dir <- ".github/workflows"
 
 # A full-line comment is not code, in YAML or in R -- both spell one the same
 # way, so one rule covers both files. It has to be dropped before anything is
-# read: every verifier here is named in prose somewhere, this file included, so
-# a reader counting a mention as a call would find all of them invoked. A
-# comment placed after code on the same line is not stripped, and a call
-# commented out that way would still be counted; the probe below fixes what
-# this reader does rather than leaving it to be inferred.
+# read: a workflow comment quoting a gate's command for a reader to run it
+# locally is not a step, and counting one would report a verifier as invoked by
+# prose. A comment placed after code on the same line is not stripped, and a
+# call commented out that way would still be counted; the probe below fixes
+# what this reader does rather than leaving it to be inferred.
 executable_lines <- function(lines) {
   lines[!grepl("^[[:space:]]*#", lines)]
 }
 
 # The two forms that actually run a script here: `Rscript <path>` in a workflow
-# step, and `source("<path>")` from another script. Matching a bare path
-# instead would count a step's `name:`, an artifact path, or a `--file`
-# argument that names one, and this gate passing for a script nothing runs is
-# the result it exists to refuse. The match ends at the file name, so
+# step, and `source("<path>")` from another script. The prefix is what
+# separates either from a bare path, which a step's `name:` or an artifact
+# value may carry without running anything. A workflow value outside `run:`
+# that spells the whole command would still be counted; nothing here does, and
+# narrowing the match to a line beginning `run:` would miss the later lines of
+# a block scalar, which is a shape a step may legitimately take.
+#
+# `scripts_dir` is escaped into the pattern rather than pasted, so its `.`
+# matches a dot and not any character. The match ends at the file name, so
 # `basename()` is what reads it back out.
 invocation <- paste0(
   "(Rscript[[:space:]]+|source\\([[:space:]]*[\"'])",
-  scripts_dir, "/[A-Za-z0-9._-]+\\.R"
+  gsub(".", "\\.", scripts_dir, fixed = TRUE),
+  "/[A-Za-z0-9._-]+\\.R"
 )
 
 invoked <- function(lines) {
@@ -63,9 +69,7 @@ invoked_by_file <- function(path) {
 }
 
 # The mechanism, before the verdict, in all three ways it can arrive vacuous.
-verifiers <- sort(basename(
-  list.files(scripts_dir, pattern = "^verify-.*\\.R$")
-))
+verifiers <- sort(list.files(scripts_dir, pattern = "^verify-.*\\.R$"))
 workflows <- sort(
   list.files(workflows_dir, pattern = "\\.ya?ml$", full.names = TRUE)
 )
@@ -180,7 +184,7 @@ if (length(uninvoked) > 0L) {
       "the assertion: a step can be deleted on its own, and a `source()` ",
       "cannot be, without editing the script that does the work."
     ),
-    paste(sprintf("`%s`", sort(uninvoked)), collapse = ", ")
+    paste(sprintf("`%s`", uninvoked), collapse = ", ")
   ))
 }
 
@@ -197,9 +201,8 @@ if (length(absent) > 0L) {
 }
 
 if (length(problems) > 0L) {
-  # `call. = FALSE` because `check-tarball.R` sources this file: without it the
-  # message arrives wrapped in `Error in eval(ei, envir)` and a `source ->
-  # withVisible` traceback, which buries the one line that names the cause.
+  # `call. = FALSE` because `check-tarball.R` sources this file; what the
+  # wrapping looks like without it is in `verify-library-isolation.R`.
   stop(call. = FALSE, paste(problems, collapse = " "))
 }
 

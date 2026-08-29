@@ -25,11 +25,9 @@ source(".github/scripts/ci-helpers.R")
 source(".github/scripts/verify-library-isolation.R", local = new.env())
 
 # Asserts that every other verifier in that directory is still reached by a
-# workflow step or by a script that is. It runs here for the same reason the
-# assertion above does, one level out: a verifier reached only by a step is
-# silenced by deleting that step, and deleting this `source()` means editing a
-# script whose job is to check a tarball. That is where the regress stops, and
-# `verify-verifier-invocation.R`'s header says why it stops there (#292).
+# workflow step or by a script that is. It runs here rather than as its own
+# step for the same reason the assertion above does, one level out; the
+# script's own header says where that regress stops (#292).
 source(".github/scripts/verify-verifier-invocation.R", local = new.env())
 
 tarball_dir <- Sys.getenv("MARGINPLYR_TARBALL_DIR", "tarball")
