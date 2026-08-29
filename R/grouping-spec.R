@@ -258,10 +258,9 @@ print.margin_grouping_spec <- function(x, ...) {
 # (#268).
 #
 # Deciding which of the three a kind takes is `grouping_kind_name()`'s, which
-# every reader of an unvalidated kind shares: a value whose own `is.na()` or
-# `length()` raises is no name there rather than an error here. What this site
-# holds afterwards is a name or nothing, so the `cat()` below takes a character
-# whichever branch answers.
+# every reader of an unvalidated kind shares. What this site holds afterwards is
+# a name or nothing, so the `cat()` below takes a character whichever branch
+# answers.
 grouping_kind_printed_name <- function(kind) {
   name <- grouping_kind_name(kind)
   if (is.null(name)) {

@@ -1142,12 +1142,11 @@ test_that("a printed Grouping specification names the constructor called", {
 })
 
 # The line a specification with no name to print prints, and the invisible
-# return a print method makes whatever it printed. The three tests below assert
-# it of shapes that reach it for four different reasons -- a kind that is
-# absent, a kind that cannot be read, a kind that is no name, a kind that
-# raises on being classified -- and that one line covers them all is the
-# decision itself, so those tests ask
-# for it in one place. The counting test further down spells the line out
+# return a print method makes whatever it printed. The two tests below assert
+# it of shapes that reach it for three different reasons -- a kind that is
+# absent, a kind that cannot be read, a kind that is no name -- and that one
+# line covers them all is the decision itself, so those tests ask for it in one
+# place. The counting test further down spells the line out
 # instead, having a read count to assert beside it. A shape that raises fails
 # here as an error, since the raise leaves `capture.output()` with nothing to
 # return and the comparison below is never made.
@@ -1234,52 +1233,55 @@ test_that("a printed Grouping specification omits a kind that is no name", {
   }
 })
 
-# The last question this line asks of a value nothing has validated. Deciding
-# whether a kind is one name asks the value's own `is.na()` and `length()`,
-# both of which an object carrying the class can answer by raising, so the
-# printed line is at the mercy of a method of the object's the way it was of a
-# `$` of the object's until #264. Every shape here holds `set` underneath, so
-# a classification that answers names `grouping_set`: the empty name is what
-# says the catch fired, and the named line is what says it did not.
-#
-# The guards read the same field and reach the same methods, and #280 gave them
-# the same answer, which is what moved the catch into `grouping_kind_name()`.
-# What that leaves here is this line, which is where the catch firing is
-# visible as a printed line rather than as a condition class.
-test_that("a printed Grouping specification classifies a kind that may raise", {
+# The last question this line asks of a value nothing has validated, and the
+# one that stopped being asked of the object. Deciding whether a kind is one
+# name is put to the kind with its class off, so no method the class carries is
+# reached: `is.character()` and `unclass()` dispatch on neither S3 nor S4, and
+# `length()` and `is.na()` are then asked of a plain character vector (#289).
+# Every shape here holds `set` underneath, so the named line is what says the
+# method went unasked, and the empty name is what would say the classification
+# put its questions to the object and got no answer.
+test_that("a printed Grouping specification never asks a kind's methods", {
   for (generic in c("is.na", "length")) {
     kind <- kind_answering(
       stats::setNames(list(raising_kind_method), generic),
       "printed_raising"
     )
-    expect_empty_name_line(new_grouping_spec(kind, list()), info = generic)
+    expect_identical(
+      utils::capture.output(print(new_grouping_spec(kind, list()))),
+      "<marginplyr grouping specification: grouping_set>",
+      info = generic
+    )
   }
 
-  # An error is caught and nothing else is, which is a choice rather than the
-  # limit of one: a method may signal a warning on its way to answering, and a
-  # kind that warns is still a kind. Catching `condition` would take the
-  # warning for a failure to answer and name nothing, so this is what fails if
-  # the catch is ever widened to one. The warnings are read as a set because
-  # nothing fixes how often classifying asks the method the way ADR 0008 fixes
-  # the count of field reads -- the registry lookup asked it a second time
-  # before #280 handed that lookup a classified name.
-  warns <- kind_answering(
-    list(is.na = function(x, ...) {
-      warning("classifying this kind warns")
-      FALSE
-    }),
-    "printed_warning"
+  # The catch this line still has is the field read's, and an error is caught
+  # and nothing else is, which is a choice rather than the limit of one: a
+  # field may signal a warning on its way to answering, and a kind that warns
+  # is still a kind. Catching `condition` would take the warning for a failure
+  # to read and name nothing, so this is what fails if that catch is ever
+  # widened to one. The warnings are read as a set because how often the field
+  # is read is what the counting test below pins.
+  warns <- rlang::new_environment(list(args = list()))
+  makeActiveBinding(
+    "type",
+    function() {
+      warning("reading this kind warns")
+      "set"
+    },
+    warns
   )
   raised <- character()
   line <- withCallingHandlers(
-    utils::capture.output(print(new_grouping_spec(warns, list()))),
+    utils::capture.output(
+      print(structure(warns, class = "margin_grouping_spec"))
+    ),
     warning = function(cnd) {
       raised <<- c(raised, conditionMessage(cnd))
       invokeRestart("muffleWarning")
     }
   )
   expect_identical(line, "<marginplyr grouping specification: grouping_set>")
-  expect_setequal(raised, "classifying this kind warns")
+  expect_setequal(raised, "reading this kind warns")
 })
 
 # What the reading did not leave alone, in the part of it that can be held to a

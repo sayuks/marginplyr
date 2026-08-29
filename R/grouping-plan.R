@@ -10,7 +10,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
   }
 
   # Classified where it is read, so that what this guard holds from here on is
-  # a name and not a value that might still refuse to be one (#280).
+  # a name and not the value it was read off (#280).
   kind <- grouping_kind_name(grouping_spec_kind(grouping_spec))
   # A catch of its own, because the two fields are not read together: an object
   # can refuse one while answering the other, and this is the only reader of
@@ -451,20 +451,18 @@ nested_arg_expr <- function(arg) {
 # class with no kind to read -- an atomic vector given the class offers no
 # field to read at all, which `grouping_spec_kind()` answers with `NULL`, and
 # a list without the field answers `NULL` too, neither of which is a kind this
-# position could admit. So is a kind that raises on being classified, which
-# `grouping_kind_name()` answers with `NULL` (#280). Both that reading and that
-# classification are the guard's own, so the two cannot disagree about what a
-# kind is or about what one is readable off. All three catches are narrow
-# in what they decide and not in what they swallow: everything they hide is a
-# failure to produce a specification of an admitted kind, which is a
-# specification reading that is not available. That is where the ADR-0015 line
-# falls too, because nothing here is deciding what such an object is -- a list
-# carrying the class and no kind, bound to a name nothing shadows, still
-# reaches `validate_grouping_spec_early()` and is refused in its own words.
-# So does an atomic vector carrying it, since #262 stopped that guard reading
-# a field before it had established the object can be read: what a colliding
-# name withholds here is a Package condition in either shape, not an untyped
-# one.
+# position could admit. Both that reading and the classification below are the
+# guard's own, so the two cannot disagree about what a kind is or about what one
+# is readable off. The evaluation's catch and the read's are narrow in what they
+# decide and not in what they swallow: everything they hide is a failure to
+# produce a specification of an admitted kind, which is a specification reading
+# that is not available. That is where the ADR-0015 line falls too, because
+# nothing here is deciding what such an object is -- a list carrying the class
+# and no kind, bound to a name nothing shadows, still reaches
+# `validate_grouping_spec_early()` and is refused in its own words. So does an
+# atomic vector carrying it, since #262 stopped that guard reading a field
+# before it had established the object can be read: what a colliding name
+# withholds here is a Package condition in either shape, not an untyped one.
 #
 # `rule` is the parent's own, which the caller already holds because it
 # validates nested arguments with it; deriving it again here would be the same
@@ -716,7 +714,11 @@ compile_grouping_spec_impl <- function(preflight,
 
   structure(
     list(
-      kind = preflight$spec$type,
+      # The classified name rather than the field, so that what a reader of the
+      # plan compares is the name the guard admitted. `share.R` asks
+      # `identical(plan$kind, "rollup")`, which a kind carrying a class answers
+      # `FALSE` to while compiling as one (#289).
+      kind = grouping_kind_name(preflight$spec$type),
       by = unique(.by),
       dimensions = dimensions,
       sets = normalized,
@@ -905,25 +907,19 @@ grouping_kind_rules <- local({
 # one string, and not the missing one. Every caller holds a value nothing has
 # validated, and every reader of one shares this, as they share the read in
 # `grouping_spec_kind()`. What it decides, why it answers with the name rather
-# than with whether there is one, and what the class coming off that answer
-# costs are ADR 0008's, in its amendment for a kind the guard could not
-# classify.
+# than with whether there is one, and why nothing here is asked of the object's
+# own methods are ADR 0008's, in its amendment for a kind classified with its
+# class off.
 grouping_kind_name <- function(kind) {
-  # `is.na()` and `length()` are generic, so these are the value's own methods
-  # and one may raise instead of answering. A raise is no answer, so the value
-  # is no name -- the reading that leaves the guards their own refusal (#280).
-  name <- tryCatch(
-    if (is.character(kind) && length(kind) == 1L && !is.na(kind)) {
-      unclass(kind)
-    },
-    error = function(cnd) NULL
-  )
-  # Asked again of the answer, which has no class left to dispatch on, so this
-  # is R's own reading and not a method's. The questions above were put to the
-  # classed value, and a method that answers wrongly rather than by raising
-  # passes them: `length()` reporting `1` over two strings returned two, and
-  # `%in%` at the caller in `check_ambiguous_nested_name()` raised on it.
-  if (!is.character(name) || length(name) != 1L || is.na(name)) {
+  # `is.character()` and `unclass()` are primitives that dispatch on neither S3
+  # nor S4, so neither reaches a method the value carries: the type test is R's
+  # own, and stripping is what puts the two questions below to a plain character
+  # vector rather than to whatever the class defines for them (#289).
+  if (!is.character(kind)) {
+    return(NULL)
+  }
+  name <- unclass(kind)
+  if (length(name) != 1L || is.na(name)) {
     return(NULL)
   }
   name
