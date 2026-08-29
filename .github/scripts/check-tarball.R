@@ -24,6 +24,12 @@ source(".github/scripts/ci-helpers.R")
 # separate environment keeps its working names off this one.
 source(".github/scripts/verify-library-isolation.R", local = new.env())
 
+# Asserts that every other verifier in that directory is still reached by a
+# workflow step or by a script that is. It runs here rather than as its own
+# step for the same reason the assertion above does, one level out; the
+# script's own header says where that regress stops (#292).
+source(".github/scripts/verify-verifier-invocation.R", local = new.env())
+
 tarball_dir <- Sys.getenv("MARGINPLYR_TARBALL_DIR", "tarball")
 check_dir <- check_directory()
 label <- check_label()

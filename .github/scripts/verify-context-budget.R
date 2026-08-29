@@ -24,8 +24,11 @@ source(".github/scripts/ci-helpers.R")
 # What the closure measured when it was last set, and the commit that set it.
 # Moving this means saying in the same commit what was added and what paid for
 # it.
-baseline_bytes <- 38810L
-baseline_note <- "#298 moving three review instructions into the closure"
+baseline_bytes <- 39223L
+baseline_note <- paste(
+  "#292 adding the verifier-invocation rule, paid for by nothing:",
+  "the gate it names is what makes every other one here undeletable"
+)
 
 entry <- "CLAUDE.md"
 

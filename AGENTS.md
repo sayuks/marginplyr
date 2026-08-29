@@ -536,6 +536,15 @@ one job body also closed #73, which asked for an assertion that every job
 withholding optional backends checks a tarball: with a single body there is no
 second shape for such a job to have.
 
+### Verifier invocation
+
+Every `verify-*.R` under `.github/scripts/` is reached by a workflow step or by
+a script that is, and `verify-verifier-invocation.R` fails when one is reached
+by neither. It derives the set from the directory, so a verifier added tomorrow
+is covered without an edit here. `check-tarball.R` sources it, and the script's
+own header says why it is not a step of its own. Run it locally with
+`Rscript .github/scripts/verify-verifier-invocation.R`.
+
 ### Queries against a lazy input
 
 marginplyr sends no query that reads a lazy input's data unless the caller
