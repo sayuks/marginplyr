@@ -95,11 +95,12 @@ direction today. A branch first evaluated on the day of the release is a
 branch nothing has ever run, which is the objection *Chunks that must fail*
 makes to an assertion that cannot fail.
 
-The scan is deliberately blunt, as the version-blind guard scan above is:
-prose that needs to name the CRAN installation call has to spell it some other
-way. Its markers all name marginplyr, because the README's comparison table
-links to another package's CRAN page and that is not a claim about this one,
-and they match case-insensitively, because `cran.r-project.org` and
+The scan is deliberately blunt, as the version-blind guard scan beside it in
+`test-documentation.R` is: prose that needs to name the CRAN installation call
+has to spell it some other way. Its markers all name marginplyr, because the
+README's comparison table links to another package's CRAN page and that is not
+a claim about this one, and they match case-insensitively, because
+`cran.r-project.org` and
 `CRAN.R-project.org` are one host and a claim is not less of one for being
 typed the second way.
 
@@ -321,12 +322,12 @@ Every guard deciding whether optional code runs goes through
 is authoritative for why the guard exists and why it is reached by `source()`
 rather than exported.
 
-Two files assert it, and each states its own reasons. Two scans in
-`tests/testthat/test-documentation.R` hold every shipped page to the rule, over
-the Rd topics, the vignette sources, and both halves of the README.
-`tests/testthat/helper-optional-backends.R` is where a test reaches the guard,
-through `skip_if_suggest_absent()` or `suggest_available()`, and where the
-wording of the resulting skip is fixed for `verify-backend.R`.
+Two scans in `tests/testthat/test-documentation.R` assert it, over the Rd
+topics, the vignette sources, and both halves of the README. A test reaches the
+guard through `skip_if_suggest_absent()` or `suggest_available()` in
+`tests/testthat/helper-optional-backends.R`, which is also where the wording of
+the resulting skip is fixed for `verify-backend.R`. Each file states its own
+reasons.
 
 ### Release matrix
 
@@ -338,10 +339,11 @@ companions its entry declares. `MARGINPLYR_REQUIRED_SUGGESTS` names all of
 them, so any one of them failing to install fails the job instead of skipping
 its tests.
 
-Two words are in use in this section, and they name different sets (#185). A *Suggest* is an optional package
-the test suite guards on — an entry in `optional_suggest_spec()`. A *backend*
-is the narrower thing a generated job exists for: the subset
-`optional_backends()` returns, which is what those jobs iterate over. `DBI` is
+Two words are in use in this section, and they name different sets (#185). A
+*Suggest* is an optional package the test suite guards on — an entry in
+`optional_suggest_spec()`. A *backend* is the narrower thing a generated job
+exists for: the subset `optional_backends()` returns, which is what those jobs
+iterate over. `DBI` is
 a Suggest and not a backend — it has no job of its own — while `data.table` is
 both, and what its job proves is an input class rather than a query
 translation. A Suggested package only a vignette or an example guards on is
