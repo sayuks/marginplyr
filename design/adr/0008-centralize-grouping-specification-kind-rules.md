@@ -461,6 +461,60 @@ plan, because a reading taken once and a reading taken three times differ only
 where the argument answers differently each time, and an argument that does
 that is one whose count this amendment is about.
 
+## Amendment: the condition class of a specification stored as a function
+
+The constraint holding error condition classes fixed is amended a sixth time,
+by #265, at the selection resolution and in the direction #262 chose for the
+guard: this is a refusal that was already written arriving, rather than a new
+one being chosen.
+
+#190 gave a Nested specification position its own refusal for a specification
+that reaches it where a column selection is expected, and wrote it from the
+condition tidyselect raises about a subscript it will not use. tidyselect
+raises no such condition about a function: `is.function()` decides its first
+branch, before any class is read, so it calls the value as the predicate form
+of a selection. What came out of the position was then whatever the call
+produced — `simpleError` naming `X[[i]]` for a signature tidyselect cannot
+call, the class the body raised for one it can, and tidyselect's own report
+about a predicate's output for one that returns the wrong thing. The class such
+a call raises therefore moves to `marginplyr_error`, and the diagnostic to the
+refusal #190 already writes for every other way of storing the same object.
+
+**What decides it.** The object is read from the frames tidyselect applied it
+from, as the error unwinds. Neither that nor the two readings that decide
+whether the position speaks for it — the argument's own expression, and which
+of those frames holds the object — is a second reading of the caller's quosure,
+which is what the constraint below forbids and what #190's refusal avoids by
+reading the condition. The evidence — that the frame holding the value outlives
+the call, that no condition carries it, that a selection helper the caller
+called holds it without applying it, and that `allow_predicates = FALSE`
+answers by removing `where()` rather than by identifying anything — is in
+`investigation/reading-a-specification-tidyselect-called.md`.
+
+**Evaluations.** The constraint holding the number and timing of evaluations is
+not reached. The table above gives such an argument one evaluation, in the
+selection resolution that refuses it, and it has one still: the frames are
+read, not the quosure. A binding tidyselect has not forced is skipped for that
+reason and not for tidiness.
+
+**What does not move.** The wording of the refusal, and every object that
+reached it before, are untouched. So is the rule that the position speaks for
+its own argument and not for a part of one: a specification under an operator
+tidyselect walks in parts, and one a selection helper the caller called was
+handed, each keep tidyselect's report, exactly as a specification refused
+inside `c()` does. The distinction is drawn twice here, from the caller's
+expression and from which frame holds the object, because a condition about a
+predicate names no subscript to compare a label with and because the two
+shapes reach it separately.
+
+**What is left.** One shape of the same object is unreached: a function that is
+a valid predicate as well as a specification — one argument, a logical scalar
+back — is applied without failing, so the position receives a selection instead
+of a refusal and no condition exists to read the frames from. Nothing marginplyr
+constructs has that shape, since a constructor builds a list. It is recorded
+here because an amendment saying a class of errors moved should say which
+errors were not there to move.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:
