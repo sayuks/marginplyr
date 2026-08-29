@@ -72,6 +72,27 @@ frame lists `...`, which `get()` cannot read as a value; and a formal a caller
 left missing is listed and raises when read. Both were reached in the shapes
 above before they were excluded.
 
+## A frame holding the object is not a frame that applied it
+
+The scan as first written answered `TRUE` for five arguments in which nothing
+was applied at all. `tidyselect::starts_with(f())`, `any_of(f())`,
+`all_of(f())`, and `last_col(f())` each fail a type check — `match` must be a
+character vector, `offset` a single integer, `all_of()`'s argument a subscript
+— with the specification bound to a formal, of the helper or of an internal
+function it delegates to: `all_of()` reaches `as_indices_impl()`, which is
+tidyselect's and not exported, so excluding exported frames alone does not
+reach it.
+
+What separates the two is where the exported frame sits. `eval_select()` is
+exported and is the entry, so every frame is under one; the first exported
+function reached *after* it is a helper the caller wrote, and everything deeper
+is that helper's. Stopping the scan there answered `FALSE` for all five and
+left the three failing shapes above answering `TRUE`.
+
+`where(fn)` was measured separately because it does not fail: it returns a
+closure of its own that calls `fn`, so the specification is never a binding of
+a tidyselect frame and the scan answers `FALSE` whatever the stopping rule is.
+
 ## What a scan cannot separate
 
 A condition names the subscript it refused, so #190 can compare that label with

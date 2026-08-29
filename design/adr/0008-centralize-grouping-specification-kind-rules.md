@@ -481,13 +481,14 @@ a call raises therefore moves to `marginplyr_error`, and the diagnostic to the
 refusal #190 already writes for every other way of storing the same object.
 
 **What decides it.** The object is read from the frames tidyselect applied it
-from, as the error unwinds, and the argument's own expression decides whether
-the position speaks for it. Neither is a second reading of the caller's
-quosure, which is what the constraint below forbids and what #190's refusal
-avoids by reading the condition. The evidence for both — that the frame holding
-the value outlives the call, that no condition carries it, and that
-`allow_predicates = FALSE` answers by removing `where()` rather than by
-identifying anything — is in
+from, as the error unwinds. Neither that nor the two readings that decide
+whether the position speaks for it — the argument's own expression, and which
+of those frames holds the object — is a second reading of the caller's quosure,
+which is what the constraint below forbids and what #190's refusal avoids by
+reading the condition. The evidence — that the frame holding the value outlives
+the call, that no condition carries it, that a selection helper the caller
+called holds it without applying it, and that `allow_predicates = FALSE`
+answers by removing `where()` rather than by identifying anything — is in
 `investigation/reading-a-specification-tidyselect-called.md`.
 
 **Evaluations.** The constraint holding the number and timing of evaluations is
@@ -498,11 +499,13 @@ reason and not for tidiness.
 
 **What does not move.** The wording of the refusal, and every object that
 reached it before, are untouched. So is the rule that the position speaks for
-its own argument and not for a part of one: a specification applied from under
-an operator tidyselect walks in parts keeps tidyselect's report, exactly as a
-specification refused inside `c()` does. The distinction is drawn from the
-caller's expression here, because a condition about a predicate names no
-subscript to compare a label with.
+its own argument and not for a part of one: a specification under an operator
+tidyselect walks in parts, and one a selection helper the caller called was
+handed, each keep tidyselect's report, exactly as a specification refused
+inside `c()` does. The distinction is drawn twice here, from the caller's
+expression and from which frame holds the object, because a condition about a
+predicate names no subscript to compare a label with and because the two
+shapes reach it separately.
 
 **What is left.** One shape of the same object is unreached: a function that is
 a valid predicate as well as a specification — one argument, a logical scalar

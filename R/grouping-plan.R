@@ -1001,10 +1001,14 @@ grouping_arg_spec <- function(arg, data_vars) {
 #
 # The frames are read as the error unwinds and the condition after it, because
 # a predicate is applied inside `resolve_column_selection()` and the frames
-# that applied it are gone once it returns.
+# that applied it are gone once it returns. What the handler keeps is the
+# condition it read them on, not that it read them: a calling handler runs for
+# every error signalled under the selection, one tidyselect goes on to recover
+# from included, and a reading kept as a flag would answer for whatever failed
+# after it instead.
 resolve_grouping_selection <- function(arg, data_proxy) {
-  selection <- sys.nframe()
-  predicate <- FALSE
+  selection_frame <- sys.nframe()
+  predicate <- NULL
   tryCatch(
     withCallingHandlers(
       resolve_column_selection(
@@ -1013,14 +1017,16 @@ resolve_grouping_selection <- function(arg, data_proxy) {
         on_rename = abort_grouping_rename
       ),
       error = function(cnd) {
-        if (is_grouping_spec_predicate(selection, nested_arg_expr(arg))) {
-          predicate <<- TRUE
+        if (is_grouping_spec_predicate(selection_frame, nested_arg_expr(arg))) {
+          predicate <<- cnd
         }
       }
     ),
     error = function(cnd) {
       label <- rlang::as_label(nested_arg_expr(arg))
-      if (!predicate && !is_grouping_spec_subscript(cnd, label)) {
+      raised <- !is.null(predicate) &&
+        any(vapply(condition_chain(cnd), identical, logical(1), predicate))
+      if (!raised && !is_grouping_spec_subscript(cnd, label)) {
         stop(cnd)
       }
       abort_nested_grouping_spec(label)
@@ -1033,10 +1039,13 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 #
 # The label comparison `is_grouping_spec_subscript()` makes has no counterpart
 # here, since a condition tidyselect raised about a predicate names no
-# subscript, so the same distinction is drawn from the caller's own expression:
-# tidyselect walks the operators below in parts and evaluates everything else
-# whole. A part is what it applied under one of them, and the position does not
-# speak for a part of an argument, for the reason recorded above
+# subscript. The same distinction is drawn twice instead, because a part of an
+# argument reaches this in two ways and neither reading answers the other. The
+# caller's expression is the first: tidyselect walks the operators below in
+# parts and evaluates everything else whole, so a part is what it applied under
+# one of them. Which frame holds the object is the second, and
+# `selection_frames()` is where that half is. The position does not speak for a
+# part of an argument, for the reason recorded above
 # `is_grouping_spec_subscript()`.
 #
 # The operators are the ones tidyselect's walk descends into -- its documented
@@ -1046,7 +1055,7 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # refused before anything under them is walked. `(` is not among them because
 # `nested_arg_expr()` has already dropped a redundant pair, and a quosure is
 # not, because `is_nameable_call()` declines the call to `~` that one is.
-is_grouping_spec_predicate <- function(selection, expr) {
+is_grouping_spec_predicate <- function(selection_frame, expr) {
   operators <- c("c", "-", ":", "!", "&", "|", "&&", "||", "*", "/", "^")
   if (!is_nameable_call(expr)) {
     return(FALSE)
@@ -1056,28 +1065,57 @@ is_grouping_spec_predicate <- function(selection, expr) {
     return(FALSE)
   }
   any(vapply(
-    selection_frames(selection),
+    selection_frames(selection_frame),
     holds_grouping_spec_function,
     logical(1)
   ))
 }
 
-# The frames tidyselect opened under this selection, outermost first.
+# The frames tidyselect's own walk opened under this selection, outermost
+# first.
 #
 # A frame is tidyselect's by the namespace its function closes over, never by
 # name: reading a private name is what `:::` is, and a namespace that stopped
 # opening these frames answers with none rather than raising, which leaves a
 # caller the untyped diagnostic they had before this refusal existed.
-selection_frames <- function(selection) {
+#
+# The walk is what the first of them opens, `resolve_column_selection()` having
+# called `tidyselect::eval_select()`, and the first exported function reached
+# after it is where the walk stops being what is running: a selection helper
+# the caller wrote, holding what the caller handed it. `starts_with(spec)`,
+# `all_of(spec)`, and `last_col(spec)` each fail a type check under one of
+# those, with the specification bound to a formal of the helper or of an
+# internal function it delegates to, having applied nothing. The scan therefore
+# stops there rather than skipping the helper's own frame, which would still
+# reach what it delegates to. Refusing under one of them would answer for a
+# part of an argument, which is the distinction recorded above
+# `is_grouping_spec_subscript()`.
+selection_frames <- function(selection_frame) {
   namespace <- asNamespace("tidyselect")
+  exported <- mget(
+    getNamespaceExports("tidyselect"),
+    envir = namespace,
+    mode = "function",
+    ifnotfound = list(NULL)
+  )
   frames <- list()
+  entered <- FALSE
   for (index in seq_len(sys.nframe())) {
-    if (index <= selection) {
+    if (index <= selection_frame) {
       next
     }
-    if (identical(environment(sys.function(index)), namespace)) {
-      frames <- c(frames, list(sys.frame(index)))
+    fn <- sys.function(index)
+    if (!identical(environment(fn), namespace)) {
+      next
     }
+    if (!entered) {
+      entered <- TRUE
+      next
+    }
+    if (any(vapply(exported, identical, logical(1), fn))) {
+      break
+    }
+    frames <- c(frames, list(sys.frame(index)))
   }
   frames
 }

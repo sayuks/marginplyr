@@ -302,11 +302,21 @@ test_that("a nested specification stored as a function is refused", {
   )
 
   # The position does not speak for a part of an argument it did not refuse,
-  # which is the rule a value tidyselect does refuse is held to as well. An
-  # argument written with an operator tidyselect walks in parts keeps
-  # tidyselect's own report, whatever the part turned out to be.
-  for (selection in list(quote(c(spec_from_caller(), grade)),
-                         quote(-spec_from_caller()))) {
+  # which is the rule a value tidyselect does refuse is held to as well. Two
+  # shapes reach that rule, and neither is answered by the other: an argument
+  # written with an operator tidyselect walks in parts, and one handed to a
+  # selection helper the caller called, which fails a type check of its own
+  # with the specification bound below it and nothing applied.
+  parts <- list(
+    quote(c(spec_from_caller(), grade)),
+    quote(-spec_from_caller()),
+    quote(tidyselect::all_of(spec_from_caller())),
+    quote(tidyselect::any_of(spec_from_caller())),
+    quote(tidyselect::starts_with(spec_from_caller())),
+    quote(tidyselect::last_col(spec_from_caller())),
+    quote(tidyselect::where(spec_from_caller()))
+  )
+  for (selection in parts) {
     spec <- eval(
       rlang::call2("grouping_sets", selection),
       envir = rlang::current_env()
