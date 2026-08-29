@@ -303,12 +303,11 @@ count_backend_reads <- function(expr) {
   counter$count
 }
 
-# The two blocks below take their Arrow inputs from `helper-arrow-shapes.R`,
-# which is where `test-grouping-backends.R` takes the shapes it asserts the
-# conditions over (#313).
+# The Arrow inputs the two blocks below take come from
+# `helper-arrow-shapes.R`.
 test_that("no Arrow read happens while a Margin verb runs", {
   skip_if_suggest_absent("arrow")
-  data <- absorbed_summary_data()
+  data <- arrow_input_data()
   absorbing <- absorbing_arrow_inputs(data)
   table <- absorbing$table
 
@@ -397,7 +396,7 @@ test_that("no Arrow Dataset read happens while a Margin verb runs", {
   skip_if_suggest_absent("arrow")
   # What a `Dataset` may be behind is not what is asserted here; that it is
   # told apart from a `Table` is, and the class is what tells it apart.
-  refusing <- refusing_arrow_inputs(absorbed_summary_data())
+  refusing <- refusing_arrow_inputs(arrow_input_data())
   dataset <- refusing$dataset
   query <- refusing$query
 

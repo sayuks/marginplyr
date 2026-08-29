@@ -122,10 +122,7 @@ test_that("Arrow uses the normalized grouping contract", {
 # Both halves are asserted, because what the decision turns on is that the two
 # are told apart (#254).
 #
-# The three input builders come from `helper-arrow-shapes.R`, which
-# `test-query-policy.R` also builds its shapes from: the comments there
-# argue from what this file asserts, and that holds only while the two
-# suites take the same objects (#313).
+# The three input builders come from `helper-arrow-shapes.R`.
 #
 # The expressions are chosen for how long they will keep being absorbed rather
 # than for how the defect was found. A group collapsed to one string, a subset
@@ -137,7 +134,7 @@ test_that("Arrow uses the normalized grouping contract", {
 # translates one fails there, naming the drift, rather than here.
 test_that("Arrow refuses a summary it would otherwise absorb", {
   skip_if_suggest_absent("arrow")
-  data <- absorbed_summary_data()
+  data <- arrow_input_data()
 
   inputs <- absorbing_arrow_inputs(data)
   for (shape in names(inputs)) {
@@ -343,7 +340,7 @@ test_that("Arrow refuses a subset inside an aggregate", {
   skip_if_suggest_absent("arrow")
 
   raised <- expect_error(summarize_with_margins(
-    arrow::Table$create(absorbed_summary_data()),
+    arrow::Table$create(arrow_input_data()),
     kept = sum(v[v > 1]),
     .grouping = rollup(k)
   ))
@@ -358,7 +355,7 @@ test_that("Arrow refuses a subset inside an aggregate", {
 
 test_that("an Arrow Dataset keeps Arrow's own refusal", {
   skip_if_suggest_absent("arrow")
-  data <- absorbed_summary_data()
+  data <- arrow_input_data()
 
   inputs <- refusing_arrow_inputs(data)
   for (shape in names(inputs)) {
@@ -387,7 +384,7 @@ test_that("an Arrow summary Arrow can evaluate is unchanged and stays lazy", {
   skip_if_suggest_absent("arrow")
 
   result <- summarize_with_margins(
-    arrow::Table$create(absorbed_summary_data()),
+    arrow::Table$create(arrow_input_data()),
     total = sum(v),
     .grouping = rollup(k)
   )
@@ -414,7 +411,7 @@ test_that("an Arrow summary Arrow can evaluate is unchanged and stays lazy", {
 # drift this block exists to catch.
 test_that("Arrow still absorbs the expressions the refusal is asserted over", {
   skip_if_suggest_absent("arrow")
-  table <- arrow::Table$create(absorbed_summary_data())
+  table <- arrow::Table$create(arrow_input_data())
   raised <- NULL
   # One per shape the shipped pages describe, so a page that stops being true
   # fails here rather than being re-read. `first()` and `last()` are absorbed
@@ -498,7 +495,7 @@ test_that("the branch guard refuses an absorbed summary the handler missed", {
   )
 
   raised <- expect_error(suppressWarnings(summarize_with_margins(
-    arrow::Table$create(absorbed_summary_data()),
+    arrow::Table$create(arrow_input_data()),
     joined = paste(s, collapse = ","),
     kept = sum(v[v > 1]),
     .grouping = rollup(k)
