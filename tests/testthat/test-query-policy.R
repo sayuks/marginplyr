@@ -70,26 +70,38 @@ find_local_assignment <- function(fn, var_name) {
 # ordinary query-building call. `dplyr::show_query()` is deliberately absent
 # -- ADR 0020 states that it runs nothing.
 #
+# `tibble::as_tibble` is a member because it is the generic that receives the
+# caller's lazy object on a conversion path where `as.data.frame` receives only
+# a local one: converting a dtplyr step evaluates the step first and converts
+# the resulting `data.table`, so the read goes uncounted (#301).
+# `as.data.frame()` written directly against that same input is counted, dtplyr
+# registering a method the base generic dispatches from, so what this entry
+# covers is the conversion and not the backend. It is traced at the generic
+# rather than at `as_tibble.dtplyr_step`, for the reason given below for
+# `dplyr::collect`.
+#
 # `subject_test` says whether counting an invocation requires knowing what the
 # call was applied to, and it is enumerated for the same reason the membership
 # is. `as.data.frame` needs one because its name is also how unrelated code
 # converts unrelated objects -- a verb reads its input's schema through it
-# repeatedly, and no such conversion reaches a backend. No `DBI::` entry takes
-# one: invoking it is itself a read, and its first argument is a connection
-# rather than the caller's data, so a subject test there would count nothing at
-# all.
+# repeatedly, and no such conversion reaches a backend. `as_tibble` needs one
+# for the same reason, and reaches it on the path this entry exists for:
+# converting a dtplyr step invokes the generic twice, once on the step and once
+# on the local table it produced. No `DBI::` entry takes one: invoking it is
+# itself a read, and its first argument is a connection rather than the caller's
+# data, so a subject test there would count nothing at all.
 lazy_execution_entry_points <- function() {
   data.frame(
     package = c(
-      "dplyr", "dplyr", "dplyr", "base",
+      "dplyr", "dplyr", "dplyr", "base", "tibble",
       "DBI", "DBI", "DBI", "DBI", "DBI"
     ),
     name = c(
-      "collect", "compute", "pull", "as.data.frame",
+      "collect", "compute", "pull", "as.data.frame", "as_tibble",
       "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable"
     ),
     subject_test = c(
-      FALSE, FALSE, FALSE, TRUE,
+      FALSE, FALSE, FALSE, TRUE, TRUE,
       FALSE, FALSE, FALSE, FALSE, FALSE
     ),
     stringsAsFactors = FALSE
@@ -364,6 +376,48 @@ test_that("no Arrow read happens while a Margin verb runs", {
       info = shape
     )
   }
+})
+
+# The conversion path the catalog's `tibble::as_tibble` entry exists for, and
+# the backend that takes it.
+#
+# Every expectation here names the package it calls into. `trace()` rewrites a
+# namespace binding and the copy an importing package's imports environment
+# holds, but not the one the attached `package:tibble` environment holds, which
+# is where a bare `as_tibble()` written here would resolve -- so that spelling
+# counts nothing while reading exactly as these do (#303).
+#
+# The two deprecated spellings are asserted because one entry covering all three
+# is the reason there is one entry: both delegate to the generic from inside
+# tibble's own namespace, so the caller's spelling does not decide whether the
+# traced binding is reached.
+test_that("a dtplyr materialization through the as_tibble family is counted", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(
+    k = c("E", "E", "W"),
+    v = c(1, 2, 3),
+    stringsAsFactors = FALSE
+  )
+
+  expect_gt(count_backend_reads(tibble::as_tibble(dtplyr::lazy_dt(data))), 0L)
+  expect_gt(count_backend_reads(dplyr::as_tibble(dtplyr::lazy_dt(data))), 0L)
+  expect_gt(
+    count_backend_reads(
+      suppressWarnings(tibble::as.tibble(dtplyr::lazy_dt(data)))
+    ),
+    0L
+  )
+  expect_gt(
+    count_backend_reads(
+      suppressWarnings(tibble::as_data_frame(dtplyr::lazy_dt(data)))
+    ),
+    0L
+  )
+
+  # The other direction, for the reason the `as.data.frame` controls give
+  # above: a subject test answering `TRUE` for everything leaves every zero in
+  # this file reading exactly as it does now.
+  expect_identical(count_backend_reads(tibble::as_tibble(data)), 0L)
 })
 
 test_that("backend kinds granted the collect_selection_proxy capability", {
