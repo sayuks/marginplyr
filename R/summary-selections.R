@@ -89,11 +89,11 @@ check_option_named_summaries <- function(dots) {
     # the option they were reaching for leaves them looking for a word that is
     # not in their code.
     if (matched %in% names(removed_summary_options)) {
-      # Two `abort_marginplyr()` calls rather than one: what the branch
-      # chooses is a whole main line, which is what ADR 0023's third amendment
-      # admits, and a template bound outside the call it raises from is what
-      # the structural gate refuses. The cost is the `i` bullet the two arms
-      # share, written out in each.
+      # Two `abort_marginplyr()` calls rather than one: the branch chooses a
+      # whole main line, which ADR 0023's third amendment admits, where one
+      # call would need a template bound elsewhere, which its *Two rules are
+      # gated* refuses. The cost is the `i` bullet the two arms share, written
+      # out in each.
       #
       # That bullet is the option's own guidance, which is written in the
       # table above rather than beside either call, so it arrives interpolated
@@ -146,20 +146,17 @@ check_summary_context_helpers <- function(dots) {
     return(invisible(NULL))
   }
 
-  # `does not support` still opens the message deliberately, which is what ADR
-  # 0019 asks of it: six assertions match that phrase by regular expression
-  # rather than by condition class.
+  # `does not support` opens the message deliberately, which is what ADR 0019
+  # asks of it.
   #
   # The helpers do not follow that phrase in the same line. They arrive alone
   # in an `i` bullet, per ADR 0023's condition 2, because how many of them the
   # caller wrote is the caller's decision.
   #
-  # The sentence after the helpers is the part #172 added, because a caller who
-  # had bound one of these names themselves was told only that the verb refused
-  # the helper and had no way to learn that their own function was never going
-  # to run (ADR 0019). It inflects a demonstrative, a noun, and two verbs, and
-  # `cli::qty()` is what carries the count to all four: the vector deciding it
-  # is no longer in the line they sit in.
+  # What the last bullet says is ADR 0019's decision. It inflects a
+  # demonstrative, a noun, and two verbs, and `cli::qty()` is what carries the
+  # count to all four: the vector deciding it is no longer in the line they sit
+  # in.
   abort_marginplyr(c(
     "{.fun summarize_with_margins} does not support:",
     i = "{.fun {unsupported}}.",
