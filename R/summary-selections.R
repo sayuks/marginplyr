@@ -89,14 +89,11 @@ check_option_named_summaries <- function(dots) {
     # the option they were reaching for leaves them looking for a word that is
     # not in their code.
     if (matched %in% names(removed_summary_options)) {
-      # Two calls rather than the one opening this branch used to bind and
-      # hand to a single call, because the structural gate reads
-      # `abort_marginplyr()`'s own argument and refuses a template bound
-      # elsewhere -- the shape `abort_share_helper_position()` records in
-      # `R/share.R` and three further sites in that file cite. What the branch
+      # Two `abort_marginplyr()` calls rather than one: what the branch
       # chooses is a whole main line, which is what ADR 0023's third amendment
-      # admits; the cost is the `i` bullet the two arms share, written out in
-      # each.
+      # admits, and a template bound outside the call it raises from is what
+      # the structural gate refuses. The cost is the `i` bullet the two arms
+      # share, written out in each.
       #
       # That bullet is the option's own guidance, which is written in the
       # table above rather than beside either call, so it arrives interpolated
@@ -153,19 +150,9 @@ check_summary_context_helpers <- function(dots) {
   # 0019 asks of it: six assertions match that phrase by regular expression
   # rather than by condition class.
   #
-  # What no longer follows it in the same line is the helpers, which arrive
-  # alone in an `i` bullet, per ADR 0023's condition 2: how many of them the
-  # caller wrote is the caller's decision. Five of those six read across the
-  # break unchanged -- four join the phrase to a helper name with `.*`, which
-  # spans a newline in R's default regular expressions, and one matches the
-  # phrase alone. Four assertions spelled the two as one run and could not, so
-  # each is re-pinned where it sits: the sixth of that census, in
-  # `test-summarize-operation.R`, and a `fixed = TRUE` match in
-  # `test-static-expression-analysis.R`, both now spelling the break; and the
-  # two in `test-contextual-helpers.R`, which is where the opening is asserted
-  # at the site the wording is decided, as byte-exact identities of each arm --
-  # one of them against the other, since what it asserts is that a
-  # parenthesized spelling reaches the same refusal.
+  # The helpers do not follow that phrase in the same line. They arrive alone
+  # in an `i` bullet, per ADR 0023's condition 2, because how many of them the
+  # caller wrote is the caller's decision.
   #
   # The sentence after the helpers is the part #172 added, because a caller who
   # had bound one of these names themselves was told only that the verb refused
@@ -439,11 +426,8 @@ rewrite_summary_selections <- function(expr,
 
   # The head is qualified before either branch reads the call, so every rebuild
   # below inherits it through `rebuild_static_call()` and no branch has to
-  # remember. This is what makes the call that executes the call this function
-  # analyzed: an unqualified head reaches the data mask resolved by ordinary
-  # lexical lookup, and a caller's own `across` then ran underneath a
-  # grouping-column exclusion check that had already passed on dplyr's
-  # (#172, ADR 0019).
+  # remember. ADR 0019's *Analysis and execution must agree* is authoritative
+  # for why a recognized head is qualified at all.
   expr <- qualify_static_spelling(expr, "selection", call_name)
 
   if (call_name %in% c("across", "if_any", "if_all")) {
