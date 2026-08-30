@@ -183,39 +183,41 @@ broken vignette rather than a stale library.
 ### Dependency metadata
 
 `DESCRIPTION`'s Imports/Suggests split is audited by hand, not with
-`attachment::att_amend_desc()`. That tool statically scans `R/` for
-`pkg::fun()` calls and promotes what it finds to Imports, but several Suggests
+`attachment::att_amend_desc()`. No package is promoted to Imports merely to
+make a check pass, and that tool cannot hold to the rule: it statically scans
+`R/` for `pkg::fun()` calls and promotes what it finds, while several Suggests
 here are used conditionally — `arrow::schema()` in `R/backend-metadata.R` sits
 behind a backend-kind guard, so the call site exists without arrow ever being a
-hard dependency. No `pkg_ignore` or `extra.suggests` configuration fixes that,
-because the false positive comes from what the scanner can express and not from
-missing configuration. It prunes by the same static reading, so what it removes
-is no better evidence than what it adds.
+hard dependency — and it drops genuinely used Suggests such as knitr. No
+`pkg_ignore` or `extra.suggests` configuration fixes that, because the false
+positive comes from what the scanner can express and not from missing
+configuration. It prunes by the same static reading, so what it removes is no
+better evidence than what it adds.
 
 The audit is a grep for `pkg::` and bare-name usage of each Suggested package
 across `R/`, `tests/`, and `vignettes/`, checked against `DESCRIPTION` by eye
 when a dependency is added, removed, or moved between Imports and Suggests. It
-answers only whether a Suggest is referenced somewhere, which leaves two
-questions to something else.
+is written here because `DESCRIPTION` is DCF and carries neither a comment nor
+a citation to reach it from.
 
-Whether a Suggest is genuinely optional is answered by
-`_R_CHECK_DEPENDS_ONLY_=true R CMD check` against a source tarball, which
-rebuilds examples, tests, and vignettes with Suggested packages absent.
-`release-matrix.yaml`'s `depends-only` job runs it, so this is a gate rather
-than a manual step, but running it locally is the fastest way to find out which
-guard is missing. A Suggest an Import already requires is never absent, so no
-guard against it can fire: check with `packageDescription("<import>")$Imports`
-rather than this package's `DESCRIPTION`, since that closure can change without
-a commit here, and keep the Suggests entry, which records a direct use that
-would need declaring if the closure stopped supplying it. `DBI = FALSE` in
-`optional_suggest_spec()` is that case, and
-`tests/testthat/helper-optional-backends.R` holds it.
+What the grep cannot answer is whether a Suggest is genuinely optional.
+`_R_CHECK_DEPENDS_ONLY_=true R CMD check` against a source tarball is the
+authority there: it rebuilds examples, tests, and vignettes with Suggested
+packages absent. `release-matrix.yaml`'s `depends-only` job runs it, so this is
+a gate rather than a manual step, but running it locally is the fastest way to
+find out which guard is missing. A Suggest an Import already requires is never
+absent, so no guard against it can fire: check with
+`packageDescription("<import>")$Imports` rather than this package's
+`DESCRIPTION`, since that closure can change without a commit here, and keep
+the Suggests entry, which records a direct use that would need declaring if the
+closure stopped supplying it. `DBI = FALSE` in `optional_suggest_spec()` is
+that case, and `tests/testthat/helper-optional-backends.R` holds it.
 
-Whether a Suggest is used at all is answered by the grep alone: `R CMD check`
-raises no NOTE for an unused one, which is why `altdoc` stood in Suggests while
-nothing outside `.Rbuildignore`d paths used it (#113). A dependency only the
-site build needs goes in `Config/Needs/website`; `altdoc.yaml`'s comment on the
-field says why that is not a weaker home and how to re-check it.
+The other direction is the grep's alone: `R CMD check` raises no NOTE for an
+unused Suggest, which is why `altdoc` stood in Suggests while nothing outside
+`.Rbuildignore`d paths used it (#113). A dependency only the site build needs
+goes in `Config/Needs/website`; `altdoc.yaml`'s comment on the field says why
+that is not a weaker home and how to re-check it.
 
 ### Optional-dependency guards
 

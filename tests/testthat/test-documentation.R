@@ -236,8 +236,7 @@ test_that("no shipped page guards on installation alone", {
 # `Config/marginplyr/cran-status` field is where that fact is recorded, once,
 # and it is what the directions below are asserted against. It sits beside
 # `Version`, which is the line a release edits anyway.
-cran_status_field <- "Config/marginplyr/cran-status"
-
+#
 # Publication day. The milestone is publication, not submission: the field
 # flips on the day `https://cran.r-project.org/package=marginplyr` resolves --
 # not when the tarball is uploaded, not when `cran-comments.md` is written, and
@@ -260,6 +259,7 @@ cran_status_field <- "Config/marginplyr/cran-status"
 # `README.Rmd` that step 2 never touched fails at step 2's assertion instead.
 # Step 4 is the one a release can genuinely skip, which is why it is last and
 # why it changes prose that is true either way. No other file needs editing.
+cran_status_field <- "Config/marginplyr/cran-status"
 
 # Only `unpublished` and `published` can be read. Any other value stops rather
 # than being treated as either, for the reason a malformed `must_error` header

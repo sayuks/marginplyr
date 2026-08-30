@@ -36,10 +36,8 @@ jobs:
           extra-packages: local::.
           # altdoc is declared in DESCRIPTION's `Config/Needs/website` rather
           # than in Suggests, because nothing outside `.Rbuildignore`d paths
-          # uses it -- this workflow, `altdoc/`, and
-          # `.github/scripts/verify-site.R` are the whole of it -- so a
-          # Suggests entry installed a dependency closure for a package the
-          # tarball never mentions (#113).
+          # uses it, so a Suggests entry installed a dependency closure for a
+          # package the tarball never mentions (#113).
           #
           # That is not a weaker home: pak resolves this field, and it parses
           # and enforces a version constraint written here, so a floor moved
