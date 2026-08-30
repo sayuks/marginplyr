@@ -164,8 +164,8 @@ assert_lazy_table <- function(x) {
 # for another shape, carrying the formula as the expression that branch then
 # reads `[[2L]]` of (#163). `rlang::call_args()` unwraps the same way, which is
 # how a formula reached the direct-share path and was computed as the share it
-# is not -- measured on 5f078ea, and the one shape of this whose misread raised
-# nothing, which is what the ticket's severity note does not cover.
+# is not -- measured on 5f078ea, and the one shape of this whose misread
+# raises nothing.
 #
 # Every analysis that reads a name recognizes a call by that name, none of them
 # recognizes `~`, and each already has an answer for a name it does not know:
@@ -235,17 +235,11 @@ nameable_call <- function(expr) {
   rebuild_static_call(unwrapped, static_call_args(unwrapped), head = spelled)
 }
 
-# `(` is the identity function, so a redundant pair of parentheses changes
-# nothing about what a call calls or what it is given: `(grouping_id)(region)`,
-# `(grouping_id(region))`, and `grouping_id(region)` are one call written three
-# ways. The three readers below see through them, which is what gives every
-# analysis in the package the same answer for the three at once, rather than
-# each family recognizing whichever spellings someone thought to enumerate
-# (#178, ADR 0019).
-#
-# Identity here stays syntactic. `(get("grouping_id"))(region)` strips to a
-# call rather than to a name, so the head is unresolved and stays that way,
-# which is the conservative #130 policy these three are written not to weaken.
+# The three readers below read through redundant parentheses, so
+# `(grouping_id)(region)`, `(grouping_id(region))`, and `grouping_id(region)`
+# reach every analysis in the package as one call. ADR 0019's *redundant
+# parentheses are read through, in one place* is authoritative for that
+# reading and for where it stops.
 #
 # Everything a pair of parentheses wraps, however many pairs deep. This is the
 # reading for a position holding a value -- a `.fns` argument, a name given to
@@ -263,11 +257,9 @@ unparenthesized_value <- function(expr) {
   expr
 }
 
-# The name a head or a function reference spells. A head is unwrapped only down
-# to a name, because that is the only thing a head can be unwrapped to without
-# changing what R does with it: `("sum")(1)` is not a call to `sum` but the
-# error R raises for applying a non-function, and `(function(x) x)(1)` names
-# nothing either way. Both keep the answer they have always had.
+# The name a head or a function reference spells, unwrapped only down to a
+# name. ADR 0019's *redundant parentheses are read through, in one place*
+# names that boundary; this is the reader it stops at.
 #
 # The early return is the other half of the missing-marker rule above. This is
 # asked of an argument a caller may have left empty -- an `across()` `.fns` is
@@ -433,14 +425,9 @@ is_name_part <- function(part) {
 # `missingArgError` naming this function's own parameter. Handed on as an
 # argument the same value forces without error, and returned it stays a value.
 #
-# What this does not carry across is the environment, and that is the decision
-# rather than a limitation. A Contextual helper's argument is resolved against
-# the Grouping plan by spelling and is never looked up in an environment
-# (ADR 0019), so there is no lookup for a quosure's environment to answer. That
-# is the opposite of the answer #165 reached one layer out, where a walk keeps a
-# quosure's environment because a selection inside it really is evaluated there,
-# and both follow the one rule: the environment is honoured wherever evaluation
-# happens, and these arguments are never evaluated.
+# What this does not carry across is the environment. ADR 0019's *an injected
+# name is read for the name it carries* is authoritative for why discarding it
+# is the decision rather than a limitation.
 unwrap_injected_quosure <- function(part) {
   if (!rlang::is_quosure(part)) {
     return(part)
