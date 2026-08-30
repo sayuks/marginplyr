@@ -235,14 +235,6 @@ reasons.
 
 ### Release matrix
 
-`.github/workflows/release-matrix.yaml` checks one built tarball rather than
-the working tree, because a check that passes on the development tree can be
-passing on a file the tarball does not ship. Each of its `backend` jobs is for
-one member of `optional_backends()`, and installs that member plus the
-companions its entry declares. `MARGINPLYR_REQUIRED_SUGGESTS` names all of
-them, so any one of them failing to install fails the job instead of skipping
-its tests.
-
 Two words are in use in this section, and they name different sets (#185). A
 *Suggest* is an optional package the test suite guards on — an entry in
 `optional_suggest_spec()`. A *backend* is the narrower thing a generated job
@@ -265,13 +257,12 @@ never `requireNamespace()` either, for the separate reason
 `inst/suggests/guard.R` gives. (`skip_if_not_installed("dbplyr")` is not
 an exception: dbplyr is an Import, so it is never absent.)
 
-Snapshot expectations run only where `NOT_CRAN` is set: testthat skips them
-under CRAN semantics, so a snapshot never fails in a job that emulates CRAN.
-That is the `backend` jobs, which set it in the workflow, and the `structure`
-job, whose script sets it so a local run matches CI. `structure` takes no
-`needs`, so in practice it is the first job to report a stale snapshot — but it
-runs against the working tree, and a `backend` job is still what proves the
-snapshot inside `R CMD check`.
+`.github/workflows/release-matrix.yaml`'s header is authoritative for how the
+jobs divide the work, which of them set `NOT_CRAN`, and the `cache-version`
+scheme that keeps their libraries apart. Each verifier under
+`.github/scripts/` states its own mechanism, and
+`tests/testthat/helper-optional-backends.R` states what each column of the
+table decides.
 
 An installed package still does not prove its tests ran, and the answer is
 structural rather than a list of test names (#93). One policy carries it:
@@ -293,48 +284,6 @@ paragraph could be trusted to keep current, which is the objection it would be
 built to answer. What cannot drift from the gate is not prose at all, but the
 remedies `verify-suite-coverage.R` prints when it fires (#220).
 
-While that holds, the `backend` jobs cover the whole suite by construction —
-each installs one backend, plus whatever companions its entry declares, and
-withholds everything else, so between them they execute every test that
-requires at most one. A test requiring two is executed by none of them and
-skips in all of them — including in a job that happens to hold both, because
-`verify-suite-coverage.R` hides all but one whatever a job installs, which is
-why the guarantee does not rest on a job's package count. Splitting such a test
-is the fix, and the
-idiom that makes it free is in `test-margin-order.R`: compare each backend
-against the **local** result, which needs no optional backend, so a backend
-cannot pass by being self-consistently wrong the way two agreeing backends can.
-
-Two gates hold the policy up, and neither is a list:
-
-- `verify-suite-coverage.R`, run by the `structure` job, runs the whole suite
-  once per optional backend with the others hidden through
-  `MARGINPLYR_HIDE_SUGGESTS`, and fails naming any test that executed in no
-  configuration. It asserts its own mechanism before concluding anything, since
-  a simulation that stopped working would report that every test runs
-  everywhere. Run it locally with
-  `Rscript .github/scripts/verify-suite-coverage.R`; it gives the same verdict
-  as CI.
-- `verify-backend.R`, inside each `backend` job, reads that job's own testthat
-  log and fails unless the suite started, passed something, failed nothing, and
-  skipped nothing for a reason other than a backend the job withheld. A stray
-  `skip_if()`, a `skip_on_os()`, or `NOT_CRAN` being dropped so snapshots skip
-  all fail the job now; none of them did under the old named-test gate.
-
-Which packages a job installs is the whole signal of that design, so the
-dependency cache is part of it. `setup-r-dependencies@v2` falls back to a
-`restore-keys` prefix of `<os>-<R version>-<arch>-<cache-version>-`, which
-means every job sharing a `cache-version` shares a library. Each dependency
-request therefore gets its own value — `full-1`, `hard-1`,
-`backend-<name>-1`, named in `release-matrix.yaml`'s header — and a new job
-that copies an existing `cache-version` inherits that job's library rather than
-installing its own. `verify-library-isolation.R` is what keeps the scheme
-honest, since a wrong cache key is otherwise indistinguishable from a correct
-run: it fails the job when an optional backend the job did not declare in
-`MARGINPLYR_REQUIRED_SUGGESTS` is on `.libPaths()`. `check-tarball.R` sources
-it rather than the workflow calling it as a step, so the assertion cannot be
-dropped from a job that still checks a tarball.
-
 Registering an optional Suggest with the test suite means editing two places.
 Every partial edit fails loudly:
 
@@ -348,32 +297,13 @@ Every partial edit fails loudly:
    `{<package>} is not installed` line that no test would produce. The
    `backend` job the entry generates does not fail — it installs the package,
    runs a suite that never mentions it, and finds nothing to complain about,
-   which is why `depends-only` is the gate named here. An `asserted = FALSE`
-   entry claims no absence
-   and gets no job, so nothing asserts it — which is the DBI case above, and
-   the reason that value exists. `companions` names what the generated job
-   installs alongside the entry, which is how `DBI` reaches the driver jobs
-   without a job of its own. It is also how an entry declares what its own
-   dependencies drag in, and there the companion is a tracked entry rather
-   than an untracked one: dtplyr declares `Imports: data.table`, so its job
-   installs data.table whichever way the entry is written, and leaving it
-   undeclared makes `verify-library-isolation.R` fail the job for a leak that
-   is really the requested package's own closure.
+   which is why `depends-only` is the gate named here.
 2. the `skip_if_suggest_absent()` or `suggest_available()` call in the tests.
    Doing only this errors immediately: those helpers refuse a package
    `optional_suggests()` does not name, since nothing would execute it and
    nothing would assert it absent.
 
-There is no third place, and that is the point (#93). The `backend` matrix used
-to be four hand-written entries, so a backend could be tracked by the tests and
-executed by no job — `verify-matrix-coverage.R` and the `coverage` job existed
-only to catch that (#71), and both are gone. `generate-backend-matrix.R` builds
-the matrix from the table instead, deriving each job's `required` list,
-installed packages, and `cache-version`, and writes what it produced to the step
-summary because `release-matrix.yaml` no longer shows its own jobs. Generating
-one job body also closed #73, which asked for an assertion that every job
-withholding optional backends checks a tarball: with a single body there is no
-second shape for such a job to have.
+There is no third place, and that is the point (#93).
 
 ### Verifier invocation
 
