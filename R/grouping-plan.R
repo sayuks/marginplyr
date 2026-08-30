@@ -455,14 +455,6 @@ nested_arg_expr <- function(arg) {
 # when it is read, and for an object whose kind the shared readers answer
 # `NULL` for (ADR 0008).
 #
-# The evaluation catch is this site's own, and the ADR-0015 line falls across
-# it where `grouping_spec_kind()`'s header above puts it for the read's:
-# nothing here decides what such an object is. Declining costs the object no
-# diagnostic either, since the same one bound to a name nothing shadows is read
-# as a specification and refused by `validate_grouping_spec_early()` as a
-# Package condition (ADR 0008, *the condition class of a specification the
-# guard could not read*).
-#
 # `rule` is the parent's own, which the caller already holds because it
 # validates nested arguments with it; deriving it again here would be the same
 # lookup twice. It is derived from the parent's kind, so the pair handed to the
