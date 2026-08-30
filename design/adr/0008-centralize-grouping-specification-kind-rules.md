@@ -268,10 +268,9 @@ constructor name the registry holds, or the kind itself, which
 The qualification is the read's as much as this one's. `tryCatch(error = )`
 catches a condition for what it says it is, so a condition raised with `stop()`
 whose class does not inherit `error` is caught by neither and reaches the
-caller. Widening either to `condition` is the rewrite #268 rejects, since it
-would take a warning signalled on the way to answering for a failure to answer,
-and a test holds that direction. Under `options(warn = 2)` a warning is an
-error and is caught, which is R's semantics for the option rather than
+caller. A warning signalled on the way to answering is not taken for a failure
+to answer, and a test holds that direction. Under `options(warn = 2)` a warning
+is an error and is caught, which is R's semantics for the option rather than
 something decided here.
 
 A completed line is also not always one line. A kind that is one name and
@@ -309,19 +308,8 @@ environment among them — `cat()` rendering anything of no length as nothing.
 Which of them a given object is goes unreported, for the reason the amendment
 above gives.
 
-Rendering the field rather than dropping it is the alternative, and it was
-rejected for what it would have to promise. A rendering that always works is
-one marginplyr chooses for objects it never builds: `deparse()` and `format()`
-are both unbounded in length, and `format()` dispatches, so a `format()` method
-of the value's own raises exactly where the rendering is supposed to save the
-line. Guarding the `cat()` call is not an alternative at all, since the opening
-of the line is written by the time it raises.
-
-Nothing a constructor builds is affected, here as in the amendment above: every
-kind one stores is one name, so the branch is not reached. The constraint on
-the number and timing of evaluations is not reached either — the kind is read
-once, as the amendment above left it, and the predicate reads the value that
-read returned rather than the field again.
+The alternatives weighed against dropping the field, and what each would have
+had to promise, are #268's.
 
 ## Amendment: the condition class of a kind the guard could not classify
 
