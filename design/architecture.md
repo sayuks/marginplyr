@@ -633,8 +633,8 @@ tests it executes (#93). Coverage is structural instead, resting on a policy
 about what a test may require, whose one home is `AGENTS.md`'s *Release matrix*
 section, rather than on a list of what each job must run.
 
-`AGENTS.md` is the operational reference for the jobs, the verifier scripts,
-and the sites registering an optional Suggest has to touch.
+`AGENTS.md` is the operational reference for the sites registering an optional
+Suggest has to touch.
 
 ## Extending backend support
 
