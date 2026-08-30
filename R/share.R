@@ -1564,11 +1564,9 @@ validate_share_direct_syntax <- function(expr, output_name) {
   # The second half of that question is not inert here, and the arity is what
   # makes it reachable: `share_of_total(, )` is two arguments to the parser and
   # is refused for the count, but `share_of_total(x = )` is *one* argument and
-  # it is empty. `rlang::is_symbol()` answered `TRUE` for it, because the empty
-  # argument is a symbol whose name is `""`, so the call was admitted and
-  # refused one layer on for an unknown preceding summary named `` -- a summary
-  # nobody wrote, which is #181's defect reached in the share family. That is a
-  # change to an un-injected spelling and is recorded as one in ADR 0019.
+  # it is empty. ADR 0019's *an injected name is read for the name it carries*
+  # records what asking it with `is_name_part()` changed here, and why the
+  # alternative was rejected.
   carried <- unwrap_injected_args(args)
   if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
     # `injected_quosure_clause()` is a whole sentence assembled around a
@@ -2139,15 +2137,10 @@ check_dialect_share_sources <- function(operation,
 }
 
 # One question about a dialect: does it convert a value of another type to a
-# number rather than refusing it? It is asked with at most two queries, neither
-# referencing a table of the caller's -- `SELECT SUM('x') FROM (SELECT 1 AS z)`
-# and, only where that is rejected, the control below -- so asking it reads
-# none of their data, which is what ADR 0020's second exemption rests on. What
-# an answered question establishes is a property of the dialect and not of one
-# connection, so the answer is reused for every later connection carrying the
-# same dialect, and a dialect that answers is never asked again. A question that
-# went unanswered established nothing, so it is asked again rather than reused
-# -- see the cache write below.
+# number rather than refusing it? ADR 0020's second exemption is authoritative
+# for the queries it is asked with, for why asking reads none of the caller's
+# data, and for the bound its amendment sets. What is reused is an answer, and
+# the cache write below is where that is enforced.
 share_dialect_verdict <- function(data, backend) {
   con <- share_dialect_connection(data)
   if (!share_dialect_can_be_asked(con)) {
@@ -2169,24 +2162,11 @@ share_dialect_verdict <- function(data, backend) {
   # every later request while continuing to misreport. This assertion is what
   # stops both.
   stopifnot(verdict %in% share_dialect_verdict_names())
-  # Only a measured outcome is recorded, which is the whole of what makes
-  # reuse sound: `"refuses"` and `"converts"` are facts about the dialect,
-  # while `"unknown"` is a fact about one attempt. A dropped socket, a
-  # permissions blip, or a warehouse that was resuming produces it on a
-  # connection whose dialect would answer perfectly well, and recording it
-  # would refuse shares on that dialect for the rest of the session -- on
-  # every later connection carrying it, with `.check_share_source = FALSE`,
-  # which opts out of the rule entirely, the only way back.
-  #
-  # Leaving it unrecorded asks again on the next request, which is why ADR
-  # 0020's second exemption bounds the question per share request until the
-  # dialect answers rather than once per dialect. What pays that is a request
-  # that is refused anyway: a dialect that genuinely cannot answer -- Oracle
-  # and SAP HANA reject the probe's `FROM`-less scaffolding, needing
-  # `FROM DUAL` and `FROM DUMMY` -- is asked twice per refused request and
-  # never on a succeeding one. Whether an unanswered attempt was transient is
-  # not asked, because it cannot be read from a raised query; that is what the
-  # control query in `probe_share_dialect()` exists to work around.
+  # Only a measured outcome is recorded, so an unanswered question is asked
+  # again on the next request rather than reused. ADR 0020's *only an answer
+  # is remembered, so the bound is per request* is authoritative for what an
+  # unanswered attempt is a fact about, for the bound that follows from it,
+  # and for what asking again costs.
   if (verdict %in% share_dialect_measured_names()) {
     share_dialect_verdicts[[key]] <- verdict
   }
@@ -2355,18 +2335,15 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
   labels <- share_kind_label_plurals(kinds)
   helpers <- share_helper_names(kinds)
   # nolint end
-  # Two calls, in the shape `abort_share_helper_position()` records. Here the
-  # verdicts differ in the whole subordinate clause naming what could not be
-  # established, so what they share is the opening of the refusal and the
-  # remedy that follows it.
+  # Two calls, choosing a whole subordinate clause -- what could not be
+  # established -- which is what ADR 0023's third amendment admits. What the
+  # arms share is the opening of the refusal and the remedy that follows it.
   #
   # Binding the clause in R and interpolating it would remove that repetition,
-  # and it is what `abort_share_source_type()` does twenty lines up -- but what
-  # it binds there is a *value*, the class the data turned out to hold. This
-  # clause is prose marginplyr wrote, and prose belongs in the template, where
-  # the idiom ADR 0023 states applies to it and a reviewer reads it beside the
-  # refusal it completes. A sentence half in a template and half in an R string
-  # is authored in neither.
+  # and it is what `abort_share_source_type()` does -- but what it binds there
+  # is a *value*, the class the data turned out to hold, where this clause is
+  # prose marginplyr wrote. ADR 0023's *Two rules are gated* is what refuses a
+  # template bound outside the call it raises from.
   if (identical(verdict, "converts")) {
     abort_marginplyr(
       c(
