@@ -619,10 +619,9 @@ compile_grouping_spec_impl <- function(preflight,
   # `grouping_name_proxy(data_vars)`, this same set; and a selection column
   # names alone cannot settle, resolved against the typed snapshot, whose
   # columns are that set on every backend. A `.by` source that could invent a
-  # name is the thing that has to justify itself here — before #134 one did,
-  # and reported a column the caller never wrote. The `.by`/`.grouping` overlap
-  # check below is the opposite case and stays a Package condition: an ordinary
-  # call reaches it.
+  # name is the thing that has to justify itself here. The `.by`/`.grouping`
+  # overlap check below is the opposite case and stays a Package condition: an
+  # ordinary call reaches it.
   unknown_by <- setdiff(.by, data_vars)
   if (length(unknown_by) > 0L) {
     stop(
@@ -1034,10 +1033,8 @@ grouping_arg_spec <- function(arg, data_vars) {
 # The refused value is read from the condition rather than by evaluating the
 # quosure again to identify it: tidyselect has already evaluated it once, and
 # ADR 0008 fixes how often a caller's quosure runs. This is marginplyr's own
-# report about a position of its own, so it stays parentless, as
-# `abort_share_source_name()` does for the same reason. Every other failure is
-# an External condition and is re-raised as it arrived, with its own class,
-# diagnostic, and cause.
+# report about a position of its own, so it stays parentless, where every
+# other failure is an External condition and propagates unchanged (ADR 0015).
 #
 # A specification stored as a function is refused from the frames instead,
 # because tidyselect refuses no function: it calls one, as the predicate form
@@ -1328,19 +1325,14 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
 
 # One caller mistake, one diagnostic: `.grouping` and `.by` refuse a renaming
 # selection for the same reason, and only the noun and the rule it states
-# differ. That difference used to be a labels list the refusal read a singular
-# or a plural noun out of; it is now two refusals, and the resolution above is
-# handed whichever one speaks for its selection.
+# differ. Two refusals rather than one, with the resolution above handed
+# whichever speaks for its selection.
 #
 # Written out rather than kept as one template with the noun interpolated,
-# because the noun is what pluralizes. `{?s}` reads the quantity beside it, so
-# a shared template would have to choose between two noun pairs, which is the
-# branch ADR 0023's `{?}` rule dissolves rather than relocates. Writing them
-# out also keeps both inside the structural gate, which reads
-# `abort_marginplyr()`'s own argument and refuses a template bound elsewhere --
-# the shape `abort_share_helper_position()` records in `R/share.R`, where what
-# two calls share is written out in each for that reason. ADR 0023's third
-# amendment names that refusal and this pair together.
+# because the noun is what pluralizes and `{?s}` reads the quantity beside it,
+# so a shared template would have to branch on it. ADR 0023's `{?}` rule is
+# what refuses that branch, and its third amendment names this pair beside
+# `R/share.R`'s helper-position refusal as what an R branch may choose instead.
 #
 # The pairs arrive alone in an `i` bullet, per ADR 0023's condition 2: how many
 # of them there are is the caller's decision.
