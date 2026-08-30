@@ -12,20 +12,11 @@
 # It is also the interpolating entry point: `message` is a cli template a call
 # site passes unexpanded, and `env` is what lets cli evaluate the template's
 # `{}` expressions in that site's own frame. ADR 0023 is authoritative for the
-# idiom every template is authored in -- the short refusal plus `i` bullets, the
-# inline style each subject takes, `{?}` for every plural, and the rule that
-# caller-derived text is interpolated as a value and never concatenated into the
-# template. ADR 0015's boundary is untouched by that: this still owns the class
-# and the blamed call.
+# idiom every template is authored in.
 #
-# The template is expanded here, as the condition is raised, rather than by
-# `cli::cli_abort()` when the condition is read. That is what keeps a subject
-# spelled the way the caller spelled it: `cli_abort()` sets `use_cli_format`,
-# and the retrieval-time formatting collapses a run of whitespace inside an
-# interpolated value as readily as inside the template, so a column named
-# `a  b` was named `a b` in the refusal. ADR 0024 records the decision and what
-# it costs -- there is no wrapping to a reader's width any more, and styling is
-# fixed by the raising session rather than the reading one.
+# The template is expanded here, as the condition is raised, rather than when
+# the condition is read, which is what keeps a subject spelled the way the
+# caller spelled it. ADR 0024 is authoritative for that decision and its costs.
 #
 # `format_inline()` is the inline half of cli and does not consult the width, so
 # every element comes back as the one line it was written as. Names carry the
@@ -282,13 +273,12 @@ message_line_runs <- function(lines) {
 # the same three.
 #
 # Every pattern either reader matches is anchored at the start of a line, so
-# this is the one place cli's rendering has to be undone, and undoing it here is
-# what makes ADR 0021's contract hold in a session that renders one. cli wraps,
-# styles, and links; the wrapping is what the runs above already undid, and the
-# other two each split an identity on their own (#217). ADR 0021's *No rendering
-# decision takes part in the identity* is authoritative for which and why.
-# `link` is spelled although it is the default, because stripping the hyperlink
-# is half of what this call is here for rather than incidental to it.
+# cli's rendering has to be undone before either reads. The wrapping is undone
+# by the runs above; the styling and the links are undone here. ADR 0021's *No
+# rendering decision takes part in the identity* is authoritative for why all
+# three are excluded. `link` is spelled although it is the default, because
+# stripping the hyperlink is half of what this call is here for rather than
+# incidental to it.
 #
 # This is a *reading*. `branch_warning_identity()` assembles its key from the
 # lines as they arrived, so nothing here can make two diagnostics that differ
@@ -299,15 +289,9 @@ message_line_runs <- function(lines) {
 #
 # cli needs no availability guard: it is an Import of this package, and every
 # error path crosses it, `abort_marginplyr()` above expanding its template
-# through `cli::format_inline()`. That is a change of mechanism rather than of
-# fact -- it was already unable to be absent as an Import of both dplyr and
-# tidyselect, the `DBI = FALSE` case in `AGENTS.md`'s dependency metadata that
-# `share_dialect_can_be_asked()` still is -- and the difference is that the
-# floor now binds. DESCRIPTION states `cli (>= 3.4.0)`, which the installer
-# reads, where a Suggests floor would have been read only by
-# `marginplyr_suggest_available()`, which is never asked about a package that
-# cannot be absent (ADR 0023). `ansi_strip()` learned `link` in cli 3.3.0, so
-# this reader is satisfied by anything the floor admits.
+# through `cli::format_inline()` (ADR 0023). `ansi_strip()` learned `link` in
+# cli 3.3.0, so this reader is satisfied by anything DESCRIPTION's
+# `cli (>= 3.4.0)` admits.
 written_message_lines <- function(lines, runs) {
   lines <- cli::ansi_strip(lines, link = TRUE)
   vapply(
@@ -323,13 +307,10 @@ written_message_lines <- function(lines, runs) {
 # first, so a plan that raises nothing new reads as one branch's report.
 #
 # The count line is marginplyr's own sentence and is inside ADR 0023's rule,
-# even though everything else this module writes is outside it: the only value
-# interpolated is an integer marginplyr counted, so there is no caller text to
-# splice and `{?s}` is what spells the plural. It gains no markup and no width
-# dependence -- `pluralize()` does not consult the width -- and it is measured
-# byte-identical to the `sprintf()` and the `if` it replaces, which is why no
-# pin moves with it. `format_error_bullets()` stays around it: this is appended
-# to a rendered message rather than raised, so the `i` has to be rendered here.
+# where everything else this module writes is outside it: the only value
+# interpolated is an integer marginplyr counted. `format_error_bullets()` stays
+# around it because this is appended to a rendered message rather than raised,
+# so the `i` has to be rendered here.
 #
 # ADR 0021's contract is untouched. The warning's identity is computed when a
 # branch buffers it, before this line exists.
@@ -351,18 +332,10 @@ report_branch_warnings <- function(conditions) {
 }
 
 # The label dplyr quotes an argument by, reproduced so that the expression
-# marginplyr handed it can be recognised in a context it rendered. dplyr writes
-# `paste0(name, " = ", expr_as_label(expr))` for a named argument
-# (`error_label_named()`), and its `expr_as_label()` is `rlang::as_label()`
-# with rlang's infix labelling suppressed through an option neither package
-# documents, and with a data pronoun -- `.data$x` -- deparsed rather than
-# labelled, where `as_label()` answers `x`. Plain `as_label()` is what this
-# uses, so the two disagree in those two places. Neither disagreement is
-# observable: a truncated label renders the same whichever expression it came
-# from, and a pronoun argument is spelled alike by the caller and the branch,
-# so the map drops it as unchanged. Both diverge in dplyr's direction only, so
-# neither can make dplyr's label of one argument equal this label of another.
-# ADR 0022 reproduces the convention and not the internals for that reason.
+# marginplyr handed it can be recognised in a context it rendered. Plain
+# `rlang::as_label()` under dplyr's `name = ` convention is what this uses,
+# rather than dplyr's `expr_as_label()`; ADR 0022 is authoritative for where
+# the two diverge and for why neither divergence is observable.
 summary_argument_labels <- function(dots) {
   arg_names <- names(dots)
   if (is.null(arg_names)) {
@@ -386,14 +359,11 @@ summary_argument_labels <- function(dots) {
 
 # What one branch hands dplyr, mapped to what the caller wrote. `caller_labels`
 # is the label half of what `new_summary_arguments()` built: the caller's label
-# for each dot, kept beside the dots since planning because nothing later
-# preserves position -- share planning drops a dot and expands a placeholder
-# into one dot per output. The lengths still agree or stop the operation, as an
-# invariant rather than a Package condition (ADR 0015): the constructor checked
-# the pair, so disagreeing here means a rewrite between it and this branch
-# changed the arity, and a map built from a misaligned pair would quote one
-# argument's expression under another. `NULL` is a caller with no spelling to
-# restore, and maps nothing.
+# for each dot, kept beside the dots since planning because the rewrites do not
+# preserve position (ADR 0022). The lengths agree here or stop the operation,
+# as an invariant rather than a Package condition (ADR 0015): a map built from
+# a misaligned pair would quote one argument's expression under another. `NULL`
+# is a caller with no spelling to restore, and maps nothing.
 #
 # A label several dots share is kept only where the callers' own labels agree,
 # since the replacement is then the same whichever dot dplyr meant; where they
@@ -418,12 +388,10 @@ branch_argument_map <- function(dots, caller_labels) {
 }
 
 # The argument bullet, restated to quote the expression the caller wrote. The
-# span inside the backticks is compared with marginplyr's own rendering of what
-# it handed dplyr, so a span equal to one is replaced by the caller's label,
-# and a span equal to none is left where it was -- which is every span in a
-# message whose format changed, and the whole of how this degrades (ADR 0022).
-# Only the span moves: the sentence around it is dplyr's, and rewriting a
-# sentence is what ADR 0021 refused for the blamed call.
+# span inside the backticks is replaced where it equals exactly one branch
+# dot's label, and left where it is otherwise; nothing around it moves.
+# ADR 0022 is authoritative for what the span is compared against and for how
+# the restatement degrades.
 #
 # `rendered` says which shape the message has rather than what to do with it: a
 # warning carries the text dplyr rendered before signalling, and an error's
