@@ -2,20 +2,9 @@
 # the three families read alongside them, keyed by the family that decides what
 # recognition does. It is the one place those names and the namespaces they may
 # carry are written down, and the one place their namespace test is
-# implemented. Before #172 each reader carried a spelling and a test of its
-# own, two derived from a rules table and the rest written out, and one --
-# `where`, in `contains_selection_predicate()` -- had no namespace test at all,
-# so a spelling could be recognized by the analysis and missed by the rewrite
-# beside it. `investigation/contextual-helper-execution-mechanism.md` counts
-# and tabulates them (#172, ADR 0019).
-#
-# The language-capture primitives are the one set of names read statically and
-# deliberately kept out. `language_capture_formal()` and
-# `captured_call_parts()` (`R/utils.R`) carry `quote`, `substitute`, and
-# `expression` with a `base` namespace test of their own, and that test is not
-# this one: a capture is refused where the head names a binding the analysis
-# can see, so it answers to the calling environment where every family here
-# refuses to. Registering them would put two rules under one reader.
+# implemented. ADR 0019's *The recognized spellings live in one registry* is
+# authoritative for why one place, for what it replaced, and for the
+# language-capture primitives it keeps out.
 #
 # A family names its own spellings only where no other table already owns them.
 # `share_kind_rules()` is the authoritative description of a contextual share
@@ -34,14 +23,9 @@
 # `test-contextual-helpers.R` asserts the laziness rather than trusting it.
 #
 # `contextual` is what ADR 0019's criterion decides, and it is not a synonym
-# for "read statically". A Contextual helper's meaning arises only through
-# static rewriting, so no caller binding can change what the verb does with it.
-# The other three families are read statically and are still ordinary names: a
-# Grouping specification constructor's spelling decides only whether a nested
-# argument is evaluated at all -- which is what separates a nested
-# specification from a tidyselect selection -- and a data-frame constructor's
-# spelling is read only to predict the output names of a data-frame-valued
-# summary. Both really run whatever the name is bound to.
+# for "read statically": three of the four families here are read statically
+# and are still ordinary names. That ADR's *What the criterion decides* is
+# authoritative for which family the field is true of and why.
 static_spelling_rules <- function() {
   list(
     grouping = function() {

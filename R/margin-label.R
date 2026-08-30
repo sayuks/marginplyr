@@ -266,20 +266,13 @@ abort_margin_label_collision <- function(margin_labels, found, on_collision) {
 }
 
 # Four arms across the two refusals below, rather than one template with two
-# branches inside it. Both branches choose a whole clause: the kind chooses how
-# the collision is named, and under the declared kind that clause pluralizes
-# with the subject, so one template would have to pick between two noun pairs;
-# and the subject is either the one colliding label, which is interpolated, or
-# the words standing in for several distinct ones, which is not, so `{?}`
-# cannot write both -- the arm it picks is literal text and is never re-read as
-# a template. ADR 0023's third amendment records the measurement and why a
+# branches inside it. ADR 0023's third amendment was written about this
+# refusal and is authoritative for what the arms differ by and for why a
 # branch on a count is still inside its `{?}` rule.
 #
 # What the shape costs is every element the arms share, written out in each:
 # the bullet carrying the columns four times, the noun `column{?s}` inflects
-# four times, and each remedy twice. The structural gate is what leaves no
-# cheaper spelling, since a template hoisted out of the arms is a template
-# bound elsewhere and it refuses one.
+# four times, and each remedy twice.
 #
 # `.check_margin_label = FALSE` is offered only where it is a remedy. It turns
 # off the read, and a declared collision is not found by reading, so naming it
