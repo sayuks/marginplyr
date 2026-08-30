@@ -238,6 +238,29 @@ test_that("no shipped page guards on installation alone", {
 # `Version`, which is the line a release edits anyway.
 cran_status_field <- "Config/marginplyr/cran-status"
 
+# Publication day. The milestone is publication, not submission: the field
+# flips on the day `https://cran.r-project.org/package=marginplyr` resolves --
+# not when the tarball is uploaded, not when `cran-comments.md` is written, and
+# not when a release ticket is closed. A submission can be rejected or
+# archived, and an instruction made true by uploading one would be false for
+# however long that took. On that day:
+#
+#   1. set the field to `published`;
+#   2. restore the CRAN paragraph to `README.Rmd`'s installation section, above
+#      the GitHub route, and a CRAN badge to its badge block;
+#   3. regenerate `README.md`; and
+#   4. revisit the vignette installation blocks. They name the GitHub route
+#      only, which stays true in both states and is why nothing asserts them --
+#      but the distinction between the released and the development version
+#      becomes worth drawing again, and it is deliberately not drawn now.
+#
+# Steps 1 to 3 hold each other up rather than relying on this list being
+# followed: 1 without 2 fails the tests below, 2 without 1 fails them too, and
+# 3 is what `document.yaml` checks, so a `README.md` regenerated from a
+# `README.Rmd` that step 2 never touched fails at step 2's assertion instead.
+# Step 4 is the one a release can genuinely skip, which is why it is last and
+# why it changes prose that is true either way. No other file needs editing.
+
 # Only `unpublished` and `published` can be read. Any other value stops rather
 # than being treated as either, for the reason a malformed `must_error` header
 # halts a render: a field this cannot read is a field whose assertions silently
@@ -271,6 +294,10 @@ cran_install_call <- "install.packages(\"marginplyr\")"
 # another package's CRAN page and that is not a claim about this one. Prose
 # needing to mention the CRAN call has to spell it some other way, as the
 # version-blind guard scan above already requires of prose naming those calls.
+#
+# The cranlogs badge is one of them for what it renders for a package CRAN has
+# never seen: `CRAN downloads 0/month`, which reads as a report of zero
+# interest and is a claim of availability.
 cran_claims <- c(
   cran_install_call,
   "cranlogs.r-pkg.org/badges/marginplyr",
