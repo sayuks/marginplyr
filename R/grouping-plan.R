@@ -450,23 +450,18 @@ nested_arg_expr <- function(arg) {
 # is followed here for what a caller could stop holding rather than for what one
 # arrives with.
 #
-# A binding that raises when it is read is not a specification, so the
-# selection reading stands where it raises, and so does an object carrying the
-# class with no kind to read -- an atomic vector given the class offers no
-# field to read at all, which `grouping_spec_kind()` answers with `NULL`, and
-# a list without the field answers `NULL` too, neither of which is a kind this
-# position could admit. Both that reading and the classification below are the
-# guard's own, so the two cannot disagree about what a kind is or about what one
-# is readable off. The evaluation's catch and the read's are narrow in what they
-# decide and not in what they swallow: everything they hide is a failure to
-# produce a specification of an admitted kind, which is a specification reading
-# that is not available. That is where the ADR-0015 line falls too, because
-# nothing here is deciding what such an object is -- a list carrying the class
-# and no kind, bound to a name nothing shadows, still reaches
-# `validate_grouping_spec_early()` and is refused in its own words. So does an
-# atomic vector carrying it, since #262 stopped that guard reading a field
-# before it had established the object can be read: what a colliding name
-# withholds here is a Package condition in either shape, not an untyped one.
+# A specification reading this site cannot complete is not a reading the
+# position has, so the selection reading stands -- for a binding that raises
+# when it is read, and for an object whose kind the shared readers answer
+# `NULL` for (ADR 0008).
+#
+# The evaluation catch is this site's own, and the ADR-0015 line falls across
+# it where `grouping_spec_kind()`'s header above puts it for the read's:
+# nothing here decides what such an object is. Declining costs the object no
+# diagnostic either, since the same one bound to a name nothing shadows is read
+# as a specification and refused by `validate_grouping_spec_early()` as a
+# Package condition (ADR 0008, *the condition class of a specification the
+# guard could not read*).
 #
 # `rule` is the parent's own, which the caller already holds because it
 # validates nested arguments with it; deriving it again here would be the same
