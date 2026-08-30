@@ -271,13 +271,10 @@ abort_absorbed_summary <- function(labels) {
 # expression once per grouping set and this stops at the first.
 #
 # Over an Arrow input the guard raises the refusal rather than an internal
-# invariant (ADR 0015), although what it reports is a defect. A caller reaching
-# it can act on it, and the action is the one the refusal already names; making
-# them read a bug report instead would move the cost of marginplyr's drift onto
-# them. It has a second arm, for every other lazy backend, where that reasoning
-# inverts and an invariant is what the caller should get; the comment on the
-# guard itself is where that sits, and ADR 0025 records both. The maintainer's
-# signal is `test-query-policy.R`, which fails when a read happens at all.
+# invariant, and its second arm inverts that for every other lazy backend.
+# Which way each falls is on the guard itself, and ADR 0025 records both. The
+# maintainer's signal is `test-query-policy.R`, which fails when a read
+# happens at all.
 summarize_margin_branch <- function(.data,
                                     ...,
                                     .by,
@@ -300,13 +297,9 @@ summarize_margin_branch <- function(.data,
   )
 
   # A lazy input whose branch came back local was read, and both arms of this
-  # are that one fact. Which arm depends on who did the reading, because ADR
-  # 0015 sorts a condition by what the caller can do about it rather than by
-  # what happened: an Arrow input absorbing is something they can rewrite, and
-  # the refusal names the rewrites; any other backend answering a lazy input
-  # with a local frame is a defect here or there, which no rewrite of their
-  # call avoids. Attributing the second to Arrow would be worse than not
-  # reporting it -- a diagnostic that misdirects, over a defect.
+  # are that one fact. Which arm depends on who did the reading, and ADR 0025's
+  # *How the refusal is raised* is authoritative for why each falls where it
+  # does.
   #
   # The second arm is also what catches a branch list that is part local and
   # part lazy, which `combine_margin_branches()` does not: a lazy-first mix is
