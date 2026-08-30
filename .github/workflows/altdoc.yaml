@@ -34,6 +34,21 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           extra-packages: local::.
+          # altdoc is declared in DESCRIPTION's `Config/Needs/website` rather
+          # than in Suggests, because nothing outside `.Rbuildignore`d paths
+          # uses it, so a Suggests entry installed a dependency closure for a
+          # package the tarball never mentions (#113).
+          #
+          # That is not a weaker home: pak resolves this field, and it parses
+          # and enforces a version constraint written here, so a floor moved
+          # across loses nothing. Nothing in this repository fails if that
+          # stops holding -- a dropped constraint silently installs an older
+          # altdoc -- so re-check it rather than assume it. Put an
+          # unsatisfiable constraint in the field of a throwaway package and
+          # resolve it with `pak::pkg_deps("local::<pkg>", dependencies =
+          # list(direct = "Config/Needs/website", indirect =
+          # "Config/Needs/website"))`; it must fail naming the constraint, not
+          # resolve.
           needs: website
 
       # Before the render rather than after it. A `must_error` option that

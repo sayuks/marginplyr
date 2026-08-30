@@ -68,66 +68,20 @@ file. Moving the pin means regenerating `README.md` in the same commit.
 
 ### Installation instructions
 
-An installation instruction is a claim about the outside world, and no file
-here can be read to check it: a README saying `install.packages()` finds
-marginplyr reads exactly the same whether CRAN has published the package or
-not. `DESCRIPTION`'s `Config/marginplyr/cran-status` field is where that fact
-is recorded — `unpublished` or `published`, no other value — and it is the
-only place it is written down. While it reads `unpublished`, the route the
-documentation gives is the one an external user can actually run today,
-`pak::pkg_install("sayuks/marginplyr")`.
+An installation instruction is a claim about the outside world.
+`DESCRIPTION`'s `Config/marginplyr/cran-status` field is where this repository
+records it — `unpublished` or `published`, no other value — and while it reads
+`unpublished` the route the documentation gives is the one an external user can
+actually run today, `pak::pkg_install("sayuks/marginplyr")`. While it reads
+that, no page may name the CRAN installation call, the cranlogs badge, or this
+package's CRAN page. Once it reads `published`, `README.md` has to carry both
+halves of what publication gives a reader: the instruction to run, and the
+badge or link saying where it goes.
 
-`test-documentation.R` asserts both directions against the field, over the Rd
-topics, the vignette sources, and both halves of the README. While the field
-reads `unpublished` no page may name the CRAN installation call, the cranlogs
-badge, or this package's CRAN page — the badge included because it renders
-`CRAN downloads 0/month` for a package CRAN has never seen, which is a claim
-of availability and not a report of zero interest. Once the field reads
-`published`, `README.md` has to carry both halves of what publication gives a
-reader: the instruction to run, and the badge or link saying where it goes.
-Both directions are load-bearing: the first is what stops the documentation
-getting ahead of CRAN, and the second is what stops a release flipping the
-field while the README still sends readers to GitHub alone.
-
-The rule is written as a function of the state and the pages rather than as a
-branch on the field, so the fixtures beside it execute the `published`
-direction today. A branch first evaluated on the day of the release is a
-branch nothing has ever run, which is the objection *Chunks that must fail*
-makes to an assertion that cannot fail.
-
-The scan is deliberately blunt, as the version-blind guard scan beside it in
-`test-documentation.R` is: prose that needs to name the CRAN installation call
-has to spell it some other way. Its markers all name marginplyr, because the
-README's comparison table links to another package's CRAN page and that is not
-a claim about this one, and they match case-insensitively, because
-`cran.r-project.org` and
-`CRAN.R-project.org` are one host and a claim is not less of one for being
-typed the second way.
-
-The milestone is publication, not submission. The field flips on the day
-`https://cran.r-project.org/package=marginplyr` resolves — not when the
-tarball is uploaded, not when `cran-comments.md` is written, and not when a
-release ticket is closed. A submission can be rejected or archived, and an
-instruction made true by uploading one would be false for however long that
-took. On that day:
-
-1. set the field to `published`;
-2. restore the CRAN paragraph to `README.Rmd`'s installation section, above
-   the GitHub route, and a CRAN badge to its badge block;
-3. regenerate `README.md`; and
-4. revisit the vignette installation blocks. They name the GitHub route only,
-   which stays true in both states and is why nothing asserts them — but the
-   distinction between the released and the development version becomes worth
-   drawing again, and it is deliberately not drawn now.
-
-Steps 1 to 3 hold each other up rather than relying on this list being
-followed: 1 without 2 fails the suite, 2 without 1 fails it too, and 3 is what
-`document.yaml` checks, so a `README.md` regenerated from a `README.Rmd` that
-step 2 never touched fails at step 2's assertion instead. Step 4 is the one a
-release can genuinely skip, which is why it is last and why it changes prose
-that is true either way. No other file needs editing: the field is the release
-process's copy of this fact, and it sits in `DESCRIPTION` beside the `Version`
-a release is already bumping.
+`tests/testthat/test-documentation.R` asserts both directions against the
+field, over the Rd topics, the vignette sources, and both halves of the README.
+Its *Publication day* comment holds the steps that flip the field, and the
+comments beside its scan hold why each is shaped as it is.
 
 ### Chunks that must fail
 
@@ -210,37 +164,13 @@ fails that job.
 
 `.github/workflows/altdoc.yaml` renders the site and then runs
 `.github/scripts/verify-site.R` over `docs/`. That script derives the pages it
-requires instead of listing them: one per `vignettes/*.qmd`, one per `man/*.Rd`
-that is not marked `\keyword{internal}`, `docs/index.html`, and one per
-`file: $ALTDOC_*` slot in `altdoc/quarto_website.yml` whose repository file is
-present. Adding a vignette or an exported function therefore needs no edit to
-the script for its page to be covered.
-
-Only the last of those keeps a table, because a placeholder cannot say on its
-own whether the file behind it exists, and an assertion is what stops that
-table behaving like the list this replaced: a `file:` slot the site config
-declares and the table does not name fails the job rather than escaping it. A
-second assertion counts the derived pages against the sources they came from,
-since every check iterates over that set and a set that arrived empty is a set
-that passes.
-
-The derivation is what decides coverage; the marker list is not. Every derived
-page has to exist, reach `</html>`, carry no build-machine path, and contain
-neither `installed.packages` nor the retired name `union_all_with_margins`. The
-last two scans also run over `docs/search.json`, which carries every page's
-text and is served beside them. `markers` adds page-specific prose on top of
-that, and a key naming no derived page is an error, so renaming a vignette
-moves its markers rather than silently dropping them. Marking a `must_error`
-chunk's rendered diagnostic is the strongest marker available: prose survives a
-chunk that stopped running, a diagnostic does not.
-
-Both halves replaced something weaker. The hand-written required list omitted
-`recipes.html` entirely, so a silent render failure of the newest vignette left
-the job green (#114); the path scan named only `Rtmp` and ran against one
-article, which is why #99's `/Users/<user>/.duckdb` reached two shipped
-vignettes unnoticed. As with the backend matrix, the cost is that the workflow
-no longer shows what it checks, so the script writes the derived set to the job
-summary.
+requires — from `vignettes/*.qmd`, from the `man/*.Rd` that are not marked
+`\keyword{internal}`, and from `altdoc/quarto_website.yml`'s `file: $ALTDOC_*`
+slots — instead of listing them, so adding a vignette or an exported function
+needs no edit there for its page to be covered. Its header holds what each
+derived page is held to and what the hand-written `markers` adds on top of
+that; write a new marker from a `must_error` chunk's rendered diagnostic where
+the page has one.
 
 To run it locally, render first with
 `altdoc::render_docs(parallel = FALSE, freeze = FALSE)`, then
@@ -253,67 +183,41 @@ broken vignette rather than a stale library.
 ### Dependency metadata
 
 `DESCRIPTION`'s Imports/Suggests split is audited by hand, not with
-`attachment::att_amend_desc()`. That tool statically scans `R/` for
-`pkg::fun()` calls and promotes anything it finds to Imports, but this package
-uses several Suggests conditionally — for example `arrow::schema()` in
-`R/backend-metadata.R` sits behind a backend-kind guard, so the call site
-exists without arrow ever being a hard dependency. A static scanner cannot see
-the guard; running the tool promotes arrow to Imports and drops genuinely used
-Suggests such as knitr, which would violate the "no package is promoted to
-Imports merely to make a check pass" rule the metadata is held to. No `pkg_ignore`
-or `extra.suggests` configuration fixes this, because the false positive comes
-from what the scanner can express, not from missing configuration.
+`attachment::att_amend_desc()`. No package is promoted to Imports merely to
+make a check pass, and that tool cannot hold to the rule: it statically scans
+`R/` for `pkg::fun()` calls and promotes what it finds, while several Suggests
+here are used conditionally — `arrow::schema()` in `R/backend-metadata.R` sits
+behind a backend-kind guard, so the call site exists without arrow ever being a
+hard dependency — and it drops genuinely used Suggests such as knitr. No
+`pkg_ignore` or `extra.suggests` configuration fixes that, because the false
+positive comes from what the scanner can express and not from missing
+configuration. It prunes by the same static reading, so what it removes is no
+better evidence than what it adds.
 
-The manual audit is a grep for `pkg::` and bare-name usage of each Suggested
-package across `R/`, `tests/`, and `vignettes/`, checked against DESCRIPTION by
-eye when a dependency is added, removed, or moved between Imports and
-Suggests. That scan only answers "is this Suggest referenced somewhere" — it
-cannot tell whether a Suggest is genuinely optional at runtime. The
-`_R_CHECK_DEPENDS_ONLY_=true` check mode is the authority on optionality, not
-the manual scan: it rebuilds examples, tests, and vignettes with Suggested
-packages absent, which is the only way to confirm code guarded behind a
-Suggest actually degrades correctly instead of erroring. Run it locally with
-`_R_CHECK_DEPENDS_ONLY_=true R CMD check` against a source tarball. CI runs the
-same mode in `release-matrix.yaml`'s `depends-only` job, so this is a gate
-rather than a manual step, but running it locally is still the fastest way to
-find out which guard is missing.
+The audit is a grep for `pkg::` and bare-name usage of each Suggested package
+across `R/`, `tests/`, and `vignettes/`, checked against `DESCRIPTION` by eye
+when a dependency is added, removed, or moved between Imports and Suggests. It
+is written here because `DESCRIPTION` is DCF and carries neither a comment nor
+a citation to reach it from.
 
-A Suggest can also be non-optional without being an Import, because an Import
-already requires it. `dbplyr` declares `Imports: DBI`, so DBI sits in the hard
-dependency closure and is installed under `_R_CHECK_DEPENDS_ONLY_=true` like
-any Import; tibble reaches the same place through dplyr. Such a package is
-never absent, so a guard written against it never fires and
-`optional_suggests()` cannot claim it absent — that is why `DBI = FALSE`
-there. Check with `packageDescription("<import>")$Imports`, not by reading this
-package's DESCRIPTION: the closure is a property of another package's metadata,
-so it can change without a commit here. Keeping the Suggests entry is still
-right, because it records a direct use that would need declaring if the closure
-stopped supplying it.
+What the grep cannot answer is whether a Suggest is genuinely optional.
+`_R_CHECK_DEPENDS_ONLY_=true R CMD check` against a source tarball is the
+authority there: it rebuilds examples, tests, and vignettes with Suggested
+packages absent. `release-matrix.yaml`'s `depends-only` job runs it, so this is
+a gate rather than a manual step, but running it locally is the fastest way to
+find out which guard is missing. A Suggest an Import already requires is never
+absent, so no guard against it can fire: check with
+`packageDescription("<import>")$Imports` rather than this package's
+`DESCRIPTION`, since that closure can change without a commit here, and keep
+the Suggests entry, which records a direct use that would need declaring if the
+closure stopped supplying it. `DBI = FALSE` in `optional_suggest_spec()` is
+that case, and `tests/testthat/helper-optional-backends.R` holds it.
 
-The audit runs in the other direction too, and a scanner is no more use there:
-a package the shipped sources never reference does not belong in Suggests,
-however real the tool that needs it. `att_amend_desc()` does prune, but by the
-same static reading that over-prunes above, so what it removes is not evidence
-either. `altdoc` was declared there while nothing outside `.Rbuildignore`d
-paths used it — `.github/workflows/altdoc.yaml` and the `altdoc::render_docs()`
-call in this file build the site, `altdoc/` configures it, and
-`.github/scripts/verify-site.R` reads its output — so the entry installed a
-dependency closure for a package the tarball never mentions (#113).
-
-`Config/Needs/website` is where such a dependency belongs, and it is not a
-weaker home: `setup-r-dependencies@v2` resolves that field through pak, which
-parses *and enforces* a version constraint written there, so a floor moved
-across loses nothing. That is worth re-checking rather than assuming, because
-nothing in this repository would fail if it stopped holding — a dropped
-constraint silently installs an older altdoc. Check it by putting an
-unsatisfiable constraint in the field of a throwaway package and resolving it:
-`pak::pkg_deps("local::<pkg>", dependencies = list(direct =
-"Config/Needs/website", indirect = "Config/Needs/website"))` must fail naming
-the constraint, not resolve.
-
-The grep above is what finds an entry like this, because `R CMD check` does not
-— an unused Suggest raises no NOTE, which is why nothing flagged it for as long
-as it stood.
+The other direction is the grep's alone: `R CMD check` raises no NOTE for an
+unused Suggest, which is why `altdoc` stood in Suggests while nothing outside
+`.Rbuildignore`d paths used it (#113). A dependency only the site build needs
+goes in `Config/Needs/website`; `altdoc.yaml`'s comment on the field says why
+that is not a weaker home and how to re-check it.
 
 ### Optional-dependency guards
 
