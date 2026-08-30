@@ -308,9 +308,6 @@ environment among them — `cat()` rendering anything of no length as nothing.
 Which of them a given object is goes unreported, for the reason the amendment
 above gives.
 
-The alternatives weighed against dropping the field, and what each would have
-had to promise, are #268's.
-
 ## Amendment: the condition class of a kind the guard could not classify
 
 The amendment above says the guards are left alone and why, and #280 is where
@@ -384,12 +381,12 @@ avoid.
 
 **Evaluations.** The constraint holding the number and timing of evaluations is
 not reached. The field is read once, as the amendments above left it. How often
-classifying asks the value's own methods is fixed by no decision, which the
-amendment above already records, and it moves in both directions: it falls at
-the guards and at the printed line, where the registry lookup's own guard asked
-them a second time and is now handed a plain string; and it is unchanged in
-number at the nested-name site, which asks `is.na()` where it did not and
-reaches `as.character()` where it no longer does.
+classifying asks the value's own methods is fixed by no decision, and it moves
+in both directions: it falls at the guards and at the printed line, where the
+registry lookup's own guard asked them a second time and is now handed a plain
+string; and it is unchanged in number at the nested-name site, which asks
+`is.na()` where it did not and reaches `as.character()` where it no longer
+does.
 
 **The handler the classification is wrapped in.** `tryCatch(error = )` a third
 time, so the trade the amendment for a specification the printer could not read
