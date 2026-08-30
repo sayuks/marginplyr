@@ -257,11 +257,9 @@ unparenthesized_value <- function(expr) {
   expr
 }
 
-# The name a head or a function reference spells. A head is unwrapped only down
-# to a name, because that is the only thing a head can be unwrapped to without
-# changing what R does with it: `("sum")(1)` is not a call to `sum` but the
-# error R raises for applying a non-function, and `(function(x) x)(1)` names
-# nothing either way. Both keep the answer they have always had.
+# The name a head or a function reference spells, unwrapped only down to a
+# name. ADR 0019's *redundant parentheses are read through, in one place*
+# names that boundary; this is the reader it stops at.
 #
 # The early return is the other half of the missing-marker rule above. This is
 # asked of an argument a caller may have left empty -- an `across()` `.fns` is
