@@ -297,12 +297,9 @@ summarize_margin_branch <- function(.data,
   )
 
   # A lazy input whose branch came back local was read, and both arms of this
-  # are that one fact. Which arm depends on who did the reading (ADR 0015): an
-  # Arrow input absorbing is something the caller can rewrite, and the refusal
-  # names the rewrites; any other backend answering a lazy input with a local
-  # frame is a defect here or there, which no rewrite of their call avoids.
-  # Attributing the second to Arrow would be worse than not reporting it -- a
-  # diagnostic that misdirects, over a defect.
+  # are that one fact. Which arm depends on who did the reading, and ADR 0025's
+  # *How the refusal is raised* is authoritative for why each falls where it
+  # does.
   #
   # The second arm is also what catches a branch list that is part local and
   # part lazy, which `combine_margin_branches()` does not: a lazy-first mix is

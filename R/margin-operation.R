@@ -388,9 +388,9 @@ order_margin_result <- function(operation, result, execution) {
 
 # Where a backend records a window ordering, `arrange()` has written the key
 # into two places and only one of them is a Margin order, so the second is
-# cleared. ADR 0018's *`arrange()` writes the key into two places* is
-# authoritative for which is which and for why clearing it takes nothing away.
-# What is left alone is the `ORDER BY`, which is where the rows' order is.
+# cleared. ADR 0018's *a lazy result carries the order and records no window
+# ordering* is authoritative for which is which, for why clearing it takes
+# nothing away, and for the `ORDER BY` it leaves alone.
 forget_margin_window_order <- function(result, backend) {
   if (!backend$records_window_order) {
     return(result)

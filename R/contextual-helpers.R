@@ -23,9 +23,9 @@
 # `test-contextual-helpers.R` asserts the laziness rather than trusting it.
 #
 # `contextual` is what ADR 0019's criterion decides, and it is not a synonym
-# for "read statically": three of the four families here are read statically
+# for "read statically": the families carrying it `FALSE` are read statically
 # and are still ordinary names. That ADR's *What the criterion decides* is
-# authoritative for which family the field is true of and why.
+# authoritative for which and why.
 static_spelling_rules <- function() {
   list(
     grouping = function() {
