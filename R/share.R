@@ -2340,10 +2340,10 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
   # arms share is the opening of the refusal and the remedy that follows it.
   #
   # Binding the clause in R and interpolating it would remove that repetition,
-  # and it is what `abort_share_source_type()` does twenty lines up -- but what
-  # it binds there is a *value*, the class the data turned out to hold, where
-  # this clause is prose marginplyr wrote. ADR 0023's *Two rules are gated* is
-  # what refuses a template bound outside the call it raises from.
+  # and it is what `abort_share_source_type()` does -- but what it binds there
+  # is a *value*, the class the data turned out to hold, where this clause is
+  # prose marginplyr wrote. ADR 0023's *Two rules are gated* is what refuses a
+  # template bound outside the call it raises from.
   if (identical(verdict, "converts")) {
     abort_marginplyr(
       c(
