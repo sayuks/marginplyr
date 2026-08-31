@@ -426,10 +426,6 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
     # frame holding what the diagnostic names: the constructor and the
     # argument's position (#261). Which spellings count as empty, and why the
     # question is put to the quosure, are `is_empty_argument()`'s.
-    #
-    # Unrefused, such an argument reaches `is_name_only_expr()`, where the
-    # empty argument is a symbol whose name is `""` and `rlang::env_has()`
-    # raises an untyped condition for a zero-length variable name.
     if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }

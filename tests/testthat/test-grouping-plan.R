@@ -836,9 +836,7 @@ test_that("the empty spellings that already had a reading keep it", {
 # The other empty argument a verb takes, and not the `.by = ` above: R matches
 # a named formal's empty argument to that formal's default, while `{{ }}`
 # splices R's missing marker into the quosure. Only the second reaches
-# `resolve_fixed_keys()` carrying one, where `is_name_only_selection()` read it
-# as a symbol whose name is `""` and `rlang::env_has()` raised an untyped
-# condition for a zero-length variable name (#340).
+# `resolve_fixed_keys()` carrying one (#340).
 test_that("a forwarded empty `.by` selects no columns on every verb", {
   data <- data.frame(
     region = c("East", "East", "West"),
