@@ -41,15 +41,13 @@ and two leaf helpers for contrast.
 | `starts_with( )` | `rlang_error`: argument "match" is missing |
 
 `c()` is the only operator that drops the part. Under every other one
-tidyselect fails, and under five of them with the same untyped message
-marginplyr was producing on its own account — so a caller who reached that
-message through `-( )` was seeing tidyselect's failure either way, while one
-who reached it through `c(, region)` was seeing a selection tidyselect would
-have accepted.
+tidyselect fails, and under five of them with `attempt to use zero-length
+variable name`, which is base R's message for reading a symbol whose name is
+`""` rather than a diagnostic tidyselect wrote.
 
-Both halves are settled by the column names: no branch above reads a column's
-data, so a reader answering `TRUE` for the part hands tidyselect a question
-the names decide, which is the contract `is_name_only_expr()` states.
+Neither outcome reads a column's data. Every row was measured twice — over a
+frame whose columns hold values, and over a named list of column positions
+carrying none — and the two agreed on all twelve.
 
 Only the three `c()` rows are spellings R parses. The rest were built with
 `as.call()`, and the empty argument was written as `rlang::missing_arg()` at
@@ -62,11 +60,9 @@ building this table.
 `dplyr::summarise(d, n = n(), .by = <expr>)` was measured for the `c()` rows
 and agrees with `eval_select()`: `c(, region)`, `c(region, )`, and
 `c(region, , grade)` group by the named columns. `dplyr::select()` reproduces
-the failures for the rest, so the non-`c()` rows are not a marginplyr
-divergence to close.
+every failure in the table, so no row of it belongs to `.by` in particular.
 
 ## What was not measured
 
-Why `c()` differs was not traced into tidyselect's `eval_c()`. The finding
-here is the behaviour rather than its mechanism, and the behaviour is what the
-reader's answer rests on.
+Why `c()` differs was not traced into tidyselect's `eval_c()`. What was
+established here is the behaviour and not its mechanism.

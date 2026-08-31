@@ -932,28 +932,25 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
   expect_false(contains_selection_predicate(quote(~.x)))
 })
 
-# R's empty argument is a symbol whose name is `""`, and this reader answered a
-# symbol by reading that name: `rlang::env_has()` raises `attempt to use
-# zero-length variable name`, an untyped condition naming nothing the caller
-# wrote (#351). It arrives as a part of a selection rather than as a whole
-# argument, so `is_empty_argument()` is never asked about it.
+# The reader answered a symbol by reading its name, and R's empty argument is
+# one whose name is `""` -- so `rlang::env_has()` raised for a zero-length
+# variable name (#351). It arrives as a part of a selection rather than as a
+# whole argument, so `is_empty_argument()` is never asked about it.
 #
-# `TRUE` is the answer the header's contract already gives: the column names
-# settle it, as a selection under `c()` and as tidyselect's own failure under
-# every other walk operator. Which of the two a caller reaches is measured per
-# operator in `investigation/an-empty-argument-under-a-selection-walk.md`.
+# `TRUE` is what the reader's own contract gives it;
+# `investigation/an-empty-argument-under-a-selection-walk.md` measures what
+# tidyselect then settles such a part as, per operator.
 test_that("the name-only reader answers R's empty argument", {
   env <- rlang::current_env()
 
-  # The part on its own, which is what the walk below hands the reader.
+  # The part on its own, which is what a walk hands the reader.
   expect_true(
     is_name_only_expr(rlang::missing_arg(), env = env, data_vars = "region")
   )
 
-  # And reached through a walk, in all three positions a selection can hold
-  # one. Written rather than constructed: R's parser keeps the empty argument
-  # in each, unlike the `f((), x)` the refusal of an empty constructor
-  # argument has to build.
+  # Written spellings, in all three positions a selection can hold one. R's
+  # parser keeps the empty argument in each, unlike the `f((), x)` the refusal
+  # of an empty constructor argument has to build.
   written <- list(
     quote(c(, region)),
     quote(c(region, )),
@@ -966,7 +963,30 @@ test_that("the name-only reader answers R's empty argument", {
         env = env,
         data_vars = c("region", "grade")
       ),
-      info = deparse(written[[index]])
+      info = deparse1(written[[index]])
+    )
+  }
+
+  # And every other operator a walk descends into, asked of the reader rather
+  # than through a verb: what it must not do is raise, whatever tidyselect
+  # goes on to do with the part.
+  constructed <- list(
+    as.call(list(as.name("-"), rlang::missing_arg())),
+    as.call(list(as.name("!"), rlang::missing_arg())),
+    as.call(list(as.name("("), rlang::missing_arg())),
+    as.call(list(as.name("|"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name("/"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name(":"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name("&"), quote(region), rlang::missing_arg()))
+  )
+  for (index in seq_along(constructed)) {
+    expect_true(
+      is_name_only_expr(
+        constructed[[index]],
+        env = env,
+        data_vars = "region"
+      ),
+      info = deparse1(constructed[[index]])
     )
   }
 })

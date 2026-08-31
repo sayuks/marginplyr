@@ -189,7 +189,12 @@
   get from omitting it, which is what writing `.grouping = ` already means.
   Redundant parentheses are transparent at all three positions, as they are
   elsewhere: an injected pair wrapping nothing is the empty argument it wraps
-  (#340).
+  (#340). An empty argument one level further down — inside a selection, as in
+  `.by = c(, region)` or `rollup(c(, grade))` — is read as tidyselect reads
+  one, which under `c()` is to select nothing for it, in place of the same
+  `attempt to use zero-length variable name`. The refusal above reaches a
+  constructor argument's own position and not a selection written there, so
+  `rollup(, grade)` is still refused (#351).
 * A selection a wrapper forwards into `across()` is now the selection dplyr
   makes of it. `across({{ cols }}, sum)` — the ordinary way to pass on a
   selection your own caller wrote — was refused by tidyselect, which advised
