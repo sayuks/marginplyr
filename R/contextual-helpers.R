@@ -214,8 +214,14 @@ is_any_static_spelling_call <- function(expr, families) {
 # may have left empty -- an `across()` written `across(units, )` reaches here
 # with R's missing marker, and assigning that to a local raises
 # `missingArgError` on the next read of it (#174).
+#
+# What stops the recursion is the guard rather than the branches below it, so
+# the guard is `is_parenthesized()`: the same argument may be a pair wrapping
+# the empty one, `unparenthesized_value()` stops at such a pair rather than
+# unwrapping to it, and under `is_redundant_parens()` this restarted on the
+# node it was called with (#349).
 static_spelling_reference_name <- function(expr, family) {
-  if (is_redundant_parens(expr)) {
+  if (is_parenthesized(expr)) {
     return(static_spelling_reference_name(
       unparenthesized_value(expr),
       family

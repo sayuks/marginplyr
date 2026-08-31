@@ -1113,7 +1113,13 @@ static_character_value <- function(expr) {
   # one are read through as they are everywhere else: `get(("share"))` names
   # what `get("share")` names. Read by recursion rather than by rebinding
   # `expr`, which is an argument a `c()` above may have left empty (#174).
-  if (is_redundant_parens(expr)) {
+  #
+  # `is_parenthesized()` and not `is_redundant_parens()`, because that argument
+  # may also be a pair wrapping the empty one. `unparenthesized_value()` stops
+  # at such a pair rather than unwrapping to it, so the weaker test restarted
+  # this reader on the node it was called with, and `get(())` exhausted the
+  # evaluation stack before dplyr saw the call (#349).
+  if (is_parenthesized(expr)) {
     return(static_character_value(unparenthesized_value(expr)))
   }
   if (is.character(expr)) {

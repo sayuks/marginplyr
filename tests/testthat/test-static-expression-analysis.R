@@ -2633,6 +2633,108 @@ test_that("a pair of parentheses holding nothing is the empty argument", {
   )
 })
 
+test_that("a pair holding nothing in an expression evaluates as dplyr does", {
+  # The pair the test above refuses as a whole argument, one level in: `z = ()`
+  # is a summary argument the verb answers for itself (#340), while `z =
+  # sum(())` is an expression the caller wrote and dplyr evaluates. The readers
+  # that see through a pair before it is sent restart on what it wraps, and
+  # `unparenthesized_value()` stops at a pair holding nothing rather than
+  # unwrapping to it -- so a reader restarting under `is_redundant_parens()`
+  # re-entered on the node it was called with and never terminated, and the
+  # caller was answered with a stack overflow catchable by no class they would
+  # write (#349). `test-utils.R` holds the gate over the readers; these are the
+  # positions a caller reaches them from.
+  #
+  # dplyr is the oracle, as it is for an omitted argument above.
+  data <- data.frame(region = c("East", "East", "West"), value = c(1, 3, 6))
+  parens <- function(expr) as.call(list(as.name("("), expr))
+  empty <- parens(rlang::missing_arg())
+
+  # A bare call argument and an `across()` `.fns` reach the reference-name read
+  # the share walk takes; `get()` reaches the reader of a statically known
+  # string, with no share helper and no `across()` anywhere in the expression.
+  # `.names` and `.unpack` are read by evaluating them, which is a third way to
+  # reach the pair and the one that raises before any walk sees it. Each of
+  # these is sent to dplyr as the caller wrote it, so dplyr's answer is the
+  # whole answer.
+  expressions <- list(
+    bare = rlang::call2("sum", empty),
+    fns = rlang::call2("across", quote(value), empty, .ns = "dplyr"),
+    names = rlang::call2(
+      "across",
+      quote(value),
+      quote(sum),
+      .names = empty,
+      .ns = "dplyr"
+    ),
+    unpack = rlang::call2(
+      "across",
+      quote(value),
+      quote(sum),
+      .unpack = empty,
+      .ns = "dplyr"
+    ),
+    named = rlang::call2("get", empty),
+    nested = rlang::call2("sum", rlang::call2("get", empty))
+  )
+
+  for (index in seq_along(expressions)) {
+    expression <- expressions[[index]]
+    baseline <- expect_error(
+      data |>
+        dplyr::group_by(region) |>
+        dplyr::summarise(z = !!expression, .groups = "drop")
+    )
+    error <- expect_error(
+      summarize_with_margins(
+        data,
+        z = !!expression,
+        .grouping = rollup(region)
+      )
+    )
+    expect_identical(class(error), class(baseline))
+    expect_identical(conditionMessage(error), conditionMessage(baseline))
+  }
+
+  # An `across()` selection is the one position dplyr is not the whole oracle
+  # for, and the pair inherits that rather than introducing it: a Margin verb
+  # resolves the selection itself, before the call is sent, so a selection that
+  # cannot be resolved is answered by the condition the selection produces and
+  # not by the one dplyr wraps around it. `across(nope, sum)` answers vctrs's
+  # subscript condition here and an `rlang_error` under dplyr, and has since
+  # the rewrite existed. What the pair owes is the cause, which is what dplyr
+  # reports underneath its own wrapper.
+  selection <- rlang::call2("across", empty, quote(sum), .ns = "dplyr")
+  baseline <- expect_error(
+    data |>
+      dplyr::group_by(region) |>
+      dplyr::summarise(z = !!selection, .groups = "drop")
+  )
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      z = !!selection,
+      .grouping = rollup(region)
+    )
+  )
+  expect_false(inherits(error, "stackOverflowError"))
+  expect_match(
+    conditionMessage(baseline),
+    conditionMessage(error),
+    fixed = TRUE
+  )
+
+  # And the refusal is the point: read as an omitted selection the pair would
+  # select every column and return a result, which is the answer dplyr does not
+  # give. `parse_across_arguments()` reports it supplied because it is -- a
+  # caller wrote a node there -- and the resolution below is what refuses it.
+  expect_identical(
+    parse_across_arguments(selection)$cols,
+    empty,
+    ignore_attr = TRUE
+  )
+})
+
 test_that("`parse_across_arguments()` answers an empty argument as omitted", {
   # The seam every `across()` path reads, and the one place that has to know
   # about the empty argument: each field below answers what it answers for an

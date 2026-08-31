@@ -556,10 +556,18 @@ rewrite_across_selection <- function(expr,
   if (identical(call_name, "across")) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
     if (!is.null(parsed$names)) {
-      call_args[[parsed$names_index]] <- rlang::eval_tidy(
-        parsed$names,
-        env = env
+      # A template that does not evaluate is left as the caller wrote it, so
+      # dplyr raises the condition their own argument produces rather than this
+      # frame raising it first (ADR 0015). The two reads of `.names` and
+      # `.unpack` above answer a failure the same way, with the value they use
+      # when the argument is absent; here the value is the argument itself.
+      template <- tryCatch(
+        list(rlang::eval_tidy(parsed$names, env = env)),
+        error = function(cnd) NULL
       )
+      if (!is.null(template)) {
+        call_args[[parsed$names_index]] <- template[[1L]]
+      }
     }
   }
 
