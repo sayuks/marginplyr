@@ -2349,21 +2349,25 @@ test_that("an omitted share `.fns` is refused by name, not by lookup", {
 })
 
 # The tests below cover the other spelling of an empty argument, and the wider
-# reading that spelling belongs to. A caller forwarding an argument their own
-# caller left out injects a quosure carrying the empty argument rather than the
-# empty argument itself, so `rlang::is_missing()` is false of it and the parse
-# above reads it as supplied. dplyr tells the two apart the same way -- a
-# written empty `.cols` takes the formal's default and deprecates, an injected
-# one selects nothing -- so dplyr is the oracle here as it is for the omitted
-# spelling, and folding the injected spelling into the omitted one would answer
-# a different call than the caller wrote (#350).
+# reading it belongs to. A caller forwarding an argument their own caller left
+# out injects a quosure carrying the empty argument rather than the empty
+# argument itself, so `rlang::is_missing()` is false of it and the parse above
+# reads it as supplied. dplyr is the oracle here as it is for the omitted
+# spelling, and it tells the two apart the same way (#350).
+#
+# One divergence from dplyr is deliberate, and is the one asserted at the end.
+# dplyr reads a top-level `across()` statically, where an injected empty `.cols`
+# resolves to the empty selection, and evaluates a nested one at run time, where
+# the same argument takes the deprecated `everything()` default. Every position
+# is rewritten here, so one reading applies to both, and it is the one dplyr
+# gives the position `across()` is written in as a summary.
 
 test_that("an injected `across()` selection is the selection dplyr makes", {
-  # The ordinary tidy-eval idiom for forwarding a selection, and the shape the
-  # empty selection below is one value of. `{{ }}` inlines a quosure into
-  # `.cols`, where a resolution that wrapped it in a second quosure handed
-  # `eval_select()` a one-sided formula -- read as the lambda shorthand, which
-  # is the `where()` the refusal advised (#350).
+  # The ordinary tidy-eval idiom for forwarding a selection, and the shape an
+  # omitted argument is one value of. `{{ }}` inlines a quosure into `.cols`,
+  # where a resolution that wrapped it in a second quosure handed
+  # `eval_select()` a one-sided formula -- the lambda shorthand, which is the
+  # `where()` the refusal advised.
   data <- data.frame(
     region = c("East", "East", "West"),
     units = c(1, 3, 6),
@@ -2397,8 +2401,10 @@ test_that("an injected `across()` selection is the selection dplyr makes", {
         )
     )
   }
+  # `drop = FALSE` because an empty selection leaves the grouping's key column
+  # alone, which a default subscript would hand back as a vector.
   groups_of <- function(result) {
-    dplyr::arrange(result[!is.na(result$region), ], region)
+    dplyr::arrange(result[!is.na(result$region), , drop = FALSE], region)
   }
 
   expect_equal(
@@ -2416,49 +2422,17 @@ test_that("an injected `across()` selection is the selection dplyr makes", {
     oracle(data, c(units, revenue)),
     ignore_attr = "row.names"
   )
-})
 
-test_that("an injected empty `across()` selection selects what dplyr selects", {
-  # dplyr resolves the empty quosure rather than reading it as an omission, and
-  # `tidyselect::eval_select()` answers one with the empty selection. The
-  # written empty `.cols` beside it keeps the formal's default, which is the
-  # difference these two assert together.
-  data <- data.frame(
-    region = c("East", "East", "West"),
-    units = c(1, 3, 6),
-    revenue = c(2, 4, 8)
-  )
-  summarize <- function(data, selection) {
-    summarize_with_margins(
-      data,
-      dplyr::across({{ selection }}, sum),
-      .grouping = rollup(region),
-      .margin_label = NULL
-    )
-  }
-  oracle <- function(data, selection) {
-    as.data.frame(
-      data |>
-        dplyr::group_by(region) |>
-        dplyr::summarise(
-          dplyr::across({{ selection }}, sum),
-          .groups = "drop"
-        )
-    )
-  }
-
-  # `drop = FALSE` because the selection is empty: the result is the grouping's
-  # key column alone, which a default subscript would hand back as a vector.
-  injected <- summarize(data)
+  # The omitted argument, which dplyr resolves rather than reading as an
+  # omission, and `eval_select()` answers with the empty selection.
   expect_equal(
-    dplyr::arrange(injected[!is.na(injected$region), , drop = FALSE], region),
+    groups_of(summarize(data)),
     oracle(data),
     ignore_attr = "row.names"
   )
-  expect_identical(names(injected), "region")
+  expect_identical(names(summarize(data)), "region")
 
-  # The written spelling, which selects every eligible column instead, so the
-  # two readings cannot be collapsed into one.
+  # The written spelling beside it, which still means every eligible column.
   written <- summarize_with_margins(
     data,
     dplyr::across(, sum),
@@ -2468,14 +2442,13 @@ test_that("an injected empty `across()` selection selects what dplyr selects", {
   expect_identical(names(written), c("region", "units", "revenue"))
 })
 
-test_that("an injected empty `across()` `.names` raises dplyr's own error", {
-  # The template is evaluated here so that a name written against the caller's
-  # own bindings reaches dplyr as the string it evaluates to. An empty quosure
-  # has no value to evaluate, and evaluating it looked up the empty symbol:
-  # base R answered with an untyped `simpleError` reading `object '' not found`
-  # whose `conditionCall()` was `NULL`, which names nothing the caller wrote
-  # and inherits no class they could catch (ADR-0015). dplyr raises on the same
-  # input, so leaving the argument for dplyr is what the oracle decides (#350).
+test_that("an unevaluable `across()` `.names` raises dplyr's own error", {
+  # The template is evaluated so that one written against the caller's own
+  # bindings reaches dplyr as its string. Every read that cannot produce one
+  # leaves the argument for dplyr, which is the same answer for an argument a
+  # wrapper forwarded empty and for a template naming something absent: base R
+  # answers either with an untyped `simpleError` carrying no context and no
+  # class the caller could catch (ADR-0015).
   data <- data.frame(
     region = c("East", "East", "West"),
     units = c(1, 3, 6)
@@ -2487,7 +2460,6 @@ test_that("an injected empty `across()` `.names` raises dplyr's own error", {
       .grouping = rollup(region)
     )
   }
-
   oracle <- function(data, template) {
     data |>
       dplyr::group_by(region) |>
@@ -2496,42 +2468,51 @@ test_that("an injected empty `across()` `.names` raises dplyr's own error", {
         .groups = "drop"
       )
   }
+  paired <- function(error, baseline, spelling) {
+    expect_identical(class(error), class(baseline))
+    expect_false(inherits(error, "simpleError"))
+    expect_false(inherits(error, "missingArgError"))
+    expect_match(conditionMessage(error), spelling, fixed = TRUE)
+  }
 
-  baseline <- expect_error(oracle(data))
-  error <- expect_error(summarize(data))
+  paired(
+    expect_error(summarize(data)),
+    expect_error(oracle(data)),
+    ".names = "
+  )
+  # A template naming nothing, which fails the same read for a reason that has
+  # no empty argument in it.
+  paired(
+    expect_error(
+      summarize_with_margins(
+        data,
+        dplyr::across(units, sum, .names = absent_template),
+        .grouping = rollup(region)
+      )
+    ),
+    expect_error(
+      data |>
+        dplyr::group_by(region) |>
+        dplyr::summarise(
+          dplyr::across(units, sum, .names = absent_template),
+          .groups = "drop"
+        )
+    ),
+    ".names = absent_template"
+  )
 
-  expect_identical(class(error), class(baseline))
-  expect_false(inherits(error, "simpleError"))
-  expect_false(inherits(error, "missingArgError"))
-  # dplyr's context names the caller's own argument, which is the half a bare
-  # `simpleError` carried none of.
-  expect_match(conditionMessage(error), ".names = ", fixed = TRUE)
-
-  # The control: an injected template that does have a value is still
-  # evaluated here, so the guard withholds the evaluation for the empty
-  # argument alone rather than for every injected template.
+  # The control: a template that does have a value is still evaluated here, so
+  # what the read withholds is the inlining and not the evaluation.
   expect_identical(
     names(summarize(data, "{.col}_total")),
-    names(
-      as.data.frame(
-        data |>
-          dplyr::group_by(region) |>
-          dplyr::summarise(
-            dplyr::across(units, sum, .names = "{.col}_total"),
-            .groups = "drop"
-          )
-      )
-    )
+    names(as.data.frame(oracle(data, "{.col}_total")))
   )
 })
 
 test_that("an injected empty `across()` argument answers as dplyr answers", {
-  # The positions the same pass reached that already agree with dplyr, asserted
-  # so that a later change breaking one of them is caught here rather than by a
-  # caller. `.fns` and an argument forwarded to it are evaluated by dplyr, and
-  # `.unpack` is evaluated here only to decide whether the name normalization
-  # applies -- a read that already tolerates a template it cannot evaluate, and
-  # leaves the argument for dplyr either way.
+  # The positions the same pass reached that already agreed with dplyr,
+  # asserted so that a later change breaking one of them is caught here rather
+  # than by a caller.
   data <- data.frame(
     region = c("East", "East", "West"),
     units = c(1, 3, 6)
@@ -2580,6 +2561,91 @@ test_that("an injected empty `across()` argument answers as dplyr answers", {
     expected,
     ignore_attr = "row.names"
   )
+})
+
+test_that("an injected share selection is refused by the name it carries", {
+  # The share planner reads its selection through a resolver of its own, which
+  # had the same wrapping and the same `rlang::is_symbol()` read #169 fixed at
+  # the four helpers: a forwarded name reached `eval_select()` and was reported
+  # as an unusable selection, rather than being asked whether it names an
+  # eligible summary.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6)
+  )
+  summarize <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      units = sum(units),
+      dplyr::across({{ selection }}, share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    )
+  }
+
+  error <- expect_error(
+    summarize(data, absent),
+    "unknown summary `absent`",
+    fixed = TRUE
+  )
+  expect_s3_class(error, "marginplyr_error")
+
+  # An omitted selection reads as the empty one here too, so the share names no
+  # output rather than every eligible source, which is what the written empty
+  # selection above it means.
+  expect_identical(names(summarize(data)), c("region", "units"))
+})
+
+test_that("a nested `across()` selection is resolved where it is written", {
+  # The deliberate divergence the section comment names. dplyr's own two
+  # readings disagree about an injected empty `.cols`: its static expansion of
+  # a top-level `across()` resolves it to the empty selection, and its run-time
+  # `across()` -- which is what a nested one reaches -- takes the deprecated
+  # `everything()` default instead. Every position is rewritten here, so the
+  # resolved one is what dplyr gives the position `across()` is written in as a
+  # summary, at every position.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+  nested <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      columns = ncol(dplyr::across({{ selection }}, ~1)),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    )
+  }
+  oracle <- function(data, selection) {
+    unique(
+      dplyr::summarise(
+        dplyr::group_by(data, region),
+        columns = ncol(dplyr::across({{ selection }}, ~1))
+      )$columns
+    )
+  }
+  columns_of <- function(result) {
+    unique(result$columns)
+  }
+
+  # A selection that is not empty agrees with dplyr wherever it is written.
+  expect_identical(columns_of(nested(data, c(units, revenue))), 2L)
+  expect_identical(
+    columns_of(nested(data, c(units, revenue))),
+    oracle(data, c(units, revenue))
+  )
+
+  # An omitted one is where the two readings part. dplyr raises its lifecycle
+  # warning on the run-time path, which is the signal that says the answer
+  # beside it is the deprecated default rather than a resolution.
+  expect_identical(columns_of(nested(data)), 0L)
+  expect_warning(
+    deprecated <- oracle(data),
+    "without supplying `.cols`",
+    fixed = TRUE
+  )
+  expect_identical(deprecated, 2L)
 })
 
 test_that("an empty argument answers as omitted wherever the walk reads one", {

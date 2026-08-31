@@ -3037,8 +3037,14 @@ resolve_share_selection <- function(expr,
                                     context,
                                     kind,
                                     error_call) {
-  if (rlang::is_symbol(expr)) {
-    source <- rlang::as_name(expr)
+  # Through the injected reading, so that a selection a wrapper forwarded is
+  # asked the question the written one is asked, rather than reaching
+  # `eval_select()` as an unusable selection (ADR 0019's amendment, #169).
+  # Asked with `is_name_part()` for the reason `validate_share_across_syntax()`
+  # gives, and read twice rather than bound, because what it carries can be the
+  # empty argument.
+  if (is_name_part(unwrap_injected_quosure(expr))) {
+    source <- rlang::as_name(unwrap_injected_quosure(expr))
     if (!source %in% preceding_names) {
       abort_share_source_name(source, preceding, context, kind)
     }
@@ -3047,9 +3053,18 @@ resolve_share_selection <- function(expr,
     as.list(seq_along(preceding_names)),
     preceding_names
   )
+  # A quosure carries the environment `env` would supply, and wrapping one
+  # hands `eval_select()` a quosure inside a quosure -- the lambda shorthand,
+  # which it refuses. `resolve_summary_selection()` reads a selection the same
+  # way, for the same reason (#350).
+  selection <- if (rlang::is_quosure(expr)) {
+    expr
+  } else {
+    rlang::new_quosure(expr, env = env)
+  }
   tryCatch(
     names(tidyselect::eval_select(
-      rlang::new_quosure(expr, env = env),
+      selection,
       data = proxy,
       strict = TRUE,
       allow_rename = FALSE,

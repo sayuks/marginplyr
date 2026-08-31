@@ -503,7 +503,7 @@ rewrite_across_selection <- function(expr,
   # already the `dplyr::everything()` that an omitted `.cols` selects, and an
   # argument the caller wrote empty is omitted in exactly that sense. A quosure
   # carrying the empty argument is not, and reaches the resolution below as the
-  # selection it is -- the empty one, which is what dplyr selects for it (#350).
+  # selection it is -- the empty one (#350).
   # What the branch decides is only where the resolved selection goes --
   # prepended when no argument occupies `.cols`, and written back over the
   # argument that does, so an empty one keeps its position instead of being
@@ -558,16 +558,20 @@ rewrite_across_selection <- function(expr,
   if (identical(call_name, "across")) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
     # Evaluated here so that a template written against the caller's own
-    # bindings reaches dplyr as the string it evaluates to. A quosure carrying
-    # the empty argument has no value to evaluate, and evaluating it looked up
-    # the empty symbol: base R answers that with an untyped `simpleError`
-    # naming nothing the caller wrote. dplyr raises on the same argument and
-    # names it, so the argument is left for dplyr (ADR 0015, #350).
-    if (!is.null(parsed$names) && !is_injected_empty_argument(parsed$names)) {
-      call_args[[parsed$names_index]] <- rlang::eval_tidy(
-        parsed$names,
-        env = env
+    # bindings reaches dplyr as the string it evaluates to. A template that
+    # cannot be evaluated is left as the caller wrote it, so dplyr evaluates it
+    # and raises with the context naming their own argument: base R's answer to
+    # the same read is an untyped `simpleError` naming nothing they wrote, and
+    # an empty argument a wrapper forwarded reaches this as one (ADR 0015,
+    # #350). The `.unpack` read above tolerates the same failure the same way.
+    if (!is.null(parsed$names)) {
+      evaluated <- tryCatch(
+        list(rlang::eval_tidy(parsed$names, env = env)),
+        error = function(cnd) NULL
       )
+      if (!is.null(evaluated)) {
+        call_args[[parsed$names_index]] <- evaluated[[1L]]
+      }
     }
   }
 
@@ -591,13 +595,14 @@ rewrite_pick_selection <- function(expr, env, data_proxy) {
 }
 
 resolve_summary_selection <- function(expr, env, data_proxy) {
-  # A quosure is passed on rather than wrapped, because it already carries the
-  # environment `env` would supply. Wrapping one produces a quosure whose
-  # expression is a quosure, and `eval_select()` reads that inner `~` as the
-  # lambda shorthand and refuses the selection with `where()` advice. `{{ }}`
-  # at `.cols` inlines a quosure, which is the ordinary idiom for forwarding a
-  # selection, so the wrapping refused every forwarded selection rather than
-  # only one carrying the empty argument (#350).
+  # A quosure is passed on rather than wrapped, because it carries the
+  # environment `env` would supply and a selection needs the one it was written
+  # in. Wrapping produces a quosure whose expression is a quosure, which
+  # `eval_select()` reads as the lambda shorthand and refuses with `where()`
+  # advice. `{{ }}` at `.cols` inlines a quosure, so this is the position the
+  # ordinary idiom for forwarding a selection arrives at (#350). The
+  # environment is what separates this from ADR 0019's amendment, which reads an
+  # injected *name* for the name alone.
   selection <- if (rlang::is_quosure(expr)) {
     expr
   } else {

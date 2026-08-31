@@ -340,22 +340,6 @@ is_empty_argument <- function(quo) {
     wraps_empty_argument(unparenthesized_value(rlang::quo_get_expr(quo)))
 }
 
-# Whether a call argument is a quosure carrying an empty argument -- the
-# spelling a caller produces by forwarding an argument their own caller left
-# out, `f({{ x }})` with `x` omitted. R's own empty argument is the other
-# spelling, and `rlang::is_missing()` answers that one; neither predicate
-# answers the other. Asked of a part read by subscript out of
-# `static_call_args()`, which holds either, so the quosure test comes first and
-# `is_empty_argument()` above is reached only for what it accepts.
-#
-# The two spellings are not interchangeable at a selection: dplyr takes the
-# formal's default for a written empty `.cols` and selects nothing for an
-# injected one, so a reader folding them together answers a call the caller did
-# not write (#350).
-is_injected_empty_argument <- function(part) {
-  rlang::is_quosure(part) && is_empty_argument(part)
-}
-
 # The head and the arguments of a call a walk descends into, and the node
 # rebuilt around rewritten arguments. `static_call_name()` above answers what a
 # walk asks of a node it does not descend into; these three are what it asks of
