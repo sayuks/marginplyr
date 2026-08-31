@@ -816,12 +816,7 @@ summarize_with_margins <- function(.data,
                                    .id = NULL,
                                    .sort = c("none", "last", "first")) {
   call <- rlang::current_call()
-  # `.ignore_empty = "all"` is `dplyr::summarise()`'s own reading of an empty
-  # argument: an unnamed one is dropped wherever it sits, and a named one is
-  # kept for `check_empty_summaries()` to refuse (#340). The default,
-  # `"trailing"`, kept a leading or interior unnamed one and carried R's
-  # missing marker into every reader downstream.
-  dots <- rlang::enquos(..., .ignore_empty = "all")
+  dots <- rlang::enquos(...)
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
@@ -839,10 +834,11 @@ summarize_with_margins <- function(.data,
         .id = .id
       )
       assert_logical_scalar(.check_share_source)
-      # Ahead of every reading of a summary expression, including the two
-      # below: an empty argument is refused rather than bound to a local.
-      check_empty_summaries(dots)
       check_option_named_summaries(dots)
+      # Ahead of the two readings of a summary expression below, and after the
+      # one check that reads only names: an empty argument is refused rather
+      # than bound to a local.
+      check_empty_summaries(dots)
       check_summary_context_helpers(dots)
       preflight_shares(dots)
     },

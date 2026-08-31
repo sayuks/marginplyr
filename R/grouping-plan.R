@@ -106,16 +106,14 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
     # input and cannot rename one.
     return(group_vars)
   }
-  # An empty `.by` selects no columns, which is `dplyr`'s answer to the same
-  # input -- what a wrapper forwards when its own caller omitted the column it
-  # passes on. Asked here because `is_name_only_selection()` below binds no
-  # local but reads the expression: R's empty argument is a symbol whose name
-  # is `""`, and `rlang::env_has()` raises an untyped condition for a
-  # zero-length variable name (#340).
+  # An empty `.by` selects no columns, which is dplyr's answer to it. Asked
+  # before `is_name_only_selection()` below, which reads the expression rather
+  # than binding it: the empty argument is a symbol whose name is `""`, and
+  # `rlang::env_has()` raises for a zero-length variable name (#340).
   #
-  # It is asked after `normalize_grouping_input()` has refused a grouped input
-  # carrying any `.by`, so the two readings dplyr takes of an empty one are
-  # both kept: supplied for that refusal, and no columns here.
+  # `normalize_grouping_input()` has already refused a grouped input carrying
+  # any `.by`, which keeps dplyr's other reading of an empty one: supplied
+  # there, no columns here.
   if (rlang::quo_is_null(by_quo) || rlang::quo_is_missing(by_quo)) {
     return(character())
   }
@@ -167,7 +165,16 @@ prepare_grouping_plan <- function(.data,
 
   with_margin_error_call(
     {
-      grouping_spec <- rlang::eval_tidy(grouping_quo)
+      # An empty `.grouping` is the argument left absent, which is what
+      # `.grouping = ` already means: R matches a named formal's empty argument
+      # to that formal's default. Only injection carries the missing marker
+      # this far, and `rlang::eval_tidy()` evaluates it -- `object '' not
+      # found`, naming nothing the caller wrote (#340).
+      grouping_spec <- if (rlang::quo_is_missing(grouping_quo)) {
+        NULL
+      } else {
+        rlang::eval_tidy(grouping_quo)
+      }
       validate_grouping_spec_early(grouping_spec)
       if (!is.null(validate_grouping)) {
         validate_grouping(grouping_spec)

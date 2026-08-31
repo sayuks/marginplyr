@@ -921,6 +921,28 @@ test_that("a forwarded empty `.by` is still an argument the caller supplied", {
   )
 })
 
+# The third verb argument injection can leave empty, and the one that fails by
+# a different mechanism: nothing binds `.grouping`'s expression, so
+# `rlang::eval_tidy()` evaluated the empty symbol and raised `object '' not
+# found`. What it is answered with is the reading `.grouping = ` already has,
+# because R matches a named formal's empty argument to that formal's default
+# (#340).
+test_that("a forwarded empty `.grouping` is the plan omitting it gives", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  forwarded <- function(data, grouping) {
+    inspect_grouping(data, .grouping = {{ grouping }})
+  }
+
+  expect_identical(forwarded(data), inspect_grouping(data))
+  expect_identical(
+    forwarded(data, rollup(region)),
+    inspect_grouping(data, .grouping = rollup(region))
+  )
+})
+
 # The other reader of a kind nothing has validated, and the one where the
 # guards' answer is not the answer: this site declines rather than refuses, so
 # what a method could take from it was a compiled call rather than a diagnostic

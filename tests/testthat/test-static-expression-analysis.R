@@ -2486,37 +2486,85 @@ test_that("a summary argument the caller left empty is refused by name", {
   }
 })
 
-test_that("an unnamed empty summary argument is dropped as dplyr drops one", {
-  # dplyr is the oracle again. It captures `...` with `.ignore_empty = "all"`,
-  # which keeps a named empty argument for the refusal above and drops an
-  # unnamed one wherever it sits. Only a trailing one was dropped here, so a
-  # leading one reached `preflight_shares()` and raised `missingArgError`
-  # (#340).
+test_that("an unnamed empty summary argument is refused by its position", {
+  # The other spellings an empty summary reaches the verb by. A leading or
+  # interior one is written; a spliced one is built, and survives capture
+  # whether it carries a name or not. Each raised `missingArgError` from the
+  # first reader that bound it (#340).
+  #
+  # `..n` is the name the refusal gives an unnamed argument, which is how dplyr
+  # refers to one and what `name_unnamed_by_position()` already spells.
   data <- data.frame(region = c("East", "East", "West"), value = c(1, 3, 6))
+  empty_summary_message <- function(name) {
+    paste0(
+      "Summary `", name, "` is empty.\n",
+      "i Remove the summary, or write the expression it computes."
+    )
+  }
 
-  expected <- summarize_with_margins(
-    data,
-    total = sum(value),
-    .grouping = rollup(region)
-  )
-  leading <- summarize_with_margins(
-    data,
-    ,
-    total = sum(value),
-    .grouping = rollup(region)
-  )
-  trailing <- summarize_with_margins(
-    data,
-    total = sum(value),
-    ,
-    .grouping = rollup(region)
+  shapes <- list(
+    leading = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        ,
+        total = sum(value),
+        .grouping = rollup(region)
+      )),
+      name = "..1"
+    ),
+    interior = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        total = sum(value),
+        ,
+        rows = dplyr::n(),
+        .grouping = rollup(region)
+      )),
+      name = "..2"
+    ),
+    spliced = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        !!!list(rlang::missing_arg()),
+        total = sum(value),
+        .grouping = rollup(region)
+      )),
+      name = "..1"
+    ),
+    spliced_named = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        !!!list(z = rlang::missing_arg()),
+        .grouping = rollup(region)
+      )),
+      name = "z"
+    )
   )
 
-  expect_identical(leading, expected)
-  expect_identical(trailing, expected)
+  for (shape in shapes) {
+    expect_s3_class(shape$error, "marginplyr_error")
+    expect_false(inherits(shape$error, "missingArgError"))
+    expect_identical(
+      conditionMessage(shape$error),
+      empty_summary_message(shape$name)
+    )
+  }
+
+  # A trailing comma is not an empty argument, here as in a Grouping
+  # specification constructor: `rlang::enquos(...)` captures no argument for
+  # one, so the refusal above cannot reach it and must not start reaching it.
   expect_identical(
-    names(dplyr::summarise(data, , total = sum(value))),
-    "total"
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      ,
+      .grouping = rollup(region)
+    ),
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .grouping = rollup(region)
+    )
   )
 })
 
