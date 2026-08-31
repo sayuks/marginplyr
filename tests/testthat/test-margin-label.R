@@ -455,6 +455,57 @@ test_that("dtplyr applies mixed named labels lazily and restores factors", {
   expect_true(all(is.na(result$second[result$id == 1L])))
 })
 
+test_that("dtplyr expansion verbs restore ordered factor dimensions", {
+  skip_if_suggest_absent("dtplyr")
+  # Two rows are load-bearing: data.table replaces a one-row factor column but
+  # recycles a scalar assignment into a multi-row one without replacing it.
+  data <- data.frame(
+    group = ordered(c("small", "large"), levels = c("small", "large")),
+    value = 1:2
+  )
+  source <- dtplyr::lazy_dt(data)
+  lazy <- list(
+    expand_with_margins = expand_with_margins(
+      source,
+      .grouping = rollup(group),
+      .margin_label = "(all)",
+      .margin_label_position = "first"
+    ),
+    nest_with_margins = nest_with_margins(
+      source,
+      .grouping = rollup(group),
+      .margin_label = "(all)",
+      .margin_label_position = "first"
+    )
+  )
+
+  results <- lapply(names(lazy), function(verb) {
+    expect_s3_class(lazy[[verb]], "dtplyr_step")
+    dplyr::collect(lazy[[verb]])
+  })
+  names(results) <- names(lazy)
+  results$nest_by_with_margins <- nest_by_with_margins(
+    source,
+    .grouping = rollup(group),
+    .margin_label = "(all)",
+    .margin_label_position = "first"
+  )
+
+  for (verb in names(results)) {
+    result <- results[[verb]]
+    expect_true(is.ordered(result$group), info = verb)
+    expect_identical(
+      levels(result$group),
+      c("(all)", "small", "large"),
+      info = verb
+    )
+    expect_setequal(
+      as.character(result$group),
+      c("small", "large", "(all)")
+    )
+  }
+})
+
 test_that("Arrow applies mixed named labels lazily with typed missing values", {
   skip_if_suggest_absent("arrow")
   data <- data.frame(

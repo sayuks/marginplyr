@@ -382,11 +382,23 @@ label_margin_branch <- function(.data,
       dplyr::across(dplyr::all_of(labelled_as_character), as.character)
     )
   }
+  # dtplyr renders a scalar overwrite as data.table `:=`. On a multi-row factor
+  # column, data.table recycles it without replacing the column class, leaving
+  # an ordered factor opposite the character branch at `funion()`. A full-size
+  # value replaces the column so factor restoration remains after the union.
+  dtplyr_factor_cols <- if (inherits(.data, "dtplyr_step")) {
+    vapply(factor_info, function(info) info$col, character(1))
+  } else {
+    character()
+  }
   values <- lapply(
     omitted,
     function(col) {
       label <- margin_labels[[col]]
       if (!is_missing_margin_label(label)) {
+        if (col %in% dtplyr_factor_cols) {
+          return(rlang::expr(rep(!!label, dplyr::n())))
+        }
         return(label)
       }
       value <- prototypes[[col]]
