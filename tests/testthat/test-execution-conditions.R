@@ -526,14 +526,23 @@ test_that("a marker inside a value or a diagnostic decides nothing", {
 # reaches this: the pair above differ, so they are two reports either way.
 test_that("a caller's own pointer line does not split one warning", {
   text <- "bad value\ni Run `dplyr::last_dplyr_warnings()` tail"
-  warnings <- collect_warnings(summarize_branch_diagnostics(text, text))
+  collected <- warnings_under_every_rendering(
+    summarize_branch_diagnostics(text, text)
+  )
 
-  expect_length(warnings, 1L)
-  message <- conditionMessage(warnings[[1L]])
-  expect_match(message, "1 further grouping set", fixed = TRUE)
+  expect_rendering_markers(collected)
+  expect_identical(lengths(collected), for_every_rendering(1L))
+  expect_identical(
+    reported_contains(collected, "1 further grouping set"),
+    for_every_rendering(TRUE)
+  )
   # The caller's line is no part of what the identity removes, so the report
-  # still carries it.
-  expect_match(message, "last_dplyr_warnings()` tail", fixed = TRUE)
+  # still carries its tail. The word alone is what every width can be asked
+  # for: the line it sits on wraps at the narrow ones.
+  expect_identical(
+    reported_contains(collected, "tail"),
+    for_every_rendering(TRUE)
+  )
 })
 
 # ADR 0022's contract for a restated line, asserted line by line rather than in

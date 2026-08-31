@@ -226,15 +226,18 @@ branch_warning_identity <- function(cnd) {
   } else {
     paste(written[seq_len(first_bullet - 1L)], collapse = " ")
   }
-  # The header's own count, kept rather than only tested for: it is what says
-  # whether dplyr appended a pointer, having nothing to point at where it
-  # reported one warning. `regmatches()` returns the whole match ahead of the
-  # groups, so the count is the third element.
-  counted <- regmatches(
+  header_match <- regmatches(
     header,
     regexec("^There (were|was) ([0-9]+) warnings? in ", header)
   )[[1L]]
-  aggregated <- length(counted) > 0L
+  aggregated <- length(header_match) > 0L
+  # `regmatches()` returns the whole match ahead of the two groups, so the
+  # count is the third element.
+  warning_count <- if (aggregated) {
+    as.integer(header_match[[3L]])
+  } else {
+    NA_integer_
+  }
   if (aggregated) {
     removed[seq_len(first_bullet - 1L)] <- TRUE
   }
@@ -242,23 +245,19 @@ branch_warning_identity <- function(cnd) {
     removed <- removed |
       (grepl("^[i\u2139] In group ", written) & seq_along(written) < cause)
   }
-  # The pointer dplyr appends is the last line, and it appends one only where
-  # the header counted more than one warning to point at. A caller's own
-  # diagnostic can spell that line anywhere in the message, and reading one as
-  # dplyr's splits the identity of a single warning: the branch that raised it
-  # once loses the tail that the branch that raised it twice keeps (#341). Its
-  # backticks are optional because cli writes the call as an `x-r-run` hyperlink
-  # where the terminal takes one, and the backticks are what the link replaces
-  # -- so removing the escapes is necessary for this line and not sufficient
-  # (#217).
+  # The pointer's backticks are optional because cli writes the call as an
+  # `x-r-run` hyperlink where the terminal takes one, and the backticks are what
+  # the link replaces -- so removing the escapes is necessary for this line and
+  # not sufficient (#217).
+  last <- length(written)
   appended <- aggregated &&
-    as.integer(counted[[3L]]) > 1L &&
+    warning_count > 1L &&
     grepl(
       "^[i\u2139] Run `?dplyr::last_dplyr_warnings\\(\\)`?",
-      written[[length(written)]]
+      written[[last]]
     )
   if (appended) {
-    removed[[length(runs)]] <- TRUE
+    removed[[last]] <- TRUE
   }
 
   paste(
