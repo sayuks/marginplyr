@@ -168,19 +168,20 @@ is_call_arguments <- function(expr, locals) {
     (is.symbol(expr) && as.character(expr) %in% locals)
 }
 
-# The scan both gates below are, once the predicate is taken out of it: of the
-# functions a namespace binds, the names of those whose body the predicate
-# matches. Every predicate handed to it here matches a walk, which is what the
-# name says; what it returns is a set of names, named rather than counted so a
-# failure says which walk to rewrite.
+# The scan all three gates below are, once the predicate is taken out of it: of
+# the functions a namespace binds, the names of those whose body the predicate
+# matches. Every predicate handed to it here matches a walk over an expression,
+# which is what the name says; what it returns is a set of names, named rather
+# than counted so a failure says which walk to rewrite.
 #
 # The predicate is the only thing it takes for itself. The two it deliberately
 # does not take are the witness and the message: each gate's witness names what
 # that gate reads -- `static_call_args` for the `for` scan,
-# `parse_across_arguments` for the `<-` scan -- and each remedy is written for
-# its own spelling, so an argument for either would exist only to be different,
-# and would make the two look interchangeable. They stay in the `test_that()`
-# block that means them.
+# `parse_across_arguments` for the `<-` scan, `unparenthesized_value` for the
+# restart scan -- and each remedy is written for its own spelling, so an
+# argument for either would exist only to be different, and would make the
+# three look interchangeable. They stay in the `test_that()` block that means
+# them.
 #
 # The enumeration and the namespace come from the caller rather than from
 # defaults here. A gate then asserts its witness against the very set this
@@ -190,10 +191,10 @@ is_call_arguments <- function(expr, locals) {
 #
 # Local to this source rather than in `helper-namespace-walk.R`: that file
 # exists because testthat gives each test file its own environment, so one
-# file's gate cannot see a reader another defined, and both gates here are in
-# one file. The other scan of this shape, in `test-grouping-plan.R`, decides by
-# deparsing rather than by walking and says so where it stands, so a shared home
-# would be a home for one caller.
+# file's gate cannot see a reader another defined, and all three gates here are
+# in one file. The other scan of this shape, in `test-grouping-plan.R`, decides
+# by deparsing rather than by walking and says so where it stands, so a shared
+# home would be a home for one caller.
 walks_matching <- function(predicate, functions, ns) {
   matched <- vapply(
     functions,
@@ -414,6 +415,155 @@ test_that("the assignment scan detects the shape it is written to forbid", {
   expect_false(binds_call_parts_by_assign(quote(sum(value[]))))
 })
 
+# The third gate over the same namespace, and the one whose subject is a walk
+# over an expression rather than over a call's parts. A pair of parentheses is
+# read through by restarting on what it wraps, and `unparenthesized_value()`
+# stops at a pair holding R's empty argument rather than unwrapping to it -- so
+# a restart guarded by `is_redundant_parens()` re-enters on the node it was
+# called with and never terminates. `is_parenthesized()` is the guard that
+# cannot, for the reason its own header gives.
+#
+# Scanned rather than listed, for the reason the gates above are. Two readers
+# were written under the weaker guard and both recursed without bound, one
+# reached from a share expression and one from a summary holding no share
+# helper at all (#349) -- so a list would be a list the third reader is not on.
+#
+# What it matches is the combination and not either half. Both readers in the
+# pair vocabulary -- `unparenthesized_call()` and `unparenthesized_name()` --
+# test `is_redundant_parens()` and read the peeler beside it, and both are
+# correct, because what they do with the answer is bind it and return: no
+# re-entry, so no node to shrink. Handing it to another call is the re-entry,
+# and `captured_call_parts()` tests the pair without reading the peeler at all.
+#
+# The two halves are found in one pass rather than in a pass each, so the
+# combination is read off one traversal of the body.
+#
+# By subscript throughout, since a scanned body holds exactly the code that may
+# carry an empty argument -- and a `switch()` fallthrough branch in one is the
+# shape that carries it here.
+restarts_on_an_unshrunk_pair <- function(expr) {
+  tests_pair <- FALSE
+  hands_on_value <- FALSE
+  visit_calls(expr, function(node) {
+    # The written-out spelling beside the named one, since a guard is a guard
+    # however it is spelled and the hazard is what it answers. `R/` holds only
+    # the named spelling today, which is what makes the other one worth
+    # matching: a reader written tomorrow reaches for whichever it remembers.
+    if (
+      identical(node[[1L]], quote(is_redundant_parens)) ||
+        identical(node[[1L]], quote(rlang::is_call)) &&
+          length(node) >= 3L && identical(node[[3L]], "(")
+    ) {
+      tests_pair <<- TRUE
+    }
+    # An assignment is not a re-entry: `spelled <- unparenthesized_value(expr)`
+    # is the binding both readers in the pair vocabulary make, and what follows
+    # it re-enters nothing. Nor is the peeler's own nesting, `unparenthesized_
+    # value(unparenthesized_value(x))`, which shrinks whatever it can shrink.
+    if (
+      identical(node[[1L]], quote(unparenthesized_value)) ||
+        identical(node[[1L]], quote(`<-`)) ||
+        identical(node[[1L]], quote(`=`))
+    ) {
+      return(invisible(NULL))
+    }
+    for (index in seq_along(node)[-1L]) {
+      if (
+        is.call(node[[index]]) &&
+          identical(node[[index]][[1L]], quote(unparenthesized_value))
+      ) {
+        hands_on_value <<- TRUE
+      }
+    }
+  })
+  tests_pair && hands_on_value
+}
+
+test_that("no reader restarts on a pair of parentheses it cannot shrink", {
+  ns <- asNamespace("marginplyr")
+  functions <- namespace_functions(ns)
+  # The scan iterates over this set, so a set that arrived empty is a set that
+  # passes.
+  expect_true("unparenthesized_value" %in% functions)
+
+  expect_equal(
+    walks_matching(restarts_on_an_unshrunk_pair, functions, ns),
+    character(),
+    info = paste(
+      "Guard the restart with `is_parenthesized()` instead --",
+      "it answers `FALSE` for the pair `unparenthesized_value()` stops at,",
+      "so the reader cannot re-enter on the node it was called with."
+    )
+  )
+})
+
+test_that("the restart scan detects the shape it is written to forbid", {
+  # Asserted before the scan's verdict means anything, for the reason the two
+  # gates above assert their own: a scan that stopped matching reports exactly
+  # what a clean package reports.
+  offending <- function(expr) {
+    if (is_redundant_parens(expr)) {
+      return(offending(unparenthesized_value(expr)))
+    }
+    expr
+  }
+  # The same restart one call deeper, and one written as a plain statement
+  # rather than a `return()`: neither is a shape a reader may be written in.
+  nested <- function(expr) {
+    if (TRUE) {
+      lapply(seq_len(2L), function(i) {
+        if (is_redundant_parens(expr)) {
+          nested(unparenthesized_value(expr))
+        }
+      })
+    }
+  }
+  # Correct, and the two shapes the gate must not name: the pair vocabulary's
+  # own readers, which bind the peeler's answer and return without re-entering,
+  # and a reader that restarts under the guard that answers `FALSE` for the
+  # pair the peeler stops at.
+  compliant_binding <- function(expr) {
+    if (!is_redundant_parens(expr)) {
+      return(expr)
+    }
+    spelled <- unparenthesized_value(expr)
+    if (is_nameable_call(spelled)) {
+      return(spelled)
+    }
+    expr
+  }
+  compliant_restart <- function(expr) {
+    if (is_parenthesized(expr)) {
+      return(compliant_restart(unparenthesized_value(expr)))
+    }
+    expr
+  }
+  compliant_test <- function(expr) {
+    if (is_redundant_parens(expr)) {
+      return(NULL)
+    }
+    expr
+  }
+
+  # And the guard written out rather than named, which is the same guard.
+  inline <- function(expr) {
+    if (rlang::is_call(expr, "(") && length(expr) == 2L) {
+      return(inline(unparenthesized_value(expr)))
+    }
+    expr
+  }
+
+  expect_true(restarts_on_an_unshrunk_pair(body(offending)))
+  expect_true(restarts_on_an_unshrunk_pair(body(nested)))
+  expect_true(restarts_on_an_unshrunk_pair(body(inline)))
+  expect_false(restarts_on_an_unshrunk_pair(body(compliant_binding)))
+  expect_false(restarts_on_an_unshrunk_pair(body(compliant_restart)))
+  expect_false(restarts_on_an_unshrunk_pair(body(compliant_test)))
+  # An empty argument in the scanned code must not abort the scan, which is the
+  # bug the gates in this file exist for.
+  expect_false(restarts_on_an_unshrunk_pair(quote(sum(value[]))))
+})
+
 test_that("every shared reader answers an empty call part", {
   # The scans above forbid binding a call part to a local; this is the same
   # rule read from the other end, at the readers a walk hands one to. An empty
@@ -436,6 +586,43 @@ test_that("every shared reader answers an empty call part", {
   expect_null(static_callee_name(parts[[2L]]))
   expect_false(is_parenthesized(parts[[2L]]))
   expect_identical(expression_data_symbols(parts[[2L]]), character())
+})
+
+test_that("every shared reader answers a pair holding an empty call part", {
+  # The positive half of the gate above, and what establishes termination for
+  # each reader rather than for the one #349 found: the gate refuses the shape
+  # a non-terminating restart has, and this calls every reader that reads
+  # through a pair with the node a restart cannot shrink. A reader that
+  # recursed on it would exhaust the evaluation stack here rather than answer.
+  #
+  # The parser rejects `f(())`, so the pair is constructed. Read by subscript
+  # for the reason the readers themselves are.
+  pair <- as.call(list(as.name("("), rlang::missing_arg()))
+
+  # The pair vocabulary answers what the pair is, which is what every reader
+  # below acts on: not something unwrapping shrinks, and a pair wrapping
+  # nothing to read.
+  expect_false(is_parenthesized(pair))
+  expect_true(wraps_empty_argument(pair))
+  expect_identical(unparenthesized_value(pair), pair)
+  expect_identical(unparenthesized_call(pair), pair)
+  expect_identical(unparenthesized_name(pair), pair)
+
+  # The readers that restart on what a pair wraps, and the two spelling reads
+  # that unwrap before their shape test. Each answers the pair as it answers
+  # any other node it does not recognize.
+  expect_identical(static_call_name(pair), "(")
+  expect_null(static_call_ns(pair))
+  expect_null(static_spelling_name(pair, "selection"))
+  expect_null(static_spelling_reference_name(pair, "share"))
+  expect_null(static_character_value(pair))
+  expect_null(static_callee_name(pair))
+  expect_null(share_expression_kind(pair))
+  expect_identical(expression_data_symbols(pair), character())
+  expect_identical(
+    statement_reads_and_bound(pair, character()),
+    list(reads = character(), bound = character())
+  )
 })
 
 test_that("lazy-table assertions use the package condition seam", {

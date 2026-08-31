@@ -205,9 +205,9 @@
   `across()` reads its selection the same way, so a forwarded name that is not
   an eligible preceding summary is now refused by that name rather than
   reported as an unusable selection. An `across()` `.names` template that
-  cannot be evaluated — forwarded empty, or naming something absent — reaches
-  dplyr, which names the argument you wrote, in place of R's bare
-  `object '' not found` naming nothing (#350).
+  cannot be evaluated — forwarded empty, naming something absent, or a pair of
+  parentheses holding nothing — reaches dplyr, which names the argument you
+  wrote, in place of R's bare error naming nothing (#349, #350).
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were
