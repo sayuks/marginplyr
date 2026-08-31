@@ -833,6 +833,19 @@ test_that("the empty spellings that already had a reading keep it", {
   )
 })
 
+# Every exported verb taking the argument named, derived from the signatures so
+# that a sixth arrives below as a wrapper a list is missing rather than as a
+# position nothing covers.
+verbs_taking <- function(arg) {
+  Filter(
+    function(name) {
+      object <- getExportedValue("marginplyr", name)
+      is.function(object) && arg %in% names(formals(object))
+    },
+    getNamespaceExports("marginplyr")
+  )
+}
+
 # The other empty argument a verb takes, and not the `.by = ` above: R matches
 # a named formal's empty argument to that formal's default, while `{{ }}`
 # splices R's missing marker into the quosure. Only the second reaches
@@ -879,18 +892,7 @@ test_that("a forwarded empty `.by` selects no columns on every verb", {
     }
   )
 
-  # Derived from the exported signatures rather than listed, so a sixth verb
-  # taking `.by` arrives here as a wrapper this list is missing rather than as
-  # a position nothing covers.
-  exports <- getNamespaceExports("marginplyr")
-  by_verbs <- Filter(
-    function(name) {
-      object <- getExportedValue("marginplyr", name)
-      is.function(object) && ".by" %in% names(formals(object))
-    },
-    exports
-  )
-  expect_setequal(names(forwarded), by_verbs)
+  expect_setequal(names(forwarded), verbs_taking(".by"))
 
   for (name in names(forwarded)) {
     verb <- forwarded[[name]]
@@ -930,13 +932,48 @@ test_that("a forwarded empty `.grouping` is the plan omitting it gives", {
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
   )
-  forwarded <- function(data, grouping) {
-    inspect_grouping(data, .grouping = {{ grouping }})
+  # The same six verbs the `.by` test covers, for the same reason: both
+  # arguments are read once, on the path all of them reach.
+  forwarded <- list(
+    summarize_with_margins = function(data, grouping) {
+      summarize_with_margins(
+        data,
+        total = sum(value),
+        .grouping = {{ grouping }}
+      )
+    },
+    summarise_with_margins = function(data, grouping) {
+      summarise_with_margins(
+        data,
+        total = sum(value),
+        .grouping = {{ grouping }}
+      )
+    },
+    expand_with_margins = function(data, grouping) {
+      expand_with_margins(data, .grouping = {{ grouping }})
+    },
+    nest_with_margins = function(data, grouping) {
+      nest_with_margins(data, .grouping = {{ grouping }})
+    },
+    nest_by_with_margins = function(data, grouping) {
+      nest_by_with_margins(data, .grouping = {{ grouping }})
+    },
+    inspect_grouping = function(data, grouping) {
+      inspect_grouping(data, .grouping = {{ grouping }})
+    }
+  )
+  expect_setequal(names(forwarded), verbs_taking(".grouping"))
+
+  for (name in names(forwarded)) {
+    verb <- forwarded[[name]]
+    expect_identical(verb(data), verb(data, NULL), info = name)
   }
 
-  expect_identical(forwarded(data), inspect_grouping(data))
+  # The other half, once: a specification the wrapper does forward still
+  # arrives, so what the guard answers is the empty argument and not every
+  # injected one.
   expect_identical(
-    forwarded(data, rollup(region)),
+    forwarded$inspect_grouping(data, rollup(region)),
     inspect_grouping(data, .grouping = rollup(region))
   )
 })

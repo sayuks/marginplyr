@@ -63,6 +63,28 @@ test_that("every removed option answers its near misses the same way", {
   )
 })
 
+# The order the two checks over `...` run in, which nothing else pins. An
+# option-shaped name is answered by the option guidance whether or not the
+# caller left it empty, so `check_empty_summaries()` runs after
+# `check_option_named_summaries()` rather than before it (#340). Moving it back
+# ahead leaves every other test in the suite green and changes only the message
+# below.
+test_that("a removed option left empty is still answered as a removed one", {
+  expect_error(
+    summarize_with_margins(
+      admission_data(),
+      .groups = ,
+      s = sum(v),
+      .grouping = rollup(g)
+    ),
+    paste0(
+      "`summarize_with_margins\\(\\)` has no `\\.groups` argument\\.\n",
+      "i Margin-summary results are always ungrouped\\."
+    ),
+    class = "marginplyr_error"
+  )
+})
+
 test_that("the synonym answers removed options identically", {
   # `summarise_with_margins()` is the same object, but the option names are read
   # from formals and the messages name one spelling, so the synonym is where a

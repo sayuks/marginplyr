@@ -141,8 +141,8 @@ check_option_named_summaries <- function(dots) {
 # including one spliced in. What it captures no argument for is a trailing
 # comma, which keeps the reading `grouping_set(region, )` already has.
 #
-# An unnamed one is named `..n`, the numbering
-# `name_unnamed_by_position()` below already spells.
+# An unnamed one is named `..n`, the numbering `name_unnamed_by_position()`
+# below already spells.
 check_empty_summaries <- function(dots) {
   empty <- vapply(dots, is_empty_argument, logical(1), USE.NAMES = FALSE)
   if (!any(empty)) {
@@ -800,8 +800,8 @@ known_across_function_names <- function(parsed) {
 # is how dplyr refers to them: an argument forwarded through `across()`'s `...`
 # is `..n`, and an unnamed `.fns` list entry takes its index. An empty summary
 # `check_empty_summaries()` refuses is named the same way, so what the caller
-# reads is one numbering rather than one per site. The replacement
-# has to be indexed by the same positions that select it. Building it over the
+# reads is one numbering rather than one per site. The replacement has to be
+# indexed by the same positions that select it. Building it over the
 # whole list instead makes the two sides differ in length whenever any entry is
 # named, so base R recycles -- warning from a call that otherwise succeeds --
 # and numbers the survivors by their position among the unnamed entries rather

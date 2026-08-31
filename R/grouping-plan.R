@@ -446,11 +446,9 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 }
 
 # The spelling a nested position reads an argument by: the caller's expression
-# with its redundant parentheses removed (#178, #259). It answers the pair
-# wrapping R's empty argument rather than unwrapping to the marker
-# (#168, #174), which is the shape `is_empty_argument()` reads to refuse one
-# (#261). Every caller here runs downstream of that refusal and is handed no
-# empty argument at all.
+# with its redundant parentheses removed (#178, #259). Every caller here runs
+# downstream of `preflight_grouping_spec()`'s refusal of an empty argument
+# (#261) and is handed none.
 nested_arg_expr <- function(arg) {
   unparenthesized_value(rlang::quo_get_expr(arg))
 }
