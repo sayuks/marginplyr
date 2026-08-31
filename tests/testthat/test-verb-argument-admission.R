@@ -10,6 +10,10 @@ admission_data <- function() {
   data.frame(g = c("a", "a", "b"), v = c(1, 2, 3))
 }
 
+# The guidance the one removed option carries, read by every test asserting a
+# refusal that carries it.
+removed_groups_guidance <- "\ni Margin-summary results are always ungrouped\\."
+
 # Two tests stood here, `a removed option is reported instead of summarized`
 # and `a near miss on a removed option names what the caller wrote`. Both were
 # written against `.sort`, which ADR 0018 returned as a live argument: a name
@@ -33,8 +37,6 @@ test_that("every removed option answers its near misses the same way", {
   # patterns below read across it. That is what keeps them assertions about one
   # message rather than two: the guidance is asserted where the refusal that
   # carries it is, not merely somewhere in the corpus.
-  guidance <- "\ni Margin-summary results are always ungrouped\\."
-
   expect_error(
     summarize_with_margins(
       admission_data(),
@@ -43,7 +45,8 @@ test_that("every removed option answers its near misses the same way", {
       .groups = "drop"
     ),
     paste0(
-      "`summarize_with_margins\\(\\)` has no `\\.groups` argument\\.", guidance
+      "`summarize_with_margins\\(\\)` has no `\\.groups` argument\\.",
+      removed_groups_guidance
     ),
     class = "marginplyr_error"
   )
@@ -57,7 +60,7 @@ test_that("every removed option answers its near misses the same way", {
     ),
     paste0(
       "`\\.groupss` is not an argument.+neither is the `\\.groups` it ",
-      "resembles\\.", guidance
+      "resembles\\.", removed_groups_guidance
     ),
     class = "marginplyr_error"
   )
@@ -78,8 +81,8 @@ test_that("a removed option left empty is still answered as a removed one", {
       .grouping = rollup(g)
     ),
     paste0(
-      "`summarize_with_margins\\(\\)` has no `\\.groups` argument\\.\n",
-      "i Margin-summary results are always ungrouped\\."
+      "`summarize_with_margins\\(\\)` has no `\\.groups` argument\\.",
+      removed_groups_guidance
     ),
     class = "marginplyr_error"
   )
