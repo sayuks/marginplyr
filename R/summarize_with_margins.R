@@ -239,11 +239,27 @@
 #' attributes a result must carry after the Margin operation, as with any
 #' dplyr pipeline.
 #'
-#' Factor and ordered-factor columns are the one exception, because
-#' marginplyr decomposes them to insert `.margin_label` and rebuilds them
-#' itself. Their levels and ordering are preserved; see *Display labels and
-#' grouping identity*. Classed columns such as [Date] and [POSIXct], including
-#' its `tzone`, are carried through by dplyr and vctrs unchanged.
+#' Factor and ordered-factor columns are the one exception, on the backends
+#' whose factors marginplyr can rebuild: local data frames, `dtplyr`, and
+#' DuckDB. There it decomposes them to insert `.margin_label` and rebuilds
+#' them itself, so their levels and ordering are preserved; see *Display
+#' labels and grouping identity*. On DuckDB it is the levels alone: an `ENUM`
+#' carries no ordered flag, so an ordered factor is already unordered when
+#' marginplyr reads the column and unordered is what it rebuilds.
+#'
+#' Arrow is the one backend that can hold a factor without marginplyr being
+#' able to rebuild one, because the schema a dimension's prototype is read
+#' from carries a dictionary column with no levels in it. A non-missing
+#' `.margin_label` there converts the dimension to character as it does any
+#' ordinary dimension, so the levels and the ordered status are gone and a
+#' Margin order sorts the dimension by its values; plain
+#' [dplyr::summarize()] over the same table keeps the dictionary type, so
+#' this is marginplyr's loss rather than Arrow's. `NA_character_` and `NULL`
+#' insert no label and so convert nothing. A SQL backend other than DuckDB
+#' reaches none of this, storing a factor as text before marginplyr sees it.
+#'
+#' Classed columns such as [Date] and [POSIXct], including its `tzone`, are
+#' carried through by dplyr and vctrs unchanged.
 #'
 #' @section Grouping set identifiers:
 #' When `.id` names an output column, each result row receives the one-based
@@ -293,7 +309,8 @@
 #' differ.
 #'
 #' Factor and ordered-factor dimensions sort by their restored levels rather
-#' than by their rendering. `.margin_label_position` positions a synthetic
+#' than by their rendering, on the backends that restore them; see *Result
+#' class and attributes*. `.margin_label_position` positions a synthetic
 #' factor level and never a row: it changes `levels()` and nothing else, so the
 #' two options stay independent and no combination of them is wrong.
 #'
@@ -451,11 +468,13 @@
 #' are names from `.by`.
 #'
 #' Non-missing labels convert ordinary grouping dimensions to character. A
-#' factor or ordered factor is reconstructed after the Margin operation,
-#' preserving ordered status and placing a new synthetic level last by default
-#' or first when `.margin_label_position = "first"`. A label equal to any
-#' declared level, used or unused, is rejected before any grouping set is
-#' built, whatever `.check_margin_label` says: see that argument above.
+#' factor or ordered factor is reconstructed after the Margin operation where
+#' the backend allows it -- see *Result class and attributes*, which owns that
+#' condition -- preserving ordered status and placing a new synthetic level
+#' last by default or first when `.margin_label_position = "first"`. A label
+#' equal to any declared level, used or unused, is rejected before any
+#' grouping set is built, whatever `.check_margin_label` says: see that
+#' argument above.
 #' Reconstruction preserves the distinction between an observation that uses a
 #' factor NA level and an actually missing factor code.
 #'
