@@ -900,18 +900,30 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
   )
 
   # A formula names no output columns, is no share helper call, no `across()`
-  # call, no name-only selection, and no grouping helper -- whatever sits on
-  # its right-hand side. Each of these answered for that right-hand side.
+  # call, and no grouping helper -- whatever sits on its right-hand side. Each
+  # of these answered for that right-hand side.
   expect_identical(
     known_data_frame_output_names(quote(~ dplyr::pick(value)), env, proxy),
     character()
   )
   expect_null(share_helper_call_kind(quote(~ share_of_total(units))))
   expect_false(is_across_call(quote(~ dplyr::across(value, mean))))
-  expect_false(
+  expect_null(grouping_helper_name(quote(~ grouping_id(region))))
+
+  # `is_name_only_expr()` answers a formula too, and its answer is the
+  # formula's rather than its right-hand side's: tidyselect refuses one on
+  # sight, so both of these are settled by the names while the right-hand
+  # sides answer `TRUE` and `FALSE` (#346).
+  expect_true(
     is_name_only_expr(quote(~c(region)), env = env, data_vars = "region")
   )
-  expect_null(grouping_helper_name(quote(~ grouping_id(region))))
+  expect_true(
+    is_name_only_expr(
+      quote(~ where(is.numeric)),
+      env = env,
+      data_vars = "region"
+    )
+  )
 
   # The predicate search still finds `where()`, from the parts rather than
   # from a misread name, and answers a bare-symbol right-hand side instead of

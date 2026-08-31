@@ -161,7 +161,12 @@
   on a backend that needs one, so on a disconnected or slow connection you
   were handed the connection's failure instead of the column diagnostic. A
   selection carrying `where()` still resolves against your input's column
-  types, including one written under `/`.
+  types, including one written under `/`. It reaches two more spellings: a
+  formula, which tidyselect refuses on sight whatever it wraps, and the
+  `.data` pronoun, whose name your input either holds or does not. Where you
+  have turned a deprecation into an error with
+  `options(lifecycle_verbosity = "error")`, the deprecation `.data` carries in
+  a selection is now raised before the query too.
 * Every error marginplyr raises for a correctable call now inherits the
   `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
   all. It is the only promised class; narrower subclasses and message wording
