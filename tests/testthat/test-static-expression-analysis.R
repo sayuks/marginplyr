@@ -2653,11 +2653,27 @@ test_that("a pair holding nothing in an expression evaluates as dplyr does", {
   # A bare call argument and an `across()` `.fns` reach the reference-name read
   # the share walk takes; `get()` reaches the reader of a statically known
   # string, with no share helper and no `across()` anywhere in the expression.
-  # Each of these is sent to dplyr as the caller wrote it, so dplyr's answer is
-  # the whole answer.
+  # `.names` and `.unpack` are read by evaluating them, which is a third way to
+  # reach the pair and the one that raises before any walk sees it. Each of
+  # these is sent to dplyr as the caller wrote it, so dplyr's answer is the
+  # whole answer.
   expressions <- list(
     bare = rlang::call2("sum", empty),
     fns = rlang::call2("across", quote(value), empty, .ns = "dplyr"),
+    names = rlang::call2(
+      "across",
+      quote(value),
+      quote(sum),
+      .names = empty,
+      .ns = "dplyr"
+    ),
+    unpack = rlang::call2(
+      "across",
+      quote(value),
+      quote(sum),
+      .unpack = empty,
+      .ns = "dplyr"
+    ),
     named = rlang::call2("get", empty),
     nested = rlang::call2("sum", rlang::call2("get", empty))
   )
