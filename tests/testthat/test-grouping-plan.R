@@ -2066,6 +2066,31 @@ test_that("the name-only reader answers what the names settle", {
 
   # `where()` is the one helper that reads column data.
   expect_false(name_only(quote(where(is.numeric))))
+
+  # tidyselect refuses a formula on sight, whatever it wraps, so the operand
+  # decides nothing here either -- and a redundant pair is walked down to one.
+  expect_true(name_only(quote(~c(region))))
+  expect_true(name_only(quote(~ where(is.numeric))))
+  expect_true(name_only(quote((~c(region)))))
+  expect_true(name_only(quote(c(region, ~absent))))
+  # A quosure is a `~` call as well, and is not refused: tidyselect evaluates
+  # one, so what settles it is the expression it carries and this reader does
+  # not open one.
+  expect_false(name_only(rlang::quo(region)))
+
+  # `.data$region` is a name tidyselect's `.data` branch looks up.
+  expect_true(name_only(quote(.data$region)))
+  expect_true(name_only(quote(c(.data$region, area))))
+  expect_true(name_only(quote((.data$region))))
+  # The operand is the `.data` symbol as written: tidyselect refuses
+  # `(.data)$region`, so the pair is not read through here.
+  expect_false(name_only(quote((.data)$region)))
+  # A subscript is no name this reads, so the pronoun's other half is left to
+  # the snapshot.
+  expect_false(name_only(quote(.data[["region"]])))
+  expect_false(name_only(quote(.data$region$sub)))
+  # `$` on anything else is what it always was.
+  expect_false(name_only(quote(other$region)))
 })
 
 test_that("a selection the names settle is refused before the typed snapshot", {
@@ -2128,6 +2153,36 @@ test_that("a selection the names settle is refused before the typed snapshot", {
     pattern = "vector of column names"
   )
 
+  # A formula is refused by `stop_formula()` before anything under it is
+  # walked, so it is settled by the names for the same reason a refused
+  # operator is -- reached from the shape, the name of a `~` call being one no
+  # reader here takes (#346).
+  for (grouping in list(
+    quote(grouping_set(~c(region))),
+    quote(rollup(~c(region)))
+  )) {
+    refuse(
+      rlang::call2("inspect_grouping", quote(data), .grouping = grouping),
+      class = "rlang_error",
+      pattern = "Formula shorthand"
+    )
+  }
+
+  # The `.data` pronoun names a column, so a name it does not hold is a
+  # failure the names decide. The spelling is deprecated in a selection, and
+  # the warning saying so is what the test below counts; here it is the
+  # ordering that is under test, so it is muffled rather than counted.
+  for (grouping in list(
+    quote(grouping_set(.data$absent)),
+    quote(rollup(.data$absent))
+  )) {
+    suppressWarnings(refuse(
+      rlang::call2("inspect_grouping", quote(data), .grouping = grouping),
+      class = "rlang_error_data_pronoun_not_found",
+      pattern = "absent"
+    ))
+  }
+
   # `.by` reaches the same reader, and its keys are resolved before the read.
   refuse(
     quote(inspect_grouping(
@@ -2147,6 +2202,20 @@ test_that("a selection the names settle is refused before the typed snapshot", {
     class = "rlang_error",
     pattern = "vector of column names"
   )
+  refuse(
+    quote(inspect_grouping(data, .grouping = rollup(region), .by = ~c(area))),
+    class = "rlang_error",
+    pattern = "Formula shorthand"
+  )
+  suppressWarnings(refuse(
+    quote(inspect_grouping(
+      data,
+      .grouping = rollup(region),
+      .by = .data$absent
+    )),
+    class = "rlang_error_data_pronoun_not_found",
+    pattern = "absent"
+  ))
 
   # The other half of the rule: a selection carrying a predicate is not
   # settled by names, and still resolves against the snapshot.
@@ -2194,6 +2263,33 @@ test_that("the discarded name-only pass reports nothing the second does not", {
       data,
       .grouping = rollup(area),
       .by = tidyselect::one_of(c("region", "absent"))
+    ))),
+    1L
+  )
+
+  # A deprecation warning is the case suppressing alone gets wrong, and
+  # `.data$region` is where it is observable: lifecycle signals one once per
+  # session, so a discarded pass that signals and muffles it leaves the
+  # canonical pass with nothing to report. The option the pass sets is what
+  # keeps the count at one rather than zero. `lifecycle_verbosity` is fixed
+  # here so the count is this call's and not the session's (#346).
+  rlang::local_options(lifecycle_verbosity = "warning")
+  for (grouping in list(
+    quote(grouping_set(.data$region)),
+    quote(rollup(.data$region))
+  )) {
+    expect_identical(
+      count_warnings(
+        rlang::call2("inspect_grouping", quote(data), .grouping = grouping)
+      ),
+      1L
+    )
+  }
+  expect_identical(
+    count_warnings(quote(inspect_grouping(
+      data,
+      .grouping = rollup(area),
+      .by = .data$region
     ))),
     1L
   )

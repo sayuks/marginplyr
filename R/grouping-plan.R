@@ -189,15 +189,25 @@ prepare_grouping_plan <- function(.data,
         # the canonical pass signals again from the same names. Suppressing
         # them is what keeps this pass invisible but for the failure it exists
         # to raise; `one_of()` is where that is observable.
-        suppressWarnings(compile_grouping_spec(
-          grouping_spec,
-          data_vars = data_vars,
-          data_proxy = grouping_name_proxy(data_vars),
-          .by = if (is.null(by)) character() else by,
-          .duplicates = .duplicates,
-          duplicates_choices = duplicates_choices,
-          preflight = preflight
-        ))
+        #
+        # A deprecation warning is the one kind suppressing is not enough for,
+        # and the option is what covers it. lifecycle signals one once per
+        # session, so a pass that signals it and muffles it spends the only
+        # signal the caller had coming and the canonical pass then reports
+        # nothing -- less than the second pass reports, where every other
+        # warning here is more. `.data$region` is where that is observable.
+        rlang::with_options(
+          suppressWarnings(compile_grouping_spec(
+            grouping_spec,
+            data_vars = data_vars,
+            data_proxy = grouping_name_proxy(data_vars),
+            .by = if (is.null(by)) character() else by,
+            .duplicates = .duplicates,
+            duplicates_choices = duplicates_choices,
+            preflight = preflight
+          )),
+          lifecycle_verbosity = "quiet"
+        )
       }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
       if (is.null(by)) {
@@ -334,6 +344,19 @@ is_name_only_expr <- function(expr, env, data_vars) {
     return(is.atomic(expr))
   }
 
+  # tidyselect refuses a formula in a selection on sight, in `stop_formula()`,
+  # whatever it wraps, so the refusal depends on no column type. It is read
+  # from the shape rather than joined to `selection_refused_operators()`
+  # because `is_nameable_call()` declines a call to `~`, so the name that set
+  # is consulted by is never read (ADR 0019, #163).
+  #
+  # A quosure is a call to `~` too, and is excluded: tidyselect evaluates one
+  # rather than refusing it, so what settles a quosure is the expression it
+  # carries, which this reader does not open.
+  if (rlang::is_call(expr, "~") && !rlang::is_quosure(expr)) {
+    return(TRUE)
+  }
+
   # A language object that is no call -- an expression vector, a pairlist --
   # answers `NULL` here, which the next line already turns into the `FALSE` a
   # guard would have returned.
@@ -355,6 +378,15 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (call_name %in% selection_refused_operators()) {
     return(TRUE)
   }
+  # `.data$region` is settled by the names, tidyselect's walk having a `.data`
+  # branch that looks up the name written here. `.data[[...]]` is not read:
+  # its subscript is no name this reader can see, and `FALSE` resolves the
+  # selection against the snapshot, which is correct however the shape reads.
+  # Asked after the name, so a pair of parentheses around the whole pronoun is
+  # already off it.
+  if (identical(call_name, "$") && is_data_pronoun_column(expr)) {
+    return(TRUE)
+  }
   if (!call_name %in% c(selection_walk_operators(), "(")) {
     return(FALSE)
   }
@@ -367,6 +399,19 @@ is_name_only_expr <- function(expr, env, data_vars) {
     env = env,
     data_vars = data_vars
   ))
+}
+
+# Whether this `$` call is the `.data$name` pronoun naming one column
+# literally, which is the half of the pronoun the names settle. The caller
+# holds that the call is named `$`. The operand is compared with the `.data`
+# symbol as written rather than through a redundant pair, because tidyselect
+# refuses `(.data)$region` -- reading through the pair here would answer for a
+# spelling it rejects, which is where ADR 0019's reading stops.
+is_data_pronoun_column <- function(expr) {
+  parts <- static_call_args(expr)
+  length(parts) == 2L &&
+    identical(parts[[1L]], quote(.data)) &&
+    is_name_part(parts[[2L]])
 }
 
 is_name_only_selection <- function(arg, data_vars) {
