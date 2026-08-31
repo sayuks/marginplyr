@@ -153,6 +153,15 @@
   returned the right answer, having read the whole input to get it — so on
   those versions this is a breaking change, and the rewrites the refusal names
   reproduce the old result while letting you choose what is read.
+* A `.grouping` or `.by` selection whose failure the column names already
+  settle is now refused without querying your input. This reaches the
+  set-difference operator `/` that tidyselect reads, the arithmetic and
+  scalar-boolean spellings it refuses in a selection — `*`, `^`, `&&`, and
+  `||` — and `one_of()`. Each of these used to send the zero-row query first
+  on a backend that needs one, so on a disconnected or slow connection you
+  were handed the connection's failure instead of the column diagnostic. A
+  selection carrying `where()` still resolves against your input's column
+  types, including one written under `/`.
 * Every error marginplyr raises for a correctable call now inherits the
   `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
   all. It is the only promised class; narrower subclasses and message wording

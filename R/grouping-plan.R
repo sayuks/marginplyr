@@ -293,6 +293,25 @@ validate_nested_grouping_units <- function(parent, nested) {
   invisible(NULL)
 }
 
+# The operators tidyselect's walk combines a selection from. `/` is one:
+# tidyselect reads it as a set difference in `eval_slash()`, which its
+# `language.Rd` does not record. `(` is walked too but combines nothing, so
+# each reader adds it where it meets one.
+selection_walk_operators <- function() {
+  c("c", ":", "!", "-", "|", "&", "/")
+}
+
+# The spellings tidyselect refuses in place of one of those. It refuses them on
+# sight, before anything under them is walked.
+selection_refused_operators <- function() {
+  c("&&", "||", "*", "^")
+}
+
+# Whether tidyselect settles this expression from the column names alone --
+# its selection where it has one, its failure where it has none. `TRUE` is what
+# lets a failure the names decide be raised before typed metadata is acquired
+# (ADR 0005); a shape this cannot answer for is `FALSE`, which resolves it
+# against the typed snapshot and is correct however that shape reads.
 is_name_only_expr <- function(expr, env, data_vars) {
   if (is.symbol(expr)) {
     name <- as.character(expr)
@@ -316,14 +335,21 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (is.null(call_name)) {
     return(FALSE)
   }
+  # The helpers that read names and nothing else. `where()` is the one that
+  # reads column data, so it is absent and answers below.
   leaf_helpers <- c(
     "all_of", "any_of", "starts_with", "ends_with", "contains",
-    "matches", "num_range", "everything", "last_col"
+    "matches", "num_range", "everything", "last_col", "one_of"
   )
   if (call_name %in% leaf_helpers) {
     return(TRUE)
   }
-  if (!call_name %in% c("c", ":", "!", "-", "|", "&", "(")) {
+  # A refused spelling fails on itself, so its operands are never reached and a
+  # predicate under one settles nothing.
+  if (call_name %in% selection_refused_operators()) {
+    return(TRUE)
+  }
+  if (!call_name %in% c(selection_walk_operators(), "(")) {
     return(FALSE)
   }
 
@@ -1080,15 +1106,13 @@ resolve_grouping_selection <- function(arg, data_proxy) {
 # part of an argument, for the reason recorded above
 # `is_grouping_spec_subscript()`.
 #
-# The operators are the ones tidyselect's walk descends into -- its documented
-# selection grammar, `c()`, `-`, `:`, `!`, `&`, `|`, and the `/` it reads as a
-# set difference -- together with the scalar-boolean and arithmetic spellings
-# it refuses in place of one of them, which cost nothing to name and are
-# refused before anything under them is walked. `(` is not among them because
-# `nested_arg_expr()` has already dropped a redundant pair, and a quosure is
-# not, because `is_nameable_call()` declines the call to `~` that one is.
+# The operators are both sets above: a specification reaches this under a
+# refused spelling as readily as under one that is walked. `(` is not among
+# them because `nested_arg_expr()` has already dropped a redundant pair, and a
+# quosure is not, because `is_nameable_call()` declines the call to `~` that
+# one is.
 is_grouping_spec_predicate <- function(selection_frame, expr) {
-  operators <- c("c", "-", ":", "!", "&", "|", "&&", "||", "*", "/", "^")
+  operators <- c(selection_walk_operators(), selection_refused_operators())
   if (!is_nameable_call(expr)) {
     return(FALSE)
   }

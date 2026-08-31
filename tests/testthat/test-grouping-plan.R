@@ -2037,6 +2037,97 @@ test_that("fixed keys settled by name alone need no typed metadata", {
   )
 })
 
+test_that("the name-only reader answers what the names settle", {
+  # The reader's question is whether tidyselect settles the expression --
+  # its selection or its failure alike -- from the column names, and the
+  # answers below are what tidyselect's own walk does with each shape.
+  data_vars <- by_rename_vars()
+  env <- rlang::new_environment()
+  name_only <- function(expr) {
+    is_name_only_expr(expr, env = env, data_vars = data_vars)
+  }
+
+  # `/` is a set difference tidyselect descends into, as `c()` and `|` are,
+  # so it is settled by what its operands settle.
+  expect_true(name_only(quote(tidyselect::everything() / region)))
+  expect_true(name_only(quote(c(region, area) / area)))
+  expect_false(name_only(quote(tidyselect::everything() / where(is.numeric))))
+
+  # A spelling tidyselect refuses fails on itself, before anything under it is
+  # walked, so the operands decide nothing and are not asked.
+  expect_true(name_only(quote(region * value)))
+  expect_true(name_only(quote(region^value)))
+  expect_true(name_only(quote(region && value)))
+  expect_true(name_only(quote(region || value)))
+  expect_true(name_only(quote(where(is.numeric) * region)))
+
+  # `one_of()` reads names and nothing else, exactly as `any_of()` does.
+  expect_true(name_only(quote(tidyselect::one_of("region"))))
+
+  # `where()` is the one helper that reads column data.
+  expect_false(name_only(quote(where(is.numeric))))
+})
+
+test_that("a selection the names settle is refused before the typed snapshot", {
+  # ADR-0005 puts a failure the names decide before the read, and the read is
+  # what this counts: `grouping_selection_proxy()` is the one place typed
+  # metadata is acquired, so a refusal that reaches it has already sent the
+  # query a lazy backend answers it with.
+  data <- data.frame(region = "East", area = "North", value = 1)
+  reads <- 0L
+  local_mocked_bindings(
+    grouping_selection_proxy = function(.data, ...) {
+      reads <<- reads + 1L
+      .data
+    }
+  )
+  refuse <- function(expr) {
+    reads <<- 0L
+    error <- expect_error(rlang::eval_tidy(expr))
+    list(reads = reads, message = conditionMessage(error))
+  }
+
+  unknown <- refuse(quote(inspect_grouping(
+    data,
+    .grouping = grouping_set(tidyselect::everything() / absent)
+  )))
+  expect_identical(unknown$reads, 0L)
+  expect_match(unknown$message, "absent")
+
+  arithmetic <- refuse(quote(inspect_grouping(
+    data,
+    .grouping = grouping_set(region * value)
+  )))
+  expect_identical(arithmetic$reads, 0L)
+  expect_match(arithmetic$message, "arithmetic operator")
+
+  helper <- refuse(quote(inspect_grouping(
+    data,
+    .grouping = grouping_set(tidyselect::one_of(1))
+  )))
+  expect_identical(helper$reads, 0L)
+  expect_match(helper$message, "vector of column names")
+
+  # `.by` reaches the same reader, and its keys are resolved before the read.
+  by_unknown <- refuse(quote(inspect_grouping(
+    data,
+    .grouping = rollup(region),
+    .by = tidyselect::everything() / absent
+  )))
+  expect_identical(by_unknown$reads, 0L)
+  expect_match(by_unknown$message, "absent")
+
+  # The other half of the rule: a selection carrying a predicate is not
+  # settled by names, and still resolves against the snapshot.
+  reads <- 0L
+  plan <- inspect_grouping(
+    data,
+    .grouping = rollup(tidyselect::everything() / where(is.numeric))
+  )
+  expect_identical(reads, 1L)
+  expect_identical(plan$included, c("(region, area)", "(region)", "()"))
+})
+
 test_that("duplicate grouping sets have explicit policies", {
   spec <- grouping_sets(grouping_set(a), grouping_set(a))
 
