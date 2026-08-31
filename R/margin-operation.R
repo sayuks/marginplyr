@@ -369,21 +369,37 @@ order_margin_result <- function(operation, result, execution) {
     length(operation$plan$dimensions) == 0L || !is.null(sort_id)
   )
 
+  # The identifier the key reads, and `NULL` where it reads none (ADR 0018).
+  # Both the terms and the position of the projection below derive from this
+  # one variable, so no term can name a column the projection has taken away.
+  key_id <- if (length(operation$plan$set_ids) > 1L) sort_id else NULL
+  staged_id <- margin_staged_sort_identifier(operation, sort_id)
+
+  # A staged identifier the key does not read is dropped before the ordering
+  # rather than after it (ADR 0018).
+  if (!is.null(staged_id) && is.null(key_id)) {
+    result <- dplyr::select(result, -dplyr::all_of(staged_id))
+  }
+
   terms <- margin_order_terms(
     plan = operation$plan,
     sort = operation$sort,
-    sort_id = sort_id
+    sort_id = key_id
   )
   if (length(terms) > 0L) {
     result <- dplyr::arrange(result, !!!terms)
   }
-  if (
-    !is.null(sort_id) &&
-      !identical(sort_id, operation$set_id_name)
-  ) {
-    result <- dplyr::select(result, -dplyr::all_of(sort_id))
+  if (!is.null(staged_id) && !is.null(key_id)) {
+    result <- dplyr::select(result, -dplyr::all_of(staged_id))
   }
   forget_margin_window_order(result, backend = operation$backend)
+}
+
+# The Grouping set identifier the finalizer drops again: the one an executor
+# staged for the order alone. An identifier the caller asked for with `.id` is
+# the result's own column and is never dropped.
+margin_staged_sort_identifier <- function(operation, sort_id) {
+  if (identical(sort_id, operation$set_id_name)) NULL else sort_id
 }
 
 # Where a backend records a window ordering, `arrange()` has written the key

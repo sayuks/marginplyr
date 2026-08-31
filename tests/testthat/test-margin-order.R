@@ -506,6 +506,218 @@ test_that("a fixed key sorts its missing values last", {
   expect_identical(result$units, c(4, 4, 1, 1, 2, 2))
 })
 
+# Every spelling that compiles to a plan holding one grouping-set occurrence.
+# The bug they shared was not in any of them: a one-occurrence plan makes every
+# Grouping bit constant, so the key reads no Grouping set identifier, and the
+# projection that dropped the staged one ran after the ordering and took the
+# `ORDER BY` with it (#339).
+#
+# Expressions rather than values, because `.by` and `.grouping` are evaluated
+# by the verb and neither survives being computed here. The dimension is
+# selected by name for the reason the helper below gives: `codetools` reads
+# this closure and cannot follow a bare symbol standing for a column.
+margin_order_single_set_specs <- function() {
+  list(
+    by_only = rlang::exprs(.by = dplyr::all_of("region")),
+    grouping_spec = rlang::exprs(
+      .grouping = grouping_spec(dplyr::all_of("region"))
+    ),
+    grouping_sets = rlang::exprs(
+      .grouping = grouping_sets(grouping_set(dplyr::all_of("region")))
+    ),
+    duplicates_dropped = rlang::exprs(
+      .grouping = grouping_sets(
+        grouping_set(dplyr::all_of("region")),
+        grouping_set(dplyr::all_of("region"))
+      ),
+      .duplicates = "drop"
+    ),
+    # One occurrence holding two dimensions. Each Grouping bit is constant for
+    # the same reason a single dimension's is, and neither reaches the key.
+    two_dimensions = rlang::exprs(
+      .grouping = grouping_spec(dplyr::all_of(c("region", "store")))
+    ),
+    # A fixed key alongside the dimension, which contributes its own terms and
+    # no Grouping bit.
+    by_and_grouping = rlang::exprs(
+      .by = dplyr::all_of("store"),
+      .grouping = grouping_spec(dplyr::all_of("region"))
+    )
+  )
+}
+
+test_that("a one-occurrence plan carries its `ORDER BY` on a lazy backend", {
+  skip_if_no_sqlite_simulation()
+  remote <- dbplyr::tbl_lazy(
+    margin_order_data(),
+    con = dbplyr::simulate_sqlite()
+  )
+  specs <- margin_order_single_set_specs()
+
+  for (name in names(specs)) {
+    arguments <- specs[[name]]
+    queries <- list(
+      summary = rlang::inject(summarize_with_margins(
+        remote,
+        units = sum(units, na.rm = TRUE),
+        !!!arguments,
+        .sort = "last"
+      )),
+      expansion = rlang::inject(expand_with_margins(
+        remote,
+        !!!arguments,
+        .sort = "last"
+      ))
+    )
+
+    for (verb in names(queries)) {
+      query <- queries[[verb]]
+      sql <- dbplyr::sql_render(query)
+      info <- paste(name, verb)
+      expect_match(sql, "ORDER BY", fixed = TRUE, info = info)
+      # The key reads no Grouping set identifier here, so the staged column is
+      # dropped before the ordering and reaches no query level at all.
+      expect_false(
+        grepl("..marginplyr_sort_", sql, fixed = TRUE),
+        info = info
+      )
+      expect_false(
+        any(grepl(
+          "..marginplyr_sort_",
+          as.character(dplyr::tbl_vars(query)),
+          fixed = TRUE
+        )),
+        info = info
+      )
+    }
+  }
+})
+
+test_that("a one-occurrence plan keeps its native plan and its order", {
+  remote <- dbplyr::tbl_lazy(
+    margin_order_data(),
+    con = dbplyr::simulate_postgres()
+  )
+  specs <- margin_order_single_set_specs()
+
+  for (name in names(specs)) {
+    query <- rlang::inject(summarize_with_margins(
+      remote,
+      units = sum(units, na.rm = TRUE),
+      !!!specs[[name]],
+      .sort = "last"
+    ))
+    sql <- dbplyr::sql_render(query)
+    expect_match(sql, "GROUP BY GROUPING SETS", fixed = TRUE, info = name)
+    expect_false(grepl("UNION ALL", sql, fixed = TRUE), info = name)
+    expect_match(sql, "ORDER BY", fixed = TRUE, info = name)
+    # The native adapter stages its identifier inside the aggregate query, so
+    # the order costs the result no column here either.
+    expect_false(
+      any(grepl(
+        "..marginplyr_sort_",
+        as.character(dplyr::tbl_vars(query)),
+        fixed = TRUE
+      )),
+      info = name
+    )
+  }
+})
+
+test_that("`.id` on a one-occurrence plan leaves the key what it was", {
+  skip_if_no_sqlite_simulation()
+  remote <- dbplyr::tbl_lazy(
+    margin_order_data(),
+    con = dbplyr::simulate_sqlite()
+  )
+  summarized <- function(...) {
+    summarize_with_margins(
+      remote,
+      units = sum(units, na.rm = TRUE),
+      .grouping = grouping_spec(dplyr::all_of("region")),
+      .sort = "last",
+      ...
+    )
+  }
+  order_by <- function(query) {
+    sub(".*ORDER BY", "", dbplyr::sql_render(query))
+  }
+
+  identified <- summarized(.id = "set")
+  expect_identical(
+    as.character(dplyr::tbl_vars(identified)),
+    c("region", "set", "units")
+  )
+  # The identifier the caller asked for is the result's own column, so nothing
+  # is dropped after the ordering. The key is the same one either way, the
+  # tiebreak having nothing to break.
+  expect_identical(order_by(identified), order_by(summarized()))
+
+  local <- summarize_with_margins(
+    margin_order_data(),
+    units = sum(units, na.rm = TRUE),
+    .grouping = grouping_spec(dplyr::all_of("region")),
+    .id = "set",
+    .sort = "last"
+  )
+  expect_identical(local$region, c("East", "West"))
+  expect_identical(local$set, c(1L, 1L))
+})
+
+test_that("`.sort = \"none\"` records no order on a one-occurrence plan", {
+  skip_if_no_sqlite_simulation()
+  remote <- dbplyr::tbl_lazy(
+    margin_order_data(),
+    con = dbplyr::simulate_sqlite()
+  )
+  specs <- margin_order_single_set_specs()
+
+  for (name in names(specs)) {
+    arguments <- specs[[name]]
+    queries <- list(
+      summary = rlang::inject(summarize_with_margins(
+        remote,
+        units = sum(units, na.rm = TRUE),
+        !!!arguments,
+        .sort = "none"
+      )),
+      expansion = rlang::inject(expand_with_margins(
+        remote,
+        !!!arguments,
+        .sort = "none"
+      ))
+    )
+    for (verb in names(queries)) {
+      expect_false(
+        grepl("ORDER BY", dbplyr::sql_render(queries[[verb]]), fixed = TRUE),
+        info = paste(name, verb)
+      )
+    }
+  }
+})
+
+test_that("`.sort = \"none\"` clears no window ordering", {
+  remote <- dbplyr::window_order(
+    dbplyr::tbl_lazy(margin_order_data(), con = dbplyr::simulate_postgres()),
+    region
+  )
+
+  query <- summarize_with_margins(
+    remote,
+    units = sum(units, na.rm = TRUE),
+    .grouping = grouping_spec(region),
+    .sort = "none"
+  )
+  # Asking for no order reaches neither the ordering nor the clearing that
+  # follows it, so a window ordering the input carried is still what a window
+  # function written over the result orders by. Its complement is the test
+  # named "a Margin order leaves no window ordering to inherit".
+  windowed <- suppressWarnings(
+    dbplyr::sql_render(dplyr::mutate(query, running = cumsum(units)))
+  )
+  expect_match(windowed, "OVER (ORDER BY", fixed = TRUE)
+})
+
 # The live backend contracts follow.
 #
 # Everything above proves the order against a local data frame or against a
@@ -528,6 +740,12 @@ test_that("a fixed key sorts its missing values last", {
 # representation of it; the name is a parameter because the SQL backends need a
 # distinct table per scenario.
 #
+# A scenario runs a verb rather than always `summarize_with_margins()`, because
+# a one-occurrence plan reaches the same finalization from both verbs and #339
+# broke it on the expansion of every dbplyr backend. Every one-occurrence
+# scenario keys its rows uniquely, so the comparison is a comparison of order:
+# the key leaves ties among rows a database is free to return either way.
+#
 # The dimensions are selected by name rather than as bare symbols, which the
 # tests above can write because `test_that()` passes a block rather than defines
 # a closure. `codetools` reads the closures below and cannot follow an NSE
@@ -538,7 +756,7 @@ expect_margin_order_agrees <- function(as_input) {
     # A rollup over two dimensions: subtotals with the rows they summarize.
     rollup = list(
       data = margin_order_data(),
-      summarize = function(input) {
+      run = function(input) {
         summarize_with_margins(
           input,
           units = sum(units, na.rm = TRUE),
@@ -552,7 +770,7 @@ expect_margin_order_agrees <- function(as_input) {
     # `.margin_label = NULL`, and the Grouping bit is what separates them.
     missing = list(
       data = margin_order_missing_data(),
-      summarize = function(input) {
+      run = function(input) {
         summarize_with_margins(
           input,
           units = sum(units, na.rm = TRUE),
@@ -567,7 +785,7 @@ expect_margin_order_agrees <- function(as_input) {
     # thing standing between it and the dialect's own default.
     fixed_key = list(
       data = margin_order_by_missing_data(),
-      summarize = function(input) {
+      run = function(input) {
         summarize_with_margins(
           input,
           units = sum(units, na.rm = TRUE),
@@ -577,15 +795,78 @@ expect_margin_order_agrees <- function(as_input) {
         )
       },
       columns = c("year", "region", "units")
+    ),
+    # A plan holding one grouping-set occurrence, which every Grouping bit is
+    # constant over: the order is the fixed key's and the dimension's alone.
+    # The staged Grouping set identifier is dropped before the ordering there,
+    # and dropping it afterwards is what cost the result its outermost
+    # `ORDER BY` (#339).
+    single_set = list(
+      data = margin_order_missing_data(),
+      run = function(input) {
+        summarize_with_margins(
+          input,
+          units = sum(units, na.rm = TRUE),
+          .grouping = grouping_sets(grouping_set(dplyr::all_of("region"))),
+          .sort = "last"
+        )
+      },
+      columns = c("region", "units")
+    ),
+    # The everyday one-occurrence plan: `.by` with no grouping specification at
+    # all, so the key holds no dimension term either.
+    single_set_by = list(
+      data = margin_order_by_missing_data(),
+      run = function(input) {
+        summarize_with_margins(
+          input,
+          units = sum(units, na.rm = TRUE),
+          .by = dplyr::all_of("year"),
+          .sort = "last"
+        )
+      },
+      columns = c("year", "units")
+    ),
+    # One occurrence holding two dimensions, which is the shape a `rollup()`
+    # scenario comes closest to and still does not reach.
+    single_set_dimensions = list(
+      data = margin_order_data(),
+      run = function(input) {
+        summarize_with_margins(
+          input,
+          units = sum(units, na.rm = TRUE),
+          .grouping = grouping_spec(dplyr::all_of(c("region", "store"))),
+          .sort = "last"
+        )
+      },
+      columns = c("region", "store", "units")
+    ),
+    # Expansion always takes the portable path, so a one-occurrence plan is
+    # where it lost its order on every dbplyr backend rather than on the ones
+    # without native `GROUPING SETS`.
+    single_set_expansion = list(
+      data = margin_order_data(),
+      run = function(input) {
+        expand_with_margins(
+          input,
+          .grouping = grouping_spec(dplyr::all_of(c("region", "store"))),
+          .sort = "last"
+        )
+      },
+      columns = c("region", "store", "units")
     )
   )
 
   for (name in names(scenarios)) {
     scenario <- scenarios[[name]]
-    local <- scenario$summarize(scenario$data)
-    remote <- dplyr::collect(
-      scenario$summarize(as_input(scenario$data, paste0("margin_order_", name)))
+    local <- scenario$run(scenario$data)
+    query <- scenario$run(
+      as_input(scenario$data, paste0("margin_order_", name))
     )
+    # dbplyr reports a dropped `ORDER BY` as a warning naming `arrange()`, a
+    # verb the caller never wrote, so a backend that stops carrying the order
+    # is caught here as well as by the rows below (#339).
+    remote <- expect_no_warning(dplyr::collect(query))
     for (column in scenario$columns) {
       expect_identical(
         remote[[column]],
