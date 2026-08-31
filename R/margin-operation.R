@@ -369,6 +369,21 @@ order_margin_result <- function(operation, result, execution) {
     length(operation$plan$dimensions) == 0L || !is.null(sort_id)
   )
 
+  staged_id <- if (identical(sort_id, operation$set_id_name)) {
+    NULL
+  } else {
+    sort_id
+  }
+
+  # A staged identifier the key does not read is dropped before the ordering
+  # rather than after it, so that the projection adds no query level for dbplyr
+  # to discard the `ORDER BY` from (ADR 0018).
+  if (!is.null(staged_id) && !margin_order_reads_set_id(operation$plan)) {
+    result <- dplyr::select(result, -dplyr::all_of(staged_id))
+    sort_id <- NULL
+    staged_id <- NULL
+  }
+
   terms <- margin_order_terms(
     plan = operation$plan,
     sort = operation$sort,
@@ -377,11 +392,8 @@ order_margin_result <- function(operation, result, execution) {
   if (length(terms) > 0L) {
     result <- dplyr::arrange(result, !!!terms)
   }
-  if (
-    !is.null(sort_id) &&
-      !identical(sort_id, operation$set_id_name)
-  ) {
-    result <- dplyr::select(result, -dplyr::all_of(sort_id))
+  if (!is.null(staged_id)) {
+    result <- dplyr::select(result, -dplyr::all_of(staged_id))
   }
   forget_margin_window_order(result, backend = operation$backend)
 }
@@ -442,10 +454,17 @@ margin_order_terms <- function(plan, sort, sort_id) {
     )
   }
 
-  if (!is.null(sort_id)) {
+  if (!is.null(sort_id) && margin_order_reads_set_id(plan)) {
     terms <- c(terms, list(margin_column_pronoun(sort_id)))
   }
   terms
+}
+
+# Whether the key reads the Grouping set identifier. A plan holding one
+# occurrence gives every row the same one, so neither a Grouping bit nor the
+# tiebreak has anything to order by (ADR 0018).
+margin_order_reads_set_id <- function(plan) {
+  length(plan$set_ids) > 1L
 }
 
 # One column's missingness term. Written as a comparison rather than as the

@@ -345,3 +345,37 @@ leaves the `ORDER BY` alone, so the rendered SQL is what it was and
 `records_window_order` capability, and not from the class of the finalized
 result — ADR 0014's rule, for its reason. A local result and a dtplyr step
 record no window ordering to clear, and the nesting verbs admit only those.
+
+## Amendment: the projection that drops an unread identifier runs first
+
+The amendments above place the staged identifier in the `FROM` clause of the
+query carrying the `ORDER BY`, and rely on the `UNION ALL` or the aggregate
+query to put it there. A plan holding one grouping-set occurrence has neither:
+the portable adapter returns its single branch uncombined, so the identifier is
+a literal the same query computes, and the projection that drops it wraps that
+query and takes the ordering with it. `expand_with_margins()` reached this on
+every dbplyr backend, and `summarize_with_margins()` on every backend without
+native `GROUPING SETS` (#339).
+
+**Such a plan does not read the identifier at all.** Every dimension is in the
+same set as every other row's, so each Grouping bit is constant — the condition
+the key already omits a bit term on — and the tiebreak orders by a column with
+one value. The key is then the fixed keys and the dimensions alone.
+
+**So the projection runs before the ordering whenever the key does not read the
+identifier.** Nothing is left to drop afterwards, the `ORDER BY` is the
+outermost one by construction, and no query level exists for dbplyr to discard
+it from. Where the key does read the identifier the order of the two is
+unchanged, and so is every plan holding two or more occurrences.
+
+Two consequences are worth recording.
+
+*The tiebreak is omitted rather than emitted over a constant.* `.id` naming the
+identifier on a one-occurrence plan therefore drops it from the key too, which
+is the same statement the paragraph above makes about `.id` on a plan with no
+observable difference to break: one occurrence is one such plan.
+
+*Which adapter runs is still decided before any of this.* The identifier is
+allocated after that choice, so a one-occurrence plan that ran on the native
+path still runs there and still stages the column; what changes is only where
+the projection dropping it sits.
