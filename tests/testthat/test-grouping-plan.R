@@ -2081,41 +2081,72 @@ test_that("a selection the names settle is refused before the typed snapshot", {
       .data
     }
   )
-  refuse <- function(expr) {
+  # Each refusal is tidyselect's own, raised through the name proxy, so the
+  # class it arrives under is the External half ADR 0015 draws.
+  refuse <- function(expr, class, pattern) {
     reads <<- 0L
-    error <- expect_error(rlang::eval_tidy(expr))
-    list(reads = reads, message = conditionMessage(error))
+    error <- expect_error(rlang::eval_tidy(expr), class = class)
+    expect_false(inherits(error, "marginplyr_error"))
+    expect_match(conditionMessage(error), pattern)
+    expect_identical(reads, 0L)
   }
 
-  unknown <- refuse(quote(inspect_grouping(
-    data,
-    .grouping = grouping_set(tidyselect::everything() / absent)
-  )))
-  expect_identical(unknown$reads, 0L)
-  expect_match(unknown$message, "absent")
+  for (grouping in list(
+    quote(grouping_set(tidyselect::everything() / absent)),
+    quote(rollup(tidyselect::everything() / absent))
+  )) {
+    refuse(
+      rlang::call2("inspect_grouping", quote(data), .grouping = grouping),
+      class = "vctrs_error_subscript_oob",
+      pattern = "absent"
+    )
+  }
 
-  arithmetic <- refuse(quote(inspect_grouping(
-    data,
-    .grouping = grouping_set(region * value)
-  )))
-  expect_identical(arithmetic$reads, 0L)
-  expect_match(arithmetic$message, "arithmetic operator")
+  for (spelling in list(
+    quote(region * value),
+    quote(region^value),
+    quote(region && value),
+    quote(region || value)
+  )) {
+    refuse(
+      rlang::call2(
+        "inspect_grouping",
+        quote(data),
+        .grouping = rlang::call2("grouping_set", spelling)
+      ),
+      class = "rlang_error",
+      pattern = "Can't use (arithmetic operator|scalar)"
+    )
+  }
 
-  helper <- refuse(quote(inspect_grouping(
-    data,
-    .grouping = grouping_set(tidyselect::one_of(1))
-  )))
-  expect_identical(helper$reads, 0L)
-  expect_match(helper$message, "vector of column names")
+  refuse(
+    quote(inspect_grouping(
+      data,
+      .grouping = grouping_set(tidyselect::one_of(1))
+    )),
+    class = "rlang_error",
+    pattern = "vector of column names"
+  )
 
   # `.by` reaches the same reader, and its keys are resolved before the read.
-  by_unknown <- refuse(quote(inspect_grouping(
-    data,
-    .grouping = rollup(region),
-    .by = tidyselect::everything() / absent
-  )))
-  expect_identical(by_unknown$reads, 0L)
-  expect_match(by_unknown$message, "absent")
+  refuse(
+    quote(inspect_grouping(
+      data,
+      .grouping = rollup(region),
+      .by = tidyselect::everything() / absent
+    )),
+    class = "vctrs_error_subscript_oob",
+    pattern = "absent"
+  )
+  refuse(
+    quote(inspect_grouping(
+      data,
+      .grouping = rollup(region),
+      .by = tidyselect::one_of(1)
+    )),
+    class = "rlang_error",
+    pattern = "vector of column names"
+  )
 
   # The other half of the rule: a selection carrying a predicate is not
   # settled by names, and still resolves against the snapshot.
@@ -2126,6 +2157,46 @@ test_that("a selection the names settle is refused before the typed snapshot", {
   )
   expect_identical(reads, 1L)
   expect_identical(plan$included, c("(region, area)", "(region)", "()"))
+})
+
+test_that("the discarded name-only pass reports nothing the second does not", {
+  # The pass exists to raise a failure the names decide and its plan is thrown
+  # away, so a condition it signals besides that failure is one the caller
+  # receives twice: the canonical pass resolves the same selection again.
+  # `one_of()` is where this is observable, being the one recognized helper
+  # that reports an unknown name without failing on it.
+  data <- data.frame(region = "East", area = "North", value = 1)
+  count_warnings <- function(expr) {
+    n <- 0L
+    withCallingHandlers(
+      rlang::eval_tidy(expr),
+      warning = function(cnd) {
+        n <<- n + 1L
+        invokeRestart("muffleWarning")
+      }
+    )
+    n
+  }
+
+  for (grouping in list(
+    quote(grouping_set(tidyselect::one_of(c("region", "absent")))),
+    quote(rollup(tidyselect::one_of(c("region", "absent"))))
+  )) {
+    expect_identical(
+      count_warnings(
+        rlang::call2("inspect_grouping", quote(data), .grouping = grouping)
+      ),
+      1L
+    )
+  }
+  expect_identical(
+    count_warnings(quote(inspect_grouping(
+      data,
+      .grouping = rollup(area),
+      .by = tidyselect::one_of(c("region", "absent"))
+    ))),
+    1L
+  )
 })
 
 test_that("duplicate grouping sets have explicit policies", {

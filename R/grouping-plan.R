@@ -185,7 +185,11 @@ prepare_grouping_plan <- function(.data,
         # against the resolved keys below. Withholding the pass instead would
         # make a `.grouping` error determinable from names alone wait for a
         # backend read, which ADR-0005 forbids.
-        compile_grouping_spec(
+        # Discarded with the plan it compiles, so a warning it signals is one
+        # the canonical pass signals again from the same names. Suppressing
+        # them is what keeps this pass invisible but for the failure it exists
+        # to raise; `one_of()` is where that is observable.
+        suppressWarnings(compile_grouping_spec(
           grouping_spec,
           data_vars = data_vars,
           data_proxy = grouping_name_proxy(data_vars),
@@ -193,7 +197,7 @@ prepare_grouping_plan <- function(.data,
           .duplicates = .duplicates,
           duplicates_choices = duplicates_choices,
           preflight = preflight
-        )
+        ))
       }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
       if (is.null(by)) {
@@ -295,8 +299,8 @@ validate_nested_grouping_units <- function(parent, nested) {
 
 # The operators tidyselect's walk combines a selection from. `/` is one:
 # tidyselect reads it as a set difference in `eval_slash()`, which its
-# `language.Rd` does not record. `(` is walked too but combines nothing, so
-# each reader adds it where it meets one.
+# `language.Rd` does not record. `(` is walked too but combines nothing, so it
+# is not here.
 selection_walk_operators <- function() {
   c("c", ":", "!", "-", "|", "&", "/")
 }
@@ -311,7 +315,9 @@ selection_refused_operators <- function() {
 # its selection where it has one, its failure where it has none. `TRUE` is what
 # lets a failure the names decide be raised before typed metadata is acquired
 # (ADR 0005); a shape this cannot answer for is `FALSE`, which resolves it
-# against the typed snapshot and is correct however that shape reads.
+# against the typed snapshot and is correct however that shape reads. Callers
+# hold `env` as the expression's own environment and `data_vars` as the input's
+# column names, which is the pair the symbol branch decides from.
 is_name_only_expr <- function(expr, env, data_vars) {
   if (is.symbol(expr)) {
     name <- as.character(expr)
