@@ -19,7 +19,8 @@
 # - `test-query-policy.R`, ADR 0020's rule about which functions reach an
 #   execution entry point, and the capability table read out of the source;
 # - `test-utils.R`, that no walk over a call's arguments binds one to a name,
-#   in either the `for` spelling or the `<-` spelling;
+#   in either the `for` spelling or the `<-` spelling, and that no reader
+#   restarts on a pair of parentheses it cannot shrink;
 # - `helper-diagnostic-sites.R`, for the two diagnostics gates it serves.
 #
 # That list is a courtesy and not the record: `test-namespace-walk.R` derives

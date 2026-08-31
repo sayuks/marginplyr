@@ -414,6 +414,145 @@ test_that("the assignment scan detects the shape it is written to forbid", {
   expect_false(binds_call_parts_by_assign(quote(sum(value[]))))
 })
 
+# The third gate over the same namespace, and the one that reads a reader
+# rather than a walk over a call's parts. A pair of parentheses is read through
+# by restarting on what it wraps, and `unparenthesized_value()` stops at a pair
+# holding R's empty argument rather than unwrapping to it -- so a restart
+# guarded by `is_redundant_parens()` re-enters on the node it was called with
+# and never terminates. `is_parenthesized()` is the guard that cannot: it asks
+# whether unwrapping answers a different node, which is `FALSE` for exactly the
+# pair the peeler stops at.
+#
+# Scanned rather than listed, for the reason the gates above are. Two readers
+# were written under the weaker guard and both recursed without bound, one
+# reached from a share expression and one from a summary holding no share
+# helper at all (#349) -- so a list would be a list the third reader is not on.
+#
+# What it matches is the combination and not either half. Both readers in the
+# pair vocabulary -- `unparenthesized_call()` and `unparenthesized_name()` --
+# test `is_redundant_parens()` and read the peeler beside it, and both are
+# correct, because what they do with the answer is bind it and return: no
+# re-entry, so no node to shrink. Handing it to another call is the re-entry,
+# and `captured_call_parts()` tests the pair without reading the peeler at all.
+reads_unparenthesized_value <- function(node, index) {
+  part <- node[[index]]
+  is.call(part) && identical(part[[1L]], quote(unparenthesized_value))
+}
+
+# Whether a body hands what the peeler answers straight to another call, which
+# is the shape of a reader restarting on the unwrapped node. An assignment is
+# not one: `spelled <- unparenthesized_value(expr)` is the binding both readers
+# in the pair vocabulary make, and what follows it re-enters nothing.
+hands_on_unparenthesized_value <- function(expr) {
+  found <- FALSE
+  visit_calls(expr, function(node) {
+    head <- node[[1L]]
+    passes_on <- !identical(head, quote(unparenthesized_value)) &&
+      !identical(head, quote(`<-`)) &&
+      !identical(head, quote(`=`))
+    if (!passes_on) {
+      return(invisible(NULL))
+    }
+    # By subscript, since a scanned body may hold an empty argument of its own.
+    for (index in seq_along(node)[-1L]) {
+      if (reads_unparenthesized_value(node, index)) {
+        found <<- TRUE
+      }
+    }
+  })
+  found
+}
+
+tests_redundant_parens <- function(expr) {
+  found <- FALSE
+  visit_calls(expr, function(node) {
+    if (identical(node[[1L]], quote(is_redundant_parens))) {
+      found <<- TRUE
+    }
+  })
+  found
+}
+
+restarts_on_an_unshrunk_pair <- function(expr) {
+  tests_redundant_parens(expr) && hands_on_unparenthesized_value(expr)
+}
+
+test_that("no reader restarts on a pair of parentheses it cannot shrink", {
+  ns <- asNamespace("marginplyr")
+  functions <- namespace_functions(ns)
+  # The scan iterates over this set, so a set that arrived empty is a set that
+  # passes.
+  expect_true("unparenthesized_value" %in% functions)
+
+  expect_equal(
+    walks_matching(restarts_on_an_unshrunk_pair, functions, ns),
+    character(),
+    info = paste(
+      "Guard the restart with `is_parenthesized()` instead --",
+      "it answers `FALSE` for the pair `unparenthesized_value()` stops at,",
+      "so the reader cannot re-enter on the node it was called with."
+    )
+  )
+})
+
+test_that("the restart scan detects the shape it is written to forbid", {
+  # Asserted before the scan's verdict means anything, for the reason the two
+  # gates above assert their own: a scan that stopped matching reports exactly
+  # what a clean package reports.
+  offending <- function(expr) {
+    if (is_redundant_parens(expr)) {
+      return(offending(unparenthesized_value(expr)))
+    }
+    expr
+  }
+  # The same restart one call deeper, and one written as a plain statement
+  # rather than a `return()`: neither is a shape a reader may be written in.
+  nested <- function(expr) {
+    if (TRUE) {
+      lapply(seq_len(2L), function(i) {
+        if (is_redundant_parens(expr)) {
+          nested(unparenthesized_value(expr))
+        }
+      })
+    }
+  }
+  # Correct, and the two shapes the gate must not name: the pair vocabulary's
+  # own readers, which bind the peeler's answer and return without re-entering,
+  # and a reader that restarts under the guard that answers `FALSE` for the
+  # pair the peeler stops at.
+  compliant_binding <- function(expr) {
+    if (!is_redundant_parens(expr)) {
+      return(expr)
+    }
+    spelled <- unparenthesized_value(expr)
+    if (is_nameable_call(spelled)) {
+      return(spelled)
+    }
+    expr
+  }
+  compliant_restart <- function(expr) {
+    if (is_parenthesized(expr)) {
+      return(compliant_restart(unparenthesized_value(expr)))
+    }
+    expr
+  }
+  compliant_test <- function(expr) {
+    if (is_redundant_parens(expr)) {
+      return(NULL)
+    }
+    expr
+  }
+
+  expect_true(restarts_on_an_unshrunk_pair(body(offending)))
+  expect_true(restarts_on_an_unshrunk_pair(body(nested)))
+  expect_false(restarts_on_an_unshrunk_pair(body(compliant_binding)))
+  expect_false(restarts_on_an_unshrunk_pair(body(compliant_restart)))
+  expect_false(restarts_on_an_unshrunk_pair(body(compliant_test)))
+  # An empty argument in the scanned code must not abort the scan, which is the
+  # bug the gates in this file exist for.
+  expect_false(restarts_on_an_unshrunk_pair(quote(sum(value[]))))
+})
+
 test_that("every shared reader answers an empty call part", {
   # The scans above forbid binding a call part to a local; this is the same
   # rule read from the other end, at the readers a walk hands one to. An empty
