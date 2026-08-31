@@ -1,3 +1,36 @@
+# The refusal every later reader of a summary expression holds. An empty
+# argument is R's missing marker, and a reader that binds it to a local raises
+# `missingArgError` on the next read of that local -- `preflight_shares()` is
+# the first of four in `R/share.R` alone, so the guard runs ahead of all of
+# them rather than inside one (#340).
+#
+# Only a named argument reaches here. `summarize_with_margins()` captures `...`
+# with `.ignore_empty = "all"`, which drops an unnamed empty argument wherever
+# it sits, exactly as `dplyr::summarise()` does with the same input.
+#
+# The first one the caller wrote is the one answered, which is the rule
+# `check_option_named_summaries()` below reads its own candidates in.
+check_empty_summaries <- function(dots) {
+  dot_names <- names(dots)
+  if (is.null(dot_names)) {
+    return(invisible(NULL))
+  }
+  empty <- vapply(dots, rlang::quo_is_missing, logical(1), USE.NAMES = FALSE)
+  if (!any(empty)) {
+    return(invisible(NULL))
+  }
+
+  # Read only from the cli template below, which `codetools` cannot follow
+  # into.
+  name <- dot_names[[which(empty)[[1L]]]] # nolint: object_usage_linter.
+  # `{.arg}` rather than `{.var}`: the caller wrote this as an argument name,
+  # and the refusal is what stops it becoming a column.
+  abort_marginplyr(c(
+    "Summary {.arg {name}} is empty.",
+    i = "Remove the summary, or write the expression it computes."
+  ))
+}
+
 # Options the verb once had. A caller following older material writes them as
 # if they were still arguments, and `...` would otherwise accept the value as
 # an ordinary summary and return a constant column. Each entry carries its own

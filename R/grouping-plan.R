@@ -106,7 +106,17 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
     # input and cannot rename one.
     return(group_vars)
   }
-  if (rlang::quo_is_null(by_quo)) {
+  # An empty `.by` selects no columns, which is `dplyr`'s answer to the same
+  # input -- what a wrapper forwards when its own caller omitted the column it
+  # passes on. Asked here because `is_name_only_selection()` below binds no
+  # local but reads the expression: R's empty argument is a symbol whose name
+  # is `""`, and `rlang::env_has()` raises an untyped condition for a
+  # zero-length variable name (#340).
+  #
+  # It is asked after `normalize_grouping_input()` has refused a grouped input
+  # carrying any `.by`, so the two readings dplyr takes of an empty one are
+  # both kept: supplied for that refusal, and no columns here.
+  if (rlang::quo_is_null(by_quo) || rlang::quo_is_missing(by_quo)) {
     return(character())
   }
   if (!is_name_only_selection(by_quo, data_vars)) {

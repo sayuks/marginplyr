@@ -833,6 +833,94 @@ test_that("the empty spellings that already had a reading keep it", {
   )
 })
 
+# The other empty argument a verb takes, and not the `.by = ` above: R matches
+# a named formal's empty argument to that formal's default, while `{{ }}`
+# splices R's missing marker into the quosure. Only the second reaches
+# `resolve_fixed_keys()` carrying one, where `is_name_only_selection()` read it
+# as a symbol whose name is `""` and `rlang::env_has()` raised an untyped
+# condition for a zero-length variable name (#340).
+test_that("a forwarded empty `.by` selects no columns on every verb", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  # `.by = NULL` is the same call with the argument supplied as absent, so each
+  # pair asserts dplyr's own answer to an empty `.by`: no columns selected.
+  forwarded <- list(
+    summarize_with_margins = function(data, by) {
+      summarize_with_margins(
+        data,
+        total = sum(value),
+        .by = {{ by }},
+        .grouping = rollup(region)
+      )
+    },
+    expand_with_margins = function(data, by) {
+      expand_with_margins(data, .by = {{ by }}, .grouping = rollup(region))
+    },
+    nest_with_margins = function(data, by) {
+      nest_with_margins(data, .by = {{ by }}, .grouping = rollup(region))
+    },
+    nest_by_with_margins = function(data, by) {
+      nest_by_with_margins(data, .by = {{ by }}, .grouping = rollup(region))
+    },
+    inspect_grouping = function(data, by) {
+      inspect_grouping(data, .by = {{ by }}, .grouping = rollup(region))
+    },
+    # The spelling synonym, which is the same function under a second export.
+    # It is here because the derivation below reads exports rather than
+    # function objects, and a synonym that stopped being one would show as an
+    # entry this list no longer covers.
+    summarise_with_margins = function(data, by) {
+      summarise_with_margins(
+        data,
+        total = sum(value),
+        .by = {{ by }},
+        .grouping = rollup(region)
+      )
+    }
+  )
+
+  # Derived from the exported signatures rather than listed, so a sixth verb
+  # taking `.by` arrives here as a wrapper this list is missing rather than as
+  # a position nothing covers.
+  exports <- getNamespaceExports("marginplyr")
+  by_verbs <- Filter(
+    function(name) {
+      object <- getExportedValue("marginplyr", name)
+      is.function(object) && ".by" %in% names(formals(object))
+    },
+    exports
+  )
+  expect_setequal(names(forwarded), by_verbs)
+
+  for (name in names(forwarded)) {
+    verb <- forwarded[[name]]
+    expect_identical(verb(data), verb(data, NULL), info = name)
+  }
+})
+
+test_that("a forwarded empty `.by` is still an argument the caller supplied", {
+  # The other half of dplyr's reading, which is unchanged: an empty `.by`
+  # selects no columns, but it is supplied, so a grouped input is refused
+  # exactly as `.by = region` would be.
+  data <- dplyr::group_by(
+    data.frame(region = c("East", "East", "West"), value = c(1, 3, 6)),
+    region
+  )
+  forwarded <- function(data, by) {
+    inspect_grouping(data, .by = {{ by }}, .grouping = rollup(region))
+  }
+
+  error <- expect_error(forwarded(data))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error),
+    "Can't supply `.by` when `.data` is grouped.",
+    fixed = TRUE
+  )
+})
+
 # The other reader of a kind nothing has validated, and the one where the
 # guards' answer is not the answer: this site declines rather than refuses, so
 # what a method could take from it was a compiled call rather than a diagnostic

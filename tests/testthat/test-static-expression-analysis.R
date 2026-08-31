@@ -2451,6 +2451,75 @@ test_that("an empty argument outside `across()` evaluates as dplyr evaluates", {
   )
 })
 
+test_that("a summary argument the caller left empty is refused by name", {
+  # The two spellings that leave a summary empty: the plain typo, and the
+  # tidy-eval idiom a wrapper forwards a column its own caller omitted with.
+  # Both reach the verb as the same quosure, so the refusal names what they
+  # share -- the summary the caller wrote (#340).
+  data <- data.frame(region = c("East", "West"), value = c(1, 6))
+  forwarded <- function(data, column) {
+    summarize_with_margins(data, z = {{ column }}, .grouping = rollup(region))
+  }
+
+  errors <- list(
+    written = expect_error(
+      summarize_with_margins(data, z = , .grouping = rollup(region))
+    ),
+    injected = expect_error(forwarded(data))
+  )
+
+  for (error in errors) {
+    expect_s3_class(error, "marginplyr_error")
+    expect_false(inherits(error, "missingArgError"))
+    # Asserted in full rather than matched, because what #340 found was not a
+    # missing refusal but a diagnostic naming `expr`, the local
+    # `preflight_shares()` bound the missing marker to.
+    expect_identical(
+      conditionMessage(error),
+      paste0(
+        "Summary `z` is empty.\n",
+        "i Remove the summary, or write the expression it computes."
+      )
+    )
+    # The call the caller wrote, not the reader that found the empty argument.
+    expect_identical(conditionCall(error)[[1L]], quote(summarize_with_margins))
+  }
+})
+
+test_that("an unnamed empty summary argument is dropped as dplyr drops one", {
+  # dplyr is the oracle again. It captures `...` with `.ignore_empty = "all"`,
+  # which keeps a named empty argument for the refusal above and drops an
+  # unnamed one wherever it sits. Only a trailing one was dropped here, so a
+  # leading one reached `preflight_shares()` and raised `missingArgError`
+  # (#340).
+  data <- data.frame(region = c("East", "East", "West"), value = c(1, 3, 6))
+
+  expected <- summarize_with_margins(
+    data,
+    total = sum(value),
+    .grouping = rollup(region)
+  )
+  leading <- summarize_with_margins(
+    data,
+    ,
+    total = sum(value),
+    .grouping = rollup(region)
+  )
+  trailing <- summarize_with_margins(
+    data,
+    total = sum(value),
+    ,
+    .grouping = rollup(region)
+  )
+
+  expect_identical(leading, expected)
+  expect_identical(trailing, expected)
+  expect_identical(
+    names(dplyr::summarise(data, , total = sum(value))),
+    "total"
+  )
+})
+
 test_that("`parse_across_arguments()` answers an empty argument as omitted", {
   # The seam every `across()` path reads, and the one place that has to know
   # about the empty argument: each field below answers what it answers for an
