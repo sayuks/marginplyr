@@ -419,6 +419,11 @@ static_call_args <- function(expr) {
 # binding, or an output called `""`, which nothing the caller wrote can be
 # (#174). Asked of a part read by subscript, never of one bound to a name,
 # which is the rule above.
+#
+# `is_name_only_expr()` is the one site that satisfies the rule without asking
+# this: it has an answer for the empty argument rather than only a reading to
+# decline, so it returns that answer first and the symbol branch below it
+# never sees one (#351).
 is_name_part <- function(part) {
   !rlang::is_missing(part) && rlang::is_symbol(part)
 }

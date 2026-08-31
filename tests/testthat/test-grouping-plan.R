@@ -948,6 +948,123 @@ test_that("a forwarded empty `.by` is still an argument the caller supplied", {
   )
 })
 
+# The empty argument one level down from the verb's argument. The argument is
+# a selection that names a column, so `is_empty_argument()` is never asked and
+# `is_name_only_expr()` read the part -- where the empty argument is a symbol
+# whose name is `""` and `rlang::env_has()` raised for a zero-length variable
+# name (#351). #340's answer above is a different position and is unchanged.
+#
+# Answered as tidyselect answers it, which under `c()` is to select nothing
+# for the part. Every position, since the walk reads every part, and every
+# verb the derivation names rather than a list that could miss one.
+test_that("an empty argument inside a `.by` selection selects nothing", {
+  # `tier` is here so that the interior position has a second fixed key to sit
+  # beside, without the selection reaching the column `.grouping` takes.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    tier = c("x", "y", "x"),
+    grade = c("a", "b", "a"),
+    value = c(1, 3, 6)
+  )
+  forwarded <- list(
+    summarize_with_margins = function(data, by) {
+      summarize_with_margins(
+        data,
+        total = sum(value),
+        .by = {{ by }},
+        .grouping = rollup(grade)
+      )
+    },
+    summarise_with_margins = function(data, by) {
+      summarise_with_margins(
+        data,
+        total = sum(value),
+        .by = {{ by }},
+        .grouping = rollup(grade)
+      )
+    },
+    expand_with_margins = function(data, by) {
+      expand_with_margins(data, .by = {{ by }}, .grouping = rollup(grade))
+    },
+    nest_with_margins = function(data, by) {
+      nest_with_margins(data, .by = {{ by }}, .grouping = rollup(grade))
+    },
+    nest_by_with_margins = function(data, by) {
+      nest_by_with_margins(data, .by = {{ by }}, .grouping = rollup(grade))
+    },
+    inspect_grouping = function(data, by) {
+      inspect_grouping(data, .by = {{ by }}, .grouping = rollup(grade))
+    }
+  )
+  expect_setequal(names(forwarded), verbs_taking(".by"))
+
+  for (name in names(forwarded)) {
+    verb <- forwarded[[name]]
+    expect_identical(verb(data, c(, region)), verb(data, region), info = name)
+    expect_identical(verb(data, c(region, )), verb(data, region), info = name)
+    expect_identical(
+      verb(data, c(region, , tier)),
+      verb(data, c(region, tier)),
+      info = name
+    )
+  }
+})
+
+# The same reader serves a Grouping specification argument, so a selection
+# written at one carries the part to the same place. What this settles is the
+# boundary against the refusal of an empty constructor argument: that refusal
+# is about the argument's own position, which `c(, grade)` does not leave
+# empty. `CONTEXT.md`'s *Nested specification position* holds the decision.
+test_that("an empty argument inside a specification's selection reads too", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    grade = c("a", "b", "a"),
+    value = c(1, 3, 6)
+  )
+  expect_identical(
+    inspect_grouping(data, .grouping = rollup(c(, grade))),
+    inspect_grouping(data, .grouping = rollup(grade))
+  )
+  expect_identical(
+    inspect_grouping(data, .grouping = rollup(c(grade, ))),
+    inspect_grouping(data, .grouping = rollup(grade))
+  )
+  # One level in, where the constructor holding the selection is the inner
+  # one -- the frame the refusal above would have named.
+  expect_identical(
+    inspect_grouping(
+      data,
+      .grouping = grouping_sets(grouping_set(c(, region)))
+    ),
+    inspect_grouping(data, .grouping = grouping_sets(grouping_set(region)))
+  )
+})
+
+# `c()` is the only walk operator that drops the part. Under the rest,
+# tidyselect raises for it, and so does `dplyr::select()` -- this package's
+# reading is not what makes those fail. So what is asserted is that nothing
+# here refuses the selection before tidyselect is reached, and not the
+# message, which is tidyselect's and moves with its version;
+# `investigation/an-empty-argument-under-a-selection-walk.md` measures the
+# message per operator on the version it was measured against.
+#
+# Constructed, because `-()` and `|(, region)` are not spellings R parses.
+test_that("an empty operand under another walk operator is tidyselect's", {
+  data <- data.frame(region = c("East", "West"), value = c(1, 6))
+  operators <- c("-", "!", "|", "/")
+
+  for (index in seq_along(operators)) {
+    operand <- as.call(list(
+      as.name(operators[[index]]),
+      rlang::missing_arg()
+    ))
+    error <- expect_error(
+      inspect_grouping(data, .by = !!operand, .grouping = rollup(region))
+    )
+    expect_false(inherits(error, "marginplyr_error"), info = operators[[index]])
+  }
+})
+
 # The other reader of a kind nothing has validated, and the one where the
 # guards' answer is not the answer: this site declines rather than refuses, so
 # what a method could take from it was a compiled call rather than a diagnostic
