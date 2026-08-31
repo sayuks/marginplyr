@@ -190,6 +190,24 @@
   Redundant parentheses are transparent at all three positions, as they are
   elsewhere: an injected pair wrapping nothing is the empty argument it wraps
   (#340).
+* A selection a wrapper forwards into `across()` is now the selection dplyr
+  makes of it. `across({{ cols }}, sum)` — the ordinary way to pass on a
+  selection your own caller wrote — was refused by tidyselect, which advised
+  wrapping it in `where()`, whatever columns it named, because the forwarded
+  selection was read as the formula shorthand for a predicate. Forwarding an
+  argument your caller omitted is one value of the same spelling, and it now
+  selects no columns, which is what dplyr selects for it; a selection you write
+  empty yourself still means every eligible column, as it did. dplyr reads a
+  nested `across()` — one inside another expression rather than standing as the
+  summary — differently, taking its deprecated `everything()` default for a
+  forwarded omission; marginplyr resolves the selection wherever it is written,
+  so the reading above is the one you get at both positions. A share's
+  `across()` reads its selection the same way, so a forwarded name that is not
+  an eligible preceding summary is now refused by that name rather than
+  reported as an unusable selection. An `across()` `.names` template that
+  cannot be evaluated — forwarded empty, naming something absent, or a pair of
+  parentheses holding nothing — reaches dplyr, which names the argument you
+  wrote, in place of R's bare error naming nothing (#349, #350).
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were

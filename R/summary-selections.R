@@ -501,11 +501,13 @@ rewrite_across_selection <- function(expr,
 
   # One resolution, whichever way the selection was written: `parsed$cols` is
   # already the `dplyr::everything()` that an omitted `.cols` selects, and an
-  # argument the caller left empty is omitted in exactly that sense. What the
-  # branch decides is only where the resolved selection goes -- prepended when
-  # no argument occupies `.cols`, and written back over the argument that does,
-  # so an empty one keeps its position instead of being dropped from the
-  # middle of the call (#174).
+  # argument the caller wrote empty is omitted in exactly that sense. A quosure
+  # carrying the empty argument is not, and reaches the resolution below as the
+  # selection it is -- the empty one (#350).
+  # What the branch decides is only where the resolved selection goes --
+  # prepended when no argument occupies `.cols`, and written back over the
+  # argument that does, so an empty one keeps its position instead of being
+  # dropped from the middle of the call (#174).
   selected <- resolve_summary_selection(
     parsed$cols,
     env = env,
@@ -591,8 +593,22 @@ rewrite_pick_selection <- function(expr, env, data_proxy) {
 }
 
 resolve_summary_selection <- function(expr, env, data_proxy) {
+  # A quosure is passed on rather than wrapped, because it carries the
+  # environment `env` would supply and a selection needs the one it was written
+  # in. Wrapping produces a quosure whose expression is a quosure, which
+  # `eval_select()` reads as the lambda shorthand and refuses with `where()`
+  # advice. `{{ }}` at `.cols` inlines a quosure, so this is the position the
+  # ordinary idiom for forwarding a selection arrives at (#350). The
+  # environment is what separates this from ADR 0019's amendment, which reads an
+  # injected *name* for the name alone.
+  selection <- if (rlang::is_quosure(expr)) {
+    expr
+  } else {
+    rlang::new_quosure(expr, env = env)
+  }
+
   tidyselect::eval_select(
-    rlang::new_quosure(expr, env = env),
+    selection,
     data = data_proxy,
     strict = TRUE,
     allow_rename = TRUE
