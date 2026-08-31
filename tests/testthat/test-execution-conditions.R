@@ -517,6 +517,25 @@ test_that("a marker inside a value or a diagnostic decides nothing", {
   )
 })
 
+# dplyr appends its pointer only at the end of a message whose header said there
+# was more than one warning, and a caller's own text may spell that line too.
+# The plan below raises one warning in a branch of two groups, where dplyr
+# appends the pointer, and in a branch of one, where it appends none -- so a
+# removal that reads the caller's line as dplyr's computes a different identity
+# in each and reports the warning twice (#341). Nothing else in the suite
+# reaches this: the pair above differ, so they are two reports either way.
+test_that("a caller's own pointer line does not split one warning", {
+  text <- "bad value\ni Run `dplyr::last_dplyr_warnings()` tail"
+  warnings <- collect_warnings(summarize_branch_diagnostics(text, text))
+
+  expect_length(warnings, 1L)
+  message <- conditionMessage(warnings[[1L]])
+  expect_match(message, "1 further grouping set", fixed = TRUE)
+  # The caller's line is no part of what the identity removes, so the report
+  # still carries it.
+  expect_match(message, "last_dplyr_warnings()` tail", fixed = TRUE)
+})
+
 # ADR 0022's contract for a restated line, asserted line by line rather than in
 # aggregate. `expect_rendering_markers()` above says only that some marker
 # survived somewhere, which a message that had lost the styling on one other

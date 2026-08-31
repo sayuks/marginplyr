@@ -197,7 +197,7 @@ buffer_branch_warning <- function(cnd, conditions, restatements) {
 # line at column zero exactly as it renders a bullet. So the header is what
 # precedes the first bullet, a grouping-value bullet is one written before the
 # `Caused by` line that introduces the caller's own diagnostic, and the pointer
-# at the store is looked for only in a message whose header said there was more
+# at the store is the last line of a message whose header said there was more
 # than one warning to point at.
 #
 # Each part is matched as the line it was written as -- `message_line_runs()`
@@ -221,12 +221,20 @@ branch_warning_identity <- function(cnd) {
   cause <- match(TRUE, grepl("^Caused by ", written))
   removed <- rep(FALSE, length(runs))
 
-  aggregated <- !is.na(first_bullet) &&
-    first_bullet > 1L &&
-    grepl(
-      "^There (were|was) [0-9]+ warnings? in ",
-      paste(written[seq_len(first_bullet - 1L)], collapse = " ")
-    )
+  header <- if (is.na(first_bullet) || first_bullet == 1L) {
+    ""
+  } else {
+    paste(written[seq_len(first_bullet - 1L)], collapse = " ")
+  }
+  # The header's own count, kept rather than only tested for: it is what says
+  # whether dplyr appended a pointer, having nothing to point at where it
+  # reported one warning. `regmatches()` returns the whole match ahead of the
+  # groups, so the count is the third element.
+  counted <- regmatches(
+    header,
+    regexec("^There (were|was) ([0-9]+) warnings? in ", header)
+  )[[1L]]
+  aggregated <- length(counted) > 0L
   if (aggregated) {
     removed[seq_len(first_bullet - 1L)] <- TRUE
   }
@@ -234,18 +242,23 @@ branch_warning_identity <- function(cnd) {
     removed <- removed |
       (grepl("^[i\u2139] In group ", written) & seq_along(written) < cause)
   }
-  # The pointer runs to the end of the message, so everything after it goes
-  # with it. Its backticks are optional because cli writes the call as an
-  # `x-r-run` hyperlink where the terminal takes one, and the backticks are what
-  # the link replaces -- so removing the escapes is necessary for this line and
-  # not sufficient (#217). That widens what a caller's own diagnostic can be
-  # mistaken for by exactly one spelling, which is the direction this reading is
-  # already chosen to fail in.
-  pointer <- which(
-    grepl("^[i\u2139] Run `?dplyr::last_dplyr_warnings\\(\\)`?", written)
-  )
-  if (aggregated && length(pointer) > 0L) {
-    removed[seq(max(pointer), length(runs))] <- TRUE
+  # The pointer dplyr appends is the last line, and it appends one only where
+  # the header counted more than one warning to point at. A caller's own
+  # diagnostic can spell that line anywhere in the message, and reading one as
+  # dplyr's splits the identity of a single warning: the branch that raised it
+  # once loses the tail that the branch that raised it twice keeps (#341). Its
+  # backticks are optional because cli writes the call as an `x-r-run` hyperlink
+  # where the terminal takes one, and the backticks are what the link replaces
+  # -- so removing the escapes is necessary for this line and not sufficient
+  # (#217).
+  appended <- aggregated &&
+    as.integer(counted[[3L]]) > 1L &&
+    grepl(
+      "^[i\u2139] Run `?dplyr::last_dplyr_warnings\\(\\)`?",
+      written[[length(written)]]
+    )
+  if (appended) {
+    removed[[length(runs)]] <- TRUE
   }
 
   paste(
