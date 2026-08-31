@@ -175,14 +175,16 @@
   missing-argument error. A summary written `z = ` — or forwarded by a wrapper
   whose own caller omitted the column it passes on — is refused as an empty
   summary named `z`, where it used to report `argument "expr" is missing, with
-  no default`; an unnamed one is refused as `..1`, the name dplyr gives it. A
-  trailing comma is not an empty argument, here as in a Grouping specification
-  constructor, because R captures no argument for one. An empty `.by` forwarded
-  the same way selects no columns, as it does in dplyr, in place of `attempt to
-  use zero-length variable name`; it is still an argument you supplied, so
-  grouped input carrying one is refused as it was. An empty `.grouping` is the
-  plan you get from omitting it, which is what writing `.grouping = ` already
-  means (#340).
+  no default`; an unnamed one is refused as `..1`. A trailing comma is not an
+  empty argument, here as in a Grouping specification constructor, because no
+  argument is captured for one. An empty `.by` forwarded the same way selects
+  no columns, as it does in dplyr, in place of `attempt to use zero-length
+  variable name`; it is still an argument you supplied, so grouped input
+  carrying one is refused as it was. An empty `.grouping` is the plan you get
+  from omitting it, which is what writing `.grouping = ` already means.
+  Redundant parentheses are transparent here as they are elsewhere, so `(` with
+  nothing inside it is the empty argument it wraps at each of these positions
+  (#340).
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were

@@ -134,17 +134,17 @@ check_option_named_summaries <- function(dots) {
 
 # The refusal every reader of a summary expression holds. R's empty argument is
 # a marker, and a reader that binds it to a local raises `missingArgError` on
-# the next read of that local -- `R/share.R` holds four such readers, so the
+# the next read of that local -- several below and in `R/share.R` do, so the
 # guard runs ahead of all of them rather than inside one (#340).
 #
 # Every empty argument `rlang::enquos(...)` captures is refused, named or not,
 # including one spliced in. What it captures no argument for is a trailing
 # comma, which keeps the reading `grouping_set(region, )` already has.
 #
-# An unnamed one is named `..n`, which is how dplyr refers to it and what
-# `name_unnamed_by_position()` below spells.
+# An unnamed one is named `..n`, the numbering
+# `name_unnamed_by_position()` below already spells.
 check_empty_summaries <- function(dots) {
-  empty <- vapply(dots, rlang::quo_is_missing, logical(1), USE.NAMES = FALSE)
+  empty <- vapply(dots, is_empty_argument, logical(1), USE.NAMES = FALSE)
   if (!any(empty)) {
     return(invisible(NULL))
   }
@@ -796,9 +796,11 @@ known_across_function_names <- function(parsed) {
   name_unnamed_by_position(fns_names, "")
 }
 
-# Both callers name the unnamed entries of an argument list by position, which
+# Every caller names the unnamed entries of an argument list by position, which
 # is how dplyr refers to them: an argument forwarded through `across()`'s `...`
-# is `..n`, and an unnamed `.fns` list entry takes its index. The replacement
+# is `..n`, and an unnamed `.fns` list entry takes its index. An empty summary
+# `check_empty_summaries()` refuses is named the same way, so what the caller
+# reads is one numbering rather than one per site. The replacement
 # has to be indexed by the same positions that select it. Building it over the
 # whole list instead makes the two sides differ in length whenever any entry is
 # named, so base R recycles -- warning from a call that otherwise succeeds --

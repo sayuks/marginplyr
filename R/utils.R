@@ -325,6 +325,24 @@ wraps_empty_argument <- function(expr) {
   is_redundant_parens(expr) && rlang::is_missing(expr[[2L]])
 }
 
+# Whether a caller left this argument empty, in either spelling R gives them:
+# the empty argument itself, or the same argument inside redundant
+# parentheses. The second is read through for the reason every other reading
+# reads through a pair (#178, #259, ADR 0019) -- `(` is the identity function,
+# so a pair wrapping the empty argument wraps nothing to read either. Only an
+# injection or a constructed call spells it, since the parser rejects
+# `f((), x)`.
+#
+# Asked of the quosure, before anything reads the expression out of it, which
+# is the rule above for every reader a walk asks first (#168, #174). Every
+# position a caller can leave empty asks this one question, so a position that
+# starts seeing through one spelling and not the other is not reachable from
+# here (#340).
+is_empty_argument <- function(quo) {
+  rlang::quo_is_missing(quo) ||
+    wraps_empty_argument(unparenthesized_value(rlang::quo_get_expr(quo)))
+}
+
 # The head and the arguments of a call a walk descends into, and the node
 # rebuilt around rewritten arguments. `static_call_name()` above answers what a
 # walk asks of a node it does not descend into; these three are what it asks of

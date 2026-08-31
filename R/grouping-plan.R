@@ -114,7 +114,7 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
   # `normalize_grouping_input()` has already refused a grouped input carrying
   # any `.by`, which keeps dplyr's other reading of an empty one: supplied
   # there, no columns here.
-  if (rlang::quo_is_null(by_quo) || rlang::quo_is_missing(by_quo)) {
+  if (rlang::quo_is_null(by_quo) || is_empty_argument(by_quo)) {
     return(character())
   }
   if (!is_name_only_selection(by_quo, data_vars)) {
@@ -170,7 +170,7 @@ prepare_grouping_plan <- function(.data,
       # to that formal's default. Only injection carries the missing marker
       # this far, and `rlang::eval_tidy()` evaluates it -- `object '' not
       # found`, naming nothing the caller wrote (#340).
-      grouping_spec <- if (rlang::quo_is_missing(grouping_quo)) {
+      grouping_spec <- if (is_empty_argument(grouping_quo)) {
         NULL
       } else {
         rlang::eval_tidy(grouping_quo)
@@ -422,24 +422,15 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
     arg <- grouping_spec$args[[i]]
-    # The first test is asked of the quosure, which is an object like any
-    # other, and before anything reads the expression out of it -- the rule
-    # `R/utils.R` states for every reader a walk asks first (#168, #174). The
-    # refusal is here rather than in the reader below because this is the frame
-    # holding what the diagnostic names: the constructor and the argument's
-    # position (#261).
+    # The refusal is here rather than in the reader below because this is the
+    # frame holding what the diagnostic names: the constructor and the
+    # argument's position (#261). Which spellings count as empty, and why the
+    # question is put to the quosure, are `is_empty_argument()`'s.
     #
-    # The second is the same argument written inside redundant parentheses,
-    # which every other reading here sees through (#178, #259) and which this
-    # one has to see through for the same reason: `(` is the identity function,
-    # so the pair wraps nothing to read either. Only an injection or a
-    # constructed call spells it, since the parser rejects `f((), x)`.
-    # Unrefused it reaches `is_name_only_expr()`, where the empty argument is a
-    # symbol whose name is `""` and `rlang::env_has()` raises an untyped
-    # condition for a zero-length variable name.
-    if (
-      rlang::quo_is_missing(arg) || wraps_empty_argument(nested_arg_expr(arg))
-    ) {
+    # Unrefused, such an argument reaches `is_name_only_expr()`, where the
+    # empty argument is a symbol whose name is `""` and `rlang::env_has()`
+    # raises an untyped condition for a zero-length variable name.
+    if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
     nested <- grouping_arg_spec(arg, data_vars)
@@ -461,9 +452,9 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 # The spelling a nested position reads an argument by: the caller's expression
 # with its redundant parentheses removed (#178, #259). It answers the pair
 # wrapping R's empty argument rather than unwrapping to the marker
-# (#168, #174), and that pair is what `preflight_grouping_spec()` reads to
-# refuse an empty argument (#261). Every other caller runs downstream of that
-# refusal and is handed no empty argument at all.
+# (#168, #174), which is the shape `is_empty_argument()` reads to refuse one
+# (#261). Every caller here runs downstream of that refusal and is handed no
+# empty argument at all.
 nested_arg_expr <- function(arg) {
   unparenthesized_value(rlang::quo_get_expr(arg))
 }

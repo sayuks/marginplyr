@@ -2451,6 +2451,15 @@ test_that("an empty argument outside `across()` evaluates as dplyr evaluates", {
   )
 })
 
+# The two tests below read one builder, so the refusal they pin is one message
+# rather than two spellings of it.
+empty_summary_message <- function(name) {
+  paste0(
+    "Summary `", name, "` is empty.\n",
+    "i Remove the summary, or write the expression it computes."
+  )
+}
+
 test_that("a summary argument the caller left empty is refused by name", {
   # The two spellings that leave a summary empty: the plain typo, and the
   # tidy-eval idiom a wrapper forwards a column its own caller omitted with.
@@ -2474,13 +2483,7 @@ test_that("a summary argument the caller left empty is refused by name", {
     # Asserted in full rather than matched, because what #340 found was not a
     # missing refusal but a diagnostic naming `expr`, the local
     # `preflight_shares()` bound the missing marker to.
-    expect_identical(
-      conditionMessage(error),
-      paste0(
-        "Summary `z` is empty.\n",
-        "i Remove the summary, or write the expression it computes."
-      )
-    )
+    expect_identical(conditionMessage(error), empty_summary_message("z"))
     # The call the caller wrote, not the reader that found the empty argument.
     expect_identical(conditionCall(error)[[1L]], quote(summarize_with_margins))
   }
@@ -2492,15 +2495,10 @@ test_that("an unnamed empty summary argument is refused by its position", {
   # whether it carries a name or not. Each raised `missingArgError` from the
   # first reader that bound it (#340).
   #
-  # `..n` is the name the refusal gives an unnamed argument, which is how dplyr
-  # refers to one and what `name_unnamed_by_position()` already spells.
+  # `..n` is the name the refusal gives an unnamed argument, the numbering
+  # `name_unnamed_by_position()` already spells for every other unnamed
+  # argument this package names.
   data <- data.frame(region = c("East", "East", "West"), value = c(1, 3, 6))
-  empty_summary_message <- function(name) {
-    paste0(
-      "Summary `", name, "` is empty.\n",
-      "i Remove the summary, or write the expression it computes."
-    )
-  }
 
   shapes <- list(
     leading = list(
@@ -2565,6 +2563,61 @@ test_that("an unnamed empty summary argument is refused by its position", {
       total = sum(value),
       .grouping = rollup(region)
     )
+  )
+})
+
+test_that("a pair of parentheses holding nothing is the empty argument", {
+  # `(` is the identity function, so a pair wrapping R's empty argument wraps
+  # nothing to read either -- the reading every other position takes of a
+  # redundant pair (#178, #259, ADR 0019), and the one a Grouping specification
+  # constructor has taken since #259. The parser rejects `f(())`, so a
+  # constructed call is how the pair is spelled at all.
+  data <- data.frame(region = c("East", "East", "West"), value = c(1, 3, 6))
+  parens <- function(expr) as.call(list(as.name("("), expr))
+  empty <- parens(rlang::missing_arg())
+
+  # A summary is refused as the unwrapped argument is. Unrefused, this pair
+  # reached the share preflight and recursed without bound.
+  named <- expect_error(summarize_with_margins(
+    data,
+    z = !!empty,
+    .grouping = rollup(region)
+  ))
+  expect_s3_class(named, "marginplyr_error")
+  expect_identical(conditionMessage(named), empty_summary_message("z"))
+
+  unnamed <- expect_error(summarize_with_margins(
+    data,
+    !!empty,
+    total = sum(value),
+    .grouping = rollup(region)
+  ))
+  expect_s3_class(unnamed, "marginplyr_error")
+  expect_identical(conditionMessage(unnamed), empty_summary_message("..1"))
+
+  # `.by` and `.grouping` answer it as they answer the unwrapped argument: no
+  # columns, and the plan omitting the argument gives.
+  expect_identical(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .by = !!empty,
+      .grouping = rollup(region)
+    ),
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .grouping = rollup(region)
+    )
+  )
+  expect_identical(
+    inspect_grouping(data, .grouping = !!empty),
+    inspect_grouping(data)
+  )
+  # Two pairs deep, since what reads through them unwraps until it stops.
+  expect_identical(
+    inspect_grouping(data, .grouping = !!parens(empty)),
+    inspect_grouping(data)
   )
 })
 
