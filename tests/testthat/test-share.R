@@ -1990,6 +1990,175 @@ test_that("Total shares expand through across and integer sources", {
   expect_type(result$units_of_total, "double")
 })
 
+# A wrapper forwarding a selection or a source into a share is the ordinary
+# tidy-eval idiom, and the three spellings below are the ones it is written in.
+# What lost them is stated where it was answered, in `wrap_share_sources()`'s
+# header (#357). These two are over the summaries, because a summary is what
+# the caller was denied; the call a share's condition reports is the test after
+# them.
+test_that("an injected share `across()` selection computes what it names", {
+  data <- data.frame(group = c("x", "y"), units = c(1, 3), revenue = c(10, 30))
+
+  written <- summarize_with_margins(
+    data,
+    dplyr::across(c(units, revenue), sum),
+    dplyr::across(
+      c(units, revenue),
+      share_of_total,
+      .names = "{.col}_share"
+    ),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  curly <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      dplyr::across(c(units, revenue), sum),
+      dplyr::across({{ selection }}, share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+  quosure <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      dplyr::across(c(units, revenue), sum),
+      dplyr::across(
+        !!rlang::enquo(selection),
+        share_of_total,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+
+  expect_identical(curly(data, c(units, revenue)), written)
+  expect_identical(quosure(data, c(units, revenue)), written)
+
+  # `rlang::ensym()` carries a bare symbol and no quosure, so it selects one
+  # column and is compared against the written spelling of that selection.
+  one_written <- summarize_with_margins(
+    data,
+    dplyr::across(c(units, revenue), sum),
+    dplyr::across(units, share_of_total, .names = "{.col}_share"),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+  symbol <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      dplyr::across(c(units, revenue), sum),
+      dplyr::across(
+        !!rlang::ensym(selection),
+        share_of_total,
+        .names = "{.col}_share"
+      ),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+
+  expect_identical(symbol(data, units), one_written)
+})
+
+test_that("an injected direct share source computes what it names", {
+  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+
+  written <- summarize_with_margins(
+    data,
+    total = sum(value),
+    whole = share_of_total(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  curly <- function(data, source) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      whole = share_of_total({{ source }}),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+  quosure <- function(data, source) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      whole = share_of_total(!!rlang::enquo(source)),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+  symbol <- function(data, source) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      whole = share_of_total(!!rlang::ensym(source)),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+
+  expect_identical(curly(data, total), written)
+  expect_identical(quosure(data, total), written)
+  expect_identical(symbol(data, total), written)
+})
+
+# What the staging stopped carrying, `with_margin_error_call()` supplies: a
+# Package condition raised inside the verb call takes its call from the
+# operation rather than from the expression handed to dplyr. This is the whole
+# reason the staged call could be removed, so it is asserted as the call itself
+# and not as its name -- including for a caller whose call holds an injection,
+# where the spelling quoted back is the one they wrote (ADR 0024).
+test_that("a share condition reports the caller's own call, injected or not", {
+  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+
+  written <- function(data) {
+    summarize_with_margins(
+      data,
+      total = c(min(value), max(value)),
+      whole = share_of_total(total),
+      .grouping = rollup(group)
+    )
+  }
+  written_error <- expect_error(
+    written(data),
+    class = "marginplyr_share_cardinality_error"
+  )
+  # Bound before the comparison rather than written into it: `expect_*()`
+  # defuses its arguments, which is the second defusal this test is about.
+  written_call <- quote(summarize_with_margins(
+    data,
+    total = c(min(value), max(value)),
+    whole = share_of_total(total),
+    .grouping = rollup(group)
+  ))
+  expect_identical(conditionCall(written_error), written_call)
+
+  injected <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      total = c(min(value), max(value)),
+      dplyr::across({{ selection }}, share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(group)
+    )
+  }
+  injected_error <- expect_error(
+    injected(data, total),
+    class = "marginplyr_share_cardinality_error"
+  )
+  injected_call <- quote(summarize_with_margins(
+    data,
+    total = c(min(value), max(value)),
+    dplyr::across({{ selection }}, share_of_total, .names = "{.col}_share"),
+    .grouping = rollup(group)
+  ))
+  expect_identical(conditionCall(injected_error), injected_call)
+})
+
 test_that("Total-share staging avoids adversarial user-name collisions", {
   # The fixed-key stand-in a Total share joins on when `.by` is empty is the
   # one internal name Parent shares never allocate.

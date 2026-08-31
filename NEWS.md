@@ -208,6 +208,16 @@
   cannot be evaluated — forwarded empty, naming something absent, or a pair of
   parentheses holding nothing — reaches dplyr, which names the argument you
   wrote, in place of R's bare error naming nothing (#349, #350).
+* A selection or a source your wrapper forwards into a share now reaches the
+  share it names. `across({{ cols }}, share_of_total)` and
+  `share_of_total({{ col }})` — with the `!!rlang::enquo()` and
+  `!!rlang::ensym()` spellings of each — reported `object 'cols' not found`,
+  naming your own wrapper's argument in place of the summary you wrote: the
+  check marginplyr wraps around a share's source carried your call back into
+  the summary, where dplyr defused it a second time and expanded the
+  forwarding where that argument is not bound. The check carries no call
+  there now, and a share's conditions still name the call you wrote,
+  forwarding and all (#357).
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were

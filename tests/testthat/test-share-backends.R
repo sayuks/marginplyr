@@ -2006,6 +2006,61 @@ test_that("dtplyr Total shares match local results", {
   expect_equal(sum(unpartitioned$revenue_share), 2)
 })
 
+# The two backends below answer an injected share selection today, and for
+# reasons that are not the local backend's: dtplyr carries the caller's call as
+# text, which no second defusal reads, and a lazy backend wraps no source in the
+# summary at all. Neither reason is stated where it could be read off the
+# result, so a change to either would be reported by nothing (#357).
+test_that("dtplyr answers an injected share `across()` selection", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(group = c("x", "y"), units = c(1, 3))
+  summarize <- function(source, selection) {
+    summarize_with_margins(
+      source,
+      units = sum(units),
+      dplyr::across({{ selection }}, share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+
+  expected <- summarize(data, units)
+  result <- dplyr::collect(summarize(dtplyr::lazy_dt(data), units))
+
+  expect_equal(as.data.frame(result), as.data.frame(expected))
+  expect_equal(result$units_share, c(0.25, 0.75, 1))
+})
+
+test_that("DuckDB answers an injected share `across()` selection", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(group = c("x", "y"), units = c(1, 3))
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "injected_share_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source, selection) {
+    summarize_with_margins(
+      source,
+      units = sum(units),
+      dplyr::across({{ selection }}, share_of_total, .names = "{.col}_share"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+
+  expected <- summarize(data, units)
+  result <- dplyr::collect(summarize(remote, units)) |>
+    dplyr::arrange(group)
+
+  expect_equal(as.data.frame(result), as.data.frame(expected))
+  expect_equal(result$units_share, c(0.25, 0.75, 1))
+})
+
 test_that("dtplyr rejects ineligible Total-share sources on collection", {
   skip_if_suggest_absent("dtplyr")
   step <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
