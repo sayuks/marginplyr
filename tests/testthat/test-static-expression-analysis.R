@@ -2348,6 +2348,240 @@ test_that("an omitted share `.fns` is refused by name, not by lookup", {
   expect_false(inherits(error, "missingArgError"))
 })
 
+# The tests below cover the other spelling of an empty argument, and the wider
+# reading that spelling belongs to. A caller forwarding an argument their own
+# caller left out injects a quosure carrying the empty argument rather than the
+# empty argument itself, so `rlang::is_missing()` is false of it and the parse
+# above reads it as supplied. dplyr tells the two apart the same way -- a
+# written empty `.cols` takes the formal's default and deprecates, an injected
+# one selects nothing -- so dplyr is the oracle here as it is for the omitted
+# spelling, and folding the injected spelling into the omitted one would answer
+# a different call than the caller wrote (#350).
+
+test_that("an injected `across()` selection is the selection dplyr makes", {
+  # The ordinary tidy-eval idiom for forwarding a selection, and the shape the
+  # empty selection below is one value of. `{{ }}` inlines a quosure into
+  # `.cols`, where a resolution that wrapped it in a second quosure handed
+  # `eval_select()` a one-sided formula -- read as the lambda shorthand, which
+  # is the `where()` the refusal advised (#350).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+  summarize <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      dplyr::across({{ selection }}, sum),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    )
+  }
+  # The same forwarding written out, since `{{ }}` is shorthand for it and the
+  # inlined quosure is what both produce.
+  forward <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      dplyr::across(!!rlang::enquo(selection), sum),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    )
+  }
+  oracle <- function(data, selection) {
+    as.data.frame(
+      data |>
+        dplyr::group_by(region) |>
+        dplyr::summarise(
+          dplyr::across({{ selection }}, sum),
+          .groups = "drop"
+        )
+    )
+  }
+  groups_of <- function(result) {
+    dplyr::arrange(result[!is.na(result$region), ], region)
+  }
+
+  expect_equal(
+    groups_of(summarize(data, units)),
+    oracle(data, units),
+    ignore_attr = "row.names"
+  )
+  expect_equal(
+    groups_of(forward(data, units)),
+    oracle(data, units),
+    ignore_attr = "row.names"
+  )
+  expect_equal(
+    groups_of(summarize(data, c(units, revenue))),
+    oracle(data, c(units, revenue)),
+    ignore_attr = "row.names"
+  )
+})
+
+test_that("an injected empty `across()` selection selects what dplyr selects", {
+  # dplyr resolves the empty quosure rather than reading it as an omission, and
+  # `tidyselect::eval_select()` answers one with the empty selection. The
+  # written empty `.cols` beside it keeps the formal's default, which is the
+  # difference these two assert together.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6),
+    revenue = c(2, 4, 8)
+  )
+  summarize <- function(data, selection) {
+    summarize_with_margins(
+      data,
+      dplyr::across({{ selection }}, sum),
+      .grouping = rollup(region),
+      .margin_label = NULL
+    )
+  }
+  oracle <- function(data, selection) {
+    as.data.frame(
+      data |>
+        dplyr::group_by(region) |>
+        dplyr::summarise(
+          dplyr::across({{ selection }}, sum),
+          .groups = "drop"
+        )
+    )
+  }
+
+  # `drop = FALSE` because the selection is empty: the result is the grouping's
+  # key column alone, which a default subscript would hand back as a vector.
+  injected <- summarize(data)
+  expect_equal(
+    dplyr::arrange(injected[!is.na(injected$region), , drop = FALSE], region),
+    oracle(data),
+    ignore_attr = "row.names"
+  )
+  expect_identical(names(injected), "region")
+
+  # The written spelling, which selects every eligible column instead, so the
+  # two readings cannot be collapsed into one.
+  written <- summarize_with_margins(
+    data,
+    dplyr::across(, sum),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(names(written), c("region", "units", "revenue"))
+})
+
+test_that("an injected empty `across()` `.names` raises dplyr's own error", {
+  # The template is evaluated here so that a name written against the caller's
+  # own bindings reaches dplyr as the string it evaluates to. An empty quosure
+  # has no value to evaluate, and evaluating it looked up the empty symbol:
+  # base R answered with an untyped `simpleError` reading `object '' not found`
+  # whose `conditionCall()` was `NULL`, which names nothing the caller wrote
+  # and inherits no class they could catch (ADR-0015). dplyr raises on the same
+  # input, so leaving the argument for dplyr is what the oracle decides (#350).
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6)
+  )
+  summarize <- function(data, template) {
+    summarize_with_margins(
+      data,
+      dplyr::across(units, sum, .names = {{ template }}),
+      .grouping = rollup(region)
+    )
+  }
+
+  oracle <- function(data, template) {
+    data |>
+      dplyr::group_by(region) |>
+      dplyr::summarise(
+        dplyr::across(units, sum, .names = {{ template }}),
+        .groups = "drop"
+      )
+  }
+
+  baseline <- expect_error(oracle(data))
+  error <- expect_error(summarize(data))
+
+  expect_identical(class(error), class(baseline))
+  expect_false(inherits(error, "simpleError"))
+  expect_false(inherits(error, "missingArgError"))
+  # dplyr's context names the caller's own argument, which is the half a bare
+  # `simpleError` carried none of.
+  expect_match(conditionMessage(error), ".names = ", fixed = TRUE)
+
+  # The control: an injected template that does have a value is still
+  # evaluated here, so the guard withholds the evaluation for the empty
+  # argument alone rather than for every injected template.
+  expect_identical(
+    names(summarize(data, "{.col}_total")),
+    names(
+      as.data.frame(
+        data |>
+          dplyr::group_by(region) |>
+          dplyr::summarise(
+            dplyr::across(units, sum, .names = "{.col}_total"),
+            .groups = "drop"
+          )
+      )
+    )
+  )
+})
+
+test_that("an injected empty `across()` argument answers as dplyr answers", {
+  # The positions the same pass reached that already agree with dplyr, asserted
+  # so that a later change breaking one of them is caught here rather than by a
+  # caller. `.fns` and an argument forwarded to it are evaluated by dplyr, and
+  # `.unpack` is evaluated here only to decide whether the name normalization
+  # applies -- a read that already tolerates a template it cannot evaluate, and
+  # leaves the argument for dplyr either way.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    units = c(1, 3, 6)
+  )
+  paired <- function(summary) {
+    error <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      !!summary,
+      .grouping = rollup(region)
+    )))
+    baseline <- expect_error(rlang::inject(
+      data |>
+        dplyr::group_by(region) |>
+        dplyr::summarise(!!summary, .groups = "drop")
+    ))
+    expect_identical(class(error), class(baseline))
+    expect_false(inherits(error, "simpleError"))
+    expect_identical(class(error$parent), class(baseline$parent))
+  }
+  empty <- function(...) rlang::enquos(...)[[1L]]
+  forward <- function(argument) empty(x = {{ argument }})
+
+  paired(rlang::expr(dplyr::across(units, !!forward())))
+  paired(rlang::expr(dplyr::across(units, sum, .unpack = !!forward())))
+  paired(rlang::expr(dplyr::across(units, sum, na.rm = !!forward())))
+
+  # `pick()` resolves its arguments as one `c()` call, so an injected empty one
+  # is an element of that call rather than the whole selection, and dplyr
+  # answers it with a result rather than a condition.
+  picked <- summarize_with_margins(
+    data,
+    columns = ncol(dplyr::pick(!!forward())),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expected <- as.data.frame(
+    data |>
+      dplyr::group_by(region) |>
+      dplyr::summarise(
+        columns = ncol(dplyr::pick(!!forward())),
+        .groups = "drop"
+      )
+  )
+  expect_equal(
+    dplyr::arrange(picked[!is.na(picked$region), ], region),
+    expected,
+    ignore_attr = "row.names"
+  )
+})
+
 test_that("an empty argument answers as omitted wherever the walk reads one", {
   # `across()` was the reconstruction path #174 was filed for, and the audit
   # that fixed it found the same read in four more places, each reached by an

@@ -190,6 +190,17 @@
   Redundant parentheses are transparent at all three positions, as they are
   elsewhere: an injected pair wrapping nothing is the empty argument it wraps
   (#340).
+* A selection a wrapper forwards into `across()` is now the selection dplyr
+  makes of it. `across({{ cols }}, sum)` — the ordinary way to pass on a
+  selection your own caller wrote — was refused by tidyselect, which advised
+  wrapping it in `where()`, whatever columns it named, because the forwarded
+  selection was read as the formula shorthand for a predicate. Forwarding an
+  argument your caller omitted is one value of the same spelling, and it now
+  selects no columns, which is what dplyr selects for it; a selection you write
+  empty yourself still means every eligible column, as it did. An omitted
+  `.names` template forwarded the same way reaches dplyr, which names the
+  argument you wrote, in place of R's `object '' not found` naming nothing
+  (#350).
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were
