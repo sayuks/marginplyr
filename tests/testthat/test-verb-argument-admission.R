@@ -10,8 +10,7 @@ admission_data <- function() {
   data.frame(g = c("a", "a", "b"), v = c(1, 2, 3))
 }
 
-# The guidance the one removed option carries, read by every test asserting a
-# refusal that carries it.
+# The guidance the one removed option carries.
 removed_groups_guidance <- "\ni Margin-summary results are always ungrouped\\."
 
 # Two tests stood here, `a removed option is reported instead of summarized`

@@ -948,7 +948,6 @@ test_that("a forwarded empty `.by` is still an argument the caller supplied", {
   )
 })
 
-
 # The other reader of a kind nothing has validated, and the one where the
 # guards' answer is not the answer: this site declines rather than refuses, so
 # what a method could take from it was a compiled call rather than a diagnostic
