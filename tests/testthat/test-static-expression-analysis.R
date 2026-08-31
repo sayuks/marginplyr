@@ -2451,6 +2451,176 @@ test_that("an empty argument outside `across()` evaluates as dplyr evaluates", {
   )
 })
 
+# The two tests below read one builder, so the refusal they pin is one message
+# rather than two spellings of it.
+empty_summary_message <- function(name) {
+  paste0(
+    "Summary `", name, "` is empty.\n",
+    "i Remove the summary, or write the expression it computes."
+  )
+}
+
+test_that("a summary argument the caller left empty is refused by name", {
+  # The two spellings that leave a summary empty: the plain typo, and the
+  # tidy-eval idiom a wrapper forwards a column its own caller omitted with.
+  # Both reach the verb as the same quosure, so the refusal names what they
+  # share -- the summary the caller wrote (#340).
+  data <- data.frame(region = c("East", "West"), value = c(1, 6))
+  forwarded <- function(data, column) {
+    summarize_with_margins(data, z = {{ column }}, .grouping = rollup(region))
+  }
+
+  errors <- list(
+    written = expect_error(
+      summarize_with_margins(data, z = , .grouping = rollup(region))
+    ),
+    injected = expect_error(forwarded(data))
+  )
+
+  for (error in errors) {
+    expect_s3_class(error, "marginplyr_error")
+    expect_false(inherits(error, "missingArgError"))
+    # Asserted in full rather than matched, because what #340 found was not a
+    # missing refusal but a diagnostic naming `expr`, the local
+    # `preflight_shares()` bound the missing marker to.
+    expect_identical(conditionMessage(error), empty_summary_message("z"))
+    # The call the caller wrote, not the reader that found the empty argument.
+    expect_identical(conditionCall(error)[[1L]], quote(summarize_with_margins))
+  }
+})
+
+test_that("an unnamed empty summary argument is refused by its position", {
+  # The other spellings an empty summary reaches the verb by. A leading or
+  # interior one is written; a spliced one is built, and survives capture
+  # whether it carries a name or not. Each raised `missingArgError` from the
+  # first reader that bound it (#340).
+  #
+  # `..n` is the name the refusal gives an unnamed argument, the numbering
+  # `name_unnamed_by_position()` already spells for every other unnamed
+  # argument this package names.
+  data <- data.frame(region = c("East", "East", "West"), value = c(1, 3, 6))
+
+  shapes <- list(
+    leading = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        ,
+        total = sum(value),
+        .grouping = rollup(region)
+      )),
+      name = "..1"
+    ),
+    interior = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        total = sum(value),
+        ,
+        rows = dplyr::n(),
+        .grouping = rollup(region)
+      )),
+      name = "..2"
+    ),
+    spliced = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        !!!list(rlang::missing_arg()),
+        total = sum(value),
+        .grouping = rollup(region)
+      )),
+      name = "..1"
+    ),
+    spliced_named = list(
+      error = expect_error(summarize_with_margins(
+        data,
+        !!!list(z = rlang::missing_arg()),
+        .grouping = rollup(region)
+      )),
+      name = "z"
+    )
+  )
+
+  for (shape in shapes) {
+    expect_s3_class(shape$error, "marginplyr_error")
+    expect_false(inherits(shape$error, "missingArgError"))
+    expect_identical(
+      conditionMessage(shape$error),
+      empty_summary_message(shape$name)
+    )
+  }
+
+  # A trailing comma is not an empty argument, here as in a Grouping
+  # specification constructor: `rlang::enquos(...)` captures no argument for
+  # one, so the refusal above cannot reach it and must not start reaching it.
+  expect_identical(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      ,
+      .grouping = rollup(region)
+    ),
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .grouping = rollup(region)
+    )
+  )
+})
+
+test_that("a pair of parentheses holding nothing is the empty argument", {
+  # `(` is the identity function, so a pair wrapping R's empty argument wraps
+  # nothing to read either -- the reading every other position takes of a
+  # redundant pair (#178, #259, ADR 0019), and the one a Grouping specification
+  # constructor has taken since #259. The parser rejects `f(())`, so a
+  # constructed call is how the pair is spelled at all.
+  data <- data.frame(region = c("East", "East", "West"), value = c(1, 3, 6))
+  parens <- function(expr) as.call(list(as.name("("), expr))
+  empty <- parens(rlang::missing_arg())
+
+  # A summary is refused as the unwrapped argument is. Unrefused, this pair
+  # reached the share preflight and recursed without bound.
+  named <- expect_error(summarize_with_margins(
+    data,
+    z = !!empty,
+    .grouping = rollup(region)
+  ))
+  expect_s3_class(named, "marginplyr_error")
+  expect_identical(conditionMessage(named), empty_summary_message("z"))
+
+  unnamed <- expect_error(summarize_with_margins(
+    data,
+    !!empty,
+    total = sum(value),
+    .grouping = rollup(region)
+  ))
+  expect_s3_class(unnamed, "marginplyr_error")
+  expect_identical(conditionMessage(unnamed), empty_summary_message("..1"))
+
+  # `.by` and `.grouping` answer it as they answer the unwrapped argument: no
+  # columns, and the plan omitting the argument gives.
+  expect_identical(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .by = !!empty,
+      .grouping = rollup(region)
+    ),
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .grouping = rollup(region)
+    )
+  )
+  expect_identical(
+    inspect_grouping(data, .grouping = !!empty),
+    inspect_grouping(data)
+  )
+  # Two pairs deep, since what reads through them unwraps until it stops.
+  expect_identical(
+    inspect_grouping(data, .grouping = !!parens(empty)),
+    inspect_grouping(data)
+  )
+})
+
 test_that("`parse_across_arguments()` answers an empty argument as omitted", {
   # The seam every `across()` path reads, and the one place that has to know
   # about the empty argument: each field below answers what it answers for an

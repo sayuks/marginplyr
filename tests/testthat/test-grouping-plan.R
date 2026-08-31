@@ -833,6 +833,121 @@ test_that("the empty spellings that already had a reading keep it", {
   )
 })
 
+# Every exported verb taking the argument named, derived from the signatures so
+# that a seventh arrives below as a wrapper a list is missing rather than as a
+# position nothing covers. The six it answers today are the same six for both
+# arguments, `summarise_with_margins()` included: the derivation reads exports
+# rather than function objects, so a synonym that stopped being one would show
+# as an entry the list no longer covers.
+verbs_taking <- function(arg) {
+  Filter(
+    function(name) {
+      object <- getExportedValue("marginplyr", name)
+      is.function(object) && arg %in% names(formals(object))
+    },
+    getNamespaceExports("marginplyr")
+  )
+}
+
+# The two verb arguments injection can leave empty, and neither is the `.by = `
+# above: R matches a named formal's empty argument to that formal's default,
+# while `{{ }}` splices R's missing marker into the quosure. Only the second
+# reaches the verb carrying one (#340).
+#
+# They fail by different mechanisms and are answered on one path each, which is
+# why one table of wrappers covers both. An empty `.by` reached
+# `resolve_fixed_keys()`, where `is_name_only_selection()` read it and
+# `rlang::env_has()` raised for a zero-length variable name. Nothing binds
+# `.grouping`'s expression at all, so `rlang::eval_tidy()` evaluated the empty
+# symbol and raised `object '' not found`.
+#
+# What each is answered with is the argument supplied as absent: no columns
+# selected, which is dplyr's own answer to an empty `.by`, and the plan
+# omitting `.grouping` gives, which is what writing `.grouping = ` already
+# means.
+test_that("a forwarded empty `.by` or `.grouping` is the argument absent", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    value = c(1, 3, 6)
+  )
+  forwarded <- list(
+    summarize_with_margins = function(data, by, grouping) {
+      summarize_with_margins(
+        data,
+        total = sum(value),
+        .by = {{ by }},
+        .grouping = {{ grouping }}
+      )
+    },
+    summarise_with_margins = function(data, by, grouping) {
+      summarise_with_margins(
+        data,
+        total = sum(value),
+        .by = {{ by }},
+        .grouping = {{ grouping }}
+      )
+    },
+    expand_with_margins = function(data, by, grouping) {
+      expand_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+    },
+    nest_with_margins = function(data, by, grouping) {
+      nest_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+    },
+    nest_by_with_margins = function(data, by, grouping) {
+      nest_by_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+    },
+    inspect_grouping = function(data, by, grouping) {
+      inspect_grouping(data, .by = {{ by }}, .grouping = {{ grouping }})
+    }
+  )
+
+  expect_setequal(names(forwarded), verbs_taking(".by"))
+  expect_setequal(names(forwarded), verbs_taking(".grouping"))
+
+  for (name in names(forwarded)) {
+    verb <- forwarded[[name]]
+    expect_identical(
+      verb(data, grouping = rollup(region)),
+      verb(data, NULL, rollup(region)),
+      info = name
+    )
+    expect_identical(
+      verb(data, by = NULL),
+      verb(data, NULL, NULL),
+      info = name
+    )
+  }
+
+  # The other half, once: a specification the wrapper does forward still
+  # arrives, so what the guard answers is the empty argument and not every
+  # injected one.
+  expect_identical(
+    forwarded$inspect_grouping(data, NULL, rollup(region)),
+    inspect_grouping(data, .grouping = rollup(region))
+  )
+})
+
+test_that("a forwarded empty `.by` is still an argument the caller supplied", {
+  # The other half of dplyr's reading, which is unchanged: an empty `.by`
+  # selects no columns, but it is supplied, so a grouped input is refused
+  # exactly as `.by = region` would be.
+  data <- dplyr::group_by(
+    data.frame(region = c("East", "East", "West"), value = c(1, 3, 6)),
+    region
+  )
+  forwarded <- function(data, by) {
+    inspect_grouping(data, .by = {{ by }}, .grouping = rollup(region))
+  }
+
+  error <- expect_error(forwarded(data))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error),
+    "Can't supply `.by` when `.data` is grouped.",
+    fixed = TRUE
+  )
+})
+
 # The other reader of a kind nothing has validated, and the one where the
 # guards' answer is not the answer: this site declines rather than refuses, so
 # what a method could take from it was a compiled call rather than a diagnostic

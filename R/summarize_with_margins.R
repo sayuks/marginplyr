@@ -835,6 +835,10 @@ summarize_with_margins <- function(.data,
       )
       assert_logical_scalar(.check_share_source)
       check_option_named_summaries(dots)
+      # Ahead of the two readings of a summary expression below, and after the
+      # one check that reads only names: an empty argument is refused rather
+      # than bound to a local.
+      check_empty_summaries(dots)
       check_summary_context_helpers(dots)
       preflight_shares(dots)
     },

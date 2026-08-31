@@ -132,6 +132,38 @@ check_option_named_summaries <- function(dots) {
   invisible(NULL)
 }
 
+# The refusal every reader of a summary expression holds. R's empty argument is
+# a marker, and a reader that binds it to a local raises `missingArgError` on
+# the next read of that local -- several below and in `R/share.R` do, so the
+# guard runs ahead of all of them rather than inside one (#340).
+#
+# Every empty argument `rlang::enquos(...)` captures is refused, named or not,
+# including one spliced in. What it captures no argument for is a trailing
+# comma, which keeps the reading `grouping_set(region, )` already has.
+#
+# An unnamed one is named `..n`, the numbering `name_unnamed_by_position()`
+# below already spells.
+check_empty_summaries <- function(dots) {
+  empty <- vapply(dots, is_empty_argument, logical(1), USE.NAMES = FALSE)
+  if (!any(empty)) {
+    return(invisible(NULL))
+  }
+
+  # The first one the caller wrote, which is the order
+  # `check_option_named_summaries()` above answers its own candidates in.
+  #
+  # `name` is read from the cli template below and nowhere else, which
+  # `codetools` cannot follow into.
+  labels <- name_unnamed_by_position(rlang::names2(dots), "..")
+  name <- labels[[which(empty)[[1L]]]] # nolint: object_usage_linter.
+  # `{.arg}` rather than `{.var}`: the caller wrote this as an argument name,
+  # and the refusal is what stops it becoming a column.
+  abort_marginplyr(c(
+    "Summary {.arg {name}} is empty.",
+    i = "Remove the summary, or write the expression it computes."
+  ))
+}
+
 check_summary_context_helpers <- function(dots) {
   unsupported <- unique(unlist(
     lapply(
@@ -764,10 +796,12 @@ known_across_function_names <- function(parsed) {
   name_unnamed_by_position(fns_names, "")
 }
 
-# Both callers name the unnamed entries of an argument list by position, which
+# Every caller names the unnamed entries of an argument list by position, which
 # is how dplyr refers to them: an argument forwarded through `across()`'s `...`
-# is `..n`, and an unnamed `.fns` list entry takes its index. The replacement
-# has to be indexed by the same positions that select it. Building it over the
+# is `..n`, and an unnamed `.fns` list entry takes its index. An empty summary
+# `check_empty_summaries()` refuses is named the same way, so what the caller
+# reads is one numbering rather than one per site. The replacement has to be
+# indexed by the same positions that select it. Building it over the
 # whole list instead makes the two sides differ in length whenever any entry is
 # named, so base R recycles -- warning from a call that otherwise succeeds --
 # and numbers the survivors by their position among the unnamed entries rather
