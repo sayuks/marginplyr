@@ -2078,19 +2078,24 @@ test_that("the name-only reader answers what the names settle", {
   # not open one.
   expect_false(name_only(rlang::quo(region)))
 
-  # `.data$region` is a name tidyselect's `.data` branch looks up.
+  # Both halves of the `.data` pronoun: `$` looks up the symbol beside it,
+  # `[[` a constant subscript, and tidyselect refuses on sight every other
+  # spelling under it -- a subscript that is not constant, one that is no
+  # string, a `$` whose right side is no symbol.
   expect_true(name_only(quote(.data$region)))
   expect_true(name_only(quote(c(.data$region, area))))
   expect_true(name_only(quote((.data$region))))
+  expect_true(name_only(quote(.data[["region"]])))
+  expect_true(name_only(quote(.data[[var]])))
+  expect_true(name_only(rlang::call2("$", quote(.data), "region")))
   # The operand is the `.data` symbol as written: tidyselect refuses
   # `(.data)$region`, so the pair is not read through here.
   expect_false(name_only(quote((.data)$region)))
-  # A subscript is no name this reads, so the pronoun's other half is left to
-  # the snapshot.
-  expect_false(name_only(quote(.data[["region"]])))
+  # A pronoun read is one `$`, so a second one is not the pronoun.
   expect_false(name_only(quote(.data$region$sub)))
-  # `$` on anything else is what it always was.
+  # `$` and `[[` on anything else are what they always were.
   expect_false(name_only(quote(other$region)))
+  expect_false(name_only(quote(other[["region"]])))
 })
 
 test_that("a selection the names settle is refused before the typed snapshot", {
@@ -2169,12 +2174,15 @@ test_that("a selection the names settle is refused before the typed snapshot", {
   }
 
   # The `.data` pronoun names a column, so a name it does not hold is a
-  # failure the names decide. The spelling is deprecated in a selection, and
-  # the warning saying so is what the test below counts; here it is the
-  # ordering that is under test, so it is muffled rather than counted.
+  # failure the names decide -- through either half of it. The spelling is
+  # deprecated in a selection, and the warning saying so is what the test
+  # below counts; here it is the ordering that is under test, so it is muffled
+  # rather than counted.
   for (grouping in list(
     quote(grouping_set(.data$absent)),
-    quote(rollup(.data$absent))
+    quote(rollup(.data$absent)),
+    quote(grouping_set(.data[["absent"]])),
+    quote(rollup(.data[["absent"]]))
   )) {
     suppressWarnings(refuse(
       rlang::call2("inspect_grouping", quote(data), .grouping = grouping),
@@ -2267,12 +2275,10 @@ test_that("the discarded name-only pass reports nothing the second does not", {
     1L
   )
 
-  # A deprecation warning is the case suppressing alone gets wrong, and
-  # `.data$region` is where it is observable: lifecycle signals one once per
-  # session, so a discarded pass that signals and muffles it leaves the
-  # canonical pass with nothing to report. The option the pass sets is what
-  # keeps the count at one rather than zero. `lifecycle_verbosity` is fixed
-  # here so the count is this call's and not the session's (#346).
+  # `.data$region` is deprecated in a selection, so it warns from both passes
+  # where lifecycle is asked to warn every time. `lifecycle_verbosity` is
+  # fixed here because the option is otherwise the session's, and a count this
+  # test did not fix is one an earlier test decides (#346).
   rlang::local_options(lifecycle_verbosity = "warning")
   for (grouping in list(
     quote(grouping_set(.data$region)),
@@ -2293,6 +2299,79 @@ test_that("the discarded name-only pass reports nothing the second does not", {
     ))),
     1L
   )
+})
+
+test_that("the discarded pass withholds a deprecation, not muffles it", {
+  # The count above cannot see what this asserts. lifecycle signals a
+  # deprecation once per session, so the pass that muffles what it signals
+  # spends the caller's only signal and the canonical pass then reports
+  # nothing -- and pinning `lifecycle_verbosity` to make a count repeatable is
+  # exactly the mode where that spend cannot happen. What the two passes run
+  # under is the observable that holds either way (#346).
+  data <- data.frame(region = "East", area = "North", value = 1)
+  compile <- compile_grouping_spec
+  seen <- character()
+  local_mocked_bindings(
+    compile_grouping_spec = function(...) {
+      verbosity <- getOption("lifecycle_verbosity")
+      seen <<- c(seen, if (is.null(verbosity)) NA_character_ else verbosity)
+      compile(...)
+    }
+  )
+
+  # Two passes run for a plan the names settle, and only the discarded one is
+  # withheld: the canonical pass runs under whatever the caller set.
+  rlang::local_options(lifecycle_verbosity = NULL)
+  inspect_grouping(data, .grouping = rollup(region))
+  expect_identical(seen, c("quiet", NA_character_))
+
+  seen <- character()
+  rlang::local_options(lifecycle_verbosity = "warning")
+  inspect_grouping(data, .grouping = rollup(region))
+  expect_identical(seen, c("quiet", "warning"))
+
+  # `"error"` is the caller's own, kept through the discarded pass, because
+  # under it the deprecation is a failure the names decide and withholding it
+  # would send the read first (ADR 0005).
+  seen <- character()
+  rlang::local_options(lifecycle_verbosity = "error")
+  inspect_grouping(data, .grouping = rollup(region))
+  expect_identical(seen, c("error", "error"))
+})
+
+test_that("a deprecation that is an error precedes the read", {
+  # The other half of the rule above, counted where every ordering in this
+  # file is: `.data$region` under `lifecycle_verbosity = "error"` fails on the
+  # deprecation, and that failure the names decide is raised before the
+  # snapshot (#346).
+  data <- data.frame(region = "East", area = "North", value = 1)
+  reads <- 0L
+  local_mocked_bindings(
+    grouping_selection_proxy = function(.data, ...) {
+      reads <<- reads + 1L
+      .data
+    }
+  )
+  rlang::local_options(lifecycle_verbosity = "error")
+  for (grouping in list(
+    quote(grouping_set(.data$region)),
+    quote(rollup(.data$region))
+  )) {
+    reads <- 0L
+    expect_error(
+      rlang::eval_tidy(
+        rlang::call2("inspect_grouping", quote(data), .grouping = grouping)
+      ),
+      class = "lifecycle_error_deprecated"
+    )
+    expect_identical(reads, 0L)
+  }
+  reads <- 0L
+  expect_error(
+    inspect_grouping(data, .grouping = rollup(area), .by = .data$region),
+    class = "lifecycle_error_deprecated"
+  )
+  expect_identical(reads, 0L)
 })
 
 test_that("duplicate grouping sets have explicit policies", {

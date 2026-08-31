@@ -190,12 +190,15 @@ prepare_grouping_plan <- function(.data,
         # them is what keeps this pass invisible but for the failure it exists
         # to raise; `one_of()` is where that is observable.
         #
-        # A deprecation warning is the one kind suppressing is not enough for,
-        # and the option is what covers it. lifecycle signals one once per
-        # session, so a pass that signals it and muffles it spends the only
-        # signal the caller had coming and the canonical pass then reports
-        # nothing -- less than the second pass reports, where every other
-        # warning here is more. `.data$region` is where that is observable.
+        # A deprecation warning is the one kind suppressing is not enough for.
+        # lifecycle signals one once per session, so a pass that signals it
+        # and muffles it spends the only signal the caller had coming and the
+        # canonical pass then reports nothing. The option withholds the signal
+        # instead of hiding it; `.data$region` is where that is observable.
+        #
+        # `"error"` is the one verbosity it does not replace, because under it
+        # the deprecation is a failure the names decide and quieting it would
+        # put the read below in front of it (ADR 0005).
         rlang::with_options(
           suppressWarnings(compile_grouping_spec(
             grouping_spec,
@@ -206,7 +209,7 @@ prepare_grouping_plan <- function(.data,
             duplicates_choices = duplicates_choices,
             preflight = preflight
           )),
-          lifecycle_verbosity = "quiet"
+          lifecycle_verbosity = discarded_pass_verbosity()
         )
       }
       data_proxy <- grouping_selection_proxy(data, backend = backend)
@@ -378,13 +381,9 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (call_name %in% selection_refused_operators()) {
     return(TRUE)
   }
-  # `.data$region` is settled by the names, tidyselect's walk having a `.data`
-  # branch that looks up the name written here. `.data[[...]]` is not read:
-  # its subscript is no name this reader can see, and `FALSE` resolves the
-  # selection against the snapshot, which is correct however the shape reads.
-  # Asked after the name, so a pair of parentheses around the whole pronoun is
-  # already off it.
-  if (identical(call_name, "$") && is_data_pronoun_column(expr)) {
+  # The `.data` pronoun. Asked after the name, so a pair of parentheses around
+  # the whole pronoun is already off it.
+  if (call_name %in% c("$", "[[") && is_data_pronoun(expr)) {
     return(TRUE)
   }
   if (!call_name %in% c(selection_walk_operators(), "(")) {
@@ -401,17 +400,32 @@ is_name_only_expr <- function(expr, env, data_vars) {
   ))
 }
 
-# Whether this `$` call is the `.data$name` pronoun naming one column
-# literally, which is the half of the pronoun the names settle. The caller
-# holds that the call is named `$`. The operand is compared with the `.data`
-# symbol as written rather than through a redundant pair, because tidyselect
-# refuses `(.data)$region` -- reading through the pair here would answer for a
-# spelling it rejects, which is where ADR 0019's reading stops.
-is_data_pronoun_column <- function(expr) {
+# Whether this call reads the `.data` pronoun, which the caller holds is named
+# `$` or `[[`. Both halves are settled by the column names: `$` looks up the
+# symbol beside it and `[[` a constant subscript, and tidyselect refuses every
+# other spelling under the pronoun on sight -- a subscript that is not
+# constant, one that is no string, a `$` whose right side is no symbol. So the
+# subject is the pronoun rather than the two shapes of subscript, and #346's
+# premise that `.data[[var]]` costs a read is measured in
+# `investigation/what-the-data-pronoun-settles-in-a-selection.md`.
+#
+# The operand is compared with the `.data` symbol as written rather than
+# through a redundant pair: tidyselect refuses `(.data)$region`, so reading
+# through the pair here would answer for a spelling it rejects.
+is_data_pronoun <- function(expr) {
   parts <- static_call_args(expr)
-  length(parts) == 2L &&
-    identical(parts[[1L]], quote(.data)) &&
-    is_name_part(parts[[2L]])
+  length(parts) == 2L && identical(parts[[1L]], quote(.data))
+}
+
+# The lifecycle verbosity the discarded name-only pass runs under. The caller's
+# own value is kept where it makes a deprecation an error, since that error is
+# one the names decide.
+discarded_pass_verbosity <- function() {
+  verbosity <- getOption("lifecycle_verbosity")
+  if (identical(verbosity, "error")) {
+    return(verbosity)
+  }
+  "quiet"
 }
 
 is_name_only_selection <- function(arg, data_vars) {
