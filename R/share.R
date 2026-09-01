@@ -970,6 +970,15 @@ wraps_share_sources_in_summary <- function(backend_kind) {
   backend_kind %in% c("local", "dtplyr")
 }
 
+# The dots with each share's source expression wrapped in the check that
+# applies the eligible-type and cardinality rules to it. Only dtplyr is given
+# the caller's call here, and as text: its checks raise at `collect()`, after
+# the verb call has returned, so nothing else can supply one. A local check
+# raises inside the verb call, where `with_margin_error_call()` sets the call
+# -- and staging one into the expression is worse than redundant there,
+# because `dplyr::summarise()` defuses the staged dot a second time and
+# expands whatever injection the caller's own spelling holds, in a mask where
+# their wrapper's formal is not bound (#357).
 wrap_share_sources <- function(dots,
                                cardinality,
                                call,
@@ -1019,8 +1028,7 @@ wrap_share_sources <- function(dots,
         share_private_call("check_share_across"),
         expr,
         share_outputs = share_outputs,
-        share_kinds = share_kinds,
-        call = rlang::call2("quote", call)
+        share_kinds = share_kinds
       )
     } else {
       check <- checks[[1L]]
@@ -1035,11 +1043,7 @@ wrap_share_sources <- function(dots,
         share_output = check$share_output,
         source_summary = check$source_summary,
         share_kind = check$share_kind,
-        !!!if (is_dtplyr) {
-          list(call_text = share_call_text(call))
-        } else {
-          list(call = rlang::call2("quote", call))
-        }
+        !!!if (is_dtplyr) list(call_text = share_call_text(call))
       )
     }
     dots[[position]] <- rlang::new_quosure(
@@ -1282,24 +1286,27 @@ share_private_call <- function(name) {
   )
 }
 
-check_share_across <- function(value, share_outputs, share_kinds, call) {
+check_share_across <- function(value, share_outputs, share_kinds) {
   for (source_summary in names(share_outputs)) {
     check_share_scalar(
       value[[source_summary]],
       share_output = share_outputs[[source_summary]],
       source_summary = source_summary,
-      share_kind = share_kinds[[source_summary]],
-      call = call
+      share_kind = share_kinds[[source_summary]]
     )
   }
   value
 }
 
+# The rules a share's source must satisfy, applied to one value. `call` is
+# dtplyr's alone: only its check raises after the verb call has returned, so
+# only it has to name the call itself. Everywhere else this raises inside the
+# operation, which names it.
 check_share_scalar <- function(value,
                                share_output,
                                source_summary,
                                share_kind,
-                               call) {
+                               call = NULL) {
   if (length(value) != 1L) {
     abort_marginplyr(
       c(
