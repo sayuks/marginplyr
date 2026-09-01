@@ -2170,3 +2170,79 @@ test_that("Arrow rejects Total shares before constructing a query", {
   expect_identical(calls$summarize, 0L)
   expect_identical(calls$collect, 0L)
 })
+
+test_that("dtplyr reports a share against a call holding its own input", {
+  skip_if_suggest_absent("dtplyr")
+  # `do.call()` records the evaluated arguments, so the call this verb captures
+  # holds the `lazy_dt` itself. Its `.internal.selfref` externalptr is what
+  # `deparse()` cannot write as source, and the text the share carries to
+  # `collect()` used to be that unreadable deparse (#360).
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3
+  )
+
+  query <- do.call(summarize_with_margins, list(
+    dtplyr::lazy_dt(data),
+    source = quote(range(value)),
+    share = quote(share_of_total(source)),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  ))
+
+  expect_s3_class(query, "dtplyr_step")
+  error <- expect_error(
+    dplyr::collect(query),
+    "exactly one value per grouping row"
+  )
+  expect_s3_class(error, "marginplyr_share_cardinality_error")
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(error$share_output, "share")
+  expect_identical(error$source_summary, "source")
+
+  # The input is the one part replaced. Named by its class rather than by the
+  # spelling of that class, which is dtplyr's to change.
+  input <- conditionCall(error)[[2L]]
+  expect_true(rlang::is_symbol(input))
+  expect_match(as.character(input), "^<.+>$")
+
+  # Every other argument is still the caller's own, `NULL` included: it is a
+  # part `deparse()` writes, so the walk has nothing to answer it with.
+  expect_identical(conditionCall(error)$source, quote(range(value)))
+  expect_identical(conditionCall(error)$share, quote(share_of_total(source)))
+  expect_null(conditionCall(error)$.margin_label)
+  expect_true(".margin_label" %in% names(as.list(conditionCall(error))))
+})
+
+test_that("dtplyr reports an across share against the same call", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    value = 1:3
+  )
+
+  query <- do.call(summarize_with_margins, list(
+    dtplyr::lazy_dt(data),
+    quote(dplyr::across(value, list(flag = ~ any(.x > 0)))),
+    flag_share = quote(share_of_parent(value_flag)),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  ))
+
+  expect_s3_class(query, "dtplyr_step")
+  error <- expect_error(
+    dplyr::collect(query),
+    "plain integer or double scalar"
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(error$share_output, "flag_share")
+  expect_identical(error$source_summary, "value_flag")
+
+  input <- conditionCall(error)[[2L]]
+  expect_true(rlang::is_symbol(input))
+  expect_match(as.character(input), "^<.+>$")
+  expect_identical(
+    conditionCall(error)$flag_share,
+    quote(share_of_parent(value_flag))
+  )
+})
