@@ -849,6 +849,41 @@ verbs_taking <- function(arg) {
   )
 }
 
+# One wrapper per verb, forwarding both arguments with `{{ }}`. File level
+# because two tests below put different expressions through the same six
+# verbs; a second copy could disagree with the derivation above while this
+# one still matched it.
+forwarded_verbs <- list(
+  summarize_with_margins = function(data, by, grouping) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .by = {{ by }},
+      .grouping = {{ grouping }}
+    )
+  },
+  summarise_with_margins = function(data, by, grouping) {
+    summarise_with_margins(
+      data,
+      total = sum(value),
+      .by = {{ by }},
+      .grouping = {{ grouping }}
+    )
+  },
+  expand_with_margins = function(data, by, grouping) {
+    expand_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+  },
+  nest_with_margins = function(data, by, grouping) {
+    nest_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+  },
+  nest_by_with_margins = function(data, by, grouping) {
+    nest_by_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+  },
+  inspect_grouping = function(data, by, grouping) {
+    inspect_grouping(data, .by = {{ by }}, .grouping = {{ grouping }})
+  }
+)
+
 # The two verb arguments injection can leave empty, and neither is the `.by = `
 # above: R matches a named formal's empty argument to that formal's default,
 # while `{{ }}` splices R's missing marker into the quosure. Only the second
@@ -870,42 +905,11 @@ test_that("a forwarded empty `.by` or `.grouping` is the argument absent", {
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
   )
-  forwarded <- list(
-    summarize_with_margins = function(data, by, grouping) {
-      summarize_with_margins(
-        data,
-        total = sum(value),
-        .by = {{ by }},
-        .grouping = {{ grouping }}
-      )
-    },
-    summarise_with_margins = function(data, by, grouping) {
-      summarise_with_margins(
-        data,
-        total = sum(value),
-        .by = {{ by }},
-        .grouping = {{ grouping }}
-      )
-    },
-    expand_with_margins = function(data, by, grouping) {
-      expand_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
-    },
-    nest_with_margins = function(data, by, grouping) {
-      nest_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
-    },
-    nest_by_with_margins = function(data, by, grouping) {
-      nest_by_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
-    },
-    inspect_grouping = function(data, by, grouping) {
-      inspect_grouping(data, .by = {{ by }}, .grouping = {{ grouping }})
-    }
-  )
+  expect_setequal(names(forwarded_verbs), verbs_taking(".by"))
+  expect_setequal(names(forwarded_verbs), verbs_taking(".grouping"))
 
-  expect_setequal(names(forwarded), verbs_taking(".by"))
-  expect_setequal(names(forwarded), verbs_taking(".grouping"))
-
-  for (name in names(forwarded)) {
-    verb <- forwarded[[name]]
+  for (name in names(forwarded_verbs)) {
+    verb <- forwarded_verbs[[name]]
     expect_identical(
       verb(data, grouping = rollup(region)),
       verb(data, NULL, rollup(region)),
@@ -922,7 +926,7 @@ test_that("a forwarded empty `.by` or `.grouping` is the argument absent", {
   # arrives, so what the guard answers is the empty argument and not every
   # injected one.
   expect_identical(
-    forwarded$inspect_grouping(data, NULL, rollup(region)),
+    forwarded_verbs$inspect_grouping(data, NULL, rollup(region)),
     inspect_grouping(data, .grouping = rollup(region))
   )
 })
@@ -946,6 +950,105 @@ test_that("a forwarded empty `.by` is still an argument the caller supplied", {
     "Can't supply `.by` when `.data` is grouped.",
     fixed = TRUE
   )
+})
+
+# The empty argument one level down from the verb's argument. The argument is
+# a selection that names a column, so `is_empty_argument()` is never asked and
+# `is_name_only_expr()` read the part -- where the empty argument is a symbol
+# whose name is `""` and `rlang::env_has()` raised for a zero-length variable
+# name (#351). #340's answer above is a different position and is unchanged.
+#
+# Answered as tidyselect answers it, which under `c()` is to select nothing
+# for the part. Every position, since the walk reads every part, and every
+# verb the derivation names rather than a list that could miss one.
+test_that("an empty argument inside a `.by` selection selects nothing", {
+  # `tier` is here so that the interior position has a second fixed key to sit
+  # beside, without the selection reaching the column `.grouping` takes.
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    tier = c("x", "y", "x"),
+    grade = c("a", "b", "a"),
+    value = c(1, 3, 6)
+  )
+
+  for (name in names(forwarded_verbs)) {
+    verb <- forwarded_verbs[[name]]
+    expect_identical(
+      verb(data, c(, region), rollup(grade)),
+      verb(data, region, rollup(grade)),
+      info = name
+    )
+    expect_identical(
+      verb(data, c(region, ), rollup(grade)),
+      verb(data, region, rollup(grade)),
+      info = name
+    )
+    expect_identical(
+      verb(data, c(region, , tier), rollup(grade)),
+      verb(data, c(region, tier), rollup(grade)),
+      info = name
+    )
+  }
+})
+
+test_that("an empty argument inside a specification's selection reads too", {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    grade = c("a", "b", "a"),
+    value = c(1, 3, 6)
+  )
+  expect_identical(
+    inspect_grouping(data, .grouping = rollup(c(, grade))),
+    inspect_grouping(data, .grouping = rollup(grade))
+  )
+  expect_identical(
+    inspect_grouping(data, .grouping = rollup(c(grade, ))),
+    inspect_grouping(data, .grouping = rollup(grade))
+  )
+  # One level in, where the constructor holding the selection is the inner
+  # one -- the frame the refusal above would have named.
+  expect_identical(
+    inspect_grouping(
+      data,
+      .grouping = grouping_sets(grouping_set(c(, region)))
+    ),
+    inspect_grouping(data, .grouping = grouping_sets(grouping_set(region)))
+  )
+})
+
+# What this asserts is that nothing here refuses the selection before
+# tidyselect is reached -- and not the message, which is tidyselect's and
+# moves with its version.
+# `investigation/an-empty-argument-under-a-selection-walk.md` measures it.
+#
+# Constructed, because none of these is a spelling R parses.
+test_that("an empty operand under another walk operator is tidyselect's", {
+  data <- data.frame(region = c("East", "West"), value = c(1, 6))
+  # The shapes that note measured, minus `( )`: a pair holding the empty
+  # argument is the whole argument left empty, which `is_empty_argument()`
+  # answers before this reader is reached (#340).
+  operands <- list(
+    as.call(list(as.name("-"), rlang::missing_arg())),
+    as.call(list(as.name("!"), rlang::missing_arg())),
+    as.call(list(as.name("|"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name("/"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name(":"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name("&"), quote(region), rlang::missing_arg()))
+  )
+
+  for (index in seq_along(operands)) {
+    error <- expect_error(
+      inspect_grouping(
+        data,
+        .by = !!operands[[index]],
+        .grouping = rollup(region)
+      )
+    )
+    expect_false(
+      inherits(error, "marginplyr_error"),
+      info = deparse1(operands[[index]])
+    )
+  }
 })
 
 # The other reader of a kind nothing has validated, and the one where the

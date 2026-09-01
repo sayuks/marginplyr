@@ -349,7 +349,9 @@ selection_refused_operators <- function() {
 # hold `env` as the expression's own environment and `data_vars` as the input's
 # column names, which is the pair the symbol branch decides from.
 is_name_only_expr <- function(expr, env, data_vars) {
-  if (is.symbol(expr)) {
+  # `is_name_part()` rather than `rlang::is_symbol()`, for the reason its
+  # header gives: a part read by subscript may be R's empty argument.
+  if (is_name_part(expr)) {
     name <- as.character(expr)
     return(
       name %in% data_vars ||
@@ -359,6 +361,16 @@ is_name_only_expr <- function(expr, env, data_vars) {
           inherit = TRUE
         )
     )
+  }
+  # The empty argument the branch above declined. tidyselect settles one from
+  # the names too, which is what `TRUE` claims here;
+  # `investigation/an-empty-argument-under-a-selection-walk.md` measures what
+  # it settles it as, per operator. A selection written at a Grouping
+  # specification argument reaches this reader as well, and `CONTEXT.md`'s
+  # *Nested specification position* holds why that is not the empty argument
+  # `preflight_grouping_spec()` refuses (#351).
+  if (rlang::is_missing(expr)) {
+    return(TRUE)
   }
   if (!is.language(expr)) {
     return(is.atomic(expr))

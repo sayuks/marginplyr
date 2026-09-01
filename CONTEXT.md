@@ -26,7 +26,10 @@ function. A spelling the position does not recognize is never
 evaluated to find out, because a selection such as `starts_with("re")` has no
 meaning outside a selection context. An argument the caller left empty gets
 neither reading, and is refused naming the constructor and the position; a
-trailing comma is not one, because R captures no argument for it. Both
+trailing comma is not one, because R captures no argument for it. That refusal
+reaches the position and not what a selection written there contains: an empty
+argument inside such a selection leaves the position filled, and is read as
+tidyselect reads one. Both
 readings claim one argument at once: a bare name that is a column of the
 input and is also bound, in the caller's environment, to a specification of a
 kind the position admits — which kinds those are varies by constructor. How

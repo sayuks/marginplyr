@@ -932,6 +932,65 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
   expect_false(contains_selection_predicate(quote(~.x)))
 })
 
+# The reader answered a symbol by reading its name, and R's empty argument is
+# one whose name is `""` -- so `rlang::env_has()` raised for a zero-length
+# variable name (#351). It arrives as a part of a selection rather than as a
+# whole argument, so `is_empty_argument()` is never asked about it.
+#
+# `TRUE` is what the reader's own contract gives it;
+# `investigation/an-empty-argument-under-a-selection-walk.md` measures what
+# tidyselect then settles such a part as, per operator.
+test_that("the name-only reader answers R's empty argument", {
+  env <- rlang::current_env()
+
+  # The part on its own, which is what a walk hands the reader.
+  expect_true(
+    is_name_only_expr(rlang::missing_arg(), env = env, data_vars = "region")
+  )
+
+  # Written spellings, in all three positions a selection can hold one. R's
+  # parser keeps the empty argument in each, unlike the `f((), x)` the refusal
+  # of an empty constructor argument has to build.
+  written <- list(
+    quote(c(, region)),
+    quote(c(region, )),
+    quote(c(region, , grade))
+  )
+  for (index in seq_along(written)) {
+    expect_true(
+      is_name_only_expr(
+        written[[index]],
+        env = env,
+        data_vars = c("region", "grade")
+      ),
+      info = deparse1(written[[index]])
+    )
+  }
+
+  # And every other operator a walk descends into, asked of the reader rather
+  # than through a verb: what it must not do is raise, whatever tidyselect
+  # goes on to do with the part.
+  constructed <- list(
+    as.call(list(as.name("-"), rlang::missing_arg())),
+    as.call(list(as.name("!"), rlang::missing_arg())),
+    as.call(list(as.name("("), rlang::missing_arg())),
+    as.call(list(as.name("|"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name("/"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name(":"), rlang::missing_arg(), quote(region))),
+    as.call(list(as.name("&"), quote(region), rlang::missing_arg()))
+  )
+  for (index in seq_along(constructed)) {
+    expect_true(
+      is_name_only_expr(
+        constructed[[index]],
+        env = env,
+        data_vars = "region"
+      ),
+      info = deparse1(constructed[[index]])
+    )
+  }
+})
+
 test_that("a formula in a summary expression evaluates instead of aborting", {
   # `derived = purrr::map_dbl(v, ~.x)` is the realistic spelling of this. purrr
   # is neither an Import nor a Suggest of this package, so it is written here
