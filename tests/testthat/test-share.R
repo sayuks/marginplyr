@@ -2792,3 +2792,17 @@ test_that("a dtplyr share reports no call rather than a parse error", {
   )
   expect_null(conditionCall(error))
 })
+
+test_that("a call text keeps a `NULL` the caller wrote", {
+  # `NULL` is what an unreadable text and the text `"NULL"` both parse to, so
+  # a walk that reads the parse for its answer replaces an argument
+  # `deparse()` writes perfectly well -- and `.margin_label = NULL` is this
+  # package's own idiom.
+  call <- quote(summarize_with_margins(data, .margin_label = NULL))
+  call[[2L]] <- new.env()
+
+  expect_identical(
+    str2lang(share_call_text(call)),
+    quote(summarize_with_margins(`<environment>`, .margin_label = NULL))
+  )
+})

@@ -1399,36 +1399,55 @@ abort_share_source_type <- function(value,
 # source. The parts that fail are replaced before the call is written, rather
 # than the read being allowed to fail (#360).
 share_call_text <- function(call) {
-  text <- deparse_call_text(round_trippable_call(call))
-  # An invariant, not a Package condition (ADR 0015): `round_trippable_call()`
-  # answers every part that does not parse back, so a text that still does not
-  # is a defect here rather than something a call rewrite avoids. It is stated
-  # at the site that writes the text, inside the verb call, because the site
-  # that reads it is past the point where stopping is affordable.
-  stopifnot(!is.null(parse_call_text(text)))
+  text <- deparse_call_text(writable_call(call))
+  # An invariant, not a Package condition (ADR 0015): `writable_call()` answers
+  # every part that does not read back, so a text that still does not is a
+  # defect here. It is stated at the site that writes the text, inside the verb
+  # call, because the site that reads it is past the point where stopping is
+  # affordable.
+  stopifnot(call_text_reads_back(text))
   text
 }
 
+# One expression as the source that would write it.
 deparse_call_text <- function(expr) {
   paste(deparse(expr, width.cutoff = 500L), collapse = "\n")
 }
 
+# Whether `text` can be read back as one expression.
+#
+# Asked instead of testing `parse_call_text()` for `NULL`, because `NULL` is
+# also what the text `"NULL"` reads as. A caller's `.margin_label = NULL` is a
+# part `deparse()` writes perfectly well, and conflating the two answers put a
+# name in its place.
+call_text_reads_back <- function(text) {
+  tryCatch(
+    {
+      str2lang(text)
+      TRUE
+    },
+    error = function(cnd) FALSE
+  )
+}
+
 # The call a text stands for, or `NULL` where the text cannot be read as one.
+# The two answers are one answer at the only site that asks: a text this cannot
+# read and a text reading as `NULL` both leave the condition no call to name.
 parse_call_text <- function(text) {
   tryCatch(str2lang(text), error = function(cnd) NULL)
 }
 
-# `expr` with every part `deparse()` cannot write as source replaced by a name
-# spelling the class of what stood there. Only the parts that fail are touched,
-# which is why the test is a trial rather than a type: a `data.frame` and a
-# Grouping specification both round-trip, and replacing them would thin a call
-# that reads correctly today.
+# `expr` -- a call -- with every part `deparse()` cannot write as source
+# replaced by a name spelling the class of what stood there. Only the parts
+# that fail are touched, which is why the test is a trial rather than a type: a
+# `data.frame` and a Grouping specification both round-trip, and replacing them
+# would thin a call that reads correctly today.
 #
 # A symbol is answered before the trial. `deparse()` writes a non-syntactic
 # name bare when it is asked for one alone -- `unit count`, which does not
 # parse -- and backquotes it inside the call it is written in, so trying one on
 # its own reports a failure the text this produces does not have.
-round_trippable_call <- function(expr) {
+writable_call <- function(expr) {
   if (rlang::is_symbol(expr) || deparse_round_trips(expr)) {
     return(expr)
   }
@@ -1439,24 +1458,31 @@ round_trippable_call <- function(expr) {
       if (rlang::is_missing(expr[[position]])) {
         next
       }
-      expr[[position]] <- round_trippable_call(expr[[position]])
+      part <- writable_call(expr[[position]])
+      # `expr[[position]] <- NULL` deletes the argument rather than setting it,
+      # and `NULL` comes back from the walk only when the caller wrote one --
+      # every replacement is a name. So the argument is left where it is.
+      if (!is.null(part)) {
+        expr[[position]] <- part
+      }
     }
     if (deparse_round_trips(expr)) {
       return(expr)
     }
   }
-  unrepresentable_name(expr)
+  unwritable_name(expr)
 }
 
+# Whether `deparse()` writes `expr` as source that reads back as an expression.
 deparse_round_trips <- function(expr) {
   text <- tryCatch(deparse_call_text(expr), error = function(cnd) NULL)
-  !is.null(text) && !is.null(parse_call_text(text))
+  !is.null(text) && call_text_reads_back(text)
 }
 
-# What stands in a call for a value R cannot write as source. A name rather
-# than a string, so that the part reads as the position it occupies, and
+# What stands in a call for a value `deparse()` cannot write as source. A name
+# rather than a string, so that the part reads as the position it occupies, and
 # non-syntactic so that no caller's own spelling collides with it.
-unrepresentable_name <- function(value) {
+unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 

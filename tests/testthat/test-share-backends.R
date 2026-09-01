@@ -2206,9 +2206,12 @@ test_that("dtplyr reports a share against a call holding its own input", {
   expect_true(rlang::is_symbol(input))
   expect_match(as.character(input), "^<.+>$")
 
-  # Every other argument is still the caller's own.
+  # Every other argument is still the caller's own, `NULL` included: it is a
+  # part `deparse()` writes, so the walk has nothing to answer it with.
   expect_identical(conditionCall(error)$source, quote(range(value)))
   expect_identical(conditionCall(error)$share, quote(share_of_total(source)))
+  expect_null(conditionCall(error)$.margin_label)
+  expect_true(".margin_label" %in% names(as.list(conditionCall(error))))
 })
 
 test_that("dtplyr reports an across share against the same call", {
@@ -2233,5 +2236,13 @@ test_that("dtplyr reports an across share against the same call", {
   )
   expect_s3_class(error, "marginplyr_error")
   expect_identical(error$share_output, "flag_share")
-  expect_true(rlang::is_call(conditionCall(error)))
+  expect_identical(error$source_summary, "value_flag")
+
+  input <- conditionCall(error)[[2L]]
+  expect_true(rlang::is_symbol(input))
+  expect_match(as.character(input), "^<.+>$")
+  expect_identical(
+    conditionCall(error)$flag_share,
+    quote(share_of_parent(value_flag))
+  )
 })
