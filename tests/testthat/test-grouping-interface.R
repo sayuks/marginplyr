@@ -502,10 +502,6 @@ test_that("a bare grouping_id() reads the plan's own dimensions", {
   expect_setequal(unique(result$bare), c(0L, 1L, 3L))
 })
 
-# The default is the plan's dimensions and not its `.by`. A `.by` column
-# belongs to every Grouping set, so it always contributes a zero bit, and a
-# leading zero leaves the number alone -- the exclusion is observable at the
-# column cap, which is where it is asserted below.
 test_that("a bare grouping_id() equals inspect_grouping()$grouping_id", {
   data <- data.frame(
     k = c("f", "f", "g"),
@@ -514,44 +510,27 @@ test_that("a bare grouping_id() equals inspect_grouping()$grouping_id", {
     value = 1:3
   )
 
-  expect_plan_correspondence <- function(result, plan) {
+  # ADR 0009 states the correspondence for one resolved `.by` and `.grouping`,
+  # so one specification is injected into both calls rather than written twice.
+  expect_plan_correspondence <- function(grouping, by = rlang::quo(NULL)) {
+    result <- summarize_with_margins(
+      data,
+      total = sum(value),
+      gid = grouping_id(),
+      .id = "sid",
+      .by = !!by,
+      .grouping = !!grouping
+    )
+    plan <- inspect_grouping(data, .by = !!by, .grouping = !!grouping)
     expect_identical(
       result$gid,
       plan$grouping_id[match(result$sid, plan$set_id)]
     )
   }
 
-  expect_plan_correspondence(
-    summarize_with_margins(
-      data,
-      total = sum(value),
-      gid = grouping_id(),
-      .id = "sid",
-      .grouping = rollup(a, b)
-    ),
-    inspect_grouping(data, .grouping = rollup(a, b))
-  )
-  expect_plan_correspondence(
-    summarize_with_margins(
-      data,
-      total = sum(value),
-      gid = grouping_id(),
-      .id = "sid",
-      .grouping = cube(a, b)
-    ),
-    inspect_grouping(data, .grouping = cube(a, b))
-  )
-  expect_plan_correspondence(
-    summarize_with_margins(
-      data,
-      total = sum(value),
-      gid = grouping_id(),
-      .id = "sid",
-      .by = k,
-      .grouping = rollup(a, b)
-    ),
-    inspect_grouping(data, .by = k, .grouping = rollup(a, b))
-  )
+  expect_plan_correspondence(rlang::quo(rollup(a, b)))
+  expect_plan_correspondence(rlang::quo(cube(a, b)))
+  expect_plan_correspondence(rlang::quo(rollup(a, b)), rlang::quo(k))
 })
 
 test_that("a bare grouping_id() is zero where the plan has no dimensions", {
@@ -599,7 +578,7 @@ test_that("a bare grouping_id() follows an edit to .grouping", {
   expect_identical(max(three$gid), 7L)
 })
 
-test_that("a bare grouping_id() leaves every written-argument refusal", {
+test_that("written arguments to grouping_id() are refused as before", {
   data <- data.frame(a = 1, b = 1)
 
   expect_error(
@@ -628,11 +607,6 @@ test_that("a bare grouping_id() leaves every written-argument refusal", {
   )
 })
 
-# The one place the `.by` exclusion is observable: 31 dimensions beside a fixed
-# column is a plan the bare call can encode, and would not be if `.by` were
-# carried. `inspect_grouping()` reports `NA_integer_` beyond the cap and the
-# bare call does not adopt that -- a silently-`NA` identifier is what this
-# default exists to remove.
 test_that("a bare grouping_id() reaches the column cap on dimensions alone", {
   dimension_data <- function(n) {
     data <- as.data.frame(stats::setNames(
@@ -643,7 +617,7 @@ test_that("a bare grouping_id() reaches the column cap on dimensions alone", {
     data$value <- 1
     data
   }
-  one_set <- function(n) {
+  single_grouping_set <- function(n) {
     rlang::call2(
       "grouping_sets",
       rlang::call2("grouping_set", !!!rlang::syms(paste0("c", seq_len(n))))
@@ -654,7 +628,7 @@ test_that("a bare grouping_id() reaches the column cap on dimensions alone", {
     dimension_data(31L),
     gid = grouping_id(),
     .by = k,
-    .grouping = !!one_set(31L)
+    .grouping = !!single_grouping_set(31L)
   )
   expect_identical(fixed$gid, 0L)
 
@@ -662,7 +636,7 @@ test_that("a bare grouping_id() reaches the column cap on dimensions alone", {
     summarize_with_margins(
       dimension_data(32L),
       gid = grouping_id(),
-      .grouping = !!one_set(32L)
+      .grouping = !!single_grouping_set(32L)
     ),
     "at most 31 columns"
   )

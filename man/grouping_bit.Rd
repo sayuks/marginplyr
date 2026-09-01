@@ -42,8 +42,7 @@ Written with no columns, \code{\link[=grouping_id]{grouping_id()}} reads every \
 the resolved plan, in plan order. That is the order \code{\link[=inspect_grouping]{inspect_grouping()}}
 reports, so a bare \code{\link[=grouping_id]{grouping_id()}} equals that function's \code{grouping_id} for
 the grouping set the row came from. Columns fixed by \code{.by} are not part of
-that default: each belongs to every grouping set, so it would widen the
-mask by a bit that is always zero.
+that default.
 
 The \verb{_bit} suffix emphasizes the \code{0}/\code{1} result and deliberately avoids
 masking \code{\link[base:grouping]{base::grouping()}}, an unrelated function that returns a permutation

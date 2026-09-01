@@ -13,8 +13,7 @@
 #' the resolved plan, in plan order. That is the order [inspect_grouping()]
 #' reports, so a bare [grouping_id()] equals that function's `grouping_id` for
 #' the grouping set the row came from. Columns fixed by `.by` are not part of
-#' that default: each belongs to every grouping set, so it would widen the
-#' mask by a bit that is always zero.
+#' that default.
 #'
 #' The `_bit` suffix emphasizes the `0`/`1` result and deliberately avoids
 #' masking [base::grouping()], an unrelated function that returns a permutation
@@ -243,12 +242,8 @@ grouping_helper_vars <- function(args, helper, plan) {
   if (identical(helper, "grouping_bit") && length(carried) != 1L) {
     abort_marginplyr("{.fun grouping_bit} requires exactly one column.")
   }
-  # `grouping_id()` written with no columns reads the plan's dimensions, in
-  # plan order, which is the order `inspect_grouping()` reports its own
-  # `grouping_id` in -- so a bare call and that column agree for one resolved
-  # plan, as `.id` and `set_id` do (ADR 0009). The plan's `.by` is left out:
-  # a `.by` column belongs to every Grouping set, so carrying it would widen
-  # the mask by a bit that is always zero and spend one of the 31 (#366).
+  # A call naming no columns falls to the plan's dimensions, in plan order,
+  # and not to its `.by` (ADR 0009).
   #
   # Written back as symbols rather than returned, so the column cap below stays
   # at one site. Every other check between here and it passes by construction:
