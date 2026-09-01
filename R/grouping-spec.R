@@ -71,9 +71,13 @@
 #'   which takes no nested Grouping specification at all. A name bound to
 #'   anything that is not a specification is a column, as it always was.
 #'
-#'   A dimension is a column of the input, so a selection cannot rename it:
-#'   `c(area = region)` is an error rather than a dimension named `area`.
-#'   Rename the result afterwards with [dplyr::rename()].
+#'   A dimension is a column of the input, so a name attached to one is
+#'   refused, whether it sits inside a selection or on the constructor's own
+#'   argument: `c(area = region)` and `rollup(area = region)` are both errors
+#'   rather than a dimension named `area`. Rename the result afterwards with
+#'   [dplyr::rename()]. A Margin verb's own argument written in a constructor
+#'   falls under that same rule, so `rollup(region, .by = year)` reports the
+#'   name instead of taking `year` as a second dimension.
 #'
 #' @return A grouping specification for use in `.grouping`.
 #' @family grouping plans and grouping identity

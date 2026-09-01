@@ -66,9 +66,13 @@ when it is bound to a \code{\link[=grouping_set]{grouping_set()}}, and never in 
 which takes no nested Grouping specification at all. A name bound to
 anything that is not a specification is a column, as it always was.
 
-A dimension is a column of the input, so a selection cannot rename it:
-\code{c(area = region)} is an error rather than a dimension named \code{area}.
-Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}
+A dimension is a column of the input, so a name attached to one is
+refused, whether it sits inside a selection or on the constructor's own
+argument: \code{c(area = region)} and \code{rollup(area = region)} are both errors
+rather than a dimension named \code{area}. Rename the result afterwards with
+\code{\link[dplyr:rename]{dplyr::rename()}}. A Margin verb's own argument written in a constructor
+falls under that same rule, so \code{rollup(region, .by = year)} reports the
+name instead of taking \code{year} as a second dimension.}
 }
 \value{
 A grouping specification for use in \code{.grouping}.

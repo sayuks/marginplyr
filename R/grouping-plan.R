@@ -272,6 +272,23 @@ abort_empty_grouping_arg <- function(constructor, position) {
   ))
 }
 
+# The refusal of a name R bound to a constructor's own argument. Such a name is
+# not a selection renaming a dimension -- `abort_grouping_rename()` answers
+# that one level in -- and nothing reads it: expansion takes the argument's
+# value and the name reaches no position. A Margin verb's own argument written
+# one pair of parentheses in arrives here, which is the spelling that made the
+# position silent (#365).
+abort_named_grouping_arg <- function(constructor, pairs) {
+  abort_marginplyr(c(
+    "{.fun {constructor}} takes no named arguments:",
+    i = "{.code {pairs}}.",
+    i = paste0(
+      "Remove the {cli::qty(length(pairs))}name{?s}, or move a Margin verb's ",
+      "argument to the verb call."
+    )
+  ))
+}
+
 abort_empty_composite <- function() {
   abort_marginplyr(
     "An empty {.fun grouping_set} cannot be a composite dimension."
@@ -489,6 +506,10 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
 
   rule <- find_grouping_kind_rule(grouping_spec$type)
   stopifnot(!is.null(rule))
+  # Over the whole call before the loop reads any argument, so a call carrying
+  # a renaming selection as well is answered by the refusal that needs no data
+  # (ADR 0005).
+  check_named_grouping_args(grouping_spec, rule)
   name_only <- TRUE
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
@@ -514,6 +535,32 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
     args[[i]] <- list(quo = arg, nested = nested_preflight)
   }
   list(spec = grouping_spec, args = args, name_only = name_only)
+}
+
+# Every name the caller bound to one constructor call's own arguments, less the
+# ones `abort_empty_grouping_arg()` speaks for. An empty argument has no
+# spelling for a pair to quote (#261), so it is left to the loop below, which
+# refuses it by position.
+check_named_grouping_args <- function(grouping_spec, rule) {
+  arg_names <- rlang::names2(grouping_spec$args)
+  empty <- vapply(
+    grouping_spec$args,
+    is_empty_argument,
+    logical(1),
+    USE.NAMES = FALSE
+  )
+  named <- nzchar(arg_names) & !empty
+  if (!any(named)) {
+    return(invisible(NULL))
+  }
+  abort_named_grouping_arg(
+    rule$constructor,
+    paste0(
+      arg_names[named],
+      " = ",
+      vapply(grouping_spec$args[named], rlang::as_label, character(1))
+    )
+  )
 }
 
 # The spelling a nested position reads an argument by: the caller's expression
