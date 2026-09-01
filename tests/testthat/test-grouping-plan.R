@@ -2901,3 +2901,37 @@ test_that("a name on a constructor's own argument is refused", {
     "region"
   )
 })
+
+test_that("a name on an empty argument is refused by position", {
+  data_vars <- c("region", "year", "value")
+
+  # An empty argument has no spelling for a pair to quote (#261), so the
+  # refusal that points by position speaks for it even when it carries a name.
+  first <- expect_error(compile_grouping_spec(
+    rollup(area = ),
+    data_vars,
+    duplicates_choices = margin_duplicates_choices
+  ))
+  expect_s3_class(first, "marginplyr_error")
+  expect_identical(
+    conditionMessage(first),
+    paste0(
+      "Argument 1 of `rollup()` is empty.\n",
+      "i Remove the comma, or write the columns that position selects."
+    )
+  )
+
+  second <- expect_error(compile_grouping_spec(
+    rollup(region, .by = ),
+    data_vars,
+    duplicates_choices = margin_duplicates_choices
+  ))
+  expect_s3_class(second, "marginplyr_error")
+  expect_identical(
+    conditionMessage(second),
+    paste0(
+      "Argument 2 of `rollup()` is empty.\n",
+      "i Remove the comma, or write the columns that position selects."
+    )
+  )
+})

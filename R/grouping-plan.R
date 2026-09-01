@@ -272,15 +272,12 @@ abort_empty_grouping_arg <- function(constructor, position) {
   ))
 }
 
-# The refusal of a name R bound to a constructor's own argument. Every
-# constructor takes `...` alone, so such a name is not a selection renaming a
-# dimension -- `abort_grouping_rename()` answers that one level in -- and
-# nothing reads it: expansion takes the argument's value and the name reaches
-# no position. A Margin verb's own argument written one pair of parentheses in
-# arrives here, which is the spelling that made the position silent (#365).
-#
-# The pairs arrive alone in an `i` bullet, per ADR 0023's condition 2: how many
-# of them there are is the caller's decision.
+# The refusal of a name R bound to a constructor's own argument. Such a name is
+# not a selection renaming a dimension -- `abort_grouping_rename()` answers
+# that one level in -- and nothing reads it: expansion takes the argument's
+# value and the name reaches no position. A Margin verb's own argument written
+# one pair of parentheses in arrives here, which is the spelling that made the
+# position silent (#365).
 abort_named_grouping_arg <- function(constructor, pairs) {
   abort_marginplyr(c(
     "{.fun {constructor}} takes no named arguments:",
@@ -540,12 +537,19 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
   list(spec = grouping_spec, args = args, name_only = name_only)
 }
 
-# Every name the caller bound to one constructor call's own arguments. The pair
-# is the caller's own text on both halves (ADR 0024), so an argument left empty
-# gives the name and nothing after the `=`, which is what was written.
+# Every name the caller bound to one constructor call's own arguments, less the
+# ones `abort_empty_grouping_arg()` speaks for. An empty argument has no
+# spelling for a pair to quote (#261), so it is left to the loop below, which
+# refuses it by position.
 check_named_grouping_args <- function(grouping_spec, rule) {
   arg_names <- rlang::names2(grouping_spec$args)
-  named <- nzchar(arg_names)
+  empty <- vapply(
+    grouping_spec$args,
+    is_empty_argument,
+    logical(1),
+    USE.NAMES = FALSE
+  )
+  named <- nzchar(arg_names) & !empty
   if (!any(named)) {
     return(invisible(NULL))
   }
