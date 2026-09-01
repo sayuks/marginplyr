@@ -477,6 +477,172 @@ test_that("grouping helpers validate their context and columns", {
   expect_setequal(qualified$bit, c(0L, 1L))
 })
 
+# `grouping_id()` written with no columns reads the Grouping plan's own
+# dimensions, in plan order (#366). The retyped spelling stays legal and is
+# what these compare against: the default is the same columns in the same
+# order, so the two calls are the same value and not merely the same shape.
+test_that("a bare grouping_id() reads the plan's own dimensions", {
+  data <- data.frame(
+    k = "f",
+    a = c("x", "x", "y"),
+    b = c("u", "v", "u"),
+    value = 1:3
+  )
+
+  result <- summarize_with_margins(
+    data,
+    total = sum(value),
+    bare = grouping_id(),
+    written = grouping_id(a, b),
+    .by = k,
+    .grouping = rollup(a, b)
+  )
+
+  expect_identical(result$bare, result$written)
+  expect_setequal(unique(result$bare), c(0L, 1L, 3L))
+})
+
+test_that("a bare grouping_id() equals inspect_grouping()$grouping_id", {
+  data <- data.frame(
+    k = c("f", "f", "g"),
+    a = c("x", "x", "y"),
+    b = c("u", "v", "u"),
+    value = 1:3
+  )
+
+  # ADR 0009 states the correspondence for one resolved `.by` and `.grouping`,
+  # so one specification is injected into both calls rather than written twice.
+  expect_plan_correspondence <- function(grouping, by = rlang::quo(NULL)) {
+    result <- summarize_with_margins(
+      data,
+      total = sum(value),
+      gid = grouping_id(),
+      .id = "sid",
+      .by = !!by,
+      .grouping = !!grouping
+    )
+    plan <- inspect_grouping(data, .by = !!by, .grouping = !!grouping)
+    expect_identical(
+      result$gid,
+      plan$grouping_id[match(result$sid, plan$set_id)]
+    )
+  }
+
+  expect_plan_correspondence(rlang::quo(rollup(a, b)))
+  expect_plan_correspondence(rlang::quo(cube(a, b)))
+  expect_plan_correspondence(rlang::quo(rollup(a, b)), rlang::quo(k))
+})
+
+test_that("a bare grouping_id() is zero where the plan has no dimensions", {
+  data <- data.frame(k = c("f", "g"), value = 1:2)
+
+  by_only <- summarize_with_margins(
+    data,
+    total = sum(value),
+    gid = grouping_id(),
+    .by = k
+  )
+  expect_identical(by_only$gid, c(0L, 0L))
+
+  empty_set <- summarize_with_margins(
+    data,
+    total = sum(value),
+    gid = grouping_id(),
+    .grouping = grouping_set()
+  )
+  expect_identical(empty_set$gid, 0L)
+})
+
+# Editing `.grouping` is what the retyped spelling could not follow, so the
+# bare call is asserted against an edit rather than against one plan only.
+test_that("a bare grouping_id() follows an edit to .grouping", {
+  data <- data.frame(
+    a = c("x", "y"),
+    b = c("u", "u"),
+    c = c("p", "p"),
+    value = 1:2
+  )
+
+  two <- summarize_with_margins(
+    data,
+    gid = grouping_id(),
+    .grouping = rollup(a, b)
+  )
+  three <- summarize_with_margins(
+    data,
+    gid = grouping_id(),
+    .grouping = rollup(a, b, c)
+  )
+
+  expect_identical(max(two$gid), 3L)
+  expect_identical(max(three$gid), 7L)
+})
+
+test_that("written arguments to grouping_id() are refused as before", {
+  data <- data.frame(a = 1, b = 1)
+
+  expect_error(
+    summarize_with_margins(data, bad = grouping_bit(), .grouping = rollup(a)),
+    "exactly one column"
+  )
+  expect_error(
+    summarize_with_margins(data, bad = grouping_id(, ), .grouping = rollup(a)),
+    "only accepts bare grouping columns"
+  )
+  expect_error(
+    summarize_with_margins(data, bad = grouping_id(1), .grouping = rollup(a)),
+    "only accepts bare grouping columns"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      bad = grouping_id(a, a),
+      .grouping = rollup(a)
+    ),
+    "duplicate columns"
+  )
+  expect_error(
+    summarize_with_margins(data, bad = grouping_id(b), .grouping = rollup(a)),
+    "not part of"
+  )
+})
+
+test_that("a bare grouping_id() reaches the column cap on dimensions alone", {
+  dimension_data <- function(n) {
+    data <- as.data.frame(stats::setNames(
+      rep(list("x"), n),
+      paste0("c", seq_len(n))
+    ))
+    data$k <- "f"
+    data$value <- 1
+    data
+  }
+  single_grouping_set <- function(n) {
+    rlang::call2(
+      "grouping_sets",
+      rlang::call2("grouping_set", !!!rlang::syms(paste0("c", seq_len(n))))
+    )
+  }
+
+  fixed <- summarize_with_margins(
+    dimension_data(31L),
+    gid = grouping_id(),
+    .by = k,
+    .grouping = !!single_grouping_set(31L)
+  )
+  expect_identical(fixed$gid, 0L)
+
+  capped <- expect_error(
+    summarize_with_margins(
+      dimension_data(32L),
+      gid = grouping_id(),
+      .grouping = !!single_grouping_set(32L)
+    ),
+    "at most 31 columns"
+  )
+  expect_s3_class(capped, "marginplyr_error")
+})
+
 test_that("expand and nest verbs consume the same grouping plan", {
   data <- data.frame(a = c("x", "x", "y"), b = c("u", "v", "u"), x = 1:3)
 

@@ -12,7 +12,8 @@ grouping_id(...)
 \arguments{
 \item{x}{A bare grouping column.}
 
-\item{...}{Bare grouping columns.}
+\item{...}{Bare grouping columns. Passing none reads every \code{.grouping}
+column of the resolved plan.}
 }
 \value{
 A grouping flag or identifier when used inside
@@ -35,8 +36,13 @@ grouping set from ordinary missing values in the source data.
 \code{\link[=grouping_bit]{grouping_bit()}} corresponds to SQL \code{GROUPING(x)}: it returns \code{1L} when
 \code{x} is absent from the grouping set and \code{0L} otherwise.
 \code{\link[=grouping_id]{grouping_id()}} combines those flags as a bit mask; its last argument is
-the least-significant bit. It accepts between 1 and 31 distinct grouping
-columns.
+the least-significant bit. It accepts up to 31 distinct grouping columns.
+
+Written with no columns, \code{\link[=grouping_id]{grouping_id()}} reads every \code{.grouping} column of
+the resolved plan, in plan order. That is the order \code{\link[=inspect_grouping]{inspect_grouping()}}
+reports, so a bare \code{\link[=grouping_id]{grouping_id()}} equals that function's \code{grouping_id} for
+the grouping set the row came from. Columns fixed by \code{.by} are not part of
+that default.
 
 The \verb{_bit} suffix emphasizes the \code{0}/\code{1} result and deliberately avoids
 masking \code{\link[base:grouping]{base::grouping()}}, an unrelated function that returns a permutation
@@ -113,7 +119,7 @@ summarize_with_margins(
   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
   revenue = sum(revenue),
   store_is_total = grouping_bit(store),
-  level = grouping_id(region, store),
+  level = grouping_id(),
   .grouping = rollup(region, store),
   .margin_label = NULL
 )

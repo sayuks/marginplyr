@@ -33,6 +33,18 @@
   `rollup(region, .by = year)` — is reported rather than taken as a second
   dimension (#365).
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
+  `grouping_id()` written with no columns reads every `.grouping` column of the
+  resolved plan, in plan order, which is the order `inspect_grouping()` reports:
+  a bare `grouping_id()` is `inspect_grouping()$grouping_id` for the Grouping
+  set the row came from, as `.id` is `set_id` for its occurrence. Retyping the
+  columns is still accepted, and is how a subset of them or an order other than
+  the plan's is encoded, but a retyped list is a copy of a specification written
+  in the same call: widening `rollup(cut, color)` to
+  `rollup(cut, color, clarity)` renumbered the levels while
+  `grouping_id(cut, color)` went on returning a two-bit mask (#366). Columns
+  fixed by `.by` are not part of the default, each contributing a bit that is
+  always zero. A plan with no dimensions gives `0L`, and one past the 31-column
+  cap is refused as a written call of that width is.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level
   up, partitioned by the fixed `.by` keys. Local data frames, dbplyr, and
