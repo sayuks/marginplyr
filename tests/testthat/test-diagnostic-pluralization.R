@@ -402,8 +402,8 @@ test_that("the NA-level refusal pluralizes its grouping column noun", {
     paste0(
       "`NA_character_` is already a factor level in grouping column:\n",
       "i `g`.\n",
-      "i Use `NULL` for a typed-missing Margin label while preserving the NA ",
-      "level."
+      "i Use `NULL` in a named-list `.margin_label` for a typed-missing ",
+      "Margin label while preserving the NA level."
     )
   )
 
@@ -413,8 +413,8 @@ test_that("the NA-level refusal pluralizes its grouping column noun", {
     paste0(
       "`NA_character_` is already a factor level in grouping columns:\n",
       "i `g` and `h`.\n",
-      "i Use `NULL` for a typed-missing Margin label while preserving the NA ",
-      "level."
+      "i Use `NULL` in a named-list `.margin_label` for a typed-missing ",
+      "Margin label while preserving the NA level."
     )
   )
 })

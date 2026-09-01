@@ -27,10 +27,12 @@
 #'   way; see [grouping_set()].
 #' @param .margin_label A display label for dimensions omitted from a grouping
 #'   set. An unnamed character scalar applies to every resolved Margin
-#'   dimension. A named character vector must name every resolved Margin
-#'   dimension exactly once; order is irrelevant, and fixed `.by` columns must
-#'   not be named. `NA_character_` and `NULL` use typed missing values instead
-#'   of a display label. See *Display labels and grouping identity*.
+#'   dimension. A named character vector or named list must name every
+#'   resolved Margin dimension exactly once; order is irrelevant, and fixed
+#'   `.by` columns must not be named. `NA_character_` and `NULL` use typed
+#'   missing values instead of a display label; only the list can give one
+#'   dimension a `NULL` while another takes a label, because `c()` drops a
+#'   `NULL` element. See *Display labels and grouping identity*.
 #' @param .margin_label_position Either `"last"` (the default) or `"first"`,
 #'   and nothing else; see *Option arguments*.
 #'   This controls the position of a non-missing synthetic label in factor and
@@ -39,7 +41,9 @@
 #' @param .check_margin_label A logical scalar controlling the half of the
 #'   Margin label collision check that reads the data: whether any *value* of a
 #'   Margin dimension is equal to that dimension's display label. Each
-#'   dimension is checked independently, and `.margin_label = NULL` opts out.
+#'   dimension is checked independently, and a typed-missing label opts its
+#'   own dimension out -- `NULL` or `NA_character_`, chosen per dimension in a
+#'   named-list `.margin_label`.
 #'   Every Margin verb uses the same default: `TRUE` for local data frames and
 #'   `FALSE` for lazy inputs, which are read only when the caller asks. A label
 #'   equal to a declared factor *level* is rejected on every backend whatever
@@ -480,17 +484,18 @@
 #'
 #' `NA_character_` and `NULL` both create a typed missing Margin value and do
 #' not create a synthetic factor level. Position is therefore a no-op for
-#' either value. `NA_character_` still participates in collision validation;
-#' `NULL` opts out. A factor NA level is a structural conflict for
-#' `NA_character_` even when `.check_margin_label = FALSE`.
+#' either value, and neither participates in the observed half of collision
+#' validation. What separates them is the declared half: a factor NA level is
+#' a structural conflict for `NA_character_` even when
+#' `.check_margin_label = FALSE`, while `NULL` preserves that level.
 #'
-#' With `.check_margin_label = TRUE`, factor columns follow this contract:
+#' Factor columns follow this contract:
 #'
 #' | Margin label | NA level | Missing value | Result |
 #' |---|---:|---:|---|
 #' | `NA_character_` | yes | yes | Error: NA is already a factor level |
 #' | `NA_character_` | yes | no | Error: NA is already a factor level |
-#' | `NA_character_` | no | yes | Error: the label collides with a value |
+#' | `NA_character_` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
 #' | `NA_character_` | no | no | Allowed; use typed missing |
 #' | `NULL` | yes | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
 #' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
@@ -503,12 +508,12 @@
 #' identically, so keep a structural identity column when the difference
 #' matters: `.id` is available from every Margin verb, and
 #' [summarize_with_margins()] can additionally write [grouping_bit()] or
-#' [grouping_id()] as summaries. `.check_margin_label` controls only the
-#' observed row of this table -- whether `NA_character_` collides with an
-#' actual missing value when no NA level is declared; the declared rows above
-#' it are checked whatever this argument says. See `.check_margin_label`
-#' above for its default and *When marginplyr queries your data* for why the
-#' two halves differ.
+#' [grouping_id()] as summaries. `.check_margin_label` controls the observed
+#' half of the check, which no row of this table reaches: a typed-missing
+#' label is not a collision, and a label equal to a declared level is refused
+#' by the declared half. Every row above is therefore decided whatever this
+#' argument says. See `.check_margin_label` above for its default and *When
+#' marginplyr queries your data* for why the two halves differ.
 #'
 #' @section Backend extension design:
 #' Unlike [dplyr::summarize()], the public margin verbs are intentionally not
@@ -697,28 +702,21 @@
 #' is.ordered(priority_result$priority)
 #' levels(priority_result$priority)
 #'
-#' # `.check_margin_label = FALSE` still controls only the observed half of
-#' # the check: whether a missing value already in the column collides with
-#' # `NA_character_` when no NA level is declared. Disabled, the margin row
-#' # and the real missing-value row print alike; `grouping_bit()` tells them
-#' # apart.
+#' # A typed-missing Margin label displays as missing wherever the column
+#' # already does, so the margin row and a real missing-value row print alike;
+#' # `grouping_bit()` tells them apart. A named list chooses per dimension,
+#' # which is the only spelling that can label one and leave another missing.
 #' status_data <- data.frame(
-#'   status = factor(c("active", NA), levels = c("active", "inactive")),
-#'   value = c(1, 2)
+#'   region = c("east", "east", "west"),
+#'   status = factor(c("active", NA, "active"), levels = c("active", "idle")),
+#'   value = c(1, 2, 3)
 #' )
-#' try(summarize_with_margins(
-#'   .data = status_data,
-#'   total = sum(value),
-#'   .grouping = rollup(status),
-#'   .margin_label = NA_character_
-#' ))
 #' summarize_with_margins(
 #'   .data = status_data,
 #'   total = sum(value),
-#'   is_total = grouping_bit(status),
-#'   .grouping = rollup(status),
-#'   .margin_label = NA_character_,
-#'   .check_margin_label = FALSE
+#'   status_is_total = grouping_bit(status),
+#'   .grouping = rollup(region, status),
+#'   .margin_label = list(region = "All regions", status = NULL)
 #' )
 #'
 #' # A direct Parent share, multiple measures through two ordered across()

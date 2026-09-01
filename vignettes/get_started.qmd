@@ -492,10 +492,12 @@ retail_sales |>
   dplyr::as_tibble()
 ```
 
-`.margin_label = NULL` bypasses collision checks entirely. `NA_character_`
-requests the same typed missing output, but an existing factor NA level is
-always a structural conflict, and whether an actual missing value collides is
-checked only when `.check_margin_label = TRUE`.
+`.margin_label = NULL` and `NA_character_` are the same request: typed missing
+output, and no observed collision check on that dimension. They part on one
+point — an existing factor NA level is always a structural conflict for
+`NA_character_`, whatever `.check_margin_label` says, while `NULL` preserves
+it. A named list chooses either one per dimension, which a named character
+vector cannot do for `NULL`, because `c()` drops a `NULL` element.
 
 A factor NA level and a missing factor code are different even though both
 can print as `<NA>`. Here the second value uses the NA level and the third is

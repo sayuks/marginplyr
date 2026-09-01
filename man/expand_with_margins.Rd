@@ -36,10 +36,12 @@ way; see \code{\link[=grouping_set]{grouping_set()}}.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
-dimension. A named character vector must name every resolved Margin
-dimension exactly once; order is irrelevant, and fixed \code{.by} columns must
-not be named. \code{NA_character_} and \code{NULL} use typed missing values instead
-of a display label. See \emph{Display labels and grouping identity}.}
+dimension. A named character vector or named list must name every
+resolved Margin dimension exactly once; order is irrelevant, and fixed
+\code{.by} columns must not be named. \code{NA_character_} and \code{NULL} use typed
+missing values instead of a display label; only the list can give one
+dimension a \code{NULL} while another takes a label, because \code{c()} drops a
+\code{NULL} element. See \emph{Display labels and grouping identity}.}
 
 \item{.margin_label_position}{Either \code{"last"} (the default) or \code{"first"},
 and nothing else; see \emph{Option arguments}.
@@ -50,7 +52,9 @@ ordered-factor levels. It does not sort result rows and has no effect for
 \item{.check_margin_label}{A logical scalar controlling the half of the
 Margin label collision check that reads the data: whether any \emph{value} of a
 Margin dimension is equal to that dimension's display label. Each
-dimension is checked independently, and \code{.margin_label = NULL} opts out.
+dimension is checked independently, and a typed-missing label opts its
+own dimension out -- \code{NULL} or \code{NA_character_}, chosen per dimension in a
+named-list \code{.margin_label}.
 Every Margin verb uses the same default: \code{TRUE} for local data frames and
 \code{FALSE} for lazy inputs, which are read only when the caller asks. A label
 equal to a declared factor \emph{level} is rejected on every backend whatever
@@ -364,15 +368,16 @@ factor NA level and an actually missing factor code.
 
 \code{NA_character_} and \code{NULL} both create a typed missing Margin value and do
 not create a synthetic factor level. Position is therefore a no-op for
-either value. \code{NA_character_} still participates in collision validation;
-\code{NULL} opts out. A factor NA level is a structural conflict for
-\code{NA_character_} even when \code{.check_margin_label = FALSE}.
+either value, and neither participates in the observed half of collision
+validation. What separates them is the declared half: a factor NA level is
+a structural conflict for \code{NA_character_} even when
+\code{.check_margin_label = FALSE}, while \code{NULL} preserves that level.
 
-With \code{.check_margin_label = TRUE}, factor columns follow this contract:\tabular{lrrl}{
+Factor columns follow this contract:\tabular{lrrl}{
    Margin label \tab NA level \tab Missing value \tab Result \cr
    \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
    \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr
-   \code{NA_character_} \tab no \tab yes \tab Error: the label collides with a value \cr
+   \code{NA_character_} \tab no \tab yes \tab Allowed; source missing values and margins require structural identity \cr
    \code{NA_character_} \tab no \tab no \tab Allowed; use typed missing \cr
    \code{NULL} \tab yes \tab yes \tab Allowed; source missing values and margins require structural identity \cr
    \code{NULL} \tab yes \tab no \tab Allowed; preserve the NA level and use typed missing \cr
@@ -387,12 +392,12 @@ Source missing values and typed-missing Margin values may display
 identically, so keep a structural identity column when the difference
 matters: \code{.id} is available from every Margin verb, and
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} can additionally write \code{\link[=grouping_bit]{grouping_bit()}} or
-\code{\link[=grouping_id]{grouping_id()}} as summaries. \code{.check_margin_label} controls only the
-observed row of this table -- whether \code{NA_character_} collides with an
-actual missing value when no NA level is declared; the declared rows above
-it are checked whatever this argument says. See \code{.check_margin_label}
-above for its default and \emph{When marginplyr queries your data} for why the
-two halves differ.
+\code{\link[=grouping_id]{grouping_id()}} as summaries. \code{.check_margin_label} controls the observed
+half of the check, which no row of this table reaches: a typed-missing
+label is not a collision, and a label equal to a declared level is refused
+by the declared half. Every row above is therefore decided whatever this
+argument says. See \code{.check_margin_label} above for its default and \emph{When
+marginplyr queries your data} for why the two halves differ.
 }
 
 \section{Database backend coverage}{
