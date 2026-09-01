@@ -1,11 +1,23 @@
+# The Margin label as one shape: `NULL`, an unnamed character scalar, or a
+# named list holding one label per dimension. A named character vector is the
+# shorthand for a list with no `NULL` element and is converted to one here, so
+# nothing downstream carries two spellings of the same argument.
+#
+# The list exists because `c()` drops a `NULL` element before this is reached,
+# which left a per-dimension `NULL` unwritable while both halves of the
+# collision check rested on one (ADR 0012).
 normalize_margin_label <- function(.margin_label) {
   if (is.null(.margin_label)) {
     return(NULL)
   }
-  if (!is.character(.margin_label) || length(.margin_label) == 0L) {
+  # An unnamed list is not the list form: its elements name no dimension, and
+  # a caller who meant one label wrote the scalar.
+  is_label_list <- is.list(.margin_label) && !is.null(names(.margin_label))
+  if (!is_label_list &&
+        (!is.character(.margin_label) || length(.margin_label) == 0L)) {
     abort_marginplyr(paste0(
       "{.arg .margin_label} must be {.code NULL}, an unnamed character ",
-      "scalar, or a named character vector."
+      "scalar, or a named character vector or list."
     ))
   }
   label_names <- names(.margin_label)
@@ -27,7 +39,39 @@ normalize_margin_label <- function(.margin_label) {
   if (anyDuplicated(label_names)) {
     abort_marginplyr("{.arg .margin_label} names must not be duplicated.")
   }
-  .margin_label
+  if (is_label_list) {
+    validate_margin_label_elements(.margin_label)
+    return(.margin_label)
+  }
+  as.list(.margin_label)
+}
+
+# Each element of a named-list `.margin_label` is one dimension's label, so it
+# is what an unnamed scalar may be, plus the `NULL` the list exists to carry.
+# The offending names travel in an `i` bullet because how many of them arrive
+# is the caller's decision (ADR 0023).
+validate_margin_label_elements <- function(.margin_label) {
+  bad <- vapply(
+    .margin_label,
+    function(label) {
+      !is.null(label) && !(is.character(label) && length(label) == 1L)
+    },
+    logical(1)
+  )
+  if (!any(bad)) {
+    return(invisible(NULL))
+  }
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  bad_names <- names(.margin_label)[bad]
+  # nolint end
+  abort_marginplyr(c(
+    paste0(
+      "{.arg .margin_label} list elements must each be {.code NULL} or a ",
+      "character scalar:"
+    ),
+    i = "{.var {bad_names}}."
+  ))
 }
 
 resolve_margin_labels <- function(.margin_label, dimensions) {
@@ -127,9 +171,11 @@ validate_margin_label <- function(.data,
           "{cli::qty(length(na_level_cols))}column{?s}:"
         ),
         i = "{.var {na_level_cols}}.",
+        # A bare `NULL` is the whole of `.margin_label`, so it is a remedy
+        # only where there is one dimension; the list is one either way.
         i = paste0(
-          "Use {.code NULL} for a typed-missing Margin label while ",
-          "preserving the NA level."
+          "Use {.code NULL} in a named-list {.arg .margin_label} for a ",
+          "typed-missing Margin label while preserving the NA level."
         )
       ))
     }
@@ -191,12 +237,13 @@ check_observed_label_collision <- function(data,
   factor_cols <- vapply(factor_info, function(info) info$col, character(1))
   # A factor dimension states its values in its levels, and a label equal to
   # one of them was rejected above, so reading its column could only find a
-  # value the levels do not contain. A missing label is the exception: whether
-  # the column holds a missing value is not something the levels record.
+  # value the levels do not contain. A typed-missing label is not a collision
+  # (ADR 0012): it displays as missing wherever the column already holds
+  # missing values, which is the result `NULL` has always been allowed to
+  # produce, so neither spelling of it selects a column.
   read_cols <- Filter(
     function(col) {
-      label <- margin_labels[[col]]
-      !is.null(label) && !(col %in% factor_cols && !is.na(label))
+      !is_missing_margin_label(margin_labels[[col]]) && !(col %in% factor_cols)
     },
     col_names
   )
@@ -212,14 +259,14 @@ check_observed_label_collision <- function(data,
     function(col) {
       margin_label <- margin_labels[[col]]
       column <- rlang::sym(col)
-      condition <- if (is.na(margin_label)) {
-        rlang::expr(is.na(!!column))
-      } else {
-        rlang::expr(as.character(!!column) == !!margin_label)
-      }
       rlang::expr(
         sum(
-          dplyr::if_else(!!condition, 1L, 0L, missing = 0L),
+          dplyr::if_else(
+            as.character(!!column) == !!margin_label,
+            1L,
+            0L,
+            missing = 0L
+          ),
           na.rm = TRUE
         )
       )

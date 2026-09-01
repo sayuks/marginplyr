@@ -388,12 +388,30 @@ test_that("margin label checks handle missing and non-syntactic columns", {
     "second group" = c("y", NA_character_),
     value = 1:2
   )
-  expect_error(
+  # A typed-missing label is not a collision (ADR 0012), so a source missing
+  # value in either column is not what refuses this.
+  expect_no_error(
     summarize_with_margins(
       missing,
       n = dplyr::n(),
       .grouping = rollup(`first group`, `second group`),
       .margin_label = NA_character_
+    )
+  )
+
+  # A non-missing label both columns hold is one, and the refusal quotes a
+  # non-syntactic name as the caller wrote it.
+  colliding <- data.frame(
+    check.names = FALSE,
+    "first group" = c("Total", "x"),
+    "second group" = c("y", "Total"),
+    value = 1:2
+  )
+  expect_error(
+    summarize_with_margins(
+      colliding,
+      n = dplyr::n(),
+      .grouping = rollup(`first group`, `second group`)
     ),
     "grouping columns:\ni `first group` and `second group`"
   )

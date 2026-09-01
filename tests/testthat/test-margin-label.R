@@ -44,7 +44,10 @@ test_that("factor NA levels and missing values obey the eight-case contract", {
     label = c(rep("NA", 4L), rep("NULL", 4L)),
     na_level = rep(c(TRUE, TRUE, FALSE, FALSE), 2L),
     missing_value = rep(c(TRUE, FALSE, TRUE, FALSE), 2L),
-    errors = c(TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE)
+    # Row 3 joins row 7 under ADR 0012's amendment: both spellings of a
+    # typed-missing label produce the same displayed result on a column
+    # holding a missing value, so neither is refused for producing it.
+    errors = c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
   )
 
   for (i in seq_len(nrow(cases))) {
@@ -285,9 +288,10 @@ test_that("a check with no column left to read contacts nothing", {
     margin_labels = list(group = NULL),
     factor_info = list()
   ))
-  # A missing label asks whether the column holds a missing value, which the
-  # levels do not record, so that one still reads.
-  expect_error(check_observed_label_collision(
+  # Nor does the other spelling of a typed-missing label: whether the column
+  # holds a missing value is no longer asked, so neither reaches the read that
+  # this unreadable column would fail.
+  expect_no_error(check_observed_label_collision(
     unreadable,
     margin_labels = list(group = NA_character_),
     factor_info = factor_info
@@ -756,4 +760,214 @@ test_that("Margin label option errors use the package condition seam", {
       "expand_with_margins"
     )
   }
+})
+
+# A per-dimension `NULL` (#371). `c()` drops a `NULL` element before
+# `.margin_label` is seen, so the list is the only spelling that carries one.
+test_that("a named list carries a per-dimension NULL", {
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    store = c("a", NA, "b"),
+    value = 1:3
+  )
+
+  result <- summarize_with_margins(
+    data,
+    n = sum(value),
+    region_bit = grouping_bit(region),
+    store_bit = grouping_bit(store),
+    .grouping = rollup(region, store),
+    .margin_label = list(region = "All", store = NULL)
+  )
+
+  # The one report the vector cannot express: `region` labelled, `store` typed
+  # missing, and the check left on.
+  expect_identical(result$region[result$region_bit == 1L], "All")
+  expect_true(all(is.na(result$store[result$store_bit == 1L])))
+  expect_false(any(result$store %in% "All", na.rm = TRUE))
+
+  # What `store_bit` is carrying: the source missing value and the margin over
+  # it display identically, which is the ambiguity `NULL` has always been
+  # allowed to produce.
+  ambiguous <- result[result$region == "E" & is.na(result$store), ]
+  expect_identical(nrow(ambiguous), 2L)
+  expect_setequal(ambiguous$store_bit, c(0L, 1L))
+})
+
+test_that("a named list means what the equivalent character vector means", {
+  data <- data.frame(
+    first = c("a", "b"),
+    second = c("x", "y"),
+    value = 1:2
+  )
+  operation <- function(label) {
+    summarize_with_margins(
+      data,
+      n = sum(value),
+      id = grouping_id(first, second),
+      .grouping = rollup(first, second),
+      .margin_label = label
+    )
+  }
+
+  expect_identical(
+    operation(list(first = "All first", second = "All second")),
+    operation(c(first = "All first", second = "All second"))
+  )
+})
+
+test_that("a named list refuses an element that is not a label", {
+  data <- data.frame(first = c("a", "b"), second = c("x", "y"), value = 1:2)
+  operation <- function(label) {
+    summarize_with_margins(
+      data,
+      n = sum(value),
+      .grouping = rollup(first, second),
+      .margin_label = label
+    )
+  }
+
+  cases <- list(
+    list(
+      label = list(first = "All", second = 1L),
+      message = "must each be `NULL` or a character scalar:\ni `second`"
+    ),
+    list(
+      label = list(first = "All", second = c("x", "y")),
+      message = "must each be `NULL` or a character scalar:\ni `second`"
+    ),
+    list(
+      label = list("All", "Total"),
+      message = "must be `NULL`, an unnamed character scalar"
+    )
+  )
+
+  for (case in cases) {
+    error <- expect_error(operation(case$label), case$message, fixed = TRUE)
+    expect_s3_class(error, "marginplyr_error")
+  }
+})
+
+# The name rules are the vector's rules, so a list reaches the same refusals
+# rather than a second set. An unnamed dimension stays a refusal: read as
+# `NULL` it would turn a misspelled name into a silent whole-call change.
+test_that("a named list reaches the vector's name refusals", {
+  data <- data.frame(
+    fixed = c("k", "k"),
+    first = c("a", "b"),
+    second = c("x", "y"),
+    value = 1:2
+  )
+  operation <- function(label) {
+    summarize_with_margins(
+      data,
+      n = sum(value),
+      .by = fixed,
+      .grouping = rollup(first, second),
+      .margin_label = label
+    )
+  }
+
+  expect_error(
+    operation(list(first = "All", second = NULL, fixed = NULL)),
+    "must not name fixed `.by` column:\ni `fixed`",
+    fixed = TRUE
+  )
+  expect_error(
+    operation(list(first = "All", second = NULL, unknown = NULL)),
+    "unknown dimension name:\ni `unknown`",
+    fixed = TRUE
+  )
+  expect_error(
+    operation(list(first = "All")),
+    "must name every Margin dimension.\ni Missing `second`",
+    fixed = TRUE
+  )
+})
+
+# ADR 0012's amendment: a typed-missing label displays as missing wherever the
+# column already holds missing values, which `NULL` has always been allowed to
+# do, so `NA_character_` is not refused for doing the same.
+test_that("a typed-missing label is not an observed collision", {
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    store = c("a", NA, "b"),
+    value = 1:3
+  )
+  operation <- function(label) {
+    summarize_with_margins(
+      data,
+      n = sum(value),
+      .grouping = rollup(region, store),
+      .margin_label = label,
+      .check_margin_label = TRUE,
+      .sort = "last"
+    )
+  }
+
+  expect_no_error(operation(c(region = "All", store = NA_character_)))
+  expect_identical(
+    operation(c(region = "All", store = NA_character_)),
+    operation(list(region = "All", store = NULL))
+  )
+})
+
+test_that("an all-typed-missing label reads no column", {
+  data <- data.frame(group = c("a", NA), value = 1:2)
+  labels <- list(NA_character_, NULL)
+
+  for (label in labels) {
+    expect_no_error(check_observed_label_collision(
+      # A column this cannot select is what proves nothing was selected: a
+      # check that read anything here would fail on the missing column.
+      dplyr::select(data, "value"),
+      margin_labels = list(group = label),
+      factor_info = list()
+    ))
+  }
+})
+
+test_that("a non-missing label is still an observed collision", {
+  data <- data.frame(group = c("All", "b"), value = 1:2)
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      n = sum(value),
+      .grouping = rollup(group),
+      .margin_label = "All"
+    ),
+    "already present in grouping column:\ni `group`",
+    fixed = TRUE
+  )
+  expect_match(conditionMessage(error), "`.check_margin_label = FALSE`")
+})
+
+# The remedy has to be one. A bare `NULL` is the whole of `.margin_label`, so
+# it was a remedy only where there was a single dimension.
+test_that("the NA-level refusal names a remedy a caller can write", {
+  status <- structure(
+    c(1L, 2L, NA_integer_),
+    levels = c("kept", NA_character_),
+    class = "factor"
+  )
+  data <- data.frame(region = c("E", "E", "W"), status = status, value = 1:3)
+  operation <- function(label) {
+    summarize_with_margins(
+      data,
+      n = sum(value),
+      .grouping = rollup(region, status),
+      .margin_label = label
+    )
+  }
+
+  error <- expect_error(
+    operation(c(region = "All", status = NA_character_)),
+    "already a factor level in grouping column:\ni `status`",
+    fixed = TRUE
+  )
+  expect_match(conditionMessage(error), "list", fixed = TRUE)
+
+  # Following the remedy has to work with more than one dimension in play.
+  expect_no_error(operation(list(region = "All", status = NULL)))
 })
