@@ -372,7 +372,7 @@ validation. What separates them is the declared half: a factor NA level is
 a structural conflict for \code{NA_character_} even when
 \code{.check_margin_label = FALSE}, while \code{NULL} preserves that level.
 
-With \code{.check_margin_label = TRUE}, factor columns follow this contract:\tabular{lrrl}{
+Factor columns follow this contract:\tabular{lrrl}{
    Margin label \tab NA level \tab Missing value \tab Result \cr
    \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
    \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr

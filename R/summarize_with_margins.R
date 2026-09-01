@@ -489,7 +489,7 @@
 #' a structural conflict for `NA_character_` even when
 #' `.check_margin_label = FALSE`, while `NULL` preserves that level.
 #'
-#' With `.check_margin_label = TRUE`, factor columns follow this contract:
+#' Factor columns follow this contract:
 #'
 #' | Margin label | NA level | Missing value | Result |
 #' |---|---:|---:|---|

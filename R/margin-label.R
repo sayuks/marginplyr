@@ -1,18 +1,16 @@
-# The Margin label as one shape: `NULL`, an unnamed character scalar, or a
-# named list holding one label per dimension. A named character vector is the
-# shorthand for a list with no `NULL` element and is converted to one here, so
-# nothing downstream carries two spellings of the same argument.
-#
-# The list exists because `c()` drops a `NULL` element before this is reached,
-# which left a per-dimension `NULL` unwritable while both halves of the
-# collision check rested on one (ADR 0012).
+# The Margin label a caller wrote, as the shape the rest of the operation
+# reads: `NULL`, an unnamed character scalar, or a named list of per-dimension
+# labels. A named character vector is converted to that list here, so the two
+# named spellings are one downstream (ADR 0012).
 normalize_margin_label <- function(.margin_label) {
   if (is.null(.margin_label)) {
     return(NULL)
   }
   # An unnamed list is not the list form: its elements name no dimension, and
-  # a caller who meant one label wrote the scalar.
-  is_label_list <- is.list(.margin_label) && !is.null(names(.margin_label))
+  # a caller who meant one label wrote the scalar. Bare, because a one-row
+  # data frame is otherwise a named list whose columns pass as labels.
+  is_label_list <- rlang::is_bare_list(.margin_label) &&
+    !is.null(names(.margin_label))
   if (!is_label_list &&
         (!is.character(.margin_label) || length(.margin_label) == 0L)) {
     abort_marginplyr(paste0(
@@ -48,8 +46,6 @@ normalize_margin_label <- function(.margin_label) {
 
 # Each element of a named-list `.margin_label` is one dimension's label, so it
 # is what an unnamed scalar may be, plus the `NULL` the list exists to carry.
-# The offending names travel in an `i` bullet because how many of them arrive
-# is the caller's decision (ADR 0023).
 validate_margin_label_elements <- function(.margin_label) {
   bad <- vapply(
     .margin_label,
@@ -171,8 +167,8 @@ validate_margin_label <- function(.data,
           "{cli::qty(length(na_level_cols))}column{?s}:"
         ),
         i = "{.var {na_level_cols}}.",
-        # A bare `NULL` is the whole of `.margin_label`, so it is a remedy
-        # only where there is one dimension; the list is one either way.
+        # The list spelling, because a bare `NULL` is the whole of
+        # `.margin_label` and so is not one dimension's answer (ADR 0012).
         i = paste0(
           "Use {.code NULL} in a named-list {.arg .margin_label} for a ",
           "typed-missing Margin label while preserving the NA level."
@@ -238,9 +234,7 @@ check_observed_label_collision <- function(data,
   # A factor dimension states its values in its levels, and a label equal to
   # one of them was rejected above, so reading its column could only find a
   # value the levels do not contain. A typed-missing label is not a collision
-  # (ADR 0012): it displays as missing wherever the column already holds
-  # missing values, which is the result `NULL` has always been allowed to
-  # produce, so neither spelling of it selects a column.
+  # (ADR 0012), so neither spelling of one selects a column either.
   read_cols <- Filter(
     function(col) {
       !is_missing_margin_label(margin_labels[[col]]) && !(col %in% factor_cols)

@@ -80,7 +80,7 @@ value is a factor level, which the column's type records, and *observed* when
 it appears only among the column's values. A typed-missing Margin label is not
 a collision: it displays as missing wherever the column already holds missing
 values, and a Grouping bit or Grouping identifier is what tells the two apart.
-_Avoid_: Duplicate label, ambiguous margin, typed-missing ambiguity
+_Avoid_: Duplicate label, ambiguous margin
 
 **Margin order**:
 The row order a Margin operation produces when it is asked to order its

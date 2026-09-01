@@ -839,6 +839,12 @@ test_that("a named list refuses an element that is not a label", {
     list(
       label = list("All", "Total"),
       message = "must be `NULL`, an unnamed character scalar"
+    ),
+    # A one-row data frame is a named list whose columns are character
+    # scalars, so it is refused for its shape rather than read as labels.
+    list(
+      label = data.frame(first = "All", second = "Total"),
+      message = "must be `NULL`, an unnamed character scalar"
     )
   )
 
