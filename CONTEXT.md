@@ -73,12 +73,14 @@ factor level.
 _Avoid_: Total value, missing-value replacement
 
 **Margin label collision**:
-A grouping dimension holding, as one of its own values, the Margin label
-chosen for it — so that a margin row and a row of the source data cannot be
-told apart by that column. A collision is *declared* when the colliding value
-is a factor level, which the column's type records, and *observed* when it
-appears only among the column's values.
-_Avoid_: Duplicate label, ambiguous margin
+A grouping dimension holding, as one of its own values, the non-missing Margin
+label chosen for it — so that a margin row and a row of the source data cannot
+be told apart by that column. A collision is *declared* when the colliding
+value is a factor level, which the column's type records, and *observed* when
+it appears only among the column's values. A typed-missing Margin label is not
+a collision: it displays as missing wherever the column already holds missing
+values, and a Grouping bit or Grouping identifier is what tells the two apart.
+_Avoid_: Duplicate label, ambiguous margin, typed-missing ambiguity
 
 **Margin order**:
 The row order a Margin operation produces when it is asked to order its
