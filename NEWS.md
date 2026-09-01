@@ -27,7 +27,11 @@
   constructor and the position — `grouping_sets(, region)` reports that its
   first argument is empty — rather than reporting an internal name you never
   wrote. A trailing comma is not an empty argument, because R captures no
-  argument for it.
+  argument for it. A name on the constructor's own argument is refused too:
+  `rollup(area = region)` reports the name rather than dropping it, and so a
+  Margin verb's own argument written one pair of parentheses in —
+  `rollup(region, .by = year)` — is reported rather than taken as a second
+  dimension (#365).
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level

@@ -126,6 +126,10 @@ pluralizing_coverage <- function() {
       "test-grouping-plan.R",
       "a renaming grouping selection is refused by every constructor"
     ),
+    abort_named_grouping_arg = pluralizing_test_location(
+      "test-grouping-plan.R",
+      "a name on a constructor's own argument is refused"
+    ),
     abort_observed_label_collision = rep("this file, the collision block", 2L),
     check_summary_context_helpers = pluralizing_test_location(
       "test-contextual-helpers.R",
@@ -201,7 +205,7 @@ test_that("the readings behind the coverage gate", {
   expect_false(is_call_to(quote(cli::format_inline("x")), "pluralize"))
 })
 
-# The gate. A seventeenth pluralizing site fails until it is pinned and named
+# The gate. A new pluralizing site fails until it is pinned and named
 # here, and a site that stops pluralizing fails until its entry goes -- neither
 # of which is a number anyone maintains, which is what the census this replaced
 # turned out to be.

@@ -2815,3 +2815,89 @@ test_that("compile_grouping_spec() reads a narrowed duplicates vocabulary", {
   )
   expect_equal(dropped$sets, list("a"))
 })
+
+test_that("a name on a constructor's own argument is refused", {
+  data_vars <- c("region", "year", "value")
+
+  refuse <- function(spec) {
+    error <- expect_error(compile_grouping_spec(
+      spec,
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
+    ))
+    expect_s3_class(error, "marginplyr_error")
+    conditionMessage(error)
+  }
+
+  named_message <- function(constructor, pairs) {
+    paste0(
+      sprintf("`%s()` takes no named arguments:\n", constructor),
+      sprintf("i %s.\n", paste(sprintf("`%s`", pairs), collapse = " and ")),
+      sprintf(
+        "i Remove the %s, or move a Margin verb's argument to the verb call.",
+        if (length(pairs) == 1L) "name" else "names"
+      )
+    )
+  }
+
+  # A Margin verb's argument written one pair of parentheses in. Every
+  # constructor is covered, because the mistake is available at each of them.
+  expect_identical(
+    refuse(rollup(region, .by = year)),
+    named_message("rollup", ".by = year")
+  )
+  expect_identical(
+    refuse(cube(region, .id = "level")),
+    named_message("cube", ".id = \"level\"")
+  )
+  expect_identical(
+    refuse(grouping_set(region, .sort = "last")),
+    named_message("grouping_set", ".sort = \"last\"")
+  )
+  expect_identical(
+    refuse(grouping_sets(grouping_set(region), .duplicates = "drop")),
+    named_message("grouping_sets", ".duplicates = \"drop\"")
+  )
+  expect_identical(
+    refuse(grouping_spec(rollup(region), .keep = TRUE)),
+    named_message("grouping_spec", ".keep = TRUE")
+  )
+
+  # The same refusal answers a name that is not a verb's argument, which the
+  # renaming rule already refuses one level in.
+  expect_identical(
+    refuse(rollup(area = region)),
+    named_message("rollup", "area = region")
+  )
+  # A name on a nested specification renames no dimension, so only this
+  # refusal speaks for it.
+  expect_identical(
+    refuse(grouping_sets(s = rollup(region))),
+    named_message("grouping_sets", "s = rollup(region)")
+  )
+
+  # How many names there are is the caller's decision, so one call carrying
+  # two is one refusal (ADR 0023, condition 2).
+  expect_identical(
+    refuse(rollup(region, .by = year, .id = "level")),
+    named_message("rollup", c(".by = year", ".id = \"level\""))
+  )
+
+  # Checked for the whole call before any argument is read, so the refusal
+  # that needs no data answers a call carrying both mistakes.
+  expect_identical(
+    refuse(rollup(tidyselect::all_of(c(area = "region")), .by = year)),
+    named_message("rollup", ".by = year")
+  )
+
+  # A name repeating its own column still renames nothing and is still a
+  # selection, so the renaming rule keeps its own population.
+  expect_identical(
+    compile_grouping_spec(
+      rollup(tidyselect::all_of(c(region = "region"))),
+      data_vars,
+      duplicates_choices = margin_duplicates_choices
+    )$dimensions,
+    "region"
+  )
+})
