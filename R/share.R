@@ -1253,7 +1253,10 @@ check_dtplyr_share_source <- function(value,
     share_output = share_output,
     source_summary = source_summary,
     share_kind = share_kind,
-    call = str2lang(call_text)
+    # Read at `collect()`, where no frame above can answer a failure. A text
+    # this cannot read costs the caller the call their diagnostic names, and
+    # must not cost them the diagnostic itself (ADR 0015, #360).
+    call = parse_call_text(call_text)
   )
 }
 
@@ -1385,8 +1388,76 @@ abort_share_source_type <- function(value,
   )
 }
 
+# The caller's call as text a dtplyr share can carry to `collect()`. What it
+# returns parses: `check_dtplyr_share_source()` reads it back where nothing can
+# answer a failure.
+#
+# `deparse()` is not total over calls. `do.call()` records the evaluated
+# arguments, so a call reaching here can hold the input itself -- a
+# `data.table`, whose `.internal.selfref` externalptr `deparse()` writes as
+# `<pointer: ...>` -- or an environment, neither of which R can write as
+# source. The parts that fail are replaced before the call is written, rather
+# than the read being allowed to fail (#360).
 share_call_text <- function(call) {
-  paste(deparse(call, width.cutoff = 500L), collapse = "\n")
+  text <- deparse_call_text(round_trippable_call(call))
+  # An invariant, not a Package condition (ADR 0015): `round_trippable_call()`
+  # answers every part that does not parse back, so a text that still does not
+  # is a defect here rather than something a call rewrite avoids. It is stated
+  # at the site that writes the text, inside the verb call, because the site
+  # that reads it is past the point where stopping is affordable.
+  stopifnot(!is.null(parse_call_text(text)))
+  text
+}
+
+deparse_call_text <- function(expr) {
+  paste(deparse(expr, width.cutoff = 500L), collapse = "\n")
+}
+
+# The call a text stands for, or `NULL` where the text cannot be read as one.
+parse_call_text <- function(text) {
+  tryCatch(str2lang(text), error = function(cnd) NULL)
+}
+
+# `expr` with every part `deparse()` cannot write as source replaced by a name
+# spelling the class of what stood there. Only the parts that fail are touched,
+# which is why the test is a trial rather than a type: a `data.frame` and a
+# Grouping specification both round-trip, and replacing them would thin a call
+# that reads correctly today.
+#
+# A symbol is answered before the trial. `deparse()` writes a non-syntactic
+# name bare when it is asked for one alone -- `unit count`, which does not
+# parse -- and backquotes it inside the call it is written in, so trying one on
+# its own reports a failure the text this produces does not have.
+round_trippable_call <- function(expr) {
+  if (rlang::is_symbol(expr) || deparse_round_trips(expr)) {
+    return(expr)
+  }
+  if (rlang::is_call(expr)) {
+    for (position in seq_along(expr)) {
+      # The empty argument is not a value, and standing a name in for it would
+      # write an argument the caller did not pass (#351).
+      if (rlang::is_missing(expr[[position]])) {
+        next
+      }
+      expr[[position]] <- round_trippable_call(expr[[position]])
+    }
+    if (deparse_round_trips(expr)) {
+      return(expr)
+    }
+  }
+  unrepresentable_name(expr)
+}
+
+deparse_round_trips <- function(expr) {
+  text <- tryCatch(deparse_call_text(expr), error = function(cnd) NULL)
+  !is.null(text) && !is.null(parse_call_text(text))
+}
+
+# What stands in a call for a value R cannot write as source. A name rather
+# than a string, so that the part reads as the position it occupies, and
+# non-syntactic so that no caller's own spelling collides with it.
+unrepresentable_name <- function(value) {
+  rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
 analyze_ordinary_summaries <- function(dots, selection_proxy) {

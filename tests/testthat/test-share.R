@@ -2719,3 +2719,76 @@ test_that("the two share refusals a verb reaches only as a second line", {
     fixed = TRUE
   )
 })
+
+test_that("a call deparse can write whole is carried through unchanged", {
+  call <- quote(summarize_with_margins(data, units = sum(units)))
+  expect_identical(
+    share_call_text(call),
+    paste(deparse(call, width.cutoff = 500L), collapse = "\n")
+  )
+})
+
+test_that("a call text replaces only the part deparse cannot write", {
+  call <- quote(summarize_with_margins(data, units = sum(units)))
+  call[[2L]] <- new.env()
+
+  expect_identical(
+    str2lang(share_call_text(call)),
+    quote(summarize_with_margins(`<environment>`, units = sum(units)))
+  )
+})
+
+test_that("a call text replaces the smallest part it can", {
+  call <- quote(summarize_with_margins(data, .grouping = rollup(region)))
+  call[[3L]][[2L]] <- new.env()
+
+  expect_identical(
+    str2lang(share_call_text(call)),
+    quote(summarize_with_margins(data, .grouping = rollup(`<environment>`)))
+  )
+})
+
+test_that("a call text names a replaced part by the class it stood for", {
+  call <- quote(summarize_with_margins(data))
+  call[[2L]] <- structure(new.env(), class = c("lazy_thing", "environment"))
+
+  expect_identical(
+    str2lang(share_call_text(call)),
+    quote(summarize_with_margins(`<lazy_thing>`))
+  )
+})
+
+test_that("a call text carries an empty argument past the walk", {
+  call <- quote(summarize_with_margins(data, , units = sum(units)))
+  call[[2L]] <- new.env()
+
+  expect_identical(
+    str2lang(share_call_text(call)),
+    quote(summarize_with_margins(`<environment>`, , units = sum(units)))
+  )
+})
+
+test_that("a call text keeps a non-syntactic name the caller wrote", {
+  call <- quote(summarize_with_margins(data, units = sum(x)))
+  call[[2L]] <- new.env()
+  call[[3L]][[2L]] <- as.name("unit count")
+
+  expect_identical(
+    str2lang(share_call_text(call)),
+    quote(summarize_with_margins(`<environment>`, units = sum(`unit count`)))
+  )
+})
+
+test_that("a dtplyr share reports no call rather than a parse error", {
+  error <- expect_error(
+    check_dtplyr_share_source(
+      c(1, 2),
+      share_output = "share",
+      source_summary = "source",
+      share_kind = "total",
+      call_text = "summarize_with_margins(<environment>)"
+    ),
+    class = "marginplyr_share_cardinality_error"
+  )
+  expect_null(conditionCall(error))
+})
