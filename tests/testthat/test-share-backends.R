@@ -548,9 +548,25 @@ test_that("dtplyr batches Parent shares with missing-safe matching", {
   )
 })
 
-parent_sql_count <- function(sql, pattern) {
-  lengths(gregexpr(pattern, sql, fixed = TRUE))
+# How many times a rendered query contains a pattern, and zero where it
+# contains none. `gregexpr()` answers `-1` for a pattern it does not find
+# and `lengths()` counts that as one element, so the count goes through
+# `regmatches()`, which drops what did not match (#362).
+#
+# A caller comparing one of these counts with another asserts that the count is
+# positive as well: an equality on its own is satisfied by two absences. One
+# comparing against a positive literal already has.
+share_query_count <- function(sql, pattern) {
+  lengths(regmatches(sql, gregexpr(pattern, sql, fixed = TRUE)))
 }
+
+test_that("a pattern is counted once per occurrence, and none where absent", {
+  # Held here because no caller can observe it: an absence counted as one
+  # occurrence reads exactly like one occurrence.
+  expect_identical(share_query_count("SELECT one FROM two", "absent"), 0L)
+  expect_identical(share_query_count("SELECT one FROM two", "one"), 1L)
+  expect_identical(share_query_count("one and one", "one"), 2L)
+})
 
 test_that("dtplyr batches validated summaries and parent mapping", {
   skip_if_suggest_absent("dtplyr")
@@ -578,17 +594,13 @@ test_that("dtplyr batches validated summaries and parent mapping", {
   one_call <- paste(capture.output(dplyr::show_query(one)), collapse = "\n")
   many_call <- paste(capture.output(dplyr::show_query(many)), collapse = "\n")
 
-  expect_identical(
-    parent_sql_count(
-      many_call,
-      "check_share_scalar(sum(revenue)"
-    ),
-    parent_sql_count(
-      one_call,
-      "check_share_scalar(sum(revenue)"
-    )
-  )
-  expect_identical(parent_sql_count(many_call, "allow.cartesian = TRUE"), 1L)
+  # A dtplyr share stages `check_dtplyr_share_source()`. `check_share_scalar()`
+  # is the local backend's wrapper and appears in no dtplyr rendering.
+  staged_check <- "check_dtplyr_share_source(sum(revenue)"
+  staged_checks <- share_query_count(many_call, staged_check)
+  expect_gt(staged_checks, 0L)
+  expect_identical(staged_checks, share_query_count(one_call, staged_check))
+  expect_identical(share_query_count(many_call, "allow.cartesian = TRUE"), 1L)
 })
 
 parent_lazy_probe_capture <- new.env(parent = emptyenv())
@@ -672,10 +684,10 @@ test_that("PostgreSQL renders one staged Parent-share join for all measures", {
   many_sql <- dbplyr::sql_render(many)
 
   expect_match(many_sql, "GROUP BY GROUPING SETS", fixed = TRUE)
-  expect_identical(parent_sql_count(many_sql, "LEFT JOIN"), 1L)
+  expect_identical(share_query_count(many_sql, "LEFT JOIN"), 1L)
   expect_identical(
-    parent_sql_count(many_sql, "GROUP BY GROUPING SETS"),
-    parent_sql_count(one_sql, "GROUP BY GROUPING SETS")
+    share_query_count(many_sql, "GROUP BY GROUPING SETS"),
+    share_query_count(one_sql, "GROUP BY GROUPING SETS")
   )
   expect_match(many_sql, "IS NULL AND", fixed = TRUE)
   expect_match(many_sql, "CAST(", fixed = TRUE)
@@ -816,7 +828,7 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
 
     expect_match(sql, "UNION ALL", fixed = TRUE, info = simulator)
     expect_identical(
-      parent_sql_count(sql, "LEFT JOIN"),
+      share_query_count(sql, "LEFT JOIN"),
       1L,
       info = simulator
     )
@@ -1841,10 +1853,7 @@ test_that("RSQLite executes portable Total shares end to end", {
   # The fixed key is matched with missing-safe identity, and every measure
   # shares the one denominator join rather than adding a join each.
   expect_match(sql, "IS NULL AND", fixed = TRUE)
-  expect_identical(
-    lengths(regmatches(sql, gregexpr("LEFT JOIN", sql, fixed = TRUE))),
-    1L
-  )
+  expect_identical(share_query_count(sql, "LEFT JOIN"), 1L)
   expect_false(grepl("GROUPING SETS", sql, fixed = TRUE))
 
   result <- arrange_result(dplyr::collect(query))
