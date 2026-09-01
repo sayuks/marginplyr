@@ -54,11 +54,10 @@ january_sales |>
 The result is one regular data frame—not three reports that you have to build
 and combine yourself.
 
-Row order is unspecified. The arrangement above happens to follow the input's
-own row order, so the same call on the same data shuffled reads differently.
-`.sort` asks for a Margin order, which puts each subtotal with the rows it
-summarizes, and `arrange()` gives any other presentation order. [Put each
-subtotal with the rows it
+Row order is unspecified: the same call on the same data in a different order
+can arrange the result differently. `.sort` asks for a Margin order, which puts
+each subtotal with the rows it summarizes, and `arrange()` gives any other
+presentation order. [Put each subtotal with the rows it
 summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html) shows
 `.sort` at work and what it does not promise.
 
