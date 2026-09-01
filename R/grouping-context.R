@@ -7,8 +7,14 @@
 #' [grouping_bit()] corresponds to SQL `GROUPING(x)`: it returns `1L` when
 #' `x` is absent from the grouping set and `0L` otherwise.
 #' [grouping_id()] combines those flags as a bit mask; its last argument is
-#' the least-significant bit. It accepts between 1 and 31 distinct grouping
-#' columns.
+#' the least-significant bit. It accepts up to 31 distinct grouping columns.
+#'
+#' Written with no columns, [grouping_id()] reads every `.grouping` column of
+#' the resolved plan, in plan order. That is the order [inspect_grouping()]
+#' reports, so a bare [grouping_id()] equals that function's `grouping_id` for
+#' the grouping set the row came from. Columns fixed by `.by` are not part of
+#' that default: each belongs to every grouping set, so it would widen the
+#' mask by a bit that is always zero.
 #'
 #' The `_bit` suffix emphasizes the `0`/`1` result and deliberately avoids
 #' masking [base::grouping()], an unrelated function that returns a permutation
@@ -66,7 +72,8 @@
 #' would be.
 #'
 #' @param x A bare grouping column.
-#' @param ... Bare grouping columns.
+#' @param ... Bare grouping columns. Passing none reads every `.grouping`
+#'   column of the resolved plan.
 #'
 #' @return A grouping flag or identifier when used inside
 #'   [summarize_with_margins()]. Local data frames and `dtplyr` steps return R
@@ -101,7 +108,7 @@
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
 #'   store_is_total = grouping_bit(store),
-#'   level = grouping_id(region, store),
+#'   level = grouping_id(),
 #'   .grouping = rollup(region, store),
 #'   .margin_label = NULL
 #' )
@@ -236,8 +243,18 @@ grouping_helper_vars <- function(args, helper, plan) {
   if (identical(helper, "grouping_bit") && length(carried) != 1L) {
     abort_marginplyr("{.fun grouping_bit} requires exactly one column.")
   }
+  # `grouping_id()` written with no columns reads the plan's dimensions, in
+  # plan order, which is the order `inspect_grouping()` reports its own
+  # `grouping_id` in -- so a bare call and that column agree for one resolved
+  # plan, as `.id` and `set_id` do (ADR 0009). The plan's `.by` is left out:
+  # a `.by` column belongs to every Grouping set, so carrying it would widen
+  # the mask by a bit that is always zero and spend one of the 31 (#366).
+  #
+  # Written back as symbols rather than returned, so the column cap below stays
+  # at one site. Every other check between here and it passes by construction:
+  # `plan$dimensions` holds distinct names drawn from `allowed`.
   if (identical(helper, "grouping_id") && length(carried) == 0L) {
-    abort_marginplyr("{.fun grouping_id} requires at least one column.")
+    carried <- lapply(plan$dimensions, rlang::sym)
   }
 
   # The compound question, asked here even though the check above has already
@@ -332,6 +349,14 @@ grouping_sql_expr <- function(var, con) {
 }
 
 grouping_id_sql_expr <- function(vars, con) {
+  if (length(vars) == 0L) {
+    # A plan with no dimensions reaches this adapter over its `.by` columns
+    # alone, and has no `GROUPING()` term for the mask to be built from: the
+    # reduction below would have nothing to reduce and would answer `NULL`.
+    # The literal is the constant the local path computes for that plan.
+    return(dbplyr::sql_glue2(con, "{0L}"))
+  }
+
   terms <- lapply(
     seq_along(vars),
     function(i) {

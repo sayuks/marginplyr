@@ -1728,6 +1728,89 @@ test_that("native SQL omits display flags when labels are disabled", {
   expect_identical(dplyr::group_vars(query), character())
 })
 
+# The bare `grouping_id()` of #366 resolves before either adapter runs, so the
+# native path is asserted against the retyped spelling rather than against a
+# transcription of the SQL: what the default has to produce is the same query.
+test_that("a bare grouping_id() renders the native SQL of the retyped call", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(a = "x", b = "u", value = 1),
+    con = dbplyr::simulate_postgres()
+  )
+  query <- function(gid) {
+    summarize_with_margins(
+      remote,
+      n = dplyr::n(),
+      gid = !!gid,
+      .grouping = rollup(a, b),
+      .margin_label = NULL
+    )
+  }
+
+  bare <- dbplyr::sql_render(query(quote(grouping_id())))
+  written <- dbplyr::sql_render(query(quote(grouping_id(a, b))))
+
+  expect_identical(bare, written)
+  expect_match(bare, "GROUPING(\"a\")", fixed = TRUE)
+  expect_match(bare, "GROUPING(\"b\")", fixed = TRUE)
+})
+
+# A plan with no dimensions still reaches the native adapter -- `GROUP BY
+# GROUPING SETS` over the `.by` columns alone -- where the mask has no
+# `GROUPING()` term to build from and has to be written as the literal the
+# local path computes.
+test_that("a bare grouping_id() renders a literal for a dimensionless plan", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(a = "x", value = 1),
+    con = dbplyr::simulate_postgres()
+  )
+  query <- summarize_with_margins(
+    remote,
+    n = dplyr::n(),
+    gid = grouping_id(),
+    .by = a
+  )
+  sql <- dbplyr::sql_render(query)
+
+  expect_match(sql, "GROUP BY GROUPING SETS", fixed = TRUE)
+  expect_false(grepl("GROUPING(\"", sql, fixed = TRUE))
+  expect_match(sql, "0 AS \"gid\"", fixed = TRUE)
+})
+
+test_that("DuckDB collects the same bare grouping_id() the local path gives", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  data <- data.frame(
+    a = c("x", "x", "y"),
+    b = c("u", "v", "u"),
+    value = 1:3
+  )
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "bare_grouping_id",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  collected <- dplyr::collect(summarize_with_margins(
+    remote,
+    total = sum(value),
+    gid = grouping_id(),
+    .grouping = rollup(a, b)
+  ))
+  local <- summarize_with_margins(
+    data,
+    total = sum(value),
+    gid = grouping_id(),
+    .grouping = rollup(a, b)
+  )
+
+  expect_setequal(as.integer(collected$gid), local$gid)
+  expect_identical(sort(unique(as.integer(collected$gid))), c(0L, 1L, 3L))
+})
+
 test_that("native SQL reports incompatible dbplyr query representations", {
   registerS3method(
     "sql_build",

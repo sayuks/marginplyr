@@ -77,3 +77,45 @@ remains stable only within one ordered plan.
 
 `inspect_grouping()`'s guaranteed Grouping-plan order is likewise unchanged,
 and is still not the same thing as a Margin order.
+
+## Amendment: the second correspondence, between a bare `grouping_id()` and `inspect_grouping()$grouping_id`
+
+This ADR fixes one correspondence: given the same resolved `.by`,
+`.grouping`, and `.duplicates`, `inspect_grouping()$set_id` is exactly the
+value a Margin verb's `.id` produces. `grouping_id()` had no counterpart to it,
+because the columns it encoded were whatever the caller retyped rather than
+anything the plan decided. A caller who wanted the plan's own mask wrote the
+`.grouping` columns a second time, in the same call, and a later edit to
+`.grouping` renumbered the levels while the retyped list kept returning the
+older mask (#366).
+
+`grouping_id()` written with no columns now reads every Grouping dimension of
+the resolved plan, in plan order. That gives the second correspondence: a bare
+`grouping_id()` is exactly `inspect_grouping()$grouping_id` for the Grouping
+set the row came from, as `.id` is exactly `set_id` for its occurrence. The
+retyped spelling is unchanged and remains the way to encode a subset of the
+dimensions, or to fix an order other than the plan's.
+
+Fixed `.by` columns are excluded from that default. A `.by` column belongs to
+every Grouping set, so it contributes a zero bit wherever it appears, and
+leading zero bits leave the value alone — the exclusion is observable only at
+the 31-column cap, which is where it earns itself: a plan of 31 dimensions
+beside a fixed column is one the default can encode. Passing a `.by` column
+explicitly is still accepted and still contributes its zero bit.
+
+Two edges follow the plan rather than the caller. A plan with no dimensions
+gives `0L`, which is what `inspect_grouping()` reports for it. A plan of more
+than 31 dimensions is refused with the same at-most-31 diagnostic the written
+spelling raises; `inspect_grouping()` reports `NA_integer_` there and the bare
+call deliberately does not adopt that, a silently-`NA` identifier being the
+failure this default exists to remove.
+
+What this ADR decides is unaffected. A Grouping set identifier is still stable
+only within one ordered Grouping plan and still separates duplicate
+occurrences; a Grouping identifier is still stable for one absence pattern and
+may still be non-consecutive. A bare `grouping_id()` is a Grouping identifier
+and inherits both properties — it cannot tell duplicate occurrences apart, and
+a `rollup()` plan still skips identifier 2.
+
+`grouping_bit()` is unchanged. It asks about one named column, so no-argument
+has no reading for it, and it keeps refusing a call that names none.
