@@ -388,7 +388,13 @@ markers <- list(
     # what ADR 0023's condition 3 keeps out of a marker. #223's phase 3 left
     # this marker in place deliberately until the file behind it was
     # re-authored, since moving it is the same edit.
-    "which can be nested"
+    "which can be nested",
+    # That refusal's remedy, added in #374, quoted whole: it interpolates
+    # nothing, so ADR 0023's condition 3 leaves every run of it available and
+    # the longest one pins the most. Its backticks are the diagnostic's own
+    # and reach the page literally, as the `Error in` marker two entries up
+    # already does.
+    "Collect it with `dplyr::collect()` first."
   ),
   "docs/man/summarize_with_margins.html" = c(
     "summarise_with_margins",

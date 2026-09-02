@@ -73,7 +73,8 @@ shows `.sort` at work and what it does not promise.
 
 - Calculates each scalar summary’s share of its immediate rollup parent.
 
-- Can expand or nest the source rows behind every subtotal.
+- Can expand the source rows behind every subtotal, or nest them for
+  local and `dtplyr` inputs.
 
 New to the idea? Start with [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html).
