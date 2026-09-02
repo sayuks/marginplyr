@@ -7,6 +7,9 @@ arrow_input_classes <- function() {
   c("arrow_dplyr_query", "Table", "RecordBatch", "Dataset")
 }
 
+# `is_sql` is whether this input is a SQL backend. It is equivalent to
+# `dialect` being non-`NULL`, but `dialect` is the field dispatch reads, and
+# its nullity does not announce itself as the test (ADR 0027).
 grouping_backend <- function(.data) {
   is_local <- is.data.frame(.data)
   is_dtplyr <- inherits(.data, "dtplyr_step")
@@ -45,7 +48,7 @@ grouping_backend <- function(.data) {
 
   structure(
     c(
-      list(kind = kind, dialect = dialect),
+      list(kind = kind, dialect = dialect, is_sql = is_sql),
       capabilities
     ),
     class = "marginplyr_backend"

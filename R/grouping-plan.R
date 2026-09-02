@@ -149,6 +149,9 @@ prepare_grouping_plan <- function(.data,
                                   validate_grouping = NULL,
                                   validate_names = NULL,
                                   call = rlang::caller_call()) {
+  # First, before anything that can raise: every entry point reaches this
+  # function, and every recorded site runs after it (ADR 0027).
+  reset_sent_queries()
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
   stopifnot(is.null(validate_names) || is.function(validate_names))
@@ -183,6 +186,7 @@ prepare_grouping_plan <- function(.data,
       input <- normalize_grouping_input(.data, by_quo)
       data <- input$data
       backend <- grouping_backend(data)
+      remember_sent_query_backend(backend)
       data_vars <- get_col_names(data, dplyr::everything())
       by <- resolve_fixed_keys(by_quo, input$groups, data_vars)
       if (!is.null(validate_names)) {

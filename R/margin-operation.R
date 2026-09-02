@@ -350,7 +350,11 @@ finalize_margin_operation <- function(operation, execution) {
     dplyr::everything()
   )
 
-  order_margin_result(operation, result, execution)
+  result <- order_margin_result(operation, result, execution)
+  # The one recorded query nobody inside the package sends: the caller runs
+  # it, so it is recorded here, before it is returned to them.
+  record_sent_query("result", result)
+  result
 }
 
 # Ordering comes last so that the `ORDER BY` is the outermost one, and after
