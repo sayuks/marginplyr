@@ -268,8 +268,7 @@ This is a union of:
 ```
 
 Both rollups contain `()`, which is why the call above asks for `"drop"`.
-Without it, the default `.duplicates = "error"` catches the overlap and names
-the positions that collide:
+Without it, the default `.duplicates = "error"` catches the overlap:
 
 ```{r}
 #| label: duplicate-grouping-sets
@@ -802,7 +801,7 @@ retail_sales |>
 ```
 
 A `grouping_sets()` specification qualifies only when it includes an empty
-`grouping_set()`; one without it is rejected naming that fix:
+`grouping_set()`; one without it is rejected:
 
 ```{r}
 #| label: total-share-without-grand-total

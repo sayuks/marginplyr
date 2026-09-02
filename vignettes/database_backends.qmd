@@ -510,8 +510,7 @@ reasons.
 
 The first is a summary Arrow's own engine cannot evaluate. Arrow answers one of
 those by reading the whole input — every column, not just the ones the summary
-names — and computing it in R, so marginplyr refuses it before a row is read
-and tells you the two ways to get it computed:
+names — and computing it in R, so marginplyr refuses it before a row is read:
 
 ```{r}
 #| label: arrow-absorbed-summary
