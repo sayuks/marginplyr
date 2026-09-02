@@ -162,3 +162,46 @@ a remedy only where there was one dimension; a caller with two who followed it
 literally reached a second refusal. `R/margin-label.R` states the rule this
 broke, beside the same pair of refusals: a remedy is offered only where it is
 one.
+
+## Amendment: one route is named where two resolve a refusal differently
+
+The rule above separates a remedy from a non-remedy. It does not decide
+between two routes that both are, and #391 is the case it does not reach.
+`assert_lazy_table()` refuses a `RecordBatchReader`, and both
+`arrow::as_arrow_table()` and `dplyr::collect()` resolve that refusal for every
+verb reaching the guard. Neither is the `expand_with_margins()` of #374 —
+neither answers a different question, and neither leads to a second refusal.
+
+They leave the caller in different places. Collecting yields a local tibble;
+converting yields the Arrow table the verb then answers as an Arrow query, and
+the row order differs with them. Cost does not separate them either: a
+`RecordBatchReader` is one-shot, so both consume it and both materialize it
+whole.
+
+**Where two routes both resolve one refusal for one object but leave the caller
+in different places, the refusal names one: the route that leaves the caller
+where the call they wrote would have.** That is `arrow::as_arrow_table()` here.
+Naming both would describe the choice rather than resolve it, and a reader
+following either arrives somewhere the diagnostic did not say they would.
+
+`or` stays available for the case that looks like this one and is not.
+`assert_margin_input()`'s `Convert it with {.fun as.data.frame} or {.fun
+dplyr::tbl} first.` is one bullet over a duck-typed rejection, where the caller
+cannot see which class was refused; its two spellings name the route for two
+different supplied objects rather than two routes for one. What decides is
+therefore whether one object has both routes, and not the count of names in the
+bullet.
+
+### Considered options
+
+*Name both, joined by `or`.* Rejected above: it is the shape this amendment
+exists to separate from `assert_margin_input()`'s.
+
+*Name `dplyr::collect()` alone.* It is the sibling guard's wording and the
+route with no optional package in it. Rejected because it asks the caller to
+leave the backend they chose, which is more than the refusal requires, and
+because the verb answers an Arrow input in Arrow — collecting changes what the
+call returns as well as what it accepts.
+
+*Leave the refusal with no remedy.* That is the defect #391 reported, and the
+one #374 fixed beside it.
