@@ -642,4 +642,13 @@ test_that("lazy-table assertions use the package condition seam", {
   )
 
   expect_s3_class(error, "marginplyr_error")
+
+  # The refusal's remedy, which the pattern above does not reach: it matches
+  # the main line, and a refusal that lost its bullet still has one. The same
+  # pin the nesting refusal carries above.
+  expect_match(
+    conditionMessage(error),
+    "Convert it with `arrow::as_arrow_table()` first.",
+    fixed = TRUE
+  )
 })

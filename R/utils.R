@@ -147,14 +147,23 @@ assert_margin_input <- function(x) {
 # alternatives to pick one of; a blacklist refuses every entry at once, so a
 # second name would be refused alongside the first and not instead of it.
 # Nothing renders today, the vector holding one name.
+#
+# `dplyr::collect()` is not named beside `arrow::as_arrow_table()`, under the
+# rule ADR 0012's amendment states. Both resolve the refusal for every verb
+# reaching this guard, but they leave the caller in different places -- one a
+# local tibble, the other the Arrow table the verb answers as an Arrow query --
+# and converting is the smaller of the two.
 assert_lazy_table <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   invalid_lazy_table_names <- "RecordBatchReader"
   if (inherits(x, invalid_lazy_table_names)) {
-    abort_marginplyr(paste0(
-      "{.arg {nm}} must not be an object of the following classes: ",
-      "{.code {invalid_lazy_table_names}}."
+    abort_marginplyr(c(
+      paste0(
+        "{.arg {nm}} must not be an object of the following classes: ",
+        "{.code {invalid_lazy_table_names}}."
+      ),
+      i = "Convert it with {.fun arrow::as_arrow_table} first."
     ))
   }
 }
