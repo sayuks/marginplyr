@@ -161,6 +161,15 @@ absorbing reads every column of the input while a caller who is told can read
 fewer.
 _Avoid_: Pulling backend, fallback backend, collecting backend
 
+**Sent query**:
+One SQL statement a Margin operation gives to a backend, recorded with the
+purpose it was sent for. Exactly one purpose is the caller's result — the query
+a Margin verb returns unexecuted, which the caller runs themselves; every other
+purpose is a query marginplyr sends for its own reasons, and which those are is
+not fixed. A Sent query is recorded before it is sent, so the record holds what
+was sent rather than what succeeded.
+_Avoid_: Audit record, context, logged query
+
 **Contextual helper**:
 A spelling whose meaning inside a Margin summary arises only through static
 rewriting, and which is therefore recognized by spelling and never resolved
