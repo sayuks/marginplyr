@@ -90,19 +90,27 @@ find_local_assignment <- function(fn, var_name) {
 # on the local table it produced. No `DBI::` entry takes one: invoking it is
 # itself a read, and its first argument is a connection rather than the caller's
 # data, so a subject test there would count nothing at all.
+#
+# `dplyr::explain` and `dbplyr::remote_query_plan` are members because each
+# reaches `DBI::dbGetQuery()` from inside dbplyr, where the walk over `R/`
+# cannot follow (ADR 0027). Neither takes a positive control: one for
+# "marginplyr does not call this" would be marginplyr calling it.
 lazy_execution_entry_points <- function() {
   data.frame(
     package = c(
-      "dplyr", "dplyr", "dplyr", "base", "tibble",
-      "DBI", "DBI", "DBI", "DBI", "DBI"
+      "dplyr", "dplyr", "dplyr", "dplyr", "base", "tibble",
+      "DBI", "DBI", "DBI", "DBI", "DBI",
+      "dbplyr"
     ),
     name = c(
-      "collect", "compute", "pull", "as.data.frame", "as_tibble",
-      "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable"
+      "collect", "compute", "pull", "explain", "as.data.frame", "as_tibble",
+      "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable",
+      "remote_query_plan"
     ),
     subject_test = c(
-      FALSE, FALSE, FALSE, TRUE, TRUE,
-      FALSE, FALSE, FALSE, FALSE, FALSE
+      FALSE, FALSE, FALSE, FALSE, TRUE, TRUE,
+      FALSE, FALSE, FALSE, FALSE, FALSE,
+      FALSE
     ),
     stringsAsFactors = FALSE
   )
