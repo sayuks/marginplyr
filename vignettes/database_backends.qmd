@@ -524,11 +524,10 @@ arrow::arrow_table(january_sales) |>
   )
 ```
 
-Collecting first is one rewrite; selecting the columns the summary needs before
-collecting is the other, and it is the one Arrow's own route cannot take for
-you. Which expressions this reaches is Arrow's to decide and changes with its
-version, so the shapes are described in one place rather than repeated here —
-see the [`summarize_with_margins()`
+Selecting the columns the summary needs before collecting is the rewrite
+Arrow's own route cannot take for you. Which expressions this reaches is
+Arrow's to decide and changes with its version, so the shapes are described in
+one place rather than repeated here — see the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 An Arrow dataset answers the same expressions with Arrow's own error rather
 than this one, because a dataset never reads itself into R.

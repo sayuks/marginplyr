@@ -717,10 +717,10 @@ rendered beside it says, it breaks a rule a repository document states, or
 something a repository document is required to hold is missing from it. How
 prose reads is not one, and no record holds a finding that is.
 
-The third does not reach a sentence saying what that diagnostic does not say —
-a contrast, or the answer the caller would otherwise have got — which is the
-page's own argument and not a copy of anything. #392 measured the `must_error`
-chunks under `vignettes/` and found both forms.
+The restatement case does not reach a sentence saying what the diagnostic does
+not say — a contrast, or the answer the caller would otherwise have got — which
+is the page's own argument and not a copy of anything. #392 measured the
+`must_error` chunks under `vignettes/` and found both forms.
 
 Two answers join the list above when a finding is about prose. A claim found
 false is deleted rather than restated, as *Code comments* in `AGENTS.md`
