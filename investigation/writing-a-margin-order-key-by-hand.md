@@ -30,7 +30,7 @@ DuckDB exercises the native `GROUP BY GROUPING SETS` adapter and SQLite the
 portable `UNION ALL` one, so every claim below that names both names both
 adapters.
 
-## Dropping a Grouping bit keeps the order; dropping a computed column loses it
+## Which column is dropped decides whether the order survives
 
 The reversed-dimension key, written as the reporter wrote it:
 
@@ -47,8 +47,8 @@ retail_sales |>
 
 Returned 2026 above 2025 with the subtotals attached on a local data frame, on
 DuckDB, and on SQLite. The `select()` is what ADR 0018's rejection describes,
-and it did not lose the order on either backend. The rendered DuckDB query says
-why:
+and on this plan it did not lose the order on either backend. The rendered
+DuckDB query says why:
 
 ```sql
 SELECT
@@ -73,9 +73,23 @@ ADR 0018's own implementation rule — the sort key must be resolvable in the
 caller's side.
 
 The same recipe under `.margin_label = NULL` returned the same row order on
-DuckDB. There the dimensions keep their input types, so `desc(year)` orders
-integers rather than the labelled character column; `.sort` has that property
-too, since it also orders the result's own columns after labelling.
+DuckDB, where the dimensions keep their input types and `desc(year)` therefore
+ordered integers rather than a labelled character column.
+
+The wrapping projection is what the measurement above turns on, and a plan can
+be built that has none. `grouping_sets(grouping_set(year, region))` holds one
+occurrence, and under `.margin_label = NULL` nothing is labelled or cast, so
+the caller's `arrange()` applies to the query the summary ends in and the
+`select()` dropping the bits wraps that query. RSQLite rendered no `ORDER BY`
+at all, with dbplyr's own warning:
+
+```
+ORDER BY is ignored in subqueries without LIMIT
+```
+
+DuckDB kept the ordering on the same input. Restoring either half of the shape
+restored it on RSQLite too: with `.margin_label = "Total"` the cast projection
+wraps the aggregate, and with a `rollup()` the union does.
 
 A column the caller computes *after* the summary is in the query that carries
 the `ORDER BY`, not below it, and dropping it takes the order with it. The
@@ -112,9 +126,8 @@ Which is the failure ADR 0018 describes, with the binder error it names.
 
 #373 and its triage both say the second presentation request — regions
 ordered by revenue, stores ordered by revenue inside them, subtotals still
-adjacent —
-"needs the parent measure on every row and so a self-join back onto the
-subtotal rows". A grouped `mutate()` reaches it instead, and it is the
+adjacent — "needs the parent measure on every row and so a self-join back
+onto the subtotal rows". A grouped `mutate()` reaches it instead, and it is the
 `mutate()` above: the region's own subtotal row is already in the result, so
 `max(ifelse(sb == 1, revenue, NA))` over the region partition puts that measure
 on every row of the region without reading the input again. dbplyr renders it
@@ -134,9 +147,9 @@ local case and says nothing about SQL.
 `compute()` before the `select()` also returned it, on DuckDB. That is a
 measurement and not a guarantee: `compute()` materializes a table, a table has
 no row order in SQL, and the subsequent `select()` renders a fresh query with
-no `ORDER BY` at all. It happened to return insertion order. It is recorded
-here so a later reader does not rediscover it and take it for a supported
-route; `vignettes/recipes.qmd` deliberately does not show it.
+no `ORDER BY` at all. It happened to return insertion order, and is recorded
+here so that a later reader who rediscovers it has the reason it proves
+nothing.
 
 ## A hand-written key and `.sort` agree on a labelled numeric dimension
 
@@ -144,9 +157,8 @@ route; `vignettes/recipes.qmd` deliberately does not show it.
 `.margin_label` has been applied, and a hand-written `arrange()` names those
 same columns — but the rendered SQL names them ambiguously, since the
 aggregate subquery holds a column of the same name holding the pre-label
-value. Whether
-the two agree therefore depends on the dialect resolving `ORDER BY <name>` to
-the output column.
+value. Whether the two agree therefore depends on the dialect resolving
+`ORDER BY <name>` to the output column.
 
 Measured on a four-row input with `year` an integer taking `999` and `1000`,
 where character and numeric order disagree. `.sort = "last"` put 1000 before

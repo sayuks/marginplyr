@@ -139,9 +139,10 @@ retail_sales |>
 everything ahead of the reversed term is what it was.
 
 An order no sort key can express is written the same way, with one more
-column. Ordering regions by revenue needs each region's own revenue on every
-one of its rows, and that number is already in the result as the region's
-subtotal row, so a grouped `mutate()` can put it there:
+column. Ordering regions by revenue, and the stores inside each region by
+revenue, needs each region's own revenue on every one of its rows; that number
+is already in the result as the region's subtotal row, so a grouped `mutate()`
+can put it there, and the `sb` term keeps each subtotal under its own stores:
 
 ```{r}
 retail_sales |>
@@ -159,14 +160,15 @@ retail_sales |>
   select(region, store, revenue)
 ```
 
-**On a lazy backend, which column you drop decides whether the order
-survives.** A column the summary produced is in the query underneath the one
-carrying the `ORDER BY`, so dropping it leaves the ordering something it can
-still read. A column you computed afterwards is in that same query, and
-dropping it takes the ordering with it.
+**On a lazy backend, dropping a helper column can cost the order.** Whether
+it does is decided by the query dbplyr builds, which this package does not own
+— but you are told when it happens, either by dbplyr warning that it discarded
+an `ORDER BY` or by the database refusing a query that orders on a column no
+longer in it.
 
-A Grouping bit is the first kind, so the reversed-year recipe runs on a
-database unchanged:
+A Grouping bit usually survives, because the bits of a `rollup()` are computed
+in the query underneath the one the ordering sits in. The reversed-year recipe runs on
+a database unchanged:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -188,8 +190,9 @@ duckdb_sales |>
   collect()
 ```
 
-`region_revenue` is the second kind, and the database says so rather than
-returning the rows in some other order:
+`region_revenue` does not survive it. You computed it after the summary, so it
+is in the same query as the ordering rather than underneath it, and dropping it
+leaves an `ORDER BY` naming a column that is gone:
 
 ```{r}
 #| label: dropping-a-computed-sort-term
@@ -443,8 +446,6 @@ seeing this needs a live database:
 ```{r}
 #| eval: !expr has_duckdb
 
-# `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets in
-# the session's temporary directory rather than in `~/.duckdb`.
 con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
 duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
 
