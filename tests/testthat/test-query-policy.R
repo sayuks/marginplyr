@@ -93,28 +93,24 @@ find_local_assignment <- function(fn, var_name) {
 #
 # `dplyr::explain` and `dbplyr::remote_query_plan` are members because each
 # reaches `DBI::dbGetQuery()` from inside dbplyr, where the walk over `R/`
-# cannot follow: one line of either there would leave the gate silent, which
-# reads exactly like a package calling neither (ADR 0027). They take no subject
-# test for the reason the `DBI::` entries take none. Neither takes a positive
-# control either, and that is deliberate: what they assert is that marginplyr
-# does not call them, so a positive control would be marginplyr calling
-# `explain()`.
+# cannot follow (ADR 0027). Neither takes a positive control: one for
+# "marginplyr does not call this" would be marginplyr calling it.
 lazy_execution_entry_points <- function() {
   data.frame(
     package = c(
-      "dplyr", "dplyr", "dplyr", "base", "tibble",
+      "dplyr", "dplyr", "dplyr", "dplyr", "base", "tibble",
       "DBI", "DBI", "DBI", "DBI", "DBI",
-      "dplyr", "dbplyr"
+      "dbplyr"
     ),
     name = c(
-      "collect", "compute", "pull", "as.data.frame", "as_tibble",
+      "collect", "compute", "pull", "explain", "as.data.frame", "as_tibble",
       "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable",
-      "explain", "remote_query_plan"
+      "remote_query_plan"
     ),
     subject_test = c(
-      FALSE, FALSE, FALSE, TRUE, TRUE,
+      FALSE, FALSE, FALSE, FALSE, TRUE, TRUE,
       FALSE, FALSE, FALSE, FALSE, FALSE,
-      FALSE, FALSE
+      FALSE
     ),
     stringsAsFactors = FALSE
   )

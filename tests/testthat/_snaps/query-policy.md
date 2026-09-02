@@ -7,14 +7,14 @@
       1    dplyr           collect        FALSE
       2    dplyr           compute        FALSE
       3    dplyr              pull        FALSE
-      4     base     as.data.frame         TRUE
-      5   tibble         as_tibble         TRUE
-      6      DBI        dbGetQuery        FALSE
-      7      DBI       dbSendQuery        FALSE
-      8      DBI   dbSendStatement        FALSE
-      9      DBI           dbFetch        FALSE
-      10     DBI       dbReadTable        FALSE
-      11   dplyr           explain        FALSE
+      4    dplyr           explain        FALSE
+      5     base     as.data.frame         TRUE
+      6   tibble         as_tibble         TRUE
+      7      DBI        dbGetQuery        FALSE
+      8      DBI       dbSendQuery        FALSE
+      9      DBI   dbSendStatement        FALSE
+      10     DBI           dbFetch        FALSE
+      11     DBI       dbReadTable        FALSE
       12  dbplyr remote_query_plan        FALSE
 
 # marginplyr functions reaching an execution entry point
