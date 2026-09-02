@@ -87,6 +87,14 @@ test_that("shared argument assertions use the package condition seam", {
   expect_s3_class(logical_error, "marginplyr_error")
   expect_s3_class(string_error, "marginplyr_error")
   expect_s3_class(nest_error, "marginplyr_error")
+
+  # The nesting refusal's remedy, which the pattern above does not reach: it
+  # matches the main line, and a refusal that lost its bullet still has one.
+  expect_match(
+    conditionMessage(nest_error),
+    "Collect it with `dplyr::collect()` first.",
+    fixed = TRUE
+  )
 })
 
 # The rule `static_call_args()` states: its elements can be R's empty argument,

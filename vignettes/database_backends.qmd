@@ -468,7 +468,7 @@ collect(dt_query)
 
 `nest_with_margins()` also supports dtplyr and remains lazy until collection.
 SQL database and Arrow tables cannot use the nesting verbs because their
-result contains a list column, and the refusal names the classes that can:
+result contains a list column:
 
 ```{r}
 #| label: nesting-a-sql-table

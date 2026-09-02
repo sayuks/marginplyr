@@ -51,14 +51,23 @@ assert_string_scalar <- function(x) {
 # joins a vector with by default would read as a conjunction. This is the same
 # call `match_margin_choice()` makes about an option vocabulary, and the
 # `toString()` comma both replace was neutral between the two readings.
+#
+# `expand_with_margins()` is not named beside `dplyr::collect()`, under the
+# rule ADR 0012's amendment states. It takes the same grouping specification
+# and stays lazy, but it returns rows rather than the list column this call
+# asked for, and `assert_lazy_table()` refuses a `RecordBatchReader` that
+# reaches this refusal.
 assert_nest_possible <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   valid_classes <- c("data.frame", "dtplyr_step")
   if (!inherits(x, valid_classes)) {
-    abort_marginplyr(paste0(
-      "{.arg {nm}} must be one of the following classes, which can be ",
-      "nested: {.or {.code {valid_classes}}}."
+    abort_marginplyr(c(
+      paste0(
+        "{.arg {nm}} must be one of the following classes, which can be ",
+        "nested: {.or {.code {valid_classes}}}."
+      ),
+      i = "Collect it with {.fun dplyr::collect} first."
     ))
   }
 }
