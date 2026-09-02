@@ -133,8 +133,9 @@
 #' [last_sent_queries()] gives four answers, and each of the three that could
 #' look like an empty record is told apart from the others:
 #'
-#' - Nothing has been recorded in this session -- no Margin verb has run --
-#'   and the call is refused with a `"marginplyr_error"`.
+#' - Nothing has been recorded in this session -- neither a Margin verb nor
+#'   [inspect_grouping()] has run -- and the call is refused with a
+#'   `"marginplyr_error"`.
 #' - The last call was not audited, the option being unset or holding a value
 #'   other than `TRUE` when the call began, and the call is refused with a
 #'   `"marginplyr_error"` naming `marginplyr.audit_sql`. The option is read

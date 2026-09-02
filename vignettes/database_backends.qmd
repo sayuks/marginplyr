@@ -599,7 +599,8 @@ sent$purpose
 
 The record is a tibble of two character columns, `purpose` and `sql`, holding
 one row per query in the order it was sent. It belongs to that one call: the
-next Margin verb empties it and starts again.
+next call to a Margin verb — or to `inspect_grouping()`, which compiles a
+grouping plan and sends queries of its own — empties it and starts again.
 
 `"result"` is the only `purpose` marginplyr promises, and it is the query
 `audit_query` holds:
@@ -621,17 +622,19 @@ collect(audit_query)
 
 Recording adds no query of its own. The capture is `dbplyr::sql_render()`,
 which renders in your session and sends nothing, so the `"selection_proxy"`
-row above — the zero-row read that answers what columns and types the input
-has — was sent whether or not you were recording. Names other than `"result"`
-are marginplyr's own and are not fixed, so match on `"result"` and read the
-rest as context.
+row above was sent whether or not you were recording. *When marginplyr queries
+your data* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+is what enumerates those queries and says which backends receive them. Names
+other than `"result"` are marginplyr's own and are not fixed, so match on
+`"result"` and read the rest as context.
 
 `last_sent_queries()` gives four answers, and it tells apart the three that
-could look like an empty record. It refuses with a marginplyr error when no
-Margin verb has run in this session, and refuses again — naming
-`marginplyr.audit_sql` — when the last call was not audited: the option is read
-once as a call begins, so setting it afterwards cannot audit a call already
-made. An audited call that sent nothing returns a zero-row tibble, the only
+could look like an empty record. It refuses with a marginplyr error when
+nothing has been recorded in this session — neither a Margin verb nor
+`inspect_grouping()` has run. It refuses again, naming `marginplyr.audit_sql`,
+when the last call was not audited: the option is read once as a call begins,
+so setting it afterwards cannot audit a call already made. An audited call that sent nothing returns a zero-row tibble, the only
 answer with zero rows — a data frame, a dtplyr table, and an Arrow table send
 no SQL, so an audited call on one records nothing and that is correct rather
 than a hole. And a statement dbplyr refuses to translate for the backend keeps

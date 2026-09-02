@@ -145,8 +145,9 @@ the same whether or not you are recording.
 \code{\link[=last_sent_queries]{last_sent_queries()}} gives four answers, and each of the three that could
 look like an empty record is told apart from the others:
 \itemize{
-\item Nothing has been recorded in this session -- no Margin verb has run --
-and the call is refused with a \code{"marginplyr_error"}.
+\item Nothing has been recorded in this session -- neither a Margin verb nor
+\code{\link[=inspect_grouping]{inspect_grouping()}} has run -- and the call is refused with a
+\code{"marginplyr_error"}.
 \item The last call was not audited, the option being unset or holding a value
 other than \code{TRUE} when the call began, and the call is refused with a
 \code{"marginplyr_error"} naming \code{marginplyr.audit_sql}. The option is read
