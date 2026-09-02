@@ -221,7 +221,9 @@ is what exemption 1 protects. ADR 0014 selects the per-kind entry that reads
 the source, and is amended separately too: its two lookups stand, but the
 second no longer selects a sampler, because there is nothing left to sample.
 ADR 0025 applies this decision's other half to a read this package does not
-issue, and is what the amendment above was written for.
+issue, and is what the amendment above was written for. ADR 0027 records the
+SQL marginplyr sends, and is where a third exemption for `EXPLAIN` was put to
+this decision and refused; nothing here changed as a result.
 
 Evidence: `investigation/query-cost-across-lazy-backends.md` and
 `investigation/share-source-eligibility-on-coercing-dialects.md`.
