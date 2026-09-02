@@ -473,6 +473,41 @@ why it does not reach a denominator that is not selected: `share_of_total()`
 accepts any plan containing a Grand total set, while this restriction on
 `share_of_parent()` still stands.
 
+A denominator at a *named ancestor level* — what fraction of its region a
+channel row is, in `rollup(region, store, channel)` — was rejected, and that
+deferral does not reach it either. ADR 0017's route is that a Grand total set
+is not selected at all; this one is selected, by the caller, and a rollup's
+parent chain is a total order, so the set two levels up is as unambiguous as
+the immediate parent. There is nothing for a selection model to decide, and
+refusing an ancestor denominator on parent ambiguity would copy a restriction
+for a reason that does not apply to it.
+
+It is refused because the value is already reachable, by the placement rule
+ADR 0017 states in the other direction. A caller who wants a cross-partition
+denominator moves that column out of `.by`; a caller who wants an ancestor
+denominator moves it in. `.by = region` with
+`.grouping = rollup(store, channel)` gives every row its share of its region
+through `share_of_total()`, with no join and no key of the caller's own.
+Placement is what chooses a denominator, and this is that lever run the other
+way rather than a workaround for a missing helper.
+
+What the placement costs is the rows above the ancestor: `region` becomes a
+fixed key, so no set of the plan pools regions and the result loses its
+all-regions row. A share against an ancestor level together with the rows
+above it is therefore the residue, and it is a documented join rather than an
+API: *Compare a row with an ancestor level* in the recipes guide owns the two
+things that join has to get right, which are the ones a caller does not
+discover — the ancestor level is selected by Grouping identity rather than by
+Margin label, and the join key carries each surviving dimension's inclusion
+bit beside its value, without which an omitted dimension matches a source
+`NA`.
+
+Naming the ancestor would also have to be an argument, and this decision
+refuses additional arguments to the helper in `across()`, so the form would be
+unavailable in the grammar column-wise shares are written in. That is a reason
+not to prefer an argument over some other spelling; it is not why an ancestor
+denominator is refused. The placement rule is.
+
 ## Amendment: the eligible-type rule is established without reading a row
 
 The decision above stands: the eligible-type rule is enforced on every backend,
