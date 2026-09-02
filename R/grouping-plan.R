@@ -150,7 +150,7 @@ prepare_grouping_plan <- function(.data,
                                   validate_names = NULL,
                                   call = rlang::caller_call()) {
   # First, before anything that can raise: every entry point reaches this
-  # function, and every Sent query of the call is recorded after it.
+  # function, and every recorded site runs after it (ADR 0027).
   reset_sent_queries()
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))

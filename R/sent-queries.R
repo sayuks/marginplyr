@@ -6,10 +6,8 @@ sent_queries <- new.env(parent = emptyenv())
 
 # Empties the record for the call beginning now, marks that a call has been
 # recorded in this session, and reads `marginplyr.audit_sql` -- the one
-# reading per call. The answer is kept with this call's record so that the
-# option set after a call refuses rather than reporting zero rows. Anything
-# but `TRUE` is "not audited" and raises nothing here; `last_sent_queries()`
-# is the surface that reports it.
+# reading per call, kept with this call's record (ADR 0027). Anything but
+# `TRUE` is "not audited", and nothing here reports it.
 #
 # Called at the very top of `prepare_grouping_plan()`, which every entry point
 # reaches before any recorded site. The backend is not known yet, so the SQL
@@ -19,8 +17,7 @@ reset_sent_queries <- function() {
   sent_queries$recorded <- TRUE
   sent_queries$audited <- isTRUE(getOption("marginplyr.audit_sql"))
   sent_queries$is_sql <- FALSE
-  sent_queries$purpose <- character()
-  sent_queries$sql <- character()
+  sent_queries$rows <- dplyr::tibble(purpose = character(), sql = character())
   invisible(NULL)
 }
 
@@ -39,9 +36,7 @@ remember_sent_query_backend <- function(backend) {
 #
 # The render is `dbplyr::sql_render()`, client-side, sending nothing. A
 # translation dbplyr refuses raises here rather than when the query was built,
-# and is recorded as `NA`: dropping the row would leave a hole in a record kept
-# for completeness, and propagating the error would let the option fail a
-# call it is not allowed to change (ADR 0027).
+# and the row is kept with `sql = NA` (ADR 0027).
 record_sent_query <- function(purpose, query) {
   stopifnot(rlang::is_string(purpose))
   if (!isTRUE(sent_queries$audited) || !isTRUE(sent_queries$is_sql)) {
@@ -52,8 +47,10 @@ record_sent_query <- function(purpose, query) {
     error = function(cnd) NA_character_
   )
   stopifnot(is.character(sql), length(sql) == 1L)
-  sent_queries$purpose <- c(sent_queries$purpose, purpose)
-  sent_queries$sql <- c(sent_queries$sql, sql)
+  sent_queries$rows <- dplyr::bind_rows(
+    sent_queries$rows,
+    dplyr::tibble(purpose = purpose, sql = sql)
+  )
   invisible(NULL)
 }
 
@@ -184,8 +181,5 @@ last_sent_queries <- function() {
       )
     ))
   }
-  dplyr::tibble(
-    purpose = sent_queries$purpose,
-    sql = sent_queries$sql
-  )
+  sent_queries$rows
 }

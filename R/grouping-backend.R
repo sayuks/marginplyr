@@ -7,12 +7,9 @@ arrow_input_classes <- function() {
   c("arrow_dplyr_query", "Table", "RecordBatch", "Dataset")
 }
 
-# Classifies the input once for every reader that follows. `kind` is what
-# dispatch reads and `dialect` is what SQL builders read; `is_sql` is whether
-# this input is a SQL backend, equivalent to `dialect` being non-`NULL`, but
-# `dialect` is the field dispatch reads and its nullity does not announce
-# itself as the test. The Sent-query record reads `is_sql` and nothing else
-# (ADR 0027).
+# `is_sql` is whether this input is a SQL backend. It is equivalent to
+# `dialect` being non-`NULL`, but `dialect` is the field dispatch reads, and
+# its nullity does not announce itself as the test (ADR 0027).
 grouping_backend <- function(.data) {
   is_local <- is.data.frame(.data)
   is_dtplyr <- inherits(.data, "dtplyr_step")
