@@ -428,12 +428,12 @@ identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
 sets out the three kinds of apparent missingness this confuses, and why
 `share_of_parent()` cannot make the same mistake internally.
 
-**`na_matches = "na"` is not the default on a database.** `dplyr::left_join()`
-matches `NA` to `NA` by default, so a local pipeline is right without the
-argument; dbplyr's default is `"never"`, so the same pipeline silently drops
-the unnamed store's share against a database. Writing it explicitly makes the
-two agree, and dbplyr translates it to the dialect's own missing-safe
-comparison:
+**`na_matches = "na"` is written explicitly because the default differs by
+backend.** `dplyr::left_join()` matches `NA` to `NA`, so a local pipeline is
+right without the argument; dbplyr's method does not, so the same pipeline
+drops the unnamed store's share against a database and says nothing. Both
+halves are below — the join as written, then the same join with the argument
+dropped:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -477,20 +477,39 @@ duckdb_sales |>
 ```
 
 ```{r}
+#| eval: !expr has_duckdb
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    region_absent = grouping_bit(region),
+    store_absent = grouping_bit(store),
+    .grouping = rollup(region, store, product, channel)
+  ) |>
+  left_join(
+    duckdb_store_totals,
+    by = c("region", "region_absent", "store", "store_absent")
+  ) |>
+  mutate(share_of_store = revenue / store_revenue) |>
+  filter(is.na(store)) |>
+  select(region, store, product, channel, revenue, share_of_store) |>
+  collect()
+```
+
+```{r}
 #| include: false
 #| eval: !expr has_duckdb
 
 DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
-The unnamed store keeps its share on the database. As in [Name the grouping
-set on every row](#name-the-grouping-set-on-every-row), the Margin order does
-not survive the join — `arrange()` after it, or collect first.
+The unnamed store keeps its share in the first and loses it in the second, and
+the two calls differ by one argument. As in [Name the grouping set on every
+row](#name-the-grouping-set-on-every-row), the Margin order does not survive
+the join — `arrange()` after it, or collect first.
 
-Reaching an ancestor level is not part of the helpers' API, and
-[ADR 0010][adr10] records why: the `.by` route above already answers the
-question, and the join is for the residue where the levels above the ancestor
-have to stay in the same result.
+Reaching an ancestor level is not part of the helpers' API.
+[ADR 0010][adr10] records why.
 
 [adr10]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0010-compute-parent-shares-as-a-contextual-summary.md
 

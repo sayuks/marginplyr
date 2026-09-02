@@ -474,9 +474,9 @@ accepts any plan containing a Grand total set, while this restriction on
 `share_of_parent()` still stands.
 
 A denominator at a *named ancestor level* — what fraction of its region a
-channel row is, in `rollup(region, store, channel)` — was rejected, and that
-deferral does not reach it either. ADR 0017's route is that a Grand total set
-is not selected at all; this one is selected, by the caller, and a rollup's
+channel row is, in `rollup(region, store, channel)` — was rejected (#375), and
+that deferral does not reach it either. ADR 0017's route is that a Grand total
+set is not selected at all; this one is selected, by the caller, and a rollup's
 parent chain is a total order, so the set two levels up is as unambiguous as
 the immediate parent. There is nothing for a selection model to decide, and
 refusing an ancestor denominator on parent ambiguity would copy a restriction
@@ -495,12 +495,8 @@ What the placement costs is the rows above the ancestor: `region` becomes a
 fixed key, so no set of the plan pools regions and the result loses its
 all-regions row. A share against an ancestor level together with the rows
 above it is therefore the residue, and it is a documented join rather than an
-API: *Compare a row with an ancestor level* in the recipes guide owns the two
-things that join has to get right, which are the ones a caller does not
-discover — the ancestor level is selected by Grouping identity rather than by
-Margin label, and the join key carries each surviving dimension's inclusion
-bit beside its value, without which an omitted dimension matches a source
-`NA`.
+API. *Compare a row with an ancestor level* in the recipes guide owns what
+that join has to get right.
 
 Naming the ancestor would also have to be an argument, and this decision
 refuses additional arguments to the helper in `across()`, so the form would be
