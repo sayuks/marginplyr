@@ -53,10 +53,10 @@ assert_string_scalar <- function(x) {
 # `toString()` comma both replace was neutral between the two readings.
 #
 # `expand_with_margins()` is not named beside `dplyr::collect()`, under the
-# rule ADR 0012's amendment states. It takes the same grouping specification
-# and stays lazy, but it returns rows rather than the list column this call
-# asked for, and `assert_lazy_table()` refuses a `RecordBatchReader` that
-# reaches this refusal.
+# rule ADR 0012's second amendment states. It takes the same grouping
+# specification and stays lazy, but it returns rows rather than the list column
+# this call asked for, and `assert_lazy_table()` refuses a `RecordBatchReader`
+# that reaches this refusal.
 assert_nest_possible <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
@@ -147,14 +147,21 @@ assert_margin_input <- function(x) {
 # alternatives to pick one of; a blacklist refuses every entry at once, so a
 # second name would be refused alongside the first and not instead of it.
 # Nothing renders today, the vector holding one name.
+#
+# `dplyr::collect()` resolves this refusal too and is not named beside
+# `arrow::as_arrow_table()`, under the rule ADR 0012's third amendment states
+# for two routes that leave the caller in different places.
 assert_lazy_table <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
   invalid_lazy_table_names <- "RecordBatchReader"
   if (inherits(x, invalid_lazy_table_names)) {
-    abort_marginplyr(paste0(
-      "{.arg {nm}} must not be an object of the following classes: ",
-      "{.code {invalid_lazy_table_names}}."
+    abort_marginplyr(c(
+      paste0(
+        "{.arg {nm}} must not be an object of the following classes: ",
+        "{.code {invalid_lazy_table_names}}."
+      ),
+      i = "Convert it with {.fun arrow::as_arrow_table} first."
     ))
   }
 }
