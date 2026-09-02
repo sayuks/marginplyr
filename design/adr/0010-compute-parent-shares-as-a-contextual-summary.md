@@ -504,6 +504,68 @@ unavailable in the grammar column-wise shares are written in. That is a reason
 not to prefer an argument over some other spelling; it is not why an ancestor
 denominator is refused. The placement rule is.
 
+A *scope wider than one call* for `.check_share_source` -- an option, a
+connection attribute, or a `local_*()` helper recording the caller's assertion
+once -- was rejected (#389).
+[ADR 0027](0027-record-the-sql-marginplyr-sends.md) refuses the option form
+already, by the distinction it draws between what decides whether a query is
+sent and what decides whether a record is kept. What the other two vehicles
+need, and what per-call rests on, is where the assertion has to be readable.
+Where the dialect converts, `.check_share_source = FALSE` produces numbers from
+values nothing has checked, and the call that produced them is the only place
+that fact can be read. An option makes it a property of the session, a
+connection attribute a property of an object built elsewhere, and a `local_*()`
+helper a property of a frame that need not be the one the call is written in;
+under all three, a reader with the call in front of them cannot tell a share
+the rule was applied to from one it was not. A connection attribute is refused
+for a further reason of its own: the connection is not marginplyr's object, and
+recording marginplyr's meaning on it writes this package's state onto something
+the caller built with DBI and shares with every other package reading that
+connection.
+
+The objection recorded beside `share_dialect_verdicts` does not transfer, and
+the analogy runs the other way. That objection is that a *wrong* fact recorded
+once governs every later connection carrying that dialect, and what answers it
+is asking again, which [ADR 0020](0020-ask-before-reading-a-lazy-input.md)
+confines to the attempt that went unanswered -- the case that could be wrong.
+Asking again is available because the question is put to the dialect. Nothing
+puts the question again to the caller: the only thing the package can do with
+an assertion it declines to reuse is refuse the share, which is what the caller
+opted out of. A measured answer, meanwhile, is keyed on the dialect class and
+so is reused by every connection carrying that dialect for the rest of the
+session, where a connection attribute would be keyed on one connection --
+narrower than the scope the package already grants that measured fact. Nor is
+the scope decided by the strength of the evidence behind the assertion:
+strength decides whether to accept an assertion at all, and this one is
+accepted. It is decided by where the consequence has to be visible.
+
+None of this reaches what a caller writes in their own code. A wrapper of their
+own that fixes the argument carries the same invisibility, and that is theirs
+to weigh; what is refused here is the invisibility marginplyr's API would
+impose on every caller.
+
+*Per-share granularity*, so that a caller vouches for one share's source and
+keeps the rule on another (#389), was rejected because nothing could act on it.
+The argument reaches one checker, `check_dialect_share_sources()`, which every
+dbplyr kind routes to; the local and dtplyr checkers take it and ignore it, the
+rule being applied on their backends already. There, `FALSE` returns before the
+dialect is asked anything, and where the dialect refuses, the database applies
+the rule itself whatever the argument said. Where the dialect converts or could
+not be asked, nothing is known about any individual source: the verdict is the
+dialect's, and it is the same verdict for every source in the call. A per-share
+opt-out would vouch for one source and leave the other refused, and a refused
+source stops the call, so it reaches no result `.check_share_source = TRUE`
+does not already reach and differs only in the diagnostic. What `FALSE` gives
+up on such a dialect is the refusal and not a check, the rule being applied to
+no source there whatever the argument says.
+
+Calculating the vouched share and returning the other as `NA` is what per-share
+granularity would have to mean to reach a result of its own, and it is rejected
+as a decision of its own rather than as this one's granularity: the refusal
+states that marginplyr will not produce a number nothing has checked, and an
+`NA` in its place discards that statement into a value that reads like missing
+data.
+
 ## Amendment: the eligible-type rule is established without reading a row
 
 The decision above stands: the eligible-type rule is enforced on every backend,

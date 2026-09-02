@@ -383,7 +383,11 @@ the next share request asks again, so a dropped connection or a warehouse that
 was resuming does not refuse your shares for the rest of the session. A
 connection that executes nothing, such as the simulators used above, cannot be
 asked and is refused for the same reason; `.check_share_source = FALSE`
-calculates the share from sources you have established yourself.
+calculates the share from sources you have established yourself. What is
+remembered is the dialect's answer and not yours: `.check_share_source` is
+scoped to the call it is written in, so a dialect that converts needs it on
+every share request, and there is no session or connection default that
+records it once.
 
 A refusing dialect is therefore shown against a live DuckDB table rather than
 the simulator used above. The diagnostic is DuckDB's own, and the column it
@@ -606,11 +610,11 @@ names every verified backend.
   factor level is rejected either way. See *`.check_margin_label` on lazy
   inputs* above.
 
-- A contextual share needs `.check_share_source = FALSE` on a backend that
-  cannot establish that its source is eligible: a connection that executes
-  nothing, such as a `simulate_*()` one, and a dialect that converts an
-  ineligible source rather than refusing it, such as SQLite. See *Parent
-  shares use a staged lazy query* above.
+- A contextual share needs `.check_share_source = FALSE` on every call against
+  a backend that cannot establish that its source is eligible: a connection
+  that executes nothing, such as a `simulate_*()` one, and a dialect that
+  converts an ineligible source rather than refusing it, such as SQLite. See
+  *Parent shares use a staged lazy query* above.
 
 - A fallback query may repeat the source relation once per grouping set.
   Inspect the generated SQL and the database query plan for large workloads;
