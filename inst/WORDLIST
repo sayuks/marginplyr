@@ -5,12 +5,14 @@ DuckDB
 DuckDB's
 HANA
 ODBC
+PSOCK
 Pre
 ROLLUP
 Rollups
 Teradata
 Ungrouped
 altdoc
+callr
 dbplyr
 dbplyr's
 deduplicated

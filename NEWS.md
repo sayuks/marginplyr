@@ -287,3 +287,15 @@
   a join key no longer fails before any grouping happens, and the input is not
   modified by reference. The result's class still follows the dplyr verb the
   Margin verb ends in, and is not promised to be the input's.
+* Added `last_sent_queries()` and the `marginplyr.audit_sql` option. With the
+  option set to `TRUE`, a Margin verb or `inspect_grouping()` against a SQL
+  backend records the SQL it sends, one row per query with its `purpose`, and
+  the accessor reads the record of the most recent call back as a two-column
+  tibble. The record promises the SQL marginplyr sent and not the execution
+  it caused: the `"result"` row is the query the verb returns unexecuted,
+  rendered before it is handed to you, so an audited call on a data frame or
+  a `dtplyr` table records nothing. Reading before any call has run, or after
+  a call made while the option was off, is refused rather than answered with
+  zero rows, and a statement dbplyr cannot translate for the backend is
+  recorded as `NA` without failing the call. The option is off by default
+  and off means no query is rendered on its account (#318, #400).
