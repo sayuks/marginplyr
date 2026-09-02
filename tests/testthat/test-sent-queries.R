@@ -1,6 +1,8 @@
 # The record is emptied at the top of every call, so no test here isolates
-# `sent_queries` itself; only the option leaks between tests, and every test
-# that sets it restores it on exit. ADR 0027 is the decision these assert.
+# `sent_queries` itself. Two pieces of state do leak between tests and are
+# restored on exit by every test that writes one: the option, and the
+# per-dialect verdict cache the share tests below empty so that the probe
+# sends its queries at all. ADR 0027 is the decision these assert.
 
 sent_queries_data <- function() {
   data.frame(
@@ -148,6 +150,19 @@ test_that("an audited dtplyr call sent nothing", {
   with_audit_option(TRUE, {
     summarize_with_margins(
       dtplyr::lazy_dt(sent_queries_data()),
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h)
+    )
+    expect_sent_nothing()
+  })
+})
+
+test_that("an audited arrow call sent nothing", {
+  skip_if_suggest_absent("arrow")
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      arrow::arrow_table(sent_queries_data()),
       total = sum(v, na.rm = TRUE),
       .grouping = rollup(g, h)
     )
@@ -334,4 +349,129 @@ test_that("grouping_backend() answers is_sql = FALSE for dtplyr", {
 
   backend <- grouping_backend(dtplyr::lazy_dt(sent_queries_data()))
   expect_false(backend$is_sql)
+})
+
+# --- the selection proxy row -------------------------------------------------
+
+test_that("an audited DuckDB call records its selection proxy", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h)
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, c("selection_proxy", "result"))
+  expect_match(record$sql[[1L]], "sent_queries", fixed = TRUE)
+})
+
+test_that("an audited RSQLite call records no selection proxy", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h)
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, "result")
+})
+
+# --- the label scan row ------------------------------------------------------
+
+test_that("an audited label check records its scan", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h),
+      .check_margin_label = TRUE
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, c("observed_label_collision", "result"))
+  expect_match(record$sql[[1L]], "Total", fixed = TRUE)
+})
+
+# --- the dialect probe's rows ------------------------------------------------
+
+# The verdict is cached per dialect for the session, so a probe sends its
+# queries only against an empty cache; both tests below empty it through
+# `helper-share-dialect-verdicts.R`.
+
+test_that("an audited DuckDB share records the probe and its control", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- sent_queries_table(con)
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  empty_share_dialect_verdicts()
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      share = share_of_parent(total),
+      .grouping = rollup(g, h)
+    )
+    record <- last_sent_queries()
+  })
+
+  # DuckDB refuses summing a string, which is the answer the control is sent
+  # to tell from a question that could not be put here at all.
+  probes <- grep("^share_dialect", record$purpose, value = TRUE)
+  expect_identical(probes, c("share_dialect", "share_dialect_control"))
+})
+
+test_that("a refused share leaves the probe's row readable", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  empty_share_dialect_verdicts()
+
+  # SQLite converts a string to a number rather than refusing it, so the share
+  # is refused here, after the probe's query has already been recorded.
+  with_audit_option(TRUE, {
+    condition <- rlang::catch_cnd(
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        share = share_of_parent(total),
+        .grouping = rollup(g, h)
+      ),
+      classes = "marginplyr_error"
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_s3_class(condition, "marginplyr_error")
+  expect_identical(record$purpose, "share_dialect")
 })
