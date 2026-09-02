@@ -364,6 +364,7 @@ markers <- list(
     "Parent shares use a staged lazy query",
     "share_of_total",
     "Completion stays in the lazy input pipeline",
+    "Record the SQL marginplyr sends",
     "Only DuckDB and SQLite are exercised as live SQL databases",
     "DuckDB covers native SQL end to end",
     "dozen-plus fallback dialects",
