@@ -62,7 +62,9 @@
 #'   a backend that could not be asked which of those it does. It changes
 #'   nothing where the rule can be applied — a local data frame, a `dtplyr`
 #'   step, and a database that refuses an ineligible summary itself all apply
-#'   it whatever this argument says. See *Contextual shares*.
+#'   it whatever this argument says. It is scoped to the call it is written in:
+#'   there is no session default and no connection default that records the
+#'   answer once. See *Contextual shares*.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
 #'   else, controlling duplicate grouping sets after expansion; see *Option
 #'   arguments*.

@@ -95,7 +95,9 @@ converts a value of another type to a number rather than refusing it, and
 a backend that could not be asked which of those it does. It changes
 nothing where the rule can be applied — a local data frame, a \code{dtplyr}
 step, and a database that refuses an ineligible summary itself all apply
-it whatever this argument says. See \emph{Contextual shares}.}
+it whatever this argument says. It is scoped to the call it is written in:
+there is no session default and no connection default that records the
+answer once. See \emph{Contextual shares}.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
 else, controlling duplicate grouping sets after expansion; see \emph{Option
