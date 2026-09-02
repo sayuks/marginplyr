@@ -162,12 +162,15 @@ fewer.
 _Avoid_: Pulling backend, fallback backend, collecting backend
 
 **Sent query**:
-One SQL statement a Margin operation gives to a backend, recorded with the
-purpose it was sent for. Exactly one purpose is the caller's result — the query
-a Margin verb returns unexecuted, which the caller runs themselves; every other
-purpose is a query marginplyr sends for its own reasons, and which those are is
-not fixed. A Sent query is recorded before it is sent, so the record holds what
-was sent rather than what succeeded.
+One SQL statement marginplyr gives to a backend while compiling a Grouping
+plan or while executing the Margin operation built on one, recorded with the
+purpose it was sent for. `inspect_grouping()` compiles a plan without a Margin
+operation, so it sends Sent queries too. Exactly one purpose is the caller's
+result — the query a Margin verb returns unexecuted, which the caller runs
+themselves; every other purpose is a query marginplyr sends for its own
+reasons, and which those are is not fixed. A Sent query is recorded before it
+is sent, so the record holds what was sent rather than what succeeded, and a
+call that fails leaves every Sent query it had already sent readable.
 _Avoid_: Audit record, context, logged query
 
 **Contextual helper**:
