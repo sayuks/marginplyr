@@ -298,9 +298,8 @@
   than answered with zero rows, and a statement dbplyr cannot translate for
   the backend is recorded as `NA` without failing the call. The record also
   holds the queries marginplyr sends for its own reasons on the way: the
-  zero-row selection proxy it reads a lazy input's columns from, which is what
-  an audited `inspect_grouping()` records; the scan under
-  `.check_margin_label` looking for an observed value equal to a Margin
+  zero-row selection proxy it reads a lazy input's columns from; the scan
+  under `.check_margin_label` looking for an observed value equal to a Margin
   label; and the question it asks a dialect before calculating a contextual
   share, with the control that tells a refusal from a question that could
   not be put. Each is recorded before it is sent, so a call refused by a

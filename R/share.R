@@ -2405,9 +2405,7 @@ probe_share_dialect <- function(con) {
 # the share. An unrecognised status therefore fails closed by construction,
 # and that is the property worth writing down rather than asserting.
 #
-# `purpose` is the name this query is recorded under (ADR 0027), and the
-# caller passes a different one for the question and for the control, the two
-# being one function called twice.
+# `purpose` is the name this query is recorded under (ADR 0027).
 probe_share_dialect_answer <- function(con, expr, purpose) {
   query <- tryCatch(
     dplyr::summarize(

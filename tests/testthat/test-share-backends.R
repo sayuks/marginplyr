@@ -1163,26 +1163,11 @@ test_that("a lazy backend that answers nothing refuses to establish a share", {
   expect_match(dbplyr::sql_render(query), "UNION ALL", fixed = TRUE)
 })
 
-# The per-dialect verdict cache is package state, so the three tests that read
-# what it records start from an empty one -- what a call records is only
-# observable from there -- and put back whatever the rest of the suite had
-# recorded. Restoring empties first, so that an entry the test itself wrote is
-# not left beside the saved ones. Only those three need either helper: the
-# verdict tests after them call `probe_share_dialect()` directly or assert the
-# cache as they found it, and the live-backend tests further down write to it
-# through the verb without reading what it holds.
-empty_share_dialect_verdicts <- function() {
-  rm(
-    list = ls(share_dialect_verdicts, all.names = TRUE),
-    envir = share_dialect_verdicts
-  )
-}
-
-restore_share_dialect_verdicts <- function(saved) {
-  empty_share_dialect_verdicts()
-  list2env(saved, envir = share_dialect_verdicts)
-  invisible(NULL)
-}
+# Only the three tests below need either helper from
+# `helper-share-dialect-verdicts.R`: the verdict tests after them call
+# `probe_share_dialect()` directly or assert the cache as they found it, and
+# the live-backend tests further down write to it through the verb without
+# reading what it holds.
 
 # What the dialect does with an ineligible summary is a property of the
 # dialect, so it is asked once and reused — which is only observable across

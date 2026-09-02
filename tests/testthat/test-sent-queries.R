@@ -1,6 +1,8 @@
 # The record is emptied at the top of every call, so no test here isolates
-# `sent_queries` itself; only the option leaks between tests, and every test
-# that sets it restores it on exit. ADR 0027 is the decision these assert.
+# `sent_queries` itself. Two pieces of state do leak between tests and are
+# restored on exit by every test that writes one: the option, and the
+# per-dialect verdict cache the share tests below empty so that the probe
+# sends its queries at all. ADR 0027 is the decision these assert.
 
 sent_queries_data <- function() {
   data.frame(
@@ -148,6 +150,19 @@ test_that("an audited dtplyr call sent nothing", {
   with_audit_option(TRUE, {
     summarize_with_margins(
       dtplyr::lazy_dt(sent_queries_data()),
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h)
+    )
+    expect_sent_nothing()
+  })
+})
+
+test_that("an audited arrow call sent nothing", {
+  skip_if_suggest_absent("arrow")
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      arrow::arrow_table(sent_queries_data()),
       total = sum(v, na.rm = TRUE),
       .grouping = rollup(g, h)
     )
@@ -377,19 +392,6 @@ test_that("an audited RSQLite call records no selection proxy", {
   expect_identical(record$purpose, "result")
 })
 
-test_that("an audited arrow call sent nothing", {
-  skip_if_suggest_absent("arrow")
-
-  with_audit_option(TRUE, {
-    summarize_with_margins(
-      arrow::arrow_table(sent_queries_data()),
-      total = sum(v, na.rm = TRUE),
-      .grouping = rollup(g, h)
-    )
-    expect_sent_nothing()
-  })
-})
-
 # --- the label scan row ------------------------------------------------------
 
 test_that("an audited label check records its scan", {
@@ -416,20 +418,8 @@ test_that("an audited label check records its scan", {
 # --- the dialect probe's rows ------------------------------------------------
 
 # The verdict is cached per dialect for the session, so a probe sends its
-# queries only against an empty cache; both tests below empty it the way
-# `test-share-backends.R` does and put back what the rest of the suite had.
-empty_sent_queries_verdicts <- function() {
-  rm(
-    list = ls(share_dialect_verdicts, all.names = TRUE),
-    envir = share_dialect_verdicts
-  )
-}
-
-restore_sent_queries_verdicts <- function(saved) {
-  empty_sent_queries_verdicts()
-  list2env(saved, envir = share_dialect_verdicts)
-  invisible(NULL)
-}
+# queries only against an empty cache; both tests below empty it through
+# `helper-share-dialect-verdicts.R`.
 
 test_that("an audited DuckDB share records the probe and its control", {
   skip_if_suggest_absent("duckdb", "DBI")
@@ -438,8 +428,8 @@ test_that("an audited DuckDB share records the probe and its control", {
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- sent_queries_table(con)
   saved <- as.list(share_dialect_verdicts, all.names = TRUE)
-  on.exit(restore_sent_queries_verdicts(saved), add = TRUE)
-  empty_sent_queries_verdicts()
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  empty_share_dialect_verdicts()
 
   with_audit_option(TRUE, {
     summarize_with_margins(
@@ -464,8 +454,8 @@ test_that("a refused share leaves the probe's row readable", {
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   remote <- sent_queries_table(con)
   saved <- as.list(share_dialect_verdicts, all.names = TRUE)
-  on.exit(restore_sent_queries_verdicts(saved), add = TRUE)
-  empty_sent_queries_verdicts()
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  empty_share_dialect_verdicts()
 
   # SQLite converts a string to a number rather than refusing it, so the share
   # is refused here, after the probe's query has already been recorded.
