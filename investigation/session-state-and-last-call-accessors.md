@@ -617,8 +617,9 @@ Three further facts about flakiness:
   `test_file()` calls." So under `Config/testthat/parallel: true`, state does
   not reach the main process, but *can* still leak between whichever files
   happen to share a reused worker — which is not deterministic. marginplyr's
-  `DESCRIPTION` sets `Config/testthat/edition: 3` and no `parallel` key, so
-  today the suite is the single-process case above.
+  `DESCRIPTION` sets `Config/testthat/edition: 3` and no `parallel` key —
+  `DESCRIPTION` being what is authoritative for that — so the suite was the
+  single-process case above on the date in this header.
 - **knitr breaks the top-level-command heuristic**, and rlang says so in code
   rather than prose: `cmd_frame()` (`rlang/R/cnd-last.R`) branches on
   `knitr_in_progress()` and looks for a knitr frame instead of `sys.frame(1)`.

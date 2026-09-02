@@ -5,23 +5,22 @@ back with `last_sent_queries()`. The record is off unless the caller sets
 `options(marginplyr.audit_sql = TRUE)`; it holds one row per Sent query, with
 the columns `purpose` and `sql` and no others; and it belongs to a single call,
 emptied at the top of `prepare_grouping_plan()`. Each row is written before its
-query is sent, so what the record holds is what was sent rather than what
-succeeded, and a call that fails leaves readable everything it had already sent.
+query is sent, which is the promise `CONTEXT.md`'s **Sent query** entry states.
 
 The capture is `dbplyr::sql_render()` and nothing else. It is client-side, sends
 nothing, and is not one of the execution entry points
 `lazy_execution_entry_points()` catalogs, so **ADR 0020 is not amended**: this
 decision adds no third exemption to it and does not read the opt-in as the
-caller having asked for a query. The four sites that do send — the zero-row
-selection proxy, the observed-label-collision scan, and the dialect probe's
-question and control — send exactly what they sent before this decision, whether
-or not a caller is auditing.
+caller having asked for a query. The four queries that do reach a connection —
+the zero-row selection proxy, the observed-label-collision scan, and the dialect
+probe's question and control — are exactly what they were before this decision,
+whether or not a caller is auditing.
 
 `marginplyr.audit_sql` is the package's first option, and `last_sent_queries()`
 is its first export that reads back what a previous call did; all fifteen others
-are verbs, constructors, or grouping helpers. Neither has a precedent inside
-this package to cite, which is why both are settled here rather than by
-analogy.
+are verbs, constructors, grouping helpers, or the inspection surface ADR 0013
+governs. Neither has a precedent inside this package to cite, which is why both
+are settled here rather than by analogy.
 
 ## Why a record rather than a signal
 
@@ -117,9 +116,11 @@ placement, `inspect_grouping()` appends its proxy query to whatever the previous
 Margin operation left behind, and nothing says the record now spans two calls —
 the `dbplyr::last_sql()` defect, rebuilt inside the feature written to answer
 it.
-`prepare_grouping_plan()` is the common ancestor of all five recorded sites and
-of five entry points rather than four, and within a Margin operation it still
-runs before every one of them.
+What makes `prepare_grouping_plan()` the reset site is not that it contains the
+recorded sites — only the selection proxy is inside it, while the
+observed-label-collision scan and the dialect probe are reached from siblings of
+its own caller. It is that all five entry points reach it, and that it runs
+before every one of the four sites on every path to them.
 
 Per-call rather than accumulating: saying which rows belong to which call
 needs a call identifier this package has no concept of, while a caller who wants
@@ -138,11 +139,9 @@ the defect this whole decision rests on calling a defect.
 
 Every recorded site runs after `grouping_backend()` has classified the input, so
 nothing classifies a second time. `grouping_backend()` returns `is_sql` as a
-field — already computed there for the `kind` cascade — with this contract:
-
-> Whether this input is a SQL backend. Equivalent to `dialect` being non-`NULL`,
-> but `dialect` is the field dispatch reads, and its nullity does not announce
-> itself as the test. The record reads this field and nothing else.
+field — already computed there for the `kind` cascade — and the record reads
+that field and nothing else. Its header carries the contract, and #318 carries
+the wording.
 
 The record remembers it per call where the backend is computed, inside the same
 function whose top holds the reset, so no recorded site is reached with the
@@ -159,8 +158,10 @@ Four claims in the plan this decision settles were true of an earlier codebase
 and are recorded as corrections rather than quietly fixed, because each was a
 reasonable reading and each is now measured against the working tree.
 
-- **The reset function.** `prepare_margin_operation()` is not the common
-  ancestor; `prepare_grouping_plan()` is. See *One call, and which call*.
+- **The reset function.** `prepare_margin_operation()` is reached by the four
+  Margin verbs and not by `inspect_grouping()`, so it is not the site every
+  recorded query runs after. `prepare_grouping_plan()` is. See *One call, and
+  which call*.
 - **"The accessor never errors."** The cited precedent, `rlang::last_error()`,
   errors when empty (#380), and the accessor refuses in two cases here.
 - **ADR 0021 does not reach a condition marginplyr authors.** Its scope is
@@ -207,11 +208,12 @@ that neither rests on the other.
   internal queries are a zero-row read, a scan the caller asked for, and a
   constant referencing no table of theirs — the plan of a constant answers
   nothing.
-- *It is not an audit record.* GoogleSQL has no `EXPLAIN` statement, so on
-  BigQuery — the backend the cost argument was about — the statement simply
+- *It does not record what was sent.* GoogleSQL has no `EXPLAIN` statement, so
+  on BigQuery — the backend the cost argument was about — the statement simply
   fails; SQL Server has none outside Synapse dedicated pool, and SAP HANA's
-  writes to a table rather than returning rows. The only method is
-  `explain.tbl_sql`, so it raises on every `dbplyr::simulate_*()` connection,
+  writes to a table rather than returning rows. The only method reached by a
+  `tbl_lazy` is `explain.tbl_sql`, so it raises on every `dbplyr::simulate_*()`
+  connection,
   which is how this package reaches the dialects it has no driver for. The text
   is `print()` on a data frame, varying with `getOption("width")`, the caller's
   indexes and row counts, and DuckDB's `explain_output`; SQLite's own
@@ -219,9 +221,10 @@ that neither rests on the other.
   format breaks. And the proposed `tryCatch` made those failures silent, which
   contradicts recording a query before it is sent.
 
-  This ground is reached before ADR 0020, not after it, so it would still refuse
-  the feature if dbplyr registered a BigQuery `sql_query_explain()` method
-  tomorrow.
+  This ground is reached before ADR 0020, not after it. It is also independent
+  of the ground above, which is why the two are recorded separately: it would
+  still refuse the feature if dbplyr registered a BigQuery
+  `sql_query_explain()` method tomorrow.
 
 **`"explain"` at every site except `"result"`,** since the other sites talk to
 the backend a moment later anyway. Rejected: it does not avoid the amendment,
@@ -273,6 +276,13 @@ caller already knows, and the `sql` shows the dialect.
 
 **An accessor that returns zero rows in every empty case.** Rejected: see *Four
 answers, distinguished*.
+
+**The name `last_marginplyr_sql()`,** which is what the map's destination called
+this accessor. Rejected: it names no concept in the glossary, and it is singular
+where the value holds up to five rows. `last_` matches all eight precedents, and
+six of the eight do not prefix with the package name; the two that do are about
+warnings, where several packages entrace into one session, which is not the case
+here.
 
 **Deferring the render to the accessor,** so that a refused translation raises
 where raising is allowed. Rejected: it needs a hidden column or a parallel store
@@ -345,6 +355,6 @@ Evidence: `investigation/what-dplyr-explain-sends-per-backend.md` for what
 `investigation/session-state-and-last-call-accessors.md` for what CRAN policy
 and *Writing R Extensions* permit a package environment, for the eight
 last-call precedents and the shape none of them has, and for the fork, PSOCK,
-and callr measurements behind the concurrency sentence;
-`investigation/share-source-schema-vs-data-read.md` for the render/read
-distinction the client-side capture rests on.
+and callr measurements behind the concurrency sentence. That
+`dbplyr::sql_render()` leaves `the$last_sql` untouched, so the capture disturbs
+nothing a caller reads from dbplyr, was measured on #381.
