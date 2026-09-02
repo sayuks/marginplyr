@@ -732,3 +732,115 @@ PostgreSQL was not measured either. RPostgres 1.4.10 is installed but no server
 was available, so what is recorded for it is the rendered statement — which is
 the simulator's answer and needs no server — and the PostgreSQL documentation.
 Oracle likewise: the two-statement form above is rendered, not sent.
+
+## 8. Three dialects outside the ticket's enumerated set
+
+#379 enumerated RSQLite, DuckDB, Postgres, BigQuery, Snowflake and Spark.
+Sections 1–7 stop there. This section covers SQL Server, SAP HANA and Teradata,
+which dbplyr also reaches, because §2 established that dbplyr's default is a
+bare `EXPLAIN {sql}` and the question of which dialects that default is *valid*
+in does not stop at the six the ticket named. Same investigation, same date;
+nothing above is overturned.
+
+None of the three was measured — no driver and no server for any of them here —
+so everything below is vendor documentation, quoted with its URL and the date
+it was fetched, in the form §7 already fixes for BigQuery, Snowflake and Spark.
+
+### SQL Server: no `EXPLAIN`, except on Synapse dedicated SQL pool
+
+Microsoft's `EXPLAIN (Transact-SQL)` topic exists, and its Applies-to banner is
+a single product:
+
+> "**Applies to:** Azure Synapse Analytics (dedicated SQL pool only)"
+
+— *EXPLAIN (Transact-SQL)*,
+<https://learn.microsoft.com/en-us/sql/t-sql/queries/explain-transact-sql?view=azure-sqldw-latest>
+(fetched 2026-09-02). Its syntax is
+`EXPLAIN [WITH_RECOMMENDATIONS] SQL_statement [;]`, it returns an XML document
+rather than a result set of plan rows, and the same page adds "This syntax is
+not supported by serverless SQL pool" and "**EXPLAIN** is not supported in a
+user transaction". *T-SQL statements in dedicated SQL pool*
+(<https://learn.microsoft.com/en-us/azure/synapse-analytics/sql-data-warehouse/sql-data-warehouse-reference-tsql-statements>,
+fetched 2026-09-02) lists `EXPLAIN` under "Query statements"; the SQL Server
+T-SQL reference has no corresponding entry.
+
+For SQL Server, Azure SQL Database, Azure SQL Managed Instance and Fabric SQL
+database the documented equivalent is a session setting issued as its own
+batch, not a modifier on the statement. *SET SHOWPLAN_ALL (Transact-SQL)*
+(<https://learn.microsoft.com/en-us/sql/t-sql/statements/set-showplan-all-transact-sql?view=sql-server-ver17>,
+fetched 2026-09-02):
+
+> "Causes Microsoft SQL Server not to execute Transact-SQL statements. Instead,
+> SQL Server returns detailed information about how the statements would be
+> executed (a query plan) [...]"
+
+> "SET SHOWPLAN_TEXT and SET SHOWPLAN_ALL cannot be specified inside a stored
+> procedure; they must be the only statements in a batch."
+
+`SET SHOWPLAN_XML` carries the same "must be the only statement in a batch"
+restriction (*SET SHOWPLAN_XML (Transact-SQL)*,
+<https://learn.microsoft.com/en-us/sql/t-sql/statements/set-showplan-xml-transact-sql?view=sql-server-ver17>,
+fetched 2026-09-02).
+
+`SET STATISTICS PROFILE` is **not** an equivalent and should not be read as one:
+*SET STATISTICS PROFILE (Transact-SQL)*
+(<https://learn.microsoft.com/en-us/sql/t-sql/statements/set-statistics-profile-transact-sql?view=sql-server-ver17>,
+fetched 2026-09-02) says "each executed query returns its regular result set,
+followed by an additional result set that shows a profile of the query
+execution" — an actual-plan option, which executes.
+
+### SAP HANA: `EXPLAIN PLAN ... FOR`, and a privilege
+
+*EXPLAIN PLAN Statement (Data Manipulation)*, SAP HANA Platform 2.0 SPS 08,
+<https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/20d9ec5575191014a251e58ecf90997a.html>
+(fetched 2026-09-02), gives the syntax as
+
+```text
+EXPLAIN PLAN [ SET STATEMENT_NAME = <statement_name> ] FOR <explain_plan_entry>
+```
+
+and adds two things that matter here: "The result of the evaluation is stored in
+the EXPLAIN_PLAN_TABLE view for examination" — so it returns no plan rows to the
+caller — and "You must have the OPTIMIZER ADMIN system privilege". The SAP HANA
+Cloud page
+(<https://help.sap.com/docs/hana-cloud-database/sap-hana-cloud-sap-hana-database-sql-reference-guide/explain-plan-statement-data-manipulation>,
+fetched 2026-09-02) splits it into `EXPLAIN RECOMPILED PLAN ... FOR <subquery>`
+and a plan-cache form.
+
+Whether a bare `EXPLAIN <select>` parses on HANA **could not be established from
+the documentation**, and is recorded as unestablished rather than guessed. What
+is established is that the reference documents no such statement: the *Data
+Manipulation Statements* index
+(<https://help.sap.com/docs/SAP_HANA_PLATFORM/4fe29514fd584807ac9f2a04f6754767/209eaa85751910149a30f95c936075be.html>,
+fetched 2026-09-02) lists `EXPLAIN PLAN` as its only EXPLAIN entry. Confirming
+the parser's behaviour needs a live server.
+
+### Teradata: supported, and one form partially executes
+
+*EXPLAIN Request Modifier*, Teradata Vantage SQL Data Manipulation Language,
+Analytics Database 20.00, publication B035-1146-200K,
+<https://docs.teradata.com/r/Enterprise_IntelliFlex_VMware/SQL-Data-Manipulation-Language/Query-and-Workload-Analysis-Statements/EXPLAIN-Request-Modifier>
+(fetched 2026-09-02):
+
+> "The Optimizer processes an explained request in the same way that the request
+> would be processed without the EXPLAIN modifier, except that the SQL within
+> the request is not actually executed. However, for a dynamic plan, the request
+> is partially executed."
+
+> "To EXPLAIN a request, you must have the permissions that are required to
+> execute that request."
+
+The syntax is `[ STATIC | DYNAMIC ] EXPLAIN [ IN XML [NODDLTEXT] ] SQL_request`,
+with `STATIC` the default. So the bare form dbplyr would send does not execute;
+`DYNAMIC EXPLAIN` does, partially.
+
+### Retrieval note
+
+docs.teradata.com and help.sap.com are client-rendered single-page applications,
+and a plain fetch of either topic URL returns a navigation shell with none of the
+text above. The quotes were retrieved from each vendor's own content API backing
+those exact pages — FluidTopics at
+`docs.teradata.com/api/khub/maps/.../topics/{id}/content` and
+`help.sap.com/http.svc/pagecontent?deliverable_id=...&file_path=...` — both
+first-party endpoints on the vendor domains. The Microsoft quotes came from
+direct fetches of the Learn pages.
