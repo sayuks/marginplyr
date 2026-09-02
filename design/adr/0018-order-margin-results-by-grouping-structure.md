@@ -177,6 +177,15 @@ order is lost on lazy backends. The trap moves out of marginplyr into caller
 code that nothing designed. Keeping the bit columns to keep the order is not
 the result the caller asked for.
 
+**A per-dimension direction on `.sort`**, so that a dimension can descend
+under a Margin order (#373). Rejected: it reaches a reversed dimension and not
+the request one step past it, ordering dimensions by a measure, which needs a
+value no ordering over the result's columns produces. A caller writes that key
+themselves either way, and the documentation carrying it carries the reversed
+dimension too, so the argument would not retire what it duplicates. It is also
+the wrong shape for `match_margin_choice()`, which admits one string from a
+fixed list, and it would have to name dimensions a composite has none of.
+
 **Leaving both out and keeping row order unspecified.** Rejected: the
 existing guidance tells a caller to add a `grouping_bit()` summary per
 dimension and drop it again, which fails on lazy backends for the reason
@@ -379,3 +388,41 @@ observable difference to break: one occurrence is one such plan.
 allocated after that choice, so a one-occurrence plan that ran on the native
 path still runs there and still stages the column; what changes is only where
 the projection dropping it sits.
+
+## Amendment: a caller writes the key too, and one clause is narrowed
+
+`.sort`'s vocabulary stays `"none"`, `"last"`, and `"first"`; the direction
+#373 asked for is written by the caller, and *Considered options* above records
+why the argument was refused. What this amendment settles is how far a
+caller-written key reaches, which two entries there answered on a measurement
+that turns out to be narrower than they state.
+
+**Both entries rest on "the caller must drop those columns afterwards, and
+`arrange()` followed by dropping a summarized column is exactly the shape
+dbplyr flattens".** Measured against dbplyr 2.6.0, dropping a *Grouping bit*
+does not lose the order on either adapter for a plan whose result is wrapped by
+the projection that places and labels the grouping columns: the bit is produced
+by the aggregate query or by the `UNION ALL`, so it stays resolvable in the
+`FROM` of the query carrying the `ORDER BY` after the projection stops
+selecting it. That covers every `rollup()` and `cube()`, and the recipe #373
+asked for is one.
+
+Where no such projection exists the entries hold. A plan of one grouping-set
+occurrence under `.margin_label = NULL` labels and casts nothing — the shape
+the amendment above is about — so the caller's `arrange()` applies to the query
+the summary ends in and the `select()` dropping the bits wraps it: RSQLite
+rendered no `ORDER BY` at all, with dbplyr's "ORDER BY is ignored in subqueries
+without LIMIT", while DuckDB kept it. A column the caller computed after the
+summary is in that position on every plan, which is why the measure-ordered
+recipe cannot drop its window column and DuckDB refuses the query with the
+binder error this decision names.
+
+**"Unavailable at all under `.margin_label = NULL`" is withdrawn.** The
+`grouping_bit()` recipe runs there, and returned the intended order on DuckDB;
+what the dimensions lose is their labels, not their bits.
+
+So what `.sort` writes that a caller cannot is narrower than these entries say,
+and the reason to keep writing it is the one the entries make second: a caller
+who writes the key holds a helper column whose safety depends on the plan, and
+`.sort` needs none. `investigation/writing-a-margin-order-key-by-hand.md` holds
+the measurements, and `vignettes/recipes.qmd` shows what a caller writes.

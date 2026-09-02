@@ -45,7 +45,7 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Only dplyr and dbplyr are required. Two recipes execute against DuckDB, so
+Only dplyr and dbplyr are required. Three recipes execute against DuckDB, so
 their chunks evaluate only when DuckDB is installed at the version marginplyr
 asks for. Where a package is missing or too old the code is still shown, but
 its output is absent. Everything else runs either locally or against
@@ -107,13 +107,148 @@ competing with one.
 derived from it.** Any later verb is free to reorder, and on a lazy backend
 one usually does — see [Name the grouping set on every
 row](#name-the-grouping-set-on-every-row) for a join that drops it silently.
-When some other presentation order is what you want, `arrange()` after the
-fact and do not ask for a Margin order at all.
+When some other presentation order is what you want, write the key yourself:
+[Write the sort key yourself](#write-the-sort-key-yourself) shows it as an
+`arrange()` you control.
 
 [Grouping
 identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
 explains why Grouping-plan order and a Margin order answer different
 questions.
+
+## Write the sort key yourself
+
+A Margin order leaves every dimension's values ascending, so a report that
+wants the newest year at the top asks for the same key with one term changed.
+`grouping_bit()` puts the Grouping bits the key reads into the result, and the
+`arrange()` is then the key above with `desc()` on the term you are reversing:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    yb = grouping_bit(year),
+    rb = grouping_bit(region),
+    .grouping = rollup(year, region)
+  ) |>
+  arrange(yb, is.na(year), desc(year), rb, is.na(region), region) |>
+  select(-yb, -rb)
+```
+
+2026 sits above 2025 and each subtotal is still under its own rows, because
+everything ahead of the reversed term is what it was.
+
+An order no sort key can express is written the same way, with one more
+column. Ordering regions by revenue, and the stores inside each region by
+revenue, needs each region's own revenue on every one of its rows; that number
+is already in the result as the region's subtotal row, so a grouped `mutate()`
+can put it there, and the `sb` term keeps each subtotal under its own stores:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    rb = grouping_bit(region),
+    sb = grouping_bit(store),
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    .by = region,
+    region_revenue = max(ifelse(sb == 1, revenue, NA), na.rm = TRUE)
+  ) |>
+  arrange(rb, desc(region_revenue), region, sb, desc(revenue), store) |>
+  select(region, store, revenue)
+```
+
+**On a lazy backend, dropping a helper column can cost the order.** Whether
+it does is decided by the query dbplyr builds, which this package does not own
+— but you are told when it happens, either by dbplyr warning that it discarded
+an `ORDER BY` or by the database refusing a query that orders on a column no
+longer in it.
+
+A Grouping bit usually survives, because the bits of a `rollup()` are computed
+in the query underneath the one the ordering sits in. The reversed-year recipe runs on
+a database unchanged:
+
+```{r}
+#| eval: !expr has_duckdb
+
+# `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets in
+# the session's temporary directory rather than in `~/.duckdb`.
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    yb = grouping_bit(year),
+    rb = grouping_bit(region),
+    .grouping = rollup(year, region)
+  ) |>
+  arrange(yb, is.na(year), desc(year), rb, is.na(region), region) |>
+  select(-yb, -rb) |>
+  collect()
+```
+
+`region_revenue` does not survive it. You computed it after the summary, so it
+is in the same query as the ordering rather than underneath it, and dropping it
+leaves an `ORDER BY` naming a column that is gone:
+
+```{r}
+#| label: dropping-a-computed-sort-term
+#| must_error: true
+#| eval: !expr has_duckdb
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    rb = grouping_bit(region),
+    sb = grouping_bit(store),
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    .by = region,
+    region_revenue = max(ifelse(sb == 1, revenue, NA), na.rm = TRUE)
+  ) |>
+  arrange(rb, desc(region_revenue), region, sb, desc(revenue), store) |>
+  select(region, store, revenue) |>
+  collect()
+```
+
+Keep the column and the result stays lazy and stays ordered, at the cost of
+carrying it:
+
+```{r}
+#| eval: !expr has_duckdb
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    rb = grouping_bit(region),
+    sb = grouping_bit(store),
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(
+    .by = region,
+    region_revenue = max(ifelse(sb == 1, revenue, NA), na.rm = TRUE)
+  ) |>
+  arrange(rb, desc(region_revenue), region, sb, desc(revenue), store) |>
+  collect()
+```
+
+`collect()` before the `select()` is the other way, and gives up laziness to
+get a report with no helper columns in it.
+
+```{r}
+#| include: false
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+The [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the whole key under *Margin order*.
 
 ## Compare each row with the right total
 
@@ -311,8 +446,6 @@ seeing this needs a live database:
 ```{r}
 #| eval: !expr has_duckdb
 
-# `shared_home = FALSE` keeps DuckDB's extension cache and stored secrets in
-# the session's temporary directory rather than in `~/.duckdb`.
 con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
 duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
 

@@ -387,9 +387,9 @@ plan, and never changes which adapter runs. It composes with every
 \code{.duplicates} policy the verb accepts with no diagnostic, and lazy inputs
 stay lazy.
 
-The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, and
-shows a join dropping one from a lazy result with no diagnostic naming this
-package.
+The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, shows
+the key written as an \code{arrange()} you control, and shows a join dropping a
+Margin order from a lazy result with no diagnostic naming this package.
 }
 
 \section{Display labels and grouping identity}{

@@ -319,6 +319,7 @@ markers <- list(
   ),
   "docs/vignettes/recipes.html" = c(
     "Put each subtotal with the rows it summarizes",
+    "Write the sort key yourself",
     "Compare each row with the right total",
     "Keep only one grouping set",
     "Name the grouping set on every row",

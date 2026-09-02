@@ -91,7 +91,9 @@
   property of the returned object and may not survive further verbs applied to
   a lazy result. `compute()` materializes a sorted lazy result in the Margin
   order; it records no dbplyr window ordering, because the key reads Grouping
-  bits from a column the result does not expose.
+  bits from a column the result does not expose. A dimension descending is the
+  same key written as an `arrange()` of your own, and rows ordered by a measure
+  is that key with one column added; the recipes guide shows both.
 * Added guides for Grouping identity and explicit key completion, and made the
   function references the canonical source of the Margin, Parent-share, and
   Margin-label contracts.
