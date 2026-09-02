@@ -335,3 +335,153 @@ test_that("grouping_backend() answers is_sql = FALSE for dtplyr", {
   backend <- grouping_backend(dtplyr::lazy_dt(sent_queries_data()))
   expect_false(backend$is_sql)
 })
+
+# --- the selection proxy row -------------------------------------------------
+
+test_that("an audited DuckDB call records its selection proxy", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h)
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, c("selection_proxy", "result"))
+  expect_match(record$sql[[1L]], "sent_queries", fixed = TRUE)
+})
+
+test_that("an audited RSQLite call records no selection proxy", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h)
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, "result")
+})
+
+test_that("an audited arrow call sent nothing", {
+  skip_if_suggest_absent("arrow")
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      arrow::arrow_table(sent_queries_data()),
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h)
+    )
+    expect_sent_nothing()
+  })
+})
+
+# --- the label scan row ------------------------------------------------------
+
+test_that("an audited label check records its scan", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g, h),
+      .check_margin_label = TRUE
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, c("observed_label_collision", "result"))
+  expect_match(record$sql[[1L]], "Total", fixed = TRUE)
+})
+
+# --- the dialect probe's rows ------------------------------------------------
+
+# The verdict is cached per dialect for the session, so a probe sends its
+# queries only against an empty cache; both tests below empty it the way
+# `test-share-backends.R` does and put back what the rest of the suite had.
+empty_sent_queries_verdicts <- function() {
+  rm(
+    list = ls(share_dialect_verdicts, all.names = TRUE),
+    envir = share_dialect_verdicts
+  )
+}
+
+restore_sent_queries_verdicts <- function(saved) {
+  empty_sent_queries_verdicts()
+  list2env(saved, envir = share_dialect_verdicts)
+  invisible(NULL)
+}
+
+test_that("an audited DuckDB share records the probe and its control", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- sent_queries_table(con)
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  on.exit(restore_sent_queries_verdicts(saved), add = TRUE)
+  empty_sent_queries_verdicts()
+
+  with_audit_option(TRUE, {
+    summarize_with_margins(
+      remote,
+      total = sum(v, na.rm = TRUE),
+      share = share_of_parent(total),
+      .grouping = rollup(g, h)
+    )
+    record <- last_sent_queries()
+  })
+
+  # DuckDB refuses summing a string, which is the answer the control is sent
+  # to tell from a question that could not be put here at all.
+  probes <- grep("^share_dialect", record$purpose, value = TRUE)
+  expect_identical(probes, c("share_dialect", "share_dialect_control"))
+})
+
+test_that("a refused share leaves the probe's row readable", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  on.exit(restore_sent_queries_verdicts(saved), add = TRUE)
+  empty_sent_queries_verdicts()
+
+  # SQLite converts a string to a number rather than refusing it, so the share
+  # is refused here, after the probe's query has already been recorded.
+  with_audit_option(TRUE, {
+    condition <- rlang::catch_cnd(
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        share = share_of_parent(total),
+        .grouping = rollup(g, h)
+      ),
+      classes = "marginplyr_error"
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_s3_class(condition, "marginplyr_error")
+  expect_identical(record$purpose, "share_dialect")
+})

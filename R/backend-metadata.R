@@ -10,7 +10,9 @@ grouping_selection_proxy <- function(.data,
     return(as.data.frame(arrow::schema(.data)))
   }
   if (backend$collect_selection_proxy) {
-    return(dplyr::collect(utils::head(.data, n = 0L)))
+    proxy <- utils::head(.data, n = 0L)
+    record_sent_query("selection_proxy", proxy)
+    return(dplyr::collect(proxy))
   }
   .data
 }

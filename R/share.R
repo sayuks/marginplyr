@@ -2369,9 +2369,17 @@ share_dialect_can_be_asked <- function(con) {
 # it dbplyr asks the connection for the query's fields before it can build a
 # `tbl`, which is a further query for a schema this frame already knows.
 probe_share_dialect <- function(con) {
-  probe <- probe_share_dialect_answer(con, quote(sum("x", na.rm = TRUE)))
+  probe <- probe_share_dialect_answer(
+    con,
+    quote(sum("x", na.rm = TRUE)),
+    purpose = "share_dialect"
+  )
   if (identical(probe, "raised")) {
-    control <- probe_share_dialect_answer(con, quote(sum(z, na.rm = TRUE)))
+    control <- probe_share_dialect_answer(
+      con,
+      quote(sum(z, na.rm = TRUE)),
+      purpose = "share_dialect_control"
+    )
     if (identical(control, "answered")) {
       return("refuses")
     }
@@ -2396,7 +2404,11 @@ probe_share_dialect <- function(con) {
 # every value it does not recognise to `"unknown"` -- the answer that refuses
 # the share. An unrecognised status therefore fails closed by construction,
 # and that is the property worth writing down rather than asserting.
-probe_share_dialect_answer <- function(con, expr) {
+#
+# `purpose` is the name this query is recorded under (ADR 0027), and the
+# caller passes a different one for the question and for the control, the two
+# being one function called twice.
+probe_share_dialect_answer <- function(con, expr, purpose) {
   query <- tryCatch(
     dplyr::summarize(
       dplyr::tbl(con, dbplyr::sql("SELECT 1 AS z"), vars = "z"),
@@ -2407,6 +2419,7 @@ probe_share_dialect_answer <- function(con, expr) {
   if (is.null(query)) {
     return("unanswerable")
   }
+  record_sent_query(purpose, query)
   answer <- tryCatch(
     list(value = suppressMessages(suppressWarnings(dplyr::collect(query)))),
     error = function(cnd) NULL
