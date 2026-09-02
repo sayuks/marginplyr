@@ -294,7 +294,224 @@ For a denominator one rollup level up rather than at the top, use
 reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 documents both helpers, and [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
-compares them side by side.
+compares them side by side. For a level between the two, [Compare a row with
+an ancestor level](#compare-a-row-with-an-ancestor-level) runs the same `.by`
+lever the other way.
+
+## Compare a row with an ancestor level
+
+`share_of_parent()` reaches the level immediately above and `share_of_total()`
+reaches the top. In a three-level report the question in between is an
+ordinary one: what fraction of its *region* is a channel row? A store's parent
+is its region, but a channel's is its store, so neither helper answers it as
+written.
+
+Move the ancestor dimension into `.by`. The Grand total set of a fixed
+partition is that partition's own total, so `share_of_total()` measures
+against the region with no join and no key of your own:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    share_of_region = share_of_total(revenue),
+    .by = region,
+    .grouping = rollup(store, channel),
+    .sort = "last"
+  )
+```
+
+Placement is what chooses a denominator, and this is the lever from [Compare
+each row with the right total](#compare-each-row-with-the-right-total) run the
+other way: move a column out of `.by` to pool partitions, move it in to
+measure against it.
+
+What the move costs is the levels above the ancestor. `region` is a fixed key,
+so no grouping set of the plan pools regions and the result has no all-regions
+row. When a report needs both — a share against an ancestor level *and* the
+levels above it — read the ancestor level out of the result and join it back.
+
+The example below adds `product`, so that the level being measured against is
+genuinely intermediate: in `rollup(region, store, product, channel)` the
+parent of a channel row is its product, and `region`/`store` is two levels
+further up. Select that level and keep the revenue under a name of its own:
+
+```{r}
+store_totals <- retail_sales |>
+  summarize_with_margins(
+    store_revenue = sum(revenue),
+    region_absent = grouping_bit(region),
+    store_absent = grouping_bit(store),
+    product_absent = grouping_bit(product),
+    channel_absent = grouping_bit(channel),
+    .grouping = rollup(region, store, product, channel)
+  ) |>
+  filter(
+    region_absent == 0L,
+    store_absent == 0L,
+    product_absent == 1L,
+    channel_absent == 1L
+  ) |>
+  select(region, region_absent, store, store_absent, store_revenue)
+
+store_totals
+```
+
+Then summarize the whole rollup, retain the same bits, and divide:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    region_absent = grouping_bit(region),
+    store_absent = grouping_bit(store),
+    .grouping = rollup(region, store, product, channel),
+    .sort = "last"
+  ) |>
+  left_join(
+    store_totals,
+    by = c("region", "region_absent", "store", "store_absent"),
+    na_matches = "na"
+  ) |>
+  mutate(share_of_store = revenue / store_revenue) |>
+  select(region, store, product, channel, revenue, share_of_store)
+```
+
+The store with no name gets its own denominator, and the two levels that have
+no store — the region subtotals and the grand total — get `NA` rather than a
+number. Two things make that come out right, and neither announces itself.
+
+**The key is Grouping identity, not the displayed value.** The level is
+selected by `grouping_bit()` rather than by a Margin label, for the reason
+[Keep only one grouping set](#keep-only-one-grouping-set) gives: a source
+value can equal the label. The same argument reaches the join key, which is
+why each dimension's bit travels beside its value. Without the bits, a row
+whose store is *omitted* joins to the row whose store is *missing in the
+source*, because both display the same thing. With `.margin_label = NULL` they
+are both `NA` and the result is a number rather than a gap:
+
+```{r}
+label_free_totals <- retail_sales |>
+  summarize_with_margins(
+    store_revenue = sum(revenue),
+    region_absent = grouping_bit(region),
+    store_absent = grouping_bit(store),
+    product_absent = grouping_bit(product),
+    channel_absent = grouping_bit(channel),
+    .grouping = rollup(region, store, product, channel),
+    .margin_label = NULL
+  ) |>
+  filter(
+    region_absent == 0L,
+    store_absent == 0L,
+    product_absent == 1L,
+    channel_absent == 1L
+  ) |>
+  select(region, store, store_revenue)
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(region, store, product, channel),
+    .margin_label = NULL,
+    .sort = "last"
+  ) |>
+  left_join(label_free_totals, by = c("region", "store"), na_matches = "na") |>
+  mutate(share_of_store = revenue / store_revenue) |>
+  filter(region == "East", is.na(store)) |>
+  select(region, store, product, channel, revenue, share_of_store)
+```
+
+The last row is East's region subtotal, and its share is greater than one: it
+took the unnamed store's revenue as its denominator. [Grouping
+identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+sets out the three kinds of apparent missingness this confuses, and why
+`share_of_parent()` cannot make the same mistake internally.
+
+**`na_matches = "na"` is written explicitly because the default differs by
+backend.** `dplyr::left_join()` matches `NA` to `NA`, so a local pipeline is
+right without the argument; dbplyr's method does not, so the same pipeline
+drops the unnamed store's share against a database and says nothing. Both
+halves are below — the join as written, then the same join with the argument
+dropped:
+
+```{r}
+#| eval: !expr has_duckdb
+
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
+
+duckdb_store_totals <- duckdb_sales |>
+  summarize_with_margins(
+    store_revenue = sum(revenue, na.rm = TRUE),
+    region_absent = grouping_bit(region),
+    store_absent = grouping_bit(store),
+    product_absent = grouping_bit(product),
+    channel_absent = grouping_bit(channel),
+    .grouping = rollup(region, store, product, channel)
+  ) |>
+  filter(
+    region_absent == 0L,
+    store_absent == 0L,
+    product_absent == 1L,
+    channel_absent == 1L
+  ) |>
+  select(region, region_absent, store, store_absent, store_revenue)
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    region_absent = grouping_bit(region),
+    store_absent = grouping_bit(store),
+    .grouping = rollup(region, store, product, channel)
+  ) |>
+  left_join(
+    duckdb_store_totals,
+    by = c("region", "region_absent", "store", "store_absent"),
+    na_matches = "na"
+  ) |>
+  mutate(share_of_store = revenue / store_revenue) |>
+  filter(is.na(store)) |>
+  select(region, store, product, channel, revenue, share_of_store) |>
+  collect()
+```
+
+```{r}
+#| eval: !expr has_duckdb
+
+duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    region_absent = grouping_bit(region),
+    store_absent = grouping_bit(store),
+    .grouping = rollup(region, store, product, channel)
+  ) |>
+  left_join(
+    duckdb_store_totals,
+    by = c("region", "region_absent", "store", "store_absent")
+  ) |>
+  mutate(share_of_store = revenue / store_revenue) |>
+  filter(is.na(store)) |>
+  select(region, store, product, channel, revenue, share_of_store) |>
+  collect()
+```
+
+```{r}
+#| include: false
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
+The unnamed store keeps its share in the first and loses it in the second, and
+the two calls differ by one argument. As in [Name the grouping set on every
+row](#name-the-grouping-set-on-every-row), the Margin order does not survive
+the join — `arrange()` after it, or collect first.
+
+Reaching an ancestor level is not part of the helpers' API.
+[ADR 0010][adr10] records why.
+
+[adr10]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0010-compute-parent-shares-as-a-contextual-summary.md
 
 ## Keep only one grouping set
 

@@ -56,6 +56,12 @@ any Grouping specification whose plan contains one. \code{\link[=rollup]{rollup(
 always produce one; \code{\link[=grouping_sets]{grouping_sets()}} produces one only when it includes an
 empty \code{\link[=grouping_set]{grouping_set()}}, and a specification without one is rejected naming
 that fix.
+
+Neither helper reaches a level between the two. For a denominator at a
+named ancestor level, move that dimension into \code{.by} and use
+\code{share_of_total()}; the \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} writes that out, and the
+join for the case where the levels above the ancestor have to stay in the
+same result.
 }
 \section{Direct shares}{
 

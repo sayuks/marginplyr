@@ -39,6 +39,14 @@
 #' empty [grouping_set()], and a specification without one is rejected naming
 #' that fix.
 #'
+#' Neither helper reaches a level between the two. For a denominator at a
+#' named ancestor level, move that dimension into `.by` and use
+#' `share_of_total()`; the [recipes guide][recipes] writes that out, and the
+#' join for the case where the levels above the ancestor have to stay in the
+#' same result.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#'
 #' @section Direct shares:
 #' A direct call must be the complete right-hand side of an explicitly named
 #' summary. Its argument must be the bare name of one eligible ordinary summary
