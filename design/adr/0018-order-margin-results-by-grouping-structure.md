@@ -379,3 +379,57 @@ observable difference to break: one occurrence is one such plan.
 allocated after that choice, so a one-occurrence plan that ran on the native
 path still runs there and still stages the column; what changes is only where
 the projection dropping it sits.
+
+## Amendment: a caller writes the key too, and dropping a Grouping bit is safe
+
+`.sort` gives a caller three choices, and both of them that order rows leave
+every dimension's values ascending. #373 asked for the fourth thing a report
+wants — a dimension descending, newest period first — and for the request one
+step past it, dimensions ordered by a measure. Neither is added to `.sort`,
+whose vocabulary stays `"none"`, `"last"`, and `"first"`. What is added is the
+statement that the key is a caller's to write, and a correction to one clause
+of the `.bits` rejection above.
+
+**A direction argument would not retire the recipe it competes with.** A
+per-dimension direction reaches the first request. The second is outside what
+any sort key expresses: ordering regions by revenue needs the region's own
+measure on each of its rows, which is a value no ordering over the result's
+columns produces. So a caller wanting it writes the key themselves whichever
+way this decision goes, and the documentation carrying that has to carry the
+first request too or send its reader between two mechanisms for one question.
+The extension would be an alternative spelling of something the guide has to
+show regardless.
+
+Its own cost is the vocabulary. `match_margin_choice()` admits one string from
+a fixed list and reads an untouched formal default by `identical()`, which is
+what refuses a prefix (#110) and a `NULL` (#144); a per-dimension direction is
+not that shape. It would also have to name dimensions, and a composite
+dimension has no single name while `cube()`, `grouping_sets()`, and
+`grouping_spec()` each give the plan a different set of them. `.sort` is
+shared by four verbs, so the shape is decided once for all of them.
+
+**What `.sort` writes that a caller cannot is narrower than the `.bits`
+rejection says.** That entry rejects handing the Grouping bits over because
+"the caller must drop those columns afterwards, and `arrange()` followed by
+dropping a summarized column is exactly the shape dbplyr flattens, so the order
+is lost on lazy backends". Measured against dbplyr 2.6.0, dropping a *Grouping
+bit* does not lose the order on DuckDB or on SQLite: a bit is produced by the
+aggregate query, which the labelling projection already wraps, so it stays
+resolvable in the `FROM` of the query carrying the `ORDER BY` after the
+projection stops selecting it. The `UNION ALL` adapter puts it in a subquery
+for the same reason. This is the implementation rule above, reached from the
+caller's side.
+
+The rejection stands. What is flattened is a column the caller computed
+*after* the summary, which sits in the query carrying the `ORDER BY` rather
+than below it — the window function the measure-ordered request needs is
+exactly that, and dropping it makes DuckDB reject the query with the binder
+error this decision describes. A caller keeps such a column in the result, or
+collects before dropping it.
+`investigation/writing-a-margin-order-key-by-hand.md` holds both measurements,
+and `vignettes/recipes.qmd` shows both cases.
+
+The narrowing changes no argument this decision reached. `.bits` was rejected
+for handing a caller a shape that fails on the second request while `.sort`
+answers the first without a helper column at all, and both halves of that
+survive.

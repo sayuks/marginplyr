@@ -341,9 +341,9 @@
 #' `.duplicates` policy the verb accepts with no diagnostic, and lazy inputs
 #' stay lazy.
 #'
-#' The [recipes guide][recipes] shows a Margin order before and after, and
-#' shows a join dropping one from a lazy result with no diagnostic naming this
-#' package.
+#' The [recipes guide][recipes] shows a Margin order before and after, shows
+#' the key written as an `arrange()` you control, and shows a join dropping a
+#' Margin order from a lazy result with no diagnostic naming this package.
 #'
 #' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
