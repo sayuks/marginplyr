@@ -475,3 +475,184 @@ test_that("a refused share leaves the probe's row readable", {
   expect_s3_class(condition, "marginplyr_error")
   expect_identical(record$purpose, "share_dialect")
 })
+
+# --- a call refused before its plan ------------------------------------------
+
+# The entry points, derived rather than listed: an entry point is an exported
+# function that compiles a Grouping plan of its own, and `.grouping` is how a
+# specification reaches one. An entry point taking a plan by some other route
+# would go unread here, which is a bound this states rather than hides -- the
+# equality in the structural gate below is what would report it, the new
+# function calling `reset_sent_queries()` without being in this set.
+margin_entry_points <- function() {
+  ns <- asNamespace("marginplyr")
+  Filter(
+    function(name) ".grouping" %in% names(formals(get(name, envir = ns))),
+    getNamespaceExports("marginplyr")
+  )
+}
+
+# The entry points, each with an argument it refuses in the validation it opens
+# with -- before a Grouping plan is compiled, and so before any query could
+# have been sent. `.duplicates` is the one option every entry point takes, and
+# a local input keeps what is under test the refusal rather than the backend.
+refused_entry_point_calls <- function() {
+  lapply(margin_entry_points(), function(verb) {
+    args <- list(
+      quote(sent_queries_data()),
+      .grouping = quote(rollup(g)),
+      .duplicates = "bogus"
+    )
+    if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
+      args <- c(args, list(total = quote(sum(v, na.rm = TRUE))))
+    }
+    list(verb = verb, args = args)
+  })
+}
+
+test_that("a call refused before its plan reports its own empty record", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  # The verbs whose refused call left the previous call's record readable,
+  # rather than one expectation per case: which entry point is stale is what a
+  # failure here has to say, and the case is not otherwise in the report.
+  stale <- character()
+
+  for (case in refused_entry_point_calls()) {
+    with_audit_option(TRUE, {
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g, h)
+      )
+      recorded <- nrow(last_sent_queries())
+      condition <- rlang::catch_cnd(
+        eval(rlang::call2(case$verb, !!!case$args)),
+        classes = "marginplyr_error"
+      )
+      record <- last_sent_queries()
+    })
+    # A prior call that recorded nothing would leave zero rows to empty, and
+    # a case that raised nothing refused at no point at all: either passes the
+    # count on a record this test never put anything into.
+    if (recorded == 0L || is.null(condition) || nrow(record) != 0L) {
+      stale <- c(stale, case$verb)
+    }
+  }
+
+  expect_identical(stale, character())
+  # The count above is all the loop reads, so the zero-row answer's shape is
+  # asserted once, on the record the last case left.
+  expect_sent_nothing()
+})
+
+test_that("a call refused before its plan reads the option for itself", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, summarize_with_margins(
+    remote,
+    total = sum(v, na.rm = TRUE),
+    .grouping = rollup(g, h)
+  ))
+  with_audit_option(FALSE, {
+    expect_error(
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g, h),
+        .duplicates = "bogus"
+      ),
+      class = "marginplyr_error"
+    )
+  })
+
+  # The refused call was the unaudited one, so the flag it left is what the
+  # accessor reports -- not the audited flag of the call before it.
+  expect_unaudited()
+})
+
+# --- the reset site, structurally --------------------------------------------
+
+# Which functions empty the record is a property of every entry point rather
+# than of any one call, so it is read from the loaded namespace; the shared
+# visitor and enumeration come from `helper-namespace-walk.R`, whose header
+# says why a structural gate reads a namespace at all.
+
+# Whether `fn` empties the record anywhere in its body.
+empties_the_record <- function(fn) {
+  found <- FALSE
+  visit_calls(body(fn), function(node) {
+    head <- node[[1]]
+    if (is.name(head) && identical(as.character(head), "reset_sent_queries")) {
+      found <<- TRUE
+    }
+  })
+  found
+}
+
+# The first expression of `fn`'s body, which is the body itself where it is not
+# a braced block.
+first_statement <- function(fn) {
+  fn_body <- body(fn)
+  if (!is.call(fn_body) || !identical(as.character(fn_body[[1]]), "{")) {
+    return(fn_body)
+  }
+  fn_body[[2]]
+}
+
+test_that("every entry point empties the record before anything else", {
+  ns <- asNamespace("marginplyr")
+  entry_points <- margin_entry_points()
+
+  emptying <- Filter(
+    function(name) empties_the_record(get(name, envir = ns)),
+    namespace_functions(ns)
+  )
+  # Both directions at once: an entry point that stopped emptying the record
+  # leaves the record spanning two calls, and a function that empties it
+  # part-way through one truncates that call's own (ADR 0027).
+  expect_setequal(emptying, entry_points)
+
+  late <- Filter(
+    function(name) {
+      opening <- first_statement(get(name, envir = ns))
+      !identical(opening, quote(reset_sent_queries()))
+    },
+    entry_points
+  )
+  # Named rather than counted: a validation moved above the reset is what this
+  # fires on, and which entry point took it is not otherwise in the report.
+  expect_identical(late, character())
+})
+
+test_that("the reset scan tells a first statement from a later one", {
+  # Both readings run over synthetic functions rather than over a member of the
+  # namespace, since a member that failed either is what the gate above reports.
+  resets_first <- function() {
+    reset_sent_queries()
+    stop("unreachable")
+  }
+  resets_later <- function() {
+    stop("unreachable")
+    reset_sent_queries()
+  }
+  bare <- function() reset_sent_queries()
+  reset <- quote(reset_sent_queries())
+
+  expect_true(empties_the_record(resets_first))
+  expect_true(empties_the_record(resets_later))
+  expect_false(empties_the_record(function() NULL))
+  expect_identical(first_statement(resets_first), reset)
+  expect_false(identical(first_statement(resets_later), reset))
+  # An unbraced body is the statement itself, which the gate above reads for no
+  # entry point today and would read for one written that way.
+  expect_identical(first_statement(bare), reset)
+})

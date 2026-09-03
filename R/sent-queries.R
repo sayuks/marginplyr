@@ -9,10 +9,12 @@ sent_queries <- new.env(parent = emptyenv())
 # reading per call, kept with this call's record (ADR 0027). Anything but
 # `TRUE` is "not audited", and nothing here reports it.
 #
-# Called at the very top of `prepare_grouping_plan()`, which every entry point
-# reaches before any recorded site. The backend is not known yet, so the SQL
-# flag starts `FALSE` and `remember_sent_query_backend()` sets it where the
-# backend is computed.
+# Called as the first statement of every entry point, ahead of the argument
+# validation each of them opens with: a call refused there is a call that
+# began, and what `last_sent_queries()` answers for it is its own empty record
+# rather than the previous call's (ADR 0027). The backend is not known yet, so
+# the SQL flag starts `FALSE` and `remember_sent_query_backend()` sets it where
+# the backend is computed.
 reset_sent_queries <- function() {
   sent_queries$recorded <- TRUE
   sent_queries$audited <- isTRUE(getOption("marginplyr.audit_sql"))
