@@ -2,6 +2,12 @@
 
 Issues and PRDs for this repo live as GitHub issues. Use the `gh` CLI for all operations.
 
+## Language
+
+Everything written to the tracker is in English: issue titles, issue bodies, and comments on them, whichever language the request that prompted them arrived in. The tracker is the one surface where this needs saying, because a request can arrive in another language and be answered where it arrived; every other document here is English because it was authored that way and stays that way by being edited rather than replaced.
+
+An issue is read alongside the files it is about — `AGENTS.md`, `CONTEXT.md`, the ADRs under `design/adr/`, and the code — and it quotes them and is quoted by them. A ticket in another language breaks that in both directions: its quotations no longer match what they quote, and a commit message or an ADR citing it reaches prose its own reader cannot use.
+
 ## Conventions
 
 - **Create an issue**: `gh issue create --title "..." --body "..."`. Use a heredoc for multi-line bodies.
