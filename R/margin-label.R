@@ -381,10 +381,17 @@ label_margin_branch <- function(.data,
     function(col) !is_missing_margin_label(margin_labels[[col]]),
     included
   )
+  # Keyed by column, and empty unless the union would drop a declared NA level
+  # (`encodes_missing_label_factor()`). A branch reads it twice, and the two
+  # reads are what put a column on one side of the union in the encoding the
+  # other side carries.
+  sentinels <- missing_label_sentinels(factor_info, margin_labels)
   encoded_factors <- Filter(
     function(info) {
-      info$col %in% labelled_included &&
-        isTRUE(info$preserve_missing_value)
+      info$col %in% included &&
+        (info$col %in% names(sentinels) ||
+           (info$col %in% labelled_included &&
+              isTRUE(info$preserve_missing_value)))
     },
     factor_info
   )
@@ -443,6 +450,14 @@ label_margin_branch <- function(.data,
           return(rlang::expr(rep(!!label, dplyr::n())))
         }
         return(label)
+      }
+      if (col %in% names(sentinels)) {
+        # The typed missing this margin row carries, spelled as the included
+        # branches spell one. `as.character()` of the prototype cannot: it is
+        # `NA`, which is also what a value on the NA level becomes, and the
+        # union is where the two would stop being distinguishable (ADR 0012).
+        # Full size for the reason the labelled arm above is.
+        return(rlang::expr(rep(!!sentinels[[col]], dplyr::n())))
       }
       value <- prototypes[[col]]
       if (is.null(value)) NA else value

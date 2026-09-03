@@ -39,8 +39,12 @@ factor_contract_data <- function(has_na_level, has_missing_value) {
   )
 }
 
-test_that("factor NA levels and missing values obey the eight-case contract", {
-  cases <- data.frame(
+# The eight rows of ADR 0012's table, in its order. Shared rather than written
+# per backend: what the dtplyr test below asserts is that the contract does not
+# depend on which backend the call was handed (#408), and a second copy of the
+# table could only weaken that.
+factor_contract_cases <- function() {
+  data.frame(
     label = c(rep("NA", 4L), rep("NULL", 4L)),
     na_level = rep(c(TRUE, TRUE, FALSE, FALSE), 2L),
     missing_value = rep(c(TRUE, FALSE, TRUE, FALSE), 2L),
@@ -49,6 +53,10 @@ test_that("factor NA levels and missing values obey the eight-case contract", {
     # holding a missing value, so neither is refused for producing it.
     errors = c(TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE)
   )
+}
+
+test_that("factor NA levels and missing values obey the eight-case contract", {
+  cases <- factor_contract_cases()
 
   for (i in seq_len(nrow(cases))) {
     case <- cases[i, ]
@@ -79,6 +87,131 @@ test_that("factor NA levels and missing values obey the eight-case contract", {
       expect_identical(margin$n, 2L)
       expect_identical(levels(result$group), levels(data$group))
     }
+  }
+})
+
+# The same eight rows on the one backend that can lose one of them. The local
+# branches are combined by `bind_rows()`, which keeps a declared NA level;
+# dtplyr combines them with `data.table`'s rbind, which drops one outright and
+# turns the values that used it into missing codes, so the row that preserves
+# an NA level under a typed-missing label went missing there with no diagnostic
+# (#408). dtplyr is where this is asserted because it is the only backend that
+# preserves such a level at all -- a plain duckdb round trip already drops it
+# and arrow refuses the column -- so it is the only one ADR 0012's "local and
+# factor-preserving lazy adapters" clause reaches.
+#
+# Each case is compared against the local result rather than against a literal,
+# because what the contract says is that the two agree.
+# A result's rows in an order both backends produce. Two are compared here and
+# they place a missing value within one grouping set differently -- the local
+# branch puts it last and `data.table` puts it first -- which is an ordering
+# property ADR 0018 leaves to the backend and not what these cases assert.
+#
+# The integer code is what is compared rather than the displayed value: it is
+# the only reading that separates a value on an NA level, which has one, from
+# the typed missing a margin row carries, which has none.
+factor_contract_rows <- function(result) {
+  rows <- data.frame(
+    code = as.integer(result$group),
+    bit = result$bit,
+    n = result$n
+  )
+  rows <- rows[order(rows$code, rows$bit, rows$n, na.last = TRUE), ]
+  row.names(rows) <- NULL
+  rows
+}
+
+test_that("dtplyr obeys the eight-case contract as the local backend does", {
+  skip_if_suggest_absent("dtplyr")
+  cases <- factor_contract_cases()
+
+  for (i in seq_len(nrow(cases))) {
+    case <- cases[i, ]
+    data <- factor_contract_data(case$na_level, case$missing_value)
+    label <- if (case$label == "NA") NA_character_ else NULL
+    info <- paste(case, collapse = "/")
+    operation <- function(input) {
+      summarize_with_margins(
+        input,
+        n = dplyr::n(),
+        bit = grouping_bit(group),
+        .grouping = rollup(group),
+        .margin_label = label
+      )
+    }
+
+    if (case$errors) {
+      error <- expect_error(operation(dtplyr::lazy_dt(data)), info = info)
+      expect_s3_class(error, "marginplyr_error")
+      next
+    }
+
+    result <- dplyr::collect(operation(dtplyr::lazy_dt(data)))
+    expected <- operation(data)
+    expect_s3_class(result$group, "factor")
+    expect_identical(levels(result$group), levels(data$group), info = info)
+    expect_identical(
+      levels(result$group),
+      levels(expected$group),
+      info = info
+    )
+    expect_identical(
+      factor_contract_rows(result),
+      factor_contract_rows(expected),
+      info = info
+    )
+  }
+})
+
+# The eight cases above declare an NA level that no value uses, so they assert
+# the level survives and not that a value on it stays distinguishable from the
+# typed missing a margin row carries. That distinction is the whole of what
+# ADR 0012 separates, and it is what an encoding that merely restored the
+# levels would lose: `as.character()` spells both as `NA`.
+test_that("dtplyr keeps a used NA level apart from a typed missing", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(
+    group = structure(
+      c(1L, 2L),
+      levels = c("x", NA_character_),
+      class = "factor"
+    ),
+    value = 1:2
+  )
+
+  # Both branch-building verbs, because the branch union they share is where
+  # the level was lost; the Grouping set identifier is what says which rows a
+  # branch stands for, since the displayed value cannot.
+  queries <- list(
+    summarize_with_margins = summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      n = dplyr::n(),
+      .grouping = rollup(group),
+      .margin_label = NULL,
+      .id = "set"
+    ),
+    expand_with_margins = expand_with_margins(
+      dtplyr::lazy_dt(data),
+      .grouping = rollup(group),
+      .margin_label = NULL,
+      .id = "set"
+    )
+  )
+
+  for (verb in names(queries)) {
+    result <- dplyr::collect(queries[[verb]])
+    expect_identical(levels(result$group), c("x", NA), info = verb)
+    source_rows <- result[result$set == 1L, , drop = FALSE]
+    margin_rows <- result[result$set == 2L, , drop = FALSE]
+    # The source row that uses the NA level prints as `<NA>` while `is.na()`
+    # is false; every margin row is a typed missing, where it is true.
+    expect_identical(
+      sort(as.integer(source_rows$group)),
+      c(1L, 2L),
+      info = verb
+    )
+    expect_false(any(is.na(source_rows$group)), info = verb)
+    expect_true(all(is.na(margin_rows$group)), info = verb)
   }
 })
 

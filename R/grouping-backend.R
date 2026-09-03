@@ -64,7 +64,8 @@ backend_capabilities <- function(kind) {
     "native_grouping_sets",
     "native_duplicate_sets",
     "records_window_order",
-    "invents_row_on_column_add"
+    "invents_row_on_column_add",
+    "drops_na_factor_level_on_union"
   )
   enabled <- list(
     local = c(
@@ -85,7 +86,17 @@ backend_capabilities <- function(kind) {
       # column-less one a column and stays empty, and a SQL table with no
       # columns cannot be constructed at all. `other` is granted nothing, so
       # an unrecognised backend keeps the ordinary attachment.
-      "invents_row_on_column_add"
+      "invents_row_on_column_add",
+      # `data.table`'s rbind drops a declared NA factor level from the result
+      # and turns the values that used it into missing codes, whatever the
+      # branches held -- it does so for a list of one table. Every branch list
+      # this kind produces is combined that way, so a dimension carrying such
+      # a level has to cross the union as character and be rebuilt after it
+      # (#408). No other kind is granted this: a local frame's `bind_rows()`
+      # keeps the level, and the two that lose it -- duckdb drops it on the
+      # way in and arrow refuses the column outright -- lose it before any
+      # branch exists, which is outside what marginplyr promises (ADR 0016).
+      "drops_na_factor_level_on_union"
     ),
     arrow = "can_read_schema",
     duckdb = c(
