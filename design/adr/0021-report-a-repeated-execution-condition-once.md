@@ -101,8 +101,8 @@ Undoing the styling is also not sufficient by itself for the pointer: the
 stripped link renders the call without the backticks dplyr writes around it
 otherwise, so that pattern admits both spellings.
 
-Evidence: `investigation/dplyr-condition-context-rendering.md`, whose revisions
-section holds the measured report counts, the rendered pointer line, and the
+Evidence: `investigation/dplyr-condition-context-rendering.md`, whose 2026-08-18
+revisions section holds the measured report counts, the rendered pointer line, and the
 two things measured beside them and found not to need changing — the wrap
 indent that survives styling, and the error path that carries no styling at
 all.
