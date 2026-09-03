@@ -215,11 +215,13 @@ does not decide it there, and the truncation is marginplyr's.
 another."** That followed from `as_label()` emitting neither `+...` nor
 `.data$x`. On the native adapter marginplyr's own label *is* `+...`, so the
 asymmetry is gone and the property #199's hard constraint needs no longer
-follows from it. What was measured to hold in its place is the collision drop
-`branch_argument_map()` already performs: two unnamed dots that both collapse
-to `+...` yield no map entry and leave dplyr's quotation standing, and a named
-dot carries `name = ` into its label, so it collides with neither an unnamed
-dot nor a differently-named one.
+follows from it. What holds in its place is the rule
+`branch_argument_map()` already applies to a shared label: two unnamed dots
+that both collapse to `+...` yield no map entry where the callers spelled them
+differently, and the entry is kept where they spelled them alike, the
+restoration being unique whichever dot dplyr meant. A named dot carries
+`name = ` into its label, so it shares a label with neither an unnamed dot nor
+a differently-named one.
 
 Neither correction reaches the eager path, where the measurements above stand
 as taken.

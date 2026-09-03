@@ -7,9 +7,10 @@ and rejects extending it to the native grouping-sets adapter "as covering nothin
 today, since both backends holding the capability are lazy". Its own *Scope*
 section names an exception to that reasoning — an error dbplyr raises while it
 translates the rewritten expression does arrive while the verb runs — and leaves
-it quoting the rewrite. This note measures that exception: what the caller is
-shown today, why the label is unreadable, and whether the mechanism ADR 0022
-already has would restore it if applied there. It was prompted by #410.
+it quoting the rewrite. This note measures that exception on the date above:
+what the caller was shown, why the label is unreadable, and whether the
+mechanism ADR 0022 already has would restore it if applied there. It was
+prompted by #410.
 
 Everything below was run against marginplyr at `4f367b4` with R 4.6.1,
 dplyr 1.2.1, dbplyr 2.6.0, rlang 1.3.0, and cli 3.6.6, on a live DuckDB
@@ -80,8 +81,8 @@ And `rlang::as_label()` over the rewrite itself, in isolation:
 
 | expression | `as_label()` |
 |---|---|
-| a bare `dbplyr::sql_glue2()` literal | `<sql>` |
-| `grouping_bit(a)`'s rewrite alone, `sql = TRUE` | `+...` |
+| a bare SQL literal — what a dot that is `grouping_bit(a)` alone rewrites to | `<sql>` |
+| `<sql literal> + 1` | `+...` |
 | `sum(value) + <sql literal>` | `+...` |
 
 So what truncates the label is that the rewrite splices in a SQL literal whose
@@ -154,8 +155,9 @@ be truncated a second time.
 
 ## The uniqueness boundary
 
-Two *unnamed* dots that both collapse to `+...` collide. `branch_argument_map()`
-finds no single candidate and drops the entry:
+Two *unnamed* dots that both collapse to `+...` share a label. Where the callers
+spelled them differently, `branch_argument_map()` finds no single candidate and
+drops the entry — measured on two such dots:
 
 ```
 labels of two unnamed rewritten dots:
@@ -164,31 +166,12 @@ map built from them:
 named character(0)
 ```
 
-so dplyr's own quotation stands, which is the degradation ADR 0022 documents. A
-named dot carries `name = ` into its label, so it can collide with neither an
-unnamed dot nor a differently-named one.
-
-## What this overturns
-
-Two claims in `investigation/dplyr-condition-context-rendering.md` (2026-08-18)
-were established on the eager path and do not hold on this one. That note gains a
-revisions entry pointing here.
-
-- *"the abbreviation is dplyr's and not a marginplyr artefact."* True there, where
-  it was measured on a long infix expression. On the native path the truncation is
-  produced by marginplyr's own rewrite, and the length of the caller's expression
-  does not decide it.
-- *"dplyr's label of one argument can never equal marginplyr's label of another,
-  which is the property #199's hard constraint needed."* That rested on
-  `as_label()` emitting neither `+...` nor `.data$x`. On the native path
-  marginplyr's own label **is** `+...`, so the asymmetry is gone. What was measured
-  to hold in its place is the collision drop above: a colliding label yields no map
-  entry, and a named dot cannot collide with an unnamed one.
-
-ADR 0022's *"substituting the caller's own would print the same `+...`"* is false
-for this case for the first of those reasons, and its *Considered Options*
-rejection of extending the restatement is not supported by "covering nothing
-today": the case exists on both backends holding the capability, on this date.
+so dplyr's own quotation stands, which is the degradation ADR 0022 documents.
+Where the callers spelled them alike the entry is kept, the restoration being
+unique whichever dot dplyr meant — the rule the ADR body already states, read
+here off `R/conditions.R:390-397` rather than measured. A named dot carries
+`name = ` into its label, so it shares a label with neither an unnamed dot nor a
+differently-named one.
 
 ## Searched for and not found
 

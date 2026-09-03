@@ -224,53 +224,50 @@ exception is what is there, and it was never measured. #410 measured it:
 `investigation/what-truncates-an-argument-label-on-the-native-adapter.md`.
 
 The scope therefore includes that error. A caller whose summary expression
-dbplyr cannot translate is quoted the expression they wrote, on duckdb and
+dbplyr cannot translate will be quoted the expression they wrote, on duckdb and
 postgres as on a local input, and the sentence above confining the scope to
-`summarize_margin_union()` no longer holds.
+`summarize_margin_union()` no longer holds. #411 implements what follows.
 
 What is extended is the restatement and not `with_branch_conditions()`. The
 native adapter issues one `summarize()` and repeats nothing, so the
-deduplication and the grouping-value restatement have nothing to act on; the
-one sentence of the old reasoning that survives is that one. The error is
-caught around that single `summarize()`, `restate_condition_arguments()` is
-applied with the map `branch_argument_map()` builds from the rewritten dots and
-the caller's labels, and it is re-raised. Nothing else about the adapter moves.
+deduplication and the grouping-value restatement have nothing to act on; the one
+sentence of the old reasoning that survives is that one. The error is caught
+around that single `summarize()`, `restate_condition_arguments()` applied with
+the map `branch_argument_map()` builds from the rewritten dots and the caller's
+labels, and the condition re-raised. Nothing else about the adapter moves.
 
 Errors only. A branch `summarize()` on a lazy backend still builds a query
-without evaluating the caller's expression, so everything the original
-reasoning covers is still covered by it; a translation *warning* was searched
-for and not produced, and writing the mechanism against an unmeasured shape is
-what the rest of this decision declines to do.
+without evaluating the caller's expression, so everything the original reasoning
+covers is still covered by it; a translation *warning* was searched for and not
+produced, and writing the mechanism against an unmeasured shape is what the rest
+of this decision declines to do.
 
 `restate_argument_bullet()`'s pattern requires a trailing period, and dbplyr's
-bullet does not carry one, so the mechanism read the native bullet as matching
-nothing and passed it through even where the map's key already equalled the
-span. The period becomes optional **and is put back as it was found**: rebuilding
-with an unconditional period would add one to dbplyr's sentence, and the sentence
+bullet does not carry one, so the mechanism reads the native bullet as matching
+nothing and passes it through even where the map's key already equals the span.
+The period becomes optional **and is put back as it was found**: rebuilding with
+an unconditional period would add one to dbplyr's sentence, and the sentence
 around the span is dplyr's.
 
 One argument above stops carrying, and this is what replaces it. *dplyr's
 rendering is reproduced only as far as it is observable* rests the #199
-constraint on `as_label()` emitting neither `+...` nor `.data$x`, so that
-dplyr's label of one argument can never equal marginplyr's label of another. On
-the native adapter marginplyr's own label **is** `+...`, because the rewrite
-splices in a SQL literal whose deparse is multi-line — measured, and independent
-of the length of the caller's expression, which is also why the same section's
-"substituting the caller's own would print the same `+...`" is false here. What
-holds instead is the collision drop this decision already specifies: two unnamed
-dots that both collapse to `+...` produce no map entry and leave dplyr's
-quotation standing, and a named dot carries `name = ` into its label, so it
-collides with neither an unnamed dot nor a differently-named one. The constraint
-is met by the degradation rather than by the asymmetry.
+constraint on `as_label()` emitting neither `+...` nor `.data$x`, so that dplyr's
+label of one argument can never equal marginplyr's label of another. On the
+native adapter marginplyr's own label **is** `+...`, and the same measurement
+makes that section's "substituting the caller's own would print the same `+...`"
+false here. What holds in its place is the rule *The identification is a test
+against marginplyr's own rendering* already states: a label two dots share is
+restored only where the callers' own labels agree as well, and left as dplyr
+wrote it where they do not. The constraint is met by that degradation rather
+than by the asymmetry.
 
 Tests assert on rendered messages through `dbplyr::simulate_postgres()`, which
-needs no optional backend, so the native path is asserted wherever the suite
-runs rather than only where a database is installed. Both directions are
-asserted, as above: the restoration, and the collision that leaves dplyr's
-quotation alone.
+needs no optional backend, so the native path is asserted wherever the suite runs
+rather than only where a database is installed. Both directions are asserted, as
+above: the restoration, and the shared label that leaves dplyr's quotation alone.
 
-`R/summarize_with_margins.R` carried this ADR's rejected reasoning beside its
+`R/summarize_with_margins.R` carries this ADR's rejected reasoning beside its
 citation, as a comment saying no condition is raised while the verb runs. It was
 false on the day it was written, and it is the second copy ADR 0023 names: the
-citation would have stayed correct across this amendment and the re-derivation
-did not. It goes.
+citation stays correct across this amendment and the re-derivation did not. It
+goes with #411.
