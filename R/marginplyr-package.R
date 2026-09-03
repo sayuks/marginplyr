@@ -87,6 +87,66 @@
 #' summary expressions run when you collect the result rather than while the
 #' verb runs, so what they raise is the collecting call's to report.
 #'
+#' @section Recording the SQL marginplyr sends:
+#' marginplyr keeps no record of the SQL it sends unless you ask for one.
+#' `options(marginplyr.audit_sql = TRUE)` switches the record on, and
+#' [last_sent_queries()] reads back what the most recent call sent:
+#'
+#' ```r
+#' # `sales_db` is a lazy table on a SQL connection.
+#' old <- options(marginplyr.audit_sql = TRUE)
+#'
+#' summarize_with_margins(
+#'   sales_db,
+#'   revenue = sum(revenue),
+#'   .grouping = rollup(region, store)
+#' )
+#'
+#' last_sent_queries()
+#' options(old)
+#' ```
+#'
+#' The record is a tibble of two character columns -- `purpose`, what the
+#' query was sent for, and `sql`, the statement as it was rendered -- with one
+#' row per query, in the order the queries were sent. It belongs to a single
+#' call, being emptied at the start of every one.
+#'
+#' `"result"` is the one `purpose` promised: the query a Margin verb returns
+#' unexecuted, which your own [dplyr::collect()] is still what runs. Every
+#' other row is a query marginplyr sends for its own reasons, and the names
+#' those rows carry are not fixed.
+#'
+#' A query is recorded before it is sent, so the record holds what was sent
+#' rather than what succeeded, and a call that fails leaves readable every
+#' query it had already sent.
+#'
+#' What is recorded is the SQL marginplyr sent, not the execution marginplyr
+#' caused. An audited call on a data frame, a dtplyr table, or an Arrow table
+#' therefore records nothing, and that zero-row answer is correct rather than
+#' a hole.
+#'
+#' There is one capture, `dbplyr::sql_render()`. It renders in your own
+#' session and sends nothing the call did not already send, so what
+#' *[When marginplyr queries your data][summarize_with_margins]* enumerates is
+#' the same whether or not you are recording.
+#'
+#' [last_sent_queries()] gives four answers, and each of the three that could
+#' look like an empty record is told apart from the others:
+#'
+#' - Nothing has been recorded in this session -- neither a Margin verb nor
+#'   [inspect_grouping()] has run -- and the call is refused with a
+#'   `"marginplyr_error"`.
+#' - The last call was not audited, the option being unset or holding a value
+#'   other than `TRUE` when the call began, and the call is refused with a
+#'   `"marginplyr_error"` naming `marginplyr.audit_sql`. The option is read
+#'   once, as the call begins; setting it afterwards does not audit a call
+#'   already made.
+#' - The call was audited and sent nothing: a zero-row tibble, the only answer
+#'   with zero rows.
+#' - A statement had no SQL form on this backend -- a translation dbplyr
+#'   refuses when the query is rendered -- and its row holds `NA` in `sql`.
+#'   The call itself is unaffected.
+#'
 #' @section Guides:
 #' - [Get started][g1]
 #' - [Recipes for common reporting tasks][g5]

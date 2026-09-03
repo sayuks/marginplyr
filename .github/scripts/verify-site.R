@@ -364,6 +364,10 @@ markers <- list(
     "Parent shares use a staged lazy query",
     "share_of_total",
     "Completion stays in the lazy input pipeline",
+    # The Sent-query section, by its heading rather than by anything it
+    # renders: every chunk in it is behind `has_duckdb`, so on a machine
+    # without DuckDB the section produces no output for a marker to quote.
+    "Record the SQL marginplyr sends",
     "Only DuckDB and SQLite are exercised as live SQL databases",
     "DuckDB covers native SQL end to end",
     "dozen-plus fallback dialects",
