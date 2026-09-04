@@ -996,12 +996,12 @@ test_that("dtplyr expansion verbs restore ordered factor dimensions", {
   }
 })
 
-test_that("dtplyr expansion verbs label a dimension of any type", {
+test_that("dtplyr expansion verbs label a non-character dimension", {
   skip_if_suggest_absent("dtplyr")
   # Two rows are load-bearing for the reason the ordered-factor test above
-  # gives, and the types are what generalise it: data.table coerces a recycled
-  # scalar to the column's own type, so an integer dimension takes `NA` from
-  # its label where a factor kept its class (#427).
+  # gives, and these four types are what generalise it: data.table coerces a
+  # recycled scalar to the column's own type, so an integer dimension takes
+  # `NA` from its label where a factor kept its class (#427).
   dimensions <- list(
     integer = c(1L, 2L),
     double = c(1.5, 2.5),
@@ -1019,6 +1019,9 @@ test_that("dtplyr expansion verbs label a dimension of any type", {
       ),
       nest_with_margins = nest_with_margins(source, .grouping = rollup(group))
     )
+    for (verb in names(lazy)) {
+      expect_s3_class(lazy[[verb]], "dtplyr_step")
+    }
     results <- lapply(lazy, dplyr::collect)
     results$nest_by_with_margins <- nest_by_with_margins(
       source,
@@ -1027,10 +1030,14 @@ test_that("dtplyr expansion verbs label a dimension of any type", {
 
     for (verb in names(results)) {
       info <- paste(type, verb)
-      expect_identical(typeof(results[[verb]]$group), "character", info = info)
-      expect_setequal(
-        results[[verb]]$group,
-        c(as.character(values), "Total")
+      got <- results[[verb]]$group
+      expect_identical(typeof(got), "character", info = info)
+      # `expect_setequal()` takes no `info`, and a bare set failure would name
+      # neither the type nor the verb that produced it.
+      expect_identical(
+        sort(unique(got)),
+        sort(c(as.character(values), "Total")),
+        info = info
       )
     }
   }
