@@ -52,10 +52,10 @@
 #' The list column is a regular list of data frames; its exact `vctrs_list_of`
 #' subclass is not part of the API. Neither is the class of its elements,
 #' which follows whichever backend produced them: tibbles for a local input,
-#' because that is what [dplyr::pick()] returns, and data tables under
-#' `dtplyr`. Only their being data frames holding the input's non-key columns
-#' is promised. Call `lapply(result$data, tibble::as_tibble)` when one element
-#' class is needed across backends. [nest_with_margins()] follows
+#' and data tables under `dtplyr`. Only their being data frames holding the
+#' input's non-key columns is promised. Call
+#' `lapply(result$data, tibble::as_tibble)` when one element class is needed
+#' across backends. [nest_with_margins()] follows
 #' [tidyr::nest()] for an empty ungrouped input and returns zero outer rows.
 #' [nest_by_with_margins()] follows [dplyr::nest_by()] and returns one row
 #' containing the empty input when there are no grouping keys.
@@ -380,7 +380,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
           set_col = set_col,
           keep_cols = keep_cols,
           .key = .key,
-          .keep = .keep,
+          kind = operation$backend$kind,
           drop_set_col = is.null(operation$set_id_name) && !sorting
         ),
         sort_id = if (sorting) set_col else NULL,
@@ -391,25 +391,44 @@ execute_margin_nest <- function(operation, .key, .keep) {
   )
 }
 
-# A nesting that removes every payload column still stands for a known number
-# of source rows per cell, and once the columns are gone the count is the only
-# thing left to carry it. `pick()` cannot: with an empty selection it answers a
-# one-row frame locally and an empty `data.table` under dtplyr, so each cell
-# reports a cardinality no source row produced, and the two backends disagree
-# besides. `n()` is that count, and dtplyr translates it to `.N`, so one
-# expression serves both. The cell is a tibble on either backend, because a
-# `data.table` cannot hold rows without columns — `dim()` reads its row count
-# from its first column, so a column-less one is always empty — and the element
-# class is documented as whatever the backend produced rather than promised.
-#
-# Both call sites spell `empty_payload` out, because the two expressions this
-# returns differ in what they read rather than in degree, and a bare `TRUE` at
-# a call site would not say which one it asked for.
-nest_cell_expr <- function(empty_payload) {
-  if (empty_payload) {
-    quote(dplyr::tibble(.rows = dplyr::n()))
+# The expression building one cell, given the columns it is to hold and the
+# backend kind whose converter it names. `cell_cols` is a named character
+# vector whose names are the names the cell's columns take and whose values
+# are the columns of the expanded step they read; an empty one is a nesting
+# that has no payload column left.
+nest_cell_expr <- function(cell_cols, kind) {
+  if (length(cell_cols) == 0L) {
+    # A nesting that removes every payload column still stands for a known
+    # number of source rows per cell, and once the columns are gone the count
+    # is the only thing left to carry it. `n()` is that count, and dtplyr
+    # translates it to `.N`, so one expression serves both backends. The cell
+    # is a tibble on either, because a `data.table` cannot hold rows without
+    # columns — `dim()` reads its row count from its first column, so a
+    # column-less one is always empty.
+    return(quote(dplyr::tibble(.rows = dplyr::n())))
+  }
+
+  # `list()`, whose only formal is `...`, because dtplyr translates a `pick()`
+  # standing where a value stands into a literal `data.table()` call carrying
+  # one named argument per column: a column named for one of that function's
+  # formals is taken as that argument, so `key` and `check.names` raise and
+  # `keep.rownames` and `stringsAsFactors` are absorbed and leave the column
+  # out of every cell (#424). The conversion is a step of its own for the same
+  # reason, each converter having formals a column could be named for.
+  #
+  # `margin_column_pronoun()` rather than a bare symbol, because dtplyr folds a
+  # symbol named `T` or `F` to the logical constant before it looks at the
+  # step's columns, which would put that constant in the cell in place of the
+  # column and report nothing.
+  columns <- rlang::set_names(
+    lapply(unname(cell_cols), margin_column_pronoun),
+    names(cell_cols)
+  )
+  # Per backend (ADR 0016).
+  if (identical(kind, "dtplyr")) {
+    rlang::expr(data.table::as.data.table(list(!!!columns)))
   } else {
-    quote(dplyr::pick(dplyr::everything()))
+    rlang::expr(dplyr::as_tibble(list(!!!columns)))
   }
 }
 
@@ -418,46 +437,37 @@ nest_expanded_margins <- function(.data,
                                   set_col,
                                   keep_cols,
                                   .key,
-                                  .keep,
+                                  kind,
                                   drop_set_col = TRUE) {
-  # `.keep = TRUE` with grouping columns nests them, so that branch always has
-  # a payload column and needs no count of its own.
-  if (.keep && length(group_cols) > 0L) {
-    # `rename()` and `relocate()` run inside a data-masked summary expression,
-    # so their tidyselect resolves `keep_cols` and `group_cols` against the
-    # nested rows before the environment. Source columns with those names
-    # would select themselves; injecting the character vectors removes the
-    # ambiguity. `inject()` reaches the whole call, so `.by` is injected too
-    # even though a top-level tidyselect context already resolves from the
-    # environment — that is why the `else` branch below can leave its own
-    # `.by` bare and still be correct.
-    result <- rlang::inject(dplyr::summarize(
-      .data,
-      "{.key}" := list({
-        nested <- dplyr::rename(
-          dplyr::pick(dplyr::everything()),
-          dplyr::all_of(!!keep_cols)
-        )
-        dplyr::relocate(nested, dplyr::all_of(!!group_cols))
-      }),
-      .by = dplyr::all_of(!!c(group_cols, set_col))
-    ))
-  } else {
-    outer_cols <- c(group_cols, set_col)
-    # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
-    # so answers `NULL` for a `dtplyr` step — every payload column would then
-    # look absent and be dropped from every cell.
-    payload_cols <- setdiff(
-      get_col_names(.data, dplyr::everything()),
-      outer_cols
+  outer_cols <- c(group_cols, set_col)
+  # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
+  # so answers `NULL` for a `dtplyr` step — every payload column would then
+  # look absent and be dropped from every cell.
+  cell_cols <- rlang::set_names(
+    setdiff(get_col_names(.data, dplyr::everything()), outer_cols)
+  )
+  if (length(keep_cols) > 0L) {
+    # `.keep = TRUE` nests a copy of each grouping column, made upstream under
+    # an internal name so that the outer key and the copy can disagree. The
+    # cell gives each copy back the name the caller wrote, and the grouping
+    # columns lead it. `order()` is stable, so the rest keep the order the
+    # input gave them.
+    restored <- match(unname(cell_cols), unname(keep_cols))
+    named <- !is.na(restored)
+    names(cell_cols)[named] <- names(keep_cols)[restored[named]]
+    leading <- match(
+      names(cell_cols),
+      group_cols,
+      nomatch = length(cell_cols) + 1L
     )
-    cell <- nest_cell_expr(empty_payload = length(payload_cols) == 0L)
-    result <- dplyr::summarize(
-      .data,
-      "{.key}" := list(!!cell),
-      .by = dplyr::all_of(outer_cols)
-    )
+    cell_cols <- cell_cols[order(leading)]
   }
+
+  result <- dplyr::summarize(
+    .data,
+    "{.key}" := list(!!nest_cell_expr(cell_cols, kind)),
+    .by = dplyr::all_of(outer_cols)
+  )
 
   if (drop_set_col) {
     result <- dplyr::select(result, -dplyr::all_of(set_col))

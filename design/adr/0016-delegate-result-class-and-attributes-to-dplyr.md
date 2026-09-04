@@ -214,3 +214,39 @@ first, and `group_by()` in place of `rowwise()` for the second.
 Classed-column round-tripping — `Date`, `POSIXct` with `tzone`, ordered and
 unordered factors — is already covered by `test-grouping-interface.R` and
 `test-factor.R` under ADR 0012, and needs nothing further here.
+
+## Amendment: the cell expression names the converter, and it names the one each backend's own nesting gives
+
+One passage is superseded, in *`nest_by_with_margins()` returns a row-wise data
+frame, by contract*: "Elements are tibbles for a local input because
+`dplyr::pick()` returns a tibble, and data tables under dtplyr because that is
+what the data.table translation produces. marginplyr chooses neither." The
+element classes it names are unchanged. What it gives as the reason for them is
+not, and neither is its last sentence.
+
+The cell can no longer be `pick(everything())`. dtplyr translates a `pick()`
+standing where a value stands into a literal `data.table()` call carrying one
+named argument per column, so a payload column named for one of that
+function's formals is taken as that argument: `key` and `check.names` raise,
+and `keep.rownames` and `stringsAsFactors` are absorbed and leave the column
+out of every cell (#424). The cell names its columns into `list()`, whose only
+formal is `...`, and converts what that returns.
+
+So marginplyr chooses the converter, and chooses per backend the one that
+answers what a caller nesting the same input without marginplyr would get:
+`dplyr::as_tibble()` locally, where `dplyr::pick()` returned a tibble, and
+`data.table::as.data.table()` under dtplyr, where `tidyr::nest()` translates to
+`.SD` and yields a `data.table`. The promise boundary is where it was — what is
+promised is that each element is a data frame holding the input's non-key
+columns — but the observed behavior the reference describes is now marginplyr's
+to keep in step with the backends rather than something falling out of a
+translation. A backend whose own nesting verb changes what it gives is a change
+to this ADR.
+
+One cell is not the backend's: the one a nesting leaving no payload column
+builds. The reference documents which class it is and why, in the paragraph
+that promises its row count.
+
+The rejected alternative stands unnarrowed: normalizing the element class is
+still rejected, and each cost named for it is still a cost, because what is
+rejected is one class across backends and not the naming of a converter.

@@ -288,20 +288,18 @@ keys_only_expected <- function() {
   )
 }
 
-# The three helpers below read the sales fixtures specifically, hence the
-# names: each one knows that `region` and `store` are the keys.
-#
-# Sorting by name rather than by symbol keeps those keys out of this file's
-# global-variable surface, which the linter reads without a data mask.
-arrange_sales_keys <- function(result) {
-  dplyr::arrange(
-    dplyr::ungroup(result),
-    dplyr::across(dplyr::all_of(c("region", "store")))
-  )
+# Sorting by name rather than by symbol keeps a fixture's keys out of this
+# file's global-variable surface, which the linter reads without a data mask.
+sales_keys <- c("region", "store")
+
+arrange_cell_keys <- function(result, keys) {
+  dplyr::arrange(dplyr::ungroup(result), dplyr::across(dplyr::all_of(keys)))
 }
 
+# Reads the sales fixtures specifically, hence the name: it names their keys
+# in what it returns.
 sales_cell_shape <- function(result) {
-  ordered <- arrange_sales_keys(result)
+  ordered <- arrange_cell_keys(result, sales_keys)
   list(
     region = ordered$region,
     store = ordered$store,
@@ -311,10 +309,10 @@ sales_cell_shape <- function(result) {
   )
 }
 
-# The element class follows the backend and is not part of the API, so cells
-# are compared as tibbles; everything else must match exactly.
-sales_cells_as_tibble <- function(result) {
-  ordered <- arrange_sales_keys(result)
+# The element class is not part of the API, so cells are compared as tibbles;
+# everything else must match exactly.
+cells_as_tibble <- function(result, keys) {
+  ordered <- arrange_cell_keys(result, keys)
   ordered$data <- lapply(ordered$data, dplyr::as_tibble)
   dplyr::as_tibble(ordered)
 }
@@ -388,7 +386,7 @@ test_that("nesting keeps cardinality under both keep options", {
     )
     # `.keep = TRUE` nests pre-margin values, so the Grand total set's cell
     # still holds the source keys rather than the Margin label.
-    total <- arrange_sales_keys(kept)$data[[3L]]
+    total <- arrange_cell_keys(kept, sales_keys)$data[[3L]]
     expect_identical(
       sort(as.character(total$region)),
       c("East", "East", "West")
@@ -421,6 +419,10 @@ test_that("nesting keeps cardinality when duplicate sets are dropped", {
     expect_identical(actual$cols, rep(0L, length(expected$rows)))
   }
 })
+
+lazy_cell_class <- function(cell_names) {
+  if (length(cell_names) == 0L) "tbl_df" else "data.table"
+}
 
 test_that("dtplyr nesting agrees with the local result and stays lazy", {
   skip_if_suggest_absent("dtplyr")
@@ -461,9 +463,12 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
       sales_cell_shape(lazy_result)$names[[1L]],
       scenario$names
     )
+    # The element class per backend (ADR 0016).
+    expect_s3_class(local_result$data[[1L]], "tbl_df")
+    expect_s3_class(lazy_result$data[[1L]], lazy_cell_class(scenario$names))
     expect_equal(
-      sales_cells_as_tibble(lazy_result),
-      sales_cells_as_tibble(local_result)
+      cells_as_tibble(lazy_result, sales_keys),
+      cells_as_tibble(local_result, sales_keys)
     )
 
     # The row-wise verb collects before it groups, so its cells compare
@@ -481,10 +486,98 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
       .keep = scenario$keep
     )
     expect_identical(sales_cell_shape(lazy_by)$names[[1L]], scenario$names)
+    expect_s3_class(local_by$data[[1L]], "tbl_df")
+    expect_s3_class(lazy_by$data[[1L]], lazy_cell_class(scenario$names))
     expect_equal(
-      sales_cells_as_tibble(lazy_by),
-      sales_cells_as_tibble(local_by)
+      cells_as_tibble(lazy_by, sales_keys),
+      cells_as_tibble(local_by, sales_keys)
     )
+  }
+})
+
+# The column names `nest_cell_expr()` is built to carry (#424): the four
+# `data.table()` formals, the two `tibble()` formals that would collide with
+# the cell it builds instead, the two symbols dtplyr folds to logical
+# constants, and the pronoun the cell names its columns through.
+formal_shadow_names <- c(
+  "keep.rownames",
+  "check.names",
+  "key",
+  "stringsAsFactors",
+  ".rows",
+  ".name_repair",
+  "T",
+  "F",
+  ".data"
+)
+
+formal_shadow_data <- function(name) {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    carrier = c("p", "q", "r"),
+    units = 1:3
+  )
+  names(data)[names(data) == "carrier"] <- name
+  data
+}
+
+
+test_that("a nested cell carries a column named for a callee's formal", {
+  skip_if_suggest_absent("dtplyr")
+  verbs <- list(
+    nest_with_margins = nest_with_margins,
+    nest_by_with_margins = nest_by_with_margins
+  )
+
+  for (name in formal_shadow_names) {
+    for (keep in c(FALSE, TRUE)) {
+      expected_names <- if (keep) {
+        c("region", name, "units")
+      } else {
+        c(name, "units")
+      }
+
+      for (verb_name in names(verbs)) {
+        verb <- verbs[[verb_name]]
+        info <- paste(verb_name, name, keep)
+
+        local_result <- verb(
+          formal_shadow_data(name),
+          .grouping = rollup(region),
+          .sort = "last",
+          .keep = keep
+        )
+        lazy_result <- dplyr::collect(
+          verb(
+            dtplyr::lazy_dt(formal_shadow_data(name)),
+            .grouping = rollup(region),
+            .sort = "last",
+            .keep = keep
+          )
+        )
+
+        # Read back separately from the comparison, which would hold for two
+        # backends that both dropped the column. The values as well as the
+        # names, because a name folded to a constant leaves a cell that has
+        # the column and the right number of rows.
+        lazy_cells <- cells_as_tibble(lazy_result, "region")
+        expect_identical(
+          names(lazy_cells$data[[1L]]),
+          expected_names,
+          info = info
+        )
+        expect_identical(
+          as.character(lazy_cells$data[[1L]][[name]]),
+          c("p", "q"),
+          info = info
+        )
+        expect_equal(
+          lazy_cells,
+          cells_as_tibble(local_result, "region"),
+          info = info
+        )
+      }
+    }
   }
 })
 
@@ -535,6 +628,25 @@ test_that("zero-column and empty nesting match an independent construction", {
   expect_identical(
     nrow(nest_by_with_margins(keyed_empty, .grouping = rollup(region))),
     0L
+  )
+})
+
+test_that("an empty dtplyr input nests into its backend's cell", {
+  skip_if_suggest_absent("dtplyr")
+  # The reconstruction answering an empty ungrouped input runs on a collected
+  # frame, so nothing the expression it builds is evaluated against says which
+  # backend the caller handed in. The cell is that backend's all the same.
+  empty <- data.frame(x = integer(), y = character())
+
+  lazy_by <- nest_by_with_margins(dtplyr::lazy_dt(empty))
+  local_by <- nest_by_with_margins(empty)
+
+  expect_identical(nrow(lazy_by), 1L)
+  expect_s3_class(lazy_by$data[[1L]], "data.table")
+  expect_s3_class(local_by$data[[1L]], "tbl_df")
+  expect_equal(
+    dplyr::as_tibble(lazy_by$data[[1L]]),
+    dplyr::as_tibble(local_by$data[[1L]])
   )
 })
 

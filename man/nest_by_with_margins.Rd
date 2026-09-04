@@ -500,10 +500,10 @@ that \code{.keep} retains grouping columns.
 The list column is a regular list of data frames; its exact \code{vctrs_list_of}
 subclass is not part of the API. Neither is the class of its elements,
 which follows whichever backend produced them: tibbles for a local input,
-because that is what \code{\link[dplyr:pick]{dplyr::pick()}} returns, and data tables under
-\code{dtplyr}. Only their being data frames holding the input's non-key columns
-is promised. Call \code{lapply(result$data, tibble::as_tibble)} when one element
-class is needed across backends. \code{\link[=nest_with_margins]{nest_with_margins()}} follows
+and data tables under \code{dtplyr}. Only their being data frames holding the
+input's non-key columns is promised. Call
+\code{lapply(result$data, tibble::as_tibble)} when one element class is needed
+across backends. \code{\link[=nest_with_margins]{nest_with_margins()}} follows
 \code{\link[tidyr:nest]{tidyr::nest()}} for an empty ungrouped input and returns zero outer rows.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} follows \code{\link[dplyr:nest_by]{dplyr::nest_by()}} and returns one row
 containing the empty input when there are no grouping keys.
