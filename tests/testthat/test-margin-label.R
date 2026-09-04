@@ -377,8 +377,7 @@ test_that("a carried factor with no NA level takes no encode route", {
   names(encode) <- vapply(info$factors, function(x) x$col, character(1))
   expect_setequal(names(encode), c("group", "key", "passthrough", "plain"))
   # `plain` is the carried column the criterion is about: a factor with no NA
-  # level. The two that have one take the route, and the dimension is here to
-  # say that being a dimension is not what decides it.
+  # level.
   expect_false(encode[["plain"]])
   expect_false(encode[["group"]])
   expect_true(encode[["key"]])
