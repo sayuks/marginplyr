@@ -1019,12 +1019,12 @@ stage_margin_summaries <- function(operation,
   result <- tryCatch(
     {
       if (use_native) {
-        # The labels stay behind: the native adapter issues one `summarize()`
-        # and repeats nothing, and the backends holding the capability are
-        # lazy, so no condition is raised while the verb runs (ADR 0022).
+        # What this adapter restates is the one error dbplyr raises
+        # translating the caller's expressions, and that error alone
+        # (ADR 0022).
         summarize_margin_native(
           operation$data,
-          dots = summaries$dots,
+          summaries = summaries,
           plan = plan,
           margin_labels = operation$margin_labels,
           reserved_names = reserved_names,

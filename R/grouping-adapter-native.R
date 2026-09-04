@@ -1,5 +1,7 @@
+# `summaries` is `stage_margin_summaries()`'s, taken whole for the reason its
+# header gives, and read here for its labels as well as its dots.
 summarize_margin_native <- function(.data,
-                                    dots,
+                                    summaries,
                                     plan,
                                     margin_labels,
                                     reserved_names,
@@ -7,11 +9,14 @@ summarize_margin_native <- function(.data,
                                     set_id_is_internal = FALSE) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
-    dots,
+    summaries$dots,
     plan = plan,
     sql = TRUE,
     con = con
   )
+  # After the rewrite, because the rewritten dots are the expressions dplyr
+  # will quote.
+  restatements <- branch_argument_map(dots, summaries$labels)
   group_vars <- unique(c(plan$by, plan$dimensions))
   if (!is.null(set_id_name)) {
     set_id_quo <- rlang::new_quosure(
@@ -50,8 +55,19 @@ summarize_margin_native <- function(.data,
     flag_quos <- list()
   }
 
-  check_summary_output_names(
+  # dbplyr translates the caller's expressions here, this being the first of
+  # the two summarizes below to reach them, and raises where it cannot. That
+  # error is the whole of what ADR 0022 restates in this adapter. The call is
+  # forced out of the check's lazy argument so that the check's own Package
+  # conditions stay outside the catch.
+  output_names <- tryCatch(
     native_summary_output_names(.data, dots),
+    error = function(cnd) {
+      stop(restate_condition_arguments(cnd, restatements))
+    }
+  )
+  check_summary_output_names(
+    output_names,
     group_vars = group_vars,
     internal_names = flag_names,
     set_id_name = set_id_name,

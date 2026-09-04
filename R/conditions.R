@@ -503,10 +503,15 @@ restate_argument_lines <- function(text, restatements, rendered) {
 # the name of the message vector rather than part of its text. The span is read
 # to the last backtick on the line, because a non-syntactic name the caller
 # wrote puts backticks inside it.
+#
+# The trailing period is captured rather than required, and put back as it was
+# found: eager dplyr ends the sentence with one and dbplyr does not, and the
+# sentence around the span belongs to whichever raised the condition
+# (ADR 0022).
 restate_argument_bullet <- function(line, restatements) {
   found <- regmatches(
     line,
-    regexec("^([i\u2139] )?In argument: `(.*)`\\.$", line)
+    regexec("^([i\u2139] )?In argument: `(.*)`(\\.)?$", line)
   )[[1L]]
   if (length(found) == 0L) {
     return(line)
@@ -515,7 +520,7 @@ restate_argument_bullet <- function(line, restatements) {
   if (is.na(restored)) {
     return(line)
   }
-  paste0(found[[2L]], "In argument: `", restored, "`.")
+  paste0(found[[2L]], "In argument: `", restored, "`", found[[4L]])
 }
 
 # Rewrites the internal grouping-column names dplyr built the context from into
