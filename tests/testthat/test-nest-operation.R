@@ -463,11 +463,9 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
       sales_cell_shape(lazy_result)$names[[1L]],
       scenario$names
     )
-    # The element class is described rather than promised (ADR 0016), and what
-    # it describes is what a caller nesting the same input without marginplyr
-    # gets: `tidyr::nest()` on a `dtplyr` step yields a `data.table`. A cell
-    # with no payload column is a tibble on either backend, a `data.table`
-    # having no form that holds rows without columns.
+    # The element class per backend (ADR 0016). A cell with no payload column
+    # is a tibble on either, a `data.table` having no form that holds rows
+    # without columns.
     expect_s3_class(local_result$data[[1L]], "tbl_df")
     expect_s3_class(lazy_result$data[[1L]], lazy_cell_class(scenario$names))
     expect_equal(
@@ -499,16 +497,20 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
   }
 })
 
-# The column names `nest_cell_expr()` is built to carry: the four
-# `data.table()` formals, and the two `tibble()` formals that would collide
-# with the cell it builds instead (#424).
+# The column names `nest_cell_expr()` is built to carry (#424): the four
+# `data.table()` formals, the two `tibble()` formals that would collide with
+# the cell it builds instead, the two symbols dtplyr folds to logical
+# constants, and the pronoun the cell names its columns through.
 formal_shadow_names <- c(
   "keep.rownames",
   "check.names",
   "key",
   "stringsAsFactors",
   ".rows",
-  ".name_repair"
+  ".name_repair",
+  "T",
+  "F",
+  ".data"
 )
 
 formal_shadow_data <- function(name) {
@@ -520,6 +522,7 @@ formal_shadow_data <- function(name) {
   names(data)[names(data) == "carrier"] <- name
   data
 }
+
 
 test_that("a nested cell carries a column named for a callee's formal", {
   skip_if_suggest_absent("dtplyr")
@@ -556,14 +559,22 @@ test_that("a nested cell carries a column named for a callee's formal", {
         )
 
         # Read back separately from the comparison, which would hold for two
-        # backends that both dropped the column.
+        # backends that both dropped the column. The values as well as the
+        # names, because a name folded to a constant leaves a cell that has
+        # the column and the right number of rows.
+        lazy_cells <- cells_as_tibble(lazy_result, "region")
         expect_identical(
-          names(cells_as_tibble(lazy_result, "region")$data[[1L]]),
+          names(lazy_cells$data[[1L]]),
           expected_names,
           info = info
         )
+        expect_identical(
+          as.character(lazy_cells$data[[1L]][[name]]),
+          c("p", "q"),
+          info = info
+        )
         expect_equal(
-          cells_as_tibble(lazy_result, "region"),
+          lazy_cells,
           cells_as_tibble(local_result, "region"),
           info = info
         )
@@ -619,6 +630,25 @@ test_that("zero-column and empty nesting match an independent construction", {
   expect_identical(
     nrow(nest_by_with_margins(keyed_empty, .grouping = rollup(region))),
     0L
+  )
+})
+
+test_that("an empty dtplyr input nests into its backend's cell", {
+  skip_if_suggest_absent("dtplyr")
+  # The reconstruction answering an empty ungrouped input runs on a collected
+  # frame, so nothing the expression it builds is evaluated against says which
+  # backend the caller handed in. The cell is that backend's all the same.
+  empty <- data.frame(x = integer(), y = character())
+
+  lazy_by <- nest_by_with_margins(dtplyr::lazy_dt(empty))
+  local_by <- nest_by_with_margins(empty)
+
+  expect_identical(nrow(lazy_by), 1L)
+  expect_s3_class(lazy_by$data[[1L]], "data.table")
+  expect_s3_class(local_by$data[[1L]], "tbl_df")
+  expect_equal(
+    dplyr::as_tibble(lazy_by$data[[1L]]),
+    dplyr::as_tibble(local_by$data[[1L]])
   )
 })
 

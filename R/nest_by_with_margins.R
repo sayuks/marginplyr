@@ -151,7 +151,13 @@ nest_by_with_margins <- function(.data,
     result <- dplyr::summarize(
       empty_data,
       "{.key}" := list(
-        !!nest_cell_expr(rlang::set_names(colnames(empty_data)), "local")
+        !!nest_cell_expr(
+          rlang::set_names(colnames(empty_data)),
+          # The kind of the input, not of `empty_data`: this rebuilds what the
+          # pipeline returned for it, so its cell is the one every other cell
+          # from this input is.
+          grouping_backend(.data)$kind
+        )
       )
     )
     if (!is.null(.id)) {

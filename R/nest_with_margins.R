@@ -52,10 +52,10 @@
 #' The list column is a regular list of data frames; its exact `vctrs_list_of`
 #' subclass is not part of the API. Neither is the class of its elements,
 #' which follows whichever backend produced them: tibbles for a local input,
-#' and data tables under `dtplyr`, which is what [tidyr::nest()] on the same
-#' input gives. Only their being data frames holding the input's non-key
-#' columns is promised. Call `lapply(result$data, tibble::as_tibble)` when one
-#' element class is needed across backends. [nest_with_margins()] follows
+#' and data tables under `dtplyr`. Only their being data frames holding the
+#' input's non-key columns is promised. Call
+#' `lapply(result$data, tibble::as_tibble)` when one element class is needed
+#' across backends. [nest_with_margins()] follows
 #' [tidyr::nest()] for an empty ungrouped input and returns zero outer rows.
 #' [nest_by_with_margins()] follows [dplyr::nest_by()] and returns one row
 #' containing the empty input when there are no grouping keys.
@@ -415,14 +415,16 @@ nest_cell_expr <- function(cell_cols, kind) {
   # `keep.rownames` and `stringsAsFactors` are absorbed and leave the column
   # out of every cell (#424). The conversion is a step of its own for the same
   # reason, each converter having formals a column could be named for.
+  #
+  # `margin_column_pronoun()` rather than a bare symbol, because dtplyr folds a
+  # symbol named `T` or `F` to the logical constant before it looks at the
+  # step's columns, which would put that constant in the cell in place of the
+  # column and report nothing.
   columns <- rlang::set_names(
-    lapply(unname(cell_cols), rlang::sym),
+    lapply(unname(cell_cols), margin_column_pronoun),
     names(cell_cols)
   )
-  # The converter is the one place the backends differ, and it is what keeps
-  # the element class the backend's own (ADR 0016): `tidyr::nest()` on a
-  # `dtplyr` step translates to `.SD` and yields a `data.table`, which is what
-  # a caller nesting the same input without marginplyr gets.
+  # Per backend (ADR 0016).
   if (identical(kind, "dtplyr")) {
     rlang::expr(data.table::as.data.table(list(!!!columns)))
   } else {

@@ -243,6 +243,11 @@ to keep in step with the backends rather than something falling out of a
 translation. A backend whose own nesting verb changes what it gives is a change
 to this ADR.
 
+One cell is not the backend's, and the reference already documents it: a
+nesting that leaves no payload column stands for a row count, and a
+column-less `data.table` is always empty, so that cell is what
+`dplyr::tibble()` produced on either backend.
+
 The rejected alternative stands unnarrowed: normalizing the element class is
 still rejected, and each cost named for it is still a cost, because what is
 rejected is one class across backends and not the naming of a converter.
