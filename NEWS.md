@@ -155,7 +155,10 @@
   the argument names inside them cannot overwrite a grouping column or collide
   with `.id`; they were refused for those collisions anyway. `across(.unpack =)`
   renames within the packed column and is reached the same way. The unnamed
-  forms are unpacked to the top level and stay refused.
+  forms are unpacked to the top level and stay refused, as is a named one
+  colliding by its own name. A backend that unpacks a named result rather than
+  packing it — Arrow, for `across()` — is refused after its branch runs, with
+  the diagnostic the local backend gives.
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across

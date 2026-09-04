@@ -1198,10 +1198,8 @@ test_that("data-frame summaries cannot overwrite grouping columns", {
 test_that("a named data-frame summary keeps its packed names to itself", {
   data <- data.frame(group = c("a", "a", "b"), value = 1:3)
 
-  # dplyr packs a data-frame result into the one column its name gives, so the
-  # argument names inside these calls are not top-level outputs and cannot
-  # collide with anything (#431). The unnamed forms, refused by the test above,
-  # are unpacked instead.
+  # The unnamed forms of these calls are the test above; dplyr unpacks those
+  # and packs these (#431).
   from_tibble <- summarize_with_margins(
     data,
     s = tibble::tibble(group = sum(value)),
@@ -1220,7 +1218,7 @@ test_that("a named data-frame summary keeps its packed names to itself", {
   expect_equal(from_across$s$group, c(1.5, 3, 2))
 
   # `.unpack` renames inside the packed column rather than out of it, so a
-  # template that produces a grouping column's name is no collision either.
+  # template producing a grouping column's name reaches no top level.
   group_frame <- function(x) data.frame(group = min(x))
   unpacked <- summarize_with_margins(
     data,
@@ -1230,8 +1228,8 @@ test_that("a named data-frame summary keeps its packed names to itself", {
   expect_equal(names(unpacked), c("group", "s"))
   expect_equal(unpacked$s$group, c(1L, 3L, 1L))
 
-  # `pick()` cannot rename, so what it packs is always input column names; the
-  # name still keeps them off the top level.
+  # `pick()` cannot rename -- `pick(c(a = b))` is a tidyselect error -- so what
+  # it packs is always input column names.
   picked <- summarize_with_margins(
     data.frame(group = c("a", "b"), value = c(1, 2)),
     s = dplyr::pick(value),
@@ -1239,6 +1237,30 @@ test_that("a named data-frame summary keeps its packed names to itself", {
   )
   expect_equal(names(picked), c("group", "s"))
   expect_equal(picked$s$value, c(1, 2))
+})
+
+test_that("a named data-frame summary is still checked by its own name", {
+  data <- data.frame(group = c("a", "a", "b"), value = 1:3)
+
+  # What the skip above leaves to `names(dots)`. Without this the skip could
+  # widen to the whole dot and every test above would still pass.
+  expect_error(
+    summarize_with_margins(
+      data,
+      group = tibble::tibble(x = sum(value)),
+      .grouping = rollup(group)
+    ),
+    "cannot overwrite grouping column.*`group`"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      a = tibble::tibble(x = sum(value)),
+      .grouping = rollup(group),
+      .id = "a"
+    ),
+    "`\\.id` \\(`a`\\) conflicts with a summary output"
+  )
 })
 
 test_that("a named data-frame summary does not collide with `.id`", {

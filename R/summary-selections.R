@@ -628,12 +628,12 @@ summary_all_of_expr <- function(selected, data_proxy) {
 }
 
 known_summary_output_names <- function(dots, data_proxy) {
-  # A dot carrying its own name produces that one column and nothing else:
-  # dplyr packs a data-frame result under the name rather than unpacking it, so
-  # the argument names inside a named `tibble()`, `data.frame()`, `across()`,
-  # or `pick()` never reach the result's top level -- including under
-  # `across(.unpack =)`, which renames within the packed column. The caller
-  # contributes the name itself from `names(dots)` (#431).
+  # A dot carrying its own name is not read for what it packs: dplyr packs a
+  # data-frame result under that name rather than unpacking it, so the argument
+  # names inside such a dot are not top-level outputs, and `names(dots)` at the
+  # caller already holds the one that is (#431). A backend that unpacks anyway
+  # is what the adapters' `check_summary_output_names()` reads the branch
+  # result for -- Arrow's `across()` is that case.
   named <- nzchar(rlang::names2(dots))
 
   unlist(
