@@ -126,21 +126,6 @@ which imports knitr — the `DBI = FALSE` case from *Dependency metadata*, so a
 guard on knitr in a vignette would never fire
 (`investigation/restoring-knitr-hooks-a-vignette-installs.md`).
 
-Three properties are load-bearing and easy to lose in a rewrite. It is
-implemented as a wrapper around knitr's `evaluate` hook, which inspects the
-returned result objects; that keeps knitr's own error rendering, whereas
-catching the condition in a helper prints an `<error/rlang_error>` header and
-a backtrace through the helper, which no reader would see. Because knitr
-does not call that hook for a chunk it does not evaluate, a chunk withheld by
-an availability guard is skipped without a special case — a guarded chunk that
-never runs must not be reported as a chunk that stopped failing, or
-`_R_CHECK_DEPENDS_ONLY_` builds break. And the definition undoes itself from an
-`after.knit` hook, which `knit()` runs from `on.exit()` so that a render halted
-by the option restores as a completed one does; knitr restores neither the
-`opts_hooks` entry nor a `knit_hooks` entry installed while it runs, and the
-`document` hook — the obvious alternative — is not called on the halted path
-(`investigation/restoring-knitr-hooks-a-vignette-installs.md`).
-
 `.github/scripts/verify-must-error.R` is the gate, run by `altdoc.yaml` and
 locally with `Rscript .github/scripts/verify-must-error.R`. It knits fixture
 documents covering each form, the guarded chunk, a malformed option value, and
@@ -359,6 +344,12 @@ compares the two, so an amendment leaves it standing and wrong. ADR 0023
 settled this once already, for a rule that governed one file while two others
 re-derived it.
 
+This holds wherever a maintained document points, not only in a comment: a
+citation names its target — a function, a heading, a chunk, an ADR or issue
+number — and not a line number, which an edit above it leaves pointing at a
+different line rather than at nothing. A SHA, and a permalink pinned to one,
+do not move.
+
 A comment describes the code it sits beside, in the present tense. What a
 review found, which round answered it, and what a test elsewhere now covers are
 things the code does not hold — the commit message and the test are where each
@@ -385,8 +376,7 @@ are. A `srcref` opens at `function(`, so no header is inside any of them, and
 an installed package carries no `srcref` at all, `keep.source.pkgs` being
 `FALSE`. Such a gate would have to skip where every existing one runs, and
 `verify-backend.R` fails a job for a skip naming no withheld backend. This is a
-hand audit for the reason *Dependency metadata* above is one: what defeats the
-scan is what a scanner can express, not missing configuration.
+hand audit for the reason *Dependency metadata* above is one.
 
 ## Agent skills
 

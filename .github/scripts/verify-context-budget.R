@@ -24,12 +24,13 @@ source(".github/scripts/ci-helpers.R")
 # What the closure measured when it was last set, and the commit that set it.
 # Moving this means saying in the same commit what was added and what paid for
 # it.
-baseline_bytes <- 24198L
+baseline_bytes <- 23384L
 baseline_note <- paste(
-  "#295 deleting the arguments three sections restated and moving the rest to",
-  "`test-documentation.R` and `altdoc.yaml`, over #293's baseline; the 5957",
-  "bytes that removed paid for restoring the rule no file held, that no",
-  "package is promoted to Imports merely to make a check pass"
+  "#416 deleting the `must_error` implementation's three load-bearing",
+  "properties, which `inst/vignette-hooks/must-error.R` already stated at the",
+  "three sites holding them, over #295's baseline; 322 of the 1056 bytes that",
+  "removed paid for the rule that a citation names its target rather than a",
+  "line number"
 )
 
 entry <- "CLAUDE.md"

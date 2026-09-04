@@ -297,10 +297,12 @@ test_that("a formula is walked as the call to `~` that it is", {
   # cover the sites and the shapes this one does not.
 
   # A formula in the `.fns` position of `across()` is the one spelling of this
-  # that users are documented to write (`R/share.R:307`), and it was the only
-  # shape in #130's tables asserted at the walk alone. The guard is where the
-  # caller meets it, so it is asserted there too: `.x` is over-reported by
-  # design, and the read of `share` beside it must still be refused.
+  # that users are documented to write (the *Indirect `.fns`* bullet of
+  # `share_of_parent()`'s *Rejected forms and supported rewrites*), and it was
+  # the only shape in #130's tables asserted at the walk alone. The guard is
+  # where the caller meets it, so it is asserted there too: `.x` is
+  # over-reported by design, and the read of `share` beside it must still be
+  # refused.
   from_across <- expect_error(
     summarize_with_margins(
       data,
@@ -1093,11 +1095,12 @@ test_that("a formula wrapping a share helper is refused, not computed", {
 
 test_that("the head is walked before the arguments, and the guard says so", {
   # The walk returns symbols in source order, and the head is syntactically
-  # first. That is not an internal detail: the guard names
-  # `share_dependency[[1L]]` (`R/share.R:786`), so this order decides which
-  # share an expression reading two of them is reported against. Asserting it
-  # through the message is what makes it a property of the diagnostic the
-  # caller reads rather than of the vector the walk happens to build.
+  # first. That is not an internal detail: the guard in
+  # `plan_share_expressions()` names `share_dependency[[1L]]`, so this order
+  # decides which share an expression reading two of them is reported against.
+  # Asserting it through the message is what makes it a property of the
+  # diagnostic the caller reads rather than of the vector the walk happens to
+  # build.
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 3, 6)

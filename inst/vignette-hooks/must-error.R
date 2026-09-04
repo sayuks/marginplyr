@@ -16,10 +16,8 @@
 #     must_error: true               any error will do
 #     must_error: marginplyr_error   the error must carry that condition class
 #
-# `AGENTS.md` is authoritative for when to mark a chunk and for the three
-# properties of this implementation that are load-bearing: it wraps knitr's
-# `evaluate` hook and inspects the result objects, it does nothing for a chunk
-# knitr never evaluated, and it undoes itself from `after.knit`.
+# `AGENTS.md` is authoritative for when to mark a chunk. What a rewrite of this
+# file must keep is stated at the sites that hold it, and not here.
 
 local({
   # Sourcing this twice -- two setup chunks in one document, or a second
@@ -161,7 +159,9 @@ local({
   # finished does. The child-mode guard is what keeps a child document's own
   # `knit()` from restoring while the parent still has chunks to run; a hook
   # this one displaced is still called there, because skipping the restoration
-  # is not a reason to swallow someone else's hook.
+  # is not a reason to swallow someone else's hook. The `document` hook was the
+  # alternative weighed
+  # (`investigation/restoring-knitr-hooks-a-vignette-installs.md`).
   previous_after_knit <- knitr::knit_hooks$get("after.knit")
 
   knitr::knit_hooks$set(after.knit = function(...) {
