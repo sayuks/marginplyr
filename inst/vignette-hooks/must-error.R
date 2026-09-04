@@ -1,23 +1,13 @@
 # The `must_error` chunk option, shared by every vignette.
 #
-# A vignette showing a rejected call executes it rather than quoting its error,
-# so the reader sees the diagnostic their own session would produce. Mark such a
-# chunk with this option instead of Quarto's `error: true`, which only *permits*
-# an error and so renders a success underneath prose that still claims a
-# failure.
-#
-# A vignette reaches it in one line -- a `source()` call on the `system.file()`
-# path to this file -- which is why the definition lives here rather than in a
-# setup chunk. The hidden setup chunks of `vignettes/recipes.qmd` and
-# `vignettes/get_started.qmd` show the call.
-#
 # Two forms:
 #
 #     must_error: true               any error will do
 #     must_error: marginplyr_error   the error must carry that condition class
 #
-# `AGENTS.md` is authoritative for when to mark a chunk. What a rewrite of this
-# file must keep is stated at the sites that hold it, and not here.
+# `AGENTS.md` is authoritative for what the option is for and when to mark a
+# chunk. What a rewrite of this file must keep is stated at the sites that hold
+# it, and not here.
 
 local({
   # Sourcing this twice -- two setup chunks in one document, or a second

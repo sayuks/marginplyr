@@ -263,8 +263,7 @@ cran_status_field <- "Config/marginplyr/cran-status"
 
 # Only `unpublished` and `published` can be read. Any other value stops rather
 # than being treated as either, for the reason a malformed `must_error` header
-# halts a render: a field this cannot read is a field whose assertions silently
-# stopped happening. Reading and checking are separate so that the refusal is
+# halts a render. Reading and checking are separate so that the refusal is
 # executed by a test today, rather than first attempted on release day.
 checked_cran_status <- function(status) {
   if (!isTRUE(status %in% c("unpublished", "published"))) {
