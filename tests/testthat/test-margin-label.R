@@ -996,6 +996,46 @@ test_that("dtplyr expansion verbs restore ordered factor dimensions", {
   }
 })
 
+test_that("dtplyr expansion verbs label a dimension of any type", {
+  skip_if_suggest_absent("dtplyr")
+  # Two rows are load-bearing for the reason the ordered-factor test above
+  # gives, and the types are what generalise it: data.table coerces a recycled
+  # scalar to the column's own type, so an integer dimension takes `NA` from
+  # its label where a factor kept its class (#427).
+  dimensions <- list(
+    integer = c(1L, 2L),
+    double = c(1.5, 2.5),
+    Date = as.Date(c("2024-01-01", "2024-01-02")),
+    logical = c(TRUE, FALSE)
+  )
+
+  for (type in names(dimensions)) {
+    values <- dimensions[[type]]
+    source <- dtplyr::lazy_dt(data.frame(group = values, value = 1:2))
+    lazy <- list(
+      expand_with_margins = expand_with_margins(
+        source,
+        .grouping = rollup(group)
+      ),
+      nest_with_margins = nest_with_margins(source, .grouping = rollup(group))
+    )
+    results <- lapply(lazy, dplyr::collect)
+    results$nest_by_with_margins <- nest_by_with_margins(
+      source,
+      .grouping = rollup(group)
+    )
+
+    for (verb in names(results)) {
+      info <- paste(type, verb)
+      expect_identical(typeof(results[[verb]]$group), "character", info = info)
+      expect_setequal(
+        results[[verb]]$group,
+        c(as.character(values), "Total")
+      )
+    }
+  }
+})
+
 test_that("Arrow applies mixed named labels lazily with typed missing values", {
   skip_if_suggest_absent("arrow")
   data <- data.frame(
