@@ -420,6 +420,10 @@ test_that("nesting keeps cardinality when duplicate sets are dropped", {
   }
 })
 
+lazy_cell_class <- function(cell_names) {
+  if (length(cell_names) == 0L) "tbl_df" else "data.table"
+}
+
 test_that("dtplyr nesting agrees with the local result and stays lazy", {
   skip_if_suggest_absent("dtplyr")
   # Both inputs are needed: whether a payload column remains is what selects
@@ -459,6 +463,13 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
       sales_cell_shape(lazy_result)$names[[1L]],
       scenario$names
     )
+    # The element class is described rather than promised (ADR 0016), and what
+    # it describes is what a caller nesting the same input without marginplyr
+    # gets: `tidyr::nest()` on a `dtplyr` step yields a `data.table`. A cell
+    # with no payload column is a tibble on either backend, a `data.table`
+    # having no form that holds rows without columns.
+    expect_s3_class(local_result$data[[1L]], "tbl_df")
+    expect_s3_class(lazy_result$data[[1L]], lazy_cell_class(scenario$names))
     expect_equal(
       cells_as_tibble(lazy_result, sales_keys),
       cells_as_tibble(local_result, sales_keys)
@@ -479,6 +490,8 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
       .keep = scenario$keep
     )
     expect_identical(sales_cell_shape(lazy_by)$names[[1L]], scenario$names)
+    expect_s3_class(local_by$data[[1L]], "tbl_df")
+    expect_s3_class(lazy_by$data[[1L]], lazy_cell_class(scenario$names))
     expect_equal(
       cells_as_tibble(lazy_by, sales_keys),
       cells_as_tibble(local_by, sales_keys)

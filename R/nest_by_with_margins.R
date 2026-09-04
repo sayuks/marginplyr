@@ -151,7 +151,7 @@ nest_by_with_margins <- function(.data,
     result <- dplyr::summarize(
       empty_data,
       "{.key}" := list(
-        !!nest_cell_expr(rlang::set_names(colnames(empty_data)))
+        !!nest_cell_expr(rlang::set_names(colnames(empty_data)), "local")
       )
     )
     if (!is.null(.id)) {
