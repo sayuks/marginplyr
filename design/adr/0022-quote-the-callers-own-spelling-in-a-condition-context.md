@@ -243,9 +243,12 @@ call runs first, so it is the one dbplyr translates and the one that raises.
 Which of the two dbplyr reaches first is not a contract, and nothing here rests
 on it being permanent: the tests assert the restored spelling through the verb,
 so a dbplyr that moved the translation to the grouped call fails them rather
-than dropping the restatement silently. Nothing else about the adapter moves,
-beyond forcing that call out of the check's lazy argument, which keeps the
-check's own Package conditions outside the catch.
+than dropping the restatement silently. #432 searched seventeen expression shapes
+for one the grouped call refuses and the ungrouped call accepts, and found
+none: `investigation/which-native-summarize-raises-a-translation-error.md`.
+The only other thing that moves in #411 is forcing that call out of the check's
+lazy argument, which keeps the check's own Package conditions outside the
+catch.
 
 Errors only. A branch `summarize()` on a lazy backend still builds a query
 without evaluating the caller's expression, so everything the original reasoning
@@ -282,3 +285,31 @@ citation, as a comment saying no condition is raised while the verb runs. It was
 false on the day it was written, and it is the second copy ADR 0023 names: the
 citation stays correct across this amendment and the re-derivation did not. It
 goes with #411.
+
+## Amendment: the blamed call moves with the argument
+
+#411 restated the native adapter's translation error's argument and left its
+`call` as dbplyr set it, so the error blamed
+`dplyr::summarize(dplyr::ungroup(.data), !!!dots)` — a call spelled with names
+the caller never wrote. #432 is the ticket, and the argument for the change is
+its.
+
+The two are one context and not two, which is what this amendment records: a
+Condition context is the argument, the grouping values, and the blamed call
+together, and CONTEXT.md's entry owes all three in the caller's terms. Nothing
+above ever decided that the native adapter keeps dbplyr's call — the section
+this amends reaches only the argument, because restating it was the whole of
+what #411 asked. So this extends the same amendment rather than reversing
+anything in it: the adapter takes the Margin verb from the executor and assigns
+it after `restate_condition_arguments()`, which returns the condition untouched
+when the map is empty and is therefore not where the second half can live.
+
+`with_branch_conditions()` is still not the vehicle, for the reason above: the
+adapter issues one `summarize()` and repeats nothing, so the deduplication and
+the grouping-value restatement have nothing to act on. What the two paths now
+share is the field assignment alone, which is why it is written at each of them
+rather than extracted.
+
+The grouping values are the third part, and they need nothing here. The native
+adapter groups by `pick(all_of(group_vars))` rather than by internal key
+columns, so dplyr already reports them under the names the caller wrote.

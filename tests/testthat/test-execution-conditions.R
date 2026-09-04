@@ -759,6 +759,40 @@ test_that("a native translation error quotes the caller's own spelling", {
   expect_s3_class(error$parent, "condition")
 })
 
+# The other half of the Condition context on this path (#432). The adapter
+# catches dbplyr's error to restate its argument, and the call it arrived with
+# is the internal `summarize()` the adapter issued over `.data` and `dots` --
+# names the caller never wrote. The whole call is asserted and not its name,
+# because an error header prints the whole call: a blamed
+# `dplyr::summarize(dplyr::ungroup(.data), !!!dots)` and the verb agree on
+# nothing but that they are calls. The expected calls are written out rather
+# than read back off the helpers, so that a helper edited without this test
+# fails it.
+#
+# Both reproductions are asserted, because the two halves of this context are
+# restated by separate statements: `native_shared_label_failure()` is the case
+# whose restatement map is empty, where `restate_condition_arguments()` returns
+# the condition untouched and the blamed call is owed anyway.
+test_that("a native translation error blames the Margin verb", {
+  expect_identical(
+    conditionCall(expect_error(native_translation_failure())),
+    quote(summarize_with_margins(
+      native_grouping_sets_input(),
+      total = sum(value) + grouping_bit(a) + no_such_column,
+      .grouping = rollup(a)
+    ))
+  )
+  expect_identical(
+    conditionCall(expect_error(native_shared_label_failure())),
+    quote(summarize_with_margins(
+      native_grouping_sets_input(),
+      grouping_bit(a) + no_such_column,
+      grouping_bit(a) + value,
+      .grouping = rollup(a)
+    ))
+  )
+})
+
 test_that("a native label two dots share is left as dplyr wrote it", {
   error <- expect_error(native_shared_label_failure())
 
