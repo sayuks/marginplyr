@@ -70,10 +70,11 @@ proxy_columns <- function(data_proxy, cols) {
 }
 
 # `carried` names the input columns that reach the result beside the Margin
-# dimensions -- a fixed `.by` key, or a column the verb passes through. They
-# cross the same branch union and lose a declared NA level in the same place,
-# so `factors` covers them too (#415). Which columns those are is settled by
-# `prepare_margin_operation()`'s `carried_columns`.
+# dimensions -- a fixed `.by` key, a column the verb passes through, or one it
+# folds into a cell. They cross the same branch union and lose a declared NA
+# level in the same place, so `factors` covers them too (#415, #421). Which
+# columns those are is settled by `prepare_margin_operation()`'s
+# `carried_columns`.
 #
 # `prototypes` stays keyed to the dimensions alone. It stands for the value a
 # branch omitting a dimension writes, and only a dimension is ever omitted.

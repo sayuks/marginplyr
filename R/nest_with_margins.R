@@ -254,11 +254,11 @@ nest_margin_pipeline <- function(.data,
     .duplicates = .duplicates,
     .sort = .sort,
     duplicates_choices = nest_duplicates_choices,
-    # Nesting expands every column and then folds all but the grouping columns
-    # into `.key`, so the fixed `.by` keys are what the result carries as
-    # columns of its own. A payload column is inside a cell by the time the
-    # finalizer runs, where nothing rebuilds it.
-    carried_columns = function(data_vars, plan) plan$by,
+    # Nesting folds all but the grouping columns into `.key`, so every input
+    # column reaches the result -- as a column of its own, or inside a cell
+    # (#421). `execute_margin_nest()` rebuilds the second kind before folding
+    # it, which is the half of the route that lets this name them all.
+    carried_columns = function(data_vars, plan) data_vars,
     .id = .id,
     call = call
   )
@@ -312,10 +312,30 @@ execute_margin_nest <- function(operation, .key, .keep) {
         character()
       }
       data <- operation$data
+      column_info <- operation$column_info
       if (length(keep_cols) > 0L) {
         keep_exprs <- lapply(group_cols, margin_column_pronoun)
         names(keep_exprs) <- unname(keep_cols)
         data <- dplyr::mutate(data, !!!keep_exprs)
+        # A `.keep` copy is made here, after `prepare_margin_operation()` read
+        # the input's schema, so no `factor_info` entry names it and the encode
+        # arm would not see it. The copy holds the source column's values, so
+        # the source column's entry describes it under the internal name. It
+        # carries no Margin label, which is what puts it on the same route as a
+        # payload column: rebuilt on its declared levels with none appended.
+        column_info$factors <- c(
+          column_info$factors,
+          lapply(
+            Filter(
+              function(info) info$col %in% names(keep_cols),
+              column_info$factors
+            ),
+            function(info) {
+              info$col <- unname(keep_cols[[info$col]])
+              info
+            }
+          )
+        )
       }
 
       validate_margin_operation(operation)
@@ -324,7 +344,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
         data,
         plan = plan,
         margin_labels = operation$margin_labels,
-        column_info = operation$column_info,
+        column_info = column_info,
         backend = operation$backend,
         set_id_name = set_col
       )
@@ -334,6 +354,25 @@ execute_margin_nest <- function(operation, .key, .keep) {
       # own; the identifier is retained past the nest and dropped once the
       # finalizer has ordered by it.
       sorting <- margin_sorting(operation)
+      # One split, read by both halves: what is folded into a cell is rebuilt
+      # here, and what stays a column of its own is what the finalizer is left.
+      # Deriving the two separately would let them drift into a finalizer that
+      # rebuilds a column the fold has taken away, or skips one it kept.
+      folded <- vapply(
+        column_info$factors,
+        function(info) !(info$col %in% group_cols),
+        logical(1)
+      )
+      # Before the fold, because that is the last point a payload column is a
+      # column. The union has already turned the values on a declared NA level
+      # into missing, so rebuilding inside the cell would restore the level
+      # with nothing left on it (#421).
+      expanded <- restore_margin_factors(
+        expanded,
+        factor_info = column_info$factors[folded],
+        margin_labels = operation$margin_labels,
+        position = operation$margin_label_position
+      )
       new_margin_execution(
         nest_expanded_margins(
           expanded,
@@ -344,7 +383,8 @@ execute_margin_nest <- function(operation, .key, .keep) {
           .keep = .keep,
           drop_set_col = is.null(operation$set_id_name) && !sorting
         ),
-        sort_id = if (sorting) set_col else NULL
+        sort_id = if (sorting) set_col else NULL,
+        factor_info = column_info$factors[!folded]
       )
     },
     call = operation$call

@@ -412,10 +412,11 @@ label_margin_branch <- function(.data,
     function(info) info$col,
     character(1)
   )
-  # A column `factor_info` names that is not a dimension is a fixed `.by` key
-  # or one the verb passes through, so it is in every branch rather than in
-  # the ones that include it, and it is never labelled: only the encoded arm
-  # above can select it (#415).
+  # A column `factor_info` names that is not a dimension is one the verb
+  # carries -- a fixed `.by` key, one it passes through, or one it folds into a
+  # cell -- so it is in every branch rather than in the ones that include it,
+  # and it is never labelled: only the encoded arm above can select it (#415,
+  # #421).
   encoded_factors <- Filter(
     function(info) {
       present <- !(info$col %in% plan$dimensions) || info$col %in% included
