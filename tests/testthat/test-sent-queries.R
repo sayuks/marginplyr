@@ -1,8 +1,10 @@
 # The record is emptied at the top of every call, so no test here isolates
-# `sent_queries` itself. Two pieces of state do leak between tests and are
-# restored on exit by every test that writes one: the option, and the
-# per-dialect verdict cache the share tests below empty so that the probe
-# sends its queries at all. ADR 0027 is the decision these assert.
+# `sent_queries` itself, save the one asserting what a session with no call in
+# it answers -- which is the one state a call cannot put back. Two other pieces
+# of state leak between tests and are restored on exit by every test that
+# writes one: the option, and the per-dialect verdict cache the share tests
+# below empty so that the probe sends its queries at all. ADR 0027 is the
+# decision these assert.
 
 sent_queries_data <- function() {
   data.frame(
@@ -474,4 +476,332 @@ test_that("a refused share leaves the probe's row readable", {
 
   expect_s3_class(condition, "marginplyr_error")
   expect_identical(record$purpose, "share_dialect")
+})
+
+# --- a call refused before its plan ------------------------------------------
+
+# The entry points, each with an argument it refuses in the validation it opens
+# with -- before a Grouping plan is compiled, and so before any query could
+# have been sent. `.duplicates` is the one option every entry point takes, and
+# a local input keeps what is under test the refusal rather than the backend.
+refused_entry_point_calls <- function() {
+  lapply(verbs_taking(".grouping"), function(verb) {
+    args <- list(
+      quote(sent_queries_data()),
+      .grouping = quote(rollup(g)),
+      .duplicates = "bogus"
+    )
+    if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
+      args <- c(args, list(total = quote(sum(v, na.rm = TRUE))))
+    }
+    list(verb = verb, args = args)
+  })
+}
+
+test_that("a call refused before its plan reports its own empty record", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  # The verbs whose refused call left the previous call's record readable,
+  # rather than one expectation per case: which entry point is stale is what a
+  # failure here has to say, and the case is not otherwise in the report.
+  stale <- character()
+
+  for (case in refused_entry_point_calls()) {
+    with_audit_option(TRUE, {
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g, h)
+      )
+      recorded <- nrow(last_sent_queries())
+      condition <- rlang::catch_cnd(
+        eval(rlang::call2(case$verb, !!!case$args)),
+        classes = "marginplyr_error"
+      )
+      record <- last_sent_queries()
+    })
+    # A prior call that recorded nothing would leave zero rows to empty, and
+    # a case that raised nothing refused at no point at all: either passes the
+    # count on a record this test never put anything into.
+    if (recorded == 0L || is.null(condition) || nrow(record) != 0L) {
+      stale <- c(stale, case$verb)
+    }
+  }
+
+  expect_identical(stale, character())
+  # The count above is all the loop reads, so the zero-row answer's shape is
+  # asserted once, on the record the last case left.
+  expect_sent_nothing()
+})
+
+test_that("a call refused before its plan reads the option for itself", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, summarize_with_margins(
+    remote,
+    total = sum(v, na.rm = TRUE),
+    .grouping = rollup(g, h)
+  ))
+  with_audit_option(FALSE, {
+    expect_error(
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g, h),
+        .duplicates = "bogus"
+      ),
+      class = "marginplyr_error"
+    )
+  })
+
+  # The refused call was the unaudited one, so the flag it left is what the
+  # accessor reports -- not the audited flag of the call before it.
+  expect_unaudited()
+
+  # And the other direction, where a stale flag would refuse a call that was
+  # audited rather than answer it with the zero rows it sent.
+  summarize_with_margins(
+    remote,
+    total = sum(v, na.rm = TRUE),
+    .grouping = rollup(g, h)
+  )
+  with_audit_option(TRUE, {
+    expect_error(
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g, h),
+        .duplicates = "bogus"
+      ),
+      class = "marginplyr_error"
+    )
+  })
+  expect_sent_nothing()
+})
+
+test_that("a call refused before its plan is a call the session recorded", {
+  # The one reading a later call cannot restore, so the whole record is saved
+  # and put back: emptying it is how the session's first call is reached
+  # twice.
+  saved <- as.list(sent_queries, all.names = TRUE)
+  empty_the_record <- function() {
+    rm(list = names(saved), envir = sent_queries)
+  }
+  on.exit(
+    {
+      empty_the_record()
+      list2env(saved, envir = sent_queries)
+    },
+    add = TRUE
+  )
+
+  empty_the_record()
+  # The control: with nothing recorded, the accessor refuses rather than
+  # answering, which is what makes the read after the refusal an assertion.
+  expect_error(last_sent_queries(), class = "marginplyr_error")
+
+  with_audit_option(TRUE, {
+    expect_error(
+      summarize_with_margins(
+        sent_queries_data(),
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g),
+        .duplicates = "bogus"
+      ),
+      class = "marginplyr_error"
+    )
+  })
+
+  # A verb that began and then refused the call has begun, so the answer is
+  # its own empty record and not the session's first (ADR 0027).
+  expect_sent_nothing()
+})
+
+# --- the reset site, structurally --------------------------------------------
+
+# Which functions empty the record is a property of every entry point rather
+# than of any one call, so it is read from the loaded namespace; the shared
+# visitor and enumeration come from `helper-namespace-walk.R`, whose header
+# says why a structural gate reads a namespace at all.
+
+# Whether `fn` empties the record anywhere in its body.
+empties_the_record <- function(fn) {
+  found <- FALSE
+  visit_calls(body(fn), function(node) {
+    head <- node[[1]]
+    if (is.name(head) && identical(as.character(head), "reset_sent_queries")) {
+      found <<- TRUE
+    }
+  })
+  found
+}
+
+# The head of the counter call covr's wrapper holds, assembled rather than
+# written as a `:::` call. `R CMD check`'s *unstated dependencies in tests*
+# reads a `:::` in a test source from the parse tree, so spelling it there
+# makes covr a dependency this package would have to declare -- and covr is
+# supplied by `test-coverage.yaml`'s `extra-packages`, belonging in no
+# dependency field of its own (`AGENTS.md`, *Dependency metadata*). Assembling
+# it names the same call without putting the token where that scan reads.
+coverage_counter <- function() {
+  call(":::", as.name("covr"), as.name("count"))
+}
+
+# `expr` with covr's instrumentation taken off, where it has any.
+#
+# covr measures a namespace by replacing each statement in it with
+# `if (TRUE) { covr:::count(<key>); <statement> }`, so a reader that takes a
+# statement by position takes covr's wrapper rather than the statement. Every
+# other structural gate in this suite goes through `visit_calls()`, which finds
+# a call wherever the wrapper puts it; this file holds the one that reads a
+# position, and the coverage job is where it reported all six entry points at
+# once.
+#
+# Read through the wrapper rather than skip under covr: a gate that stops
+# asserting in one job reads exactly like a gate nothing violates, which is the
+# failure a structural gate exists to prevent. The shape is covr's and not
+# documented, so a covr that changed it fails this gate instead of quieting it
+# -- the direction the reading has to fail in, and why no `skip()` is here.
+strip_coverage_wrapper <- function(expr) {
+  if (!is.call(expr) || !identical(expr[[1]], quote(`if`)) ||
+        length(expr) != 3L || !identical(expr[[2]], TRUE)) {
+    return(expr)
+  }
+  branch <- expr[[3]]
+  if (!is.call(branch) || !identical(branch[[1]], quote(`{`)) ||
+        length(branch) != 3L) {
+    return(expr)
+  }
+  counter <- branch[[2]]
+  if (!is.call(counter) || !identical(counter[[1]], coverage_counter())) {
+    return(expr)
+  }
+  branch[[3]]
+}
+
+# The first expression of `fn`'s body, which is the body itself where it is not
+# a braced block. Both readings go through the unwrapping above, because covr
+# wraps an unbraced body whole and wraps each statement of a braced one.
+first_statement <- function(fn) {
+  fn_body <- strip_coverage_wrapper(body(fn))
+  if (!is.call(fn_body) || !identical(as.character(fn_body[[1]]), "{")) {
+    return(fn_body)
+  }
+  if (length(fn_body) < 2L) {
+    return(NULL)
+  }
+  strip_coverage_wrapper(fn_body[[2]])
+}
+
+test_that("every entry point empties the record before anything else", {
+  ns <- asNamespace("marginplyr")
+  # An entry point is an exported function that compiles a Grouping plan of
+  # its own, and `.grouping` is how a specification reaches one. One taking a
+  # plan by some other route would go unread, which the equality below is what
+  # reports: it is the function calling `reset_sent_queries()` from outside
+  # this set.
+  entry_points <- verbs_taking(".grouping")
+
+  emptying <- Filter(
+    function(name) empties_the_record(get(name, envir = ns)),
+    namespace_functions(ns)
+  )
+  # Both directions at once: an entry point that stopped emptying the record
+  # leaves the record spanning two calls, and a function that empties it
+  # part-way through one truncates that call's own (ADR 0027).
+  expect_setequal(emptying, entry_points)
+
+  late <- Filter(
+    function(name) {
+      opening <- first_statement(get(name, envir = ns))
+      !identical(opening, quote(reset_sent_queries()))
+    },
+    entry_points
+  )
+  # Named rather than counted: a validation moved above the reset is what this
+  # fires on, and which entry point took it is not otherwise in the report.
+  expect_identical(late, character())
+})
+
+test_that("the reset scan tells a first statement from a later one", {
+  # Both readings run over synthetic functions rather than over a member of the
+  # namespace, since a member that failed either is what the gate above reports.
+  resets_first <- function() {
+    reset_sent_queries()
+    stop("unreachable")
+  }
+  resets_later <- function() {
+    stop("unreachable")
+    reset_sent_queries()
+  }
+  bare <- function() reset_sent_queries()
+  reset <- quote(reset_sent_queries())
+
+  expect_true(empties_the_record(resets_first))
+  expect_true(empties_the_record(resets_later))
+  expect_false(empties_the_record(function() NULL))
+  expect_identical(first_statement(resets_first), reset)
+  expect_false(identical(first_statement(resets_later), reset))
+  # An unbraced body is the statement itself, which the gate above reads for no
+  # entry point today and would read for one written that way. An empty braced
+  # one has no first statement to read, and answers that rather than raising a
+  # subscript error the gate would report as neither verdict.
+  expect_identical(first_statement(bare), reset)
+  expect_null(first_statement(function() {}))
+})
+
+test_that("the reset scan reads through covr's instrumentation", {
+  # The shape covr rewrites a statement into, written out rather than produced
+  # by calling covr: covr is supplied by the coverage workflow and is in no
+  # dependency field, so a test that called it would put it in one. Measured on
+  # covr 3.6.5.9001, which is what the coverage job installed when this gate
+  # reported all six entry points against a package that resets in all six.
+  # Only the counter's head is substituted in, for the reason its own reader
+  # gives; the wrapper around it is the literal covr writes.
+  reset <- quote(reset_sent_queries())
+  counter <- coverage_counter()
+
+  braced <- function() NULL
+  body(braced) <- bquote({
+    if (TRUE) {
+      .(counter)("marginplyr/R/grouping-plan.R:1:1:1:1")
+      reset_sent_queries()
+    }
+    if (TRUE) {
+      .(counter)("marginplyr/R/grouping-plan.R:2:1:2:1")
+      stop("unreachable")
+    }
+  })
+
+  unbraced <- function() NULL
+  body(unbraced) <- bquote(if (TRUE) {
+    .(counter)("marginplyr/R/grouping-plan.R:1:1:1:1")
+    reset_sent_queries()
+  })
+
+  expect_identical(first_statement(braced), reset)
+  expect_identical(first_statement(unbraced), reset)
+  # The instrumented body still answers the other reading, which walks rather
+  # than counts positions and is what the wrapper leaves alone.
+  expect_true(empties_the_record(braced))
+
+  # An `if (TRUE)` a caller wrote is not a wrapper, so the unwrapping may not
+  # take it apart: it has no counter in it, and taking it apart would report a
+  # first statement that is not the one the entry point opens with.
+  authored <- function() NULL
+  body(authored) <- quote({
+    if (TRUE) {
+      validate()
+      reset_sent_queries()
+    }
+  })
+  expect_false(identical(first_statement(authored), reset))
 })

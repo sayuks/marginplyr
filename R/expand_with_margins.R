@@ -92,6 +92,7 @@ expand_with_margins <- function(.data,
                                 .duplicates = c("error", "drop", "keep"),
                                 .id = NULL,
                                 .sort = c("none", "last", "first")) {
+  reset_sent_queries()
   call <- rlang::current_call()
   with_margin_error_call(
     {

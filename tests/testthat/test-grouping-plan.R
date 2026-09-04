@@ -833,22 +833,6 @@ test_that("the empty spellings that already had a reading keep it", {
   )
 })
 
-# Every exported verb taking the argument named, derived from the signatures so
-# that a seventh arrives below as a wrapper a list is missing rather than as a
-# position nothing covers. The six it answers today are the same six for both
-# arguments, `summarise_with_margins()` included: the derivation reads exports
-# rather than function objects, so a synonym that stopped being one would show
-# as an entry the list no longer covers.
-verbs_taking <- function(arg) {
-  Filter(
-    function(name) {
-      object <- getExportedValue("marginplyr", name)
-      is.function(object) && arg %in% names(formals(object))
-    },
-    getNamespaceExports("marginplyr")
-  )
-}
-
 # One wrapper per verb, forwarding both arguments with `{{ }}`. File level
 # because two tests below put different expressions through the same six
 # verbs; a second copy could disagree with the derivation above while this

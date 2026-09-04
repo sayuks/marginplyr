@@ -165,6 +165,7 @@ nest_with_margins <- function(.data,
                               .sort = c("none", "last", "first"),
                               .key = "data",
                               .keep = FALSE) {
+  reset_sent_queries()
   call <- rlang::current_call()
   if (is.null(.key)) {
     .key <- "data"
