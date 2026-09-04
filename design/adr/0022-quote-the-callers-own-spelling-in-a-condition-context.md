@@ -229,12 +229,18 @@ postgres as on a local input, and the sentence above confining the scope to
 `summarize_margin_union()` no longer holds. #411 implements what follows.
 
 What is extended is the restatement and not `with_branch_conditions()`. The
-native adapter issues one `summarize()` and repeats nothing, so the
-deduplication and the grouping-value restatement have nothing to act on; the one
-sentence of the old reasoning that survives is that one. The error is caught
-around that single `summarize()`, `restate_condition_arguments()` applied with
-the map `branch_argument_map()` builds from the rewritten dots and the caller's
-labels, and the condition re-raised. Nothing else about the adapter moves.
+native adapter summarizes the caller's expressions once and repeats nothing, so
+the deduplication and the grouping-value restatement have nothing to act on; the
+one sentence of the old reasoning that survives is that one. The error is
+caught, `restate_condition_arguments()` applied with the map
+`branch_argument_map()` builds from the rewritten dots and the caller's labels,
+and the condition re-raised. Nothing else about the adapter moves.
+
+It is caught around both calls that hand dplyr those expressions — the adapter
+summarizes them a second time, ungrouped, to learn the output names — because
+which of the two dbplyr translates first is dbplyr's business and not a contract
+this can rest on. Measured on the date #410 was written, the ungrouped one is
+reached first, so it is the one the tests exercise.
 
 Errors only. A branch `summarize()` on a lazy backend still builds a query
 without evaluating the caller's expression, so everything the original reasoning

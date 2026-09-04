@@ -108,6 +108,19 @@ summarize_failing_rollup <- function() {
   )
 }
 
+# The native grouping-sets adapter's own reproduction. `simulate_postgres()`
+# holds that capability and needs no optional backend, dbplyr being an Import,
+# so the native path is asserted wherever the suite runs. What the adapter
+# hands dplyr splices a SQL literal whose own deparse overflows the width
+# `as_label()` deparses at, so the label dbplyr's error quotes collapses to
+# `+...` for any dot combining a helper with anything else (#410).
+native_grouping_sets_input <- function() {
+  dbplyr::tbl_lazy(
+    data.frame(a = c("x", "y"), value = c(1, 2)),
+    con = dbplyr::simulate_postgres()
+  )
+}
+
 # One plan whose two grouping sets raise whatever the caller asks them to.
 # `dplyr::n()` is 3 only in the grouping set that groups by nothing, which
 # `rollup()` runs second, so `whole` is the later branch and `fail` makes it
@@ -689,6 +702,63 @@ test_that("a branch error quotes the caller's own spelling", {
   expect_s3_class(error$parent, "condition")
 })
 
+# The one condition the native adapter raises while the verb runs, and the
+# only part of ADR 0022 that reaches it: an error dbplyr raises translating the
+# rewritten expression. Both directions are asserted, because a restoration
+# that quietly stopped happening reads exactly like a package whose contexts
+# were all still faithful.
+test_that("a native translation error quotes the caller's own spelling", {
+  # `a`, `value`, and `no_such_column` are read from the lazy input, which
+  # codetools reads as undefined globals wherever a verb's arguments are
+  # written inside a function.
+  # nolint start: object_usage_linter.
+  error <- expect_error(
+    summarize_with_margins(
+      native_grouping_sets_input(),
+      total = sum(value) + grouping_bit(a) + no_such_column,
+      .grouping = rollup(a)
+    )
+  )
+  # nolint end
+
+  message <- conditionMessage(error)
+  # The trailing newline is part of the assertion: dbplyr's sentence carries no
+  # period, and the restatement puts back the punctuation it found rather than
+  # a period of its own.
+  expect_match(
+    message,
+    "In argument: `total = sum(value) + grouping_bit(a) + no_such_column`\n",
+    fixed = TRUE
+  )
+  expect_false(grepl("+...", message, fixed = TRUE))
+  # The condition itself is still dbplyr's, restated context and all.
+  expect_s3_class(error$parent, "condition")
+})
+
+test_that("a native label two dots share is left as dplyr wrote it", {
+  # `a`, `value`, and `no_such_column` are read from the lazy input, which
+  # codetools reads as undefined globals wherever a verb's arguments are
+  # written inside a function.
+  # nolint start: object_usage_linter.
+  error <- expect_error(
+    summarize_with_margins(
+      native_grouping_sets_input(),
+      grouping_bit(a) + no_such_column,
+      grouping_bit(a) + value,
+      .grouping = rollup(a)
+    )
+  )
+  # nolint end
+
+  # Two unnamed dots the callers spelled differently collapse to one label, so
+  # `branch_argument_map()` finds no single candidate and drops the entry.
+  expect_match(
+    conditionMessage(error),
+    "In argument: `+...`",
+    fixed = TRUE
+  )
+})
+
 test_that("a propagated error keeps its class, diagnostic, and cause", {
   error <- expect_error(summarize_failing_rollup())
 
@@ -812,6 +882,12 @@ test_that("a bullet this cannot read leaves the condition alone", {
   expect_identical(
     restated(paste0("i In argument: `dplyr::all_of(\"x\")`.", cause)),
     paste0("i In argument: `c(x)`.", cause)
+  )
+  # dbplyr's bullet carries no trailing period, and one is neither required to
+  # read the span nor added when the bullet is rebuilt.
+  expect_identical(
+    restated(paste0("i In argument: `dplyr::all_of(\"x\")`", cause)),
+    paste0("i In argument: `c(x)`", cause)
   )
   # A wording dplyr could move to.
   expect_identical(
