@@ -2,6 +2,7 @@
 
 Investigated: 2026-08-18
 Revised: 2026-08-18 — ADR 0021
+Revised: 2026-09-04 — investigation/what-truncates-an-argument-label-on-the-native-adapter.md
 
 Measured while implementing #199, which asked for a Condition context quoting
 the caller's own spelling of a summary argument. ADR 0022 records the decision
@@ -195,6 +196,35 @@ Continuation lines began with two literal spaces ahead of any escape at
 all in `$message` or `$body` — rlang holds the bare bullets and cli formats
 them at print — so a reading that removes styling was a no-op on the error
 path.
+
+## Revisions (2026-09-04)
+
+Two claims in *How dplyr renders the label* were established on the eager path
+and do not hold on the native grouping-sets adapter.
+`investigation/what-truncates-an-argument-label-on-the-native-adapter.md` is
+the note that established the correction, and holds the measurements.
+
+**"The abbreviation is dplyr's and not a marginplyr artefact."** Measured here
+on a long infix expression, and true of it. On the native adapter the label is
+truncated because `rewrite_grouping_dots()` splices in a `dbplyr` SQL literal
+whose deparse is multi-line, so `rlang::as_label()` answers `+...` for
+`grouping_bit(a)`'s rewrite on its own. The length of the caller's expression
+does not decide it there, and the truncation is marginplyr's.
+
+**"dplyr's label of one argument can never equal marginplyr's label of
+another."** That followed from `as_label()` emitting neither `+...` nor
+`.data$x`. On the native adapter marginplyr's own label *is* `+...`, so the
+asymmetry is gone and the property #199's hard constraint needs no longer
+follows from it. What holds in its place is the rule
+`branch_argument_map()` already applies to a shared label: two unnamed dots
+that both collapse to `+...` yield no map entry where the callers spelled them
+differently, and the entry is kept where they spelled them alike, the
+restoration being unique whichever dot dplyr meant. A named dot carries
+`name = ` into its label, so it shares a label with neither an unnamed dot nor
+a differently-named one.
+
+Neither correction reaches the eager path, where the measurements above stand
+as taken.
 
 ## Searched for and not found
 
