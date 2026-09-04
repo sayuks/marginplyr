@@ -644,17 +644,50 @@ empties_the_record <- function(fn) {
   found
 }
 
+# `expr` with covr's instrumentation taken off, where it has any.
+#
+# covr measures a namespace by replacing each statement in it with
+# `if (TRUE) { covr:::count(<key>); <statement> }`, so a reader that takes a
+# statement by position takes covr's wrapper rather than the statement. Every
+# other structural gate in this suite goes through `visit_calls()`, which finds
+# a call wherever the wrapper puts it; this file holds the one that reads a
+# position, and the coverage job is where it reported all six entry points at
+# once.
+#
+# Read through the wrapper rather than skip under covr: a gate that stops
+# asserting in one job reads exactly like a gate nothing violates, which is the
+# failure a structural gate exists to prevent. The shape is covr's and not
+# documented, so a covr that changed it fails this gate instead of quieting it
+# -- the direction the reading has to fail in, and why no `skip()` is here.
+strip_coverage_wrapper <- function(expr) {
+  if (!is.call(expr) || !identical(expr[[1]], quote(`if`)) ||
+        length(expr) != 3L || !identical(expr[[2]], TRUE)) {
+    return(expr)
+  }
+  branch <- expr[[3]]
+  if (!is.call(branch) || !identical(branch[[1]], quote(`{`)) ||
+        length(branch) != 3L) {
+    return(expr)
+  }
+  counter <- branch[[2]]
+  if (!is.call(counter) || !identical(counter[[1]], quote(covr:::count))) {
+    return(expr)
+  }
+  branch[[3]]
+}
+
 # The first expression of `fn`'s body, which is the body itself where it is not
-# a braced block.
+# a braced block. Both readings go through the unwrapping above, because covr
+# wraps an unbraced body whole and wraps each statement of a braced one.
 first_statement <- function(fn) {
-  fn_body <- body(fn)
+  fn_body <- strip_coverage_wrapper(body(fn))
   if (!is.call(fn_body) || !identical(as.character(fn_body[[1]]), "{")) {
     return(fn_body)
   }
   if (length(fn_body) < 2L) {
     return(NULL)
   }
-  fn_body[[2]]
+  strip_coverage_wrapper(fn_body[[2]])
 }
 
 test_that("every entry point empties the record before anything else", {
@@ -712,4 +745,49 @@ test_that("the reset scan tells a first statement from a later one", {
   # subscript error the gate would report as neither verdict.
   expect_identical(first_statement(bare), reset)
   expect_null(first_statement(function() {}))
+})
+
+test_that("the reset scan reads through covr's instrumentation", {
+  # The shape covr rewrites a statement into, written out rather than produced
+  # by calling covr: covr is supplied by the coverage workflow and is in no
+  # dependency field, so a test that called it would put it in one. Measured on
+  # covr 3.6.5.9001, which is what the coverage job installed when this gate
+  # reported all six entry points against a package that resets in all six.
+  reset <- quote(reset_sent_queries())
+
+  braced <- function() NULL
+  body(braced) <- quote({
+    if (TRUE) {
+      covr:::count("marginplyr/R/grouping-plan.R:1:1:1:1")
+      reset_sent_queries()
+    }
+    if (TRUE) {
+      covr:::count("marginplyr/R/grouping-plan.R:2:1:2:1")
+      stop("unreachable")
+    }
+  })
+
+  unbraced <- function() NULL
+  body(unbraced) <- quote(if (TRUE) {
+    covr:::count("marginplyr/R/grouping-plan.R:1:1:1:1")
+    reset_sent_queries()
+  })
+
+  expect_identical(first_statement(braced), reset)
+  expect_identical(first_statement(unbraced), reset)
+  # The instrumented body still answers the other reading, which walks rather
+  # than counts positions and is what the wrapper leaves alone.
+  expect_true(empties_the_record(braced))
+
+  # An `if (TRUE)` a caller wrote is not a wrapper, so the unwrapping may not
+  # take it apart: it has no counter in it, and taking it apart would report a
+  # first statement that is not the one the entry point opens with.
+  authored <- function() NULL
+  body(authored) <- quote({
+    if (TRUE) {
+      validate()
+      reset_sent_queries()
+    }
+  })
+  expect_false(identical(first_statement(authored), reset))
 })
