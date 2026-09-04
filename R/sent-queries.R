@@ -10,11 +10,9 @@ sent_queries <- new.env(parent = emptyenv())
 # `TRUE` is "not audited", and nothing here reports it.
 #
 # Called as the first statement of every entry point, ahead of the argument
-# validation each of them opens with: a call refused there is a call that
-# began, and what `last_sent_queries()` answers for it is its own empty record
-# rather than the previous call's (ADR 0027). The backend is not known yet, so
-# the SQL flag starts `FALSE` and `remember_sent_query_backend()` sets it where
-# the backend is computed.
+# validation each of them opens with (ADR 0027). The backend is not known yet,
+# so the SQL flag starts `FALSE` and `remember_sent_query_backend()` sets it
+# where the backend is computed.
 reset_sent_queries <- function() {
   sent_queries$recorded <- TRUE
   sent_queries$audited <- isTRUE(getOption("marginplyr.audit_sql"))
@@ -97,8 +95,10 @@ record_sent_query <- function(purpose, query) {
 #' call made in this process and not one made in a worker.
 #'
 #' @section Four answers:
-#' - Nothing has been recorded in this session -- no Margin verb has run --
-#'   and the call is refused with a `"marginplyr_error"`.
+#' - Nothing has been recorded in this session -- no Margin verb has begun --
+#'   and the call is refused with a `"marginplyr_error"`. A verb that began and
+#'   then refused your call has begun, so what is read after one is its own
+#'   record, empty, and not this refusal.
 #' - The last call was not audited, the option being unset or holding a value
 #'   other than `TRUE` when the call began, and the call is refused with a
 #'   `"marginplyr_error"` naming `marginplyr.audit_sql`. The option is read

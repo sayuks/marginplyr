@@ -154,45 +154,38 @@ the same way.
 
 ## Amendment: the reset is the first statement of each entry point, not of the plan
 
-**"emptied at the top of `prepare_grouping_plan()`"** no longer holds, and
-neither does *One call, and which call*'s first sentence. The record is emptied
-at the top of every entry point instead. Nothing else here changes: what the
-record holds, what it promises, and which four answers it gives are untouched,
-and this amendment is what makes the third of them reachable where it was not.
+**"emptied at the top of `prepare_grouping_plan()`"** no longer holds, nor does
+*One call, and which call*'s first sentence, nor the last clause of
+*Corrections*' first entry, which names the same site. The record is emptied at
+the first statement of `summarize_with_margins()`, `expand_with_margins()`,
+`nest_with_margins()`, `nest_by_with_margins()`, and `inspect_grouping()`
+instead, ahead of the argument validation each of them opens with — which
+`prepare_grouping_plan()` runs after (#409).
 
-`prepare_grouping_plan()` runs before every recorded site, which is what that
-section establishes, and that is not enough: it also runs *after* the argument
-validation each entry point opens with. A call refused there — `.sort` given a
-value outside its vocabulary, a `.data` no verb accepts, a summary two readings
-claim — never reached the reset, so `last_sent_queries()` answered it with the
-previous successful call's rows verbatim, and the audited flag deciding which
-of the four answers is given was that previous call's too (#409).
+The bound is the body. A call R refuses before entering one, an argument
+matching no formal, reaches no statement of it and leaves the previous call's
+record readable. That is a call that never began, and it is the same reading
+under which one refused *inside* the body did.
 
-That is the defect this decision exists to remove, arriving in the one place
-the decision itself left open: a record readable after a call it does not
-belong to, with nothing saying so. A refusal is a call that began, so the
-answer it takes is *The call was audited and sent nothing* — the zero-row
-tibble, which having sent nothing is exactly true of it.
+Two of the four answers move with that reading. A refusal inside the body takes
+*The call was audited and sent nothing*, the third. And it is a call the session
+recorded, so a session whose only call was refused is answered with that
+zero-row tibble rather than with the first — which now says that no verb reached
+its own body, where before it said that none had completed one.
 
-The reset therefore moves to the first statement of `summarize_with_margins()`,
-`expand_with_margins()`, `nest_with_margins()`, `nest_by_with_margins()`, and
-`inspect_grouping()`, ahead of everything that can raise. What made
-`prepare_grouping_plan()` the site — that all five reach it, and reach it
-before any recorded site — is preserved rather than traded away: the five reach
-it still, and a reset before their validation is a reset before it. Neither of
-the two things that function computes is read by the reset: `.grouping` is not
-resolved yet, and the backend is unknown, which is why the SQL flag starts
-`FALSE` and `remember_sent_query_backend()` stays where the backend is
-computed.
+What made `prepare_grouping_plan()` the site — that all five entry points reach
+it, and reach it before any recorded site — is preserved rather than traded
+away: the five reach it still, and a reset before their validation is a reset
+before it. Neither of the two things that function computes is read by the
+reset: `.grouping` is not resolved yet, and the backend is unknown, which is why
+the SQL flag starts `FALSE` and `remember_sent_query_backend()` stays where the
+backend is computed.
 
-Five sites are not five rules. `test-sent-queries.R` reads the loaded namespace
-and asserts that the set of functions calling `reset_sent_queries()` is exactly
-the set of exported functions taking `.grouping`, and that each of them calls
-it first. An entry point added without a reset, and a validation moved above
-one, are each what that gate fires on. A structural gate is what this placement
-needs and the old one did not: one function's top is a place a reader can see,
-while "before every refusal in five bodies" is a property nothing but a scan
-can hold.
+What moves with the placement is a gate. `test-sent-queries.R` reads the loaded
+namespace and asserts that the set of functions calling `reset_sent_queries()`
+is exactly the set of exported functions taking `.grouping`, and that each of
+them calls it first. An entry point added without a reset, and a validation
+moved above one, are each what it fires on.
 
 ## Corrections
 

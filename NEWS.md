@@ -304,6 +304,7 @@
   share, with the control that tells a refusal from a question that could
   not be put. Each is recorded before it is sent, so a call refused by a
   collision or by an ineligible share source leaves readable every query it
-  had already sent. A call refused before it sent anything -- by an argument
-  its verb rejects -- reads back as the empty record it is, rather than as the
-  previous call's. The option is off by default (#318, #400, #401, #409).
+  had already sent. A call one of these verbs refused before sending anything
+  reads back as the empty record it is, rather than as the previous call's,
+  and is a call the session has recorded. The option is off by default
+  (#318, #400, #401, #409).

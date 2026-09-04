@@ -1,8 +1,10 @@
 # The record is emptied at the top of every call, so no test here isolates
-# `sent_queries` itself. Two pieces of state do leak between tests and are
-# restored on exit by every test that writes one: the option, and the
-# per-dialect verdict cache the share tests below empty so that the probe
-# sends its queries at all. ADR 0027 is the decision these assert.
+# `sent_queries` itself, save the one asserting what a session with no call in
+# it answers -- which is the one state a call cannot put back. Two other pieces
+# of state leak between tests and are restored on exit by every test that
+# writes one: the option, and the per-dialect verdict cache the share tests
+# below empty so that the probe sends its queries at all. ADR 0027 is the
+# decision these assert.
 
 sent_queries_data <- function() {
   data.frame(
@@ -478,26 +480,12 @@ test_that("a refused share leaves the probe's row readable", {
 
 # --- a call refused before its plan ------------------------------------------
 
-# The entry points, derived rather than listed: an entry point is an exported
-# function that compiles a Grouping plan of its own, and `.grouping` is how a
-# specification reaches one. An entry point taking a plan by some other route
-# would go unread here, which is a bound this states rather than hides -- the
-# equality in the structural gate below is what would report it, the new
-# function calling `reset_sent_queries()` without being in this set.
-margin_entry_points <- function() {
-  ns <- asNamespace("marginplyr")
-  Filter(
-    function(name) ".grouping" %in% names(formals(get(name, envir = ns))),
-    getNamespaceExports("marginplyr")
-  )
-}
-
 # The entry points, each with an argument it refuses in the validation it opens
 # with -- before a Grouping plan is compiled, and so before any query could
 # have been sent. `.duplicates` is the one option every entry point takes, and
 # a local input keeps what is under test the refusal rather than the backend.
 refused_entry_point_calls <- function() {
-  lapply(margin_entry_points(), function(verb) {
+  lapply(verbs_taking(".grouping"), function(verb) {
     args <- list(
       quote(sent_queries_data()),
       .grouping = quote(rollup(g)),
@@ -577,6 +565,64 @@ test_that("a call refused before its plan reads the option for itself", {
   # The refused call was the unaudited one, so the flag it left is what the
   # accessor reports -- not the audited flag of the call before it.
   expect_unaudited()
+
+  # And the other direction, where a stale flag would refuse a call that was
+  # audited rather than answer it with the zero rows it sent.
+  summarize_with_margins(
+    remote,
+    total = sum(v, na.rm = TRUE),
+    .grouping = rollup(g, h)
+  )
+  with_audit_option(TRUE, {
+    expect_error(
+      summarize_with_margins(
+        remote,
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g, h),
+        .duplicates = "bogus"
+      ),
+      class = "marginplyr_error"
+    )
+  })
+  expect_sent_nothing()
+})
+
+test_that("a call refused before its plan is a call the session recorded", {
+  # The one reading a later call cannot restore, so the whole record is saved
+  # and put back: emptying it is how the session's first call is reached
+  # twice.
+  saved <- as.list(sent_queries, all.names = TRUE)
+  empty_the_record <- function() {
+    rm(list = names(saved), envir = sent_queries)
+  }
+  on.exit(
+    {
+      empty_the_record()
+      list2env(saved, envir = sent_queries)
+    },
+    add = TRUE
+  )
+
+  empty_the_record()
+  # The control: with nothing recorded, the accessor refuses rather than
+  # answering, which is what makes the read after the refusal an assertion.
+  expect_error(last_sent_queries(), class = "marginplyr_error")
+
+  with_audit_option(TRUE, {
+    expect_error(
+      summarize_with_margins(
+        sent_queries_data(),
+        total = sum(v, na.rm = TRUE),
+        .grouping = rollup(g),
+        .duplicates = "bogus"
+      ),
+      class = "marginplyr_error"
+    )
+  })
+
+  # A verb that began and then refused the call has begun, so the answer is
+  # its own empty record and not the session's first (ADR 0027).
+  expect_sent_nothing()
 })
 
 # --- the reset site, structurally --------------------------------------------
@@ -605,12 +651,20 @@ first_statement <- function(fn) {
   if (!is.call(fn_body) || !identical(as.character(fn_body[[1]]), "{")) {
     return(fn_body)
   }
+  if (length(fn_body) < 2L) {
+    return(NULL)
+  }
   fn_body[[2]]
 }
 
 test_that("every entry point empties the record before anything else", {
   ns <- asNamespace("marginplyr")
-  entry_points <- margin_entry_points()
+  # An entry point is an exported function that compiles a Grouping plan of
+  # its own, and `.grouping` is how a specification reaches one. One taking a
+  # plan by some other route would go unread, which the equality below is what
+  # reports: it is the function calling `reset_sent_queries()` from outside
+  # this set.
+  entry_points <- verbs_taking(".grouping")
 
   emptying <- Filter(
     function(name) empties_the_record(get(name, envir = ns)),
@@ -653,6 +707,9 @@ test_that("the reset scan tells a first statement from a later one", {
   expect_identical(first_statement(resets_first), reset)
   expect_false(identical(first_statement(resets_later), reset))
   # An unbraced body is the statement itself, which the gate above reads for no
-  # entry point today and would read for one written that way.
+  # entry point today and would read for one written that way. An empty braced
+  # one has no first statement to read, and answers that rather than raising a
+  # subscript error the gate would report as neither verdict.
   expect_identical(first_statement(bare), reset)
+  expect_null(first_statement(function() {}))
 })
