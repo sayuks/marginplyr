@@ -153,14 +153,16 @@ backends use a portable \verb{UNION ALL} adapter with the same semantics.
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} and \code{\link[=summarise_with_margins]{summarise_with_margins()}} are synonyms,
 following \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[dplyr:summarise]{dplyr::summarise()}}.
 
-One result a \code{dtplyr} input cannot carry back is a summary with no columns
-in it: asked for no summaries and given no fixed key or grouping dimension,
-the answer is one row holding nothing, whatever the input held, and a
-\code{data.table} reads its row count from its first column. Such a call
-collects to zero rows where a local data frame returns one, as
-\code{\link[dplyr:summarize]{dplyr::summarize()}} itself does for that lazy input. Anything that puts a
-column in the result -- one summary, one fixed key, one grouping dimension,
-or \code{.id} -- ends the difference.
+One result no lazy backend can carry back is a summary with no columns in
+it: asked for no summaries and given no fixed key or grouping dimension,
+the answer is one row holding nothing, whatever the input held. A
+\code{data.table} reads its row count from its first column, so a \code{dtplyr} input
+collects to zero rows where a local data frame returns one; a SQL table of
+no columns cannot be written at all, so a database input raises the error
+dbplyr renders one with. Each is what \code{\link[dplyr:summarize]{dplyr::summarize()}} itself answers
+for that lazy input, and anything that puts a column in the result -- one
+summary, one fixed key, one grouping dimension, or \code{.id} -- ends the
+difference.
 
 One summary an Arrow table or record batch cannot carry -- or a query built
 on either -- is one Arrow's own engine cannot evaluate. Arrow answers such an

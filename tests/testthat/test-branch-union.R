@@ -321,6 +321,82 @@ test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
   )
 })
 
+# The Grand total branch of a summary with nothing to summarize groups by
+# nothing and selects nothing, and the label and identifier `mutate()`s layered
+# on that query gave dbplyr a `lazy_select_query` it could not render: the
+# collect failed inside dbplyr's own star expansion, naming neither the
+# caller's call nor any marginplyr function (#428). Every call here has a
+# column in its result, which is what the documented promise turns on, so what
+# each is held to is the local answer.
+test_that("a summary with no summaries renders on a SQL backend", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+
+  data <- data.frame(a = c("x", "x", "y", NA), b = c("u", "u", "v", "v"))
+  dplyr::copy_to(con, data, "no_summary", temporary = TRUE)
+  remote <- dplyr::tbl(con, "no_summary")
+
+  # The reported call, then three neighbours of it: a second dropped dimension,
+  # an identifier column added over the branch, and a Margin label of `NULL`,
+  # which fills a dropped dimension with a missing value instead of a label.
+  calls <- list(
+    function(input) summarize_with_margins(input, .grouping = rollup(a)),
+    function(input) summarize_with_margins(input, .grouping = rollup(a, b)),
+    function(input) {
+      summarize_with_margins(input, .grouping = rollup(a), .id = "s")
+    },
+    function(input) {
+      summarize_with_margins(input, .grouping = rollup(a), .margin_label = NULL)
+    }
+  )
+  ordered <- function(result) {
+    dplyr::arrange(
+      dplyr::as_tibble(result),
+      dplyr::across(dplyr::everything())
+    )
+  }
+
+  for (build in calls) {
+    expect_equal(
+      ordered(dplyr::collect(build(remote))),
+      ordered(build(data))
+    )
+  }
+})
+
+# The boundary the branch above stops at, and dbplyr's rather than this
+# package's: with no dimension and no identifier there is no column left to put
+# the Grand total row on, and a SQL table of no columns cannot be written. It
+# is compared against what `dplyr::summarize()` answers for the same input, as
+# the `dtplyr` half of the same limit is, so a dbplyr that gained the shape
+# reports here and the documented promise is what changes.
+test_that("a column-less SQL summary keeps dbplyr's own refusal", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+
+  data <- data.frame(a = c("x", "x", "y"), v = 1:3)
+  dplyr::copy_to(con, data, "column_less", temporary = TRUE)
+  remote <- dplyr::tbl(con, "column_less")
+
+  upstream <- expect_error(dplyr::collect(dplyr::summarize(remote)))
+  expect_error(
+    dplyr::collect(summarize_with_margins(remote)),
+    conditionMessage(upstream),
+    fixed = TRUE
+  )
+
+  # The local answer is `dplyr::summarize()`'s there too, and it is one row.
+  expect_identical(
+    dim(summarize_with_margins(data)),
+    dim(dplyr::summarize(data))
+  )
+  expect_identical(nrow(dplyr::summarize(data)), 1L)
+})
+
 # The count-preserving attachment is asked for only where a backend needs it,
 # because `n()` in a `mutate()` is a window function on SQL and an unsupported
 # expression on arrow, where it warns and pulls the data into R. Arrow is the
