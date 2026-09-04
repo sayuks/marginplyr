@@ -214,3 +214,34 @@ first, and `group_by()` in place of `rowwise()` for the second.
 Classed-column round-tripping — `Date`, `POSIXct` with `tzone`, ordered and
 unordered factors — is already covered by `test-grouping-interface.R` and
 `test-factor.R` under ADR 0012, and needs nothing further here.
+
+## Amendment: the cell expression chooses the element class, and it is a tibble on both backends
+
+Two passages are superseded. In *`nest_by_with_margins()` returns a row-wise
+data frame, by contract*: "Elements are tibbles for a local input because
+`dplyr::pick()` returns a tibble, and data tables under dtplyr because that is
+what the data.table translation produces. marginplyr chooses neither." In
+*Documentation consequences*: "tibbles for a local input, data tables under
+dtplyr".
+
+The cell can no longer be `pick(everything())`. dtplyr translates a `pick()`
+standing where a value stands into a literal `data.table()` call carrying one
+named argument per column, so a payload column named for one of that
+function's formals is taken as that argument: `key` and `check.names` raise,
+and `keep.rownames` and `stringsAsFactors` are absorbed and leave the column
+out of every cell (#424). The cell names its columns into `list()`, whose only
+formal is `...`, and converts what that returns, so the element is a tibble on
+both backends and marginplyr is what chose it.
+
+What the ADR promises is unchanged: each element is a data frame holding the
+input's non-key columns, and the class is described rather than promised. A
+uniform element class is a consequence of the collision-safe cell and not a
+guarantee, which is why the `lapply(result$data, tibble::as_tibble)` a caller
+writes for one still says what it always said.
+
+The rejected alternative narrows rather than reverses. What was rejected is
+normalizing after the fact, and each cost named for it stands: a coercion away
+from what dplyr chose locally, and under dtplyr a conversion mapped over every
+collected element, or a collect of a result the caller asked to keep lazy.
+Converting inside the cell expression incurs none of them, because it is part
+of the query rather than a pass over its result.

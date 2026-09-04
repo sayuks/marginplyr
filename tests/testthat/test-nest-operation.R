@@ -288,20 +288,18 @@ keys_only_expected <- function() {
   )
 }
 
-# The three helpers below read the sales fixtures specifically, hence the
-# names: each one knows that `region` and `store` are the keys.
-#
-# Sorting by name rather than by symbol keeps those keys out of this file's
-# global-variable surface, which the linter reads without a data mask.
-arrange_sales_keys <- function(result) {
-  dplyr::arrange(
-    dplyr::ungroup(result),
-    dplyr::across(dplyr::all_of(c("region", "store")))
-  )
+# Sorting by name rather than by symbol keeps a fixture's keys out of this
+# file's global-variable surface, which the linter reads without a data mask.
+sales_keys <- c("region", "store")
+
+arrange_cell_keys <- function(result, keys) {
+  dplyr::arrange(dplyr::ungroup(result), dplyr::across(dplyr::all_of(keys)))
 }
 
+# Reads the sales fixtures specifically, hence the name: it names their keys
+# in what it returns.
 sales_cell_shape <- function(result) {
-  ordered <- arrange_sales_keys(result)
+  ordered <- arrange_cell_keys(result, sales_keys)
   list(
     region = ordered$region,
     store = ordered$store,
@@ -311,10 +309,10 @@ sales_cell_shape <- function(result) {
   )
 }
 
-# The element class follows the backend and is not part of the API, so cells
-# are compared as tibbles; everything else must match exactly.
-sales_cells_as_tibble <- function(result) {
-  ordered <- arrange_sales_keys(result)
+# The element class is not part of the API, so cells are compared as tibbles;
+# everything else must match exactly.
+cells_as_tibble <- function(result, keys) {
+  ordered <- arrange_cell_keys(result, keys)
   ordered$data <- lapply(ordered$data, dplyr::as_tibble)
   dplyr::as_tibble(ordered)
 }
@@ -388,7 +386,7 @@ test_that("nesting keeps cardinality under both keep options", {
     )
     # `.keep = TRUE` nests pre-margin values, so the Grand total set's cell
     # still holds the source keys rather than the Margin label.
-    total <- arrange_sales_keys(kept)$data[[3L]]
+    total <- arrange_cell_keys(kept, sales_keys)$data[[3L]]
     expect_identical(
       sort(as.character(total$region)),
       c("East", "East", "West")
@@ -462,8 +460,8 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
       scenario$names
     )
     expect_equal(
-      sales_cells_as_tibble(lazy_result),
-      sales_cells_as_tibble(local_result)
+      cells_as_tibble(lazy_result, sales_keys),
+      cells_as_tibble(local_result, sales_keys)
     )
 
     # The row-wise verb collects before it groups, so its cells compare
@@ -482,21 +480,15 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
     )
     expect_identical(sales_cell_shape(lazy_by)$names[[1L]], scenario$names)
     expect_equal(
-      sales_cells_as_tibble(lazy_by),
-      sales_cells_as_tibble(local_by)
+      cells_as_tibble(lazy_by, sales_keys),
+      cells_as_tibble(local_by, sales_keys)
     )
   }
 })
 
-# dtplyr translates a `pick()` that stands where a value stands into a literal
-# `data.table()` call with one named argument per column, so a payload column
-# named for one of that function's formals arrives as that argument instead.
-# `key` and `check.names` raise; `keep.rownames` and `stringsAsFactors` are
-# absorbed without a word and leave the column out of every cell (#424).
-#
-# `.rows` and `.name_repair` are here for the cell built in their place: they
-# are `tibble()`'s own formals, so a cell that named its columns directly into
-# that function would trade one set of collisions for the other.
+# The column names `nest_cell_expr()` is built to carry: the four
+# `data.table()` formals, and the two `tibble()` formals that would collide
+# with the cell it builds instead (#424).
 formal_shadow_names <- c(
   "keep.rownames",
   "check.names",
@@ -514,17 +506,6 @@ formal_shadow_data <- function(name) {
   )
   names(data)[names(data) == "carrier"] <- name
   data
-}
-
-# As `sales_cells_as_tibble()` does, and for the same reason, over this
-# fixture's single key.
-formal_shadow_cells <- function(result) {
-  ordered <- dplyr::arrange(
-    dplyr::ungroup(result),
-    dplyr::across(dplyr::all_of("region"))
-  )
-  ordered$data <- lapply(ordered$data, dplyr::as_tibble)
-  dplyr::as_tibble(ordered)
 }
 
 test_that("a nested cell carries a column named for a callee's formal", {
@@ -564,13 +545,13 @@ test_that("a nested cell carries a column named for a callee's formal", {
         # Read back separately from the comparison, which would hold for two
         # backends that both dropped the column.
         expect_identical(
-          names(formal_shadow_cells(lazy_result)$data[[1L]]),
+          names(cells_as_tibble(lazy_result, "region")$data[[1L]]),
           expected_names,
           info = info
         )
         expect_equal(
-          formal_shadow_cells(lazy_result),
-          formal_shadow_cells(local_result),
+          cells_as_tibble(lazy_result, "region"),
+          cells_as_tibble(local_result, "region"),
           info = info
         )
       }
