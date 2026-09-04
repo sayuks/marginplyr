@@ -94,10 +94,10 @@ offer no option for the other half, and no package supplies one
 (`investigation/requiring-a-documentation-chunk-to-fail.md`).
 
 `inst/vignette-hooks/must-error.R` therefore defines a `must_error` chunk
-option. It implies `error: true`, so the two are never set inconsistently, and
-it halts the render naming the chunk when a chunk marked with it completes
-without raising an error. Mark a chunk with it instead of `error: true`
-whenever the surrounding prose asserts that the call fails.
+option. It implies `error: true`, and it halts the render naming the chunk when
+a chunk marked with it completes without raising an error. Mark a chunk with it
+instead of `error: true` whenever the surrounding prose asserts that the call
+fails.
 
 It takes two forms. `must_error: true` accepts any error, which is what the
 option has always meant. `must_error: marginplyr_error` additionally requires
@@ -105,7 +105,7 @@ the error to carry that condition class. Prefer the class form wherever the
 prose names what refuses the call: a bare `true` passes when the call fails for
 an unrelated reason — a renamed argument, a typo, a changed column — and the
 reader is then shown a diagnostic the prose does not describe. The class form
-also matches an error a dplyr verb wrapped. Any other value halts the render.
+also matches an error a dplyr verb wrapped.
 
 The definition lives under `inst/` so that every vignette reaches it in one
 line rather than carrying a copy:

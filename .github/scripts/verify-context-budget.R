@@ -24,12 +24,13 @@ source(".github/scripts/ci-helpers.R")
 # What the closure measured when it was last set, and the commit that set it.
 # Moving this means saying in the same commit what was added and what paid for
 # it.
-baseline_bytes <- 22080L
+baseline_bytes <- 22005L
 baseline_note <- paste(
   "#418 deleting the gate's argument from *Chunks that must fail*, which",
   "`verify-must-error.R`'s header and `release-matrix.yaml`'s already held,",
-  "together with the two reasons `inst/vignette-hooks/must-error.R` states",
-  "beside the code each is about, over #416's baseline; nothing was added"
+  "together with the reasons `inst/vignette-hooks/must-error.R` states beside",
+  "the code each is about and a claim its review found false, over #416's",
+  "baseline; nothing was added"
 )
 
 entry <- "CLAUDE.md"
