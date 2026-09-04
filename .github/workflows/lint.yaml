@@ -30,6 +30,20 @@ jobs:
       - name: Verify the always-loaded context is within its baseline
         run: Rscript .github/scripts/verify-context-budget.R
 
+  # Beside `context-budget` and for its reason: repository hygiene on the same
+  # trigger, needing no package installed. A grep for a name a document cites
+  # is what makes the name fail loudly, and until this step nothing ran one.
+  doc-references:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+
+      - name: Verify every path a maintained document names exists
+        run: Rscript .github/scripts/verify-doc-references.R
+
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 20
