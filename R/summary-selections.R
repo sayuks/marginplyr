@@ -294,6 +294,54 @@ new_summary_arguments <- function(dots,
   list(dots = dots, labels = labels)
 }
 
+# The name dplyr would have given each unnamed summary marginplyr rewrites,
+# read from what the caller wrote rather than from the rewrite.
+#
+# dplyr names an unnamed summary by deparsing the expression it receives, and
+# what a rewritten one hands it is marginplyr's spelling: a branch-local `0L`
+# or `1L` where the caller wrote `grouping_bit()` or `grouping_id()`, and a
+# qualified `all_of()` literal where they wrote a selection helper. The first
+# spelled a different column name in each Grouping-set branch, which is what
+# the union's column invariant refused; the second named the column after the
+# rewrite. `...` is documented as `dplyr::summarize()`'s name-value pairs, so
+# the name is settled from the caller's own expression here instead (#430).
+#
+# Only a rewritten summary is named, which is what keeps the fix away from a
+# summary dplyr expands rather than names: a data-frame-valued summary's
+# columns go into the result while it is unnamed and are packed into one column
+# under any name, and returning a one-row data frame is an ordinary way to
+# write several columns at once. One no rewrite reaches goes on expanding.
+#
+# One a rewrite does reach is named, and is then packed. The recognized
+# data-frame-valued shapes are excluded here rather than left to that, because
+# they are the ones a static reading reaches: `across()` and `pick()` are
+# selection helpers and `tibble()` beside one carries the rewrite up, and each
+# names its own outputs whatever a branch rewrote inside it. What is left is a
+# data-frame-valued expression the static reading does not recognize, and no
+# reading separates it from a scalar one: `nrow(pick(v, w))` has to be named
+# and `range_frame(pick(v))` has to not be, which is a question about the
+# value's type. #435 holds what that costs and what answering it would take.
+#
+# `rlang::as_label()` is `rlang::quos_auto_name()`'s own labeller, so the name
+# is dplyr's up to the width at which rlang abbreviates a long expression:
+# dplyr asks rlang for a variant spelling of that abbreviation through an
+# internal option, and neither spelling stands for an expression the caller
+# could read back.
+name_rewritten_summary_dots <- function(original, resolved) {
+  stopifnot(length(original) == length(resolved))
+  arg_names <- rlang::names2(resolved)
+  for (i in which(!nzchar(arg_names))) {
+    expr <- rlang::quo_get_expr(original[[i]])
+    rewritten <- !identical(expr, rlang::quo_get_expr(resolved[[i]])) ||
+      contains_grouping_helper(expr)
+    if (!rewritten || !is.null(data_frame_valued_summary_kind(expr))) {
+      next
+    }
+    arg_names[[i]] <- rlang::as_label(expr)
+  }
+  stats::setNames(resolved, arg_names)
+}
+
 plan_summary_expressions <- function(dots,
                                      data_proxy,
                                      data_vars,
@@ -307,6 +355,7 @@ plan_summary_expressions <- function(dots,
   # the caller's own labels: every rewrite below runs after this line, and ADR
   # 0007 has already captured the dots at the public verb.
   caller_labels <- summary_argument_labels(dots)
+  original_dots <- dots
   selection_proxy <- dplyr::select(
     data_proxy,
     dplyr::all_of(setdiff(
@@ -322,6 +371,12 @@ plan_summary_expressions <- function(dots,
     normalize_across_names = FALSE,
     skip_shares = TRUE
   )
+  # Against the dots this rewrite received, and before share planning moves
+  # one: a share summary carries an output name already, and every rewrite
+  # below this either answers a named dot or is one of those moves. The labels
+  # above are read first because they are the caller's spelling for a Condition
+  # context, which a name assigned here would spell `sum(v) = sum(v)`.
+  dots <- name_rewritten_summary_dots(original_dots, dots)
   summary_plan <- plan_share_expressions(
     dots,
     selection_proxy = selection_proxy,
@@ -641,18 +696,42 @@ known_summary_output_names <- function(dots, data_proxy) {
   )
 }
 
-known_data_frame_output_names <- function(expr, env, data_proxy) {
+# Which data-frame-valued shape a summary is written as, or `NULL` for one that
+# is not recognized as any. Two readers need the recognition and each needs a
+# different half of it: `known_data_frame_output_names()` reads which outputs
+# the shape produces, and `name_rewritten_summary_dots()` reads that dplyr
+# expands them rather than naming one column for the summary. Answering both
+# from here is what keeps a shape added for one from being invisible to the
+# other.
+#
+# Two frame families rather than one, because the owner differs and the owner
+# is what recognition tests: tibble owns `tibble()` and `data_frame()`, base
+# owns `data.frame()`. Neither is a Contextual helper -- nothing rewrites them,
+# and a caller who binds `tibble` gets their own function -- so what is read
+# here is only which output names the summary is going to produce (ADR 0019).
+data_frame_valued_summary_kind <- function(expr) {
   if (!rlang::is_call(expr)) {
+    return(NULL)
+  }
+  if (is_any_static_spelling_call(expr, c("tibble_frame", "base_frame"))) {
+    return("frame")
+  }
+  if (is_static_spelling_call(expr, "selection", "pick")) {
+    return("pick")
+  }
+  if (is_static_spelling_call(expr, "selection", "across")) {
+    return("across")
+  }
+  NULL
+}
+
+known_data_frame_output_names <- function(expr, env, data_proxy) {
+  kind <- data_frame_valued_summary_kind(expr)
+  if (is.null(kind)) {
     return(character())
   }
 
-  # Two families rather than one, because the owner differs and the owner is
-  # what recognition tests: tibble owns `tibble()` and `data_frame()`, base
-  # owns `data.frame()`. Neither is a Contextual helper -- nothing rewrites
-  # them, and a caller who binds `tibble` gets their own function -- so what is
-  # read here is only which output names the summary is going to produce
-  # (ADR 0019).
-  if (is_any_static_spelling_call(expr, c("tibble_frame", "base_frame"))) {
+  if (identical(kind, "frame")) {
     call_args <- static_call_args(expr)
     arg_names <- names(call_args)
     if (is.null(arg_names)) {
@@ -669,7 +748,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     ))
   }
 
-  if (is_static_spelling_call(expr, "selection", "pick")) {
+  if (identical(kind, "pick")) {
     call_args <- static_call_args(expr)
     selection <- if (length(call_args) == 0L) {
       rlang::expr(dplyr::everything())
@@ -679,11 +758,14 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     return(names(resolve_summary_selection(selection, env, data_proxy)))
   }
 
-  if (is_static_spelling_call(expr, "selection", "across")) {
+  if (identical(kind, "across")) {
     return(known_across_output_names(expr, env, data_proxy))
   }
 
-  character()
+  # A kind the classifier answers and this does not. Both are in this file and
+  # nothing outside it names a kind, so no call reaches this and it stays a
+  # bare `stop()` (ADR 0015).
+  stop("Unhandled data-frame-valued summary kind: ", kind, call. = FALSE)
 }
 
 known_injected_argument_name <- function(expr) {

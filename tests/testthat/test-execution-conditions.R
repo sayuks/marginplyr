@@ -135,15 +135,19 @@ native_translation_failure <- function() {
   # nolint end
 }
 
-# The same failure under two unnamed dots the caller spelled differently. Both
-# collapse to one label, so the span says which expression raised the error but
-# not which argument did.
+# The same failure under two dots the caller spelled differently and named the
+# same. Both collapse to one label, so the span says which expression raised
+# the error but not which argument did.
+#
+# The name is what makes the two collide, unnamed dots no longer being able to:
+# each carries the caller's own expression as its name since #430, so two dots
+# the caller spelled differently label differently as well.
 native_shared_label_failure <- function() {
   # nolint start: object_usage_linter.
   summarize_with_margins(
     native_grouping_sets_input(),
-    grouping_bit(a) + no_such_column,
-    grouping_bit(a) + value,
+    x = grouping_bit(a) + no_such_column,
+    x = grouping_bit(a) + value,
     .grouping = rollup(a)
   )
   # nolint end
@@ -762,7 +766,7 @@ test_that("a native label two dots share is left as dplyr wrote it", {
   # drops the entry, so dplyr's own quotation stands.
   expect_match(
     conditionMessage(error),
-    "In argument: `+...`",
+    "In argument: `x = +...`",
     fixed = TRUE
   )
 })

@@ -208,6 +208,29 @@ grouping_helper_name <- function(expr) {
   static_spelling_name(expr, "grouping")
 }
 
+# Whether `rewrite_grouping_dots()` would replace anything in this expression.
+# One reader needs it: an unnamed summary carrying a Grouping helper is named
+# before the rewrite runs, because the rewrite is what leaves each branch a
+# different expression to deparse (#430).
+#
+# The walk is `find_summary_context_helpers()`'s rather than the rewrite's own,
+# for the reason that function gives: a helper the caller quoted is language
+# data, and `rewrite_grouping_expr()` descends past it without rewriting it, so
+# a search that read it would answer for a summary nothing rewrites.
+contains_grouping_helper <- function(expr) {
+  if (!rlang::is_call(expr)) {
+    return(FALSE)
+  }
+  if (!is.null(grouping_helper_name(expr))) {
+    return(TRUE)
+  }
+  any(vapply(
+    searched_call_parts(expr),
+    contains_grouping_helper,
+    logical(1)
+  ))
+}
+
 grouping_helper_vars <- function(args, helper, plan) {
   # Each argument is read as a value rather than bound to a name, for the reason
   # `static_call_args()` gives: one of them may be R's empty argument, which is
