@@ -16,10 +16,25 @@
 #     must_error: true               any error will do
 #     must_error: marginplyr_error   the error must carry that condition class
 #
-# `AGENTS.md` is authoritative for when to mark a chunk and for the three
-# properties of this implementation that are load-bearing: it wraps knitr's
-# `evaluate` hook and inspects the result objects, it does nothing for a chunk
-# knitr never evaluated, and it undoes itself from `after.knit`.
+# `AGENTS.md` is authoritative for when to mark a chunk. Three properties of
+# what follows are load-bearing and easy to lose in a rewrite.
+#
+# It is implemented as a wrapper around knitr's `evaluate` hook, which inspects
+# the returned result objects; that keeps knitr's own error rendering, whereas
+# catching the condition in a helper prints an `<error/rlang_error>` header and
+# a backtrace through the helper, which no reader would see.
+#
+# Because knitr does not call that hook for a chunk it does not evaluate, a
+# chunk withheld by an availability guard is skipped without a special case -- a
+# guarded chunk that never runs must not be reported as a chunk that stopped
+# failing, or `_R_CHECK_DEPENDS_ONLY_` builds break.
+#
+# And the definition undoes itself from an `after.knit` hook, which `knit()`
+# runs from `on.exit()` so that a render halted by the option restores as a
+# completed one does; knitr restores neither the `opts_hooks` entry nor a
+# `knit_hooks` entry installed while it runs, and the `document` hook -- the
+# obvious alternative -- is not called on the halted path
+# (`investigation/restoring-knitr-hooks-a-vignette-installs.md`).
 
 local({
   # Sourcing this twice -- two setup chunks in one document, or a second
