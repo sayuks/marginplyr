@@ -101,10 +101,10 @@ margin_column_info <- function(data_proxy,
           # is at risk, only a union that drops one puts it there, and only a
           # sentinel keeps a value on that level apart from the typed missing
           # a margin row carries, which `as.character()` spells the same way
-          # (ADR 0012). The backend is read here because this is the one place
-          # it is, and both sides of the route -- `label_margin_branch()` and
-          # `restore_margin_factors()` -- then read one answer rather than
-          # deciding twice.
+          # (ADR 0012). Settled here so that both sides of the route --
+          # `label_margin_branch()` and `restore_margin_factors()` -- read one
+          # answer rather than deciding twice, which is what they would do:
+          # neither is handed the backend.
           encode_missing_label = has_na_in_level &&
             backend$drops_na_factor_level_on_union &&
             backend$can_encode_factor_missing_values

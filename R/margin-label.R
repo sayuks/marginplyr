@@ -381,15 +381,26 @@ label_margin_branch <- function(.data,
     function(col) !is_missing_margin_label(margin_labels[[col]]),
     included
   )
-  # Keyed by column, and empty unless the union would drop a declared NA level
-  # (`encodes_missing_label_factor()`). A branch reads it twice, and the two
-  # reads are what put a column on one side of the union in the encoding the
-  # other side carries.
-  sentinels <- missing_label_sentinels(factor_info, margin_labels)
+  sentinels <- margin_factor_sentinels(factor_info, margin_labels)
+  # Columns whose Margin label is missing and which cross the union as
+  # character anyway, because it would otherwise drop their declared NA level
+  # (`encodes_missing_label_factor()`). Empty on every other backend, and the
+  # set is read from the whole plan rather than from this branch so that both
+  # arms below put the column in the same encoding.
+  missing_label_encoded <- vapply(
+    Filter(
+      function(info) {
+        encodes_missing_label_factor(info, margin_labels[[info$col]])
+      },
+      factor_info
+    ),
+    function(info) info$col,
+    character(1)
+  )
   encoded_factors <- Filter(
     function(info) {
       info$col %in% included &&
-        (info$col %in% names(sentinels) ||
+        (info$col %in% missing_label_encoded ||
            (info$col %in% labelled_included &&
               isTRUE(info$preserve_missing_value)))
     },
@@ -401,14 +412,10 @@ label_margin_branch <- function(.data,
       encoded_factors,
       function(info) {
         col <- info$col
-        missing_sentinel <- factor_missing_sentinel(
-          info,
-          margin_labels[[col]]
-        )
         rlang::expr(
           encode_factor_for_margin(
             !!margin_column_pronoun(col),
-            missing_sentinel = !!missing_sentinel,
+            missing_sentinel = !!sentinels[[col]],
             preserve_missing_value = TRUE
           )
         )
@@ -451,7 +458,7 @@ label_margin_branch <- function(.data,
         }
         return(label)
       }
-      if (col %in% names(sentinels)) {
+      if (col %in% missing_label_encoded) {
         # The typed missing this margin row carries, spelled as the included
         # branches spell one. `as.character()` of the prototype cannot: it is
         # `NA`, which is also what a value on the NA level becomes, and the

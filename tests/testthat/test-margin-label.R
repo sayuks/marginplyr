@@ -142,7 +142,13 @@ test_that("dtplyr obeys the eight-case contract as the local backend does", {
 
     if (case$errors) {
       error <- expect_error(operation(dtplyr::lazy_dt(data)), info = info)
-      expect_s3_class(error, "marginplyr_error")
+      # The same assertion the local loop makes, so that the two error rows
+      # are compared across backends as the six allowed ones are.
+      expect_match(
+        deparse1(conditionCall(error)),
+        "summarize_with_margins",
+        fixed = TRUE
+      )
       next
     }
 
@@ -179,18 +185,31 @@ test_that("dtplyr keeps a used NA level apart from a typed missing", {
     value = 1:2
   )
 
-  # Both branch-building verbs, because the branch union they share is where
-  # the level was lost; the Grouping set identifier is what says which rows a
-  # branch stands for, since the displayed value cannot.
-  queries <- list(
-    summarize_with_margins = summarize_with_margins(
+  # Every Margin verb, because the branch union they share is where the level
+  # was lost; the Grouping set identifier is what says which rows a branch
+  # stands for, since the displayed value cannot.
+  results <- list(
+    summarize_with_margins = dplyr::collect(summarize_with_margins(
       dtplyr::lazy_dt(data),
       n = dplyr::n(),
       .grouping = rollup(group),
       .margin_label = NULL,
       .id = "set"
-    ),
-    expand_with_margins = expand_with_margins(
+    )),
+    expand_with_margins = dplyr::collect(expand_with_margins(
+      dtplyr::lazy_dt(data),
+      .grouping = rollup(group),
+      .margin_label = NULL,
+      .id = "set"
+    )),
+    nest_with_margins = dplyr::collect(nest_with_margins(
+      dtplyr::lazy_dt(data),
+      .grouping = rollup(group),
+      .margin_label = NULL,
+      .id = "set"
+    )),
+    # Local already: this verb returns a row-wise result rather than a query.
+    nest_by_with_margins = nest_by_with_margins(
       dtplyr::lazy_dt(data),
       .grouping = rollup(group),
       .margin_label = NULL,
@@ -198,8 +217,8 @@ test_that("dtplyr keeps a used NA level apart from a typed missing", {
     )
   )
 
-  for (verb in names(queries)) {
-    result <- dplyr::collect(queries[[verb]])
+  for (verb in names(results)) {
+    result <- results[[verb]]
     expect_identical(levels(result$group), c("x", NA), info = verb)
     source_rows <- result[result$set == 1L, , drop = FALSE]
     margin_rows <- result[result$set == 2L, , drop = FALSE]

@@ -19,22 +19,17 @@ encodes_missing_label_factor <- function(info, label) {
   is_missing_margin_label(label) && isTRUE(info$encode_missing_label)
 }
 
-# The sentinel each such column is carried as, keyed by column; empty where no
-# column takes the route. Built once per branch so that the value a branch
-# omitting the dimension writes is the one the branches including it encode to.
-missing_label_sentinels <- function(factor_info, margin_labels) {
-  encoded <- Filter(
-    function(info) {
-      encodes_missing_label_factor(info, margin_labels[[info$col]])
-    },
-    factor_info
-  )
+# The sentinel each factor dimension is carried as while it crosses the branch
+# union as character, keyed by column. Derived once so that the value a branch
+# omitting the dimension writes is the one the branches including it encode to,
+# rather than the two arms deriving it apart.
+margin_factor_sentinels <- function(factor_info, margin_labels) {
   stats::setNames(
     lapply(
-      encoded,
+      factor_info,
       function(info) factor_missing_sentinel(info, margin_labels[[info$col]])
     ),
-    vapply(encoded, function(info) info$col, character(1))
+    vapply(factor_info, function(info) info$col, character(1))
   )
 }
 
