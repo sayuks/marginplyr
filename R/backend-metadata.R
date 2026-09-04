@@ -49,8 +49,8 @@ grouping_selection_proxy <- function(.data,
 # rather than anything a caller can rewrite their way out of -- either a proxy
 # that does not answer for its own columns, or a subclass whose `[[` is not
 # column extraction. It is still worth stopping on, and stopping bare: silence
-# here would report the dimension as an absent prototype and label its margin
-# rows `NA` instead.
+# here would report a column with no levels and no prototype as one the input
+# declared that way.
 proxy_columns <- function(data_proxy, cols) {
   columns <- stats::setNames(
     lapply(cols, function(col) data_proxy[[col]]),
@@ -72,9 +72,8 @@ proxy_columns <- function(data_proxy, cols) {
 # `carried` names the input columns that reach the result beside the Margin
 # dimensions -- a fixed `.by` key, or a column the verb passes through. They
 # cross the same branch union and lose a declared NA level in the same place,
-# so `factors` covers them too (#415). Each verb states its own set, because
-# what a result carries is a property of the verb: only a column present in
-# the result can be rebuilt after the union.
+# so `factors` covers them too (#415). Which columns those are is settled by
+# `prepare_margin_operation()`'s `carried_columns`.
 #
 # `prototypes` stays keyed to the dimensions alone. It stands for the value a
 # branch omitting a dimension writes, and only a dimension is ever omitted.

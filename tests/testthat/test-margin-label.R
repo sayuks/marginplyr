@@ -253,6 +253,7 @@ na_level_carried_data <- function(ordered = FALSE) {
       levels = c("a", NA_character_),
       class = carried_class
     ),
+    plain = factor(c("q", "r")),
     group = factor(c("g1", "g2")),
     value = 1:2
   )
@@ -262,15 +263,18 @@ na_level_carried_data <- function(ordered = FALSE) {
 # code for the reason `factor_contract_rows()` gives: a value on the NA level
 # and a typed missing are one displayed value and two codes. Sorted because
 # ADR 0018 leaves within-set row order to the backend.
-expect_carried_factor_agrees <- function(result, expected, col) {
-  expect_identical(levels(result[[col]]), c("a", NA))
-  expect_identical(levels(result[[col]]), levels(expected[[col]]))
+expect_passthrough_agrees <- function(result, expected) {
+  expect_identical(levels(result$passthrough), c("a", NA))
+  expect_identical(levels(result$passthrough), levels(expected$passthrough))
   expect_identical(
-    sort(as.integer(result[[col]])),
-    sort(as.integer(expected[[col]]))
+    sort(as.integer(result$passthrough)),
+    sort(as.integer(expected$passthrough))
   )
-  expect_false(any(is.na(result[[col]])))
-  expect_identical(any(is.na(result[[col]])), any(is.na(expected[[col]])))
+  expect_false(any(is.na(result$passthrough)))
+  expect_identical(
+    any(is.na(result$passthrough)),
+    any(is.na(expected$passthrough))
+  )
 }
 
 test_that("dtplyr keeps a used NA level on a fixed .by key", {
@@ -310,7 +314,7 @@ test_that("dtplyr keeps a used NA level on a passed-through column", {
   result <- dplyr::collect(operation(dtplyr::lazy_dt(data)))
   expected <- operation(data)
   expect_s3_class(result$passthrough, "factor")
-  expect_carried_factor_agrees(result, expected, "passthrough")
+  expect_passthrough_agrees(result, expected)
 })
 
 test_that("a passed-through ordered factor keeps its ordering", {
@@ -324,7 +328,7 @@ test_that("a passed-through ordered factor keeps its ordering", {
   expected <- operation(data)
   expect_s3_class(result$passthrough, "ordered")
   expect_s3_class(expected$passthrough, "ordered")
-  expect_carried_factor_agrees(result, expected, "passthrough")
+  expect_passthrough_agrees(result, expected)
 })
 
 test_that("a Margin label position adds no level to a carried column", {
@@ -365,13 +369,17 @@ test_that("a carried factor with no NA level takes no encode route", {
   info <- margin_column_info(
     proxy,
     dimensions = "group",
-    carried = c("key", "passthrough"),
+    carried = c("key", "passthrough", "plain"),
     backend = grouping_backend(dtplyr::lazy_dt(data))
   )
 
   encode <- vapply(info$factors, function(x) x$encode_missing_label, logical(1))
   names(encode) <- vapply(info$factors, function(x) x$col, character(1))
-  expect_setequal(names(encode), c("group", "key", "passthrough"))
+  expect_setequal(names(encode), c("group", "key", "passthrough", "plain"))
+  # `plain` is the carried column the criterion is about: a factor with no NA
+  # level. The two that have one take the route, and the dimension is here to
+  # say that being a dimension is not what decides it.
+  expect_false(encode[["plain"]])
   expect_false(encode[["group"]])
   expect_true(encode[["key"]])
   expect_true(encode[["passthrough"]])
