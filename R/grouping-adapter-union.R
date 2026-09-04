@@ -276,23 +276,23 @@ abort_absorbed_summary <- function(labels) {
 # maintainer's signal is `test-query-policy.R`, which fails when a read
 # happens at all.
 #
-# `seed_name` names one column the branch summarizes for itself. Only a caller
-# whose branch would otherwise select nothing at all passes one, and
+# `placeholder_name` names one column the branch summarizes for itself. Only a
+# caller whose branch would otherwise select nothing at all passes one, and
 # `summarize_margin_union()` is where that is decided and where the column is
 # dropped again.
 summarize_margin_branch <- function(.data,
                                     ...,
                                     .by,
                                     caller_labels,
-                                    seed_name = NULL) {
+                                    placeholder_name = NULL) {
   dots <- rlang::enquos(...)
 
-  # The seed joins what dplyr is handed and not `dots`, which stays the
+  # The placeholder joins what dplyr is handed and not `dots`, which stays the
   # caller's: the handler below places a blamed expression in it by position,
   # and a column the caller did not write has no label to be blamed under.
   summarize_dots <- dots
-  if (!is.null(seed_name)) {
-    summarize_dots[[seed_name]] <- rlang::quo(dplyr::n())
+  if (!is.null(placeholder_name)) {
+    summarize_dots[[placeholder_name]] <- rlang::quo(dplyr::n())
   }
 
   result <- withCallingHandlers(
@@ -405,17 +405,17 @@ summarize_margin_union <- function(.data,
   # A branch that summarizes nothing and groups by nothing selects no columns
   # at all, and the label and identifier `mutate()`s layered on that query give
   # dbplyr a `lazy_select_query` whose star expansion has no column to read
-  # (#428). Such a branch carries a column of its own instead, dropped once the
-  # columns the result keeps are in place.
+  # (#428). Such a branch summarizes a column of its own to stand in the
+  # result's place, dropped once the columns the result keeps are there.
   #
-  # `n()` and not a literal, because the seed has to aggregate: a constant in a
-  # `summarize()` over no groups renders as `SELECT 1 AS seed FROM t`, one row
-  # per source row, where `COUNT(*)` is the single Grand total row the branch
-  # stands for.
-  seed_name <- new_margin_internal_names(
+  # `n()` and not a literal, because the placeholder has to aggregate: a
+  # constant in a `summarize()` over no groups renders as `SELECT 1 AS x FROM
+  # t`, one row per source row, where `COUNT(*)` is the single Grand total row
+  # the branch stands for.
+  placeholder_name <- new_margin_internal_names(
     1L,
     used_names = c(reserved_names, unname(key_names)),
-    prefix = "..marginplyr_seed_"
+    prefix = "..marginplyr_placeholder_"
   )
 
   conditions <- new_branch_conditions(
@@ -436,8 +436,9 @@ summarize_margin_union <- function(.data,
         grouping_set = grouping_set,
         sql = FALSE
       )
-      needs_seed <- length(branch_dots) == 0L && length(grouping_set) == 0L
-      branch_seed <- if (needs_seed) seed_name else NULL
+      selects_nothing <- length(branch_dots) == 0L &&
+        length(grouping_set) == 0L
+      placeholder <- if (selects_nothing) placeholder_name else NULL
 
       # Only the caller's expressions are wrapped. The checks and the branch
       # builders below raise Package conditions, which carry their own context
@@ -452,16 +453,16 @@ summarize_margin_union <- function(.data,
           !!!branch_dots,
           .by = unname(key_names[grouping_set]),
           caller_labels = summaries$labels,
-          seed_name = branch_seed
+          placeholder_name = placeholder
         ),
         conditions = conditions,
         restatements = branch_argument_map(branch_dots, summaries$labels)
       )
 
-      # Without the seed: every question below is asked of the names the
-      # summary produced, and that column is this adapter's own.
+      # Without the placeholder: what this asks about is the names the summary
+      # produced, and that column is the adapter's own.
       check_summary_output_names(
-        setdiff(get_col_names(result, dplyr::everything()), branch_seed),
+        setdiff(get_col_names(result, dplyr::everything()), placeholder),
         group_vars = group_vars,
         internal_names = unname(key_names[setdiff(group_vars, grouping_set)]),
         set_id_name = set_id_name,
@@ -486,13 +487,10 @@ summarize_margin_union <- function(.data,
       )
 
       # A summary branch holds one row per group rather than one per source
-      # row, and the seed above leaves it holding a column whichever branch
-      # this is, so no identifier column materialises a row and nothing is
-      # counted. What a `data.table` still cannot represent is the result once
-      # every column goes away again -- a one-row, zero-column table -- which
-      # is dtplyr's own answer to such a summary rather than something this
-      # attachment decides, and is documented as a limit on
-      # `summarize_with_margins()` where a caller meets it.
+      # row, and the placeholder above leaves every branch holding a column, so
+      # no identifier column materialises a row and nothing is counted. The
+      # result a `data.table` still cannot hold once every column goes away
+      # again is a documented limit on `summarize_with_margins()`.
       result <- add_grouping_set_id(
         result,
         set_id_name,
@@ -503,10 +501,10 @@ summarize_margin_union <- function(.data,
       # Last, so that the columns the result keeps are all in place before the
       # branch gives up the only one it had: dropping ahead of the identifier
       # would hand the same zero-column query to the same `mutate()`.
-      if (is.null(branch_seed)) {
+      if (is.null(placeholder)) {
         result
       } else {
-        dplyr::select(result, -dplyr::all_of(branch_seed))
+        dplyr::select(result, -dplyr::all_of(placeholder))
       }
     },
     plan$sets,

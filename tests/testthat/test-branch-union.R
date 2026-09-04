@@ -342,12 +342,16 @@ test_that("a summary with no summaries renders on a SQL backend", {
   # an identifier column added over the branch, and a Margin label of `NULL`,
   # which fills a dropped dimension with a missing value instead of a label.
   calls <- list(
-    function(input) summarize_with_margins(input, .grouping = rollup(a)),
-    function(input) summarize_with_margins(input, .grouping = rollup(a, b)),
-    function(input) {
+    "rollup(a)" = function(input) {
+      summarize_with_margins(input, .grouping = rollup(a))
+    },
+    "rollup(a, b)" = function(input) {
+      summarize_with_margins(input, .grouping = rollup(a, b))
+    },
+    "rollup(a) with .id" = function(input) {
       summarize_with_margins(input, .grouping = rollup(a), .id = "s")
     },
-    function(input) {
+    "rollup(a) with a NULL label" = function(input) {
       summarize_with_margins(input, .grouping = rollup(a), .margin_label = NULL)
     }
   )
@@ -358,12 +362,43 @@ test_that("a summary with no summaries renders on a SQL backend", {
     )
   }
 
-  for (build in calls) {
+  for (label in names(calls)) {
+    build <- calls[[label]]
     expect_equal(
       ordered(dplyr::collect(build(remote))),
-      ordered(build(data))
+      ordered(build(data)),
+      info = label
     )
   }
+})
+
+# The same branch, reached on a backend that has `GROUPING SETS` and is routed
+# off them: a repeated grouping set kept under a Grouping set identifier is
+# what `stage_margin_summaries()` sends to the union adapter instead, so a
+# backend the native path covers meets the branch anyway. #428 names this call.
+test_that("a no-summary union branch renders off the native path", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  data <- data.frame(a = c("x", "x", "y", NA))
+  dplyr::copy_to(con, data, "off_native", temporary = TRUE)
+  remote <- dplyr::tbl(con, "off_native")
+
+  build <- function(input) {
+    summarize_with_margins(
+      input,
+      .grouping = grouping_sets(rollup(a), grouping_set()),
+      .duplicates = "keep",
+      .id = "s"
+    )
+  }
+  ordered <- function(result) {
+    dplyr::arrange(dplyr::as_tibble(result), a, s)
+  }
+
+  expect_equal(ordered(dplyr::collect(build(remote))), ordered(build(data)))
 })
 
 # The boundary the branch above stops at, and dbplyr's rather than this

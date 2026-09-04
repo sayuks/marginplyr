@@ -107,16 +107,16 @@
 #' [summarize_with_margins()] and [summarise_with_margins()] are synonyms,
 #' following [dplyr::summarize()] and [dplyr::summarise()].
 #'
-#' One result no lazy backend can carry back is a summary with no columns in
-#' it: asked for no summaries and given no fixed key or grouping dimension,
-#' the answer is one row holding nothing, whatever the input held. A
-#' `data.table` reads its row count from its first column, so a `dtplyr` input
-#' collects to zero rows where a local data frame returns one; a SQL table of
-#' no columns cannot be written at all, so a database input raises the error
-#' dbplyr renders one with. Each is what [dplyr::summarize()] itself answers
-#' for that lazy input, and anything that puts a column in the result -- one
-#' summary, one fixed key, one grouping dimension, or `.id` -- ends the
-#' difference.
+#' Two lazy inputs cannot carry back a summary with no columns in it: asked
+#' for no summaries and given no fixed key or grouping dimension, the answer
+#' is one row holding nothing, whatever the input held. A `data.table` reads
+#' its row count from its first column, so a `dtplyr` input collects to zero
+#' rows where a local data frame returns one, and a SQL table of no columns
+#' cannot be written at all, so a database input raises the error dbplyr
+#' renders one with. Each is what [dplyr::summarize()] itself answers for that
+#' lazy input; an Arrow input answers as a local one does. Anything that puts
+#' a column in the result -- one summary, one fixed key, one grouping
+#' dimension, or `.id` -- ends the difference.
 #'
 #' One summary an Arrow table or record batch cannot carry -- or a query built
 #' on either -- is one Arrow's own engine cannot evaluate. Arrow answers such an
