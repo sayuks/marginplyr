@@ -229,6 +229,12 @@ check_margin_id_collision <- function(.id, names, where) {
   invisible(NULL)
 }
 
+# `carried_columns` answers which of the input's columns the verb's result
+# holds beside the Margin dimensions, given the input's column names and the
+# compiled plan. Each verb hands in its own answer rather than a word naming
+# its kind, the shape `abort_margin_label_collision()` takes, because the
+# answer is a property of the verb: only a column the result holds can have
+# its factor levels rebuilt after the branch union (#415).
 prepare_margin_operation <- function(.data,
                                      by_quo,
                                      grouping_quo,
@@ -238,11 +244,13 @@ prepare_margin_operation <- function(.data,
                                      .duplicates,
                                      .sort,
                                      duplicates_choices,
+                                     carried_columns,
                                      .id = NULL,
                                      validate_grouping = NULL,
                                      call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
+  stopifnot(is.function(carried_columns))
 
   with_margin_error_call(
     {
@@ -286,7 +294,8 @@ prepare_margin_operation <- function(.data,
       column_info <- margin_column_info(
         data_proxy,
         plan$dimensions,
-        backend = backend
+        backend = backend,
+        carried = carried_columns(data_vars, plan)
       )
       margin_labels <- resolve_margin_labels(
         .margin_label,

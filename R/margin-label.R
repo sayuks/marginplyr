@@ -130,6 +130,18 @@ is_missing_margin_label <- function(label) {
   is.null(label) || is.na(label)
 }
 
+# One column's Margin label, and `NULL` for a column that has none.
+# `factor_info` names the factor columns crossing the branch union while
+# `margin_labels` is keyed to the Margin dimensions alone, so every read that
+# iterates the former reaches a name the latter does not hold (#415), where
+# `[[` raises a subscript error rather than answering that it is unlabelled.
+margin_label_of <- function(margin_labels, col) {
+  if (!col %in% names(margin_labels)) {
+    return(NULL)
+  }
+  margin_labels[[col]]
+}
+
 validate_margin_label <- function(.data,
                                   dimensions,
                                   by,
@@ -207,7 +219,7 @@ check_declared_label_collision <- function(margin_labels,
   declared <- vapply(
     factor_info,
     function(info) {
-      label <- margin_labels[[info$col]]
+      label <- margin_label_of(margin_labels, info$col)
       !is_missing_margin_label(label) && label %in% info$levels
     },
     logical(1)
@@ -390,16 +402,24 @@ label_margin_branch <- function(.data,
   missing_label_encoded <- vapply(
     Filter(
       function(info) {
-        encodes_missing_label_factor(info, margin_labels[[info$col]])
+        encodes_missing_label_factor(
+          info,
+          margin_label_of(margin_labels, info$col)
+        )
       },
       factor_info
     ),
     function(info) info$col,
     character(1)
   )
+  # A column `factor_info` names that is not a dimension is a fixed `.by` key
+  # or one the verb passes through, so it is in every branch rather than in
+  # the ones that include it, and it is never labelled: only the encoded arm
+  # above can select it (#415).
   encoded_factors <- Filter(
     function(info) {
-      info$col %in% included &&
+      present <- !(info$col %in% plan$dimensions) || info$col %in% included
+      present &&
         (info$col %in% missing_label_encoded ||
            (info$col %in% labelled_included &&
               isTRUE(info$preserve_missing_value)))

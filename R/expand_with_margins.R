@@ -114,6 +114,9 @@ expand_with_margins <- function(.data,
     .duplicates = .duplicates,
     .sort = .sort,
     duplicates_choices = margin_duplicates_choices,
+    # An expansion branch is the input's own rows, so every column of the input
+    # reaches the result and none of them is summarised away.
+    carried_columns = function(data_vars, plan) data_vars,
     .id = .id,
     call = call
   )

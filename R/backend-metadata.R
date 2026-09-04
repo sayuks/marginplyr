@@ -49,14 +49,14 @@ grouping_selection_proxy <- function(.data,
 # rather than anything a caller can rewrite their way out of -- either a proxy
 # that does not answer for its own columns, or a subclass whose `[[` is not
 # column extraction. It is still worth stopping on, and stopping bare: silence
-# here would report the dimension as an absent prototype and label its margin
-# rows `NA` instead.
-proxy_columns <- function(data_proxy, dimensions) {
+# here would report a column with no levels and no prototype as one the input
+# declared that way.
+proxy_columns <- function(data_proxy, cols) {
   columns <- stats::setNames(
-    lapply(dimensions, function(col) data_proxy[[col]]),
-    dimensions
+    lapply(cols, function(col) data_proxy[[col]]),
+    cols
   )
-  absent <- dimensions[vapply(columns, is.null, logical(1))]
+  absent <- cols[vapply(columns, is.null, logical(1))]
   if (length(absent) > 0L) {
     stop(
       "The selection proxy has no column",
@@ -69,10 +69,24 @@ proxy_columns <- function(data_proxy, dimensions) {
   columns
 }
 
+# `carried` names the input columns that reach the result beside the Margin
+# dimensions -- a fixed `.by` key, or a column the verb passes through. They
+# cross the same branch union and lose a declared NA level in the same place,
+# so `factors` covers them too (#415). Which columns those are is settled by
+# `prepare_margin_operation()`'s `carried_columns`.
+#
+# `prototypes` stays keyed to the dimensions alone. It stands for the value a
+# branch omitting a dimension writes, and only a dimension is ever omitted.
+#
+# No query is added. The selection proxy already holds every column for each
+# kind that can restore factors, so reading more of it is a second read of the
+# one snapshot ADR 0002 acquired rather than a second acquisition.
 margin_column_info <- function(data_proxy,
                                dimensions,
-                               backend) {
-  if (length(dimensions) == 0L) {
+                               backend,
+                               carried = character()) {
+  read <- unique(c(dimensions, carried))
+  if (length(read) == 0L) {
     return(list(factors = list(), prototypes = list()))
   }
 
@@ -80,9 +94,9 @@ margin_column_info <- function(data_proxy,
     return(list(factors = list(), prototypes = list()))
   }
 
-  schema <- proxy_columns(data_proxy, dimensions)
+  schema <- proxy_columns(data_proxy, read)
 
-  prototypes <- lapply(schema, function(x) x[NA_integer_])
+  prototypes <- lapply(schema[dimensions], function(x) x[NA_integer_])
   factors <- if (backend$can_restore_factors) {
     lapply(
       names(schema)[vapply(schema, is.factor, logical(1))],

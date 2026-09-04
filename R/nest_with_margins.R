@@ -254,6 +254,11 @@ nest_margin_pipeline <- function(.data,
     .duplicates = .duplicates,
     .sort = .sort,
     duplicates_choices = nest_duplicates_choices,
+    # Nesting expands every column and then folds all but the grouping columns
+    # into `.key`, so the fixed `.by` keys are what the result carries as
+    # columns of its own. A payload column is inside a cell by the time the
+    # finalizer runs, where nothing rebuilds it.
+    carried_columns = function(data_vars, plan) plan$by,
     .id = .id,
     call = call
   )
