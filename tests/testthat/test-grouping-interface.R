@@ -1174,6 +1174,85 @@ test_that("column-wise summaries preserve names and unpacked outputs", {
   expect_equal(names(unpacked), c("group", "x_lo", "x_hi"))
 })
 
+# #430. dplyr names an unnamed summary by deparsing the expression it is given,
+# and marginplyr rewrites that expression before dplyr sees it: the branch's own
+# `0L` or `1L` for a Grouping helper, and a qualified `all_of()` literal for a
+# selection helper. The first left each branch a different column name, which
+# the union adapter's column invariant refused and the native adapter did not
+# notice; the second named the column after the rewrite.
+#
+# Both adapters are asserted, the native one over a simulated connection so that
+# the case runs wherever the suite does. The values are asserted beside the
+# names on the local path, because a Grouping helper naming a column correctly
+# in every branch is what the union combines, and the combined column is what
+# says the branches agreed about more than their names.
+test_that("an unnamed summary is named from the caller's own expression", {
+  data <- data.frame(a = c("x", "y"), v = c(1, 2))
+
+  result <- summarize_with_margins(
+    data,
+    sum(v) + grouping_bit(a),
+    .grouping = rollup(a)
+  )
+  expect_equal(names(result), c("a", "sum(v) + grouping_bit(a)"))
+  expect_equal(result[["sum(v) + grouping_bit(a)"]], c(1, 2, 4))
+
+  native <- summarize_with_margins(
+    dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres()),
+    sum(v) + grouping_bit(a),
+    .grouping = rollup(a)
+  )
+  expect_true("sum(v) + grouping_bit(a)" %in% colnames(native))
+})
+
+test_that("an unnamed summary is named before a selection is resolved", {
+  data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
+
+  result <- summarize_with_margins(
+    data,
+    ncol(dplyr::pick(x, y)),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(result), c("group", "ncol(dplyr::pick(x, y))"))
+  expect_equal(result[["ncol(dplyr::pick(x, y))"]], rep(2L, 3L))
+})
+
+# The bound the fix is written to: only a summary marginplyr rewrites is named,
+# because a name is not only a label for a data-frame-valued summary. dplyr
+# expands such a summary's columns into the result while it is unnamed and packs
+# them into one column under any name, and returning a one-row data frame from a
+# function of the caller's own is an ordinary way to write several columns at
+# once. Nothing rewrites that call, and nothing may name it.
+test_that("an unnamed summary no rewrite reaches keeps dplyr's own naming", {
+  data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
+  range_frame <- function(value) {
+    data.frame(lo = min(value), hi = max(value))
+  }
+
+  expect_equal(
+    names(summarize_with_margins(data, sum(x), .grouping = rollup(group))),
+    c("group", "sum(x)")
+  )
+  expect_equal(
+    names(summarize_with_margins(
+      data,
+      range_frame(x),
+      .grouping = rollup(group)
+    )),
+    c("group", "lo", "hi")
+  )
+  # A recognized data-frame-valued summary is rewritten, so it is the exclusion
+  # rather than the bound that keeps this one expanding.
+  expect_equal(
+    names(summarize_with_margins(
+      data,
+      dplyr::across(c(x, y), mean),
+      .grouping = rollup(group)
+    )),
+    c("group", "x", "y")
+  )
+})
+
 test_that("data-frame summaries cannot overwrite grouping columns", {
   data <- data.frame(group = c("a", "a", "b"), value = 1:3)
 

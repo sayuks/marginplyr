@@ -148,6 +148,20 @@
   evaluated to know what it calls — `get("pick")(units)` — is an ordinary call
   as it was.
   See *Relationship to dplyr summaries* in `?summarize_with_margins`.
+* An unnamed summary now takes its column name from the expression you wrote
+  rather than from the one marginplyr rewrote it into. `...` is documented as
+  `dplyr::summarize()`'s name-value pairs, and the rewrite ran first: a
+  `grouping_bit()` or `grouping_id()` became the branch's own `0L` or `1L`, so
+  `sum(v) + grouping_bit(a)` named a different column in each Grouping-set
+  branch — which stopped the operation inside an internal invariant on every
+  backend taking the portable `UNION ALL` path, and named the column after a
+  SQL literal on the backends running `GROUP BY GROUPING SETS`. A selection
+  helper became a qualified `all_of()` literal, so `nrow(pick(v, w))` named its
+  column `nrow(dplyr::pick(dplyr::all_of(c("v", "w"))))`. Both are now named
+  after the caller's own expression, identically on every backend. A summary no
+  rewrite reaches is named by dplyr exactly as before, and a data-frame-valued
+  summary still expands its columns into the result rather than packing them
+  into one column under a name (#430).
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across
