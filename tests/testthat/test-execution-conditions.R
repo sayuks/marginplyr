@@ -121,6 +121,34 @@ native_grouping_sets_input <- function() {
   )
 }
 
+# A summary expression dbplyr cannot translate, on that input.
+native_translation_failure <- function() {
+  # `a`, `value`, and `no_such_column` are read from the lazy input, which
+  # codetools reads as undefined globals wherever a verb's arguments are
+  # written inside a function.
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    native_grouping_sets_input(),
+    total = sum(value) + grouping_bit(a) + no_such_column,
+    .grouping = rollup(a)
+  )
+  # nolint end
+}
+
+# The same failure under two unnamed dots the caller spelled differently. Both
+# collapse to one label, so the span says which expression raised the error but
+# not which argument did.
+native_shared_label_failure <- function() {
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    native_grouping_sets_input(),
+    grouping_bit(a) + no_such_column,
+    grouping_bit(a) + value,
+    .grouping = rollup(a)
+  )
+  # nolint end
+}
+
 # One plan whose two grouping sets raise whatever the caller asks them to.
 # `dplyr::n()` is 3 only in the grouping set that groups by nothing, which
 # `rollup()` runs second, so `whole` is the later branch and `fail` makes it
@@ -692,9 +720,12 @@ test_that("a branch error quotes the caller's own spelling", {
   error <- expect_error(summarize_across_failure())
 
   message <- conditionMessage(error)
+  # The trailing period is part of the assertion: eager dplyr's sentence
+  # carries one, and the rebuild puts back the punctuation it found rather
+  # than dropping or doubling it.
   expect_match(
     message,
-    "`dplyr::across(c(grade), ~sum(nope(.x)))`",
+    "`dplyr::across(c(grade), ~sum(nope(.x)))`.",
     fixed = TRUE
   )
   expect_false(grepl("all_of", message, fixed = TRUE))
@@ -708,18 +739,7 @@ test_that("a branch error quotes the caller's own spelling", {
 # that quietly stopped happening reads exactly like a package whose contexts
 # were all still faithful.
 test_that("a native translation error quotes the caller's own spelling", {
-  # `a`, `value`, and `no_such_column` are read from the lazy input, which
-  # codetools reads as undefined globals wherever a verb's arguments are
-  # written inside a function.
-  # nolint start: object_usage_linter.
-  error <- expect_error(
-    summarize_with_margins(
-      native_grouping_sets_input(),
-      total = sum(value) + grouping_bit(a) + no_such_column,
-      .grouping = rollup(a)
-    )
-  )
-  # nolint end
+  error <- expect_error(native_translation_failure())
 
   message <- conditionMessage(error)
   # The trailing newline is part of the assertion: dbplyr's sentence carries no
@@ -736,22 +756,10 @@ test_that("a native translation error quotes the caller's own spelling", {
 })
 
 test_that("a native label two dots share is left as dplyr wrote it", {
-  # `a`, `value`, and `no_such_column` are read from the lazy input, which
-  # codetools reads as undefined globals wherever a verb's arguments are
-  # written inside a function.
-  # nolint start: object_usage_linter.
-  error <- expect_error(
-    summarize_with_margins(
-      native_grouping_sets_input(),
-      grouping_bit(a) + no_such_column,
-      grouping_bit(a) + value,
-      .grouping = rollup(a)
-    )
-  )
-  # nolint end
+  error <- expect_error(native_shared_label_failure())
 
-  # Two unnamed dots the callers spelled differently collapse to one label, so
-  # `branch_argument_map()` finds no single candidate and drops the entry.
+  # `branch_argument_map()` finds no single candidate for the shared label and
+  # drops the entry, so dplyr's own quotation stands.
   expect_match(
     conditionMessage(error),
     "In argument: `+...`",

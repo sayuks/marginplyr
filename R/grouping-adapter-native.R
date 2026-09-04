@@ -1,26 +1,22 @@
-# `caller_labels` is `new_summary_arguments()`'s, parallel to the `dots` this
-# is handed, and is what the translation error below is restated with. It is
-# required rather than defaulted, because a default computed here would be
-# computed from dots this has already rewritten, and would restate a spelling
-# the caller never wrote (ADR 0024).
+# `summaries` is `stage_margin_summaries()`'s, taken whole for the reason its
+# header gives, and read here for its labels as well as its dots.
 summarize_margin_native <- function(.data,
-                                    dots,
+                                    summaries,
                                     plan,
                                     margin_labels,
                                     reserved_names,
-                                    caller_labels,
                                     set_id_name = NULL,
                                     set_id_is_internal = FALSE) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
-    dots,
+    summaries$dots,
     plan = plan,
     sql = TRUE,
     con = con
   )
   # After the rewrite, because the rewritten dots are the expressions dplyr
   # will quote.
-  restatements <- branch_argument_map(dots, caller_labels)
+  restatements <- branch_argument_map(dots, summaries$labels)
   group_vars <- unique(c(plan$by, plan$dimensions))
   if (!is.null(set_id_name)) {
     set_id_quo <- rlang::new_quosure(
@@ -59,13 +55,16 @@ summarize_margin_native <- function(.data,
     flag_quos <- list()
   }
 
-  # Forced here rather than left to lazy evaluation inside the check, so that
-  # the translation error a summarize of the caller's expressions can raise is
-  # restated and the check's own Package conditions are not reached by the
-  # restatement at all.
-  output_names <- with_native_restatement(
+  # dbplyr translates the caller's expressions here, this being the first of
+  # the two summarizes below to reach them, and raises where it cannot. That
+  # error is the whole of what ADR 0022 restates in this adapter. The call is
+  # forced out of the check's lazy argument so that the check's own Package
+  # conditions stay outside the catch.
+  output_names <- tryCatch(
     native_summary_output_names(.data, dots),
-    restatements
+    error = function(cnd) {
+      stop(restate_condition_arguments(cnd, restatements))
+    }
   )
   check_summary_output_names(
     output_names,
@@ -75,18 +74,15 @@ summarize_margin_native <- function(.data,
     set_id_is_internal = set_id_is_internal
   )
 
-  result <- with_native_restatement(
-    dplyr::summarize(
-      .data = dplyr::group_by(
-        .data,
-        dplyr::pick(dplyr::all_of(group_vars))
-      ),
-      !!!dots,
-      !!!set_id_quos,
-      !!!flag_quos,
-      .groups = "drop"
+  result <- dplyr::summarize(
+    .data = dplyr::group_by(
+      .data,
+      dplyr::pick(dplyr::all_of(group_vars))
     ),
-    restatements
+    !!!dots,
+    !!!set_id_quos,
+    !!!flag_quos,
+    .groups = "drop"
   )
 
   result <- attach_grouping_sets_query(result, plan$sets)
@@ -112,24 +108,6 @@ summarize_margin_native <- function(.data,
   }
 
   result
-}
-
-# The error dbplyr raises when it cannot translate a rewritten expression is
-# the one condition this adapter produces while the verb runs; everything else
-# it does builds a query. Both of the calls that hand dplyr the caller's
-# expressions are wrapped, because either can be the first to translate them,
-# and nothing between them is.
-#
-# Not `with_branch_conditions()`: this adapter issues its summarize once and
-# repeats nothing, so the deduplication and the grouping-value restatement have
-# nothing to act on (ADR 0022, *Amendment*).
-with_native_restatement <- function(expr, restatements) {
-  tryCatch(
-    expr,
-    error = function(cnd) {
-      stop(restate_condition_arguments(cnd, restatements))
-    }
-  )
 }
 
 # What `check_summary_output_names()` needs and the grouped summarize above
