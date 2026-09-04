@@ -499,10 +499,9 @@ that \code{.keep} retains grouping columns.
 
 The list column is a regular list of data frames; its exact \code{vctrs_list_of}
 subclass is not part of the API. Neither is the class of its elements,
-which follows whichever backend produced them: tibbles for a local input,
-because that is what \code{\link[dplyr:pick]{dplyr::pick()}} returns, and data tables under
-\code{dtplyr}. Only their being data frames holding the input's non-key columns
-is promised. Call \code{lapply(result$data, tibble::as_tibble)} when one element
+which follows whichever backend produced them and is tibbles on both today.
+Only their being data frames holding the input's non-key columns is
+promised. Call \code{lapply(result$data, tibble::as_tibble)} when one element
 class is needed across backends. \code{\link[=nest_with_margins]{nest_with_margins()}} follows
 \code{\link[tidyr:nest]{tidyr::nest()}} for an empty ungrouped input and returns zero outer rows.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} follows \code{\link[dplyr:nest_by]{dplyr::nest_by()}} and returns one row
@@ -511,18 +510,18 @@ containing the empty input when there are no grouping keys.
 When nesting leaves no payload column — every input column is a fixed key or
 a grouping dimension, and \code{.keep} does not put them back — each nested data
 frame still has one row per source row it stands for, as \code{\link[dplyr:nest_by]{dplyr::nest_by()}}
-does. That row count is promised. The class of such a cell is described
-rather than promised, as every element class is: on both backends it is what
-\code{\link[dplyr:tibble]{dplyr::tibble()}} produced, because a \code{data.table} cannot hold rows without
-columns at all.
+does. That row count is promised; the class of such a cell is described
+rather than promised, as every element class is.
 
-That last point is also a limit on what an input can carry into \code{dtplyr},
-rather than anything nesting does: a data frame with rows and no columns
-loses its rows on the way in, so \code{dtplyr::lazy_dt(data.frame(row.names = 1:3))} is already empty before marginplyr reads it and no behavior here can
-restore the three rows. Nest an input that has rows and no columns locally
-when its row count matters. This is the whole of the difference: a
-column-less input that reaches the backend with the rows it had -- one with
-no rows either -- nests to the same result on both backends.
+A \code{data.table} cannot hold rows without columns at all, which is a limit on
+what an input can carry into \code{dtplyr} rather than anything nesting does: a
+data frame with rows and no columns loses its rows on the way in, so
+\code{dtplyr::lazy_dt(data.frame(row.names = 1:3))} is already empty before
+marginplyr reads it and no behavior here can restore the three rows. Nest
+an input that has rows and no columns locally when its row count matters.
+This is the whole of the difference: a column-less input that reaches the
+backend with the rows it had -- one with no rows either -- nests to the
+same result on both backends.
 
 No input column name is reserved for internal bookkeeping. Temporary
 grouping-set and \code{.keep} columns are generated collision-free and removed

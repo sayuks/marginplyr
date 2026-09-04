@@ -240,7 +240,7 @@ test_that("dtplyr keeps a used NA level apart from a typed missing", {
 # for a dimension whose Margin label is missing, and the set `factor_info`
 # names widens from the Margin dimensions to the factor columns crossing the
 # union.
-na_level_carried_data <- function(ordered = FALSE) {
+na_level_carried_data <- function(ordered = FALSE, na_level_group = FALSE) {
   carried_class <- if (ordered) c("ordered", "factor") else "factor"
   data.frame(
     key = structure(
@@ -254,7 +254,11 @@ na_level_carried_data <- function(ordered = FALSE) {
       class = carried_class
     ),
     plain = factor(c("q", "r")),
-    group = factor(c("g1", "g2")),
+    group = if (na_level_group) {
+      structure(c(1L, 2L), levels = c("g1", NA_character_), class = "factor")
+    } else {
+      factor(c("g1", "g2"))
+    },
     value = 1:2
   )
 }
@@ -387,36 +391,6 @@ test_that("a carried factor with no NA level takes no encode route", {
   expect_identical(names(info$prototypes), "group")
 })
 
-# A nesting verb folds every column but the grouping columns into a cell, so a
-# carried column crosses the union like any other and is inside the cell by the
-# time the finalizer runs (#421). `.keep = TRUE` adds a second site: it copies
-# each grouping column under an internal name before the union, so the outer
-# column and its own nested copy can disagree about the level.
-#
-# A fixture of its own rather than `na_level_carried_data()`, which holds a
-# column named `key`: a cell is built by `pick(everything())`, which dtplyr
-# translates to a `data.table()` call, so that name arrives as that function's
-# `key` argument and the call fails. Nothing here is marginplyr's -- the same
-# `summarize(list(pick(everything())))` on a bare `lazy_dt()` fails the same
-# way -- and it is filed as #424.
-na_level_nested_data <- function(ordered = FALSE, na_level_group = FALSE) {
-  carried_class <- if (ordered) c("ordered", "factor") else "factor"
-  data.frame(
-    group = if (na_level_group) {
-      structure(c(1L, 2L), levels = c("g1", NA_character_), class = "factor")
-    } else {
-      factor(c("g1", "g2"))
-    },
-    passthrough = structure(
-      c(1L, 2L),
-      levels = c("a", NA_character_),
-      class = carried_class
-    ),
-    plain = factor(c("q", "r")),
-    value = 1:2
-  )
-}
-
 # Rows are one per Grouping set member and ADR 0018 leaves their order to the
 # backend, so the cells are paired by the integer codes of `outer`, which name
 # together as many columns as it takes for the tuple to be distinct per row.
@@ -457,9 +431,14 @@ expect_cell_column_agrees <- function(result,
   }
 }
 
+# A nesting verb folds every column but the grouping columns into a cell, so a
+# carried column crosses the union like any other and is inside the cell by the
+# time the finalizer runs (#421). `.keep = TRUE` adds a second site: it copies
+# each grouping column under an internal name before the union, so the outer
+# column and its own nested copy can disagree about the level.
 test_that("dtplyr keeps a used NA level on a nested payload column", {
   skip_if_suggest_absent("dtplyr")
-  data <- na_level_nested_data()
+  data <- na_level_carried_data()
   operation <- function(input) {
     nest_with_margins(input, .grouping = rollup(group))
   }
@@ -480,7 +459,7 @@ test_that("dtplyr keeps a used NA level on a nested payload column", {
 
 test_that("a nested payload ordered factor keeps its ordering", {
   skip_if_suggest_absent("dtplyr")
-  data <- na_level_nested_data(ordered = TRUE)
+  data <- na_level_carried_data(ordered = TRUE)
   operation <- function(input) {
     nest_with_margins(input, .grouping = rollup(group))
   }
@@ -499,7 +478,7 @@ test_that("a nested payload ordered factor keeps its ordering", {
 
 test_that("nest_by_with_margins keeps a used NA level in its cell", {
   skip_if_suggest_absent("dtplyr")
-  data <- na_level_nested_data()
+  data <- na_level_carried_data()
   operation <- function(input) {
     nest_by_with_margins(input, .grouping = rollup(group))
   }
@@ -518,7 +497,7 @@ test_that("nest_by_with_margins keeps a used NA level in its cell", {
 
 test_that(".keep = TRUE keeps a used NA level on a nested grouping copy", {
   skip_if_suggest_absent("dtplyr")
-  data <- na_level_nested_data(na_level_group = TRUE)
+  data <- na_level_carried_data(na_level_group = TRUE)
   operation <- function(input) {
     nest_with_margins(input, .grouping = rollup(group), .keep = TRUE)
   }
@@ -542,7 +521,7 @@ test_that(".keep = TRUE keeps a used NA level on a nested grouping copy", {
 
 test_that("nest_by_with_margins keeps a used NA level with .keep = TRUE", {
   skip_if_suggest_absent("dtplyr")
-  data <- na_level_nested_data(na_level_group = TRUE)
+  data <- na_level_carried_data(na_level_group = TRUE)
   operation <- function(input) {
     nest_by_with_margins(input, .grouping = rollup(group), .keep = TRUE)
   }
@@ -562,7 +541,7 @@ test_that("nest_by_with_margins keeps a used NA level with .keep = TRUE", {
 
 test_that(".keep = TRUE keeps a used NA level on a nested .by key copy", {
   skip_if_suggest_absent("dtplyr")
-  data <- na_level_nested_data()
+  data <- na_level_carried_data()
   operation <- function(input) {
     nest_with_margins(
       input,

@@ -488,6 +488,96 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
   }
 })
 
+# dtplyr translates a `pick()` that stands where a value stands into a literal
+# `data.table()` call with one named argument per column, so a payload column
+# named for one of that function's formals arrives as that argument instead.
+# `key` and `check.names` raise; `keep.rownames` and `stringsAsFactors` are
+# absorbed without a word and leave the column out of every cell (#424).
+#
+# `.rows` and `.name_repair` are here for the cell built in their place: they
+# are `tibble()`'s own formals, so a cell that named its columns directly into
+# that function would trade one set of collisions for the other.
+formal_shadow_names <- c(
+  "keep.rownames",
+  "check.names",
+  "key",
+  "stringsAsFactors",
+  ".rows",
+  ".name_repair"
+)
+
+formal_shadow_data <- function(name) {
+  data <- data.frame(
+    region = c("East", "East", "West"),
+    carrier = c("p", "q", "r"),
+    units = 1:3
+  )
+  names(data)[names(data) == "carrier"] <- name
+  data
+}
+
+# As `sales_cells_as_tibble()` does, and for the same reason, over this
+# fixture's single key.
+formal_shadow_cells <- function(result) {
+  ordered <- dplyr::arrange(
+    dplyr::ungroup(result),
+    dplyr::across(dplyr::all_of("region"))
+  )
+  ordered$data <- lapply(ordered$data, dplyr::as_tibble)
+  dplyr::as_tibble(ordered)
+}
+
+test_that("a nested cell carries a column named for a callee's formal", {
+  skip_if_suggest_absent("dtplyr")
+  verbs <- list(
+    nest_with_margins = nest_with_margins,
+    nest_by_with_margins = nest_by_with_margins
+  )
+
+  for (name in formal_shadow_names) {
+    for (keep in c(FALSE, TRUE)) {
+      expected_names <- if (keep) {
+        c("region", name, "units")
+      } else {
+        c(name, "units")
+      }
+
+      for (verb_name in names(verbs)) {
+        verb <- verbs[[verb_name]]
+        info <- paste(verb_name, name, keep)
+
+        local_result <- verb(
+          formal_shadow_data(name),
+          .grouping = rollup(region),
+          .sort = "last",
+          .keep = keep
+        )
+        lazy_result <- dplyr::collect(
+          verb(
+            dtplyr::lazy_dt(formal_shadow_data(name)),
+            .grouping = rollup(region),
+            .sort = "last",
+            .keep = keep
+          )
+        )
+
+        # Read back separately from the comparison, which would hold for two
+        # backends that both dropped the column.
+        expect_identical(
+          names(formal_shadow_cells(lazy_result)$data[[1L]]),
+          expected_names,
+          info = info
+        )
+        expect_equal(
+          formal_shadow_cells(lazy_result),
+          formal_shadow_cells(local_result),
+          info = info
+        )
+      }
+    }
+  }
+})
+
 test_that("zero-column and empty nesting match an independent construction", {
   # A frame with rows and no columns at all: every cell is a payload-free
   # cell, and `dplyr::nest_by()` is the upstream verb that answers it.
