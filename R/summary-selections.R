@@ -628,9 +628,17 @@ summary_all_of_expr <- function(selected, data_proxy) {
 }
 
 known_summary_output_names <- function(dots, data_proxy) {
+  # A dot carrying its own name produces that one column and nothing else:
+  # dplyr packs a data-frame result under the name rather than unpacking it, so
+  # the argument names inside a named `tibble()`, `data.frame()`, `across()`,
+  # or `pick()` never reach the result's top level -- including under
+  # `across(.unpack =)`, which renames within the packed column. The caller
+  # contributes the name itself from `names(dots)` (#431).
+  named <- nzchar(rlang::names2(dots))
+
   unlist(
     lapply(
-      dots,
+      dots[!named],
       function(dot) {
         expr <- rlang::quo_get_expr(dot)
         env <- rlang::quo_get_env(dot)

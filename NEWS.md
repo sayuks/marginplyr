@@ -148,6 +148,14 @@
   evaluated to know what it calls — `get("pick")(units)` — is an ordinary call
   as it was.
   See *Relationship to dplyr summaries* in `?summarize_with_margins`.
+* A data-frame-valued summary you gave a name to is no longer read for the
+  names it packs. `s = tibble(group = sum(value))`, `s = across(value, mean,
+  .names = "group")`, and `s = pick(value)` each produce one column called `s`,
+  because dplyr packs a named data-frame result rather than unpacking it, so
+  the argument names inside them cannot overwrite a grouping column or collide
+  with `.id`; they were refused for those collisions anyway. `across(.unpack =)`
+  renames within the packed column and is reached the same way. The unnamed
+  forms are unpacked to the top level and stay refused.
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across
