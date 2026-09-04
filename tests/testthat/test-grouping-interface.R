@@ -1222,7 +1222,7 @@ test_that("an unnamed summary is named before a selection is resolved", {
 # expands such a summary's columns into the result while it is unnamed and packs
 # them into one column under any name, and returning a one-row data frame from a
 # function of the caller's own is an ordinary way to write several columns at
-# once. Nothing rewrites that call, and nothing may name it.
+# once. Nothing rewrites `range_frame(x)`, so nothing names it.
 test_that("an unnamed summary no rewrite reaches keeps dplyr's own naming", {
   data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
   range_frame <- function(value) {
@@ -1251,6 +1251,39 @@ test_that("an unnamed summary no rewrite reaches keeps dplyr's own naming", {
     )),
     c("group", "x", "y")
   )
+})
+
+# What that bound costs, pinned here rather than left to be found: a
+# data-frame-valued summary a rewrite *does* reach is named, and dplyr packs a
+# named one into a single column. Both shapes below expanded before #430.
+#
+# Telling them from `nrow(pick(x, y))` above, which #430 requires be named, is a
+# question about the value's type, and ADR 0019 reads spellings. So this is the
+# assertion that says the two recognized shapes are excluded by name because a
+# static reading reaches them and not because the exclusion is complete.
+test_that("a rewritten data-frame-valued summary is named and packed", {
+  data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
+  range_frame <- function(columns) {
+    data.frame(lo = min(columns[[1L]]), hi = max(columns[[1L]]))
+  }
+  totals <- function(value, bit) {
+    data.frame(sum = sum(value), margin = bit)
+  }
+
+  selected <- summarize_with_margins(
+    data,
+    range_frame(dplyr::pick(x)),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(selected), c("group", "range_frame(dplyr::pick(x))"))
+  expect_s3_class(selected[["range_frame(dplyr::pick(x))"]], "data.frame")
+
+  helped <- summarize_with_margins(
+    data,
+    totals(x, grouping_bit(group)),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(helped), c("group", "totals(x, grouping_bit(group))"))
 })
 
 test_that("data-frame summaries cannot overwrite grouping columns", {

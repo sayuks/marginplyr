@@ -159,9 +159,15 @@
   helper became a qualified `all_of()` literal, so `nrow(pick(v, w))` named its
   column `nrow(dplyr::pick(dplyr::all_of(c("v", "w"))))`. Both are now named
   after the caller's own expression, identically on every backend. A summary no
-  rewrite reaches is named by dplyr exactly as before, and a data-frame-valued
-  summary still expands its columns into the result rather than packing them
-  into one column under a name (#430).
+  rewrite reaches is named by dplyr exactly as before, and so is a summary
+  written as `across()` or `pick()` itself, so both go on expanding a
+  data-frame value's columns into the result. A data-frame-valued summary a
+  rewrite *does* reach is now named, and dplyr packs a named one:
+  `range_frame(pick(x))` returned `lo` and `hi` and now returns one
+  data-frame column named after the call. Telling that summary from
+  `nrow(pick(v, w))` is a question about the value's type rather than about how
+  it is spelled, so give either one a name of your own where you want the
+  columns expanded or packed regardless (#430).
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across

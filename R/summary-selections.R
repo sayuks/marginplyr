@@ -306,17 +306,21 @@ new_summary_arguments <- function(dots,
 # rewrite. `...` is documented as `dplyr::summarize()`'s name-value pairs, so
 # the name is settled from the caller's own expression here instead (#430).
 #
-# Only a rewritten summary is named, and that bound is what keeps the fix from
-# reaching a summary whose value is a data frame: dplyr expands such a
-# summary's columns into the result while it is unnamed and packs them into one
-# column under any name, and a one-row data frame returned by a function of the
-# caller's own is an ordinary way to write several columns at once. Nothing
-# rewrites that call, so nothing here names it.
+# Only a rewritten summary is named, which is what keeps the fix away from a
+# summary dplyr expands rather than names: a data-frame-valued summary's
+# columns go into the result while it is unnamed and are packed into one column
+# under any name, and returning a one-row data frame is an ordinary way to
+# write several columns at once. One no rewrite reaches goes on expanding.
 #
-# The two recognized data-frame-valued shapes are rewritten, so they need the
-# exclusion stated: `across()` and `pick()` are selection helpers, and
-# `tibble()` beside one carries the rewrite up. They also need no fix, each
-# naming its own outputs whatever a branch rewrote inside it.
+# One a rewrite does reach is named, and is then packed. The recognized
+# data-frame-valued shapes are excluded here rather than left to that, because
+# they are the ones a static reading reaches: `across()` and `pick()` are
+# selection helpers and `tibble()` beside one carries the rewrite up, and each
+# names its own outputs whatever a branch rewrote inside it. What is left is a
+# data-frame-valued expression the static reading does not recognize, and no
+# reading separates it from a scalar one: `nrow(pick(v, w))` has to be named
+# and `range_frame(pick(v))` has to not be, which is a question about the
+# value's type.
 #
 # `rlang::as_label()` is `rlang::quos_auto_name()`'s own labeller, so the name
 # is dplyr's up to the width at which rlang abbreviates a long expression:
@@ -695,7 +699,7 @@ known_summary_output_names <- function(dots, data_proxy) {
 # Which data-frame-valued shape a summary is written as, or `NULL` for one that
 # is not recognized as any. Two readers need the recognition and each needs a
 # different half of it: `known_data_frame_output_names()` reads which outputs
-# the shape produces, and `name_unnamed_summary_dots()` reads that dplyr
+# the shape produces, and `name_rewritten_summary_dots()` reads that dplyr
 # expands them rather than naming one column for the summary. Answering both
 # from here is what keeps a shape added for one from being invisible to the
 # other.
@@ -754,7 +758,14 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     return(names(resolve_summary_selection(selection, env, data_proxy)))
   }
 
-  known_across_output_names(expr, env, data_proxy)
+  if (identical(kind, "across")) {
+    return(known_across_output_names(expr, env, data_proxy))
+  }
+
+  # A kind the classifier answers and this does not. Both are in this file and
+  # nothing outside it names a kind, so no call reaches this and it stays a
+  # bare `stop()` (ADR 0015).
+  stop("Unhandled data-frame-valued summary kind: ", kind, call. = FALSE)
 }
 
 known_injected_argument_name <- function(expr) {
