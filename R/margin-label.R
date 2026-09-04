@@ -460,21 +460,21 @@ label_margin_branch <- function(.data,
       dplyr::across(dplyr::all_of(labelled_as_character), as.character)
     )
   }
-  # dtplyr renders a scalar overwrite as data.table `:=`. On a multi-row factor
-  # column, data.table recycles it without replacing the column class, leaving
-  # an ordered factor opposite the character branch at `funion()`. A full-size
-  # value replaces the column so factor restoration remains after the union.
-  dtplyr_factor_cols <- if (inherits(.data, "dtplyr_step")) {
-    vapply(factor_info, function(info) info$col, character(1))
-  } else {
-    character()
-  }
+  # dtplyr renders a scalar overwrite as data.table `:=`, which recycles the
+  # value and coerces it to the column's own type rather than replacing the
+  # column. The omitted branch then reaches `funion()` as the ordered factor or
+  # the integer it started as, holding the `NA` a character label coerced to,
+  # while the included branches are character (#427). A full-size value
+  # replaces the column. Every labelled dimension takes it rather than only the
+  # ones that are not character already, for which it replaces the column with
+  # itself.
+  dtplyr_full_size_label <- inherits(.data, "dtplyr_step")
   values <- lapply(
     omitted,
     function(col) {
       label <- margin_labels[[col]]
       if (!is_missing_margin_label(label)) {
-        if (col %in% dtplyr_factor_cols) {
+        if (dtplyr_full_size_label) {
           return(rlang::expr(rep(!!label, dplyr::n())))
         }
         return(label)
@@ -484,7 +484,9 @@ label_margin_branch <- function(.data,
         # branches spell one. `as.character()` of the prototype cannot: it is
         # `NA`, which is also what a value on the NA level becomes, and the
         # union is where the two would stop being distinguishable (ADR 0012).
-        # Full size for the reason the labelled arm above is.
+        # Full size for the reason the labelled arm above is, and with no
+        # backend test because `drops_na_factor_level_on_union`, which
+        # `missing_label_encoded` requires, is dtplyr's alone.
         return(rlang::expr(rep(!!sentinels[[col]], dplyr::n())))
       }
       value <- prototypes[[col]]
