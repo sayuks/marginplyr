@@ -167,7 +167,7 @@
   data-frame column named after the call. Telling that summary from
   `nrow(pick(v, w))` is a question about the value's type rather than about how
   it is spelled, so give either one a name of your own where you want the
-  columns expanded or packed regardless (#430).
+  columns expanded or packed regardless (#430, #435).
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across

@@ -1260,7 +1260,7 @@ test_that("an unnamed summary no rewrite reaches keeps dplyr's own naming", {
 # Telling them from `nrow(pick(x, y))` above, which #430 requires be named, is a
 # question about the value's type, and ADR 0019 reads spellings. So this is the
 # assertion that says the two recognized shapes are excluded by name because a
-# static reading reaches them and not because the exclusion is complete.
+# static reading reaches them and not because the exclusion is complete (#435).
 test_that("a rewritten data-frame-valued summary is named and packed", {
   data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
   range_frame <- function(columns) {

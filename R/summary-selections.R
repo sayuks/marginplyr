@@ -320,7 +320,7 @@ new_summary_arguments <- function(dots,
 # data-frame-valued expression the static reading does not recognize, and no
 # reading separates it from a scalar one: `nrow(pick(v, w))` has to be named
 # and `range_frame(pick(v))` has to not be, which is a question about the
-# value's type.
+# value's type. #435 holds what that costs and what answering it would take.
 #
 # `rlang::as_label()` is `rlang::quos_auto_name()`'s own labeller, so the name
 # is dplyr's up to the width at which rlang abbreviates a long expression:
