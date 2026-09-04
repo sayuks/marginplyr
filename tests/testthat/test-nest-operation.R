@@ -463,9 +463,7 @@ test_that("dtplyr nesting agrees with the local result and stays lazy", {
       sales_cell_shape(lazy_result)$names[[1L]],
       scenario$names
     )
-    # The element class per backend (ADR 0016). A cell with no payload column
-    # is a tibble on either, a `data.table` having no form that holds rows
-    # without columns.
+    # The element class per backend (ADR 0016).
     expect_s3_class(local_result$data[[1L]], "tbl_df")
     expect_s3_class(lazy_result$data[[1L]], lazy_cell_class(scenario$names))
     expect_equal(

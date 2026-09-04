@@ -392,10 +392,10 @@ execute_margin_nest <- function(operation, .key, .keep) {
 }
 
 # The expression building one cell, given the columns it is to hold and the
-# backend kind that will evaluate it. `cell_cols` is a named character vector
-# whose names are the names the cell's columns take and whose values are the
-# columns of the expanded step they read; an empty one is a nesting that has
-# no payload column left.
+# backend kind whose converter it names. `cell_cols` is a named character
+# vector whose names are the names the cell's columns take and whose values
+# are the columns of the expanded step they read; an empty one is a nesting
+# that has no payload column left.
 nest_cell_expr <- function(cell_cols, kind) {
   if (length(cell_cols) == 0L) {
     # A nesting that removes every payload column still stands for a known
@@ -450,8 +450,8 @@ nest_expanded_margins <- function(.data,
     # `.keep = TRUE` nests a copy of each grouping column, made upstream under
     # an internal name so that the outer key and the copy can disagree. The
     # cell gives each copy back the name the caller wrote, and the grouping
-    # columns lead it, which is what `.keep` promises. `order()` is stable, so
-    # the rest keep the order the input gave them.
+    # columns lead it. `order()` is stable, so the rest keep the order the
+    # input gave them.
     restored <- match(unname(cell_cols), unname(keep_cols))
     named <- !is.na(restored)
     names(cell_cols)[named] <- names(keep_cols)[restored[named]]
