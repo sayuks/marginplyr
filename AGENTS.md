@@ -344,6 +344,12 @@ compares the two, so an amendment leaves it standing and wrong. ADR 0023
 settled this once already, for a rule that governed one file while two others
 re-derived it.
 
+This holds wherever a maintained document points, not only in a comment: a
+citation names its target — a function, a heading, a chunk, an ADR or issue
+number — and not a line number, which an edit above it leaves pointing at a
+different line rather than at nothing. A SHA, and a permalink pinned to one,
+do not move.
+
 A comment describes the code it sits beside, in the present tense. What a
 review found, which round answered it, and what a test elsewhere now covers are
 things the code does not hold — the commit message and the test are where each
@@ -370,8 +376,7 @@ are. A `srcref` opens at `function(`, so no header is inside any of them, and
 an installed package carries no `srcref` at all, `keep.source.pkgs` being
 `FALSE`. Such a gate would have to skip where every existing one runs, and
 `verify-backend.R` fails a job for a skip naming no withheld backend. This is a
-hand audit for the reason *Dependency metadata* above is one: what defeats the
-scan is what a scanner can express, not missing configuration.
+hand audit for the reason *Dependency metadata* above is one.
 
 ## Agent skills
 
