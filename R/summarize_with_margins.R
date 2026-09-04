@@ -382,10 +382,13 @@
 #' which it is omitted.
 #'
 #' Summary results may not overwrite a fixed key or grouping dimension,
-#' including through a data-frame-valued summary. The local dplyr backend can
-#' overwrite an existing variable and reuse a newly created summary in a
-#' later expression, but other backends may not. marginplyr rejects grouping
-#' key overwrites so that grouping identity and behavior stay portable.
+#' including through an unnamed data-frame-valued summary, whose columns dplyr
+#' unpacks to the top level. A named one is checked by its own name alone,
+#' because dplyr packs its columns into the single column that name gives.
+#' The local dplyr backend can overwrite an existing variable and reuse a newly
+#' created summary in a later expression, but other backends may not.
+#' marginplyr rejects grouping key overwrites so that grouping identity and
+#' behavior stay portable.
 #' Use a new summary name, or rename the grouping column before this call.
 #'
 #' [dplyr::cur_group()], [dplyr::cur_group_id()],
