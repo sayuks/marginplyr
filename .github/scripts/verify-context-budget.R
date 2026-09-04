@@ -26,12 +26,11 @@ source(".github/scripts/ci-helpers.R")
 # it.
 baseline_bytes <- 23384L
 baseline_note <- paste(
-  "moving the `must_error` implementation's three load-bearing properties to",
-  "`inst/vignette-hooks/must-error.R`, whose header had deferred outward for",
-  "facts about itself, over #295's baseline; the 1056 bytes that freed paid",
-  "for the rule that a citation names its target rather than a line number,",
-  "and for deleting the *Dependency metadata* conclusion *Code comments*",
-  "re-derived beside its own citation to it"
+  "#416 deleting the `must_error` implementation's three load-bearing",
+  "properties, which `inst/vignette-hooks/must-error.R` already stated at the",
+  "three sites holding them, over #295's baseline; 322 of the 1056 bytes that",
+  "removed paid for the rule that a citation names its target rather than a",
+  "line number"
 )
 
 entry <- "CLAUDE.md"
