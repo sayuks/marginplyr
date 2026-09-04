@@ -88,12 +88,26 @@ margin_column_info <- function(data_proxy,
       names(schema)[vapply(schema, is.factor, logical(1))],
       function(col) {
         x <- schema[[col]]
+        has_na_in_level <- anyNA(levels(x))
         list(
           col = col,
           levels = levels(x),
           ordered = is.ordered(x),
-          has_na_in_level = anyNA(levels(x)),
-          preserve_missing_value = backend$can_encode_factor_missing_values
+          has_na_in_level = has_na_in_level,
+          preserve_missing_value = backend$can_encode_factor_missing_values,
+          # Whether this column takes the encode-and-rebuild route even where
+          # its Margin label is missing and so adds no level. All three terms
+          # are necessary and none is implied by the others: only an NA level
+          # is at risk, only a union that drops one puts it there, and only a
+          # sentinel keeps a value on that level apart from the typed missing
+          # a margin row carries, which `as.character()` spells the same way
+          # (ADR 0012). Settled here so that both sides of the route --
+          # `label_margin_branch()` and `restore_margin_factors()` -- read one
+          # answer rather than deciding twice, which is what they would do:
+          # neither is handed the backend.
+          encode_missing_label = has_na_in_level &&
+            backend$drops_na_factor_level_on_union &&
+            backend$can_encode_factor_missing_values
         )
       }
     )

@@ -11,6 +11,28 @@ factor_missing_sentinel <- function(info, .margin_name) {
   sentinel
 }
 
+# Whether a factor dimension crosses the branch union as character despite a
+# missing Margin label, which is what `encode_missing_label` in
+# `R/backend-metadata.R` records for the column. Both sides of the route read
+# this, so neither can encode what the other does not rebuild.
+encodes_missing_label_factor <- function(info, label) {
+  is_missing_margin_label(label) && isTRUE(info$encode_missing_label)
+}
+
+# The sentinel each factor dimension is carried as while it crosses the branch
+# union as character, keyed by column. Derived once so that the value a branch
+# omitting the dimension writes is the one the branches including it encode to,
+# rather than the two arms deriving it apart.
+margin_factor_sentinels <- function(factor_info, margin_labels) {
+  stats::setNames(
+    lapply(
+      factor_info,
+      function(info) factor_missing_sentinel(info, margin_labels[[info$col]])
+    ),
+    vapply(factor_info, function(info) info$col, character(1))
+  )
+}
+
 encode_factor_for_margin <- function(x,
                                      missing_sentinel,
                                      preserve_missing_value) {
@@ -72,8 +94,15 @@ restore_margin_factors <- function(.data,
   Reduce(
     function(data, info) {
       label <- margin_labels[[info$col]]
+      # A missing label adds no level, so a column the branches carried as
+      # their own class arrives with its levels already intact. The exception
+      # is one that crossed the union as character to keep them, which is
+      # rebuilt on its declared levels: `NULL` appends none.
       if (is_missing_margin_label(label)) {
-        return(data)
+        if (!encodes_missing_label_factor(info, label)) {
+          return(data)
+        }
+        return(reconstruct_factor(data, info, NULL, position = position))
       }
       reconstruct_factor(data, info, label, position = position)
     },
