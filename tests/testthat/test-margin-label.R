@@ -234,6 +234,152 @@ test_that("dtplyr keeps a used NA level apart from a typed missing", {
   }
 })
 
+# A factor column that is not a Margin dimension crosses the same branch union
+# and loses the same declared NA level there (#415). Neither a fixed `.by` key
+# nor a passed-through column is labelled, so each takes the route #408 opened
+# for a dimension whose Margin label is missing, and the set `factor_info`
+# names widens from the Margin dimensions to the factor columns crossing the
+# union.
+na_level_carried_data <- function(ordered = FALSE) {
+  carried_class <- if (ordered) c("ordered", "factor") else "factor"
+  data.frame(
+    key = structure(
+      c(1L, 2L),
+      levels = c("p", NA_character_),
+      class = "factor"
+    ),
+    passthrough = structure(
+      c(1L, 2L),
+      levels = c("a", NA_character_),
+      class = carried_class
+    ),
+    group = factor(c("g1", "g2")),
+    value = 1:2
+  )
+}
+
+# Compared against the local result the way the #408 cases are, and by integer
+# code for the reason `factor_contract_rows()` gives: a value on the NA level
+# and a typed missing are one displayed value and two codes. Sorted because
+# ADR 0018 leaves within-set row order to the backend.
+expect_carried_factor_agrees <- function(result, expected, col) {
+  expect_identical(levels(result[[col]]), c("a", NA))
+  expect_identical(levels(result[[col]]), levels(expected[[col]]))
+  expect_identical(
+    sort(as.integer(result[[col]])),
+    sort(as.integer(expected[[col]]))
+  )
+  expect_false(any(is.na(result[[col]])))
+  expect_identical(any(is.na(result[[col]])), any(is.na(expected[[col]])))
+}
+
+test_that("dtplyr keeps a used NA level on a fixed .by key", {
+  skip_if_suggest_absent("dtplyr")
+  data <- na_level_carried_data()
+  operation <- function(input) {
+    summarize_with_margins(
+      input,
+      n = dplyr::n(),
+      .by = key,
+      .grouping = rollup(group)
+    )
+  }
+
+  result <- dplyr::collect(operation(dtplyr::lazy_dt(data)))
+  expected <- operation(data)
+  expect_s3_class(result$key, "factor")
+  expect_identical(levels(result$key), c("p", NA))
+  expect_identical(levels(result$key), levels(expected$key))
+  expect_identical(
+    sort(as.integer(result$key)),
+    sort(as.integer(expected$key))
+  )
+  # Every row of both results holds a value on the NA level, so `is.na()` is
+  # false throughout: the key is never a margin row's typed missing.
+  expect_false(any(is.na(result$key)))
+  expect_identical(any(is.na(result$key)), any(is.na(expected$key)))
+})
+
+test_that("dtplyr keeps a used NA level on a passed-through column", {
+  skip_if_suggest_absent("dtplyr")
+  data <- na_level_carried_data()
+  operation <- function(input) {
+    expand_with_margins(input, .grouping = rollup(group))
+  }
+
+  result <- dplyr::collect(operation(dtplyr::lazy_dt(data)))
+  expected <- operation(data)
+  expect_s3_class(result$passthrough, "factor")
+  expect_carried_factor_agrees(result, expected, "passthrough")
+})
+
+test_that("a passed-through ordered factor keeps its ordering", {
+  skip_if_suggest_absent("dtplyr")
+  data <- na_level_carried_data(ordered = TRUE)
+  operation <- function(input) {
+    expand_with_margins(input, .grouping = rollup(group))
+  }
+
+  result <- dplyr::collect(operation(dtplyr::lazy_dt(data)))
+  expected <- operation(data)
+  expect_s3_class(result$passthrough, "ordered")
+  expect_s3_class(expected$passthrough, "ordered")
+  expect_carried_factor_agrees(result, expected, "passthrough")
+})
+
+test_that("a Margin label position adds no level to a carried column", {
+  skip_if_suggest_absent("dtplyr")
+  data <- na_level_carried_data()
+
+  for (position in c("first", "last")) {
+    result <- dplyr::collect(expand_with_margins(
+      dtplyr::lazy_dt(data),
+      .grouping = rollup(group),
+      .margin_label = "All",
+      .margin_label_position = position
+    ))
+    # The dimension takes the label at the requested end; neither carried
+    # column takes one at either, so their levels are what the input declared.
+    expect_identical(
+      levels(result$group),
+      if (identical(position, "first")) {
+        c("All", "g1", "g2")
+      } else {
+        c("g1", "g2", "All")
+      },
+      info = position
+    )
+    expect_identical(levels(result$key), c("p", NA), info = position)
+    expect_identical(levels(result$passthrough), c("a", NA), info = position)
+  }
+})
+
+# The route a carried column takes is unobservable in a result that has taken
+# it correctly: a factor with no NA level is rebuilt on the levels it already
+# had. So what the acceptance asks for -- that such a column is not encoded to
+# character and not rebuilt -- is asserted where the decision is made.
+test_that("a carried factor with no NA level takes no encode route", {
+  skip_if_suggest_absent("dtplyr")
+  data <- na_level_carried_data()
+  proxy <- grouping_selection_proxy(dtplyr::lazy_dt(data))
+  info <- margin_column_info(
+    proxy,
+    dimensions = "group",
+    carried = c("key", "passthrough"),
+    backend = grouping_backend(dtplyr::lazy_dt(data))
+  )
+
+  encode <- vapply(info$factors, function(x) x$encode_missing_label, logical(1))
+  names(encode) <- vapply(info$factors, function(x) x$col, character(1))
+  expect_setequal(names(encode), c("group", "key", "passthrough"))
+  expect_false(encode[["group"]])
+  expect_true(encode[["key"]])
+  expect_true(encode[["passthrough"]])
+  # Prototypes stand for the value an omitted dimension writes, and only a
+  # dimension is ever omitted, so widening the factor read leaves them alone.
+  expect_identical(names(info$prototypes), "group")
+})
+
 test_that("NA factor levels stay structural when collision checks are off", {
   with_na_level <- factor_contract_data(
     has_na_level = TRUE,

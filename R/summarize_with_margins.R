@@ -875,6 +875,12 @@ summarize_with_margins <- function(.data,
     .duplicates = .duplicates,
     .sort = .sort,
     duplicates_choices = margin_duplicates_choices,
+    # A summary result holds the grouping columns and the caller's outputs, so
+    # the fixed `.by` keys are the whole of what it carries from the input. A
+    # summary output is free to reuse another column's name, which is why this
+    # is not the input's column names narrowed to what the result happens to
+    # hold: that name would be rebuilt from the input column's levels.
+    carried_columns = function(data_vars, plan) plan$by,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
     call = call
