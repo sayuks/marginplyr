@@ -206,10 +206,13 @@ the note that established the correction, and holds the measurements.
 
 **"The abbreviation is dplyr's and not a marginplyr artefact."** Measured here
 on a long infix expression, and true of it. On the native adapter the label is
-truncated because `rewrite_grouping_dots()` splices in a `dbplyr` SQL literal
-whose deparse is multi-line, so `rlang::as_label()` answers `+...` for
-`grouping_bit(a)`'s rewrite on its own. The length of the caller's expression
-does not decide it there, and the truncation is marginplyr's.
+truncated because `rewrite_grouping_dots()` splices in a `dbplyr` `sql` object
+whose own `deparse()` is 59 characters, against the width of 60 at which
+`as_label()` deparses the whole expression. Anything spliced beside it
+therefore overflows to two lines and rlang replaces the call's arguments with
+`...`, so `sum(value) + <sql>` labels `+...` while the literal alone labels
+`<sql>`. The length of the caller's expression does not decide it there, and
+the truncation is marginplyr's.
 
 **"dplyr's label of one argument can never equal marginplyr's label of
 another."** That followed from `as_label()` emitting neither `+...` nor

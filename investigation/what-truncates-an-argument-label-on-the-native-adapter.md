@@ -85,12 +85,25 @@ And `rlang::as_label()` over the rewrite itself, in isolation:
 | `<sql literal> + 1` | `+...` |
 | `sum(value) + <sql literal>` | `+...` |
 
-So what truncates the label is that the rewrite splices in a SQL literal whose
-deparse is multi-line. The consequence is that native-path translation errors are
-unreadable across the board rather than in a long-expression corner: any dot
-combining a helper with anything else labels as `+...`, and the one case that
-escapes — a dot that is the helper alone — labels as `<sql>`, which names the
-caller's expression no better.
+What truncates the label is the size of the literal the rewrite splices in, not
+the size of the caller's expression around it. `grouping_sql_expr()` returns a
+`dbplyr` `sql` object, whose `deparse()` is the single 59-character line
+
+```
+structure("GROUPING(\"a\")", class = c("sql", "character"))
+```
+
+and `rlang:::deparse_one()`, which `as_label()` reaches, deparses the whole
+expression at a width of 60. The literal alone very nearly fills that budget, so
+`deparse(expr, 60L)` overflows to two lines for anything spliced beside it, and
+rlang re-deparses the call with its arguments replaced by `...`. Not the infix
+path: `rlang::expr_deparse(e, width = 60)` answers `sum(value) + <sql>` on one
+line, so `infix_overflows()` is `FALSE`.
+
+The consequence is that native-path translation errors are unreadable across the
+board rather than in a long-expression corner: any dot combining a helper with
+anything else labels as `+...`, and the one case that escapes — a dot that is the
+helper alone — labels as `<sql>`, which names the caller's expression no better.
 
 ## The span, marginplyr's own label, and uniqueness
 
@@ -169,7 +182,7 @@ named character(0)
 so dplyr's own quotation stands, which is the degradation ADR 0022 documents.
 Where the callers spelled them alike the entry is kept, the restoration being
 unique whichever dot dplyr meant — the rule the ADR body already states, read
-here off `R/conditions.R:390-397` rather than measured. A named dot carries
+here off `R/conditions.R:389-398` rather than measured. A named dot carries
 `name = ` into its label, so it shares a label with neither an unnamed dot nor a
 differently-named one.
 
