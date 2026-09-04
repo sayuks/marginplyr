@@ -1,12 +1,18 @@
 # `summaries` is `stage_margin_summaries()`'s, taken whole for the reason its
 # header gives, and read here for its labels as well as its dots.
+#
+# `call` is the Margin verb a Condition context is owed instead of the internal
+# `summarize()` this adapter issues; a caller that reaches this directly has
+# none to name and leaves the blamed call alone, as `summarize_margin_union()`
+# does.
 summarize_margin_native <- function(.data,
                                     summaries,
                                     plan,
                                     margin_labels,
                                     reserved_names,
                                     set_id_name = NULL,
-                                    set_id_is_internal = FALSE) {
+                                    set_id_is_internal = FALSE,
+                                    call = NULL) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
     summaries$dots,
@@ -60,10 +66,19 @@ summarize_margin_native <- function(.data,
   # error is the whole of what ADR 0022 restates in this adapter. The call is
   # forced out of the check's lazy argument so that the check's own Package
   # conditions stay outside the catch.
+  #
+  # The blamed call is rewritten alongside the argument, both being parts of
+  # one Condition context (CONTEXT.md). It is assigned after the restatement
+  # rather than inside it, because that function returns the condition
+  # untouched when the map is empty.
   output_names <- tryCatch(
     native_summary_output_names(.data, dots),
     error = function(cnd) {
-      stop(restate_condition_arguments(cnd, restatements))
+      cnd <- restate_condition_arguments(cnd, restatements)
+      if (!is.null(call)) {
+        cnd$call <- call
+      }
+      stop(cnd)
     }
   )
   check_summary_output_names(

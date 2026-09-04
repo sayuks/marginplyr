@@ -1035,7 +1035,8 @@ stage_margin_summaries <- function(operation,
           margin_labels = operation$margin_labels,
           reserved_names = reserved_names,
           set_id_name = set_id_name,
-          set_id_is_internal = set_id_is_internal
+          set_id_is_internal = set_id_is_internal,
+          call = operation$call
         )
       } else {
         summarize_margin_union(

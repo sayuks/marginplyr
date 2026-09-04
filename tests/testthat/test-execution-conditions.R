@@ -755,6 +755,26 @@ test_that("a native translation error quotes the caller's own spelling", {
   expect_s3_class(error$parent, "condition")
 })
 
+# The other half of the Condition context on this path (#432). The adapter
+# catches dbplyr's error to restate its argument, and the call it arrived with
+# is the internal `summarize()` the adapter issued over `.data` and `dots` --
+# names the caller never wrote. Asserted on the rendered call rather than on
+# its name alone, because the name a bare `dplyr::summarize()` carries is not
+# what a caller reads: an error header prints the whole call.
+test_that("a native translation error blames the Margin verb", {
+  error <- expect_error(native_translation_failure())
+
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
+  )
+  expect_false(grepl(
+    "dots",
+    paste(deparse(conditionCall(error)), collapse = " "),
+    fixed = TRUE
+  ))
+})
+
 test_that("a native label two dots share is left as dplyr wrote it", {
   error <- expect_error(native_shared_label_failure())
 
