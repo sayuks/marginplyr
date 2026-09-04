@@ -43,9 +43,14 @@ new_margin_operation <- function(data,
 # resolves in the aggregate query alone, and dbplyr discards the ordering of
 # any query it goes on to wrap in a subquery — which labelling the omitted
 # dimensions and placing the grouping columns both do.
-new_margin_execution <- function(result, sort_id = NULL) {
+#
+# `factor_info` is the columns the finalizer can still reach, and `NULL` says
+# every column the operation named. Only an executor that puts a column
+# somewhere the finalizer cannot `mutate()` reports one: nesting folds its
+# payload into a cell and rebuilds it there (#421).
+new_margin_execution <- function(result, sort_id = NULL, factor_info = NULL) {
   structure(
-    list(result = result, sort_id = sort_id),
+    list(result = result, sort_id = sort_id, factor_info = factor_info),
     class = "marginplyr_margin_execution"
   )
 }
@@ -342,9 +347,13 @@ finalize_margin_operation <- function(operation, execution) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
   result <- dplyr::ungroup(execution$result)
+  factor_info <- execution$factor_info
+  if (is.null(factor_info)) {
+    factor_info <- operation$column_info$factors
+  }
   result <- restore_margin_factors(
     result,
-    factor_info = operation$column_info$factors,
+    factor_info = factor_info,
     margin_labels = operation$margin_labels,
     position = operation$margin_label_position
   )

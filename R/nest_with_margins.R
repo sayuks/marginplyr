@@ -267,14 +267,6 @@ nest_margin_pipeline <- function(.data,
     .key = .key,
     .keep = .keep
   )
-  # The payload columns are inside a cell by now and rebuilt already, so the
-  # finalizer is handed the columns it can still reach. `mutate()` on one of
-  # the others would name a column the result no longer has.
-  outer_cols <- c(operation$plan$by, operation$plan$dimensions)
-  operation$column_info$factors <- Filter(
-    function(info) info$col %in% outer_cols,
-    operation$column_info$factors
-  )
   finalize_margin_operation(operation, execution)
 }
 
@@ -362,16 +354,22 @@ execute_margin_nest <- function(operation, .key, .keep) {
       # own; the identifier is retained past the nest and dropped once the
       # finalizer has ordered by it.
       sorting <- margin_sorting(operation)
+      # One split, read by both halves: what is folded into a cell is rebuilt
+      # here, and what stays a column of its own is what the finalizer is left.
+      # Deriving the two separately would let them drift into a finalizer that
+      # rebuilds a column the fold has taken away, or skips one it kept.
+      folded <- vapply(
+        column_info$factors,
+        function(info) !(info$col %in% group_cols),
+        logical(1)
+      )
       # Before the fold, because that is the last point a payload column is a
       # column. The union has already turned the values on a declared NA level
       # into missing, so rebuilding inside the cell would restore the level
       # with nothing left on it (#421).
       expanded <- restore_margin_factors(
         expanded,
-        factor_info = Filter(
-          function(info) !(info$col %in% group_cols),
-          column_info$factors
-        ),
+        factor_info = column_info$factors[folded],
         margin_labels = operation$margin_labels,
         position = operation$margin_label_position
       )
@@ -385,7 +383,8 @@ execute_margin_nest <- function(operation, .key, .keep) {
           .keep = .keep,
           drop_set_col = is.null(operation$set_id_name) && !sorting
         ),
-        sort_id = if (sorting) set_col else NULL
+        sort_id = if (sorting) set_col else NULL,
+        factor_info = column_info$factors[!folded]
       )
     },
     call = operation$call

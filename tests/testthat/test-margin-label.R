@@ -418,17 +418,26 @@ na_level_nested_data <- function(ordered = FALSE, na_level_group = FALSE) {
 }
 
 # Rows are one per Grouping set member and ADR 0018 leaves their order to the
-# backend, so the cells are paired by the outer column's integer code, which is
-# distinct per row in every case below. Reading the code rather than the
-# displayed value is also what keeps a value on the NA level apart from a
-# margin row's typed missing, which `as.character()` spells the same way.
+# backend, so the cells are paired by the integer codes of `outer`, which name
+# together as many columns as it takes for the tuple to be distinct per row.
+# Reading the code rather than the displayed value is also what keeps a value
+# on the NA level apart from a margin row's typed missing, which
+# `as.character()` spells the same way.
 nest_cells <- function(result, outer, .key = "data") {
-  lapply(result[[.key]][order(as.integer(result[[outer]]))], as.data.frame)
+  keys <- lapply(outer, function(col) as.integer(result[[col]]))
+  lapply(result[[.key]][do.call(order, keys)], as.data.frame)
 }
 
-# By integer code for the reason `expect_passthrough_agrees()` gives, with
-# `na.last` because `sort()` drops the missing a lost level leaves behind --
-# the one difference the assertion exists to catch.
+# Rows within a cell are put in `value` order, which is distinct per source row
+# in every fixture here, so the codes are compared position by position rather
+# than as a multiset: what is asserted is which row lost the level and not how
+# many did. The order a backend returns rows in is its own (ADR 0018), so
+# sorting by a column of the data is what makes the comparison meaningful.
+#
+# The integer code for the reason `expect_passthrough_agrees()` gives, and it
+# is strictly stronger than comparing `is.na()`: a value on the NA level has a
+# code and a typed missing has none, so code identity carries the missingness
+# pattern and separates the two readings `as.character()` spells alike.
 expect_cell_column_agrees <- function(result,
                                       expected,
                                       outer,
@@ -438,15 +447,13 @@ expect_cell_column_agrees <- function(result,
   expected_cells <- nest_cells(expected, outer)
   expect_identical(length(result_cells), length(expected_cells))
   for (i in seq_along(result_cells)) {
-    got <- result_cells[[i]][[col]]
-    want <- expected_cells[[i]][[col]]
+    got <- result_cells[[i]]
+    want <- expected_cells[[i]]
+    got <- got[order(got$value), ][[col]]
+    want <- want[order(want$value), ][[col]]
     expect_identical(levels(got), expected_levels, info = as.character(i))
     expect_identical(levels(got), levels(want), info = as.character(i))
-    expect_identical(
-      sort(as.integer(got), na.last = TRUE),
-      sort(as.integer(want), na.last = TRUE),
-      info = as.character(i)
-    )
+    expect_identical(as.integer(got), as.integer(want), info = as.character(i))
   }
 }
 
@@ -528,6 +535,55 @@ test_that(".keep = TRUE keeps a used NA level on a nested grouping copy", {
     result,
     expected,
     "group",
+    "passthrough",
+    c("a", NA)
+  )
+})
+
+test_that("nest_by_with_margins keeps a used NA level with .keep = TRUE", {
+  skip_if_suggest_absent("dtplyr")
+  data <- na_level_nested_data(na_level_group = TRUE)
+  operation <- function(input) {
+    nest_by_with_margins(input, .grouping = rollup(group), .keep = TRUE)
+  }
+
+  result <- operation(dtplyr::lazy_dt(data))
+  expected <- operation(data)
+  expect_identical(levels(result$group), c("g1", NA, "Total"))
+  expect_cell_column_agrees(result, expected, "group", "group", c("g1", NA))
+  expect_cell_column_agrees(
+    result,
+    expected,
+    "group",
+    "passthrough",
+    c("a", NA)
+  )
+})
+
+test_that(".keep = TRUE keeps a used NA level on a nested .by key copy", {
+  skip_if_suggest_absent("dtplyr")
+  data <- na_level_nested_data()
+  operation <- function(input) {
+    nest_with_margins(
+      input,
+      .by = passthrough,
+      .grouping = rollup(group),
+      .keep = TRUE
+    )
+  }
+
+  result <- dplyr::collect(operation(dtplyr::lazy_dt(data)))
+  expected <- operation(data)
+  # A fixed `.by` key is a grouping column, so the payload rebuild passes it
+  # over and it reaches the cell through the `.keep` copy instead -- the one
+  # route the tests above leave to the dimension case. It takes no Margin label
+  # at either site.
+  expect_identical(levels(result$passthrough), c("a", NA))
+  expect_identical(levels(result$passthrough), levels(expected$passthrough))
+  expect_cell_column_agrees(
+    result,
+    expected,
+    c("passthrough", "group"),
     "passthrough",
     c("a", NA)
   )
