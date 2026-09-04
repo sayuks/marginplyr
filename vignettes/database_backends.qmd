@@ -63,9 +63,8 @@ has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_arrow <- marginplyr_suggest_available("arrow")
 
-# Chunks marked with `must_error` show a call that is meant to fail, so the
-# reader sees the real diagnostic rather than a quotation of one. AGENTS.md is
-# authoritative for what the option does and why it exists.
+# Installs the `must_error` chunk option this document's rejected-call chunks
+# use. AGENTS.md is authoritative for what it does and why it exists.
 source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
 ```
 
