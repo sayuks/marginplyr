@@ -2,17 +2,19 @@
 # header gives, and read here for its labels as well as its dots.
 #
 # `call` is the Margin verb a Condition context is owed instead of the internal
-# `summarize()` this adapter issues; a caller that reaches this directly has
-# none to name and leaves the blamed call alone, as `summarize_margin_union()`
-# does.
+# `summarize()` this adapter issues. It has no default, unlike
+# `summarize_margin_union()`'s, because the executor is this adapter's only
+# caller: a default would stand for a caller that does not exist, and an
+# optional argument nothing omits is one the reader has to establish is never
+# omitted.
 summarize_margin_native <- function(.data,
                                     summaries,
                                     plan,
                                     margin_labels,
                                     reserved_names,
+                                    call,
                                     set_id_name = NULL,
-                                    set_id_is_internal = FALSE,
-                                    call = NULL) {
+                                    set_id_is_internal = FALSE) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
     summaries$dots,
@@ -70,14 +72,12 @@ summarize_margin_native <- function(.data,
   # The blamed call is rewritten alongside the argument, both being parts of
   # one Condition context (CONTEXT.md). It is assigned after the restatement
   # rather than inside it, because that function returns the condition
-  # untouched when the map is empty.
+  # untouched when the map is empty, and this half is owed either way.
   output_names <- tryCatch(
     native_summary_output_names(.data, dots),
     error = function(cnd) {
       cnd <- restate_condition_arguments(cnd, restatements)
-      if (!is.null(call)) {
-        cnd$call <- call
-      }
+      cnd$call <- call
       stop(cnd)
     }
   )
