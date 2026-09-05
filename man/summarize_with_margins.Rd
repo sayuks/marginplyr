@@ -436,10 +436,16 @@ complete grouping plan. This extends dplyr's grouping-column rule across
 every branch: a dimension remains excluded even in a grouping set from
 which it is omitted.
 
+Where an unnamed summary's value is a data frame, a local input expands its
+columns into the result, exactly as \code{\link[dplyr:summarize]{dplyr::summarize()}} does, and a name
+marginplyr assigned such a summary does not appear. Writing a name of your
+own packs those columns into a single column under it, again as dplyr does.
+A lazy input gives whatever shape its own backend gives.
+
 Summary results may not overwrite a fixed key or grouping dimension,
 including through an unnamed data-frame-valued summary, whose columns dplyr
-unpacks to the top level. A named one is checked by its own name alone,
-because dplyr packs its columns into the single column that name gives.
+unpacks to the top level. One you named is checked by that name alone,
+because dplyr packs its columns into the single column the name gives.
 The local dplyr backend can overwrite an existing variable and reuse a newly
 created summary in a later expression, but other backends may not.
 marginplyr rejects grouping key overwrites so that grouping identity and

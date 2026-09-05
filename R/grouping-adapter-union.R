@@ -477,6 +477,18 @@ summarize_margin_union <- function(.data,
         result <- dplyr::rename(result, !!!rename_pairs)
       }
 
+      # After the rename and before the labelling: the grouping columns are
+      # under their own names by here, and the label and identifier columns
+      # the checks below would have to be told to ignore are not there yet.
+      # ADR 0028 is what expands.
+      result <- expand_assigned_data_frames(
+        result,
+        assigned_names = summaries$assigned_names,
+        group_vars = group_vars,
+        set_id_name = set_id_name,
+        set_id_is_internal = set_id_is_internal
+      )
+
       result <- label_margin_branch(
         result,
         plan = plan,
