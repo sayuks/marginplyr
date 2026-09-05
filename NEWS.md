@@ -168,6 +168,17 @@
   `nrow(pick(v, w))` is a question about the value's type rather than about how
   it is spelled, so give either one a name of your own where you want the
   columns expanded or packed regardless (#430, #435).
+* A data-frame-valued summary you gave a name to is no longer read for the
+  names it packs. `s = tibble(group = sum(value))`, `s = across(value, mean,
+  .names = "group")`, and `s = pick(value)` each produce one column called `s`,
+  because dplyr packs a named data-frame result rather than unpacking it, so
+  the argument names inside them cannot overwrite a grouping column or collide
+  with `.id`; they were refused for those collisions anyway. `across(.unpack =)`
+  renames within the packed column and is reached the same way. The unnamed
+  forms are unpacked to the top level and stay refused, as is a named one
+  colliding by its own name. A backend that unpacks a named result rather than
+  packing it — Arrow, for `across()` — is refused after its branch runs, with
+  the diagnostic the local backend gives.
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across
@@ -272,9 +283,12 @@
   whose own text spells the line dplyr writes to point at
   `dplyr::last_dplyr_warnings()`, while warnings that differ from each other
   are still reported one by one. Only that context changes: the class, the
-  diagnostic, and the cause you receive are the ones raised. A lazy input is
-  unaffected, because its summary expressions run when you collect the result
-  rather than while the verb runs (#141, #108).
+  diagnostic, and the cause you receive are the ones raised. A lazy input
+  raises most of these when you collect the result rather than while the verb
+  runs, so they are yours to receive and not the verb's to restate; the one
+  exception is an expression the database cannot be given at all, which is
+  refused while the verb runs and is quoted and blamed the same way
+  (#141, #108, #411, #432).
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns. `.keep = TRUE` retains original pre-margin key values,
   and nesting rejects duplicate sets with `.duplicates = "keep"` because

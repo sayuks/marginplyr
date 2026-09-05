@@ -1355,6 +1355,38 @@ test_that("native adapters reject summary outputs on their own columns", {
   expect_s3_class(id_error, "marginplyr_error")
 })
 
+test_that("Arrow's unpacked named across is caught after the branch runs", {
+  skip_if_suggest_absent("arrow")
+
+  # `known_summary_output_names()` skips a named dot because dplyr packs a
+  # data-frame result under the name (#431). Arrow does not: it returns a
+  # top-level `group` here and discards `s`, so the pre-execution check sees
+  # only `s` and the adapter's result-name check is the whole of what refuses
+  # this. The local answer is the contract, so it is read here rather than
+  # restated.
+  data <- shadowed_summary_data()
+  local_error <- expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(value, mean, .names = "group"),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  arrow_error <- expect_error(
+    summarize_with_margins(
+      arrow::as_arrow_table(data),
+      s = dplyr::across(value, mean, .names = "group"),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_identical(
+    conditionMessage(arrow_error),
+    conditionMessage(local_error)
+  )
+})
+
 test_that("native adapters keep unpredictable names that collide with none", {
   data <- shadowed_summary_data()
   dots <- unpredictable_summary_dots("total", .names = NULL)
