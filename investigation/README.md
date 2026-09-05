@@ -101,10 +101,13 @@ overturned.
 1. Add one line to the header block:
 
    ```text
-   Revised: <YYYY-MM-DD> — investigation/<successor>.md
+   Revised: <YYYY-MM-DD> — <what established the correction>
    ```
 
-   one per revision, in date order after `Investigated:`.
+   one per revision, in date order after `Investigated:`. What follows the dash
+   is what step 2 names — usually `investigation/<successor>.md`, and the
+   artifact where the correction was established in code or configuration
+   rather than in another note.
 
 2. Add a section headed `## Revisions (<YYYY-MM-DD>)`, placed after the
    findings it amends, stating what changed and why. Name the note or artifact

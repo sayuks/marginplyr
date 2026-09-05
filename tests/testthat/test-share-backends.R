@@ -204,10 +204,10 @@ test_that("dtplyr integer and double Parent shares match local results", {
   expect_type(result$double_share, "double")
 })
 
-# #446 put an expression in the branch that builds no ratio, on every backend
-# rather than on the SQL kinds alone, so data.table is asked to translate it
-# too. What is at risk here is the value: the refusal below is the local
-# eligible-type check, which dtplyr reaches before any share is built.
+# The branch that builds no ratio is not conditioned on backend kind, so
+# data.table translates the same expression the SQL kinds send (#446). What is
+# at risk here is the value: the refusal below is the local eligible-type
+# check, which dtplyr reaches before any share is built.
 test_that("dtplyr Total shares needing no join match local results", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(
