@@ -257,9 +257,10 @@ ratio: when a Grouping plan gives every occurrence its own denominator, share
 construction returns before any denominator is mapped or joined, and nothing in
 the staged query then referenced the source at all. A refusing dialect was
 never asked to bind it, so DuckDB answered `1` for a character source that the
-local path refuses. This section measures that path and the expression now
-placed in it; nothing above is overturned, because no measurement above reaches
-a share with no denominator.
+local path refused. This section measures that path and the expression put in
+it on this date; nothing above is overturned, because no measurement above
+reaches a share with no denominator. `R/share.R` is authoritative for what the
+package sends.
 
 Measured on 2026-09-05 against R 4.6.1, dplyr 1.2.1, dbplyr 2.6.0, duckdb
 1.5.5, RSQLite 3.53.3, dtplyr 1.3.3, and data.table 1.18.6.1, with marginplyr
@@ -292,19 +293,18 @@ DuckDB over a `VARCHAR` holding `'1','2','3'` and one holding `'1','2','n'`:
 Each refused at binding, value-independently, reporting
 `'*(VARCHAR, INTEGER_LITERAL)'` — the same operand pair *A substitution, not an
 addition* recorded, so this rests on the same 20-of-24 result and adds no
-dialect behaviour to it. The first is what `dplyr::if_else()` renders, and it is
-the form taken: the condition is an `IS NULL`, which SQL never answers with
-`NULL`, so neither arm can be skipped and the value stays exactly `1.0`. dbplyr
-rendered it without an `ELSE`, as
-`CASE WHEN ((total * 1) IS NULL) THEN 1.0 WHEN NOT ((total * 1) IS NULL) THEN 1.0 END`,
-which is why that property is what the branch rests on rather than a
-convenience.
+dialect behaviour to it. The first is what `dplyr::if_else()` rendered, and
+dbplyr rendered it without an `ELSE`, as
+`CASE WHEN ((total * 1) IS NULL) THEN 1.0 WHEN NOT ((total * 1) IS NULL) THEN 1.0 END`.
+So what kept the value at exactly `1.0` was that the condition is an `IS NULL`,
+which SQL never answers with `NULL`: neither arm could be skipped, and no third
+value could come from the missing `ELSE`.
 
 Over eligible sources on DuckDB — a double, a zero, an all-`NA` double, and an
 integer — every share was `1` of type double.
 
-**`.check_share_source = FALSE` does not relax it.** With the flag set, the
-local path still refused a character source (its type check does not read the
-argument) and DuckDB still failed at collection. The flag suppresses the
-converting-dialect verdict refusal only, which is what it already did for the
+**`.check_share_source = FALSE` relaxed nothing here.** With the flag set, the
+local path still refused a character source — its type check did not read the
+argument — and DuckDB still failed at collection. The flag suppressed the
+converting-dialect verdict refusal alone, which is what it already did for the
 ratio.

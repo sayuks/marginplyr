@@ -110,6 +110,13 @@ overturned.
    findings it amends, stating what changed and why. Name the note or artifact
    that established the correction.
 
+   A second revision on a date the note already carries writes the issue
+   number into both — `Revised: <YYYY-MM-DD> (#<issue>) — <target>` and
+   `## Revisions (<YYYY-MM-DD>, #<issue>)` — so that a header line names one
+   section. Without it a reader has two entries and two sections and no way to
+   pair them, which is what `refusing-a-character-share-source-in-the-staged-query.md`
+   reached the day it was written: two investigations, one date, one target.
+
 3. Leave the original findings in place, unedited. The point of the note is
    what was believed on its date; deleting the superseded text destroys the
    only record of that.

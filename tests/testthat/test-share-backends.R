@@ -204,6 +204,55 @@ test_that("dtplyr integer and double Parent shares match local results", {
   expect_type(result$double_share, "double")
 })
 
+# #446 put an expression in the branch that builds no ratio, on every backend
+# rather than on the SQL kinds alone, so data.table is asked to translate it
+# too. What is at risk here is the value: the refusal below is the local
+# eligible-type check, which dtplyr reaches before any share is built.
+test_that("dtplyr Total shares needing no join match local results", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    integer_value = 1:3,
+    double_value = c(0.5, 1.5, 4),
+    missing_value = rep(NA_real_, 3L),
+    zero_value = c(0, 0, 0),
+    character_value = c("1", "2", "3")
+  )
+  # No `.grouping`, so the only occurrence is the Grand total set and every
+  # share is its own denominator.
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      integer_total = sum(integer_value),
+      double_total = sum(double_value),
+      missing_total = sum(missing_value),
+      zero_total = sum(zero_value),
+      integer_share = share_of_total(integer_total),
+      double_share = share_of_total(double_total),
+      missing_share = share_of_total(missing_total),
+      zero_share = share_of_total(zero_total)
+    )
+  }
+
+  expected <- summarize(data)
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  result <- dplyr::collect(query)
+  expect_equal(as.data.frame(result), as.data.frame(expected))
+  for (share in c("integer", "double", "missing", "zero")) {
+    expect_identical(result[[paste0(share, "_share")]], 1, info = share)
+  }
+
+  expect_error(
+    dplyr::collect(summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      total = max(character_value),
+      whole = share_of_total(total)
+    )),
+    "plain integer or double scalar"
+  )
+})
+
 test_that("dtplyr validates each referenced source expanded by across", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(

@@ -2672,11 +2672,12 @@ apply_joined_shares <- function(result,
       source <- pair$source
       denominator <- denominator_names[[source]]
       if (length(joined_ids) == 0L) {
-        # This branch builds no ratio, so this expression is the only thing
-        # binding the source's type, which is what a refusing dialect rejects a
-        # character source by (#446). Both arms are `1.0` and `is.na()` answers
-        # every value, so the constant this branch has always produced is
-        # unchanged for an eligible source.
+        # No denominator was joined, so nothing else in the staged query names
+        # the source: this is what binds it there, for the reason the ratio's
+        # own `* 1L` below gives (#446). Both arms are the constant this branch
+        # has always produced, and the condition is an `IS NULL`, which SQL
+        # never answers with `NULL`, so no third value leaks from the `CASE`
+        # dbplyr renders without an `ELSE`.
         return(rlang::expr(
           dplyr::if_else(
             is.na((!!margin_column_pronoun(source)) * 1L),
