@@ -1068,11 +1068,8 @@ stage_margin_summaries <- function(operation,
     }
   )
   # The adapters check against the identifier they were handed, which is the
-  # allocated one wherever the two branches above replaced the caller's. Every
-  # name they can see was checked against the caller's `.id` before execution
-  # -- except the ones an expansion puts there (ADR 0028), which no static
-  # reading could predict. Left unasked, the caller's `.id` overwrites such a
-  # column when it is renamed back onto the result.
+  # allocated one wherever the two branches above replaced the caller's, so
+  # this is the frame that can still ask the caller's own (ADR 0028).
   if (set_id_is_internal) {
     check_margin_id_collision(
       operation$set_id_name,

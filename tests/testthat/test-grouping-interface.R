@@ -1376,10 +1376,9 @@ test_that("an expanded inner name is checked against an internal identifier", {
   )
 })
 
-# The same share, against the other identifier: `.id` is the caller's own here,
-# and the adapter was handed the allocated one in its place, so the adapter
-# cannot ask this. Unasked, the caller's `.id` is renamed onto the expanded
-# column and the summary is lost rather than refused.
+# The same share, against the other identifier: the adapter was handed the
+# allocated one in the caller's `.id`'s place, so `stage_margin_summaries()`
+# is what asks this one.
 test_that("an expanded inner name is checked against a replaced `.id`", {
   data <- data.frame(
     g1 = c("a", "a", "b"),
