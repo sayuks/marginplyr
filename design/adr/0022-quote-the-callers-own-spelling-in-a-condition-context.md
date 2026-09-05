@@ -341,9 +341,8 @@ callers now spell one expression two ways where it abbreviates — which is what
 the sections above already describe as the label matching nothing and the
 quotation standing.
 
-What the option's disappearance would cost is a silent return to the old
-spelling, and the test is written against that rather than against a string:
-it computes both the assigned name and `dplyr::summarize()`'s own name for the
-same expression, and asserts separately that the expression is still one the
-two labellers disagree about. An rlang that dropped the option fails the first;
-one that stopped abbreviating at that width fails the second.
+Depending on an undocumented option in another package is the cost, and it is
+paid rather than avoided: the alternative is a name that is dplyr's only until
+an expression grows long, which is the defect itself. An rlang that dropped the
+option would put that name back, and the tests are written against dplyr's own
+naming rather than against a spelling, so it would not go unreported.

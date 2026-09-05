@@ -346,8 +346,9 @@ report_branch_warnings <- function(conditions) {
 # The label dplyr quotes an argument by, reproduced so that the expression
 # marginplyr handed it can be recognised in a context it rendered. Plain
 # `rlang::as_label()` under dplyr's `name = ` convention is what this uses,
-# rather than dplyr's `expr_as_label()`; ADR 0022 is authoritative for where
-# the two diverge and for why neither divergence is observable.
+# rather than dplyr's `expr_as_label()`. What this site writes is a condition
+# label, and that is what ADR 0022 decides; a name a caller reads back falls
+# the other way, under the same ADR's amendment for #439.
 summary_argument_labels <- function(dots) {
   arg_names <- names(dots)
   if (is.null(arg_names)) {

@@ -1205,16 +1205,13 @@ test_that("an unnamed summary is named from the caller's own expression", {
   expect_true("sum(v) + grouping_bit(a)" %in% colnames(native))
 })
 
-# #439. The name is dplyr's or it is nothing, and an expression long enough for
-# rlang to abbreviate is where the two labellers part: dplyr suppresses rlang's
-# infix labelling, so `+...` where plain `rlang::as_label()` writes `... + 5`.
-# Both sides are computed here rather than written out, so what the assertion
-# holds is the equality and not a spelling.
+# #439. Both names are computed here rather than written out, so what the
+# assertion holds is the equality with dplyr's own and not a spelling.
 #
-# `expect_false` beside each is what keeps the case from going vacuous. Every
-# other assigned name in this file is short enough that both labellers agree, so
-# an expression that stopped abbreviating would pass the equality while
-# asserting nothing about the divergence it was written for.
+# `expect_false` is what keeps the case from going vacuous. Every other assigned
+# name in this file is short enough that the two labellers agree, so an
+# expression that stopped abbreviating would pass the equality while asserting
+# nothing about the divergence it was written for.
 test_that("an assigned name abbreviates the way dplyr's does", {
   data <- data.frame(g = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
   # `dplyr::summarize()` evaluates what it names, so the Grouping helper is
@@ -1223,44 +1220,34 @@ test_that("an assigned name abbreviates the way dplyr's does", {
   # its own rewrite untouched.
   grouping_bit <- function(...) 0L
 
-  selected <- rlang::expr(
-    sum(dplyr::pick(x)[[1]]) + 1 + sum(y) + 2 + mean(x) + 3 + mean(y) + 4 +
-      stats::median(x) + 5
-  )
-  helped <- rlang::expr(
-    sum(x) + 1 + sum(y) + 2 + mean(x) + 3 + mean(y) + 4 + max(x) +
-      grouping_bit(g)
-  )
-  dplyr_name <- function(expr) {
-    setdiff(names(dplyr::summarize(data, !!expr, .by = g)), "g")
+  # Both adapters, the native one over a simulated connection so that the case
+  # runs wherever the suite does.
+  expect_dplyr_name <- function(expr) {
+    dplyr_name <- setdiff(names(dplyr::summarize(data, !!expr, .by = g)), "g")
+    expect_false(dplyr_name == rlang::as_label(expr))
+    expect_equal(
+      setdiff(
+        names(summarize_with_margins(data, !!expr, .grouping = rollup(g))),
+        "g"
+      ),
+      dplyr_name
+    )
+    native <- summarize_with_margins(
+      dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres()),
+      !!expr,
+      .grouping = rollup(g)
+    )
+    expect_equal(setdiff(colnames(native), "g"), dplyr_name)
   }
 
-  expect_false(dplyr_name(selected) == rlang::as_label(selected))
-  expect_equal(
-    setdiff(
-      names(summarize_with_margins(data, !!selected, .grouping = rollup(g))),
-      "g"
-    ),
-    dplyr_name(selected)
-  )
-
-  expect_false(dplyr_name(helped) == rlang::as_label(helped))
-  expect_equal(
-    setdiff(
-      names(summarize_with_margins(data, !!helped, .grouping = rollup(g))),
-      "g"
-    ),
-    dplyr_name(helped)
-  )
-
-  # The native adapter receives the named dots too, over a simulated connection
-  # so that the case runs wherever the suite does.
-  native <- summarize_with_margins(
-    dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres()),
-    !!helped,
-    .grouping = rollup(g)
-  )
-  expect_true(dplyr_name(helped) %in% colnames(native))
+  expect_dplyr_name(rlang::expr(
+    sum(dplyr::pick(x)[[1]]) + 1 + sum(y) + 2 + mean(x) + 3 + mean(y) + 4 +
+      stats::median(x) + 5
+  ))
+  expect_dplyr_name(rlang::expr(
+    sum(x) + 1 + sum(y) + 2 + mean(x) + 3 + mean(y) + 4 + max(x) +
+      grouping_bit(g)
+  ))
 })
 
 test_that("an unnamed summary is named before a selection is resolved", {
