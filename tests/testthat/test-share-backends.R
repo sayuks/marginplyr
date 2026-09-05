@@ -1630,6 +1630,76 @@ test_that("DuckDB refuses a character share source whatever it holds", {
   }
 })
 
+# #446. The plan below gives every occurrence its own denominator, so no
+# denominator is joined and the share is built as a constant. The refusal here
+# is therefore of the expression that branch emits for the sole purpose of
+# binding the source, and not of the ratio `DuckDB refuses a character share
+# source whatever it holds` covers. Only a Total share reaches it: a Parent
+# share requires a rollup, and every rollup gives some occurrence a parent.
+test_that("DuckDB refuses a character source for a share that needs no join", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    numeric_looking = c("1", "2", "3"),
+    non_numeric = c("n", "m", "o"),
+    revenue = c(1, 2, 4),
+    zero = c(0, 0, 0),
+    missing = rep(NA_real_, 3L)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_whole_character_duckdb_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  # `.grouping` is left absent so that the shape under test is the default one
+  # a Total share takes, rather than a spelling of it.
+  summarize <- function(source, column, ...) {
+    summarize_with_margins(
+      source,
+      total = max(!!rlang::sym(column)),
+      whole = share_of_total(total),
+      .by = region,
+      ...
+    )
+  }
+
+  # Runs first for the reason the joined refusal's does: the errors below are
+  # read for their class alone, so without an eligible collection a dropped
+  # table would satisfy them.
+  for (column in c("revenue", "zero", "missing")) {
+    eligible <- dplyr::collect(summarize(remote, column))
+    expect_type(eligible$whole, "double")
+    expect_identical(eligible$whole, rep(1, nrow(eligible)), info = column)
+  }
+
+  for (column in c("numeric_looking", "non_numeric")) {
+    expect_error(
+      summarize(data, column),
+      "plain integer or double scalar",
+      info = column
+    )
+    query <- summarize(remote, column)
+    expect_s3_class(query, "tbl_lazy")
+    error <- expect_error(dplyr::collect(query), info = column)
+    expect_false(inherits(error, "marginplyr_error"), info = column)
+
+    # `.check_share_source = FALSE` governs the dialect-verdict refusal only,
+    # so it does not relax the eligible-type rule on either path.
+    expect_error(
+      summarize(data, column, .check_share_source = FALSE),
+      "plain integer or double scalar",
+      info = column
+    )
+    relaxed <- summarize(remote, column, .check_share_source = FALSE)
+    expect_s3_class(relaxed, "tbl_lazy")
+    expect_error(dplyr::collect(relaxed), info = column)
+  }
+})
+
 test_that("DuckDB Parent shares agree across native, portable, local paths", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

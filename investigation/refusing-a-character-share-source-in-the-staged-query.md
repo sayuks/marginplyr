@@ -2,6 +2,7 @@
 
 Investigated: 2026-09-05
 Revised: 2026-09-05 — `R/share.R`
+Revised: 2026-09-05 (#446) — `R/share.R`
 
 `investigation/share-source-eligibility-on-coercing-dialects.md` (2026-08-16)
 established that a dialect can be asked whether it converts a non-numeric value
@@ -248,3 +249,62 @@ Nothing above is overturned. Which operations each dialect refused for a
 character column stands, and every form measured made DuckDB and PostgreSQL
 refuse a character source value-independently; what these measurements settled
 is which of them is safe for the numeric sources that must keep working.
+
+## Revisions (2026-09-05, #446)
+
+Everything above measures the *ratio*. #446 found the path that builds no
+ratio: when a Grouping plan gives every occurrence its own denominator, share
+construction returns before any denominator is mapped or joined, and nothing in
+the staged query then referenced the source at all. A refusing dialect was
+never asked to bind it, so DuckDB answered `1` for a character source that the
+local path refuses. This section measures that path and the expression now
+placed in it; nothing above is overturned, because no measurement above reaches
+a share with no denominator.
+
+Measured on 2026-09-05 against R 4.6.1, dplyr 1.2.1, dbplyr 2.6.0, duckdb
+1.5.5, RSQLite 3.53.3, dtplyr 1.3.3, and data.table 1.18.6.1, with marginplyr
+loaded from the working tree via `pkgload::load_all()`.
+
+**Which plans reach it.** A Total share reaches the branch whenever every
+occurrence's variable part is empty. All six combinations of `.grouping` absent,
+`grouping_sets(grouping_set())`, and two empty sets under
+`.duplicates = "keep"`, each with and without `.by`, reached it. A **Parent
+share cannot**: `share_of_parent()` requires `.grouping` to be one pure
+`rollup()`, every rollup has at least one dimension, and every such plan gives
+some occurrence a parent. Both empty-set spellings were refused by that
+grouping check before any share was built.
+
+**Which backends had the gap.** The local path and dtplyr both refused a
+character source with the eligible-type diagnostic, from the result and before
+any share expression. RSQLite refused the call whatever the source held —
+including an eligible one — because the dialect verdict is what refuses it
+there. The gap was general dbplyr on a refusing dialect alone.
+
+**What binds the source without changing the value.** Three forms were run on
+DuckDB over a `VARCHAR` holding `'1','2','3'` and one holding `'1','2','n'`:
+
+| SQL | numeric-looking | non-numeric |
+|---|---|---|
+| `CASE WHEN (c*1) IS NULL THEN 1.0 ELSE 1.0 END` | Binder Error | Binder Error |
+| `1.0 + 0 * (c*1)` | Binder Error | Binder Error |
+| `MAX(c*1) IS NULL` | Binder Error | Binder Error |
+
+Each refused at binding, value-independently, reporting
+`'*(VARCHAR, INTEGER_LITERAL)'` — the same operand pair *A substitution, not an
+addition* recorded, so this rests on the same 20-of-24 result and adds no
+dialect behaviour to it. The first is what `dplyr::if_else()` renders, and it is
+the form taken: the condition is an `IS NULL`, which SQL never answers with
+`NULL`, so neither arm can be skipped and the value stays exactly `1.0`. dbplyr
+rendered it without an `ELSE`, as
+`CASE WHEN ((total * 1) IS NULL) THEN 1.0 WHEN NOT ((total * 1) IS NULL) THEN 1.0 END`,
+which is why that property is what the branch rests on rather than a
+convenience.
+
+Over eligible sources on DuckDB — a double, a zero, an all-`NA` double, and an
+integer — every share was `1` of type double.
+
+**`.check_share_source = FALSE` does not relax it.** With the flag set, the
+local path still refused a character source (its type check does not read the
+argument) and DuckDB still failed at collection. The flag suppresses the
+converting-dialect verdict refusal only, which is what it already did for the
+ratio.
