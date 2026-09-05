@@ -1205,6 +1205,51 @@ test_that("an unnamed summary is named from the caller's own expression", {
   expect_true("sum(v) + grouping_bit(a)" %in% colnames(native))
 })
 
+# #439. Both names are computed here rather than written out, so what the
+# assertion holds is the equality with dplyr's own and not a spelling.
+#
+# `expect_false` is what keeps the case from going vacuous. Every other assigned
+# name in this file is short enough that the two labellers agree, so an
+# expression that stopped abbreviating would pass the equality while asserting
+# nothing about the divergence it was written for.
+test_that("an assigned name abbreviates the way dplyr's does", {
+  data <- data.frame(g = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
+  # `dplyr::summarize()` evaluates what it names, so the Grouping helper is
+  # shadowed by a binding its data mask reaches before the export. marginplyr
+  # reads the spelling rather than the binding (ADR 0019), so the shadow leaves
+  # its own rewrite untouched.
+  grouping_bit <- function(...) 0L
+
+  # Both adapters, the native one over a simulated connection so that the case
+  # runs wherever the suite does.
+  expect_dplyr_name <- function(expr) {
+    dplyr_name <- setdiff(names(dplyr::summarize(data, !!expr, .by = g)), "g")
+    expect_false(dplyr_name == rlang::as_label(expr))
+    expect_equal(
+      setdiff(
+        names(summarize_with_margins(data, !!expr, .grouping = rollup(g))),
+        "g"
+      ),
+      dplyr_name
+    )
+    native <- summarize_with_margins(
+      dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres()),
+      !!expr,
+      .grouping = rollup(g)
+    )
+    expect_equal(setdiff(colnames(native), "g"), dplyr_name)
+  }
+
+  expect_dplyr_name(rlang::expr(
+    sum(dplyr::pick(x)[[1]]) + 1 + sum(y) + 2 + mean(x) + 3 + mean(y) + 4 +
+      stats::median(x) + 5
+  ))
+  expect_dplyr_name(rlang::expr(
+    sum(x) + 1 + sum(y) + 2 + mean(x) + 3 + mean(y) + 4 + max(x) +
+      grouping_bit(g)
+  ))
+})
+
 test_that("an unnamed summary is named before a selection is resolved", {
   data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
 

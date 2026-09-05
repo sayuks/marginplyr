@@ -131,8 +131,11 @@ The reference states the rule a caller needs and not this argument: an unnamed
 summary expands, a name you write packs, and a name marginplyr assigns does not
 appear.
 
-Two things stay outside this decision, both following from #430 rather than
-from it, and both are #439: `rlang::as_label()`'s abbreviation producing a
-column name the caller cannot read back, and an assigned name differing between
-`pick(x)` and `dplyr::pick(x)`. Each applies equally to a scalar summary, which
-this decision does not touch.
+One thing stayed outside this decision, following from #430 rather than from
+it, and it was #439: an assigned name abbreviating a long expression the way
+`rlang::as_label()` does rather than the way `dplyr::summarize()` does. It
+applied equally to a scalar summary, which this decision does not touch, and
+ADR 0022's amendment for #439 is where it is now settled. The second thing
+named here was that `pick(x)` and `dplyr::pick(x)` take different assigned
+names; #439 measured that `dplyr::summarize()` names those two differently as
+well, so it was never marginplyr's to answer.
