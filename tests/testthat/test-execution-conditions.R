@@ -786,8 +786,8 @@ test_that("a native translation error blames the Margin verb", {
     conditionCall(expect_error(native_shared_label_failure())),
     quote(summarize_with_margins(
       native_grouping_sets_input(),
-      grouping_bit(a) + no_such_column,
-      grouping_bit(a) + value,
+      x = grouping_bit(a) + no_such_column,
+      x = grouping_bit(a) + value,
       .grouping = rollup(a)
     ))
   )
