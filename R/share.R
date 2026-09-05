@@ -2378,7 +2378,8 @@ probe_share_dialect <- function(con) {
     control <- probe_share_dialect_answer(
       con,
       quote(sum(z, na.rm = TRUE)),
-      purpose = "share_dialect_control"
+      purpose = "share_dialect_control",
+      expected = share_probe_scaffold()$number
     )
     if (identical(control, "answered")) {
       return("refuses")
@@ -2405,11 +2406,12 @@ probe_share_dialect <- function(con) {
 # the share. An unrecognised status therefore fails closed by construction,
 # and that is the property worth writing down rather than asserting.
 #
-# `purpose` is the name this query is recorded under (ADR 0027).
-probe_share_dialect_answer <- function(con, expr, purpose) {
+# `purpose` is the name this query is recorded under (ADR 0027). `expected` is
+# the number the answer must hold, which only the control names.
+probe_share_dialect_answer <- function(con, expr, purpose, expected = NULL) {
   query <- tryCatch(
     dplyr::summarize(
-      dplyr::tbl(con, dbplyr::sql("SELECT 1 AS z"), vars = "z"),
+      dplyr::tbl(con, share_probe_scaffold()$sql, vars = "z"),
       p = !!expr
     ),
     error = function(cnd) NULL
@@ -2430,11 +2432,27 @@ probe_share_dialect_answer <- function(con, expr, purpose) {
     !is.data.frame(value) ||
       nrow(value) != 1L ||
       ncol(value) != 1L ||
-      !is_share_source_type(value[[1L]])
+      !is.numeric(value[[1L]])
   ) {
     return("unanswerable")
   }
+  # Not `is_share_source_type()`, which is the eligible-type rule about a
+  # caller's summary and rejects a classed value. What class the driver mapped
+  # the database's type to is a fact about the driver: PostgreSQL's
+  # `SUM(integer)` is `bigint`, which RPostgres maps to `bit64::integer64`, a
+  # classed double that `is.numeric()` holds of (#440).
+  if (!is.null(expected) && !isTRUE(value[[1L]] == expected)) {
+    return("unanswerable")
+  }
   "answered"
+}
+
+# The table-free scaffolding both questions are asked against, and the number
+# it selects. One definition because the control's reading is that its result
+# is that number, so a scaffolding edited on its own would read every control
+# as unanswerable.
+share_probe_scaffold <- function() {
+  list(sql = dbplyr::sql("SELECT 1 AS z"), number = 1)
 }
 
 # The refusal names whichever helpers the caller wrote, as the Arrow one does

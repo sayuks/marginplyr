@@ -1310,6 +1310,66 @@ test_that("an answer of an unexpected shape is not read as a verdict", {
   expect_identical(verdict_for_answer(list(p = 1)), "unknown")
 })
 
+# What class the driver mapped the database's type to is a fact about the
+# driver, and the control asks about the connection: did this query come back
+# with the number the scaffolding selected? PostgreSQL's `SUM(integer)` is
+# `bigint`, which RPostgres maps to `bit64::integer64` -- a classed double.
+# Reading the control through the eligible-type rule, which rejects a classed
+# value because the rule is about a caller's summary, therefore refused every
+# share on the dialect including the numeric ones (#440).
+#
+# The class here stands in for `bit64::integer64`, and is deliberately not
+# named after it. bit64 is no dependency of this package, so the class would
+# carry methods here or not depending on whether an earlier test happened to
+# load it, and a double built by hand does not hold an `integer64`'s bit
+# pattern: with bit64 loaded, `structure(1, class = "integer64") == 1` is
+# `FALSE` where `bit64::as.integer64(1) == 1` is `TRUE`. What the reading turns
+# on is that the value is classed, not which class it carries. `is.numeric()`
+# and `== 1` were both measured to hold of a real `bit64::integer64` under
+# bit64 4.8.6.
+test_that("a classed number answers the control", {
+  bigint <- structure(1, class = "driver_mapped_bigint")
+  expect_false(is_share_source_type(bigint))
+
+  local_mocked_bindings(
+    collect = local({
+      calls <- 0L
+      function(x, ...) {
+        calls <<- calls + 1L
+        if (calls == 1L) {
+          stop("function sum(unknown) does not exist")
+        }
+        data.frame(p = bigint)
+      }
+    }),
+    .package = "dplyr"
+  )
+
+  expect_identical(probe_share_dialect(dbplyr::simulate_postgres()), "refuses")
+})
+
+# The control asks the one thing no dialect can refuse -- summing the number
+# the scaffolding already selects -- so a result that is some other number says
+# the query that answered is not the query the scaffolding built, and the
+# refusal the probe's raise looked like cannot be read from it.
+test_that("a control returning another number answers nothing", {
+  local_mocked_bindings(
+    collect = local({
+      calls <- 0L
+      function(x, ...) {
+        calls <<- calls + 1L
+        if (calls == 1L) {
+          stop("function sum(unknown) does not exist")
+        }
+        data.frame(p = 7)
+      }
+    }),
+    .package = "dplyr"
+  )
+
+  expect_identical(probe_share_dialect(dbplyr::simulate_postgres()), "unknown")
+})
+
 # Reading any raised query as the dialect's refusal is how the protection came
 # to be off exactly where it was needed: `"refuses"` is the verdict that
 # proceeds, so every unrelated reason a query can raise switched the rule off
