@@ -361,6 +361,18 @@ new_summary_arguments <- function(dots,
   list(dots = dots, labels = labels, assigned_names = assigned_names)
 }
 
+# The name `dplyr::summarize()` gives an unnamed argument, for an argument
+# marginplyr names in dplyr's place. dplyr's `expr_as_label()` is
+# `rlang::as_label()` with rlang's infix labelling suppressed through an
+# undocumented option, and the two spellings differ once an expression is long
+# enough to abbreviate. Setting that option is the whole of the reproduction:
+# the other branch of `expr_as_label()` deparses a bare data pronoun, which no
+# expression reaching the one caller here can be (ADR 0022, amended).
+dplyr_auto_name <- function(expr) {
+  rlang::local_options(`rlang:::use_as_label_infix` = FALSE)
+  rlang::as_label(expr)
+}
+
 # The name dplyr would have given each unnamed summary marginplyr rewrites,
 # read from what the caller wrote rather than from the rewrite. The named dots
 # arrive beside the Assigned summary name each one took, `NA` where none was
@@ -392,11 +404,10 @@ new_summary_arguments <- function(dots,
 # and `range_frame(pick(v))` has to not be, which is a question about the
 # value's type. ADR 0028 is where that one is answered.
 #
-# `rlang::as_label()` is `rlang::quos_auto_name()`'s own labeller, so the name
-# is dplyr's up to the width at which rlang abbreviates a long expression:
-# dplyr asks rlang for a variant spelling of that abbreviation through an
-# internal option, and neither spelling stands for an expression the caller
-# could read back.
+# The label is `dplyr_auto_name()` and not `rlang::as_label()`, because what is
+# written here is a column name rather than a condition label: ADR 0022's
+# rejection of reproducing dplyr's spelling reaches the label alone, and its
+# amendment for #439 says so.
 name_rewritten_summary_dots <- function(original, resolved) {
   stopifnot(length(original) == length(resolved))
   arg_names <- rlang::names2(resolved)
@@ -408,7 +419,7 @@ name_rewritten_summary_dots <- function(original, resolved) {
     if (!rewritten || !is.null(data_frame_valued_summary_kind(expr))) {
       next
     }
-    arg_names[[i]] <- rlang::as_label(expr)
+    arg_names[[i]] <- dplyr_auto_name(expr)
     assigned_names[[i]] <- arg_names[[i]]
   }
   list(

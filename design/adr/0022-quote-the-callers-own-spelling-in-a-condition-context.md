@@ -162,7 +162,8 @@ measurement: share planning drops a dot to `NULL` and expands a placeholder
 into one dot per output before flattening, so position is not preserved.
 
 **Reproduce `expr_as_label()` faithfully, undocumented option included.**
-Rejected above: what it covers is unobservable.
+Rejected above: what it covers is unobservable. That reaches a condition label
+and nothing else, which the amendment for #439 records.
 
 **Extend the restatement to the native grouping-sets adapter.** Rejected as
 covering nothing today, since both backends holding the capability are lazy.
@@ -313,3 +314,36 @@ rather than extracted.
 The grouping values are the third part, and they need nothing here. The native
 adapter groups by `pick(all_of(group_vars))` rather than by internal key
 columns, so dplyr already reports them under the names the caller wrote.
+
+## Amendment: an Assigned summary name reproduces the option
+
+*dplyr's rendering is reproduced only as far as it is observable* rests on a
+label dplyr truncated rendering the same whichever expression it came from, and
+*Considered Options* rejects reproducing `expr_as_label()` on that ground. The
+subject of both is a **condition label**, and there the argument holds
+unchanged. It does not reach an Assigned summary name, which #430 introduced
+after this decision was taken: that name is a column of the result, so
+`... + 5` where dplyr writes `+...` is a column the caller subscripts by, and
+`?summarize_with_margins` fixes dplyr's naming as the contract for `...`. #439
+is the ticket.
+
+`name_rewritten_summary_dots()` therefore labels through `dplyr_auto_name()`,
+which is `rlang::as_label()` under the option dplyr sets. Reproducing the option
+is the whole of it. `expr_as_label()`'s other branch deparses a bare data
+pronoun instead of labelling it, and no expression reaching that call site is
+one: a summary spelled `.data$x` is rewritten by nothing, so it is never
+assigned a name, and a pronoun inside a larger expression is not the expression
+the labeller reads.
+
+Nothing else moves. `summary_argument_labels()` goes on labelling with plain
+`rlang::as_label()`, for the reason the amended section gives, so the two
+callers now spell one expression two ways where it abbreviates — which is what
+the sections above already describe as the label matching nothing and the
+quotation standing.
+
+What the option's disappearance would cost is a silent return to the old
+spelling, and the test is written against that rather than against a string:
+it computes both the assigned name and `dplyr::summarize()`'s own name for the
+same expression, and asserts separately that the expression is still one the
+two labellers disagree about. An rlang that dropped the option fails the first;
+one that stopped abbreviating at that width fails the second.
