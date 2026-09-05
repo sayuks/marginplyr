@@ -836,11 +836,12 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     # A simulator has no database behind it, so neither of these executes and
     # each stands for a property a dialect that does execute is held to: the
     # cast for the integer source share `RSQLite executes portable Parent
-    # shares end to end` compares against a local result, and the `* 1.0` for
-    # the refusal `DuckDB refuses a character share source whatever it holds`
-    # asserts (#429).
+    # shares end to end` compares against a local result, and the `* 1` for the
+    # refusal `DuckDB refuses a character share source whatever it holds`
+    # asserts (#429). The character class is what keeps the second from
+    # passing on a `* 1.0`, which widens a DuckDB `DECIMAL` source.
     expect_match(sql, "(CAST|CDBL)\\(", info = simulator)
-    expect_match(sql, "* 1.0", fixed = TRUE, info = simulator)
+    expect_match(sql, "\\* 1[^.0-9]", info = simulator)
     expect_false(
       grepl("GROUPING SETS", sql, fixed = TRUE),
       info = simulator
@@ -1447,6 +1448,45 @@ test_that("DuckDB reports an ineligible share source against its summary", {
       gregexpr("[.][.]marginplyr_[A-Za-z0-9_]+", message)
     )))
   )
+})
+
+# The multiplication that refuses a character source is applied to a numeric
+# one too, so it has to be an operation that cannot fail for a value the
+# source's own declared type holds. `copy_to()` cannot express such a type,
+# which is why this one is created in SQL: DuckDB types `DECIMAL(18,2) * 1.0`
+# as `DECIMAL(18,3)`, which overflows at the maximum below, while `* 1` stays
+# `DECIMAL(18,2)` and answers. The measures differ only in the multiplication,
+# so nothing else here distinguishes them (#429).
+test_that("DuckDB shares a source at its declared type's maximum", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(
+    con,
+    paste(
+      "CREATE TEMPORARY TABLE share_source_wide_decimal_data AS",
+      "SELECT 'E' AS region, CAST(9999999999999999.99 AS DECIMAL(18, 2)) AS m",
+      "UNION ALL",
+      "SELECT 'E', CAST(1.00 AS DECIMAL(18, 2))",
+      "UNION ALL",
+      "SELECT 'W', CAST(9999999999999999.99 AS DECIMAL(18, 2))"
+    )
+  )
+  remote <- dplyr::tbl(con, "share_source_wide_decimal_data")
+
+  result <- dplyr::collect(summarize_with_margins(
+    remote,
+    total = max(m),
+    parent = share_of_parent(total),
+    grand = share_of_total(total),
+    .grouping = rollup(region)
+  ))
+
+  # Every occurrence's maximum is the same value, so each share is one exactly
+  # and no comparison here depends on how the decimal rounds to a double.
+  expect_type(result$parent, "double")
+  expect_identical(result$parent, rep(1, 3L))
+  expect_identical(result$grand, rep(1, 3L))
 })
 
 # #429. What refuses a character source here is the multiplication in the
