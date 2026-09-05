@@ -2409,11 +2409,13 @@ probe_share_dialect <- function(con) {
 # `purpose` is the name this query is recorded under (ADR 0027). `control` says
 # which of the two questions this is, which is what decides the reading below.
 probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
+  # Bound outside the wrap below for the reason `probe_share_dialect_holds()`
+  # binds its number outside its own: what these wraps read as a connection
+  # that could not be asked is an error, and marginplyr's own frames raise
+  # errors that are defects.
+  scaffold <- share_probe_scaffold()$sql
   query <- tryCatch(
-    dplyr::summarize(
-      dplyr::tbl(con, share_probe_scaffold()$sql, vars = "z"),
-      p = !!expr
-    ),
+    dplyr::summarize(dplyr::tbl(con, scaffold, vars = "z"), p = !!expr),
     error = function(cnd) NULL
   )
   if (is.null(query)) {

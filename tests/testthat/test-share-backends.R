@@ -1376,6 +1376,27 @@ test_that("the control takes the scaffolding's number in any driver type", {
   )
 })
 
+# Three wraps read an error as a connection that could not be asked: the two
+# building and executing the query, and the one around the control's
+# comparison. A marginplyr frame inside any of them would report its own defect
+# as a dialect that cannot answer, and every share on that dialect would be
+# refused with nothing said about why. `share_probe_scaffold()` is the frame
+# both readings reach, and it is read outside all three.
+test_that("a defect in marginplyr's own frame is not read as a dialect", {
+  local_mocked_bindings(
+    share_probe_scaffold = function() stop("scaffold defect")
+  )
+
+  expect_error(
+    probe_share_dialect(dbplyr::simulate_postgres()),
+    "scaffold defect"
+  )
+  expect_error(
+    probe_share_dialect_holds(1, control = TRUE),
+    "scaffold defect"
+  )
+})
+
 # Reading any raised query as the dialect's refusal is how the protection came
 # to be off exactly where it was needed: `"refuses"` is the verdict that
 # proceeds, so every unrelated reason a query can raise switched the rule off
