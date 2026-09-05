@@ -2428,23 +2428,33 @@ probe_share_dialect_answer <- function(con, expr, purpose, expected = NULL) {
     return("raised")
   }
   value <- answer$value
-  if (
-    !is.data.frame(value) ||
-      nrow(value) != 1L ||
-      ncol(value) != 1L ||
-      !is.numeric(value[[1L]])
-  ) {
+  if (!is.data.frame(value) || nrow(value) != 1L || ncol(value) != 1L) {
     return("unanswerable")
   }
-  # Not `is_share_source_type()`, which is the eligible-type rule about a
-  # caller's summary and rejects a classed value. What class the driver mapped
-  # the database's type to is a fact about the driver: PostgreSQL's
-  # `SUM(integer)` is `bigint`, which RPostgres maps to `bit64::integer64`, a
-  # classed double that `is.numeric()` holds of (#440).
-  if (!is.null(expected) && !isTRUE(value[[1L]] == expected)) {
+  if (!probe_share_dialect_holds(value[[1L]], expected)) {
     return("unanswerable")
   }
   "answered"
+}
+
+# Whether the one value a query came back with is the answer its caller asked
+# for. Not `is_share_source_type()`: that is the eligible-type rule about a
+# caller's summary, and it rejects a classed value, so it also rejects what a
+# driver mapped a database type to. RPostgres alone offers four mappings for
+# the `bigint` PostgreSQL sums an integer to -- `bit64::integer64`, `integer`,
+# `numeric`, and `character`, the first a classed double and the last not a
+# number at all -- and the caller chooses between them when they connect
+# (#440).
+#
+# So the probe asks only that a number came back, which is the conversion. The
+# control names the number the scaffolding selected and asks for that, in
+# whatever type the mapping produced: `==` compares across those four, where a
+# type test admits three of them.
+probe_share_dialect_holds <- function(value, expected) {
+  if (is.null(expected)) {
+    return(is.numeric(value))
+  }
+  isTRUE(value == expected)
 }
 
 # The table-free scaffolding both questions are asked against, and the number
