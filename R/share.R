@@ -2448,18 +2448,23 @@ probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
 #
 # The probe asks only that a number came back, which is the conversion. The
 # control asks for the number the scaffolding selected, in whatever type the
-# mapping produced, which is why it tests both. `==` alone would be the weaker
-# question of what R coerces equal to that number: a logical, a factor, a Date,
-# a raw, and a length-1 list all compare equal to `1`, and a `blob` column
-# raises inside `==` where nothing catches it. Each of those would read as the
-# control answering, and `"refuses"` is the verdict that proceeds -- the rule
-# switched off and that cached against the dialect.
+# mapping produced, and tests the type as well as the value: `==` alone is the
+# weaker question of what R coerces equal to that number, which several base
+# types answer without being it.
+#
+# The comparison is wrapped because a class that passes the type test can raise
+# inside `==` rather than return `FALSE` -- `haven::labelled` and `units` both
+# do -- and nothing between here and the caller catches it, where every other
+# way this function can fail already falls to "unanswerable".
 probe_share_dialect_holds <- function(value, control) {
   if (!control) {
     return(is.numeric(value))
   }
   (is.numeric(value) || is.character(value)) &&
-    isTRUE(value == share_probe_scaffold()$number)
+    isTRUE(tryCatch(
+      value == share_probe_scaffold()$number,
+      error = function(cnd) FALSE
+    ))
 }
 
 # The table-free scaffolding both questions are asked against, and the number

@@ -1351,9 +1351,7 @@ test_that("the control takes the scaffolding's number in any driver type", {
   expect_identical(verdict_when_control_returns("x"), "unknown")
   expect_identical(verdict_when_control_returns(NA), "unknown")
 
-  # Every one of these compares equal to `1` under R's coercion rules, and the
-  # last raises inside `==`. Reading any as the control answering would record
-  # `"refuses"`, which proceeds, against the dialect.
+  # Every one of these compares equal to `1` under R's coercion rules.
   expect_identical(verdict_when_control_returns(TRUE), "unknown")
   expect_identical(verdict_when_control_returns(factor("1")), "unknown")
   expect_identical(
@@ -1362,6 +1360,23 @@ test_that("the control takes the scaffolding's number in any driver type", {
   )
   expect_identical(verdict_when_control_returns(I(list(1))), "unknown")
   expect_identical(verdict_when_control_returns(as.raw(1)), "unknown")
+
+  # A class that passes the type test and raises inside `==`, which
+  # `haven::labelled` and `units` both do. Nothing between the comparison and
+  # the caller catches it, so without the wrap this escapes as a bare R error
+  # rather than as the verdict that refuses the share. Registered in the global
+  # environment because that is where dispatch for an internal generic reaches
+  # from marginplyr's namespace.
+  assign(
+    "==.raises_on_comparison",
+    function(e1, e2) stop("cannot compare"),
+    envir = globalenv()
+  )
+  on.exit(rm("==.raises_on_comparison", envir = globalenv()), add = TRUE)
+  expect_identical(
+    verdict_when_control_returns(structure(1, class = "raises_on_comparison")),
+    "unknown"
+  )
 })
 
 # Reading any raised query as the dialect's refusal is how the protection came
