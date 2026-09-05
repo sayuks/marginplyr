@@ -1376,6 +1376,33 @@ test_that("an expanded inner name is checked against an internal identifier", {
   )
 })
 
+# The same share, against the other identifier: `.id` is the caller's own here,
+# and the adapter was handed the allocated one in its place, so the adapter
+# cannot ask this. Unasked, the caller's `.id` is renamed onto the expanded
+# column and the summary is lost rather than refused.
+test_that("an expanded inner name is checked against a replaced `.id`", {
+  data <- data.frame(
+    g1 = c("a", "a", "b"),
+    g2 = c("p", "q", "p"),
+    x = c(1, 3, 5)
+  )
+  shadows_id <- function(value) {
+    stats::setNames(data.frame(sum(value)), "sid")
+  }
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(x),
+      parent = share_of_parent(total),
+      shadows_id(dplyr::pick(x)[[1L]]),
+      .grouping = rollup(g1, g2),
+      .id = "sid"
+    ),
+    "`.id`.*`sid`.*conflicts with a summary output"
+  )
+})
+
 test_that("data-frame summaries cannot overwrite grouping columns", {
   data <- data.frame(group = c("a", "a", "b"), value = 1:3)
 

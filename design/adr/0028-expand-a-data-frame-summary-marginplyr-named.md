@@ -111,6 +111,13 @@ package allocated for itself, `add_grouping_set_id()` has yet to write it, and
 the other two would leave an inner name equal to that column silently
 overwritten.
 
+Where the package allocated that identifier it replaced the caller's `.id` with
+it, so the adapter holds no name to ask the `.id` question with, and
+`stage_margin_summaries()` asks it once over the staged result instead. Every
+other name the result carries was asked before execution; only an expanded one
+was not, and the caller's `.id` is renamed onto the result at the end, so an
+unasked collision loses the summary rather than refusing it.
+
 ## Consequences
 
 `dplyr::mutate()` is what writes the expanded columns, so the result's class
