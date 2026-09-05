@@ -2453,18 +2453,19 @@ probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
 # types answer without being it.
 #
 # The comparison is wrapped because a class that passes the type test can raise
-# inside `==` rather than return `FALSE` -- `haven::labelled` and `units` both
+# inside `==` rather than return `FALSE` -- `units` and `vctrs::new_vctr` both
 # do -- and nothing between here and the caller catches it, where every other
-# way this function can fail already falls to "unanswerable".
+# way this function can fail already falls to "unanswerable". The number is
+# bound first so that only the comparison is inside the wrap: an error raised
+# by marginplyr's own frame is a defect, and reading it as a dialect that could
+# not answer would hide it behind a refused share.
 probe_share_dialect_holds <- function(value, control) {
   if (!control) {
     return(is.numeric(value))
   }
+  number <- share_probe_scaffold()$number
   (is.numeric(value) || is.character(value)) &&
-    isTRUE(tryCatch(
-      value == share_probe_scaffold()$number,
-      error = function(cnd) FALSE
-    ))
+    isTRUE(tryCatch(value == number, error = function(cnd) FALSE))
 }
 
 # The table-free scaffolding both questions are asked against, and the number

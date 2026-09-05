@@ -1361,12 +1361,9 @@ test_that("the control takes the scaffolding's number in any driver type", {
   expect_identical(verdict_when_control_returns(I(list(1))), "unknown")
   expect_identical(verdict_when_control_returns(as.raw(1)), "unknown")
 
-  # A class that passes the type test and raises inside `==`, which
-  # `haven::labelled` and `units` both do. Nothing between the comparison and
-  # the caller catches it, so without the wrap this escapes as a bare R error
-  # rather than as the verdict that refuses the share. Registered in the global
-  # environment because that is where dispatch for an internal generic reaches
-  # from marginplyr's namespace.
+  # A class that passes the type test and raises inside `==`. The method is
+  # registered in the global environment because one defined in this frame is
+  # not dispatched from marginplyr's namespace, where the comparison runs.
   assign(
     "==.raises_on_comparison",
     function(e1, e2) stop("cannot compare"),
