@@ -1749,12 +1749,11 @@ test_that("DuckDB refuses a character source for a share that needs no join", {
   }
 })
 
-# #449. The eligible-type rule reads the summary its own backend computed, so
-# an aggregate whose result type differs across backends divides them: R's
-# `max()` coerces a logical to an integer the rule accepts, while DuckDB's
-# `MAX` returns a `BOOLEAN` the staged share's multiplication refuses. Neither
-# backend departed from the rule (ADR 0010), and `?share_of_parent` states the
-# split this pins.
+# #449. The eligible-type rule is applied to the summary each backend
+# computed, so an aggregate whose result type differs across backends divides
+# them: DuckDB's `MAX` returns a `BOOLEAN`, which the staged share's
+# multiplication refuses. Neither backend departed from the rule (ADR 0010),
+# and `?share_of_parent` states the split this pins.
 test_that("a logical source is eligible locally and refused on DuckDB", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -1780,11 +1779,15 @@ test_that("a logical source is eligible locally and refused on DuckDB", {
     )
   }
 
-  # Runs first for the reason the character refusals' does: the error collected
-  # below is read for its class alone, since DuckDB's wording is its version's,
-  # so without this a dropped table would satisfy it.
+  # Runs first for the reason the character refusals' probe does.
   eligible <- dplyr::collect(summarize(remote, "revenue"))
   expect_identical(eligible$whole, rep(1, nrow(eligible)))
+
+  # What divides the backends is that DuckDB computes the summary and refuses
+  # only the share on it. A `max(flag)` DuckDB could not compute would be the
+  # `mean(<logical>)` case, which plain dbplyr fails identically and which is
+  # therefore not this one.
+  expect_true(dplyr::collect(dplyr::summarise(remote, m = max(flag)))$m)
 
   local <- summarize(data, "flag")
   expect_type(local$total, "integer")

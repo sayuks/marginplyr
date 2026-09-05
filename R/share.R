@@ -386,12 +386,12 @@
 #' from a source it has shown to be ineligible. None of it reads a row of your
 #' data.
 #'
-#' That rule reads the type the backend itself computed, not the type the same
-#' expression would produce in R, so an aggregate whose result type differs
-#' across backends is eligible on some and refused on others. `max()` over a
-#' logical column is one: R coerces it to an integer, which the rule accepts,
-#' while a database whose `MAX` returns a boolean has produced an ineligible
-#' summary and refuses the share as its own error at [dplyr::collect()].
+#' The summary that rule judges is the one the backend computed, not the one
+#' the same expression would produce in R, so an aggregate whose result type
+#' differs across backends is eligible on some and refused on others. `max()`
+#' over a logical column is one: R coerces it to an integer, which the rule
+#' accepts, while a database whose `MAX` returns a boolean has produced an
+#' ineligible summary and refuses the share.
 #'
 #' What differs is what establishes the rule, and whether the
 #' exactly-one-value cardinality rule is established with it:
