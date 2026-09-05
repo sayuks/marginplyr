@@ -764,9 +764,17 @@ summary_all_of_expr <- function(selected, data_proxy) {
 }
 
 known_summary_output_names <- function(dots, data_proxy) {
+  # A dot carrying its own name is not read for what it packs: dplyr packs a
+  # data-frame result under that name rather than unpacking it, so the argument
+  # names inside such a dot are not top-level outputs, and `names(dots)` at the
+  # caller already holds the one that is (#431). A backend that unpacks anyway
+  # is what the adapters' `check_summary_output_names()` reads the branch
+  # result for -- Arrow's `across()` is that case.
+  named <- nzchar(rlang::names2(dots))
+
   unlist(
     lapply(
-      dots,
+      dots[!named],
       function(dot) {
         expr <- rlang::quo_get_expr(dot)
         env <- rlang::quo_get_env(dot)

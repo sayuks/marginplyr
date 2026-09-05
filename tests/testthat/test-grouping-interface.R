@@ -1423,6 +1423,87 @@ test_that("data-frame summaries cannot overwrite grouping columns", {
   )
 })
 
+test_that("a named data-frame summary keeps its packed names to itself", {
+  data <- data.frame(group = c("a", "a", "b"), value = 1:3)
+
+  # The unnamed forms of these calls are the test above; dplyr unpacks those
+  # and packs these (#431).
+  from_tibble <- summarize_with_margins(
+    data,
+    s = tibble::tibble(group = sum(value)),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(from_tibble), c("group", "s"))
+  expect_equal(from_tibble$group, c("a", "b", "Total"))
+  expect_equal(from_tibble$s$group, c(3L, 3L, 6L))
+
+  from_across <- summarize_with_margins(
+    data,
+    s = dplyr::across(value, mean, .names = "group"),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(from_across), c("group", "s"))
+  expect_equal(from_across$s$group, c(1.5, 3, 2))
+
+  # `.unpack` renames inside the packed column rather than out of it, so a
+  # template producing a grouping column's name reaches no top level.
+  group_frame <- function(x) data.frame(group = min(x))
+  unpacked <- summarize_with_margins(
+    data,
+    s = dplyr::across(value, group_frame, .unpack = "{inner}"),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(unpacked), c("group", "s"))
+  expect_equal(unpacked$s$group, c(1L, 3L, 1L))
+
+  # `pick()` cannot rename -- `pick(c(a = b))` is a tidyselect error -- so what
+  # it packs is always input column names.
+  picked <- summarize_with_margins(
+    data.frame(group = c("a", "b"), value = c(1, 2)),
+    s = dplyr::pick(value),
+    .by = group
+  )
+  expect_equal(names(picked), c("group", "s"))
+  expect_equal(picked$s$value, c(1, 2))
+})
+
+test_that("a named data-frame summary is still checked by its own name", {
+  data <- data.frame(group = c("a", "a", "b"), value = 1:3)
+
+  # What the skip above leaves to `names(dots)`. Without this the skip could
+  # widen to the whole dot and every test above would still pass.
+  expect_error(
+    summarize_with_margins(
+      data,
+      group = tibble::tibble(x = sum(value)),
+      .grouping = rollup(group)
+    ),
+    "cannot overwrite grouping column.*`group`"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      a = tibble::tibble(x = sum(value)),
+      .grouping = rollup(group),
+      .id = "a"
+    ),
+    "`\\.id` \\(`a`\\) conflicts with a summary output"
+  )
+})
+
+test_that("a named data-frame summary does not collide with `.id`", {
+  data <- data.frame(group = c("a", "a", "b"), value = 1:3)
+
+  result <- summarize_with_margins(
+    data,
+    s = tibble::tibble(a = sum(value)),
+    .grouping = rollup(group),
+    .id = "a"
+  )
+  expect_true(all(c("a", "s") %in% names(result)))
+  expect_equal(result$s$a, c(3L, 3L, 6L))
+})
+
 test_that("branch-local dplyr group context helpers are rejected", {
   data <- data.frame(group = c("a", "a", "b"), value = 1:3)
 

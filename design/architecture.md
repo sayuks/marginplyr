@@ -483,6 +483,12 @@ isolated lazy-query node, and renders that node for confirmed native dialects.
 It receives the compiled plan and executor-prepared inputs; it does not
 prepare, validate, or finalize a Margin operation.
 
+It owes a Condition context too, over the one condition it can raise while the
+verb runs: an error dbplyr raises translating the caller's rewritten summary
+expressions. It restates that error's argument and its blamed call, and needs
+no third part, because it groups by the caller's own columns. See
+[ADR 0022](adr/0022-quote-the-callers-own-spelling-in-a-condition-context.md).
+
 ### Portable adapter (`R/grouping-adapter-union.R`)
 
 Owns branch materialization and `UNION ALL` composition. The summary path
@@ -492,9 +498,10 @@ per grouping set; nesting builds on that expansion in its verb executor. Like
 the native adapter, it consumes derived inputs and does not own the lifecycle.
 
 Because it is the one path that summarizes the caller's own expressions once
-per grouping set, it is also the one that owes a Condition context: it wraps
-the branch summary alone in `with_branch_conditions()`, so that the checks and
-builders around it keep raising their Package conditions unchanged.
+per grouping set, it is the only one where a Repeated condition exists and the
+only one whose grouping values arrive under names the caller never wrote: it
+wraps the branch summary alone in `with_branch_conditions()`, so that the
+checks and builders around it keep raising their Package conditions unchanged.
 
 The same fact gives it a second responsibility, and ADR 0025 is where the
 decision behind it sits. An Absorbing backend answers an expression its own

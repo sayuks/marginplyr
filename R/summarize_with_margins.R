@@ -388,10 +388,13 @@
 #' A lazy input gives whatever shape its own backend gives.
 #'
 #' Summary results may not overwrite a fixed key or grouping dimension,
-#' including through a data-frame-valued summary. The local dplyr backend can
-#' overwrite an existing variable and reuse a newly created summary in a
-#' later expression, but other backends may not. marginplyr rejects grouping
-#' key overwrites so that grouping identity and behavior stay portable.
+#' including through an unnamed data-frame-valued summary, whose columns dplyr
+#' unpacks to the top level. One you named is checked by that name alone,
+#' because dplyr packs its columns into the single column the name gives.
+#' The local dplyr backend can overwrite an existing variable and reuse a newly
+#' created summary in a later expression, but other backends may not.
+#' marginplyr rejects grouping key overwrites so that grouping identity and
+#' behavior stay portable.
 #' Use a new summary name, or rename the grouping column before this call.
 #'
 #' [dplyr::cur_group()], [dplyr::cur_group_id()],
@@ -1042,6 +1045,7 @@ stage_margin_summaries <- function(operation,
           plan = plan,
           margin_labels = operation$margin_labels,
           reserved_names = reserved_names,
+          call = operation$call,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal
         )
