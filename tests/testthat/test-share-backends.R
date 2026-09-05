@@ -1347,11 +1347,21 @@ test_that("the control takes the scaffolding's number in any driver type", {
   expect_identical(verdict_when_control_returns(1), "refuses")
   expect_identical(verdict_when_control_returns("1"), "refuses")
 
-  # The refusal is read from a query that raised where the same scaffolding
-  # demonstrably works, so a result that is some other number leaves the raise
-  # unexplained.
   expect_identical(verdict_when_control_returns(7), "unknown")
   expect_identical(verdict_when_control_returns("x"), "unknown")
+  expect_identical(verdict_when_control_returns(NA), "unknown")
+
+  # Every one of these compares equal to `1` under R's coercion rules, and the
+  # last raises inside `==`. Reading any as the control answering would record
+  # `"refuses"`, which proceeds, against the dialect.
+  expect_identical(verdict_when_control_returns(TRUE), "unknown")
+  expect_identical(verdict_when_control_returns(factor("1")), "unknown")
+  expect_identical(
+    verdict_when_control_returns(as.Date("1970-01-02")),
+    "unknown"
+  )
+  expect_identical(verdict_when_control_returns(I(list(1))), "unknown")
+  expect_identical(verdict_when_control_returns(as.raw(1)), "unknown")
 })
 
 # Reading any raised query as the dialect's refusal is how the protection came

@@ -2379,7 +2379,7 @@ probe_share_dialect <- function(con) {
       con,
       quote(sum(z, na.rm = TRUE)),
       purpose = "share_dialect_control",
-      expected = share_probe_scaffold()$number
+      control = TRUE
     )
     if (identical(control, "answered")) {
       return("refuses")
@@ -2406,9 +2406,9 @@ probe_share_dialect <- function(con) {
 # the share. An unrecognised status therefore fails closed by construction,
 # and that is the property worth writing down rather than asserting.
 #
-# `purpose` is the name this query is recorded under (ADR 0027). `expected` is
-# the number the answer must hold, which only the control names.
-probe_share_dialect_answer <- function(con, expr, purpose, expected = NULL) {
+# `purpose` is the name this query is recorded under (ADR 0027). `control` says
+# which of the two questions this is, which is what decides the reading below.
+probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
   query <- tryCatch(
     dplyr::summarize(
       dplyr::tbl(con, share_probe_scaffold()$sql, vars = "z"),
@@ -2431,7 +2431,7 @@ probe_share_dialect_answer <- function(con, expr, purpose, expected = NULL) {
   if (!is.data.frame(value) || nrow(value) != 1L || ncol(value) != 1L) {
     return("unanswerable")
   }
-  if (!probe_share_dialect_holds(value[[1L]], expected)) {
+  if (!probe_share_dialect_holds(value[[1L]], control = control)) {
     return("unanswerable")
   }
   "answered"
@@ -2446,15 +2446,20 @@ probe_share_dialect_answer <- function(con, expr, purpose, expected = NULL) {
 # number at all -- and the caller chooses between them when they connect
 # (#440).
 #
-# So the probe asks only that a number came back, which is the conversion. The
-# control names the number the scaffolding selected and asks for that, in
-# whatever type the mapping produced: `==` compares across those four, where a
-# type test admits three of them.
-probe_share_dialect_holds <- function(value, expected) {
-  if (is.null(expected)) {
+# The probe asks only that a number came back, which is the conversion. The
+# control asks for the number the scaffolding selected, in whatever type the
+# mapping produced, which is why it tests both. `==` alone would be the weaker
+# question of what R coerces equal to that number: a logical, a factor, a Date,
+# a raw, and a length-1 list all compare equal to `1`, and a `blob` column
+# raises inside `==` where nothing catches it. Each of those would read as the
+# control answering, and `"refuses"` is the verdict that proceeds -- the rule
+# switched off and that cached against the dialect.
+probe_share_dialect_holds <- function(value, control) {
+  if (!control) {
     return(is.numeric(value))
   }
-  isTRUE(value == expected)
+  (is.numeric(value) || is.character(value)) &&
+    isTRUE(value == share_probe_scaffold()$number)
 }
 
 # The table-free scaffolding both questions are asked against, and the number
