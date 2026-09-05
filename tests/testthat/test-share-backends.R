@@ -833,7 +833,16 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
       info = simulator
     )
     expect_match(sql, "IS NULL AND", fixed = TRUE, info = simulator)
+    # A simulator has no database behind it, so neither of these executes and
+    # each stands for a property a dialect that does execute is held to: the
+    # cast for the integer source share `RSQLite executes portable Parent
+    # shares end to end` compares against a local result, and the `* 1` for the
+    # refusal `DuckDB refuses a character share source whatever it holds`
+    # asserts (#429). The character class is what keeps the second from passing
+    # on a `* 1.0`, which `DuckDB shares a source at its declared type's
+    # maximum` is the executed gate against.
     expect_match(sql, "(CAST|CDBL)\\(", info = simulator)
+    expect_match(sql, "\\* 1[^.0-9]", info = simulator)
     expect_false(
       grepl("GROUPING SETS", sql, fixed = TRUE),
       info = simulator
@@ -1440,6 +1449,100 @@ test_that("DuckDB reports an ineligible share source against its summary", {
       gregexpr("[.][.]marginplyr_[A-Za-z0-9_]+", message)
     )))
   )
+})
+
+# The multiplication that refuses a character source is applied to a numeric
+# one too, so it has to be an operation that cannot fail for a value the
+# source's own declared type holds. `copy_to()` cannot express such a type,
+# which is why this one is created in SQL: DuckDB types `DECIMAL(18,2) * 1.0`
+# as `DECIMAL(18,3)`, which overflows at the maximum below, while `* 1` stays
+# `DECIMAL(18,2)` and answers. The measures differ only in the multiplication,
+# so nothing else here distinguishes them (#429).
+test_that("DuckDB shares a source at its declared type's maximum", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(
+    con,
+    paste(
+      "CREATE TEMPORARY TABLE share_source_wide_decimal_data AS",
+      "SELECT 'E' AS region, CAST(9999999999999999.99 AS DECIMAL(18, 2)) AS m",
+      "UNION ALL",
+      "SELECT 'E', CAST(1.00 AS DECIMAL(18, 2))",
+      "UNION ALL",
+      "SELECT 'W', CAST(9999999999999999.99 AS DECIMAL(18, 2))"
+    )
+  )
+  remote <- dplyr::tbl(con, "share_source_wide_decimal_data")
+
+  result <- dplyr::collect(summarize_with_margins(
+    remote,
+    total = max(m),
+    parent = share_of_parent(total),
+    grand = share_of_total(total),
+    .grouping = rollup(region)
+  ))
+
+  # Every occurrence's maximum is the same value, so each share is one exactly
+  # and no comparison here depends on how the decimal rounds to a double.
+  expect_type(result$parent, "double")
+  expect_identical(result$parent, rep(1, 3L))
+  expect_identical(result$grand, rep(1, 3L))
+})
+
+# #429. What refuses a character source here is the multiplication in the
+# staged ratio, which binds by type, so the two columns below are refused for
+# the same reason and neither's values are part of it. `DuckDB reports an
+# ineligible share source against its summary` covers only the non-numeric
+# column, which is why it did not reach #429.
+test_that("DuckDB refuses a character share source whatever it holds", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    numeric_looking = c("1", "2", "3"),
+    non_numeric = c("n", "m", "o"),
+    revenue = c(1, 2, 4)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_character_duckdb_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source, column) {
+    summarize_with_margins(
+      source,
+      total = max(!!rlang::sym(column)),
+      parent = share_of_parent(total),
+      grand = share_of_total(total),
+      .grouping = rollup(region)
+    )
+  }
+
+  # The refusal below is of a character source and not of every share on the
+  # dialect, which is what separated this fix from reclassifying DuckDB as
+  # converting. It runs first because it is also what makes those refusals
+  # attributable to the source: the errors are read for their class alone,
+  # since DuckDB's wording is its version's, so without this a dropped table
+  # or a renamed column would satisfy them.
+  eligible <- dplyr::collect(summarize(remote, "revenue"))
+  expect_identical(sort(eligible$parent), c(0.5, 1, 1))
+  expect_identical(sort(eligible$grand), c(0.5, 1, 1))
+
+  for (column in c("numeric_looking", "non_numeric")) {
+    expect_error(
+      summarize(data, column),
+      "plain integer or double scalar",
+      info = column
+    )
+    query <- summarize(remote, column)
+    expect_s3_class(query, "tbl_lazy")
+    error <- expect_error(dplyr::collect(query), info = column)
+    expect_false(inherits(error, "marginplyr_error"), info = column)
+  }
 })
 
 test_that("DuckDB Parent shares agree across native, portable, local paths", {

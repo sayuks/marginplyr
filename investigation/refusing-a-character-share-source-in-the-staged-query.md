@@ -1,6 +1,7 @@
 # Refusing a character share source from the staged query itself
 
 Investigated: 2026-09-05
+Revised: 2026-09-05 — `R/share.R`
 
 `investigation/share-source-eligibility-on-coercing-dialects.md` (2026-08-16)
 established that a dialect can be asked whether it converts a non-numeric value
@@ -171,3 +172,79 @@ was reached without changing any dialect's verdict.
   established.
 - Arrow inputs, which `abort_arrow_shares()` is reached for rather than the
   ratio; no Arrow case was run under the edit beyond the suite.
+
+## Revisions (2026-09-05)
+
+Two items *What was not measured* left open were measured on this date while
+#429 was implemented, and a third question — what the widening those two found
+costs at a declared type's maximum — came out of a review of that
+implementation. Together they rule out every form scored above:
+`as.double(x) / as.double(y)` computes a character share, and every form
+carrying `* 1` carries `* 1.0`, since R's `1` is a double. `R/share.R` is
+authoritative for what the package sends.
+
+**What `x * 1` does to a source that is neither an integer nor a double.** On
+duckdb 1.5.5, `typeof()` was read for each step over a `DECIMAL(18,3)` pair and
+a `BIGINT` pair:
+
+| expression | `DECIMAL(18,3)` source | `BIGINT` source |
+|---|---|---|
+| `x` | `DECIMAL(18,3)` | `BIGINT` |
+| `x * 1.0` | `DECIMAL(18,4)` | `DECIMAL(21,1)` |
+| `TRY_CAST(x * 1.0 AS DOUBLE)` | `DOUBLE` | `DOUBLE` |
+
+So the multiplication did not by itself make its operand a double, and the bare
+`(x * 1) / (y * 1)` left what the driver returned to the dialect's decimal
+handling. That is a second reason to keep the cast, beside the integer division
+the `x / y` row of that table recorded.
+
+**What the widening does at the declared type's maximum.** The row above was
+read for its type alone, and what that type change costs was not asked until a
+review of #429's implementation asked it. In each `DECIMAL` case measured the
+scale grew by one while the width did not, so a value the declared type holds
+no longer fits. Measured on duckdb 1.5.5 over a column holding its declared
+type's maximum:
+
+| source type | value | `x` | `x * 1.0` | `x * 1` |
+|---|---|---|---|---|
+| `DECIMAL(18,2)` | `9999999999999999.99` | answered | `DECIMAL(18,3)`, raised | `DECIMAL(18,2)`, answered |
+| `DECIMAL(38,10)` | `9999999999999999999999999999.9999999999` | answered | `DECIMAL(38,11)`, came back missing | `DECIMAL(38,10)`, answered |
+
+The `DECIMAL(18,2)` refusal was
+
+```
+Out of Range Error: Overflow in multiplication of DECIMAL(18)
+(999999999999999999 * 10).
+```
+
+and the `DECIMAL(38,10)` case raised nothing at all — the column came back
+`NA`, which is what the share would have reported.
+
+The literal's own type is what decides this, and R's `1` is a double, which
+dbplyr renders as `1.0`. An integer literal changed no type: `HUGEINT` stayed
+`HUGEINT` under `* 1` where `* 1.0` made it `DECIMAL(21,1)`, and `x + 0` and
+`x - 0` also left `DECIMAL(18,2)` alone while `x / 1` gave `DOUBLE`. All six
+forms that refused a `VARCHAR` at binding still refused one with an integer
+literal, reporting `'*(VARCHAR, INTEGER_LITERAL)'` in place of
+`'*(VARCHAR, DECIMAL(2,1))'`.
+
+**What the fallback simulators render.** *What the substitution cost the suite*
+left unmeasured whether `x * 1.0` guards those dialects against integer
+division. Keeping the casts does not put that question to them: all fifteen
+simulators that section's test names rendered both the multiplication and the
+dialect's own cast, so the assertion that failed under the bare form did not
+fail under a form that keeps them. Nothing here was executed, which is the whole
+of what a simulator can establish.
+
+**The multiplication on the denominator refuses nothing extra.** The
+denominator is the source summary carried through a join, so it holds the
+source's type, and a dialect that refuses one refuses the other. Dropping it
+was measured to change no result and no refusal: a `VARCHAR` source was still
+refused at binding with only the numerator multiplied, and the
+`DECIMAL(18,2)` maximum answered `5e+15` for `x * 1 / y`, identical to
+`x / y`. It halves how many operands the widening above can reach.
+
+Nothing above is overturned. Which operations each dialect refused for a
+character column stands, and every form measured made DuckDB and PostgreSQL
+refuse a character source value-independently; what these measurements settled
+is which of them is safe for the numeric sources that must keep working.
