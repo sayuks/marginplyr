@@ -1749,6 +1749,56 @@ test_that("DuckDB refuses a character source for a share that needs no join", {
   }
 })
 
+# #449. The eligible-type rule is applied to the summary each backend
+# computed, so an aggregate whose result type differs across backends divides
+# them: DuckDB's `MAX` returns a `BOOLEAN`, which the staged share's
+# multiplication refuses. Neither backend departed from the rule (ADR 0010),
+# and `?share_of_parent` states the split this pins.
+test_that("a logical source is eligible locally and refused on DuckDB", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    flag = c(TRUE, TRUE, FALSE),
+    revenue = c(1, 2, 4)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_logical_duckdb_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source, column) {
+    summarize_with_margins(
+      source,
+      total = max(!!rlang::sym(column)),
+      whole = share_of_total(total),
+      .by = region
+    )
+  }
+
+  # Runs first for the reason the character refusals' probe does.
+  eligible <- dplyr::collect(summarize(remote, "revenue"))
+  expect_identical(eligible$whole, rep(1, nrow(eligible)))
+
+  # What divides the backends is that DuckDB computes the summary and refuses
+  # only the share on it. A `max(flag)` DuckDB could not compute would be the
+  # `mean(<logical>)` case, which plain dbplyr fails identically and which is
+  # therefore not this one.
+  expect_true(dplyr::collect(dplyr::summarise(remote, m = max(flag)))$m)
+
+  local <- summarize(data, "flag")
+  expect_type(local$total, "integer")
+  expect_identical(local$whole, rep(1, nrow(local)))
+
+  query <- summarize(remote, "flag")
+  expect_s3_class(query, "tbl_lazy")
+  error <- expect_error(dplyr::collect(query))
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
 test_that("DuckDB Parent shares agree across native, portable, local paths", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
