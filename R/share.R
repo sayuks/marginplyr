@@ -2643,15 +2643,13 @@ apply_joined_shares <- function(result,
               is.na(!!margin_column_pronoun(denominator)) |
               (!!margin_column_pronoun(denominator)) == 0,
             NA_real_,
-            # `* 1`, which dbplyr renders `* 1.0`, is what makes a dialect
-            # classified as refusing reject a character source: the casts alone
-            # accept a numeric-looking character column on DuckDB (#429). The
-            # casts stay because they are what makes the ratio a double —
-            # without them PostgreSQL and RSQLite divided an integer pair as
-            # integers, and the multiplication alone leaves a DuckDB `DECIMAL`
-            # source decimal. What the probe measures is an aggregate while
-            # this depends on arithmetic, so a dialect where those two diverge
-            # reproduces #429 here.
+            # `* 1`, which dbplyr renders `* 1.0`, is what refuses a character
+            # source on a dialect classified as refusing: the cast alone
+            # accepts a numeric-looking character column on DuckDB (#429). The
+            # cast is not made redundant by it — the cast is what makes the
+            # ratio a double whatever the source's type. The verdict this rests
+            # on is measured with an aggregate while this is arithmetic, so a
+            # dialect answering the two differently reproduces #429 here.
             as.double((!!margin_column_pronoun(source)) * 1) /
               as.double((!!margin_column_pronoun(denominator)) * 1)
           )

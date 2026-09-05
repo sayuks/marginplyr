@@ -833,11 +833,12 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
       info = simulator
     )
     expect_match(sql, "IS NULL AND", fixed = TRUE, info = simulator)
-    # Neither assertion executes -- a simulator has no database behind it -- so
-    # each stands for a property measured on a dialect that does. The cast is
-    # what stops integer division, which PostgreSQL and RSQLite performed on an
-    # integer pair without it; the `* 1.0` is what makes a character source
-    # refuse at binding rather than be coerced (#429).
+    # A simulator has no database behind it, so neither of these executes and
+    # each stands for a property a dialect that does execute is held to: the
+    # cast for the integer source share `RSQLite executes portable Parent
+    # shares end to end` compares against a local result, and the `* 1.0` for
+    # the refusal `DuckDB refuses a character share source whatever it holds`
+    # asserts (#429).
     expect_match(sql, "(CAST|CDBL)\\(", info = simulator)
     expect_match(sql, "* 1.0", fixed = TRUE, info = simulator)
     expect_false(
@@ -1448,13 +1449,11 @@ test_that("DuckDB reports an ineligible share source against its summary", {
   )
 })
 
-# #429. The test above uses a source DuckDB cannot read as a number, and the
-# refusal it asserts came from the equality against the denominator, which is
-# one of the few operations DuckDB coerces a character column for. A
-# numeric-looking source passed that equality and the casts beside it, so the
-# dialect calculated a share from a character summary and raised nothing. What
-# refuses it now is the multiplication in the ratio, which binds by type rather
-# than by value, so both sources here are refused for the same reason.
+# #429. What refuses a character source here is the multiplication in the
+# staged ratio, which binds by type, so the two columns below are refused for
+# the same reason and neither's values are part of it. `DuckDB reports an
+# ineligible share source against its summary` covers only the non-numeric
+# column, which is why it did not reach #429.
 test_that("DuckDB refuses a character share source whatever it holds", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -1482,6 +1481,16 @@ test_that("DuckDB refuses a character share source whatever it holds", {
     )
   }
 
+  # The refusal below is of a character source and not of every share on the
+  # dialect, which is what separated this fix from reclassifying DuckDB as
+  # converting. It runs first because it is also what makes those refusals
+  # attributable to the source: the errors are read for their class alone,
+  # since DuckDB's wording is its version's, so without this a dropped table
+  # or a renamed column would satisfy them.
+  eligible <- dplyr::collect(summarize(remote, "revenue"))
+  expect_identical(sort(eligible$parent), c(0.5, 1, 1))
+  expect_identical(sort(eligible$grand), c(0.5, 1, 1))
+
   for (column in c("numeric_looking", "non_numeric")) {
     expect_error(
       summarize(data, column),
@@ -1493,12 +1502,6 @@ test_that("DuckDB refuses a character share source whatever it holds", {
     error <- expect_error(dplyr::collect(query), info = column)
     expect_false(inherits(error, "marginplyr_error"), info = column)
   }
-
-  # The refusal is of a character source and not of every share on the dialect,
-  # which is what separated this fix from reclassifying DuckDB as converting.
-  eligible <- dplyr::collect(summarize(remote, "revenue"))
-  expect_identical(sort(eligible$parent), c(0.5, 1, 1))
-  expect_identical(sort(eligible$grand), c(0.5, 1, 1))
 })
 
 test_that("DuckDB Parent shares agree across native, portable, local paths", {

@@ -1,7 +1,7 @@
 # Refusing a character share source from the staged query itself
 
 Investigated: 2026-09-05
-Revised: 2026-09-05 — R/share.R, implementing #429
+Revised: 2026-09-05 — #429
 
 `investigation/share-source-eligibility-on-coercing-dialects.md` (2026-08-16)
 established that a dialect can be asked whether it converts a non-numeric value
@@ -175,10 +175,10 @@ was reached without changing any dialect's verdict.
 
 ## Revisions (2026-09-05)
 
-Two of the items above were measured while implementing #429 in `R/share.R`,
-and together they decided which of the three wanted forms was committed. The
-form above the fold that carries them is `as.double(x * 1) / as.double(y * 1)`,
-not the bare `mul1`.
+Two items *What was not measured* left open were measured on this date while
+#429 was implemented. Together they decided between two forms *A substitution,
+not an addition* had scored alike. `R/share.R` is authoritative for which one
+the package sends.
 
 **What `x * 1` does to a source that is neither an integer nor a double.** On
 duckdb 1.5.5, `typeof()` was read for each step over a `DECIMAL(18,3)` pair and
@@ -190,22 +190,20 @@ a `BIGINT` pair:
 | `x * 1.0` | `DECIMAL(18,4)` | `DECIMAL(21,1)` |
 | `TRY_CAST(x * 1.0 AS DOUBLE)` | `DOUBLE` | `DOUBLE` |
 
-So the multiplication does not by itself make its operand a double, and the
-bare `mul1` form leaves what the driver returns to the dialect's decimal
-handling. The cast is what the share's always-a-double contract rests on, which
-is the second reason it stays — the first being the integer division the `x / y`
-row above recorded.
+So the multiplication did not by itself make its operand a double, and the bare
+`(x * 1) / (y * 1)` left what the driver returned to the dialect's decimal
+handling. That is a second reason to keep the cast, beside the integer division
+the `x / y` row of that table recorded.
 
-**What the fallback simulators render.** The section above left unmeasured
-whether `x * 1.0` guards those dialects against integer division, and the
-committed form does not put that question to them: all fifteen simulators
-`available_simulators()` names rendered both guards, the multiplication and the
-dialect's own cast, so the assertion that failed under the bare `mul1` form
-holds unchanged. Nothing here executes them, which is the whole of what a
-simulator can establish.
+**What the fallback simulators render.** *What the substitution cost the suite*
+left unmeasured whether `x * 1.0` guards those dialects against integer
+division. `as.double(x * 1) / as.double(y * 1)` does not put that question to
+them: all fifteen simulators that section's test names rendered both the
+multiplication and the dialect's own cast, so the assertion that failed under
+the bare form did not fail under this one. Nothing here was executed, which is
+the whole of what a simulator can establish.
 
-Unchanged by this: which operations each dialect refuses for a character
-column, and that the committed form makes DuckDB and PostgreSQL refuse a
-character source value-independently. The suite was run whole under the
-committed form with `NOT_CRAN=true` and `MARGINPLYR_REQUIRED_SUGGESTS=""` and
-reported no failure.
+Nothing above is overturned. Which operations each dialect refused for a
+character column stands, and both forms made DuckDB and PostgreSQL refuse a
+character source value-independently; what these two measurements settled is
+only which of them to send.
