@@ -252,68 +252,6 @@ check_summary_output_names <- function(output_names,
   check_margin_id_collision(set_id_name, output_names, "a summary output")
 }
 
-# The columns of a data-frame-valued summary that took an Assigned summary
-# name, put back where dplyr would have put them had the summary stayed
-# unnamed (ADR 0028). A name the caller wrote is not among the assigned ones,
-# so it packs as it does under `dplyr::summarize()`.
-#
-# `is.data.frame()` is the whole of the scope. No other backend expanded such a
-# summary before the name was assigned, so expanding one there would be a new
-# behavior rather than a repair.
-#
-# Reached from `summarize_margin_union()` only, that being the adapter a local
-# result is built by: `summarize_margin_native()` opens by reading its input's
-# remote connection, so nothing it returns is a data frame.
-#
-# The two checks that can now have a subject are asked again, of the names that
-# replaced the assigned one -- the pre-execution pass and the adapter's own
-# could only ask them of a name standing for the whole frame.
-# `check_summary_output_names()` is not asked, because the internal columns its
-# third question is about are renamed or dropped by the point this runs.
-expand_assigned_data_frames <- function(result,
-                                        assigned_names,
-                                        group_vars,
-                                        set_id_name,
-                                        set_id_is_internal = FALSE) {
-  if (!is.data.frame(result)) {
-    return(result)
-  }
-  packed <- intersect(assigned_names[!is.na(assigned_names)], names(result))
-  packed <- Filter(function(name) is.data.frame(result[[name]]), packed)
-  if (length(packed) == 0L) {
-    return(result)
-  }
-
-  inner_names <- unlist(
-    lapply(packed, function(name) names(result[[name]])),
-    use.names = FALSE
-  )
-  check_summary_group_overwrite(inner_names, group_vars = group_vars)
-  # A Grouping set identifier the package allocated for itself is not the
-  # caller's `.id`, and reporting a collision with it as one names an argument
-  # the caller never wrote, exactly as in `check_summary_output_names()`.
-  if (!set_id_is_internal) {
-    check_margin_id_collision(set_id_name, inner_names, "a summary output")
-  }
-
-  for (name in packed) {
-    result <- expand_packed_summary_column(result, name)
-  }
-  result
-}
-
-# `dplyr::mutate()` writes the columns, which is what makes two inner columns
-# of one name resolve the way dplyr's own expansion resolves them, and what
-# keeps the result's class dplyr's (ADR 0016). `.after` is what puts them where
-# the packed column stood.
-expand_packed_summary_column <- function(result, name) {
-  columns <- as.list(result[[name]])
-  result <- dplyr::mutate(result, !!!columns, .after = dplyr::all_of(name))
-  # An inner column of the assigned name has already taken the packed column's
-  # place above, and there is then nothing left under that name to drop.
-  dplyr::select(result, -dplyr::all_of(setdiff(name, names(columns))))
-}
-
 check_internal_summary_names <- function(output_names, internal_names) {
   conflicting_names <- intersect(output_names, internal_names)
   if (length(conflicting_names) == 0L) {
@@ -332,6 +270,64 @@ check_internal_summary_names <- function(output_names, internal_names) {
     i = "{.var {conflicting_names}}.",
     i = "Use different summary output names."
   ))
+}
+
+# The columns of a data-frame-valued summary that took an Assigned summary
+# name, put back where dplyr would have put them had the summary stayed
+# unnamed (ADR 0028).
+#
+# Reached from `summarize_margin_union()` only. `use_native` in
+# `stage_margin_summaries()` gates the other adapter on `native_grouping_sets`,
+# which `backend_capabilities()` grants to the two SQL kinds alone, so no local
+# result is built there.
+#
+# The composite check is asked again, of the names that replaced the assigned
+# one. Its internal names are empty here: the branch's `..marginplyr_key_`
+# columns are renamed or gone by this point, and the one internal column still
+# to be added -- the Grouping set identifier -- arrives through
+# `set_id_is_internal` instead.
+expand_assigned_data_frames <- function(result,
+                                        assigned_names,
+                                        group_vars,
+                                        set_id_name,
+                                        set_id_is_internal = FALSE) {
+  if (!is.data.frame(result)) {
+    return(result)
+  }
+  packed <- intersect(assigned_names[!is.na(assigned_names)], names(result))
+  packed <- Filter(function(name) is.data.frame(result[[name]]), packed)
+  if (length(packed) == 0L) {
+    return(result)
+  }
+
+  check_summary_output_names(
+    unlist(
+      lapply(packed, function(name) names(result[[name]])),
+      use.names = FALSE
+    ),
+    group_vars = group_vars,
+    internal_names = character(),
+    set_id_name = set_id_name,
+    set_id_is_internal = set_id_is_internal
+  )
+
+  for (name in packed) {
+    result <- expand_packed_summary_column(result, name)
+  }
+  result
+}
+
+# `dplyr::mutate()` writes the columns, so `.after` is what puts them where the
+# packed column stood.
+expand_packed_summary_column <- function(result, name) {
+  columns <- as.list(result[[name]])
+  result <- dplyr::mutate(result, !!!columns, .after = dplyr::all_of(name))
+  # An inner column of the assigned name has taken the packed column's place
+  # above, leaving nothing under that name to drop.
+  if (name %in% names(columns)) {
+    return(result)
+  }
+  dplyr::select(result, -dplyr::all_of(name))
 }
 
 # What execution carries for the caller's summary arguments: the dots to hand

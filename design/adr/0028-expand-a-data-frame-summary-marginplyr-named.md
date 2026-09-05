@@ -79,9 +79,11 @@ margin labelling. That is the point the grouping columns are under their own
 names and the label and identifier columns are not there yet, so the checks
 below need to be told to ignore nothing.
 
-`summarize_margin_native()` is not a second site. It opens by reading its
-input's remote connection, so nothing it returns is a data frame and the guard
-above could never pass there.
+`summarize_margin_native()` is not a second site. `stage_margin_summaries()`
+chooses it only where `supports_grouping_sets()` holds, which needs the
+`native_grouping_sets` capability, which `backend_capabilities()` grants to the
+`duckdb` and `postgres` kinds alone — both lazy. So no local result is built
+there and the guard above could never pass.
 
 The carrier is `new_summary_arguments()`, which gains a third vector parallel to
 the dots and the caller labels: the Assigned summary name for each dot, `NA`
@@ -92,18 +94,22 @@ subscripted by the same origin positions the caller labels already are.
 
 ## What is checked again
 
-`check_summary_group_overwrite()` and `check_margin_id_collision()` are asked a
-second time, of the names that replaced the assigned one. Neither could have
-been asked of them before: the summary stood for one column under a name of
-marginplyr's, and no pre-execution reading knew what it held. An inner name
-equal to a grouping dimension is refused, and one equal to the caller's `.id`
-is refused, in the wording those two already use.
+`check_summary_output_names()` is asked a second time, of the names that
+replaced the assigned one. None of its three questions could have been asked of
+them before: the summary stood for one column under a name of marginplyr's, and
+no pre-execution reading knew what it held. An inner name equal to a grouping
+dimension is refused, and one equal to the caller's `.id` is refused, in the
+wording those two already use.
 
-`check_summary_output_names()` is not asked. Its third question is about the
-internal columns the adapter put beside the summary outputs, and those are
-renamed or gone by this point, so asking it with an empty set would add a case
-to a composition whose contract is that both execution paths ask the same three
-questions in the same order.
+The composite is asked rather than its parts, so this becomes a third path
+under the contract that every path asks the same three questions in the same
+order. Its `internal_names` is empty at this point, the branch's
+`..marginplyr_key_` columns having been renamed or dropped, but the internal
+question still has a subject: where the Grouping set identifier is one the
+package allocated for itself, `add_grouping_set_id()` has yet to write it, and
+`set_id_is_internal` is what puts it back among the internal names. Asking only
+the other two would leave an inner name equal to that column silently
+overwritten.
 
 ## Consequences
 

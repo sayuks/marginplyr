@@ -1253,15 +1253,9 @@ test_that("an unnamed summary no rewrite reaches keeps dplyr's own naming", {
   )
 })
 
-# A data-frame-valued summary a rewrite reaches takes an Assigned summary name,
-# which dplyr would pack under; ADR 0028 expands it again on a local input, so
-# both shapes below hold the columns they held before #430. Telling them from
-# `nrow(pick(x, y))` above is a question about the value's type, which is why
-# the decision is made here rather than from the spelling (ADR 0019).
-#
-# The caller-named call is asserted beside them because it is what says the
-# expansion is keyed on who wrote the name: `out` is a name dplyr packs under
-# and marginplyr assigned none, so it packs.
+# ADR 0028, over the two shapes #435 reported. The caller-named call is
+# asserted beside them because it is what says the expansion is keyed on who
+# wrote the name: `out` is a name marginplyr assigned none of, so it packs.
 test_that("a rewritten data-frame-valued summary is named and expanded", {
   data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
   range_frame <- function(columns) {
@@ -1352,6 +1346,33 @@ test_that("an expanded inner name is checked against the result's names", {
       .id = "sum"
     ),
     "`.id`.*`sum`.*conflicts with a summary output"
+  )
+})
+
+# The third question, which the expansion is asked with no internal names of
+# its own: a share keeps set identity under a Grouping set identifier the
+# package allocated, and `add_grouping_set_id()` has yet to write it when the
+# expansion runs. Reachable only through an expansion -- packed, the inner name
+# is inside a column and collides with nothing.
+test_that("an expanded inner name is checked against an internal identifier", {
+  data <- data.frame(
+    g1 = c("a", "a", "b"),
+    g2 = c("p", "q", "p"),
+    x = c(1, 3, 5)
+  )
+  shadows_identifier <- function(value) {
+    stats::setNames(data.frame(sum(value)), "..marginplyr_set_id_1")
+  }
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(x),
+      parent = share_of_parent(total),
+      shadows_identifier(dplyr::pick(x)[[1L]]),
+      .grouping = rollup(g1, g2)
+    ),
+    "summary output names conflict with internal grouping columns"
   )
 })
 

@@ -381,15 +381,11 @@
 #' every branch: a dimension remains excluded even in a grouping set from
 #' which it is omitted.
 #'
-#' An unnamed summary takes its column name from the expression you wrote
-#' rather than from what marginplyr rewrote it into, so
-#' `sum(v) + grouping_bit(a)` names the same column on every backend. Where
-#' such a summary's value is a data frame, a local input expands its columns
-#' into the result and the name marginplyr assigned does not appear, exactly as
-#' [dplyr::summarize()] expands an unnamed one. Writing a name of your own
-#' packs those columns into a single column under it, again as dplyr does. A
-#' lazy input follows its own backend: Arrow packs them whether or not the
-#' summary is named, and a SQL backend has no expanded form to give.
+#' Where an unnamed summary's value is a data frame, a local input expands its
+#' columns into the result, exactly as [dplyr::summarize()] does, and a name
+#' marginplyr assigned such a summary does not appear. Writing a name of your
+#' own packs those columns into a single column under it, again as dplyr does.
+#' A lazy input gives whatever shape its own backend gives.
 #'
 #' Summary results may not overwrite a fixed key or grouping dimension,
 #' including through a data-frame-valued summary. The local dplyr backend can
