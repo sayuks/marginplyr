@@ -101,14 +101,26 @@ overturned.
 1. Add one line to the header block:
 
    ```text
-   Revised: <YYYY-MM-DD> — investigation/<successor>.md
+   Revised: <YYYY-MM-DD> — <what established the correction>
    ```
 
-   one per revision, in date order after `Investigated:`.
+   one per revision, in date order after `Investigated:`. What follows the dash
+   is what step 2 names — usually `investigation/<successor>.md`, and the
+   artifact where the correction was established in code or configuration
+   rather than in another note.
 
 2. Add a section headed `## Revisions (<YYYY-MM-DD>)`, placed after the
    findings it amends, stating what changed and why. Name the note or artifact
    that established the correction.
+
+   A second revision on a date the note already carries writes the issue
+   number into both — `(#<issue>)` after the date in step 1's line, and
+   `## Revisions (<YYYY-MM-DD>, #<issue>)` here — so that a header line names
+   one section. Without it a reader has two entries and two sections and no way
+   to pair them, which is what
+   `refusing-a-character-share-source-in-the-staged-query.md` reached the day
+   it was written: two investigations, one date, and the same thing named
+   after the dash.
 
 3. Leave the original findings in place, unedited. The point of the note is
    what was believed on its date; deleting the superseded text destroys the

@@ -204,6 +204,55 @@ test_that("dtplyr integer and double Parent shares match local results", {
   expect_type(result$double_share, "double")
 })
 
+# The branch that builds no ratio is not conditioned on backend kind, so
+# data.table translates the same expression the SQL kinds send (#446). What is
+# at risk here is the value: the refusal below is the local eligible-type
+# check, which dtplyr reaches before any share is built.
+test_that("dtplyr Total shares needing no join match local results", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(
+    group = c("x", "x", "y"),
+    integer_value = 1:3,
+    double_value = c(0.5, 1.5, 4),
+    missing_value = rep(NA_real_, 3L),
+    zero_value = c(0, 0, 0),
+    character_value = c("1", "2", "3")
+  )
+  # No `.grouping`, so the only occurrence is the Grand total set and every
+  # share is its own denominator.
+  summarize <- function(source) {
+    summarize_with_margins(
+      source,
+      integer_total = sum(integer_value),
+      double_total = sum(double_value),
+      missing_total = sum(missing_value),
+      zero_total = sum(zero_value),
+      integer_share = share_of_total(integer_total),
+      double_share = share_of_total(double_total),
+      missing_share = share_of_total(missing_total),
+      zero_share = share_of_total(zero_total)
+    )
+  }
+
+  expected <- summarize(data)
+  query <- summarize(dtplyr::lazy_dt(data))
+  expect_s3_class(query, "dtplyr_step")
+  result <- dplyr::collect(query)
+  expect_equal(as.data.frame(result), as.data.frame(expected))
+  for (share in c("integer", "double", "missing", "zero")) {
+    expect_identical(result[[paste0(share, "_share")]], 1, info = share)
+  }
+
+  expect_error(
+    dplyr::collect(summarize_with_margins(
+      dtplyr::lazy_dt(data),
+      total = max(character_value),
+      whole = share_of_total(total)
+    )),
+    "plain integer or double scalar"
+  )
+})
+
 test_that("dtplyr validates each referenced source expanded by across", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(
@@ -1627,6 +1676,76 @@ test_that("DuckDB refuses a character share source whatever it holds", {
     expect_s3_class(query, "tbl_lazy")
     error <- expect_error(dplyr::collect(query), info = column)
     expect_false(inherits(error, "marginplyr_error"), info = column)
+  }
+})
+
+# #446. The plan below gives every occurrence its own denominator, so no
+# denominator is joined and the share is built as a constant. The refusal here
+# is therefore of the expression that branch emits for the sole purpose of
+# binding the source, and not of the ratio `DuckDB refuses a character share
+# source whatever it holds` covers. Only a Total share reaches it: a Parent
+# share requires a rollup, and every rollup gives some occurrence a parent.
+test_that("DuckDB refuses a character source for a share that needs no join", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    numeric_looking = c("1", "2", "3"),
+    non_numeric = c("n", "m", "o"),
+    revenue = c(1, 2, 4),
+    zero = c(0, 0, 0),
+    missing = rep(NA_real_, 3L)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_whole_character_duckdb_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  # `.grouping` is left absent so that the shape under test is the default one
+  # a Total share takes, rather than a spelling of it.
+  summarize <- function(source, column, ...) {
+    summarize_with_margins(
+      source,
+      total = max(!!rlang::sym(column)),
+      whole = share_of_total(total),
+      .by = region,
+      ...
+    )
+  }
+
+  # Runs first for the reason the joined refusal's does: the errors a
+  # collection raises below are read for their class alone, so without this a
+  # dropped table would satisfy them.
+  for (column in c("revenue", "zero", "missing")) {
+    eligible <- dplyr::collect(summarize(remote, column))
+    expect_type(eligible$whole, "double")
+    expect_identical(eligible$whole, rep(1, nrow(eligible)), info = column)
+  }
+
+  for (column in c("numeric_looking", "non_numeric")) {
+    expect_error(
+      summarize(data, column),
+      "plain integer or double scalar",
+      info = column
+    )
+    query <- summarize(remote, column)
+    expect_s3_class(query, "tbl_lazy")
+    error <- expect_error(dplyr::collect(query), info = column)
+    expect_false(inherits(error, "marginplyr_error"), info = column)
+
+    # `.check_share_source = FALSE` governs the dialect-verdict refusal only,
+    # so it does not relax the eligible-type rule on either path.
+    expect_error(
+      summarize(data, column, .check_share_source = FALSE),
+      "plain integer or double scalar",
+      info = column
+    )
+    relaxed <- summarize(remote, column, .check_share_source = FALSE)
+    expect_s3_class(relaxed, "tbl_lazy")
+    expect_error(dplyr::collect(relaxed), info = column)
   }
 })
 

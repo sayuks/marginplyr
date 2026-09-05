@@ -2672,7 +2672,18 @@ apply_joined_shares <- function(result,
       source <- pair$source
       denominator <- denominator_names[[source]]
       if (length(joined_ids) == 0L) {
-        return(rlang::expr(1.0))
+        # No denominator was joined, so nothing else in the staged query names
+        # the source: this is what binds it there, for the reason the ratio's
+        # own `* 1L` below gives (#446). Both arms are `1.0`, and the condition
+        # is an `IS NULL`, which SQL never answers with `NULL`, so no third
+        # value leaks from the `CASE` dbplyr renders without an `ELSE`.
+        return(rlang::expr(
+          dplyr::if_else(
+            is.na((!!margin_column_pronoun(source)) * 1L),
+            1.0,
+            1.0
+          )
+        ))
       }
       rlang::expr(
         dplyr::if_else(
