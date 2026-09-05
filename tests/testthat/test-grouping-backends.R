@@ -1514,6 +1514,44 @@ test_that("Arrow preserves margin values without implicit ordering", {
   expect_setequal(result$group, unordered_margin_expected())
 })
 
+# ADR 0028 scopes the expansion by `is.data.frame()`, and these are the two
+# input classes on either side of that carrying one summary between them. A
+# `data.table` is a data frame, so what it holds is expanded; an Arrow table is
+# not, and Arrow packed such a summary before an Assigned summary name existed
+# to pack it under, so there is nothing there to restore.
+expanded_summary_data <- function() {
+  data.frame(group = c("a", "a", "b"), x = c(1, 3, 5))
+}
+
+expanded_summary_totals <- function(value, bit) {
+  data.frame(sum = sum(value), margin = bit)
+}
+
+test_that("a data.table input expands a rewritten data-frame summary", {
+  skip_if_suggest_absent("data.table")
+  result <- summarize_with_margins(
+    data.table::as.data.table(expanded_summary_data()),
+    expanded_summary_totals(x, grouping_bit(group)),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(result), c("group", "sum", "margin"))
+  expect_equal(result$sum, c(4, 5, 9))
+  expect_equal(result$margin, c(0L, 0L, 1L))
+})
+
+test_that("Arrow packs a rewritten data-frame summary", {
+  skip_if_suggest_absent("arrow")
+  result <- summarize_with_margins(
+    arrow::Table$create(expanded_summary_data()),
+    expanded_summary_totals(x, grouping_bit(group)),
+    .grouping = rollup(group)
+  ) |>
+    dplyr::collect()
+  packed <- "expanded_summary_totals(x, grouping_bit(group))"
+  expect_equal(names(result), c("group", packed))
+  expect_s3_class(result[[packed]], "data.frame")
+})
+
 test_that("dtplyr nesting retains original keys and empty rowwise behavior", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(

@@ -36,6 +36,8 @@ marginplyr passes through, and therefore describes but does not promise:
 
 Nothing else in the package needs a reconstruction rule, because every Margin
 verb ends in a dplyr verb applied to a data frame that dplyr itself produced.
+[ADR 0028](0028-expand-a-data-frame-summary-marginplyr-named.md) is the
+exception, and states its own scope.
 
 ### Measured behavior
 

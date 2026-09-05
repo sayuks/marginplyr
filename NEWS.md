@@ -161,13 +161,17 @@
   after the caller's own expression, identically on every backend. A summary no
   rewrite reaches is named by dplyr exactly as before, and so is a summary
   written as `across()` or `pick()` itself, so both go on expanding a
-  data-frame value's columns into the result. A data-frame-valued summary a
-  rewrite *does* reach is now named, and dplyr packs a named one:
-  `range_frame(pick(x))` returned `lo` and `hi` and now returns one
-  data-frame column named after the call. Telling that summary from
-  `nrow(pick(v, w))` is a question about the value's type rather than about how
-  it is spelled, so give either one a name of your own where you want the
-  columns expanded or packed regardless (#430, #435).
+  data-frame value's columns into the result. So does a summary the naming
+  *does* reach whose value is a data frame, which dplyr would pack under any
+  name: on a local input marginplyr expands that column again after the
+  summary runs, so `range_frame(pick(x))` returns `lo` and `hi` as it did
+  before, and the name marginplyr assigned does not appear. Write a name of
+  your own to pack those columns into one column under it. Which summaries
+  those are is a question about the value's type — `nrow(pick(v, w))` is one
+  call away and has to be named — so it is answered from the value rather than
+  from the spelling, and only for an input already in memory: Arrow packed such
+  a summary before this change too, and no SQL backend expanded one
+  (#430, #435).
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
   Lazy margin-label checks use portable numeric `CASE` aggregates across

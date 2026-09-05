@@ -1253,15 +1253,16 @@ test_that("an unnamed summary no rewrite reaches keeps dplyr's own naming", {
   )
 })
 
-# What that bound costs, pinned here rather than left to be found: a
-# data-frame-valued summary a rewrite *does* reach is named, and dplyr packs a
-# named one into a single column. Both shapes below expanded before #430.
+# A data-frame-valued summary a rewrite reaches takes an Assigned summary name,
+# which dplyr would pack under; ADR 0028 expands it again on a local input, so
+# both shapes below hold the columns they held before #430. Telling them from
+# `nrow(pick(x, y))` above is a question about the value's type, which is why
+# the decision is made here rather than from the spelling (ADR 0019).
 #
-# Telling them from `nrow(pick(x, y))` above, which #430 requires be named, is a
-# question about the value's type, and ADR 0019 reads spellings. So this is the
-# assertion that says the two recognized shapes are excluded by name because a
-# static reading reaches them and not because the exclusion is complete (#435).
-test_that("a rewritten data-frame-valued summary is named and packed", {
+# The caller-named call is asserted beside them because it is what says the
+# expansion is keyed on who wrote the name: `out` is a name dplyr packs under
+# and marginplyr assigned none, so it packs.
+test_that("a rewritten data-frame-valued summary is named and expanded", {
   data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5), y = c(2, 4, 6))
   range_frame <- function(columns) {
     data.frame(lo = min(columns[[1L]]), hi = max(columns[[1L]]))
@@ -1275,15 +1276,83 @@ test_that("a rewritten data-frame-valued summary is named and packed", {
     range_frame(dplyr::pick(x)),
     .grouping = rollup(group)
   )
-  expect_equal(names(selected), c("group", "range_frame(dplyr::pick(x))"))
-  expect_s3_class(selected[["range_frame(dplyr::pick(x))"]], "data.frame")
+  expect_equal(names(selected), c("group", "lo", "hi"))
+  expect_equal(selected[["lo"]], c(1, 5, 1))
+  expect_equal(selected[["hi"]], c(3, 5, 5))
 
   helped <- summarize_with_margins(
     data,
     totals(x, grouping_bit(group)),
     .grouping = rollup(group)
   )
-  expect_equal(names(helped), c("group", "totals(x, grouping_bit(group))"))
+  expect_equal(names(helped), c("group", "sum", "margin"))
+  expect_equal(helped[["sum"]], c(4, 5, 9))
+  expect_equal(helped[["margin"]], c(0L, 0L, 1L))
+
+  named <- summarize_with_margins(
+    data,
+    out = range_frame(dplyr::pick(x)),
+    .grouping = rollup(group)
+  )
+  expect_equal(names(named), c("group", "out"))
+  expect_s3_class(named[["out"]], "data.frame")
+})
+
+# The expansion runs once per branch, so a plan with more than one grouping set
+# is what says the branches still agree on their columns -- `bind_rows()` fills
+# a column a branch is missing rather than refusing the pair, so a disagreement
+# would arrive as an `NA` and not as an error.
+test_that("an expanded data-frame summary crosses a multi-set union", {
+  data <- data.frame(
+    region = c("east", "east", "west"),
+    channel = c("web", "shop", "web"),
+    x = c(1, 3, 5)
+  )
+  totals <- function(value, bit) {
+    data.frame(sum = sum(value), margin = bit)
+  }
+
+  result <- summarize_with_margins(
+    data,
+    totals(x, grouping_bit(region)),
+    .grouping = cube(region, channel)
+  )
+  expect_equal(names(result), c("region", "channel", "sum", "margin"))
+  expect_false(anyNA(result[["sum"]]))
+  # The rows of the two sets that omit `region`: `channel` alone and the Grand
+  # total. Every other row came from a branch where the bit is `0L`.
+  expect_equal(sum(result[["margin"]] == 1L), 3L)
+})
+
+# The columns an expansion puts in the result are names no pre-execution check
+# could read, since the summary stood for one column there under a name of
+# marginplyr's. Both questions that still have a subject are asked again.
+test_that("an expanded inner name is checked against the result's names", {
+  data <- data.frame(group = c("a", "a", "b"), x = c(1, 3, 5))
+  shadows_group <- function(value) {
+    data.frame(group = sum(value))
+  }
+  totals <- function(value, bit) {
+    data.frame(sum = sum(value), margin = bit)
+  }
+
+  expect_error(
+    summarize_with_margins(
+      data,
+      shadows_group(dplyr::pick(x)[[1L]]),
+      .grouping = rollup(group)
+    ),
+    "cannot overwrite grouping column.*`group`"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      totals(x, grouping_bit(group)),
+      .grouping = rollup(group),
+      .id = "sum"
+    ),
+    "`.id`.*`sum`.*conflicts with a summary output"
+  )
 })
 
 test_that("data-frame summaries cannot overwrite grouping columns", {

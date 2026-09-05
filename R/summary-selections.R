@@ -252,6 +252,68 @@ check_summary_output_names <- function(output_names,
   check_margin_id_collision(set_id_name, output_names, "a summary output")
 }
 
+# The columns of a data-frame-valued summary that took an Assigned summary
+# name, put back where dplyr would have put them had the summary stayed
+# unnamed (ADR 0028). A name the caller wrote is not among the assigned ones,
+# so it packs as it does under `dplyr::summarize()`.
+#
+# `is.data.frame()` is the whole of the scope. No other backend expanded such a
+# summary before the name was assigned, so expanding one there would be a new
+# behavior rather than a repair.
+#
+# Reached from `summarize_margin_union()` only, that being the adapter a local
+# result is built by: `summarize_margin_native()` opens by reading its input's
+# remote connection, so nothing it returns is a data frame.
+#
+# The two checks that can now have a subject are asked again, of the names that
+# replaced the assigned one -- the pre-execution pass and the adapter's own
+# could only ask them of a name standing for the whole frame.
+# `check_summary_output_names()` is not asked, because the internal columns its
+# third question is about are renamed or dropped by the point this runs.
+expand_assigned_data_frames <- function(result,
+                                        assigned_names,
+                                        group_vars,
+                                        set_id_name,
+                                        set_id_is_internal = FALSE) {
+  if (!is.data.frame(result)) {
+    return(result)
+  }
+  packed <- intersect(assigned_names[!is.na(assigned_names)], names(result))
+  packed <- Filter(function(name) is.data.frame(result[[name]]), packed)
+  if (length(packed) == 0L) {
+    return(result)
+  }
+
+  inner_names <- unlist(
+    lapply(packed, function(name) names(result[[name]])),
+    use.names = FALSE
+  )
+  check_summary_group_overwrite(inner_names, group_vars = group_vars)
+  # A Grouping set identifier the package allocated for itself is not the
+  # caller's `.id`, and reporting a collision with it as one names an argument
+  # the caller never wrote, exactly as in `check_summary_output_names()`.
+  if (!set_id_is_internal) {
+    check_margin_id_collision(set_id_name, inner_names, "a summary output")
+  }
+
+  for (name in packed) {
+    result <- expand_packed_summary_column(result, name)
+  }
+  result
+}
+
+# `dplyr::mutate()` writes the columns, which is what makes two inner columns
+# of one name resolve the way dplyr's own expansion resolves them, and what
+# keeps the result's class dplyr's (ADR 0016). `.after` is what puts them where
+# the packed column stood.
+expand_packed_summary_column <- function(result, name) {
+  columns <- as.list(result[[name]])
+  result <- dplyr::mutate(result, !!!columns, .after = dplyr::all_of(name))
+  # An inner column of the assigned name has already taken the packed column's
+  # place above, and there is then nothing left under that name to drop.
+  dplyr::select(result, -dplyr::all_of(setdiff(name, names(columns))))
+}
+
 check_internal_summary_names <- function(output_names, internal_names) {
   conflicting_names <- intersect(output_names, internal_names)
   if (length(conflicting_names) == 0L) {
@@ -273,29 +335,41 @@ check_internal_summary_names <- function(output_names, internal_names) {
 }
 
 # What execution carries for the caller's summary arguments: the dots to hand
-# dplyr, beside the caller's own label for each. Constructed at the one point
-# both halves are final -- after every rewrite -- so a pair that stops agreeing
-# in length cannot be built at all, which is an invariant rather than a Package
-# condition (ADR 0015): no call produces it, and a map built from a misaligned
-# pair would quote one argument's expression under another.
+# dplyr, beside the caller's own label for each and the Assigned summary name
+# for each. Constructed at the one point all three are final -- after every
+# rewrite -- so vectors that stop agreeing in length cannot be built at all,
+# which is an invariant rather than a Package condition (ADR 0015): no call
+# produces it, and a map built from a misaligned pair would quote one
+# argument's expression under another.
 #
 # The labels default to the dots' own, which is the truth for a caller reaching
 # an adapter directly: what it passed is what it wrote. Nothing is restated
 # there, because `branch_argument_map()` drops a label a rewrite left alone --
 # so "no spelling to restore" needs no representation of its own, and a length
-# is checked once rather than only when a second value says to.
+# is checked once rather than only when a second value says to. The assigned
+# names default to none for the same reason: such a caller wrote every name its
+# dots carry, and ADR 0028 expands only a name marginplyr wrote.
 new_summary_arguments <- function(dots,
-                                  labels = summary_argument_labels(dots)) {
+                                  labels = summary_argument_labels(dots),
+                                  assigned_names = rep(
+                                    NA_character_,
+                                    length(dots)
+                                  )) {
   stopifnot(
     is.list(dots),
     is.character(labels),
-    length(labels) == length(dots)
+    length(labels) == length(dots),
+    is.character(assigned_names),
+    length(assigned_names) == length(dots)
   )
-  list(dots = dots, labels = labels)
+  list(dots = dots, labels = labels, assigned_names = assigned_names)
 }
 
 # The name dplyr would have given each unnamed summary marginplyr rewrites,
-# read from what the caller wrote rather than from the rewrite.
+# read from what the caller wrote rather than from the rewrite. The named dots
+# arrive beside the Assigned summary name each one took, `NA` where none was
+# assigned: ADR 0028 decides after execution, and a result column carrying a
+# name marginplyr wrote is the only thing it acts on.
 #
 # dplyr names an unnamed summary by deparsing the expression it receives, and
 # what a rewritten one hands it is marginplyr's spelling: a branch-local `0L`
@@ -320,7 +394,7 @@ new_summary_arguments <- function(dots,
 # data-frame-valued expression the static reading does not recognize, and no
 # reading separates it from a scalar one: `nrow(pick(v, w))` has to be named
 # and `range_frame(pick(v))` has to not be, which is a question about the
-# value's type. #435 holds what that costs and what answering it would take.
+# value's type. ADR 0028 is where that one is answered.
 #
 # `rlang::as_label()` is `rlang::quos_auto_name()`'s own labeller, so the name
 # is dplyr's up to the width at which rlang abbreviates a long expression:
@@ -330,6 +404,7 @@ new_summary_arguments <- function(dots,
 name_rewritten_summary_dots <- function(original, resolved) {
   stopifnot(length(original) == length(resolved))
   arg_names <- rlang::names2(resolved)
+  assigned_names <- rep(NA_character_, length(resolved))
   for (i in which(!nzchar(arg_names))) {
     expr <- rlang::quo_get_expr(original[[i]])
     rewritten <- !identical(expr, rlang::quo_get_expr(resolved[[i]])) ||
@@ -338,8 +413,12 @@ name_rewritten_summary_dots <- function(original, resolved) {
       next
     }
     arg_names[[i]] <- rlang::as_label(expr)
+    assigned_names[[i]] <- arg_names[[i]]
   }
-  stats::setNames(resolved, arg_names)
+  list(
+    dots = stats::setNames(resolved, arg_names),
+    assigned_names = assigned_names
+  )
 }
 
 plan_summary_expressions <- function(dots,
@@ -376,7 +455,8 @@ plan_summary_expressions <- function(dots,
   # below this either answers a named dot or is one of those moves. The labels
   # above are read first because they are the caller's spelling for a Condition
   # context, which a name assigned here would spell `sum(v) = sum(v)`.
-  dots <- name_rewritten_summary_dots(original_dots, dots)
+  named <- name_rewritten_summary_dots(original_dots, dots)
+  dots <- named$dots
   summary_plan <- plan_share_expressions(
     dots,
     selection_proxy = selection_proxy,
@@ -385,9 +465,10 @@ plan_summary_expressions <- function(dots,
     validate_cardinality = wraps_share_sources_in_summary(backend_kind)
   )
   # Share planning is the one step that moves a dot, so it reports where each
-  # dot it produced came from and the labels are subscripted by that. Every
-  # other rewrite here answers one dot with one dot in place.
+  # dot it produced came from and both per-dot vectors are subscripted by that.
+  # Every other rewrite here answers one dot with one dot in place.
   caller_labels <- caller_labels[summary_plan$origin_positions]
+  assigned_names <- named$assigned_names[summary_plan$origin_positions]
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
     data_proxy = data_proxy,
@@ -404,7 +485,11 @@ plan_summary_expressions <- function(dots,
     )
   }
   list(
-    summaries = new_summary_arguments(summary_plan$dots, caller_labels),
+    summaries = new_summary_arguments(
+      summary_plan$dots,
+      caller_labels,
+      assigned_names
+    ),
     requests = summary_plan$requests
   )
 }
