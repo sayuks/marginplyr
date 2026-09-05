@@ -111,11 +111,13 @@ overturned.
    that established the correction.
 
    A second revision on a date the note already carries writes the issue
-   number into both — `Revised: <YYYY-MM-DD> (#<issue>) — <target>` and
-   `## Revisions (<YYYY-MM-DD>, #<issue>)` — so that a header line names one
-   section. Without it a reader has two entries and two sections and no way to
-   pair them, which is what `refusing-a-character-share-source-in-the-staged-query.md`
-   reached the day it was written: two investigations, one date, one target.
+   number into both — `(#<issue>)` after the date in step 1's line, and
+   `## Revisions (<YYYY-MM-DD>, #<issue>)` here — so that a header line names
+   one section. Without it a reader has two entries and two sections and no way
+   to pair them, which is what
+   `refusing-a-character-share-source-in-the-staged-query.md` reached the day
+   it was written: two investigations, one date, and the same thing named
+   after the dash.
 
 3. Leave the original findings in place, unedited. The point of the note is
    what was believed on its date; deleting the superseded text destroys the

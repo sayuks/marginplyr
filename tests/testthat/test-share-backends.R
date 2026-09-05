@@ -1716,9 +1716,9 @@ test_that("DuckDB refuses a character source for a share that needs no join", {
     )
   }
 
-  # Runs first for the reason the joined refusal's does: the errors below are
-  # read for their class alone, so without an eligible collection a dropped
-  # table would satisfy them.
+  # Runs first for the reason the joined refusal's does: the errors a
+  # collection raises below are read for their class alone, so without this a
+  # dropped table would satisfy them.
   for (column in c("revenue", "zero", "missing")) {
     eligible <- dplyr::collect(summarize(remote, column))
     expect_type(eligible$whole, "double")
