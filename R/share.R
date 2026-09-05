@@ -2378,7 +2378,8 @@ probe_share_dialect <- function(con) {
     control <- probe_share_dialect_answer(
       con,
       quote(sum(z, na.rm = TRUE)),
-      purpose = "share_dialect_control"
+      purpose = "share_dialect_control",
+      control = TRUE
     )
     if (identical(control, "answered")) {
       return("refuses")
@@ -2405,13 +2406,15 @@ probe_share_dialect <- function(con) {
 # the share. An unrecognised status therefore fails closed by construction,
 # and that is the property worth writing down rather than asserting.
 #
-# `purpose` is the name this query is recorded under (ADR 0027).
-probe_share_dialect_answer <- function(con, expr, purpose) {
+# `purpose` is the name this query is recorded under (ADR 0027). `control` says
+# which of the two questions this is, which is what decides the reading below.
+probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
+  # Bound outside the wraps below for the reason `probe_share_dialect_holds()`
+  # binds its number outside its own: what each of them reads as something the
+  # connection did is an error.
+  scaffold <- share_probe_scaffold()$sql
   query <- tryCatch(
-    dplyr::summarize(
-      dplyr::tbl(con, dbplyr::sql("SELECT 1 AS z"), vars = "z"),
-      p = !!expr
-    ),
+    dplyr::summarize(dplyr::tbl(con, scaffold, vars = "z"), p = !!expr),
     error = function(cnd) NULL
   )
   if (is.null(query)) {
@@ -2426,15 +2429,52 @@ probe_share_dialect_answer <- function(con, expr, purpose) {
     return("raised")
   }
   value <- answer$value
-  if (
-    !is.data.frame(value) ||
-      nrow(value) != 1L ||
-      ncol(value) != 1L ||
-      !is_share_source_type(value[[1L]])
-  ) {
+  if (!is.data.frame(value) || nrow(value) != 1L || ncol(value) != 1L) {
+    return("unanswerable")
+  }
+  if (!probe_share_dialect_holds(value[[1L]], control = control)) {
     return("unanswerable")
   }
   "answered"
+}
+
+# Whether the one value a query came back with is the answer its caller asked
+# for. Not `is_share_source_type()`: that is the eligible-type rule about a
+# caller's summary, and it rejects a classed value, so it also rejects what a
+# driver mapped a database type to. RPostgres alone offers four mappings for
+# the `bigint` PostgreSQL sums an integer to -- `bit64::integer64`, `integer`,
+# `numeric`, and `character`, the first a classed double and the last not a
+# number at all -- and the caller chooses between them when they connect
+# (#440).
+#
+# The probe asks only that a number came back, which is the conversion. The
+# control asks for the number the scaffolding selected, in whatever type the
+# mapping produced, and tests the type as well as the value: `==` alone is the
+# weaker question of what R coerces equal to that number, which several base
+# types answer without being it.
+#
+# The comparison is wrapped because a class that passes the type test can raise
+# inside `==` rather than return `FALSE` -- `units` and `vctrs::new_vctr` both
+# do -- and nothing between here and the caller catches it, where every other
+# way this function can fail already falls to "unanswerable". The number is
+# bound first so that only the comparison is inside the wrap: an error raised
+# by marginplyr's own frame is a defect, and reading it as a dialect that could
+# not answer would hide it behind a refused share.
+probe_share_dialect_holds <- function(value, control) {
+  if (!control) {
+    return(is.numeric(value))
+  }
+  number <- share_probe_scaffold()$number
+  (is.numeric(value) || is.character(value)) &&
+    isTRUE(tryCatch(value == number, error = function(cnd) FALSE))
+}
+
+# The table-free scaffolding both questions are asked against, and the number
+# it selects. One definition because the control's reading is that its result
+# is that number, so a scaffolding edited on its own would read every control
+# as unanswerable.
+share_probe_scaffold <- function() {
+  list(sql = dbplyr::sql("SELECT 1 AS z"), number = 1)
 }
 
 # The refusal names whichever helpers the caller wrote, as the Arrow one does

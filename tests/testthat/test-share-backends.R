@@ -1313,10 +1313,95 @@ test_that("an answer of an unexpected shape is not read as a verdict", {
   }
 
   expect_identical(verdict_for_answer(data.frame(p = 0)), "converts")
+  # A number the driver mapped to a class of its own is still the conversion.
+  expect_identical(
+    verdict_for_answer(data.frame(p = structure(0, class = "driver_mapped"))),
+    "converts"
+  )
   expect_identical(verdict_for_answer(data.frame(a = 1, b = 2)), "unknown")
   expect_identical(verdict_for_answer(data.frame(p = numeric(0))), "unknown")
   expect_identical(verdict_for_answer(data.frame(p = "x")), "unknown")
   expect_identical(verdict_for_answer(list(p = 1)), "unknown")
+})
+
+# The four answering cases are RPostgres's four `bigint` mappings, each
+# measured `"refuses"` against a live PostgreSQL 17.11. The classed one carries
+# a name no package defines methods for, deliberately: a double built by hand
+# does not hold a `bit64::integer64` bit pattern, so with bit64 loaded
+# `structure(1, class = "integer64") == 1` is `FALSE` where
+# `bit64::as.integer64(1) == 1` is `TRUE`, and borrowing the name would assert
+# the driver's arithmetic rather than this reading.
+test_that("the control takes the scaffolding's number in any driver type", {
+  verdict_when_control_returns <- function(value) {
+    local_mocked_bindings(
+      collect = local({
+        calls <- 0L
+        function(x, ...) {
+          calls <<- calls + 1L
+          if (calls == 1L) {
+            stop("function sum(unknown) does not exist")
+          }
+          data.frame(p = value)
+        }
+      }),
+      .package = "dplyr"
+    )
+    probe_share_dialect(dbplyr::simulate_postgres())
+  }
+  classed <- structure(1, class = "driver_mapped_bigint")
+  expect_false(is_share_source_type(classed))
+
+  expect_identical(verdict_when_control_returns(classed), "refuses")
+  expect_identical(verdict_when_control_returns(1L), "refuses")
+  expect_identical(verdict_when_control_returns(1), "refuses")
+  expect_identical(verdict_when_control_returns("1"), "refuses")
+
+  expect_identical(verdict_when_control_returns(7), "unknown")
+  expect_identical(verdict_when_control_returns("x"), "unknown")
+  expect_identical(verdict_when_control_returns(NA), "unknown")
+
+  # Every one of these compares equal to `1` under R's coercion rules.
+  expect_identical(verdict_when_control_returns(TRUE), "unknown")
+  expect_identical(verdict_when_control_returns(factor("1")), "unknown")
+  expect_identical(
+    verdict_when_control_returns(as.Date("1970-01-02")),
+    "unknown"
+  )
+  expect_identical(verdict_when_control_returns(I(list(1))), "unknown")
+  expect_identical(verdict_when_control_returns(as.raw(1)), "unknown")
+
+  # A class that passes the type test and raises inside `==`. The method is
+  # registered in the global environment because one defined in this frame is
+  # not dispatched from marginplyr's namespace, where the comparison runs.
+  assign(
+    "==.raises_on_comparison",
+    function(e1, e2) stop("cannot compare"),
+    envir = globalenv()
+  )
+  on.exit(rm("==.raises_on_comparison", envir = globalenv()), add = TRUE)
+  expect_identical(
+    verdict_when_control_returns(structure(1, class = "raises_on_comparison")),
+    "unknown"
+  )
+})
+
+# Every wrap whose value decides the verdict reads an error as something the
+# connection did, so a marginplyr frame inside one would have its own defect
+# reported as the dialect. `share_probe_scaffold()` is the frame both readings
+# reach, and it is read outside all of them.
+test_that("a defect in marginplyr's own frame is not read as a dialect", {
+  local_mocked_bindings(
+    share_probe_scaffold = function() stop("scaffold defect")
+  )
+
+  expect_error(
+    probe_share_dialect(dbplyr::simulate_postgres()),
+    "scaffold defect"
+  )
+  expect_error(
+    probe_share_dialect_holds(1, control = TRUE),
+    "scaffold defect"
+  )
 })
 
 # Reading any raised query as the dialect's refusal is how the protection came
