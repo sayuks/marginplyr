@@ -1749,6 +1749,53 @@ test_that("DuckDB refuses a character source for a share that needs no join", {
   }
 })
 
+# #449. The eligible-type rule reads the summary its own backend computed, so
+# an aggregate whose result type differs across backends divides them: R's
+# `max()` coerces a logical to an integer the rule accepts, while DuckDB's
+# `MAX` returns a `BOOLEAN` the staged share's multiplication refuses. Neither
+# backend departed from the rule (ADR 0010), and `?share_of_parent` states the
+# split this pins.
+test_that("a logical source is eligible locally and refused on DuckDB", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    flag = c(TRUE, TRUE, FALSE),
+    revenue = c(1, 2, 4)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_logical_duckdb_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source, column) {
+    summarize_with_margins(
+      source,
+      total = max(!!rlang::sym(column)),
+      whole = share_of_total(total),
+      .by = region
+    )
+  }
+
+  # Runs first for the reason the character refusals' does: the error collected
+  # below is read for its class alone, since DuckDB's wording is its version's,
+  # so without this a dropped table would satisfy it.
+  eligible <- dplyr::collect(summarize(remote, "revenue"))
+  expect_identical(eligible$whole, rep(1, nrow(eligible)))
+
+  local <- summarize(data, "flag")
+  expect_type(local$total, "integer")
+  expect_identical(local$whole, rep(1, nrow(local)))
+
+  query <- summarize(remote, "flag")
+  expect_s3_class(query, "tbl_lazy")
+  error <- expect_error(dplyr::collect(query))
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
 test_that("DuckDB Parent shares agree across native, portable, local paths", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
