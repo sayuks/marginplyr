@@ -2643,17 +2643,16 @@ apply_joined_shares <- function(result,
               is.na(!!margin_column_pronoun(denominator)) |
               (!!margin_column_pronoun(denominator)) == 0,
             NA_real_,
-            # `* 1L` renders as `* 1` and binds the source by type, which is
-            # what refuses a character one on a dialect classified as refusing;
-            # the cast alone accepts a numeric-looking character column on
-            # DuckDB (#429). `1L` and not `1`: a double literal widens a DuckDB
-            # `DECIMAL(18,2)` to `DECIMAL(18,3)`, which overflows at the
-            # declared type's own maximum. The denominator carries the source's
-            # type, so a second copy there refuses nothing the source has not
-            # already refused. The cast stays regardless — it is what makes the
-            # ratio a double. The verdict this rests on is measured with an
-            # aggregate while this is arithmetic, so a dialect answering the
-            # two differently reproduces #429 here.
+            # `* 1L` binds the source by type, which is what refuses a
+            # character one on a dialect classified as refusing; the cast alone
+            # accepts a numeric-looking character column there (#429). The
+            # literal is `1L` because a double one changes the source's
+            # declared type, which `DuckDB shares a source at its declared
+            # type's maximum` fails on. The denominator holds the source's
+            # type, so a second copy there refuses nothing new. The cast stays:
+            # it is what makes the ratio a double. The verdict this rests on is
+            # measured with an aggregate while this is arithmetic, so a dialect
+            # answering the two differently reproduces #429 here.
             as.double((!!margin_column_pronoun(source)) * 1L) /
               as.double(!!margin_column_pronoun(denominator))
           )

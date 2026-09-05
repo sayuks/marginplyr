@@ -1,7 +1,7 @@
 # Refusing a character share source from the staged query itself
 
 Investigated: 2026-09-05
-Revised: 2026-09-05 — #429
+Revised: 2026-09-05 — `R/share.R`
 
 `investigation/share-source-eligibility-on-coercing-dialects.md` (2026-08-16)
 established that a dialect can be asked whether it converts a non-numeric value

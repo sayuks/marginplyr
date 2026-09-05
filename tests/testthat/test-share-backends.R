@@ -838,8 +838,9 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     # cast for the integer source share `RSQLite executes portable Parent
     # shares end to end` compares against a local result, and the `* 1` for the
     # refusal `DuckDB refuses a character share source whatever it holds`
-    # asserts (#429). The character class is what keeps the second from
-    # passing on a `* 1.0`, which widens a DuckDB `DECIMAL` source.
+    # asserts (#429). The character class is what keeps the second from passing
+    # on a `* 1.0`, which `DuckDB shares a source at its declared type's
+    # maximum` is the executed gate against.
     expect_match(sql, "(CAST|CDBL)\\(", info = simulator)
     expect_match(sql, "\\* 1[^.0-9]", info = simulator)
     expect_false(
