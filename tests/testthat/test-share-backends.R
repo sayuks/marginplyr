@@ -833,7 +833,13 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
       info = simulator
     )
     expect_match(sql, "IS NULL AND", fixed = TRUE, info = simulator)
+    # Neither assertion executes -- a simulator has no database behind it -- so
+    # each stands for a property measured on a dialect that does. The cast is
+    # what stops integer division, which PostgreSQL and RSQLite performed on an
+    # integer pair without it; the `* 1.0` is what makes a character source
+    # refuse at binding rather than be coerced (#429).
     expect_match(sql, "(CAST|CDBL)\\(", info = simulator)
+    expect_match(sql, "* 1.0", fixed = TRUE, info = simulator)
     expect_false(
       grepl("GROUPING SETS", sql, fixed = TRUE),
       info = simulator
@@ -1440,6 +1446,59 @@ test_that("DuckDB reports an ineligible share source against its summary", {
       gregexpr("[.][.]marginplyr_[A-Za-z0-9_]+", message)
     )))
   )
+})
+
+# #429. The test above uses a source DuckDB cannot read as a number, and the
+# refusal it asserts came from the equality against the denominator, which is
+# one of the few operations DuckDB coerces a character column for. A
+# numeric-looking source passed that equality and the casts beside it, so the
+# dialect calculated a share from a character summary and raised nothing. What
+# refuses it now is the multiplication in the ratio, which binds by type rather
+# than by value, so both sources here are refused for the same reason.
+test_that("DuckDB refuses a character share source whatever it holds", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(
+    region = c("E", "E", "W"),
+    numeric_looking = c("1", "2", "3"),
+    non_numeric = c("n", "m", "o"),
+    revenue = c(1, 2, 4)
+  )
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    "share_source_character_duckdb_data",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  summarize <- function(source, column) {
+    summarize_with_margins(
+      source,
+      total = max(!!rlang::sym(column)),
+      parent = share_of_parent(total),
+      grand = share_of_total(total),
+      .grouping = rollup(region)
+    )
+  }
+
+  for (column in c("numeric_looking", "non_numeric")) {
+    expect_error(
+      summarize(data, column),
+      "plain integer or double scalar",
+      info = column
+    )
+    query <- summarize(remote, column)
+    expect_s3_class(query, "tbl_lazy")
+    error <- expect_error(dplyr::collect(query), info = column)
+    expect_false(inherits(error, "marginplyr_error"), info = column)
+  }
+
+  # The refusal is of a character source and not of every share on the dialect,
+  # which is what separated this fix from reclassifying DuckDB as converting.
+  eligible <- dplyr::collect(summarize(remote, "revenue"))
+  expect_identical(sort(eligible$parent), c(0.5, 1, 1))
+  expect_identical(sort(eligible$grand), c(0.5, 1, 1))
 })
 
 test_that("DuckDB Parent shares agree across native, portable, local paths", {

@@ -1,6 +1,7 @@
 # Refusing a character share source from the staged query itself
 
 Investigated: 2026-09-05
+Revised: 2026-09-05 — R/share.R, implementing #429
 
 `investigation/share-source-eligibility-on-coercing-dialects.md` (2026-08-16)
 established that a dialect can be asked whether it converts a non-numeric value
@@ -171,3 +172,40 @@ was reached without changing any dialect's verdict.
   established.
 - Arrow inputs, which `abort_arrow_shares()` is reached for rather than the
   ratio; no Arrow case was run under the edit beyond the suite.
+
+## Revisions (2026-09-05)
+
+Two of the items above were measured while implementing #429 in `R/share.R`,
+and together they decided which of the three wanted forms was committed. The
+form above the fold that carries them is `as.double(x * 1) / as.double(y * 1)`,
+not the bare `mul1`.
+
+**What `x * 1` does to a source that is neither an integer nor a double.** On
+duckdb 1.5.5, `typeof()` was read for each step over a `DECIMAL(18,3)` pair and
+a `BIGINT` pair:
+
+| expression | `DECIMAL(18,3)` source | `BIGINT` source |
+|---|---|---|
+| `x` | `DECIMAL(18,3)` | `BIGINT` |
+| `x * 1.0` | `DECIMAL(18,4)` | `DECIMAL(21,1)` |
+| `TRY_CAST(x * 1.0 AS DOUBLE)` | `DOUBLE` | `DOUBLE` |
+
+So the multiplication does not by itself make its operand a double, and the
+bare `mul1` form leaves what the driver returns to the dialect's decimal
+handling. The cast is what the share's always-a-double contract rests on, which
+is the second reason it stays — the first being the integer division the `x / y`
+row above recorded.
+
+**What the fallback simulators render.** The section above left unmeasured
+whether `x * 1.0` guards those dialects against integer division, and the
+committed form does not put that question to them: all fifteen simulators
+`available_simulators()` names rendered both guards, the multiplication and the
+dialect's own cast, so the assertion that failed under the bare `mul1` form
+holds unchanged. Nothing here executes them, which is the whole of what a
+simulator can establish.
+
+Unchanged by this: which operations each dialect refuses for a character
+column, and that the committed form makes DuckDB and PostgreSQL refuse a
+character source value-independently. The suite was run whole under the
+committed form with `NOT_CRAN=true` and `MARGINPLYR_REQUIRED_SUGGESTS=""` and
+reported no failure.
