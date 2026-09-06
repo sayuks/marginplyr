@@ -9,36 +9,50 @@ Maintainer: 'Yusuke Sasaki <sayuks.dev@gmail.com>'
 New submission
 ```
 
-This is the expected new-submission NOTE; the run reports nothing else.
+This is the expected new-submission NOTE; both runs below report it and
+nothing else.
 
 ## Test environments
 
-Both runs below check the built source tarball, not the development tree, on
-R 4.6.1, aarch64-apple-darwin23, macOS Tahoe 26.5.2, with Quarto 1.9.38.
+Both runs check one source tarball produced by `R CMD build`, not the
+development tree, on R 4.6.1, aarch64-apple-darwin23, macOS Tahoe 26.6.2, with
+Quarto 1.9.38.
 
-* Fully provisioned `R CMD check --as-cran`, every Suggested package
-  installed: 0 errors, 0 warnings, 1 note. Installation, examples, tests,
-  vignette re-building, and the PDF and HTML manuals all pass. 1487 tests
-  pass; the 3 skips are the `expect_snapshot()` diagnostics that testthat
-  skips on CRAN by default.
-* `_R_CHECK_DEPENDS_ONLY_=true R CMD check`, Suggested packages absent:
-  status OK, no notes. Examples, tests, and vignettes all complete. 1083
-  tests pass; 66 of the 68 skips are backend tests whose optional package is
-  missing, and the other 2 are the same snapshot skips as above.
+* `R CMD check --as-cran`, every Suggested package installed. Installation,
+  examples, tests, vignette re-building, and the PDF and HTML manuals all
+  pass. Every skipped test is an `expect_snapshot()` diagnostic, which
+  testthat skips on CRAN by default.
+* `_R_CHECK_DEPENDS_ONLY_=true _R_CHECK_FORCE_SUGGESTS_=false R CMD check
+  --as-cran`, Suggested packages withheld. Examples, tests, and vignettes all
+  complete. Every skipped test is either one of those same snapshot
+  diagnostics or a test whose optional backend is absent, and the testthat
+  output names the missing package for each of the latter.
+  `_R_CHECK_FORCE_SUGGESTS_=false` is what stops `--as-cran` from treating the
+  deliberately withheld packages as a failure.
+
+Neither entry quotes a test count, deliberately. A count changes whenever a
+test is added, so one written here is accurate on the day it is measured and
+silently wrong afterwards, and a stale count reads exactly like a fresh one.
+What these runs are offered as evidence for is the status line above and the
+account of the skips, and both of those survive a test being added.
 
 ## Optional backends
 
-arrow, DBI, dtplyr, duckdb, and RSQLite are Suggests, and marginplyr works
-without them: local data frames need none of them, and each backend adds one
-optional lazy path. Every example, test, and vignette section that uses one of
-these packages is guarded, so a platform whose binaries are unavailable still
-checks cleanly with only the corresponding coverage skipped. The
-dependency-only run above is the evidence, because none of those backends is
+arrow, data.table, dtplyr, duckdb, and RSQLite are Suggests, and marginplyr
+works without them: local data frames need none of them, and each backend adds
+one optional lazy path. Every example, test, and vignette section that uses one
+of these packages is guarded, so a platform whose binaries are unavailable
+still checks cleanly with only the corresponding coverage skipped. The
+dependency-only run above is the evidence, because none of those packages is
 installed in it.
+
+DBI is a Suggest too, and is the one this argument does not reach: marginplyr
+calls it directly, so it is declared, but dbplyr imports it, so it is present
+in the dependency-only run and nothing there skips for its absence.
 
 ## Vignettes and Quarto
 
-The four vignettes are Quarto documents, which is why `SystemRequirements`
+The vignettes are Quarto documents, which is why `SystemRequirements`
 declares the Quarto command line tool. `R CMD build` renders them with Quarto,
 so the tarball ships the rendered `inst/doc/*.html` files alongside the `.qmd`
 sources; no `.html` file is committed to the repository.
