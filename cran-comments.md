@@ -9,8 +9,8 @@ Maintainer: 'Yusuke Sasaki <sayuks.dev@gmail.com>'
 New submission
 ```
 
-This is the expected new-submission NOTE; both runs below report it and
-nothing else.
+This is the expected new-submission NOTE, and it is the only note either run
+below reports.
 
 ## Test environments
 
@@ -30,25 +30,24 @@ Quarto 1.9.38.
   `_R_CHECK_FORCE_SUGGESTS_=false` is what stops `--as-cran` from treating the
   deliberately withheld packages as a failure.
 
-Neither entry quotes a test count, deliberately. A count changes whenever a
-test is added, so one written here is accurate on the day it is measured and
-silently wrong afterwards, and a stale count reads exactly like a fresh one.
-What these runs are offered as evidence for is the status line above and the
-account of the skips, and both of those survive a test being added.
+Neither entry quotes a test count, deliberately: a count is accurate on the day
+it is measured and silently wrong afterwards. What these runs are offered as
+evidence for is the status line above and the account of the skips, and both of
+those survive a test being added.
 
 ## Optional backends
 
 arrow, data.table, dtplyr, duckdb, and RSQLite are Suggests, and marginplyr
-works without them: local data frames need none of them, and each backend adds
-one optional lazy path. Every example, test, and vignette section that uses one
-of these packages is guarded, so a platform whose binaries are unavailable
-still checks cleanly with only the corresponding coverage skipped. The
-dependency-only run above is the evidence, because none of those packages is
-installed in it.
+works without them: a plain data frame needs none of them, and each adds one
+optional path — a lazy backend for arrow, dtplyr, duckdb, and RSQLite, and an
+accepted input class for data.table. Every example, test, and vignette section
+that uses one of these packages is guarded, so a platform whose binaries are
+unavailable still checks cleanly with only the corresponding coverage skipped.
+The dependency-only run above is the evidence, because none of those packages
+is installed in it.
 
-DBI is a Suggest too, and is the one this argument does not reach: marginplyr
-calls it directly, so it is declared, but dbplyr imports it, so it is present
-in the dependency-only run and nothing there skips for its absence.
+DBI is a Suggest too, and the dependency-only run says nothing about it: dbplyr
+imports DBI, so that run has it installed.
 
 ## Vignettes and Quarto
 
