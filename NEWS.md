@@ -288,6 +288,10 @@
   forwarding where that argument is not bound. The check carries no call
   there now, and a share's conditions still name the call you wrote,
   forwarding and all (#357).
+* A Margin verb piped into another one now names itself when it refuses.
+  `f(x) |> g()` runs `f` while `g` reads its input, and `g` reported every
+  marginplyr error raised there against its own call, so a refusal you would
+  fix by rewriting `f` was blamed on `g` (#455).
 * A condition raised while your summary expression runs now reports its
   context in names you can act on. A margin operation summarizes that
   expression once per grouping set, so the grouping values it reported were
@@ -356,5 +360,8 @@
   collision or by an ineligible share source leaves readable every query it
   had already sent. A call one of these verbs refused before sending anything
   reads back as the empty record it is, rather than as the previous call's,
-  and is a call the session has recorded. The option is off by default
-  (#318, #400, #401, #409).
+  and is a call the session has recorded. Piping one Margin verb into another
+  leaves the outer call's record and not both calls': the input runs before
+  the outer call empties one, so `"result"` is in the record once and is the
+  query you were handed. The option is off by default
+  (#318, #400, #401, #409, #455).

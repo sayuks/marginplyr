@@ -9,10 +9,10 @@ sent_queries <- new.env(parent = emptyenv())
 # reading per call, kept with this call's record (ADR 0027). Anything but
 # `TRUE` is "not audited", and nothing here reports it.
 #
-# Called as the first statement of every entry point, ahead of the argument
-# validation each of them opens with (ADR 0027). The backend is not known yet,
-# so the SQL flag starts `FALSE` and `remember_sent_query_backend()` sets it
-# where the backend is computed.
+# Called by every entry point directly after it forces `.data` and ahead of
+# the argument validation each of them opens with (ADR 0027). The backend is
+# not known yet, so the SQL flag starts `FALSE` and
+# `remember_sent_query_backend()` sets it where the backend is computed.
 reset_sent_queries <- function() {
   sent_queries$recorded <- TRUE
   sent_queries$audited <- isTRUE(getOption("marginplyr.audit_sql"))
@@ -63,7 +63,9 @@ record_sent_query <- function(purpose, query) {
 #' [expand_with_margins()], [nest_with_margins()], [nest_by_with_margins()],
 #' or [inspect_grouping()] -- and this function reads it back. The record is
 #' emptied at the start of every call, so what it holds belongs to that call
-#' alone.
+#' alone. Piping one Margin verb into another is two calls, and the outer one
+#' is the most recent: its input runs first and its rows are then emptied,
+#' leaving the outer call's own.
 #'
 #' @return A tibble with two character columns. `purpose` says what the query
 #'   was sent for and `sql` holds the statement as it was rendered. Rows are in

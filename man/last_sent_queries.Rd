@@ -21,7 +21,9 @@ the SQL of one call -- the most recent call to \code{\link[=summarize_with_margi
 \code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
 or \code{\link[=inspect_grouping]{inspect_grouping()}} -- and this function reads it back. The record is
 emptied at the start of every call, so what it holds belongs to that call
-alone.
+alone. Piping one Margin verb into another is two calls, and the outer one
+is the most recent: its input runs first and its rows are then emptied,
+leaving the outer call's own.
 }
 \section{What the record promises}{
 

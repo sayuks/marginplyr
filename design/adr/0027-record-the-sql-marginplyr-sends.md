@@ -187,6 +187,55 @@ is exactly the set of exported functions taking `.grouping`, and that each of
 them calls it first. An entry point added without a reset, and a validation
 moved above one, are each what it fires on.
 
+## Amendment: the input's promise is forced before the reset
+
+**"The record is emptied at the first statement"** of each entry point no
+longer holds, nor does the last sentence of the amendment above, which fixes
+the gate on that ordering. Each entry point opens with `force(.data)` and
+empties the record at its second statement instead (#455).
+
+The amendment above bounds the record by the body and stops there, and `.data`
+is a promise, so the body decides when the call that wrote `.data` runs. `|>`
+expands to `g(f(x))`: `g` emptied the record, then forced `.data` in the
+validation it opens with, which ran `f`. `f` emptied the record again and
+recorded its own rows, and `g` appended to them. The record then held both
+calls, with `"result"` — the one promised `purpose` — in it twice and nothing
+saying it spanned two calls. That is the `dbplyr::last_sql()` defect *Why a
+record rather than a signal* names, reproduced by the idiomatic way of writing
+the call.
+
+The reading is unchanged and sharpened: a promise the body forces belongs to
+the call that wrote it, not to the call reading it. Forcing `.data` first is
+what puts the input's whole execution before this call's record exists.
+
+The four answers hold as the amendment above states them, and two of them are
+reached for the first time under a pipe. An outer call refused inside its body
+takes *The call was audited and sent nothing*, the third, where before it was
+answered with the rows its input had recorded. And an input that refuses raises
+before the outer call's reset, so what stays readable is the input's own
+record, holding every query it had already sent — *A query is recorded before
+it is sent*, applied to the call that sent them.
+
+One thing outside this decision moves with the placement, and is recorded here
+because nothing else would hold it. Each entry point rewrites the call of every
+`marginplyr_error` raised inside the block its validation runs in. A `.data`
+forced inside that block therefore reported an input verb's refusal against the
+outer call, which is not the call the caller would rewrite to avoid it. Forcing
+ahead of the block is the same move, so the two are not separable and neither
+is traded for the other.
+
+The gate moves with the placement, in one half. The set of functions calling
+`reset_sent_queries()` is still exactly the set of exported functions taking
+`.grouping`. What each of them is held to is now two statements in order:
+`force(.data)`, then `reset_sent_queries()`. A swapped pair and a validation
+moved above either are each what it fires on.
+
+`.data` is the whole of it. Another formal holding a Margin verb — a
+`.margin_label` computed by one — is forced wherever the body reads it, and
+nothing here changes that or asserts anything about it. `.data` is the formal
+every entry point takes, the one a pipe writes to, and the only one whose
+promise is a call a reader would think of as the previous one.
+
 ## Corrections
 
 Four claims in the plan this decision settles were true of an earlier codebase

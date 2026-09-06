@@ -136,6 +136,7 @@ inspect_grouping <- function(.data,
                              .grouping = NULL,
                              .duplicates = c("error", "drop", "keep"),
                              .format = c("text", "list")) {
+  force(.data)
   reset_sent_queries()
   call <- rlang::current_call()
   grouping_quo <- rlang::enquo(.grouping)

@@ -618,6 +618,9 @@ The record is a tibble of two character columns, `purpose` and `sql`, holding
 one row per query in the order it was sent. It belongs to that one call: the
 next call to a Margin verb — or to `inspect_grouping()`, which compiles a
 grouping plan and sends queries of its own — empties it and starts again.
+Piping one Margin verb into another is two such calls, and the record you read
+afterwards is the outer one's: the input runs first, and the outer call empties
+what it left.
 
 `"result"` is the only `purpose` marginplyr promises, and it is the query
 `audit_query` holds:
