@@ -46,7 +46,9 @@ Nothing beyond marginplyr's own dependencies is required. The DuckDB, SQLite,
 dtplyr, and Arrow sections below need optional packages, so their chunks
 evaluate only when those packages are installed at the versions marginplyr asks
 for. Where a package is missing or too old the code is still shown, but its
-output is absent.
+output is absent. One dtplyr chunk calls `data.table::as.data.table()` and the
+list above does not name data.table, because dtplyr imports it: installing
+dtplyr installs it.
 
 ```{r}
 #| include: false
@@ -61,6 +63,8 @@ has_duckdb <- marginplyr_suggest_available("DBI") &&
 # dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
 # the installed driver version through RSQLite.
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
+# The one dtplyr chunk that calls `data.table::as.data.table()` is behind this
+# guard and needs none of its own, dtplyr importing data.table.
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_arrow <- marginplyr_suggest_available("arrow")
 
@@ -130,10 +134,12 @@ contains one `GROUP BY GROUPING SETS` operation. The requested rollup:
 ()
 ```
 
-becomes the equivalent SQL grouping-set list. Hidden `GROUPING()` flags allow
-the outer query to label only dimensions removed by aggregation. A source
-`NULL` therefore stays different from a generated subtotal even though SQL
-would otherwise display both as missing.
+becomes the equivalent SQL grouping-set list. In SQL, `GROUPING(x)` returns `1`
+when `x` was removed from the grouping set that produced a row and `0` when it
+remained part of the group. marginplyr adds one such flag per dimension and
+keeps it out of the result, so the outer query labels only the dimensions
+aggregation removed. A source `NULL` therefore stays different from a generated
+subtotal even though SQL would otherwise display both as missing.
 
 More complex grouping specifications use the same translation. The two
 rollups below are combined by Cartesian product, matching comma-separated SQL
@@ -198,13 +204,50 @@ the grouping sets and transfers only the summarized result:
 #| eval: !expr has_duckdb
 
 duckdb_result <- collect(duckdb_query)
-DBI::dbDisconnect(con)
-
 duckdb_result
 ```
 
-Use `compute()` instead when the next stage should remain in the database as a
-materialized or temporary remote table.
+The `arrange()` above orders by the labels, so `"Total"` falls wherever that
+string does among a dimension's values. `.sort` orders by the structure of the
+Grouping plan instead, so each subtotal lands with the rows it summarizes. It
+is an argument of the verb rather than a step after it; *Margin order* in the
+[`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the key it builds and what a later verb can do to it:
+
+```{r}
+#| eval: !expr has_duckdb
+
+sales_db |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region, store),
+    .sort = "last"
+  ) |>
+  collect()
+```
+
+Use `compute()` instead of `collect()` when the next stage should remain in the
+database. It executes the query and stores the result there as a remote table,
+so what reads it afterwards is still a lazy query against the connection:
+
+```{r}
+#| eval: !expr has_duckdb
+
+duckdb_stage <- compute(duckdb_query)
+class(duckdb_stage)
+
+duckdb_stage |>
+  filter(level == 1L) |>
+  collect()
+```
+
+```{r}
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con)
+```
 
 DuckDB also preserves factor grouping columns represented as enums. When a
 factor dimension uses `.margin_label = NA_character_` or `NULL`, marginplyr
@@ -269,7 +312,7 @@ DBI::dbDisconnect(con)
 
 Keeping `grouping_bit()` or `grouping_id()` in the result is the other free
 protection: either identifies every margin row structurally, so a source row
-and a margin row that print alike still stay distinguishable by position,
+and a margin row that print alike still differ in a column you can read,
 whatever `.check_margin_label` finds or misses.
 
 Opt into `.check_margin_label = TRUE` when the extra scan for an observed
@@ -321,8 +364,9 @@ sqlite_sales |>
 
 `share_of_parent()` needs a denominator from another Grouping-set row, so it
 cannot be translated as one ordinary aggregate expression. marginplyr first
-forms the ordinary Margin summaries, then builds one Parent mapping shared by
-every requested measure. `.check_share_source = FALSE` appears here because
+computes the ordinary summaries for every grouping set, then builds one
+denominator lookup — the parent row for each result row — shared by every
+requested measure. `.check_share_source = FALSE` appears here because
 the simulated connection executes nothing and therefore cannot be asked what
 its dialect does with an ineligible source; the rule it opts out of is
 described below.
@@ -343,7 +387,9 @@ This is still one lazy query. `show_query()` renders it without execution;
 only an explicit operation such as `collect()` or `compute()` asks the backend
 to run it. Native and portable grouping adapters both feed the same staged
 Parent-share contract. Parent matching uses internal Grouping identity and
-missing-safe keys rather than displayed Margin labels.
+missing-safe keys rather than displayed Margin labels; [Parent lookup is
+structural](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#parent-lookup-is-structural)
+works that through, and defines the Grand total set the next section reads.
 
 `share_of_total()` stages the same way and asks less of the query. Its
 denominator depends on the fixed `.by` keys and nothing else, so its mapping
@@ -362,39 +408,27 @@ postgres_sales |>
 ```
 
 Syntax, source-name, written-order, and `across()` errors are validated before
-execution. A share source must still be a plain integer or double, and that
+execution, and the staged queries above are still not executed: `show_query()`
+runs nothing. A share source must still be a plain integer or double, and that
 rule holds here too — but marginplyr reads no row of your data to establish
-it. A database evaluates the source summary itself, so where the dialect
-refuses an ineligible summary that refusal is the answer, and it reaches you
-as the database's own diagnostic when you execute the query. The staged
-queries above are still not executed, and `show_query()` runs nothing.
+it. A database evaluates the source summary itself, so marginplyr asks the
+dialect instead, with at most two queries referencing none of your tables,
+whether it refuses an ineligible summary or converts one to a number; where it
+refuses, that refusal is the answer and reaches you as the database's own
+diagnostic when you execute the query.
 
-Where the dialect converts a value of another type to a number instead of
-refusing it — SQLite answers `sum()` of a text column with `0` rather than an
-error — nothing applies the rule at all, and marginplyr refuses the share
-rather than calculating one from values nothing has checked. Which of the two
-a dialect does is asked with at most two queries referencing none of your
-tables: a probe, and — only when the probe is rejected — a control, which is
-what tells a dialect that genuinely refuses apart from one that could not
-answer at all. An answer is a property of the dialect, so a dialect that
-answers is asked once and every later connection carrying it reuses that
-answer. Where the question could not be answered, nothing is remembered and
-the next share request asks again, so a dropped connection or a warehouse that
-was resuming does not refuse your shares for the rest of the session. A
-connection that executes nothing, such as the simulators used above, cannot be
-asked and is refused for the same reason; `.check_share_source = FALSE`
-calculates the share from sources you have established yourself. What is
-remembered is the dialect's answer and not yours: `.check_share_source` is
-scoped to the call it is written in, so a dialect that converts needs it on
-every share request, and there is no session or connection default that
-records it once.
+Where the dialect converts instead — SQLite answers `sum()` of a text column
+with `0` rather than an error — nothing applies the rule at all, and the share
+is refused rather than calculated from values nothing has checked. A connection
+that executes nothing, such as the simulators used above, cannot be asked and
+is refused the same way; `.check_share_source = FALSE` calculates the share
+from sources you have established yourself, on the one call it is written in.
 
 A refusing dialect is therefore shown against a live DuckDB table rather than
 the simulator used above. The diagnostic is DuckDB's own, and the column it
-names carries the name of the summary to rewrite. It reaches you as a plain
-`rlang_error` with no marginplyr class in its `parent` chain — nothing here
-reads the row that used to make it a `marginplyr_error` — so the chunk below
-accepts any error rather than naming one:
+names carries the name of the summary to rewrite. The error is the database's
+and not marginplyr's, so the chunk below accepts any error rather than naming
+one:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -439,7 +473,9 @@ denominators. Backend-specific non-finite representations are outside that
 contract. See the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 for both helpers' supported sources, denominator rules, `across()` forms,
-empty inputs, and post-summary `mutate()` guidance.
+empty inputs, and post-summary `mutate()` guidance, and its *Lazy execution
+boundaries* for what each backend establishes, which later connections reuse a
+dialect's answer, and what an unanswered question leaves unremembered.
 
 ## Completion stays in the lazy input pipeline
 
@@ -502,10 +538,27 @@ postgres_sales |>
   )
 ```
 
-dtplyr also enforces the contextual-share source rules, for both denominators.
-A valid request stays a native lazy query, and an ineligible source type or a
-non-scalar summary raises a Package condition at explicit execution, before an
-invalid grouping row is emitted:
+`nest_by_with_margins()` is the row-wise counterpart, and it is the one Margin
+verb that collects a lazy input without being asked: a row-wise data frame is a
+local object, so it has nothing lazy to return. *When marginplyr queries your
+data* names it as its one exemption. Its detail tables are the ones dtplyr
+built, so each cell is a `data.table`:
+
+```{r}
+#| eval: !expr has_dtplyr
+
+january_sales |>
+  dtplyr::lazy_dt() |>
+  nest_by_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(revenue = sum(data$revenue))
+```
+
+dtplyr also enforces the contextual-share source rules, for `share_of_parent()`
+and `share_of_total()` alike. A valid request stays a native lazy query, and an
+ineligible source type or a non-scalar summary raises a marginplyr error at
+explicit execution, before an invalid grouping row is emitted:
 
 ```{r}
 #| label: dtplyr-ineligible-share-source
@@ -617,8 +670,10 @@ sent$purpose
 
 The record is a tibble of two character columns, `purpose` and `sql`, holding
 one row per query in the order it was sent. It belongs to that one call: the
-next call to a Margin verb — or to `inspect_grouping()`, which compiles a
-grouping plan and sends queries of its own — empties it and starts again.
+next call to a Margin verb — or to
+[`inspect_grouping()`](https://sayuks.github.io/marginplyr/man/inspect_grouping.html),
+which compiles a grouping plan and sends queries of its own — empties it and
+starts again.
 Piping one Margin verb into another is two such calls, and the record you read
 afterwards is the outer one's: the input runs first, and the outer call empties
 what it left.
@@ -650,16 +705,23 @@ is what enumerates those queries and says which backends receive them. Names
 other than `"result"` are marginplyr's own and are not fixed, so match on
 `"result"` and read the rest as context.
 
-`last_sent_queries()` gives four answers, and it tells apart the three that
-could look like an empty record. It refuses with a marginplyr error when
-nothing has been recorded in this session — neither a Margin verb nor
-`inspect_grouping()` has run. It refuses again, naming `marginplyr.audit_sql`,
-when the last call was not audited: the option is read once as a call begins,
-so setting it afterwards cannot audit a call already made. An audited call that sent nothing returns a zero-row tibble, the only
-answer with zero rows — a data frame, a dtplyr table, and an Arrow table send
-no SQL, so an audited call on one records nothing and that is correct rather
-than a hole. And a statement dbplyr refuses to translate for the backend keeps
-its row with `NA` in `sql`, leaving the call itself unaffected.
+`last_sent_queries()` gives four answers, and three of them could otherwise
+look alike:
+
+- **Nothing has been recorded in this session**, neither a Margin verb nor
+  `inspect_grouping()` having run: refused with a marginplyr error.
+
+- **The last call was not audited**: refused with a marginplyr error naming
+  `marginplyr.audit_sql`. The option is read once as a call begins, so setting
+  it afterwards cannot audit a call already made.
+
+- **An audited call sent nothing**: a zero-row tibble, the only answer with
+  zero rows. A data frame, a dtplyr table, and an Arrow table send no SQL, so
+  an audited call on one records nothing, and that is correct rather than a
+  hole.
+
+- **A statement dbplyr refuses to translate for the backend**: its row is kept
+  with `NA` in `sql`, and the call itself is unaffected.
 
 Each row is written before its query is sent, so a call that fails leaves
 readable every query it had already sent.
@@ -710,16 +772,11 @@ reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
   one. Ask for a Margin order with `.sort`, or call `arrange()` for any other
   presentation order.
 
-- Lazy inputs default to `.check_margin_label = FALSE`, which skips only the
-  *observed* half of the collision check; a label equal to a *declared*
-  factor level is rejected either way. See *`.check_margin_label` on lazy
-  inputs* above.
+- Lazy inputs default to `.check_margin_label = FALSE`; see
+  *`.check_margin_label` on lazy inputs* above.
 
-- A contextual share needs `.check_share_source = FALSE` on every call against
-  a backend that cannot establish that its source is eligible: a connection
-  that executes nothing, such as a `simulate_*()` one, and a dialect that
-  converts an ineligible source rather than refusing it, such as SQLite. See
-  *Parent shares use a staged lazy query* above.
+- A contextual share may need `.check_share_source = FALSE`; see *Parent
+  shares use a staged lazy query* above.
 
 - A fallback query may repeat the source relation once per grouping set.
   Inspect the generated SQL and the database query plan for large workloads;

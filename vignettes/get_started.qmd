@@ -295,13 +295,18 @@ retail_sales |>
       rollup(year, month),
       rollup(region, store)
     ),
-    .duplicates = "keep"
-  ) |>
-  filter(
-    year == "Total",
-    region == "Total"
+    .duplicates = "keep",
+    .id = "occurrence",
+    .sort = "last"
   )
 ```
+
+The last two rows are the `()` set of each rollup, and only `occurrence` tells
+them apart: their Grouping identifiers are equal, because the same dimensions
+are absent from both. They are the last two rows, and next to each other,
+because `.sort` was asked for: `.id` is the Margin order's final tiebreak
+rather than its key, so a kept duplicate sits beside the occurrence it
+repeats.
 
 SQL combines comma-separated grouping items by Cartesian product.
 `grouping_spec()` provides that operation:
@@ -601,7 +606,7 @@ complete grouping plan, not only the ones active in one branch. The
 `cur_group*()` family is rejected outright: a branch-local identifier, row
 position, or column set has no global meaning once several grouping sets are
 combined, so use `grouping_bit()` or `grouping_id()` to identify levels
-instead. The refusal is a Package condition naming the replacement, not a
+instead. The refusal is a marginplyr error naming the replacement, not a
 silently different answer:
 
 ```{r}

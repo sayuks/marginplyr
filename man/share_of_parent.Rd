@@ -387,7 +387,8 @@ column keeps its type either way:\tabular{lrl}{
 }
 
 
-Missing detail or subtotal combinations are not completed.
+Missing detail or subtotal combinations are not completed. The \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{completing keys guide} shows how to complete the input facts before the summary,
+where synthetic facts are meant to reach every level.
 }
 
 \section{Lazy execution boundaries}{

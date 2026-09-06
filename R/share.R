@@ -371,7 +371,11 @@
 #' | Without fixed `.by` keys | One row of the Grand total set | `1.0`, double |
 #' | With fixed `.by` keys | Zero rows | Empty double vector |
 #'
-#' Missing detail or subtotal combinations are not completed.
+#' Missing detail or subtotal combinations are not completed. The [completing
+#' keys guide][keys] shows how to complete the input facts before the summary,
+#' where synthetic facts are meant to reach every level.
+#'
+#' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
 #'
 #' @section Lazy execution boundaries:
 #' Share execution supports local data frames and lazy dbplyr and dtplyr

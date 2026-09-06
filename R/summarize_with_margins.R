@@ -6,7 +6,11 @@
 #'
 #' Use it when one report needs several levels of detail—for example, stores,
 #' region subtotals, and a company total—or when that report should use the
-#' same code locally and through [dbplyr::tbl_lazy()].
+#' same code locally and through [dbplyr::tbl_lazy()]. The [Get started
+#' guide][started] builds that report from a hand-written version, and is the
+#' page to read before this one.
+#'
+#' [started]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
 #'
 #' @param .data A data frame or lazy table.
 #' @param ... Name-value pairs as used in [dplyr::summarize()]. Contextual

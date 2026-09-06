@@ -138,7 +138,8 @@ data frames and lazy tables.
 \details{
 Use it when one report needs several levels of detail—for example, stores,
 region subtotals, and a company total—or when that report should use the
-same code locally and through \code{\link[dbplyr:tbl_lazy]{dbplyr::tbl_lazy()}}.
+same code locally and through \code{\link[dbplyr:tbl_lazy]{dbplyr::tbl_lazy()}}. The \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} builds that report from a hand-written version, and is the
+page to read before this one.
 
 \code{\link[=grouping_sets]{grouping_sets()}} forms a union of grouping families. \code{\link[=grouping_spec]{grouping_spec()}}
 combines its arguments by Cartesian product, matching comma-separated SQL
