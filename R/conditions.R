@@ -100,9 +100,8 @@ is_unsupported_predicate <- function(cnd) {
 # caller wrote, which is what CONTEXT.md's *Condition context* asks for and
 # what no frame here could name.
 #
-# Reading the types would mean a query the caller did not ask for, which
-# ADR 0020 refuses; that is why the proxy is typeless here rather than an
-# omission this could fix.
+# The refusal stands rather than reading the types, ADR 0020 being what the
+# read would cross.
 abort_selection_predicate <- function(label, parent) {
   abort_marginplyr(
     c(

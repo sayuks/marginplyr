@@ -142,6 +142,14 @@ margin dimension even when every expanded grouping set contains it.
 Consequently, it participates in \code{.margin_label} type conversion and
 collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
+
+Both are written as column selections, so a selection predicate —
+\code{\link[tidyselect:where]{tidyselect::where()}} and anything written with it — needs the column types
+of the input. Some lazy backends do not report those without a query, and
+marginplyr sends none you did not ask for, so a predicate written against
+one of them is refused rather than answered. Select the columns by name, or
+collect the input first. Local data and the lazy backends whose types are
+available without a query answer a predicate as dplyr does.
 }
 
 \section{Grouped and row-wise inputs}{

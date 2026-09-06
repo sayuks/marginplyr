@@ -2920,11 +2920,9 @@ test_that("a name on an empty argument is refused by position", {
   )
 })
 
-# The same refusal a summary selection gets, at the two selections a Margin
-# verb resolves against the input's own proxy. A backend that reports no column
-# types leaves tidyselect nothing to test a predicate against, and reading them
-# would be a query nobody asked for (ADR 0020), so what is owed the caller is
-# the argument and the verb rather than an answer (#453).
+# The refusal `test-summarize-operation.R` states the reasons for, at the two
+# selections a Margin verb resolves against the input's own proxy rather than
+# against the summary's (#453).
 test_that("a grouping predicate is refused with the argument and the verb", {
   data <- data.frame(region = c("a", "b"), grade = c("x", "y"), value = 1:2)
   remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_dbi())

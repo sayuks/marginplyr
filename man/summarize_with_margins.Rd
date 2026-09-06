@@ -200,6 +200,14 @@ margin dimension even when every expanded grouping set contains it.
 Consequently, it participates in \code{.margin_label} type conversion and
 collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
+
+Both are written as column selections, so a selection predicate —
+\code{\link[tidyselect:where]{tidyselect::where()}} and anything written with it — needs the column types
+of the input. Some lazy backends do not report those without a query, and
+marginplyr sends none you did not ask for, so a predicate written against
+one of them is refused rather than answered. Select the columns by name, or
+collect the input first. Local data and the lazy backends whose types are
+available without a query answer a predicate as dplyr does.
 }
 
 \section{Grouped and row-wise inputs}{
@@ -436,13 +444,9 @@ complete grouping plan. This extends dplyr's grouping-column rule across
 every branch: a dimension remains excluded even in a grouping set from
 which it is omitted.
 
-A selection predicate, \code{\link[tidyselect:where]{tidyselect::where()}} and anything written with it,
-needs the column types of the input. Some lazy backends do not report those
-without a query, and marginplyr sends none you did not ask for, so a
-predicate written against one of them is refused rather than answered — in
-\code{...}, in \code{.grouping}, and in \code{.by} alike. Select the columns by name, or
-collect the input first. Local data and the lazy backends whose types are
-available without a query answer a predicate as \code{\link[dplyr:summarize]{dplyr::summarize()}} does.
+A selection predicate here is refused against the same inputs it is refused
+against in \code{.by} and \code{.grouping}, for the same reason and with the same
+remedy: see \emph{Fixed columns and grouping dimensions}.
 
 Where an unnamed summary's value is a data frame, a local input expands its
 columns into the result, exactly as \code{\link[dplyr:summarize]{dplyr::summarize()}} does, and a name
