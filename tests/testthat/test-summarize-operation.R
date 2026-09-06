@@ -323,3 +323,50 @@ test_that("summary tidyselect conditions retain their class and cause", {
   expect_false(inherits(error, "marginplyr_error"))
   expect_match(conditionMessage(error), "Column `unknown` doesn't exist")
 })
+
+# A backend whose selection proxy is the lazy table itself carries no column
+# types, so tidyselect refuses a predicate rather than answering it. The
+# refusal stands -- reading the types would be a query nobody asked for
+# (ADR 0020) -- but the caller is owed the argument they wrote and the verb
+# they wrote it in (#453).
+test_that("a summary predicate is refused with the argument and the verb", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_dbi())
+
+  error <- expect_error(summarize_with_margins(
+    remote,
+    dplyr::across(dplyr::where(is.numeric), sum),
+    .grouping = rollup(group)
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  # Matched rather than compared whole, because the rendered message ends with
+  # the cause, whose line names the internal frame tidyselect refused in.
+  expect_match(
+    conditionMessage(error),
+    paste0(
+      "Can't select with a predicate in ",
+      "`dplyr::across(dplyr::where(is.numeric), sum)`.\n",
+      "i This input's backend doesn't report column types without a query, ",
+      "and marginplyr sends none you didn't ask for.\n",
+      "i Select the columns by name, or collect the input first."
+    ),
+    fixed = TRUE
+  )
+  # The verb the caller wrote is what the refusal blames, and tidyselect's own
+  # diagnostic is still reachable as the cause.
+  expect_identical(
+    rlang::call_name(conditionCall(error)),
+    "summarize_with_margins"
+  )
+  expect_s3_class(error$parent, "tidyselect_error_predicates_unsupported")
+
+  # A proxy that carries types answers the predicate, as it did before.
+  expect_named(
+    summarize_with_margins(
+      data,
+      dplyr::across(dplyr::where(is.numeric), sum),
+      .grouping = rollup(group)
+    ),
+    c("group", "value")
+  )
+})

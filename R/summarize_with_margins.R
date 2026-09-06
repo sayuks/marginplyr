@@ -154,6 +154,14 @@
 #' collision checks. Use `.by` for columns that must always remain fixed, and
 #' use `.grouping` for dimensions that may become totals.
 #'
+#' Both are written as column selections, so a selection predicate —
+#' [tidyselect::where()] and anything written with it — needs the column types
+#' of the input. Some lazy backends do not report those without a query, and
+#' marginplyr sends none you did not ask for, so a predicate written against
+#' one of them is refused rather than answered. Select the columns by name, or
+#' collect the input first. Local data and the lazy backends whose types are
+#' available without a query answer a predicate as dplyr does.
+#'
 #' @section Grouped and row-wise inputs:
 #' When `.data` has been grouped with [dplyr::group_by()] and `.by` is `NULL`,
 #' its grouping columns become implicit fixed keys. For example,
@@ -380,6 +388,10 @@
 #' complete grouping plan. This extends dplyr's grouping-column rule across
 #' every branch: a dimension remains excluded even in a grouping set from
 #' which it is omitted.
+#'
+#' A selection predicate here is refused against the same inputs it is refused
+#' against in `.by` and `.grouping`, for the same reason and with the same
+#' remedy: see *Fixed columns and grouping dimensions*.
 #'
 #' Where an unnamed summary's value is a data frame, a local input expands its
 #' columns into the result, exactly as [dplyr::summarize()] does, and a name

@@ -2884,3 +2884,62 @@ test_that("a name on an empty argument is refused by position", {
     )
   )
 })
+
+# The refusal `test-summarize-operation.R` states the reasons for, at the two
+# selections a Margin verb resolves against the input's own proxy rather than
+# against the summary's (#453).
+test_that("a grouping predicate is refused with the argument and the verb", {
+  data <- data.frame(region = c("a", "b"), grade = c("x", "y"), value = 1:2)
+  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_dbi())
+  refusal <- paste0(
+    "i This input's backend doesn't report column types without a query, ",
+    "and marginplyr sends none you didn't ask for.\n",
+    "i Select the columns by name, or collect the input first."
+  )
+
+  dimension <- expect_error(summarize_with_margins(
+    remote,
+    n = dplyr::n(),
+    .grouping = rollup(dplyr::where(is.character))
+  ))
+  expect_s3_class(dimension, "marginplyr_error")
+  expect_match(
+    conditionMessage(dimension),
+    paste0(
+      "Can't select with a predicate in `dplyr::where(is.character)`.\n",
+      refusal
+    ),
+    fixed = TRUE
+  )
+  expect_identical(
+    rlang::call_name(conditionCall(dimension)),
+    "summarize_with_margins"
+  )
+  expect_s3_class(dimension$parent, "tidyselect_error_predicates_unsupported")
+
+  # A fixed key is selected against the same proxy and is refused the same way.
+  fixed <- expect_error(summarize_with_margins(
+    remote,
+    n = dplyr::n(),
+    .by = dplyr::where(is.character),
+    .grouping = rollup(region)
+  ))
+  expect_s3_class(fixed, "marginplyr_error")
+  expect_match(
+    conditionMessage(fixed),
+    paste0(
+      "Can't select with a predicate in `dplyr::where(is.character)`.\n",
+      refusal
+    ),
+    fixed = TRUE
+  )
+
+  # A proxy that carries types answers both predicates, as it did before.
+  answered <- summarize_with_margins(
+    data,
+    n = dplyr::n(),
+    .by = dplyr::where(is.numeric),
+    .grouping = rollup(dplyr::where(is.character))
+  )
+  expect_named(answered, c("value", "region", "grade", "n"))
+})

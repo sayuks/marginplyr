@@ -454,6 +454,7 @@ plan_summary_expressions <- function(dots,
     data_proxy = data_proxy,
     data_vars = data_vars,
     group_vars = group_vars,
+    caller_labels = caller_labels,
     normalize_across_names = FALSE,
     skip_shares = TRUE
   )
@@ -481,6 +482,7 @@ plan_summary_expressions <- function(dots,
     data_proxy = data_proxy,
     data_vars = data_vars,
     group_vars = group_vars,
+    caller_labels = caller_labels,
     normalize_across_names = identical(backend_kind, "dtplyr")
   )
   if (length(summary_plan$cardinality) > 0L) {
@@ -528,12 +530,18 @@ find_summary_context_helpers <- function(expr) {
   )
 }
 
+# `caller_labels` is what a refusal quotes the failing dot by, and is passed in
+# rather than read off `dots`: the second resolution runs over dots this one
+# rewrote, whose labels are marginplyr's spelling and not the caller's
+# (ADR 0022).
 resolve_summary_selections <- function(dots,
                                        data_proxy,
                                        data_vars,
                                        group_vars,
+                                       caller_labels,
                                        normalize_across_names = FALSE,
                                        skip_shares = FALSE) {
+  stopifnot(length(dots) == length(caller_labels))
   selectable_vars <- setdiff(data_vars, unique(group_vars))
   selection_proxy <- dplyr::select(
     data_proxy,
@@ -541,8 +549,9 @@ resolve_summary_selections <- function(dots,
   )
 
   lapply(
-    dots,
-    function(dot) {
+    seq_along(dots),
+    function(i) {
+      dot <- dots[[i]]
       expr <- rlang::quo_get_expr(dot)
       if (
         skip_shares &&
@@ -550,11 +559,19 @@ resolve_summary_selections <- function(dots,
       ) {
         return(dot)
       }
-      expr <- rewrite_summary_selections(
-        expr,
-        env = rlang::quo_get_env(dot),
-        data_proxy = selection_proxy,
-        normalize_across_names = normalize_across_names
+      expr <- tryCatch(
+        rewrite_summary_selections(
+          expr,
+          env = rlang::quo_get_env(dot),
+          data_proxy = selection_proxy,
+          normalize_across_names = normalize_across_names
+        ),
+        error = function(cnd) {
+          if (is_unsupported_predicate(cnd)) {
+            abort_selection_predicate(caller_labels[[i]], cnd)
+          }
+          stop(cnd)
+        }
       )
       rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
     }
