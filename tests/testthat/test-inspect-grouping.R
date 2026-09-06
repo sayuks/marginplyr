@@ -76,7 +76,7 @@ test_that("list inspection preserves exact non-syntactic dimension names", {
   )
 })
 
-test_that("inspection preserves grouping bits at integer-mask boundaries", {
+test_that("inspection preserves Grouping bits at integer-mask boundaries", {
   empty_text <- inspect_grouping(data.frame(value = 1L))
   empty_list <- inspect_grouping(
     data.frame(value = 1L),
@@ -531,7 +531,7 @@ test_that("dbplyr inspection returns local plan data without a source query", {
   expect_identical(result$included, c("(group)", "()"))
 })
 
-test_that("inspect_grouping() options use the package condition seam", {
+test_that("inspect_grouping() options use the Package condition seam", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 
   error <- expect_error(

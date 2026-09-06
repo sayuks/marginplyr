@@ -391,7 +391,7 @@ test_that("a carried factor with no NA level takes no encode route", {
   expect_identical(names(info$prototypes), "group")
 })
 
-# Rows are one per Grouping set member and ADR 0018 leaves their order to the
+# Rows are one per grouping set member and ADR 0018 leaves their order to the
 # backend, so the cells are paired by the integer codes of `outer`, which name
 # together as many columns as it takes for the tuple to be distinct per row.
 # Reading the code rather than the displayed value is also what keeps a value
@@ -1235,7 +1235,7 @@ test_that("collision checks use the displayed value of non-factor columns", {
   )
 })
 
-test_that("Margin label option errors use the package condition seam", {
+test_that("Margin label option errors use the Package condition seam", {
   data <- data.frame(
     fixed = "f",
     first = "a",

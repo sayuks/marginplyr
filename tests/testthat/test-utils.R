@@ -68,7 +68,7 @@ test_that("assert_lazy_table() works", {
   )
 })
 
-test_that("shared argument assertions use the package condition seam", {
+test_that("shared argument assertions use the Package condition seam", {
   x <- 1
 
   logical_error <- expect_error(
@@ -633,7 +633,7 @@ test_that("every shared reader answers a pair holding an empty call part", {
   )
 })
 
-test_that("lazy-table assertions use the package condition seam", {
+test_that("lazy-table assertions use the Package condition seam", {
   skip_if_suggest_absent("arrow")
 
   error <- expect_error(

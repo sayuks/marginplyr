@@ -8,14 +8,14 @@ a Margin verb cannot use it, and the one rewrite that fixes it:
 
 `CONTEXT.md` defines *Mutable step*. What the refusal answers is measured in
 #451: over such an input `expand_with_margins()` returned a result in which
-every row carried the margin label, and left the caller holding a table whose
+every row carried the Margin label, and left the caller holding a table whose
 column *names* had been permuted while its column *data* had not — so
 `dtx$region` afterwards held the integers that had been `dtx$year`. A
 `select()` in the input's own pipeline lost the caller a column outright.
 
 ## Why this is marginplyr's to refuse
 
-The hazard is dtplyr's. `union_all(mutate(l, region = "T"), l)` over a mutable
+The hazard is dtplyr's. `union_all(mutate(l, region = "T"), l)` over a Mutable
 step returns the same wrong answer with no marginplyr involved, so a
 multi-branch query over a step data.table may write to is broken wherever it is
 written. That report is filed separately and this refusal does not wait on it.
@@ -176,7 +176,7 @@ The last assertion below is the one that is not about behaviour:
 - The caller's table is unchanged after a refusal, in names, columns, and rows.
   That is what the refusal is for, and a refusal raised after the damage would
   otherwise pass every other assertion.
-- A grouped mutable step reaches this refusal rather than the fixed-key
+- A grouped Mutable step reaches this refusal rather than the fixed-key
   rejection its groups used to earn, the refusal sitting above key resolution.
   That is a consequence of the placement above and is pinned rather than left
   to be rediscovered.

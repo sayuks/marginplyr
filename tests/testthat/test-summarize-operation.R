@@ -82,7 +82,7 @@ test_that("invalid summary selections precede label name coverage errors", {
   )
 })
 
-test_that("shared lifecycle options use package conditions", {
+test_that("shared lifecycle options use Package conditions", {
   data <- data.frame(group = "x")
   cases <- list(
     check_margin_label = list(
@@ -264,7 +264,7 @@ test_that("dtplyr unwraps a `.fns` list of one into the function it holds", {
   expect_named(expected, c("group", "units_total", "revenue_total"))
 })
 
-test_that("summary selection errors use the package condition seam", {
+test_that("summary selection errors use the Package condition seam", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   summary_options <- list(.groups = "drop")
   cases <- list(

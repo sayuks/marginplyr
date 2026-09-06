@@ -127,7 +127,7 @@ test_that("nest verbs preserve their own quosure environments", {
   expect_identical(dplyr::group_vars(nested_by), c("fixed", "group"))
 })
 
-test_that("nest preflight precedes semantic margin-label validation", {
+test_that("nest preflight precedes semantic Margin-label validation", {
   skip_if_suggest_absent("dtplyr")
   register_nest_proxy_methods()
   source <- dtplyr::lazy_dt(data.frame(group = c("Total", "x"), value = 1:2))
@@ -147,7 +147,7 @@ test_that("nest preflight precedes semantic margin-label validation", {
   expect_identical(nest_proxy_capture$n, 1L)
 })
 
-test_that("nesting option errors use the package condition seam", {
+test_that("nesting option errors use the Package condition seam", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   cases <- list(
     keep = list(
@@ -650,7 +650,7 @@ test_that("an empty dtplyr input nests into its backend's cell", {
   )
 })
 
-test_that("nesting rejects unsupported sources with a package condition", {
+test_that("nesting rejects unsupported sources with a Package condition", {
   remote <- dbplyr::tbl_lazy(
     data.frame(group = c("x", "y"), value = 1:2),
     con = dbplyr::simulate_postgres()

@@ -1,4 +1,4 @@
-test_that("rollup uses Total and exposes SQL-compatible grouping bits", {
+test_that("rollup uses Total and exposes SQL-compatible Grouping bits", {
   data <- data.frame(
     a = c("x", NA_character_),
     b = c("u", "u"),
@@ -123,7 +123,7 @@ test_that("grouping grammar errors retain each public verb call", {
   }
 })
 
-test_that("Grouping plan errors use the package condition seam", {
+test_that("Grouping plan errors use the Package condition seam", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
 
   error <- expect_error(
@@ -305,7 +305,7 @@ test_that("duplicate policies affect result cardinality", {
   expect_equal(nrow(kept), 4L)
 })
 
-test_that("margin labels are display-only and can be disabled", {
+test_that("Margin labels are display-only and can be disabled", {
   collision <- data.frame(a = c("Total", "x"), value = 1:2)
   expect_error(
     summarize_with_margins(
@@ -350,7 +350,7 @@ test_that("margin labels are display-only and can be disabled", {
   expect_true(any(is.na(typed$a) & typed$gid == 15L))
 })
 
-test_that("all Margin verbs eagerly check local margin-label collisions", {
+test_that("all Margin verbs eagerly check local Margin-label collisions", {
   data <- data.frame(group = c("Total", "x"), value = 1:2)
   operations <- list(
     summarize = function(data) {
@@ -402,7 +402,7 @@ test_that("Margin verbs skip label checks for lazy inputs by default", {
   )
 })
 
-test_that("margin label checks handle missing and non-syntactic columns", {
+test_that("Margin label checks handle missing and non-syntactic columns", {
   missing <- data.frame(
     check.names = FALSE,
     "first group" = c(NA_character_, "x"),
@@ -682,7 +682,7 @@ test_that("a bare grouping_id() reaches the column cap on dimensions alone", {
   expect_s3_class(capped, "marginplyr_error")
 })
 
-test_that("expand and nest verbs consume the same grouping plan", {
+test_that("expand and nest verbs consume the same Grouping plan", {
   data <- data.frame(a = c("x", "x", "y"), b = c("u", "v", "u"), x = 1:3)
 
   expanded <- expand_with_margins(data, .grouping = rollup(a, b))

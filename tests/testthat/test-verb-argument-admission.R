@@ -3,7 +3,7 @@
 # `...` accepts any named expression, so an argument name the verb does not
 # have becomes a constant summary column instead of an error; an input
 # without dplyr methods reached `group_vars()` and reported an internal
-# generic rather than the argument the caller supplied; and an option argument
+# generic rather than the argument the caller supplied; and an Option argument
 # validated with `match.arg()` accepted abbreviations nothing documents.
 
 admission_data <- function() {
@@ -507,7 +507,7 @@ test_that("a reordering of the vocabulary is refused", {
 })
 
 test_that("`NULL` is rejected by every option rather than taken as a default", {
-  # `match.arg(NULL, choices)` returns `choices[1]`, so every option argument
+  # `match.arg(NULL, choices)` returns `choices[1]`, so every Option argument
   # used to read a `NULL` as a request for its own default. #110 stopped that
   # along with the abbreviations above, and #144 settled it as a decision: the
   # *Option arguments* section on `?summarize_with_margins` states that a

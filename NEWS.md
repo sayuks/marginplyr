@@ -2,7 +2,7 @@
 
 * Initial CRAN submission.
 * Added `grouping_set()`, `grouping_sets()`, `rollup()`, `cube()`, and
-  `grouping_spec()` for arbitrary SQL-style grouping plans, including empty
+  `grouping_spec()` for arbitrary SQL-style Grouping plans, including empty
   sets, nesting, Cartesian products, and composite dimensions.
 * A nested argument a Grouping specification constructor cannot read is refused
   with marginplyr's own diagnostic naming the spelling that works, in place of
@@ -32,7 +32,7 @@
   argument gives `"text"` for compact display values or `"list"` for the exact
   character vectors to program against. See *Formats and ordinary tibble
   behavior* in `?inspect_grouping`.
-* Added `.id` to every Margin verb for one-based Grouping set occurrence
+* Added `.id` to every Margin verb for one-based grouping set occurrence
   identifiers, including duplicate-aware local, lazy, expansion, and nesting
   paths.
 * Added `.sort` to every Margin verb for an opt-in Margin order, taking
@@ -74,7 +74,7 @@
 * `summarize_with_margins()`, `summarise_with_margins()`,
   `expand_with_margins()`,
   `nest_with_margins()`, and `nest_by_with_margins()` now share one normalized
-  grouping-plan implementation.
+  Grouping-plan implementation.
 * Existing `dplyr::group_by()` columns act as implicit fixed `.by` keys across
   local and lazy backends. Grouped input cannot also supply `.by`; margin
   summaries, row expansions, and regular nests return ungrouped results, while
@@ -105,7 +105,7 @@
   stay refused for a collision, as is a named one colliding by its own name.
 * Dynamically named data-frame summaries now reserve collision-free internal
   grouping names, and opaque collisions fail with a targeted diagnostic.
-  Lazy margin-label checks use portable numeric `CASE` aggregates across
+  Lazy Margin-label checks use portable numeric `CASE` aggregates across
   supported SQL dialects.
 * Backend detection now validates the documented Arrow and dtplyr minimum
   versions, centralizes backend capabilities, and reports incompatible dbplyr

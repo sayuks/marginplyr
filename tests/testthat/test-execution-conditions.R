@@ -1066,7 +1066,7 @@ test_that("an ambiguous label is restored only where it is unique", {
 # because it is this module's, and directly because neither consumer's
 # diagnostic would report a traversal that changed shape: the share-selection
 # reader answers the same empty vector for a chain read in the wrong order as
-# for one naming nothing, and the grouping-specification predicate the same
+# for one naming nothing, and the Grouping-specification predicate the same
 # `FALSE`. Unlike the Condition context above, it is reached without a verb --
 # a chain is what a caller's own selection failure arrives as, and building one
 # is what states the shape the reader is written for.

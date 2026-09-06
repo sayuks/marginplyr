@@ -99,7 +99,7 @@ test_that("grouping families support union, nesting, and Cartesian product", {
   )
 })
 
-test_that("grouping specification kinds enforce the nesting grammar", {
+test_that("Grouping specification kinds enforce the nesting grammar", {
   nested_calls <- list(
     set = quote(grouping_set(a)),
     sets = quote(grouping_sets(grouping_set(a))),
@@ -174,7 +174,7 @@ test_that("grouping specification kinds enforce the nesting grammar", {
   }
 })
 
-test_that("a nested specification position recognizes a spelling or a name", {
+test_that("a Nested specification position recognizes a spelling or a name", {
   data_vars <- c("region", "grade", "value")
   spec_from_caller <- function(...) rollup(...)
   compile <- function(spec) {
@@ -1844,7 +1844,7 @@ test_that("invalid grouping input lists every supported constructor", {
 # parent, which `grouping_arg_spec()` evaluates and the preflight recurses into.
 # #262 reproduced at both, and a fix holding at one and not the other would
 # read as a fix.
-test_that("a malformed grouping specification is refused by both guards", {
+test_that("a malformed Grouping specification is refused by both guards", {
   malformed <- list(
     # A `type` that is not one name, and `args` that are not a list: the two
     # halves of the first guard's condition, which no single object fails both
@@ -1916,7 +1916,7 @@ test_that("a malformed grouping specification is refused by both guards", {
 # the reason the test above writes every object in both, and the public routes
 # as well, because that is where the defect was reported and a guard is reached
 # from them through the whole lifecycle rather than the compiler alone.
-test_that("a grouping specification kind is classified with its class off", {
+test_that("a Grouping specification kind is classified with its class off", {
   kinds <- lapply(c("is.na", "length"), function(generic) {
     kind_answering(
       stats::setNames(list(raising_kind_method), generic),
@@ -2652,7 +2652,7 @@ test_that("invalid or ambiguous specifications fail early", {
 # The public half would hold with the guard promoted back, since the public
 # path never reaches it, and the internal half is what records the demotion --
 # neither says enough alone. The upstream message stays loosely matched: ADR
-# 0015 propagates an external condition unchanged, so its wording is
+# 0015 propagates an External condition unchanged, so its wording is
 # tidyselect's to revise.
 test_that("an unknown `.by` column fails outside the public contract", {
   data <- data.frame(region = "x", value = 1)

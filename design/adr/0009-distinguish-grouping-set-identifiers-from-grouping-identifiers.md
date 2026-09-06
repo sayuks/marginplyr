@@ -91,13 +91,13 @@ older mask (#366).
 
 `grouping_id()` written with no columns now reads every Grouping dimension of
 the resolved plan, in plan order. That gives the second correspondence: a bare
-`grouping_id()` is exactly `inspect_grouping()$grouping_id` for the Grouping
+`grouping_id()` is exactly `inspect_grouping()$grouping_id` for the grouping
 set the row came from, as `.id` is exactly `set_id` for its occurrence. The
 retyped spelling is unchanged and remains the way to encode a subset of the
 dimensions, or to fix an order other than the plan's.
 
 Fixed `.by` columns are excluded from that default. A `.by` column belongs to
-every Grouping set, so it contributes a zero bit wherever it appears, and
+every grouping set, so it contributes a zero bit wherever it appears, and
 leading zero bits leave the value alone — the exclusion is observable only at
 the 31-column cap, which is where it earns itself: a plan of 31 dimensions
 beside a fixed column is one the default can encode. Passing a `.by` column

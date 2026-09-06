@@ -861,7 +861,7 @@ margin_label_check_data <- function() {
 # fixture, once per lazy backend that can execute the check. The call is written
 # out in each rather than wrapped in a shared expectation, because a closure
 # would put `first` and `second` somewhere `codetools` cannot follow them.
-test_that("dtplyr checks margin labels across all dimensions", {
+test_that("dtplyr checks Margin labels across all dimensions", {
   skip_if_suggest_absent("dtplyr")
   expect_error(
     summarize_with_margins(
@@ -874,7 +874,7 @@ test_that("dtplyr checks margin labels across all dimensions", {
   )
 })
 
-test_that("Arrow checks margin labels across all dimensions", {
+test_that("Arrow checks Margin labels across all dimensions", {
   skip_if_suggest_absent("arrow")
   expect_error(
     summarize_with_margins(
@@ -887,7 +887,7 @@ test_that("Arrow checks margin labels across all dimensions", {
   )
 })
 
-test_that("DuckDB checks margin labels across all dimensions", {
+test_that("DuckDB checks Margin labels across all dimensions", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -909,7 +909,7 @@ test_that("DuckDB checks margin labels across all dimensions", {
   )
 })
 
-test_that("lazy margin label checks aggregate portable numeric values", {
+test_that("lazy Margin label checks aggregate portable numeric values", {
   registerS3method(
     "db_collect",
     "margin_check_connection",
@@ -948,7 +948,7 @@ test_that("lazy margin label checks aggregate portable numeric values", {
   ))
 })
 
-test_that("documented SQL dialects use portable margin label checks", {
+test_that("documented SQL dialects use portable Margin label checks", {
   registerS3method(
     "db_collect",
     "margin_check_connection",
@@ -2192,7 +2192,7 @@ mutable_step_data <- function() {
   )
 }
 
-test_that("every margin verb refuses a mutable dtplyr step", {
+test_that("every Margin verb refuses a mutable dtplyr step", {
   skip_if_suggest_absent("dtplyr")
   expect_setequal(names(forwarded_verbs), verbs_taking(".grouping"))
 
@@ -2288,7 +2288,7 @@ test_that("an immutable dtplyr step answers as the local input does", {
   expect_equal(as.data.frame(table_result), as.data.frame(local_result))
 })
 
-test_that("a grouped mutable step is refused before its groups are read", {
+test_that("a grouped Mutable step is refused before its groups are read", {
   skip_if_suggest_absent("dtplyr")
   data <- mutable_step_data()
   grouped <- dplyr::group_by(
