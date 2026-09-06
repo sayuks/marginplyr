@@ -619,14 +619,15 @@ DuckDB and PostgreSQL use native \verb{GROUP BY GROUPING SETS} SQL. Automated
 tests execute DuckDB queries against a live in-memory database and verify
 PostgreSQL SQL with dbplyr's simulator.
 
-SQLite is the other live database, and it runs the portable \verb{UNION ALL}
-path end to end: Parent shares under \code{.check_share_source = FALSE}, the
-refusal the default raises there -- SQLite converts a value of another type
-to a number rather than refusing it -- a Margin order through both
+SQLite is the other live database. It runs the portable \verb{UNION ALL} path
+end to end: Parent shares under \code{summarize_with_margins()}'s
+\code{.check_share_source = FALSE}, a Margin order through both
 \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}}, including the missing-value
 placement its own ordering would not produce, the observed half of the
 Margin label collision check, and the queries \code{\link[=last_sent_queries]{last_sent_queries()}}
-records. Tests that compare rendered SQL run against that database too;
+records. The refusal that argument's default raises on the dialect is
+covered there too, and outside that list: it lands before a portable query
+is built. Tests that compare rendered SQL also run against that database;
 what those establish is what was rendered, which is what a simulator
 establishes.
 

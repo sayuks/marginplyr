@@ -388,9 +388,6 @@ grouping plan. Simulation verifies generated SQL but does not claim live
 execution against every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
-*Database backend coverage* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-states what is verified on each backend.
 
 ## Keep the rows behind each total
 
@@ -456,11 +453,8 @@ subtotal, explicit dplyr code may be easier.
 
 ## Backend verification
 
-Support is not one status. Some backends are exercised against a live
-database; the rest are verified through dbplyr’s SQL simulators, which
-establish what SQL is rendered and nothing about a running server. Which
-claim covers which backend is stated in one place, *Database backend
-coverage* in the [`summarize_with_margins()`
+What is verified on each backend, and how, is stated in one place:
+*Database backend coverage* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 
 The function reference contains executable examples for composite

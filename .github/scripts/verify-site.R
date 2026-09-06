@@ -370,7 +370,7 @@ markers <- list(
     "Record the SQL marginplyr sends",
     # The verification section, which states no scope of its own: the
     # `summarize_with_margins()` reference owns that, so a marker naming a
-    # backend here would be the restatement the section was reduced to remove.
+    # backend here would pin a restatement this section does not carry.
     "SQL simulation is useful evidence about rendering",
     "treat a simulator-only backend as SQL-generation support",
     "Which claim rests on which is stated in one place",
