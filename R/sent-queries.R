@@ -10,11 +10,8 @@ sent_queries <- new.env(parent = emptyenv())
 # `TRUE` is "not audited", and nothing here reports it.
 #
 # Called by every entry point directly after it forces `.data` and ahead of
-# the argument validation each of them opens with (ADR 0027). Both halves of
-# that placement decide which call the record belongs to: an entry point whose
-# input is another Margin verb runs that verb while forcing the promise, so
-# emptying the record first would leave this call holding what the input
-# recorded. The backend is not known yet, so the SQL flag starts `FALSE` and
+# the argument validation each of them opens with (ADR 0027). The backend is
+# not known yet, so the SQL flag starts `FALSE` and
 # `remember_sent_query_backend()` sets it where the backend is computed.
 reset_sent_queries <- function() {
   sent_queries$recorded <- TRUE

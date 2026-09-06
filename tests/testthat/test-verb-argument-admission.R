@@ -632,6 +632,26 @@ test_that("every entry point admits input the same way", {
   )
 })
 
+test_that("an omitted input is answered by R and not by the verb", {
+  # Every entry point opens by forcing `.data`, which is ahead of the block
+  # that rewrites a marginplyr error's call, so an omitted input raises where
+  # R raises it. It was never a marginplyr condition -- that block rewrites
+  # only those -- and the message naming the formal is what a caller acts on
+  # (#455).
+  for (verb in verbs_taking(".grouping")) {
+    error <- expect_error(
+      eval(rlang::call2(verb, .grouping = quote(rollup(g))))
+    )
+    expect_s3_class(error, "missingArgError")
+    expect_false(inherits(error, "marginplyr_error"))
+    expect_match(
+      conditionMessage(error),
+      "argument \".data\" is missing",
+      fixed = TRUE
+    )
+  }
+})
+
 test_that("admission does not widen what the nesting verbs accept", {
   skip_if_suggest_absent("arrow")
 

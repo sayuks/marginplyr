@@ -297,7 +297,7 @@ test_that("a piped Margin verb records only the outer call's result", {
   remote <- sent_queries_table(con)
 
   with_audit_option(TRUE, {
-    remote |>
+    query <- remote |>
       summarize_with_margins(
         inner = sum(v, na.rm = TRUE),
         .grouping = rollup(g)
@@ -310,9 +310,33 @@ test_that("a piped Margin verb records only the outer call's result", {
   })
 
   # One row, not two: `"result"` is the one promised `purpose`, and a reader
-  # matching on it must find the query they were handed and no other.
+  # matching on it must find the query they were handed and no other. The
+  # outer query nests the input's, so its text holds the input's too, and what
+  # tells the two apart is which query the row is -- not a substring absent
+  # from one of them, as it is where the two calls read the same table.
   expect_identical(record$purpose, "result")
-  expect_match(record$sql, "outer", fixed = TRUE)
+  expect_identical(record$sql, as.character(dbplyr::sql_render(query)))
+})
+
+test_that("a piped expand_with_margins() records only its own result", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    query <- remote |>
+      summarize_with_margins(
+        inner = sum(v, na.rm = TRUE),
+        .grouping = rollup(g)
+      ) |>
+      expand_with_margins(.grouping = rollup(g))
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, "result")
+  expect_identical(record$sql, as.character(dbplyr::sql_render(query)))
 })
 
 test_that("a dplyr verb between two Margin verbs changes nothing", {
@@ -834,7 +858,7 @@ strip_coverage_wrapper <- function(expr) {
 nth_statement <- function(fn, n) {
   fn_body <- strip_coverage_wrapper(body(fn))
   if (!is.call(fn_body) || !identical(as.character(fn_body[[1]]), "{")) {
-    if (identical(n, 1L)) {
+    if (n == 1L) {
       return(fn_body)
     }
     return(NULL)
@@ -898,6 +922,11 @@ test_that("the reset scan tells an opening statement from a later one", {
     reset_sent_queries()
     force(.data)
   }
+  validates_between <- function() {
+    force(.data)
+    stop("unreachable")
+    reset_sent_queries()
+  }
   bare <- function() reset_sent_queries()
   reset <- quote(reset_sent_queries())
   forced <- quote(force(.data))
@@ -909,10 +938,15 @@ test_that("the reset scan tells an opening statement from a later one", {
   expect_identical(nth_statement(opens_correctly, 2L), reset)
   # Each way the two statements can be wrong is a distinct reading, and the
   # gate above is an `||` over both, so neither position may pass on its own:
-  # a body missing the forcing, and a body holding both in the other order.
+  # a body missing the forcing, a body holding both in the other order, and a
+  # body whose forcing is right with a statement pushed between the two. The
+  # last is the only one the second position alone rejects, and is what a
+  # validation moved above the reset would look like.
   expect_false(identical(nth_statement(resets_later, 1L), forced))
   expect_identical(nth_statement(swapped, 1L), reset)
   expect_false(identical(nth_statement(swapped, 2L), reset))
+  expect_identical(nth_statement(validates_between, 1L), forced)
+  expect_false(identical(nth_statement(validates_between, 2L), reset))
   # An unbraced body is the statement itself, which the gate above reads for no
   # entry point today and would read for one written that way. It has no second
   # statement, and an empty braced body has neither; both answer that rather
