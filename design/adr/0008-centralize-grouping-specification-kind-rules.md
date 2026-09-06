@@ -320,7 +320,7 @@ name asks the value's own `is.na()` and `length()` methods. Either can raise
 instead of answering, and what came out of the guard was then whatever the
 object raised — `simpleError` for a `stop()` in the method, a class of the
 object's own where it aborted with one — in place of the
-`Invalid grouping specification.` refusal below it. The class such a call
+`Invalid Grouping specification.` refusal below it. The class such a call
 raises therefore moves to `marginplyr_error`, for the same reason #262 gives:
 this is the guard's own answer arriving rather than a new one being chosen,
 since ADR 0015 already assigns a malformed specification reaching this guard a
@@ -544,7 +544,7 @@ because the first is already R's own reading of a character vector: a
   `grouping_set`, the kind being `set` and the class carrying a method that was
   never relevant to it.
 - The guards in `validate_grouping_spec_early()` admit it, where they refused
-  it. The `Invalid grouping specification.` refusal still answers every kind
+  it. The `Invalid Grouping specification.` refusal still answers every kind
   that is no name — two strings, none, or the missing one — and answers it on
   the stripped value, so a `length()` claiming `1` over two strings does not
   reach the decision.

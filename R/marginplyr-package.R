@@ -2,7 +2,7 @@
 #'
 #' marginplyr extends [dplyr::summarize()] with SQL-style `GROUPING SETS`,
 #' `ROLLUP`, and `CUBE` summaries: totals, subtotals, and arbitrary grouping
-#' combinations, with grouping identifiers to tell the resulting grains
+#' combinations, with Grouping identifiers to tell the resulting grains
 #' apart. Local data frames and lazy tables are supported. Confirmed
 #' database backends use native grouping sets; other lazy backends use a
 #' `UNION ALL` fallback with the same semantics.

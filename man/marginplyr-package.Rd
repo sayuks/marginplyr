@@ -8,7 +8,7 @@
 \description{
 marginplyr extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with SQL-style \verb{GROUPING SETS},
 \code{ROLLUP}, and \code{CUBE} summaries: totals, subtotals, and arbitrary grouping
-combinations, with grouping identifiers to tell the resulting grains
+combinations, with Grouping identifiers to tell the resulting grains
 apart. Local data frames and lazy tables are supported. Confirmed
 database backends use native grouping sets; other lazy backends use a
 \verb{UNION ALL} fallback with the same semantics.
