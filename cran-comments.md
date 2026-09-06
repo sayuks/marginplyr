@@ -23,12 +23,14 @@ Quarto 1.9.38.
   pass. Every skipped test is an `expect_snapshot()` diagnostic, which
   testthat skips on CRAN by default.
 * `_R_CHECK_DEPENDS_ONLY_=true _R_CHECK_FORCE_SUGGESTS_=false R CMD check
-  --as-cran`, Suggested packages withheld. Examples, tests, and vignettes all
+  --as-cran`, against a library holding only marginplyr's hard dependencies,
+  testthat, the declared `VignetteBuilder`, and what those require; every
+  other Suggested package is absent. Examples, tests, and vignettes all
   complete. Every skipped test is either one of those same snapshot
   diagnostics or a test whose optional backend is absent, and the testthat
   output names the missing package for each of the latter.
   `_R_CHECK_FORCE_SUGGESTS_=false` is what stops `--as-cran` from treating the
-  deliberately withheld packages as a failure.
+  absent packages as a failure.
 
 Neither entry quotes a test count, deliberately: a count is accurate on the day
 it is measured and silently wrong afterwards. What these runs are offered as
