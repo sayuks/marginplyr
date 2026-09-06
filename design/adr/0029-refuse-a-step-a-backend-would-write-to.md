@@ -128,6 +128,33 @@ and the one the Arrow refusal beside it already takes.
 `?marginplyr` is unchanged: what a caller catches is the `marginplyr_error`
 that page already promises.
 
+The reference pages are unchanged too, and that is decided rather than passed
+over (#470). A Mutable step is a dtplyr step, so the three sentences #470 names
+that claim the class are broader than what is accepted, and they are left
+broader: `nest_with_margins()`'s `@param .data` — *A local data frame or a
+`dtplyr` step* — its *It works with local data frames and `dtplyr` steps*, and
+*Share execution supports local data frames and lazy dbplyr and dtplyr inputs*.
+
+This is where the parallel with ADR 0025 stops. There the page had to carry
+what a caller could not otherwise know; here the refusal is reached only by a
+caller who wrote `immutable = FALSE` themselves, against `lazy_dt()`'s default,
+and the diagnostic names the one rewrite.
+
+`@param .data` is also not where this package documents a refusal. The two
+definitions naming no backend — `summarize_with_margins()`'s and
+`inspect_grouping()`'s *A data frame or lazy table* — name none of the
+refusals a Margin verb already raises, the Arrow ones being carried by sections
+instead.
+So `nest_with_margins()`'s is the only definition a dtplyr clause would fit,
+and putting it there alone would say the refusal is nesting's when it is raised
+for every verb `verbs_taking(".grouping")` returns.
+
+The other three sentences #470 names describe an input that was accepted: when
+a `dtplyr` result is collected to be made row-wise, the integers a step returns
+for a grouping identity, and what establishes the share source rules on one.
+None of the three claims what may be passed, so none is what this decision
+would qualify.
+
 ## Test strategy
 
 The tests sit where the backend-kind contracts do and are guarded by
