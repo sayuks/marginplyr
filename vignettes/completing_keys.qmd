@@ -136,8 +136,8 @@ substantive modeling choice.
 
 If the intended change is only presentational, summarize the observed facts
 first and replace the finished display value afterwards. A completed key with
-no observed fact averages an empty selection, so the mean it reports is
-missing:
+no observed fact averages an empty selection, so the mean it reports is `NaN`,
+which `coalesce()` replaces as it does any missing value:
 
 ```{r}
 #| eval: !expr has_tidyr

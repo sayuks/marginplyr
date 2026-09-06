@@ -5,6 +5,12 @@ consistently to local and remote data.
 
 ## Language
 
+**Grain**:
+What one row of a summary stands for: the dimensions it is grouped by. An
+ordinary grouped summary has one grain; a Grouping plan produces several in
+one result.
+_Avoid_: Granularity, aggregation level
+
 **Grouping specification**:
 A user-declared description of the grouping sets, rollups, cubes, or products
 to be applied.

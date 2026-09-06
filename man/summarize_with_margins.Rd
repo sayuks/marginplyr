@@ -699,8 +699,9 @@ Margin verb defaults it to \code{is.data.frame(.data)}.
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}'s \code{.check_share_source} reads nothing on any
 backend, so it defaults to \code{TRUE} there.
 
-\code{\link[=last_sent_queries]{last_sent_queries()}} reports what a call actually sent, which is how this
-rule is checked against a connection rather than read here.
+\code{\link[=last_sent_queries]{last_sent_queries()}} reports what a call actually sent, which is how the
+two unasked queries above are counted against a connection rather than
+taken from this page.
 }
 
 \examples{
