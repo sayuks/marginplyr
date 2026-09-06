@@ -1329,3 +1329,128 @@ test_that("Arrow executes a Margin order end to end", {
   ))
   expect_identical(result$size, c("large", "medium", "small", "Total"))
 })
+
+# A Margin label converts its dimension to character, which is why the block
+# above reaches no dictionary column and says nothing about one. These cover
+# what a label leaves behind: a typed-missing label, which inserts none, and a
+# fixed key, which holds none (#452). `refuses_dictionary_sort` in
+# `R/grouping-backend.R` is why the distinction matters on this backend alone.
+
+test_that("Arrow orders a factor dimension whose label inserts nothing", {
+  skip_if_suggest_absent("arrow")
+
+  input <- arrow::as_arrow_table(margin_order_factor_data())
+
+  # The order a Margin label already produced on this backend, which the block
+  # above asserts: Arrow restores no levels, so the dimension orders by its
+  # character values and the margin row goes last. A typed-missing label owes
+  # the same order, with a missing value where the label would have been.
+  labelled <- dplyr::collect(summarize_with_margins(
+    input,
+    units = sum(units),
+    .grouping = rollup(size),
+    .margin_label = "Total",
+    .sort = "last"
+  ))
+  expect_identical(labelled$size, c("large", "medium", "small", "Total"))
+
+  for (label in list(NULL, NA_character_)) {
+    result <- dplyr::collect(summarize_with_margins(
+      input,
+      units = sum(units),
+      .grouping = rollup(size),
+      .margin_label = label,
+      .sort = "last"
+    ))
+    # The result column is untouched: a typed-missing label converts nothing,
+    # so the dimension comes back as Arrow returns it and the margin row's
+    # value is missing rather than a label.
+    # The dimension is an ordered factor, and the class is what the same call
+    # returns without a Margin order: the cast reaches the key alone.
+    expect_identical(
+      class(result$size),
+      class(dplyr::collect(summarize_with_margins(
+        input,
+        units = sum(units),
+        .grouping = rollup(size),
+        .margin_label = label
+      ))$size)
+    )
+    expect_true(is.ordered(result$size))
+    expect_identical(
+      as.character(result$size),
+      replace(labelled$size, labelled$size == "Total", NA_character_)
+    )
+  }
+
+  first <- dplyr::collect(summarize_with_margins(
+    input,
+    units = sum(units),
+    .grouping = rollup(size),
+    .margin_label = NULL,
+    .sort = "first"
+  ))
+  expect_identical(
+    as.character(first$size),
+    c(NA, "large", "medium", "small")
+  )
+})
+
+test_that("Arrow orders a factor fixed key, which holds no Margin label", {
+  skip_if_suggest_absent("arrow")
+
+  data <- margin_order_data()
+  data$region <- factor(data$region, levels = c("West", "East"))
+  input <- arrow::as_arrow_table(data)
+
+  for (label in list("Total", NULL)) {
+    result <- dplyr::collect(summarize_with_margins(
+      input,
+      units = sum(units),
+      .by = region,
+      .grouping = rollup(store),
+      .margin_label = label,
+      .sort = "last"
+    ))
+
+    # A fixed key is never converted whatever the label is, so it stays a
+    # dictionary column and orders by its values rather than by the declared
+    # levels, which put "West" first.
+    expect_true(is.factor(result$region))
+    expect_identical(
+      as.character(result$region),
+      c("East", "East", "East", "West", "West", "West")
+    )
+    margin <- label %||% NA_character_
+    expect_identical(
+      as.character(result$store),
+      c("s1", "s2", margin, "s3", "s4", margin)
+    )
+  }
+})
+
+test_that("Arrow orders a composite factor dimension under expansion", {
+  skip_if_suggest_absent("arrow")
+
+  data <- margin_order_data()
+  data$region <- factor(data$region)
+  data$store <- factor(data$store)
+  result <- dplyr::collect(expand_with_margins(
+    arrow::as_arrow_table(data),
+    .grouping = rollup(c(region, store)),
+    .margin_label = NULL,
+    .sort = "last"
+  ))
+
+  # A composite dimension's columns share one Grouping bit, so the margin rows
+  # come last as a block rather than one per column.
+  expect_true(is.factor(result$region))
+  expect_identical(
+    as.character(result$region),
+    c(rep("East", 4L), rep("West", 4L), rep(NA_character_, 4L))
+  )
+  expect_identical(
+    as.character(result$store),
+    c("s1", "s2", NA, NA, "s3", "s4", NA, NA, rep(NA_character_, 4L))
+  )
+})

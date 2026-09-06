@@ -65,7 +65,8 @@ backend_capabilities <- function(kind) {
     "native_duplicate_sets",
     "records_window_order",
     "invents_row_on_column_add",
-    "drops_na_factor_level_on_union"
+    "drops_na_factor_level_on_union",
+    "refuses_dictionary_sort"
   )
   enabled <- list(
     local = c(
@@ -98,7 +99,15 @@ backend_capabilities <- function(kind) {
       # branch exists, which is outside what marginplyr promises (ADR 0016).
       "drops_na_factor_level_on_union"
     ),
-    arrow = "can_read_schema",
+    arrow = c(
+      "can_read_schema",
+      # Arrow holds a factor as a dictionary column, and its sort refuses one
+      # -- `dplyr::arrange()` on a dictionary fails the same way with no
+      # marginplyr in the pipeline (#452). ADR 0018's *Factor dimensions sort
+      # by level* is authoritative for what the Margin order does about it and
+      # for why no other kind is granted this.
+      "refuses_dictionary_sort"
+    ),
     duckdb = c(
       "collect_selection_proxy",
       "can_read_schema",
