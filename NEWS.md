@@ -40,8 +40,8 @@
   structure of its Grouping plan rather than by displayed values, so a subtotal
   sits with the rows it summarizes rather than wherever its Margin label falls,
   and lazy inputs stay lazy. See *Margin order* in `?summarize_with_margins`.
-* Added the `retail_sales` data set, 24 rows of synthetic monthly sales that
-  the guides and examples are written against. See `?retail_sales`.
+* Added the `retail_sales` data set, 24 rows of synthetic monthly sales.
+  See `?retail_sales`.
 * Added guides for Grouping identity and explicit key completion, and made the
   function references the canonical source of the Margin, Parent-share, and
   Margin-label contracts.
