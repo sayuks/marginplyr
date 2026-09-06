@@ -143,6 +143,27 @@ test_that("Grouping plan errors use the package condition seam", {
   )
 })
 
+test_that("a refused input keeps its own call when piped into a verb", {
+  data <- data.frame(a = c("x", "y"), value = 1:2)
+
+  # An entry point rewrites the call of every `marginplyr_error` raised inside
+  # the block its validation runs in. The input's promise is forced before
+  # that block, so an input that is itself a Margin verb reports the call the
+  # caller wrote it as rather than the one reading it (#455).
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      .grouping = rollup(a),
+      .duplicates = "bogus"
+    ) |>
+      summarize_with_margins(total = sum(n), .grouping = rollup(a))
+  )
+
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(conditionCall(error)$.duplicates, "bogus")
+})
+
 test_that("Grouping tidyselect conditions retain their class and cause", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
   selection <- rlang::quo(unknown)

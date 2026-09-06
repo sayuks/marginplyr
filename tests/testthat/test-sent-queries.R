@@ -280,6 +280,146 @@ test_that("inspect_grouping() after a Margin verb holds only its own rows", {
   })
 })
 
+# --- a call whose input is another call --------------------------------------
+
+# `|>` expands to `g(f(x))`, so `f` runs while `g` forces `.data`, and which
+# call the record belongs to turns on whether `g` empties it before or after
+# that forcing. Emptying first leaves the record spanning both, which is the
+# `dbplyr::last_sql()` defect ADR 0027 exists to remove, reached by the
+# idiomatic way of writing the call (#455). RSQLite records no selection proxy,
+# so each of these reads a record whose whole content is result rows.
+
+test_that("a piped Margin verb records only the outer call's result", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    remote |>
+      summarize_with_margins(
+        inner = sum(v, na.rm = TRUE),
+        .grouping = rollup(g)
+      ) |>
+      summarize_with_margins(
+        outer = sum(inner, na.rm = TRUE),
+        .grouping = rollup(g)
+      )
+    record <- last_sent_queries()
+  })
+
+  # One row, not two: `"result"` is the one promised `purpose`, and a reader
+  # matching on it must find the query they were handed and no other.
+  expect_identical(record$purpose, "result")
+  expect_match(record$sql, "outer", fixed = TRUE)
+})
+
+test_that("a dplyr verb between two Margin verbs changes nothing", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    remote |>
+      summarize_with_margins(
+        inner = sum(v, na.rm = TRUE),
+        .grouping = rollup(g)
+      ) |>
+      dplyr::filter(inner > 0) |>
+      expand_with_margins(.grouping = rollup(g))
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, "result")
+})
+
+test_that("inspect_grouping() piped from a Margin verb sends nothing", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  # The zero-row answer is the third of the four, and reaching it here is what
+  # says the record belongs to the call that sent nothing rather than to the
+  # one that filled it.
+  with_audit_option(TRUE, {
+    remote |>
+      summarize_with_margins(
+        inner = sum(v, na.rm = TRUE),
+        .grouping = rollup(g)
+      ) |>
+      inspect_grouping(.grouping = rollup(g))
+    expect_sent_nothing()
+  })
+})
+
+test_that("an outer verb refused after its input ran reports its own record", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  # A refusal inside the body takes the third answer (ADR 0027), and an input
+  # that recorded rows of its own is where that is hardest to hold: those rows
+  # are in the record when the outer call begins.
+  with_audit_option(TRUE, {
+    condition <- rlang::catch_cnd(
+      remote |>
+        summarize_with_margins(
+          inner = sum(v, na.rm = TRUE),
+          .grouping = rollup(g)
+        ) |>
+        summarize_with_margins(
+          outer = sum(inner, na.rm = TRUE),
+          .grouping = rollup(g),
+          .duplicates = "bogus"
+        ),
+      classes = "marginplyr_error"
+    )
+    expect_s3_class(condition, "marginplyr_error")
+    expect_sent_nothing()
+  })
+})
+
+test_that("an input that refuses leaves its own record readable", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- sent_queries_table(con)
+  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
+  empty_share_dialect_verdicts()
+
+  # The other direction of the same forcing: the input raises, so the outer
+  # call never reaches its own reset and the record left readable is the
+  # input's, holding every query it had already sent.
+  with_audit_option(TRUE, {
+    condition <- rlang::catch_cnd(
+      remote |>
+        summarize_with_margins(
+          total = sum(v, na.rm = TRUE),
+          share = share_of_parent(total),
+          .grouping = rollup(g, h)
+        ) |>
+        summarize_with_margins(
+          outer = sum(total, na.rm = TRUE),
+          .grouping = rollup(g)
+        ),
+      classes = "marginplyr_error"
+    )
+    record <- last_sent_queries()
+  })
+
+  expect_s3_class(condition, "marginplyr_error")
+  expect_identical(record$purpose, "share_dialect")
+})
+
 # --- a statement with no SQL form --------------------------------------------
 
 test_that("a translation refused at render is recorded as NA", {
@@ -687,21 +827,25 @@ strip_coverage_wrapper <- function(expr) {
   branch[[3]]
 }
 
-# The first expression of `fn`'s body, which is the body itself where it is not
-# a braced block. Both readings go through the unwrapping above, because covr
-# wraps an unbraced body whole and wraps each statement of a braced one.
-first_statement <- function(fn) {
+# The `n`th expression of `fn`'s body, or `NULL` where the body has fewer. An
+# unbraced body is one expression, so it answers `n == 1` and nothing else.
+# Both readings go through the unwrapping above, because covr wraps an unbraced
+# body whole and wraps each statement of a braced one.
+nth_statement <- function(fn, n) {
   fn_body <- strip_coverage_wrapper(body(fn))
   if (!is.call(fn_body) || !identical(as.character(fn_body[[1]]), "{")) {
-    return(fn_body)
-  }
-  if (length(fn_body) < 2L) {
+    if (identical(n, 1L)) {
+      return(fn_body)
+    }
     return(NULL)
   }
-  strip_coverage_wrapper(fn_body[[2]])
+  if (length(fn_body) < n + 1L) {
+    return(NULL)
+  }
+  strip_coverage_wrapper(fn_body[[n + 1L]])
 }
 
-test_that("every entry point empties the record before anything else", {
+test_that("every entry point forces its input and then empties the record", {
   ns <- asNamespace("marginplyr")
   # An entry point is an exported function that compiles a Grouping plan of
   # its own, and `.grouping` is how a specification reaches one. One taking a
@@ -719,22 +863,30 @@ test_that("every entry point empties the record before anything else", {
   # part-way through one truncates that call's own (ADR 0027).
   expect_setequal(emptying, entry_points)
 
-  late <- Filter(
+  # `force(.data)` first and the reset second, in that order. Emptying the
+  # record before the input's promise is forced attributes to this call
+  # whatever the call that wrote `.data` recorded, and forcing the promise
+  # after any other statement is a statement running under the previous call's
+  # record (#455).
+  misordered <- Filter(
     function(name) {
-      opening <- first_statement(get(name, envir = ns))
-      !identical(opening, quote(reset_sent_queries()))
+      fn <- get(name, envir = ns)
+      !identical(nth_statement(fn, 1L), quote(force(.data))) ||
+        !identical(nth_statement(fn, 2L), quote(reset_sent_queries()))
     },
     entry_points
   )
-  # Named rather than counted: a validation moved above the reset is what this
-  # fires on, and which entry point took it is not otherwise in the report.
-  expect_identical(late, character())
+  # Named rather than counted: a validation moved above either statement is
+  # what this fires on, and which entry point took it is not otherwise in the
+  # report.
+  expect_identical(misordered, character())
 })
 
-test_that("the reset scan tells a first statement from a later one", {
+test_that("the reset scan tells an opening statement from a later one", {
   # Both readings run over synthetic functions rather than over a member of the
   # namespace, since a member that failed either is what the gate above reports.
-  resets_first <- function() {
+  opens_correctly <- function() {
+    force(.data)
     reset_sent_queries()
     stop("unreachable")
   }
@@ -742,20 +894,32 @@ test_that("the reset scan tells a first statement from a later one", {
     stop("unreachable")
     reset_sent_queries()
   }
+  swapped <- function() {
+    reset_sent_queries()
+    force(.data)
+  }
   bare <- function() reset_sent_queries()
   reset <- quote(reset_sent_queries())
+  forced <- quote(force(.data))
 
-  expect_true(empties_the_record(resets_first))
+  expect_true(empties_the_record(opens_correctly))
   expect_true(empties_the_record(resets_later))
   expect_false(empties_the_record(function() NULL))
-  expect_identical(first_statement(resets_first), reset)
-  expect_false(identical(first_statement(resets_later), reset))
+  expect_identical(nth_statement(opens_correctly, 1L), forced)
+  expect_identical(nth_statement(opens_correctly, 2L), reset)
+  # Each way the two statements can be wrong is a distinct reading, and the
+  # gate above is an `||` over both, so neither position may pass on its own:
+  # a body missing the forcing, and a body holding both in the other order.
+  expect_false(identical(nth_statement(resets_later, 1L), forced))
+  expect_identical(nth_statement(swapped, 1L), reset)
+  expect_false(identical(nth_statement(swapped, 2L), reset))
   # An unbraced body is the statement itself, which the gate above reads for no
-  # entry point today and would read for one written that way. An empty braced
-  # one has no first statement to read, and answers that rather than raising a
-  # subscript error the gate would report as neither verdict.
-  expect_identical(first_statement(bare), reset)
-  expect_null(first_statement(function() {}))
+  # entry point today and would read for one written that way. It has no second
+  # statement, and an empty braced body has neither; both answer that rather
+  # than raising a subscript error the gate would report as neither verdict.
+  expect_identical(nth_statement(bare, 1L), reset)
+  expect_null(nth_statement(bare, 2L))
+  expect_null(nth_statement(function() {}, 1L))
 })
 
 test_that("the reset scan reads through covr's instrumentation", {
@@ -767,17 +931,18 @@ test_that("the reset scan reads through covr's instrumentation", {
   # Only the counter's head is substituted in, for the reason its own reader
   # gives; the wrapper around it is the literal covr writes.
   reset <- quote(reset_sent_queries())
+  forced <- quote(force(.data))
   counter <- coverage_counter()
 
   braced <- function() NULL
   body(braced) <- bquote({
     if (TRUE) {
       .(counter)("marginplyr/R/grouping-plan.R:1:1:1:1")
-      reset_sent_queries()
+      force(.data)
     }
     if (TRUE) {
       .(counter)("marginplyr/R/grouping-plan.R:2:1:2:1")
-      stop("unreachable")
+      reset_sent_queries()
     }
   })
 
@@ -787,8 +952,9 @@ test_that("the reset scan reads through covr's instrumentation", {
     reset_sent_queries()
   })
 
-  expect_identical(first_statement(braced), reset)
-  expect_identical(first_statement(unbraced), reset)
+  expect_identical(nth_statement(braced, 1L), forced)
+  expect_identical(nth_statement(braced, 2L), reset)
+  expect_identical(nth_statement(unbraced, 1L), reset)
   # The instrumented body still answers the other reading, which walks rather
   # than counts positions and is what the wrapper leaves alone.
   expect_true(empties_the_record(braced))
@@ -803,5 +969,5 @@ test_that("the reset scan reads through covr's instrumentation", {
       reset_sent_queries()
     }
   })
-  expect_false(identical(first_statement(authored), reset))
+  expect_false(identical(nth_statement(authored, 1L), reset))
 })

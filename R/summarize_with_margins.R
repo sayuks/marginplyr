@@ -845,6 +845,7 @@ summarize_with_margins <- function(.data,
                                    .duplicates = c("error", "drop", "keep"),
                                    .id = NULL,
                                    .sort = c("none", "last", "first")) {
+  force(.data)
   reset_sent_queries()
   call <- rlang::current_call()
   dots <- rlang::enquos(...)
