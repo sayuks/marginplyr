@@ -295,13 +295,21 @@ retail_sales |>
       rollup(year, month),
       rollup(region, store)
     ),
-    .duplicates = "keep"
+    .duplicates = "keep",
+    .id = "occurrence",
+    .sort = "last"
   ) |>
   filter(
     year == "Total",
     region == "Total"
   )
 ```
+
+The two rows are the `()` set of each rollup, and only `occurrence` tells them
+apart: their Grouping identifiers are equal because the same dimensions are
+absent from both. `.sort` is what keeps them adjacent — `.id` is the Margin
+order's final tiebreak rather than its key, so a kept duplicate sits beside the
+occurrence it repeats and not somewhere else in the result.
 
 SQL combines comma-separated grouping items by Cartesian product.
 `grouping_spec()` provides that operation:

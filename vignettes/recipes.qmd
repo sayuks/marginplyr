@@ -547,6 +547,22 @@ retail_sales |>
   filter(absence == 1L)
 ```
 
+Written with no columns at all, `grouping_id()` reads every `.grouping` column
+in plan order. That is the order `inspect_grouping()` reported above, so the
+identifier is the same one and there is no second list of dimensions to keep in
+step with the specification:
+
+```{r}
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    absence = grouping_id(),
+    .grouping = cube(region, channel),
+    .sort = "last"
+  ) |>
+  filter(absence == 1L)
+```
+
 Two steps are required because `grouping_id()` and `grouping_bit()` are
 contextual summary helpers. They read the Grouping set that produced a row,
 which only the summary knows, so calling one inside `filter()` is rejected:
@@ -827,10 +843,23 @@ DBI::dbDisconnect(con, shutdown = TRUE)
 Every value matches the local calculation above. The two tables are not laid
 out alike — this one carries the `set` column and is in no Margin order,
 because the pipeline ends in an ordinary `summarize()` rather than in a Margin
-verb — so compare them by key rather than row by row. The cost is in the row
-count:
-expansion produces one copy of the input per grouping set, so a plan with many
-sets multiplies the rows the database has to scan. Reach for this when the
+verb — so compare them by key rather than row by row. `expand_with_margins()`
+takes `.sort` itself, which orders the expansion rather than what follows it:
+
+```{r}
+retail_sales |>
+  filter(year == 2026L, month == "Jan", region == "East") |>
+  expand_with_margins(
+    .grouping = rollup(region, store),
+    .id = "set",
+    .sort = "last"
+  ) |>
+  select(set, region, store, units)
+```
+
+The cost is in the row count: expansion produces one copy of the input per
+grouping set, so a plan with many sets multiplies the rows the database has to
+scan. Reach for this when the
 aggregation pass genuinely cannot express the calculation, not to avoid
 writing a summary.
 

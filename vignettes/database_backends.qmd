@@ -58,6 +58,9 @@ source(system.file("suggests", "guard.R", package = "marginplyr"))
 
 has_duckdb <- marginplyr_suggest_available("DBI") &&
   marginplyr_suggest_available("duckdb")
+# dtplyr imports data.table, so this guard answers for both: the refused-step
+# chunk below calls `data.table::as.data.table()` and needs none of its own.
+# That is also why the install list above names dtplyr and not data.table.
 # dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
 # the installed driver version through RSQLite.
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
@@ -200,13 +203,48 @@ the grouping sets and transfers only the summarized result:
 #| eval: !expr has_duckdb
 
 duckdb_result <- collect(duckdb_query)
-DBI::dbDisconnect(con)
-
 duckdb_result
 ```
 
-Use `compute()` instead when the next stage should remain in the database as a
-materialized or temporary remote table.
+The `arrange()` above is one way to order that result. `.sort` is the other,
+and it is an argument of the verb, so it reaches the backend inside the same
+query rather than as a step over it. It puts each subtotal with the rows it
+summarizes, wherever the Margin label would otherwise fall among a dimension's
+values:
+
+```{r}
+#| eval: !expr has_duckdb
+
+sales_db |>
+  filter(year == 2026L, month == "Jan") |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region, store),
+    .sort = "last"
+  ) |>
+  collect()
+```
+
+Use `compute()` instead of `collect()` when the next stage should remain in the
+database. It executes the query and stores the result there as a remote table,
+so what reads it afterwards is still a lazy query against the connection:
+
+```{r}
+#| eval: !expr has_duckdb
+
+duckdb_stage <- compute(duckdb_query)
+class(duckdb_stage)
+
+duckdb_stage |>
+  filter(store == "Total") |>
+  collect()
+```
+
+```{r}
+#| eval: !expr has_duckdb
+
+DBI::dbDisconnect(con)
+```
 
 DuckDB also preserves factor grouping columns represented as enums. When a
 factor dimension uses `.margin_label = NA_character_` or `NULL`, marginplyr
@@ -368,12 +406,12 @@ postgres_sales |>
 Syntax, source-name, written-order, and `across()` errors are validated before
 execution, and the staged queries above are still not executed: `show_query()`
 runs nothing. A share source must still be a plain integer or double, and that
-rule holds here too — but marginplyr reads no row of your data to establish it.
-A database evaluates the source summary itself, so marginplyr asks the dialect
-instead, with at most two queries referencing none of your tables, whether it
-refuses an ineligible summary or converts one to a number; where it refuses,
-that refusal is the answer and reaches you as the database's own diagnostic
-when you execute the query.
+rule holds here too — but marginplyr reads no row of your data to establish
+it. A database evaluates the source summary itself, so marginplyr asks the
+dialect instead, with at most two queries referencing none of your tables,
+whether it refuses an ineligible summary or converts one to a number; where it
+refuses, that refusal is the answer and reaches you as the database's own
+diagnostic when you execute the query.
 
 Where the dialect converts instead — SQLite answers `sum()` of a text column
 with `0` rather than an error — nothing applies the rule at all, and the share
@@ -494,6 +532,23 @@ postgres_sales |>
   nest_with_margins(
     .grouping = rollup(region, store)
   )
+```
+
+`nest_by_with_margins()` is the row-wise counterpart, and it is the one Margin
+verb that collects a lazy input without being asked: a row-wise data frame is a
+local object, so it has nothing lazy to return. *When marginplyr queries your
+data* names it as its one exemption. Its detail tables are the ones dtplyr
+built, so each cell is a `data.table`:
+
+```{r}
+#| eval: !expr has_dtplyr
+
+january_sales |>
+  dtplyr::lazy_dt() |>
+  nest_by_with_margins(
+    .grouping = rollup(region, store)
+  ) |>
+  mutate(revenue = sum(data$revenue))
 ```
 
 dtplyr also enforces the contextual-share source rules, for `share_of_parent()`
