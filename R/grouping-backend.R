@@ -103,10 +103,9 @@ backend_capabilities <- function(kind) {
       "can_read_schema",
       # Arrow holds a factor as a dictionary column, and its sort refuses one
       # -- `dplyr::arrange()` on a dictionary fails the same way with no
-      # marginplyr in the pipeline, so the Margin order casts such a column
-      # inside its key (#452). No other kind is granted this: each of the
-      # others sorts its own factor representation, and casting would order a
-      # restored factor by its character values instead of its levels.
+      # marginplyr in the pipeline (#452). ADR 0018's *Factor dimensions sort
+      # by level* is authoritative for what the Margin order does about it and
+      # for why no other kind is granted this.
       "refuses_dictionary_sort"
     ),
     duckdb = c(

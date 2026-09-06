@@ -425,9 +425,9 @@ margin_staged_sort_identifier <- function(operation, sort_id) {
   if (identical(sort_id, operation$set_id_name)) NULL else sort_id
 }
 
-# The result columns the key has to cast rather than name, because the backend
-# will not sort them as they stand. Empty for every backend but Arrow, whose
-# dictionary columns its sort refuses.
+# The result columns the key has to cast rather than name. Empty unless the
+# backend holds `refuses_dictionary_sort`, which is where why it does is
+# recorded.
 #
 # `arrow::schema()` answers from the query's own type metadata, so this adds no
 # query (ADR 0020); it is the read `grouping_selection_proxy()` performs for

@@ -74,6 +74,16 @@ A caller who declared `small < medium < large` asked for that order, and
 `can_restore_factors` is true only for local, dtplyr, and DuckDB, so no
 backend is asked for an order it cannot express.
 
+Arrow is the one backend that expresses neither. It holds a factor as a
+dictionary column and its sort refuses one, so the key casts such a column to
+its values — `refuses_dictionary_sort` is what grants that, and Arrow alone
+holds it. The declared levels are therefore not honoured there, and the cost is
+real: a caller who declared `small < medium < large` gets value order. The
+alternative is not level order but no order at all, the call failing at
+`collect()` with Arrow's own error (#452), which is what it did. The cast
+reaches the key alone, so the result's column is what Arrow returns and this
+takes nothing else away.
+
 ### Missing values come last, and that is promised
 
 Dialects disagree by default: with `arrange(g)` DuckDB returns `NA` last and
