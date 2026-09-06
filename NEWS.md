@@ -39,8 +39,8 @@
 * Added `.sort` to every Margin verb for an opt-in Margin order, taking
   `"none"` (the default), `"last"`, or `"first"`. It orders a result by the
   structure of its Grouping plan rather than by displayed values, so a subtotal
-  sits with the rows it summarizes and the grand total comes last, and lazy
-  inputs stay lazy. See *Margin order* in `?summarize_with_margins`.
+  sits with the rows it summarizes rather than wherever its Margin label falls,
+  and lazy inputs stay lazy. See *Margin order* in `?summarize_with_margins`.
 * Added guides for Grouping identity and explicit key completion, and made the
   function references the canonical source of the Margin, Parent-share, and
   Margin-label contracts.
@@ -61,7 +61,8 @@
   already known from the column's metadata (#122).
 * Added `.check_share_source` to `summarize_with_margins()`, `TRUE` by default
   on every backend including lazy ones, because a share source's eligibility
-  can be established without reading your data.
+  can be established without reading your data. See *When marginplyr queries
+  your data* in `?summarize_with_margins`.
 * DuckDB and PostgreSQL use native `GROUPING SETS`; other backends use the
   portable `UNION ALL` adapter.
 * `summarize_with_margins()`, `summarise_with_margins()`,
