@@ -368,10 +368,12 @@ markers <- list(
     # renders: every chunk in it is behind `has_duckdb`, so on a machine
     # without DuckDB the section produces no output for a marker to quote.
     "Record the SQL marginplyr sends",
-    "Only DuckDB and SQLite are exercised as live SQL databases",
-    "DuckDB covers native SQL end to end",
-    "dozen-plus fallback dialects",
-    "Arrow and dtplyr are tested for the lazy",
+    # The verification section, which states no scope of its own: the
+    # `summarize_with_margins()` reference owns that, so a marker naming a
+    # backend here would be the restatement the section was reduced to remove.
+    "SQL simulation is useful evidence about rendering",
+    "treat a simulator-only backend as SQL-generation support",
+    "Which claim rests on which is stated in one place",
     # The unconditional half of the mutable-step refusal (ADR 0029). Its
     # `must_error` chunk is behind `has_dtplyr`, so the prose introducing it is
     # what a marker can reach, and this run of it holds no apostrophe and no

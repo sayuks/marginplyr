@@ -387,8 +387,10 @@ confirmed native support use a `UNION ALL` translation with the same
 grouping plan. Simulation verifies generated SQL but does not claim live
 execution against every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-shows native SQL, fallback SQL, live DuckDB execution, `collect()`, and
-the verification status of each backend.
+shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
+*Database backend coverage* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states what is verified on each backend.
 
 ## Keep the rows behind each total
 
@@ -454,13 +456,12 @@ subtotal, explicit dplyr code may be easier.
 
 ## Backend verification
 
-| Verification status | Backends |
-|----|----|
-| Live native execution tested | DuckDB |
-| Live portable Parent-share execution tested, with `.check_share_source = FALSE`; the default refuses the share on these dialects | SQLite |
-| Native SQL generation tested | PostgreSQL |
-| Fallback SQL generation tested | Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, Teradata, and generic DBI/ODBC connections |
-| Non-SQL lazy backend tested | Arrow, dtplyr |
+Support is not one status. Some backends are exercised against a live
+database; the rest are verified through dbplyr’s SQL simulators, which
+establish what SQL is rendered and nothing about a running server. Which
+claim covers which backend is stated in one place, *Database backend
+coverage* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 
 The function reference contains executable examples for composite
 dimensions, tidy-select expressions, duplicate grouping sets, Cartesian
