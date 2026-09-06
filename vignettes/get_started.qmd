@@ -490,7 +490,7 @@ retail_sales |>
     .margin_label = NULL
   ) |>
   # `retail_sales` is a plain data frame and so is this result, which prints
-  # the Margin row as a bare `NA` whatever type `year` now holds. A tibble's
+  # the margin row as a bare `NA` whatever type `year` now holds. A tibble's
   # type header is what shows `year` is still <int>, which is the whole claim
   # being made here.
   dplyr::as_tibble()

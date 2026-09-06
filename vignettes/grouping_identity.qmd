@@ -14,7 +14,7 @@ date: last-modified
 ---
 
 A Margin result combines rows from several grouping sets. Visible values such
-as `"Total"` are useful for display, but they do not identify which Grouping
+as `"Total"` are useful for display, but they do not identify which grouping
 set produced a row. marginplyr provides two kinds of identifier for that
 purpose, and they answer different questions: a *Grouping set identifier* says
 where in the Grouping plan an occurrence sits, and a *Grouping identifier*
@@ -224,7 +224,7 @@ Factors make three distinct situations visible:
 1. An **NA factor level** belongs to the factor domain and can be used by an
    observation whose factor code is not missing.
 2. A **source missing value** has a missing factor code.
-3. A **typed-missing Margin value** marks a dimension omitted from a Grouping
+3. A **typed-missing Margin value** marks a dimension omitted from a grouping
    set when `.margin_label = NULL` or `NA_character_`.
 
 The first two can both print as `<NA>`:

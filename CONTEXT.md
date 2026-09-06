@@ -6,13 +6,15 @@ consistently to local and remote data.
 ## Language
 
 **House term**:
-A concept this file defines. Its name is capitalized wherever it names that
-concept and left lowercase wherever the same words carry their ordinary sense,
-so one page can write "the Grouping plan expands to" and "SQL calls this idea
-grouping sets". A phrase no entry defines is ordinary English however often it
-appears: *grouping set* and *grand total* are ordinary here, and each names
-something defined only inside a longer entry — Grouping set identifier, Grand
-total set — which is capitalized whole.
+A concept marginplyr itself defines, rather than one it borrows. Its name is
+capitalized wherever it names that concept and left lowercase wherever the same
+words carry their ordinary sense, so one page can write "the Grouping plan
+expands to" and "SQL calls this idea grouping sets". Borrowed vocabulary is
+ordinary throughout — *grouping set* is SQL's, *grand total* is a report's,
+*grain* is a data model's — and an entry below fixes such a word's spelling
+without making it a House term. It capitalizes only inside one built on it, as
+in Grouping set identifier and Grand total set. Having no entry does not make a
+term borrowed: Margin verb has none and is marginplyr's own.
 _Avoid_: Domain term, glossary term, defined term
 
 **Grain**:
@@ -148,7 +150,7 @@ converting it to a number rather than raising. Its opposite is a *refusing*
 dialect, which rejects the same aggregate. Which of the two a dialect is
 decides whether the eligible-type rule for a share source can be left to the
 database: a refusing dialect applies it and reports an ineligible source in
-its own diagnostic, while a converting dialect applies nothing and returns a
+its own diagnostic, while a Converting dialect applies nothing and returns a
 number whatever the source held, so a share over one is refused unless the
 caller establishes the source themselves. Which of the two a dialect is, is a
 property of the dialect and not of one connection, so it is established once and
