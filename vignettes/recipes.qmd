@@ -292,8 +292,8 @@ For a denominator one rollup level up rather than at the top, use
 `share_of_parent()`. The
 [`share_of_parent()`
 reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-documents both helpers, and [Get
-started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+documents both helpers, and [Compare a summary with the
+whole](https://sayuks.github.io/marginplyr/vignettes/get_started.html#compare-a-summary-with-the-whole)
 compares them side by side. For a level between the two, [Compare a row with
 an ancestor level](#compare-a-row-with-an-ancestor-level) runs the same `.by`
 lever the other way.

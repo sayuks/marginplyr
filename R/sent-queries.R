@@ -132,8 +132,12 @@ record_sent_query <- function(purpose, query) {
 #' ```
 #'
 #' @seealso *[When marginplyr queries your data][summarize_with_margins]* for
-#'   the queries a Margin verb sends without being asked, and
-#'   [dplyr::show_query()] for the result query alone.
+#'   the queries a Margin verb sends without being asked,
+#'   [dplyr::show_query()] for the result query alone, and *Record the SQL
+#'   marginplyr sends* in the [database-backends guide][guide] for the record
+#'   read against a live connection.
+#'
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #' @export
 #' @examples
 #' # The record is kept only while the option is set, so the example restores

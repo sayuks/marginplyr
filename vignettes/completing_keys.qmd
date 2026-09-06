@@ -293,9 +293,10 @@ DBI::dbDisconnect(con)
 ```
 
 Read the two renderings side by side. The inline query carries the key rows
-themselves — on SQLite, a zero-row `SELECT` unioned with a `VALUES` list,
-wrapped in the casts that give the columns their types — while the `copy_to()`
-query names `requested_keys`, a table that now exists on the connection.
+themselves — on SQLite, a zero-row `SELECT` joined by `UNION ALL` to a
+`VALUES` list, wrapped in the casts that give the columns their types — while
+the `copy_to()` query names `requested_keys`, a table that now exists on the
+connection.
 
 Use explicit `dplyr::copy_to()` for a larger or reusable local key relation.
 It performs data movement at the line where the caller requested it.
@@ -304,8 +305,8 @@ marginplyr never copies, collects, uploads, downloads, or otherwise moves
 completion data implicitly. Connection choice, data movement, and execution
 remain ordinary dplyr and dbplyr operations owned by the caller.
 
-Execution, not completion, is where a backend's own rules start to matter.
-[Database
+Execution, not completion, is where each backend starts to impose rules of its
+own. [Database
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 takes the lazy pipeline from here through query shape, `collect()`, and what
 each backend is verified to do.
