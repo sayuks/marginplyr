@@ -26,7 +26,7 @@ implicit fixed keys. A fixed key is a column of the input, so a selection
 cannot rename it: \code{c(area = region)} is an error rather than a fixed key
 named \code{area}. Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}
 
-\item{.grouping}{A grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
+\item{.grouping}{A Grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
 \code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
 represents one empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
@@ -106,7 +106,7 @@ implement it by vertically combining branches with SQL \verb{UNION ALL}.
 
 This function is not a variant of \code{\link[dplyr:union_all]{dplyr::union_all()}}. That function
 combines two data frames supplied by the caller; \code{\link[=expand_with_margins]{expand_with_margins()}}
-consumes one data frame and a grouping plan, then emits the corresponding
+consumes one data frame and a Grouping plan, then emits the corresponding
 row copies. Naming the public operation for row expansion keeps the SQL
 implementation strategy out of the user-facing API.
 }
@@ -138,7 +138,7 @@ use \code{.by}. For example, \code{.by = year} is structurally equivalent to
 
 These forms are not completely interchangeable in the current
 implementation. A column supplied through \code{.grouping} is treated as a
-margin dimension even when every expanded grouping set contains it.
+Margin dimension even when every expanded grouping set contains it.
 Consequently, it participates in \code{.margin_label} type conversion and
 collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
@@ -263,9 +263,9 @@ carried through by dplyr and vctrs unchanged.
 \section{Grouping set identifiers}{
 
 When \code{.id} names an output column, each result row receives the one-based
-position of its Grouping set occurrence after applying \code{.duplicates}.
+position of its grouping set occurrence after applying \code{.duplicates}.
 \code{"drop"} renumbers retained occurrences, while supported \code{"keep"} paths give
-identical duplicate sets distinct identifiers. One Grouping set has
+identical duplicate sets distinct identifiers. One grouping set has
 identifier \code{1L}, and a zero-row result retains an integer \code{.id} column.
 
 Output columns are ordered as fixed keys, variable dimensions, \code{.id}, then

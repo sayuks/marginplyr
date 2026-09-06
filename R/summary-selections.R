@@ -383,7 +383,7 @@ dplyr_auto_name <- function(expr) {
 # what a rewritten one hands it is marginplyr's spelling: a branch-local `0L`
 # or `1L` where the caller wrote `grouping_bit()` or `grouping_id()`, and a
 # qualified `all_of()` literal where they wrote a selection helper. The first
-# spelled a different column name in each Grouping-set branch, which is what
+# spelled a different column name in each grouping-set branch, which is what
 # the union's column invariant refused; the second named the column after the
 # rewrite. `...` is documented as `dplyr::summarize()`'s name-value pairs, so
 # the name is settled from the caller's own expression here instead (#430).

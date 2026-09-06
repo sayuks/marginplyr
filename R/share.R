@@ -23,7 +23,7 @@
 #' ```
 #'
 #' A helper is contextual because its denominator belongs to another
-#' Grouping-set row, so it can be used only inside
+#' grouping-set row, so it can be used only inside
 #' [summarize_with_margins()]. Direct calls, ordinary [dplyr::summarize()]
 #' calls, and [dplyr::mutate()] calls are rejected.
 #'
@@ -269,7 +269,7 @@
 #' synthesizes or completes keys. A missing numerator, missing denominator, or
 #' zero denominator gives `NA_real_`; local `NaN` is missing. Other finite
 #' ratios are unclamped doubles, so negative values and values above one are
-#' retained. Denominator matching uses internal Grouping set metadata rather
+#' retained. Denominator matching uses internal grouping set metadata rather
 #' than `.id` or displayed Margin labels, and missing fixed or variable keys
 #' are matched with missing-safe identity rather than ordinary SQL
 #' `NULL = NULL`.
@@ -277,13 +277,13 @@
 #' A Parent share's denominator is the immediate strictly less detailed
 #' [rollup()] level. Composite dimensions are added or removed together. The
 #' Grand total set has no parent, so its Parent share is `1.0`, even when its
-#' source is zero or missing. Duplicate Grouping set occurrences remain in the
+#' source is zero or missing. Duplicate grouping set occurrences remain in the
 #' result but are skipped while finding the next coarser parent, because a
 #' parent must be strictly less detailed.
 #'
 #' A Total share's denominator is the Grand total set. Every row of it,
 #' duplicate occurrences included, has a Total share of `1.0`, even when its
-#' source is zero or missing. Duplicate Grand total occurrences aggregate the
+#' source is zero or missing. Duplicate grand total occurrences aggregate the
 #' same rows and therefore hold the same values, so they are interchangeable
 #' rather than skipped and which one supplies the denominator is not
 #' specified.
@@ -690,7 +690,7 @@ abort_ambiguous_parent <- function(call = rlang::caller_call()) {
       ),
       i = paste0(
         "{.fun grouping_sets}, {.fun cube}, {.fun grouping_spec}, and other ",
-        "grouping specifications do not define one unambiguous parent."
+        "Grouping specifications do not define one unambiguous parent."
       ),
       i = paste0(
         "Rewrite {.arg .grouping} as one {.fun rollup} or omit the Parent ",
@@ -2726,7 +2726,7 @@ build_parent_denominator <- function(result,
 }
 
 # A Total share's denominator depends on `.by` and nothing else, so its
-# mapping is the Grand total rows reduced to one row per fixed partition and
+# mapping is the grand total rows reduced to one row per fixed partition and
 # matched on the fixed keys alone. See ADR 0017.
 build_total_denominator <- function(result,
                                     plan,
@@ -2931,7 +2931,7 @@ check_share_source_types <- function(values, requests, call) {
   invisible(NULL)
 }
 
-# The Grand total occurrences of a plan: those omitting every variable
+# The grand total occurrences of a plan: those omitting every variable
 # grouping dimension. There is at most one unless duplicates were kept. Named
 # for the occurrences it returns, because `total_set_ids()` below returns the
 # other shape — one denominator per occurrence, in plan order.
@@ -2942,7 +2942,7 @@ grand_total_occurrence_ids <- function(plan) {
 
 # The denominator occurrence of every grouping set, in the shape
 # `parent_set_ids()` returns: `NA` where the row is its own denominator, and
-# otherwise the occurrence supplying it. Duplicate Grand total occurrences
+# otherwise the occurrence supplying it. Duplicate grand total occurrences
 # hold the same values, so any of them answers for every other set; which one
 # is used is not part of the contract.
 total_set_ids <- function(plan) {

@@ -8,7 +8,7 @@
 #' @section Relationship to dplyr:
 #' This function is not a variant of [dplyr::union_all()]. That function
 #' combines two data frames supplied by the caller; [expand_with_margins()]
-#' consumes one data frame and a grouping plan, then emits the corresponding
+#' consumes one data frame and a Grouping plan, then emits the corresponding
 #' row copies. Naming the public operation for row expansion keeps the SQL
 #' implementation strategy out of the user-facing API.
 #'

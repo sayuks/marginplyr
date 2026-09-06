@@ -221,7 +221,7 @@ test_that("a nested specification from a caller's function names its verb", {
     expect_match(
       conditionMessage(error),
       paste0(
-        "`spec_from_caller(a)` is a grouping specification, but a nested ",
+        "`spec_from_caller(a)` is a Grouping specification, but a nested ",
         "position recognizes one only when it is a call to"
       ),
       fixed = TRUE
@@ -1687,7 +1687,7 @@ test_that("a printed Grouping specification names the constructor called", {
     expect_identical(spec$type, kind, info = kind)
     expect_identical(
       utils::capture.output(print(spec)),
-      paste0("<marginplyr grouping specification: ", constructor, ">"),
+      paste0("<marginplyr Grouping specification: ", constructor, ">"),
       info = kind
     )
   }
@@ -1696,7 +1696,7 @@ test_that("a printed Grouping specification names the constructor called", {
   # one. Printing it still names something rather than nothing.
   expect_identical(
     utils::capture.output(print(new_grouping_spec("nonesuch", list()))),
-    "<marginplyr grouping specification: nonesuch>"
+    "<marginplyr Grouping specification: nonesuch>"
   )
 })
 
@@ -1712,7 +1712,7 @@ test_that("a printed Grouping specification names the constructor called", {
 expect_empty_name_line <- function(spec, info = NULL) {
   expect_identical(
     utils::capture.output(returned <- withVisible(print(spec))),
-    "<marginplyr grouping specification: >",
+    "<marginplyr Grouping specification: >",
     info = info
   )
   expect_identical(returned, list(value = spec, visible = FALSE), info = info)
@@ -1808,7 +1808,7 @@ test_that("a printed Grouping specification never asks a kind's methods", {
     )
     expect_identical(
       utils::capture.output(print(new_grouping_spec(kind, list()))),
-      "<marginplyr grouping specification: grouping_set>",
+      "<marginplyr Grouping specification: grouping_set>",
       info = generic
     )
   }
@@ -1839,7 +1839,7 @@ test_that("a printed Grouping specification never asks a kind's methods", {
       invokeRestart("muffleWarning")
     }
   )
-  expect_identical(line, "<marginplyr grouping specification: grouping_set>")
+  expect_identical(line, "<marginplyr Grouping specification: grouping_set>")
   expect_setequal(raised, "reading this kind warns")
 })
 
@@ -1891,7 +1891,7 @@ test_that("a printed Grouping specification asks for its kind once", {
   with_rule <- count_reads("set")
   expect_identical(
     with_rule$line,
-    "<marginplyr grouping specification: grouping_set>"
+    "<marginplyr Grouping specification: grouping_set>"
   )
   expect_identical(with_rule$reads, 1L)
 
@@ -1899,7 +1899,7 @@ test_that("a printed Grouping specification asks for its kind once", {
   without_rule <- count_reads("nonesuch")
   expect_identical(
     without_rule$line,
-    "<marginplyr grouping specification: nonesuch>"
+    "<marginplyr Grouping specification: nonesuch>"
   )
   expect_identical(without_rule$reads, 1L)
 
@@ -1908,7 +1908,7 @@ test_that("a printed Grouping specification asks for its kind once", {
   without_name <- count_reads(1:3)
   expect_identical(
     without_name$line,
-    "<marginplyr grouping specification: >"
+    "<marginplyr Grouping specification: >"
   )
   expect_identical(without_name$reads, 1L)
 })

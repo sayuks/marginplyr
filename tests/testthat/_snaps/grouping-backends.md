@@ -6,7 +6,7 @@
     Condition
       Error in `summarize_with_margins()`:
       ! `.data` comes from `dtplyr::lazy_dt(immutable = FALSE)`.
-      i A margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
+      i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
       i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
 
 ---
@@ -17,7 +17,7 @@
     Condition
       Error in `summarise_with_margins()`:
       ! `.data` comes from `dtplyr::lazy_dt(immutable = FALSE)`.
-      i A margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
+      i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
       i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
 
 ---
@@ -28,7 +28,7 @@
     Condition
       Error in `expand_with_margins()`:
       ! `.data` comes from `dtplyr::lazy_dt(immutable = FALSE)`.
-      i A margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
+      i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
       i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
 
 ---
@@ -39,7 +39,7 @@
     Condition
       Error in `nest_with_margins()`:
       ! `.data` comes from `dtplyr::lazy_dt(immutable = FALSE)`.
-      i A margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
+      i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
       i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
 
 ---
@@ -50,7 +50,7 @@
     Condition
       Error in `nest_by_with_margins()`:
       ! `.data` comes from `dtplyr::lazy_dt(immutable = FALSE)`.
-      i A margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
+      i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
       i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
 
 ---
@@ -61,6 +61,6 @@
     Condition
       Error in `inspect_grouping()`:
       ! `.data` comes from `dtplyr::lazy_dt(immutable = FALSE)`.
-      i A margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
+      i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
       i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
 

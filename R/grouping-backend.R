@@ -98,7 +98,7 @@ abort_mutable_dtplyr_step <- function() {
   abort_marginplyr(c(
     "{.arg .data} comes from {.code dtplyr::lazy_dt(immutable = FALSE)}.",
     i = paste0(
-      "A margin verb builds one branch per grouping set from the same step, ",
+      "A Margin verb builds one branch per grouping set from the same step, ",
       "and data.table writes each branch to your table by reference."
     ),
     i = "Rebuild the input with {.code dtplyr::lazy_dt(immutable = TRUE)}."

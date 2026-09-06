@@ -434,7 +434,7 @@ markers <- list(
     "Database backend coverage",
     "Microsoft SQL Server",
     "NA is already a factor level",
-    "cannot select any column named in the complete grouping plan",
+    "cannot select any column named in the complete Grouping plan",
     "cur_group_id"
   ),
   # `@keywords internal` on the `"_PACKAGE"` topic takes it out of

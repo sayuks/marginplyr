@@ -2,7 +2,7 @@
 #'
 #' marginplyr extends [dplyr::summarize()] with SQL-style `GROUPING SETS`,
 #' `ROLLUP`, and `CUBE` summaries: totals, subtotals, and arbitrary grouping
-#' combinations, with grouping identifiers to tell the resulting grains
+#' combinations, with Grouping identifiers to tell the resulting grains
 #' apart. Local data frames and lazy tables are supported. Confirmed
 #' database backends use native grouping sets; other lazy backends use a
 #' `UNION ALL` fallback with the same semantics.
@@ -23,13 +23,13 @@
 #' @section Next steps:
 #' - **Grouping specifications**: [grouping_set()], [grouping_sets()],
 #'   [rollup()], [cube()], and [grouping_spec()] describe which grouping
-#'   sets a margin operation computes.
+#'   sets a Margin operation computes.
 #' - **Margin operations**: [summarize_with_margins()],
 #'   [expand_with_margins()], [nest_with_margins()], and
-#'   [nest_by_with_margins()] apply a grouping specification to data.
+#'   [nest_by_with_margins()] apply a Grouping specification to data.
 #' - **Grouping-plan inspection and grouping identities**:
 #'   [inspect_grouping()], [grouping_bit()], and [grouping_id()] resolve and
-#'   identify grouping sets before or after running a margin operation.
+#'   identify grouping sets before or after running a Margin operation.
 #' - **Contextual shares**: [share_of_parent()] and [share_of_total()]
 #'   calculate a summary's ratio to its immediate rollup parent, or to the
 #'   grand total.
@@ -70,7 +70,7 @@
 #'
 #' marginplyr itself raises no warning: it states what it will not do by
 #' refusing. What a Margin verb does adjust, for an error and a warning alike,
-#' is the context reported around one, because a margin operation may summarize
+#' is the context reported around one, because a Margin operation may summarize
 #' your expression once per grouping set. Such a condition reports its grouping
 #' values under the columns you named rather than under internal ones, quotes
 #' the argument as you spelled it rather than as marginplyr rewrote it to

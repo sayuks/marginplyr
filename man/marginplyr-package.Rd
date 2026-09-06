@@ -8,7 +8,7 @@
 \description{
 marginplyr extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with SQL-style \verb{GROUPING SETS},
 \code{ROLLUP}, and \code{CUBE} summaries: totals, subtotals, and arbitrary grouping
-combinations, with grouping identifiers to tell the resulting grains
+combinations, with Grouping identifiers to tell the resulting grains
 apart. Local data frames and lazy tables are supported. Confirmed
 database backends use native grouping sets; other lazy backends use a
 \verb{UNION ALL} fallback with the same semantics.
@@ -32,13 +32,13 @@ summarize_with_margins(
 \itemize{
 \item \strong{Grouping specifications}: \code{\link[=grouping_set]{grouping_set()}}, \code{\link[=grouping_sets]{grouping_sets()}},
 \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, and \code{\link[=grouping_spec]{grouping_spec()}} describe which grouping
-sets a margin operation computes.
+sets a Margin operation computes.
 \item \strong{Margin operations}: \code{\link[=summarize_with_margins]{summarize_with_margins()}},
 \code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, and
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} apply a grouping specification to data.
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} apply a Grouping specification to data.
 \item \strong{Grouping-plan inspection and grouping identities}:
 \code{\link[=inspect_grouping]{inspect_grouping()}}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}} resolve and
-identify grouping sets before or after running a margin operation.
+identify grouping sets before or after running a Margin operation.
 \item \strong{Contextual shares}: \code{\link[=share_of_parent]{share_of_parent()}} and \code{\link[=share_of_total]{share_of_total()}}
 calculate a summary's ratio to its immediate rollup parent, or to the
 grand total.
@@ -81,7 +81,7 @@ change to your call can avoid; please report those at
 
 marginplyr itself raises no warning: it states what it will not do by
 refusing. What a Margin verb does adjust, for an error and a warning alike,
-is the context reported around one, because a margin operation may summarize
+is the context reported around one, because a Margin operation may summarize
 your expression once per grouping set. Such a condition reports its grouping
 values under the columns you named rather than under internal ones, quotes
 the argument as you spelled it rather than as marginplyr rewrote it to

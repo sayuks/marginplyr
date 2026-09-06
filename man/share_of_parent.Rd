@@ -41,7 +41,7 @@ total_share = share_of_total(revenue)
 }\if{html}{\out{</div>}}
 
 A helper is contextual because its denominator belongs to another
-Grouping-set row, so it can be used only inside
+grouping-set row, so it can be used only inside
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}. Direct calls, ordinary \code{\link[dplyr:summarize]{dplyr::summarize()}}
 calls, and \code{\link[dplyr:mutate]{dplyr::mutate()}} calls are rejected.
 
@@ -282,7 +282,7 @@ Both helpers divide within each fixed \code{.by} partition, and neither ever
 synthesizes or completes keys. A missing numerator, missing denominator, or
 zero denominator gives \code{NA_real_}; local \code{NaN} is missing. Other finite
 ratios are unclamped doubles, so negative values and values above one are
-retained. Denominator matching uses internal Grouping set metadata rather
+retained. Denominator matching uses internal grouping set metadata rather
 than \code{.id} or displayed Margin labels, and missing fixed or variable keys
 are matched with missing-safe identity rather than ordinary SQL
 \code{NULL = NULL}.
@@ -290,13 +290,13 @@ are matched with missing-safe identity rather than ordinary SQL
 A Parent share's denominator is the immediate strictly less detailed
 \code{\link[=rollup]{rollup()}} level. Composite dimensions are added or removed together. The
 Grand total set has no parent, so its Parent share is \code{1.0}, even when its
-source is zero or missing. Duplicate Grouping set occurrences remain in the
+source is zero or missing. Duplicate grouping set occurrences remain in the
 result but are skipped while finding the next coarser parent, because a
 parent must be strictly less detailed.
 
 A Total share's denominator is the Grand total set. Every row of it,
 duplicate occurrences included, has a Total share of \code{1.0}, even when its
-source is zero or missing. Duplicate Grand total occurrences aggregate the
+source is zero or missing. Duplicate grand total occurrences aggregate the
 same rows and therefore hold the same values, so they are interchangeable
 rather than skipped and which one supplies the denominator is not
 specified.

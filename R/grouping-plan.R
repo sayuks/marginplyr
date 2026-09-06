@@ -30,7 +30,7 @@ validate_grouping_spec_early <- function(grouping_spec) {
 }
 
 abort_invalid_grouping_spec <- function() {
-  abort_marginplyr("Invalid grouping specification.")
+  abort_marginplyr("Invalid Grouping specification.")
 }
 
 # The kind an object carrying the specification class says it is, or `NULL`
@@ -901,7 +901,7 @@ compile_grouping_spec_impl <- function(preflight,
 expand_grouping_family <- function(preflight, data_proxy) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
-    stop("Unknown grouping specification kind.", call. = FALSE)
+    stop("Unknown Grouping specification kind.", call. = FALSE)
   }
   rule$expand(preflight, data_proxy)
 }
@@ -1440,7 +1440,7 @@ abort_ambiguous_nested_name <- function(name) {
   abort_marginplyr(c(
     paste0(
       "{.var {name}} is both a column of the input and a name bound to a ",
-      "grouping specification, so a nested position cannot tell which one ",
+      "Grouping specification, so a nested position cannot tell which one ",
       "you mean."
     ),
     i = "For the column, write {.code {column}}.",
@@ -1451,7 +1451,7 @@ abort_ambiguous_nested_name <- function(name) {
 abort_nested_grouping_spec <- function(label) {
   abort_marginplyr(c(
     paste0(
-      "{.code {label}} is a grouping specification, but a nested position ",
+      "{.code {label}} is a Grouping specification, but a nested position ",
       "recognizes one only when it is a call to ",
       "{.or {.fun {grouping_constructor_names()}}}, or a name bound to a ",
       "specification."

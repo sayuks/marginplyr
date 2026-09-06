@@ -22,7 +22,7 @@
 #'   implicit fixed keys. A fixed key is a column of the input, so a selection
 #'   cannot rename it: `c(area = region)` is an error rather than a fixed key
 #'   named `area`. Rename the result afterwards with [dplyr::rename()].
-#' @param .grouping A grouping specification made with [grouping_set()],
+#' @param .grouping A Grouping specification made with [grouping_set()],
 #'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
 #'   represents one empty grouping set. Any expression returning a
 #'   specification can be written here, while a specification nested inside
@@ -125,7 +125,7 @@
 #'
 #' These forms are not completely interchangeable in the current
 #' implementation. A column supplied through `.grouping` is treated as a
-#' margin dimension even when every expanded grouping set contains it.
+#' Margin dimension even when every expanded grouping set contains it.
 #' Consequently, it participates in `.margin_label` type conversion and
 #' collision checks. Use `.by` for columns that must always remain fixed, and
 #' use `.grouping` for dimensions that may become totals.
@@ -243,9 +243,9 @@
 #'
 #' @section Grouping set identifiers:
 #' When `.id` names an output column, each result row receives the one-based
-#' position of its Grouping set occurrence after applying `.duplicates`.
+#' position of its grouping set occurrence after applying `.duplicates`.
 #' `"drop"` renumbers retained occurrences, while supported `"keep"` paths give
-#' identical duplicate sets distinct identifiers. One Grouping set has
+#' identical duplicate sets distinct identifiers. One grouping set has
 #' identifier `1L`, and a zero-row result retains an integer `.id` column.
 #'
 #' Output columns are ordered as fixed keys, variable dimensions, `.id`, then
@@ -349,7 +349,7 @@
 #' is bound to where you wrote it.
 #'
 #' [dplyr::across()] and [dplyr::pick()] cannot select any column named in the
-#' complete grouping plan. This extends dplyr's grouping-column rule across
+#' complete Grouping plan. This extends dplyr's grouping-column rule across
 #' every branch: a dimension remains excluded even in a grouping set from
 #' which it is omitted.
 #'
@@ -445,7 +445,7 @@
 #' [rollup()]; composite dimensions move together, and duplicate occurrences
 #' skip identical sets when choosing the parent. [share_of_total()] divides by
 #' the Grand total set, so it accepts any Grouping specification whose plan
-#' contains one, including [cube()]; duplicate Grand total occurrences hold
+#' contains one, including [cube()]; duplicate grand total occurrences hold
 #' the same values and are interchangeable.
 #'
 #' Arrow inputs reject both after expression planning and common
@@ -461,7 +461,7 @@
 #' and displayed Margin labels do not determine the denominator.
 #'
 #' The source must be a unique, preceding, self-contained integer or double
-#' scalar summary. Lazy execution preserves collision-safe Grouping set
+#' scalar summary. Lazy execution preserves collision-safe grouping set
 #' metadata through ordinary aggregation, calculates the requested shares
 #' through one shared mapping per denominator kind, and then removes the
 #' metadata before returning the requested column order.
@@ -790,7 +790,7 @@
 #'   type = typeof(empty_partitions$revenue_share)
 #' )
 #'
-#' # across() and pick() treat every fixed key and margin dimension as a
+#' # across() and pick() treat every fixed key and Margin dimension as a
 #' # grouping column, including dimensions omitted from a subtotal branch.
 #' summarize_with_margins(
 #'   .data = retail_sales,
