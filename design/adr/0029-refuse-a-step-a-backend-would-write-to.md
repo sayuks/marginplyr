@@ -129,22 +129,30 @@ and the one the Arrow refusal beside it already takes.
 that page already promises.
 
 The reference pages are unchanged too, and that is decided rather than passed
-over (#470). A Mutable step is a dtplyr step, so `nest_with_margins()`'s
-`@param .data` — *A local data frame or a `dtplyr` step* — is broader than
-what is accepted, and it is left broader. This is where the parallel with ADR
-0025 stops. There the page had to carry what a caller could not otherwise know,
-which summaries Arrow absorbs being Arrow's to decide and moving with its
-version; here the refusal is reached only by a caller who wrote `immutable =
-FALSE` themselves, against `lazy_dt()`'s default, and the diagnostic names the
-one rewrite. A clause would have to go on every `@param .data` definition in
-the package, the refusal being raised for every verb `verbs_taking(".grouping")`
-returns, and nothing would hold those copies in step — an amendment here would
-leave the ones it did not reach standing and wrong.
+over (#470). A Mutable step is a dtplyr step, so the three sentences #470 names
+that claim the class are broader than what is accepted, and they are left
+broader: `nest_with_margins()`'s `@param .data` — *A local data frame or a
+`dtplyr` step* — its *It works with local data frames and `dtplyr` steps*, and
+*Share execution supports local data frames and lazy dbplyr and dtplyr inputs*.
 
-The other pages #470 names describe an input that was accepted: when a
-`dtplyr` result is collected to be made row-wise, the integers a step returns
+This is where the parallel with ADR 0025 stops. There the page had to carry
+what a caller could not otherwise know; here the refusal is reached only by a
+caller who wrote `immutable = FALSE` themselves, against `lazy_dt()`'s default,
+and the diagnostic names the one rewrite.
+
+`@param .data` is also not where this package documents a refusal. The two
+definitions naming no backend — `summarize_with_margins()`'s and
+`inspect_grouping()`'s *A data frame or lazy table* — name none of the
+refusals a Margin verb already raises, the Arrow ones being carried by sections
+instead.
+So `nest_with_margins()`'s is the only definition a dtplyr clause would fit,
+and putting it there alone would say the refusal is nesting's when it is raised
+for every verb `verbs_taking(".grouping")` returns.
+
+The other three sentences #470 names describe an input that was accepted: when
+a `dtplyr` result is collected to be made row-wise, the integers a step returns
 for a grouping identity, and what establishes the share source rules on one.
-None of them claims what may be passed, so none of them is what this decision
+None of the three claims what may be passed, so none is what this decision
 would qualify.
 
 ## Test strategy
