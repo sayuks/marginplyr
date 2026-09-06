@@ -406,7 +406,8 @@ order_margin_result <- function(operation, result, execution) {
   terms <- margin_order_terms(
     plan = operation$plan,
     sort = operation$sort,
-    sort_id = key_id
+    sort_id = key_id,
+    as_character = margin_dictionary_sort_columns(result, operation$backend)
   )
   if (length(terms) > 0L) {
     result <- dplyr::arrange(result, !!!terms)
@@ -422,6 +423,36 @@ order_margin_result <- function(operation, result, execution) {
 # the result's own column and is never dropped.
 margin_staged_sort_identifier <- function(operation, sort_id) {
   if (identical(sort_id, operation$set_id_name)) NULL else sort_id
+}
+
+# The result columns the key has to cast rather than name, because the backend
+# will not sort them as they stand. Empty for every backend but Arrow, whose
+# dictionary columns its sort refuses.
+#
+# `arrow::schema()` answers from the query's own type metadata, so this adds no
+# query (ADR 0020); it is the read `grouping_selection_proxy()` performs for
+# the same reason. The result is read rather than the input, because what the
+# key names is the result's columns: a labelled dimension crossed the union as
+# character and is not a dictionary by now, whatever the input held.
+#
+# The field's own type is asked rather than `as.data.frame()`'s factor, which
+# would answer the same question through R's conversion. That spelling is what
+# `grouping_selection_proxy()` needs, having to hand the proxy back as a data
+# frame; here nothing needs the conversion, and writing `as.data.frame()`
+# without needing it would put this function in `test-query-policy.R`'s
+# reaching set -- the static scan matches that entry point by name, its subject
+# test being available only to the tracer.
+margin_dictionary_sort_columns <- function(result, backend) {
+  if (!backend$refuses_dictionary_sort) {
+    return(character())
+  }
+  fields <- arrow::schema(result)$fields
+  is_dictionary <- vapply(
+    fields,
+    function(field) inherits(field$type, "DictionaryType"),
+    logical(1)
+  )
+  vapply(fields[is_dictionary], function(field) field$name, character(1))
 }
 
 # Where a backend records a window ordering, `arrange()` has written the key
@@ -452,10 +483,21 @@ forget_margin_window_order <- function(result, backend) {
 #
 # `"first"` reverses the Grouping bits alone. Missingness and values stay
 # ascending, because first and last position margins and not missing values.
-margin_order_terms <- function(plan, sort, sort_id) {
+#
+# `as_character` names the columns whose value term is cast rather than named.
+# Only the value term takes it: the missingness term is a comparison over the
+# column and every backend accepts that. The cast reaches the key alone, so the
+# result's own column keeps whatever the executor left in it.
+margin_order_terms <- function(plan,
+                               sort,
+                               sort_id,
+                               as_character = character()) {
   terms <- unlist(
     lapply(plan$by, function(key) {
-      list(margin_missing_last_expr(key), margin_column_pronoun(key))
+      list(
+        margin_missing_last_expr(key),
+        margin_sort_value_expr(key, as_character)
+      )
     }),
     recursive = FALSE
   )
@@ -475,7 +517,7 @@ margin_order_terms <- function(plan, sort, sort_id) {
       terms,
       list(
         margin_missing_last_expr(dimension),
-        margin_column_pronoun(dimension)
+        margin_sort_value_expr(dimension, as_character)
       )
     )
   }
@@ -484,6 +526,18 @@ margin_order_terms <- function(plan, sort, sort_id) {
     terms <- c(terms, list(margin_column_pronoun(sort_id)))
   }
   terms
+}
+
+# One column's value term, cast where the backend will not sort the column as
+# it stands. The cast is `as.character()` and not a wider coercion because the
+# only such column is a dictionary one, whose values are already strings: a
+# numeric cast to character would order lexicographically and put 10 before 9.
+margin_sort_value_expr <- function(column, as_character) {
+  pronoun <- margin_column_pronoun(column)
+  if (!(column %in% as_character)) {
+    return(pronoun)
+  }
+  rlang::expr(as.character(!!pronoun))
 }
 
 # One column's missingness term. Written as a comparison rather than as the
