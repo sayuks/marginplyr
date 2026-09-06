@@ -41,9 +41,7 @@
   sits with the rows it summarizes rather than wherever its Margin label falls,
   and lazy inputs stay lazy. See *Margin order* in `?summarize_with_margins`.
 * Added the `retail_sales` data set, 24 rows of synthetic monthly sales that
-  the guides and examples are written against. Its online-direct records carry
-  a missing `store`, which is how the documentation tells a source missing
-  value from a subtotal. See `?retail_sales`.
+  the guides and examples are written against. See `?retail_sales`.
 * Added guides for Grouping identity and explicit key completion, and made the
   function references the canonical source of the Margin, Parent-share, and
   Margin-label contracts.
@@ -167,8 +165,8 @@
 * Added `.key` to `nest_with_margins()` and `nest_by_with_margins()`, a string
   naming the list column. Each follows the function it resembles for `NULL`:
   `nest_with_margins()` reads it as `"data"`, as `tidyr::nest()` does, and
-  `nest_by_with_margins()` refuses it, as `dplyr::nest_by()` does. See
-  *Relationship to tidyr and dplyr* in `?nest_with_margins`.
+  `nest_by_with_margins()` refuses it, as `dplyr::nest_by()` does. See `.key`
+  in `?nest_with_margins` and `?nest_by_with_margins`.
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns, and reject duplicate sets with `.duplicates = "keep"`
   because their visible outer keys would be indistinguishable.
