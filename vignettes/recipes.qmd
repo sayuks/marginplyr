@@ -83,8 +83,9 @@ retail_sales |>
 ```
 
 `.sort = "last"` asks for a Margin order instead. Within each fixed `.by` key
-every dimension contributes its Grouping bit before its own value, so each
-subtotal sits directly beneath the rows it summarizes:
+every dimension contributes its Grouping bit — the `0`/`1` flag
+`grouping_bit()` returns for it, `1` where aggregation removed it — before its
+own value, so each subtotal sits directly beneath the rows it summarizes:
 
 ```{r}
 retail_sales |>
@@ -333,8 +334,9 @@ levels above it — read the ancestor level out of the result and join it back.
 
 The example below adds `product`, so that the level being measured against is
 genuinely intermediate: in `rollup(region, store, product, channel)` the
-parent of a channel row is its product, and `region`/`store` is two levels
-further up. Select that level and keep the revenue under a name of its own:
+parent of a channel row is its product, and the store level `(region, store)`
+is two levels further up. Select that level and keep the revenue under a name
+of its own:
 
 ```{r}
 store_totals <- retail_sales |>
@@ -430,10 +432,10 @@ sets out the three kinds of apparent missingness this confuses, and why
 
 **`na_matches = "na"` is written explicitly because the default differs by
 backend.** `dplyr::left_join()` matches `NA` to `NA`, so a local pipeline is
-right without the argument; dbplyr's method does not, so the same pipeline
-drops the unnamed store's share against a database and says nothing. Both
-halves are below — the join as written, then the same join with the argument
-dropped:
+right without the argument. dbplyr's method does not. The same pipeline
+therefore drops the unnamed store's share against a database, and nothing
+reports that it did. Both halves are below — the join as written, then the
+same join with the argument dropped:
 
 ```{r}
 #| eval: !expr has_duckdb

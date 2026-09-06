@@ -15,8 +15,10 @@ date: last-modified
 
 A Margin result combines rows from several Grouping sets. Visible values such
 as `"Total"` are useful for display, but they do not identify which Grouping
-set produced a row. marginplyr provides Grouping set identifiers and
-structural Grouping identifiers for that purpose.
+set produced a row. marginplyr provides two kinds of identifier for that
+purpose, and they answer different questions: a *Grouping set identifier* says
+where in the Grouping plan an occurrence sits, and a *Grouping identifier*
+says which dimensions are absent from a row.
 
 Read [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) first
@@ -32,12 +34,11 @@ library(dplyr)
 
 ## Four related values
 
-Four interfaces answer two different questions. `.id` and
-`inspect_grouping()$set_id` describe *where an occurrence appears in one
-ordered Grouping plan*; `grouping_bit()` and `grouping_id()` describe *which
-dimensions are absent from a row*. A Grouping set identifier can therefore
-distinguish repeated identical sets, and a Grouping identifier deliberately
-cannot.
+Four interfaces answer those two questions. `.id` and
+`inspect_grouping()$set_id` are Grouping set identifiers; `grouping_bit()` and
+`grouping_id()` are Grouping identifiers. A Grouping set identifier can
+therefore distinguish repeated identical sets, and a Grouping identifier
+deliberately cannot.
 
 The [`grouping_bit()`
 reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html)
@@ -301,10 +302,9 @@ The included source `NA` store and the subtotal's omitted `store` may display
 the same value, but their Grouping identities differ and Parent lookup remains
 unambiguous.
 
-`share_of_total()` is identified the same way and asks a smaller question of
-the plan: its denominator is the Grand total set, the grouping set in which
-every dimension is omitted, so it is defined for any plan containing one
-rather than for a rollup alone. See the
+`share_of_total()` is identified the same way. Its denominator is the Grand
+total set, the grouping set in which every dimension is omitted, so it is
+defined for any plan containing one rather than for a rollup alone. See the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 for both helpers' value, source-summary, ordering, and `across()` rules, and
 [Compare a row with an ancestor
