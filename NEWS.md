@@ -40,6 +40,8 @@
   structure of its Grouping plan rather than by displayed values, so a subtotal
   sits with the rows it summarizes rather than wherever its Margin label falls,
   and lazy inputs stay lazy. See *Margin order* in `?summarize_with_margins`.
+* Added the `retail_sales` data set, 24 rows of synthetic monthly sales that
+  the guides and examples are written against. See `?retail_sales`.
 * Added guides for Grouping identity and explicit key completion, and made the
   function references the canonical source of the Margin, Parent-share, and
   Margin-label contracts.
@@ -58,6 +60,11 @@
   and `FALSE` for lazy inputs. A label equal to a declared factor level is
   rejected on every backend whatever this argument says, because the level is
   already known from the column's metadata (#122).
+* Added `.margin_label_position` to every Margin verb, taking `"last"` (the
+  default) or `"first"`. It decides where a non-missing Margin label's
+  synthetic level sits in a factor dimension's level order, and is a no-op for
+  a typed-missing Margin label (#16). See *Display labels and grouping
+  identity* in `?summarize_with_margins`.
 * Added `.check_share_source` to `summarize_with_margins()`, `TRUE` by default
   on every backend including lazy ones, because a share source's eligibility
   can be established without reading your data. See *When marginplyr queries
@@ -155,6 +162,11 @@
   warning every grouping set raises is reported once, saying how many further
   sets raised it, in place of one identical warning per set (#141, #108, #411,
   #432). See *Errors and warnings* in `?marginplyr`.
+* Added `.key` to `nest_with_margins()` and `nest_by_with_margins()`, a string
+  naming the list column. Each follows the function it resembles for `NULL`:
+  `nest_with_margins()` reads it as `"data"`, as `tidyr::nest()` does, and
+  `nest_by_with_margins()` refuses it, as `dplyr::nest_by()` does. See `.key`
+  in `?nest_with_margins` and `?nest_by_with_margins`.
 * `nest_with_margins()` and `nest_by_with_margins()` now use collision-free
   internal columns, and reject duplicate sets with `.duplicates = "keep"`
   because their visible outer keys would be indistinguishable.
