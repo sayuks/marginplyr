@@ -53,9 +53,9 @@ FALSE) |> filter(...)` returns a correct result today and leaves the table
 intact, and it is refused. This is accepted rather than worked around, because
 what makes it safe is a property of the query dtplyr generated for that
 derivation and not anything this package can promise across dtplyr versions —
-and, measured in #451, `filter()` and `select()` produce the same step class
-carrying the same `implicit_copy` value and fall on opposite sides. No step
-below the root separates them.
+and, measured in #451, a `filter()` and a `select()` over one mutable root
+carry the same `implicit_copy` value and fall on opposite sides. No step below
+the root separates them.
 
 Nor does the verb separate them. `summarize_with_margins()` returned a correct
 result over the same input while `expand_with_margins()` did not, and
@@ -119,9 +119,11 @@ against the input. ADR 0005 puts a local refusal in front of both.
 
 The database-backends vignette shows the refusal in a `must_error:
 marginplyr_error` chunk beside the other dtplyr sections, and
-`.github/scripts/verify-site.R` gains the matching marker. The marker is chosen
-from the refusal's own uninterpolated prose, per ADR 0023's condition 3; the
-refusal interpolates nothing, so any of its three lines would serve.
+`.github/scripts/verify-site.R` gains the matching marker. That chunk is behind
+`has_dtplyr` and renders nothing where dtplyr is absent, so the marker is
+quoted from the unconditional prose introducing it rather than from the
+diagnostic — the placement `verify-site.R`'s own comment on the entry states,
+and the one the Arrow refusal beside it already takes.
 
 `?marginplyr` is unchanged: what a caller catches is the `marginplyr_error`
 that page already promises.
@@ -129,17 +131,28 @@ that page already promises.
 ## Test strategy
 
 The tests sit where the backend-kind contracts do and are guarded by
-`skip_if_suggest_absent("dtplyr")`. They require dtplyr alone, so the
-one-backend-per-test rule `AGENTS.md` states holds.
+`skip_if_suggest_absent("dtplyr")`. They call `data.table::` — `lazy_dt()`
+refuses `immutable = FALSE` for anything that is not already a data table, so
+the input cannot be built without it — and take no guard on data.table, which
+is the one-backend-per-test rule holding rather than being bent. dtplyr
+declares `Imports: data.table`, so data.table is never the reason one of these
+tests could fail, and a guard on it would instead skip the whole set in the
+dtplyr coverage configuration, where `verify-suite-coverage.R` hides every
+other member of `optional_backends()`. The test states this where it calls it.
 
-Four assertions, and the last of them is the one that is not about behaviour:
+The last assertion below is the one that is not about behaviour:
 
-- Every verb `verbs_taking(".grouping")` returns refuses a mutable root, with
-  the wording pinned once by snapshot. The set is derived rather than listed,
-  so a seventh verb fails here instead of arriving unrefused.
+- Every verb `verbs_taking(".grouping")` returns refuses a mutable root, each
+  pinned by snapshot. The set is derived rather than listed, so a seventh verb
+  fails here instead of arriving unrefused, and one snapshot per verb is what
+  pins the part that differs between them — the call the refusal blames.
 - The caller's table is unchanged after a refusal, in names, columns, and rows.
   That is what the refusal is for, and a refusal raised after the damage would
   otherwise pass every other assertion.
+- A grouped mutable step reaches this refusal rather than the fixed-key
+  rejection its groups used to earn, the refusal sitting above key resolution.
+  That is a consequence of the placement above and is pinned rather than left
+  to be rediscovered.
 - The pair that proves the predicate reads the root: a `filter()` over a
   mutable root is refused, a `mutate()` over an immutable one is accepted. Both
   steps sit one level from their root, so a predicate reading the step it was

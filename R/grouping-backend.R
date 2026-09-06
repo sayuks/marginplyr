@@ -61,9 +61,9 @@ grouping_backend <- function(.data) {
 # the copy.
 #
 # The root is what is read, and every derived step carries the field too. Its
-# value there answers a different question: `filter()` and `select()` both
-# produce a `dtplyr_step_subset` carrying `TRUE`, and only one of them destroys
-# the caller's table, so no step below the root separates the destructive
+# value there answers a different question: a `filter()` and a `select()` over
+# one mutable root both carry `TRUE`, and only one of them destroys the
+# caller's table, so no step below the root separates the destructive
 # derivations from the safe ones (#451). Walking to the root asks the question
 # that does separate them -- whether dtplyr was given permission to write to
 # the caller's table at all.
@@ -73,29 +73,27 @@ grouping_backend <- function(.data) {
 # `data.table` it was built from, so a class test would be a second reading of
 # the same boundary.
 #
-# A missing field answers `FALSE`. Both names are non-exported dtplyr
-# internals, so a dtplyr that renamed either would otherwise make this refuse
-# on a field that no longer means what it did; `test-grouping-backends.R` pins
-# both, which is what reports that change.
+# Both fields are read with `[[`, whose character index is exact, and not with
+# `$`, which matches a prefix on a list -- so a dtplyr that renamed
+# `implicit_copy` to something starting with it would otherwise be read rather
+# than let through. A field neither name finds answers `FALSE`, both being
+# non-exported dtplyr internals; `test-grouping-backends.R` pins them, which is
+# what reports such a release.
 mutable_dtplyr_step <- function(.data) {
   if (!inherits(.data, "dtplyr_step")) {
     return(FALSE)
   }
   root <- .data
-  while (inherits(root$parent, "dtplyr_step")) {
-    root <- root$parent
+  while (inherits(root[["parent"]], "dtplyr_step")) {
+    root <- root[["parent"]]
   }
-  isTRUE(root$implicit_copy)
+  isTRUE(root[["implicit_copy"]])
 }
 
 # The refusal a Mutable step earns, raised before any branch is built and so
-# before the caller's table can be written to (ADR 0029).
-#
-# The refusal is deliberately wider than the damage: a step derived from a
-# mutable root with `filter()` alone comes back correct today, and is refused
-# anyway, because which derivations survive is a property of the query dtplyr
-# generated rather than anything this package can promise. ADR 0029 records
-# that line and what it costs.
+# before the caller's table can be written to. ADR 0029 records why the input
+# is refused rather than copied, and how much wider than the damage the line is
+# drawn.
 abort_mutable_dtplyr_step <- function() {
   abort_marginplyr(c(
     "{.arg .data} comes from {.code dtplyr::lazy_dt(immutable = FALSE)}.",
