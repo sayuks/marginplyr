@@ -186,19 +186,10 @@ wide_plan |>
 
 This is a backend-independent Grouping plan, not a database execution plan.
 Use `show_query()` for generated SQL and database-native tooling for optimizer
-plans:
-
-```{r}
-dbplyr::tbl_lazy(
-  retail_sales,
-  con = dbplyr::simulate_postgres()
-) |>
-  summarize_with_margins(
-    revenue = sum(revenue),
-    .grouping = rollup(region, store)
-  ) |>
-  show_query()
-```
+plans. [Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+renders the SQL one of these plans becomes, on a dialect with native grouping
+sets and on one without.
 
 ## Margin labels are display values
 

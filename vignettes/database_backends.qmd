@@ -366,32 +366,21 @@ postgres_sales |>
 ```
 
 Syntax, source-name, written-order, and `across()` errors are validated before
-execution. A share source must still be a plain integer or double, and that
-rule holds here too — but marginplyr reads no row of your data to establish
-it. A database evaluates the source summary itself, so where the dialect
-refuses an ineligible summary that refusal is the answer, and it reaches you
-as the database's own diagnostic when you execute the query. The staged
-queries above are still not executed, and `show_query()` runs nothing.
+execution, and the staged queries above are still not executed: `show_query()`
+runs nothing. A share source must still be a plain integer or double, and that
+rule holds here too — but marginplyr reads no row of your data to establish it.
+A database evaluates the source summary itself, so marginplyr asks the dialect
+instead, with at most two queries referencing none of your tables, whether it
+refuses an ineligible summary or converts one to a number; where it refuses,
+that refusal is the answer and reaches you as the database's own diagnostic
+when you execute the query.
 
-Where the dialect converts a value of another type to a number instead of
-refusing it — SQLite answers `sum()` of a text column with `0` rather than an
-error — nothing applies the rule at all, and marginplyr refuses the share
-rather than calculating one from values nothing has checked. Which of the two
-a dialect does is asked with at most two queries referencing none of your
-tables: a probe, and — only when the probe is rejected — a control, which is
-what tells a dialect that genuinely refuses apart from one that could not
-answer at all. An answer is a property of the dialect, so a dialect that
-answers is asked once and every later connection carrying it reuses that
-answer. Where the question could not be answered, nothing is remembered and
-the next share request asks again, so a dropped connection or a warehouse that
-was resuming does not refuse your shares for the rest of the session. A
-connection that executes nothing, such as the simulators used above, cannot be
-asked and is refused for the same reason; `.check_share_source = FALSE`
-calculates the share from sources you have established yourself. What is
-remembered is the dialect's answer and not yours: `.check_share_source` is
-scoped to the call it is written in, so a dialect that converts needs it on
-every share request, and there is no session or connection default that
-records it once.
+Where the dialect converts instead — SQLite answers `sum()` of a text column
+with `0` rather than an error — nothing applies the rule at all, and the share
+is refused rather than calculated from values nothing has checked. A connection
+that executes nothing, such as the simulators used above, cannot be asked and
+is refused the same way; `.check_share_source = FALSE` calculates the share
+from sources you have established yourself, on the one call it is written in.
 
 A refusing dialect is therefore shown against a live DuckDB table rather than
 the simulator used above. The diagnostic is DuckDB's own, and the column it
@@ -442,7 +431,9 @@ denominators. Backend-specific non-finite representations are outside that
 contract. See the
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 for both helpers' supported sources, denominator rules, `across()` forms,
-empty inputs, and post-summary `mutate()` guidance.
+empty inputs, and post-summary `mutate()` guidance, and its *Lazy execution
+boundaries* for what each backend establishes, which later connections reuse a
+dialect's answer, and what an unanswered question leaves unremembered.
 
 ## Completion stays in the lazy input pipeline
 
@@ -722,16 +713,11 @@ reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
   one. Ask for a Margin order with `.sort`, or call `arrange()` for any other
   presentation order.
 
-- Lazy inputs default to `.check_margin_label = FALSE`, which skips only the
-  *observed* half of the collision check; a label equal to a *declared*
-  factor level is rejected either way. See *`.check_margin_label` on lazy
-  inputs* above.
+- Lazy inputs default to `.check_margin_label = FALSE`; see
+  *`.check_margin_label` on lazy inputs* above.
 
-- A contextual share needs `.check_share_source = FALSE` on every call against
-  a backend that cannot establish that its source is eligible: a connection
-  that executes nothing, such as a `simulate_*()` one, and a dialect that
-  converts an ineligible source rather than refusing it, such as SQLite. See
-  *Parent shares use a staged lazy query* above.
+- A contextual share may need `.check_share_source = FALSE`; see *Parent
+  shares use a staged lazy query* above.
 
 - A fallback query may repeat the source relation once per grouping set.
   Inspect the generated SQL and the database query plan for large workloads;

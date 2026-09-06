@@ -52,7 +52,11 @@ has_sqlite <- marginplyr_suggest_available("DBI") &&
 ## Why completion is a separate operation
 
 marginplyr does not provide `.complete`, `.fill`, or `.empty` arguments, and it
-does not provide `complete_with_margins()`.
+does not provide `complete_with_margins()`. A contextual share holds the same
+line: *Value rules* in the [`share_of_parent()`
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html) states
+that neither helper ever synthesizes or completes keys, so a denominator with
+no row behind it gives `NA_real_` rather than a number.
 
 Input completion and result completion answer different questions:
 

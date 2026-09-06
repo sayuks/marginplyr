@@ -414,6 +414,13 @@ markers <- list(
     "summarise_with_margins",
     "Relationship to dplyr summaries",
     "Display labels and grouping identity",
+    # The same section again, as the anchor rather than as its heading text.
+    # `grouping_identity.qmd` is the one vignette that links a man page with a
+    # fragment, and a heading whose words survive a change to how quarto
+    # derives its `id` would leave that link landing at the top of this page
+    # with nothing failing. The heading marker above cannot stand for it: it
+    # matches the words wherever they are written.
+    "id=\"display-labels-and-grouping-identity\"",
     "Contextual shares",
     "Backend extension design",
     "Database backend coverage",
