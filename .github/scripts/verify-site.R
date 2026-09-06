@@ -27,9 +27,10 @@ read_page <- function(path) {
 }
 
 # `\keyword{internal}` is the rule altdoc applies when deciding that a topic
-# documents internals and gets no page of its own. Stating the rule rather than
-# naming the topic it currently excludes keeps a second internal topic from
-# demanding a page that will never be rendered.
+# documents internals and gets no page of its own. No topic has carried it
+# since #456, so this filter drops nothing today; it stays written as the rule
+# so that a topic given the keyword later leaves the set rather than demanding
+# a page that will never be rendered.
 documents_internals <- function(path) {
   any(grepl(
     "\\keyword{internal}",
@@ -419,12 +420,10 @@ markers <- list(
     "cannot select any column named in the complete grouping plan",
     "cur_group_id"
   ),
-  # Naming this page here is what holds it in the derived set. `@keywords
-  # internal` on the topic takes it out of `reference_sources` above, which
-  # requires no page and so fails nothing -- how the three sections below left
-  # the site for as long as they did (#456). A `markers` key naming a page the
-  # site does not produce is an error, so restoring that keyword now stops this
-  # script rather than silently dropping the page again.
+  # `@keywords internal` on the `"_PACKAGE"` topic takes it out of
+  # `reference_sources` above, which requires no page and so fails nothing --
+  # how the three sections below left the site for as long as they did (#456).
+  # Naming the page here is what fails the run if the keyword returns.
   "docs/man/marginplyr-package.html" = c(
     # One marker per section that has no other page. The condition class and
     # the audit option are each quoted by the sentence stating what it
@@ -434,10 +433,13 @@ markers <- list(
     "is the only class marginplyr promises",
     "Recording the SQL marginplyr sends",
     "switches the record on",
-    # The Guides list, by the one entry whose wording is this list's own. The
-    # other four name their vignette closely enough that the navbar or a
-    # cross-reference could supply the same run.
-    "Complete absent keys before margins"
+    # The Guides list, by its heading and by one entry's href. No entry's text
+    # can serve: all five are vignette titles, and the sidebar renders every
+    # one of them on all 21 pages, so a marker quoting one passes on a page
+    # whose Guides section was deleted. The href is the list's own because the
+    # sidebar links the same vignette relatively.
+    "Guides",
+    "https://sayuks.github.io/marginplyr/vignettes/completing_keys.html"
   ),
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",
