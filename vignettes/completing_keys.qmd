@@ -19,6 +19,11 @@ before a Margin operation when synthetic facts should participate in detail,
 subtotal, and grand-total summaries. Replace values after a summary when the
 change is only for display.
 
+If grouping sets are new to you, read [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+first. It introduces the Grouping specifications, Margin labels, and Margin
+operations this guide assumes.
+
 ```{r setup}
 #| message: false
 
@@ -26,10 +31,10 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Only dplyr and dbplyr are required. The tidyr and SQLite sections below need
-optional packages, so their chunks evaluate only when those packages are
-installed at the versions marginplyr asks for. Where a package is missing or
-too old the code is still shown, but its output is absent.
+Nothing beyond marginplyr's own dependencies is required. The tidyr and SQLite
+sections below need optional packages, so their chunks evaluate only when those
+packages are installed at the versions marginplyr asks for. Where a package is
+missing or too old the code is still shown, but its output is absent.
 
 ```{r}
 #| include: false
@@ -130,12 +135,16 @@ The two means show that filling synthetic facts before a summary is a
 substantive modeling choice.
 
 If the intended change is only presentational, summarize the observed facts
-first and replace the finished display value afterwards:
+first and replace the finished display value afterwards. A completed key with
+no observed fact averages an empty selection, so the mean it reports is
+missing:
 
 ```{r}
-observed_summary <- facts |>
+#| eval: !expr has_tidyr
+
+observed_summary <- completed_facts |>
   summarize_with_margins(
-    mean_revenue = mean(revenue),
+    mean_revenue = mean(revenue[is_fact]),
     .grouping = rollup(region, store, product)
   )
 
@@ -143,7 +152,9 @@ observed_summary |>
   mutate(display_mean = dplyr::coalesce(mean_revenue, 0))
 ```
 
-That `mutate()` does not add fact rows or alter any existing aggregate.
+Three detail rows change; every subtotal and the grand total keep the value
+they were summarized to, because that `mutate()` adds no fact rows and alters
+no existing aggregate.
 
 ## Union an explicit scaffold with observed keys
 
@@ -238,8 +249,8 @@ The union, join, completion expressions, and Margin summary remain lazy.
 ## Move local keys only when you ask to
 
 For a small local key table, `dbplyr::copy_inline()` embeds the rows in the
-lazy SQL with `VALUES`. This avoids creating a persistent table but makes the
-query text grow with the number of keys:
+lazy SQL as a `VALUES` subquery. This avoids creating a persistent table but
+makes the query text grow with the number of keys:
 
 ```{r}
 #| message: false
@@ -281,9 +292,20 @@ show_query(reusable_query)
 DBI::dbDisconnect(con)
 ```
 
+Read the two renderings side by side. The inline query carries the key rows
+themselves — on SQLite, a zero-row `SELECT` unioned with a `VALUES` list,
+wrapped in the casts that give the columns their types — while the `copy_to()`
+query names `requested_keys`, a table that now exists on the connection.
+
 Use explicit `dplyr::copy_to()` for a larger or reusable local key relation.
 It performs data movement at the line where the caller requested it.
 
 marginplyr never copies, collects, uploads, downloads, or otherwise moves
 completion data implicitly. Connection choice, data movement, and execution
 remain ordinary dplyr and dbplyr operations owned by the caller.
+
+Execution, not completion, is where a backend's own rules start to matter.
+[Database
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+takes the lazy pipeline from here through query shape, `collect()`, and what
+each backend is verified to do.

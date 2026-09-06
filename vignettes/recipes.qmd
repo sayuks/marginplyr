@@ -45,11 +45,12 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Only dplyr and dbplyr are required. Four recipes execute against DuckDB, so
-their chunks evaluate only when DuckDB is installed at the version marginplyr
-asks for. Where a package is missing or too old the code is still shown, but
-its output is absent. Everything else runs either locally or against
-`dbplyr::simulate_postgres()`, which needs no database and no optional package.
+Nothing beyond marginplyr's own dependencies is required. Four recipes execute
+against DuckDB, so their chunks evaluate only when DuckDB is installed at the
+version marginplyr asks for. Where a package is missing or too old the code is
+still shown, but its output is absent. Everything else runs either locally or
+against `dbplyr::simulate_postgres()`, which needs no database and no optional
+package.
 
 ```{r}
 #| include: false
