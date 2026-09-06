@@ -422,7 +422,15 @@ markers <- list(
     # matches the words wherever they are written.
     "id=\"display-labels-and-grouping-identity\"",
     "Contextual shares",
-    "Backend extension design",
+    # The section holding the two summaries a lazy backend refuses, and one
+    # claim from each half of it. The heading alone would pass a section folded
+    # back into `@details`, where it stands ahead of the usage a first reader
+    # needs (#461). Neither claim survives a section reduced to a
+    # cross-reference, and the Arrow half is the one `R/share.R` points here
+    # for.
+    "Summaries a lazy backend cannot carry",
+    "cannot carry back a summary with no columns in it",
+    "before a row is read, and names the two rewrites that compute it",
     "Database backend coverage",
     "Microsoft SQL Server",
     "NA is already a factor level",
@@ -460,7 +468,10 @@ markers <- list(
     "Direct shares",
     "Eligible source summaries",
     "Column-wise shares",
-    "Rejected forms and supported rewrites",
+    # The one rejection *Eligible source summaries* alone states: a named
+    # `across()` is a data-frame-valued summary rather than a scalar source.
+    # It reaches the page as prose, so the run quoted carries no apostrophe.
+    "packs both results into one data-frame-valued",
     "Lazy execution boundaries",
     # The page documents both denominators, and states that neither completes
     # keys. Losing either would leave one helper without a contract.

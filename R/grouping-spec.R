@@ -11,7 +11,8 @@
 #' - [grouping_sets()] forms the union of its arguments.
 #' - [rollup()] creates hierarchical prefixes.
 #' - [cube()] creates every subset of its dimensions.
-#' - [grouping_spec()] forms the Cartesian product of its arguments, like
+#' - [grouping_spec()] forms the Cartesian product of its arguments — every
+#'   grouping set of one combined with every grouping set of the next — like
 #'   comma-separated SQL `GROUP BY` items.
 #'
 #' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
@@ -36,50 +37,54 @@
 #'   nested Grouping specification, and requires at least one argument.
 #'   [grouping_spec()] combines its arguments by Cartesian product, accepts any
 #'   valid nested Grouping specification, and with no arguments represents the
-#'   identity product (the empty grouping set).
-#'
-#'   A nested Grouping specification is recognized by how it is written: a
-#'   call to one of these constructors, or a name bound to a specification.
-#'   Redundant parentheses are transparent to that reading, because `(` is the
-#'   identity function: `(s)` is the specification `s` is, and
-#'   `(rollup(region))` is the call it wraps, however many pairs deep.
-#'   Any other argument is a column selection, so a call of your own that
-#'   returns a specification is refused where it is nested even though it is
-#'   accepted as `.grouping` itself. Assign what it returns to a name and use
-#'   that name: `s <- my_spec(region)`, then `grouping_sets(s, grade)`. A
-#'   specification written inside a selection, as in `c(s, grade)`, is a
-#'   selection containing something it cannot select, and is refused as one —
-#'   unless the input has a column named `s`, when the selection takes that
-#'   column, as any selection does with a name the data holds.
-#'
-#'   An argument left empty gets neither reading, and is refused naming the
-#'   constructor and the position: `grouping_sets(, region)` reports that its
-#'   first argument is empty. A trailing comma is not an empty argument,
-#'   because R captures no argument for it, so `grouping_sets(region, )` is
-#'   `grouping_sets(region)`, and passing no arguments at all means what the
-#'   first paragraph above says it means for each constructor.
-#'
-#'   A name both readings claim is refused rather than guessed. Where the
-#'   input has a column named `s` and `s` is also bound to a nested Grouping
-#'   specification the position accepts, the call names both readings and the
-#'   spelling that settles each: `all_of("s")` selects the column whatever is
-#'   bound, and `!!s` uses the specification whatever columns the input has.
-#'   What a position accepts is what decides whether there are two readings,
-#'   so a colliding name is refused in [grouping_sets()] and [grouping_spec()]
-#'   whatever specification it is bound to, in [rollup()] and [cube()] only
-#'   when it is bound to a [grouping_set()], and never in [grouping_set()],
-#'   which takes no nested Grouping specification at all. A name bound to
-#'   anything that is not a specification is a column, as it always was.
-#'
-#'   A dimension is a column of the input, so a name attached to one is
-#'   refused, whether it sits inside a selection or on the constructor's own
-#'   argument: `c(area = region)` and `rollup(area = region)` are both errors
-#'   rather than a dimension named `area`. Rename the result afterwards with
-#'   [dplyr::rename()]. A Margin verb's own argument written in a constructor
-#'   falls under that same rule, so `rollup(region, .by = year)` reports the
-#'   name instead of taking `year` as a second dimension.
+#'   identity product (the empty grouping set). Which of the two readings an
+#'   argument gets, and what is refused rather than read either way, is *How an
+#'   argument is read*.
 #'
 #' @return A grouping specification for use in `.grouping`.
+#'
+#' @section How an argument is read:
+#' A nested Grouping specification is recognized by how it is written: a
+#' call to one of these constructors, or a name bound to a specification.
+#' Redundant parentheses are transparent to that reading, because `(` is the
+#' identity function: `(s)` is the specification `s` is, and
+#' `(rollup(region))` is the call it wraps, however many pairs deep.
+#' Any other argument is a column selection, so a call of your own that
+#' returns a specification is refused where it is nested even though it is
+#' accepted as `.grouping` itself. Assign what it returns to a name and use
+#' that name: `s <- my_spec(region)`, then `grouping_sets(s, grade)`. A
+#' specification written inside a selection, as in `c(s, grade)`, is a
+#' selection containing something it cannot select, and is refused as one —
+#' unless the input has a column named `s`, when the selection takes that
+#' column, as any selection does with a name the data holds.
+#'
+#' An argument left empty gets neither reading, and is refused naming the
+#' constructor and the position: `grouping_sets(, region)` reports that its
+#' first argument is empty. A trailing comma is not an empty argument,
+#' because R captures no argument for it, so `grouping_sets(region, )` is
+#' `grouping_sets(region)`, and passing no arguments at all means what `...`
+#' above says it means for each constructor.
+#'
+#' A name both readings claim is refused rather than guessed. Where the
+#' input has a column named `s` and `s` is also bound to a nested Grouping
+#' specification the position accepts, the call names both readings and the
+#' spelling that settles each: `all_of("s")` selects the column whatever is
+#' bound, and `!!s` uses the specification whatever columns the input has.
+#' What a position accepts is what decides whether there are two readings,
+#' so a colliding name is refused in [grouping_sets()] and [grouping_spec()]
+#' whatever specification it is bound to, in [rollup()] and [cube()] only
+#' when it is bound to a [grouping_set()], and never in [grouping_set()],
+#' which takes no nested Grouping specification at all. A name bound to
+#' anything that is not a specification is a column, as it always was.
+#'
+#' A dimension is a column of the input, so a name attached to one is
+#' refused, whether it sits inside a selection or on the constructor's own
+#' argument: `c(area = region)` and `rollup(area = region)` are both errors
+#' rather than a dimension named `area`. Rename the result afterwards with
+#' [dplyr::rename()]. A Margin verb's own argument written in a constructor
+#' falls under that same rule, so `rollup(region, .by = year)` reports the
+#' name instead of taking `year` as a second dimension.
+#'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()], [expand_with_margins()],
 #'   [nest_with_margins()], and [nest_by_with_margins()], the Margin verbs
@@ -144,15 +149,22 @@
 #'   region == "Total"
 #' )
 #'
-#' # grouping_spec() takes their Cartesian product, producing combinations
-#' # such as (year, month, region, store) and (year, region).
+#' # grouping_spec() takes their Cartesian product instead. Each of the first
+#' # rollup's three grouping sets is combined with each of the second's, so
+#' # inspect_grouping() reports 3 x 3 = 9 of them, from (year, month, region,
+#' # store) down to the grand total.
+#' combined_specification <- grouping_spec(
+#'   rollup(year, month),
+#'   rollup(region, store)
+#' )
+#' inspect_grouping(
+#'   .data = retail_sales,
+#'   .grouping = combined_specification
+#' )
 #' combined_totals <- summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),
-#'   .grouping = grouping_spec(
-#'     rollup(year, month),
-#'     rollup(region, store)
-#'   )
+#'   .grouping = combined_specification
 #' )
 #'
 #' # A nested grouping_set() is a composite dimension: region and store are

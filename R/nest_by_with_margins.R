@@ -11,20 +11,12 @@
 #' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
 #' @inheritSection summarize_with_margins When marginplyr queries your data
-#' @inheritSection summarize_with_margins Backend extension design
 #' @inheritSection nest_with_margins Relationship to tidyr and dplyr
 #' @param .key A non-missing string naming the list column. Unlike
 #'   [nest_with_margins()] and [tidyr::nest()], `NULL` is not converted to
 #'   `"data"`; this follows [dplyr::nest_by()].
 #' @details A `dtplyr` result is collected before it is made row-wise because
 #'   row-wise data frames are local objects.
-#'
-#' [dplyr::nest_by()] is not a stable upstream API and may eventually be
-#' deprecated in favor of [tidyr::nest()]. This margin-aware wrapper remains
-#' intentional because its row-wise return shape is useful for per-margin
-#' models and reports. Both public nesting interfaces use the same private
-#' margin-operation pipeline, so they share one grouping plan and nesting
-#' contract without invoking each other.
 #' @return A row-wise data frame grouped by the visible grouping columns and
 #'   `.id` when supplied. This is the return shape whatever the class of
 #'   `.data`, because a row-wise data frame is always a tibble subclass; see

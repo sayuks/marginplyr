@@ -71,8 +71,7 @@
 #' ```
 #'
 #' A direct call cannot be unnamed, use a string, use a forward reference,
-#' redefine the source name, or use a share as another share's source. Each
-#' rejected form and its rewrite are listed below.
+#' redefine the source name, or use a share as another share's source.
 #'
 #' @section Eligible source summaries:
 #' The source must be defined exactly once before the share. It must be
@@ -133,6 +132,12 @@
 #' revenue_total = sum(revenue)
 #' revenue_share = share_of_parent(revenue_total)
 #' ```
+#'
+#' Naming an [dplyr::across()] does the mirror image of that:
+#' `total = across(c(revenue, units), sum)` packs both results into one
+#' data-frame-valued `total` column, so `total` is not a scalar source. Drop
+#' the name to get one statically named column per selected column, or define
+#' each summary at top level.
 #'
 #' A source name must be defined exactly once. If a later calculation was
 #' intended to refine the earlier value, combine the complete calculation into
@@ -258,86 +263,6 @@
 #' # Supported
 #' across(revenue, share_of_parent, .names = "{.col}_share")
 #' ```
-#'
-#' @section Rejected forms and supported rewrites:
-#' This checklist keeps every rejection next to the form that should replace
-#' it:
-#'
-#' - **Wrong context:** `share_of_parent(total)` by itself, inside
-#'   `dplyr::summarize()`, or inside `dplyr::mutate()` is rejected. Define
-#'   `total = sum(value)` and `share = share_of_parent(total)` inside
-#'   [summarize_with_margins()]; derive from the finished `share` in a following
-#'   `dplyr::mutate()`.
-#' - **Unsupported Grouping specification:** `grouping_sets()`, `cube()`, and
-#'   `grouping_spec()` do not define one Parent chain. For a Parent share,
-#'   replace them with one pure `rollup()` or omit the request. For a Total
-#'   share only a plan without a Grand total set is rejected; add an empty
-#'   `grouping_set()` to the `grouping_sets()` specification.
-#' - **Unnamed direct output:** `share_of_parent(total)` supplied without
-#'   `share =` is rejected. Use `share = share_of_parent(total)`.
-#' - **Non-bare source:** `share_of_parent(sum(value))`,
-#'   `share_of_parent(total + tax)`, and `share_of_parent("total")` are
-#'   rejected. First define `total = sum(value)` and then use
-#'   `share = share_of_parent(total)`.
-#' - **Forward reference:** `share = share_of_parent(total)` before
-#'   `total = sum(value)` is rejected. Move the `total` summary before
-#'   `share`.
-#' - **Repeated source name:** defining `net` twice is rejected. Use one
-#'   complete expression such as `net = sum(revenue) - sum(discount)` before
-#'   `net_share = share_of_parent(net)`.
-#' - **Unnamed data-frame-valued source:** an unnamed
-#'   `tibble::tibble(total = sum(value))` cannot provide `total`. Rewrite it as
-#'   the top-level `total = sum(value)` or create a statically named column with
-#'   a preceding `across()`.
-#' - **Named `across()` source:** `total = across(c(revenue, units), sum)`
-#'   packs both results into one data-frame-valued `total` column, so `total`
-#'   is not a scalar source. Drop the `total =` name to get one column per
-#'   selected column, or define each summary at top level.
-#' - **Summary-alias dependency:** `gross = sum(value)`,
-#'   `net = gross - sum(discount)` is rejected when `net` is a source. Use
-#'   `net = sum(value) - sum(discount)`.
-#' - **Wrapped share:** `percent = 100 * share_of_parent(total)` is
-#'   rejected. Create `share = share_of_parent(total)`, then use
-#'   `dplyr::mutate(percent = 100 * share)` on the result.
-#' - **Share dependency:** a share cannot source another share of either kind,
-#'   or an ordinary summary later in the same call. Create all requested
-#'   shares from ordinary summaries, then derive further columns in
-#'   `dplyr::mutate()`.
-#' - **Non-numeric or non-scalar source:** semantic classes, zero-length
-#'   results, and `quantile(value, c(0.25, 0.75))` are rejected. Convert only
-#'   when meaningful and create one scalar summary per output, such as
-#'   `q25 = quantile(value, 0.25)` and `q25_share = share_of_parent(q25)`.
-#' - **Ineligible `across()` selection:** source columns, grouping keys, and
-#'   previous shares are rejected. Select only preceding ordinary
-#'   summaries, for example `across(c(total, count), share_of_parent, ...)`.
-#' - **Predicate selection:** `where(is.numeric)` is rejected. Use explicit
-#'   names, `all_of()`, `any_of()`, or another name-based selector.
-#' - **Indirect `.fns`:** `~share_of_parent(.x)`,
-#'   `\(x) share_of_total(x)`, and `list(share_of_parent)` are rejected. Pass
-#'   the bare helper, or `marginplyr::share_of_parent`, directly.
-#' - **Aggregate and share in one function list:**
-#'   `across(value, list(total = sum, share = share_of_parent))` is rejected.
-#'   Use one `across(value, sum)` followed by a second
-#'   `across(value, share_of_parent, .names = "{.col}_share")`.
-#' - **Additional function arguments:** passing `na.rm = TRUE` to a share's
-#'   `across()` is rejected. Handle it in the preceding
-#'   `total = sum(value, na.rm = TRUE)`, then select `total`.
-#' - **Unpacking:** `.unpack = TRUE` is rejected. Omit `.unpack` or use
-#'   `.unpack = FALSE`.
-#' - **Missing or empty names:** omitted `.names` and `.names = ""` are
-#'   rejected. Supply a non-empty template such as
-#'   `.names = "{.col}_share"`.
-#' - **Duplicate names:** selecting multiple sources with
-#'   `.names = "share"` is rejected. Include `{.col}` in the template.
-#' - **Grouping-key collision:** `.names = "region"` (or any fixed or variable
-#'   key) is rejected. Use a new name such as `{.col}_share`.
-#' - **Ordinary-summary collision:** `.names = "{.col}"` overwrites the source
-#'   and is rejected. Use `.names = "{.col}_share"`.
-#' - **`.id` collision:** `.names = "set"` with `.id = "set"` is rejected.
-#'   Rename either output, for example `.id = "occurrence"` and
-#'   `.names = "{.col}_share"`.
-#' - **Share collision:** reusing a direct or generated share name is
-#'   rejected. Give each share one unique output name.
 #'
 #' @section Value rules:
 #' Both helpers divide within each fixed `.by` partition, and neither ever
