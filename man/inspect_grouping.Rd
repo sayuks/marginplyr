@@ -57,7 +57,7 @@ that absence pattern as a bit mask. \code{grouping_id} is \code{NA_integer_} bey
 31 variable dimensions, while \code{grouping_bits} remains complete.
 
 \code{\link[=grouping_bit]{grouping_bit()}} is the canonical reference for how these four values
-relate and which of them distinguish duplicate Grouping-set occurrences.
+relate and which of them distinguish duplicate grouping-set occurrences.
 }
 
 \section{Formats and ordinary tibble behavior}{

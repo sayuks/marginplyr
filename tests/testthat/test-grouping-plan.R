@@ -2,7 +2,7 @@
 # asserted: the compiler tests below and the Margin verb one, which is the same
 # diagnostic reaching a caller by the route they meet it on.
 ambiguous_s_message <- paste0(
-  "`s` is both a column of the input and a name bound to a grouping ",
+  "`s` is both a column of the input and a name bound to a Grouping ",
   "specification, so a nested position cannot tell which one you mean.\n",
   "i For the column, write `all_of(\"s\")`.\n",
   "i For the specification, write `!!s`."
@@ -202,7 +202,7 @@ test_that("a nested specification position recognizes a spelling or a name", {
   expect_identical(
     conditionMessage(refused),
     paste0(
-      "`spec_from_caller(region)` is a grouping specification, but a nested ",
+      "`spec_from_caller(region)` is a Grouping specification, but a nested ",
       "position recognizes one only when it is a call to `grouping_set()`, ",
       "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a ",
       "name bound to a specification.\n",
@@ -236,7 +236,7 @@ test_that("a nested specification position recognizes a spelling or a name", {
     expect_s3_class(error, "marginplyr_error")
     expect_match(
       conditionMessage(error),
-      "is a grouping specification, but a nested position",
+      "is a Grouping specification, but a nested position",
       fixed = TRUE
     )
   }
@@ -258,7 +258,7 @@ test_that("a nested specification position recognizes a spelling or a name", {
 test_that("a nested specification stored as a function is refused", {
   data_vars <- c("region", "grade", "value")
   refusal <- paste0(
-    "is a grouping specification, but a nested position recognizes one only ",
+    "is a Grouping specification, but a nested position recognizes one only ",
     "when it is a call to `grouping_set()`, `grouping_sets()`, `rollup()`, ",
     "`cube()`, or `grouping_spec()`, or a name bound to a specification.\n",
     "i Anything else is read as a column selection.\n",
@@ -496,7 +496,7 @@ test_that("a nested argument is read through its redundant parentheses", {
   expect_identical(
     conditionMessage(refused),
     paste0(
-      "`spec_from_caller(region)` is a grouping specification, but a nested ",
+      "`spec_from_caller(region)` is a Grouping specification, but a nested ",
       "position recognizes one only when it is a call to `grouping_set()`, ",
       "`grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a ",
       "name bound to a specification.\n",
@@ -1083,7 +1083,7 @@ test_that("a kind whose classification lies is no more a name for it", {
     expect_s3_class(error, "marginplyr_error")
     expect_identical(
       conditionMessage(error),
-      "Invalid grouping specification."
+      "Invalid Grouping specification."
     )
   }
 })
@@ -1276,7 +1276,7 @@ test_that("a nested name only one reading claims keeps that reading", {
   expect_s3_class(from_caller, "marginplyr_error")
   expect_match(
     conditionMessage(from_caller),
-    "is a grouping specification, but a nested position",
+    "is a Grouping specification, but a nested position",
     fixed = TRUE
   )
 
@@ -1894,7 +1894,7 @@ test_that("a malformed grouping specification is refused by both guards", {
       expect_s3_class(error, "marginplyr_error")
       expect_identical(
         conditionMessage(error),
-        "Invalid grouping specification."
+        "Invalid Grouping specification."
       )
     }
   }

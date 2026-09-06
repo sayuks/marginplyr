@@ -410,7 +410,7 @@ summarize_margin_union <- function(.data,
   #
   # `n()` and not a literal, because the placeholder has to aggregate: a
   # constant in a `summarize()` over no groups renders as `SELECT 1 AS x FROM
-  # t`, one row per source row, where `COUNT(*)` is the single Grand total row
+  # t`, one row per source row, where `COUNT(*)` is the single grand total row
   # the branch stands for.
   placeholder_name <- new_margin_internal_names(
     1L,

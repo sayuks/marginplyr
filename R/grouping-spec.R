@@ -1,4 +1,4 @@
-#' Build a grouping specification
+#' Build a Grouping specification
 #'
 #' These constructors describe SQL-style grouping operations for the
 #' `.grouping` argument of [summarize_with_margins()] and related verbs.
@@ -41,7 +41,7 @@
 #'   argument gets, and what is refused rather than read either way, is *How an
 #'   argument is read*.
 #'
-#' @return A grouping specification for use in `.grouping`.
+#' @return A Grouping specification for use in `.grouping`.
 #'
 #' @section How an argument is read:
 #' A nested Grouping specification is recognized by how it is written: a
@@ -88,7 +88,7 @@
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()], [expand_with_margins()],
 #'   [nest_with_margins()], and [nest_by_with_margins()], the Margin verbs
-#'   that consume a grouping specification.
+#'   that consume a Grouping specification.
 #' @export
 #' @examples
 #' # The operations team needs store, region, and company totals for each
@@ -253,7 +253,7 @@ print.margin_grouping_spec <- function(x, ...) {
   # count, and states what reading through a shared function costs.
   kind <- grouping_spec_kind(x)
   cat(
-    "<marginplyr grouping specification: ",
+    "<marginplyr Grouping specification: ",
     grouping_kind_printed_name(kind),
     ">\n",
     sep = ""

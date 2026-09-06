@@ -362,7 +362,7 @@ sqlite_sales |>
 
 ## Parent shares use a staged lazy query
 
-`share_of_parent()` needs a denominator from another Grouping-set row, so it
+`share_of_parent()` needs a denominator from another grouping-set row, so it
 cannot be translated as one ordinary aggregate expression. marginplyr first
 computes the ordinary summaries for every grouping set, then builds one
 denominator lookup — the parent row for each result row — shared by every

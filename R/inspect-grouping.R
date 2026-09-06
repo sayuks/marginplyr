@@ -39,7 +39,7 @@
 #' 31 variable dimensions, while `grouping_bits` remains complete.
 #'
 #' [grouping_bit()] is the canonical reference for how these four values
-#' relate and which of them distinguish duplicate Grouping-set occurrences.
+#' relate and which of them distinguish duplicate grouping-set occurrences.
 #'
 #' @section Formats and ordinary tibble behavior:
 #' The default `.format = "text"` represents column collections as `()`,

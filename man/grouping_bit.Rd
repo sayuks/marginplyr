@@ -18,7 +18,7 @@ column of the resolved plan.}
 \value{
 A grouping flag or identifier when used inside
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}. Local data frames and \code{dtplyr} steps return R
-integers, because the value is known for each Grouping-set branch and is
+integers, because the value is known for each grouping-set branch and is
 substituted before execution. Arrow and every backend taking the portable
 \verb{UNION ALL} path receive that same constant as a literal in their own
 query. Only a backend actually running native \verb{GROUP BY GROUPING SETS}
@@ -54,11 +54,11 @@ and it contributes a zero bit to \code{\link[=grouping_id]{grouping_id()}}.
 }
 \section{Grouping identity values}{
 
-marginplyr exposes four related values. Two describe \emph{where} a Grouping-set
+marginplyr exposes four related values. Two describe \emph{where} a grouping-set
 occurrence sits in one ordered Grouping plan; two describe \emph{which}
 dimensions are absent from a row. Only the first pair can tell repeated
-identical Grouping sets apart:\tabular{lll}{
-   Value \tab Meaning \tab Duplicate Grouping-set occurrences \cr
+identical grouping sets apart:\tabular{lll}{
+   Value \tab Meaning \tab Duplicate grouping-set occurrences \cr
    \code{.id} \tab One-based position in the resolved Grouping plan \tab Distinct with \code{.duplicates = "keep"} \cr
    \code{\link[=inspect_grouping]{inspect_grouping()}} \verb{$set_id} \tab The same position before execution \tab Distinct with \code{.duplicates = "keep"} \cr
    \code{\link[=grouping_bit]{grouping_bit()}} \tab Whether one chosen dimension is absent \tab The same for identical absence patterns \cr
@@ -112,7 +112,7 @@ summarize_with_margins(
   .grouping = rollup(region, store)
 )
 
-# Keeping typed missing values makes the grouping bits essential: source
+# Keeping typed missing values makes the Grouping bits essential: source
 # missing values, factor NA levels, and generated margins may all print as
 # NA even though their structural identities differ.
 summarize_with_margins(

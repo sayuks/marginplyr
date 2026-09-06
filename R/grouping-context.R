@@ -24,12 +24,12 @@
 #' and it contributes a zero bit to [grouping_id()].
 #'
 #' @section Grouping identity values:
-#' marginplyr exposes four related values. Two describe *where* a Grouping-set
+#' marginplyr exposes four related values. Two describe *where* a grouping-set
 #' occurrence sits in one ordered Grouping plan; two describe *which*
 #' dimensions are absent from a row. Only the first pair can tell repeated
-#' identical Grouping sets apart:
+#' identical grouping sets apart:
 #'
-#' | Value | Meaning | Duplicate Grouping-set occurrences |
+#' | Value | Meaning | Duplicate grouping-set occurrences |
 #' |---|---|---|
 #' | `.id` | One-based position in the resolved Grouping plan | Distinct with `.duplicates = "keep"` | # nolint: line_length_linter
 #' | [inspect_grouping()] `$set_id` | The same position before execution | Distinct with `.duplicates = "keep"` | # nolint: line_length_linter
@@ -76,7 +76,7 @@
 #'
 #' @return A grouping flag or identifier when used inside
 #'   [summarize_with_margins()]. Local data frames and `dtplyr` steps return R
-#'   integers, because the value is known for each Grouping-set branch and is
+#'   integers, because the value is known for each grouping-set branch and is
 #'   substituted before execution. Arrow and every backend taking the portable
 #'   `UNION ALL` path receive that same constant as a literal in their own
 #'   query. Only a backend actually running native `GROUP BY GROUPING SETS`
@@ -100,7 +100,7 @@
 #'   .grouping = rollup(region, store)
 #' )
 #'
-#' # Keeping typed missing values makes the grouping bits essential: source
+#' # Keeping typed missing values makes the Grouping bits essential: source
 #' # missing values, factor NA levels, and generated margins may all print as
 #' # NA even though their structural identities differ.
 #' summarize_with_margins(

@@ -31,7 +31,7 @@
 #' `.keep = TRUE` also puts the original grouping keys in that inner data
 #' frame. This corresponds to selecting those keys in [tidyr::nest()] (for
 #' example, `nest(data = everything(), .by = region)`), but uses a logical
-#' argument because margin dimensions must remain visible outside to identify
+#' argument because Margin dimensions must remain visible outside to identify
 #' detail, subtotal, and total rows.
 #'
 #' [nest_with_margins()] does not implement the full `...` column

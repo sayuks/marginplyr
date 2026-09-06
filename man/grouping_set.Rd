@@ -6,7 +6,7 @@
 \alias{rollup}
 \alias{cube}
 \alias{grouping_spec}
-\title{Build a grouping specification}
+\title{Build a Grouping specification}
 \usage{
 grouping_set(...)
 
@@ -36,7 +36,7 @@ argument gets, and what is refused rather than read either way, is \emph{How an
 argument is read}.}
 }
 \value{
-A grouping specification for use in \code{.grouping}.
+A Grouping specification for use in \code{.grouping}.
 }
 \description{
 These constructors describe SQL-style grouping operations for the
@@ -216,7 +216,7 @@ postgres_sales |>
 \seealso{
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}},
 \code{\link[=nest_with_margins]{nest_with_margins()}}, and \code{\link[=nest_by_with_margins]{nest_by_with_margins()}}, the Margin verbs
-that consume a grouping specification.
+that consume a Grouping specification.
 
 Other grouping plans and grouping identity:
 \code{\link[=grouping_bit]{grouping_bit()}},

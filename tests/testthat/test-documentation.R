@@ -113,7 +113,7 @@ test_that("the Grouping-identity comparison has exactly one canonical home", {
 
   # The table is recognised by its own header cells rather than by a section
   # title, so a copy pasted into another topic is still detected.
-  header <- "Value \\tab Meaning \\tab Duplicate Grouping-set occurrences"
+  header <- "Value \\tab Meaning \\tab Duplicate grouping-set occurrences"
   carries_table <- vapply(
     topics,
     function(text) grepl(header, text, fixed = TRUE),
