@@ -1,4 +1,4 @@
-# Calculate Total shares against the grand total set
+# Calculate Total shares against the Grand total set
 
 `share_of_total()` is a second contextual summary helper for
 `summarize_with_margins()`. It divides one preceding named numeric scalar
@@ -60,7 +60,7 @@ result, and the invariant is kept rather than excepted.
 
 ### Duplicate grand total occurrences are interchangeable
 
-Which Grand total occurrence supplies the denominator is not specified.
+Which grand total occurrence supplies the denominator is not specified.
 
 Duplicate occurrences arise only under `.duplicates = "keep"`. Two Grand
 total sets are two occurrences of the same grouping mask, so `"error"`
@@ -95,7 +95,7 @@ construction would union one relation to itself once per non-root occurrence
 staged result — and would synthesize a join key column per dimension whose
 value is `NULL` on both sides, since the Grand total set contains no
 dimension to match on. A Total share's denominator depends on `.by` and
-nothing else, so its mapping is the Grand total rows reduced to one row per
+nothing else, so its mapping is the grand total rows reduced to one row per
 fixed partition, joined on the fixed keys with the same missing-safe
 identity.
 
@@ -143,9 +143,9 @@ the caller spelled the specification.
 between pooled and partitioned. Rejected above; an argument would make every
 caller decide something the invariant already answers.
 
-**Naming the first Grand total occurrence in plan order.** Rejected above.
+**Naming the first grand total occurrence in plan order.** Rejected above.
 
-**Erroring when a plan has more than one Grand total occurrence.** Rejected:
+**Erroring when a plan has more than one grand total occurrence.** Rejected:
 it refuses a case whose value is unambiguous, and the caller has no way to
 read the refusal as anything but arbitrary.
 

@@ -59,7 +59,7 @@ recorded with the name.
 | `cur_group`, `cur_group_id`, `cur_group_rows`, `cur_data`, `cur_data_all` | Contextual helper — refused |
 | `across`, `if_any`, `if_all`, `pick` | Contextual helper |
 | `where` | Contextual helper |
-| `grouping_set`, `grouping_sets`, `rollup`, `cube`, `grouping_spec` | ordinary lookup; the spelling gates *evaluation only*, in a nested specification position |
+| `grouping_set`, `grouping_sets`, `rollup`, `cube`, `grouping_spec` | ordinary lookup; the spelling gates *evaluation only*, in a Nested specification position |
 | `n`, and every other name | ordinary lookup |
 
 `n()` is the case that shows the criterion is doing work rather than describing

@@ -1027,7 +1027,7 @@ test_that("a formula in a summary expression evaluates instead of aborting", {
   expect_identical(result$share, result$units / sum(data$value))
 })
 
-test_that("a formula in a grouping specification reaches tidyselect", {
+test_that("a formula in a Grouping specification reaches tidyselect", {
   # `grouping_arg_spec()` read a name to decide whether an argument is a
   # Grouping constructor call or a selection to evaluate later. It guarded each
   # read with `rlang::is_call()` separately, which #163 reads as protection --

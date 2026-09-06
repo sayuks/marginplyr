@@ -43,7 +43,7 @@ The columns are:
 - `grouping_id`, the SQL-compatible bit mask for those dimensions.
 
 With `.format = "text"`, `fixed`, `included`, and `omitted` use a
-parenthesized Grouping set display: `()` for zero columns, `(region)` for one,
+parenthesized grouping set display: `()` for zero columns, `(region)` for one,
 and `(region, store)` for more than one. Names appear in Grouping-plan order
 without quotes or backticks. `grouping_bits` is named text such as
 `region=0, store=0, product=1`, without outer parentheses.

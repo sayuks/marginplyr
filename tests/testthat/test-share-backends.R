@@ -1495,7 +1495,7 @@ test_that("a query that raises for another reason is not read as a refusal", {
 
 # The control is only the price of telling two failures apart, so a dialect
 # that answers the first question is never asked a second one.
-test_that("a converting dialect is asked exactly one query", {
+test_that("a Converting dialect is asked exactly one query", {
   queries <- 0L
   verdict_counting <- function() {
     local_mocked_bindings(

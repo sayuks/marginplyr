@@ -1,6 +1,6 @@
 # Compute Parent shares as a contextual summary
 
-`share_of_parent()` will be an exported contextual helper used only inside
+`share_of_parent()` will be an exported Contextual helper used only inside
 `summarize_with_margins()`. It will take one previously defined, named numeric
 scalar summary and return its ratio to the corresponding value in the
 immediately less detailed grouping set. It will be supported only when
@@ -82,7 +82,7 @@ or a statically named column produced by a preceding `across()`. A named
 column under that name, so the name stands for the pack rather than for one of
 the columns in it, and the error says to drop the name instead of adding one.
 A column expanded from an unnamed data-frame-valued summary is not eligible,
-although such summaries otherwise retain their existing margin-summary
+although such summaries otherwise retain their existing Margin-summary
 behavior. The expanded column's provenance, type, and expression position are
 not consistently available for static dependency validation across local and
 lazy backends. The error shows how to rewrite it as top-level named summaries
@@ -375,7 +375,7 @@ direct call, one `across()` call, and one post-summary `mutate()` example.
 The summary reference's empty-input section will include the Parent share
 column and its type for both fixed-key cases.
 The grouping-identity article will explain that Parent lookup uses internal
-Grouping set identity and bits rather than displayed Margin labels, and link
+grouping set identity and bits rather than displayed Margin labels, and link
 back to the helper's full value and expression contract.
 Database documentation will explain that the ordinary summaries and Parent
 shares are separate lazy query stages without requiring callers to understand
@@ -419,7 +419,7 @@ Parent share, the source summary, and the original public call. An invalid
 source therefore fails at collection rather than emitting a wrong row.
 
 Local execution uses the same wrapper for the same reason: validating inside
-the ordinary summary is what removes the full input rescan per Grouping set
+the ordinary summary is what removes the full input rescan per grouping set
 that a separate cardinality query would need. General dbplyr keeps the
 relaxation this decision already granted it: no extra schema or cardinality
 query, no implicit collection, and an incompatible type or non-scalar result
@@ -464,7 +464,7 @@ the result's meaning. A `.subtotals = "one"` mode was rejected because forcing
 subtotal rows to `1` is a presentation rule and obscures the immediate-parent
 definition, especially in rollups with three or more dimensions.
 
-A post-summary `add_rollup_share()` verb was rejected because the grouping
+A post-summary `add_rollup_share()` verb was rejected because the Grouping
 plan and parent mapping are already available inside the Margin operation.
 Allowing `cube()` or arbitrary grouping sets was deferred until an explicit
 parent-selection model exists. That deferral is about selecting a parent, and

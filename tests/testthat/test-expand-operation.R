@@ -268,7 +268,7 @@ test_that("expand preserves duplicate grouping-set policies", {
   expect_identical(names(kept), names(data))
 })
 
-test_that("expand rejects unsupported sources with a package condition", {
+test_that("expand rejects unsupported sources with a Package condition", {
   skip_if_suggest_absent("arrow")
 
   error <- expect_error(

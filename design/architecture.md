@@ -358,7 +358,7 @@ The responsibilities divide as follows:
   where the parent set includes it and is missing otherwise — computed by the
   same expression on both sides, and never from a displayed Margin label or
   the caller-visible `.id`. A Total share's denominator depends on `.by` and
-  nothing else, so its mapping is one read of the Grand total occurrence
+  nothing else, so its mapping is one read of the grand total occurrence
   matched on the fixed keys alone, with a constant column standing in when
   there are none.
 - **Calculation** builds one shared mapping per requested kind, joins each

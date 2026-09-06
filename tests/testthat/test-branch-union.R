@@ -207,7 +207,7 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
 # and the local backend is the one that holds rows without columns natively.
 # Comparing to local also keeps this to one optional backend, as AGENTS.md
 # requires.
-test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
+test_that("a zero-column dtplyr input gains no row with the grouping set id", {
   skip_if_suggest_absent("dtplyr")
 
   empty <- data.frame()
@@ -269,7 +269,7 @@ test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
 
   # A summary branch with no summaries either is the one column-less branch
   # whose row is not fabricated: with no keys and nothing to calculate it is
-  # the Grand total group, which local dplyr also answers with one row. Fixing
+  # the grand total group, which local dplyr also answers with one row. Fixing
   # the expansion by counting rows would have taken this row away.
   expect_identical(
     dplyr::collect(summarize_with_margins(dtplyr::lazy_dt(empty), .id = "s")),
@@ -279,7 +279,7 @@ test_that("a zero-column dtplyr input gains no row with the Grouping set id", {
 
 # The neighbour of the case above, and the boundary it runs into rather than a
 # second instance of the defect. Asked for no summaries and given no key,
-# `dtplyr` has no column to carry the Grand total row on, and a one-row,
+# `dtplyr` has no column to carry the grand total row on, and a one-row,
 # zero-column `data.table` does not exist -- `dim()` reads the row count from
 # the first column. Nothing in the union adapter decides it: it is what
 # `dplyr::summarize()` already answers for the same lazy input, which is what
@@ -321,7 +321,7 @@ test_that("a column-less dtplyr summary keeps dtplyr's own empty answer", {
   )
 })
 
-# The Grand total branch of a summary with nothing to summarize groups by
+# The grand total branch of a summary with nothing to summarize groups by
 # nothing and selects nothing, and the label and identifier `mutate()`s layered
 # on that query gave dbplyr a `lazy_select_query` it could not render: the
 # collect failed inside dbplyr's own star expansion, naming neither the
@@ -403,7 +403,7 @@ test_that("a no-summary union branch renders off the native path", {
 
 # The boundary the branch above stops at, and dbplyr's rather than this
 # package's: with no dimension and no identifier there is no column left to put
-# the Grand total row on, and a SQL table of no columns cannot be written. It
+# the grand total row on, and a SQL table of no columns cannot be written. It
 # is compared against what `dplyr::summarize()` answers for the same input, as
 # the `dtplyr` half of the same limit is, so a dbplyr that gained the shape
 # reports here and the documented promise is what changes.
@@ -477,7 +477,7 @@ test_that("Parent shares combine their denominator mappings the same way", {
   expect_identical(result$total[is_grand_total], grand_total)
   expect_identical(result$parent[is_grand_total], 1)
 
-  # The set one dimension finer than the Grand total divides by it, and the
+  # The set one dimension finer than the grand total divides by it, and the
   # one below that divides by its own region.
   by_region <- result[
     result$channel == "Total" & result$sku == "Total" & !is_grand_total,

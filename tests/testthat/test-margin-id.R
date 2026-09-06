@@ -1,4 +1,4 @@
-test_that("summary exposes one-based Grouping set occurrence identifiers", {
+test_that("summary exposes one-based grouping set occurrence identifiers", {
   data <- data.frame(
     fixed = c(1L, 1L),
     group = c("x", "y"),
@@ -54,7 +54,7 @@ test_that("all Margin verbs validate .id consistently", {
   }
 })
 
-test_that("expand identifies retained Grouping set occurrences", {
+test_that("expand identifies retained grouping set occurrences", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   spec <- grouping_sets(grouping_set(group), grouping_set(group))
 

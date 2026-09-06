@@ -431,7 +431,7 @@ test_that("the NA-level refusal pluralizes its grouping column noun", {
 # arm exists under both kinds and is plural-only, since two distinct label
 # values need two columns, so both are recorded and neither stands in for the
 # other.
-test_that("the margin label collision pluralizes its grouping column noun", {
+test_that("the Margin label collision pluralizes its grouping column noun", {
   declared <- data.frame(
     a = factor(c("All", "x")),
     b = factor(c("All", "y")),

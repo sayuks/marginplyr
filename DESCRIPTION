@@ -6,7 +6,7 @@ Authors@R:
            role = c("aut", "cre", "cph"))
 Description: Provides 'dplyr'-compatible tools for SQL-style 'GROUPING SETS',
     'ROLLUP', and 'CUBE' summaries, including arbitrary grouping sets, totals,
-    subtotals, and grouping identifiers. Confirmed database backends use native
+    subtotals, and Grouping identifiers. Confirmed database backends use native
     grouping sets; other lazy backends use a 'UNION ALL' fallback. Local data
     frames and lazy tables are supported.
 License: MIT + file LICENSE

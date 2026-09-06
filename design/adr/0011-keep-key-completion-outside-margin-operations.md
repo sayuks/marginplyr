@@ -31,7 +31,7 @@ use `tidyr::complete()` or a key relation joined before
 `summarize_with_margins()`. To retain observed keys that are absent from an
 explicit scaffold, callers can union the scaffold with distinct fact keys
 before the join. Inserted fact values then flow through every requested
-Grouping set in the usual way. A fact marker or fact identifier can distinguish
+grouping set in the usual way. A fact marker or fact identifier can distinguish
 inserted rows when calculating counts or other summaries that must ignore
 them.
 
@@ -45,7 +45,7 @@ completion data implicitly.
 
 ## Why completion is not part of the Grouping specification
 
-A Grouping specification declares which Grouping sets exist. It does not
+A Grouping specification declares which grouping sets exist. It does not
 declare the valid value domain of grouping dimensions, create fact rows, or
 assign summary values. Putting completion options on `rollup()` would mix
 those responsibilities, leave `cube()` and arbitrary grouping sets without a
@@ -53,7 +53,7 @@ consistent interface, and make a data-independent specification depend on
 summary output names.
 
 `inspect_grouping()` consequently remains an inspection of the
-backend-independent Grouping plan. Completion does not add Grouping sets or
+backend-independent Grouping plan. Completion does not add grouping sets or
 change Grouping set identifiers, Grouping identifiers, or Grouping bits, so
 it does not belong in that function's interface.
 

@@ -813,7 +813,7 @@ expect_margin_order_agrees <- function(as_input) {
       },
       columns = c("region", "units")
     ),
-    # The everyday one-occurrence plan: `.by` with no grouping specification at
+    # The everyday one-occurrence plan: `.by` with no Grouping specification at
     # all, so the key holds no dimension term either.
     single_set_by = list(
       data = margin_order_by_missing_data(),

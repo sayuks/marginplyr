@@ -1537,7 +1537,7 @@ test_that("Parent planning evaluates across arguments once", {
   expect_identical(parent_names_n, 1L)
 })
 
-test_that("Parent planning evaluates the grouping specification once", {
+test_that("Parent planning evaluates the Grouping specification once", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   evaluations <- 0L
   grouping <- function() {
@@ -1640,7 +1640,7 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
 
 # US42 is structural, not a timing budget: the local Parent-share stage reads
 # the summarized result, never the input, so no pass over the input may be
-# proportional to the Grouping-set count. Each generic registered below counts
+# proportional to the grouping-set count. Each generic registered below counts
 # one such pass when applied to an object still carrying this class, and drops
 # the class from whatever it returns, so a derived frame is not counted and
 # only the input itself is. The list is the assertion's reach: a rescan routed
@@ -1702,7 +1702,7 @@ count_parent_input_passes <- function(data, ...) {
   list(passes = parent_scan_capture$n, result = result)
 }
 
-test_that("Parent shares add no input pass per Grouping set", {
+test_that("Parent shares add no input pass per grouping set", {
   register_parent_scan_methods()
   data <- data.frame(
     a = c("x", "y", "x", "y"),
@@ -1732,8 +1732,8 @@ test_that("Parent shares add no input pass per Grouping set", {
 
   # The counter is wired to something: a summarization does read the input.
   expect_gt(three_sets_plain$passes, 0L)
-  # Adding two Grouping sets adds no pass over the input, so no pass is
-  # proportional to the Grouping-set count.
+  # Adding two grouping sets adds no pass over the input, so no pass is
+  # proportional to the grouping-set count.
   expect_identical(five_sets_share$passes, three_sets_share$passes)
   # And Parent shares add no pass of their own at either size: they are
   # calculated from the summarized result, not from a second look at the input.
@@ -1753,7 +1753,7 @@ test_that("Parent shares add no input pass per Grouping set", {
 # they accept, which occurrence answers for every other, and that the terms
 # they are refused in are the ones the caller wrote.
 
-test_that("direct Total shares divide by the grand total set", {
+test_that("direct Total shares divide by the Grand total set", {
   data <- data.frame(
     region = c("East", "East", "West"),
     store = c("A", "B", "C"),
@@ -1816,7 +1816,7 @@ test_that("Total shares divide within each fixed partition", {
   expect_identical(grand_total$whole, c(1, 1))
 })
 
-test_that("Total shares accept every plan containing a grand total set", {
+test_that("Total shares accept every plan containing a Grand total set", {
   data <- data.frame(
     a = c("x", "x", "y", "y"),
     b = c("p", "q", "p", "q"),
@@ -1849,7 +1849,7 @@ test_that("Total shares accept every plan containing a grand total set", {
   }
 })
 
-test_that("Total shares require a plan containing a grand total set", {
+test_that("Total shares require a plan containing a Grand total set", {
   data <- data.frame(a = "x", b = "y", value = 1)
   unsupported <- list(
     grouping_set(a),
@@ -2552,7 +2552,7 @@ test_that("an ineligible share selection raises a parentless condition", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 
   # A selection that evaluates cleanly and names something ineligible is
-  # marginplyr's own report, so it has no external condition to preserve.
+  # marginplyr's own report, so it has no External condition to preserve.
   ineligible <- expect_error(
     summarize_with_margins(
       data,
