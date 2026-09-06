@@ -160,7 +160,6 @@
 #' [g4]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
 #' [g5]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
-#' @keywords internal
 #' @examples
 #' summarize_with_margins(
 #'   .data = retail_sales,

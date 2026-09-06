@@ -419,6 +419,26 @@ markers <- list(
     "cannot select any column named in the complete grouping plan",
     "cur_group_id"
   ),
+  # Naming this page here is what holds it in the derived set. `@keywords
+  # internal` on the topic takes it out of `reference_sources` above, which
+  # requires no page and so fails nothing -- how the three sections below left
+  # the site for as long as they did (#456). A `markers` key naming a page the
+  # site does not produce is an error, so restoring that keyword now stops this
+  # script rather than silently dropping the page again.
+  "docs/man/marginplyr-package.html" = c(
+    # One marker per section that has no other page. The condition class and
+    # the audit option are each quoted by the sentence stating what it
+    # promises, not by the name alone: a name survives a section reduced to a
+    # cross-reference.
+    "Errors and warnings",
+    "is the only class marginplyr promises",
+    "Recording the SQL marginplyr sends",
+    "switches the record on",
+    # The Guides list, by the one entry whose wording is this list's own. The
+    # other four name their vignette closely enough that the navbar or a
+    # cross-reference could supply the same run.
+    "Complete absent keys before margins"
+  ),
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",
     "Positron",
