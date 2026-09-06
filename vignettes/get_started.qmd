@@ -13,6 +13,7 @@ format:
 date: last-modified
 ---
 
+A grain is what one row of a summary stands for — one row per store, say.
 Reports often need several grains at once: detail rows, subtotals, and a grand
 total. `marginplyr` creates those levels with one dplyr-style summary. SQL
 calls this idea `GROUPING SETS`; you do not need to know that syntax to begin.
@@ -491,46 +492,13 @@ retail_sales |>
 ```
 
 `.margin_label = NULL` and `NA_character_` are the same request: typed missing
-output, and no observed collision check on that dimension. They part on one
-point — an existing factor NA level is always a structural conflict for
+output, and no observed collision check on that dimension. They part on
+factors, where an existing NA level is always a structural conflict for
 `NA_character_`, whatever `.check_margin_label` says, while `NULL` preserves
-it. A named list chooses either one per dimension, which a named character
-vector cannot do for `NULL`, because `c()` drops a `NULL` element.
-
-A factor NA level and a missing factor code are different even though both
-can print as `<NA>`. Here the second value uses the NA level and the third is
-actually missing:
-
-```{r}
-factor_status <- structure(
-  c(1L, 2L, NA_integer_),
-  levels = c("kept", NA_character_),
-  class = "factor"
-)
-is.na(factor_status)
-levels(factor_status)
-
-factor_margins <- data.frame(
-  status = factor_status,
-  value = 1:3
-) |>
-  summarize_with_margins(
-    n = dplyr::n(),
-    status_is_margin = grouping_bit(status),
-    .grouping = rollup(status),
-    .margin_label = NULL
-  )
-
-levels(factor_margins$status)
-is.na(factor_margins$status)
-factor_margins
-```
-
-`NULL` preserves the NA level and uses a missing factor code for the Margin
-row. Retain `grouping_bit()` or `grouping_id()` because source missing values
-and generated Margin values are otherwise indistinguishable. With
-`NA_character_`, an existing factor NA level is a structural conflict even
-when `.check_margin_label = FALSE`.
+it. [Three kinds of apparent
+missingness](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#three-kinds-of-apparent-missingness)
+works one factor through an NA level, a source missing value, and a
+typed-missing Margin value, which can all print as `<NA>`.
 
 For local data, `.check_margin_label = TRUE` prevents an existing value such
 as `"Total"` from becoming visually ambiguous. Lazy inputs default to
@@ -647,19 +615,12 @@ retail_sales |>
   )
 ```
 
-That refusal is by spelling, as every recognized name here is. A few names mean
-what marginplyr rewrites them into rather than what they are bound to:
-`grouping_bit()`, `grouping_id()`, `share_of_parent()`, `share_of_total()`,
-`across()`, `if_any()`, `if_all()`, `pick()`, `where()`, and the
-`cur_group*()` family are recognized bare or qualified with the package that
-owns them, and a binding of the same name in your own environment never
-changes what a Margin verb does with one. Redundant parentheses are
-transparent to that, so `(pick)(units)` and `(pick(units))` ask for what
-`pick(units)` asks for. For `cur_group_id()` that is stricter than
-`dplyr::summarize()`, which resolves it by ordinary lookup;
-here it stays refused, because reading the binding would mean resolving a call
-head against the calling environment. Every other name, `n()` included,
-follows ordinary lookup.
+That refusal is by spelling, as every recognized name here is. The helpers a
+Margin verb rewrites — `grouping_bit()`, `pick()`, the `cur_group*()` family
+and the rest — are read from how they are written, so a binding of the same
+name in your own environment never changes what one does. `cur_group_id()`
+stays refused for that reason, where `dplyr::summarize()` would resolve it by
+ordinary lookup. Every other name, `n()` included, follows ordinary lookup.
 
 Two familiar conveniences also behave differently. Row order is unspecified
 for local and lazy results alike unless `.sort` asks for a Margin order, which
@@ -1072,12 +1033,6 @@ The list column is a regular list of data frames; a
 `nest_by_with_margins()` follows `dplyr::nest_by()` and returns one row
 containing the empty data frame when there are no keys.
 
-`dplyr::nest_by()` is currently not a stable upstream API and may eventually
-be deprecated in favor of `tidyr::nest(.by = )`. marginplyr nevertheless
-keeps its row-wise wrapper because per-margin modeling and reporting are
-useful, and implements it through the same nesting core rather than a separate
-semantic path.
-
 ## Optional Quarto tabsets with quartabs
 
 [`quartabs`](https://sayuks.github.io/quartabs/) can turn the nested report
@@ -1123,6 +1078,6 @@ tabbed_report |>
   )
 ```
 
-The `"Total"` tab is created by the grouping plan. The ordered factor makes it
-the first tab; `quartabs` only handles presentation, while marginplyr defines
-which source rows belong to that total.
+The `"Total"` tab is created by the grouping plan. The factor's level order
+makes it the first tab; `quartabs` only handles presentation, while marginplyr
+defines which source rows belong to that total.
