@@ -73,6 +73,50 @@ condition_chain <- function(cnd) {
   c(list(cnd), condition_chain(cnd$parent))
 }
 
+# Whether a failure is tidyselect refusing a predicate for want of column
+# types. The whole chain is read for the reason `condition_chain()` above
+# gives: a predicate written under a selection helper is refused one level in.
+#
+# The class is tidyselect's own and is the whole of the test. A backend whose
+# selection proxy carries types answers a predicate rather than refusing one,
+# so no reading of the backend is needed to tell the two cases apart, and a
+# tidyselect that stopped raising this class leaves the caller the untyped
+# diagnostic they had before this refusal existed.
+is_unsupported_predicate <- function(cnd) {
+  any(vapply(
+    condition_chain(cnd),
+    inherits,
+    logical(1),
+    what = "tidyselect_error_predicates_unsupported"
+  ))
+}
+
+# The refusal a selection predicate gets where the proxy has no types. `label`
+# is the argument as the caller spelled it, and `parent` is tidyselect's own
+# condition, kept so the caller reads why tidyselect refused.
+#
+# The blamed call is left to `with_margin_error_call()`, which every selection
+# site reaching this runs under: what it puts there is the Margin verb the
+# caller wrote, which is what CONTEXT.md's *Condition context* asks for and
+# what no frame here could name.
+#
+# Reading the types would mean a query the caller did not ask for, which
+# ADR 0020 refuses; that is why the proxy is typeless here rather than an
+# omission this could fix.
+abort_selection_predicate <- function(label, parent) {
+  abort_marginplyr(
+    c(
+      "Can't select with a predicate in {.code {label}}.",
+      i = paste0(
+        "This input's backend doesn't report column types without a query, ",
+        "and marginplyr sends none you didn't ask for."
+      ),
+      i = "Select the columns by name, or collect the input first."
+    ),
+    parent = parent
+  )
+}
+
 # What an External condition raised while one grouping-set branch runs is
 # reported with. `keys` maps each `..marginplyr_key_N` column the branch
 # grouped by to the column the caller named, and `call` is the Margin verb the

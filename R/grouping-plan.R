@@ -134,10 +134,24 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
 # `get_col_names()`'s other callers read back names dplyr assigned on purpose,
 # so the check belongs on this resolution rather than in that helper.
 resolve_by_selection <- function(by_quo, data_proxy) {
-  resolve_column_selection(
-    by_quo,
-    data_proxy,
-    on_rename = abort_by_rename
+  # A predicate reaches here only from the resolution against the input's own
+  # proxy: the name-only reader withholds one from the names-only proxy, which
+  # answers no predicate whatever the backend is.
+  tryCatch(
+    resolve_column_selection(
+      by_quo,
+      data_proxy,
+      on_rename = abort_by_rename
+    ),
+    error = function(cnd) {
+      if (is_unsupported_predicate(cnd)) {
+        abort_selection_predicate(
+          rlang::as_label(rlang::quo_get_expr(by_quo)),
+          cnd
+        )
+      }
+      stop(cnd)
+    }
   )
 }
 
@@ -1212,6 +1226,12 @@ resolve_grouping_selection <- function(arg, data_proxy) {
       raised <- !is.null(predicate) &&
         any(vapply(condition_chain(cnd), identical, logical(1), predicate))
       if (!raised && !is_grouping_spec_subscript(cnd, label)) {
+        # Last, so that a specification tidyselect took for a predicate keeps
+        # the refusal written for it above: this reads the failure that speaks
+        # for no specification at all.
+        if (is_unsupported_predicate(cnd)) {
+          abort_selection_predicate(label, cnd)
+        }
         stop(cnd)
       }
       abort_nested_grouping_spec(label)
