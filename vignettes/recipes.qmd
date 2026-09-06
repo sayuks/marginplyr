@@ -45,11 +45,12 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Only dplyr and dbplyr are required. Three recipes execute against DuckDB, so
-their chunks evaluate only when DuckDB is installed at the version marginplyr
-asks for. Where a package is missing or too old the code is still shown, but
-its output is absent. Everything else runs either locally or against
-`dbplyr::simulate_postgres()`, which needs no database and no optional package.
+Nothing beyond marginplyr's own dependencies is required. Four recipes execute
+against DuckDB, so their chunks evaluate only when DuckDB is installed at the
+version marginplyr asks for. Where a package is missing or too old the code is
+still shown, but its output is absent. Everything else runs either locally or
+against `dbplyr::simulate_postgres()`, which needs no database and no optional
+package.
 
 ```{r}
 #| include: false
@@ -119,7 +120,7 @@ questions.
 
 A Margin order leaves every dimension's values ascending, so a report that
 wants the newest year at the top asks for the same key with one term changed.
-`grouping_bit()` puts the Grouping bits the key reads into the result, and the
+`grouping_bit()` exposes the same Grouping bits the key uses, and the
 `arrange()` is then the key above with `desc()` on the term you are reversing:
 
 ```{r}
@@ -291,8 +292,8 @@ For a denominator one rollup level up rather than at the top, use
 `share_of_parent()`. The
 [`share_of_parent()`
 reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-documents both helpers, and [Get
-started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+documents both helpers, and [Compare a summary with the
+whole](https://sayuks.github.io/marginplyr/vignettes/get_started.html#compare-a-summary-with-the-whole)
 compares them side by side. For a level between the two, [Compare a row with
 an ancestor level](#compare-a-row-with-an-ancestor-level) runs the same `.by`
 lever the other way.
@@ -561,9 +562,13 @@ retail_sales |>
 ```
 
 For a single dimension, `grouping_bit()` avoids the bit arithmetic altogether:
-retain one flag column per dimension and filter on the flags. [Grouping
-identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
-compares all four identity values and states their duplicate-occurrence rules.
+retain one flag column per dimension and filter on the flags. The
+[`grouping_bit()`
+reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html) compares
+all four identity values and states their duplicate-occurrence rules, and the
+[Grouping identity
+guide](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
+works through what that comparison means in practice.
 
 ## Name the grouping set on every row
 
@@ -614,7 +619,8 @@ retail_sales |>
 `inspect_grouping()` is local even when `.data` is not: it reads captured
 column metadata and the Grouping plan, never the source rows
 ([ADR 0013][adr13]). A lazy result and a local tibble have no common source,
-so dbplyr refuses the join outright:
+so dbplyr refuses the join outright, and its message names the two `copy`
+routes out of the refusal:
 
 [adr13]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0013-inspect-grouping-plans-as-ordinary-tibbles.md
 

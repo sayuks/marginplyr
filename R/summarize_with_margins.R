@@ -633,6 +633,10 @@
 #' [summarize_with_margins()]'s `.check_share_source` reads nothing on any
 #' backend, so it defaults to `TRUE` there.
 #'
+#' [last_sent_queries()] reports what a call actually sent, which is how the
+#' two unasked queries above are counted against a connection rather than
+#' taken from this page.
+#'
 #' @family summarize and expand data with margins
 #' @export
 #' @examples

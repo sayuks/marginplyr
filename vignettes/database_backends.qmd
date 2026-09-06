@@ -42,10 +42,11 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Only dplyr and dbplyr are required. The DuckDB, SQLite, dtplyr, and Arrow
-sections below need optional packages, so their chunks evaluate only when those
-packages are installed at the versions marginplyr asks for. Where a package is
-missing or too old the code is still shown, but its output is absent.
+Nothing beyond marginplyr's own dependencies is required. The DuckDB, SQLite,
+dtplyr, and Arrow sections below need optional packages, so their chunks
+evaluate only when those packages are installed at the versions marginplyr asks
+for. Where a package is missing or too old the code is still shown, but its
+output is absent.
 
 ```{r}
 #| include: false

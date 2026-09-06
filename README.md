@@ -56,7 +56,7 @@ order can arrange the result differently. `.sort` asks for a Margin
 order, which puts each subtotal with the rows it summarizes, and
 `arrange()` gives any other presentation order. [Put each subtotal with
 the rows it
-summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html)
+summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html#put-each-subtotal-with-the-rows-it-summarizes)
 shows `.sort` at work and what it does not promise.
 
 - Works with local data frames and lazy `dbplyr` tables.
