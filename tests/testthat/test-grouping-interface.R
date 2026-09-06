@@ -1379,7 +1379,7 @@ test_that("an expanded data-frame summary crosses a multi-set union", {
   )
   expect_equal(names(result), c("region", "channel", "sum", "margin"))
   expect_false(anyNA(result[["sum"]]))
-  # The rows of the two sets that omit `region`: `channel` alone and the Grand
+  # The rows of the two sets that omit `region`: `channel` alone and the grand
   # total. Every other row came from a branch where the bit is `0L`.
   expect_equal(sum(result[["margin"]] == 1L), 3L)
 })
