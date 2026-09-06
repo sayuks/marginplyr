@@ -510,10 +510,10 @@ test_that("`NULL` is rejected by every option rather than taken as a default", {
   # `match.arg(NULL, choices)` returns `choices[1]`, so every option argument
   # used to read a `NULL` as a request for its own default. #110 stopped that
   # along with the abbreviations above, and #144 settled it as a decision: the
-  # *Option arguments* section on `?summarize_with_margins` says which
-  # arguments do give a `NULL` a meaning and why an option vocabulary is not
-  # among them. The untouched formal is what selects a default, and it arrives
-  # as the whole vocabulary rather than as a `NULL`.
+  # *Option arguments* section on `?summarize_with_margins` states that a
+  # `NULL` is an error rather than a request for the default. The untouched
+  # formal is what selects a default, and it arrives as the whole vocabulary
+  # rather than as a `NULL`.
   for (case in option_vocabulary_cases()) {
     expect_identical(
       option_rejection_message(case$verb, case$option, NULL),

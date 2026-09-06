@@ -297,8 +297,8 @@ test_that("a formula is walked as the call to `~` that it is", {
   # cover the sites and the shapes this one does not.
 
   # A formula in the `.fns` position of `across()` is the one spelling of this
-  # that users are documented to write (the *Indirect `.fns`* bullet of
-  # `share_of_parent()`'s *Rejected forms and supported rewrites*), and it was
+  # that users are documented to write (the rejected `.fns` forms in
+  # `share_of_parent()`'s *Column-wise shares*), and it was
   # the only shape in #130's tables asserted at the walk alone. The guard is
   # where the caller meets it, so it is asserted there too: `.x` is
   # over-reported by design, and the read of `share` beside it must still be

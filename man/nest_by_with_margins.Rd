@@ -114,13 +114,6 @@ This is the row-wise counterpart of \code{\link[=nest_with_margins]{nest_with_ma
 \details{
 A \code{dtplyr} result is collected before it is made row-wise because
 row-wise data frames are local objects.
-
-\code{\link[dplyr:nest_by]{dplyr::nest_by()}} is not a stable upstream API and may eventually be
-deprecated in favor of \code{\link[tidyr:nest]{tidyr::nest()}}. This margin-aware wrapper remains
-intentional because its row-wise return shape is useful for per-margin
-models and reports. Both public nesting interfaces use the same private
-margin-operation pipeline, so they share one grouping plan and nesting
-contract without invoking each other.
 }
 \section{Fixed columns and grouping dimensions}{
 
@@ -211,22 +204,10 @@ match, so a change to the vocabulary refuses the wrapper's own default while
 leaving a value passed through it alone. A wrapper that
 would rather not track this signature resolves the value itself and passes
 the one string it chose, which no later widening or reordering of the
-vocabulary can invalidate. \code{\link[rlang:arg_match]{rlang::arg_match()}} refuses an abbreviation there
-as this package does, while \code{\link[base:match.arg]{base::match.arg()}} resolves one, so a wrapper
-built on that accepts spellings this package would not.
+vocabulary can invalidate.
 
 Elsewhere in this package \code{NULL} is a documented value, and what it means is
-stated with the argument that takes it: it is \code{.grouping}'s one empty
-grouping set, \code{.margin_label}'s typed missing value in place of a display
-label, \code{.id}'s absent identifier column, and, in \code{\link[=nest_with_margins]{nest_with_margins()}}, the
-\code{.key} that \code{\link[tidyr:nest]{tidyr::nest()}} reads as \code{"data"} — while
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} refuses a \code{NULL} \code{.key}, following
-\code{\link[dplyr:nest_by]{dplyr::nest_by()}}. That each of them answers for itself is the point. Those
-arguments name a value, a column, or a plan, and such a name has a natural
-absent case to give a \code{NULL}. A vocabulary of options has none — every option
-argument already has a default that does something — so a \code{NULL} arriving at
-one is far more often a variable that did not hold what its caller thought
-than a request for anything, and it is reported rather than resolved.
+stated with the argument that takes it.
 }
 
 \section{Result class and attributes}{
@@ -468,19 +449,6 @@ backend, so it defaults to \code{TRUE} there.
 \code{\link[=last_sent_queries]{last_sent_queries()}} reports what a call actually sent, which is how the
 two unasked queries above are counted against a connection rather than
 taken from this page.
-}
-
-\section{Backend extension design}{
-
-Unlike \code{\link[dplyr:summarize]{dplyr::summarize()}}, the public margin verbs are intentionally not
-S3 generics. They prepare one operation around a backend-independent
-grouping plan, pass it to a verb-specific executor, and apply common
-finalization. One typed selection-metadata snapshot is acquired during
-preparation. Native \verb{GROUPING SETS} and portable \verb{UNION ALL} adapters
-consume the prepared plan; they do not own validation or finalization.
-These adapters are implementation details rather than an extension API, so
-support for a new backend should be added to marginplyr itself with
-metadata, result, laziness, and SQL-strategy contract tests.
 }
 
 \section{Relationship to tidyr and dplyr}{

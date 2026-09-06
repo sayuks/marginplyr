@@ -31,7 +31,41 @@ specifications and require at least one resolved dimension.
 nested Grouping specification, and requires at least one argument.
 \code{\link[=grouping_spec]{grouping_spec()}} combines its arguments by Cartesian product, accepts any
 valid nested Grouping specification, and with no arguments represents the
-identity product (the empty grouping set).
+identity product (the empty grouping set). Which of the two readings an
+argument gets, and what is refused rather than read either way, is \emph{How an
+argument is read}.}
+}
+\value{
+A grouping specification for use in \code{.grouping}.
+}
+\description{
+These constructors describe SQL-style grouping operations for the
+\code{.grouping} argument of \code{\link[=summarize_with_margins]{summarize_with_margins()}} and related verbs.
+Start with \code{\link[=rollup]{rollup()}} when the report follows a hierarchy such as
+store to region to company. Use \code{\link[=grouping_sets]{grouping_sets()}} for an exact selection of
+levels, and \code{\link[=cube]{cube()}} only when every combination is useful.
+}
+\details{
+\itemize{
+\item \code{\link[=grouping_set]{grouping_set()}} creates one grouping set. With no columns it represents
+the empty set \verb{()}.
+\item \code{\link[=grouping_sets]{grouping_sets()}} forms the union of its arguments.
+\item \code{\link[=rollup]{rollup()}} creates hierarchical prefixes.
+\item \code{\link[=cube]{cube()}} creates every subset of its dimensions.
+\item \code{\link[=grouping_spec]{grouping_spec()}} forms the Cartesian product of its arguments — every
+grouping set of one combined with every grouping set of the next — like
+comma-separated SQL \verb{GROUP BY} items.
+}
+
+A \code{\link[=grouping_set]{grouping_set()}} nested directly inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} is a
+composite dimension. Its columns are added or removed together.
+
+A resolved Grouping plan can be read back in four ways: \code{.id},
+\code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
+\code{\link[=grouping_bit]{grouping_bit()}} compares them; the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works
+through the same values with executable examples.
+}
+\section{How an argument is read}{
 
 A nested Grouping specification is recognized by how it is written: a
 call to one of these constructors, or a name bound to a specification.
@@ -51,8 +85,8 @@ An argument left empty gets neither reading, and is refused naming the
 constructor and the position: \code{grouping_sets(, region)} reports that its
 first argument is empty. A trailing comma is not an empty argument,
 because R captures no argument for it, so \code{grouping_sets(region, )} is
-\code{grouping_sets(region)}, and passing no arguments at all means what the
-first paragraph above says it means for each constructor.
+\code{grouping_sets(region)}, and passing no arguments at all means what \code{...}
+above says it means for each constructor.
 
 A name both readings claim is refused rather than guessed. Where the
 input has a column named \code{s} and \code{s} is also bound to a nested Grouping
@@ -72,37 +106,9 @@ argument: \code{c(area = region)} and \code{rollup(area = region)} are both erro
 rather than a dimension named \code{area}. Rename the result afterwards with
 \code{\link[dplyr:rename]{dplyr::rename()}}. A Margin verb's own argument written in a constructor
 falls under that same rule, so \code{rollup(region, .by = year)} reports the
-name instead of taking \code{year} as a second dimension.}
-}
-\value{
-A grouping specification for use in \code{.grouping}.
-}
-\description{
-These constructors describe SQL-style grouping operations for the
-\code{.grouping} argument of \code{\link[=summarize_with_margins]{summarize_with_margins()}} and related verbs.
-Start with \code{\link[=rollup]{rollup()}} when the report follows a hierarchy such as
-store to region to company. Use \code{\link[=grouping_sets]{grouping_sets()}} for an exact selection of
-levels, and \code{\link[=cube]{cube()}} only when every combination is useful.
-}
-\details{
-\itemize{
-\item \code{\link[=grouping_set]{grouping_set()}} creates one grouping set. With no columns it represents
-the empty set \verb{()}.
-\item \code{\link[=grouping_sets]{grouping_sets()}} forms the union of its arguments.
-\item \code{\link[=rollup]{rollup()}} creates hierarchical prefixes.
-\item \code{\link[=cube]{cube()}} creates every subset of its dimensions.
-\item \code{\link[=grouping_spec]{grouping_spec()}} forms the Cartesian product of its arguments, like
-comma-separated SQL \verb{GROUP BY} items.
+name instead of taking \code{year} as a second dimension.
 }
 
-A \code{\link[=grouping_set]{grouping_set()}} nested directly inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} is a
-composite dimension. Its columns are added or removed together.
-
-A resolved Grouping plan can be read back in four ways: \code{.id},
-\code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
-\code{\link[=grouping_bit]{grouping_bit()}} compares them; the \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works
-through the same values with executable examples.
-}
 \examples{
 # The operations team needs store, region, and company totals for each
 # reporting month. Columns in `.by` remain in every grouping set.
@@ -162,15 +168,22 @@ dplyr::filter(
   region == "Total"
 )
 
-# grouping_spec() takes their Cartesian product, producing combinations
-# such as (year, month, region, store) and (year, region).
+# grouping_spec() takes their Cartesian product instead. Each of the first
+# rollup's three grouping sets is combined with each of the second's, so
+# inspect_grouping() reports 3 x 3 = 9 of them, from (year, month, region,
+# store) down to the grand total.
+combined_specification <- grouping_spec(
+  rollup(year, month),
+  rollup(region, store)
+)
+inspect_grouping(
+  .data = retail_sales,
+  .grouping = combined_specification
+)
 combined_totals <- summarize_with_margins(
   .data = retail_sales,
   revenue = sum(revenue),
-  .grouping = grouping_spec(
-    rollup(year, month),
-    rollup(region, store)
-  )
+  .grouping = combined_specification
 )
 
 # A nested grouping_set() is a composite dimension: region and store are

@@ -153,34 +153,6 @@ Confirmed SQL backends use one \verb{GROUP BY GROUPING SETS} query. Other lazy
 backends use a portable \verb{UNION ALL} adapter with the same semantics.
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} and \code{\link[=summarise_with_margins]{summarise_with_margins()}} are synonyms,
 following \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[dplyr:summarise]{dplyr::summarise()}}.
-
-Two lazy inputs cannot carry back a summary with no columns in it: asked
-for no summaries and given no fixed key or grouping dimension, the answer
-is one row holding nothing, whatever the input held. A \code{data.table} reads
-its row count from its first column, so a \code{dtplyr} input collects to zero
-rows where a local data frame returns one, and a SQL table of no columns
-cannot be written at all, so a database input raises the error dbplyr
-renders one with. Each is what \code{\link[dplyr:summarize]{dplyr::summarize()}} itself answers for that
-lazy input; an Arrow input answers as a local one does. Anything that puts
-a column in the result -- one summary, one fixed key, one grouping
-dimension, or \code{.id} -- ends the difference.
-
-One summary an Arrow table or record batch cannot carry -- or a query built
-on either -- is one Arrow's own engine cannot evaluate. Arrow answers such an
-expression by reading the whole input -- every column of it, not only the
-ones the summary names -- and computing it in R. marginplyr refuses it
-instead, before a row is read, and names the two rewrites that compute it:
-collect the input first, and select the columns the summary needs before
-collecting, which is the narrowing Arrow's own route cannot do for you.
-
-Which expressions those are is Arrow's to decide and moves with its version,
-so they are not listed here. Among the shapes refused are a group collapsed
-into a single value, such as pasting one, a subset written inside an
-aggregate, and a statistic over two columns at once; ordinary numeric
-summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
-An Arrow dataset, and a query built on one, raise Arrow's own refusal for
-the same expressions instead, because a dataset never reads itself into R;
-they are otherwise unaffected.
 }
 \section{Fixed columns and grouping dimensions}{
 
@@ -271,22 +243,10 @@ match, so a change to the vocabulary refuses the wrapper's own default while
 leaving a value passed through it alone. A wrapper that
 would rather not track this signature resolves the value itself and passes
 the one string it chose, which no later widening or reordering of the
-vocabulary can invalidate. \code{\link[rlang:arg_match]{rlang::arg_match()}} refuses an abbreviation there
-as this package does, while \code{\link[base:match.arg]{base::match.arg()}} resolves one, so a wrapper
-built on that accepts spellings this package would not.
+vocabulary can invalidate.
 
 Elsewhere in this package \code{NULL} is a documented value, and what it means is
-stated with the argument that takes it: it is \code{.grouping}'s one empty
-grouping set, \code{.margin_label}'s typed missing value in place of a display
-label, \code{.id}'s absent identifier column, and, in \code{\link[=nest_with_margins]{nest_with_margins()}}, the
-\code{.key} that \code{\link[tidyr:nest]{tidyr::nest()}} reads as \code{"data"} — while
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} refuses a \code{NULL} \code{.key}, following
-\code{\link[dplyr:nest_by]{dplyr::nest_by()}}. That each of them answers for itself is the point. Those
-arguments name a value, a column, or a plan, and such a name has a natural
-absent case to give a \code{NULL}. A vocabulary of options has none — every option
-argument already has a default that does something — so a \code{NULL} arriving at
-one is far more often a variable that did not hold what its caller thought
-than a request for anything, and it is reported rather than resolved.
+stated with the argument that takes it.
 }
 
 \section{Result class and attributes}{
@@ -496,6 +456,37 @@ out and text parsed from a literal, but not language a summary builds while
 it runs.
 }
 
+\section{Summaries a lazy backend cannot carry}{
+
+Two lazy inputs cannot carry back a summary with no columns in it: asked
+for no summaries and given no fixed key or grouping dimension, the answer
+is one row holding nothing, whatever the input held. A \code{data.table} reads
+its row count from its first column, so a \code{dtplyr} input collects to zero
+rows where a local data frame returns one, and a SQL table of no columns
+cannot be written at all, so a database input raises the error dbplyr
+renders one with. Each is what \code{\link[dplyr:summarize]{dplyr::summarize()}} itself answers for that
+lazy input; an Arrow input answers as a local one does. Anything that puts
+a column in the result -- one summary, one fixed key, one grouping
+dimension, or \code{.id} -- ends the difference.
+
+One summary an Arrow table or record batch cannot carry -- or a query built
+on either -- is one Arrow's own engine cannot evaluate. Arrow answers such an
+expression by reading the whole input -- every column of it, not only the
+ones the summary names -- and computing it in R. marginplyr refuses it
+instead, before a row is read, and names the two rewrites that compute it:
+collect the input first, and select the columns the summary needs before
+collecting, which is the narrowing Arrow's own route cannot do for you.
+
+Which expressions those are is Arrow's to decide and moves with its version,
+so they are not listed here. Among the shapes refused are a group collapsed
+into a single value, such as pasting one, a subset written inside an
+aggregate, and a statistic over two columns at once; ordinary numeric
+summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
+An Arrow dataset, and a query built on one, raise Arrow's own refusal for
+the same expressions instead, because a dataset never reads itself into R;
+they are otherwise unaffected.
+}
+
 \section{Contextual shares}{
 
 \code{\link[=share_of_parent]{share_of_parent()}} and \code{\link[=share_of_total]{share_of_total()}} calculate a preceding named
@@ -599,19 +590,6 @@ label is not a collision, and a label equal to a declared level is refused
 by the declared half. Every row above is therefore decided whatever this
 argument says. See \code{.check_margin_label} above for its default and \emph{When
 marginplyr queries your data} for why the two halves differ.
-}
-
-\section{Backend extension design}{
-
-Unlike \code{\link[dplyr:summarize]{dplyr::summarize()}}, the public margin verbs are intentionally not
-S3 generics. They prepare one operation around a backend-independent
-grouping plan, pass it to a verb-specific executor, and apply common
-finalization. One typed selection-metadata snapshot is acquired during
-preparation. Native \verb{GROUPING SETS} and portable \verb{UNION ALL} adapters
-consume the prepared plan; they do not own validation or finalization.
-These adapters are implementation details rather than an extension API, so
-support for a new backend should be added to marginplyr itself with
-metadata, result, laziness, and SQL-strategy contract tests.
 }
 
 \section{Database backend coverage}{

@@ -87,8 +87,8 @@ result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 }\if{html}{\out{</div>}}
 
 A direct call cannot be unnamed, use a string, use a forward reference,
-redefine the source name, or use a share as another share's source. Each
-rejected form and its rewrite are listed below.
+redefine the source name, or use a share as another share's source. \emph{Eligible
+source summaries} writes out the rewrite for each of those.
 }
 
 \section{Eligible source summaries}{
@@ -148,6 +148,12 @@ revenue_share = share_of_parent(revenue_total)
 revenue_total = sum(revenue)
 revenue_share = share_of_parent(revenue_total)
 }\if{html}{\out{</div>}}
+
+Naming an \code{\link[dplyr:across]{dplyr::across()}} does the mirror image of that:
+\code{total = across(c(revenue, units), sum)} packs both results into one
+data-frame-valued \code{total} column, so \code{total} is not a scalar source. Drop
+the name to get one statically named column per selected column, or define
+each summary at top level.
 
 A source name must be defined exactly once. If a later calculation was
 intended to refine the earlier value, combine the complete calculation into
@@ -269,89 +275,6 @@ across(revenue, share_of_parent, .names = "\{.col\}")
 # Supported
 across(revenue, share_of_parent, .names = "\{.col\}_share")
 }\if{html}{\out{</div>}}
-}
-
-\section{Rejected forms and supported rewrites}{
-
-This checklist keeps every rejection next to the form that should replace
-it:
-\itemize{
-\item \strong{Wrong context:} \code{share_of_parent(total)} by itself, inside
-\code{dplyr::summarize()}, or inside \code{dplyr::mutate()} is rejected. Define
-\code{total = sum(value)} and \code{share = share_of_parent(total)} inside
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}; derive from the finished \code{share} in a following
-\code{dplyr::mutate()}.
-\item \strong{Unsupported Grouping specification:} \code{grouping_sets()}, \code{cube()}, and
-\code{grouping_spec()} do not define one Parent chain. For a Parent share,
-replace them with one pure \code{rollup()} or omit the request. For a Total
-share only a plan without a Grand total set is rejected; add an empty
-\code{grouping_set()} to the \code{grouping_sets()} specification.
-\item \strong{Unnamed direct output:} \code{share_of_parent(total)} supplied without
-\verb{share =} is rejected. Use \code{share = share_of_parent(total)}.
-\item \strong{Non-bare source:} \code{share_of_parent(sum(value))},
-\code{share_of_parent(total + tax)}, and \code{share_of_parent("total")} are
-rejected. First define \code{total = sum(value)} and then use
-\code{share = share_of_parent(total)}.
-\item \strong{Forward reference:} \code{share = share_of_parent(total)} before
-\code{total = sum(value)} is rejected. Move the \code{total} summary before
-\code{share}.
-\item \strong{Repeated source name:} defining \code{net} twice is rejected. Use one
-complete expression such as \code{net = sum(revenue) - sum(discount)} before
-\code{net_share = share_of_parent(net)}.
-\item \strong{Unnamed data-frame-valued source:} an unnamed
-\code{tibble::tibble(total = sum(value))} cannot provide \code{total}. Rewrite it as
-the top-level \code{total = sum(value)} or create a statically named column with
-a preceding \code{across()}.
-\item \strong{Named \code{across()} source:} \code{total = across(c(revenue, units), sum)}
-packs both results into one data-frame-valued \code{total} column, so \code{total}
-is not a scalar source. Drop the \verb{total =} name to get one column per
-selected column, or define each summary at top level.
-\item \strong{Summary-alias dependency:} \code{gross = sum(value)},
-\code{net = gross - sum(discount)} is rejected when \code{net} is a source. Use
-\code{net = sum(value) - sum(discount)}.
-\item \strong{Wrapped share:} \code{percent = 100 * share_of_parent(total)} is
-rejected. Create \code{share = share_of_parent(total)}, then use
-\code{dplyr::mutate(percent = 100 * share)} on the result.
-\item \strong{Share dependency:} a share cannot source another share of either kind,
-or an ordinary summary later in the same call. Create all requested
-shares from ordinary summaries, then derive further columns in
-\code{dplyr::mutate()}.
-\item \strong{Non-numeric or non-scalar source:} semantic classes, zero-length
-results, and \code{quantile(value, c(0.25, 0.75))} are rejected. Convert only
-when meaningful and create one scalar summary per output, such as
-\code{q25 = quantile(value, 0.25)} and \code{q25_share = share_of_parent(q25)}.
-\item \strong{Ineligible \code{across()} selection:} source columns, grouping keys, and
-previous shares are rejected. Select only preceding ordinary
-summaries, for example \code{across(c(total, count), share_of_parent, ...)}.
-\item \strong{Predicate selection:} \code{where(is.numeric)} is rejected. Use explicit
-names, \code{all_of()}, \code{any_of()}, or another name-based selector.
-\item \strong{Indirect \code{.fns}:} \code{~share_of_parent(.x)},
-\verb{\\(x) share_of_total(x)}, and \code{list(share_of_parent)} are rejected. Pass
-the bare helper, or \code{marginplyr::share_of_parent}, directly.
-\item \strong{Aggregate and share in one function list:}
-\code{across(value, list(total = sum, share = share_of_parent))} is rejected.
-Use one \code{across(value, sum)} followed by a second
-\code{across(value, share_of_parent, .names = "{.col}_share")}.
-\item \strong{Additional function arguments:} passing \code{na.rm = TRUE} to a share's
-\code{across()} is rejected. Handle it in the preceding
-\code{total = sum(value, na.rm = TRUE)}, then select \code{total}.
-\item \strong{Unpacking:} \code{.unpack = TRUE} is rejected. Omit \code{.unpack} or use
-\code{.unpack = FALSE}.
-\item \strong{Missing or empty names:} omitted \code{.names} and \code{.names = ""} are
-rejected. Supply a non-empty template such as
-\code{.names = "{.col}_share"}.
-\item \strong{Duplicate names:} selecting multiple sources with
-\code{.names = "share"} is rejected. Include \code{{.col}} in the template.
-\item \strong{Grouping-key collision:} \code{.names = "region"} (or any fixed or variable
-key) is rejected. Use a new name such as \verb{\{.col\}_share}.
-\item \strong{Ordinary-summary collision:} \code{.names = "{.col}"} overwrites the source
-and is rejected. Use \code{.names = "{.col}_share"}.
-\item \strong{\code{.id} collision:} \code{.names = "set"} with \code{.id = "set"} is rejected.
-Rename either output, for example \code{.id = "occurrence"} and
-\code{.names = "{.col}_share"}.
-\item \strong{Share collision:} reusing a direct or generated share name is
-rejected. Give each share one unique output name.
-}
 }
 
 \section{Value rules}{

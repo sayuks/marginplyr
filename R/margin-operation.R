@@ -125,8 +125,11 @@ margin_sort_choices <- c("none", "last", "first")
 # by a caller used to select the default silently. The `identical()` guard below
 # is the whole of what refuses one now, and refusing it is a documented contract
 # rather than a leftover of the rewrite (#144): the *Option arguments* section
-# on `?summarize_with_margins` states it and says why an option vocabulary is
-# the place `NULL` does not mean "use the default".
+# on `?summarize_with_margins` states it. An option vocabulary is the one place
+# in this package where `NULL` names nothing, because every option argument
+# already has a default that does something, so a `NULL` arriving here is far
+# more often a variable that did not hold what its caller thought than a
+# request for anything.
 #
 # `rlang::arg_match()` and `rlang::arg_match0()` were measured against this
 # helper rather than adopted. They agree with it on every input but one -- both

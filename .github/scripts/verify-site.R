@@ -422,7 +422,14 @@ markers <- list(
     # matches the words wherever they are written.
     "id=\"display-labels-and-grouping-identity\"",
     "Contextual shares",
-    "Backend extension design",
+    # The section holding the two edge cases #461 moved out of `@details`. Its
+    # heading is what a later edit would fold back into the opening prose, and
+    # the two claims under it are quoted as well: neither survives a section
+    # reduced to a cross-reference, and the Arrow half is the one this page
+    # owns for `R/share.R` to point at.
+    "Summaries a lazy backend cannot carry",
+    "cannot carry back a summary with no columns in it",
+    "before a row is read, and names the two rewrites that compute it",
     "Database backend coverage",
     "Microsoft SQL Server",
     "NA is already a factor level",
@@ -460,7 +467,10 @@ markers <- list(
     "Direct shares",
     "Eligible source summaries",
     "Column-wise shares",
-    "Rejected forms and supported rewrites",
+    # The one rejection #461's checklist held that no other section did, folded
+    # into *Eligible source summaries* when the checklist went. It reaches the
+    # page as prose, so the run quoted carries no apostrophe.
+    "packs both results into one data-frame-valued",
     "Lazy execution boundaries",
     # The page documents both denominators, and states that neither completes
     # keys. Losing either would leave one helper without a contract.
