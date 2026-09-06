@@ -372,6 +372,12 @@ markers <- list(
     "DuckDB covers native SQL end to end",
     "dozen-plus fallback dialects",
     "Arrow and dtplyr are tested for the lazy",
+    # The unconditional half of the mutable-step refusal (ADR 0029). Its
+    # `must_error` chunk is behind `has_dtplyr`, so the prose introducing it is
+    # what a marker can reach, and this run of it holds no apostrophe and no
+    # double hyphen — pandoc's `smart` extension rewrites both in prose, where
+    # only a code span keeps them literal.
+    "builds one branch per grouping set from the step it is given",
     # The unconditional half of the absorbed-summary section. Its `must_error`
     # chunk is behind `has_arrow` like the two share refusals below it, so the
     # prose introducing it is what a marker can reach. Chosen from a run of
