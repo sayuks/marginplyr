@@ -46,7 +46,9 @@ Nothing beyond marginplyr's own dependencies is required. The DuckDB, SQLite,
 dtplyr, and Arrow sections below need optional packages, so their chunks
 evaluate only when those packages are installed at the versions marginplyr asks
 for. Where a package is missing or too old the code is still shown, but its
-output is absent.
+output is absent. One dtplyr chunk calls `data.table::as.data.table()` and the
+list above does not name data.table, because dtplyr imports it: installing
+dtplyr installs it.
 
 ```{r}
 #| include: false
@@ -58,12 +60,11 @@ source(system.file("suggests", "guard.R", package = "marginplyr"))
 
 has_duckdb <- marginplyr_suggest_available("DBI") &&
   marginplyr_suggest_available("duckdb")
-# dtplyr imports data.table, so this guard answers for both: the refused-step
-# chunk below calls `data.table::as.data.table()` and needs none of its own.
-# That is also why the install list above names dtplyr and not data.table.
 # dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
 # the installed driver version through RSQLite.
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
+# The one dtplyr chunk that calls `data.table::as.data.table()` is behind this
+# guard and needs none of its own, dtplyr importing data.table.
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_arrow <- marginplyr_suggest_available("arrow")
 
@@ -206,11 +207,13 @@ duckdb_result <- collect(duckdb_query)
 duckdb_result
 ```
 
-The `arrange()` above is one way to order that result. `.sort` is the other,
-and it is an argument of the verb, so it reaches the backend inside the same
-query rather than as a step over it. It puts each subtotal with the rows it
-summarizes, wherever the Margin label would otherwise fall among a dimension's
-values:
+The `arrange()` above orders by the labels, so `"Total"` falls wherever that
+string does among a dimension's values. `.sort` orders by the structure of the
+Grouping plan instead, so each subtotal lands with the rows it summarizes. It
+is an argument of the verb rather than a step after it; *Margin order* in the
+[`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the key it builds and what a later verb can do to it:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -236,7 +239,7 @@ duckdb_stage <- compute(duckdb_query)
 class(duckdb_stage)
 
 duckdb_stage |>
-  filter(store == "Total") |>
+  filter(level == 1L) |>
   collect()
 ```
 
@@ -361,8 +364,9 @@ sqlite_sales |>
 
 `share_of_parent()` needs a denominator from another Grouping-set row, so it
 cannot be translated as one ordinary aggregate expression. marginplyr first
-forms the ordinary Margin summaries, then builds one Parent mapping shared by
-every requested measure. `.check_share_source = FALSE` appears here because
+computes the ordinary summaries for every grouping set, then builds one
+denominator lookup — the parent row for each result row — shared by every
+requested measure. `.check_share_source = FALSE` appears here because
 the simulated connection executes nothing and therefore cannot be asked what
 its dialect does with an ineligible source; the rule it opts out of is
 described below.

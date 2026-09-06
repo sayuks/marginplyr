@@ -547,10 +547,11 @@ retail_sales |>
   filter(absence == 1L)
 ```
 
-Written with no columns at all, `grouping_id()` reads every `.grouping` column
-in plan order. That is the order `inspect_grouping()` reported above, so the
-identifier is the same one and there is no second list of dimensions to keep in
-step with the specification:
+`grouping_id()` can also be written with no columns at all, which the
+[`grouping_bit()`
+reference](https://sayuks.github.io/marginplyr/man/grouping_bit.html) defines
+against the resolved plan. It is the same identifier here, and there is no
+second list of dimensions to keep in step with the specification:
 
 ```{r}
 retail_sales |>
@@ -848,7 +849,7 @@ takes `.sort` itself, which orders the expansion rather than what follows it:
 
 ```{r}
 retail_sales |>
-  filter(year == 2026L, month == "Jan", region == "East") |>
+  filter(year == 2026L, month == "Jan") |>
   expand_with_margins(
     .grouping = rollup(region, store),
     .id = "set",
@@ -856,6 +857,11 @@ retail_sales |>
   ) |>
   select(set, region, store, units)
 ```
+
+Each region's detail copies now sit above its margin copies, and the
+all-regions copies come last. Without `.sort` the same call returns rows
+contiguous by grouping set instead, which is the order the expansion builds its
+branches in.
 
 The cost is in the row count: expansion produces one copy of the input per
 grouping set, so a plan with many sets multiplies the rows the database has to
