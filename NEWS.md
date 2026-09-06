@@ -55,6 +55,11 @@
   (#110, #144, #210). See *Option arguments* in `?summarize_with_margins`.
 * Changed the default display label to `"Total"`; `.margin_label = NULL`
   preserves grouping-column types and typed missing values.
+* `.margin_label` also takes a per-dimension spelling: a named character
+  vector labels each resolved Margin dimension separately, and a named list
+  does the same while letting one dimension take `NULL` where another takes
+  a label (#16, #371). See *Display labels and grouping identity* in
+  `?summarize_with_margins`.
 * `.check_margin_label` controls only the half of the Margin label collision
   check that reads your data, so it defaults to `TRUE` for local data frames
   and `FALSE` for lazy inputs. A label equal to a declared factor level is
