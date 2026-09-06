@@ -556,12 +556,23 @@
 #' tests execute DuckDB queries against a live in-memory database and verify
 #' PostgreSQL SQL with dbplyr's simulator.
 #'
-#' The portable `UNION ALL` SQL path is executed end to end for contextual
-#' shares against a live in-memory SQLite database. It is also verified with
-#' dbplyr simulators for Access, SAP HANA, Hive, Impala, MariaDB, Microsoft SQL
-#' Server, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, SQLite, and
-#' Teradata, plus generic DBI and ODBC connections. Simulator coverage verifies
-#' SQL generation, not execution against every database server.
+#' SQLite is the other live database. It runs the portable `UNION ALL` path
+#' end to end: Parent shares under `summarize_with_margins()`'s
+#' `.check_share_source = FALSE`, a Margin order through both
+#' [dplyr::collect()] and [dplyr::compute()], including the missing-value
+#' placement its own ordering would not produce, the observed half of the
+#' Margin label collision check, and the queries [last_sent_queries()]
+#' records. The refusal that argument's default raises on the dialect is
+#' covered there too, and outside that list: it lands before a portable query
+#' is built. Tests that compare rendered SQL also run against that database;
+#' what those establish is what was rendered, which is what a simulator
+#' establishes.
+#'
+#' The portable path is also verified with dbplyr simulators for Access, SAP
+#' HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon
+#' Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus generic DBI and
+#' ODBC connections. Simulator coverage verifies SQL generation, not execution
+#' against every database server.
 #'
 #' Arrow and dtplyr are also tested lazy backends, but they are not SQL
 #' database connections.
