@@ -14,8 +14,7 @@
 * Added contextual `grouping_bit()` and `grouping_id()` summary helpers.
   `grouping_id()` written with no columns reads every `.grouping` column of the
   resolved plan, in plan order, so widening a Grouping specification widens the
-  mask instead of leaving it at its old width (#366). See *Grouping identity
-  values* in `?grouping_bit`.
+  mask instead of leaving it at its old width (#366). See `?grouping_bit`.
 * Added the contextual `share_of_parent()` summary helper, which divides a
   preceding numeric scalar summary by the same measure one `rollup()` level up,
   partitioned by the fixed `.by` keys. Local data frames, dbplyr, and dtplyr
@@ -25,7 +24,7 @@
 * Added the contextual `share_of_total()` summary helper, which divides the
   same kind of source summary by the Grand total set within each fixed `.by`
   partition, and so accepts any Grouping plan that contains one.
-* Each of those four contextual helpers takes a bare name and accepts one
+* Each of those four Contextual helpers takes a bare name and accepts one
   forwarded by injection, so a function of your own can pass either
   `!!rlang::enquo(col)` or `!!rlang::ensym(col)` (#169).
 * Added `inspect_grouping()` for reading the resolved Grouping plan as an
@@ -50,8 +49,8 @@
   `.format` on `inspect_grouping()` — takes one of those strings spelled in
   full, and refuses an abbreviation and `NULL` alike. Passing the whole
   vocabulary as the signature spells it asks for the default, which is what
-  lets a wrapper repeat the signature and forward the argument it was given.
-  See *Option arguments* in `?summarize_with_margins`.
+  lets a wrapper repeat the signature and forward the argument it was given
+  (#110, #144, #210). See *Option arguments* in `?summarize_with_margins`.
 * Changed the default display label to `"Total"`; `.margin_label = NULL`
   preserves grouping-column types and typed missing values.
 * `.check_margin_label` controls only the half of the Margin label collision
@@ -78,7 +77,7 @@
   overwrite grouping keys, always return ungrouped output, and reject
   branch-local `cur_group*()` helpers in favor of `grouping_bit()` and
   `grouping_id()`.
-* Summary expressions now resolve every contextual helper by spelling, so
+* Summary expressions now resolve every Contextual helper by spelling, so
   `grouping_bit()`, `grouping_id()`, `share_of_parent()`, `share_of_total()`,
   `across()`, `if_any()`, `if_all()`, `pick()`, `where()`, and the rejected
   `cur_group*()` helpers mean what marginplyr rewrites them into, and a binding
@@ -123,8 +122,7 @@
   diagnostic. This reaches the set-difference operator `/`, the arithmetic and
   scalar-boolean spellings `*`, `^`, `&&`, and `||`, `one_of()`, a formula, and
   the `.data` pronoun; a selection carrying `where()` still resolves against
-  your input's column types. See *When marginplyr queries your data* in
-  `?summarize_with_margins`.
+  your input's column types.
 * Every error marginplyr raises for a correctable call now inherits the
   `"marginplyr_error"` class, so `tryCatch(marginplyr_error = )` catches them
   all, and the columns, values, and arguments such an error quotes are spelled
@@ -185,5 +183,6 @@
   records the queries it sends — the `"result"` query it hands you unexecuted,
   and the ones it sends for its own reasons on the way — and the accessor reads
   the most recent call's record back as a two-column tibble of `purpose` and
-  `sql` (#318, #400, #401, #409, #455). See *What the record promises* in
-  `?last_sent_queries`.
+  `sql`. Piping one Margin verb into another is two calls, and the record you
+  read is the outer one's alone (#318, #400, #401, #409, #455). See *What the
+  record promises* in `?last_sent_queries`.
