@@ -71,8 +71,7 @@
 #' ```
 #'
 #' A direct call cannot be unnamed, use a string, use a forward reference,
-#' redefine the source name, or use a share as another share's source. *Eligible
-#' source summaries* writes out the rewrite for each of those.
+#' redefine the source name, or use a share as another share's source.
 #'
 #' @section Eligible source summaries:
 #' The source must be defined exactly once before the share. It must be

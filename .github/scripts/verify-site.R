@@ -422,11 +422,12 @@ markers <- list(
     # matches the words wherever they are written.
     "id=\"display-labels-and-grouping-identity\"",
     "Contextual shares",
-    # The section holding the two edge cases #461 moved out of `@details`. Its
-    # heading is what a later edit would fold back into the opening prose, and
-    # the two claims under it are quoted as well: neither survives a section
-    # reduced to a cross-reference, and the Arrow half is the one this page
-    # owns for `R/share.R` to point at.
+    # The section holding the two summaries a lazy backend refuses, and one
+    # claim from each half of it. The heading alone would pass a section folded
+    # back into `@details`, where it stands ahead of the usage a first reader
+    # needs (#461). Neither claim survives a section reduced to a
+    # cross-reference, and the Arrow half is the one `R/share.R` points here
+    # for.
     "Summaries a lazy backend cannot carry",
     "cannot carry back a summary with no columns in it",
     "before a row is read, and names the two rewrites that compute it",
@@ -467,9 +468,9 @@ markers <- list(
     "Direct shares",
     "Eligible source summaries",
     "Column-wise shares",
-    # The one rejection #461's checklist held that no other section did, folded
-    # into *Eligible source summaries* when the checklist went. It reaches the
-    # page as prose, so the run quoted carries no apostrophe.
+    # The one rejection *Eligible source summaries* alone states: a named
+    # `across()` is a data-frame-valued summary rather than a scalar source.
+    # It reaches the page as prose, so the run quoted carries no apostrophe.
     "packs both results into one data-frame-valued",
     "Lazy execution boundaries",
     # The page documents both denominators, and states that neither completes

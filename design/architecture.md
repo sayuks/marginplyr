@@ -39,9 +39,8 @@ special empty-input behavior, and adds row-wise grouping by the visible keys
 only after common finalization. It is kept even though `dplyr::nest_by()` is
 not a stable upstream API and may eventually be deprecated in favor of
 `tidyr::nest()`, because its row-wise return shape is what a per-margin model
-or report is written against. Both nesting verbs reach the lifecycle above
-rather than one calling the other, so neither holds a second grouping plan or
-nesting contract.
+or report is written against. Both reach the lifecycle above rather than one
+calling the other.
 
 The lifecycle is deliberately explicit:
 

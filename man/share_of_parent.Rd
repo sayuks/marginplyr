@@ -87,8 +87,7 @@ result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 }\if{html}{\out{</div>}}
 
 A direct call cannot be unnamed, use a string, use a forward reference,
-redefine the source name, or use a share as another share's source. \emph{Eligible
-source summaries} writes out the rewrite for each of those.
+redefine the source name, or use a share as another share's source.
 }
 
 \section{Eligible source summaries}{
