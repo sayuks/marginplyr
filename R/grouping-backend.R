@@ -55,6 +55,56 @@ grouping_backend <- function(.data) {
   )
 }
 
+# Whether this input is a Mutable step: a dtplyr step whose root was built with
+# `immutable = FALSE`. `lazy_dt()` records that argument as `implicit_copy` on
+# the `dtplyr_step_first` it returns, inverted -- `TRUE` is the caller waiving
+# the copy.
+#
+# The root is what is read, and every derived step carries the field too. Its
+# value there answers a different question: a `filter()` and a `select()` over
+# one mutable root both carry `TRUE`, and only one of them destroys the
+# caller's table, so no step below the root separates the destructive
+# derivations from the safe ones (#451). Walking to the root asks the question
+# that does separate them -- whether dtplyr was given permission to write to
+# the caller's table at all.
+#
+# The walk stops where the parent stops being a step, rather than at
+# `dtplyr_step_first` by class: the root's own `parent` holds the
+# `data.table` it was built from, so a class test would be a second reading of
+# the same boundary.
+#
+# Both fields are read with `[[`, whose character index is exact, and not with
+# `$`, which matches a prefix on a list -- so a dtplyr that renamed
+# `implicit_copy` to something starting with it would otherwise be read rather
+# than let through. A field neither name finds answers `FALSE`, both being
+# non-exported dtplyr internals; `test-grouping-backends.R` pins them, which is
+# what reports such a release.
+mutable_dtplyr_step <- function(.data) {
+  if (!inherits(.data, "dtplyr_step")) {
+    return(FALSE)
+  }
+  root <- .data
+  while (inherits(root[["parent"]], "dtplyr_step")) {
+    root <- root[["parent"]]
+  }
+  isTRUE(root[["implicit_copy"]])
+}
+
+# The refusal a Mutable step earns, raised before any branch is built and so
+# before the caller's table can be written to. ADR 0029 records why the input
+# is refused rather than copied, and how much wider than the damage the line is
+# drawn.
+abort_mutable_dtplyr_step <- function() {
+  abort_marginplyr(c(
+    "{.arg .data} comes from {.code dtplyr::lazy_dt(immutable = FALSE)}.",
+    i = paste0(
+      "A margin verb builds one branch per grouping set from the same step, ",
+      "and data.table writes each branch to your table by reference."
+    ),
+    i = "Rebuild the input with {.code dtplyr::lazy_dt(immutable = TRUE)}."
+  ))
+}
+
 backend_capabilities <- function(kind) {
   capability_names <- c(
     "collect_selection_proxy",

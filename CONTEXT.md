@@ -161,6 +161,22 @@ absorbing reads every column of the input while a caller who is told can read
 fewer.
 _Avoid_: Pulling backend, fallback backend, collecting backend
 
+**Mutable step**:
+A dtplyr step whose root was built with `dtplyr::lazy_dt(immutable = FALSE)`,
+which is the caller giving data.table permission to write to their own table.
+It is a property of how the input was constructed rather than of its class,
+and it is therefore finer-grained than a backend kind, one kind holding both,
+which is why it is established by walking the step's parents to its root
+rather than looked up. Nothing below the root separates the derivations that
+destroy the caller's table from the ones that survive: a `filter()` and a
+`select()` over the same mutable root produce the same step class carrying the
+same field value and fall on opposite sides. A Margin verb refuses one before
+any branch is built, because it builds one branch per grouping set from the
+same step and data.table writes each of them to the caller's table by
+reference — leaving a result in which every row carries the margin label, and
+a table whose columns were dropped or whose names were permuted.
+_Avoid_: Mutable input, in-place backend
+
 **Sent query**:
 One SQL statement marginplyr gives to a backend while compiling a Grouping
 plan or while executing the Margin operation built on one, recorded with the

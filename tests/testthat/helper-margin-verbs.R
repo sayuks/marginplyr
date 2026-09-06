@@ -22,3 +22,45 @@ verbs_taking <- function(arg) {
     getNamespaceExports("marginplyr")
   )
 }
+
+# One wrapper per verb, forwarding both arguments with `{{ }}`, so that a test
+# putting one expression through every verb writes it once. Each supplies
+# whatever else its own signature requires and nothing more, which is why the
+# two summary verbs carry a `total` and the other four take the data alone.
+#
+# Here rather than in the file that wanted it first, by the argument this
+# file's header already makes: `test-grouping-plan.R` puts empty arguments
+# through it and `test-grouping-backends.R` a refused input, and a per-file
+# copy is what could disagree with `verbs_taking()` above while the other still
+# matched it. Every caller holds the two to each other, so a seventh verb fails
+# where it is used rather than arriving uncovered.
+forwarded_verbs <- list(
+  summarize_with_margins = function(data, by, grouping) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      .by = {{ by }},
+      .grouping = {{ grouping }}
+    )
+  },
+  summarise_with_margins = function(data, by, grouping) {
+    summarise_with_margins(
+      data,
+      total = sum(value),
+      .by = {{ by }},
+      .grouping = {{ grouping }}
+    )
+  },
+  expand_with_margins = function(data, by, grouping) {
+    expand_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+  },
+  nest_with_margins = function(data, by, grouping) {
+    nest_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+  },
+  nest_by_with_margins = function(data, by, grouping) {
+    nest_by_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
+  },
+  inspect_grouping = function(data, by, grouping) {
+    inspect_grouping(data, .by = {{ by }}, .grouping = {{ grouping }})
+  }
+)

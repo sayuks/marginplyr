@@ -469,6 +469,24 @@ show_query(dt_query)
 collect(dt_query)
 ```
 
+The step has to be built with `immutable = TRUE`, which is what `lazy_dt()`
+does by default. A margin verb builds one branch per grouping set from the
+step it is given, and when the step was built with `immutable = FALSE`
+data.table writes every one of those branches back to your own table by
+reference. That returns a result in which each row carries the margin label,
+and leaves you holding a table that has lost a column or had its names
+permuted. Such an input is refused before any branch is built:
+
+```{r}
+#| label: mutable-dtplyr-step
+#| eval: !expr has_dtplyr
+#| must_error: marginplyr_error
+
+data.table::as.data.table(january_sales) |>
+  dtplyr::lazy_dt(immutable = FALSE) |>
+  expand_with_margins(.grouping = rollup(region, store))
+```
+
 `nest_with_margins()` also supports dtplyr and remains lazy until collection.
 SQL database and Arrow tables cannot use the nesting verbs because their
 result contains a list column:

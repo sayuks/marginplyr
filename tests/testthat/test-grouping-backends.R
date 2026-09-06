@@ -2171,3 +2171,171 @@ test_that("DuckDB safely quotes factor identifiers and labels", {
   expect_true(is.factor(result[["odd name"]]))
   expect_true("O'Total" %in% levels(result[["odd name"]]))
 })
+
+# A Mutable step is a dtplyr step whose root was built with
+# `immutable = FALSE`, and every verb taking `.grouping` refuses one (#451,
+# ADR 0029).
+#
+# `data.table::` is called here under a dtplyr guard and takes none of its own,
+# which is the one-backend-per-test rule holding rather than being bent.
+# `lazy_dt()` refuses `immutable = FALSE` for anything that is not already a
+# data table, so the input cannot be built without it; dtplyr declares
+# `Imports: data.table`, so it is never the reason one of these could fail; and
+# a guard on it would skip this whole section in the one configuration that
+# executes it, `verify-suite-coverage.R` hiding every backend but the selected
+# one.
+mutable_step_data <- function() {
+  data.table::data.table(
+    year = c(2023L, 2023L, 2024L),
+    region = c("East", "West", "West"),
+    value = c(1, 2, 3)
+  )
+}
+
+test_that("every margin verb refuses a mutable dtplyr step", {
+  skip_if_suggest_absent("dtplyr")
+  expect_setequal(names(forwarded_verbs), verbs_taking(".grouping"))
+
+  for (name in names(forwarded_verbs)) {
+    data <- mutable_step_data()
+    before <- data.table::copy(data)
+    step <- dtplyr::lazy_dt(data, immutable = FALSE)
+
+    error <- expect_error(forwarded_verbs[[name]](step, NULL, rollup(region)))
+    expect_s3_class(error, "marginplyr_error")
+    # The whole point of refusing: the table the caller still holds is the one
+    # they handed over, in its names, its columns, and its rows.
+    expect_identical(as.data.frame(data), as.data.frame(before), info = name)
+  }
+})
+
+test_that("the refusal reads as it is written, for every verb", {
+  skip_if_suggest_absent("dtplyr")
+
+  # One snapshot per verb rather than one for the set: the three lines are the
+  # same everywhere and the header is not, so the call each verb blames is the
+  # part only a per-verb pin covers. The wrapper deparses identically in every
+  # one of them, which is why the header is what tells them apart -- it is also
+  # the only thing they differ by, and the reason they are all here.
+  for (name in names(forwarded_verbs)) {
+    verb <- forwarded_verbs[[name]]
+    expect_snapshot(
+      error = TRUE,
+      verb(
+        dtplyr::lazy_dt(mutable_step_data(), immutable = FALSE),
+        NULL,
+        rollup(region)
+      )
+    )
+  }
+})
+
+test_that("the refusal reads the root step and not the step it was given", {
+  skip_if_suggest_absent("dtplyr")
+
+  # The pair that separates the two readings. A `filter()` over a mutable root
+  # returns a correct result today and is refused anyway, because which
+  # derivations survive is a property of the query dtplyr generated
+  # (ADR 0029); a `mutate()` over an immutable root carries no permission to
+  # write and is accepted, though the step it produces sits one level from its
+  # root exactly as the refused one does.
+  derived_mutable <- dtplyr::lazy_dt(mutable_step_data(), immutable = FALSE) |>
+    dplyr::filter(value > 0)
+  expect_error(
+    expand_with_margins(derived_mutable, .grouping = rollup(region)),
+    class = "marginplyr_error"
+  )
+
+  derived_immutable <- dtplyr::lazy_dt(
+    mutable_step_data(),
+    immutable = TRUE
+  ) |>
+    dplyr::mutate(doubled = value * 2)
+  accepted <- dplyr::collect(
+    expand_with_margins(derived_immutable, .grouping = rollup(region))
+  )
+  expect_setequal(accepted$region, c("East", "West", "Total"))
+  expect_identical(accepted$doubled, c(2, 4, 6, 2, 4, 6))
+})
+
+test_that("an immutable dtplyr step answers as the local input does", {
+  skip_if_suggest_absent("dtplyr")
+  data <- mutable_step_data()
+
+  # The baseline is the same call over a local frame rather than a written-out
+  # expectation, which is what "returns the same result it does today" means:
+  # a refusal that reached an immutable step would fail this, and so would one
+  # that changed what an accepted step returns.
+  local_result <- summarize_with_margins(
+    as.data.frame(data),
+    total = sum(value),
+    .grouping = rollup(region)
+  )
+  step_result <- dplyr::collect(summarize_with_margins(
+    dtplyr::lazy_dt(data, immutable = TRUE),
+    total = sum(value),
+    .grouping = rollup(region)
+  ))
+  expect_equal(as.data.frame(step_result), as.data.frame(local_result))
+
+  # A bare `data.table` resolves to the `local` kind, where dplyr's copy
+  # semantics apply, so nothing here refuses it either.
+  table_result <- summarize_with_margins(
+    data,
+    total = sum(value),
+    .grouping = rollup(region)
+  )
+  expect_equal(as.data.frame(table_result), as.data.frame(local_result))
+})
+
+test_that("a grouped mutable step is refused before its groups are read", {
+  skip_if_suggest_absent("dtplyr")
+  data <- mutable_step_data()
+  grouped <- dplyr::group_by(
+    dtplyr::lazy_dt(data, immutable = FALSE),
+    region
+  )
+
+  # The refusal sits above key resolution, so it displaces the fixed-key
+  # rejection these groups used to earn -- `region` arriving as both a fixed
+  # key and a dimension. Pinned because the displacement is a consequence of
+  # where ADR 0029 puts the refusal rather than something it asked for.
+  error <- expect_error(
+    expand_with_margins(grouped, .grouping = rollup(region))
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "immutable = FALSE", fixed = TRUE)
+})
+
+test_that("the dtplyr fields the refusal reads still mean what it reads", {
+  skip_if_suggest_absent("dtplyr")
+  data <- mutable_step_data()
+
+  mutable_root <- dtplyr::lazy_dt(data, immutable = FALSE)
+  immutable_root <- dtplyr::lazy_dt(data, immutable = TRUE)
+  expect_s3_class(mutable_root, "dtplyr_step_first")
+  expect_true(mutable_root$implicit_copy)
+  expect_false(immutable_root$implicit_copy)
+
+  # The root's own `parent` is the table rather than another step, which is
+  # where the walk stops.
+  expect_false(inherits(mutable_root$parent, "dtplyr_step"))
+
+  # A derived step reaches its root through `$parent`, and carries a value of
+  # its own that answers a different question: this one is `TRUE` while the
+  # derivation is harmless, which is why the walk exists.
+  derived <- dplyr::filter(immutable_root, value > 0)
+  expect_true(derived$implicit_copy)
+  expect_identical(derived$parent, immutable_root)
+
+  expect_true(mutable_dtplyr_step(mutable_root))
+  expect_false(mutable_dtplyr_step(derived))
+  # A step whose fields dtplyr renamed is let through rather than refused. The
+  # name is spelled out in full because `[[` is exact where `$` is not: a
+  # rename keeping the old name as a prefix would be read by `$` and is let
+  # through here, which is the direction this has to fail in.
+  expect_false(mutable_dtplyr_step(structure(
+    list(implicit_copy_renamed = TRUE),
+    class = c("dtplyr_step_first", "dtplyr_step")
+  )))
+})

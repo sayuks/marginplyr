@@ -206,6 +206,18 @@
   returned the right answer, having read the whole input to get it — so on
   those versions this is a breaking change, and the rewrites the refusal names
   reproduce the old result while letting you choose what is read.
+* A dtplyr input built with `dtplyr::lazy_dt(immutable = FALSE)` is now
+  refused, before any branch is built. A margin verb builds one branch per
+  grouping set from the step you gave it, and a mutable step lets data.table
+  write every one of those branches back to your own table by reference: the
+  call returned a result whose every row carried the margin label, and left
+  your table with a column dropped or its names permuted while its data stayed
+  put. The refusal names the one rewrite, `dtplyr::lazy_dt(immutable = TRUE)`,
+  which is what `lazy_dt()` does by default. It is deliberately wider than the
+  damage — a mutable step you only filtered comes back correct today and is
+  refused with the rest — because which derivations survive is decided by the
+  query dtplyr generates rather than by anything marginplyr can promise. A
+  `data.table` passed directly is unaffected, and so is every other backend.
 * A `.grouping` or `.by` selection whose failure the column names already
   settle is now refused without querying your input. This reaches the
   set-difference operator `/` that tidyselect reads, the arithmetic and

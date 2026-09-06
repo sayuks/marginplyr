@@ -183,6 +183,13 @@ prepare_grouping_plan <- function(.data,
       input <- normalize_grouping_input(.data, by_quo)
       data <- input$data
       backend <- grouping_backend(data)
+      # After `grouping_backend()` rather than before, because
+      # `check_backend_version()` runs inside it: a dtplyr below the floor is
+      # then answered by the floor rather than by a field that version may
+      # spell differently. ADR 0029 is authoritative for the placement.
+      if (mutable_dtplyr_step(data)) {
+        abort_mutable_dtplyr_step()
+      }
       remember_sent_query_backend(backend)
       data_vars <- get_col_names(data, dplyr::everything())
       by <- resolve_fixed_keys(by_quo, input$groups, data_vars)

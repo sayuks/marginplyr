@@ -833,41 +833,6 @@ test_that("the empty spellings that already had a reading keep it", {
   )
 })
 
-# One wrapper per verb, forwarding both arguments with `{{ }}`. File level
-# because two tests below put different expressions through the same six
-# verbs; a second copy could disagree with the derivation above while this
-# one still matched it.
-forwarded_verbs <- list(
-  summarize_with_margins = function(data, by, grouping) {
-    summarize_with_margins(
-      data,
-      total = sum(value),
-      .by = {{ by }},
-      .grouping = {{ grouping }}
-    )
-  },
-  summarise_with_margins = function(data, by, grouping) {
-    summarise_with_margins(
-      data,
-      total = sum(value),
-      .by = {{ by }},
-      .grouping = {{ grouping }}
-    )
-  },
-  expand_with_margins = function(data, by, grouping) {
-    expand_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
-  },
-  nest_with_margins = function(data, by, grouping) {
-    nest_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
-  },
-  nest_by_with_margins = function(data, by, grouping) {
-    nest_by_with_margins(data, .by = {{ by }}, .grouping = {{ grouping }})
-  },
-  inspect_grouping = function(data, by, grouping) {
-    inspect_grouping(data, .by = {{ by }}, .grouping = {{ grouping }})
-  }
-)
-
 # The two verb arguments injection can leave empty, and neither is the `.by = `
 # above: R matches a named formal's empty argument to that formal's default,
 # while `{{ }}` splices R's missing marker into the quosure. Only the second
