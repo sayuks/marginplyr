@@ -13,7 +13,7 @@ format:
 date: last-modified
 ---
 
-`marginplyr` applies one grouping plan to local data frames and supported lazy
+`marginplyr` applies one Grouping plan to local data frames and supported lazy
 tables. With a database table, the plan remains lazy: `show_query()` renders
 the SQL, while `collect()` executes it and brings the result into R.
 
@@ -92,7 +92,7 @@ local_result <- january_sales |>
 local_result
 ```
 
-The grouping specification does not change when the input becomes a lazy table:
+The Grouping specification does not change when the input becomes a lazy table:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -141,7 +141,7 @@ keeps it out of the result, so the outer query labels only the dimensions
 aggregation removed. A source `NULL` therefore stays different from a generated
 subtotal even though SQL would otherwise display both as missing.
 
-More complex grouping specifications use the same translation. The two
+More complex Grouping specifications use the same translation. The two
 rollups below are combined by Cartesian product, matching comma-separated SQL
 `GROUP BY` items:
 
@@ -343,9 +343,9 @@ show_query(sqlite_query)
 ```
 
 This SQL is longer than the native form, but it preserves the same requested
-grouping levels and margin labels. Native versus fallback translation is
+grouping levels and Margin labels. Native versus fallback translation is
 selected by the backend adapter; analysis code does not need a different
-grouping specification.
+Grouping specification.
 
 `expand_with_margins()` also stays lazy. On a fallback backend, its SQL makes
 the row-expansion branches explicit:
@@ -507,10 +507,10 @@ collect(dt_query)
 ```
 
 The step has to be built with `immutable = TRUE`, which is what `lazy_dt()`
-does by default. A margin verb builds one branch per grouping set from the
+does by default. A Margin verb builds one branch per grouping set from the
 step it is given, and when the step was built with `immutable = FALSE`
 data.table writes every one of those branches back to your own table by
-reference. That returns a result in which each row carries the margin label,
+reference. That returns a result in which each row carries the Margin label,
 and leaves you holding a table that has lost a column or had its names
 permuted. Such an input is refused before any branch is built:
 
@@ -672,7 +672,7 @@ The record is a tibble of two character columns, `purpose` and `sql`, holding
 one row per query in the order it was sent. It belongs to that one call: the
 next call to a Margin verb — or to
 [`inspect_grouping()`](https://sayuks.github.io/marginplyr/man/inspect_grouping.html),
-which compiles a grouping plan and sends queries of its own — empties it and
+which compiles a Grouping plan and sends queries of its own — empties it and
 starts again.
 Piping one Margin verb into another is two such calls, and the record you read
 afterwards is the outer one's: the input runs first, and the outer call empties

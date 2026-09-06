@@ -13,7 +13,7 @@ format:
 date: last-modified
 ---
 
-A Margin result combines rows from several Grouping sets. Visible values such
+A Margin result combines rows from several grouping sets. Visible values such
 as `"Total"` are useful for display, but they do not identify which Grouping
 set produced a row. marginplyr provides two kinds of identifier for that
 purpose, and they answer different questions: a *Grouping set identifier* says

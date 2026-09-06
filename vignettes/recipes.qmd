@@ -565,7 +565,7 @@ retail_sales |>
 ```
 
 Two steps are required because `grouping_id()` and `grouping_bit()` are
-contextual summary helpers. They read the Grouping set that produced a row,
+contextual summary helpers. They read the grouping set that produced a row,
 which only the summary knows, so calling one inside `filter()` is rejected:
 
 ```{r}

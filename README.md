@@ -6,7 +6,7 @@
 ### SQL-style grouping sets, rollups, and cubes for dplyr and dbplyr
 
 Create detail rows, subtotals, and grand totals with one dplyr-style
-summary. Use the same grouping specification with a local data frame or
+summary. Use the same Grouping specification with a local data frame or
 a lazy database table.
 
 <!-- badges: start -->
@@ -286,7 +286,7 @@ parent_report |>
 #> 8  Total         Total   23300     1.0000000       100.00000
 ```
 
-A row of the Grand total set has a parent share of one, and a missing or
+A row of the Grand total set has a Parent share of one, and a missing or
 zero denominator gives `NA`. Parent matching is structural, so display
 labels never choose the parent.
 
@@ -294,7 +294,7 @@ labels never choose the parent.
 
 `share_of_total()` is the same helper with a different denominator: the
 grand total of the same report, within each fixed `.by` group. There is
-never a question of *which* row that is, so it accepts any grouping
+never a question of *which* row that is, so it accepts any Grouping
 specification that produces one — including the `cube()` that
 `share_of_parent()` rejects:
 
@@ -350,7 +350,7 @@ documents both helpers in full: the eligible sources, value rules,
 
 ## Use the same report with a database
 
-The grouping plan becomes part of the lazy query. `show_query()`
+The Grouping plan becomes part of the lazy query. `show_query()`
 inspects the SQL without collecting the result:
 
 ``` r
@@ -384,7 +384,7 @@ postgres_sales |>
 
 DuckDB and PostgreSQL use native grouping sets. Backends without
 confirmed native support use a `UNION ALL` translation with the same
-grouping plan. Simulation verifies generated SQL but does not claim live
+Grouping plan. Simulation verifies generated SQL but does not claim live
 execution against every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
@@ -444,7 +444,7 @@ These approaches solve related problems with different interfaces:
 | Repeated `dplyr::summarize()` plus row binding | A small, one-off set of totals where explicit branches are clearest | You author and combine each grouping level |
 | [`data.table`](https://rdatatable.gitlab.io/data.table/reference/groupingsets.html) grouping sets | A local data.table workflow | `rollup()`, `cube()`, and `groupingsets()` return one data.table |
 | [`rollup`](https://cran.r-project.org/package=rollup) | Its dplyr-oriented grouped-data-frame-list workflow fits the analysis | Grouping levels are represented as a list before their summaries are combined |
-| marginplyr | The same grouping plan should work locally and on a lazy source | One data frame or lazy query, with native SQL or a portable fallback |
+| marginplyr | The same Grouping plan should work locally and on a lazy source | One data frame or lazy query, with native SQL or a portable fallback |
 
 marginplyr is most useful when a report has multiple grains, when the
 data should stay in a database until `collect()`, or when subtotal

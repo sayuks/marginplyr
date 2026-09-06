@@ -5,6 +5,16 @@ consistently to local and remote data.
 
 ## Language
 
+**House term**:
+A concept this file defines. Its name is capitalized wherever it names that
+concept and left lowercase wherever the same words carry their ordinary sense,
+so one page can write "the Grouping plan expands to" and "SQL calls this idea
+grouping sets". A phrase no entry defines is ordinary English however often it
+appears: *grouping set* and *grand total* are ordinary here, and each names
+something defined only inside a longer entry — Grouping set identifier, Grand
+total set — which is capitalized whole.
+_Avoid_: Domain term, glossary term, defined term
+
 **Grain**:
 What one row of a summary stands for: the dimensions it is grouped by. An
 ordinary grouped summary has one grain; a Grouping plan produces several in
@@ -46,7 +56,7 @@ _Avoid_: Nested grouping, nested slot
 
 **Grouping plan**:
 The backend-independent grouping semantics obtained by fully expanding a
-grouping specification.
+Grouping specification.
 _Avoid_: Execution plan, backend plan
 
 **Grouping set identifier**:
@@ -67,7 +77,7 @@ _Avoid_: Missing-value flag, grouping set identifier
 
 **Margin operation**:
 One request to summarize, expand, or nest data across the grouping sets in a
-grouping plan, from preparation through finalization.
+Grouping plan, from preparation through finalization.
 _Avoid_: Grouping plan, operation context
 
 **Margin label**:
@@ -111,7 +121,7 @@ _Avoid_: Root set, root row, total row, margin row
 **Parent share**:
 For a row in a rollup result, the ratio of one named scalar summary value to
 the corresponding value in the immediately less detailed grouping set. A row
-of the Grand total set has a parent share of one. A missing numerator, zero
+of the Grand total set has a Parent share of one. A missing numerator, zero
 denominator, or missing denominator produces a missing double value. The
 source is a previously defined numeric scalar summary and the result is
 always a double; finite ratios are not clamped. Parent shares are defined for
@@ -123,7 +133,7 @@ _Avoid_: Subtotal share, percent of grand total
 **Total share**:
 For a row in a multi-grain result, the ratio of one named scalar summary
 value to the corresponding value in the Grand total set. A row of the Grand
-total set has a total share of one. A missing numerator, zero denominator, or
+total set has a Total share of one. A missing numerator, zero denominator, or
 missing denominator produces a missing double value. The source is a
 previously defined numeric scalar summary and the result is always a double;
 finite ratios are not clamped. Total shares are defined for any Grouping plan
@@ -179,7 +189,7 @@ destroy the caller's table from the ones that survive: a `filter()` and a
 same field value and fall on opposite sides. A Margin verb refuses one before
 any branch is built, because it builds one branch per grouping set from the
 same step and data.table writes each of them to the caller's table by
-reference — leaving a result in which every row carries the margin label, and
+reference — leaving a result in which every row carries the Margin label, and
 a table whose columns were dropped or whose names were permuted.
 _Avoid_: Mutable input, in-place backend
 
