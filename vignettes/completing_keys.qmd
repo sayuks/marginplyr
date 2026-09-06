@@ -13,7 +13,7 @@ format:
 date: last-modified
 ---
 
-marginplyr creates the Grouping sets requested by a Grouping specification; it
+marginplyr creates the grouping sets requested by a Grouping specification; it
 does not create unobserved values within those sets. Complete absent keys
 before a Margin operation when synthetic facts should participate in detail,
 subtotal, and grand-total summaries. Replace values after a summary when the
@@ -60,7 +60,7 @@ no row behind it gives `NA_real_` rather than a number.
 
 Input completion and result completion answer different questions:
 
-- **Pre-summary synthetic facts** participate in every requested Grouping set.
+- **Pre-summary synthetic facts** participate in every requested grouping set.
   They can change counts, means, distinct counts, and user-defined summaries.
 - **Post-summary display replacement** changes how an existing result is
   shown. It does not recalculate subtotals or the grand total.
@@ -72,7 +72,7 @@ Margin operation makes the chosen semantics visible in ordinary data
 manipulation code.
 
 Completion also does not belong in a Grouping specification. A Grouping
-specification declares which Grouping sets exist; it does not declare the
+specification declares which grouping sets exist; it does not declare the
 valid value domain of each dimension or invent fact values.
 
 ## Complete local facts with `tidyr::complete()`

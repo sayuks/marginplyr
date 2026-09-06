@@ -748,7 +748,7 @@ summarize_with_margins(
   .margin_label = c(region = "All regions", store = "All stores")
 )
 # The retained type is the point of `NULL`, and a plain data frame prints
-# the Margin row as a bare `NA` whatever `year` now holds. A tibble's type
+# the margin row as a bare `NA` whatever `year` now holds. A tibble's type
 # header is what shows that `year` is still <int> rather than character.
 summarize_with_margins(
   .data = retail_sales,

@@ -109,7 +109,7 @@ This is valid dplyr code and can be the clearest choice for one small,
 one-off report. It becomes repetitive when the hierarchy grows, the requested
 levels change, or every branch must stay lazy on a remote source.
 
-### One grouping plan
+### One Grouping plan
 
 `rollup(region, store)` describes the same three levels directly:
 
@@ -123,7 +123,7 @@ january_report <- january_sales |>
 january_report
 ```
 
-The result is one ordinary data frame. The grouping plan expands to:
+The result is one ordinary data frame. The Grouping plan expands to:
 
 ```text
 (region, store)  store detail
@@ -153,7 +153,7 @@ monthly_report |>
 ```
 
 Columns in `.by` belong to every grouping set. They retain their input types
-and never receive the margin label. The empty set from `rollup()` still
+and never receive the Margin label. The empty set from `rollup()` still
 includes the fixed `.by` columns, so it produces one company total per year
 and month.
 
@@ -387,7 +387,7 @@ and where the calculation runs.
 | Repeated `summarize()` plus `bind_rows()` | A one-off report has only a few levels and explicit branches are easiest to review | Every grouping level is authored and maintained separately |
 | [`data.table`](https://rdatatable.gitlab.io/data.table/reference/groupingsets.html) | The analysis is a local data.table workflow | It uses the data.table API rather than a dbplyr lazy query |
 | [`rollup`](https://cran.r-project.org/package=rollup) | Its list of grouped data frames is a natural intermediate representation | The workflow differs from marginplyr's single relational result |
-| marginplyr | One grouping plan should work locally and through dbplyr, or grouping identity and margin-aware nesting matter | Its broader semantics add concepts that a single subtotal does not need |
+| marginplyr | One Grouping plan should work locally and through dbplyr, or grouping identity and margin-aware nesting matter | Its broader semantics add concepts that a single subtotal does not need |
 
 Use the simplest approach that preserves the shape and execution model your
 analysis needs. marginplyr is particularly useful when the report has many
@@ -490,7 +490,7 @@ retail_sales |>
     .margin_label = NULL
   ) |>
   # `retail_sales` is a plain data frame and so is this result, which prints
-  # the Margin row as a bare `NA` whatever type `year` now holds. A tibble's
+  # the margin row as a bare `NA` whatever type `year` now holds. A tibble's
   # type header is what shows `year` is still <int>, which is the whole claim
   # being made here.
   dplyr::as_tibble()
@@ -602,7 +602,7 @@ of the official API where arbitrary grouping sets have no portable
 interpretation. A summary may not overwrite a fixed key or grouping dimension,
 even where the local dplyr backend would allow it, because that would destroy
 grouping-set identity. `across()` and `pick()` exclude every column in the
-complete grouping plan, not only the ones active in one branch. The
+complete Grouping plan, not only the ones active in one branch. The
 `cur_group*()` family is rejected outright: a branch-local identifier, row
 position, or column set has no global meaning once several grouping sets are
 combined, so use `grouping_bit()` or `grouping_id()` to identify levels
@@ -810,7 +810,7 @@ fact markers for counts and means, same-connection dimension tables,
 
 ## Use the same plan with remote data
 
-The grouping plan can be applied to a lazy table without first collecting its
+The Grouping plan can be applied to a lazy table without first collecting its
 rows. This PostgreSQL simulation shows the native SQL without requiring a
 server:
 
@@ -901,7 +901,7 @@ nested_sections$data[[1]]
 
 Use `.keep = TRUE` when the grouping keys are also needed inside each detail
 table. The nested copies preserve their original values even when the
-corresponding outer key is a margin label:
+corresponding outer key is a Margin label:
 
 ```{r}
 nested_with_keys <- january_sales |>
@@ -1082,6 +1082,6 @@ tabbed_report |>
   )
 ```
 
-The `"Total"` tab is created by the grouping plan. The factor's level order
+The `"Total"` tab is created by the Grouping plan. The factor's level order
 makes it the first tab; `quartabs` only handles presentation, while marginplyr
 defines which source rows belong to that total.
