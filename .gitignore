@@ -55,5 +55,6 @@ _quarto/*
 .DS_Store
 .quarto
 sandbox/
+/checktor-report/
 /doc/
 /Meta/

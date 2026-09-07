@@ -823,6 +823,7 @@ test_that("parentheses do not let a selection reach a grouping column", {
   }
 })
 
+# jarl-ignore unnecessary_parentheses: Nested pairs are syntax under test.
 test_that("a share `.fns` reference is the helper through parentheses", {
   # The end-to-end half of the reference reading above, and the position whose
   # refusal names what it is refusing: a `.fns` this does not recognize is

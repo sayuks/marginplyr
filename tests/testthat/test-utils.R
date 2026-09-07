@@ -255,6 +255,7 @@ test_that("the walk scan detects the shape it is written to forbid", {
       part
     }
   }
+  # jarl-ignore if_always_true: This is the forbidden syntax fixture.
   nested <- function(expr) {
     if (TRUE) {
       lapply(seq_len(2L), function(i) {
@@ -516,6 +517,7 @@ test_that("the restart scan detects the shape it is written to forbid", {
   }
   # The same restart one call deeper, and one written as a plain statement
   # rather than a `return()`: neither is a shape a reader may be written in.
+  # jarl-ignore if_always_true: This is the forbidden syntax fixture.
   nested <- function(expr) {
     if (TRUE) {
       lapply(seq_len(2L), function(i) {
@@ -753,6 +755,7 @@ test_that("the deferred-head scan detects the shape it is written to forbid", {
   )
 })
 
+# jarl-ignore missing_argument: The empty call part is the behavior under test.
 test_that("every shared reader answers an empty call part", {
   # The scans above forbid binding a call part to a local; this is the same
   # rule read from the other end, at the readers a walk hands one to. An empty

@@ -535,7 +535,7 @@ test_that("Arrow schema metadata supports predicates and computed queries", {
 
     expect_equal(names(result), c("group", "total"))
     expect_setequal(result$total, c(3L, 3L, 6L))
-    expect_true(any(is.na(result$group)))
+    expect_true(anyNA(result$group))
   }
 
   factor_result <- summarize_with_margins(

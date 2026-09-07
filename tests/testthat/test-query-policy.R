@@ -260,6 +260,7 @@ is_lazy_backend_input <- function(x) {
 install_read_tracer <- function(entry, counter, where) {
   subject <- entry$subject
   if (is.null(subject)) {
+    # jarl-ignore implicit_assignment: trace() requires a function literal.
     suppressMessages(trace(
       entry$name,
       where = where,

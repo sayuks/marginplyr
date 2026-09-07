@@ -617,6 +617,7 @@ test_that("a bare grouping_id() follows an edit to .grouping", {
   expect_identical(max(three$gid), 7L)
 })
 
+# jarl-ignore missing_argument: Empty arguments are the refusal under test.
 test_that("written arguments to grouping_id() are refused as before", {
   data <- data.frame(a = 1, b = 1)
 
@@ -1710,6 +1711,7 @@ test_that("a printed Grouping specification names the constructor called", {
 # here as an error, since the raise leaves `capture.output()` with nothing to
 # return and the comparison below is never made.
 expect_empty_name_line <- function(spec, info = NULL) {
+  # jarl-ignore implicit_assignment: The assertion also captures visibility.
   expect_identical(
     utils::capture.output(returned <- withVisible(print(spec))),
     "<marginplyr Grouping specification: >",

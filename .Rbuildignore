@@ -19,5 +19,7 @@
 ^investigation$
 ^cran-comments\.md$
 ^codecov\.yml$
+^jarl\.toml$
+^checktor-report$
 ^doc$
 ^Meta$

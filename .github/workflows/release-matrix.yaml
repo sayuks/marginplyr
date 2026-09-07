@@ -17,6 +17,8 @@
 #   backend-matrix generates the `backend` matrix below from the one table in
 #                  `tests/testthat/helper-optional-backends.R`.
 #   build          produces the single tarball every other job checks.
+#   checktor       on a manual pre-release run, checks that tarball for review
+#                  concerns outside R CMD check and records a human report.
 #   depends-only   rebuilds examples, tests, and vignettes with Suggested
 #                  packages withheld (`_R_CHECK_DEPENDS_ONLY_=true`).
 #   tarball        checks that tarball on R release, devel, and oldrel.
@@ -87,6 +89,9 @@
 #                       itself (`build`, `structure`, and `R-CMD-check.yaml`).
 #   hard-1              hard dependencies plus rcmdcheck, testthat, and quarto
 #                       (`depends-only` and `tarball`).
+#   checktor-1          hard dependencies plus checktor (`checktor`). Separate
+#                       because this job makes no optional-backend claim and
+#                       should not add checktor's dependencies to `hard-1`.
 #   backend-<name>-1    hard dependencies plus rcmdcheck and testthat, and
 #                       exactly one optional backend plus its companions
 #                       (`backend`). Derived per entry by
@@ -253,6 +258,57 @@ jobs:
         with:
           name: source-tarball
           path: tarball/marginplyr_*.tar.gz
+          retention-days: 7
+          if-no-files-found: error
+
+  # Reviewer-oriented checks are a release decision, not a signal worth adding
+  # to every pull request. A manual run of this workflow is the pre-release
+  # gate, and checks the same source tarball as the R release/devel/oldrel and
+  # isolated-backend jobs. Locally, install checktor and run:
+  #
+  #   R CMD build .
+  #   Rscript .github/scripts/check-cran-readiness.R marginplyr_*.tar.gz
+  #
+  # `.github/scripts/check-cran-readiness.R` owns the gate and report contract.
+  checktor:
+    name: CRAN preflight (checktor)
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: any::checktor
+          cache-version: checktor-1
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: source-tarball
+          path: tarball
+
+      - name: Run extra CRAN preflight checks
+        run: >-
+          Rscript .github/scripts/check-cran-readiness.R
+          tarball/marginplyr_*.tar.gz checktor-report/report.md
+
+      - name: Add the checktor report to the run summary
+        if: always()
+        run: cat checktor-report/report.md >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: checktor-report
+          path: checktor-report/report.md
           retention-days: 7
           if-no-files-found: error
 

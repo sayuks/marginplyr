@@ -142,6 +142,7 @@ native_translation_failure <- function() {
 # The name is what makes the two collide, unnamed dots no longer being able to:
 # each carries the caller's own expression as its name since #430, so two dots
 # the caller spelled differently label differently as well.
+# jarl-ignore duplicated_arguments: The collision is the failure under test.
 native_shared_label_failure <- function() {
   # nolint start: object_usage_linter.
   summarize_with_margins(
@@ -782,6 +783,7 @@ test_that("a native translation error blames the Margin verb", {
       .grouping = rollup(a)
     ))
   )
+  # jarl-ignore duplicated_arguments: The quote asserts the colliding call.
   expect_identical(
     conditionCall(expect_error(native_shared_label_failure())),
     quote(summarize_with_margins(

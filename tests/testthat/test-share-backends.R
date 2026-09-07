@@ -372,6 +372,7 @@ test_that("dtplyr preserves across arguments for unreferenced functions", {
   )
 })
 
+# jarl-ignore missing_argument: Omitted selection behavior is under test.
 test_that("dtplyr preserves an omitted across selection", {
   skip_if_suggest_absent("dtplyr")
   # dtplyr takes the share `across()` apart and rebuilds it a second time, to

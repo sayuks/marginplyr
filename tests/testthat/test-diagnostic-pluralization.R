@@ -189,6 +189,7 @@ test_that("the readings behind the coverage gate", {
     c(TRUE, TRUE, FALSE)
   )
 
+  # jarl-ignore unreachable_code: This fixture is inspected without execution.
   invariants <- function(n) {
     stop("column", if (n == 1L) " " else "s ", call. = FALSE)
     stop("a flat invariant naming no count.", call. = FALSE)

@@ -223,6 +223,7 @@ test_that("a namespaced call reads neither of its operands", {
     expression_data_symbols(quote(list(m = stats::median))),
     character()
   )
+  # jarl-ignore internal_function: The scanner reads `:::` as syntax.
   expect_identical(expression_data_symbols(quote(pkg:::fun(x))), "x")
 
   # A share source depending on an alias named after the function it calls.
@@ -942,6 +943,7 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
 # `TRUE` is what the reader's own contract gives it;
 # `investigation/an-empty-argument-under-a-selection-walk.md` measures what
 # tidyselect then settles such a part as, per operator.
+# jarl-ignore missing_argument: Empty expressions are the behavior under test.
 test_that("the name-only reader answers R's empty argument", {
   env <- rlang::current_env()
 
@@ -1351,6 +1353,7 @@ test_that("`<-`, `for`, and `local()` bind names rather than reading them", {
   # reads count and it has none. A bare `for` cannot be asserted here because
   # it evaluates to `NULL` and no summary can be one, so the walk-level table
   # below is the layer that covers that spelling.
+  # jarl-ignore implicit_assignment: Assignment is the syntax under test.
   from_bare_assignment <- summarize_with_margins(
     data,
     units = sum(value),
@@ -1419,6 +1422,7 @@ test_that("a bound name does not hide a genuine read beside it", {
   )
   expect_s3_class(from_local_body, "marginplyr_error")
 
+  # jarl-ignore implicit_assignment: Assignment is the syntax under test.
   from_bare_assignment <- expect_error(
     summarize_with_margins(
       data,
@@ -2031,6 +2035,7 @@ test_that("`across()` argument numbering holds without a mix of names", {
   expect_match(conditionMessage(all_named), "`na.rm`.", fixed = TRUE)
 })
 
+# jarl-ignore missing_argument: Empty arguments are the behavior under test.
 test_that("an empty argument in a summary expression evaluates, not aborts", {
   # Every empty-index spelling carries R's missing marker as an argument, and
   # `x[, "col"]` is everyday R rather than a contrived shape, so these are
@@ -2070,6 +2075,7 @@ test_that("an empty argument in a summary expression evaluates, not aborts", {
   )
 })
 
+# jarl-ignore missing_argument: Empty arguments are the refusal under test.
 test_that("a function rejecting an empty argument raises the caller's error", {
   # `sum(value, )` is the fourth spelling from #168, and it is the one whose
   # empty argument the called function itself refuses -- `mean()` accepts a
@@ -2145,6 +2151,7 @@ test_that("an empty argument does not hide a share helper beside it", {
 # always done here, and the empty spelling now matches it. The columns and the
 # values are dplyr's either way, which is what these assert.
 
+# jarl-ignore missing_argument: Omitted selection behavior is under test.
 test_that("an omitted `across()` selection keeps the columns dplyr selects", {
   data <- data.frame(
     region = c("East", "East", "West"),
@@ -2208,6 +2215,7 @@ test_that("an omitted `across()` selection keeps the columns dplyr selects", {
   })
 })
 
+# jarl-ignore missing_argument: The omitted function is the behavior under test.
 test_that("an omitted `across()` function keeps the columns dplyr returns", {
   # An omitted `.fns` is the identity, so every group must hold one row for the
   # result to be a summary at all -- which is dplyr's rule, not this package's,
@@ -2250,6 +2258,7 @@ test_that("an omitted `across()` function keeps the columns dplyr returns", {
   )
 })
 
+# jarl-ignore missing_argument: Omitted arguments are the behavior under test.
 test_that("an omitted `across()` argument leaves the positions around it", {
   # The surrounding arguments are what a rebuild that drops or appends gets
   # wrong: an argument removed from the middle moves every positional argument
@@ -2332,6 +2341,7 @@ test_that("an omitted `across()` argument leaves the positions around it", {
   )
 })
 
+# jarl-ignore missing_argument: Omitted arguments are the refusal under test.
 test_that("an invalid omitted `across()` argument raises dplyr's own error", {
   # An omitted `.fns` over a group of more than one row is a size error dplyr
   # itself raises, and the analysis has no fault to report: the caller must see
@@ -2388,6 +2398,7 @@ test_that("an omitted selection in a share `across()` selects every source", {
   )
 })
 
+# jarl-ignore missing_argument: The omitted function is the refusal under test.
 test_that("an omitted share `.fns` is refused by name, not by lookup", {
   # A share helper written past an omitted `.fns` is not a `.fns` at all, and
   # the diagnostic that says so is the one the caller can act on.
@@ -2424,6 +2435,7 @@ test_that("an omitted share `.fns` is refused by name, not by lookup", {
 # is rewritten here, so one reading applies to both, and it is the one dplyr
 # gives the position `across()` is written in as a summary.
 
+# jarl-ignore missing_argument: Omitted selection behavior is under test.
 test_that("an injected `across()` selection is the selection dplyr makes", {
   # The ordinary tidy-eval idiom for forwarding a selection, and the shape an
   # omitted argument is one value of. `{{ }}` inlines a quosure into `.cols`,
@@ -2707,6 +2719,7 @@ test_that("a nested `across()` selection is resolved where it is written", {
   expect_identical(deprecated, 2L)
 })
 
+# jarl-ignore missing_argument: Empty expressions are the behavior under test.
 test_that("an empty argument answers as omitted wherever the walk reads one", {
   # `across()` was the reconstruction path #174 was filed for, and the audit
   # that fixed it found the same read in four more places, each reached by an
@@ -2761,6 +2774,7 @@ test_that("an empty argument answers as omitted wherever the walk reads one", {
   expect_identical(injected_string, "x")
 })
 
+# jarl-ignore missing_argument: Empty arguments are the behavior under test.
 test_that("an empty argument outside `across()` evaluates as dplyr evaluates", {
   # The end-to-end half of the same audit, with dplyr as the oracle: whatever
   # each expression does in `dplyr::summarise()` is what it must do here,
@@ -2860,6 +2874,7 @@ test_that("a summary argument the caller left empty is refused by name", {
   }
 })
 
+# jarl-ignore missing_argument: Empty summaries are the refusal under test.
 test_that("an unnamed empty summary argument is refused by its position", {
   # The other spellings an empty summary reaches the verb by. A leading or
   # interior one is written; a spliced one is built, and survives capture
@@ -3094,6 +3109,7 @@ test_that("a pair holding nothing in an expression evaluates as dplyr does", {
   )
 })
 
+# jarl-ignore missing_argument: Empty arguments are the behavior under test.
 test_that("`parse_across_arguments()` answers an empty argument as omitted", {
   # The seam every `across()` path reads, and the one place that has to know
   # about the empty argument: each field below answers what it answers for an
@@ -3129,6 +3145,7 @@ test_that("`parse_across_arguments()` answers an empty argument as omitted", {
   expect_identical(supplied$unpack, FALSE)
 })
 
+# jarl-ignore missing_argument: Empty arguments are the behavior under test.
 test_that("a grouping helper reads an empty argument as a non-column", {
   # The third place an empty argument reaches, found by the same audit and
   # reached by neither path above: a `grouping_id()` or `grouping_bit()` call is
@@ -3754,6 +3771,7 @@ test_that("a name the recovery cannot read fails closed, not through", {
   )
 })
 
+# jarl-ignore unnecessary_parentheses: Nested pairs are syntax under test.
 test_that("a name the recovery can read is read, however it is spelled", {
   # The other half of the same table: shapes that are statically knowable, and
   # the two that are knowable to read nothing at all.
