@@ -434,13 +434,11 @@ unaudited `inspect_grouping()` alone therefore moves the answer to the second,
 and the page #23's User Story 35 makes canonical was the copy that was wrong
 (#494).
 
-`?last_sent_queries` now states the contract alone: what the record holds,
-which calls keep one, and what each of the four answers means. `?marginplyr`
-keeps that the record is off by default and that there is one capture, the
-guide keeps the live-backend walkthrough and the point that `"result"` is a
-render and not an execution, and both point at the reference for the rest.
-*Four answers, distinguished* above is this decision's record of them and not
-a copy of that page.
+`?last_sent_queries` now states the contract: what the record holds, which
+calls keep one, what each of the four answers means, and how to write a record
+out. `?marginplyr` and the guide each keep what their own audience needs and
+point at it for the contract. *Four answers, distinguished* above is this
+decision's record of them and not a copy of that page.
 
 What the fix rests on is that the page enumerates the calls once, in its
 description, and the first answer refers to that list rather than repeating

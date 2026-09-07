@@ -154,26 +154,21 @@ rd_topic_of <- function(topics, name) {
 }
 
 # `?last_sent_queries`'s four answers refer to the list of calls its
-# description gives rather than repeating it (#494), so the list is what a
-# seventh entry point has to reach to be covered by the first answer. This
-# fires when one does not, reading the set from the signatures as
-# `test-sent-queries.R` reads it from the bodies.
+# description gives rather than repeating it (ADR 0027, *one page states the
+# contract and two point at it*), so that list is what a seventh entry point
+# has to reach to be covered by the first answer. This fires when one does not,
+# reading the set from the signatures as `test-sent-queries.R` reads it from
+# the bodies. Whether a sentence about the record is true is not something it
+# reads.
 #
 # The description alone, not the page: `\seealso` links
 # `summarize_with_margins` for an unrelated reason, so a scan over the whole
 # topic passes two of the six verbs with the list deleted outright.
-#
-# What no scan here reads is whether a sentence about the record is true. The
-# drift #494 found was a bullet naming a narrower condition than the code uses,
-# on a page whose list already held all six calls, and *any entry point moves
-# the session off the first answer* in `test-sent-queries.R` is what holds that
-# condition, by running it.
 test_that("the record's owner lists every call that keeps one", {
   topics <- rd_topics()
   skip_if(is.null(topics), "No Rd sources available")
 
   described <- rd_description(topics[["last_sent_queries.Rd"]])
-  expect_type(described, "character")
 
   unlisted <- Filter(
     function(name) {

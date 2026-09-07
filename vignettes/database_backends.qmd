@@ -692,26 +692,14 @@ which renders in your session and sends nothing, so the `"selection_proxy"`
 row above was sent whether or not you were recording. *When marginplyr queries
 your data* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-is what enumerates those queries and says which backends receive them. Names
-other than `"result"` are marginplyr's own and are not fixed, so match on
-`"result"` and read the rest as context.
+is what enumerates those queries and says which backends receive them. Match
+on `"result"` and read the rest as context.
 
 `last_sent_queries()` gives four answers, and three of them could otherwise
 look like an empty record. What tells them apart, which calls keep a record,
-and what the record you are holding belongs to are stated in the
+what the record you are holding belongs to, and how to write one out are
+stated in the
 [`last_sent_queries()` reference](https://sayuks.github.io/marginplyr/man/last_sent_queries.html).
-
-marginplyr writes no file. The tibble is what you write, in whatever format
-your audit takes:
-
-```{r}
-#| eval: false
-
-utils::write.csv(last_sent_queries(), "sent-queries.csv")
-```
-
-The record is per call and nothing accumulates on your behalf, so a batch is
-read one call at a time and bound afterwards.
 
 ```{r}
 #| eval: !expr has_duckdb
