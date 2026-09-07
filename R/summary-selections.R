@@ -442,12 +442,10 @@ plan_summary_expressions <- function(dots,
   # 0007 has already captured the dots at the public verb.
   caller_labels <- summary_argument_labels(dots)
   original_dots <- dots
-  selection_proxy <- dplyr::select(
+  selection_proxy <- summary_selection_proxy(
     data_proxy,
-    dplyr::all_of(setdiff(
-      data_vars,
-      unique(group_vars)
-    ))
+    data_vars = data_vars,
+    group_vars = group_vars
   )
   dots <- resolve_summary_selections(
     dots,
@@ -530,6 +528,16 @@ find_summary_context_helpers <- function(expr) {
   )
 }
 
+# Builds the proxy every summary-selection reader sees: source columns outside
+# fixed keys and grouping dimensions. Keeping the exclusion here makes the
+# planning, rewriting, and output-name readers agree on one selection context.
+summary_selection_proxy <- function(data_proxy, data_vars, group_vars) {
+  dplyr::select(
+    data_proxy,
+    dplyr::all_of(setdiff(data_vars, unique(group_vars)))
+  )
+}
+
 # `caller_labels` is what a refusal quotes the failing dot by, and is passed in
 # rather than read off `dots`: the second resolution runs over dots this one
 # rewrote, whose labels are marginplyr's spelling and not the caller's
@@ -542,10 +550,10 @@ resolve_summary_selections <- function(dots,
                                        normalize_across_names = FALSE,
                                        skip_shares = FALSE) {
   stopifnot(length(dots) == length(caller_labels))
-  selectable_vars <- setdiff(data_vars, unique(group_vars))
-  selection_proxy <- dplyr::select(
+  selection_proxy <- summary_selection_proxy(
     data_proxy,
-    dplyr::all_of(selectable_vars)
+    data_vars = data_vars,
+    group_vars = group_vars
   )
 
   lapply(
@@ -741,12 +749,7 @@ rewrite_across_selection <- function(expr,
 }
 
 rewrite_pick_selection <- function(expr, env, data_proxy) {
-  call_args <- static_call_args(expr)
-  selection <- if (length(call_args) == 0L) {
-    rlang::expr(dplyr::everything())
-  } else {
-    rlang::call2("c", !!!call_args)
-  }
+  selection <- parse_pick_selection(expr)
   selected <- resolve_summary_selection(
     selection,
     env = env,
@@ -754,6 +757,16 @@ rewrite_pick_selection <- function(expr, env, data_proxy) {
   )
 
   rebuild_static_call(expr, list(summary_all_of_expr(selected, data_proxy)))
+}
+
+# Reads a `pick()` call's selection. An empty call selects everything, and both
+# callers need that rule to agree on the columns `pick()` can produce.
+parse_pick_selection <- function(expr) {
+  call_args <- static_call_args(expr)
+  if (length(call_args) == 0L) {
+    return(rlang::expr(dplyr::everything()))
+  }
+  rlang::call2("c", !!!call_args)
 }
 
 resolve_summary_selection <- function(expr, env, data_proxy) {
@@ -866,12 +879,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   }
 
   if (identical(kind, "pick")) {
-    call_args <- static_call_args(expr)
-    selection <- if (length(call_args) == 0L) {
-      rlang::expr(dplyr::everything())
-    } else {
-      rlang::call2("c", !!!call_args)
-    }
+    selection <- parse_pick_selection(expr)
     return(names(resolve_summary_selection(selection, env, data_proxy)))
   }
 

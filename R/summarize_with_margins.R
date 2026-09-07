@@ -931,16 +931,14 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       )
       summaries <- summary_plan$summaries
       dots <- summaries$dots
-      summary_selection_proxy <- dplyr::select(
+      selection_proxy <- summary_selection_proxy(
         operation$data_proxy,
-        dplyr::all_of(setdiff(
-          operation$data_vars,
-          unique(group_vars)
-        ))
+        data_vars = operation$data_vars,
+        group_vars = group_vars
       )
       summary_output_names <- unique(c(
         names(dots)[nzchar(names(dots))],
-        known_summary_output_names(dots, summary_selection_proxy)
+        known_summary_output_names(dots, selection_proxy)
       ))
       check_summary_group_overwrite(
         summary_output_names,

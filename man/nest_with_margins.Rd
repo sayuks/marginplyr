@@ -100,7 +100,7 @@ original, pre-margin values rather than \code{.margin_label}.}
 }
 \value{
 For a local input, an ungrouped data frame with one list column,
-whose class and attributes follow \code{\link[dplyr:summarize]{dplyr::summarize()}}; see \emph{Result class
+whose class and attributes follow \code{\link[dplyr:mutate]{dplyr::mutate()}}; see \emph{Result class
 and attributes}. A \code{dtplyr} input returns a lazy \code{dtplyr} step until
 collected. Result row order is unspecified unless \code{.sort} asks for a
 Margin order; see \emph{Margin order}, or use \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other

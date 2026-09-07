@@ -2,6 +2,7 @@
 ^AGENTS\.md$
 ^CLAUDE\.md$
 ^\.Rproj\.user$
+^\.git$
 ^LICENSE\.md$
 ^CODE_OF_CONDUCT\.md$
 ^README\.Rmd$
