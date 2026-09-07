@@ -127,15 +127,19 @@ reconstruct_factor.data.frame <- function(data,
   # against the data mask first, so a source column called `new_levels`,
   # `ord`, or `missing_sentinel` would supply the argument instead of the
   # local, silently rebuilding the factor from the wrong levels.
+  #
+  # The head is qualified rather than bare for the separate reason
+  # `marginplyr_private_call()` gives: the dtplyr method below shares this
+  # body, and dtplyr defers the expression into an environment where a bare
+  # name is not bound (#491).
   dplyr::mutate(
     .data = data,
-    "{col}" := !!rlang::expr(
-      reconstruct_factor_vector(
-        !!margin_column_pronoun(col),
-        new_levels = !!new_levels,
-        ordered = !!ord,
-        missing_sentinel = !!missing_sentinel
-      )
+    "{col}" := !!rlang::call2(
+      marginplyr_private_call("reconstruct_factor_vector"),
+      margin_column_pronoun(col),
+      new_levels = new_levels,
+      ordered = ord,
+      missing_sentinel = missing_sentinel
     )
   )
 }

@@ -971,7 +971,7 @@ wrap_share_sources <- function(dots,
         source_summaries
       )
       wrapped <- rlang::call2(
-        share_private_call("check_share_across"),
+        marginplyr_private_call("check_share_across"),
         expr,
         share_outputs = share_outputs,
         share_kinds = share_kinds
@@ -980,7 +980,7 @@ wrap_share_sources <- function(dots,
       check <- checks[[1L]]
       is_dtplyr <- identical(backend_kind, "dtplyr")
       wrapped <- rlang::call2(
-        share_private_call(if (is_dtplyr) {
+        marginplyr_private_call(if (is_dtplyr) {
           "check_dtplyr_share_source"
         } else {
           "check_share_scalar"
@@ -1152,18 +1152,18 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
     )
   }
   input <- rlang::call2(
-    share_private_call("dtplyr_share_input_name"),
+    marginplyr_private_call("dtplyr_share_input_name"),
     dtplyr_lambda_pronoun()
   )
   mapping_expr <- rlang::call2(
-    share_private_call("new_share_validation_mapping"),
+    marginplyr_private_call("new_share_validation_mapping"),
     inputs = mapping$inputs,
     share_outputs = mapping$share_outputs,
     source_summaries = mapping$source_summaries,
     share_kinds = mapping$share_kinds
   )
   validator <- rlang::call2(
-    share_private_call("check_dtplyr_share_scalar"),
+    marginplyr_private_call("check_dtplyr_share_scalar"),
     value,
     input = input,
     mapping = mapping_expr,
@@ -1224,14 +1224,6 @@ new_share_validation_mapping <- function(inputs,
     share_outputs = share_outputs,
     source_summaries = source_summaries,
     share_kinds = share_kinds
-  )
-}
-
-share_private_call <- function(name) {
-  rlang::call2(
-    ":::",
-    rlang::sym("marginplyr"),
-    rlang::sym(name)
   )
 }
 

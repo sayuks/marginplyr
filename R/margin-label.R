@@ -433,12 +433,14 @@ label_margin_branch <- function(.data,
       encoded_factors,
       function(info) {
         col <- info$col
-        rlang::expr(
-          encode_factor_for_margin(
-            !!margin_column_pronoun(col),
-            missing_sentinel = !!sentinels[[col]],
-            preserve_missing_value = TRUE
-          )
+        # The head is qualified for the reason `marginplyr_private_call()`
+        # gives: dtplyr defers this expression into an environment where a
+        # bare name is not bound (#491).
+        rlang::call2(
+          marginplyr_private_call("encode_factor_for_margin"),
+          margin_column_pronoun(col),
+          missing_sentinel = sentinels[[col]],
+          preserve_missing_value = TRUE
         )
       }
     )
