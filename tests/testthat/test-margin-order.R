@@ -705,7 +705,7 @@ test_that("`.sort = \"none\"` clears no window ordering", {
   query <- summarize_with_margins(
     remote,
     units = sum(units, na.rm = TRUE),
-    .grouping = grouping_spec(region),
+    .grouping = rollup(region),
     .sort = "none"
   )
   # Asking for no order reaches neither the ordering nor the clearing that
@@ -716,6 +716,46 @@ test_that("`.sort = \"none\"` clears no window ordering", {
     dbplyr::sql_render(dplyr::mutate(query, running = cumsum(units)))
   )
   expect_match(windowed, "OVER (ORDER BY", fixed = TRUE)
+})
+
+test_that("`.sort = \"none\"` preserves portable window ordering", {
+  skip_if_no_sqlite_simulation()
+  remote <- dbplyr::window_order(
+    dbplyr::tbl_lazy(margin_order_data(), con = dbplyr::simulate_sqlite()),
+    region
+  )
+
+  query <- summarize_with_margins(
+    remote,
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(region),
+    .sort = "none"
+  )
+  expect_false(grepl("ORDER BY", dbplyr::sql_render(query), fixed = TRUE))
+  windowed <- suppressWarnings(
+    dbplyr::sql_render(dplyr::mutate(query, running = cumsum(units)))
+  )
+  expect_match(windowed, "OVER (ORDER BY", fixed = TRUE)
+})
+
+test_that("portable window ordering keeps only summary columns", {
+  skip_if_no_sqlite_simulation()
+  remote <- dbplyr::window_order(
+    dbplyr::tbl_lazy(margin_order_data(), con = dbplyr::simulate_sqlite()),
+    store,
+    dplyr::desc(region)
+  )
+
+  query <- summarize_with_margins(
+    remote,
+    units = sum(units, na.rm = TRUE),
+    .grouping = rollup(region),
+    .sort = "none"
+  )
+  windowed <- suppressWarnings(
+    dbplyr::sql_render(dplyr::mutate(query, running = cumsum(units)))
+  )
+  expect_match(windowed, "OVER (ORDER BY `region` DESC", fixed = TRUE)
 })
 
 # The live backend contracts follow.

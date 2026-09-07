@@ -176,6 +176,20 @@ The default is not data dependent. The removed option defaulted to
 lazy results unordered. Row order is where such a split is hardest to
 notice.
 
+## Amendment: no Margin order preserves usable window ordering
+
+`.sort = "none"` asks for no Margin order. It also leaves every usable dbplyr
+window-order term the input carried available to a later window expression,
+on both the native and portable adapters (#493). A term whose column is not
+in the result is discarded as dbplyr normally discards it; marginplyr adds no
+rule of its own for that case.
+
+A window ordering is metadata for a later window expression, not a physical
+row order. The portable adapter therefore restores it on the final lazy
+result rather than adding an `ORDER BY` or a per-branch subquery. This does
+not alter the existing rule for `.sort = "first"` or `"last"`: those choices
+request a Margin order and clear a window ordering that cannot reproduce it.
+
 ## Considered options
 
 **`.bits`, an argument adding one Grouping bit column per dimension, leaving

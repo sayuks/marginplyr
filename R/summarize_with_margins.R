@@ -1058,6 +1058,11 @@ stage_margin_summaries <- function(operation,
           set_id_is_internal = set_id_is_internal
         )
       } else {
+        input_window_order <- if (operation$backend$records_window_order) {
+          dbplyr::op_sort(operation$data)
+        } else {
+          list()
+        }
         summarize_margin_union(
           operation$data,
           summaries = summaries,
@@ -1067,7 +1072,8 @@ stage_margin_summaries <- function(operation,
           reserved_names = reserved_names,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal,
-          call = operation$call
+          call = operation$call,
+          input_window_order = input_window_order
         )
       }
     },
