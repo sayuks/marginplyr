@@ -386,7 +386,8 @@ summarize_margin_union <- function(.data,
                                    reserved_names,
                                    set_id_name = NULL,
                                    set_id_is_internal = FALSE,
-                                   call = NULL) {
+                                   call = NULL,
+                                   input_window_order = list()) {
   dots <- summaries$dots
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
@@ -523,7 +524,28 @@ summarize_margin_union <- function(.data,
     plan$set_ids
   )
 
-  combine_margin_branches(branches)
+  restore_input_window_order(
+    combine_margin_branches(branches),
+    input_window_order
+  )
+}
+
+# Restores the input's usable dbplyr window ordering after `UNION ALL` has
+# dropped it. ADR 0018's `.sort = "none"` amendment and #493 decide the
+# contract; terms the result cannot name follow the native adapter and vanish.
+restore_input_window_order <- function(result, input_window_order) {
+  if (length(input_window_order) == 0L) {
+    return(result)
+  }
+  result_names <- get_col_names(result, dplyr::everything())
+  usable <- Filter(
+    function(term) all(all.vars(term) %in% result_names),
+    input_window_order
+  )
+  if (length(usable) == 0L) {
+    return(result)
+  }
+  dbplyr::window_order(result, !!!usable)
 }
 
 # `backend` is the operation's own, and it sits among the required arguments
