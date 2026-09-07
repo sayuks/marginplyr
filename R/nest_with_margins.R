@@ -81,7 +81,7 @@
 #' before the result is returned.
 #'
 #' @return For a local input, an ungrouped data frame with one list column,
-#'   whose class and attributes follow [dplyr::summarize()]; see *Result class
+#'   whose class and attributes follow [dplyr::mutate()]; see *Result class
 #'   and attributes*. A `dtplyr` input returns a lazy `dtplyr` step until
 #'   collected. Result row order is unspecified unless `.sort` asks for a
 #'   Margin order; see *Margin order*, or use [dplyr::arrange()] for any other

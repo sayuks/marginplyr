@@ -74,15 +74,11 @@ margin_factor_levels <- function(info, .margin_name, position) {
       !(.margin_name %in% info$levels)
   )
 
-  # The assignment is this function's return value, which codetools reads as a
-  # dead store.
-  # nolint start: object_usage_linter.
-  new_levels <- if (identical(position, "first")) {
+  if (identical(position, "first")) {
     c(.margin_name, info$levels)
   } else {
     c(info$levels, .margin_name)
   }
-  # nolint end
 }
 
 restore_margin_factors <- function(.data,

@@ -58,8 +58,7 @@ source(system.file("suggests", "guard.R", package = "marginplyr"))
 # the installed driver version through RSQLite.
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
-has_tabsets <- marginplyr_suggest_available("knitr") &&
-  marginplyr_suggest_available("quartabs")
+has_tabsets <- marginplyr_suggest_available("quartabs")
 
 # Installs the `must_error` chunk option this document's rejected-call chunks
 # use. AGENTS.md is authoritative for what it does and why it exists.

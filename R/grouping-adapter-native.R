@@ -47,15 +47,14 @@ summarize_margin_native <- function(.data,
       used_names = reserved_names,
       prefix = "..marginplyr_grouping_"
     )
-    flag_quos <- Map(
-      function(var, name) {
+    flag_quos <- lapply(
+      labelled_dimensions,
+      function(var) {
         rlang::new_quosure(
           grouping_sql_expr(var, con),
           env = rlang::empty_env()
         )
-      },
-      labelled_dimensions,
-      flag_names
+      }
     )
     names(flag_quos) <- flag_names
   } else {
