@@ -123,6 +123,49 @@ test_that("the Grouping-identity comparison has exactly one canonical home", {
   expect_equal(names(topics)[carries_table], "grouping_bit.Rd")
 })
 
+# The topic documenting `name`, which is not always a page of its own:
+# `summarise_with_margins()` is an alias on `summarize_with_margins.Rd`, and a
+# page linking that topic has named it.
+rd_topic_of <- function(topics, name) {
+  alias <- paste0("\\alias{", name, "}")
+  documented <- names(topics)[vapply(
+    topics,
+    function(text) grepl(alias, text, fixed = TRUE),
+    logical(1)
+  )]
+  sub("[.]Rd$", "", documented)
+}
+
+# `?last_sent_queries` owns the record's contract (#494), and the one
+# enumeration it holds is of the calls that keep a record. Its four answers
+# refer to that list rather than restating it, so a seventh entry point missing
+# from the list is missing from the first answer too -- which is what this
+# fires on, reading the set from the signatures as `test-sent-queries.R` reads
+# it from the bodies.
+#
+# What it cannot read is whether a sentence about the record is true: the
+# drift #494 found was a bullet naming a narrower condition than the code
+# uses, on a page that already listed all six calls. *Any entry point moves the
+# session off the first answer* in `test-sent-queries.R` is what holds that
+# condition, by running it.
+test_that("the record's owner names every call that keeps one", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  page <- topics[["last_sent_queries.Rd"]]
+  expect_type(page, "character")
+
+  unnamed <- Filter(
+    function(name) {
+      links <- paste0("\\link[=", rd_topic_of(topics, name), "]")
+      !any(vapply(links, grepl, logical(1), x = page, fixed = TRUE))
+    },
+    verbs_taking(".grouping")
+  )
+
+  expect_identical(unnamed, character())
+})
+
 # Every guard in the shipped documentation decides whether optional code runs,
 # and `requireNamespace()` cannot make that decision correctly: it reports an
 # installed-but-too-old package usable, and the guarded code then calls an API

@@ -54,6 +54,13 @@ record_sent_query <- function(purpose, query) {
   invisible(NULL)
 }
 
+# The record's contract is written on this page and nowhere else: `?marginplyr`
+# and the database-backends guide point at it rather than restating it (#494).
+# The one enumeration it holds is of the calls that keep a record, which the
+# four answers refer to rather than repeat. `test-documentation.R` holds that
+# list to the entry points the code has, and `test-sent-queries.R` runs each of
+# them against the answer it moves the session to.
+
 #' Read back the SQL marginplyr sent in the last call
 #'
 #' A Margin verb applied to a SQL backend returns its result unexecuted and
@@ -97,10 +104,10 @@ record_sent_query <- function(purpose, query) {
 #' call made in this process and not one made in a worker.
 #'
 #' @section Four answers:
-#' - Nothing has been recorded in this session -- no Margin verb has begun --
-#'   and the call is refused with a `"marginplyr_error"`. A verb that began and
-#'   then refused your call has begun, so what is read after one is its own
-#'   record, empty, and not this refusal.
+#' - Nothing has been recorded in this session -- none of the calls listed
+#'   above has begun -- and the call is refused with a `"marginplyr_error"`. A
+#'   call that began and then refused your arguments has begun, so what is read
+#'   after one is its own record, empty, and not this refusal.
 #' - The last call was not audited, the option being unset or holding a value
 #'   other than `TRUE` when the call began, and the call is refused with a
 #'   `"marginplyr_error"` naming `marginplyr.audit_sql`. The option is read

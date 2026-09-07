@@ -38,6 +38,20 @@ expect_unaudited <- function() {
   )
 }
 
+# The session's first refusal, told apart from the unaudited one by what its
+# message does not name. Both are marginplyr errors, so a read asserting only
+# the class passes on either.
+expect_nothing_recorded <- function() {
+  condition <- rlang::catch_cnd(
+    last_sent_queries(),
+    classes = "marginplyr_error"
+  )
+  expect_s3_class(condition, "marginplyr_error")
+  expect_false(
+    grepl("marginplyr.audit_sql", conditionMessage(condition), fixed = TRUE)
+  )
+}
+
 expect_sent_nothing <- function() {
   record <- last_sent_queries()
   expect_s3_class(record, "tbl_df")
@@ -751,10 +765,10 @@ test_that("a call refused before its plan reads the option for itself", {
   expect_sent_nothing()
 })
 
-test_that("a call refused before its plan is a call the session recorded", {
-  # The one reading a later call cannot restore, so the whole record is saved
-  # and put back: emptying it is how the session's first call is reached
-  # twice.
+# `expr` evaluated against a record holding nothing, which is put back
+# afterwards. The state a later call cannot restore is the session's first, so
+# reaching it more than once means saving the whole record and emptying it.
+with_empty_record <- function(expr) {
   saved <- as.list(sent_queries, all.names = TRUE)
   empty_the_record <- function() {
     rm(list = names(saved), envir = sent_queries)
@@ -768,25 +782,68 @@ test_that("a call refused before its plan is a call the session recorded", {
   )
 
   empty_the_record()
-  # The control: with nothing recorded, the accessor refuses rather than
-  # answering, which is what makes the read after the refusal an assertion.
-  expect_error(last_sent_queries(), class = "marginplyr_error")
+  force(expr)
+}
 
-  with_audit_option(TRUE, {
-    expect_error(
-      summarize_with_margins(
-        sent_queries_data(),
-        total = sum(v, na.rm = TRUE),
-        .grouping = rollup(g),
-        .duplicates = "bogus"
-      ),
-      class = "marginplyr_error"
-    )
+test_that("a call refused before its plan is a call the session recorded", {
+  with_empty_record({
+    # The control: with nothing recorded, the accessor refuses rather than
+    # answering, which is what makes the read after the refusal an assertion.
+    expect_nothing_recorded()
+
+    with_audit_option(TRUE, {
+      expect_error(
+        summarize_with_margins(
+          sent_queries_data(),
+          total = sum(v, na.rm = TRUE),
+          .grouping = rollup(g),
+          .duplicates = "bogus"
+        ),
+        class = "marginplyr_error"
+      )
+    })
+
+    # A verb that began and then refused the call has begun, so the answer is
+    # its own empty record and not the session's first (ADR 0027).
+    expect_sent_nothing()
   })
+})
 
-  # A verb that began and then refused the call has begun, so the answer is
-  # its own empty record and not the session's first (ADR 0027).
-  expect_sent_nothing()
+# The first of the four answers is reached when nothing has been recorded, and
+# every entry point moves the session off it -- `inspect_grouping()` included,
+# which compiles a Grouping plan without a Margin operation and empties the
+# record like the rest (ADR 0027). The reference states that condition once,
+# and this is what holds it: an entry point that stopped recording would leave
+# the session answering the first where the page promises the second.
+test_that("any entry point moves the session off the first answer", {
+  data <- data.frame(g = c("a", "a", "b"), value = 1:3)
+
+  # The entry point still answering the session's first refusal, rather than
+  # one expectation per verb: which one it is not otherwise in the report.
+  first <- character()
+
+  for (name in names(forwarded_verbs)) {
+    with_empty_record({
+      expect_nothing_recorded()
+      # Unaudited, the option being unset, so the answer the call moves to is
+      # the second and its message names `marginplyr.audit_sql`.
+      expect_null(getOption("marginplyr.audit_sql"))
+      forwarded_verbs[[name]](data, grouping = rollup(g))
+      condition <- rlang::catch_cnd(
+        last_sent_queries(),
+        classes = "marginplyr_error"
+      )
+      if (
+        is.null(condition) ||
+          !grepl("marginplyr.audit_sql", conditionMessage(condition),
+                 fixed = TRUE)
+      ) {
+        first <- c(first, name)
+      }
+    })
+  }
+
+  expect_identical(first, character())
 })
 
 # --- the reset site, structurally --------------------------------------------

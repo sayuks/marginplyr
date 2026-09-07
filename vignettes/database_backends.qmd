@@ -706,22 +706,9 @@ other than `"result"` are marginplyr's own and are not fixed, so match on
 `"result"` and read the rest as context.
 
 `last_sent_queries()` gives four answers, and three of them could otherwise
-look alike:
-
-- **Nothing has been recorded in this session**, neither a Margin verb nor
-  `inspect_grouping()` having run: refused with a marginplyr error.
-
-- **The last call was not audited**: refused with a marginplyr error naming
-  `marginplyr.audit_sql`. The option is read once as a call begins, so setting
-  it afterwards cannot audit a call already made.
-
-- **An audited call sent nothing**: a zero-row tibble, the only answer with
-  zero rows. A data frame, a dtplyr table, and an Arrow table send no SQL, so
-  an audited call on one records nothing, and that is correct rather than a
-  hole.
-
-- **A statement dbplyr refuses to translate for the backend**: its row is kept
-  with `NA` in `sql`, and the call itself is unaffected.
+look like an empty record. What tells them apart is stated in the
+[`last_sent_queries()` reference](https://sayuks.github.io/marginplyr/man/last_sent_queries.html),
+which is also where the record's contract is written.
 
 Each row is written before its query is sent, so a call that fails leaves
 readable every query it had already sent.
