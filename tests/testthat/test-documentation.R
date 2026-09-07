@@ -123,6 +123,64 @@ test_that("the Grouping-identity comparison has exactly one canonical home", {
   expect_equal(names(topics)[carries_table], "grouping_bit.Rd")
 })
 
+# The `\description{}` block of one Rd topic, or `""` where the topic has none
+# -- which fails whatever reads the block rather than passing it an empty page.
+#
+# The block holds braces of its own, every `\code{}` in it one, so what bounds
+# the match is roxygen2 writing the closing brace of a top-level block on a
+# line of its own.
+rd_description <- function(text) {
+  block <- regmatches(
+    text,
+    regexpr("(?s)\\\\description\\{\\n.*?\\n\\}\\n", text, perl = TRUE)
+  )
+  if (length(block) == 0L) {
+    return("")
+  }
+  block
+}
+
+# The topic documenting `name`, which is not always a page of its own:
+# `summarise_with_margins()` is an alias on `summarize_with_margins.Rd`, and a
+# page linking that topic has named it.
+rd_topic_of <- function(topics, name) {
+  alias <- paste0("\\alias{", name, "}")
+  documented <- names(topics)[vapply(
+    topics,
+    function(text) grepl(alias, text, fixed = TRUE),
+    logical(1)
+  )]
+  sub("[.]Rd$", "", documented)
+}
+
+# The first of `?last_sent_queries`'s four answers refers to the list of calls
+# its description gives rather than repeating it (ADR 0027, *one page states
+# the contract and two point at it*), so that list is what a seventh entry
+# point has to reach to be covered by it. This fires when one does not,
+# reading the set from the signatures as `test-sent-queries.R` reads it from
+# the bodies. Whether a sentence about the record is true is not something it
+# reads.
+#
+# The description alone, not the page: `\seealso` links
+# `summarize_with_margins` for an unrelated reason, so a scan over the whole
+# topic passes two of the six verbs with the list deleted outright.
+test_that("the record's owner lists every call that keeps one", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  described <- rd_description(topics[["last_sent_queries.Rd"]])
+
+  unlisted <- Filter(
+    function(name) {
+      links <- paste0("\\link[=", rd_topic_of(topics, name), "]")
+      !any(vapply(links, grepl, logical(1), x = described, fixed = TRUE))
+    },
+    verbs_taking(".grouping")
+  )
+
+  expect_identical(unlisted, character())
+})
+
 # Every guard in the shipped documentation decides whether optional code runs,
 # and `requireNamespace()` cannot make that decision correctly: it reports an
 # installed-but-too-old package usable, and the guarded code then calls an API
