@@ -820,9 +820,11 @@ test_that("any entry point moves the session off the first answer", {
 
   data <- data.frame(g = c("a", "a", "b"), value = 1:3)
 
-  # The entry point still answering the session's first refusal, rather than
-  # one expectation per verb: which one it is not otherwise in the report.
-  first <- character()
+  # The entry point after which the accessor did not give the unaudited
+  # refusal -- the session either still answering its first or answering with
+  # rows -- rather than one expectation per verb: which one it is not otherwise
+  # in the report.
+  unmoved <- character()
 
   for (name in names(forwarded_verbs)) {
     with_empty_record({
@@ -832,12 +834,12 @@ test_that("any entry point moves the session off the first answer", {
       expect_null(getOption("marginplyr.audit_sql"))
       forwarded_verbs[[name]](data, grouping = rollup(g))
       if (!isTRUE(refusal_names_the_option())) {
-        first <- c(first, name)
+        unmoved <- c(unmoved, name)
       }
     })
   }
 
-  expect_identical(first, character())
+  expect_identical(unmoved, character())
 })
 
 # --- the reset site, structurally --------------------------------------------

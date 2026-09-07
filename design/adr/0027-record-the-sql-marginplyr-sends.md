@@ -443,10 +443,15 @@ decision's record of them and not a copy of that page.
 What the fix rests on is that the page enumerates the calls once, in its
 description, and the first answer refers to that list rather than repeating
 it. `test-documentation.R` holds the list to the exported functions taking
-`.grouping`, reading the description alone because `\seealso` links two of
-those names for reasons of its own. Whether a sentence about the record is
-true is not a thing either gate reads, and `test-sent-queries.R` runs every
-entry point against the answer it moves the session to for that reason.
+`.grouping`, reading the description alone for the reason it states. Whether a
+sentence about the record is true is not a thing either gate reads, and
+`test-sent-queries.R` runs every entry point against the answer it moves the
+session to for that reason.
+
+One claim in the section above was already wrong before this branch reached
+it: "It names one capture" is true of `?marginplyr`'s section and not of the
+reference, which named none then and names none now. The paragraph describes
+the two pages together, which is the shape this amendment ends.
 
 ## Related decisions
 

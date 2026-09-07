@@ -54,11 +54,11 @@ record_sent_query <- function(purpose, query) {
   invisible(NULL)
 }
 
-# The four answers below refer to the list of calls the description names
-# rather than repeating it, so the page holds one enumeration and the two
-# cannot disagree (ADR 0027, *one page states the contract and two point at
-# it*). `test-documentation.R` holds that list to the entry points the code
-# has.
+# The first of the four answers below refers to the list of calls the
+# description names rather than repeating it, so the page holds one enumeration
+# and the two cannot disagree (ADR 0027, *one page states the contract and two
+# point at it*). `test-documentation.R` holds that list to the entry points the
+# code has.
 
 #' Read back the SQL marginplyr sent in the last call
 #'

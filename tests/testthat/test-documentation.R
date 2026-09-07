@@ -153,10 +153,10 @@ rd_topic_of <- function(topics, name) {
   sub("[.]Rd$", "", documented)
 }
 
-# `?last_sent_queries`'s four answers refer to the list of calls its
-# description gives rather than repeating it (ADR 0027, *one page states the
-# contract and two point at it*), so that list is what a seventh entry point
-# has to reach to be covered by the first answer. This fires when one does not,
+# The first of `?last_sent_queries`'s four answers refers to the list of calls
+# its description gives rather than repeating it (ADR 0027, *one page states
+# the contract and two point at it*), so that list is what a seventh entry
+# point has to reach to be covered by it. This fires when one does not,
 # reading the set from the signatures as `test-sent-queries.R` reads it from
 # the bodies. Whether a sentence about the record is true is not something it
 # reads.
