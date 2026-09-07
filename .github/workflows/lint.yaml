@@ -44,22 +44,6 @@ jobs:
       - name: Verify every path a maintained document names exists
         run: Rscript .github/scripts/verify-doc-references.R
 
-  # Jarl complements rather than replaces lintr. Its fast syntax rules run in
-  # a separate job so they report without waiting for the package dependency
-  # install below; lintr remains responsible for namespace-aware usage and
-  # formatting rules that Jarl deliberately does not implement. The action and
-  # binary are pinned independently. Run the same check locally with
-  # `jarl check .`; `jarl.toml` owns the repository-wide rule selection.
-  jarl:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: etiennebacher/setup-jarl@v0.1.1
-        with:
-          version: "0.6.0"
-
   lint:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -74,6 +58,15 @@ jobs:
         with:
           extra-packages: any::lintr, any::pkgload, local::.
           needs: lint
+
+      # Jarl complements rather than replaces lintr. Package-specific rules
+      # need R and installed packages, so this reuses the dependency environment
+      # instead of duplicating it in a separate job. The action and binary are
+      # pinned independently. Run the same check locally with `jarl check .`;
+      # `jarl.toml` owns the repository-wide rule selection.
+      - uses: etiennebacher/setup-jarl@v0.1.1
+        with:
+          version: "0.6.0"
 
       # `object_usage_linter()` resolves symbols through the package namespace,
       # so linting a package that is not loaded reports every internal function
