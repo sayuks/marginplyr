@@ -172,7 +172,7 @@ test_that("dtplyr obeys the eight-case contract as the local backend does", {
 # One verb call, written so the same expression serves both backends: `INPUT`
 # stands where the verb's data argument goes and is replaced with the
 # expression that produces it.
-factor_user_env_call <- function(call, input) {
+factor_call_with_input <- function(call, input) {
   do.call(substitute, list(call, list(INPUT = input)))
 }
 
@@ -257,7 +257,7 @@ test_that("dtplyr rebuilds a factor dimension outside the namespace", {
         data,
         rlang::call2(
           "collect",
-          factor_user_env_call(calls[[verb]], quote(dtplyr::lazy_dt(data))),
+          factor_call_with_input(calls[[verb]], quote(dtplyr::lazy_dt(data))),
           .ns = "dplyr"
         )
       )
@@ -269,10 +269,15 @@ test_that("dtplyr rebuilds a factor dimension outside the namespace", {
         info = info
       )
       expect_identical(
-        sort(as.character(result$group)),
-        sort(as.character(
-          eval(factor_user_env_call(calls[[verb]], quote(data)))$group
-        )),
+        # `na.last` because the default drops a missing value from both sides,
+        # which is the one difference these cases are here to see.
+        sort(as.character(result$group), na.last = TRUE),
+        sort(
+          as.character(
+            eval(factor_call_with_input(calls[[verb]], quote(data)))$group
+          ),
+          na.last = TRUE
+        ),
         info = info
       )
     }

@@ -433,9 +433,8 @@ label_margin_branch <- function(.data,
       encoded_factors,
       function(info) {
         col <- info$col
-        # The head is qualified for the reason `marginplyr_private_call()`
-        # gives: dtplyr defers this expression into an environment where a
-        # bare name is not bound (#491).
+        # The head is qualified because dtplyr defers this expression
+        # (`marginplyr_private_call()`, #491).
         rlang::call2(
           marginplyr_private_call("encode_factor_for_margin"),
           margin_column_pronoun(col),
