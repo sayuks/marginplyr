@@ -23,10 +23,6 @@ above. See ADR 0020.
 
 ## Amendment: Arrow does not hold declared factor levels
 
-The "every backend" clause in the amendment above is superseded. Arrow's
-schema supplies no factor levels for marginplyr to compare, and Arrow returns
-the dimension as character, so an unused declared level cannot itself make two
-result rows indistinguishable. An observed collision is still checked when the
-caller sets `.check_margin_label = TRUE`. ADR 0020's amendment *declared
-factor levels are not metadata on Arrow* owns this exception and the rule that
-it adds no read.
+The "every backend" clause in the amendment above is superseded by #492.
+ADR 0020's amendment *declared factor levels are not metadata on Arrow* owns
+the Arrow exception and the rule that it adds no read.

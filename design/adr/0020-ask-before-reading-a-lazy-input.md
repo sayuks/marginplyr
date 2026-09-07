@@ -231,10 +231,9 @@ Evidence: `investigation/query-cost-across-lazy-backends.md` and
 ## Amendment: declared factor levels are not metadata on Arrow
 
 The declared half of the Margin-label collision check still contacts nothing
-where marginplyr holds factor-level metadata. It was too broad to say that this
-holds on every backend. Arrow's schema supplies a dictionary type but not its
-levels to the metadata marginplyr reads, and a non-missing Margin label makes
-the resulting dimension character rather than a factor.
+where marginplyr holds factor-level metadata. #492 narrows the former
+all-backends statement for Arrow: an Arrow result carries a non-missing Margin
+label as character rather than as a factor.
 
 Arrow therefore does not reject a label equal to an unused declared factor
 level, whatever `.check_margin_label` says. That level has no row in the
@@ -242,8 +241,5 @@ result, so it cannot itself make a source row and a margin row
 indistinguishable. A source value equal to the label is an observed collision,
 and Arrow rejects it when the caller sets `.check_margin_label = TRUE`.
 
-This does not add a metadata read or distinguish Arrow input classes. A
-zero-row read can reveal levels for some Arrow inputs but not for every Arrow
-table, query, or dataset, and the rule above does not permit a read the caller
-did not ask for. ADR 0003's amendment *one half of the collision check contacts
-nothing* is superseded only in its "every backend" clause.
+This adds no read. ADR 0003's amendment *one half of the collision check
+contacts nothing* is superseded only in its "every backend" clause.
