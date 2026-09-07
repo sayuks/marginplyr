@@ -62,13 +62,13 @@ reconstruct_factor_vector <- function(x,
 }
 
 margin_factor_levels <- function(info, .margin_name, position) {
-  # An invariant, not a Package condition (ADR-0015). A label equal to a
-  # declared level is rejected before anything executes and whatever
-  # `.check_margin_label` says (ADR 0020): every Margin verb calls
-  # `validate_margin_operation()` before the `finalize_margin_operation()` that
-  # calls `restore_margin_factors()`, which is the only caller of this. A level
-  # equal to the label would otherwise be deduplicated away and re-appended,
-  # moving it to the end of the levels for no reason a caller could see.
+  # An invariant, not a Package condition (ADR-0015). A Margin label equal to
+  # a level `info` holds has already been rejected before anything executes:
+  # every Margin verb calls `validate_margin_operation()` before the
+  # `finalize_margin_operation()` that calls `restore_margin_factors()`, which
+  # is the only caller of this. A level equal to the label would otherwise be
+  # deduplicated away and re-appended, moving it to the end of the levels for no
+  # reason a caller could see.
   stopifnot(
     "A Margin label equal to a declared factor level reached execution." =
       !(.margin_name %in% info$levels)

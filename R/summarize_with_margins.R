@@ -50,13 +50,15 @@
 #'   named-list `.margin_label`.
 #'   Every Margin verb uses the same default: `TRUE` for local data frames and
 #'   `FALSE` for lazy inputs, which are read only when the caller asks. A label
-#'   equal to a declared factor *level* is rejected on every backend whatever
-#'   this argument says, because the levels are already known and finding it
-#'   sends no query. Left unchecked, a colliding value gives the result a
-#'   margin row and a source row that no grouping column tells apart; keeping
-#'   [grouping_bit()] or [grouping_id()] in the result distinguishes them at no
-#'   added cost. See *Display labels and grouping identity* for the factor
-#'   missing-value contract.
+#'   equal to a declared factor *level* is rejected wherever marginplyr holds
+#'   the levels, whatever this argument says, because finding it sends no
+#'   query. Arrow does not hold or restore factor levels; it checks an observed
+#'   collision only when this argument is `TRUE`. See *Result class and
+#'   attributes* for Arrow's character result. Left unchecked, a colliding
+#'   value gives the result a margin row and a source row that no grouping
+#'   column tells apart; keeping [grouping_bit()] or [grouping_id()] in the
+#'   result distinguishes them at no added cost. See *Display labels and
+#'   grouping identity* for the factor missing-value contract.
 #' @param .check_share_source A logical scalar, `TRUE` by default on every
 #'   backend, including lazy ones: establishing that a share's source summary
 #'   is an eligible type reads none of your data. `FALSE` calculates a
