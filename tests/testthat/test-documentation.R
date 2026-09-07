@@ -123,6 +123,23 @@ test_that("the Grouping-identity comparison has exactly one canonical home", {
   expect_equal(names(topics)[carries_table], "grouping_bit.Rd")
 })
 
+# The `\description{}` block of one Rd topic, or `""` where the topic has none
+# -- which fails whatever reads the block rather than passing it an empty page.
+#
+# The block holds braces of its own, every `\code{}` in it one, so what bounds
+# the match is roxygen2 writing the closing brace of a top-level block on a
+# line of its own.
+rd_description <- function(text) {
+  block <- regmatches(
+    text,
+    regexpr("(?s)\\\\description\\{\\n.*?\\n\\}\\n", text, perl = TRUE)
+  )
+  if (length(block) == 0L) {
+    return("")
+  }
+  block
+}
+
 # The topic documenting `name`, which is not always a page of its own:
 # `summarise_with_margins()` is an alias on `summarize_with_margins.Rd`, and a
 # page linking that topic has named it.
@@ -136,34 +153,37 @@ rd_topic_of <- function(topics, name) {
   sub("[.]Rd$", "", documented)
 }
 
-# `?last_sent_queries` owns the record's contract (#494), and the one
-# enumeration it holds is of the calls that keep a record. Its four answers
-# refer to that list rather than restating it, so a seventh entry point missing
-# from the list is missing from the first answer too -- which is what this
-# fires on, reading the set from the signatures as `test-sent-queries.R` reads
-# it from the bodies.
+# `?last_sent_queries`'s four answers refer to the list of calls its
+# description gives rather than repeating it (#494), so the list is what a
+# seventh entry point has to reach to be covered by the first answer. This
+# fires when one does not, reading the set from the signatures as
+# `test-sent-queries.R` reads it from the bodies.
 #
-# What it cannot read is whether a sentence about the record is true: the
-# drift #494 found was a bullet naming a narrower condition than the code
-# uses, on a page that already listed all six calls. *Any entry point moves the
-# session off the first answer* in `test-sent-queries.R` is what holds that
+# The description alone, not the page: `\seealso` links
+# `summarize_with_margins` for an unrelated reason, so a scan over the whole
+# topic passes two of the six verbs with the list deleted outright.
+#
+# What no scan here reads is whether a sentence about the record is true. The
+# drift #494 found was a bullet naming a narrower condition than the code uses,
+# on a page whose list already held all six calls, and *any entry point moves
+# the session off the first answer* in `test-sent-queries.R` is what holds that
 # condition, by running it.
-test_that("the record's owner names every call that keeps one", {
+test_that("the record's owner lists every call that keeps one", {
   topics <- rd_topics()
   skip_if(is.null(topics), "No Rd sources available")
 
-  page <- topics[["last_sent_queries.Rd"]]
-  expect_type(page, "character")
+  described <- rd_description(topics[["last_sent_queries.Rd"]])
+  expect_type(described, "character")
 
-  unnamed <- Filter(
+  unlisted <- Filter(
     function(name) {
       links <- paste0("\\link[=", rd_topic_of(topics, name), "]")
-      !any(vapply(links, grepl, logical(1), x = page, fixed = TRUE))
+      !any(vapply(links, grepl, logical(1), x = described, fixed = TRUE))
     },
     verbs_taking(".grouping")
   )
 
-  expect_identical(unnamed, character())
+  expect_identical(unlisted, character())
 })
 
 # Every guard in the shipped documentation decides whether optional code runs,

@@ -423,6 +423,33 @@ capture, there being one. `vignettes/database_backends.qmd` carries the same
 material against a live backend, with the point that `"result"` is a render and
 not an execution — the caller's own `collect()` is still what runs it.
 
+## Amendment: one page states the contract and two point at it
+
+*Documentation consequences* above spreads one contract over three pages, and
+it drifted. `?last_sent_queries`'s first answer said the record is empty while
+"no Margin verb has begun", where the accessor refuses on
+`sent_queries$recorded` — set by `reset_sent_queries()`, which every exported
+function taking `.grouping` calls, `inspect_grouping()` among them. An
+unaudited `inspect_grouping()` alone therefore moves the answer to the second,
+and the page #23's User Story 35 makes canonical was the copy that was wrong
+(#494).
+
+`?last_sent_queries` now states the contract alone: what the record holds,
+which calls keep one, and what each of the four answers means. `?marginplyr`
+keeps that the record is off by default and that there is one capture, the
+guide keeps the live-backend walkthrough and the point that `"result"` is a
+render and not an execution, and both point at the reference for the rest.
+*Four answers, distinguished* above is this decision's record of them and not
+a copy of that page.
+
+What the fix rests on is that the page enumerates the calls once, in its
+description, and the first answer refers to that list rather than repeating
+it. `test-documentation.R` holds the list to the exported functions taking
+`.grouping`, reading the description alone because `\seealso` links two of
+those names for reasons of its own. Whether a sentence about the record is
+true is not a thing either gate reads, and `test-sent-queries.R` runs every
+entry point against the answer it moves the session to for that reason.
+
 ## Related decisions
 
 ADR 0020 is the rule this decision does not amend, and its *Related decisions*

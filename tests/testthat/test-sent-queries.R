@@ -25,31 +25,27 @@ sent_queries_table <- function(con) {
   dplyr::tbl(con, "sent_queries")
 }
 
-expect_unaudited <- function() {
+# Which of the accessor's two refusals it raised: `TRUE` for the unaudited one,
+# `FALSE` for the session's first, and `NA` where it answered rather than
+# refusing. Both refusals are marginplyr errors, so naming
+# `marginplyr.audit_sql` is the whole of what tells them apart.
+refusal_names_the_option <- function() {
   condition <- rlang::catch_cnd(
     last_sent_queries(),
     classes = "marginplyr_error"
   )
-  expect_s3_class(condition, "marginplyr_error")
-  expect_match(
-    conditionMessage(condition),
-    "marginplyr.audit_sql",
-    fixed = TRUE
-  )
+  if (is.null(condition)) {
+    return(NA)
+  }
+  grepl("marginplyr.audit_sql", conditionMessage(condition), fixed = TRUE)
 }
 
-# The session's first refusal, told apart from the unaudited one by what its
-# message does not name. Both are marginplyr errors, so a read asserting only
-# the class passes on either.
+expect_unaudited <- function() {
+  expect_identical(refusal_names_the_option(), TRUE)
+}
+
 expect_nothing_recorded <- function() {
-  condition <- rlang::catch_cnd(
-    last_sent_queries(),
-    classes = "marginplyr_error"
-  )
-  expect_s3_class(condition, "marginplyr_error")
-  expect_false(
-    grepl("marginplyr.audit_sql", conditionMessage(condition), fixed = TRUE)
-  )
+  expect_identical(refusal_names_the_option(), FALSE)
 }
 
 expect_sent_nothing <- function() {
@@ -816,6 +812,12 @@ test_that("a call refused before its plan is a call the session recorded", {
 # and this is what holds it: an entry point that stopped recording would leave
 # the session answering the first where the page promises the second.
 test_that("any entry point moves the session off the first answer", {
+  # The wrappers are what this runs, so the two are held to each other here as
+  # every other caller holds them (`helper-margin-verbs.R`): a seventh verb
+  # missing from the list would otherwise leave the loop covering six of seven
+  # under a name saying it covers every entry point.
+  expect_setequal(names(forwarded_verbs), verbs_taking(".grouping"))
+
   data <- data.frame(g = c("a", "a", "b"), value = 1:3)
 
   # The entry point still answering the session's first refusal, rather than
@@ -829,15 +831,7 @@ test_that("any entry point moves the session off the first answer", {
       # the second and its message names `marginplyr.audit_sql`.
       expect_null(getOption("marginplyr.audit_sql"))
       forwarded_verbs[[name]](data, grouping = rollup(g))
-      condition <- rlang::catch_cnd(
-        last_sent_queries(),
-        classes = "marginplyr_error"
-      )
-      if (
-        is.null(condition) ||
-          !grepl("marginplyr.audit_sql", conditionMessage(condition),
-                 fixed = TRUE)
-      ) {
+      if (!isTRUE(refusal_names_the_option())) {
         first <- c(first, name)
       }
     })

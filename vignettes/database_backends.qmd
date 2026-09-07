@@ -668,18 +668,9 @@ sent <- last_sent_queries()
 sent$purpose
 ```
 
-The record is a tibble of two character columns, `purpose` and `sql`, holding
-one row per query in the order it was sent. It belongs to that one call: the
-next call to a Margin verb — or to
-[`inspect_grouping()`](https://sayuks.github.io/marginplyr/man/inspect_grouping.html),
-which compiles a Grouping plan and sends queries of its own — empties it and
-starts again.
-Piping one Margin verb into another is two such calls, and the record you read
-afterwards is the outer one's: the input runs first, and the outer call empties
-what it left.
+Those are the purposes this one call sent under, in the order it sent them.
 
-`"result"` is the only `purpose` marginplyr promises, and it is the query
-`audit_query` holds:
+`"result"` is the query `audit_query` holds:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -706,12 +697,9 @@ other than `"result"` are marginplyr's own and are not fixed, so match on
 `"result"` and read the rest as context.
 
 `last_sent_queries()` gives four answers, and three of them could otherwise
-look like an empty record. What tells them apart is stated in the
-[`last_sent_queries()` reference](https://sayuks.github.io/marginplyr/man/last_sent_queries.html),
-which is also where the record's contract is written.
-
-Each row is written before its query is sent, so a call that fails leaves
-readable every query it had already sent.
+look like an empty record. What tells them apart, which calls keep a record,
+and what the record you are holding belongs to are stated in the
+[`last_sent_queries()` reference](https://sayuks.github.io/marginplyr/man/last_sent_queries.html).
 
 marginplyr writes no file. The tibble is what you write, in whatever format
 your audit takes:
