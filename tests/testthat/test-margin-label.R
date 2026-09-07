@@ -985,6 +985,44 @@ test_that("DuckDB rejects a declared collision without being asked", {
   expect_identical(levels(result$g), c("a", "(all)", "b", "Total"))
 })
 
+# Arrow's schema does not give marginplyr the declared levels it needs to
+# reject the first call. Arrow also returns the dimension as character, so the
+# unused level has no source row that could be confused with its Margin label.
+test_that("Arrow checks observed, not declared, Margin label collisions", {
+  skip_if_suggest_absent("arrow")
+
+  unused_level <- arrow::Table$create(data.frame(
+    group = factor(c("a", "b"), levels = c("a", "b", "Total")),
+    value = 1:2
+  ))
+  result <- expect_no_error(dplyr::collect(summarize_with_margins(
+    unused_level,
+    n = dplyr::n(),
+    .grouping = rollup(group),
+    .margin_label = "Total",
+    .check_margin_label = TRUE
+  )))
+  expect_type(result$group, "character")
+  expect_setequal(result$group, c("a", "b", "Total"))
+
+  observed_collision <- arrow::Table$create(data.frame(
+    group = factor(c("a", "Total"), levels = c("a", "b", "Total")),
+    value = 1:2
+  ))
+  error <- expect_error(
+    summarize_with_margins(
+      observed_collision,
+      n = dplyr::n(),
+      .grouping = rollup(group),
+      .margin_label = "Total",
+      .check_margin_label = TRUE
+    ),
+    "already present in grouping column:\ni `group`",
+    fixed = TRUE
+  )
+  expect_s3_class(error, "marginplyr_error")
+})
+
 # The silence is the contract, so it is asserted rather than left to the
 # absence of a failing expectation: a later change to `.check_margin_label`'s
 # default has to fail here instead of passing quietly. SQLite is where the

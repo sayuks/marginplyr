@@ -20,3 +20,13 @@ label equal to an observed value requires reading, and that read is what
 `.check_margin_label` opts into. Both halves still run after the schema-aware
 preflight and immediately before low-level execution, for the reason stated
 above. See ADR 0020.
+
+## Amendment: Arrow does not hold declared factor levels
+
+The "every backend" clause in the amendment above is superseded. Arrow's
+schema supplies no factor levels for marginplyr to compare, and Arrow returns
+the dimension as character, so an unused declared level cannot itself make two
+result rows indistinguishable. An observed collision is still checked when the
+caller sets `.check_margin_label = TRUE`. ADR 0020's amendment *declared
+factor levels are not metadata on Arrow* owns this exception and the rule that
+it adds no read.
