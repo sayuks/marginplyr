@@ -13,6 +13,27 @@ margin_column_pronoun <- function(name) {
   rlang::call2("[[", rlang::sym(".data"), name)
 }
 
+# How an internal function is spelled as the head of an expression a backend
+# defers. `name` is that function's name in this namespace.
+#
+# A bare symbol is resolved where the deferred expression runs, which is not
+# where marginplyr built it. dplyr resolves one below the quosure's own
+# environment, so the local backend hides the difference; dtplyr translates
+# the expression into a `data.table` call evaluated in the environment the
+# caller wrote the pipeline in, where no internal name is bound and the call
+# fails for every user (#491).
+#
+# `:::` and not `::`, because none of these functions is exported. The call is
+# built rather than written, so this package's source carries no literal
+# `marginplyr:::` for `R CMD check` to raise its NOTE over.
+marginplyr_private_call <- function(name) {
+  rlang::call2(
+    ":::",
+    rlang::sym("marginplyr"),
+    rlang::sym(name)
+  )
+}
+
 assert_logical_scalar <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.

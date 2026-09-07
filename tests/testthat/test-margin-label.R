@@ -169,6 +169,121 @@ test_that("dtplyr obeys the eight-case contract as the local backend does", {
   }
 })
 
+# One verb call, written so the same expression serves both backends: `INPUT`
+# stands where the verb's data argument goes and is replaced with the
+# expression that produces it.
+factor_call_with_input <- function(call, input) {
+  do.call(substitute, list(call, list(INPUT = input)))
+}
+
+# Evaluates `call` where marginplyr's own bindings do not resolve. This is the
+# whole of what the test below adds over the cases above, and simplifying it
+# into an ordinary call makes that test pass on an unfixed tree.
+#
+# `testthat::test_env("marginplyr")` is `env_clone(asNamespace("marginplyr"))`,
+# so a test written in the ordinary way builds its `lazy_dt()` where every
+# internal symbol resolves. dtplyr evaluates its translation in the
+# environment the pipeline was written in, not where the verb ran, so such a
+# test finds a head a Margin operation injects while a user's session does not:
+# the eight-case test above exercises the failing combination and passed
+# against a tree that errored for every caller (#491).
+#
+# The parent is the search path below `package:marginplyr`, not `globalenv()`
+# where a user writes one, because `pkgload::load_all()` attaches every
+# internal name to `package:marginplyr` and an environment above it resolves
+# them all. Starting below withholds them under `devtools::test()` and against
+# an installed package alike, and still reaches `utils::head()`, which dtplyr's
+# own translation calls and an environment parented on `baseenv()` would not
+# supply. Every name the calls below use is therefore `::`-qualified.
+factor_in_user_env <- function(data, call) {
+  below_marginplyr <- match("package:marginplyr", search()) + 1L
+  env <- new.env(parent = as.environment(below_marginplyr))
+  env$data <- data
+  eval(call, env)
+}
+
+# The four verbs against a factor and an ordered-factor dimension, on dtplyr,
+# with the default `.margin_label` -- the combination #491 reported.
+#
+# Only the dimension is compared across backends. The payload a nesting verb
+# builds is a `data.table` on one side and a tibble on the other, which is
+# ADR 0016's per-backend converter and not what these cases assert; the
+# dimension's class, levels, and values are what the documented factor
+# exception promises.
+test_that("dtplyr rebuilds a factor dimension outside the namespace", {
+  skip_if_suggest_absent("dtplyr")
+
+  calls <- list(
+    summarize_with_margins = quote(
+      marginplyr::summarize_with_margins(
+        INPUT,
+        n = dplyr::n(),
+        .grouping = marginplyr::rollup(group)
+      )
+    ),
+    expand_with_margins = quote(
+      marginplyr::expand_with_margins(
+        INPUT,
+        .grouping = marginplyr::rollup(group)
+      )
+    ),
+    nest_with_margins = quote(
+      marginplyr::nest_with_margins(
+        INPUT,
+        .grouping = marginplyr::rollup(group)
+      )
+    ),
+    nest_by_with_margins = quote(
+      marginplyr::nest_by_with_margins(
+        INPUT,
+        .grouping = marginplyr::rollup(group)
+      )
+    )
+  )
+
+  for (ordered in c(FALSE, TRUE)) {
+    data <- data.frame(
+      group = factor(
+        c("lo", "hi", "lo"),
+        levels = c("lo", "hi"),
+        ordered = ordered
+      ),
+      v = c(1, 2, 3)
+    )
+
+    for (verb in names(calls)) {
+      info <- paste0(verb, "/ordered=", ordered)
+      result <- factor_in_user_env(
+        data,
+        rlang::call2(
+          "collect",
+          factor_call_with_input(calls[[verb]], quote(dtplyr::lazy_dt(data))),
+          .ns = "dplyr"
+        )
+      )
+      expect_true(is.factor(result$group), info = info)
+      expect_identical(is.ordered(result$group), ordered, info = info)
+      expect_identical(
+        levels(result$group),
+        c("lo", "hi", "Total"),
+        info = info
+      )
+      expect_identical(
+        # `na.last` because the default drops a missing value from both sides,
+        # which is the one difference these cases are here to see.
+        sort(as.character(result$group), na.last = TRUE),
+        sort(
+          as.character(
+            eval(factor_call_with_input(calls[[verb]], quote(data)))$group
+          ),
+          na.last = TRUE
+        ),
+        info = info
+      )
+    }
+  }
+})
+
 # The eight cases above declare an NA level that no value uses, so they assert
 # the level survives and not that a value on it stays distinguishable from the
 # typed missing a margin row carries. That distinction is the whole of what

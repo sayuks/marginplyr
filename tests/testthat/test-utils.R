@@ -176,20 +176,19 @@ is_call_arguments <- function(expr, locals) {
     (is.symbol(expr) && as.character(expr) %in% locals)
 }
 
-# The scan all three gates below are, once the predicate is taken out of it: of
+# The scan all four gates below are, once the predicate is taken out of it: of
 # the functions a namespace binds, the names of those whose body the predicate
-# matches. Every predicate handed to it here matches a walk over an expression,
-# which is what the name says; what it returns is a set of names, named rather
-# than counted so a failure says which walk to rewrite.
+# matches. What it returns is a set of names, named rather than counted so a
+# failure says which function to rewrite.
 #
 # The predicate is the only thing it takes for itself. The two it deliberately
 # does not take are the witness and the message: each gate's witness names what
 # that gate reads -- `static_call_args` for the `for` scan,
 # `parse_across_arguments` for the `<-` scan, `unparenthesized_value` for the
-# restart scan -- and each remedy is written for its own spelling, so an
-# argument for either would exist only to be different, and would make the
-# three look interchangeable. They stay in the `test_that()` block that means
-# them.
+# restart scan, `marginplyr_private_call` for the deferred-head scan -- and each
+# remedy is written for its own spelling, so an argument for either would exist
+# only to be different, and would make the four look interchangeable. They stay
+# in the `test_that()` block that means them.
 #
 # The enumeration and the namespace come from the caller rather than from
 # defaults here. A gate then asserts its witness against the very set this
@@ -199,7 +198,7 @@ is_call_arguments <- function(expr, locals) {
 #
 # Local to this source rather than in `helper-namespace-walk.R`: that file
 # exists because testthat gives each test file its own environment, so one
-# file's gate cannot see a reader another defined, and all three gates here are
+# file's gate cannot see a reader another defined, and all four gates here are
 # in one file. The other scan of this shape, in `test-grouping-plan.R`, decides
 # by deparsing rather than by walking and says so where it stands, so a shared
 # home would be a home for one caller.
@@ -570,6 +569,188 @@ test_that("the restart scan detects the shape it is written to forbid", {
   # An empty argument in the scanned code must not abort the scan, which is the
   # bug the gates in this file exist for.
   expect_false(restarts_on_an_unshrunk_pair(quote(sum(value[]))))
+})
+
+# The fourth gate over the same namespace, and the one whose subject is the
+# environment an expression is finally read in rather than the walk that built
+# it. A backend that defers an expression evaluates it where marginplyr did not
+# write it: dplyr resolves a bare head below the quosure's own environment, so
+# the local backend finds every internal name, while dtplyr translates the
+# expression into a `data.table` call evaluated in the environment the caller
+# wrote the pipeline in, where none of them is bound (#491).
+#
+# A gate rather than the one-off scan #491 asked for, for the reason the gates
+# above are scans: what a grep does not read it reports clean. That reading is
+# what let the two sites #491 names ship -- `test-margin-label.R`'s eight-case
+# dtplyr contract test exercises the failing combination, and passed, because
+# `testthat::test_env()` clones the namespace it would have to withhold.
+#
+# `marginplyr_private_call()` is the spelling that holds on both backends, and
+# is what the remedy names.
+
+# Which builder a call is, by the name under any qualifier it carries. `""`
+# for a head that is not a name at all, which no builder is written as.
+expression_builder_name <- function(head) {
+  if (is.symbol(head)) {
+    return(as.character(head))
+  }
+  if (rlang::is_call(head, "::") && length(head) == 3L) {
+    return(as.character(head[[3L]]))
+  }
+  ""
+}
+
+# Whether `expr` is an unquoted subtree, which the builder evaluates while it
+# runs rather than leaving for the backend. `!!x` parses as `!(!x)` and `!!!x`
+# as `!(!(!x))`, so the doubled negation is what separates either from the
+# ordinary one a deferred expression may hold.
+is_unquoted_part <- function(expr) {
+  rlang::is_call(expr, "!", n = 1) && rlang::is_call(expr[[2L]], "!", n = 1)
+}
+
+# The heads of every call a captured expression leaves for the backend, which
+# is every call below `expr` that no unquote reaches. By subscript and through
+# `lapply()`, for the reason `visit_calls()` gives: a captured expression is
+# exactly the code that may carry R's empty argument.
+captured_call_heads <- function(expr) {
+  if (!is.call(expr) || is_unquoted_part(expr)) {
+    return(list())
+  }
+  c(
+    list(expr[[1L]]),
+    unlist(
+      lapply(as.list(expr), captured_call_heads),
+      recursive = FALSE
+    )
+  )
+}
+
+# The names of the internal functions a body leaves as the bare head of a
+# deferred expression.
+#
+# `rlang::expr()` and `quote()` capture their whole argument, so every head
+# inside one is deferred; `rlang::call2()` is handed its head as its first
+# argument alone, its remaining arguments being values the builder evaluates.
+# `call2()` also accepts a string there, which is the same hazard spelled
+# differently, so both spellings are read.
+bare_internal_deferred_heads <- function(expr, internal) {
+  found <- character()
+  named <- function(head) {
+    (is.symbol(head) && as.character(head) %in% internal) ||
+      (is.character(head) && length(head) == 1L && head %in% internal)
+  }
+  visit_calls(expr, function(node) {
+    builder <- expression_builder_name(node[[1L]])
+    if (length(node) < 2L) {
+      return(invisible(NULL))
+    }
+    heads <- if (builder %in% c("expr", "quo", "quote")) {
+      captured_call_heads(node[[2L]])
+    } else if (identical(builder, "call2")) {
+      list(node[[2L]])
+    } else {
+      list()
+    }
+    for (index in seq_along(heads)) {
+      head <- heads[[index]]
+      if (named(head)) {
+        found <<- unique(c(found, as.character(head)))
+      }
+    }
+  })
+  found
+}
+
+test_that("no deferred expression names an internal function bare", {
+  ns <- asNamespace("marginplyr")
+  functions <- namespace_functions(ns)
+  internal <- setdiff(functions, getNamespaceExports(ns))
+  # The scan iterates over this set, so a set that arrived empty is a set that
+  # passes. `marginplyr_private_call()` is both a member of the set and the
+  # remedy, so one witness answers for the enumeration and for the spelling.
+  expect_true("marginplyr_private_call" %in% internal)
+
+  expect_equal(
+    walks_matching(
+      function(body) length(bare_internal_deferred_heads(body, internal)) > 0L,
+      functions,
+      ns
+    ),
+    character(),
+    info = paste(
+      "Spell the head with `marginplyr_private_call()` instead --",
+      "it builds the `marginplyr:::` qualifier, which resolves wherever the",
+      "backend evaluates the expression."
+    )
+  )
+})
+
+test_that("the deferred-head scan detects the shape it is written to forbid", {
+  # Asserted before the scan's verdict means anything, for the reason the three
+  # gates above assert their own: a scan that stopped matching reports exactly
+  # what a clean package reports. The shapes are #491's two sites and the
+  # spelling that replaced them.
+  internal <- c("encode_factor_for_margin", "margin_column_pronoun")
+  offending <- function(col) {
+    rlang::expr(encode_factor_for_margin(!!margin_column_pronoun(col)))
+  }
+  by_string <- function(col) {
+    rlang::call2("encode_factor_for_margin", margin_column_pronoun(col))
+  }
+  under_mutate <- function(data, col) {
+    dplyr::mutate(data, "{col}" := !!rlang::expr(
+      encode_factor_for_margin(!!margin_column_pronoun(col))
+    ))
+  }
+  compliant <- function(col) {
+    rlang::call2(
+      marginplyr_private_call("encode_factor_for_margin"),
+      margin_column_pronoun(col)
+    )
+  }
+
+  expect_identical(
+    bare_internal_deferred_heads(body(offending), internal),
+    "encode_factor_for_margin"
+  )
+  expect_identical(
+    bare_internal_deferred_heads(body(by_string), internal),
+    "encode_factor_for_margin"
+  )
+  expect_identical(
+    bare_internal_deferred_heads(body(under_mutate), internal),
+    "encode_factor_for_margin"
+  )
+  expect_identical(
+    bare_internal_deferred_heads(body(compliant), internal),
+    character()
+  )
+  # A builder's own arguments are values it evaluates, so an internal name
+  # standing in one is not the shape: the unquoted pronoun above appears in
+  # every case and is named by none of them, and `call2()` defers its head
+  # alone.
+  expect_identical(
+    bare_internal_deferred_heads(
+      quote(rlang::call2("c", margin_column_pronoun(col))),
+      internal
+    ),
+    character()
+  )
+  # An ordinary negation inside a deferred expression is not an unquote, or
+  # the scan would read past every head below one.
+  expect_identical(
+    bare_internal_deferred_heads(
+      quote(rlang::expr(!encode_factor_for_margin(x))),
+      internal
+    ),
+    "encode_factor_for_margin"
+  )
+  # An empty argument in the scanned code must not abort the scan, which is the
+  # bug the gates in this file exist for.
+  expect_identical(
+    bare_internal_deferred_heads(quote(rlang::expr(sum(value[]))), internal),
+    character()
+  )
 })
 
 test_that("every shared reader answers an empty call part", {
