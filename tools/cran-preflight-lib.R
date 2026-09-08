@@ -26,18 +26,9 @@ worktree_is_unchanged <- function(before, after) {
   !is.na(before) && !is.na(after) && identical(before, after)
 }
 
-# Names every release stage that remains external to the local command.
+# Points to the release authority for every stage outside the local command.
 preflight_pending_stages <- function() {
-  c(
-    CI = "Required CI for this exact SHA.",
-    semantic = "Semantic CRAN review for the frozen candidate.",
-    remote = paste(
-      "Targeted R-hub v2 and exact-tarball win-builder checks."
-    ),
-    human = paste(
-      "Human release issue, comments, submission, and publication actions."
-    )
-  )
+  c(release = "Continue with `tools/cran-release.md`.")
 }
 
 # Allocates the mutable record every preflight step appends to.

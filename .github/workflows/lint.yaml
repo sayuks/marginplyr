@@ -44,10 +44,10 @@ jobs:
       - name: Verify every path a maintained document names exists
         run: Rscript .github/scripts/verify-doc-references.R
 
-  # The preflight's policy and fixture checks use only base R and local git.
+  # The release tools' policy and fixture checks use only base R and local git.
   # Keeping them beside the other repository-hygiene jobs makes the release
   # contract fail before a package dependency installation or remote check.
-  preflight-contract:
+  release-contract:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -57,6 +57,9 @@ jobs:
 
       - name: Verify the local CRAN preflight contract
         run: Rscript .github/scripts/verify-cran-preflight.R
+
+      - name: Verify the CRAN release helper contract
+        run: Rscript .github/scripts/verify-cran-release.R
 
   lint:
     runs-on: ubuntu-latest
