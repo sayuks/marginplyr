@@ -6,6 +6,8 @@
 source(".github/scripts/cran-note-policy.R")
 source("tools/cran-preflight-lib.R")
 
+# Stops with a fixture label when a contract returns a different value.
+# Callers supply values whose attributes and types are part of the assertion.
 expect_identical <- function(actual, expected, label) {
   if (!identical(actual, expected)) {
     stop(
@@ -20,6 +22,8 @@ expect_identical <- function(actual, expected, label) {
   }
 }
 
+# Asserts one scalar truth without weakening `expect_identical()`'s strictness
+# for fixtures whose exact value matters.
 expect_true <- function(actual, label) {
   expect_identical(isTRUE(actual), TRUE, label)
 }
@@ -42,6 +46,17 @@ expect_identical(
   allowed$marker,
   "New submission",
   "the required cran-comments marker"
+)
+curly_quoted_submission <- sub(
+  "'Yusuke Sasaki <sayuks.dev@gmail.com>'",
+  "‘Yusuke Sasaki <sayuks.dev@gmail.com>’",
+  new_submission,
+  fixed = TRUE
+)
+expect_identical(
+  classify_cran_note(curly_quoted_submission, "unpublished")$status,
+  "allowed-note",
+  "the initial-submission NOTE rendered with R quotes"
 )
 
 near_miss <- paste(new_submission, "Possibly misspelled words", sep = "\n")
@@ -94,7 +109,7 @@ checktor_requirement <- preflight_requirements[
 ]
 expect_identical(
   checktor_requirement$operator,
-  ">=",
+  "==",
   "the checktor baseline operator"
 )
 expect_identical(
@@ -295,6 +310,11 @@ expect_identical(
   FALSE,
   "a mutated clean worktree"
 )
+expect_identical(
+  worktree_is_unchanged(NA_character_, NA_character_),
+  FALSE,
+  "two unavailable worktree records"
+)
 
 evidence <- file.path(fixture_root, "evidence")
 dir.create(evidence)
@@ -322,30 +342,33 @@ expect_true(
   file.exists(file.path(evidence, "results.dcf")),
   "the machine result"
 )
+machine_result <- read.dcf(file.path(evidence, "results.dcf"))
+expect_true(
+  nzchar(machine_result[[1L, "Pending-Stages"]]),
+  "the machine-readable pending stages"
+)
 expect_true(file.exists(file.path(evidence, "steps.tsv")), "the step results")
 
+# Runs the shared subprocess adapter from a fixture directory and returns only
+# its exit status, which is the public observation these CLI fixtures assert.
 run_in_dir <- function(path, command, args, stdout) {
   old <- setwd(path)
   on.exit(setwd(old), add = TRUE)
-  status <- suppressWarnings(system2(
-    command,
-    vapply(args, shQuote, character(1)),
-    stdout = stdout,
-    stderr = stdout
-  ))
-  if (is.null(status) || length(status) == 0L) {
-    return(0L)
-  }
-  if (is.character(status)) {
-    code <- attr(status, "status")
-    return(if (is.null(code)) 0L else as.integer(code))
-  }
-  as.integer(status)
+  run_system(command, args, stdout = stdout)$status
 }
 
 cli_root <- file.path(fixture_root, "cli")
 dir.create(file.path(cli_root, "tools"), recursive = TRUE)
 dir.create(file.path(cli_root, ".github", "scripts"), recursive = TRUE)
+repository_link <- file.path(fixture_root, "repository-link")
+expect_true(
+  file.symlink(cli_root, repository_link),
+  "the repository symlink fixture"
+)
+expect_true(
+  path_is_inside(file.path(repository_link, "new-evidence"), cli_root),
+  "an unresolved path below a symlink into the repository"
+)
 copied_tools <- file.copy(
   c("tools/cran-preflight.R", "tools/cran-preflight-lib.R"),
   file.path(cli_root, "tools")
@@ -379,6 +402,38 @@ writeLines("^tools$", file.path(cli_root, ".Rbuildignore"))
 dir.create(file.path(cli_root, "R"))
 writeLines("fixture <- function() TRUE", file.path(cli_root, "R", "fixture.R"))
 writeLines("export(fixture)", file.path(cli_root, "NAMESPACE"))
+writeLines(
+  c(
+    "source('.github/scripts/cran-note-policy.R')",
+    "source('tools/cran-preflight-lib.R')",
+    "args <- commandArgs(trailingOnly = TRUE)",
+    "scenario <- args[[1L]]",
+    "output <- args[[2L]]",
+    "pipeline <- switch(",
+    "  scenario,",
+    "  success = function(state, repository_root, description) {",
+    "    state$counts <- c(errors = 0L, warnings = 0L, notes = 0L)",
+    "  },",
+    "  interrupt = function(state, repository_root, description) {",
+    "    condition <- structure(",
+    "      list(message = 'fixture interrupt', call = NULL),",
+    "      class = c('interrupt', 'condition')",
+    "    )",
+    "    stop(condition)",
+    "  },",
+    "  mutation = function(state, repository_root, description) {",
+    "    writeLines('mutation', file.path(repository_root, 'mutation.txt'))",
+    "  }",
+    ")",
+    "status <- cran_preflight_cli(",
+    "  c('--output', output),",
+    "  expected_root = getwd(),",
+    "  pipeline = pipeline",
+    ")",
+    "quit(status = status, save = 'no')"
+  ),
+  file.path(cli_root, "preflight-driver.R")
+)
 expect_identical(
   run_in_dir(cli_root, "git", c("init", "--quiet"), TRUE),
   0L,
@@ -423,6 +478,49 @@ expect_identical(
 )
 
 rscript <- file.path(R.home("bin"), "Rscript")
+success_status <- run_in_dir(
+  cli_root,
+  rscript,
+  c(
+    "preflight-driver.R",
+    "success",
+    file.path(fixture_root, "success-evidence")
+  ),
+  file.path(fixture_root, "success.log")
+)
+expect_identical(success_status, 0L, "a successful pipeline subprocess")
+
+interrupt_status <- run_in_dir(
+  cli_root,
+  rscript,
+  c(
+    "preflight-driver.R",
+    "interrupt",
+    file.path(fixture_root, "interrupt-evidence")
+  ),
+  file.path(fixture_root, "interrupt.log")
+)
+expect_identical(interrupt_status, 130L, "an interrupted pipeline subprocess")
+
+mutation_status <- run_in_dir(
+  cli_root,
+  rscript,
+  c(
+    "preflight-driver.R",
+    "mutation",
+    file.path(fixture_root, "mutation-evidence")
+  ),
+  file.path(fixture_root, "mutation.log")
+)
+expect_identical(mutation_status, 2L, "a mutating pipeline subprocess")
+expect_true(
+  nzchar(paste(readLines(
+    file.path(fixture_root, "mutation-evidence", "worktree-after.txt")
+  ), collapse = "\n")),
+  "the recorded mutation"
+)
+unlink(file.path(cli_root, "mutation.txt"))
+
 clean_log <- file.path(fixture_root, "clean.log")
 clean_status <- run_in_dir(
   cli_root,

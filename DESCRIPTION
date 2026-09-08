@@ -39,7 +39,7 @@ Suggests:
     tidyr
 Config/marginplyr/cran-status: unpublished
 Config/Needs/preflight:
-    checktor (>= 0.1.0),
+    checktor (== 0.1.0),
     rcmdcheck,
     urlchecker
 Config/testthat/edition: 3

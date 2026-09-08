@@ -2,6 +2,8 @@
 # `cran-preflight.R` is the public command; functions live here so deterministic
 # policy and subprocess fixtures can exercise them without running a full check.
 
+# Maps the accumulated candidate, tool, and interruption state to the public
+# exit-code contract.
 preflight_exit_code <- function(
   candidate_failed,
   tool_failed,
@@ -19,10 +21,26 @@ preflight_exit_code <- function(
   0L
 }
 
+# Answers whether two available git status records are byte-identical.
 worktree_is_unchanged <- function(before, after) {
-  identical(before, after)
+  !is.na(before) && !is.na(after) && identical(before, after)
 }
 
+# Names every release stage that remains external to the local command.
+preflight_pending_stages <- function() {
+  c(
+    CI = "Required CI for this exact SHA.",
+    semantic = "Semantic CRAN review for the frozen candidate.",
+    remote = paste(
+      "Targeted R-hub v2 and exact-tarball win-builder checks."
+    ),
+    human = paste(
+      "Human release issue, comments, submission, and publication actions."
+    )
+  )
+}
+
+# Allocates the mutable record every preflight step appends to.
 new_preflight_state <- function(evidence_path) {
   state <- new.env(parent = emptyenv())
   state$started <- Sys.time()
@@ -56,6 +74,7 @@ new_preflight_state <- function(evidence_path) {
   state
 }
 
+# Appends one completed step whose status belongs to the summary vocabulary.
 record_preflight_step <- function(
   state,
   step,
@@ -82,16 +101,19 @@ record_preflight_step <- function(
   invisible(status)
 }
 
+# Collapses one optional value for safe storage in a DCF field or table cell.
 single_line <- function(value) {
   value <- if (length(value) == 0L || is.na(value[[1L]])) "" else value[[1L]]
   gsub("[\r\n\t]+", " ", as.character(value))
 }
 
+# Renders an optional value, substituting the caller's explicit absence label.
 display_or <- function(value, missing) {
   rendered <- single_line(value)
   if (nzchar(rendered)) rendered else missing
 }
 
+# Renders a recorded git status without making an empty clean state invisible.
 printable_worktree_status <- function(status) {
   if (is.na(status)) {
     return("<unavailable>")
@@ -102,8 +124,10 @@ printable_worktree_status <- function(status) {
   gsub("\n", "; ", status, fixed = TRUE)
 }
 
+# Writes the human and machine summaries from a completed state record.
 write_preflight_evidence <- function(state, exit_code) {
   evidence_path <- state$evidence_path
+  pending_stages <- preflight_pending_stages()
   utils::write.table(
     state$steps,
     file.path(evidence_path, "steps.tsv"),
@@ -135,6 +159,12 @@ write_preflight_evidence <- function(state, exit_code) {
     Warnings = single_line(state$counts[["warnings"]]),
     Notes = single_line(state$counts[["notes"]]),
     `Tool-Versions` = single_line(tool_versions),
+    `Pending-Stages` = paste(
+      names(pending_stages),
+      pending_stages,
+      sep = "=",
+      collapse = "; "
+    ),
     `Worktree-Before` = single_line(printable_worktree_status(
       state$worktree_before
     )),
@@ -230,15 +260,13 @@ write_preflight_evidence <- function(state, exit_code) {
     "",
     "## Pending release stages",
     "",
-    "- Required CI for this exact SHA.",
-    "- Semantic CRAN review for the frozen candidate.",
-    "- Targeted R-hub v2 and exact-tarball win-builder checks.",
-    "- Human release issue, comments, submission, and publication actions."
+    paste0("- ", unname(pending_stages))
   )
   writeLines(summary, file.path(evidence_path, "summary.md"))
   invisible(summary)
 }
 
+# Reads exactly one DESCRIPTION record from the path supplied by its caller.
 read_description <- function(path) {
   description <- read.dcf(path)
   if (nrow(description) != 1L) {
@@ -247,6 +275,7 @@ read_description <- function(path) {
   description
 }
 
+# Reads one trimmed DESCRIPTION field, optionally admitting its absence.
 description_value <- function(description, field, required = TRUE) {
   if (!(field %in% colnames(description))) {
     if (required) {
@@ -257,6 +286,7 @@ description_value <- function(description, field, required = TRUE) {
   trimws(description[[1L, field]])
 }
 
+# Parses one DCF dependency field into package, operator, and version columns.
 dependency_requirements <- function(field) {
   if (length(field) == 0L || is.na(field) || !nzchar(field)) {
     return(data.frame(
@@ -291,6 +321,7 @@ dependency_requirements <- function(field) {
   )
 }
 
+# Answers whether one installed version satisfies its declared comparison.
 version_satisfies <- function(installed, operator, required) {
   if (!nzchar(operator)) {
     return(TRUE)
@@ -308,6 +339,7 @@ version_satisfies <- function(installed, operator, required) {
   )
 }
 
+# Reports installation and version status for every parsed requirement.
 check_package_requirements <- function(requirements) {
   if (nrow(requirements) == 0L) {
     return(data.frame(
@@ -344,6 +376,7 @@ check_package_requirements <- function(requirements) {
   do.call(rbind, rows)
 }
 
+# Calculates the candidate hash with the SHA-256 implementation supplied by R.
 sha256_file <- function(path) {
   sha256sum <- get0("sha256sum", envir = asNamespace("tools"), inherits = FALSE)
   if (is.null(sha256sum)) {
@@ -352,6 +385,8 @@ sha256_file <- function(path) {
   unname(as.character(sha256sum(path)))
 }
 
+# Verifies tarball naming and DESCRIPTION identity, then returns its unpacked
+# path and SHA-256.
 verify_candidate_tarball <- function(
   tarball,
   expected_package,
@@ -404,6 +439,8 @@ verify_candidate_tarball <- function(
   )
 }
 
+# Reports every mismatch between check results, allowed NOTE markers, and the
+# release comments the caller supplied.
 cran_comments_problems <- function(path, counts, allowed_notes) {
   if (!file.exists(path)) {
     return("cran-comments.md does not exist.")
@@ -461,12 +498,33 @@ cran_comments_problems <- function(path, counts, allowed_notes) {
   problems
 }
 
+# Resolves symlinks through the nearest existing ancestor of a prospective path.
+resolve_prospective_path <- function(path) {
+  ancestor <- path.expand(path)
+  suffix <- character()
+  while (!file.exists(ancestor) && !dir.exists(ancestor)) {
+    parent <- dirname(ancestor)
+    if (identical(parent, ancestor)) {
+      break
+    }
+    suffix <- c(basename(ancestor), suffix)
+    ancestor <- parent
+  }
+  resolved <- normalizePath(ancestor, winslash = "/", mustWork = TRUE)
+  if (length(suffix) == 0L) {
+    return(resolved)
+  }
+  do.call(file.path, c(list(resolved), as.list(suffix)))
+}
+
+# Answers whether a prospective path resolves at or below the repository root.
 path_is_inside <- function(path, directory) {
-  path <- normalizePath(path, winslash = "/", mustWork = FALSE)
+  path <- resolve_prospective_path(path)
   directory <- normalizePath(directory, winslash = "/", mustWork = TRUE)
   identical(path, directory) || startsWith(path, paste0(directory, "/"))
 }
 
+# Parses the sole diagnostic option without changing the gate's pass criteria.
 parse_preflight_args <- function(args) {
   output <- NULL
   while (length(args) > 0L) {
@@ -490,6 +548,7 @@ parse_preflight_args <- function(args) {
   list(output = output)
 }
 
+# Runs one subprocess, returning its normalized exit status and captured output.
 run_system <- function(
   command,
   args = character(),
@@ -514,6 +573,7 @@ run_system <- function(
   list(status = as.integer(status), output = character())
 }
 
+# Runs a read-only git query and returns its output or refuses its failure.
 git_output <- function(args) {
   result <- run_system("git", args)
   if (result$status != 0L) {
@@ -522,6 +582,7 @@ git_output <- function(args) {
   result$output
 }
 
+# Captures tracked, index, and untracked non-ignored status as one exact record.
 git_status_record <- function() {
   paste(
     git_output(c("status", "--porcelain=v1", "--untracked-files=all")),
@@ -529,12 +590,14 @@ git_status_record <- function() {
   )
 }
 
+# Selects a persistent user-cache location for a uniquely named evidence bundle.
 default_evidence_path <- function() {
   root <- file.path(tools::R_user_dir("marginplyr", "cache"), "cran-preflight")
   stamp <- format(Sys.time(), "%Y%m%dT%H%M%S")
   file.path(root, paste0(stamp, "-", Sys.getpid()))
 }
 
+# Creates one new evidence directory after proving it is outside the repository.
 create_evidence_path <- function(requested, repository_root) {
   path <- if (is.null(requested)) default_evidence_path() else requested
   path <- path.expand(path)
@@ -553,6 +616,7 @@ create_evidence_path <- function(requested, repository_root) {
   normalizePath(path, mustWork = TRUE)
 }
 
+# Writes a possibly empty multi-line status record without substituting prose.
 write_text_record <- function(value, path) {
   if (is.na(value) || !nzchar(value)) {
     writeLines(character(), path)
@@ -561,6 +625,7 @@ write_text_record <- function(value, path) {
   }
 }
 
+# Returns installed versions for the checker packages named by its caller.
 checker_versions <- function(packages) {
   versions <- vapply(packages, function(package) {
     if (requireNamespace(package, quietly = TRUE)) {
@@ -576,6 +641,8 @@ checker_versions <- function(packages) {
   )
 }
 
+# Checks full-Suggests, preflight-tool, package, Quarto, Pandoc, and TeX
+# availability without installing any of them.
 preflight_prerequisites <- function(description, package, version) {
   suggests <- dependency_requirements(description_value(
     description,
@@ -674,6 +741,8 @@ preflight_prerequisites <- function(description, package, version) {
   )
 }
 
+# Archives the repository's clean HEAD and builds exactly one source tarball in
+# the external evidence workspace.
 build_candidate_tarball <- function(
   repository_root,
   evidence_path,
@@ -736,6 +805,7 @@ build_candidate_tarball <- function(
   destination
 }
 
+# Evaluates one expression while sending its output and messages to one log.
 capture_console <- function(path, code) {
   connection <- file(path, open = "wt")
   sink(connection, type = "output")
@@ -748,6 +818,7 @@ capture_console <- function(path, code) {
   force(code)
 }
 
+# Runs shipped spelling policy against the unpacked candidate and retains rows.
 run_spelling_check <- function(package_path, evidence_path) {
   log <- file.path(evidence_path, "spelling.log")
   findings <- capture_console(
@@ -770,6 +841,7 @@ run_spelling_check <- function(package_path, evidence_path) {
   list(findings = findings, evidence = table_path)
 }
 
+# Runs the repository's shared checktor wrapper against the candidate tarball.
 run_checktor <- function(repository_root, tarball, evidence_path) {
   report <- file.path(evidence_path, "checktor-report.md")
   log <- file.path(evidence_path, "checktor.log")
@@ -802,6 +874,7 @@ run_checktor <- function(repository_root, tarball, evidence_path) {
   )
 }
 
+# Runs the sole full R CMD check against an already-built candidate tarball.
 run_rcmdcheck <- function(tarball, evidence_path) {
   check_dir <- file.path(evidence_path, "check")
   dir.create(check_dir)
@@ -824,6 +897,7 @@ run_rcmdcheck <- function(tarball, evidence_path) {
   list(result = result, check_dir = check_dir, console = console)
 }
 
+# Answers whether any structured check condition reports a URL problem.
 check_reports_url_problem <- function(result) {
   conditions <- c(result$errors, result$warnings, result$notes)
   if (length(conditions) == 0L) {
@@ -840,6 +914,7 @@ check_reports_url_problem <- function(result) {
   }, logical(1)))
 }
 
+# Converts urlchecker's list columns into cells safe for a retained TSV.
 character_url_results <- function(results) {
   data <- as.data.frame(results)
   data[] <- lapply(data, function(column) {
@@ -852,6 +927,7 @@ character_url_results <- function(results) {
   data
 }
 
+# Classifies each failed URL observation as actionable or unavailable.
 classify_url_results <- function(results) {
   data <- character_url_results(results)
   if (nrow(data) == 0L) {
@@ -893,6 +969,7 @@ classify_url_results <- function(results) {
   }, character(1))
 }
 
+# Performs the one bounded, read-only URL retry and retains its observations.
 run_url_diagnostic <- function(package_path, evidence_path, delay = 5) {
   Sys.sleep(delay)
   log <- file.path(evidence_path, "url-diagnostic.log")
@@ -926,6 +1003,7 @@ run_url_diagnostic <- function(package_path, evidence_path, delay = 5) {
   )
 }
 
+# Writes every NOTE disposition and its complete normalized signature to TSV.
 write_note_results <- function(classifications, evidence_path) {
   data <- if (length(classifications) == 0L) {
     data.frame(
@@ -956,6 +1034,7 @@ write_note_results <- function(classifications, evidence_path) {
   path
 }
 
+# Marks the state with one candidate or tooling failure.
 record_problem <- function(state, kind) {
   if (identical(kind, "candidate")) {
     state$candidate_failed <- TRUE
@@ -965,6 +1044,7 @@ record_problem <- function(state, kind) {
   invisible(kind)
 }
 
+# Executes every required check in release order after preconditions hold.
 run_preflight_pipeline <- function(state, repository_root, description) {
   evidence <- state$evidence_path
   transient_directories <- file.path(
@@ -1315,7 +1395,13 @@ run_preflight_pipeline <- function(state, repository_root, description) {
   invisible(NULL)
 }
 
-cran_preflight_cli <- function(args, expected_root) {
+# Owns invocation validation, worktree bracketing, final evidence, and the
+# public exit code.
+cran_preflight_cli <- function(
+  args,
+  expected_root,
+  pipeline = run_preflight_pipeline
+) {
   parsed <- tryCatch(parse_preflight_args(args), error = function(cnd) cnd)
   if (inherits(parsed, "condition")) {
     cat(conditionMessage(parsed), "\n", file = stderr())
@@ -1414,7 +1500,7 @@ cran_preflight_cli <- function(args, expected_root) {
 
   if (!state$candidate_failed && !state$tool_failed) {
     tryCatch(
-      run_preflight_pipeline(state, expected_root, description),
+      pipeline(state, expected_root, description),
       interrupt = function(cnd) {
         state$interrupted <- TRUE
         record_preflight_step(
@@ -1449,7 +1535,7 @@ cran_preflight_cli <- function(args, expected_root) {
     state$worktree_after,
     file.path(evidence, "worktree-after.txt")
   )
-  unchanged <- !is.na(state$worktree_after) && worktree_is_unchanged(
+  unchanged <- worktree_is_unchanged(
     state$worktree_before,
     state$worktree_after
   )

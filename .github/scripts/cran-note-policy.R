@@ -7,6 +7,7 @@
 # second incoming finding cannot inherit the disposition of the first.
 normalize_cran_note <- function(note) {
   note <- gsub("\033\\[[0-9;]*[[:alpha:]]", "", note)
+  note <- chartr("‘’", "''", note)
   lines <- strsplit(gsub("\r\n?", "\n", note), "\n", fixed = TRUE)[[1L]]
   lines <- trimws(lines)
   if (length(lines) > 0L) {
