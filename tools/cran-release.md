@@ -179,13 +179,15 @@ repository authorities:
 
 ```sh
 Rscript -e 'roxygen2::roxygenise()'
+R CMD INSTALL .
 Rscript -e 'rmarkdown::render("README.Rmd", quiet = TRUE)'
 git diff --check
 git diff
 ```
 
-The README command requires Pandoc 3.10.1 and the working tree installed first,
-as `AGENTS.md` documents. Obtain separate approvals before commit, push, and PR
+Confirm `quarto pandoc --version` reports 3.10.1 before the README command. The
+working tree is installed first because its chunks load marginplyr, as
+`AGENTS.md` documents. Obtain separate approvals before commit, push, and PR
 creation:
 
 ```sh

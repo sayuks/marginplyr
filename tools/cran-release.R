@@ -546,6 +546,15 @@ cran_release_operation <- function(
   }
   changed <- release_changed_files(before, after)
 
+  if (identical(operation, "prepare")) {
+    message(paste0(
+      "After manual source edits, regenerate with ",
+      "`Rscript -e 'roxygen2::roxygenise()'`; install the working tree; ",
+      "then run `Rscript -e ",
+      "'rmarkdown::render(\"README.Rmd\", quiet = TRUE)'`."
+    ))
+  }
+
   if (length(changed) == 0L) {
     message(operation, " is already complete for ", version, ".")
     return(invisible(changed))
