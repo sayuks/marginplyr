@@ -121,6 +121,10 @@ concurrency:
 
 env:
   GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
+  # A manual run is release evidence and fails closed on every NOTE not matched
+  # by the shared state-scoped policy. Push and pull-request runs keep their
+  # lower-noise annotation behavior for moving R-devel output (#505).
+  MARGINPLYR_STRICT_RELEASE: ${{ github.event_name == 'workflow_dispatch' }}
   # `--as-cran` otherwise queries CRAN on every run. That adds network
   # flakiness and NOTEs about clock skew or momentarily unreachable URLs which
   # say nothing about the change under test, and each one would be annotated as

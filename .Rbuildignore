@@ -8,6 +8,7 @@
 ^README\.Rmd$
 ^dev$
 ^data-raw$
+^tools$
 ^\.github$
 ^\.claude$
 ^docs$

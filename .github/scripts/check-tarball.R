@@ -9,13 +9,13 @@
 # reviewed place rather than in six copies of an inline step. And a matrix job
 # cannot pass R arguments, so configuration arrives through the environment.
 #
-# Exits non-zero on any ERROR or WARNING. An unexpected NOTE is annotated and
-# written to the job summary but does not fail the job: R-devel and CRAN
-# incoming checks introduce NOTEs that are outside this package's control, and
-# a gate that cries wolf gets ignored. Judging the recorded NOTEs is part of
-# the release review.
+# Exits non-zero on any ERROR or WARNING. An unexpected NOTE is always
+# annotated and written to the job summary. It also fails a manually dispatched
+# strict release run; routine push and pull-request checks retain their
+# lower-noise reporting behavior (#505).
 
 source(".github/scripts/ci-helpers.R")
+source(".github/scripts/cran-note-policy.R")
 
 # Asserts that this job's library holds the optional backends it declared and
 # no others, and stops before the check when it does not. It runs here rather
@@ -39,33 +39,6 @@ split_words <- function(value) {
   words[nzchar(words)]
 }
 
-# NOTEs this package has already accounted for. Each entry pairs a literal
-# fragment of the NOTE's text with the reason it is expected, so the job
-# summary explains itself without a reviewer reconstructing the history.
-#
-# Fragments are matched literally and kept narrow on purpose. Matching the
-# "checking CRAN incoming feasibility" header instead would classify every
-# future incoming finding -- misspellings, unreachable URLs -- as understood,
-# which is the opposite of what this list is for.
-understood_notes <- c(
-  "New submission" =
-    "marginplyr 0.1.0 is a first CRAN release, so incoming checks say so.",
-  "Days since last update" =
-    "Only meaningful for resubmissions during a review cycle."
-)
-
-describe_note <- function(note) {
-  matched <- vapply(
-    names(understood_notes),
-    function(fragment) grepl(fragment, note, fixed = TRUE),
-    logical(1)
-  )
-  if (!any(matched)) {
-    return(NA_character_)
-  }
-  understood_notes[[which(matched)[1]]]
-}
-
 tarballs <- list.files(tarball_dir, pattern = "[.]tar[.]gz$", full.names = TRUE)
 if (length(tarballs) != 1L) {
   stop(sprintf(
@@ -75,6 +48,11 @@ if (length(tarballs) != 1L) {
   ))
 }
 message("Checking source tarball: ", tarballs)
+cran_status <- cran_status_from_tarball(tarballs)
+strict_release <- identical(
+  tolower(Sys.getenv("MARGINPLYR_STRICT_RELEASE", "false")),
+  "true"
+)
 
 result <- rcmdcheck::rcmdcheck(
   tarballs,
@@ -116,19 +94,30 @@ append_section <- function(lines, heading, entries) {
 summary_lines <- append_section(summary_lines, "Errors", result$errors)
 summary_lines <- append_section(summary_lines, "Warnings", result$warnings)
 
+classifications <- lapply(
+  result$notes,
+  classify_cran_note,
+  cran_status = cran_status
+)
 unexpected <- character()
-for (note in result$notes) {
-  reason <- describe_note(note)
-  heading <- if (is.na(reason)) "Unexpected NOTE" else "Understood NOTE"
+for (index in seq_along(result$notes)) {
+  note <- result$notes[[index]]
+  classification <- classifications[[index]]
+  allowed <- identical(classification$status, "allowed-note")
+  heading <- if (allowed) "Allowed NOTE" else "Unexpected NOTE"
   summary_lines <- c(
     summary_lines,
     sprintf("### %s", heading),
     "",
-    if (is.na(reason)) "No recorded explanation for this NOTE." else reason,
+    if (allowed) {
+      classification$rationale
+    } else {
+      "No release-policy allowance matches this complete NOTE."
+    },
     "",
     as_summary_block(note)
   )
-  if (is.na(reason)) {
+  if (!allowed) {
     unexpected <- c(unexpected, note)
   }
 }
@@ -151,5 +140,13 @@ if (length(result$errors) > 0L || length(result$warnings) > 0L) {
     label,
     length(result$errors),
     length(result$warnings)
+  ))
+}
+
+if (cran_notes_block(classifications, strict_release)) {
+  stop(sprintf(
+    "%s failed strict release classification with %d unknown NOTE(s).",
+    label,
+    length(unexpected)
   ))
 }

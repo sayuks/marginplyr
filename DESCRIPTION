@@ -38,6 +38,10 @@ Suggests:
     tibble,
     tidyr
 Config/marginplyr/cran-status: unpublished
+Config/Needs/preflight:
+    checktor (== 0.1.0),
+    rcmdcheck,
+    urlchecker
 Config/testthat/edition: 3
 VignetteBuilder:
     quarto
