@@ -967,6 +967,7 @@ test_that("the reset scan tells an opening statement from a later one", {
     reset_sent_queries()
     stop("unreachable")
   }
+  # jarl-ignore unreachable_code: The scanner reads this malformed fixture.
   resets_later <- function() {
     stop("unreachable")
     reset_sent_queries()
@@ -975,6 +976,7 @@ test_that("the reset scan tells an opening statement from a later one", {
     reset_sent_queries()
     force(.data)
   }
+  # jarl-ignore unreachable_code: The scanner reads this malformed fixture.
   validates_between <- function() {
     force(.data)
     stop("unreachable")
@@ -1022,6 +1024,7 @@ test_that("the reset scan reads through covr's instrumentation", {
   counter <- coverage_counter()
 
   braced <- function() NULL
+  # jarl-ignore if_always_true: This reproduces covr's literal wrapper.
   body(braced) <- bquote({
     if (TRUE) {
       .(counter)("marginplyr/R/grouping-plan.R:1:1:1:1")
@@ -1034,6 +1037,7 @@ test_that("the reset scan reads through covr's instrumentation", {
   })
 
   unbraced <- function() NULL
+  # jarl-ignore if_always_true: This reproduces covr's literal wrapper.
   body(unbraced) <- bquote(if (TRUE) {
     .(counter)("marginplyr/R/grouping-plan.R:1:1:1:1")
     reset_sent_queries()
@@ -1050,6 +1054,7 @@ test_that("the reset scan reads through covr's instrumentation", {
   # take it apart: it has no counter in it, and taking it apart would report a
   # first statement that is not the one the entry point opens with.
   authored <- function() NULL
+  # jarl-ignore if_always_true: The literal condition is the authored fixture.
   body(authored) <- quote({
     if (TRUE) {
       validate()

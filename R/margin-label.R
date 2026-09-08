@@ -31,7 +31,7 @@ normalize_margin_label <- function(.margin_label) {
   if (anyNA(label_names)) {
     abort_marginplyr("{.arg .margin_label} names must not be missing.")
   }
-  if (any(!nzchar(label_names))) {
+  if (!all(nzchar(label_names))) {
     abort_marginplyr("{.arg .margin_label} names must not be empty.")
   }
   if (anyDuplicated(label_names)) {

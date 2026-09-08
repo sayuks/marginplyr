@@ -344,7 +344,7 @@ test_that("dtplyr keeps a used NA level apart from a typed missing", {
       c(1L, 2L),
       info = verb
     )
-    expect_false(any(is.na(source_rows$group)), info = verb)
+    expect_false(anyNA(source_rows$group), info = verb)
     expect_true(all(is.na(margin_rows$group)), info = verb)
   }
 })
@@ -389,10 +389,10 @@ expect_passthrough_agrees <- function(result, expected) {
     sort(as.integer(result$passthrough)),
     sort(as.integer(expected$passthrough))
   )
-  expect_false(any(is.na(result$passthrough)))
+  expect_false(anyNA(result$passthrough))
   expect_identical(
-    any(is.na(result$passthrough)),
-    any(is.na(expected$passthrough))
+    anyNA(result$passthrough),
+    anyNA(expected$passthrough)
   )
 }
 
@@ -419,8 +419,8 @@ test_that("dtplyr keeps a used NA level on a fixed .by key", {
   )
   # Every row of both results holds a value on the NA level, so `is.na()` is
   # false throughout: the key is never a margin row's typed missing.
-  expect_false(any(is.na(result$key)))
-  expect_identical(any(is.na(result$key)), any(is.na(expected$key)))
+  expect_false(anyNA(result$key))
+  expect_identical(anyNA(result$key), anyNA(expected$key))
 })
 
 test_that("dtplyr keeps a used NA level on a passed-through column", {
@@ -1362,7 +1362,7 @@ test_that("non-missing labels preserve factor NA levels and missing codes", {
   detail <- result[result$bit == 0L, , drop = FALSE]
 
   expect_identical(levels(result$group), c("x", NA_character_, "All"))
-  expect_true(any(is.na(detail$group)))
+  expect_true(anyNA(detail$group))
   expect_true(any(!is.na(detail$group) & is.na(as.character(detail$group))))
   expect_identical(as.character(result$group[result$bit == 1L]), "All")
 })

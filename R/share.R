@@ -1798,7 +1798,7 @@ validate_share_request <- function(outputs,
   if (length(outputs) == 0L) {
     return(invisible(NULL))
   }
-  if (any(!nzchar(outputs))) {
+  if (!all(nzchar(outputs))) {
     abort_marginplyr(
       "{share_kind_modifier(kind)} output names must not be empty."
     )

@@ -412,6 +412,7 @@ test_that("a nested column selection is unaffected by the specification rule", {
   expect_equal(compile(inside)$sets, list(c("region", "grade")))
 })
 
+# jarl-ignore unnecessary_parentheses: Nested pairs are syntax under test.
 test_that("a nested argument is read through its redundant parentheses", {
   data_vars <- c("region", "grade", "value")
   bound <- rollup(value)
@@ -733,6 +734,7 @@ empty_grouping_arg_message <- function(constructor, position) {
   )
 }
 
+# jarl-ignore missing_argument: Empty arguments are the refusal under test.
 test_that("a leading or interior empty argument is refused in every kind", {
   data <- data.frame(
     region = c("a", "b"),
@@ -806,6 +808,7 @@ test_that("a leading or interior empty argument is refused in every kind", {
   )
 })
 
+# jarl-ignore missing_argument: Omitted arguments are the behavior under test.
 test_that("the empty spellings that already had a reading keep it", {
   data <- data.frame(region = c("a", "b"), value = c(1, 2))
   region_only <- inspect_grouping(data, .grouping = grouping_sets(region))
@@ -910,6 +913,7 @@ test_that("a forwarded empty `.by` is still an argument the caller supplied", {
 # Answered as tidyselect answers it, which under `c()` is to select nothing
 # for the part. Every position, since the walk reads every part, and every
 # verb the derivation names rather than a list that could miss one.
+# jarl-ignore missing_argument: Omitted selections are the behavior under test.
 test_that("an empty argument inside a `.by` selection selects nothing", {
   # `tier` is here so that the interior position has a second fixed key to sit
   # beside, without the selection reaching the column `.grouping` takes.
@@ -940,6 +944,7 @@ test_that("an empty argument inside a `.by` selection selects nothing", {
   }
 })
 
+# jarl-ignore missing_argument: Omitted selections are the behavior under test.
 test_that("an empty argument inside a specification's selection reads too", {
   data <- data.frame(
     region = c("East", "East", "West"),

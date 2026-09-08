@@ -1,0 +1,22 @@
+category	check	location	reason
+code	print_cat_usage	grouping-spec.R:255	The finding is the output of an S3 print method, where cat() is the intended interface.
+code	temp_cleanup	test-grouping-plan.R:635	The test takes basename(tempfile()) as an unused cache key and creates no file.
+code	globalenv_mod	grouping-plan.R:705	The superassignment updates state owned by the enclosing closure, not .GlobalEnv.
+code	globalenv_mod	grouping-plan.R:1035	The superassignment initializes state owned by the enclosing closure, not .GlobalEnv.
+code	globalenv_mod	grouping-plan.R:1227	The superassignment carries a condition to the enclosing handler, not .GlobalEnv.
+description	acronyms	SETS	GROUPING SETS is a quoted SQL keyword, not an unexplained acronym.
+description	acronyms	ROLLUP	ROLLUP is a quoted SQL keyword, not an unexplained acronym.
+description	acronyms	CUBE	CUBE is a quoted SQL keyword, not an unexplained acronym.
+description	acronyms	UNION	UNION ALL is a SQL keyword, not an unexplained acronym.
+description	acronyms	ALL	UNION ALL is a SQL keyword, not an unexplained acronym.
+description	title_case	Word should be capitalized: 'dplyr'	dplyr is a product name whose canonical spelling starts with a lowercase letter.
+documentation	commented_examples	grouping_bit.Rd: commented-out call in \examples{}	The example comments explain executable calls; they do not replace the example.
+documentation	commented_examples	grouping_set.Rd: commented-out call in \examples{}	The example comments explain executable calls; they do not replace the example.
+documentation	commented_examples	nest_by_with_margins.Rd: commented-out call in \examples{}	The example comments explain executable calls; they do not replace the example.
+documentation	commented_examples	nest_with_margins.Rd: commented-out call in \examples{}	The example comments explain executable calls; they do not replace the example.
+documentation	commented_examples	share_of_parent.Rd: commented-out call in \examples{}	The example comments explain executable calls; they do not replace the example.
+documentation	commented_examples	summarize_with_margins.Rd: commented-out call in \examples{}	The example comments explain executable calls; they do not replace the example.
+documentation	suggested_in_examples	last_sent_queries.Rd: uses Suggested package 'DBI' in \examples without a guard	The example uses the repository's version-aware marginplyr_suggest_available() guard.
+documentation	suggested_in_examples	nest_by_with_margins.Rd: uses Suggested package 'dtplyr' in \examples without a guard	The example uses the repository's version-aware marginplyr_suggest_available() guard.
+documentation	suggested_in_examples	nest_with_margins.Rd: uses Suggested package 'dtplyr' in \examples without a guard	The example uses the repository's version-aware marginplyr_suggest_available() guard.
+documentation	suggested_in_examples	summarize_with_margins.Rd: uses Suggested package 'DBI' in \examples without a guard	The example uses the repository's version-aware marginplyr_suggest_available() guard.

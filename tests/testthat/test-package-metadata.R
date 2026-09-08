@@ -36,7 +36,7 @@ license_copyright_holder <- function() {
 # wording around it. The year is matched only to locate the line and is then
 # discarded, because copyright-year policy is a separate question.
 license_md_copyright_holder <- function(path) {
-  notice <- "^Copyright \\(c\\) [0-9]{4} (.+)$"
+  notice <- "^Copyright \\(c\\) [0-9]{4}(?:-[0-9]{4})? (.+)$"
   matched <- grep(notice, readLines(path, warn = FALSE), value = TRUE)
   if (length(matched) != 1L) {
     stop(

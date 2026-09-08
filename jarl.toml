@@ -1,0 +1,4 @@
+[lint]
+# The package-specific rules are high-signal here. `expect_not` catches a
+# testthat anti-pattern without opting into the stylistic TESTTHAT family.
+extend-select = ["DPLYR", "expect_not"]

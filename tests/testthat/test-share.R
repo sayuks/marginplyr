@@ -494,6 +494,7 @@ test_that("direct Parent-share syntax and dependency errors are targeted", {
     ),
     "forward reference"
   )
+  # jarl-ignore duplicated_arguments: The collision is the failure under test.
   expect_error(
     summarize_with_margins(
       data,
@@ -556,6 +557,7 @@ test_that("direct Parent-share syntax and dependency errors are targeted", {
 
 test_that("Parent-share outputs reject every static collision", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
+  # jarl-ignore duplicated_arguments: The list holds collision fixtures.
   calls <- list(
     quote(summarize_with_margins(
       data,
@@ -1298,6 +1300,7 @@ test_that("Parent-share across does not infer bare predicate symbols", {
 test_that("Parent-share across classifies source-name failures", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 
+  # jarl-ignore duplicated_arguments: The collision is the failure under test.
   duplicate_error <- expect_error(
     summarize_with_margins(
       data,
@@ -2758,6 +2761,7 @@ test_that("a call text names a replaced part by the class it stood for", {
   )
 })
 
+# jarl-ignore missing_argument: The empty call part is the behavior under test.
 test_that("a call text carries an empty argument past the walk", {
   call <- quote(summarize_with_margins(data, , units = sum(units)))
   call[[2L]] <- new.env()
