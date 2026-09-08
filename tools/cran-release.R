@@ -144,12 +144,27 @@ release_prepare_files <- function(files, version) {
   files
 }
 
+release_readme_cran_parts <- function(lines) {
+  c(
+    badge = sum(grepl(
+      "badges/version/marginplyr",
+      lines,
+      fixed = TRUE
+    )),
+    link = sum(grepl(
+      "[CRAN](https://CRAN.R-project.org/package=marginplyr)",
+      lines,
+      fixed = TRUE
+    )),
+    install = sum(lines == "install.packages(\"marginplyr\")")
+  )
+}
+
 release_readme_claims_cran <- function(lines) {
-  any(grepl(
-    "cran.r-project.org/package=marginplyr",
-    tolower(lines),
-    fixed = TRUE
-  )) && "install.packages(\"marginplyr\")" %in% lines
+  identical(
+    unname(release_readme_cran_parts(lines)),
+    c(1L, 1L, 1L)
+  )
 }
 
 release_published_installation <- function() {
@@ -175,6 +190,13 @@ release_published_installation <- function() {
 release_publish_readme <- function(lines) {
   if (release_readme_claims_cran(lines)) {
     return(lines)
+  }
+  parts <- release_readme_cran_parts(lines)
+  if (any(parts != 0L)) {
+    release_abort(paste0(
+      "README.Rmd has partial or duplicated CRAN publication text; ",
+      "refusing to guess which initial-only edit is intended."
+    ))
   }
 
   badge_end <- which(lines == "<!-- badges: end -->")

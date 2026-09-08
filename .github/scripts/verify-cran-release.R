@@ -150,6 +150,21 @@ expect_identical(
   "the idempotent initial post-release edit"
 )
 
+partial_initial <- initial_files
+partial_initial$`README.Rmd` <- append(
+  partial_initial$`README.Rmd`,
+  paste0(
+    "[![CRAN status](https://www.r-pkg.org/badges/version/marginplyr)]",
+    "(https://CRAN.R-project.org/package=marginplyr)"
+  ),
+  after = 2L
+)
+expect_release_error(
+  release_post_files(partial_initial, "0.1.0"),
+  1L,
+  "partial initial-only publication text"
+)
+
 published_without_claim <- initial_files
 published_without_claim$DESCRIPTION <- release_set_dcf_field(
   published_without_claim$DESCRIPTION,
