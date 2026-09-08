@@ -1,6 +1,6 @@
 category	check	location	reason
 code	print_cat_usage	grouping-spec.R:255	The finding is the output of an S3 print method, where cat() is the intended interface.
-code	temp_cleanup	test-grouping-plan.R:634	The test takes basename(tempfile()) as an unused cache key and creates no file.
+code	temp_cleanup	test-grouping-plan.R:635	The test takes basename(tempfile()) as an unused cache key and creates no file.
 code	globalenv_mod	grouping-plan.R:705	The superassignment updates state owned by the enclosing closure, not .GlobalEnv.
 code	globalenv_mod	grouping-plan.R:1035	The superassignment initializes state owned by the enclosing closure, not .GlobalEnv.
 code	globalenv_mod	grouping-plan.R:1227	The superassignment carries a condition to the enclosing handler, not .GlobalEnv.
