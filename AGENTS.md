@@ -12,11 +12,11 @@ what was added and what paid for it.
 
 ### Linting
 
-Load the package before linting, so the local run matches `.github/workflows/lint.yaml`:
+Before pushing, run both lint checks:
 
-```r
-pkgload::load_all(".", quiet = TRUE)
-lintr::lint_package()
+```sh
+jarl check .
+Rscript -e 'pkgload::load_all(".", quiet = TRUE); lintr::lint_package()'
 ```
 
 `object_usage_linter()` resolves symbols through the package namespace. Without
