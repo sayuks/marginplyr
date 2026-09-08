@@ -264,12 +264,8 @@ jobs:
   # Reviewer-oriented checks are a release decision, not a signal worth adding
   # to every pull request. A manual run of this workflow is the pre-release
   # gate, and checks the same source tarball as the R release/devel/oldrel and
-  # isolated-backend jobs. Locally, install checktor and run:
-  #
-  #   R CMD build .
-  #   Rscript .github/scripts/check-cran-readiness.R marginplyr_*.tar.gz
-  #
-  # `.github/scripts/check-cran-readiness.R` owns the gate and report contract.
+  # isolated-backend jobs. `.github/scripts/check-cran-readiness.R` documents
+  # the matching local invocation and owns the gate and report contract.
   checktor:
     name: CRAN preflight (checktor)
     if: github.event_name == 'workflow_dispatch'
