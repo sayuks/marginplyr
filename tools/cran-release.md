@@ -152,6 +152,20 @@ or approval is absent. Recovery: edit the existing issue after approval rather
 than creating a duplicate. Human fallback: create the issue in GitHub's UI with
 the same title and template.
 
+For every later ledger change, first read the current body, edit a temporary
+copy, show the exact proposed diff, and obtain approval before the external
+update:
+
+```sh
+release_issue_body=$(mktemp)
+gh issue view <issue-number> --json body --jq .body > "$release_issue_body"
+# Edit the temporary copy, then show its diff against the fetched body.
+gh issue edit <issue-number> --body-file "$release_issue_body"
+```
+
+The human fallback is the issue's Edit action in GitHub's UI after reviewing
+the same proposed checkbox/evidence change.
+
 ### 3. Prepare and merge the release PR
 
 Purpose: make version, NEWS, `cran-comments.md`, metadata, and generated files
@@ -472,9 +486,14 @@ notes, and two assets.
 Purpose: atomically publish the initial CRAN state/documentation when needed,
 advance to development, add the development NEWS heading, and regenerate files.
 
-Create a clean branch/worktree from current main after approval. Preview first:
+Show the branch/worktree target and obtain approval, then create it from current
+main and preview:
 
 ```sh
+git fetch origin
+git worktree add ../marginplyr-post-release-0.1.0 \
+  -b post-release/0.1.0 origin/main
+cd ../marginplyr-post-release-0.1.0
 Rscript tools/cran-release.R post-release --version 0.1.0
 ```
 
@@ -492,14 +511,29 @@ and install call appear once, version is `0.1.0.9000`, and NEWS begins with that
 heading. For an update, status and CRAN documentation must remain unchanged
 while version/NEWS advance. Run documentation and relevant tests, then obtain
 separate approvals for commit/push and PR creation. Put all of these changes in
-one PR.
+one PR:
+
+```sh
+Rscript .github/scripts/verify-context-budget.R
+Rscript .github/scripts/verify-doc-references.R
+Rscript .github/scripts/verify-cran-release.R
+jarl check .
+Rscript -e 'pkgload::load_all(".", quiet = TRUE); lintr::lint_package()'
+Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/testthat")'
+git diff --check
+
+git add DESCRIPTION NEWS.md README.Rmd README.md
+git commit -m "Start marginplyr 0.1.0.9000"
+git push -u origin post-release/0.1.0
+gh pr create --fill
+```
 
 Success evidence: green reviewable PR with no duplicated heading, badge, or
 installation text. Block on publication mismatch, dirty/unexpected state,
 generation failure, or a split/partial change. Recovery: inspect helper output;
 fix the disposable branch, or discard only that branch and recreate it. Human
-fallback: make the publication-day edits listed in `tests/testthat/
-test-documentation.R`, render with Pandoc 3.10.1, and create one PR.
+fallback: follow this stage by hand, render with Pandoc 3.10.1, and create one
+PR.
 
 ### 15. Monitor site deployment and CRAN flavors for 72 hours
 
@@ -523,7 +557,15 @@ Success evidence: deployed site, no undispositioned CRAN finding, and the full
 disposition. Recovery: investigate; fixes use the normal development/release
 process rather than rewriting this release. Human fallback: inspect Actions,
 the public site, and CRAN's check page on the same schedule. Close the release
-issue only after approval and only when every checkbox is complete.
+issue only when every checkbox is complete. Show the final ledger and obtain
+approval before the external close:
+
+```sh
+gh issue close <issue-number> \
+  --comment "Release monitoring completed; all findings are dispositioned."
+```
+
+The human fallback is GitHub's Close issue action with the same final comment.
 
 ## Release issue ledger
 

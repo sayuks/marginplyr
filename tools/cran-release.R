@@ -161,10 +161,13 @@ release_readme_cran_parts <- function(lines) {
 }
 
 release_readme_claims_cran <- function(lines) {
-  identical(
-    unname(release_readme_cran_parts(lines)),
-    c(1L, 1L, 1L)
-  )
+  parts <- release_readme_cran_parts(lines)
+  identical(unname(parts[["install"]]), 1L) &&
+    sum(parts[c("badge", "link")]) >= 1L
+}
+
+release_readme_is_canonical <- function(lines) {
+  identical(unname(release_readme_cran_parts(lines)), c(1L, 1L, 1L))
 }
 
 release_published_installation <- function() {
@@ -188,7 +191,7 @@ release_published_installation <- function() {
 
 # Adds the publication-only README source exactly once.
 release_publish_readme <- function(lines) {
-  if (release_readme_claims_cran(lines)) {
+  if (release_readme_is_canonical(lines)) {
     return(lines)
   }
   parts <- release_readme_cran_parts(lines)
@@ -573,7 +576,7 @@ cran_release_operation <- function(
   for (path in changed) {
     release_write_atomic(file.path(root, path), after[[path]])
   }
-  if ("README.Rmd" %in% changed) {
+  if (identical(operation, "post-release")) {
     release_render_readme(root, runner = runner)
     rendered <- readLines(file.path(root, "README.md"), warn = FALSE)
     if (!release_readme_claims_cran(rendered)) {

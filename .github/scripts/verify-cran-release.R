@@ -177,6 +177,23 @@ expect_release_error(
   "an update missing initial-only documentation"
 )
 
+published_with_badge <- published_without_claim
+published_with_badge$`README.Rmd` <- append(
+  published_with_badge$`README.Rmd`,
+  c(
+    paste0(
+      "[![CRAN status](https://www.r-pkg.org/badges/version/marginplyr)]",
+      "(https://CRAN.R-project.org/package=marginplyr)"
+    ),
+    "install.packages(\"marginplyr\")"
+  ),
+  after = 2L
+)
+expect_true(
+  release_readme_claims_cran(published_with_badge$`README.Rmd`),
+  "a published README with an install call and badge"
+)
+
 packages <- matrix(
   c("marginplyr", "0.1.0", "other", "9.9.9"),
   ncol = 2L,
@@ -280,6 +297,70 @@ expect_true(
     warn = FALSE
   )),
   "the applied generated README"
+)
+
+old_wd <- setwd(fixture_root)
+expect_identical(system2("git", c("add", ".")), 0L, "initial follow-up add")
+expect_identical(
+  system2(
+    "git",
+    c(
+      "-c", "user.name=ReleaseFixture",
+      "-c", "user.email=fixture@example.invalid",
+      "commit", "--quiet", "-m", "initial-follow-up"
+    )
+  ),
+  0L,
+  "initial follow-up commit"
+)
+setwd(old_wd)
+
+cran_release_operation(
+  "prepare",
+  "0.1.1",
+  root = fixture_root,
+  apply = TRUE
+)
+old_wd <- setwd(fixture_root)
+expect_identical(system2("git", c("add", ".")), 0L, "update preparation add")
+expect_identical(
+  system2(
+    "git",
+    c(
+      "-c", "user.name=ReleaseFixture",
+      "-c", "user.email=fixture@example.invalid",
+      "commit", "--quiet", "-m", "update-preparation"
+    )
+  ),
+  0L,
+  "update preparation commit"
+)
+setwd(old_wd)
+
+update_packages <- packages
+update_packages[update_packages[, "Package"] == "marginplyr", "Version"] <-
+  "0.1.1"
+render_state$calls <- 0L
+cran_release_operation(
+  "post-release",
+  "0.1.1",
+  root = fixture_root,
+  apply = TRUE,
+  packages = update_packages,
+  runner = successful_runner
+)
+expect_identical(
+  render_state$calls,
+  2L,
+  "the update post-release generation commands"
+)
+expect_identical(
+  release_dcf_field(
+    readLines(file.path(fixture_root, "DESCRIPTION"), warn = FALSE),
+    "Version"
+  ),
+  "0.1.1.9000",
+  "the applied update development version"
 )
 
 expect_release_error(
