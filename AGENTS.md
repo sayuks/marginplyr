@@ -59,12 +59,12 @@ working tree first or the regenerated file shows an older package's output.
 
 Its renderer is pinned, unlike roxygen2's, because pandoc's markdown writer
 is not stable across versions while the check is a byte comparison: pandoc
-3.8.3 — what `setup-pandoc@v2` installs by default — writes a `text` info
-string on the fence holding the reporting-levels block, and 3.10.1 omits it,
-so an unpinned job reds on a README nobody touched. `document.yaml` names the
-version the committed file came from; regenerating locally against a
-different pandoc produces a diff that is a pandoc difference and not a stale
-file. Moving the pin means regenerating `README.md` in the same commit.
+3.8.3 writes a `text` info string on the fence holding the reporting-levels
+block, and 3.10.1 omits it, so an unpinned job reds on a README nobody touched.
+`document.yaml` pins 3.10.1, the version the committed file came from;
+regenerating locally against a different pandoc produces a diff that is a
+pandoc difference and not a stale file. Moving the pin means regenerating
+`README.md` in the same commit.
 
 ### Installation instructions
 
@@ -78,10 +78,10 @@ package's CRAN page. Once it reads `published`, `README.md` has to carry both
 halves of what publication gives a reader: the instruction to run, and the
 badge or link saying where it goes.
 
-`tests/testthat/test-documentation.R` asserts both directions against the
-field, over the Rd topics, the vignette sources, and both halves of the README.
-Its *Publication day* comment holds the steps that flip the field, and the
-comments beside its scan hold why each is shaped as it is.
+`tools/cran-release.md` owns the publication check and the steps that flip the
+field. `tests/testthat/test-documentation.R` asserts both directions against
+the field, over the Rd topics, the vignette sources, and both halves of the
+README; its comments hold why that gate is shaped as it is.
 
 ### Chunks that must fail
 

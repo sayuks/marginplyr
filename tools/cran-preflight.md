@@ -43,29 +43,15 @@ release. The printed external bundle path contains the tarball, hash manifest,
 machine-readable results and step table, human summary, full check directory
 and logs, checktor report, and the conditional URL diagnostic.
 
-## Release sequence
+## What follows this gate
 
-`usethis::use_release_issue()` remains the separate human checklist. Record the
-candidate SHA and then complete these stages in order:
+Continue with the complete human-and-agent release sequence in
+[`tools/cran-release.md`](cran-release.md). That playbook owns CI, semantic
+review, remote checks, the release issue, CRAN submission, publication, and
+post-publication work. This command performs none of them.
 
-1. Run this local preflight.
-2. Push the same SHA and record all required CI results, including the routine
-   matrix, documentation, lint, site, coverage, release/devel/oldrel tarball,
-   depends-only, suite-coverage, library-isolation, and live backend evidence.
-3. Complete the cited, non-mutating semantic CRAN review and disposition every
-   finding.
-4. Run one targeted current R-devel R-hub v2 platform, then upload the retained
-   tarball to win-builder R-devel after verifying its SHA-256.
-5. Complete `cran-comments.md`, version, submission, confirmation, publication,
-   and follow-up as distinct human actions.
-
-For an initial submission, the recorded `unpublished` state admits only the
-narrow `New submission` NOTE and requires the unpublished installation route.
-For an update, record current CRAN results, reverse-dependency evidence,
-downstream communication where needed, and the update rationale; it gets no
-weaker command mode or permanent rapid-resubmission NOTE allowance.
-
-Evidence is valid only for its recorded commit. A later tracked change to
-metadata, documentation, examples, dependencies or guards, executable sources,
-or `cran-comments.md` restarts the applicable local, CI, semantic, and remote
-stages. The command never dispatches those stages or performs a submission.
+For a real release, `--output` must name a durable, repository-external
+directory. Keep its retained tarball available through win-builder, CRAN
+submission, and GitHub Release creation. The candidate-tree invariant above is
+the status of the repository worktree; tools may change disposable external
+build and check trees without changing that candidate.
