@@ -62,7 +62,7 @@ jobs:
       # Jarl complements rather than replaces lintr. Package-specific rules
       # need R and installed packages, so this reuses the dependency environment
       # instead of duplicating it in a separate job. The action and binary are
-      # pinned independently. Run the same check locally with `jarl check .`;
+      # pinned independently. `AGENTS.md` owns the matching local procedure;
       # `jarl.toml` owns the repository-wide rule selection.
       - uses: etiennebacher/setup-jarl@v0.1.1
         with:
