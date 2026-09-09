@@ -60,6 +60,9 @@ own dimension out -- \code{NULL} or \code{NA_character_}, chosen per dimension i
 named-list \code{.margin_label}.
 Every Margin verb uses the same default: \code{TRUE} for local data frames and
 \code{FALSE} for lazy inputs, which are read only when the caller asks. A label
+check after collecting a lazy input therefore defaults to \code{TRUE} instead
+of \code{FALSE}; set \code{.check_margin_label} explicitly when following a
+collect-first remediation.
 equal to a declared factor \emph{level} is rejected wherever marginplyr holds
 the levels, whatever this argument says, because finding it sends no
 query. Arrow does not hold or restore factor levels; it checks an observed
@@ -195,7 +198,9 @@ Both are written as column selections, so a selection predicate —
 of the input. Some lazy backends do not report those without a query, and
 marginplyr sends none you did not ask for, so a predicate written against
 one of them is refused rather than answered. Select the columns by name, or
-collect the input first. Local data and the lazy backends whose types are
+collect the input first. A Margin operation on collected data defaults
+\code{.check_margin_label} to \code{TRUE} rather than the lazy-input default \code{FALSE},
+so set it explicitly. Local data and the lazy backends whose types are
 available without a query answer a predicate as dplyr does.
 }
 

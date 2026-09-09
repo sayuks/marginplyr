@@ -185,6 +185,48 @@ test_that("Arrow refuses a summary it would otherwise absorb", {
   }
 })
 
+test_that("Arrow summary collection makes collision policy explicit", {
+  skip_if_suggest_absent("arrow")
+
+  source <- arrow::Table$create(data.frame(group = "Total", s = "a"))
+  error <- expect_error(
+    summarize_with_margins(
+      source,
+      joined = paste(s, collapse = ","),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(error),
+    paste0(
+      "Collection changes the default of `.check_margin_label` from ",
+      "`FALSE` to `TRUE`"
+    ),
+    fixed = TRUE
+  )
+
+  local <- dplyr::collect(source)
+  expect_error(
+    summarize_with_margins(
+      local,
+      joined = paste(s, collapse = ","),
+      .grouping = rollup(group)
+    ),
+    "already present in grouping column"
+  )
+  result <- summarize_with_margins(
+    local,
+    joined = paste(s, collapse = ","),
+    .grouping = rollup(group),
+    .check_margin_label = FALSE,
+    .id = "set"
+  )
+
+  expect_identical(result$group, c("Total", "Total"))
+  expect_setequal(result$set, c(1L, 2L))
+})
+
 # Which summaries the refusal names is a function of how the installed Arrow
 # phrases its warning, and both phrasings are inside the range `DESCRIPTION`
 # admits, so it is asserted at the reading rather than through a verb: a

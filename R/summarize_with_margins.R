@@ -50,6 +50,9 @@
 #'   named-list `.margin_label`.
 #'   Every Margin verb uses the same default: `TRUE` for local data frames and
 #'   `FALSE` for lazy inputs, which are read only when the caller asks. A label
+#'   check after collecting a lazy input therefore defaults to `TRUE` instead
+#'   of `FALSE`; set `.check_margin_label` explicitly when following a
+#'   collect-first remediation.
 #'   equal to a declared factor *level* is rejected wherever marginplyr holds
 #'   the levels, whatever this argument says, because finding it sends no
 #'   query. Arrow does not hold or restore factor levels; it checks an observed
@@ -137,7 +140,9 @@
 #' of the input. Some lazy backends do not report those without a query, and
 #' marginplyr sends none you did not ask for, so a predicate written against
 #' one of them is refused rather than answered. Select the columns by name, or
-#' collect the input first. Local data and the lazy backends whose types are
+#' collect the input first. A Margin operation on collected data defaults
+#' `.check_margin_label` to `TRUE` rather than the lazy-input default `FALSE`,
+#' so set it explicitly. Local data and the lazy backends whose types are
 #' available without a query answer a predicate as dplyr does.
 #'
 #' @section Grouped and row-wise inputs:
@@ -473,7 +478,9 @@
 #' contains a list column. [nest_with_margins()] and
 #' [nest_by_with_margins()] therefore ask you to collect first. Contextual
 #' shares are rejected for every accepted Arrow input before a summary query is
-#' constructed; collect first when local share execution is appropriate.
+#' constructed; collect first when local share execution is appropriate. In
+#' either rewrite, collection changes `.check_margin_label`'s default from
+#' `FALSE` to `TRUE`, so choose that policy explicitly on the re-run.
 #'
 #' @section Contextual shares:
 #' [share_of_parent()] and [share_of_total()] calculate a preceding named

@@ -348,7 +348,9 @@ test_that("a summary predicate is refused with the argument and the verb", {
       "`dplyr::across(dplyr::where(is.numeric), sum)`.\n",
       "i This input's backend doesn't report column types without a query, ",
       "and marginplyr sends none you didn't ask for.\n",
-      "i Select the columns by name, or collect the input first."
+      "i Select the columns by name, or collect the input first.\n",
+      "i A Margin operation on collected data defaults `.check_margin_label` ",
+      "from `FALSE` to `TRUE`; set it explicitly."
     ),
     fixed = TRUE
   )

@@ -956,3 +956,46 @@ test_that("nesting reader inputs directs the caller to collect", {
     }
   }
 })
+
+test_that("Arrow nesting collection makes collision policy explicit", {
+  skip_if_suggest_absent("arrow")
+
+  source <- arrow::Table$create(data.frame(group = "Total", value = 1L))
+  verbs <- list(
+    nest = nest_with_margins,
+    nest_by = nest_by_with_margins
+  )
+
+  for (verb in names(verbs)) {
+    error <- expect_error(
+      verbs[[verb]](source, .grouping = rollup(group)),
+      class = "marginplyr_error",
+      info = verb
+    )
+    expect_match(
+      conditionMessage(error),
+      paste0(
+        "Collection changes the default of `.check_margin_label` from ",
+        "`FALSE` to `TRUE`"
+      ),
+      fixed = TRUE,
+      info = verb
+    )
+
+    local <- dplyr::collect(source)
+    expect_error(
+      verbs[[verb]](local, .grouping = rollup(group)),
+      "already present in grouping column",
+      info = verb
+    )
+    result <- verbs[[verb]](
+      local,
+      .grouping = rollup(group),
+      .check_margin_label = FALSE,
+      .id = "set"
+    )
+
+    expect_identical(result$group, c("Total", "Total"), info = verb)
+    expect_identical(sort(result$set), c(1L, 2L), info = verb)
+  }
+})

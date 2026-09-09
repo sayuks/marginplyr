@@ -1619,7 +1619,7 @@ test_that("an all-typed-missing label reads no column", {
   }
 })
 
-test_that("a non-missing label is still an observed collision", {
+test_that("an observed-collision opt-out retains structural identity", {
   data <- data.frame(group = c("All", "b"), value = 1:2)
 
   error <- expect_error(
@@ -1632,7 +1632,24 @@ test_that("a non-missing label is still an observed collision", {
     "already present in grouping column:\ni `group`",
     fixed = TRUE
   )
-  expect_match(conditionMessage(error), "`.check_margin_label = FALSE`")
+  expect_match(
+    conditionMessage(error),
+    "only if you retain `.id`, `grouping_bit()`, or `grouping_id()`",
+    fixed = TRUE
+  )
+
+  colliding <- data.frame(group = "All", value = 1L)
+  result <- summarize_with_margins(
+    colliding,
+    n = dplyr::n(),
+    .grouping = rollup(group),
+    .margin_label = "All",
+    .check_margin_label = FALSE,
+    .id = "set"
+  )
+
+  expect_identical(result$group, c("All", "All"))
+  expect_setequal(result$set, c(1L, 2L))
 })
 
 # The remedy has to be one. A bare `NULL` is the whole of `.margin_label`, so

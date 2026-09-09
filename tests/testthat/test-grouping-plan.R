@@ -2899,7 +2899,9 @@ test_that("a grouping predicate is refused with the argument and the verb", {
   refusal <- paste0(
     "i This input's backend doesn't report column types without a query, ",
     "and marginplyr sends none you didn't ask for.\n",
-    "i Select the columns by name, or collect the input first."
+    "i Select the columns by name, or collect the input first.\n",
+    "i A Margin operation on collected data defaults `.check_margin_label` ",
+    "from `FALSE` to `TRUE`; set it explicitly."
   )
 
   dimension <- expect_error(summarize_with_margins(

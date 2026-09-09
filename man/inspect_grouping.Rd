@@ -178,7 +178,9 @@ The nesting verbs accept neither Arrow input category, because their result
 contains a list column. \code{\link[=nest_with_margins]{nest_with_margins()}} and
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} therefore ask you to collect first. Contextual
 shares are rejected for every accepted Arrow input before a summary query is
-constructed; collect first when local share execution is appropriate.
+constructed; collect first when local share execution is appropriate. In
+either rewrite, collection changes \code{.check_margin_label}'s default from
+\code{FALSE} to \code{TRUE}, so choose that policy explicitly on the re-run.
 }
 
 \examples{
