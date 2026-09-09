@@ -76,8 +76,8 @@ assert_string_scalar <- function(x) {
 # `expand_with_margins()` is not named beside `dplyr::collect()`, under the
 # rule ADR 0012's second amendment states. It takes the same Grouping
 # specification and stays lazy, but it returns rows rather than the list column
-# this call asked for, and `assert_lazy_table()` refuses a `RecordBatchReader`
-# that reaches this refusal.
+# this call asked for. A `RecordBatchReader` that reaches this refusal remains
+# on the nesting path rather than the reusable-input or inspection path.
 assert_nest_possible <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
@@ -164,35 +164,39 @@ assert_margin_input <- function(x) {
   ))
 }
 
-# The refused classes stay in the line that names them, for the reason
-# `assert_nest_possible()` above records: the vector is this function's own
-# constant. `{.code}` is that function's style for the same subject, and it is
-# what keeps a second entry from rendering as one object's class chain.
-#
-# The join is cli's default `and` rather than that function's `{.or}`, and the
-# difference is what the sentence asks of the list. A whitelist offers
-# alternatives to pick one of; a blacklist refuses every entry at once, so a
-# second name would be refused alongside the first and not instead of it.
-# Nothing renders today, the vector holding one name.
-#
-# `dplyr::collect()` resolves this refusal too and is not named beside
-# `arrow::as_arrow_table()`, under the rule ADR 0012's third amendment states
-# for two routes that leave the caller in different places.
-#
-# A reader remains refused because a Margin operation needs to build every
-# grouping-set branch from the same reusable input; ADR 0012's amendment on a
-# general admission refusal records why a one-shot reader cannot satisfy it.
-assert_lazy_table <- function(x) {
+# A Margin operation needs every grouping-set branch to start from the same
+# reusable input. A direct reader and an Arrow query whose source graph contains
+# one both fail that precondition; ADR 0012 records the refusal and its remedy.
+assert_reusable_margin_input <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
-  invalid_lazy_table_names <- "RecordBatchReader"
-  if (inherits(x, invalid_lazy_table_names)) {
+  if (arrow_input_has_reader_source(x)) {
     abort_marginplyr(c(
       paste0(
-        "{.arg {nm}} must not be an object of the following classes: ",
-        "{.code {invalid_lazy_table_names}}."
+        "{.arg {nm}} must not be or depend on a ",
+        "{.cls RecordBatchReader}."
       ),
-      i = "Convert it with {.fun arrow::as_arrow_table} first."
+      i = "Materialize it with {.fun arrow::as_arrow_table} first."
+    ))
+  }
+}
+
+# Inspection executes no grouping-set branch, so an Arrow query backed by a
+# reader is safe here. A direct reader still lacks the selection proxy the
+# current adapter requires; #510 owns removing this temporary distinction.
+assert_inspectable_input <- function(x) {
+  # Read only from the cli template below, which codetools cannot see.
+  nm <- deparse(substitute(x)) # nolint: object_usage_linter.
+  if (inherits(x, "RecordBatchReader")) {
+    abort_marginplyr(c(
+      paste0(
+        "{.arg {nm}} must be an Arrow dplyr query rather than a ",
+        "{.cls RecordBatchReader}."
+      ),
+      i = paste0(
+        "Build one with {.fun dplyr::select} and ",
+        "{.fun dplyr::everything} first."
+      )
     ))
   }
 }

@@ -147,7 +147,7 @@ inspect_grouping <- function(.data,
   with_margin_error_call(
     {
       assert_margin_input(.data)
-      assert_lazy_table(.data)
+      assert_inspectable_input(.data)
       .format <- match_margin_choice(
         .format,
         choices = grouping_format_choices,

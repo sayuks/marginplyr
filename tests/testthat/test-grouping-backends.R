@@ -763,6 +763,36 @@ test_that("public Arrow table classes are supported", {
   )
 })
 
+# This pins the external behaviour that makes reader reuse unsafe. Which branch
+# consumes which batch is not stable across a shared test session, so the
+# contract is the absence of the known complete result. If Arrow begins sharing
+# one scan across both branches, this fails and the refusal can be reconsidered.
+test_that("Arrow reader branches do not produce the complete result", {
+  skip_if_suggest_absent("arrow")
+
+  reader <- multi_batch_arrow_reader()
+  detail <- dplyr::summarise(
+    reader,
+    n = dplyr::n(),
+    total = sum(v),
+    .by = k
+  )
+  grand <- dplyr::summarise(
+    reader,
+    n = dplyr::n(),
+    total = sum(v)
+  ) |>
+    dplyr::mutate(k = "Total", .before = 1L)
+  result <- dplyr::collect(dplyr::union_all(detail, grand))
+  complete <- tibble::tibble(
+    k = c("E", "W", "Total"),
+    n = c(2L, 3L, 5L),
+    total = c(3L, 12L, 15L)
+  )
+
+  expect_false(dplyr::setequal(result, complete))
+})
+
 # Deciding whether a selection renames means comparing what it selected against
 # the columns it selected from, and a lazy selection proxy is the table object
 # itself: `names()` on it returns `con`, `src`, and `lazy_query`, so reading it

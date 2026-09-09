@@ -2,6 +2,7 @@
 
 Investigated: 2026-09-08
 Revised: 2026-09-09 — multi-branch RecordBatchReader reproduction below
+Revised: 2026-09-09 (#509) — reader-backed query bypass and verb boundary below
 
 Measured with R 4.6.1, arrow 25.0.1, and dplyr 1.2.1.  The Arrow sources and
 reference pages linked below were read on the investigation date.  This note
@@ -127,3 +128,43 @@ then refers to a reusable table rather than to the reader. It is not the direct
 remedy for a nesting verb, because an Arrow table still cannot carry its list
 column; that verb's existing `dplyr::collect()` remedy consumes the reader into
 a local data frame instead.
+
+## Revisions (2026-09-09, #509)
+
+The first revision tested the direct reader refusal but did not test a query
+whose source was that reader. Arrow 25.0.1 allowed that query through
+marginplyr's class-only guard and reproduced the incomplete result:
+
+```r
+reader <- arrow::RecordBatchReader$create(
+  arrow::record_batch(k = c("E", "E"), v = 1:2),
+  arrow::record_batch(k = c("W", "W", "W"), v = 3:5)
+)
+query <- dplyr::select(reader, dplyr::everything())
+
+marginplyr::summarize_with_margins(
+  query,
+  n = dplyr::n(),
+  total = sum(v),
+  .grouping = marginplyr::rollup(k)
+) |>
+  dplyr::collect()
+#> # A tibble: 2 x 3
+#>   k         n total
+#>   <chr> <int> <int>
+#> 1 Total     2     3
+#> 2 W         3    12
+```
+
+The expected rows were `E = 2`, `W = 3`, and `Total = 5`. A query wrapper did
+not make the reader reusable; it only hid the direct class from the guard. The
+incomplete rows were execution-order dependent: running the backend tests in a
+shared session also produced only the otherwise correct `Total = 5` row. The
+stable observation was that the complete three-row result was not produced,
+not which branch consumed which batch first.
+
+Inspection fell on the other side of the verb boundary. Passing the same
+unexecuted `query` to `inspect_grouping()` returned the two-set rollup plan,
+after which converting `reader` still returned all five rows. Inspection built
+no grouping-set branches and consumed no batch. Issue #510 records the decision
+to add direct-reader inspection separately from PR #509.

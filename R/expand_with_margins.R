@@ -98,7 +98,7 @@ expand_with_margins <- function(.data,
   with_margin_error_call(
     {
       assert_margin_input(.data)
-      assert_lazy_table(.data)
+      assert_reusable_margin_input(.data)
     },
     call = call
   )

@@ -491,29 +491,38 @@ they are otherwise unaffected.
 
 \section{Arrow inputs}{
 
-Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset}, or an
-\code{arrow_dplyr_query} built from one. All three direct inputs are accepted by
-\code{summarize_with_margins()}, \code{expand_with_margins()}, and
-\code{inspect_grouping()}; their queries are accepted too. A translatable summary
-stays an Arrow query for every one of them. For a summary Arrow cannot
-translate, a \code{Table} and \code{RecordBatch} (and a query built on either) would
-fall back to R, so marginplyr refuses it before a row is read. A \code{Dataset}
-and a query built on one instead keep Arrow's own unsupported-expression
-error. Thus an \code{arrow_dplyr_query} is described by its source, not by its
-query class alone.
+Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset},
+\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. marginplyr's
+contract depends on both the verb and the query's sources:\tabular{llll}{
+   Input \tab Summary or expansion \tab Inspection \tab Nesting \cr
+   \code{Table}, \code{RecordBatch}, or \code{Dataset} \tab Accepted \tab Accepted \tab Refused; collect first \cr
+   Query with no reader source \tab Accepted \tab Accepted \tab Refused; collect first \cr
+   \code{RecordBatchReader} \tab Refused; materialize first \tab Refused; build a query first \tab Refused; collect first \cr
+   Query with any reader source \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
+   Non-tabular Arrow object \tab General input refusal \tab General input refusal \tab General input refusal \cr
+}
 
-A \code{RecordBatchReader} is deliberately refused even though Arrow can start a
-dplyr query from it: the reader is one-pass, while a Margin operation builds
-one branch per grouping set from the same input. Later branches cannot
-re-read rows an earlier branch consumed and can therefore compute an
-incomplete result. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch once and
-materializes them as the reusable \code{Table} the branches require; convert
-explicitly before calling \code{\link[=summarize_with_margins]{summarize_with_margins()}},
-\code{\link[=expand_with_margins]{expand_with_margins()}}, or \code{\link[=inspect_grouping]{inspect_grouping()}}. For a nesting verb,
-collect the reader directly instead: an Arrow \code{Table} still cannot carry
-the list-column result. A \code{Scanner}, \code{Scalar}, \code{Array}, \code{ChunkedArray},
-\code{Schema}, \code{Field}, \code{DataType}, and other non-tabular Arrow objects are not
-dplyr inputs. Materialize a Scanner with \verb{$ToTable()} or choose its
+
+A translatable summary or expansion stays an Arrow query. For a summary
+Arrow cannot translate, a \code{Table} and \code{RecordBatch} (and queries built on
+them) would fall back to R, so marginplyr refuses it before a row is read. A
+\code{Dataset} and a query built on one instead keep Arrow's own
+unsupported-expression error. Thus an \code{arrow_dplyr_query} is described by
+its complete source graph, not by its query class alone.
+
+A \code{RecordBatchReader} is one-pass, while a Margin operation may build one
+branch per grouping set. \code{\link[=summarize_with_margins]{summarize_with_margins()}} and
+\code{\link[=expand_with_margins]{expand_with_margins()}} therefore refuse both the reader and any query whose
+source graph contains one. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
+once and materializes the reusable \code{Table} those branches require.
+\code{inspect_grouping()} executes no branch, so it accepts a reader-backed query
+without consuming it. A direct reader currently needs to be wrapped first,
+for example with \code{dplyr::select(reader, dplyr::everything())}; issue #510
+tracks removing that distinction.
+
+A \code{Scanner}, \code{Scalar}, \code{Array}, \code{ChunkedArray}, \code{Schema}, \code{Field},
+\code{DataType}, and other non-tabular Arrow objects are not dplyr inputs.
+Materialize a Scanner with \verb{$ToTable()} or choose its
 \verb{$ToRecordBatchReader()} stream first; convert any other object to a data
 frame or lazy dplyr table appropriate to the data it represents.
 

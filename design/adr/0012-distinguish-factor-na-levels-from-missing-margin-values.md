@@ -208,30 +208,16 @@ one #374 fixed beside it.
 
 ## Amendment: a general admission refusal names the destination
 
-The paragraph above beginning “`or` stays available” relied on both named
-functions being remedies for the objects reaching `assert_margin_input()`.
-That is false for Arrow's non-tabular objects: neither `as.data.frame()` nor
-`dplyr::tbl()` converts a `Scanner`, `Scalar`, `Array`, `ChunkedArray`, `Field`,
-or `DataType` into a dplyr table. A duck-typed refusal can identify the class
-that failed admission, but it cannot know the constructor that makes every
-future backend's object tabular.
+The general admission refusal names its required destination -- a data frame or
+a lazy table that supports dplyr verbs -- without promising a conversion
+function.
 
-The general refusal therefore names the required destination -- a data frame
-or a lazy table that supports dplyr verbs -- without promising a conversion
-function. This does not change the `RecordBatchReader` refusal above. That
-class passes general dplyr admission and is rejected for a narrower reason: a
-Margin operation builds one branch per grouping set from the same input, while
-the reader is one-shot. A later branch cannot re-read rows an earlier branch
-consumed and can produce an incomplete result.
+The reusable-input refusal applies to a direct `RecordBatchReader` and to an
+Arrow query whose source graph contains one. `arrow::as_arrow_table()` is their
+named remedy. `inspect_grouping()` applies a separate inspection rule: it
+accepts a reader-backed query but, until #510, refuses a direct reader and asks
+the caller to build that query explicitly. The nesting verbs retain their
+`dplyr::collect()` remedy.
 
-Arrow 25.0.1 still exhibits that failure: combining a grouped summary and a
-grand-total summary built from one two-batch reader omits one group and computes
-the total from only the first batch. The dated reproduction belongs to
+PR #509 records the contract change. The evidence is in
 `investigation/arrow-r-input-shapes-and-dplyr-fallback.md`.
-
-`arrow::as_arrow_table()` remains its remedy. With a reader containing multiple
-record batches, the conversion consumes every batch once and materializes all
-rows in a reusable `Table`; each Margin branch can then read the complete
-input. The test at the public-verb seam asserts both halves: every guarded verb
-refuses before consuming the reader, and following the named remedy yields the
-complete grouped and grand-total counts.
