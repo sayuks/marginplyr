@@ -74,6 +74,8 @@
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
+#' @inheritSection summarize_with_margins Arrow inputs
+#'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()] to run a Margin operation on the
 #'   inspected plan.

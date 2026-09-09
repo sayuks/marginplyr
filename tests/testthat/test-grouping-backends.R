@@ -393,6 +393,25 @@ test_that("an Arrow summary Arrow can evaluate is unchanged and stays lazy", {
   expect_setequal(dplyr::collect(result)$total, c(3, 3, 6))
 })
 
+test_that("Arrow rejects contextual shares for every accepted input shape", {
+  skip_if_suggest_absent("arrow")
+
+  data <- arrow_input_data()
+  inputs <- c(absorbing_arrow_inputs(data), refusing_arrow_inputs(data))
+
+  for (shape in names(inputs)) {
+    raised <- expect_error(summarize_with_margins(
+      inputs[[shape]],
+      total = sum(v),
+      share = share_of_parent(total),
+      .grouping = rollup(k)
+    ), label = shape)
+
+    expect_s3_class(raised, "marginplyr_error")
+    expect_match(conditionMessage(raised), "share_of_parent", fixed = TRUE)
+  }
+})
+
 # Part one of the two-part regression. The refusal above asserts what
 # marginplyr does with an absorbed expression; this asserts that Arrow still
 # absorbs the two expressions it is asserted over, and that Arrow still marks

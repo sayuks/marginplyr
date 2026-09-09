@@ -132,6 +132,33 @@ Elsewhere in this package \code{NULL} is a documented value, and what it means i
 stated with the argument that takes it.
 }
 
+\section{Arrow inputs}{
+
+Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset}, or an
+\code{arrow_dplyr_query} built from one. All three direct inputs are accepted by
+\code{summarize_with_margins()}, \code{expand_with_margins()}, and
+\code{inspect_grouping()}; their queries are accepted too. A translatable summary
+stays an Arrow query for every one of them. For a summary Arrow cannot
+translate, a \code{Table} and \code{RecordBatch} (and a query built on either) would
+fall back to R, so marginplyr refuses it before a row is read. A \code{Dataset}
+and a query built on one instead keep Arrow's own unsupported-expression
+error. Thus an \code{arrow_dplyr_query} is described by its source, not by its
+query class alone.
+
+A \code{RecordBatchReader} is deliberately refused even though Arrow can start a
+dplyr query from it: the reader is one-pass, and converting it consumes and
+materializes the entire stream. Convert it explicitly with
+\code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} before calling a Margin verb. A \code{Scanner} and
+other non-tabular Arrow objects are not dplyr inputs; materialize a Scanner
+with \verb{$ToTable()} or choose its \verb{$ToRecordBatchReader()} stream first.
+
+The nesting verbs accept neither Arrow input category, because their result
+contains a list column. \code{\link[=nest_with_margins]{nest_with_margins()}} and
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} therefore ask you to collect first. Contextual
+shares are rejected for every accepted Arrow input before a summary query is
+constructed; collect first when local share execution is appropriate.
+}
+
 \examples{
 inspect_grouping(
   .data = retail_sales,

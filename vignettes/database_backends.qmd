@@ -587,6 +587,23 @@ Arrow summaries and expansions are supported and lazy wherever Arrow can
 evaluate the summary itself. Two things are refused instead, for two unrelated
 reasons.
 
+### Which Arrow inputs are supported
+
+The accepted Arrow inputs are `Table`, `RecordBatch`, `Dataset`, and a dplyr
+query built from one. A translatable summary or expansion stays an Arrow query
+for all of them. For an expression Arrow cannot translate, a table or record
+batch would silently fall back to R; marginplyr refuses that fallback before
+any row is read. A dataset instead reports Arrow's own unsupported-expression
+error. A dplyr query follows the object it started from, so its class alone
+does not tell you which outcome applies.
+
+`RecordBatchReader` is intentionally not accepted. It is a one-pass stream;
+use `arrow::as_arrow_table()` to make the materialization explicit before a
+Margin verb. A `Scanner` is not a dplyr input either: choose `$ToTable()` or
+`$ToRecordBatchReader()` first. The nesting verbs do not accept any Arrow
+input because their result contains a list column. Contextual shares are also
+rejected for every accepted Arrow input; collect first for local execution.
+
 The first is a summary Arrow's own engine cannot evaluate. Arrow answers one of
 those by reading the whole input — every column, not just the ones the summary
 names — and computing it in R, so marginplyr refuses it before a row is read:

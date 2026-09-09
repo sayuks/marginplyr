@@ -32,6 +32,7 @@
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
+#' @inheritSection summarize_with_margins Arrow inputs
 #' @inheritSection summarize_with_margins Database backend coverage
 #' @inheritSection summarize_with_margins When marginplyr queries your data
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its

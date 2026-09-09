@@ -702,3 +702,68 @@ test_that("arrow input is still admitted", {
     ))
   )
 })
+
+# Arrow's direct tabular inputs are a `Table`, `RecordBatch`, and `Dataset`;
+# a dplyr query can start at each. Keep admission over every source/query pair,
+# because their unsupported-expression behaviour is not interchangeable.
+test_that("public Arrow table classes are supported", {
+  skip_if_suggest_absent("arrow")
+
+  data <- arrow_input_data()
+  sources <- list(
+    table = arrow::Table$create(data),
+    record_batch = arrow::record_batch(data),
+    dataset = arrow::InMemoryDataset$create(arrow::Table$create(data))
+  )
+  inputs <- c(
+    sources,
+    stats::setNames(
+      lapply(sources, dplyr::select, dplyr::everything()),
+      paste0(names(sources), "_query")
+    )
+  )
+
+  for (shape in names(inputs)) {
+    input <- inputs[[shape]]
+    expect_true(
+      inherits(
+        summarize_with_margins(input, n = sum(v), .grouping = rollup(k)),
+        "arrow_dplyr_query"
+      ),
+      info = shape
+    )
+    expect_true(
+      inherits(
+        expand_with_margins(input, .grouping = rollup(k)),
+        "arrow_dplyr_query"
+      ),
+      info = shape
+    )
+    expect_true(
+      inherits(inspect_grouping(input, .grouping = rollup(k)), "tbl_df"),
+      info = shape
+    )
+    expect_error(
+      nest_with_margins(input, .grouping = rollup(k)),
+      class = "marginplyr_error",
+      info = shape
+    )
+  }
+})
+
+test_that("a RecordBatchReader is refused before applicable Margin verbs", {
+  skip_if_suggest_absent("arrow")
+
+  reader <- function() arrow::as_record_batch_reader(arrow_input_data())
+  calls <- list(
+    summarize = function() {
+      summarize_with_margins(reader(), n = sum(v), .grouping = rollup(k))
+    },
+    expand = function() expand_with_margins(reader(), .grouping = rollup(k)),
+    inspect = function() inspect_grouping(reader(), .grouping = rollup(k))
+  )
+
+  for (verb in names(calls)) {
+    expect_error(calls[[verb]](), "RecordBatchReader", info = verb)
+  }
+})
