@@ -2245,9 +2245,6 @@ mutable_step_data <- function() {
 test_that("every Margin verb refuses a mutable dtplyr step", {
   skip_if_suggest_absent("dtplyr")
   margin_verbs <- setdiff(verbs_taking(".grouping"), "inspect_grouping")
-  forwarded_margin_verbs <- forwarded_verbs[
-    setdiff(names(forwarded_verbs), "inspect_grouping")
-  ]
   expect_setequal(names(forwarded_margin_verbs), margin_verbs)
 
   for (name in names(forwarded_margin_verbs)) {
@@ -2267,9 +2264,6 @@ test_that("every Margin verb refuses a mutable dtplyr step", {
 
 test_that("the refusal reads as it is written, for every verb", {
   skip_if_suggest_absent("dtplyr")
-  forwarded_margin_verbs <- forwarded_verbs[
-    setdiff(names(forwarded_verbs), "inspect_grouping")
-  ]
 
   # One snapshot per verb rather than one for the set: the three lines are the
   # same everywhere and the header is not, so the call each verb blames is the

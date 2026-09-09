@@ -564,18 +564,25 @@ test_that("inspection of a Mutable step invokes no execution entry point", {
   )
   root <- dtplyr::lazy_dt(data, immutable = FALSE)
   inputs <- list(root = root, derived = dplyr::select(root, region, value))
+  specifications <- list(
+    named = rollup(region),
+    typed = rollup(where(is.character))
+  )
 
   # The positive control is the same backend and input root as the zeroes, so a
   # counter blind to dtplyr materialization cannot make inspection look clean.
   expect_gt(count_entry_point_invocations(tibble::as_tibble(root)), 0L)
   for (shape in names(inputs)) {
-    expect_identical(
-      count_entry_point_invocations(
-        inspect_grouping(inputs[[shape]], .grouping = rollup(region))
-      ),
-      0L,
-      info = shape
-    )
+    for (selection in names(specifications)) {
+      expect_identical(
+        count_entry_point_invocations(inspect_grouping(
+          inputs[[shape]],
+          .grouping = specifications[[selection]]
+        )),
+        0L,
+        info = paste(shape, selection)
+      )
+    }
   }
 })
 

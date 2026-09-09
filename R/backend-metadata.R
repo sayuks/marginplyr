@@ -21,6 +21,20 @@ zero_row_dtplyr_proxy_input <- function(.data) {
   step
 }
 
+# The typed selection proxy for Mutable-step inspection. The registered dtplyr
+# method evaluates only the isolated zero-row root above and reaches none of
+# ADR 0020's catalogued execution entry points; calling the method directly is
+# what avoids routing the step through `collect()` or `as_tibble()`.
+mutable_dtplyr_selection_proxy <- function(.data) {
+  proxy <- utils::head(zero_row_dtplyr_proxy_input(.data), n = 0L)
+  as_data_table <- getS3method(
+    "as.data.table",
+    "dtplyr_step",
+    envir = asNamespace("data.table")
+  )
+  as_data_table(proxy)
+}
+
 grouping_selection_proxy <- function(.data,
                                      backend = grouping_backend(.data)) {
   if (identical(backend$kind, "arrow")) {

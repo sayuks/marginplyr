@@ -64,3 +64,10 @@ forwarded_verbs <- list(
     inspect_grouping(data, .by = {{ by }}, .grouping = {{ grouping }})
   }
 )
+
+# The branch-building subset, kept beside the entry-point forwarders so every
+# structural mutable-step test reads one set. `inspect_grouping()` is the sole
+# entry point outside it because inspection builds no Margin operation (#513).
+forwarded_margin_verbs <- forwarded_verbs[
+  setdiff(names(forwarded_verbs), "inspect_grouping")
+]

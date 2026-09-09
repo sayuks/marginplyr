@@ -563,6 +563,22 @@ test_that("an audited DuckDB call records its selection proxy", {
   expect_match(record$sql[[1L]], "sent_queries", fixed = TRUE)
 })
 
+test_that("an audited DuckDB inspection keeps its selection proxy", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    inspect_grouping(remote, .grouping = rollup(g, h))
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, "selection_proxy")
+  expect_match(record$sql, "sent_queries", fixed = TRUE)
+})
+
 test_that("an audited RSQLite call records no selection proxy", {
   skip_if_suggest_absent("RSQLite", "DBI")
 
