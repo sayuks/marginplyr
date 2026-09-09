@@ -91,6 +91,10 @@ find_local_assignment <- function(fn, var_name) {
 # itself a read, and its first argument is a connection rather than the caller's
 # data, so a subject test there would count nothing at all.
 #
+# `arrow::as_arrow_table` is a member because it consumes a reader while
+# materializing it, which is exactly the execution #510 refuses inspection to
+# hide behind its normalization.
+#
 # `dplyr::explain` and `dbplyr::remote_query_plan` are members because each
 # reaches `DBI::dbGetQuery()` from inside dbplyr, where the walk over `R/`
 # cannot follow (ADR 0027). Neither takes a positive control: one for
@@ -100,17 +104,17 @@ lazy_execution_entry_points <- function() {
     package = c(
       "dplyr", "dplyr", "dplyr", "dplyr", "base", "tibble",
       "DBI", "DBI", "DBI", "DBI", "DBI",
-      "dbplyr"
+      "dbplyr", "arrow"
     ),
     name = c(
       "collect", "compute", "pull", "explain", "as.data.frame", "as_tibble",
       "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable",
-      "remote_query_plan"
+      "remote_query_plan", "as_arrow_table"
     ),
     subject_test = c(
       FALSE, FALSE, FALSE, FALSE, TRUE, TRUE,
       FALSE, FALSE, FALSE, FALSE, FALSE,
-      FALSE
+      FALSE, FALSE
     ),
     stringsAsFactors = FALSE
   )
@@ -376,6 +380,12 @@ test_that("no Arrow read happens while a Margin verb runs", {
   # `AGENTS.md` rules out for every derived gate, and the shape this counter
   # had while it traced Arrow's methods.
   expect_gt(count_entry_point_invocations(dplyr::collect(table)), 0L)
+  expect_gt(
+    count_entry_point_invocations(
+      arrow::as_arrow_table(multi_batch_arrow_reader())
+    ),
+    0L
+  )
 
   # The same mechanism for the one entry counted by what it was applied to. Both
   # directions are asserted, because a subject test that answered `TRUE` for
@@ -406,6 +416,16 @@ test_that("no Arrow read happens while a Margin verb runs", {
   expect_identical(
     count_entry_point_invocations(
       expand_with_margins(table, .grouping = rollup(k))
+    ),
+    0L
+  )
+
+  expect_identical(
+    count_entry_point_invocations(
+      inspect_grouping(
+        multi_batch_arrow_reader(),
+        .grouping = rollup(k)
+      )
     ),
     0L
   )

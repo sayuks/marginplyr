@@ -221,3 +221,6 @@ the caller to build that query explicitly. The nesting verbs retain their
 
 PR #509 records the contract change. The evidence is in
 `investigation/arrow-r-input-shapes-and-dplyr-fallback.md`.
+
+The inspection sentence is superseded by ADR 0020's amendment *inspect a
+direct Arrow reader through an unexecuted query* (#510).

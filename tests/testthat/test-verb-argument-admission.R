@@ -855,19 +855,22 @@ test_that("reader inputs are refused before reusable Margin verbs", {
   expect_setequal(result$total, c(3L, 12L, 15L))
 })
 
-test_that("direct reader inspection requests a query without consuming it", {
+test_that("direct reader inspection matches reusable Arrow inputs", {
   skip_if_suggest_absent("arrow")
 
   reader <- multi_batch_arrow_reader()
-  raised <- expect_error(
-    inspect_grouping(reader, .grouping = rollup(k)),
-    class = "marginplyr_error"
+  direct <- inspect_grouping(reader, .grouping = rollup(k))
+  table <- inspect_grouping(
+    arrow::Table$create(arrow_input_data()),
+    .grouping = rollup(k)
   )
-  expect_match(
-    conditionMessage(raised),
-    "Build one with `dplyr::select()` and `dplyr::everything()` first.",
-    fixed = TRUE
+  query <- inspect_grouping(
+    dplyr::select(multi_batch_arrow_reader(), dplyr::everything()),
+    .grouping = rollup(k)
   )
+
+  expect_identical(direct, table)
+  expect_identical(direct, query)
   expect_identical(arrow::as_arrow_table(reader)$num_rows, 5L)
 })
 

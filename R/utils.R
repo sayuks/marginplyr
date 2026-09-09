@@ -181,26 +181,6 @@ assert_reusable_margin_input <- function(x) {
   }
 }
 
-# Inspection executes no grouping-set branch, so an Arrow query backed by a
-# reader is safe here. A direct reader still lacks the selection proxy the
-# current adapter requires; #510 owns removing this temporary distinction.
-assert_inspectable_input <- function(x) {
-  # Read only from the cli template below, which codetools cannot see.
-  nm <- deparse(substitute(x)) # nolint: object_usage_linter.
-  if (inherits(x, "RecordBatchReader")) {
-    abort_marginplyr(c(
-      paste0(
-        "{.arg {nm}} must be an Arrow dplyr query rather than a ",
-        "{.cls RecordBatchReader}."
-      ),
-      i = paste0(
-        "Build one with {.fun dplyr::select} and ",
-        "{.fun dplyr::everything} first."
-      )
-    ))
-  }
-}
-
 # The name and namespace a static analysis reads from a call, and `NULL` when
 # there is none to read. Anything that is not a call answers `NULL` too, so a
 # site may ask without a guard of its own; the sites that keep one keep it for

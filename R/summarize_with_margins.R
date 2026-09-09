@@ -443,7 +443,7 @@
 #' | --- | --- | --- | --- |
 #' | `Table`, `RecordBatch`, or `Dataset` | Accepted | Accepted | Refused; collect first | # nolint: line_length_linter
 #' | Query with no reader source | Accepted | Accepted | Refused; collect first | # nolint: line_length_linter
-#' | `RecordBatchReader` | Refused; materialize first | Refused; build a query first | Refused; collect first | # nolint: line_length_linter
+#' | `RecordBatchReader` | Refused; materialize first | Accepted | Refused; collect first | # nolint: line_length_linter
 #' | Query with any reader source | Refused; materialize first | Accepted | Refused; collect first | # nolint: line_length_linter
 #' | Non-tabular Arrow object | General input refusal | General input refusal | General input refusal | # nolint: line_length_linter
 #'
@@ -459,10 +459,9 @@
 #' [expand_with_margins()] therefore refuse both the reader and any query whose
 #' source graph contains one. [arrow::as_arrow_table()] consumes every batch
 #' once and materializes the reusable `Table` those branches require.
-#' `inspect_grouping()` executes no branch, so it accepts a reader-backed query
-#' without consuming it. A direct reader currently needs to be wrapped first,
-#' for example with `dplyr::select(reader, dplyr::everything())`; issue #510
-#' tracks removing that distinction.
+#' `inspect_grouping()` executes no branch, so it accepts both a direct reader
+#' and a reader-backed query without consuming either. It normalizes a direct
+#' reader to an unexecuted Arrow query internally.
 #'
 #' A `Scanner`, `Scalar`, `Array`, `ChunkedArray`, `Schema`, `Field`,
 #' `DataType`, and other non-tabular Arrow objects are not dplyr inputs.
