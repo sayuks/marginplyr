@@ -84,6 +84,12 @@ Grouping plan. It is deliberately separate from a SQL execution plan. Use
 \code{\link[dplyr:show_query]{dplyr::show_query()}} for generated SQL and backend-native tools for an
 optimizer plan.
 
+Because inspection builds no grouping-set branch, it also accepts a dtplyr
+step rooted at \code{dtplyr::lazy_dt(immutable = FALSE)} and leaves the caller's
+\code{data.table} unchanged. Margin verbs refuse the same Mutable step before
+building a branch; rebuild it with \code{immutable = TRUE} before passing it to
+one of them.
+
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} walks through inspecting a plan and
 reading it back off a Margin result. The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} uses a
 plan to choose which grouping set to keep, and joins one against \code{.id} to

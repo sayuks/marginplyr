@@ -556,6 +556,36 @@ test_that("a dtplyr materialization through the as_tibble family is counted", {
   )
 })
 
+test_that("inspection of a Mutable step invokes no execution entry point", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    region = c("East", "West"),
+    value = c(1, 2)
+  )
+  root <- dtplyr::lazy_dt(data, immutable = FALSE)
+  inputs <- list(root = root, derived = dplyr::select(root, region, value))
+  specifications <- list(
+    named = rollup(region),
+    typed = rollup(where(is.character))
+  )
+
+  # The positive control is the same backend and input root as the zeroes, so a
+  # counter blind to dtplyr materialization cannot make inspection look clean.
+  expect_gt(count_entry_point_invocations(tibble::as_tibble(root)), 0L)
+  for (shape in names(inputs)) {
+    for (selection in names(specifications)) {
+      expect_identical(
+        count_entry_point_invocations(inspect_grouping(
+          inputs[[shape]],
+          .grouping = specifications[[selection]]
+        )),
+        0L,
+        info = paste(shape, selection)
+      )
+    }
+  }
+})
+
 test_that("an attached execution entry point is counted", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(k = c("E", "E", "W"), v = c(1, 2, 3))

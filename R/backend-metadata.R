@@ -4,6 +4,37 @@ get_col_names <- function(data, ...) {
   as.character(dplyr::tbl_vars(selected))
 }
 
+# A copy of a Mutable step rooted in a zero-row table, used only to acquire an
+# inspection selection proxy. The derived step may already hold a reference-
+# writing `:=` call, so changing its root's permission is too late; replacing
+# the copied root's source gives that call an isolated schema-only table to
+# write to. ADR 0029 records why Margin operations refuse rather than use this
+# rewrite.
+zero_row_dtplyr_proxy_input <- function(.data) {
+  stopifnot(inherits(.data, "dtplyr_step"))
+  step <- .data
+  if (inherits(step[["parent"]], "dtplyr_step")) {
+    step[["parent"]] <- zero_row_dtplyr_proxy_input(step[["parent"]])
+  } else {
+    step[["parent"]] <- utils::head(step[["parent"]], n = 0L)
+  }
+  step
+}
+
+# The typed selection proxy for Mutable-step inspection. The registered dtplyr
+# method evaluates only the isolated zero-row root above and reaches none of
+# ADR 0020's catalogued execution entry points; calling the method directly is
+# what avoids routing the step through `collect()` or `as_tibble()`.
+mutable_dtplyr_selection_proxy <- function(.data) {
+  proxy <- utils::head(zero_row_dtplyr_proxy_input(.data), n = 0L)
+  as_data_table <- getS3method(
+    "as.data.table",
+    "dtplyr_step",
+    envir = asNamespace("data.table")
+  )
+  as_data_table(proxy)
+}
+
 grouping_selection_proxy <- function(.data,
                                      backend = grouping_backend(.data)) {
   if (identical(backend$kind, "arrow")) {

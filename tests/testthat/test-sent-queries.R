@@ -69,6 +69,18 @@ test_that("a local call under the default option records nothing", {
   expect_unaudited()
 })
 
+test_that("an unaudited inspection is described as a tracked call", {
+  expect_null(getOption("marginplyr.audit_sql"))
+  inspect_grouping(sent_queries_data(), .grouping = rollup(g, h))
+
+  condition <- rlang::catch_cnd(
+    last_sent_queries(),
+    classes = "marginplyr_error"
+  )
+  expect_match(conditionMessage(condition), "last tracked call", fixed = TRUE)
+  expect_no_match(conditionMessage(condition), "Margin operation", fixed = TRUE)
+})
+
 test_that("a dtplyr call under the default option records nothing", {
   skip_if_suggest_absent("dtplyr")
 
@@ -498,6 +510,8 @@ test_that("reading before any call has run is refused", {
     classes = "marginplyr_error"
   )
   expect_s3_class(condition, "marginplyr_error")
+  expect_match(conditionMessage(condition), "No tracked call", fixed = TRUE)
+  expect_no_match(conditionMessage(condition), "Margin operation", fixed = TRUE)
   expect_no_match(
     conditionMessage(condition),
     "marginplyr.audit_sql",
@@ -547,6 +561,22 @@ test_that("an audited DuckDB call records its selection proxy", {
 
   expect_identical(record$purpose, c("selection_proxy", "result"))
   expect_match(record$sql[[1L]], "sent_queries", fixed = TRUE)
+})
+
+test_that("an audited DuckDB inspection keeps its selection proxy", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- sent_queries_table(con)
+
+  with_audit_option(TRUE, {
+    inspect_grouping(remote, .grouping = rollup(g, h))
+    record <- last_sent_queries()
+  })
+
+  expect_identical(record$purpose, "selection_proxy")
+  expect_match(record$sql, "sent_queries", fixed = TRUE)
 })
 
 test_that("an audited RSQLite call records no selection proxy", {

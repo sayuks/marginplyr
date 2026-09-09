@@ -53,14 +53,3 @@
       i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
       i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
 
----
-
-    Code
-      verb(dtplyr::lazy_dt(mutable_step_data(), immutable = FALSE), NULL, rollup(
-        region))
-    Condition
-      Error in `inspect_grouping()`:
-      ! `.data` comes from `dtplyr::lazy_dt(immutable = FALSE)`.
-      i A Margin verb builds one branch per grouping set from the same step, and data.table writes each branch to your table by reference.
-      i Rebuild the input with `dtplyr::lazy_dt(immutable = TRUE)`.
-

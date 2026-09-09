@@ -1,10 +1,10 @@
-# Every exported verb taking the argument named, derived from the signatures so
+# Every exported entry point taking the argument named, derived from the
+# signatures so
 # that a seventh arrives at a caller as a wrapper a list is missing rather than
 # as a position nothing covers. The six it answers today are the same six for
-# `.by`, `.grouping`, and any other Margin argument, `summarise_with_margins()`
-# included: the derivation reads exports rather than function objects, so a
-# synonym that stopped being one would show as an entry the list no longer
-# covers.
+# `.by` and `.grouping`, five Margin verbs and `inspect_grouping()`: the
+# derivation reads exports rather than function objects, so a synonym that
+# stopped being one would show as an entry the list no longer covers.
 #
 # Here rather than in whichever test file wanted it first, because testthat
 # gives each file its own environment: `test-grouping-plan.R` builds one
@@ -64,3 +64,10 @@ forwarded_verbs <- list(
     inspect_grouping(data, .by = {{ by }}, .grouping = {{ grouping }})
   }
 )
+
+# The branch-building subset, kept beside the entry-point forwarders so every
+# structural mutable-step test reads one set. `inspect_grouping()` is the sole
+# entry point outside it because inspection builds no Margin operation (#513).
+forwarded_margin_verbs <- forwarded_verbs[
+  setdiff(names(forwarded_verbs), "inspect_grouping")
+]

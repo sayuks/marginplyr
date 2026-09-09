@@ -64,6 +64,12 @@
 #' [dplyr::show_query()] for generated SQL and backend-native tools for an
 #' optimizer plan.
 #'
+#' Because inspection builds no grouping-set branch, it also accepts a dtplyr
+#' step rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves the caller's
+#' `data.table` unchanged. Margin verbs refuse the same Mutable step before
+#' building a branch; rebuild it with `immutable = TRUE` before passing it to
+#' one of them.
+#'
 #' The [grouping identity guide][guide] walks through inspecting a plan and
 #' reading it back off a Margin result. The [recipes guide][recipes] uses a
 #' plan to choose which grouping set to keep, and joins one against `.id` to
@@ -169,6 +175,7 @@ inspect_grouping <- function(.data,
         grouping_quo = grouping_quo,
         .duplicates = .duplicates,
         duplicates_choices = margin_duplicates_choices,
+        builds_margin_branches = FALSE,
         call = call
       )
       format_grouping_plan(grouping$plan, format = .format)

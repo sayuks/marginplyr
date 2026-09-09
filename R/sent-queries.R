@@ -183,13 +183,13 @@ record_sent_query <- function(purpose, query) {
 last_sent_queries <- function() {
   if (!isTRUE(sent_queries$recorded)) {
     abort_marginplyr(c(
-      "No Margin operation has run in this session.",
+      "No tracked call has run in this session.",
       i = "Run a Margin verb or {.fun inspect_grouping} first."
     ))
   }
   if (!isTRUE(sent_queries$audited)) {
     abort_marginplyr(c(
-      "The last Margin operation was not audited.",
+      "The last tracked call was not audited.",
       i = paste0(
         "Set {.code options(marginplyr.audit_sql = TRUE)} ",
         "before the call to record its queries."

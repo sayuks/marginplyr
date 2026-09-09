@@ -160,10 +160,12 @@ prepare_grouping_plan <- function(.data,
                                   grouping_quo,
                                   .duplicates,
                                   duplicates_choices,
+                                  builds_margin_branches,
                                   validate_grouping = NULL,
                                   validate_names = NULL,
                                   call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
+  stopifnot(rlang::is_bool(builds_margin_branches))
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
   stopifnot(is.null(validate_names) || is.function(validate_names))
   # Already matched against the calling verb's own vocabulary, which may be
@@ -197,11 +199,13 @@ prepare_grouping_plan <- function(.data,
       input <- normalize_grouping_input(.data, by_quo)
       data <- input$data
       backend <- grouping_backend(data)
-      # After `grouping_backend()` rather than before, because
+      mutable_step <- mutable_dtplyr_step(data)
+      # A Mutable step is unsafe only for a caller that builds grouping-set
+      # branches from it. After `grouping_backend()` rather than before, because
       # `check_backend_version()` runs inside it: a dtplyr below the floor is
       # then answered by the floor rather than by a field that version may
       # spell differently. ADR 0029 is authoritative for the placement.
-      if (mutable_dtplyr_step(data)) {
+      if (builds_margin_branches && mutable_step) {
         abort_mutable_dtplyr_step()
       }
       remember_sent_query_backend(backend)
@@ -251,19 +255,44 @@ prepare_grouping_plan <- function(.data,
           lifecycle_verbosity = discarded_pass_verbosity()
         )
       }
-      data_proxy <- grouping_selection_proxy(data, backend = backend)
-      if (is.null(by)) {
-        by <- resolve_by_selection(by_quo, data_proxy)
+      # Inspection needs no typed snapshot when names settle both selections.
+      # Its canonical pass uses the name proxy too, preserving the two-pass
+      # validation and warning behavior without executing a Mutable step.
+      if (
+        !builds_margin_branches &&
+          mutable_step &&
+          preflight$name_only &&
+          !is.null(by)
+      ) {
+        data_proxy <- grouping_name_proxy(data_vars)
+        plan <- compile_grouping_spec(
+          grouping_spec,
+          data_vars = data_vars,
+          data_proxy = data_proxy,
+          .by = by,
+          .duplicates = .duplicates,
+          duplicates_choices = duplicates_choices,
+          preflight = preflight
+        )
+      } else {
+        data_proxy <- if (!builds_margin_branches && mutable_step) {
+          mutable_dtplyr_selection_proxy(data)
+        } else {
+          grouping_selection_proxy(data, backend = backend)
+        }
+        if (is.null(by)) {
+          by <- resolve_by_selection(by_quo, data_proxy)
+        }
+        plan <- compile_grouping_spec(
+          grouping_spec,
+          data_vars = data_vars,
+          data_proxy = data_proxy,
+          .by = by,
+          .duplicates = .duplicates,
+          duplicates_choices = duplicates_choices,
+          preflight = preflight
+        )
       }
-      plan <- compile_grouping_spec(
-        grouping_spec,
-        data_vars = data_vars,
-        data_proxy = data_proxy,
-        .by = by,
-        .duplicates = .duplicates,
-        duplicates_choices = duplicates_choices,
-        preflight = preflight
-      )
 
       list(
         data = data,
