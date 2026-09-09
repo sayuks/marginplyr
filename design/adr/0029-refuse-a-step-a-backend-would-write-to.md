@@ -199,3 +199,26 @@ is authored in and ADR 0024 the rule it spells `.data` by.
 
 Evidence: #451, whose triage comment holds the table of eight inputs the root
 predicate was chosen from.
+
+## Amendment: inspection is outside the branch-building boundary
+
+The *Where it is raised* section's shared-entry-point scope and the test
+strategy's `verbs_taking(".grouping")` set are superseded by #513. A Mutable
+step is refused by every Margin operation, and not by `inspect_grouping()`:
+inspection compiles and formats a Grouping plan but builds no grouping-set
+branch for data.table to write back through.
+
+`prepare_grouping_plan()` now requires its caller to state whether it builds
+Margin branches. The check remains immediately after `grouping_backend()` for
+the five Margin verbs, preserving the version-floor and failure-precedence
+placement above, while inspection passes through the same point.
+
+A name-only inspection runs its canonical compilation against column names and
+invokes no execution entry point. The earlier name-only validation pass remains
+separate, preserving its warning and evaluation behavior. A typed selection
+still needs a zero-row proxy. For a Mutable step, that proxy is acquired from a
+copy of the step whose root is an isolated zero-row table, so even a derived
+`select()` whose dtplyr call already contains a reference-writing `:=` can
+change neither the caller's columns nor their values. This is inspection-only
+metadata preparation; Margin operations continue to refuse rather than copy,
+as the original decision requires.

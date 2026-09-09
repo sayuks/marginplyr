@@ -282,6 +282,7 @@ prepare_margin_operation <- function(.data,
         grouping_quo = grouping_quo,
         .duplicates = .duplicates,
         duplicates_choices = duplicates_choices,
+        builds_margin_branches = TRUE,
         validate_grouping = validate_grouping,
         validate_names = function(data_vars) {
           check_margin_id_collision(

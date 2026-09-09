@@ -192,7 +192,10 @@ same field value and fall on opposite sides. A Margin verb refuses one before
 any branch is built, because it builds one branch per grouping set from the
 same step and data.table writes each of them to the caller's table by
 reference — leaving a result in which every row carries the Margin label, and
-a table whose columns were dropped or whose names were permuted.
+a table whose columns were dropped or whose names were permuted. Inspection
+builds no branch and accepts one; where a typed selection needs a proxy, it is
+compiled against an isolated zero-row root so the caller's table stays
+unchanged.
 _Avoid_: Mutable input, in-place backend
 
 **Sent query**:

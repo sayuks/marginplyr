@@ -69,6 +69,18 @@ test_that("a local call under the default option records nothing", {
   expect_unaudited()
 })
 
+test_that("an unaudited inspection is described as a tracked call", {
+  expect_null(getOption("marginplyr.audit_sql"))
+  inspect_grouping(sent_queries_data(), .grouping = rollup(g, h))
+
+  condition <- rlang::catch_cnd(
+    last_sent_queries(),
+    classes = "marginplyr_error"
+  )
+  expect_match(conditionMessage(condition), "last tracked call", fixed = TRUE)
+  expect_no_match(conditionMessage(condition), "Margin operation", fixed = TRUE)
+})
+
 test_that("a dtplyr call under the default option records nothing", {
   skip_if_suggest_absent("dtplyr")
 
@@ -498,6 +510,8 @@ test_that("reading before any call has run is refused", {
     classes = "marginplyr_error"
   )
   expect_s3_class(condition, "marginplyr_error")
+  expect_match(conditionMessage(condition), "No tracked call", fixed = TRUE)
+  expect_no_match(conditionMessage(condition), "Margin operation", fixed = TRUE)
   expect_no_match(
     conditionMessage(condition),
     "marginplyr.audit_sql",

@@ -2222,8 +2222,9 @@ test_that("DuckDB safely quotes factor identifiers and labels", {
 })
 
 # A Mutable step is a dtplyr step whose root was built with
-# `immutable = FALSE`, and every verb taking `.grouping` refuses one (#451,
-# ADR 0029).
+# `immutable = FALSE`. Every Margin verb taking `.grouping` refuses one, while
+# `inspect_grouping()` accepts one because it builds no grouping-set branch
+# (#451, #513, ADR 0029).
 #
 # `data.table::` is called here under a dtplyr guard and takes none of its own,
 # which is the one-backend-per-test rule holding rather than being bent.
@@ -2243,14 +2244,20 @@ mutable_step_data <- function() {
 
 test_that("every Margin verb refuses a mutable dtplyr step", {
   skip_if_suggest_absent("dtplyr")
-  expect_setequal(names(forwarded_verbs), verbs_taking(".grouping"))
+  margin_verbs <- setdiff(verbs_taking(".grouping"), "inspect_grouping")
+  forwarded_margin_verbs <- forwarded_verbs[
+    setdiff(names(forwarded_verbs), "inspect_grouping")
+  ]
+  expect_setequal(names(forwarded_margin_verbs), margin_verbs)
 
-  for (name in names(forwarded_verbs)) {
+  for (name in names(forwarded_margin_verbs)) {
     data <- mutable_step_data()
     before <- data.table::copy(data)
     step <- dtplyr::lazy_dt(data, immutable = FALSE)
 
-    error <- expect_error(forwarded_verbs[[name]](step, NULL, rollup(region)))
+    error <- expect_error(
+      forwarded_margin_verbs[[name]](step, NULL, rollup(region))
+    )
     expect_s3_class(error, "marginplyr_error")
     # The whole point of refusing: the table the caller still holds is the one
     # they handed over, in its names, its columns, and its rows.
@@ -2260,14 +2267,17 @@ test_that("every Margin verb refuses a mutable dtplyr step", {
 
 test_that("the refusal reads as it is written, for every verb", {
   skip_if_suggest_absent("dtplyr")
+  forwarded_margin_verbs <- forwarded_verbs[
+    setdiff(names(forwarded_verbs), "inspect_grouping")
+  ]
 
   # One snapshot per verb rather than one for the set: the three lines are the
   # same everywhere and the header is not, so the call each verb blames is the
   # part only a per-verb pin covers. The wrapper deparses identically in every
   # one of them, which is why the header is what tells them apart -- it is also
   # the only thing they differ by, and the reason they are all here.
-  for (name in names(forwarded_verbs)) {
-    verb <- forwarded_verbs[[name]]
+  for (name in names(forwarded_margin_verbs)) {
+    verb <- forwarded_margin_verbs[[name]]
     expect_snapshot(
       error = TRUE,
       verb(
@@ -2277,6 +2287,49 @@ test_that("the refusal reads as it is written, for every verb", {
       )
     )
   }
+})
+
+test_that("inspection accepts mutable root and derived dtplyr steps", {
+  skip_if_suggest_absent("dtplyr")
+
+  shapes <- list(
+    root = identity,
+    derived = function(step) dplyr::select(step, region, value)
+  )
+  for (shape in names(shapes)) {
+    data <- mutable_step_data()
+    before <- data.table::copy(data)
+    mutable <- shapes[[shape]](dtplyr::lazy_dt(data, immutable = FALSE))
+    immutable <- shapes[[shape]](dtplyr::lazy_dt(data, immutable = TRUE))
+
+    plan <- inspect_grouping(mutable, .grouping = rollup(region))
+    expected <- inspect_grouping(immutable, .grouping = rollup(region))
+
+    expect_identical(plan, expected, info = shape)
+    expect_identical(as.data.frame(data), as.data.frame(before), info = shape)
+  }
+})
+
+test_that("inspection resolves typed selections without Mutable-step writes", {
+  skip_if_suggest_absent("dtplyr")
+  data <- mutable_step_data()
+  before <- data.table::copy(data)
+  mutable <- dtplyr::lazy_dt(data, immutable = FALSE) |>
+    dplyr::select(region, value)
+  immutable <- dtplyr::lazy_dt(data, immutable = TRUE) |>
+    dplyr::select(region, value)
+
+  plan <- inspect_grouping(
+    mutable,
+    .grouping = rollup(where(is.character))
+  )
+  expected <- inspect_grouping(
+    immutable,
+    .grouping = rollup(where(is.character))
+  )
+
+  expect_identical(plan, expected)
+  expect_identical(as.data.frame(data), as.data.frame(before))
 })
 
 test_that("the refusal reads the root step and not the step it was given", {
