@@ -808,7 +808,7 @@ test_that("public Arrow table classes are supported", {
   }
 })
 
-test_that("a RecordBatchReader is refused before reusable Margin verbs", {
+test_that("reader inputs are refused before reusable Margin verbs", {
   skip_if_suggest_absent("arrow")
 
   calls <- list(
@@ -819,11 +819,28 @@ test_that("a RecordBatchReader is refused before reusable Margin verbs", {
       expand_with_margins(input, .grouping = rollup(k))
     }
   )
+  inputs <- list(
+    reader = identity,
+    reader_query = function(input) {
+      dplyr::select(input, dplyr::everything())
+    }
+  )
 
-  for (verb in names(calls)) {
-    input <- multi_batch_arrow_reader()
-    expect_error(calls[[verb]](input), "RecordBatchReader", info = verb)
-    expect_identical(arrow::as_arrow_table(input)$num_rows, 5L)
+  for (shape in names(inputs)) {
+    for (verb in names(calls)) {
+      input <- inputs[[shape]](multi_batch_arrow_reader())
+      info <- paste(shape, verb)
+      expect_error(
+        calls[[verb]](input),
+        "RecordBatchReader",
+        info = info
+      )
+      expect_identical(
+        arrow::as_arrow_table(input)$num_rows,
+        5L,
+        info = info
+      )
+    }
   }
 
   converted <- arrow::as_arrow_table(multi_batch_arrow_reader())
@@ -852,26 +869,6 @@ test_that("direct reader inspection requests a query without consuming it", {
     fixed = TRUE
   )
   expect_identical(arrow::as_arrow_table(reader)$num_rows, 5L)
-})
-
-test_that("a reader-backed Arrow query is refused before Margin branches", {
-  skip_if_suggest_absent("arrow")
-
-  calls <- list(
-    summarize = function(input) {
-      summarize_with_margins(input, n = sum(v), .grouping = rollup(k))
-    },
-    expand = function(input) {
-      expand_with_margins(input, .grouping = rollup(k))
-    }
-  )
-
-  for (verb in names(calls)) {
-    reader <- multi_batch_arrow_reader()
-    input <- dplyr::select(reader, dplyr::everything())
-    expect_error(calls[[verb]](input), "RecordBatchReader", info = verb)
-    expect_identical(arrow::as_arrow_table(input)$num_rows, 5L)
-  }
 })
 
 test_that("a reader anywhere in an Arrow query is refused", {

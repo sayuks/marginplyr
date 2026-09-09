@@ -13,10 +13,6 @@ arrow_input_classes <- function() {
 # methods. Queries keep their left source in `.data` and any right sources in
 # the join and union nodes; walking all three is what prevents wrapping a
 # one-shot reader in a query from bypassing the reusable-input refusal.
-#
-# This reproduces Arrow's source graph rather than calling its unexported
-# `all_sources()` helper. The public-verb tests pin each node shape so a change
-# in Arrow's query representation fails at the refusal boundary.
 arrow_input_has_reader_source <- function(.data) {
   if (is.null(.data)) {
     return(FALSE)
