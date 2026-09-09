@@ -638,6 +638,41 @@ test_that("every entry point admits input the same way", {
   )
 })
 
+test_that("non-tabular Arrow objects use the general admission refusal", {
+  skip_if_suggest_absent("arrow")
+
+  table <- arrow::Table$create(admission_data())
+  dataset <- arrow::InMemoryDataset$create(table)
+  inputs <- list(
+    scanner = dataset$NewScan()$Finish(),
+    scalar = arrow::Scalar$create(1),
+    array = arrow::Array$create(1:2),
+    chunked_array = arrow::ChunkedArray$create(1:2),
+    schema = arrow::schema(v = arrow::int32()),
+    field = arrow::field("v", arrow::int32()),
+    data_type = arrow::int32()
+  )
+  main <- "must be a data frame or a lazy table that supports dplyr verbs"
+  remedy <- paste0(
+    "Convert it to a data frame or a lazy table that supports dplyr verbs ",
+    "first."
+  )
+
+  for (shape in names(inputs)) {
+    raised <- expect_error(
+      summarize_with_margins(
+        inputs[[shape]],
+        n = dplyr::n(),
+        .grouping = rollup(g)
+      ),
+      main,
+      class = "marginplyr_error",
+      info = shape
+    )
+    expect_match(conditionMessage(raised), remedy, fixed = TRUE, info = shape)
+  }
+})
+
 test_that("an omitted input is answered by R and not by the verb", {
   # Every entry point opens by forcing `.data`, which is ahead of the block
   # that rewrites a marginplyr error's call, so an omitted input raises where
