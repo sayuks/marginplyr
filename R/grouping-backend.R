@@ -2,8 +2,8 @@
 # would drift: the kind below, and the branch summary's Absorbing-backend
 # handler, which has only `.data` to decide from and must not answer for a
 # warning some other backend raised (ADR 0025). A direct `RecordBatchReader` is
-# deliberately absent because no verb accepts it. A query backed by one still
-# has the class below; each verb applies its narrower reader-source rule.
+# deliberately absent: inspection normalizes one before this classifier, while
+# each Margin verb applies its narrower reader-source rule.
 arrow_input_classes <- function() {
   c("arrow_dplyr_query", "Table", "RecordBatch", "Dataset")
 }

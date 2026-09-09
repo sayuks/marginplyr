@@ -16,6 +16,7 @@
       10     DBI           dbFetch        FALSE
       11     DBI       dbReadTable        FALSE
       12  dbplyr remote_query_plan        FALSE
+      13   arrow    as_arrow_table        FALSE
 
 # marginplyr functions reaching an execution entry point
 

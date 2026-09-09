@@ -595,7 +595,7 @@ Arrow's tabular dplyr inputs and marginplyr's verb-specific contract are:
 |---|---|---|---|
 | `Table`, `RecordBatch`, or `Dataset` | Accepted | Accepted | Refused; collect first |
 | Query with no reader source | Accepted | Accepted | Refused; collect first |
-| `RecordBatchReader` | Refused; materialize first | Refused; build a query first | Refused; collect first |
+| `RecordBatchReader` | Refused; materialize first | Accepted | Refused; collect first |
 | Query with any reader source | Refused; materialize first | Accepted | Refused; collect first |
 | Non-tabular Arrow object | General input refusal | General input refusal | General input refusal |
 
@@ -609,18 +609,17 @@ source graph, so its class alone does not tell you which outcome applies.
 per grouping set. Summary and expansion therefore refuse both a direct reader
 and a query whose source graph contains one. Use `arrow::as_arrow_table()` to
 consume every batch once and make the reusable table explicit.
-`inspect_grouping()` executes no branch, so it accepts a reader-backed query
-without consuming it. A direct reader currently needs to be wrapped first:
+`inspect_grouping()` executes no branch, so it accepts a direct reader or a
+reader-backed query without consuming either. A direct reader is normalized to
+the same unexecuted query internally:
 
 ```r
-reader_query <- dplyr::select(reader, dplyr::everything())
-inspect_grouping(reader_query, .grouping = rollup(region, store))
+inspect_grouping(reader, .grouping = rollup(region, store))
 ```
 
-Issue #510 tracks accepting the direct reader without this step. For a nesting
-verb, collect the reader or query directly: an Arrow table still cannot carry
-the list-column result. A `Scanner` is not a dplyr input either: choose
-`$ToTable()` or `$ToRecordBatchReader()` first. Neither are `Scalar`, `Array`,
+For a nesting verb, collect the reader or query directly: an Arrow table still
+cannot carry the list-column result. A `Scanner` is not a dplyr input either:
+choose `$ToTable()` or `$ToRecordBatchReader()` first. Neither are `Scalar`, `Array`,
 `ChunkedArray`, `Schema`, `Field`, `DataType`, or other non-tabular Arrow
 objects. Convert those to a data frame or lazy dplyr table appropriate to the
 data they represent. Contextual shares are rejected for every Arrow input

@@ -243,3 +243,24 @@ and Arrow rejects it when the caller sets `.check_margin_label = TRUE`.
 
 This adds no read. ADR 0003's amendment *one half of the collision check
 contacts nothing* is superseded only in its "every backend" clause.
+
+## Amendment: inspect a direct Arrow reader through an unexecuted query
+
+`inspect_grouping()` accepts a direct `RecordBatchReader` and normalizes it to
+the same `arrow_dplyr_query` a caller would build with
+`dplyr::select(reader, dplyr::everything())` (#510). Inspection compiles and
+formats one Grouping plan; it builds no grouping-set branch, so it has none of
+the reuse hazard that keeps a reader out of a Margin operation.
+
+The normalization runs after general input admission and before
+`prepare_grouping_plan()`. It constructs a query and does not call `collect()`,
+`compute()`, or `arrow::as_arrow_table()`, so no batch is consumed. Summary and
+expansion still reject a direct reader or a query whose source graph contains
+one, and nesting still asks the caller to collect either shape.
+
+`arrow::as_arrow_table()` joins the execution-entry-point catalog in
+`test-query-policy.R`: it consumes a reader while materializing it. The runtime
+gate has a positive control for that entry and asserts that direct-reader
+inspection invokes no catalogued entry point. The public-verb test compares its
+Grouping plan with the plans from a `Table` and a manually wrapped reader query,
+then consumes the original reader to show every batch remains.

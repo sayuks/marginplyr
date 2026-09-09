@@ -147,7 +147,12 @@ inspect_grouping <- function(.data,
   with_margin_error_call(
     {
       assert_margin_input(.data)
-      assert_inspectable_input(.data)
+      # A reader is one-shot across Margin branches, but inspection builds no
+      # branch. The selection makes the Arrow query shape the metadata adapter
+      # expects without consuming a batch (ADR 0020).
+      if (inherits(.data, "RecordBatchReader")) {
+        .data <- dplyr::select(.data, dplyr::everything())
+      }
       .format <- match_margin_choice(
         .format,
         choices = grouping_format_choices,

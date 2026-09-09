@@ -497,7 +497,7 @@ contract depends on both the verb and the query's sources:\tabular{llll}{
    Input \tab Summary or expansion \tab Inspection \tab Nesting \cr
    \code{Table}, \code{RecordBatch}, or \code{Dataset} \tab Accepted \tab Accepted \tab Refused; collect first \cr
    Query with no reader source \tab Accepted \tab Accepted \tab Refused; collect first \cr
-   \code{RecordBatchReader} \tab Refused; materialize first \tab Refused; build a query first \tab Refused; collect first \cr
+   \code{RecordBatchReader} \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
    Query with any reader source \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
    Non-tabular Arrow object \tab General input refusal \tab General input refusal \tab General input refusal \cr
 }
@@ -515,10 +515,9 @@ branch per grouping set. \code{\link[=summarize_with_margins]{summarize_with_mar
 \code{\link[=expand_with_margins]{expand_with_margins()}} therefore refuse both the reader and any query whose
 source graph contains one. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
 once and materializes the reusable \code{Table} those branches require.
-\code{inspect_grouping()} executes no branch, so it accepts a reader-backed query
-without consuming it. A direct reader currently needs to be wrapped first,
-for example with \code{dplyr::select(reader, dplyr::everything())}; issue #510
-tracks removing that distinction.
+\code{inspect_grouping()} executes no branch, so it accepts both a direct reader
+and a reader-backed query without consuming either. It normalizes a direct
+reader to an unexecuted Arrow query internally.
 
 A \code{Scanner}, \code{Scalar}, \code{Array}, \code{ChunkedArray}, \code{Schema}, \code{Field},
 \code{DataType}, and other non-tabular Arrow objects are not dplyr inputs.
