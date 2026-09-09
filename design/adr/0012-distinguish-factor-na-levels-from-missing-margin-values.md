@@ -205,3 +205,19 @@ call returns as well as what it accepts.
 
 *Leave the refusal with no remedy.* That is the defect #391 reported, and the
 one #374 fixed beside it.
+
+## Amendment: a general admission refusal names the destination
+
+The general admission refusal names its required destination -- a data frame or
+a lazy table that supports dplyr verbs -- without promising a conversion
+function.
+
+The reusable-input refusal applies to a direct `RecordBatchReader` and to an
+Arrow query whose source graph contains one. `arrow::as_arrow_table()` is their
+named remedy. `inspect_grouping()` applies a separate inspection rule: it
+accepts a reader-backed query but, until #510, refuses a direct reader and asks
+the caller to build that query explicitly. The nesting verbs retain their
+`dplyr::collect()` remedy.
+
+PR #509 records the contract change. The evidence is in
+`investigation/arrow-r-input-shapes-and-dplyr-fallback.md`.

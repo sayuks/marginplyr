@@ -434,6 +434,48 @@
 #' the same expressions instead, because a dataset never reads itself into R;
 #' they are otherwise unaffected.
 #'
+#' @section Arrow inputs:
+#' Arrow's tabular dplyr inputs are a `Table`, `RecordBatch`, `Dataset`,
+#' `RecordBatchReader`, or an `arrow_dplyr_query` built from them. marginplyr's
+#' contract depends on both the verb and the query's sources:
+#'
+#' | Input | Summary or expansion | Inspection | Nesting |
+#' | --- | --- | --- | --- |
+#' | `Table`, `RecordBatch`, or `Dataset` | Accepted | Accepted | Refused; collect first | # nolint: line_length_linter
+#' | Query with no reader source | Accepted | Accepted | Refused; collect first | # nolint: line_length_linter
+#' | `RecordBatchReader` | Refused; materialize first | Refused; build a query first | Refused; collect first | # nolint: line_length_linter
+#' | Query with any reader source | Refused; materialize first | Accepted | Refused; collect first | # nolint: line_length_linter
+#' | Non-tabular Arrow object | General input refusal | General input refusal | General input refusal | # nolint: line_length_linter
+#'
+#' A translatable summary or expansion stays an Arrow query. For a summary
+#' Arrow cannot translate, a `Table` and `RecordBatch` (and queries built on
+#' them) would fall back to R, so marginplyr refuses it before a row is read. A
+#' `Dataset` and a query built on one instead keep Arrow's own
+#' unsupported-expression error. Thus an `arrow_dplyr_query` is described by
+#' its complete source graph, not by its query class alone.
+#'
+#' A `RecordBatchReader` is one-pass, while a Margin operation may build one
+#' branch per grouping set. [summarize_with_margins()] and
+#' [expand_with_margins()] therefore refuse both the reader and any query whose
+#' source graph contains one. [arrow::as_arrow_table()] consumes every batch
+#' once and materializes the reusable `Table` those branches require.
+#' `inspect_grouping()` executes no branch, so it accepts a reader-backed query
+#' without consuming it. A direct reader currently needs to be wrapped first,
+#' for example with `dplyr::select(reader, dplyr::everything())`; issue #510
+#' tracks removing that distinction.
+#'
+#' A `Scanner`, `Scalar`, `Array`, `ChunkedArray`, `Schema`, `Field`,
+#' `DataType`, and other non-tabular Arrow objects are not dplyr inputs.
+#' Materialize a Scanner with `$ToTable()` or choose its
+#' `$ToRecordBatchReader()` stream first; convert any other object to a data
+#' frame or lazy dplyr table appropriate to the data it represents.
+#'
+#' The nesting verbs accept neither Arrow input category, because their result
+#' contains a list column. [nest_with_margins()] and
+#' [nest_by_with_margins()] therefore ask you to collect first. Contextual
+#' shares are rejected for every accepted Arrow input before a summary query is
+#' constructed; collect first when local share execution is appropriate.
+#'
 #' @section Contextual shares:
 #' [share_of_parent()] and [share_of_total()] calculate a preceding named
 #' numeric scalar summary's ratio to the same summary on another row of the
@@ -866,7 +908,7 @@ summarize_with_margins <- function(.data,
   share_kinds <- with_margin_error_call(
     {
       assert_margin_input(.data)
-      assert_lazy_table(.data)
+      assert_reusable_margin_input(.data)
       normalize_margin_options(
         .margin_label = .margin_label,
         .margin_label_position = .margin_label_position,

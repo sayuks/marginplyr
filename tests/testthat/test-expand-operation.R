@@ -276,7 +276,7 @@ test_that("expand rejects unsupported sources with a Package condition", {
       arrow::as_record_batch_reader(data.frame(group = c("x", "y"))),
       .grouping = rollup(group)
     ),
-    "`\\.data` must not be an object of the following classes"
+    "`\\.data` must not be or depend on a <RecordBatchReader>"
   )
 
   expect_s3_class(error, "marginplyr_error")

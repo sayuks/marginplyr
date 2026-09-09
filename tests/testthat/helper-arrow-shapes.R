@@ -20,6 +20,16 @@ arrow_input_data <- function() {
   )
 }
 
+# Two batches whose group boundary is also the batch boundary. Reusing this
+# reader across grouping-set branches can therefore expose both a missing group
+# and a grand total computed from only one batch.
+multi_batch_arrow_reader <- function() {
+  arrow::RecordBatchReader$create(
+    arrow::record_batch(k = c("E", "E"), v = 1:2),
+    arrow::record_batch(k = c("W", "W", "W"), v = 3:5)
+  )
+}
+
 # A query rather than the object itself is the third shape, because
 # `arrow_dplyr_query` is the one class that appears on both sides of the
 # division: over a table it absorbs, over a dataset it refuses. `select()`

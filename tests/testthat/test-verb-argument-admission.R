@@ -589,18 +589,35 @@ test_that("the nesting verbs answer `.duplicates = \"keep\"` in their terms", {
 })
 
 test_that("input that dplyr cannot group is rejected in the caller's terms", {
-  for (input in list(as.matrix(admission_data()), as.list(admission_data()))) {
-    expect_error(
-      summarize_with_margins(input, s = sum(v), .grouping = rollup(g)),
+  remedy <- paste0(
+    "Convert it to a data frame or a lazy table that supports dplyr verbs ",
+    "first."
+  )
+  inputs <- list(
+    character = "x",
+    numeric = 1,
+    matrix = as.matrix(admission_data()),
+    list = as.list(admission_data())
+  )
+  for (shape in names(inputs)) {
+    raised <- expect_error(
+      summarize_with_margins(
+        inputs[[shape]],
+        s = sum(v),
+        .grouping = rollup(g)
+      ),
       "must be a data frame or a lazy table",
-      class = "marginplyr_error"
+      class = "marginplyr_error",
+      info = shape
     )
+    expect_match(conditionMessage(raised), remedy, fixed = TRUE, info = shape)
   }
 
-  expect_error(
+  raised <- expect_error(
     summarize_with_margins(NULL, s = sum(v), .grouping = rollup(g)),
     "`NULL` was supplied"
   )
+  expect_match(conditionMessage(raised), remedy, fixed = TRUE)
 })
 
 test_that("every entry point admits input the same way", {
@@ -630,6 +647,41 @@ test_that("every entry point admits input the same way", {
     admission_message,
     class = "marginplyr_error"
   )
+})
+
+test_that("non-tabular Arrow objects use the general admission refusal", {
+  skip_if_suggest_absent("arrow")
+
+  table <- arrow::Table$create(admission_data())
+  dataset <- arrow::InMemoryDataset$create(table)
+  inputs <- list(
+    scanner = dataset$NewScan()$Finish(),
+    scalar = arrow::Scalar$create(1),
+    array = arrow::Array$create(1:2),
+    chunked_array = arrow::ChunkedArray$create(1:2),
+    schema = arrow::schema(v = arrow::int32()),
+    field = arrow::field("v", arrow::int32()),
+    data_type = arrow::int32()
+  )
+  main <- "must be a data frame or a lazy table that supports dplyr verbs"
+  remedy <- paste0(
+    "Convert it to a data frame or a lazy table that supports dplyr verbs ",
+    "first."
+  )
+
+  for (shape in names(inputs)) {
+    raised <- expect_error(
+      summarize_with_margins(
+        inputs[[shape]],
+        n = dplyr::n(),
+        .grouping = rollup(g)
+      ),
+      main,
+      class = "marginplyr_error",
+      info = shape
+    )
+    expect_match(conditionMessage(raised), remedy, fixed = TRUE, info = shape)
+  }
 })
 
 test_that("an omitted input is answered by R and not by the verb", {
@@ -701,4 +753,203 @@ test_that("arrow input is still admitted", {
       .grouping = rollup(g)
     ))
   )
+})
+
+# Arrow's direct tabular inputs are a `Table`, `RecordBatch`, and `Dataset`;
+# a dplyr query can start at each. Keep admission over every source/query pair,
+# because their unsupported-expression behaviour is not interchangeable.
+test_that("public Arrow table classes are supported", {
+  skip_if_suggest_absent("arrow")
+
+  data <- arrow_input_data()
+  sources <- list(
+    table = arrow::Table$create(data),
+    record_batch = arrow::record_batch(data),
+    dataset = arrow::InMemoryDataset$create(arrow::Table$create(data))
+  )
+  inputs <- c(
+    sources,
+    stats::setNames(
+      lapply(sources, dplyr::select, dplyr::everything()),
+      paste0(names(sources), "_query")
+    )
+  )
+
+  for (shape in names(inputs)) {
+    input <- inputs[[shape]]
+    expect_true(
+      inherits(
+        summarize_with_margins(input, n = sum(v), .grouping = rollup(k)),
+        "arrow_dplyr_query"
+      ),
+      info = shape
+    )
+    expect_true(
+      inherits(
+        expand_with_margins(input, .grouping = rollup(k)),
+        "arrow_dplyr_query"
+      ),
+      info = shape
+    )
+    expect_true(
+      inherits(inspect_grouping(input, .grouping = rollup(k)), "tbl_df"),
+      info = shape
+    )
+    expect_error(
+      nest_with_margins(input, .grouping = rollup(k)),
+      class = "marginplyr_error",
+      info = shape
+    )
+    expect_error(
+      nest_by_with_margins(input, .grouping = rollup(k)),
+      class = "marginplyr_error",
+      info = shape
+    )
+  }
+})
+
+test_that("reader inputs are refused before reusable Margin verbs", {
+  skip_if_suggest_absent("arrow")
+
+  calls <- list(
+    summarize = function(input) {
+      summarize_with_margins(input, n = sum(v), .grouping = rollup(k))
+    },
+    expand = function(input) {
+      expand_with_margins(input, .grouping = rollup(k))
+    }
+  )
+  inputs <- list(
+    reader = identity,
+    reader_query = function(input) {
+      dplyr::select(input, dplyr::everything())
+    }
+  )
+
+  for (shape in names(inputs)) {
+    for (verb in names(calls)) {
+      input <- inputs[[shape]](multi_batch_arrow_reader())
+      info <- paste(shape, verb)
+      expect_error(
+        calls[[verb]](input),
+        "RecordBatchReader",
+        info = info
+      )
+      expect_identical(
+        arrow::as_arrow_table(input)$num_rows,
+        5L,
+        info = info
+      )
+    }
+  }
+
+  converted <- arrow::as_arrow_table(multi_batch_arrow_reader())
+  result <- summarize_with_margins(
+    converted,
+    n = dplyr::n(),
+    total = sum(v),
+    .grouping = rollup(k)
+  ) |>
+    dplyr::collect()
+  expect_setequal(result$n, c(2L, 3L, 5L))
+  expect_setequal(result$total, c(3L, 12L, 15L))
+})
+
+test_that("direct reader inspection requests a query without consuming it", {
+  skip_if_suggest_absent("arrow")
+
+  reader <- multi_batch_arrow_reader()
+  raised <- expect_error(
+    inspect_grouping(reader, .grouping = rollup(k)),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(raised),
+    "Build one with `dplyr::select()` and `dplyr::everything()` first.",
+    fixed = TRUE
+  )
+  expect_identical(arrow::as_arrow_table(reader)$num_rows, 5L)
+})
+
+test_that("a reader anywhere in an Arrow query is refused", {
+  skip_if_suggest_absent("arrow")
+
+  table <- arrow::Table$create(data.frame(k = c("E", "W"), v = c(1L, 2L)))
+  query_builders <- list(
+    root = function(reader_query) reader_query,
+    join_right = function(reader_query) {
+      dplyr::left_join(table, reader_query, by = "k")
+    },
+    union_right = function(reader_query) {
+      dplyr::union_all(table, reader_query)
+    }
+  )
+
+  for (shape in names(query_builders)) {
+    reader <- multi_batch_arrow_reader()
+    reader_query <- dplyr::select(reader, dplyr::everything())
+    input <- query_builders[[shape]](reader_query)
+    expect_error(
+      summarize_with_margins(
+        input,
+        n = dplyr::n(),
+        .grouping = rollup(k)
+      ),
+      "RecordBatchReader",
+      class = "marginplyr_error",
+      info = shape
+    )
+    expect_identical(
+      arrow::as_arrow_table(reader)$num_rows,
+      5L,
+      info = shape
+    )
+  }
+})
+
+test_that("a reader-backed Arrow query can be inspected without consumption", {
+  skip_if_suggest_absent("arrow")
+
+  reader <- multi_batch_arrow_reader()
+  input <- dplyr::select(reader, dplyr::everything())
+  plan <- inspect_grouping(input, .grouping = rollup(k))
+
+  expect_identical(plan$included, c("(k)", "()"))
+  expect_identical(arrow::as_arrow_table(reader)$num_rows, 5L)
+})
+
+test_that("nesting reader inputs directs the caller to collect", {
+  skip_if_suggest_absent("arrow")
+
+  verbs <- list(
+    nest = nest_with_margins,
+    nest_by = nest_by_with_margins
+  )
+  inputs <- list(
+    reader = identity,
+    reader_query = function(input) {
+      dplyr::select(input, dplyr::everything())
+    }
+  )
+
+  for (shape in names(inputs)) {
+    for (verb in names(verbs)) {
+      input <- inputs[[shape]](multi_batch_arrow_reader())
+      info <- paste(shape, verb)
+      raised <- expect_error(
+        verbs[[verb]](input, .grouping = rollup(k)),
+        class = "marginplyr_error",
+        info = info
+      )
+      expect_match(
+        conditionMessage(raised),
+        "Collect it with `dplyr::collect()` first.",
+        fixed = TRUE,
+        info = info
+      )
+      local <- dplyr::collect(input)
+      expect_identical(nrow(local), 5L, info = info)
+      expect_no_error(verbs[[verb]](local, .grouping = rollup(k)))
+    }
+  }
 })

@@ -39,18 +39,18 @@ test_that("assert_nest_possible() works", {
   expect_error(assert_nest_possible(new.env()))
 })
 
-test_that("assert_lazy_table() works", {
+test_that("assert_reusable_margin_input() works", {
   skip_if_suggest_absent("arrow")
 
   expect_error(
-    assert_lazy_table(
+    assert_reusable_margin_input(
       arrow::as_record_batch_reader(data.frame())
     ),
-    "must not be an object of the following class"
+    "must not be or depend on"
   )
-  expect_no_error(assert_lazy_table(data.frame()))
-  expect_no_error(assert_lazy_table(arrow::arrow_table(x = 1)))
-  expect_no_error(assert_lazy_table(arrow::record_batch(x = 1)))
+  expect_no_error(assert_reusable_margin_input(data.frame()))
+  expect_no_error(assert_reusable_margin_input(arrow::arrow_table(x = 1)))
+  expect_no_error(assert_reusable_margin_input(arrow::record_batch(x = 1)))
 
   # arrow "Dataset" class
   tmp <- tempfile("test", fileext = ".parquet")
@@ -62,7 +62,7 @@ test_that("assert_lazy_table() works", {
   )
 
   expect_no_error(
-    assert_lazy_table(
+    assert_reusable_margin_input(
       arrow::open_dataset(tmp)
     )
   )
@@ -817,12 +817,12 @@ test_that("every shared reader answers a pair holding an empty call part", {
   )
 })
 
-test_that("lazy-table assertions use the Package condition seam", {
+test_that("reusable-input assertions use the Package condition seam", {
   skip_if_suggest_absent("arrow")
 
   error <- expect_error(
-    assert_lazy_table(arrow::as_record_batch_reader(data.frame())),
-    "must not be an object of the following class"
+    assert_reusable_margin_input(arrow::as_record_batch_reader(data.frame())),
+    "must not be or depend on"
   )
 
   expect_s3_class(error, "marginplyr_error")
@@ -832,7 +832,7 @@ test_that("lazy-table assertions use the Package condition seam", {
   # pin the nesting refusal carries above.
   expect_match(
     conditionMessage(error),
-    "Convert it with `arrow::as_arrow_table()` first.",
+    "Materialize it with `arrow::as_arrow_table()` first.",
     fixed = TRUE
   )
 })

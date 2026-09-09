@@ -393,6 +393,25 @@ test_that("an Arrow summary Arrow can evaluate is unchanged and stays lazy", {
   expect_setequal(dplyr::collect(result)$total, c(3, 3, 6))
 })
 
+test_that("Arrow rejects contextual shares for every accepted input shape", {
+  skip_if_suggest_absent("arrow")
+
+  data <- arrow_input_data()
+  inputs <- c(absorbing_arrow_inputs(data), refusing_arrow_inputs(data))
+
+  for (shape in names(inputs)) {
+    raised <- expect_error(summarize_with_margins(
+      inputs[[shape]],
+      total = sum(v),
+      share = share_of_parent(total),
+      .grouping = rollup(k)
+    ), label = shape)
+
+    expect_s3_class(raised, "marginplyr_error")
+    expect_match(conditionMessage(raised), "share_of_parent", fixed = TRUE)
+  }
+})
+
 # Part one of the two-part regression. The refusal above asserts what
 # marginplyr does with an absorbed expression; this asserts that Arrow still
 # absorbs the two expressions it is asserted over, and that Arrow still marks
@@ -742,6 +761,36 @@ test_that("public Arrow table classes are supported", {
     ),
     "RecordBatchReader"
   )
+})
+
+# This pins the external behaviour that makes reader reuse unsafe. Which branch
+# consumes which batch is not stable across a shared test session, so the
+# contract is the absence of the known complete result. If Arrow begins sharing
+# one scan across both branches, this fails and the refusal can be reconsidered.
+test_that("Arrow reader branches do not produce the complete result", {
+  skip_if_suggest_absent("arrow")
+
+  reader <- multi_batch_arrow_reader()
+  detail <- dplyr::summarise(
+    reader,
+    n = dplyr::n(),
+    total = sum(v),
+    .by = k
+  )
+  grand <- dplyr::summarise(
+    reader,
+    n = dplyr::n(),
+    total = sum(v)
+  ) |>
+    dplyr::mutate(k = "Total", .before = 1L)
+  result <- dplyr::collect(dplyr::union_all(detail, grand))
+  complete <- tibble::tibble(
+    k = c("E", "W", "Total"),
+    n = c(2L, 3L, 5L),
+    total = c(3L, 12L, 15L)
+  )
+
+  expect_false(dplyr::setequal(result, complete))
 })
 
 # Deciding whether a selection renames means comparing what it selected against
