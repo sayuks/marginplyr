@@ -833,3 +833,36 @@ test_that("a RecordBatchReader is refused before applicable Margin verbs", {
   expect_setequal(result$n, c(2L, 3L, 5L))
   expect_setequal(result$total, c(3L, 12L, 15L))
 })
+
+test_that("nesting a RecordBatchReader directs the caller to collect", {
+  skip_if_suggest_absent("arrow")
+
+  reader <- function() {
+    arrow::RecordBatchReader$create(
+      arrow::record_batch(k = c("E", "E"), v = 1:2),
+      arrow::record_batch(k = c("W", "W", "W"), v = 3:5)
+    )
+  }
+  verbs <- list(
+    nest = nest_with_margins,
+    nest_by = nest_by_with_margins
+  )
+
+  for (verb in names(verbs)) {
+    input <- reader()
+    raised <- expect_error(
+      verbs[[verb]](input, .grouping = rollup(k)),
+      class = "marginplyr_error",
+      info = verb
+    )
+    expect_match(
+      conditionMessage(raised),
+      "Collect it with `dplyr::collect()` first.",
+      fixed = TRUE,
+      info = verb
+    )
+    local <- dplyr::collect(input)
+    expect_identical(nrow(local), 5L)
+    expect_no_error(verbs[[verb]](local, .grouping = rollup(k)))
+  }
+})

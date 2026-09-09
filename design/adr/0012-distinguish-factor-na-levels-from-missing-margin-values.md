@@ -224,6 +224,11 @@ Margin operation builds one branch per grouping set from the same input, while
 the reader is one-shot. A later branch cannot re-read rows an earlier branch
 consumed and can produce an incomplete result.
 
+Arrow 25.0.1 still exhibits that failure: combining a grouped summary and a
+grand-total summary built from one two-batch reader omits one group and computes
+the total from only the first batch. The dated reproduction belongs to
+`investigation/arrow-r-input-shapes-and-dplyr-fallback.md`.
+
 `arrow::as_arrow_table()` remains its remedy. With a reader containing multiple
 record batches, the conversion consumes every batch once and materializes all
 rows in a reusable `Table`; each Margin branch can then read the complete

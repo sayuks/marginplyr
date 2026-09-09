@@ -601,8 +601,10 @@ does not tell you which outcome applies.
 while a Margin operation builds one branch per grouping set from the same
 input; a later branch cannot re-read rows an earlier branch consumed. Use
 `arrow::as_arrow_table()` to consume every batch once and make the reusable
-table explicit before a Margin verb. A `Scanner` is not a dplyr input either:
-choose `$ToTable()` or
+table explicit before a summary, expansion, or plan inspection. For a nesting
+verb, collect the reader directly instead: an Arrow table still cannot carry
+the list-column result. A `Scanner` is not a dplyr input either: choose
+`$ToTable()` or
 `$ToRecordBatchReader()` first. Neither are `Scalar`, `Array`, `ChunkedArray`,
 `Schema`, `Field`, `DataType`, or other non-tabular Arrow objects. Convert
 those to a data frame or lazy dplyr table appropriate to the data they

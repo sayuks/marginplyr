@@ -1,6 +1,7 @@
 # Arrow R input shapes and dplyr fallback
 
 Investigated: 2026-09-08
+Revised: 2026-09-09 — multi-branch RecordBatchReader reproduction below
 
 Measured with R 4.6.1, arrow 25.0.1, and dplyr 1.2.1.  The Arrow sources and
 reference pages linked below were read on the investigation date.  This note
@@ -102,3 +103,27 @@ rules.  Those rows rest on the current first-party implementation plus the
 local 25.0.1 reproduction.  Since Arrow can add compute kernels or change this
 internal classification, the supported-expression set and the fallback wording
 must be checked against the Arrow version actually supported by marginplyr.
+
+## Revisions (2026-09-09)
+
+Arrow 25.0.1 correctly consumed both batches when one summary query was built
+from a `RecordBatchReader`: two batches holding two and three rows produced a
+count of five and a sum of fifteen. It did not make that reader reusable. A
+second summary query executed against the same reader returned a count and sum
+of zero.
+
+The Margin-operation shape reproduced the original wrong-result reason. A
+grouped summary and a grand-total summary were built lazily from the same
+reader and combined with `dplyr::union_all()`. The input held `E` in the first
+two-row batch and `W` in the second three-row batch. The complete answer was
+`E = 2`, `W = 3`, and `Total = 5`; Arrow instead returned `W = 3` and
+`Total = 2`. Thus constructing both queries before execution did not turn the
+one-shot source into one shared scan.
+
+`arrow::as_arrow_table()` consumed those same two batches once and produced a
+five-row table whose value column summed to fifteen. The conversion is therefore
+a valid remedy for the summary, expansion, and inspection guards: every branch
+then refers to a reusable table rather than to the reader. It is not the direct
+remedy for a nesting verb, because an Arrow table still cannot carry its list
+column; that verb's existing `dplyr::collect()` remedy consumes the reader into
+a local data frame instead.

@@ -508,11 +508,14 @@ one branch per grouping set from the same input. Later branches cannot
 re-read rows an earlier branch consumed and can therefore compute an
 incomplete result. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch once and
 materializes them as the reusable \code{Table} the branches require; convert
-explicitly before calling a Margin verb. A \code{Scanner}, \code{Scalar}, \code{Array},
-\code{ChunkedArray}, \code{Schema}, \code{Field}, \code{DataType}, and other non-tabular Arrow
-objects are not dplyr inputs. Materialize a Scanner with \verb{$ToTable()} or
-choose its \verb{$ToRecordBatchReader()} stream first; convert any other object
-to a data frame or lazy dplyr table appropriate to the data it represents.
+explicitly before calling \code{\link[=summarize_with_margins]{summarize_with_margins()}},
+\code{\link[=expand_with_margins]{expand_with_margins()}}, or \code{\link[=inspect_grouping]{inspect_grouping()}}. For a nesting verb,
+collect the reader directly instead: an Arrow \code{Table} still cannot carry
+the list-column result. A \code{Scanner}, \code{Scalar}, \code{Array}, \code{ChunkedArray},
+\code{Schema}, \code{Field}, \code{DataType}, and other non-tabular Arrow objects are not
+dplyr inputs. Materialize a Scanner with \verb{$ToTable()} or choose its
+\verb{$ToRecordBatchReader()} stream first; convert any other object to a data
+frame or lazy dplyr table appropriate to the data it represents.
 
 The nesting verbs accept neither Arrow input category, because their result
 contains a list column. \code{\link[=nest_with_margins]{nest_with_margins()}} and

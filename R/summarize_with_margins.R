@@ -452,11 +452,14 @@
 #' re-read rows an earlier branch consumed and can therefore compute an
 #' incomplete result. [arrow::as_arrow_table()] consumes every batch once and
 #' materializes them as the reusable `Table` the branches require; convert
-#' explicitly before calling a Margin verb. A `Scanner`, `Scalar`, `Array`,
-#' `ChunkedArray`, `Schema`, `Field`, `DataType`, and other non-tabular Arrow
-#' objects are not dplyr inputs. Materialize a Scanner with `$ToTable()` or
-#' choose its `$ToRecordBatchReader()` stream first; convert any other object
-#' to a data frame or lazy dplyr table appropriate to the data it represents.
+#' explicitly before calling [summarize_with_margins()],
+#' [expand_with_margins()], or [inspect_grouping()]. For a nesting verb,
+#' collect the reader directly instead: an Arrow `Table` still cannot carry
+#' the list-column result. A `Scanner`, `Scalar`, `Array`, `ChunkedArray`,
+#' `Schema`, `Field`, `DataType`, and other non-tabular Arrow objects are not
+#' dplyr inputs. Materialize a Scanner with `$ToTable()` or choose its
+#' `$ToRecordBatchReader()` stream first; convert any other object to a data
+#' frame or lazy dplyr table appropriate to the data it represents.
 #'
 #' The nesting verbs accept neither Arrow input category, because their result
 #' contains a list column. [nest_with_margins()] and
