@@ -156,9 +156,12 @@
 #' also supply `.by`; call [dplyr::ungroup()] first when replacing the existing
 #' groups. A grouping column also cannot appear in `.grouping`, because one
 #' column cannot be both a fixed key and a dimension that can be rolled up.
-#' Grouped local data created with `.drop = FALSE` is rejected because empty
-#' factor groups do not have a consistent equivalent in SQL and other lazy
-#' backends.
+#' Grouped local data created with `.drop = FALSE` is rejected because
+#' marginplyr cannot preserve empty groups across local and lazy backends.
+#' [dplyr::ungroup()] discards empty groups, which is appropriate when they do
+#' not belong in the result. To retain empty keys, complete the input before
+#' the Margin operation; [Complete absent keys before margins][keys]
+#' guide follows the ADR 0011 workflow.
 #'
 #' Unlike the default output of [dplyr::summarize()] on grouped data,
 #' [summarize_with_margins()], [expand_with_margins()], and
@@ -167,7 +170,11 @@
 #' hierarchy to retain.
 #' [nest_by_with_margins()] instead returns a row-wise data frame grouped by
 #' all visible fixed keys, grouping dimensions, and `.id` when supplied.
-#' Row-wise input is rejected; call [dplyr::ungroup()] first.
+#' Row-wise input is rejected. [dplyr::ungroup()] discards row-wise grouping;
+#' when named row-wise identifiers should remain fixed keys, ungroup first and
+#' select them with `.by`.
+#'
+#' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
 #'
 #' @section Option arguments:
 #' An argument documented as taking one of a listed set of strings —

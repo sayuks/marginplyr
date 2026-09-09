@@ -71,14 +71,19 @@ normalize_grouping_input <- function(.data, by_quo) {
   if (inherits(.data, "rowwise_df")) {
     abort_marginplyr(c(
       "{.fun rowwise} input is not supported.",
-      i = "Call {.fun dplyr::ungroup} first."
+      i = "Calling {.fun dplyr::ungroup} discards row-wise grouping."
     ))
   }
 
   if (!dplyr::group_by_drop_default(.data)) {
     abort_marginplyr(c(
       "Grouped input created with {.code .drop = FALSE} is not supported.",
-      i = "Call {.fun dplyr::ungroup} first."
+      i = "marginplyr cannot preserve empty groups.",
+      i = "Call {.fun dplyr::ungroup} to discard empty groups.",
+      i = paste0(
+        "To retain empty keys, complete the input before the ",
+        "Margin operation."
+      )
     ))
   }
 
@@ -86,7 +91,10 @@ normalize_grouping_input <- function(.data, by_quo) {
   if (length(input_groups) > 0L && !rlang::quo_is_null(by_quo)) {
     abort_marginplyr(c(
       "Can't supply {.arg .by} when {.arg .data} is grouped.",
-      i = "Call {.fun dplyr::ungroup} first."
+      i = paste0(
+        "Call {.fun dplyr::ungroup} first to replace the existing ",
+        "groups with {.arg .by}."
+      )
     ))
   }
 
