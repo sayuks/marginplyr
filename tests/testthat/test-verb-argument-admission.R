@@ -748,6 +748,11 @@ test_that("public Arrow table classes are supported", {
       class = "marginplyr_error",
       info = shape
     )
+    expect_error(
+      nest_by_with_margins(input, .grouping = rollup(k)),
+      class = "marginplyr_error",
+      info = shape
+    )
   }
 })
 
