@@ -494,8 +494,10 @@ test_that("the Margin label collision pluralizes its grouping column noun", {
     paste0(
       "\"All\" is already present in grouping column:\n",
       "i `a`.\n",
-      "i Choose another `.margin_label` or set ",
-      "`.check_margin_label = FALSE`."
+      "i Choose another `.margin_label`.\n",
+      "i Set `.check_margin_label = FALSE` only if you retain `.id`, ",
+      "`grouping_bit()`, or `grouping_id()` to distinguish source and ",
+      "Margin rows."
     )
   )
 
@@ -505,8 +507,10 @@ test_that("the Margin label collision pluralizes its grouping column noun", {
     paste0(
       "\"All\" is already present in grouping columns:\n",
       "i `a` and `b`.\n",
-      "i Choose another `.margin_label` or set ",
-      "`.check_margin_label = FALSE`."
+      "i Choose another `.margin_label`.\n",
+      "i Set `.check_margin_label = FALSE` only if you retain `.id`, ",
+      "`grouping_bit()`, or `grouping_id()` to distinguish source and ",
+      "Margin rows."
     )
   )
 
@@ -516,8 +520,10 @@ test_that("the Margin label collision pluralizes its grouping column noun", {
     paste0(
       "Margin labels are already present in grouping columns:\n",
       "i `a` and `b`.\n",
-      "i Choose another `.margin_label` or set ",
-      "`.check_margin_label = FALSE`."
+      "i Choose another `.margin_label`.\n",
+      "i Set `.check_margin_label = FALSE` only if you retain `.id`, ",
+      "`grouping_bit()`, or `grouping_id()` to distinguish source and ",
+      "Margin rows."
     )
   )
 })

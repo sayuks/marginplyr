@@ -88,7 +88,12 @@ assert_nest_possible <- function(x) {
         "{.arg {nm}} must be one of the following classes, which can be ",
         "nested: {.or {.code {valid_classes}}}."
       ),
-      i = "Collect it with {.fun dplyr::collect} first."
+      i = "Collect it with {.fun dplyr::collect} first.",
+      i = paste0(
+        "Collection changes the default of {.arg .check_margin_label} from ",
+        "{.code FALSE} to {.code TRUE}; set it explicitly when ",
+        "re-running this call."
+      )
     ))
   }
 }

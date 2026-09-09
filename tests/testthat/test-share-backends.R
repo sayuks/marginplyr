@@ -469,6 +469,52 @@ test_that("Arrow rejects Parent shares before constructing a query", {
   expect_snapshot(conditionMessage(error))
 })
 
+test_that("Arrow share collection makes collision policy explicit", {
+  skip_if_suggest_absent("arrow")
+
+  source <- arrow::Table$create(data.frame(group = "Total", value = 1L))
+  error <- expect_error(
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(error),
+    paste0(
+      "Collection changes the default of `.check_margin_label` from ",
+      "`FALSE` to `TRUE`"
+    ),
+    fixed = TRUE
+  )
+
+  local <- dplyr::collect(source)
+  expect_error(
+    summarize_with_margins(
+      local,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(group)
+    ),
+    "already present in grouping column"
+  )
+  result <- summarize_with_margins(
+    local,
+    total = sum(value),
+    share = share_of_parent(total),
+    .grouping = rollup(group),
+    .check_margin_label = FALSE,
+    .id = "set"
+  )
+
+  expect_identical(result$group, c("Total", "Total"))
+  expect_setequal(result$set, c(1L, 2L))
+  expect_identical(result$share, c(1, 1))
+})
+
 test_that("Arrow ordinary Margin summaries remain lazy and available", {
   skip_if_suggest_absent("arrow")
   query <- summarize_with_margins(

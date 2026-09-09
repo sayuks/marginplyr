@@ -339,7 +339,9 @@
 #' operations remain supported and lazy, apart from a summary Arrow's own
 #' engine cannot evaluate, which is refused for its own reason and before any
 #' row is read; see [summarize_with_margins()]. Explicitly collect an Arrow
-#' input first when local share execution is appropriate.
+#' input first when local share execution is appropriate. Collection changes
+#' `.check_margin_label`'s default from `FALSE` to `TRUE`, so choose that
+#' policy explicitly on the re-run.
 #'
 #' A `dtplyr` step remains a native lazy query: no validation-only query is
 #' added and nothing is collected on your behalf. Its execution-time
@@ -640,6 +642,11 @@ abort_arrow_shares <- function(kinds) {
     i = paste0(
       "Omit {.fun {share_helper_names(kinds)}} or explicitly collect the ",
       "data before calling {.fun summarize_with_margins}."
+    ),
+    i = paste0(
+      "Collection changes the default of {.arg .check_margin_label} from ",
+      "{.code FALSE} to {.code TRUE}; set it explicitly when ",
+      "re-running this call."
     )
   ))
 }
@@ -2452,6 +2459,11 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
           "{.fun {helpers}} from sources you have established yourself, or ",
           "explicitly collect the data before calling ",
           "{.fun summarize_with_margins}."
+        ),
+        i = paste0(
+          "Collection changes the default of {.arg .check_margin_label} from ",
+          "{.code FALSE} to {.code TRUE}; set it explicitly when ",
+          "re-running this call."
         )
       ),
       call = call
@@ -2471,6 +2483,11 @@ abort_share_source_dialect <- function(kinds, verdict, call) {
         "{.fun {helpers}} from sources you have established yourself, or ",
         "explicitly collect the data before calling ",
         "{.fun summarize_with_margins}."
+      ),
+      i = paste0(
+        "Collection changes the default of {.arg .check_margin_label} from ",
+        "{.code FALSE} to {.code TRUE}; set it explicitly when ",
+        "re-running this call."
       )
     ),
     call = call

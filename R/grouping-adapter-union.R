@@ -240,6 +240,11 @@ abort_absorbed_summary <- function(labels) {
       "{.fun summarize_with_margins}."
     ),
     i = paste0(
+      "Collection changes the default of {.arg .check_margin_label} from ",
+      "{.code FALSE} to {.code TRUE}; set it explicitly when ",
+      "re-running this call."
+    ),
+    i = paste0(
       "Select the columns you need before collecting. Arrow reads every ",
       "column of the input, including the ones a summary does not use."
     )

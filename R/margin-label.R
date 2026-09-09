@@ -361,9 +361,12 @@ abort_observed_label_collision <- function(bad_cols, bad_labels) {
         "{cli::qty(length(bad_cols))}column{?s}:"
       ),
       i = "{.var {bad_cols}}.",
+      i = "Choose another {.arg .margin_label}.",
       i = paste0(
-        "Choose another {.arg .margin_label} or set ",
-        "{.code .check_margin_label = FALSE}."
+        "Set {.code .check_margin_label = FALSE} only if you retain ",
+        "{.arg .id}, {.fun grouping_bit}, or {.fun grouping_id} to ",
+        "distinguish ",
+        "source and Margin rows."
       )
     ))
   }
@@ -373,9 +376,11 @@ abort_observed_label_collision <- function(bad_cols, bad_labels) {
       "{cli::qty(length(bad_cols))}column{?s}:"
     ),
     i = "{.var {bad_cols}}.",
+    i = "Choose another {.arg .margin_label}.",
     i = paste0(
-      "Choose another {.arg .margin_label} or set ",
-      "{.code .check_margin_label = FALSE}."
+      "Set {.code .check_margin_label = FALSE} only if you retain ",
+      "{.arg .id}, {.fun grouping_bit}, or {.fun grouping_id} to distinguish ",
+      "source and Margin rows."
     )
   ))
 }

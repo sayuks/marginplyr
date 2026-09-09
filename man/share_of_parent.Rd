@@ -351,7 +351,9 @@ the diagnostic names whichever helpers the call used. Other Arrow Margin
 operations remain supported and lazy, apart from a summary Arrow's own
 engine cannot evaluate, which is refused for its own reason and before any
 row is read; see \code{\link[=summarize_with_margins]{summarize_with_margins()}}. Explicitly collect an Arrow
-input first when local share execution is appropriate.
+input first when local share execution is appropriate. Collection changes
+\code{.check_margin_label}'s default from \code{FALSE} to \code{TRUE}, so choose that
+policy explicitly on the re-run.
 
 A \code{dtplyr} step remains a native lazy query: no validation-only query is
 added and nothing is collected on your behalf. Its execution-time

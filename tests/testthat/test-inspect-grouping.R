@@ -489,6 +489,57 @@ test_that("lazy inspection reads typed metadata once, executing no margins", {
   expect_identical(result$grouping_id, c(0L, 1L))
 })
 
+test_that("inspection scopes predicate collection guidance to Margin verbs", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(group = "Total", value = 1L),
+    "inspection_predicate_collision",
+    temporary = TRUE
+  )
+
+  error <- expect_error(
+    inspect_grouping(remote, .grouping = rollup(where(is.character))),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(error),
+    paste0(
+      "A Margin operation on collected data defaults `.check_margin_label` ",
+      "from `FALSE` to `TRUE`; set it explicitly."
+    ),
+    fixed = TRUE
+  )
+  expect_false(grepl(
+    "re-running this call",
+    conditionMessage(error),
+    fixed = TRUE
+  ))
+
+  local <- dplyr::collect(remote)
+  expect_error(
+    summarize_with_margins(
+      local,
+      n = dplyr::n(),
+      .grouping = rollup(where(is.character))
+    ),
+    "already present in grouping column"
+  )
+  result <- summarize_with_margins(
+    local,
+    n = dplyr::n(),
+    .grouping = rollup(where(is.character)),
+    .check_margin_label = FALSE,
+    .id = "set"
+  )
+
+  expect_identical(result$group, c("Total", "Total"))
+  expect_setequal(result$set, c(1L, 2L))
+})
+
 test_that("a name-only grouping error precedes a .by predicate's read", {
   # A `.by` predicate is resolved from typed metadata, but the Grouping
   # specification beside it may still be resolvable from names — and ADR-0005

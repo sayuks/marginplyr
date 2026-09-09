@@ -110,7 +110,12 @@ abort_selection_predicate <- function(label, parent) {
         "This input's backend doesn't report column types without a query, ",
         "and marginplyr sends none you didn't ask for."
       ),
-      i = "Select the columns by name, or collect the input first."
+      i = "Select the columns by name, or collect the input first.",
+      i = paste0(
+        "A Margin operation on collected data defaults ",
+        "{.arg .check_margin_label} ",
+        "from {.code FALSE} to {.code TRUE}; set it explicitly."
+      )
     ),
     parent = parent
   )
