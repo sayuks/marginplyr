@@ -589,18 +589,24 @@ test_that("the nesting verbs answer `.duplicates = \"keep\"` in their terms", {
 })
 
 test_that("input that dplyr cannot group is rejected in the caller's terms", {
+  remedy <- paste0(
+    "Convert it to a data frame or a lazy table that supports dplyr verbs ",
+    "first."
+  )
   for (input in list(as.matrix(admission_data()), as.list(admission_data()))) {
-    expect_error(
+    raised <- expect_error(
       summarize_with_margins(input, s = sum(v), .grouping = rollup(g)),
       "must be a data frame or a lazy table",
       class = "marginplyr_error"
     )
+    expect_match(conditionMessage(raised), remedy, fixed = TRUE)
   }
 
-  expect_error(
+  raised <- expect_error(
     summarize_with_margins(NULL, s = sum(v), .grouping = rollup(g)),
     "`NULL` was supplied"
   )
+  expect_match(conditionMessage(raised), remedy, fixed = TRUE)
 })
 
 test_that("every entry point admits input the same way", {
@@ -759,16 +765,36 @@ test_that("public Arrow table classes are supported", {
 test_that("a RecordBatchReader is refused before applicable Margin verbs", {
   skip_if_suggest_absent("arrow")
 
-  reader <- function() arrow::as_record_batch_reader(arrow_input_data())
+  reader <- function() {
+    arrow::RecordBatchReader$create(
+      arrow::record_batch(k = c("E", "E"), v = 1:2),
+      arrow::record_batch(k = c("W", "W", "W"), v = 3:5)
+    )
+  }
   calls <- list(
-    summarize = function() {
-      summarize_with_margins(reader(), n = sum(v), .grouping = rollup(k))
+    summarize = function(input) {
+      summarize_with_margins(input, n = sum(v), .grouping = rollup(k))
     },
-    expand = function() expand_with_margins(reader(), .grouping = rollup(k)),
-    inspect = function() inspect_grouping(reader(), .grouping = rollup(k))
+    expand = function(input) {
+      expand_with_margins(input, .grouping = rollup(k))
+    },
+    inspect = function(input) inspect_grouping(input, .grouping = rollup(k))
   )
 
   for (verb in names(calls)) {
-    expect_error(calls[[verb]](), "RecordBatchReader", info = verb)
+    input <- reader()
+    expect_error(calls[[verb]](input), "RecordBatchReader", info = verb)
+    expect_identical(arrow::as_arrow_table(input)$num_rows, 5L)
   }
+
+  converted <- arrow::as_arrow_table(reader())
+  result <- summarize_with_margins(
+    converted,
+    n = dplyr::n(),
+    total = sum(v),
+    .grouping = rollup(k)
+  ) |>
+    dplyr::collect()
+  expect_setequal(result$n, c(2L, 3L, 5L))
+  expect_setequal(result$total, c(3L, 12L, 15L))
 })

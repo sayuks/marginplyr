@@ -146,9 +146,12 @@ error. Thus an \code{arrow_dplyr_query} is described by its source, not by its
 query class alone.
 
 A \code{RecordBatchReader} is deliberately refused even though Arrow can start a
-dplyr query from it: the reader is one-pass, and converting it consumes and
-materializes the entire stream. Convert it explicitly with
-\code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} before calling a Margin verb. A \code{Scanner} and
+dplyr query from it: the reader is one-pass, while a Margin operation builds
+one branch per grouping set from the same input. Later branches cannot
+re-read rows an earlier branch consumed and can therefore compute an
+incomplete result. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch once and
+materializes them as the reusable \code{Table} the branches require; convert
+explicitly before calling a Margin verb. A \code{Scanner} and
 other non-tabular Arrow objects are not dplyr inputs; materialize a Scanner
 with \verb{$ToTable()} or choose its \verb{$ToRecordBatchReader()} stream first.
 

@@ -145,7 +145,10 @@ assert_margin_input <- function(x) {
         "dplyr verbs."
       ),
       i = "{.code NULL} was supplied.",
-      i = "Convert it with {.fun as.data.frame} or {.fun dplyr::tbl} first."
+      i = paste0(
+        "Convert it to a data frame or a lazy table that supports dplyr ",
+        "verbs first."
+      )
     ))
   }
   abort_marginplyr(c(
@@ -154,7 +157,10 @@ assert_margin_input <- function(x) {
       "dplyr verbs."
     ),
     i = "A {.cls {class(x)[[1L]]}} was supplied.",
-    i = "Convert it with {.fun as.data.frame} or {.fun dplyr::tbl} first."
+    i = paste0(
+      "Convert it to a data frame or a lazy table that supports dplyr verbs ",
+      "first."
+    )
   ))
 }
 
@@ -172,6 +178,10 @@ assert_margin_input <- function(x) {
 # `dplyr::collect()` resolves this refusal too and is not named beside
 # `arrow::as_arrow_table()`, under the rule ADR 0012's third amendment states
 # for two routes that leave the caller in different places.
+#
+# A reader remains refused because a Margin operation needs to build every
+# grouping-set branch from the same reusable input; ADR 0012's amendment on a
+# general admission refusal records why a one-shot reader cannot satisfy it.
 assert_lazy_table <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.

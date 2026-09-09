@@ -447,9 +447,12 @@
 #' query class alone.
 #'
 #' A `RecordBatchReader` is deliberately refused even though Arrow can start a
-#' dplyr query from it: the reader is one-pass, and converting it consumes and
-#' materializes the entire stream. Convert it explicitly with
-#' [arrow::as_arrow_table()] before calling a Margin verb. A `Scanner` and
+#' dplyr query from it: the reader is one-pass, while a Margin operation builds
+#' one branch per grouping set from the same input. Later branches cannot
+#' re-read rows an earlier branch consumed and can therefore compute an
+#' incomplete result. [arrow::as_arrow_table()] consumes every batch once and
+#' materializes them as the reusable `Table` the branches require; convert
+#' explicitly before calling a Margin verb. A `Scanner` and
 #' other non-tabular Arrow objects are not dplyr inputs; materialize a Scanner
 #' with `$ToTable()` or choose its `$ToRecordBatchReader()` stream first.
 #'

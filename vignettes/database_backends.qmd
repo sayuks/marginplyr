@@ -597,9 +597,12 @@ any row is read. A dataset instead reports Arrow's own unsupported-expression
 error. A dplyr query follows the object it started from, so its class alone
 does not tell you which outcome applies.
 
-`RecordBatchReader` is intentionally not accepted. It is a one-pass stream;
-use `arrow::as_arrow_table()` to make the materialization explicit before a
-Margin verb. A `Scanner` is not a dplyr input either: choose `$ToTable()` or
+`RecordBatchReader` is intentionally not accepted. It is a one-pass stream,
+while a Margin operation builds one branch per grouping set from the same
+input; a later branch cannot re-read rows an earlier branch consumed. Use
+`arrow::as_arrow_table()` to consume every batch once and make the reusable
+table explicit before a Margin verb. A `Scanner` is not a dplyr input either:
+choose `$ToTable()` or
 `$ToRecordBatchReader()` first. The nesting verbs do not accept any Arrow
 input because their result contains a list column. Contextual shares are also
 rejected for every accepted Arrow input; collect first for local execution.
