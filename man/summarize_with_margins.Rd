@@ -610,8 +610,11 @@ the backend allows it -- see \emph{Result class and attributes}, which owns that
 condition -- preserving ordered status and placing a new synthetic level
 last by default or first when \code{.margin_label_position = "first"}. A label
 equal to any declared level, used or unused, is rejected before any
-grouping set is built, whatever \code{.check_margin_label} says: see that
-argument above.
+grouping set is built wherever marginplyr holds factor-level metadata,
+whatever \code{.check_margin_label} says. Arrow does not retain or restore those
+levels: a factor dimension with a non-missing label returns as character, so
+an unused declared level is allowed. On Arrow, an observed collision is
+refused only when \code{.check_margin_label = TRUE}: see that argument above.
 Reconstruction preserves the distinction between an observation that uses a
 factor NA level and an actually missing factor code.
 
