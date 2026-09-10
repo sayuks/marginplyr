@@ -726,7 +726,16 @@ test_that("RSQLite shares conserve under scale and duplication", {
   source <- share_metamorphic_input()
   # SQLite converts ineligible sources, but this known `sum(integer)` source is
   # eligible before the test asks to bypass the dialect check.
-  expect_type(source$measure, "integer")
+  expect_identical(
+    typeof(source$measure),
+    "integer",
+    label = metamorphic_label(
+      "duplicate rows with fixed and variable missing keys",
+      "RSQLite source is an eligible sum(integer) expression",
+      "summarize_with_margins()",
+      "RSQLite"
+    )
+  )
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   input <- dplyr::copy_to(
