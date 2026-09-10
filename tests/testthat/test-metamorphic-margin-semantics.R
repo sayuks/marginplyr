@@ -582,3 +582,192 @@ test_that("RSQLite preserves typed missing values across grouping-set order", {
     }
   }
 })
+
+# The positive integer measure keeps conservation separate from the missing- and
+# zero-denominator examples in `test-share.R`. The first and last rows are a
+# duplicate, and both the fixed and variable keys carry a missing value.
+share_metamorphic_input <- function() {
+  data.frame(
+    fixed = c("north", "north", NA_character_, NA_character_, "north"),
+    region = c("east", NA_character_, "west", "west", "east"),
+    store = c("a", "a", NA_character_, "b", "a"),
+    measure = c(2L, 3L, 5L, 7L, 2L)
+  )
+}
+
+share_metamorphic_summary <- function(input, check_share_source = TRUE) {
+  rlang::inject(summarize_with_margins(
+    input,
+    measure_total = sum(.data$measure),
+    parent_share = share_of_parent(!!rlang::sym("measure_total")),
+    total_share = share_of_total(!!rlang::sym("measure_total")),
+    .by = !!rlang::sym("fixed"),
+    .grouping = rollup(!!rlang::sym("region"), !!rlang::sym("store")),
+    .id = "occurrence",
+    .margin_label = NULL,
+    .check_share_source = check_share_source
+  )) |>
+    dplyr::collect()
+}
+
+expect_share_conservation <- function(result, case, backend) {
+  total_partitions <- result |>
+    dplyr::group_by(.data$fixed, .data$occurrence) |>
+    dplyr::summarise(share_sum = sum(.data$total_share), .groups = "drop")
+  expect_equal(
+    total_partitions$share_sum,
+    rep(1, nrow(total_partitions)),
+    label = metamorphic_label(
+      case,
+      "Total shares sum to one per fixed-key and grouping occurrence",
+      "summarize_with_margins()",
+      backend
+    )
+  )
+
+  # `rollup(region, store)` orders details, regional subtotals, then Grand
+  # totals. The first two occurrences consequently have the stated immediate
+  # parents, while each Grand-total row is its own Parent share of one.
+  detail_parents <- result |>
+    dplyr::filter(.data$occurrence == 1L) |>
+    dplyr::group_by(.data$fixed, .data$region) |>
+    dplyr::summarise(share_sum = sum(.data$parent_share), .groups = "drop")
+  subtotal_parents <- result |>
+    dplyr::filter(.data$occurrence == 2L) |>
+    dplyr::group_by(.data$fixed) |>
+    dplyr::summarise(share_sum = sum(.data$parent_share), .groups = "drop")
+  parent_partitions <- dplyr::bind_rows(detail_parents, subtotal_parents)
+  expect_equal(
+    parent_partitions$share_sum,
+    rep(1, nrow(parent_partitions)),
+    label = metamorphic_label(
+      case,
+      "Parent shares sum to one beneath each immediate parent",
+      "summarize_with_margins()",
+      backend
+    )
+  )
+}
+
+expect_share_relations <- function(input,
+                                   case,
+                                   backend,
+                                   check_share_source = TRUE) {
+  baseline <- metamorphic_public_result(
+    share_metamorphic_summary(input, check_share_source),
+    case,
+    "identity",
+    "summarize_with_margins()",
+    backend
+  )
+  expect_share_conservation(baseline, case, backend)
+
+  scale <- 5L
+  scaled <- metamorphic_public_result(
+    share_metamorphic_summary(
+      dplyr::mutate(input, measure = .data$measure * scale),
+      check_share_source
+    ),
+    case,
+    "multiply every positive source measure by one nonzero constant",
+    "summarize_with_margins()",
+    backend
+  )
+  expect_metamorphic_multiset(
+    scaled,
+    dplyr::mutate(baseline, measure_total = .data$measure_total * scale),
+    case,
+    "source summary scales while Parent and Total shares stay unchanged",
+    "summarize_with_margins()",
+    backend
+  )
+
+  duplicated <- metamorphic_public_result(
+    share_metamorphic_summary(
+      dplyr::union_all(input, input),
+      check_share_source
+    ),
+    case,
+    "duplicate every source row",
+    "summarize_with_margins()",
+    backend
+  )
+  expect_metamorphic_multiset(
+    duplicated,
+    dplyr::mutate(baseline, measure_total = .data$measure_total * 2L),
+    case,
+    "additive summary doubles while Parent and Total shares stay unchanged",
+    "summarize_with_margins()",
+    backend
+  )
+}
+
+test_that("local shares conserve under scale and duplication", {
+  expect_share_relations(
+    share_metamorphic_input(),
+    "duplicate rows with fixed and variable missing keys",
+    "local"
+  )
+})
+
+test_that("dtplyr shares conserve under scale and duplication", {
+  skip_if_suggest_absent("dtplyr")
+
+  expect_share_relations(
+    dtplyr::lazy_dt(share_metamorphic_input()),
+    "duplicate rows with fixed and variable missing keys",
+    "dtplyr"
+  )
+})
+
+test_that("RSQLite shares conserve under scale and duplication", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  source <- share_metamorphic_input()
+  # SQLite converts ineligible sources, but this known `sum(integer)` source is
+  # eligible before the test asks to bypass the dialect check.
+  expect_identical(
+    typeof(source$measure),
+    "integer",
+    label = metamorphic_label(
+      "duplicate rows with fixed and variable missing keys",
+      "RSQLite source is an eligible sum(integer) expression",
+      "summarize_with_margins()",
+      "RSQLite"
+    )
+  )
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  input <- dplyr::copy_to(
+    con,
+    source,
+    "metamorphic_share_sqlite_input",
+    temporary = TRUE
+  )
+
+  expect_share_relations(
+    input,
+    "duplicate rows with fixed and variable missing keys",
+    "RSQLite",
+    check_share_source = FALSE
+  )
+})
+
+test_that("DuckDB shares conserve under scale and duplication", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  input <- dplyr::copy_to(
+    con,
+    share_metamorphic_input(),
+    "metamorphic_share_duckdb_input",
+    temporary = TRUE
+  )
+
+  expect_share_relations(
+    input,
+    "duplicate rows with fixed and variable missing keys",
+    "DuckDB"
+  )
+})
