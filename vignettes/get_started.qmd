@@ -563,10 +563,30 @@ retail_sales |>
 ```
 
 A fixed grouping column also cannot appear in `.grouping`; call `ungroup()`
-first if that column should be rolled up instead. Row-wise inputs must
-likewise be ungrouped explicitly. Local groups created with `.drop = FALSE`
-are rejected because empty factor groups do not have a consistent SQL or
-lazy-backend equivalent:
+first if that column should be rolled up instead. Row-wise inputs are rejected
+because `ungroup()` discards their row-wise grouping. When named row-wise
+identifiers should remain fixed keys, make that choice explicit with `.by`:
+
+```{r}
+rowwise_report <- retail_sales |>
+  rowwise(year) |>
+  ungroup() |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .by = year,
+    .grouping = rollup(region, store)
+  )
+
+rowwise_report
+```
+
+Local groups created with `.drop = FALSE` are rejected because marginplyr
+cannot preserve empty groups across local and lazy backends. Calling
+`ungroup()` discards empty groups, which is appropriate only when they do not
+belong in the result. To retain empty keys, complete the input before the
+Margin operation; [Complete absent keys before
+margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
+follows [ADR 0011](https://github.com/sayuks/marginplyr/blob/main/design/adr/0011-keep-key-completion-outside-margin-operations.md):
 
 ```{r}
 #| label: drop-false-groups

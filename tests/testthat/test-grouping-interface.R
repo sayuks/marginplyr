@@ -943,39 +943,21 @@ test_that("grouped inputs reject conflicting grouping instructions", {
   )
   grouped <- dplyr::group_by(data, year)
 
-  expect_error(
-    summarize_with_margins(
-      grouped,
-      value = sum(value),
-      .by = year,
-      .grouping = rollup(region)
-    ),
-    "Can't supply `.by`"
-  )
-  expect_error(
-    expand_with_margins(
-      grouped,
-      .by = year,
-      .grouping = rollup(region)
-    ),
-    "Can't supply `.by`"
-  )
-  expect_error(
-    nest_with_margins(
-      grouped,
-      .by = year,
-      .grouping = rollup(region)
-    ),
-    "Can't supply `.by`"
-  )
-  expect_error(
-    nest_by_with_margins(
-      grouped,
-      .by = year,
-      .grouping = rollup(region)
-    ),
-    "Can't supply `.by`"
-  )
+  for (name in names(forwarded_verbs)) {
+    error <- expect_error(
+      forwarded_verbs[[name]](grouped, year, rollup(region))
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      conditionMessage(error),
+      paste0(
+        "Can't supply `.by` when `.data` is grouped.\n",
+        "i Call `dplyr::ungroup()` first to replace the existing groups ",
+        "with `.by`."
+      )
+    )
+    expect_identical(rlang::call_name(conditionCall(error)), name)
+  }
 
   expect_error(
     summarize_with_margins(
@@ -987,45 +969,134 @@ test_that("grouped inputs reject conflicting grouping instructions", {
   )
 })
 
-test_that("row-wise inputs require explicit ungrouping", {
-  data <- dplyr::rowwise(
-    data.frame(region = c("East", "West"), value = 1:2)
-  )
+test_that(
+  "grouped-input refusals describe the lost semantics at every public seam",
+  {
+    data <- data.frame(
+      account = c("A", "B"),
+      region = c("East", "West"),
+      value = 1:2
+    )
+    inputs <- list(
+      rowwise = dplyr::rowwise(data, account),
+      drop_false = dplyr::group_by(
+        dplyr::mutate(
+          data,
+          account = factor(account, levels = c("A", "B", "C"))
+        ),
+        account,
+        .drop = FALSE
+      )
+    )
+    messages <- list(
+      rowwise = paste0(
+        "`rowwise()` input is not supported.\n",
+        "i Calling `dplyr::ungroup()` discards row-wise grouping."
+      ),
+      drop_false = paste0(
+        "Grouped input created with `.drop = FALSE` is not supported.\n",
+        "i marginplyr cannot preserve empty groups.\n",
+        "i Call `dplyr::ungroup()` to discard empty groups.\n",
+        paste0(
+          "i To retain empty keys, complete the input before the ",
+          "Margin operation."
+        )
+      )
+    )
 
-  expect_error(
-    summarize_with_margins(
-      data,
-      value = sum(value),
-      .grouping = rollup(region)
-    ),
-    "`rowwise\\(\\)` input is not supported"
-  )
-  expect_error(
-    expand_with_margins(data, .grouping = rollup(region)),
-    "`rowwise\\(\\)` input is not supported"
-  )
-  expect_error(
-    nest_with_margins(data, .grouping = rollup(region)),
-    "`rowwise\\(\\)` input is not supported"
-  )
-  expect_error(
-    nest_by_with_margins(data, .grouping = rollup(region)),
-    "`rowwise\\(\\)` input is not supported"
-  )
-})
+    for (input_name in names(inputs)) {
+      for (verb_name in names(forwarded_verbs)) {
+        error <- expect_error(
+          forwarded_verbs[[verb_name]](
+            inputs[[input_name]],
+            NULL,
+            rollup(region)
+          )
+        )
+        expect_s3_class(error, "marginplyr_error")
+        expect_identical(conditionMessage(error), messages[[input_name]])
+        expect_identical(rlang::call_name(conditionCall(error)), verb_name)
+      }
+    }
+  }
+)
 
-test_that("empty persistent groups are rejected instead of silently dropped", {
-  data <- data.frame(
-    year = factor(2025L, levels = c(2025L, 2026L)),
-    value = 1
-  ) |>
-    dplyr::group_by(year, .drop = FALSE)
+test_that(
+  "row-wise rewrites either discard or retain identifier keys explicitly",
+  {
+    data <- data.frame(
+      account = c("A", "B"),
+      region = c("East", "West"),
+      value = c(1, 2)
+    ) |>
+      dplyr::rowwise(account)
 
-  expect_error(
-    summarize_with_margins(data, value = sum(value)),
-    "`.drop = FALSE` is not supported"
-  )
-})
+    discarded <- data |>
+      dplyr::ungroup() |>
+      summarize_with_margins(
+        total = sum(value),
+        .grouping = rollup(region),
+        .margin_label = NULL,
+        .id = "set"
+      )
+    retained <- data |>
+      dplyr::ungroup() |>
+      summarize_with_margins(
+        total = sum(value),
+        .by = account,
+        .grouping = rollup(region),
+        .margin_label = NULL,
+        .id = "set"
+      )
+
+    expect_false("account" %in% names(discarded))
+    expect_identical(discarded$total[discarded$set == 2L], 3)
+    expect_identical(retained$account[retained$set == 2L], c("A", "B"))
+    expect_identical(retained$total[retained$set == 2L], c(1, 2))
+  }
+)
+
+test_that(
+  "drop-false rewrites either discard empty groups or complete their keys",
+  {
+    data <- data.frame(
+      account = factor("A", levels = c("A", "B")),
+      region = "East",
+      value = 2
+    ) |>
+      dplyr::group_by(account, .drop = FALSE)
+
+    discarded <- data |>
+      dplyr::ungroup() |>
+      summarize_with_margins(
+        total = sum(value),
+        .grouping = rollup(region),
+        .margin_label = NULL,
+        .id = "set"
+      )
+    completed <- data.frame(
+      account = factor(c("A", "B"), levels = c("A", "B"))
+    ) |>
+      dplyr::left_join(dplyr::ungroup(data), by = "account") |>
+      dplyr::mutate(value = dplyr::coalesce(value, 0)) |>
+      summarize_with_margins(
+        total = sum(value),
+        .by = account,
+        .grouping = rollup(region),
+        .margin_label = NULL,
+        .id = "set"
+      )
+
+    expect_false("account" %in% names(discarded))
+    expect_identical(discarded$total[discarded$set == 2L], 2)
+    expect_identical(
+      as.character(completed$account[completed$set == 1L]),
+      c("A", "B")
+    )
+    expect_identical(completed$total[completed$set == 1L], c(2, 0))
+    expect_identical(completed$total[completed$set == 2L], c(2, 0))
+  }
+)
 
 test_that("summary expressions reject the removed .groups argument", {
   data <- data.frame(group = c("b", "a", "b"), value = 1:3)

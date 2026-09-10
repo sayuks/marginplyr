@@ -216,9 +216,12 @@ As with \code{\link[dplyr:summarize]{dplyr::summarize()}} and \code{\link[tidyr:
 also supply \code{.by}; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first when replacing the existing
 groups. A grouping column also cannot appear in \code{.grouping}, because one
 column cannot be both a fixed key and a dimension that can be rolled up.
-Grouped local data created with \code{.drop = FALSE} is rejected because empty
-factor groups do not have a consistent equivalent in SQL and other lazy
-backends.
+Grouped local data created with \code{.drop = FALSE} is rejected because
+marginplyr cannot preserve empty groups across local and lazy backends.
+\code{\link[dplyr:ungroup]{dplyr::ungroup()}} discards empty groups, which is appropriate when they do
+not belong in the result. To retain empty keys, complete the input before
+the Margin operation; \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins}
+guide follows the ADR 0011 workflow.
 
 Unlike the default output of \code{\link[dplyr:summarize]{dplyr::summarize()}} on grouped data,
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}, \code{\link[=expand_with_margins]{expand_with_margins()}}, and
@@ -227,7 +230,9 @@ sets contain multiple grains, so there is no single meaningful grouping
 hierarchy to retain.
 \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} instead returns a row-wise data frame grouped by
 all visible fixed keys, grouping dimensions, and \code{.id} when supplied.
-Row-wise input is rejected; call \code{\link[dplyr:ungroup]{dplyr::ungroup()}} first.
+Row-wise input is rejected. \code{\link[dplyr:ungroup]{dplyr::ungroup()}} discards row-wise grouping;
+when named row-wise identifiers should remain fixed keys, ungroup first and
+select them with \code{.by}.
 }
 
 \section{Option arguments}{

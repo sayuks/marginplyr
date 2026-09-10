@@ -219,7 +219,8 @@ accepts a reader-backed query but, until #510, refuses a direct reader and asks
 the caller to build that query explicitly. The nesting verbs retain their
 `dplyr::collect()` remedy.
 
-PR #509 records the contract change. The evidence is in
+PR #509 records the contract change. The source and cross-platform execution
+evidence are in
 `investigation/arrow-r-input-shapes-and-dplyr-fallback.md`.
 
 The inspection sentence is superseded by ADR 0020's amendment *inspect a
