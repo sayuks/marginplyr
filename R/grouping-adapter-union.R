@@ -408,8 +408,8 @@ summarize_margin_union <- function(.data,
                                    plan,
                                    margin_labels,
                                    column_info,
-                                   backend,
                                    reserved_names,
+                                   backend = grouping_backend(.data),
                                    set_id_name = NULL,
                                    set_id_is_internal = FALSE,
                                    call = NULL,
@@ -551,7 +551,11 @@ summarize_margin_union <- function(.data,
     plan$set_ids
   )
 
-  if (identical(backend$kind, "sql") && length(group_vars) > 0L) {
+  if (
+    identical(backend$kind, "sql") &&
+      length(branches) > 1L &&
+      length(group_vars) > 0L
+  ) {
     anchor <- sql_margin_type_anchor(
       source_data,
       branches[[1L]],
@@ -624,7 +628,11 @@ expand_margin_union <- function(.data,
     plan$set_ids
   )
 
-  if (identical(backend$kind, "sql") && length(plan$dimensions) > 0L) {
+  if (
+    identical(backend$kind, "sql") &&
+      length(branches) > 1L &&
+      length(plan$dimensions) > 0L
+  ) {
     anchor <- sql_margin_type_anchor(
       .data,
       branches[[1L]],
