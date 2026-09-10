@@ -62,9 +62,12 @@
   `?summarize_with_margins`.
 * `.check_margin_label` controls only the half of the Margin label collision
   check that reads your data, so it defaults to `TRUE` for local data frames
-  and `FALSE` for lazy inputs. A label equal to a declared factor level is
-  rejected on every backend whatever this argument says, because the level is
-  already known from the column's metadata (#122).
+  and `FALSE` for lazy inputs. Where marginplyr holds factor-level metadata, a
+  label equal to a declared factor level is rejected whatever this argument
+  says. Arrow does not retain or restore those levels: it returns a factor
+  dimension with a non-missing Margin label as character, permits an unused
+  declared level, and refuses an observed collision only when
+  `.check_margin_label = TRUE` (#122, #492).
 * Added `.margin_label_position` to every Margin verb, taking `"last"` (the
   default) or `"first"`. It decides where a non-missing Margin label's
   synthetic level sits in a factor dimension's level order, and is a no-op for
