@@ -624,10 +624,7 @@ A `Scanner` is not a dplyr input either:
 choose `$ToTable()` or `$ToRecordBatchReader()` first. Neither are `Scalar`, `Array`,
 `ChunkedArray`, `Schema`, `Field`, `DataType`, or other non-tabular Arrow
 objects. Convert those to a data frame or lazy dplyr table appropriate to the
-data they represent. Contextual shares are rejected for every Arrow input
-accepted by a summary; collect first for local execution. Collection changes
-`.check_margin_label`'s default from `FALSE` to `TRUE`, so choose that policy
-explicitly on the re-run.
+data they represent.
 
 The first is a summary Arrow's own engine cannot evaluate. Arrow answers one of
 those by reading the whole input — every column, not just the ones the summary
@@ -655,9 +652,10 @@ than this one, because a dataset never reads itself into R.
 
 The second is contextual shares. `share_of_parent()` and `share_of_total()` are
 both rejected outright, before any Arrow query is constructed: the reason is the
-source summary they share. Collect the Arrow table first when you need either,
-then choose `.check_margin_label` explicitly because collection changes its
-default from `FALSE` to `TRUE`.
+source summary they share. The local result uses a different default collision
+policy from the Arrow query: the local re-run's `.check_margin_label` is an
+explicit caller choice about whether observed Margin label collisions are
+checked.
 
 ```{r}
 #| label: arrow-parent-share
