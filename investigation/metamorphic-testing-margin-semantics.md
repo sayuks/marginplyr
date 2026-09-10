@@ -2,7 +2,11 @@
 
 Investigated: 2026-09-10
 
-Related issue: [#527](https://github.com/sayuks/marginplyr/issues/527)
+Related issues:
+[RSQLite typed-missing regression #527](https://github.com/sayuks/marginplyr/issues/527),
+[Grouping-plan algebra and expansion #529](https://github.com/sayuks/marginplyr/issues/529),
+[share conservation #530](https://github.com/sayuks/marginplyr/issues/530), and
+[nesting membership #531](https://github.com/sayuks/marginplyr/issues/531).
 
 ## Summary
 
@@ -56,24 +60,31 @@ expectations about grouping:
 - The same reference explicitly limits structural equivalence between `.by`
   and an always-included grouping dimension: label conversion and collision
   validation need not be equivalent.
-- [ADR 0009](../design/adr/0009-make-grouping-plan-occurrences-first-class.md)
+- [ADR 0009](../design/adr/0009-distinguish-grouping-set-identifiers-from-grouping-identifiers.md)
   makes `.id` occurrence- and plan-order-dependent, while a bare
   `grouping_id()` corresponds to the plan's absence mask.
-- [ADR 0012](../design/adr/0012-make-margin-labels-type-stable.md) distinguishes
+- [ADR 0012](../design/adr/0012-distinguish-factor-na-levels-from-missing-margin-values.md) distinguishes
   source missing values, factor NA levels, and typed-missing Margin labels.
   Factor level order is part of the contract only on factor-restoring backends.
-- [ADR 0018](../design/adr/0018-centralize-margin-ordering-policy.md) makes row
+- [ADR 0018](../design/adr/0018-order-margin-results-by-grouping-structure.md) makes row
   order unspecified under `.sort = "none"`; an opted-in Margin order is
   structural, puts missing values last, and is independent of display labels.
   Factor values follow restored level order.
-- [ADR 0010](../design/adr/0010-make-shares-structural-margin-operations.md) and
-  [ADR 0017](../design/adr/0017-recompute-shares-from-the-final-grouping-plan.md)
+- [ADR 0010](../design/adr/0010-compute-parent-shares-as-a-contextual-summary.md) and
+  [ADR 0017](../design/adr/0017-calculate-total-shares-against-the-grand-total-set.md)
   define Parent and Total shares, fixed-key partitions, missing/zero behavior,
   and Grand total denominators.
 - [The nesting reference](../R/nest_with_margins.R) promises that nested cells
   hold the source rows they represent; `.keep = TRUE` retains original
   pre-Margin keys. Element classes and cross-backend cell classes are not
   promised.
+- [The README](../README.Rmd) and the
+  [Get started](../vignettes/get_started.qmd),
+  [Grouping identity](../vignettes/grouping_identity.qmd),
+  [Recipes](../vignettes/recipes.qmd), and
+  [Database backends](../vignettes/database_backends.qmd) guides exercise the
+  same constructor, identity, share, expansion, nesting, and backend contracts
+  through user-facing examples.
 
 Backend exclusions were applied before comparison. Arrow shares were not
 tested because the public contract rejects them. SQLite share checks used
@@ -115,6 +126,42 @@ renumber them.
 | 23 | Same nesting request | Swap `nest_with_margins()` and `nest_by_with_margins()` | Outer keys and cells match; only documented rowwise grouping differs | nest, nest-by; local, dtplyr | Result class/grouping excluded | One interface example; no generated cell comparison | No violation |
 | 24 | Nested result with `.keep = TRUE` | Project keys out of each cell | Equals `.keep = FALSE`, with identical outer keys and cell cardinalities | nest, nest-by; local, dtplyr | Element subclasses ignored | Cardinality examples exist; generated projection relation did not | No violation |
 | 25 | Same data, two non-colliding Margin labels | Change only display label under `.sort` and normalize margin cells by Grouping bits | Row order and non-label values are unchanged | all Margin verbs conceptually; summary on all executed backends | Explicit `.sort`; factor-level position kept separate | Order tests use one default label | No violation |
+
+### Relation traceability
+
+The table above states the executable oracle. This table identifies the
+repository source used to admit each oracle and the existing test seam checked
+for overlap. A source defines only the part of a relation attributed to it;
+the exclusions in the executable table remove behavior the source does not
+promise.
+
+| MR | Contract source | Existing test seam inspected |
+|---|---|---|
+| 1 | [`summarize_with_margins()` result and order contract](../R/summarize_with_margins.R), [`expand_with_margins()` row-copy contract](../R/expand_with_margins.R), [ADR 0018](../design/adr/0018-order-margin-results-by-grouping-structure.md) | [`test-margin-order.R`](../tests/testthat/test-margin-order.R), [`test-expand-operation.R`](../tests/testthat/test-expand-operation.R) |
+| 2 | [`grouping_sets()` union and portable SQL semantics](../R/summarize_with_margins.R), [ADR 0009](../design/adr/0009-distinguish-grouping-set-identifiers-from-grouping-identifiers.md), [ADR 0012](../design/adr/0012-distinguish-factor-na-levels-from-missing-margin-values.md) | [`test-branch-union.R`](../tests/testthat/test-branch-union.R), [`test-margin-label.R`](../tests/testthat/test-margin-label.R) |
+| 3 | [`summarize_with_margins()` extension of dplyr grouping](../R/summarize_with_margins.R), [Grouping identity guide](../vignettes/grouping_identity.qmd) | `arbitrary and empty grouping sets match explicit summaries` and `grouping helpers validate their context and columns` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 4 | [ADR 0012](../design/adr/0012-distinguish-factor-na-levels-from-missing-margin-values.md), [`summarize_with_margins()` result-class contract](../R/summarize_with_margins.R) | `factor and ordered factor columns are reconstructed` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R), the factor cases in [`test-margin-label.R`](../tests/testthat/test-margin-label.R) |
+| 5 | [`rollup()` prefix definition](../R/grouping-spec.R), [Get started constructor table](../vignettes/get_started.qmd) | `rollup uses Total and exposes SQL-compatible Grouping bits` and `expand and nest verbs consume the same Grouping plan` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 6 | [`cube()` subset definition](../R/grouping-spec.R), [Get started cube expansion](../vignettes/get_started.qmd) | `Cartesian products, nesting, and composite dimensions execute` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 7 | [`cube()` subset and ordered-dimension definitions](../R/grouping-spec.R), [Grouping identity guide](../vignettes/grouping_identity.qmd) | the bare-`grouping_id()` cases in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 8 | [`cube()` subset and `grouping_spec()` product definitions](../R/grouping-spec.R), [Database-backends product example](../vignettes/database_backends.qmd) | `Cartesian products, nesting, and composite dimensions execute` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 9 | [`grouping_spec()` Cartesian-product definition](../R/grouping-spec.R), [Database-backends product example](../vignettes/database_backends.qmd) | `Cartesian products, nesting, and composite dimensions execute` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 10 | [`grouping_spec()` Cartesian-product definition](../R/grouping-spec.R) | `Cartesian products, nesting, and composite dimensions execute` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 11 | [`grouping_sets()` union and duplicate-policy contracts](../R/grouping-spec.R) | `duplicate policies affect result cardinality` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 12 | [`cube()` and composite-dimension definitions](../R/grouping-spec.R), [Get started composite example](../vignettes/get_started.qmd) | `Cartesian products, nesting, and composite dimensions execute` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 13 | [`rollup()` and composite-dimension definitions](../R/grouping-spec.R), [Get started composite example](../vignettes/get_started.qmd) | `Cartesian products, nesting, and composite dimensions execute` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 14 | [`grouping_set()` set semantics and duplicate policy](../R/grouping-spec.R), [ADR 0009](../design/adr/0009-distinguish-grouping-set-identifiers-from-grouping-identifiers.md) | `duplicate policies affect result cardinality` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 15 | [Fixed columns and grouping dimensions](../R/summarize_with_margins.R) | `fixed .by columns are never replaced` and `existing groups become implicit fixed keys` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 16 | [`expand_with_margins()` row-copy and later-summary contract](../R/expand_with_margins.R), [Recipes expansion workflow](../vignettes/recipes.qmd) | `expand and nest verbs consume the same Grouping plan` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R), [`test-expand-operation.R`](../tests/testthat/test-expand-operation.R) |
+| 17 | [Empty grouping-set definition](../R/grouping-spec.R), [Get started Grand-total example](../vignettes/get_started.qmd) | `arbitrary and empty grouping sets match explicit summaries` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 18 | [`summarize_with_margins()` extension of dplyr summaries and share contract](../R/summarize_with_margins.R) | the additive examples in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) and ratio examples in [`test-share.R`](../tests/testthat/test-share.R) |
+| 19 | [ADR 0010](../design/adr/0010-compute-parent-shares-as-a-contextual-summary.md), [ADR 0017](../design/adr/0017-calculate-total-shares-against-the-grand-total-set.md), [Recipes share workflows](../vignettes/recipes.qmd) | [`test-share.R`](../tests/testthat/test-share.R), [`test-share-backends.R`](../tests/testthat/test-share-backends.R) |
+| 20 | [Parent and Total denominator contracts](../R/summarize_with_margins.R), [ADR 0010](../design/adr/0010-compute-parent-shares-as-a-contextual-summary.md), [ADR 0017](../design/adr/0017-calculate-total-shares-against-the-grand-total-set.md) | the fixed expected-ratio cases in [`test-share.R`](../tests/testthat/test-share.R) and [`test-share-backends.R`](../tests/testthat/test-share-backends.R) |
+| 21 | [Total-share admission and Grand-total contract](../R/summarize_with_margins.R), [ADR 0017](../design/adr/0017-calculate-total-shares-against-the-grand-total-set.md), [Get started share comparison](../vignettes/get_started.qmd) | the Total-share plan-admission cases in [`test-share.R`](../tests/testthat/test-share.R) |
+| 22 | [Nesting source-row contract](../R/nest_with_margins.R), [Get started nesting workflow](../vignettes/get_started.qmd) | the cell-content and empty-input cases in [`test-nest-operation.R`](../tests/testthat/test-nest-operation.R) |
+| 23 | [Grouped and row-wise result contract](../R/summarize_with_margins.R), [nesting reference](../R/nest_with_margins.R) | `both nesting interfaces expose .keep` and `nest_by_with_margins() is row-wise whatever the input class` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| 24 | [Nesting `.keep` contract](../R/nest_with_margins.R), [Get started nesting workflow](../vignettes/get_started.qmd) | the `.keep` and cell-cardinality cases in [`test-nest-operation.R`](../tests/testthat/test-nest-operation.R) |
+| 25 | [Margin-order and display-label contracts](../R/summarize_with_margins.R), [ADR 0018](../design/adr/0018-order-margin-results-by-grouping-structure.md) | [`test-margin-order.R`](../tests/testthat/test-margin-order.R), the label-position cases in [`test-margin-label.R`](../tests/testthat/test-margin-label.R) |
 
 The executed input range was deterministic: 0--8 rows; two ordinary values
 plus `NA` for fixed and variable keys; duplicated rows; negative, zero,
@@ -205,7 +252,7 @@ infer a type.
 says that `NULL` and `NA_character_` use typed missing values and that portable
 `UNION ALL` has the same semantics as the native path.
 [Grouping specifications](../R/grouping-spec.R) define `grouping_sets()` as a
-union. [ADR 0012](../design/adr/0012-make-margin-labels-type-stable.md)
+union. [ADR 0012](../design/adr/0012-distinguish-factor-na-levels-from-missing-margin-values.md)
 independently states that an omitted dimension receives a typed missing value.
 
 **Affected API and backend.** Confirmed on `summarize_with_margins()`,
@@ -222,7 +269,8 @@ dialect matrix inspects SQL shape on simulated non-missing data rather than
 collecting a live all-missing result. The live SQLite Margin-label test uses a
 non-missing `"Total"` label. None permutes grouping-set occurrences while
 holding an all-missing typed dimension and a typed-missing label constant. The
-full existing suite therefore remains green.
+full existing suite passed on 2026-09-10 while the standalone reproducer
+failed.
 
 **Severity:** medium. Values and row counts remain correct, but the defect is a
 silent schema corruption at a public boundary. It can break downstream string
@@ -251,16 +299,21 @@ explains the same SQLite boundary: declared pass-through columns retain static
 affinity, while computed/all-NULL expressions become logical when no value is
 computed.
 
-A direct probe showed that `CAST(NULL AS TEXT)` alone still collects as logical
-through RSQLite when every value is NULL. Reordering the most detailed branch
-first is also incomplete because an arbitrary grouping-set family need not
-contain one set with every dimension. A future fix should therefore evaluate a
-typed zero-row seed relation (for example, one that selects the actual source
-dimension columns before the real branches) or another mechanism that gives
-every compound output column declared source affinity. It must be checked
-against [ADR 0020](../design/adr/0020-ban-unrequested-reads-of-lazy-inputs.md)'s
-no-unrequested-read contract and must preserve Grouping set identifiers. No
-such fix was implemented here.
+## Potential fix directions
+
+Two candidate mechanisms were ruled out by the investigation. A direct probe
+showed that `CAST(NULL AS TEXT)` alone still collects as logical through
+RSQLite when every value is NULL. Reordering the most detailed branch first is
+also incomplete because an arbitrary grouping-set family need not contain one
+set with every dimension.
+
+One untested candidate is a typed zero-row seed relation that selects the
+actual source dimension columns before the real branches. Another is any
+mechanism that gives every compound output column declared source affinity.
+Either candidate would need separate verification against
+[ADR 0020](../design/adr/0020-ask-before-reading-a-lazy-input.md)'s
+no-unrequested-read contract and the existing Grouping set identifier
+contract. No candidate was implemented here.
 
 ## No violation found
 
@@ -287,23 +340,14 @@ summary expressions or unavailable live database dialects.
 These six candidates looked plausible but are invalid under the actual
 marginplyr contract and were not used as bug oracles.
 
-1. **Physical result order is invariant under input or Grouping-plan
-   permutation.** Invalid when `.sort = "none"`; row order is explicitly
-   unspecified.
-2. **`.id` is invariant under grouping-set permutation or deduplication.**
-   Invalid; `.id` is the one-based occurrence position after duplicate policy.
-3. **A bare `grouping_id()` is invariant under dimension permutation.**
-   Invalid; bit significance follows Grouping-plan dimension order.
-4. **`.by = fixed` is fully interchangeable with an always-included Margin
-   dimension.** Invalid beyond grouping-set structure: the latter participates
-   in label conversion and collision checks.
-5. **A missing displayed grouping value identifies a Margin row.** Invalid;
-   source missing values and typed-missing margins require `.id`,
-   `grouping_bit()`, or `grouping_id()`.
-6. **`share_of_parent()` should commute with replacing a rollup by any
-   equivalent cube or arbitrary grouping-set family.** Invalid; Parent share is
-   admitted only for a pure rollup because the other plans do not select one
-   unambiguous parent chain. Total share was tested instead.
+| Candidate | Source input | Transformation | Apparent relation | APIs / backends | Preconditions, exclusions, and reason rejected | Existing coverage checked |
+|---|---|---|---|---|---|---|
+| Physical-order invariance | Any Margin input | Permute source rows or Grouping-plan occurrences | Physical result row order is unchanged | all Margin verbs; all backends | Invalid when `.sort = "none"`; row order is explicitly unspecified. Only `.sort`-requested order is contractual | `row order is unspecified by default` and backend ordering cases in [`test-margin-order.R`](../tests/testthat/test-margin-order.R) |
+| Occurrence-ID invariance | A plan with `.id`, including duplicate sets | Permute occurrences or change duplicate policy | `.id` values remain unchanged | all Margin verbs; all backends | Invalid; `.id` is the one-based occurrence position after duplicate policy | `duplicate policies affect result cardinality` in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R), duplicate-order cases in [`test-margin-order.R`](../tests/testthat/test-margin-order.R) |
+| Bare grouping-ID invariance | A plan with at least two dimensions | Permute dimension order | Bare `grouping_id()` remains unchanged | summary and inspect; all applicable backends | Invalid; bit significance follows Grouping-plan dimension order. Compare decoded absence sets instead | the bare-`grouping_id()` cases in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| Full `.by` interchangeability | A fixed key plus Margin dimensions | Move the fixed key into an always-included `grouping_spec()` component | Values, types, labels, and collision behavior are identical | all Margin verbs; all backends | Only the grouping-set structure is equivalent. A `.grouping` dimension participates in label conversion and collision checks; `.by` does not | `fixed .by columns are never replaced` and implicit-union cases in [`test-grouping-interface.R`](../tests/testthat/test-grouping-interface.R) |
+| Displayed-missing identity | Source missing values and a typed-missing Margin label in the same dimension | Classify rows from the displayed grouping value alone | Missing means the row is a Margin | all Margin verbs; all backends | Invalid; source missing and typed-missing Margin values require `.id`, `grouping_bit()`, or `grouping_id()` for identity | source-NA cases in [`test-margin-label.R`](../tests/testthat/test-margin-label.R) and [`test-margin-order.R`](../tests/testthat/test-margin-order.R) |
+| Parent-share plan-form invariance | A pure rollup with Parent shares | Replace it by an otherwise equivalent cube or arbitrary grouping-set family | `share_of_parent()` is unchanged | summary shares; all share-capable backends | Invalid outside a pure rollup because no single parent chain is selected. The valid Total-share relation became MR 21 | Parent-share admission cases in [`test-share.R`](../tests/testthat/test-share.R) and the [Get started guide](../vignettes/get_started.qmd) |
 
 ## Recommended durable metamorphic tests
 
@@ -329,36 +373,6 @@ marginplyr contract and were not used as bug oracles.
 5. **Nesting membership.** Compare each nested cell's source-row identifiers
    with the corresponding expanded branch, and assert `.keep = FALSE` is the
    projected form of `.keep = TRUE`, on local and dtplyr.
-
-### Test-suite adoption decision
-
-These relations should not all be copied verbatim into `testthat`. The
-exploratory harness deliberately used broad repetition to search for defects;
-the durable suite should retain a small number of deterministic witnesses that
-protect independent contracts at public seams.
-
-- The confirmed RSQLite violation should become a regression test in the same
-  change that fixes it. Landing it earlier as an ordinary test would leave the
-  main suite intentionally red; skipping or weakening it would not protect the
-  contract.
-- Constructor algebra, expand/direct-summary equivalence, share conservation,
-  and nesting membership can be added before any production change because
-  they pass and cover independent semantic seams that fixed expected-value
-  examples do not cover.
-- Each durable property should use an explicit, small table of deterministic
-  cases rather than random sampling. Failure output must identify the seed
-  case, transformation, API, and backend.
-- Backend coverage should be selected by execution path rather than multiplied
-  indiscriminately: local semantics, dtplyr translation, one portable SQL
-  backend (RSQLite), one native SQL backend (DuckDB), and Arrow only where the
-  API contract supports it.
-- Row permutation, bijective relabeling, and exhaustive constructor
-  permutations are useful periodic or development-time probes, but have lower
-  value as mandatory per-commit checks once the higher-priority relations are
-  present.
-
-This gives the permanent suite substantially more semantic reach without
-turning the full exploratory search space into a slow or opaque CI burden.
 
 All proposed tests observe the public seams named by
 [the architecture](../design/architecture.md); none needs to construct or
