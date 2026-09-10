@@ -667,3 +667,195 @@ test_that("nesting rejects unsupported sources with a Package condition", {
     "nest_with_margins"
   )
 })
+
+nest_metamorphic_source <- function() {
+  data.frame(
+    fixed = c("north", "north", NA_character_, NA_character_, "south"),
+    region = c("east", "east", NA_character_, "west", "east"),
+    store = c("a", "a", "a", NA_character_, "a"),
+    amount = c(2, 2, -3, 0, 2),
+    row_id = c(101L, 102L, 103L, 104L, 105L)
+  )
+}
+
+nest_metamorphic_input <- function(input, backend) {
+  if (identical(backend, "dtplyr")) {
+    return(dtplyr::lazy_dt(input))
+  }
+  input
+}
+
+nest_metamorphic_collect <- function(result) {
+  if (is.data.frame(result)) {
+    return(result)
+  }
+  dplyr::collect(result)
+}
+
+nest_metamorphic_sort_cell <- function(cell) {
+  cell <- tibble::as_tibble(cell)
+  cell[vctrs::vec_order(cell), , drop = FALSE]
+}
+
+# Normalizes only the nesting contract: visible outer groups and each cell's
+# row multiset. It deliberately discards physical order, rowwise grouping, and
+# the backend-owned class of a nested data frame.
+nest_metamorphic_result <- function(result) {
+  result <- dplyr::ungroup(nest_metamorphic_collect(result))
+  cells <- result$data
+  outer <- tibble::as_tibble(result[setdiff(names(result), "data")])
+  order <- vctrs::vec_order(outer)
+
+  list(
+    outer = outer[order, , drop = FALSE],
+    cells = lapply(cells[order], nest_metamorphic_sort_cell)
+  )
+}
+
+nest_metamorphic_nest <- function(input, verb, keep) {
+  grouping <- rlang::inject(
+    rollup(!!rlang::sym("region"), !!rlang::sym("store"))
+  )
+  verb(
+    input,
+    .by = dplyr::all_of("fixed"),
+    .grouping = grouping,
+    .margin_label = NULL,
+    .id = "set",
+    .sort = "none",
+    .keep = keep
+  )
+}
+
+nest_metamorphic_membership <- function(result) {
+  normalized <- nest_metamorphic_result(result)
+  normalized$cells <- lapply(
+    normalized$cells,
+    function(cell) sort(cell$row_id)
+  )
+  normalized
+}
+
+nest_metamorphic_expansion <- function(input) {
+  grouping <- rlang::inject(
+    rollup(!!rlang::sym("region"), !!rlang::sym("store"))
+  )
+  expanded <- nest_metamorphic_collect(
+    expand_with_margins(
+      input,
+      .by = dplyr::all_of("fixed"),
+      .grouping = grouping,
+      .margin_label = NULL,
+      .id = "set",
+      .sort = "none"
+    )
+  )
+  keys <- c("fixed", "region", "store", "set")
+  grouped <- dplyr::summarise(
+    expanded,
+    data = list(.data$row_id),
+    .by = dplyr::all_of(keys)
+  )
+  outer <- tibble::as_tibble(grouped[keys])
+  order <- vctrs::vec_order(outer)
+
+  list(
+    outer = outer[order, , drop = FALSE],
+    cells = lapply(grouped$data[order], sort)
+  )
+}
+
+nest_metamorphic_project_keys <- function(result) {
+  result$cells <- lapply(result$cells, function(cell) {
+    nest_metamorphic_sort_cell(
+      cell[setdiff(names(cell), c("fixed", "region", "store"))]
+    )
+  })
+  result
+}
+
+nest_metamorphic_label <- function(backend, api, transformation) {
+  paste(
+    "source case: duplicate rows with missing fixed and grouping keys",
+    paste0("backend: ", backend),
+    paste0("API: ", api),
+    paste0("transformation: ", transformation),
+    sep = "; "
+  )
+}
+
+expect_nest_relations <- function(input, backend) {
+  verbs <- list(
+    nest_with_margins = nest_with_margins,
+    nest_by_with_margins = nest_by_with_margins
+  )
+  source <- nest_metamorphic_input(input, backend)
+  permuted <- nest_metamorphic_input(
+    input[rev(seq_len(nrow(input))), , drop = FALSE],
+    backend
+  )
+
+  for (verb_name in names(verbs)) {
+    nested <- nest_metamorphic_nest(source, verbs[[verb_name]], keep = TRUE)
+    permuted_nested <- nest_metamorphic_nest(
+      permuted,
+      verbs[[verb_name]],
+      keep = TRUE
+    )
+
+    expect_identical(
+      nest_metamorphic_membership(nested),
+      nest_metamorphic_expansion(source),
+      info = nest_metamorphic_label(
+        backend,
+        verb_name,
+        "source-row membership"
+      )
+    )
+    expect_identical(
+      nest_metamorphic_result(nested),
+      nest_metamorphic_result(permuted_nested),
+      info = nest_metamorphic_label(
+        backend,
+        verb_name,
+        "source-row permutation"
+      )
+    )
+
+    kept <- nest_metamorphic_result(nested)
+    dropped <- nest_metamorphic_result(
+      nest_metamorphic_nest(source, verbs[[verb_name]], keep = FALSE)
+    )
+    expect_identical(
+      nest_metamorphic_project_keys(kept),
+      dropped,
+      info = nest_metamorphic_label(
+        backend,
+        verb_name,
+        "keep projection"
+      )
+    )
+  }
+  expect_identical(
+    nest_metamorphic_result(
+      nest_metamorphic_nest(source, nest_with_margins, keep = TRUE)
+    ),
+    nest_metamorphic_result(
+      nest_metamorphic_nest(source, nest_by_with_margins, keep = TRUE)
+    ),
+    info = nest_metamorphic_label(
+      backend,
+      "nest_with_margins() and nest_by_with_margins()",
+      "interface agreement"
+    )
+  )
+}
+
+test_that("local nesting public seams preserve source-row relations", {
+  expect_nest_relations(nest_metamorphic_source(), "local")
+})
+
+test_that("dtplyr nesting public seams preserve source-row relations", {
+  skip_if_suggest_absent("dtplyr")
+  expect_nest_relations(nest_metamorphic_source(), "dtplyr")
+})
