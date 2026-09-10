@@ -9,5 +9,4 @@
 library(testthat)
 library(marginplyr)
 
-cat("[DEBUG-cov515] forcing progress reporter\n")
-test_check("marginplyr", reporter = "progress")
+test_check("marginplyr")

@@ -805,11 +805,13 @@ test_that("public Arrow table classes are supported", {
   )
 })
 
-# This pins the external behaviour that makes reader reuse unsafe. Which branch
-# consumes which batch is not stable across a shared test session, so the
-# contract is the absence of the known complete result. If Arrow begins sharing
-# one scan across both branches, this fails and the refusal can be reconsidered.
-test_that("Arrow reader branches do not produce the complete result", {
+# These are the two premises that make reader reuse unsafe: both queries retain
+# the reader as their source, and consuming that reader once exhausts it. The
+# executable union reproduction in
+# `investigation/arrow-r-input-shapes-and-dplyr-fallback.md` cannot run inside
+# the suite: Arrow may abort the R process instead of returning an incomplete
+# result when two execution plans share the reader.
+test_that("Arrow reader query branches retain a one-shot source", {
   skip_if_suggest_absent("arrow")
 
   reader <- multi_batch_arrow_reader()
@@ -823,16 +825,15 @@ test_that("Arrow reader branches do not produce the complete result", {
     reader,
     n = dplyr::n(),
     total = sum(v)
-  ) |>
-    dplyr::mutate(k = "Total", .before = 1L)
-  result <- dplyr::collect(dplyr::union_all(detail, grand))
-  complete <- tibble::tibble(
-    k = c("E", "W", "Total"),
-    n = c(2L, 3L, 5L),
-    total = c(3L, 12L, 15L)
   )
 
-  expect_false(dplyr::setequal(result, complete))
+  expect_true(arrow_input_has_reader_source(detail))
+  expect_true(arrow_input_has_reader_source(grand))
+
+  first <- arrow::as_arrow_table(reader)
+  second <- arrow::as_arrow_table(reader)
+  expect_identical(first$num_rows, 5L)
+  expect_identical(second$num_rows, 0L)
 })
 
 # Deciding whether a selection renames means comparing what it selected against

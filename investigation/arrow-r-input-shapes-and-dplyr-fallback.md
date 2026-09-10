@@ -3,6 +3,7 @@
 Investigated: 2026-09-08
 Revised: 2026-09-09 — multi-branch RecordBatchReader reproduction below
 Revised: 2026-09-09 (#509) — reader-backed query bypass and verb boundary below
+Revised: 2026-09-10 — test-coverage run 34419952931 below
 
 Measured with R 4.6.1, arrow 25.0.1, and dplyr 1.2.1.  The Arrow sources and
 reference pages linked below were read on the investigation date.  This note
@@ -168,3 +169,19 @@ unexecuted `query` to `inspect_grouping()` returned the two-set rollup plan,
 after which converting `reader` still returned all five rows. Inspection built
 no grouping-set branches and consumed no batch. Issue #510 records the decision
 to add direct-reader inspection separately from PR #509.
+
+## Revisions (2026-09-10)
+
+GitHub Actions test-coverage run 34419952931 established that the same
+two-query `union_all()` reproduction did not reliably return an incomplete
+result on its Ubuntu runner. With R 4.6.1, arrow 25.0.1, and coverage
+instrumentation, the preceding run and its rerun aborted with `malloc():
+unaligned tcache chunk detected`; the diagnostic run instead segfaulted in
+`Table__from_ExecPlanReader()` while collecting the union. The same versions on
+macOS still returned an incomplete result.
+
+The reproduction was therefore not safe to execute inside the test process.
+The non-executing query graphs still retained the original reader as their
+source, and sequential `arrow::as_arrow_table()` calls still returned five rows
+and then zero rows. `tests/testthat/test-grouping-backends.R` recorded those two
+observations without connecting two Arrow execution plans to one reader.
