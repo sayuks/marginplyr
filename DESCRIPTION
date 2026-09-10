@@ -36,7 +36,8 @@ Suggests:
     spelling,
     testthat (>= 3.0.0),
     tibble,
-    tidyr
+    tidyr,
+    vctrs
 Config/marginplyr/cran-status: unpublished
 Config/Needs/preflight:
     checktor (== 0.1.0),
