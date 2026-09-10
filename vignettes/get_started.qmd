@@ -580,12 +580,10 @@ rowwise_report <- retail_sales |>
 rowwise_report
 ```
 
-Local groups created with `.drop = FALSE` are rejected because marginplyr
-cannot preserve empty groups across local and lazy backends. Calling
-`ungroup()` discards empty groups, which is appropriate only when they do not
-belong in the result. To retain empty keys, complete the input before the
-Margin operation; [Complete absent keys before
-margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
+Whether empty keys belong in a report is a semantic choice. Remove the
+existing grouping when they do not; when they do, complete the input before the
+Margin operation so those keys take part in the calculation. [Complete absent
+keys before margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html)
 follows [ADR 0011](https://github.com/sayuks/marginplyr/blob/main/design/adr/0011-keep-key-completion-outside-margin-operations.md):
 
 ```{r}
