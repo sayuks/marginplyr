@@ -32,6 +32,26 @@ combine_margin_branches <- function(branches) {
   union_margin_branches(branches)
 }
 
+# A generic SQL backend has no schema-only prototype. SQLite consequently
+# reports a compound column of all SQL NULLs as logical when the omitted branch
+# is first, even if another branch passes a character dimension through. A
+# zero-row anchor keeps each carried source column in the first SELECT without
+# reading it: the query still executes only when the caller collects the
+# Margin operation (ADR 0020).
+sql_margin_type_anchor <- function(.data, branch, source_columns) {
+  branch_columns <- get_col_names(branch, dplyr::everything())
+  source_columns <- intersect(source_columns, branch_columns)
+  anchor <- dplyr::filter(.data, FALSE)
+  anchor <- dplyr::select(anchor, dplyr::all_of(source_columns))
+  missing_columns <- setdiff(branch_columns, source_columns)
+  if (length(missing_columns) > 0L) {
+    missing_values <- rep(list(NA), length(missing_columns))
+    names(missing_values) <- missing_columns
+    anchor <- dplyr::mutate(anchor, !!!missing_values)
+  }
+  dplyr::select(anchor, dplyr::all_of(branch_columns))
+}
+
 # `dplyr::bind_rows()` combines the whole list in one pass, and it is the whole
 # of the eager path: `union_all.data.frame()` ends in a `dplyr_reconstruct()`
 # onto its first argument, but that call restores nothing `vec_rbind()` did not
@@ -389,10 +409,12 @@ summarize_margin_union <- function(.data,
                                    margin_labels,
                                    column_info,
                                    reserved_names,
+                                   backend = grouping_backend(.data),
                                    set_id_name = NULL,
                                    set_id_is_internal = FALSE,
                                    call = NULL,
                                    input_window_order = list()) {
+  source_data <- .data
   dots <- summaries$dots
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
@@ -529,6 +551,19 @@ summarize_margin_union <- function(.data,
     plan$set_ids
   )
 
+  if (
+    identical(backend$kind, "sql") &&
+      length(branches) > 1L &&
+      length(group_vars) > 0L
+  ) {
+    anchor <- sql_margin_type_anchor(
+      source_data,
+      branches[[1L]],
+      source_columns = group_vars
+    )
+    branches <- c(list(anchor), branches)
+  }
+
   restore_input_window_order(
     combine_margin_branches(branches),
     input_window_order
@@ -592,6 +627,19 @@ expand_margin_union <- function(.data,
     plan$sets,
     plan$set_ids
   )
+
+  if (
+    identical(backend$kind, "sql") &&
+      length(branches) > 1L &&
+      length(plan$dimensions) > 0L
+  ) {
+    anchor <- sql_margin_type_anchor(
+      .data,
+      branches[[1L]],
+      source_columns = get_col_names(.data, dplyr::everything())
+    )
+    branches <- c(list(anchor), branches)
+  }
 
   combine_margin_branches(branches)
 }
