@@ -165,10 +165,11 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
   )
   sql <- as.character(dbplyr::sql_render(query))
 
-  # Every branch joins the same top-level `UNION ALL`, with none bracketed into
-  # a subquery of its own. Counting alone would not say that -- a nested union
-  # renders the same number of `UNION ALL`s, just inside a `FROM (...)` -- so
-  # what is counted is the ones outside every parenthesis.
+  # Every branch and the zero-row type anchor joins the same top-level `UNION
+  # ALL`, with none bracketed into a subquery of its own. Counting alone would
+  # not say that -- a nested union renders the same number of `UNION ALL`s,
+  # just inside a `FROM (...)` -- so what is counted is the ones outside every
+  # parenthesis.
   #
   # dbplyr flattens a union of unions, so this holds whichever way the branches
   # are bracketed on the way in, and it is the property rather than the
@@ -180,7 +181,7 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
   )
   set_count <- length(plan$sets)
   expect_identical(set_count, 8L)
-  expect_identical(count_top_level_unions(sql), set_count - 1L)
+  expect_identical(count_top_level_unions(sql), set_count)
 
   remote_result <- query |>
     dplyr::collect() |>

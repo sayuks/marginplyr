@@ -1238,6 +1238,55 @@ test_that("portable SQL consumes named per-column labels lazily", {
   expect_match(sql, "UNION ALL", fixed = TRUE)
 })
 
+test_that("RSQLite keeps an all-missing dimension type across union order", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  verbs <- list(
+    summarize_with_margins = function(data, grouping, label) {
+      summarize_with_margins(
+        data,
+        .grouping = grouping,
+        .margin_label = label
+      )
+    },
+    expand_with_margins = function(data, grouping, label) {
+      expand_with_margins(
+        data,
+        .grouping = grouping,
+        .margin_label = label
+      )
+    }
+  )
+  groupings <- list(
+    detail_first = grouping_sets(grouping_set(a), grouping_set()),
+    total_first = grouping_sets(grouping_set(), grouping_set(a))
+  )
+
+  for (values in list(character(), NA_character_)) {
+    remote <- dplyr::copy_to(
+      con,
+      data.frame(a = values),
+      paste0("all_missing_type_", length(values)),
+      temporary = TRUE
+    )
+    for (label in list(NULL, NA_character_)) {
+      for (verb in names(verbs)) {
+        results <- lapply(
+          groupings,
+          function(grouping) {
+            dplyr::collect(verbs[[verb]](remote, grouping, label))
+          }
+        )
+        expect_identical(typeof(results$detail_first$a), "character")
+        expect_identical(typeof(results$total_first$a), "character")
+        expect_identical(results$detail_first$a, results$total_first$a)
+      }
+    }
+  }
+})
+
 test_that("DuckDB uses typed missing for a missing factor Margin label", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
