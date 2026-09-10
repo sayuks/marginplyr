@@ -520,6 +520,14 @@ test_that("inspection scopes predicate collection guidance to Margin verbs", {
   ))
 
   local <- dplyr::collect(remote)
+  inspection <- inspect_grouping(
+    local,
+    .grouping = rollup(where(is.character))
+  )
+  expect_identical(
+    inspection,
+    inspect_grouping(local, .grouping = rollup(group))
+  )
   expect_error(
     summarize_with_margins(
       local,

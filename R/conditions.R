@@ -96,9 +96,8 @@ is_unsupported_predicate <- function(cnd) {
 # condition, kept so the caller reads why tidyselect refused.
 #
 # The blamed call is left to `with_margin_error_call()`, which every selection
-# site reaching this runs under: what it puts there is the Margin verb the
-# caller wrote, which is what CONTEXT.md's *Condition context* asks for and
-# what no frame here could name.
+# site reaching this runs under: it names the Margin verb or
+# `inspect_grouping()` call the caller wrote, which no frame here could name.
 #
 # The refusal stands rather than reading the types, ADR 0020 being what the
 # read would cross.
