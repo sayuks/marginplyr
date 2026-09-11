@@ -12,6 +12,12 @@ normalize_cran_note <- function(note) {
   lines <- trimws(lines)
   if (length(lines) > 0L) {
     lines[[1L]] <- sub("^[*][[:space:]]+", "", lines[[1L]])
+    lines[[1L]] <- sub(
+      "[[:space:]]+\\[[0-9.]+(?:ms|s|m|h)/[0-9.]+(?:ms|s|m|h)\\](?=[[:space:]]+NOTE$)",
+      "",
+      lines[[1L]],
+      perl = TRUE
+    )
   }
   paste(lines[nzchar(lines)], collapse = "\n")
 }

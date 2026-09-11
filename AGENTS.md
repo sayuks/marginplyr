@@ -1,5 +1,8 @@
 ## Local checks
 
+Package-affecting changes need `Rscript tools/review-ready-check.R` before
+review; `design/agents/local-checks.md` owns its triggers and freshness.
+
 ### Always-loaded context
 
 `CLAUDE.md` and the files its `@` references pull in are read before every task,
@@ -12,12 +15,7 @@ what was added and what paid for it.
 
 ### Linting
 
-Before pushing, run both lint checks:
-
-```sh
-jarl check .
-Rscript -e 'pkgload::load_all(".", quiet = TRUE); lintr::lint_package()'
-```
+Before pushing, run both linters in that check.
 
 `object_usage_linter()` resolves symbols through the package namespace. Without
 `load_all()` it reports every internal marginplyr function as an undefined
