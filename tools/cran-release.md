@@ -187,6 +187,55 @@ Show the preview. Obtain approval for the exact tracked edits, then run:
 Rscript tools/cran-release.R prepare --version 0.1.0 --apply
 ```
 
+#### Dependency-metadata advisory audit
+
+Before making a tracked dependency-metadata edit, run
+`attachment::att_amend_desc()` only on a disposable copy of the exact clean
+preparation worktree. It is an advisory scan, not a metadata editor: never run
+it in the release worktree and never copy its mutated `DESCRIPTION` back. The
+preparation commit SHA is the clean worktree's `HEAD`; record it before making
+the copy. A later change that can affect dependency usage requires a new audit
+from its own clean preparation commit.
+
+The copy and its evidence stay outside the repository and release issue. The
+issue ledger records their durable location and summary rather than raw local
+logs. A release agent records the preparation commit SHA, `attachment` version,
+the exact invocation, console output (including its exit status), and resulting
+DESCRIPTION diff. For example:
+
+```sh
+preparation_sha=$(git rev-parse HEAD)
+git status --short
+test -z "$(git status --short)"
+audit_root=$(mktemp -d)
+git clone --no-hardlinks . "$audit_root"
+(
+  cd "$audit_root" || exit 1
+  test "$(git rev-parse HEAD)" = "$preparation_sha"
+  Rscript -e 'packageVersion("attachment"); attachment::att_amend_desc(document = FALSE, must.exist = FALSE, check_if_suggests_is_installed = FALSE, use.config = FALSE)' \
+    > attachment-console.txt 2>&1
+  printf 'attachment exit status: %s\n' "$?" >> attachment-console.txt
+  git diff -- DESCRIPTION > attachment-DESCRIPTION.diff
+)
+```
+
+Partial scanner output or evaluation errors are not a clean result.
+Preserve them in the console output, label the scan `partial/error` in the
+evidence, and do not read an empty or partial diff as evidence that a dependency
+is unused. Block if the dependency-audit evidence is incomplete, including a
+missing preparation identity, tool version, invocation, console output, or
+`DESCRIPTION` diff.
+
+The release agent then semantically reviews every proposed addition, removal,
+and field move. Inspect direct and bare-name usage across package code, tests,
+examples, vignettes, installed files, optional-dependency guards,
+`VignetteBuilder`, and repository-only tooling fields such as
+`Config/Needs/website`. For each proposal, record one disposition — `remove`,
+`keep`, `reclassify`, or `scanner false result` — with repository evidence and
+an explanation of whether the dependency is genuinely optional. Dispositions
+must be accepted before making any tracked dependency-metadata edit; a proposed
+change without acceptance remains unchanged.
+
 Write/review NEWS, `cran-comments.md`, DESCRIPTION metadata, examples, and any
 other necessary release content. Regenerate after source edits, using the
 repository authorities:
@@ -300,6 +349,16 @@ the Actions UI.
 
 Purpose: review requirements deterministic checks cannot decide. This is a
 non-mutating agent review; every finding needs a human disposition.
+
+#### Dependency-audit candidate confirmation
+
+First reopen the Stage 3 dependency-audit evidence and compare every recorded
+dependency disposition with the exact candidate. Confirm that every accepted
+`remove`, `keep`, `reclassify`, or `scanner false result` is reflected in the
+candidate `DESCRIPTION`, or explicitly remains unchanged where no tracked edit
+was accepted. Record candidate-file evidence for each row. Block if the
+dependency-audit evidence or a Stage 7 disposition is missing; no dependency
+metadata may pass this stage by an unrecorded scanner result.
 
 Use the commit-pinned Posit `cran-extrachecks` rubric at
 [`b58a92e`](https://github.com/posit-dev/skills/blob/b58a92e7c479b7795f4f003490b046c01e345fce/r-lib/cran-extrachecks/SKILL.md)
@@ -584,6 +643,13 @@ Adapt this body for the version; keep it readable rather than pasting raw logs:
 - [ ] Submission kind: initial / update
 - [ ] `cran-comments.md` reviewed: <summary>
 
+## Dependency-audit evidence
+
+- [ ] Preparation commit SHA: `<40-char-sha>`
+- [ ] `attachment` version and invocation: <version/command>
+- [ ] Console output and DESCRIPTION diff: <external durable location; complete or partial/error>
+- [ ] Every proposed change has a semantic disposition and maintainer acceptance: <table/link>
+
 ## Exact local artifact
 
 - [ ] Preflight exit 0
@@ -603,6 +669,7 @@ Adapt this body for the version; keep it readable rather than pasting raw logs:
 
 - [ ] Semantic rubric commit and review: <sha/url>
 - [ ] Every finding has a human disposition: <table/link>
+- [ ] Every dependency-audit disposition is confirmed against the exact candidate or explicitly unchanged: <table/link>
 - [ ] R-hub platform, candidate SHA, date, result: <durable url>
 - [ ] win-builder environment, date, digest, archived result summary
 
