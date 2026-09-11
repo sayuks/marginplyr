@@ -27,7 +27,7 @@ zero_row_dtplyr_proxy_input <- function(.data) {
 # what avoids routing the step through `collect()` or `as_tibble()`.
 mutable_dtplyr_selection_proxy <- function(.data) {
   proxy <- utils::head(zero_row_dtplyr_proxy_input(.data), n = 0L)
-  as_data_table <- getS3method(
+  as_data_table <- utils::getS3method(
     "as.data.table",
     "dtplyr_step",
     envir = asNamespace("data.table")
