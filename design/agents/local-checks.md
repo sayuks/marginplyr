@@ -15,10 +15,12 @@ exclusions. A tests-only change is Package-affecting. When the classification
 is uncertain, use this one.
 
 A **Repository-only change** can be shown to affect none of those things.
-Design and investigation notes, agent instructions, and CI or release tooling
-excluded from the package are ordinary examples. Repository-only does not mean
-unchecked: run the verifier or generation command owned by the changed
-artifact. It means the package boundary below is not additionally required.
+Design and investigation notes and agent instructions that drive no generation
+are ordinary examples. Exclusion from the package is not sufficient: CI,
+release, or local-check tooling is Package-affecting when it can change a
+package check result. Repository-only does not mean unchecked: run the verifier
+or generation command owned by the changed artifact. It means the package
+boundary below is not additionally required.
 
 The **Review-ready check** is the fixed local gate for one Package-affecting
 commit. It is not a name for focused tests or for the wider release process.

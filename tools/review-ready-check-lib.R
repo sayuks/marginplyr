@@ -88,12 +88,18 @@ parse_review_ready_args <- function(args) {
 }
 
 # Checks the tools needed before allocating or running the disposable checkout.
-review_ready_prerequisites <- function() {
+review_ready_prerequisites <- function(
+  package_available = function(package) {
+    requireNamespace(package, quietly = TRUE)
+  },
+  find_command = Sys.which,
+  r_bin = R.home("bin")
+) {
   packages <- c("testthat", "pkgload", "lintr", "rcmdcheck")
-  available <- vapply(packages, requireNamespace, logical(1), quietly = TRUE)
+  available <- vapply(packages, package_available, logical(1))
   commands <- c(
-    jarl = unname(Sys.which("jarl")),
-    R = file.path(R.home("bin"), "R")
+    jarl = unname(find_command("jarl")),
+    R = file.path(r_bin, "R")
   )
   missing <- c(packages[!available], names(commands)[!nzchar(commands)])
   if (length(missing) > 0L) {
@@ -106,13 +112,8 @@ review_ready_prerequisites <- function() {
   }
   list(
     r = unname(commands[["R"]]),
-    rscript = file.path(R.home("bin"), "Rscript"),
-    jarl = unname(commands[["jarl"]]),
-    package_versions = vapply(
-      packages,
-      function(package) as.character(utils::packageVersion(package)),
-      character(1)
-    )
+    rscript = file.path(r_bin, "Rscript"),
+    jarl = unname(commands[["jarl"]])
   )
 }
 
@@ -203,7 +204,7 @@ build_review_ready_tarball <- function(
   cat("\n==> Build source tarball\n")
   result <- runner(
     r_command,
-    c("CMD", "build", source_root, "--no-manual"),
+    c("CMD", "build", source_root),
     directory = workspace,
     capture = FALSE
   )
@@ -290,7 +291,7 @@ run_review_ready_rcmdcheck <- function(tarball, workspace) {
   cat("\n==> Source-tarball R CMD check --as-cran\n")
   result <- rcmdcheck::rcmdcheck(
     tarball,
-    args = c("--as-cran", "--no-manual"),
+    args = "--as-cran",
     build_args = NULL,
     check_dir = file.path(workspace, "check"),
     error_on = "never",

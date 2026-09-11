@@ -41,9 +41,25 @@ expect_error(
   "a configurable gate"
 )
 
-installed_prerequisites <- review_ready_prerequisites()
-expect_true(nzchar(installed_prerequisites$jarl), "the jarl executable")
-expect_true(nzchar(installed_prerequisites$r), "the R executable")
+fixture_prerequisites <- review_ready_prerequisites(
+  package_available = function(package) TRUE,
+  find_command = function(command) "/jarl",
+  r_bin = "/R/bin"
+)
+expect_identical(
+  fixture_prerequisites,
+  list(r = "/R/bin/R", rscript = "/R/bin/Rscript", jarl = "/jarl"),
+  "available prerequisites"
+)
+expect_error(
+  review_ready_prerequisites(
+    package_available = function(package) package != "lintr",
+    find_command = function(command) "",
+    r_bin = "/R/bin"
+  ),
+  "lintr, jarl",
+  "missing prerequisites"
+)
 
 fixture_sha <- paste(rep("a", 40L), collapse = "")
 clean_git <- function(root, args) {
@@ -183,6 +199,10 @@ expect_true(
 expect_true(
   grepl("--as-cran", library_source, fixed = TRUE),
   "the CRAN-style check"
+)
+expect_true(
+  !grepl("--no-manual", library_source, fixed = TRUE),
+  "the complete CRAN-style check"
 )
 expect_true(
   grepl("env = review_ready_rcmdcheck_env()", library_source, fixed = TRUE),
