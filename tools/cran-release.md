@@ -181,12 +181,6 @@ cd ../marginplyr-release-0.1.0
 Rscript tools/cran-release.R prepare --version 0.1.0
 ```
 
-Show the preview. Obtain approval for the exact tracked edits, then run:
-
-```sh
-Rscript tools/cran-release.R prepare --version 0.1.0 --apply
-```
-
 #### Dependency-metadata advisory audit
 
 Before making a tracked dependency-metadata edit, run
@@ -197,25 +191,38 @@ preparation commit SHA is the clean worktree's `HEAD`; record it before making
 the copy. A later change that can affect dependency usage requires a new audit
 from its own clean preparation commit.
 
-The copy and its evidence stay outside the repository and release issue. The
-issue ledger records their durable location and summary rather than raw local
-logs. A release agent records the preparation commit SHA, `attachment` version,
-the exact invocation, console output (including its exit status), and resulting
-DESCRIPTION diff. For example:
+Choose a durable absolute directory outside the repository for the copy and its
+evidence; retain it through the release. The issue ledger records its location
+and summary rather than raw local logs. A release agent records the preparation
+commit SHA, `attachment` version, the exact invocation, console output
+(including its exit status), and resulting DESCRIPTION diff. For example:
 
 ```sh
+set -e
 preparation_sha=$(git rev-parse HEAD)
-git status --short
-test -z "$(git status --short)"
-audit_root=$(mktemp -d)
-git clone --no-hardlinks . "$audit_root"
+test -z "$(git status --short)" || {
+  echo "The preparation worktree must be clean." >&2
+  exit 1
+}
+audit_root=/absolute/external/path/marginplyr-0.1.0-dependency-audit
+test ! -e "$audit_root"
+mkdir "$audit_root"
+printf '%s\n' "$preparation_sha" > "$audit_root/preparation-sha.txt"
+printf '%s\n' \
+  "Rscript -e 'packageVersion(\"attachment\"); attachment::att_amend_desc(document = FALSE, must.exist = FALSE, check_if_suggests_is_installed = FALSE, use.config = FALSE)'" \
+  > "$audit_root/attachment-invocation.txt"
+git clone --no-hardlinks . "$audit_root/source"
 (
-  cd "$audit_root" || exit 1
+  cd "$audit_root/source"
   test "$(git rev-parse HEAD)" = "$preparation_sha"
+  set +e
   Rscript -e 'packageVersion("attachment"); attachment::att_amend_desc(document = FALSE, must.exist = FALSE, check_if_suggests_is_installed = FALSE, use.config = FALSE)' \
-    > attachment-console.txt 2>&1
-  printf 'attachment exit status: %s\n' "$?" >> attachment-console.txt
-  git diff -- DESCRIPTION > attachment-DESCRIPTION.diff
+    > "$audit_root/attachment-console.txt" 2>&1
+  attachment_status=$?
+  set -e
+  printf 'attachment exit status: %s\n' "$attachment_status" \
+    >> "$audit_root/attachment-console.txt"
+  git diff -- DESCRIPTION > "$audit_root/attachment-DESCRIPTION.diff"
 )
 ```
 
@@ -235,6 +242,13 @@ examples, vignettes, installed files, optional-dependency guards,
 an explanation of whether the dependency is genuinely optional. Dispositions
 must be accepted before making any tracked dependency-metadata edit; a proposed
 change without acceptance remains unchanged.
+
+Show the preparation preview and dependency-audit dispositions. Obtain approval
+for the exact tracked edits, then run:
+
+```sh
+Rscript tools/cran-release.R prepare --version 0.1.0 --apply
+```
 
 Write/review NEWS, `cran-comments.md`, DESCRIPTION metadata, examples, and any
 other necessary release content. Regenerate after source edits, using the
