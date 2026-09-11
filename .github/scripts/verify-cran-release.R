@@ -29,6 +29,39 @@ expect_release_error <- function(expr, status, label) {
   invisible(error)
 }
 
+# Returns one numbered stage so its release contract is tested in isolation.
+release_playbook_stage <- function(lines, stage) {
+  heading <- paste0("^### ", stage, "\\. ")
+  starts <- grep(heading, lines)
+  if (length(starts) != 1L) {
+    stop("The release playbook must contain exactly one requested stage.", call. = FALSE)
+  }
+
+  later <- grep("^### [0-9]+\\. ", lines)
+  ends <- later[later > starts]
+  end <- if (length(ends)) ends[[1L]] - 1L else length(lines)
+  paste(lines[starts:end], collapse = "\n")
+}
+
+# Requires every policy marker that a stage promises to release operators.
+expect_stage_markers <- function(stage, markers, label) {
+  missing <- markers[!vapply(markers, grepl, logical(1L), x = stage, fixed = TRUE)]
+  expect_identical(missing, character(), label)
+}
+
+# Checks the failure cases of the release-playbook contract assertions.
+expect_error <- function(expr, message, label) {
+  error <- tryCatch({
+    force(expr)
+    NULL
+  }, error = identity)
+  expect_true(inherits(error, "error"), paste(label, "raises"))
+  expect_true(
+    grepl(message, conditionMessage(error), fixed = TRUE),
+    paste(label, "message")
+  )
+}
+
 description_lines <- c(
   "Package: marginplyr",
   "Version: 0.1.0.9000",
@@ -397,6 +430,90 @@ for (marker in forbidden) {
     paste("the absent release coordinator marker", marker)
   )
 }
+
+playbook <- readLines("tools/cran-release.md", warn = FALSE)
+stage_three <- release_playbook_stage(playbook, 3L)
+expect_stage_markers(
+  stage_three,
+  c(
+    "disposable copy",
+    "exact clean",
+    "preparation worktree",
+    "never run",
+    "release worktree",
+    "durable absolute directory",
+    "attachment::att_amend_desc()",
+    "preparation commit SHA",
+    "`attachment` version",
+    "invocation",
+    "console output",
+    "DESCRIPTION diff",
+    "set -e",
+    "test -z",
+    "attachment-invocation.txt",
+    "direct and bare-name usage",
+    "package code",
+    "tests",
+    "examples",
+    "vignettes",
+    "installed files",
+    "optional-dependency guards",
+    "VignetteBuilder",
+    "Config/Needs/website",
+    "`remove`",
+    "`keep`",
+    "`reclassify`",
+    "`scanner false result`",
+    "genuinely optional",
+    "accepted before making",
+    "tracked dependency-metadata edit",
+    "Partial scanner output",
+    "evaluation errors",
+    "not a clean result",
+    "Block if the dependency-audit evidence is incomplete"
+  ),
+  "the Stage 3 dependency-audit contract"
+)
+
+stage_seven <- release_playbook_stage(playbook, 7L)
+expect_stage_markers(
+  stage_seven,
+  c(
+    "Stage 3 dependency-audit evidence",
+    "every recorded",
+    "disposition with the exact candidate",
+    "exact candidate",
+    "explicitly remains unchanged",
+    "Block if the",
+    "dependency-audit evidence",
+    "Stage 7 disposition is missing"
+  ),
+  "the Stage 7 dependency-audit confirmation"
+)
+
+expect_stage_markers(
+  paste(
+    "### 3. Prepare and merge the release PR",
+    "attachment::att_amend_desc()",
+    sep = "\n"
+  ),
+  c("attachment::att_amend_desc()"),
+  "a complete dependency-audit fixture"
+)
+expect_error(
+  expect_stage_markers(
+    "### 3. Prepare and merge the release PR",
+    "attachment::att_amend_desc()",
+    "a missing dependency-audit record"
+  ),
+  "expected character(0)",
+  "a missing dependency-audit record"
+)
+expect_error(
+  release_playbook_stage(c("### 3. Duplicate", "### 3. Duplicate"), 3L),
+  "exactly one requested stage",
+  "a duplicate release-playbook stage"
+)
 
 message(
   "Verified the CRAN release helpers against initial, update, preview, ",

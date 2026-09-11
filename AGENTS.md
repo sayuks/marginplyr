@@ -146,17 +146,15 @@ broken vignette rather than a stale library.
 
 ### Dependency metadata
 
-`DESCRIPTION`'s Imports/Suggests split is audited by hand, not with
-`attachment::att_amend_desc()`. No package is promoted to Imports merely to
-make a check pass, and that tool cannot hold to the rule: it statically scans
-`R/` for `pkg::fun()` calls and promotes what it finds, while several Suggests
-here are used conditionally — `arrow::schema()` in `R/backend-metadata.R` sits
-behind a backend-kind guard, so the call site exists without arrow ever being a
-hard dependency — and it drops genuinely used Suggests such as knitr. No
-`pkg_ignore` or `extra.suggests` configuration fixes that, because the false
-positive comes from what the scanner can express and not from missing
-configuration. It prunes by the same static reading, so what it removes is no
-better evidence than what it adds.
+`DESCRIPTION`'s Imports/Suggests split is audited by hand.
+`attachment::att_amend_desc()` is only the Stage 3 advisory scan on a
+disposable copy; semantic audit decides every result. It sees `pkg::fun()` but
+not runtime optionality, so no package is promoted to Imports merely because
+the scanner saw it — `arrow::schema()` in `R/backend-metadata.R` is conditional.
+`attachment` 1.1.0 retains ordinary vignette `knitr` usage; the scanner's other
+limits are evidenced in `investigation/attachment-unused-suggests.md`. No
+`pkg_ignore` or `extra.suggests` configuration fixes a scanner false result,
+and its removals are no better evidence than its additions.
 
 The audit is a grep for `pkg::` and bare-name usage of each Suggested package
 across `R/`, `tests/`, and `vignettes/`, checked against `DESCRIPTION` by eye
