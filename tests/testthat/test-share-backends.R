@@ -789,7 +789,7 @@ test_that("PostgreSQL renders one staged Parent-share join for all measures", {
   expect_match(many_sql, "CAST(", fixed = TRUE)
 })
 
-test_that("DuckDB Parent mapping keeps staged summaries bounded across rollups", {
+test_that("DuckDB bounds staged summaries across Parent rollups", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
