@@ -2922,14 +2922,11 @@ build_lazy_parent_mapping <- function(result,
                                       plan,
                                       set_id_name,
                                       used_names) {
-  group_vars <- unique(c(plan$by, plan$dimensions))
-  key_exprs <- lapply(group_vars, margin_column_pronoun)
-  names(key_exprs) <- group_vars
-  denominator_exprs <- lapply(
-    sources,
-    function(source) margin_column_pronoun(source)
+  mapping_exprs <- parent_mapping_exprs(
+    plan,
+    sources = sources,
+    denominator_names = denominator_names
   )
-  names(denominator_exprs) <- unname(denominator_names[sources])
 
   mappings <- lapply(
     child_ids,
@@ -2945,13 +2942,25 @@ build_lazy_parent_mapping <- function(result,
       )
       dplyr::transmute(
         parent_rows,
-        !!!key_exprs,
+        !!!mapping_exprs$keys,
         !!!child_id_expr,
-        !!!denominator_exprs
+        !!!mapping_exprs$denominators
       )
     }
   )
   combine_margin_branches(mappings)
+}
+
+# The staged-summary projections both Parent mapping strategies share. The
+# caller inserts the child occurrence identifier between the keys and the
+# denominators because its expression differs between the two strategies.
+parent_mapping_exprs <- function(plan, sources, denominator_names) {
+  group_vars <- unique(c(plan$by, plan$dimensions))
+  key_exprs <- lapply(group_vars, margin_column_pronoun)
+  names(key_exprs) <- group_vars
+  denominator_exprs <- lapply(sources, margin_column_pronoun)
+  names(denominator_exprs) <- unname(denominator_names[sources])
+  list(keys = key_exprs, denominators = denominator_exprs)
 }
 
 # A SQL Parent mapping is a relation carried by the query, not one branch per
@@ -2989,20 +2998,20 @@ build_dbplyr_parent_mapping <- function(result,
     by = stats::setNames(parent_id_name, set_id_name)
   )
 
-  group_vars <- unique(c(plan$by, plan$dimensions))
-  key_exprs <- lapply(group_vars, margin_column_pronoun)
-  names(key_exprs) <- group_vars
+  mapping_exprs <- parent_mapping_exprs(
+    plan,
+    sources = sources,
+    denominator_names = denominator_names
+  )
   child_id_expr <- stats::setNames(
     list(margin_column_pronoun(child_id_name)),
     set_id_name
   )
-  denominator_exprs <- lapply(sources, margin_column_pronoun)
-  names(denominator_exprs) <- unname(denominator_names[sources])
   dplyr::transmute(
     parent_rows,
-    !!!key_exprs,
+    !!!mapping_exprs$keys,
     !!!child_id_expr,
-    !!!denominator_exprs
+    !!!mapping_exprs$denominators
   )
 }
 

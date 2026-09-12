@@ -29,7 +29,7 @@ when its caller requests CTE rendering, but a returned lazy relation does not
 carry that option as part of its interface. Making it implicit would add a
 dbplyr-representation and SQL-dialect compatibility seam only to reduce two
 constant staged-summary definitions to one. The inline relation removes the
-Grouping-set-proportional repetition through an existing dbplyr interface and
+grouping-set-proportional repetition through an existing dbplyr interface and
 leaves later dplyr composition ordinary.
 
 ## Amendment: dtplyr rewrites a literal-backtick join key

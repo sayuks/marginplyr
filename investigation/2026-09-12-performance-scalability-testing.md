@@ -44,7 +44,7 @@ changing production code, permanent tests, or CI during this phase.
 
 ## Question
 
-When one independently increases source rows, grouping dimensions, Grouping-set
+When one independently increases source rows, grouping dimensions, grouping-set
 occurrences, fixed-key cardinality, summary expressions, contextual-share
 calculations, input columns, or duplicate occurrences, do the public Margin
 operations exhibit growth not justified by their result contract or selected
@@ -52,7 +52,7 @@ backend strategy?
 
 The observations of interest are structural as well as temporal: branch and
 scan counts, SQL or lazy-query size and depth, backend executions,
-materialization, metadata/proxy acquisitions, and work per Grouping-set
+materialization, metadata/proxy acquisitions, and work per grouping-set
 occurrence. Absolute speed and comparisons between backend engines are not the
 question.
 
@@ -114,7 +114,7 @@ Two earlier performance investigations are directly relevant:
 
 - [`parent-share-local-benchmark.md`](parent-share-local-benchmark.md) measured a
   100,000-row, five-set local rollup after one warm-up. Integrating scalar
-  validation into summary execution and removing Grouping-set-proportional
+  validation into summary execution and removing grouping-set-proportional
   full-input rescans reduced the observed median from 0.342 to 0.194 seconds.
   The durable contract is not that timing; it is that share validation adds no
   validation-only source pass or query.
@@ -157,7 +157,7 @@ Notation used below:
 - `D`: resolved variable grouping-dimension count;
 - `F`: fixed `.by` key count;
 - `K`: fixed-key cardinality (number of fixed partitions);
-- `S`: Grouping-set occurrence count after duplicate policy;
+- `S`: grouping-set occurrence count after duplicate policy;
 - `S0`: occurrence count before `.duplicates = "drop"` removes repeats;
 - `E`: expanded ordinary-summary expression/output count;
 - `H`: contextual-share output count;
