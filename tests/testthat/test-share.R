@@ -324,6 +324,19 @@ test_that(paste0(
   expect_identical(partitioned$share, double())
 })
 
+test_that("local NaN Parent-share numerators normalize to NA_real_", {
+  result <- summarize_with_margins(
+    data.frame(group = c("a", "b")),
+    total = if (dplyr::n() == 1L) NaN else 2,
+    share = share_of_parent(total),
+    .grouping = rollup(group),
+    .margin_label = NULL
+  )
+
+  detail <- result$share[!is.na(result$group)]
+  expect_identical(detail, c(NA_real_, NA_real_))
+})
+
 test_that(paste0(
   "Parent matching ignores display labels and preserves ",
   "expression order"
