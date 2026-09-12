@@ -381,16 +381,18 @@ adapters, and each says only what its backends do differently:
 
 | Adapter | Backend kinds | Difference from the shared work |
 |---|---|---|
-| Local | `local` | Checks materialized source types first |
+| Row-matched | `local`, `other` | Nothing |
+| dtplyr | `dtplyr` | Temporarily rewrites a literal-backtick join key |
 | General dbplyr | `duckdb`, `postgres`, `sql` | Missing-safe `sql_on` join |
-| Lazy non-SQL | `dtplyr`, `other` | Nothing |
 
-The lazy non-SQL adapter adding nothing is the point rather than an
-oversight: it names the contract that a lazy non-SQL backend joins exactly as
-local data does but cannot have its source types checked first, because
-nothing is materialized to check. Its validation happens earlier, inside the
-ordinary summary. Collapsing it into the local adapter would make that
-difference invisible at the seam that has to honour it.
+The Row-matched adapter adding nothing is the point rather than an oversight:
+it names the contract that a lazy non-SQL backend joins exactly as local data
+does. `other` cannot have its source types checked first because nothing is
+materialized to check; its validation happens earlier, inside the ordinary
+summary. dtplyr takes that same validation path, but its join translation needs
+the temporary rewrite where a fixed key contains a literal backtick. Collapsing
+either difference into another adapter would make it invisible at the seam that
+has to honour it.
 
 Arrow is rejected at the immediately earlier executor boundary because no
 ordinary-summary query may be staged for a valid Arrow contextual-share
@@ -548,7 +550,7 @@ Direct field reads are confined to:
   kind, for the one that asserts it may check nothing, and its dialect, for
   the one that asks whether that dialect converts — and the input it prepared;
   and
-- the two contextual-share adapters, which read the Grouping plan and
+- the three contextual-share adapters, which read the Grouping plan and
   nothing else.
 
 The native and portable Grouping adapters receive the specific derived values

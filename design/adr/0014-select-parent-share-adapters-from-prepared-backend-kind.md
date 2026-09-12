@@ -6,6 +6,27 @@ chosen by looking up the backend kind that the Margin operation already
 prepared — never by inspecting the class of the staged ordinary-summary
 result, and never by a chain of capability predicates rebuilt at this seam.
 
+## Amendment: dtplyr rewrites a literal-backtick join key
+
+The ratio-adapter table's Row-matched row no longer includes `dtplyr`.
+`execute_dtplyr_shares()` is a distinct adapter which supplies the one behavior
+its join needs: when any staged join key contains a literal backtick, it gives
+both join relations collision-free internal key names and restores the left
+relation's original names immediately afterwards. The shared mapping, join,
+ratio, and cleanup remain shared.
+
+This is a property of dtplyr's join translation, not of Grouping-plan
+preparation or the staged result's class. The adapter selects it from the
+already prepared backend kind, and the temporary names neither reach the
+caller nor rename their input. #540 establishes the failing dtplyr path.
+
+The ratio table's first row now reads:
+
+| Adapter | Backend kinds | What it adds to the shared work |
+|---|---|---|
+| Row-matched | `local`, `other` | Nothing |
+| dtplyr | `dtplyr` | Rewrites a literal-backtick join key temporarily |
+
 ## Amendment: the samplers are source checkers, and none of them samples
 
 The decision above stands in full: there are still two lookups keyed on the
