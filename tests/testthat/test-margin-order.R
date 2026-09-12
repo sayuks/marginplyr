@@ -1469,28 +1469,67 @@ test_that("Arrow orders a factor fixed key, which holds no Margin label", {
   }
 })
 
-test_that("Arrow orders a composite factor dimension under expansion", {
+test_that("Arrow orders repeated nonconstant Grouping bits", {
   skip_if_suggest_absent("arrow")
 
-  data <- margin_order_data()
-  data$region <- factor(data$region)
-  data$store <- factor(data$store)
-  result <- dplyr::collect(expand_with_margins(
-    arrow::as_arrow_table(data),
-    .grouping = rollup(c(region, store)),
-    .margin_label = NULL,
-    .sort = "last"
-  ))
+  groupings <- list(
+    composite = rlang::expr(rollup(grouping_set(a, b))),
+    explicit = rlang::expr(grouping_sets(grouping_spec(a, b), grouping_set()))
+  )
+  inputs <- list(
+    empty = data.frame(a = character(), b = character(), units = double()),
+    populated = data.frame(
+      a = c("East", "West", "East"),
+      b = c("s1", "s2", "s3"),
+      units = c(1, 2, 3)
+    )
+  )
 
-  # A composite dimension's columns share one Grouping bit, so the margin rows
-  # come last as a block rather than one per column.
-  expect_true(is.factor(result$region))
-  expect_identical(
-    as.character(result$region),
-    c(rep("East", 4L), rep("West", 4L), rep(NA_character_, 4L))
-  )
-  expect_identical(
-    as.character(result$store),
-    c("s1", "s2", NA, NA, "s3", "s4", NA, NA, rep(NA_character_, 4L))
-  )
+  for (grouping_name in names(groupings)) {
+    grouping <- groupings[[grouping_name]]
+    for (input_name in names(inputs)) {
+      input <- inputs[[input_name]]
+      for (sort in c("first", "last")) {
+        expected_summary <- rlang::inject(summarize_with_margins(
+          input,
+          units = sum(units),
+          .grouping = !!grouping,
+          .sort = sort
+        ))
+        summary <- rlang::inject(summarize_with_margins(
+          arrow::as_arrow_table(input),
+          units = sum(units),
+          .grouping = !!grouping,
+          .sort = sort
+        ))
+        expect_s3_class(summary, "arrow_dplyr_query")
+        collected_summary <- dplyr::collect(summary)
+        expect_identical(names(collected_summary), names(expected_summary))
+        expect_identical(
+          as.data.frame(collected_summary),
+          expected_summary,
+          info = paste(grouping_name, input_name, sort, "summary")
+        )
+
+        expected_expansion <- rlang::inject(expand_with_margins(
+          input,
+          .grouping = !!grouping,
+          .sort = sort
+        ))
+        expansion <- rlang::inject(expand_with_margins(
+          arrow::as_arrow_table(input),
+          .grouping = !!grouping,
+          .sort = sort
+        ))
+        expect_s3_class(expansion, "arrow_dplyr_query")
+        collected_expansion <- dplyr::collect(expansion)
+        expect_identical(names(collected_expansion), names(expected_expansion))
+        expect_identical(
+          as.data.frame(collected_expansion),
+          expected_expansion,
+          info = paste(grouping_name, input_name, sort, "expansion")
+        )
+      }
+    }
+  }
 })

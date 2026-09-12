@@ -504,9 +504,15 @@ margin_order_terms <- function(plan,
     recursive = FALSE
   )
 
+  seen_margin_ids <- list()
   for (dimension in plan$dimensions) {
-    bit <- margin_grouping_bit_expr(plan, dimension, sort_id)
-    if (!is.null(bit)) {
+    margin_ids <- margin_grouping_bit_ids(plan, dimension)
+    if (
+      !is.null(sort_id) &&
+        !is.null(margin_ids) &&
+        !any(vapply(seen_margin_ids, identical, logical(1), margin_ids))
+    ) {
+      bit <- margin_grouping_bit_expr(sort_id, margin_ids)
       terms <- c(terms, list(
         if (identical(sort, "first")) {
           rlang::expr(dplyr::desc(!!bit))
@@ -514,6 +520,7 @@ margin_order_terms <- function(plan,
           bit
         }
       ))
+      seen_margin_ids <- c(seen_margin_ids, list(margin_ids))
     }
     terms <- c(
       terms,
@@ -553,13 +560,9 @@ margin_missing_last_expr <- function(column) {
   ))
 }
 
-# One dimension's Grouping bit, read from the Grouping set identifier the
-# adapter left in the result. `NULL` when the plan makes the bit constant, so
-# that a term with nothing to order by is not emitted.
-margin_grouping_bit_expr <- function(plan, dimension, sort_id) {
-  if (is.null(sort_id)) {
-    return(NULL)
-  }
+# The Grouping-set occurrences where one dimension is absent. `NULL` when the
+# plan makes its Grouping bit constant, so a key term would order nothing.
+margin_grouping_bit_ids <- function(plan, dimension) {
   margin_ids <- as.integer(
     plan$set_ids[plan$grouping_masks[, dimension] == 1L]
   )
@@ -569,7 +572,14 @@ margin_grouping_bit_expr <- function(plan, dimension, sort_id) {
   ) {
     return(NULL)
   }
+  margin_ids
+}
 
+# One Grouping bit read from the identifier the adapter left in the result.
+# `margin_order_terms()` emits this only once for equal occurrence ids: the
+# repeated term is redundant by ADR 0018 and Arrow cannot materialize two
+# expressions under the same internal field name.
+margin_grouping_bit_expr <- function(sort_id, margin_ids) {
   rlang::expr(dplyr::if_else(
     (!!margin_column_pronoun(sort_id)) %in% !!margin_ids,
     1L,
