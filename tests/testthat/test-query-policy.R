@@ -366,6 +366,55 @@ test_that("the counter reports entry-point invocations rather than reads", {
   )
 })
 
+test_that("the exempt selection proxy materializes no caller rows", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  capture <- new.env(parent = emptyenv())
+  # No materialization and a zero-row materialization are both contract-safe.
+  capture$rows <- 0L
+  probe_head <- function(x, ...) {
+    result <- NextMethod()
+    class(result) <- unique(c("margin_zero_row_probe", class(result)))
+    result
+  }
+  probe_collect <- function(x, ...) {
+    result <- NextMethod()
+    capture$rows <- capture$rows + nrow(result)
+    result
+  }
+  registerS3method(
+    "head",
+    "margin_zero_row_probe",
+    probe_head,
+    envir = asNamespace("utils")
+  )
+  registerS3method(
+    "collect",
+    "margin_zero_row_probe",
+    probe_collect,
+    envir = asNamespace("dplyr")
+  )
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  table <- dplyr::copy_to(
+    con,
+    data.frame(k = c("E", "W"), v = c(1, 2)),
+    "zero_row_selection_proxy",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+  class(table) <- c("margin_zero_row_probe", class(table))
+
+  summarize_with_margins(
+    table,
+    total = sum(v, na.rm = TRUE),
+    .grouping = rollup(where(is.character)),
+    .margin_label = NULL
+  )
+
+  expect_identical(capture$rows, 0L)
+})
+
 # The Arrow inputs the two blocks below take come from
 # `helper-arrow-shapes.R`.
 test_that("no Arrow read happens while a Margin verb runs", {
