@@ -276,11 +276,11 @@ unless a future adapter separates the paths.
 2. Run a second focused campaign for Margin order and Margin label semantics,
    then a separately isolated backend campaign using the generated
    one-backend matrix. Do not infer backend coverage from this local campaign.
-3. Keep mutation testing opt-in for now. `muttest` found a real gap quickly,
-   but the observed campaign took roughly seven minutes beyond setup and
-   required workarounds for worker filtering, queue timeout accounting, and
-   JSON-result printing. Pinning 0.3.0 plus a repository harness would itself
-   become maintenance surface.
+3. The 2026-09-12 evidence did not justify a permanent mutation-testing check.
+   `muttest` found a real gap quickly, but the observed campaign took roughly
+   seven minutes beyond setup and required workarounds for worker filtering,
+   queue timeout accounting, and JSON-result printing. Pinning 0.3.0 plus a
+   repository harness would itself become maintenance surface.
 4. Reconsider a manual or scheduled CI job after the tool issues are resolved,
    or after two more focused campaigns show recurring unique findings. Do not
    add `muttest` to package Imports or Suggests; install it as quality-tooling
