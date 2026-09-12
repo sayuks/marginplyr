@@ -19,10 +19,8 @@ set.seed(pbt_seed)
 pbt_counts <- new.env(parent = emptyenv())
 pbt_counts$generated <- 0L
 pbt_counts$checks <- 0L
-pbt_counts$discarded <- 0L
+pbt_counts$discarded_checks <- 0L
 pbt_counts$failures <- list()
-
-`%||%` <- function(x, y) if (is.null(x)) y else x
 
 pbt_fail <- function(property, case, message) {
   failure <- list(
@@ -65,6 +63,17 @@ pbt_attempt <- function(code, property, case) {
         paste(class(condition), conditionMessage(condition), sep = "\n")
       )
     }
+  )
+}
+
+pbt_report <- function(label) {
+  cat(
+    label, "\n",
+    "seed: ", pbt_seed, "\n",
+    "generated cases: ", pbt_counts$generated, "\n",
+    "property checks: ", pbt_counts$checks, "\n",
+    "discarded checks: ", pbt_counts$discarded_checks, "\n",
+    sep = ""
   )
 }
 
@@ -662,7 +671,7 @@ pbt_canonical_vector <- function(x) {
   if (is.logical(x)) {
     return(ifelse(is.na(x), "<NA>", ifelse(x, "TRUE", "FALSE")))
   }
-  if (is.numeric(x) || is.integer(x)) {
+  if (is.numeric(x)) {
     return(ifelse(
       is.na(x),
       "<NA>",
@@ -864,7 +873,7 @@ pbt_run_backends <- function() {
       ) {
         # This is the second confirmed violation from the exploration. Skip
         # only its known failing precondition so other Arrow sort keys run.
-        pbt_counts$discarded <- pbt_counts$discarded + 2L
+        pbt_counts$discarded_checks <- pbt_counts$discarded_checks + 2L
       } else {
         pbt_attempt(
           pbt_property_backend_sort(pair, backend, "last"),
@@ -907,14 +916,7 @@ pbt_run_backends <- function() {
       }
     }
   }
-  cat(
-    "PBT BACKENDS PASS\n",
-    "seed: ", pbt_seed, "\n",
-    "generated cases: ", pbt_counts$generated, "\n",
-    "property checks: ", pbt_counts$checks, "\n",
-    "discarded cases: ", pbt_counts$discarded, "\n",
-    sep = ""
-  )
+  pbt_report("PBT BACKENDS PASS")
 }
 
 pbt_nest_call <- function(case, verb, keep) {
@@ -1056,14 +1058,7 @@ pbt_run_nesting <- function() {
       )
     }
   }
-  cat(
-    "PBT NESTING PASS\n",
-    "seed: ", pbt_seed, "\n",
-    "generated cases: ", pbt_counts$generated, "\n",
-    "property checks: ", pbt_counts$checks, "\n",
-    "discarded cases: ", pbt_counts$discarded, "\n",
-    sep = ""
-  )
+  pbt_report("PBT NESTING PASS")
 }
 
 pbt_run <- function() {
@@ -1091,14 +1086,7 @@ pbt_run <- function() {
     pbt_counts$generated <- pbt_counts$generated + 1L
     pbt_property_share(share_case)
   }
-  cat(
-    "PBT PASS\n",
-    "seed: ", pbt_seed, "\n",
-    "generated cases: ", pbt_counts$generated, "\n",
-    "property checks: ", pbt_counts$checks, "\n",
-    "discarded cases: ", pbt_counts$discarded, "\n",
-    sep = ""
-  )
+  pbt_report("PBT PASS")
 }
 
 if (identical(Sys.getenv("MARGINPLYR_PBT_MODE", "local"), "backends")) {
