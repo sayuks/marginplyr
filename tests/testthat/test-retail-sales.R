@@ -25,6 +25,14 @@ test_that("retail_sales is a plain data frame with the documented columns", {
   )
 })
 
+test_that("retail_sales keeps the documented region domain", {
+  expect_setequal(unique(retail_sales$region), c("East", "West"))
+})
+
+test_that("retail_sales keeps the documented channel domain", {
+  expect_setequal(unique(retail_sales$channel), c("Online", "Store"))
+})
+
 test_that("retail_sales has missing stores only on online-direct records", {
   # `store` is the only column documented to carry missing values; the
   # examples rely on every other column being complete.
