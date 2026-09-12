@@ -6,6 +6,32 @@ chosen by looking up the backend kind that the Margin operation already
 prepared — never by inspecting the class of the staged ordinary-summary
 result, and never by a chain of capability predicates rebuilt at this seam.
 
+## Amendment (2026-09-12): SQL carries the Parent plan as one inline relation
+
+The decision below that Parent mapping construction is shared by every backend
+is withdrawn. Row-matched and dtplyr adapters still build one denominator
+branch per child occurrence. The general dbplyr adapter instead carries the
+small `child occurrence -> Parent occurrence` plan inside the query as one
+non-materializing inline relation and joins the staged summary to it once. The
+ratio calculation, one final join per share kind, cleanup, and adapter
+selection from the prepared backend kind remain shared.
+
+This difference is owned by the adapter because the shared branch form makes
+dbplyr render the complete staged summary once per child occurrence. #550's
+rollup series showed the native aggregate definition growing from three to
+five copies as the plan grew from three to five occurrences; the inline plan
+holds it at two. `copy_inline()` adds query text proportional to the plan but
+does not execute or materialize the caller's data, so ADR 0020 continues to
+hold.
+
+An always-CTE custom lazy-query node was rejected. dbplyr can factor a query
+when its caller requests CTE rendering, but a returned lazy relation does not
+carry that option as part of its interface. Making it implicit would add a
+dbplyr-representation and SQL-dialect compatibility seam only to reduce two
+constant staged-summary definitions to one. The inline relation removes the
+Grouping-set-proportional repetition through an existing dbplyr interface and
+leaves later dplyr composition ordinary.
+
 ## Amendment: dtplyr rewrites a literal-backtick join key
 
 The ratio-adapter table's Row-matched row no longer includes `dtplyr`.
