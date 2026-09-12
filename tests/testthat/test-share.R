@@ -1,3 +1,42 @@
+# The parent occurrence identifiers distinguish retained duplicates that produce
+# the same Parent-share values, so this test observes the planner directly.
+test_that("Parent occurrence discovery follows a pure rollup sequence", {
+  plan <- function(sets) {
+    list(sets = sets, by = character())
+  }
+
+  expect_identical(
+    parent_set_ids(plan(list(c("group"), character()))),
+    c(2L, NA_integer_)
+  )
+  expect_identical(
+    parent_set_ids(plan(list(character()))),
+    NA_integer_
+  )
+  expect_identical(
+    parent_set_ids(plan(list(c("group"), c("group"), character()))),
+    c(3L, 3L, NA_integer_)
+  )
+  expect_identical(
+    parent_set_ids(plan(list(
+      c("region", "store", "product"),
+      c("region", "store"),
+      c("region", "store"),
+      c("region"),
+      character()
+    ))),
+    c(2L, 4L, 4L, 5L, NA_integer_)
+  )
+  expect_identical(
+    parent_set_ids(plan(list(
+      c("region", "store", "product"),
+      c("region", "store"),
+      character()
+    ))),
+    c(2L, 3L, NA_integer_)
+  )
+})
+
 test_that("direct Parent shares use the immediate rollup parent", {
   data <- data.frame(
     region = c("East", "East", "West"),

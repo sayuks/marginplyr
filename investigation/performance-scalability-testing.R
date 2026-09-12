@@ -49,6 +49,27 @@ elapsed_summary <- function(run, repetitions = 5L) {
   )
 }
 
+# Counts the comparisons the planner itself makes while finding adjacent
+# distinct rollup occurrences. The trace is scratch instrumentation for this
+# investigation harness, not package behavior or a test-suite threshold.
+parent_set_id_candidate_visits <- function(plan) {
+  option_name <- "marginplyr_parent_set_ids_candidate_visits"
+  old_options <- options(stats::setNames(list(0L), option_name))
+  on.exit(options(old_options), add = TRUE)
+  suppressMessages(base::trace(
+    "identical",
+    tracer = quote(options(
+      marginplyr_parent_set_ids_candidate_visits =
+        getOption("marginplyr_parent_set_ids_candidate_visits") + 1L
+    )),
+    print = FALSE
+  ))
+  on.exit(suppressMessages(base::untrace("identical")), add = TRUE)
+
+  invisible(parent_set_ids(plan))
+  getOption(option_name)
+}
+
 allocated_bytes <- function(run) {
   path <- tempfile("marginplyr-rprofmem-")
   on.exit(unlink(path), add = TRUE)
@@ -420,6 +441,8 @@ run_fixed_keys <- function() {
 }
 
 run_parent_id_scaling <- function() {
+  jit_level <- compiler::enableJIT(0L)
+  on.exit(compiler::enableJIT(jit_level), add = TRUE)
   rows <- list()
   for (dimensions in c(16L, 32L, 64L, 128L, 256L)) {
     data <- make_data(1L, dimensions)
@@ -428,11 +451,13 @@ run_parent_id_scaling <- function() {
       names(data),
       duplicates_choices = margin_duplicates_choices
     )
+    candidate_visits <- parent_set_id_candidate_visits(plan)
     run <- function() parent_set_ids(plan)
     timing <- elapsed_summary(run, repetitions = 9L)
     rows[[length(rows) + 1L]] <- data.frame(
       dimensions = dimensions,
       sets = length(plan$sets),
+      candidate_visits = candidate_visits,
       elapsed_median = timing[["elapsed_median"]],
       elapsed_min = timing[["elapsed_min"]],
       elapsed_max = timing[["elapsed_max"]]

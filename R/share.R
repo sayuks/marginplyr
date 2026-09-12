@@ -3095,6 +3095,10 @@ total_set_ids <- function(plan) {
   result
 }
 
+# The parent occurrence identifier for every occurrence in a compiled pure
+# rollup Grouping plan, or missing for an occurrence of the Grand total set.
+# Its caller has already established that the plan came from one pure
+# `rollup()`.
 parent_set_ids <- function(plan) {
   result <- rep(NA_integer_, length(plan$sets))
   variable_sets <- lapply(
@@ -3102,19 +3106,15 @@ parent_set_ids <- function(plan) {
     setdiff,
     y = plan$by
   )
+  # The compiled pure rollup is detailed to coarse. The next distinct run
+  # supplies every occurrence in the preceding run's immediate Parent.
+  run_start <- 1L
   for (i in seq_along(variable_sets)) {
-    child <- variable_sets[[i]]
-    candidates <- which(vapply(
-      variable_sets,
-      function(parent) {
-        length(parent) < length(child) && all(parent %in% child)
-      },
-      logical(1)
-    ))
-    candidates <- candidates[candidates > i]
-    if (length(candidates) > 0L) {
-      result[[i]] <- candidates[[1L]]
+    if (i == 1L || identical(variable_sets[[i]], variable_sets[[i - 1L]])) {
+      next
     }
+    result[seq.int(run_start, i - 1L)] <- i
+    run_start <- i
   }
   result
 }
