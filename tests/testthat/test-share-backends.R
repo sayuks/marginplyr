@@ -789,6 +789,105 @@ test_that("PostgreSQL renders one staged Parent-share join for all measures", {
   expect_match(many_sql, "CAST(", fixed = TRUE)
 })
 
+test_that("DuckDB bounds staged summaries across Parent rollups", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(
+      g1 = "a",
+      g2 = "b",
+      g3 = "c",
+      g4 = "d",
+      value = 1
+    ),
+    "parent_mapping_shape",
+    temporary = TRUE
+  )
+
+  small <- summarize_with_margins(
+    remote,
+    total = sum(value),
+    share = share_of_parent(total),
+    .grouping = rollup(g1, g2),
+    .margin_label = NULL,
+    .check_share_source = FALSE
+  )
+  large <- summarize_with_margins(
+    remote,
+    total = sum(value),
+    share = share_of_parent(total),
+    .grouping = rollup(g1, g2, g3, g4),
+    .margin_label = NULL,
+    .check_share_source = FALSE
+  )
+  small_sql <- dbplyr::sql_render(small)
+  large_sql <- dbplyr::sql_render(large)
+
+  expect_identical(
+    share_query_count(small_sql, "GROUP BY GROUPING SETS"),
+    2L
+  )
+  expect_identical(
+    share_query_count(large_sql, "GROUP BY GROUPING SETS"),
+    2L
+  )
+  expect_identical(share_query_count(large_sql, "LEFT JOIN"), 1L)
+})
+
+test_that("RSQLite Parent mapping does not multiply portable branch families", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- data.frame(
+    g1 = c("a", "b", NA),
+    g2 = c("x", NA, "y"),
+    g3 = c("u", "v", "w"),
+    g4 = c("i", "j", "k"),
+    value = 1:3
+  )
+  table_name <- "parent_mapping_sqlite_shape"
+  remote <- dplyr::copy_to(
+    con,
+    data,
+    table_name,
+    temporary = TRUE
+  )
+  summarize <- function(source, grouping) {
+    summarize_with_margins(
+      source,
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = grouping,
+      .id = "set",
+      .margin_label = NULL,
+      .check_share_source = FALSE
+    )
+  }
+
+  small_grouping <- rollup(g1, g2)
+  large_grouping <- rollup(g1, g2, g3, g4)
+  small <- summarize(remote, small_grouping)
+  large <- summarize(remote, large_grouping)
+  small_sql <- dbplyr::sql_render(small)
+  large_sql <- dbplyr::sql_render(large)
+
+  # Generic SQL stages one branch per set plus its zero-row type anchor. The
+  # Parent join may reference that family a constant two times, never once per
+  # child occurrence (#550).
+  expect_identical(share_query_count(small_sql, table_name), 2L * (3L + 1L))
+  expect_identical(share_query_count(large_sql, table_name), 2L * (5L + 1L))
+  expect_identical(share_query_count(large_sql, "LEFT JOIN"), 1L)
+  expect_identical(share_query_count(large_sql, "INNER JOIN"), 1L)
+
+  expected <- summarize(data, small_grouping) |>
+    dplyr::arrange(set, g1, g2)
+  actual <- dplyr::collect(small) |>
+    dplyr::arrange(set, g1, g2)
+  expect_equal(as.data.frame(actual), as.data.frame(expected))
+})
+
 # The counters are the contract: requesting a share reads none of the caller's
 # data, so nothing asks this connection for the staged query's fields, its row
 # count, or its results — whichever way `.check_share_source` is set, and

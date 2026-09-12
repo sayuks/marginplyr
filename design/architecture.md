@@ -376,14 +376,17 @@ The responsibilities divide as follows:
 Adapter selection is a lookup on the prepared backend kind, not on the staged
 result's class, and every adapter takes the same five arguments. See
 [ADR 0014](adr/0014-select-parent-share-adapters-from-prepared-backend-kind.md).
-The mapping, calculation, and cleanup above are shared; there are three
-adapters, and each says only what its backends do differently:
+The denominator targets, calculation, and cleanup above are shared; there are
+three adapters, and each says only what its backends do differently. Parent
+mapping construction is also shared by the Row-matched and dtplyr adapters,
+while the general dbplyr adapter carries the occurrence mapping as one inline
+relation so the staged summary is not repeated once per child occurrence:
 
 | Adapter | Backend kinds | Difference from the shared work |
 |---|---|---|
 | Row-matched | `local`, `other` | Nothing |
 | dtplyr | `dtplyr` | Temporarily rewrites a literal-backtick join key |
-| General dbplyr | `duckdb`, `postgres`, `sql` | Missing-safe `sql_on` join |
+| General dbplyr | `duckdb`, `postgres`, `sql` | Inline Parent plan and missing-safe `sql_on` join |
 
 The Row-matched adapter adding nothing is the point rather than an oversight:
 it names the contract that a lazy non-SQL backend joins exactly as local data
