@@ -1201,7 +1201,7 @@ test_that("British and American summary spellings are synonyms", {
     .by = group
   )
 
-  expect_equal(british, american)
+  expect_identical(british, american)
   expect_identical(formals(summarise_with_margins), formals(
     summarize_with_margins
   ))
