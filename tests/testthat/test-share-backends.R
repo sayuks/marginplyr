@@ -2404,6 +2404,91 @@ test_that("dtplyr Total shares match local results", {
   expect_equal(sum(unpartitioned$revenue_share), 2)
 })
 
+test_that("dtplyr shares join fixed keys containing literal backticks", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::as.data.table(setNames(
+    data.frame(
+      c("p", "p", "q", "q"),
+      c("x", "y", "x", "y"),
+      c(1L, 3L, 2L, 2L)
+    ),
+    c("a`b", "group", "value")
+  ))
+  original <- data.table::copy(data)
+  summarize <- function(verb, source, ...) {
+    verb(
+      source,
+      ...
+    )
+  }
+  arrange_result <- function(result) {
+    dplyr::arrange(result, .data[["a`b"]], group)
+  }
+
+  for (verb in list(summarize_with_margins, summarise_with_margins)) {
+    expected <- arrange_result(summarize(
+      verb,
+      as.data.frame(data),
+      total = sum(value),
+      parent = share_of_parent(total),
+      whole = share_of_total(total),
+      .by = dplyr::all_of("a`b"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    ))
+    query <- summarize(
+      verb,
+      dtplyr::lazy_dt(data),
+      total = sum(value),
+      parent = share_of_parent(total),
+      whole = share_of_total(total),
+      .by = dplyr::all_of("a`b"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+
+    expect_s3_class(query, "dtplyr_step")
+    expect_equal(
+      as.data.frame(arrange_result(dplyr::collect(query))),
+      as.data.frame(expected)
+    )
+    expect_identical(as.character(dplyr::tbl_vars(query)), names(expected))
+  }
+
+  expect_identical(data, original)
+
+  empty <- setNames(data.frame(character(), character()), c("`", "group"))
+  for (verb in list(summarize_with_margins, summarise_with_margins)) {
+    expected <- summarize(
+      verb,
+      empty,
+      total = dplyr::n(),
+      parent = share_of_parent(total),
+      whole = share_of_total(total),
+      .by = dplyr::all_of("`"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+    query <- summarize(
+      verb,
+      dtplyr::lazy_dt(empty),
+      total = dplyr::n(),
+      parent = share_of_parent(total),
+      whole = share_of_total(total),
+      .by = dplyr::all_of("`"),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+
+    expect_s3_class(query, "dtplyr_step")
+    expect_equal(
+      as.data.frame(dplyr::collect(query)),
+      as.data.frame(expected)
+    )
+    expect_identical(as.character(dplyr::tbl_vars(query)), names(expected))
+  }
+})
+
 # The two backends below answer an injected share selection today, and for
 # reasons that are not the local backend's: dtplyr carries the caller's call as
 # text, which no second defusal reads, and a lazy backend wraps no source in the

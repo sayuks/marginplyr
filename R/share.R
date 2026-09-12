@@ -2047,7 +2047,7 @@ share_adapter <- function(backend_kind) {
     duckdb = execute_dbplyr_shares,
     postgres = execute_dbplyr_shares,
     sql = execute_dbplyr_shares,
-    dtplyr = execute_row_matched_shares,
+    dtplyr = execute_dtplyr_shares,
     other = execute_row_matched_shares
   )
   adapter <- adapters[[backend_kind]]
@@ -2072,6 +2072,22 @@ execute_row_matched_shares <- function(operation,
     set_id_name = set_id_name,
     kind = kind,
     sql_join = FALSE
+  )
+}
+
+execute_dtplyr_shares <- function(operation,
+                                  result,
+                                  requests,
+                                  set_id_name,
+                                  kind) {
+  apply_joined_shares(
+    result,
+    requests = requests,
+    plan = operation$plan,
+    set_id_name = set_id_name,
+    kind = kind,
+    sql_join = FALSE,
+    join_name_rewriter = dtplyr_join_names
   )
 }
 
@@ -2543,7 +2559,8 @@ apply_joined_shares <- function(result,
                                 plan,
                                 set_id_name,
                                 kind,
-                                sql_join) {
+                                sql_join,
+                                join_name_rewriter = NULL) {
   rule <- share_kind_rule(kind)
   target_ids <- rule$target_ids(plan)
   own_denominator_ids <- plan$set_ids[is.na(target_ids)]
@@ -2604,12 +2621,40 @@ apply_joined_shares <- function(result,
         y_as = "RHS"
       )
     } else {
+      escaped_join_names <- if (is.null(join_name_rewriter)) {
+        NULL
+      } else {
+        join_name_rewriter(
+          join_names,
+          used_names = c(result_names, denominator_names, key_names)
+        )
+      }
+      if (!is.null(escaped_join_names)) {
+        result <- dplyr::rename(
+          result,
+          !!!rlang::set_names(rlang::syms(join_names), escaped_join_names)
+        )
+        mapping <- dplyr::rename(
+          mapping,
+          !!!rlang::set_names(rlang::syms(join_names), escaped_join_names)
+        )
+        join_names <- unname(escaped_join_names)
+      }
       result <- dplyr::left_join(
         result,
         mapping,
         by = join_names,
         na_matches = "na"
       )
+      if (!is.null(escaped_join_names)) {
+        result <- dplyr::rename(
+          result,
+          !!!rlang::set_names(
+            rlang::syms(join_names),
+            names(escaped_join_names)
+          )
+        )
+      }
     }
   }
 
@@ -2674,6 +2719,22 @@ apply_joined_shares <- function(result,
     result <- dplyr::select(result, -dplyr::all_of(internal_names))
   }
   result
+}
+
+# dtplyr passes a join key through data.table's `on` parser, which splits a
+# literal backtick in the key name. The staged result owns both sides here, so
+# renaming them only for that join avoids the parser without changing the
+# caller's input or the returned columns.
+dtplyr_join_names <- function(join_names, used_names) {
+  if (!any(grepl("`", join_names, fixed = TRUE))) {
+    return(NULL)
+  }
+  escaped <- new_margin_internal_names(
+    length(join_names),
+    used_names = used_names,
+    prefix = "..marginplyr_dtplyr_join_key_"
+  )
+  stats::setNames(escaped, join_names)
 }
 
 # What a kind contributes to the join above is two entries of
