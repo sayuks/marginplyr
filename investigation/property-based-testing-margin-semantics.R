@@ -20,7 +20,6 @@ pbt_counts <- new.env(parent = emptyenv())
 pbt_counts$generated <- 0L
 pbt_counts$checks <- 0L
 pbt_counts$discarded_checks <- 0L
-pbt_counts$failures <- list()
 
 pbt_fail <- function(property, case, message) {
   failure <- list(
@@ -30,7 +29,6 @@ pbt_fail <- function(property, case, message) {
     message = message,
     case = case
   )
-  pbt_counts$failures[[length(pbt_counts$failures) + 1L]] <- failure
   saveRDS(failure, pbt_artifact)
   stop(
     paste0(
