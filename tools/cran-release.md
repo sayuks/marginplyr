@@ -166,17 +166,20 @@ gh issue edit <issue-number> --body-file "$release_issue_body"
 The human fallback is the issue's Edit action in GitHub's UI after reviewing
 the same proposed checkbox/evidence change.
 
-### 3. Prepare and merge the release PR
+### 3. Prepare the release candidate
 
 Purpose: make version, NEWS, `cran-comments.md`, metadata, and generated files
-reviewable without disturbing the maintainer's normal checkout.
+reviewable without disturbing the maintainer's normal checkout. A tracked diff
+goes through a pull request. A preparation that remains identical to the clean
+default branch after the same review follows the zero-diff path below.
 
 Prerequisites: stages 1–2 complete and a chosen version. Create a disposable
-branch/worktree after approval:
+detached worktree after approval; a release branch is created later only when
+the review produces a tracked diff:
 
 ```sh
 git fetch origin
-git worktree add ../marginplyr-release-0.1.0 -b release/0.1.0 origin/main
+git worktree add --detach ../marginplyr-release-0.1.0 origin/main
 cd ../marginplyr-release-0.1.0
 Rscript tools/cran-release.R prepare --version 0.1.0
 ```
@@ -243,8 +246,10 @@ an explanation of whether the dependency is genuinely optional. Dispositions
 must be accepted before making any tracked dependency-metadata edit; a proposed
 change without acceptance remains unchanged.
 
-Show the preparation preview and dependency-audit dispositions. Obtain approval
-for the exact tracked edits, then run:
+Show the preparation preview and dependency-audit dispositions. Resolve every
+manual release-content and dependency-metadata decision before deciding whether
+the preparation has a diff. When tracked edits are required, obtain approval
+for the exact edits, then run:
 
 ```sh
 Rscript tools/cran-release.R prepare --version 0.1.0 --apply
@@ -264,29 +269,56 @@ git diff
 
 Confirm `quarto pandoc --version` reports 3.10.1 before the README command. The
 working tree is installed first because its chunks load marginplyr, as
-`AGENTS.md` documents. Obtain separate approvals before commit, push, and PR
-creation:
+`AGENTS.md` documents.
+
+After the review and required regeneration, inspect `git status --short` and
+`git diff`. Follow exactly one of these paths:
+
+- **Tracked-diff path.** Show the detached `HEAD` and exact
+  `release/0.1.0` branch to be created, then obtain approval before creating
+  it. Obtain separate approvals before commit, push, and PR creation:
 
 ```sh
+git switch -c release/0.1.0
 git add <reviewed-paths>
 git commit -m "Prepare marginplyr 0.1.0 for CRAN (#507)"
 git push -u origin release/0.1.0
 gh pr create --fill
 ```
 
-Success evidence: reviewed PR, generated files equal their sources, required PR
-checks green, and merge commit on the default branch. Block on unresolved
-metadata/content, generated diffs, failing checks, or missing approval. Recovery:
-amend the branch and rerun affected generation/checks; if abandoned, remove only
-this disposable worktree/branch. Human fallback: make the same edits and PR by
-hand, using helper preview as a checklist.
+- **Zero-diff path.** Use this only when the helper preview is already complete,
+  every release-content review and dependency-audit disposition is accepted,
+  required generation leaves its outputs equal to their sources, and
+  `git status --short` is empty. Show the exact remote to be fetched and the
+  reviewed `HEAD`, then obtain approval before fetching again. Require the
+  reviewed `HEAD` to remain the current `origin/main`; if it moved, recreate
+  the worktree and repeat stage 3 against the new default-branch SHA. Record in
+  the release issue that a preparation PR is not required because the reviewed
+  preparation has zero diff. Record the helper invocation and no-op result, the
+  reviewed release content, generated-file equality, the complete
+  dependency-audit evidence and accepted dispositions, and the clean
+  default-branch SHA. Show that zero-diff preparation evidence and obtain
+  approval to use its SHA at stage 4. Do not create an empty commit, branch, or
+  pull request.
+
+Success evidence is either a reviewed PR with green checks and its merge commit
+on the default branch, or approved zero-diff preparation evidence naming the
+current clean default-branch SHA. Both paths require generated files equal to
+their sources and complete, accepted dependency-audit evidence. Block on
+unresolved metadata/content, stale or incomplete evidence, unexpected generated
+diffs, failing checks, or missing approval. Recovery on the tracked-diff path is
+to amend the branch and rerun affected generation/checks. Recovery on the
+zero-diff path is to make a required change through the tracked-diff path or to
+repeat the review from the current default branch. Human fallback is the same
+review and either the same PR or the same recorded zero-diff evidence.
 
 ### 4. Freeze the candidate SHA
 
-Purpose: bind every later artifact and result to one merged commit.
+Purpose: bind every later artifact and result to one reviewed commit.
 
-After the preparation PR is merged, show the remote/default-branch target and
-obtain approval before the switch/pull. Then run:
+After the preparation PR is merged, or after the zero-diff preparation evidence
+is approved, show the remote/default-branch target and obtain approval before
+the switch/pull. Then run:
 
 ```sh
 git switch main
@@ -297,14 +329,22 @@ printf '%s\n' "$candidate_sha"
 ```
 
 This is read-only after the pull. Success evidence is a 40-character SHA on the
-clean default branch, recorded in the release issue after approval. Block if the
-preparation PR is not merged or status is dirty. Recovery: synchronize or use a
-clean worktree at the merge commit, then recompute. Human fallback is the same
-commands or GitHub's merged-commit page.
+clean default branch, recorded in the release issue after approval. On the
+zero-diff path it must be identical to the approved preparation SHA; if the
+default branch advanced, the evidence is stale and stage 3 repeats at the new
+SHA. Block if neither the preparation PR is merged nor the zero-diff evidence is
+approved, if the two zero-diff SHAs differ, or if status is dirty. Recovery:
+synchronize or use a clean worktree at the reviewed commit, then recompute.
+Human fallback is the same commands or GitHub's commit page.
 
 Any later tracked change to metadata, documentation, examples, dependencies or
 guards, executable source, or `cran-comments.md` creates a new candidate and
 invalidates all applicable evidence below.
+
+After the Candidate SHA is frozen, keep new evidence in the release issue and
+repository-external evidence bundles, outside the candidate worktree. Evidence
+must not itself create a new candidate. If a finding requires a tracked fix,
+make it through a new preparation PR and restart at stage 4 with its merged SHA.
 
 ### 5. Run the exact-tarball local preflight
 
@@ -643,6 +683,9 @@ The human fallback is GitHub's Close issue action with the same final comment.
 ## Release issue ledger
 
 Adapt this body for the version; keep it readable rather than pasting raw logs:
+At the end of a zero-diff stage 3, replace the initial Next human action with
+“Review and approve the zero-diff preparation evidence and freeze `<sha>` as the
+Candidate SHA.”
 
 ```markdown
 ## Next human action
@@ -651,7 +694,8 @@ Adapt this body for the version; keep it readable rather than pasting raw logs:
 
 ## Candidate
 
-- [ ] Preparation PR merged: <url>
+- [ ] Preparation PR: <merged URL / not required (zero diff)>
+- [ ] Zero-diff preparation evidence, when applicable: <summary/link>
 - [ ] Candidate SHA: `<40-char-sha>`
 - [ ] Clean candidate worktree confirmed
 - [ ] Submission kind: initial / update
