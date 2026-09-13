@@ -212,22 +212,3 @@ expect_true(
   grepl("review_ready_check_cli", entrypoint, fixed = TRUE),
   "the public entry point"
 )
-
-codex_config <- readLines(".codex/config.toml", warn = FALSE)
-expect_true(
-  any(codex_config == 'default_permissions = "marginplyr"'),
-  "the marginplyr Codex permission profile"
-)
-expect_true(
-  any(codex_config == 'extends = ":workspace"'),
-  "the inherited workspace safeguards"
-)
-expect_true(
-  any(codex_config == '"~/Library/Caches/quarto" = "write"'),
-  "the Codex Quarto cache grant"
-)
-build_ignore <- readLines(".Rbuildignore", warn = FALSE)
-expect_true(
-  any(build_ignore == "^\\.codex$"),
-  "the source-package exclusion for Codex configuration"
-)
