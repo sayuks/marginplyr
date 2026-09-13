@@ -274,8 +274,9 @@ working tree is installed first because its chunks load marginplyr, as
 After the review and required regeneration, inspect `git status --short` and
 `git diff`. Follow exactly one of these paths:
 
-- **Tracked-diff path.** Create `release/0.1.0` from the detached `HEAD`, then
-  obtain separate approvals before commit, push, and PR creation:
+- **Tracked-diff path.** Show the detached `HEAD` and exact
+  `release/0.1.0` branch to be created, then obtain approval before creating
+  it. Obtain separate approvals before commit, push, and PR creation:
 
 ```sh
 git switch -c release/0.1.0
@@ -288,14 +289,17 @@ gh pr create --fill
 - **Zero-diff path.** Use this only when the helper preview is already complete,
   every release-content review and dependency-audit disposition is accepted,
   required generation leaves its outputs equal to their sources, and
-  `git status --short` is empty. Fetch again and require the reviewed `HEAD` to
-  remain the current `origin/main`; if it moved, recreate the worktree and
-  repeat stage 3 against the new default-branch SHA. Record the helper
-  invocation and no-op result, the reviewed release content, generated-file
-  equality, the complete dependency-audit evidence and accepted dispositions,
-  and the clean default-branch SHA. Show that zero-diff preparation evidence
-  and obtain approval to use its SHA at stage 4. Do not create an empty commit,
-  branch, or pull request.
+  `git status --short` is empty. Show the exact remote to be fetched and the
+  reviewed `HEAD`, then obtain approval before fetching again. Require the
+  reviewed `HEAD` to remain the current `origin/main`; if it moved, recreate
+  the worktree and repeat stage 3 against the new default-branch SHA. Record in
+  the release issue that a preparation PR is not required because the reviewed
+  preparation has zero diff. Record the helper invocation and no-op result, the
+  reviewed release content, generated-file equality, the complete
+  dependency-audit evidence and accepted dispositions, and the clean
+  default-branch SHA. Show that zero-diff preparation evidence and obtain
+  approval to use its SHA at stage 4. Do not create an empty commit, branch, or
+  pull request.
 
 Success evidence is either a reviewed PR with green checks and its merge commit
 on the default branch, or approved zero-diff preparation evidence naming the
@@ -690,7 +694,8 @@ Candidate SHA.”
 
 ## Candidate
 
-- [ ] Preparation outcome: PR merged <url> / zero-diff evidence approved <summary/link>
+- [ ] Preparation PR: <merged URL / not required (zero diff)>
+- [ ] Zero-diff preparation evidence, when applicable: <summary/link>
 - [ ] Candidate SHA: `<40-char-sha>`
 - [ ] Clean candidate worktree confirmed
 - [ ] Submission kind: initial / update

@@ -273,11 +273,8 @@ expect_identical(
 )
 setwd(old_wd)
 
-before_prepare <- lapply(
-  c("DESCRIPTION", "NEWS.md"),
-  function(path) readLines(file.path(fixture_root, path), warn = FALSE)
-)
-names(before_prepare) <- c("DESCRIPTION", "NEWS.md")
+prepare_paths <- c("DESCRIPTION", "NEWS.md")
+before_prepare <- release_read_files(fixture_root, prepare_paths)
 zero_diff_output <- capture.output(
   zero_diff <- cran_release_operation(
     "prepare",
@@ -297,11 +294,8 @@ expect_true(
   "the zero-diff preparation diagnostic"
 )
 expect_identical(
-  lapply(
-    c("DESCRIPTION", "NEWS.md"),
-    function(path) readLines(file.path(fixture_root, path), warn = FALSE)
-  ),
-  unname(before_prepare),
+  release_read_files(fixture_root, prepare_paths),
+  before_prepare,
   "the non-mutating zero-diff preparation"
 )
 
@@ -509,7 +503,10 @@ expect_stage_markers(
     "zero-diff preparation evidence",
     "current `origin/main`",
     "Do not create an empty commit",
-    "approved zero-diff preparation evidence"
+    "approved zero-diff preparation evidence",
+    "obtain approval before creating",
+    "obtain approval before fetching again",
+    "preparation PR is not required"
   ),
   "the Stage 3 dependency-audit contract"
 )
@@ -536,7 +533,8 @@ expect_stage_markers(
   c(
     "Review and approve the zero-diff preparation evidence",
     "freeze `<sha>` as the",
-    "Preparation outcome: PR merged <url> / zero-diff evidence approved"
+    "Preparation PR: <merged URL / not required (zero diff)>",
+    "Zero-diff preparation evidence, when applicable"
   ),
   "the zero-diff release-ledger contract"
 )
