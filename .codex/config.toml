@@ -1,0 +1,11 @@
+# Quarto 1.10 stores its macOS Sass cache under ~/Library/Caches/quarto.
+# Codex commands inherit the sandbox boundary, so the source-tarball vignette
+# build needs this narrow write grant for Quarto's Deno KV database.
+default_permissions = "marginplyr"
+
+[permissions.marginplyr]
+description = "Edit marginplyr and write Quarto's macOS cache."
+extends = ":workspace"
+
+[permissions.marginplyr.filesystem]
+"~/Library/Caches/quarto" = "write"
