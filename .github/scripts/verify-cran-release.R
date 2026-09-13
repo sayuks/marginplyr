@@ -273,6 +273,38 @@ expect_identical(
 )
 setwd(old_wd)
 
+before_prepare <- lapply(
+  c("DESCRIPTION", "NEWS.md"),
+  function(path) readLines(file.path(fixture_root, path), warn = FALSE)
+)
+names(before_prepare) <- c("DESCRIPTION", "NEWS.md")
+zero_diff_output <- capture.output(
+  zero_diff <- cran_release_operation(
+    "prepare",
+    "0.1.0",
+    root = fixture_root,
+    apply = FALSE
+  ),
+  type = "message"
+)
+expect_identical(zero_diff, character(), "the zero-diff preparation result")
+expect_true(
+  any(grepl(
+    "prepare is already complete for 0.1.0.",
+    zero_diff_output,
+    fixed = TRUE
+  )),
+  "the zero-diff preparation diagnostic"
+)
+expect_identical(
+  lapply(
+    c("DESCRIPTION", "NEWS.md"),
+    function(path) readLines(file.path(fixture_root, path), warn = FALSE)
+  ),
+  unname(before_prepare),
+  "the non-mutating zero-diff preparation"
+)
+
 before <- readLines(file.path(fixture_root, "DESCRIPTION"), warn = FALSE)
 preview <- capture.output(cran_release_operation(
   "post-release",
@@ -470,9 +502,43 @@ expect_stage_markers(
     "Partial scanner output",
     "evaluation errors",
     "not a clean result",
-    "Block if the dependency-audit evidence is incomplete"
+    "Block if the dependency-audit evidence is incomplete",
+    "git worktree add --detach",
+    "Tracked-diff path",
+    "Zero-diff path",
+    "zero-diff preparation evidence",
+    "current `origin/main`",
+    "Do not create an empty commit",
+    "approved zero-diff preparation evidence"
   ),
   "the Stage 3 dependency-audit contract"
+)
+
+stage_four <- release_playbook_stage(playbook, 4L)
+expect_stage_markers(
+  stage_four,
+  c(
+    "zero-diff preparation evidence",
+    "identical to the approved preparation SHA",
+    "stage 3 repeats",
+    "outside the candidate worktree",
+    "new preparation PR",
+    "restart at stage 4"
+  ),
+  "the zero-diff candidate-freeze contract"
+)
+
+ledger_start <- grep("^## Release issue ledger$", playbook)
+expect_identical(length(ledger_start), 1L, "the release ledger section")
+ledger <- paste(playbook[ledger_start:length(playbook)], collapse = "\n")
+expect_stage_markers(
+  ledger,
+  c(
+    "Review and approve the zero-diff preparation evidence",
+    "freeze `<sha>` as the",
+    "Preparation outcome: PR merged <url> / zero-diff evidence approved"
+  ),
+  "the zero-diff release-ledger contract"
 )
 
 stage_seven <- release_playbook_stage(playbook, 7L)
@@ -517,5 +583,6 @@ expect_error(
 
 message(
   "Verified the CRAN release helpers against initial, update, preview, ",
-  "idempotence, publication, dirty-state, and command-failure fixtures."
+  "zero-diff, idempotence, publication, dirty-state, and command-failure ",
+  "fixtures."
 )
