@@ -16,9 +16,10 @@ the first unchecked stage whose evidence still belongs to that candidate.
 
 | Kind | Meaning | Examples |
 |---|---|---|
-| Automatic | A command computes or checks deterministic local state. It may run without approval when read-only. | helper preview, local preflight, publication lookup |
+| Automatic | A command computes or checks deterministic local state. It may run without approval when read-only. | helper preview, release-readiness audit, publication lookup |
 | Agent-operated | Codex runs a documented command, reads its result, and summarizes it. A human can run the same command instead. | CI inspection, semantic review, R-hub inspection |
-| Approval-gated | Codex stops immediately before changing tracked or external state and states the exact target and action. | tracked edits, commit/push, workflow dispatch, issue update, win-builder send, tag/Release, PR |
+| Agent-prepared | Codex makes a bounded remediation PR from one audit; a human reviews and approves its result before it becomes a candidate. | spelling/source corrections, checktor remediations, generated-file repairs |
+| Approval-gated | Codex stops immediately before an external release action or a change to the approved candidate, and states the exact target and action. | merge, workflow dispatch, issue update, win-builder send, tag/Release, CRAN upload |
 | Human-only | Codex may prepare evidence but cannot perform the action. | CRAN upload, confirmation/rejection/follow-up email |
 
 The helper previews tracked edits by default. `--apply` is an explicit local
@@ -32,14 +33,15 @@ There is no global `--yes` setting or approval database.
   and post-publication edits and performs a read-only CRAN publication lookup.
   It is stateless and requires a clean worktree.
 - [`tools/cran-preflight.R`](cran-preflight.R) remains the directly invoked,
-  non-mutating candidate gate. It neither calls the release helper nor performs
-  an external release action.
+  non-mutating release-readiness audit. It neither calls the release helper nor
+  performs an external release action.
 - One release issue is the current checklist and evidence ledger. It records
   durable summaries and URLs, never credentials, authentication material, raw
   local logs, or an unexpired private win-builder result URL.
-- The repository-external preflight bundle holds the canonical candidate
-  tarball, raw logs, and machine-readable evidence. Keep it until monitoring is
-  complete and the GitHub Release assets have been verified.
+- The repository-external preflight bundle holds the audited tarball, raw logs,
+  and machine-readable evidence. Once its SHA is approved and frozen, it is the
+  canonical candidate tarball. Keep it until monitoring is complete and the
+  GitHub Release assets have been verified.
 
 Every approval request must name the operation, exact branch/SHA/file or remote
 target, and expected effect. Approval for one checkpoint does not authorize a
@@ -311,60 +313,70 @@ zero-diff path is to make a required change through the tracked-diff path or to
 repeat the review from the current default branch. Human fallback is the same
 review and either the same PR or the same recorded zero-diff evidence.
 
-### 4. Freeze the candidate SHA
+### 4. Run the release-readiness audit
 
-Purpose: bind every later artifact and result to one reviewed commit.
+Purpose: find candidate defects before binding the candidate SHA.
 
 After the preparation PR is merged, or after the zero-diff preparation evidence
-is approved, show the remote/default-branch target and obtain approval before
-the switch/pull. Then run:
+is approved, synchronize the clean default branch and retain its SHA as the
+audit SHA. Then choose a durable absolute directory outside the repository and
+run:
+
+```sh
+git switch main
+git pull --ff-only
+audit_sha=$(git rev-parse HEAD)
+git status --short
+Rscript tools/cran-preflight.R \
+  --output /absolute/external/path/marginplyr-0.1.0-preflight
+printf '%s\n' "$audit_sha"
+```
+
+This automatic audit is specified in
+[`tools/cran-preflight.md`](cran-preflight.md). It checks spelling, checktor,
+the exact source tarball, and the candidate-tree invariant once each. Success
+evidence is exit 0, the audit SHA, retained tarball path, SHA-256 manifest,
+passing/allowed result summary, and identical before/after worktree records.
+Record the SHA, digest, and durable summary in the release issue after human
+approval; keep raw evidence external.
+
+A candidate finding stops before stage 5. The release agent reads the complete
+audit output and groups related, candidate-remediable, non-behavioral findings
+from that audit into one remediation PR. A change to public behavior,
+dependencies, or release policy remains a separate PR. After any remediation PR
+merges, restart this stage: its final SHA needs the one authoritative clean
+audit. A tool or infrastructure failure is repaired and rerun into a new
+external directory. Human fallback is the same command and review.
+
+### 5. Freeze the candidate SHA
+
+Purpose: bind every later artifact and result to the human-approved audit.
+
+Show the remote/default-branch target and the approved audit SHA, then obtain
+approval before the switch/pull. Then run:
 
 ```sh
 git switch main
 git pull --ff-only
 candidate_sha=$(git rev-parse HEAD)
+test "$candidate_sha" = "<approved audit SHA>"
 git status --short
 printf '%s\n' "$candidate_sha"
 ```
 
-This is read-only after the pull. Success evidence is a 40-character SHA on the
-clean default branch, recorded in the release issue after approval. On the
-zero-diff path it must be identical to the approved preparation SHA; if the
-default branch advanced, the evidence is stale and stage 3 repeats at the new
-SHA. Block if neither the preparation PR is merged nor the zero-diff evidence is
-approved, if the two zero-diff SHAs differ, or if status is dirty. Recovery:
-synchronize or use a clean worktree at the reviewed commit, then recompute.
-Human fallback is the same commands or GitHub's commit page.
+This is read-only after the pull. Success evidence is the approved 40-character
+audit SHA on the clean default branch. On the zero-diff path it must also be
+identical to the approved preparation SHA; if the default branch advanced, the
+audit evidence is stale and stage 4 repeats at the new SHA. Block if neither the
+preparation PR is merged nor the zero-diff preparation evidence is approved, if
+any of the three SHAs differ, or if status is dirty. Human fallback is the same
+commands or GitHub's commit page.
 
 Any later tracked change to metadata, documentation, examples, dependencies or
 guards, executable source, or `cran-comments.md` creates a new candidate and
-invalidates all applicable evidence below.
-
-After the Candidate SHA is frozen, keep new evidence in the release issue and
-repository-external evidence bundles, outside the candidate worktree. Evidence
-must not itself create a new candidate. If a finding requires a tracked fix,
-make it through a new preparation PR and restart at stage 4 with its merged SHA.
-
-### 5. Run the exact-tarball local preflight
-
-Purpose: produce and check the canonical source tarball without changing the
-candidate worktree.
-
-Choose a durable absolute directory outside the repository:
-
-```sh
-Rscript tools/cran-preflight.R \
-  --output /absolute/external/path/marginplyr-0.1.0-preflight
-```
-
-This automatic local gate is specified in
-[`tools/cran-preflight.md`](cran-preflight.md). Success evidence: exit 0, the
-candidate SHA, retained tarball path, SHA-256 manifest, passing/allowed result
-summary, and identical before/after worktree records. Record only the SHA,
-digest, and durable summary in the issue after approval; keep raw evidence
-external. Block on every nonzero exit. Recovery follows the preflight summary;
-fix candidate defects through a new PR/SHA, or repair tooling/infrastructure and
-rerun into a new external directory. Human fallback is the same command.
+invalidates the audit and every later stage. Evidence remains in the release
+issue and repository-external bundle, outside the candidate worktree; it never
+creates a candidate itself.
 
 ### 6. Require CI for the candidate
 
@@ -443,7 +455,7 @@ guards, or `cran-comments.md`.
 ### 8. Dispatch one targeted R-hub v2 check
 
 Purpose: cover one current R-devel Linux environment not duplicated by routine
-CI. Prerequisites: stages 5–7 green/dispositioned, pushed candidate SHA, existing
+CI. Prerequisites: stages 4–7 green/dispositioned, pushed candidate SHA, existing
 R-hub workflow, authenticated GitHub access, and `rhub::rhub_doctor()` passing.
 
 Resolve by capability each release rather than assuming a stale alias:
@@ -473,7 +485,7 @@ inspect Actions.
 ### 9. Send the retained tarball to win-builder R-devel
 
 Purpose: test the exact candidate archive on CRAN-like Windows-devel
-infrastructure. Prerequisites: stages 5–8 complete and the external bundle still
+infrastructure. Prerequisites: stages 4–8 complete and the external bundle still
 intact.
 
 Verify identity first:
@@ -493,7 +505,7 @@ Success evidence: matching digest, environment/date, and a passing emailed
 result. Archive the result into the external evidence bundle before it expires;
 record a durable summary in the issue, not the unexpired private URL. Block on a
 digest mismatch, unexpected archive, send failure, or check finding. Recovery:
-never rebuild silently—locate the retained archive or restart at stage 5; retry
+never rebuild silently—locate the retained archive or restart at stage 4; retry
 transient service failure only after approval. Human fallback is the same web
 form and email handling.
 
@@ -709,10 +721,12 @@ Candidate SHA.”
 
 ## Exact local artifact
 
-- [ ] Preflight exit 0
+- [ ] Release-readiness audit exit 0
+- [ ] Audit SHA: `<40-char-sha>`
 - [ ] Retained tarball: `marginplyr_<version>.tar.gz`
 - [ ] SHA-256: `<digest>`
 - [ ] Durable preflight summary: <location or approved summary>
+- [ ] Human approval of the audit result: <issue comment / review>
 
 ## Candidate-SHA evidence
 

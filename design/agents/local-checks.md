@@ -51,10 +51,12 @@ The command takes no options. It runs, in order:
 
 1. a test-source dependency scan that refuses every package candidate absent
    from `DESCRIPTION`;
-2. the full testthat suite, including local snapshot expectations;
-3. `jarl check .`;
-4. package-aware lintr after `pkgload::load_all()`; and
-5. a source-tarball `R CMD check --as-cran` against disposable empty local
+2. package spelling, reporting unknown words and their locations only when it
+   finds them;
+3. the full testthat suite, including local snapshot expectations;
+4. `jarl check .`;
+5. package-aware lintr after `pkgload::load_all()`; and
+6. a source-tarball `R CMD check --as-cran` against disposable empty local
    CRAN and Bioconductor indexes, with remote incoming checks and
    external-clock verification disabled. The local future-file-timestamp
    comparison remains enabled.
@@ -71,6 +73,7 @@ Record the exact identity and outcome in the pull request:
 
 ```text
 - Review-ready check: <40-character commit SHA>
+  - package spelling: passed
   - full testthat suite: passed
   - jarl: passed
   - package-aware lintr: passed

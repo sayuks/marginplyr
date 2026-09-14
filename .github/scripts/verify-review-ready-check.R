@@ -60,6 +60,15 @@ expect_error(
   "lintr, jarl",
   "missing prerequisites"
 )
+expect_error(
+  review_ready_prerequisites(
+    package_available = function(package) package != "spelling",
+    find_command = function(command) "/jarl",
+    r_bin = "/R/bin"
+  ),
+  "spelling",
+  "a missing spelling prerequisite"
+)
 
 fixture_sha <- paste(rep("a", 40L), collapse = "")
 clean_git <- function(root, args) {
@@ -95,8 +104,16 @@ prerequisites <- list(
 steps <- review_ready_source_steps(prerequisites)
 expect_identical(
   names(steps),
-  c("Full testthat suite", "jarl", "package-aware lintr"),
+  c("Package spelling", "Full testthat suite", "jarl", "package-aware lintr"),
   "the fixed source-step order"
+)
+expect_true(
+  grepl(
+    "spelling::spell_check_package",
+    steps[["Package spelling"]]$args[[2L]],
+    fixed = TRUE
+  ),
+  "the package spelling command"
 )
 expect_identical(steps$jarl$args, c("check", "."), "the jarl command")
 expect_identical(

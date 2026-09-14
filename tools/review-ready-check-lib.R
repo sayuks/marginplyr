@@ -95,7 +95,7 @@ review_ready_prerequisites <- function(
   find_command = Sys.which,
   r_bin = R.home("bin")
 ) {
-  packages <- c("testthat", "pkgload", "lintr", "rcmdcheck")
+  packages <- c("spelling", "testthat", "pkgload", "lintr", "rcmdcheck")
   available <- vapply(packages, package_available, logical(1))
   commands <- c(
     jarl = unname(find_command("jarl")),
@@ -159,9 +159,22 @@ verify_review_ready_test_packages <- function(
   invisible(TRUE)
 }
 
-# Defines the three working-tree checks before the source-tarball boundary.
+# Defines the four working-tree checks before the source-tarball boundary.
 review_ready_source_steps <- function(prerequisites) {
   list(
+    `Package spelling` = list(
+      command = prerequisites$rscript,
+      args = c(
+        "-e",
+        paste0(
+          "findings <- spelling::spell_check_package('.', vignettes = TRUE, ",
+          "use_wordlist = TRUE); if (nrow(findings)) { print(findings); ",
+          "stop('Package spelling found unknown words.', call. = FALSE) }; ",
+          "cat('Package spelling passed.\\n')"
+        )
+      ),
+      env = character()
+    ),
     `Full testthat suite` = list(
       command = prerequisites$rscript,
       args = c(

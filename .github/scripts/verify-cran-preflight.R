@@ -161,6 +161,16 @@ expect_identical(
   "one spelling invocation"
 )
 expect_identical(
+  grepl("spelling.tsv", preflight_sources, fixed = TRUE),
+  FALSE,
+  "no spelling TSV artifact"
+)
+expect_identical(
+  grepl("spelling.log", preflight_sources, fixed = TRUE),
+  FALSE,
+  "no spelling log artifact"
+)
+expect_identical(
   lengths(regmatches(
     preflight_sources,
     gregexpr("rcmdcheck::rcmdcheck", preflight_sources, fixed = TRUE)
@@ -484,6 +494,64 @@ expect_identical(
 
 evidence <- file.path(fixture_root, "evidence")
 dir.create(evidence)
+spelling_fixture <- structure(
+  data.frame(
+    word = "ungroup",
+    found = I(list(c(
+      "expand_with_margins.Rd:189",
+      "nest_with_margins.Rd:234"
+    ))),
+    stringsAsFactors = FALSE
+  ),
+  class = c("summary_spellcheck", "data.frame")
+)
+# The preflight verifier has no spelling dependency. This fixture printer makes
+# the generic `print()` call observable while retaining spelling's list shape.
+print.summary_spellcheck <- function(x, ...) {
+  cat("WORD FOUND IN\n")
+  for (index in seq_len(nrow(x))) {
+    cat(x$word[[index]], paste(x$found[[index]], collapse = "\n"), sep = "\n")
+    cat("\n")
+  }
+  invisible(x)
+}
+spelling_state <- new_preflight_state(evidence)
+spelling_output <- capture.output(run_preflight_spelling_step(
+  spelling_state,
+  package_path = package_dir,
+  checker = function(...) spelling_fixture
+))
+expect_true(
+  any(grepl("ungroup", spelling_output, fixed = TRUE)),
+  "the spelling finding word"
+)
+expect_true(
+  all(vapply(
+    c("expand_with_margins.Rd:189", "nest_with_margins.Rd:234"),
+    function(location) any(grepl(location, spelling_output, fixed = TRUE)),
+    logical(1)
+  )),
+  "every spelling finding location"
+)
+expect_identical(
+  spelling_state$steps$status,
+  "failed",
+  "a nonempty spelling result"
+)
+expect_identical(
+  spelling_state$candidate_failed,
+  TRUE,
+  "a spelling finding is a candidate failure"
+)
+expect_identical(
+  preflight_exit_code(
+    candidate_failed = spelling_state$candidate_failed,
+    tool_failed = spelling_state$tool_failed
+  ),
+  1L,
+  "a spelling finding has the candidate exit status"
+)
+
 state <- new_preflight_state(evidence)
 state$candidate_sha <- paste(rep("a", 40L), collapse = "")
 state$package <- "marginplyr"
