@@ -43,6 +43,8 @@ jobs:
           pandoc_version=$(quarto pandoc --version | head -n 1)
           echo "Quarto ${quarto_version}"
           echo "${pandoc_version}"
+          echo "README_QUARTO_VERSION=${quarto_version}" >> "$GITHUB_ENV"
+          echo "README_PANDOC_VERSION=${pandoc_version}" >> "$GITHUB_ENV"
           {
             echo '### README renderer'
             echo "- Quarto: \`${quarto_version}\`"
@@ -90,7 +92,5 @@ jobs:
           if git diff --exit-code README.md; then
             exit 0
           fi
-          quarto_version=$(quarto --version)
-          pandoc_version=$(quarto pandoc --version | head -n 1)
-          echo "::error::README.md is not what README.qmd renders with latest stable Quarto ${quarto_version} and its bundled ${pandoc_version}. This can mean README.md is stale, or that a newer Quarto changed its bundled Pandoc or Markdown writer output. Run devtools::build_readme() with the current stable Quarto and commit README.md."
+          echo "::error::README.md is not what README.qmd renders with latest stable Quarto ${README_QUARTO_VERSION} and its bundled ${README_PANDOC_VERSION}. This can mean README.md is stale, or that a newer Quarto changed its bundled Pandoc or Markdown writer output. Run devtools::build_readme() with the current stable Quarto and commit README.md."
           exit 1

@@ -11,9 +11,9 @@ and no generated-file synchronization check?
 
 The survey covered `dplyr`, `tidyr`, `readr`, `purrr`, `ggplot2`, `tibble`, and
 the `tidyverse` package. `usethis`, `devtools`, and `pkgdown` were also read
-because they own the current package-development convention and the tools that
-implement it. Every repository claim below refers to the named default-branch
-commit, not to an assumed permanent state.
+because their surveyed commits owned the package-development convention and
+the tools that implemented it. Every repository claim below refers to the
+named default-branch commit, not to an assumed permanent state.
 
 ## Summary
 
@@ -26,15 +26,15 @@ Pandoc for package checks and pkgdown, but did not rebuild the README. Tibble's
 custom workflow also installed Pandoc indirectly and committed some generated
 artifacts, but its pre-commit mutation steps did not render the README.
 
-That fleet represented the older convention, not the direction of the current
-tidyverse tooling. At the surveyed `usethis` commit,
+That fleet represented the older convention, not the direction established by
+the surveyed tidyverse tooling. At the surveyed `usethis` commit,
 `create_tidy_package()` called `use_readme_qmd()`, and the QMD template rendered
 to GFM. The change was introduced on 2026-03-05. The upkeep and release
 checklists still treated `devtools::build_readme()` as a human-run task rather
 than a repository-visible CI invariant.
 
 The best fit for `marginplyr` was therefore not to copy the surveyed fleet's
-manual-only synchronization. It was to adopt the current QMD direction, use
+manual-only synchronization. It was to adopt that QMD direction, use
 the latest stable Quarto with its bundled Pandoc, and retain the existing
 read-only regeneration-and-diff gate. This gave contributors one renderer and
 one command, avoided separately choosing a Pandoc version, and made renderer
@@ -69,7 +69,7 @@ while `r-lib/devtools` kept only a hand-written
 [`README.md`](https://github.com/r-lib/devtools/blob/8fcec5a0664001c79d215c9161edf60f356bafb0/README.md#L1-L12).
 Neither executable-README repository had a repository-visible README render or
 diff workflow. This reinforced that the sampled installed base lagged the new
-template; it did not make Rmd the current recommendation.
+template; it did not make Rmd the surveyed tooling's recommendation.
 
 The absence of an explicit Quarto setup in ggplot2 did not mean that its
 vignettes avoided Quarto. Its `DESCRIPTION` selected Quarto as the
@@ -86,14 +86,14 @@ The primary tidyverse guidance said that an executable README had to be
 rendered regularly, recommended `devtools::build_readme()`, installed a local
 pre-commit hook, and included the same command in release/upkeep checklists:
 
-- The current `use_readme_qmd()`/`use_readme_rmd()` implementation explicitly
+- The surveyed `use_readme_qmd()`/`use_readme_rmd()` implementation explicitly
   said to render regularly and described the local hook
   ([source](https://github.com/r-lib/usethis/blob/eefc9fd26c44b6c3eca7672dbedfb5b2ec284c03/R/readme.R#L8-L28)).
   The hook only acted when a README source was staged, compared mtimes, required
   source and output to be staged together, and could be bypassed with
   `--no-verify`
   ([template](https://github.com/r-lib/usethis/blob/eefc9fd26c44b6c3eca7672dbedfb5b2ec284c03/inst/templates/readme-rmd-pre-commit.sh#L1-L14)).
-- The current tidy upkeep checklist ended with
+- The surveyed tidy upkeep checklist ended with
   `devtools::build_readme()`
   ([source](https://github.com/r-lib/usethis/blob/eefc9fd26c44b6c3eca7672dbedfb5b2ec284c03/R/upkeep.R#L312-L327)),
   and the release checklist included it before package checks
@@ -119,7 +119,7 @@ updated only `README.md` to reflect new dependency versions. This practice
 could work well with attentive maintainers, but it did not prove on every pull
 request that the output matched the source and installed package.
 
-## Rmd in the fleet versus QMD in the current standard
+## Rmd in the fleet versus QMD in the surveyed standard
 
 At `eefc9fd`, `create_tidy_package()` created a QMD README
 ([source](https://github.com/r-lib/usethis/blob/eefc9fd26c44b6c3eca7672dbedfb5b2ec284c03/R/tidyverse.R#L61-L73)).
@@ -190,8 +190,8 @@ the simpler complete synchronization predicate.
 Adopt **latest stable Quarto + its bundled Pandoc + an exact generated README
 diff gate**:
 
-1. Migrate `README.Rmd` to `README.qmd` using the current usethis GFM shape.
-   This followed the current tidyverse package template and consolidated the
+1. Migrate `README.Rmd` to `README.qmd` using the surveyed usethis GFM shape.
+   This followed the surveyed tidyverse package template and consolidated the
    repository on the renderer it already used for vignettes and the site.
 2. In the README documentation job, set up Quarto with `version: release` or
    its equivalent default. Remove standalone Pandoc setup and all repository
@@ -217,6 +217,6 @@ This recommendation deliberately differed from the surveyed repositories in
 one respect: it kept a stronger source/output invariant. That was justified by
 `marginplyr`'s larger executable README, its existing use of README output in
 multiple published surfaces, and its existing release automation. The
-tidyverse fleet showed that manual regeneration was workable; the current
+tidyverse fleet showed that manual regeneration was workable; the surveyed
 usethis standard showed that QMD was the forward path. Neither provided a
 reason to discard a working read-only correctness gate.

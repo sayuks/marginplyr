@@ -21,8 +21,8 @@ committed generated file and a complete synchronization check.
 Do not adopt the r-lib auto-commit example.  It is an R Markdown workflow, not
 a Quarto workflow; it uses the standalone `setup-pandoc` action; and it changes
 the repository after a push instead of proving in the pull request that source
-and generated output arrive together.  No current usethis function creates a
-Quarto README CI workflow.
+and generated output arrive together.  At the examined usethis commit, no
+exported function created a Quarto README CI workflow.
 
 Byte identity is not itself a user requirement.  It is the implementation of a
 stronger and useful requirement: the Markdown a reader receives must be the
@@ -36,9 +36,9 @@ inventing and maintaining a partial semantic oracle.
 
 ## What usethis actually creates
 
-The usethis reference says that `README.qmd` and `README.Rmd` must still be
-rendered regularly and points to an example workflow in `r-lib/actions`.  It
-does not say that `use_readme_qmd()` installs that workflow
+The usethis reference read on 2026-09-14 said that `README.qmd` and
+`README.Rmd` had to be rendered regularly and pointed to an example workflow
+in `r-lib/actions`. It did not say that `use_readme_qmd()` installed that workflow
 ([README reference](https://usethis.r-lib.org/reference/use_readme_rmd.html)).
 The implementation confirms the narrower behavior:
 
@@ -54,10 +54,10 @@ The implementation confirms the narrower behavior:
   the output
   ([hook template](https://github.com/r-lib/usethis/blob/eefc9fd26c44b6c3eca7672dbedfb5b2ec284c03/inst/templates/readme-rmd-pre-commit.sh)).
 
-The current exported workflow helper is the generic `use_github_action()`; a
-`use_github_action_render()` export does not exist.  The generic helper copies
-a named workflow from `r-lib/actions`, defaulting to that repository's latest
-published release
+At the examined usethis commit, the exported workflow helper was the generic
+`use_github_action()`; `use_github_action_render()` was not exported. The
+generic helper copied a named workflow from `r-lib/actions` and defaulted to
+that repository's latest published release
 ([reference](https://usethis.r-lib.org/reference/use_github_action.html),
 [implementation](https://github.com/r-lib/usethis/blob/eefc9fd26c44b6c3eca7672dbedfb5b2ec284c03/R/github-actions.R#L82-L154),
 [namespace](https://github.com/r-lib/usethis/blob/v3.2.2/NAMESPACE)).
@@ -67,8 +67,8 @@ delete it.  A repository-specific migration is therefore required here.
 
 ## The linked CI example is not a QMD synchronization check
 
-The only README-like rendering example under the current `r-lib/actions`
-`v2-branch` is `render-rmarkdown.yaml`.  It:
+At the examined `r-lib/actions` commit, the only README-like rendering example
+under `v2-branch` was `render-rmarkdown.yaml`.  It:
 
 1. runs only after pushes that touch `**.Rmd`;
 2. finds changed `.Rmd` files and calls `rmarkdown::render()` on them;
@@ -100,9 +100,10 @@ mutating it.
 
 ## What Quarto's actions do and do not do
 
-`quarto-dev/quarto-actions/setup@v2` defaults its `version` input to `release`,
-which resolves and downloads the latest stable Quarto when the job runs.  An
-exact version is optional
+At the examined setup-action commit,
+`quarto-dev/quarto-actions/setup@v2` defaulted its `version` input to `release`,
+which resolved and downloaded the latest stable Quarto when the job ran. An
+exact version was optional
 ([setup definition](https://github.com/quarto-dev/quarto-actions/blob/91dabb203fce7f899d10ef8e482d94b00f397cbc/setup/action.yml#L3-L8),
 [download branch](https://github.com/quarto-dev/quarto-actions/blob/91dabb203fce7f899d10ef8e482d94b00f397cbc/setup/action.yml#L48-L66)).
 That provides the desired floating toolchain when `version` is omitted.
@@ -148,8 +149,8 @@ official Pandoc 3.8.3, 3.10, 3.10.1, and 3.11.  The 3.10 to 3.10.1 transition
 produced the same difference already measured for R Markdown: the literal
 reporting-levels fence changed from ```` ``` text ```` to a bare fence.  Thus
 QMD migration does not cure the writer-only byte difference that motivated the
-current pin.  Allowing Quarto to float also allows its bundled Pandoc and
-Quarto's own filters to change.
+repository pin measured above. Allowing Quarto to float also allows its bundled
+Pandoc and Quarto's own filters to change.
 
 This does not prevent the proposed policy.  It changes how an upstream writer
 change is handled:
@@ -171,7 +172,8 @@ added README regeneration and the comparison together.  The reason was not
 that Markdown formatting has a byte-level public contract.  It was that
 `README.md` was a generated file with no regeneration gate.
 
-The current topology gives the generated half unusually wide reach:
+The repository topology observed on 2026-09-14 gave the generated half
+unusually wide reach:
 
 - GitHub displays `README.md` at the repository root.
 - The altdoc site uses it as the home-page source.
@@ -241,9 +243,9 @@ Moving the README to QMD leaves one document engine and one bundled Pandoc path
 instead of maintaining R Markdown plus a standalone Pandoc solely for the
 README.
 
-Current devtools supports this route.  `devtools::build_readme()` recognizes
-`README.qmd`, installs the current package source into a temporary library,
-and passes that library through `R_LIBS_USER` because Quarto starts a separate R
+At the examined devtools commit, `devtools::build_readme()` recognized
+`README.qmd`, installed the package source into a temporary library,
+and passed that library through `R_LIBS_USER` because Quarto starts a separate R
 process for knitr
 ([implementation](https://github.com/r-lib/devtools/blob/v2.5.2/R/build-readme.R#L98-L167),
 [reference](https://devtools.r-lib.org/reference/build_rmd.html)).

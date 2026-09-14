@@ -43,7 +43,7 @@ january_sales |>
 
 `rollup(region, store)` asks for three reporting levels:
 
-```
+``` text
 (region, store)  store detail
 (region)         region subtotal
 ()               company total
