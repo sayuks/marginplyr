@@ -809,27 +809,67 @@ capture_console <- function(path, code) {
   force(code)
 }
 
-# Runs shipped spelling policy against the unpacked candidate and retains rows.
-run_spelling_check <- function(package_path, evidence_path) {
-  log <- file.path(evidence_path, "spelling.log")
-  findings <- capture_console(
-    log,
-    spelling::spell_check_package(
-      package_path,
-      vignettes = TRUE,
-      use_wordlist = TRUE
+# Prints only detected spelling findings, so an agent can repair the source
+# without creating a second evidence artifact beside the canonical tarball.
+report_spelling_findings <- function(findings) {
+  if (nrow(findings) > 0L) {
+    print(findings)
+  }
+  invisible(findings)
+}
+
+# Runs shipped spelling policy against the unpacked candidate.
+run_spelling_check <- function(
+  package_path,
+  checker = spelling::spell_check_package
+) {
+  findings <- checker(
+    package_path,
+    vignettes = TRUE,
+    use_wordlist = TRUE
+  )
+  findings
+}
+
+# Records one spelling result as a candidate defect or an unavailable tool.
+run_preflight_spelling_step <- function(
+  state,
+  package_path,
+  checker = run_spelling_check
+) {
+  started <- proc.time()[["elapsed"]]
+  findings <- tryCatch(checker(package_path), error = function(cnd) cnd)
+  if (inherits(findings, "condition")) {
+    record_preflight_step(
+      state,
+      "spelling",
+      "unavailable",
+      proc.time()[["elapsed"]] - started,
+      "",
+      conditionMessage(findings)
     )
+    record_problem(state, "tool")
+    return(invisible(NULL))
+  }
+
+  report_spelling_findings(findings)
+  spelling_failed <- nrow(findings) > 0L
+  record_preflight_step(
+    state,
+    "spelling",
+    if (spelling_failed) "failed" else "passed",
+    proc.time()[["elapsed"]] - started,
+    "",
+    if (spelling_failed) {
+      "Unrecognized words were found."
+    } else {
+      "No unrecognized words."
+    }
   )
-  table_path <- file.path(evidence_path, "spelling.tsv")
-  utils::write.table(
-    as.data.frame(findings),
-    table_path,
-    sep = "\t",
-    row.names = FALSE,
-    quote = TRUE,
-    na = ""
-  )
-  list(findings = findings, evidence = table_path)
+  if (spelling_failed) {
+    record_problem(state, "candidate")
+  }
+  invisible(NULL)
 }
 
 # Runs the repository's shared checktor wrapper against the candidate tarball.
@@ -1170,39 +1210,7 @@ run_preflight_pipeline <- function(state, repository_root, description) {
     "Tarball name, directory, DESCRIPTION, and SHA-256 agree."
   )
 
-  started <- proc.time()[["elapsed"]]
-  spelling <- tryCatch(
-    run_spelling_check(identity$package_path, evidence),
-    error = function(cnd) cnd
-  )
-  if (inherits(spelling, "condition")) {
-    record_preflight_step(
-      state,
-      "spelling",
-      "unavailable",
-      proc.time()[["elapsed"]] - started,
-      file.path(evidence, "spelling.log"),
-      conditionMessage(spelling)
-    )
-    record_problem(state, "tool")
-  } else {
-    spelling_failed <- nrow(as.data.frame(spelling$findings)) > 0L
-    record_preflight_step(
-      state,
-      "spelling",
-      if (spelling_failed) "failed" else "passed",
-      proc.time()[["elapsed"]] - started,
-      spelling$evidence,
-      if (spelling_failed) {
-        "Unrecognized words were found."
-      } else {
-        "No unrecognized words."
-      }
-    )
-    if (spelling_failed) {
-      record_problem(state, "candidate")
-    }
-  }
+  run_preflight_spelling_step(state, identity$package_path)
 
   started <- proc.time()[["elapsed"]]
   checktor <- tryCatch(

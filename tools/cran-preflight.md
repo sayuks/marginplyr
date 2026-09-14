@@ -1,6 +1,7 @@
 # Local CRAN preflight
 
-Run the release gate from a clean repository root:
+Run the release-readiness audit from a clean repository root, before freezing
+the candidate SHA:
 
 ```sh
 Rscript tools/cran-preflight.R
@@ -9,7 +10,9 @@ Rscript tools/cran-preflight.R
 The command archives clean `HEAD` into an external disposable source tree,
 builds exactly one source tarball, and retains that tarball and its SHA-256 with
 the full evidence bundle. `--output <new-directory>` selects another external
-bundle location; it changes neither checks nor pass criteria.
+bundle location; it changes neither checks nor pass criteria. An exit 0 is
+evidence for the SHA the human approves and then freezes; a candidate finding
+stops that path before freezing.
 
 The command installs and edits nothing. Before running it, install every
 `Suggests` entry at the version declared in `DESCRIPTION`, plus the packages in
@@ -18,7 +21,7 @@ toolchain. The installed `marginplyr` version must equal the candidate version b
 Quarto vignette build runs in a child R process. A missing prerequisite exits
 with an installation hint rather than changing the library.
 
-The invariant local gate performs, once each:
+The invariant local audit performs, once each:
 
 1. shipped spelling against the unpacked candidate;
 2. the shared checktor baseline against the candidate tarball;
@@ -29,6 +32,10 @@ The invariant local gate performs, once each:
    problem; and
 5. byte-for-byte comparison of the repository's before/after `git status`
    record.
+
+When spelling finds unknown words, it prints the words and their locations to
+the command output so the release agent can repair their source or propose a
+wordlist addition. The audit creates no separate spelling log or table.
 
 Every ERROR and WARNING blocks. Every NOTE blocks unless the complete,
 normalized NOTE matches the state-scoped policy in

@@ -526,13 +526,28 @@ expect_stage_markers(
   stage_four,
   c(
     "zero-diff preparation evidence",
-    "identical to the approved preparation SHA",
-    "stage 3 repeats",
-    "outside the candidate worktree",
-    "new preparation PR",
-    "restart at stage 4"
+    "audit SHA",
+    "obtain approval before",
+    "checks spelling, checktor",
+    "candidate-remediable",
+    "one remediation PR",
+    "one authoritative clean",
+    "restart this stage"
   ),
-  "the zero-diff candidate-freeze contract"
+  "the release-readiness audit contract"
+)
+
+stage_five <- release_playbook_stage(playbook, 5L)
+expect_stage_markers(
+  stage_five,
+  c(
+    "approved audit SHA",
+    "approved preparation SHA",
+    "stage 4 repeats",
+    "three SHAs differ",
+    "outside the candidate worktree"
+  ),
+  "the candidate-freeze contract"
 )
 
 ledger_start <- grep("^## Release issue ledger$", playbook)
@@ -541,10 +556,12 @@ ledger <- paste(playbook[ledger_start:length(playbook)], collapse = "\n")
 expect_stage_markers(
   ledger,
   c(
-    "Review and approve the zero-diff preparation evidence",
-    "freeze `<sha>` as the",
+    "Run the release-readiness audit for `<sha>`",
+    "before freezing the Candidate SHA",
     "Preparation PR: <merged URL / not required (zero diff)>",
-    "Zero-diff preparation evidence, when applicable"
+    "Zero-diff preparation evidence, when applicable",
+    "Release-readiness audit exit 0",
+    "Human approval of the audit result"
   ),
   "the zero-diff release-ledger contract"
 )
