@@ -201,7 +201,7 @@ test_that("the record's owner lists every call that keeps one", {
 # has to spell it some other way.
 version_blind_guards <- c("requireNamespace", "is_installed")
 
-# Both halves of the README are pages: `README.Rmd` is where a claim is
+# Both halves of the README are pages: `README.qmd` is where a claim is
 # written, and `README.md` is what a reader on GitHub is shown and what the
 # website's home page includes.
 #
@@ -212,14 +212,14 @@ version_blind_guards <- c("requireNamespace", "is_installed")
 #
 # A repository run reads both. A check run reads whichever half R installed,
 # and that is a question about the R running the check, not about this package:
-# `.Rbuildignore` keeps `README.Rmd` out of the tarball, and "Package README.md
+# `.Rbuildignore` keeps `README.qmd` out of the tarball, and "Package README.md
 # files are now installed and featured in HTML help" is an R 4.6.0 change, while
 # `DESCRIPTION` supports 4.1.0. So an older R checking a tarball reaches
 # neither, which is a page the scans do not see rather than a failure -- the
 # residency the vignette sources already have.
 readme_sources <- function() {
   repository <- c(
-    testthat::test_path("..", "..", "README.Rmd"),
+    testthat::test_path("..", "..", "README.qmd"),
     testthat::test_path("..", "..", "README.md")
   )
   paths <- repository[file.exists(repository)]
@@ -398,9 +398,9 @@ test_that("installation instructions follow the recorded CRAN state", {
   # the one way this gate could go quiet. Asserted over what is there rather
   # than over a fixed pair, because which halves are there varies and none of
   # the variation is this package's doing: covr runs from a copy built without
-  # the `.Rbuildignore`d `README.Rmd`, and an R older than 4.6.0 checking a
+  # the `.Rbuildignore`d `README.qmd`, and an R older than 4.6.0 checking a
   # tarball has neither half.
-  on_disk <- c("README.Rmd", "README.md")
+  on_disk <- c("README.qmd", "README.md")
   on_disk <- on_disk[vapply(
     on_disk,
     function(file) file.exists(testthat::test_path("..", "..", file)),

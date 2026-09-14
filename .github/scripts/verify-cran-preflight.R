@@ -139,7 +139,8 @@ preflight_sources <- paste(
   collapse = "\n"
 )
 forbidden_calls <- c(
-  "roxygenise(", "render(\"README.Rmd\"", "att_amend_desc(",
+  "roxygenise(", "render(\"README.Rmd\"", "quarto_render(",
+  "att_amend_desc(",
   "att_from_namespace(", "url_update(", "use_release_issue(",
   "test_dir(", "run_examples(", "build_vignettes(", "covr::"
 )

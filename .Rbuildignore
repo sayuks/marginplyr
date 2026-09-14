@@ -5,7 +5,7 @@
 ^\.git$
 ^LICENSE\.md$
 ^CODE_OF_CONDUCT\.md$
-^README\.Rmd$
+^README\.qmd$
 ^dev$
 ^data-raw$
 ^tools$

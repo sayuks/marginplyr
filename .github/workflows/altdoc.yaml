@@ -33,6 +33,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          install-pandoc: false
           extra-packages: local::.
           # altdoc is declared in DESCRIPTION's `Config/Needs/website` rather
           # than in Suggests, because nothing outside `.Rbuildignore`d paths

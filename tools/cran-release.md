@@ -80,9 +80,9 @@ Rscript tools/cran-release.R post-release --version 0.1.0 --apply
 still writes release notes, metadata, and `cran-comments.md`. `post-release`
 first verifies CRAN publication, then conditionally adds the initial-only CRAN
 README text, sets the development version, adds its NEWS heading, and regenerates
-`README.md` with the repository-pinned Pandoc 3.10.1. It installs the edited tree
-into a disposable library for rendering, so the README cannot load an older
-installed marginplyr.
+`README.md` with the current Quarto and its bundled Pandoc. It installs the
+edited tree into a disposable library for rendering, so the README cannot load
+an older installed marginplyr.
 
 If a helper refuses dirty or unexpected state, inspect `git status --short` and
 the named file. Do not bypass the refusal. If `--apply` is interrupted or a
@@ -99,7 +99,7 @@ Purpose: establish whether this is an initial or update release and whether the
 local and hosted tools can produce valid evidence.
 
 Prerequisites: repository root, clean default branch, `gh` authenticated,
-current release/R-patched R, Quarto, Pandoc 3.10.1, TeX, all `Suggests`, and
+current release/R-patched R, current stable Quarto, TeX, all `Suggests`, and
 `Config/Needs/preflight` installed. Show the branch and remote update to be
 integrated and obtain approval before synchronizing with `git pull --ff-only`.
 
@@ -261,15 +261,14 @@ repository authorities:
 
 ```sh
 Rscript -e 'roxygen2::roxygenise()'
-R CMD INSTALL .
-Rscript -e 'rmarkdown::render("README.Rmd", quiet = TRUE)'
+Rscript -e 'devtools::build_readme()'
 git diff --check
 git diff
 ```
 
-Confirm `quarto pandoc --version` reports 3.10.1 before the README command. The
-working tree is installed first because its chunks load marginplyr, as
-`AGENTS.md` documents.
+Record `quarto --version` and `quarto pandoc --version` before the README
+command. `devtools::build_readme()` installs the working tree because its chunks
+load marginplyr, as `AGENTS.md` documents.
 
 After the review and required regeneration, inspect `git status --short` and
 `git diff`. Follow exactly one of these paths:
@@ -635,7 +634,7 @@ Rscript -e 'pkgload::load_all(".", quiet = TRUE); lintr::lint_package()'
 Rscript -e 'pkgload::load_all(".", quiet = TRUE); testthat::test_dir("tests/testthat")'
 git diff --check
 
-git add DESCRIPTION NEWS.md README.Rmd README.md
+git add DESCRIPTION NEWS.md README.qmd README.md
 git commit -m "Start marginplyr 0.1.0.9000"
 git push -u origin post-release/0.1.0
 gh pr create --fill
@@ -645,8 +644,8 @@ Success evidence: green reviewable PR with no duplicated heading, badge, or
 installation text. Block on publication mismatch, dirty/unexpected state,
 generation failure, or a split/partial change. Recovery: inspect helper output;
 fix the disposable branch, or discard only that branch and recreate it. Human
-fallback: follow this stage by hand, render with Pandoc 3.10.1, and create one
-PR.
+fallback: follow this stage by hand, render with the current stable Quarto, and
+create one PR.
 
 ### 15. Monitor site deployment and CRAN flavors for 72 hours
 

@@ -43,26 +43,22 @@ honest: any leak into `man/` fails CI.
 ### Documentation
 
 `man/`, `NAMESPACE`, and `README.md` are generated. After changing roxygen
-comments run `roxygen2::roxygenise()`; after changing `README.Rmd` run
-`rmarkdown::render("README.Rmd")`. Commit what either produces;
+comments run `roxygen2::roxygenise()`; after changing `README.qmd` run
+`devtools::build_readme()`. Commit what either produces;
 `.github/workflows/document.yaml` regenerates all three and fails when any
 differs from what its source produces.
 
 The README is the generated file with the widest reach — GitHub shows it and
 the website's home page includes it — and the only one whose source
 `.Rbuildignore` keeps out of the tarball, so nothing a check run reaches
-records what it should have contained. Rendering it executes its chunks
-against the *installed* marginplyr, as the site build does, so install the
-working tree first or the regenerated file shows an older package's output.
+records what it should have contained. `devtools::build_readme()` installs the
+working tree before rendering, as the site build does.
 
-Its renderer is pinned, unlike roxygen2's, because pandoc's markdown writer
-is not stable across versions while the check is a byte comparison: pandoc
-3.8.3 writes a `text` info string on the fence holding the reporting-levels
-block, and 3.10.1 omits it, so an unpinned job reds on a README nobody touched.
-`document.yaml` pins 3.10.1, the version the committed file came from;
-regenerating locally against a different pandoc produces a diff that is a
-pandoc difference and not a stale file. Moving the pin means regenerating
-`README.md` in the same commit.
+`document.yaml` uses the current stable Quarto and only its bundled Pandoc;
+neither executable is version-pinned. It logs both versions before the byte
+comparison. A README diff can therefore mean either a stale generated file or
+writer drift after Quarto changed its bundled Pandoc; the failure names both
+possibilities. Regenerate with the current stable Quarto and commit the result.
 
 ### Installation instructions
 

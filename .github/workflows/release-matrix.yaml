@@ -217,8 +217,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: r-lib/actions/setup-pandoc@v2
-
       # The vignette engine is the quarto R package, which shells out to the
       # Quarto CLI named in DESCRIPTION's SystemRequirements. Install it here
       # rather than assuming the runner image ships one.
@@ -230,6 +228,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          install-pandoc: false
           # Quarto renders vignettes in a child R process that cannot see the
           # temporary installation R CMD build makes, so install the package
           # itself as well.
@@ -329,8 +328,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: r-lib/actions/setup-pandoc@v2
-
       - uses: quarto-dev/quarto-actions/setup@v2
 
       - uses: r-lib/actions/setup-r@v2
@@ -345,6 +342,7 @@ jobs:
       # job if one turns out not to be.
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          install-pandoc: false
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
           cache-version: hard-1
@@ -404,8 +402,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - uses: r-lib/actions/setup-pandoc@v2
-
       - uses: quarto-dev/quarto-actions/setup@v2
 
       - uses: r-lib/actions/setup-r@v2
@@ -429,6 +425,7 @@ jobs:
       # arrow and duckdb from the restored cache (#64).
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          install-pandoc: false
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
           cache-version: hard-1

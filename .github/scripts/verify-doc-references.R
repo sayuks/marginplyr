@@ -23,7 +23,7 @@
 #   can tell that from ours. Their own file names are still covered, from the
 #   side of every document that cites one. `investigation/README.md` states
 #   the convention rather than recording a note, so it is read.
-# * Generated files. `README.md` is rendered from `README.Rmd`, which is read
+# * Generated files. `README.md` is rendered from `README.qmd`, which is read
 #   in its place; `man/` and `NAMESPACE` are roxygen output and carry no
 #   extension this reads.
 # * Paths, not bare names. A candidate has to contain a `/`. A bare

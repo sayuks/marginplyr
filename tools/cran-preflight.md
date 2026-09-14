@@ -13,8 +13,8 @@ bundle location; it changes neither checks nor pass criteria.
 
 The command installs and edits nothing. Before running it, install every
 `Suggests` entry at the version declared in `DESCRIPTION`, plus the packages in
-`Config/Needs/preflight`, and install Quarto, Pandoc, and a TeX toolchain. The
-installed `marginplyr` version must equal the candidate version because the
+`Config/Needs/preflight`, and install Quarto with its bundled Pandoc plus a TeX
+toolchain. The installed `marginplyr` version must equal the candidate version because the
 Quarto vignette build runs in a child R process. A missing prerequisite exits
 with an installation hint rather than changing the library.
 

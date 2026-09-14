@@ -197,14 +197,14 @@ release_publish_readme <- function(lines) {
   parts <- release_readme_cran_parts(lines)
   if (any(parts != 0L)) {
     release_abort(paste0(
-      "README.Rmd has partial or duplicated CRAN publication text; ",
+      "README.qmd has partial or duplicated CRAN publication text; ",
       "refusing to guess which initial-only edit is intended."
     ))
   }
 
   badge_end <- which(lines == "<!-- badges: end -->")
   if (length(badge_end) != 1L) {
-    release_abort("README.Rmd must contain exactly one badge block.")
+    release_abort("README.qmd must contain exactly one badge block.")
   }
   badge <- paste0(
     "[![CRAN status](https://www.r-pkg.org/badges/version/marginplyr)]",
@@ -214,14 +214,14 @@ release_publish_readme <- function(lines) {
 
   installation <- which(lines == "## Installation")
   if (length(installation) != 1L) {
-    release_abort("README.Rmd must contain exactly one Installation heading.")
+    release_abort("README.qmd must contain exactly one Installation heading.")
   }
   later_headings <- which(
     seq_along(lines) > installation & grepl("^## ", lines)
   )
   if (length(later_headings) == 0L) {
     release_abort(paste(
-      "README.Rmd Installation must be followed by another section."
+      "README.qmd Installation must be followed by another section."
     ))
   }
   next_heading <- later_headings[[1L]]
@@ -271,13 +271,13 @@ release_post_files <- function(files, version) {
     if (!identical(current, version)) {
       release_abort("Initial-only publication edits cannot start after a bump.")
     }
-    files$`README.Rmd` <- release_publish_readme(files$`README.Rmd`)
+    files$`README.qmd` <- release_publish_readme(files$`README.qmd`)
     description <- release_set_dcf_field(
       description,
       "Config/marginplyr/cran-status",
       "published"
     )
-  } else if (!release_readme_claims_cran(files$`README.Rmd`)) {
+  } else if (!release_readme_claims_cran(files$`README.qmd`)) {
     release_abort(paste0(
       "Published update state is missing the initial-only CRAN README text; ",
       "refusing to recreate it as an update edit."
@@ -456,8 +456,8 @@ release_command <- function(command, args, root) {
   list(status = as.integer(status), output = paste(output, collapse = "\n"))
 }
 
-# Regenerates README.md with the repository-pinned Pandoc after installing the
-# edited tree into a disposable library, so its chunks never load an old build.
+# Regenerates README.md with Quarto's bundled Pandoc after installing the edited
+# tree into a disposable library, so its chunks never load an old build.
 release_render_readme <- function(root, runner = release_command) {
   library <- tempfile("marginplyr-release-library-")
   dir.create(library)
@@ -481,9 +481,8 @@ release_render_readme <- function(root, runner = release_command) {
 
   expression <- paste0(
     ".libPaths(c(", deparse(library), ", .libPaths())); ",
-    "if (as.character(rmarkdown::pandoc_version()) != '3.10.1') ",
-    "stop('README regeneration requires Pandoc 3.10.1.'); ",
-    "rmarkdown::render('README.Rmd', quiet = TRUE)"
+    "Sys.setenv(R_LIBS_USER = paste(.libPaths(), collapse = .Platform$path.sep)); ",
+    "quarto::quarto_render('README.qmd', quiet = TRUE)"
   )
   render <- runner(
     file.path(R.home("bin"), "Rscript"),
@@ -537,7 +536,7 @@ cran_release_operation <- function(
     c("DESCRIPTION", "NEWS.md")
   } else if (identical(operation, "post-release")) {
     verify_cran_publication(version, packages = packages)
-    c("DESCRIPTION", "NEWS.md", "README.Rmd")
+    c("DESCRIPTION", "NEWS.md", "README.qmd")
   } else {
     release_abort(paste("Unknown release operation:", operation), 2L)
   }
@@ -552,9 +551,8 @@ cran_release_operation <- function(
   if (identical(operation, "prepare")) {
     message(paste0(
       "After manual source edits, regenerate with ",
-      "`Rscript -e 'roxygen2::roxygenise()'`; install the working tree; ",
-      "then run `Rscript -e ",
-      "'rmarkdown::render(\"README.Rmd\", quiet = TRUE)'`."
+      "`Rscript -e 'roxygen2::roxygenise()'`; then run ",
+      "`Rscript -e 'devtools::build_readme()'`."
     ))
   }
 
@@ -568,7 +566,7 @@ cran_release_operation <- function(
       release_print_diff(path, before[[path]], after[[path]])
     }
     if (identical(operation, "post-release")) {
-      message("README.md will be regenerated with Pandoc 3.10.1 on --apply.")
+      message("README.md will be regenerated with Quarto on --apply.")
     }
     return(invisible(changed))
   }
