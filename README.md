@@ -1,5 +1,6 @@
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+<!-- README.md is generated from README.qmd. Please edit that file -->
 
 # marginplyr
 
@@ -42,7 +43,7 @@ january_sales |>
 
 `rollup(region, store)` asks for three reporting levels:
 
-```
+``` text
 (region, store)  store detail
 (region)         region subtotal
 ()               company total

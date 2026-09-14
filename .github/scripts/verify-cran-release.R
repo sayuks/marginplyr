@@ -104,7 +104,7 @@ initial_files <- list(
     "Config/marginplyr/cran-status: unpublished"
   ),
   `NEWS.md` = c("# marginplyr 0.1.0", "", "* Initial submission."),
-  `README.Rmd` = c(
+  `README.qmd` = c(
     "<!-- badges: start -->",
     "[![R-CMD-check](check.svg)](check)",
     "<!-- badges: end -->",
@@ -168,13 +168,13 @@ expect_identical(
 expect_true(
   any(grepl(
     "cran.r-project.org/package=marginplyr",
-    tolower(post$`README.Rmd`),
+    tolower(post$`README.qmd`),
     fixed = TRUE
   )),
   "the CRAN badge or link"
 )
 expect_true(
-  "install.packages(\"marginplyr\")" %in% post$`README.Rmd`,
+  "install.packages(\"marginplyr\")" %in% post$`README.qmd`,
   "the CRAN installation call"
 )
 expect_identical(
@@ -184,8 +184,8 @@ expect_identical(
 )
 
 partial_initial <- initial_files
-partial_initial$`README.Rmd` <- append(
-  partial_initial$`README.Rmd`,
+partial_initial$`README.qmd` <- append(
+  partial_initial$`README.qmd`,
   paste0(
     "[![CRAN status](https://www.r-pkg.org/badges/version/marginplyr)]",
     "(https://CRAN.R-project.org/package=marginplyr)"
@@ -211,8 +211,8 @@ expect_release_error(
 )
 
 published_with_badge <- published_without_claim
-published_with_badge$`README.Rmd` <- append(
-  published_with_badge$`README.Rmd`,
+published_with_badge$`README.qmd` <- append(
+  published_with_badge$`README.qmd`,
   c(
     paste0(
       "[![CRAN status](https://www.r-pkg.org/badges/version/marginplyr)]",
@@ -223,7 +223,7 @@ published_with_badge$`README.Rmd` <- append(
   after = 2L
 )
 expect_true(
-  release_readme_claims_cran(published_with_badge$`README.Rmd`),
+  release_readme_claims_cran(published_with_badge$`README.qmd`),
   "a published README with an install call and badge"
 )
 
@@ -319,11 +319,13 @@ expect_true(
 
 render_state <- new.env(parent = emptyenv())
 render_state$calls <- 0L
+render_state$args <- list()
 successful_runner <- function(command, args, root) {
   render_state$calls <- render_state$calls + 1L
+  render_state$args[[render_state$calls]] <- args
   if (render_state$calls == 2L) {
     writeLines(
-      readLines(file.path(root, "README.Rmd"), warn = FALSE),
+      readLines(file.path(root, "README.qmd"), warn = FALSE),
       file.path(root, "README.md")
     )
   }
@@ -341,6 +343,14 @@ expect_identical(
   render_state$calls,
   2L,
   "the post-release generation commands"
+)
+expect_true(
+  any(grepl("quarto::quarto_render('README.qmd'", render_state$args[[2L]], fixed = TRUE)),
+  "the Quarto README render command"
+)
+expect_true(
+  !any(grepl("pandoc_version", render_state$args[[2L]], fixed = TRUE)),
+  "the unpinned Pandoc renderer"
 )
 expect_identical(
   release_dcf_field(

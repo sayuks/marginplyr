@@ -632,7 +632,7 @@ checker_versions <- function(packages) {
   )
 }
 
-# Checks full-Suggests, preflight-tool, package, Quarto, Pandoc, and TeX
+# Checks full-Suggests, preflight-tool, package, Quarto, bundled Pandoc, and TeX
 # availability without installing any of them.
 preflight_prerequisites <- function(description, package, version) {
   suggests <- dependency_requirements(description_value(

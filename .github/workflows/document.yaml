@@ -23,20 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # README.md is knitted through rmarkdown's `github_document` format,
-      # which is pandoc; nothing else in this job needs it.
-      #
-      # The version is pinned because pandoc's markdown writer is not stable
-      # across versions and the check below is a byte comparison: 3.8.3 writes
-      # the `text` info string on the fence at `README.Rmd`'s reporting-levels
-      # block, and 3.10.1 omits it. So an unpinned action reds this job on a
-      # README that is perfectly up to date, and reds it again on whatever
-      # r-lib moves its default to next. The pin names the renderer the
-      # committed `README.md` came from; moving it means regenerating that
-      # file in the same commit.
-      - uses: r-lib/actions/setup-pandoc@v2
-        with:
-          pandoc-version: '3.10.1'
+      # Use the current stable Quarto and only its bundled Pandoc. The
+      # executable versions deliberately float together; the diagnostic below
+      # records both when their writer output changes.
+      - uses: quarto-dev/quarto-actions/setup@v2
 
       - uses: r-lib/actions/setup-r@v2
         with:
@@ -44,13 +34,28 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::roxygen2, any::rmarkdown, local::.
+          extra-packages: any::roxygen2, any::devtools, local::.
+          install-pandoc: false
+
+      - name: Record README renderer versions
+        run: |
+          quarto_version=$(quarto --version)
+          pandoc_version=$(quarto pandoc --version | head -n 1)
+          echo "Quarto ${quarto_version}"
+          echo "${pandoc_version}"
+          echo "README_QUARTO_VERSION=${quarto_version}" >> "$GITHUB_ENV"
+          echo "README_PANDOC_VERSION=${pandoc_version}" >> "$GITHUB_ENV"
+          {
+            echo '### README renderer'
+            echo "- Quarto: \`${quarto_version}\`"
+            echo "- Bundled Pandoc: \`${pandoc_version}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Regenerate documentation
         run: roxygen2::roxygenise()
         shell: Rscript {0}
 
-      # README.md is generated from README.Rmd the same way, and it is read
+      # README.md is generated from README.qmd the same way, and it is read
       # further than any other generated file here: GitHub shows it, and the
       # website's home page includes it. `.Rbuildignore` keeps the source out
       # of the tarball, so nothing a check run can reach says what the
@@ -59,12 +64,12 @@ jobs:
       # follows it.
       #
       # Both regenerations run before either check, because this one writes
-      # into `man/` as well: `README.Rmd` sets `fig.path` to
+      # into `man/` as well: `README.qmd` sets `fig.path` to
       # `man/figures/README-`, so a figure chunk added later produces a file
       # the check below does not look at and the `man/` check would already
       # have passed.
       - name: Regenerate README.md
-        run: rmarkdown::render("README.Rmd", quiet = TRUE)
+        run: devtools::build_readme(quiet = TRUE)
         shell: Rscript {0}
 
       # The committed help pages and NAMESPACE must be what the roxygen
@@ -79,14 +84,13 @@ jobs:
         run: git diff --exit-code man/ NAMESPACE
 
       # The diff is shown, and then what it might mean: a byte comparison of
-      # rendered markdown reds for two different reasons, and the second one
-      # sends a reader looking for an edit nobody made. Whoever committed this
-      # `README.md` may have rendered it against a different pandoc from the
-      # one pinned above.
+      # rendered Markdown can fail because the source/output is stale or
+      # because the current stable Quarto changed its bundled Pandoc or writer
+      # output. The recorded versions make those cases distinguishable.
       - name: Check README.md is up to date
         run: |
           if git diff --exit-code README.md; then
             exit 0
           fi
-          echo '::error::README.md is not what README.Rmd renders. Regenerate it with rmarkdown::render("README.Rmd") and commit the result. If the only differences are code-fence info strings or rewrapped prose, the pandoc you rendered with differs from the version this workflow pins.'
+          echo "::error::README.md is not what README.qmd renders with latest stable Quarto ${README_QUARTO_VERSION} and its bundled ${README_PANDOC_VERSION}. This can mean README.md is stale, or that a newer Quarto changed its bundled Pandoc or Markdown writer output. Run devtools::build_readme() with the current stable Quarto and commit README.md."
           exit 1
