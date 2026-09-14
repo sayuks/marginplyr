@@ -295,6 +295,53 @@ expect_identical(
   "a baseline entry for a materially changed finding"
 )
 
+writeLines(
+  c(
+    "fixture <- local({",
+    "  counter <<- list(",
+    "    value = value",
+    "  )",
+    "})"
+  ),
+  checktor_fixture_file
+)
+multiline_checktor_baseline <- checktor_baseline_fixture
+multiline_checktor_baseline$source <- "counter <<- list( value = value )"
+expect_identical(
+  checktor_baseline_match(
+    multiline_checktor_baseline,
+    checktor_finding_fixture(2L),
+    checktor_fixture_root
+  )$unexpected,
+  FALSE,
+  "an unchanged multiline reviewed checktor finding"
+)
+writeLines(
+  c(
+    "fixture <- local({",
+    "  counter <<- list(",
+    "    value = value + 1",
+    "  )",
+    "})"
+  ),
+  checktor_fixture_file
+)
+changed_multiline_checktor_finding <- checktor_baseline_match(
+  multiline_checktor_baseline,
+  checktor_finding_fixture(2L),
+  checktor_fixture_root
+)
+expect_identical(
+  changed_multiline_checktor_finding$unexpected,
+  TRUE,
+  "a changed continuation of a multiline checktor finding"
+)
+expect_identical(
+  changed_multiline_checktor_finding$stale,
+  TRUE,
+  "a baseline entry for a changed multiline finding"
+)
+
 url_fixture <- data.frame(
   Status = c("404", "500", "429", "", "301"),
   Message = c(

@@ -51,6 +51,37 @@ checktor_finding_scope <- function(parsed, source_lines, line) {
   paste(trimws(source_lines[blocks$line1]), collapse = " > ")
 }
 
+# Returns the complete block statement that holds one finding line. The caller
+# supplies parsed R source and its lines, and holds that `line` belongs to one
+# statement. Normalizing that statement makes a changed continuation of a
+# multiline call distinct without treating earlier line movement as a change.
+checktor_finding_expression <- function(parsed, source_lines, line) {
+  opening_braces <- parsed[parsed$token == "'{'", , drop = FALSE]
+  block_parents <- opening_braces$parent
+  statements <- parsed[
+    parsed$token == "expr" & parsed$parent %in% block_parents,
+    ,
+    drop = FALSE
+  ]
+  statements <- statements[
+    statements$line1 <= line & statements$line2 >= line,
+    ,
+    drop = FALSE
+  ]
+  if (nrow(statements) == 0L) {
+    return(trimws(source_lines[[line]]))
+  }
+  statements <- statements[order(
+    statements$line2 - statements$line1,
+    statements$col2 - statements$col1
+  ), , drop = FALSE]
+  statement <- statements[1L, , drop = FALSE]
+  paste(
+    trimws(source_lines[seq.int(statement$line1, statement$line2)]),
+    collapse = " "
+  )
+}
+
 # Gives code findings a file-and-source anchor and leaves other checktor
 # locations unchanged. The caller supplies checktor's file, line, and location
 # columns and a package root containing every named source; code anchors also
@@ -96,7 +127,11 @@ checktor_finding_anchors <- function(findings, package_path) {
       source_lines,
       line
     )
-    anchors$source[[index]] <- trimws(source_lines[[line]])
+    anchors$source[[index]] <- checktor_finding_expression(
+      parsed,
+      source_lines,
+      line
+    )
   }
 
   anchors
