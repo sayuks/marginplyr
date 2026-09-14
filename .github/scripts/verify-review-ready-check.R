@@ -190,31 +190,37 @@ expect_identical(
   "the named offline settings"
 )
 
-# R 4.6 asks the standard CRAN and Bioconductor repositories whether an
-# undeclared package candidate found in tests is real. Keep synthetic
-# namespace fixtures from making the fixed local gate depend on those indexes.
-test_files <- list.files(
-  "tests",
-  pattern = "[.][rR]$",
-  recursive = TRUE,
-  full.names = TRUE
-)
-check_packages_used_helper <- get(
-  ".check_packages_used_helper",
-  envir = asNamespace("tools")
-)
-test_package_usage <- check_packages_used_helper(
-  read.dcf("DESCRIPTION")[1L, ],
-  test_files
-)
-test_package_candidates <- as.character(unlist(
-  test_package_usage[c("others", "imports", "data")],
-  use.names = FALSE
-))
 expect_identical(
-  test_package_candidates,
+  review_ready_test_package_candidates("."),
   character(),
   "no undeclared test package candidate requiring repository indexes"
+)
+expect_error(
+  verify_review_ready_test_packages(".", candidates = "pkg"),
+  "undeclared package candidates: pkg",
+  "an undeclared test package candidate"
+)
+
+offline_workspace <- tempfile("review-ready-offline-")
+dir.create(offline_workspace)
+on.exit(unlink(offline_workspace, recursive = TRUE), add = TRUE)
+offline_repositories <- review_ready_offline_repositories(offline_workspace)
+expect_identical(
+  names(offline_repositories),
+  c("CRAN", "BioCsoft", "BioCann", "BioCexp"),
+  "the standard repository names"
+)
+expect_true(
+  all(startsWith(offline_repositories, "file:")),
+  "local repository URLs"
+)
+expect_identical(
+  nrow(utils::available.packages(
+    repos = offline_repositories,
+    filters = list()
+  )),
+  0L,
+  "readable empty repository indexes"
 )
 
 entrypoint <- paste(readLines("tools/review-ready-check.R", warn = FALSE), collapse = "\n")
@@ -237,6 +243,14 @@ expect_true(
 expect_true(
   grepl("env = review_ready_rcmdcheck_env()", library_source, fixed = TRUE),
   "the applied offline settings"
+)
+expect_true(
+  grepl(
+    "repos = review_ready_offline_repositories(workspace)",
+    library_source,
+    fixed = TRUE
+  ),
+  "the applied offline repositories"
 )
 expect_true(
   grepl("review_ready_check_cli", entrypoint, fixed = TRUE),

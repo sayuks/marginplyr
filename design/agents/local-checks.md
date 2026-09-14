@@ -49,10 +49,13 @@ Rscript tools/review-ready-check.R
 
 The command takes no options. It runs, in order:
 
-1. the full testthat suite, including local snapshot expectations;
-2. `jarl check .`;
-3. package-aware lintr after `pkgload::load_all()`; and
-4. a source-tarball `R CMD check --as-cran` with remote incoming checks and
+1. a test-source dependency scan that refuses every package candidate absent
+   from `DESCRIPTION`;
+2. the full testthat suite, including local snapshot expectations;
+3. `jarl check .`;
+4. package-aware lintr after `pkgload::load_all()`; and
+5. a source-tarball `R CMD check --as-cran` against disposable empty local
+   CRAN and Bioconductor indexes, with remote incoming checks and
    external-clock verification disabled. The local future-file-timestamp
    comparison remains enabled.
 
