@@ -11,6 +11,18 @@
 # own class intact, and only a fault the analysis itself detects becomes a
 # Package condition.
 
+# Builds the namespace-call shape an analysis receives without writing a
+# synthetic package as literal `pkg::` syntax, which R's package-usage check
+# would otherwise treat as an undeclared package candidate.
+synthetic_namespace_call <- function(operator, package, function_name, ...) {
+  head <- as.call(list(
+    as.name(operator),
+    as.name(package),
+    as.name(function_name)
+  ))
+  as.call(c(list(head), list(...)))
+}
+
 test_that("a call whose head is a call is evaluated, not classified", {
   # `call_name()` answers `NULL` here, so the `$`/`[[` test used to compare
   # `NULL` against a character vector, yielding `NA` inside `if()`. Such a call
@@ -223,8 +235,8 @@ test_that("a namespaced call reads neither of its operands", {
     expression_data_symbols(quote(list(m = stats::median))),
     character()
   )
-  # jarl-ignore internal_function: The scanner reads `:::` as syntax.
-  expect_identical(expression_data_symbols(quote(pkg:::fun(x))), "x")
+  internal_call <- synthetic_namespace_call(":::", "pkg", "fun", quote(x))
+  expect_identical(expression_data_symbols(internal_call), "x")
 
   # A share source depending on an alias named after the function it calls.
   expect_no_error(
@@ -4000,7 +4012,13 @@ test_that("a capture the walk cannot name plainly is analyzed, not assumed", {
     expression_data_symbols(quote(base::quote(share))),
     character()
   )
-  expect_identical(expression_data_symbols(quote(pkg::quote(share))), "share")
+  qualified_capture <- synthetic_namespace_call(
+    "::",
+    "pkg",
+    "quote",
+    quote(share)
+  )
+  expect_identical(expression_data_symbols(qualified_capture), "share")
   # A parenthesized head is evaluated in the mask like any other operand, so
   # the name of the primitive is itself a read there -- the answer the walk has
   # given every head that is not a bare symbol since #130.

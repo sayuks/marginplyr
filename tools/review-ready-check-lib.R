@@ -117,6 +117,48 @@ review_ready_prerequisites <- function(
   )
 }
 
+# Returns package names that R's test-source scan cannot match to DESCRIPTION.
+# The fixed gate refuses them before using empty local repository indexes, so
+# the offline check cannot hide a misspelled or undeclared dependency.
+review_ready_test_package_candidates <- function(
+  source_root,
+  scanner = function(description, files) {
+    helper <- get(".check_packages_used_helper", envir = asNamespace("tools"))
+    helper(description, files)
+  }
+) {
+  description <- read.dcf(file.path(source_root, "DESCRIPTION"))[1L, ]
+  files <- list.files(
+    file.path(source_root, "tests"),
+    pattern = "[.](Rin|[rR])$",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+  usage <- scanner(description, files)
+  unique(as.character(unlist(
+    usage[c("others", "imports", "data")],
+    use.names = FALSE
+  )))
+}
+
+# Refuses a test dependency that an empty offline repository would otherwise
+# make R's package-usage check discard as a non-package name.
+verify_review_ready_test_packages <- function(
+  source_root,
+  candidates = review_ready_test_package_candidates(source_root)
+) {
+  cat("\n==> Test dependency syntax\n")
+  if (length(candidates) > 0L) {
+    stop(
+      "Tests refer to undeclared package candidates: ",
+      paste(candidates, collapse = ", "),
+      ".",
+      call. = FALSE
+    )
+  }
+  invisible(TRUE)
+}
+
 # Defines the three working-tree checks before the source-tarball boundary.
 review_ready_source_steps <- function(prerequisites) {
   list(
@@ -256,9 +298,32 @@ review_ready_check_outcome <- function(result, cran_status) {
   )
 }
 
-# Names the environment entry because rcmdcheck applies names as variable keys.
+# Names the environment entries because rcmdcheck applies names as variable
+# keys. Remote incoming checks and the external clock belong to the release
+# flow; the local future-file-timestamp comparison remains enabled here.
 review_ready_rcmdcheck_env <- function() {
-  c(`_R_CHECK_CRAN_INCOMING_REMOTE_` = "false")
+  c(
+    `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
+    `_R_CHECK_SYSTEM_CLOCK_` = "false"
+  )
+}
+
+# Creates the four named repository indexes R consults under --as-cran without
+# allowing the fixed local gate to reach a network service.
+review_ready_offline_repositories <- function(workspace) {
+  root <- file.path(workspace, "offline-repository")
+  contribution <- file.path(root, "src", "contrib")
+  dir.create(contribution, recursive = TRUE)
+  if (!isTRUE(file.create(file.path(contribution, "PACKAGES")))) {
+    stop("Could not create the offline repository index.", call. = FALSE)
+  }
+  path <- normalizePath(root, winslash = "/", mustWork = TRUE)
+  prefix <- if (.Platform$OS.type == "windows") "file:///" else "file://"
+  repository <- paste0(prefix, utils::URLencode(path, reserved = FALSE))
+  stats::setNames(
+    rep(repository, 4L),
+    c("CRAN", "BioCsoft", "BioCann", "BioCexp")
+  )
 }
 
 # Prints every NOTE and whether the shared CRAN policy already explains it.
@@ -295,7 +360,8 @@ run_review_ready_rcmdcheck <- function(tarball, workspace) {
     build_args = NULL,
     check_dir = file.path(workspace, "check"),
     error_on = "never",
-    env = review_ready_rcmdcheck_env()
+    env = review_ready_rcmdcheck_env(),
+    repos = review_ready_offline_repositories(workspace)
   )
   outcome <- review_ready_check_outcome(
     result,
@@ -327,6 +393,7 @@ run_review_ready_check <- function(
 
   cat("Review-ready commit: ", identity$sha, "\n", sep = "")
   cat("Disposable source: ", source_root, "\n", sep = "")
+  verify_review_ready_test_packages(source_root)
   steps <- review_ready_source_steps(prerequisites)
   for (label in names(steps)) {
     run_review_ready_step(label, steps[[label]], source_root)

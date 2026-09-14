@@ -183,8 +183,61 @@ expect_identical(
 )
 expect_identical(
   review_ready_rcmdcheck_env(),
-  c(`_R_CHECK_CRAN_INCOMING_REMOTE_` = "false"),
-  "the named remote-incoming setting"
+  c(
+    `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
+    `_R_CHECK_SYSTEM_CLOCK_` = "false"
+  ),
+  "the named offline settings"
+)
+
+expect_identical(
+  review_ready_test_package_candidates("."),
+  character(),
+  "no undeclared test package candidate requiring repository indexes"
+)
+
+rin_fixture <- tempfile("review-ready-rin-")
+dir.create(file.path(rin_fixture, "tests"), recursive = TRUE)
+on.exit(unlink(rin_fixture, recursive = TRUE), add = TRUE)
+expect_true(
+  file.copy("DESCRIPTION", file.path(rin_fixture, "DESCRIPTION")),
+  "the Rin fixture DESCRIPTION"
+)
+writeLines(
+  "definitelymissingpkg::f()",
+  file.path(rin_fixture, "tests", "fixture.Rin")
+)
+expect_identical(
+  review_ready_test_package_candidates(rin_fixture),
+  "definitelymissingpkg",
+  "an undeclared package candidate in a top-level Rin test"
+)
+expect_error(
+  verify_review_ready_test_packages(".", candidates = "pkg"),
+  "undeclared package candidates: pkg",
+  "an undeclared test package candidate"
+)
+
+offline_workspace <- tempfile("review-ready-offline-")
+dir.create(offline_workspace)
+on.exit(unlink(offline_workspace, recursive = TRUE), add = TRUE)
+offline_repositories <- review_ready_offline_repositories(offline_workspace)
+expect_identical(
+  names(offline_repositories),
+  c("CRAN", "BioCsoft", "BioCann", "BioCexp"),
+  "the standard repository names"
+)
+expect_true(
+  all(startsWith(offline_repositories, "file:")),
+  "local repository URLs"
+)
+expect_identical(
+  nrow(utils::available.packages(
+    repos = offline_repositories,
+    filters = list()
+  )),
+  0L,
+  "readable empty repository indexes"
 )
 
 entrypoint <- paste(readLines("tools/review-ready-check.R", warn = FALSE), collapse = "\n")
@@ -206,7 +259,15 @@ expect_true(
 )
 expect_true(
   grepl("env = review_ready_rcmdcheck_env()", library_source, fixed = TRUE),
-  "the applied remote incoming setting"
+  "the applied offline settings"
+)
+expect_true(
+  grepl(
+    "repos = review_ready_offline_repositories(workspace)",
+    library_source,
+    fixed = TRUE
+  ),
+  "the applied offline repositories"
 )
 expect_true(
   grepl("review_ready_check_cli", entrypoint, fixed = TRUE),
