@@ -318,8 +318,9 @@ review and either the same PR or the same recorded zero-diff evidence.
 Purpose: find candidate defects before binding the candidate SHA.
 
 After the preparation PR is merged, or after the zero-diff preparation evidence
-is approved, synchronize the clean default branch and retain its SHA as the
-audit SHA. Then choose a durable absolute directory outside the repository and
+is approved, show the remote/default-branch target and obtain approval before
+the switch/pull. Synchronize the clean default branch, retain its SHA as the
+audit SHA, then choose a durable absolute directory outside the repository and
 run:
 
 ```sh
@@ -341,8 +342,8 @@ Record the SHA, digest, and durable summary in the release issue after human
 approval; keep raw evidence external.
 
 A candidate finding stops before stage 5. The release agent reads the complete
-audit output and groups related, candidate-remediable, non-behavioral findings
-from that audit into one remediation PR. A change to public behavior,
+audit output and groups candidate-remediable, non-behavioral findings from that
+audit into one remediation PR. A change to public behavior,
 dependencies, or release policy remains a separate PR. After any remediation PR
 merges, restart this stage: its final SHA needs the one authoritative clean
 audit. A tool or infrastructure failure is repaired and rerun into a new
@@ -695,8 +696,8 @@ The human fallback is GitHub's Close issue action with the same final comment.
 
 Adapt this body for the version; keep it readable rather than pasting raw logs:
 At the end of a zero-diff stage 3, replace the initial Next human action with
-“Review and approve the zero-diff preparation evidence and freeze `<sha>` as the
-Candidate SHA.”
+“Run the release-readiness audit for `<sha>`, then review and approve its result
+before freezing the Candidate SHA.”
 
 ```markdown
 ## Next human action

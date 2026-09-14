@@ -527,6 +527,7 @@ expect_stage_markers(
   c(
     "zero-diff preparation evidence",
     "audit SHA",
+    "obtain approval before",
     "checks spelling, checktor",
     "candidate-remediable",
     "one remediation PR",
@@ -555,8 +556,8 @@ ledger <- paste(playbook[ledger_start:length(playbook)], collapse = "\n")
 expect_stage_markers(
   ledger,
   c(
-    "Review and approve the zero-diff preparation evidence",
-    "freeze `<sha>` as the",
+    "Run the release-readiness audit for `<sha>`",
+    "before freezing the Candidate SHA",
     "Preparation PR: <merged URL / not required (zero diff)>",
     "Zero-diff preparation evidence, when applicable",
     "Release-readiness audit exit 0",
