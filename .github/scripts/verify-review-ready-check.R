@@ -183,8 +183,38 @@ expect_identical(
 )
 expect_identical(
   review_ready_rcmdcheck_env(),
-  c(`_R_CHECK_CRAN_INCOMING_REMOTE_` = "false"),
-  "the named remote-incoming setting"
+  c(
+    `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
+    `_R_CHECK_SYSTEM_CLOCK_` = "false"
+  ),
+  "the named offline settings"
+)
+
+# R 4.6 asks the standard CRAN and Bioconductor repositories whether an
+# undeclared package candidate found in tests is real. Keep synthetic
+# namespace fixtures from making the fixed local gate depend on those indexes.
+test_files <- list.files(
+  "tests",
+  pattern = "[.][rR]$",
+  recursive = TRUE,
+  full.names = TRUE
+)
+check_packages_used_helper <- get(
+  ".check_packages_used_helper",
+  envir = asNamespace("tools")
+)
+test_package_usage <- check_packages_used_helper(
+  read.dcf("DESCRIPTION")[1L, ],
+  test_files
+)
+test_package_candidates <- as.character(unlist(
+  test_package_usage[c("others", "imports", "data")],
+  use.names = FALSE
+))
+expect_identical(
+  test_package_candidates,
+  character(),
+  "no undeclared test package candidate requiring repository indexes"
 )
 
 entrypoint <- paste(readLines("tools/review-ready-check.R", warn = FALSE), collapse = "\n")
@@ -206,7 +236,7 @@ expect_true(
 )
 expect_true(
   grepl("env = review_ready_rcmdcheck_env()", library_source, fixed = TRUE),
-  "the applied remote incoming setting"
+  "the applied offline settings"
 )
 expect_true(
   grepl("review_ready_check_cli", entrypoint, fixed = TRUE),

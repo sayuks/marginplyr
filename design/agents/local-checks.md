@@ -52,8 +52,9 @@ The command takes no options. It runs, in order:
 1. the full testthat suite, including local snapshot expectations;
 2. `jarl check .`;
 3. package-aware lintr after `pkgload::load_all()`; and
-4. a source-tarball `R CMD check --as-cran` with remote incoming checks
-   disabled.
+4. a source-tarball `R CMD check --as-cran` with remote incoming checks and
+   external-clock verification disabled. The local future-file-timestamp
+   comparison remains enabled.
 
 It stops on the first failed step. An ERROR or WARNING fails the package check.
 A nonzero or timed-out check process also fails, even when no condition could
@@ -84,8 +85,8 @@ Neither test run replaces jarl or lintr.
 The Review-ready check uses the developer's fully provisioned library. The
 release matrix remains responsible for depends-only, suite-coverage, library
 isolation, optional-backend execution, other R versions, and other operating
-systems. The CRAN release playbook owns the stricter exact-candidate preflight
-and remote checks.
+systems. The CRAN release playbook owns the stricter exact-candidate preflight,
+remote checks, and external-clock evidence.
 
 Unused-Suggests review is not part of the daily Review-ready check. Dependency
 metadata still follows `AGENTS.md`'s *Dependency metadata* rules when changed;

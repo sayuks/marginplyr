@@ -256,9 +256,14 @@ review_ready_check_outcome <- function(result, cran_status) {
   )
 }
 
-# Names the environment entry because rcmdcheck applies names as variable keys.
+# Names the environment entries because rcmdcheck applies names as variable
+# keys. Remote incoming checks and the external clock belong to the release
+# flow; the local future-file-timestamp comparison remains enabled here.
 review_ready_rcmdcheck_env <- function() {
-  c(`_R_CHECK_CRAN_INCOMING_REMOTE_` = "false")
+  c(
+    `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
+    `_R_CHECK_SYSTEM_CLOCK_` = "false"
+  )
 }
 
 # Prints every NOTE and whether the shared CRAN policy already explains it.
