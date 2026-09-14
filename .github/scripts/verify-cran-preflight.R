@@ -4,6 +4,7 @@
 # deliberately narrow NOTE allowance fail before either expensive gate runs.
 
 source(".github/scripts/cran-note-policy.R")
+source(".github/scripts/checktor-baseline.R")
 source("tools/cran-preflight-lib.R")
 
 # Stops with a fixture label when a contract returns a different value.
@@ -175,6 +176,125 @@ expect_identical(
 expect_true(
   grepl("_R_CHECK_CRAN_INCOMING_REMOTE_", preflight_sources, fixed = TRUE),
   "the incoming remote check setting"
+)
+
+checktor_fixture_root <- tempfile("marginplyr-checktor-baseline-")
+dir.create(checktor_fixture_root)
+on.exit(unlink(checktor_fixture_root, recursive = TRUE), add = TRUE)
+checktor_fixture_file <- file.path(checktor_fixture_root, "R", "fixture.R")
+dir.create(dirname(checktor_fixture_file))
+writeLines(
+  c(
+    "fixture <- function(value) {",
+    "  value",
+    "}",
+    "counter <<- value",
+    "",
+    "counter <<- value"
+  ),
+  checktor_fixture_file
+)
+checktor_baseline_fixture <- data.frame(
+  category = "code",
+  check = "globalenv_mod",
+  location = "R/fixture.R",
+  source = "counter <<- value",
+  reason = "The fixture superassignment belongs to its enclosing closure.",
+  stringsAsFactors = FALSE
+)
+checktor_finding_fixture <- function(line) {
+  if (length(line) == 0L) {
+    return(data.frame(
+      category = character(),
+      check = character(),
+      file = character(),
+      line = integer(),
+      location = character(),
+      message = character(),
+      stringsAsFactors = FALSE
+    ))
+  }
+  data.frame(
+    category = "code",
+    check = "globalenv_mod",
+    file = "R/fixture.R",
+    line = line,
+    location = paste0("R/fixture.R:", line),
+    message = "GlobalEnv modification check",
+    stringsAsFactors = FALSE
+  )
+}
+relocated_checktor_finding <- checktor_baseline_match(
+  checktor_baseline_fixture,
+  checktor_finding_fixture(6L),
+  checktor_fixture_root
+)
+expect_identical(
+  relocated_checktor_finding$unexpected,
+  FALSE,
+  "a relocated reviewed checktor finding"
+)
+expect_identical(
+  relocated_checktor_finding$stale,
+  FALSE,
+  "a relocated checktor baseline entry"
+)
+
+new_checktor_finding <- checktor_baseline_match(
+  checktor_baseline_fixture,
+  rbind(
+    checktor_finding_fixture(4L),
+    checktor_finding_fixture(6L)
+  ),
+  checktor_fixture_root
+)
+expect_identical(
+  new_checktor_finding$unexpected,
+  c(FALSE, TRUE),
+  "a new finding with the same check in the same file"
+)
+expect_identical(
+  new_checktor_finding$stale,
+  FALSE,
+  "a baseline entry beside a new same-file finding"
+)
+
+removed_checktor_finding <- checktor_baseline_match(
+  checktor_baseline_fixture,
+  checktor_finding_fixture(integer()),
+  checktor_fixture_root
+)
+expect_identical(
+  removed_checktor_finding$stale,
+  TRUE,
+  "a removed reviewed checktor finding"
+)
+
+writeLines(
+  c(
+    "fixture <- function(value) {",
+    "  value",
+    "}",
+    "counter <<- value + 1",
+    "",
+    "counter <<- value"
+  ),
+  checktor_fixture_file
+)
+changed_checktor_finding <- checktor_baseline_match(
+  checktor_baseline_fixture,
+  checktor_finding_fixture(4L),
+  checktor_fixture_root
+)
+expect_identical(
+  changed_checktor_finding$unexpected,
+  TRUE,
+  "a materially changed reviewed checktor finding"
+)
+expect_identical(
+  changed_checktor_finding$stale,
+  TRUE,
+  "a baseline entry for a materially changed finding"
 )
 
 url_fixture <- data.frame(

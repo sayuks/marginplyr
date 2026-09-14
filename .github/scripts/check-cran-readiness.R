@@ -5,11 +5,13 @@
 #   R CMD build .
 #   Rscript .github/scripts/check-cran-readiness.R marginplyr_*.tar.gz
 #
-# checktor 0.1.0 has no suppression interface. The baseline therefore records
-# reviewed findings exactly, and this script fails for either a new finding or
-# a stale baseline entry. The latter makes a checktor upgrade or a resolved
-# false positive remove its exception instead of leaving it able to mask a
-# future recurrence.
+# checktor 0.1.0 has no suppression interface. The baseline records each
+# reviewed finding's durable anchor, and this script fails for either a new
+# finding or a stale baseline entry. The latter makes a checktor upgrade or a
+# resolved false positive remove its exception instead of leaving it able to
+# mask a future recurrence.
+
+source(".github/scripts/checktor-baseline.R")
 
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) < 1L || length(args) > 2L) {
@@ -37,11 +39,12 @@ if (file.exists(input_path) && grepl("[.]tar[.]gz$", input_path)) {
   package_path <- candidates[[1L]]
 }
 
-required_columns <- c("category", "check", "location", "reason")
+required_columns <- checktor_baseline_columns
 baseline <- utils::read.delim(
   baseline_path,
   colClasses = "character",
   check.names = FALSE,
+  quote = "",
   na.strings = character()
 )
 if (!identical(names(baseline), required_columns)) {
@@ -54,11 +57,7 @@ if (any(!nzchar(baseline$reason))) {
   stop("Every checktor baseline entry must state a reason.")
 }
 
-finding_key <- function(x) {
-  paste(x$category, x$check, x$location, sep = "\t")
-}
-
-baseline_keys <- finding_key(baseline)
+baseline_keys <- checktor_baseline_key(baseline)
 if (anyDuplicated(baseline_keys)) {
   stop("The checktor baseline contains duplicate entries.")
 }
@@ -87,7 +86,9 @@ if (inherits(results, "condition")) {
 }
 
 findings <- checktor::issues(results)
-finding_columns <- c("category", "check", "location", "message")
+finding_columns <- c(
+  "category", "check", "file", "line", "location", "message"
+)
 missing_columns <- setdiff(finding_columns, names(findings))
 if (length(missing_columns) > 0L) {
   stop(
@@ -96,9 +97,10 @@ if (length(missing_columns) > 0L) {
   )
 }
 
-finding_keys <- finding_key(findings)
-unexpected <- !finding_keys %in% baseline_keys
-stale <- !baseline_keys %in% finding_keys
+baseline_status <- checktor_baseline_match(baseline, findings, package_path)
+baseline_match <- baseline_status$baseline_match
+unexpected <- baseline_status$unexpected
+stale <- baseline_status$stale
 gate_passed <- !any(unexpected) && !any(stale)
 
 escape_markdown <- function(x) {
@@ -121,7 +123,6 @@ markdown_table <- function(x, columns) {
 }
 
 if (nrow(findings) > 0L) {
-  baseline_match <- match(finding_keys, baseline_keys)
   findings$disposition <- ifelse(unexpected, "unexpected", "accepted baseline")
   findings$reason <- ifelse(unexpected, "", baseline$reason[baseline_match])
 } else {
