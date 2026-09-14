@@ -185,12 +185,11 @@ checktor_fixture_file <- file.path(checktor_fixture_root, "R", "fixture.R")
 dir.create(dirname(checktor_fixture_file))
 writeLines(
   c(
-    "fixture <- function(value) {",
-    "  value",
-    "}",
-    "counter <<- value",
+    "fixture <- local({",
+    "  counter <<- value",
     "",
-    "counter <<- value"
+    "  counter <<- value",
+    "})"
   ),
   checktor_fixture_file
 )
@@ -198,6 +197,7 @@ checktor_baseline_fixture <- data.frame(
   category = "code",
   check = "globalenv_mod",
   location = "R/fixture.R",
+  scope = "fixture <- local({",
   source = "counter <<- value",
   reason = "The fixture superassignment belongs to its enclosing closure.",
   stringsAsFactors = FALSE
@@ -226,7 +226,7 @@ checktor_finding_fixture <- function(line) {
 }
 relocated_checktor_finding <- checktor_baseline_match(
   checktor_baseline_fixture,
-  checktor_finding_fixture(6L),
+  checktor_finding_fixture(4L),
   checktor_fixture_root
 )
 expect_identical(
@@ -243,8 +243,8 @@ expect_identical(
 new_checktor_finding <- checktor_baseline_match(
   checktor_baseline_fixture,
   rbind(
-    checktor_finding_fixture(4L),
-    checktor_finding_fixture(6L)
+    checktor_finding_fixture(2L),
+    checktor_finding_fixture(4L)
   ),
   checktor_fixture_root
 )
@@ -275,8 +275,6 @@ writeLines(
     "fixture <- function(value) {",
     "  value",
     "}",
-    "counter <<- value + 1",
-    "",
     "counter <<- value"
   ),
   checktor_fixture_file

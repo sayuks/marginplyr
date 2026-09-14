@@ -4,13 +4,19 @@
 # checktor location because it is already line-independent.
 
 checktor_baseline_columns <- c(
-  "category", "check", "location", "source", "reason"
+  "category", "check", "location", "scope", "source", "reason"
 )
 
+# Turns a baseline or anchor data frame's identity columns into comparable
+# keys. The caller supplies character category, check, location, and source
+# columns plus scope, each already normalized for the kind of finding it
+# represents.
 checktor_baseline_key <- function(x) {
-  paste(x$category, x$check, x$location, x$source, sep = "\t")
+  paste(x$category, x$check, x$location, x$scope, x$source, sep = "\t")
 }
 
+# Locates the one package source checktor's file field names. The caller holds
+# a package root and a checktor path or a basename unique within that root.
 checktor_finding_source_path <- function(package_path, file) {
   direct_path <- file.path(package_path, file)
   if (file.exists(direct_path)) {
@@ -30,6 +36,25 @@ checktor_finding_source_path <- function(package_path, file) {
   candidates[[1L]]
 }
 
+# Returns the lexical block openings that contain one source line. The caller
+# supplies parsed R source and its lines, and holds that `line` names one of
+# those lines. Their ordered spelling distinguishes an unchanged statement
+# moved into a different closure from a line-number-only relocation.
+checktor_finding_scope <- function(parsed, source_lines, line) {
+  opening_braces <- parsed[parsed$token == "'{'", , drop = FALSE]
+  blocks <- parsed[match(opening_braces$parent, parsed$id), , drop = FALSE]
+  blocks <- blocks[blocks$line1 <= line & blocks$line2 >= line, , drop = FALSE]
+  if (nrow(blocks) == 0L) {
+    return("")
+  }
+  blocks <- blocks[order(blocks$line1, blocks$col1), , drop = FALSE]
+  paste(trimws(source_lines[blocks$line1]), collapse = " > ")
+}
+
+# Gives code findings a file-and-source anchor and leaves other checktor
+# locations unchanged. The caller supplies checktor's file, line, and location
+# columns and a package root containing every named source; code anchors also
+# record their lexical scope so one identical line cannot change owners unseen.
 checktor_finding_anchors <- function(findings, package_path) {
   required_columns <- c("file", "line", "location")
   missing_columns <- setdiff(required_columns, names(findings))
@@ -42,6 +67,7 @@ checktor_finding_anchors <- function(findings, package_path) {
 
   anchors <- data.frame(
     location = findings$location,
+    scope = rep("", nrow(findings)),
     source = rep("", nrow(findings)),
     stringsAsFactors = FALSE
   )
@@ -56,6 +82,7 @@ checktor_finding_anchors <- function(findings, package_path) {
       findings$file[[index]]
     )
     source_lines <- readLines(source_path, warn = FALSE)
+    parsed <- utils::getParseData(parse(source_path, keep.source = TRUE))
     line <- findings$line[[index]]
     if (line > length(source_lines)) {
       stop(
@@ -64,15 +91,22 @@ checktor_finding_anchors <- function(findings, package_path) {
       )
     }
     anchors$location[[index]] <- findings$file[[index]]
+    anchors$scope[[index]] <- checktor_finding_scope(
+      parsed,
+      source_lines,
+      line
+    )
     anchors$source[[index]] <- trimws(source_lines[[line]])
   }
 
   anchors
 }
 
-# Compares every current finding to a reviewed baseline exactly once. A second
-# finding with the same anchor remains unexpected, so an additional copy of a
-# reviewed pattern cannot be accepted merely by sharing its source text.
+# Compares checktor findings against a schema-validated reviewed baseline. The
+# caller supplies checktor's category, check, file, line, and location columns
+# plus the package root they name; the result marks unexpected and stale rows.
+# A second finding with one anchor remains unexpected, so an additional copy of
+# a reviewed pattern cannot be accepted merely by sharing its source text.
 checktor_baseline_match <- function(baseline, findings, package_path) {
   baseline_keys <- checktor_baseline_key(baseline)
   anchors <- checktor_finding_anchors(findings, package_path)
@@ -80,6 +114,7 @@ checktor_baseline_match <- function(baseline, findings, package_path) {
     category = findings$category,
     check = findings$check,
     location = anchors$location,
+    scope = anchors$scope,
     source = anchors$source,
     stringsAsFactors = FALSE
   ))
