@@ -195,6 +195,23 @@ expect_identical(
   character(),
   "no undeclared test package candidate requiring repository indexes"
 )
+
+rin_fixture <- tempfile("review-ready-rin-")
+dir.create(file.path(rin_fixture, "tests"), recursive = TRUE)
+on.exit(unlink(rin_fixture, recursive = TRUE), add = TRUE)
+expect_true(
+  file.copy("DESCRIPTION", file.path(rin_fixture, "DESCRIPTION")),
+  "the Rin fixture DESCRIPTION"
+)
+writeLines(
+  "definitelymissingpkg::f()",
+  file.path(rin_fixture, "tests", "fixture.Rin")
+)
+expect_identical(
+  review_ready_test_package_candidates(rin_fixture),
+  "definitelymissingpkg",
+  "an undeclared package candidate in a top-level Rin test"
+)
 expect_error(
   verify_review_ready_test_packages(".", candidates = "pkg"),
   "undeclared package candidates: pkg",

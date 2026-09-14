@@ -130,7 +130,7 @@ review_ready_test_package_candidates <- function(
   description <- read.dcf(file.path(source_root, "DESCRIPTION"))[1L, ]
   files <- list.files(
     file.path(source_root, "tests"),
-    pattern = "[.][rR]$",
+    pattern = "[.](Rin|[rR])$",
     recursive = TRUE,
     full.names = TRUE
   )
