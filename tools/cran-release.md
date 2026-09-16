@@ -102,8 +102,10 @@ local and hosted tools can produce valid evidence.
 
 Prerequisites: repository root, clean default branch, `gh` authenticated,
 current release/R-patched R, current stable Quarto, TeX, all `Suggests`, and
-`Config/Needs/preflight` installed. Show the branch and remote update to be
-integrated and obtain approval before synchronizing with `git pull --ff-only`.
+`Config/Needs/preflight` plus `Config/Needs/release` installed. The release
+helper checks the latter set before it performs an operation. Show the branch
+and remote update to be integrated and obtain approval before synchronizing
+with `git pull --ff-only`.
 
 Agent-operated, read-only commands:
 

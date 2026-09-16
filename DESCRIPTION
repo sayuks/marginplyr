@@ -51,6 +51,11 @@ Config/Needs/review:
     rcmdcheck,
     spelling,
     testthat
+Config/Needs/release:
+    attachment,
+    devtools,
+    rhub,
+    roxygen2
 Config/testthat/edition: 3
 VignetteBuilder:
     quarto
