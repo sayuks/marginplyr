@@ -61,6 +61,34 @@ The command takes no options. It runs, in order:
    external-clock verification disabled. The local future-file-timestamp
    comparison remains enabled.
 
+### Observing one invocation
+
+The Review-ready check can start child processes while it performs those steps.
+They belong to the one check; they are not the shell execution an agent starts
+to run it. A subagent is separate again: its work and any shell execution it
+starts are not the agent-launched Review-ready invocation or evidence for it.
+
+For one clean commit, start one Review-ready invocation and retain its execution
+identity until it returns a terminal completion result. Only that invocation's
+terminal exit or timeout outcome is evidence. Do not infer success or failure
+from partial output, elapsed time, process absence, or a separate `ps`
+invocation. If the execution identity or its result is lost, the evidence is
+unavailable: report that before any replacement run, and do not silently rerun
+the check.
+
+The following are mappings for the current shell interfaces, not a second
+definition of the evidence rule:
+
+- **Claude Code:** start the command once with `Bash(run_in_background: true)`
+  and consume its automatic completion notification, including the exit status.
+  Do not poll with repeated `Bash`, `TaskOutput`, `Monitor`, `ps`, or `sleep`
+  calls.
+- **Codex:** retain the complete `exec_command` result. When it contains a live
+  `session_id`, continue that same terminal session with `write_stdin` until a
+  result includes `exit_code`; do not reduce an in-progress result to `.output`
+  alone. An outer wrapper preserves the nested result or keeps waiting on the
+  same execution instead of completing and discarding its handle.
+
 For a spelling finding, correct an actual typo; when the word is intentional,
 add it to `inst/WORDLIST` instead.
 
