@@ -334,8 +334,9 @@ printf '%s\n' "$audit_sha"
 ```
 
 This automatic audit is specified in
-[`tools/cran-preflight.md`](cran-preflight.md). It checks spelling, checktor,
-the exact source tarball, and the candidate-tree invariant once each. Success
+[`tools/cran-preflight.md`](cran-preflight.md). It runs package-aware lintr
+against the loaded unpacked candidate and checks spelling, checktor, the exact
+source tarball, and the candidate-tree invariant once each. Success
 evidence is exit 0, the audit SHA, retained tarball path, SHA-256 manifest,
 passing/allowed result summary, and identical before/after worktree records.
 Record the SHA, digest, and durable summary in the release issue after human

@@ -528,6 +528,7 @@ expect_stage_markers(
     "zero-diff preparation evidence",
     "audit SHA",
     "obtain approval before",
+    "runs package-aware lintr",
     "checks spelling, checktor",
     "candidate-remediable",
     "one remediation PR",

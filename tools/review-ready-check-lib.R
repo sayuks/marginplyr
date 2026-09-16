@@ -89,13 +89,18 @@ parse_review_ready_args <- function(args) {
 
 # Checks the tools needed before allocating or running the disposable checkout.
 review_ready_prerequisites <- function(
+  description = read.dcf("DESCRIPTION"),
   package_available = function(package) {
     requireNamespace(package, quietly = TRUE)
   },
   find_command = Sys.which,
   r_bin = R.home("bin")
 ) {
-  packages <- c("spelling", "testthat", "pkgload", "lintr", "rcmdcheck")
+  field <- "Config/Needs/review"
+  if (!(field %in% colnames(description))) {
+    stop("DESCRIPTION is missing `", field, "`.", call. = FALSE)
+  }
+  packages <- dependency_requirements(description[[1L, field]])$package
   available <- vapply(packages, package_available, logical(1))
   commands <- c(
     jarl = unname(find_command("jarl")),

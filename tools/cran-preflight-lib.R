@@ -277,41 +277,6 @@ description_value <- function(description, field, required = TRUE) {
   trimws(description[[1L, field]])
 }
 
-# Parses one DCF dependency field into package, operator, and version columns.
-dependency_requirements <- function(field) {
-  if (length(field) == 0L || is.na(field) || !nzchar(field)) {
-    return(data.frame(
-      package = character(),
-      operator = character(),
-      version = character()
-    ))
-  }
-  entries <- trimws(strsplit(gsub("\n", " ", field), ",", fixed = TRUE)[[1L]])
-  pattern <- paste0(
-    "^([A-Za-z][A-Za-z0-9.]*)",
-    "(?:[[:space:]]*\\((>=|<=|==|>|<)[[:space:]]*([^()]+)\\))?$"
-  )
-  matched <- regexec(pattern, entries, perl = TRUE)
-  parts <- regmatches(entries, matched)
-  if (any(lengths(parts) == 0L)) {
-    stop(
-      "Cannot parse dependency requirement(s): ",
-      paste(entries[lengths(parts) == 0L], collapse = ", "),
-      call. = FALSE
-    )
-  }
-  data.frame(
-    package = vapply(parts, `[[`, character(1), 2L),
-    operator = vapply(parts, function(part) {
-      if (length(part) >= 3L) part[[3L]] else ""
-    }, character(1)),
-    version = vapply(parts, function(part) {
-      if (length(part) >= 4L) trimws(part[[4L]]) else ""
-    }, character(1)),
-    stringsAsFactors = FALSE
-  )
-}
-
 # Answers whether one installed version satisfies its declared comparison.
 version_satisfies <- function(installed, operator, required) {
   if (!nzchar(operator)) {
@@ -872,6 +837,76 @@ run_preflight_spelling_step <- function(
   invisible(NULL)
 }
 
+# Runs package-aware lint policy in the candidate's default load environment.
+run_lintr_check <- function(package_path) {
+  pkgload::load_all(package_path, quiet = TRUE)
+  lintr::lint_package(
+    package_path,
+    cache = FALSE,
+    show_progress = FALSE
+  )
+}
+
+# Writes one stable, relative location and diagnostic for every lint finding.
+report_lint_findings <- function(lints, package_path) {
+  package_path <- normalizePath(
+    package_path,
+    winslash = "/",
+    mustWork = TRUE
+  )
+  package_prefix <- paste0(package_path, "/")
+  for (lint in lints) {
+    filename <- gsub("\\\\", "/", lint$filename)
+    if (startsWith(filename, package_prefix)) {
+      filename <- substring(filename, nchar(package_prefix) + 1L)
+    }
+    cat(
+      filename, ":", lint$line_number, ":", lint$column_number,
+      ": [", single_line(lint$linter), "] ", single_line(lint$message),
+      "\n",
+      sep = ""
+    )
+  }
+  invisible(lints)
+}
+
+# Records candidate findings separately from loading or linting tool failures.
+run_preflight_lintr_step <- function(
+  state,
+  package_path,
+  checker = run_lintr_check
+) {
+  started <- proc.time()[["elapsed"]]
+  lints <- tryCatch(checker(package_path), error = function(cnd) cnd)
+  if (inherits(lints, "condition")) {
+    record_preflight_step(
+      state,
+      "lintr",
+      "unavailable",
+      proc.time()[["elapsed"]] - started,
+      "",
+      conditionMessage(lints)
+    )
+    record_problem(state, "tool")
+    return(invisible(NULL))
+  }
+
+  report_lint_findings(lints, package_path)
+  lint_failed <- length(lints) > 0L
+  record_preflight_step(
+    state,
+    "lintr",
+    if (lint_failed) "failed" else "passed",
+    proc.time()[["elapsed"]] - started,
+    "",
+    if (lint_failed) "Lint findings were found." else "No lint findings."
+  )
+  if (lint_failed) {
+    record_problem(state, "candidate")
+  }
+  invisible(NULL)
+}
+
 # Runs the repository's shared checktor wrapper against the candidate tarball.
 run_checktor <- function(repository_root, tarball, evidence_path) {
   report <- file.path(evidence_path, "checktor-report.md")
@@ -1210,6 +1245,7 @@ run_preflight_pipeline <- function(state, repository_root, description) {
     "Tarball name, directory, DESCRIPTION, and SHA-256 agree."
   )
 
+  run_preflight_lintr_step(state, identity$package_path)
   run_preflight_spelling_step(state, identity$package_path)
 
   started <- proc.time()[["elapsed"]]
