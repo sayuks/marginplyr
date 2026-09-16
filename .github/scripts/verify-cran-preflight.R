@@ -599,6 +599,158 @@ expect_identical(
   130L,
   "an interrupted preflight exit"
 )
+
+local({
+  fixture <- file.path(fixture_root, "incomplete-rcmdcheck")
+  dir.create(fixture)
+  original_functions <- mget(
+    c(
+      "preflight_prerequisites",
+      "checker_versions",
+      "build_candidate_tarball",
+      "verify_candidate_tarball",
+      "run_preflight_lintr_step",
+      "run_preflight_spelling_step",
+      "run_checktor",
+      "run_rcmdcheck",
+      "run_url_diagnostic",
+      "cran_comments_problems"
+    ),
+    envir = .GlobalEnv,
+    inherits = FALSE
+  )
+  on.exit({
+    for (name in names(original_functions)) {
+      assign(name, original_functions[[name]], envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+
+  assign("preflight_prerequisites", function(...) {
+    list(
+      preflight_packages = character(),
+      package_requirements = data.frame(),
+      problems = character(),
+      quarto_version = "fixture Quarto",
+      pandoc_version = "fixture Pandoc"
+    )
+  }, envir = .GlobalEnv)
+  assign("checker_versions", function(...) character(), envir = .GlobalEnv)
+  assign("build_candidate_tarball", function(...) {
+    file.path(fixture, "marginplyr_0.1.0.tar.gz")
+  }, envir = .GlobalEnv)
+  assign("verify_candidate_tarball", function(...) {
+    list(
+      sha256 = "fixture-sha256",
+      package_path = fixture
+    )
+  }, envir = .GlobalEnv)
+  assign("run_preflight_lintr_step", function(...) invisible(NULL),
+    envir = .GlobalEnv
+  )
+  assign("run_preflight_spelling_step", function(...) invisible(NULL),
+    envir = .GlobalEnv
+  )
+  assign("run_checktor", function(...) {
+    list(status = 0L, report = file.path(fixture, "checktor-report.md"))
+  }, envir = .GlobalEnv)
+  assign("run_rcmdcheck", function(...) {
+    list(
+      result = list(
+        status = 1L,
+        timeout = FALSE,
+        errors = character(),
+        warnings = character(),
+        notes = character()
+      ),
+      check_dir = file.path(fixture, "check"),
+      console = file.path(fixture, "rcmdcheck-console.log")
+    )
+  }, envir = .GlobalEnv)
+  assign("run_url_diagnostic", function(...) {
+    stop("URL diagnostic must not run after an incomplete R CMD check.")
+  }, envir = .GlobalEnv)
+  assign("cran_comments_problems", function(...) {
+    stop("cran-comments comparison must not run after an incomplete R CMD check.")
+  }, envir = .GlobalEnv)
+
+  state <- new_preflight_state(fixture)
+  state$package <- "marginplyr"
+  state$version <- "0.1.0"
+  state$cran_status <- "unpublished"
+  run_preflight_pipeline(state, fixture, matrix(character(), nrow = 1L))
+
+  expect_identical(
+    tail(state$steps$step, 1L),
+    "R-CMD-check",
+    "an incomplete R CMD check stops the pipeline"
+  )
+  expect_identical(
+    tail(state$steps$status, 1L),
+    "unavailable",
+    "an incomplete R CMD check is unavailable"
+  )
+  expect_identical(state$tool_failed, TRUE, "an incomplete check is tooling")
+  expect_identical(
+    state$candidate_failed,
+    FALSE,
+    "an incomplete check is not a candidate finding"
+  )
+  expect_true(
+    grepl(
+      "process status 1",
+      tail(state$steps$detail, 1L),
+      fixed = TRUE
+    ),
+    "the incomplete check evidence retains its process status"
+  )
+  write_preflight_evidence(
+    state,
+    preflight_exit_code(state$candidate_failed, state$tool_failed)
+  )
+  expect_true(
+    grepl(
+      "process status 1",
+      paste(readLines(file.path(fixture, "summary.md")), collapse = "\\n"),
+      fixed = TRUE
+    ),
+    "the evidence summary explains the incomplete check"
+  )
+})
+timeout_outcome <- classify_rcmdcheck_result(
+  list(
+    status = 0L,
+    timeout = TRUE,
+    errors = character(),
+    warnings = character(),
+    notes = character()
+  ),
+  "unpublished"
+)
+expect_identical(
+  timeout_outcome$status,
+  "unavailable",
+  "a timed-out R CMD check is unavailable"
+)
+candidate_outcome <- classify_rcmdcheck_result(
+  list(
+    status = 1L,
+    timeout = FALSE,
+    errors = "fixture ERROR",
+    warnings = character(),
+    notes = character()
+  ),
+  "unpublished"
+)
+expect_identical(
+  candidate_outcome$status,
+  "failed",
+  "a parsed R CMD check error remains a candidate finding"
+)
+expect_identical(
+  candidate_outcome$problem,
+  "candidate",
+  "a parsed R CMD check error does not become tooling"
+)
 expect_identical(
   version_satisfies("1.0.0", ">=", "2.0.0"),
   FALSE,

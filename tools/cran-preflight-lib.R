@@ -186,25 +186,23 @@ write_preflight_evidence <- function(state, exit_code) {
   }
 
   steps <- if (nrow(state$steps) == 0L) {
-    "| _No steps recorded._ |  |  |  |"
+    c(
+      "| Step | Status | Seconds | Evidence | Detail |",
+      "|---|---:|---:|---|---|",
+      "| _No steps recorded._ |  |  |  |  |"
+    )
   } else {
     c(
-      "| Step | Status | Seconds | Evidence |",
-      "|---|---:|---:|---|",
+      "| Step | Status | Seconds | Evidence | Detail |",
+      "|---|---:|---:|---|---|",
       apply(state$steps, 1L, function(row) {
         sprintf(
-          "| %s | %s | %s | `%s` |",
+          "| %s | %s | %s | `%s` | %s |",
           row[["step"]], row[["status"]], row[["elapsed_seconds"]],
-          row[["evidence"]]
+          row[["evidence"]],
+          gsub("|", "\\\\|", single_line(row[["detail"]]), fixed = TRUE)
         )
       })
-    )
-  }
-  if (nrow(state$steps) == 0L) {
-    steps <- c(
-      "| Step | Status | Seconds | Evidence |",
-      "|---|---:|---:|---|",
-      steps
     )
   }
 
@@ -966,6 +964,66 @@ run_rcmdcheck <- function(tarball, evidence_path) {
   list(result = result, check_dir = check_dir, console = console)
 }
 
+# Classifies structured R CMD check output before any conditional follow-up.
+classify_rcmdcheck_result <- function(result, cran_status) {
+  process_status <- suppressWarnings(as.integer(result$status))
+  if (length(process_status) != 1L || is.na(process_status)) {
+    process_status <- NA_integer_
+  }
+  timeout <- isTRUE(result$timeout)
+  counts <- c(
+    errors = length(result$errors),
+    warnings = length(result$warnings),
+    notes = length(result$notes)
+  )
+  classifications <- lapply(
+    result$notes,
+    classify_cran_note,
+    cran_status = cran_status
+  )
+  unknown_notes <- vapply(
+    classifications,
+    function(note) identical(note$status, "unknown-note"),
+    logical(1)
+  )
+  has_failures <- counts[["errors"]] > 0L ||
+    counts[["warnings"]] > 0L || any(unknown_notes)
+  completed <- identical(process_status, 0L) && !timeout
+  status_text <- if (is.na(process_status)) "unavailable" else process_status
+
+  if (!completed && !has_failures) {
+    return(list(
+      status = "unavailable",
+      problem = "tool",
+      counts = counts,
+      classifications = classifications,
+      detail = sprintf(
+        paste0(
+          "R CMD check was incomplete (process status %s; timeout %s) and ",
+          "reported no candidate diagnostic."
+        ),
+        status_text,
+        timeout
+      )
+    ))
+  }
+
+  has_allowed <- length(classifications) > 0L && !any(unknown_notes)
+  list(
+    status = if (has_failures) {
+      "failed"
+    } else if (has_allowed) {
+      "allowed-note"
+    } else {
+      "passed"
+    },
+    problem = if (has_failures) "candidate" else NULL,
+    counts = counts,
+    classifications = classifications,
+    detail = NULL
+  )
+}
+
 # Answers whether any structured check condition reports a URL problem.
 check_reports_url_problem <- function(result) {
   conditions <- c(result$errors, result$warnings, result$notes)
@@ -1307,37 +1365,29 @@ run_preflight_pipeline <- function(state, repository_root, description) {
   }
 
   result <- check$result
-  state$counts <- c(
-    errors = length(result$errors),
-    warnings = length(result$warnings),
-    notes = length(result$notes)
-  )
-  classifications <- lapply(
-    result$notes,
-    classify_cran_note,
-    cran_status = state$cran_status
-  )
+  outcome <- classify_rcmdcheck_result(result, state$cran_status)
+  state$counts <- outcome$counts
+  classifications <- outcome$classifications
   state$note_classifications <- classifications
   note_path <- write_note_results(classifications, evidence)
-  unknown_notes <- vapply(
-    classifications,
-    function(note) identical(note$status, "unknown-note"),
-    logical(1)
-  )
-  has_failures <- state$counts[["errors"]] > 0L ||
-    state$counts[["warnings"]] > 0L || any(unknown_notes)
-  has_allowed <- length(classifications) > 0L && !any(unknown_notes)
-  check_status <- if (has_failures) {
-    "failed"
-  } else if (has_allowed) {
-    "allowed-note"
-  } else {
-    "passed"
+
+  if (identical(outcome$status, "unavailable")) {
+    record_preflight_step(
+      state,
+      "R-CMD-check",
+      "unavailable",
+      proc.time()[["elapsed"]] - started,
+      check$console,
+      outcome$detail
+    )
+    record_problem(state, outcome$problem)
+    return(invisible(NULL))
   }
+
   record_preflight_step(
     state,
     "R-CMD-check",
-    check_status,
+    outcome$status,
     proc.time()[["elapsed"]] - started,
     check$check_dir,
     sprintf(
@@ -1346,8 +1396,8 @@ run_preflight_pipeline <- function(state, repository_root, description) {
       state$counts[["notes"]], note_path
     )
   )
-  if (has_failures) {
-    record_problem(state, "candidate")
+  if (!is.null(outcome$problem)) {
+    record_problem(state, outcome$problem)
   }
 
   started <- proc.time()[["elapsed"]]
