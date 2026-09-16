@@ -838,11 +838,14 @@ run_preflight_spelling_step <- function(
 }
 
 # Runs package-aware lint policy in the candidate's default load environment.
+# Quarto generates executable vignette scripts under inst/doc while building the
+# tarball, so lint their maintained .qmd sources rather than those by-products.
 run_lintr_check <- function(package_path) {
   pkgload::load_all(package_path, quiet = TRUE)
   lintr::lint_package(
     package_path,
     cache = FALSE,
+    exclusions = list("R/RcppExports.R", "inst/doc"),
     show_progress = FALSE
   )
 }
