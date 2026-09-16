@@ -206,8 +206,12 @@ expect_true(
   "the disabled lintr cache"
 )
 expect_true(
-  grepl('"inst/doc"', lintr_source, fixed = TRUE),
-  "the generated vignette-script exclusion"
+  grepl(
+    'exclusions = list("R/RcppExports.R", "inst/doc")',
+    gsub("[[:space:]]+", " ", lintr_source),
+    fixed = TRUE
+  ),
+  "the exact candidate lint exclusions"
 )
 expect_true(
   grepl("show_progress = FALSE", lintr_source, fixed = TRUE),
