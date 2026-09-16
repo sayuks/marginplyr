@@ -41,8 +41,17 @@ Suggests:
 Config/marginplyr/cran-status: unpublished
 Config/Needs/preflight:
     checktor (== 0.1.0),
+    lintr,
+    pkgload,
     rcmdcheck,
+    spelling,
     urlchecker
+Config/Needs/review:
+    lintr,
+    pkgload,
+    rcmdcheck,
+    spelling,
+    testthat
 Config/testthat/edition: 3
 VignetteBuilder:
     quarto

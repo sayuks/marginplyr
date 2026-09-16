@@ -22,6 +22,7 @@
 ^cran-comments\.md$
 ^codecov\.yml$
 ^jarl\.toml$
+^\.lintr$
 ^checktor-report$
 ^doc$
 ^Meta$

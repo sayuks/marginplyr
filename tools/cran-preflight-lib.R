@@ -872,6 +872,77 @@ run_preflight_spelling_step <- function(
   invisible(NULL)
 }
 
+# Runs package-aware lint policy in the candidate's default load environment.
+run_lintr_check <- function(package_path) {
+  pkgload::load_all(package_path, quiet = TRUE)
+  lintr::lint_package(
+    package_path,
+    cache = FALSE,
+    exclusions = list("inst/doc"),
+    show_progress = FALSE
+  )
+}
+
+# Writes one stable, relative location and diagnostic for every lint finding.
+report_lint_findings <- function(lints, package_path) {
+  package_path <- normalizePath(
+    package_path,
+    winslash = "/",
+    mustWork = TRUE
+  )
+  package_prefix <- paste0(package_path, "/")
+  for (lint in lints) {
+    filename <- gsub("\\\\", "/", lint$filename)
+    if (startsWith(filename, package_prefix)) {
+      filename <- substring(filename, nchar(package_prefix) + 1L)
+    }
+    cat(
+      filename, ":", lint$line_number, ":", lint$column_number,
+      ": [", single_line(lint$linter), "] ", single_line(lint$message),
+      "\n",
+      sep = ""
+    )
+  }
+  invisible(lints)
+}
+
+# Records candidate findings separately from loading or linting tool failures.
+run_preflight_lintr_step <- function(
+  state,
+  package_path,
+  checker = run_lintr_check
+) {
+  started <- proc.time()[["elapsed"]]
+  lints <- tryCatch(checker(package_path), error = function(cnd) cnd)
+  if (inherits(lints, "condition")) {
+    record_preflight_step(
+      state,
+      "lintr",
+      "unavailable",
+      proc.time()[["elapsed"]] - started,
+      "",
+      conditionMessage(lints)
+    )
+    record_problem(state, "tool")
+    return(invisible(NULL))
+  }
+
+  report_lint_findings(lints, package_path)
+  lint_failed <- length(lints) > 0L
+  record_preflight_step(
+    state,
+    "lintr",
+    if (lint_failed) "failed" else "passed",
+    proc.time()[["elapsed"]] - started,
+    "",
+    if (lint_failed) "Lint findings were found." else "No lint findings."
+  )
+  if (lint_failed) {
+    record_problem(state, "candidate")
+  }
+  invisible(NULL)
+}
+
 # Runs the repository's shared checktor wrapper against the candidate tarball.
 run_checktor <- function(repository_root, tarball, evidence_path) {
   report <- file.path(evidence_path, "checktor-report.md")
@@ -1210,6 +1281,7 @@ run_preflight_pipeline <- function(state, repository_root, description) {
     "Tarball name, directory, DESCRIPTION, and SHA-256 agree."
   )
 
+  run_preflight_lintr_step(state, identity$package_path)
   run_preflight_spelling_step(state, identity$package_path)
 
   started <- proc.time()[["elapsed"]]

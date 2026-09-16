@@ -100,8 +100,27 @@ preflight_requirements <- dependency_requirements(description_value(
 ))
 expect_identical(
   preflight_requirements$package,
-  c("checktor", "rcmdcheck", "urlchecker"),
-  "the preflight-only dependency set"
+  c("checktor", "lintr", "pkgload", "rcmdcheck", "spelling", "urlchecker"),
+  "the preflight dependency set"
+)
+review_requirements <- dependency_requirements(description_value(
+  description,
+  "Config/Needs/review"
+))
+expect_identical(
+  review_requirements$package,
+  c("lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
+  "the review dependency set"
+)
+expect_identical(
+  intersect(preflight_requirements$package, review_requirements$package),
+  c("lintr", "pkgload", "rcmdcheck", "spelling"),
+  "the intentional task-group overlap"
+)
+expect_identical(
+  names(checker_versions(preflight_requirements$package)),
+  c("R", "platform", preflight_requirements$package),
+  "the declared preflight tool-version evidence"
 )
 checktor_requirement <- preflight_requirements[
   preflight_requirements$package == "checktor",
@@ -124,12 +143,23 @@ package_requirements <- rbind(
 )
 expect_identical(
   intersect(preflight_requirements$package, package_requirements$package),
-  character(),
-  "preflight-only packages outside Imports and Suggests"
+  "spelling",
+  "the transitional spelling overlap with Suggests"
 )
 
 build_ignore <- readLines(".Rbuildignore", warn = FALSE)
 expect_true("^tools$" %in% build_ignore, "the tools tarball exclusion")
+lintr_config <- read.dcf(".lintr")
+expect_identical(
+  lintr_config[[1L, "exclusions"]],
+  'list("inst/doc")',
+  "the generated-vignette lint exclusion"
+)
+expect_identical(
+  "^\\.lintr$" %in% build_ignore,
+  TRUE,
+  "the lintr configuration tarball exclusion"
+)
 
 preflight_sources <- paste(
   unlist(lapply(
@@ -160,6 +190,76 @@ expect_identical(
   1L,
   "one spelling invocation"
 )
+expect_identical(
+  lengths(regmatches(
+    preflight_sources,
+    gregexpr("lintr::lint_package", preflight_sources, fixed = TRUE)
+  )),
+  1L,
+  "one lintr invocation"
+)
+lintr_source <- paste(deparse(run_lintr_check), collapse = "\n")
+expect_true(
+  grepl(
+    "pkgload::load_all(package_path, quiet = TRUE)",
+    lintr_source,
+    fixed = TRUE
+  ),
+  "the candidate package load"
+)
+expect_true(
+  grepl("cache = FALSE", lintr_source, fixed = TRUE),
+  "the disabled lintr cache"
+)
+expect_true(
+  grepl('exclusions = list("inst/doc")', lintr_source, fixed = TRUE),
+  "the candidate's generated-vignette lint exclusion"
+)
+expect_true(
+  grepl("show_progress = FALSE", lintr_source, fixed = TRUE),
+  "the disabled lintr progress"
+)
+pipeline_source <- paste(deparse(run_preflight_pipeline), collapse = "\n")
+identity_position <- regexpr(
+  "Tarball name, directory, DESCRIPTION, and SHA-256 agree.",
+  pipeline_source,
+  fixed = TRUE
+)[[1L]]
+lintr_position <- regexpr(
+  "run_preflight_lintr_step(state, identity$package_path)",
+  pipeline_source,
+  fixed = TRUE
+)[[1L]]
+spelling_position <- regexpr(
+  "run_preflight_spelling_step(state, identity$package_path)",
+  pipeline_source,
+  fixed = TRUE
+)[[1L]]
+expect_true(
+  identity_position < lintr_position && lintr_position < spelling_position,
+  "the exact-candidate lint ordering"
+)
+lint_report_source <- paste(deparse(report_lint_findings), collapse = "\n")
+for (field in c(
+  "lint$filename", "lint$line_number", "lint$column_number",
+  "lint$linter", "lint$message"
+)) {
+  expect_true(
+    grepl(field, lint_report_source, fixed = TRUE),
+    paste("the reported lint field", field)
+  )
+}
+lint_step_source <- paste(deparse(run_preflight_lintr_step), collapse = "\n")
+for (marker in c(
+  '"unavailable"', '"failed"', '"passed"',
+  'record_problem(state, "tool")',
+  'record_problem(state, "candidate")'
+)) {
+  expect_true(
+    grepl(marker, lint_step_source, fixed = TRUE),
+    paste("the lint classification marker", marker)
+  )
+}
 expect_identical(
   grepl("spelling.tsv", preflight_sources, fixed = TRUE),
   FALSE,
@@ -477,6 +577,11 @@ expect_identical(
   130L,
   "an interrupted preflight exit"
 )
+expect_identical(
+  version_satisfies("1.0.0", ">=", "2.0.0"),
+  FALSE,
+  "a too-old declared package"
+)
 expect_true(
   worktree_is_unchanged("", ""),
   "an unchanged clean worktree"
@@ -767,6 +872,28 @@ clean_status <- run_in_dir(
   clean_log
 )
 expect_identical(clean_status, 2L, "a missing-prerequisite subprocess")
+clean_steps <- utils::read.delim(
+  file.path(fixture_root, "clean-evidence", "steps.tsv"),
+  stringsAsFactors = FALSE
+)
+expect_identical(
+  clean_steps$step,
+  c("worktree-before", "prerequisites", "worktree-after"),
+  "a prerequisite failure before candidate build"
+)
+expect_identical(
+  clean_steps$status,
+  c("passed", "unavailable", "passed"),
+  "the prerequisite failure classification"
+)
+expect_true(
+  all(file.exists(file.path(
+    fixture_root,
+    "clean-evidence",
+    c("summary.md", "results.dcf", "steps.tsv")
+  ))),
+  "the prerequisite-failure evidence"
+)
 expect_identical(
   readLines(file.path(fixture_root, "clean-evidence", "worktree-before.txt")),
   readLines(file.path(fixture_root, "clean-evidence", "worktree-after.txt")),

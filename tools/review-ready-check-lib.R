@@ -87,15 +87,40 @@ parse_review_ready_args <- function(args) {
   list()
 }
 
+# Reads the R package names owned by the review-ready task group.
+review_ready_package_names <- function(description) {
+  field <- "Config/Needs/review"
+  if (!(field %in% colnames(description))) {
+    stop("DESCRIPTION is missing `", field, "`.", call. = FALSE)
+  }
+  entries <- trimws(strsplit(
+    gsub("\n", " ", description[[1L, field]]),
+    ",",
+    fixed = TRUE
+  )[[1L]])
+  pattern <- "^([A-Za-z][A-Za-z0-9.]*)(?:[[:space:]]*\\([^()]+\\))?$"
+  matched <- regexec(pattern, entries, perl = TRUE)
+  parts <- regmatches(entries, matched)
+  if (any(lengths(parts) == 0L)) {
+    stop(
+      "Cannot parse review dependency requirement(s): ",
+      paste(entries[lengths(parts) == 0L], collapse = ", "),
+      call. = FALSE
+    )
+  }
+  vapply(parts, `[[`, character(1), 2L)
+}
+
 # Checks the tools needed before allocating or running the disposable checkout.
 review_ready_prerequisites <- function(
+  description = read.dcf("DESCRIPTION"),
   package_available = function(package) {
     requireNamespace(package, quietly = TRUE)
   },
   find_command = Sys.which,
   r_bin = R.home("bin")
 ) {
-  packages <- c("spelling", "testthat", "pkgload", "lintr", "rcmdcheck")
+  packages <- review_ready_package_names(description)
   available <- vapply(packages, package_available, logical(1))
   commands <- c(
     jarl = unname(find_command("jarl")),

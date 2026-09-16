@@ -23,15 +23,23 @@ with an installation hint rather than changing the library.
 
 The invariant local audit performs, once each:
 
-1. shipped spelling against the unpacked candidate;
-2. the shared checktor baseline against the candidate tarball;
-3. full `R CMD check --as-cran` through rcmdcheck, against that same tarball,
+1. package-aware lintr against the unpacked candidate, after loading that
+   candidate through pkgload's default package and test-helper environment;
+2. shipped spelling against the unpacked candidate;
+3. the shared checktor baseline against the candidate tarball;
+4. full `R CMD check --as-cran` through rcmdcheck, against that same tarball,
    with the manual, rebuilt vignettes, full Suggests, and incoming remote
    checks;
-4. one bounded read-only URL diagnostic only when the check reports a URL
+5. one bounded read-only URL diagnostic only when the check reports a URL
    problem; and
-5. byte-for-byte comparison of the repository's before/after `git status`
+6. byte-for-byte comparison of the repository's before/after `git status`
    record.
+
+lintr runs with its cache disabled and reports each finding as a candidate-
+relative file, line, column, linter, and message. Findings make the audit exit
+`1`; a package-load or linter condition makes it exit `2`. Neither route skips
+the normal human summary, machine result, step table, tool versions, or final
+worktree evidence.
 
 When spelling finds unknown words, it prints the words and their locations to
 the command output so the release agent can repair their source or propose a

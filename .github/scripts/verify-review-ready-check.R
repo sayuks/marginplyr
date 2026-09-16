@@ -41,7 +41,25 @@ expect_error(
   "a configurable gate"
 )
 
+description <- read.dcf("DESCRIPTION")
+expect_identical(
+  review_ready_package_names(description),
+  c("lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
+  "the declared review packages"
+)
+versioned_review_description <- matrix(
+  "alpha (>= 1.0), beta",
+  nrow = 1L,
+  dimnames = list(NULL, "Config/Needs/review")
+)
+expect_identical(
+  review_ready_package_names(versioned_review_description),
+  c("alpha", "beta"),
+  "review package names with constraints"
+)
+
 fixture_prerequisites <- review_ready_prerequisites(
+  description = description,
   package_available = function(package) TRUE,
   find_command = function(command) "/jarl",
   r_bin = "/R/bin"
@@ -53,6 +71,7 @@ expect_identical(
 )
 expect_error(
   review_ready_prerequisites(
+    description = description,
     package_available = function(package) package != "lintr",
     find_command = function(command) "",
     r_bin = "/R/bin"
@@ -62,6 +81,7 @@ expect_error(
 )
 expect_error(
   review_ready_prerequisites(
+    description = description,
     package_available = function(package) package != "spelling",
     find_command = function(command) "/jarl",
     r_bin = "/R/bin"
