@@ -3,12 +3,50 @@
 # Stateless deterministic helpers for the repository CRAN release playbook.
 # The Markdown manual owns orchestration and every external or judgement step.
 
+# `Config/Needs/*` parsing belongs in this shared helper so every local gate
+# reads one DCF grammar rather than carrying a second parser.
+if (!exists("dependency_requirements", mode = "function", inherits = TRUE)) {
+  source(file.path("tools", "dependency-requirements.R"))
+}
+
 release_abort <- function(message, status = 1L) {
   condition <- structure(
     list(message = message, call = NULL, status = as.integer(status)),
     class = c("marginplyr_release_error", "error", "condition")
   )
   stop(condition)
+}
+
+# Confirms that the packages the release playbook runs directly are available.
+# Package dependencies and the preflight toolset have their own checks.
+release_prerequisites <- function(
+  description = read.dcf("DESCRIPTION"),
+  package_available = function(package) requireNamespace(package, quietly = TRUE)
+) {
+  field <- "Config/Needs/release"
+  if (!(field %in% colnames(description))) {
+    release_abort(paste0("DESCRIPTION is missing `", field, "`."), status = 2L)
+  }
+  packages <- dependency_requirements(description[[1L, field]])$package
+  if (length(packages) == 0L) {
+    release_abort(
+      paste0("DESCRIPTION declares no `", field, "` packages."),
+      status = 2L
+    )
+  }
+  available <- vapply(packages, package_available, logical(1))
+  missing <- packages[!available]
+  if (length(missing) > 0L) {
+    release_abort(
+      paste0(
+        "Missing release prerequisites: ",
+        paste(missing, collapse = ", "),
+        "."
+      ),
+      status = 2L
+    )
+  }
+  packages
 }
 
 # Reads one single-line DCF field from already loaded DESCRIPTION lines.
@@ -632,6 +670,7 @@ cran_release_cli <- function(args = commandArgs(trailingOnly = TRUE)) {
   tryCatch({
     parsed <- parse_cran_release_args(args)
     if (isTRUE(parsed$help)) return(0L)
+    release_prerequisites()
     cran_release_operation(
       parsed$operation,
       parsed$version,

@@ -65,7 +65,8 @@ expect_error <- function(expr, message, label) {
 description_lines <- c(
   "Package: marginplyr",
   "Version: 0.1.0.9000",
-  "Config/marginplyr/cran-status: published"
+  "Config/marginplyr/cran-status: published",
+  "Config/Needs/release: attachment, devtools, rhub, roxygen2"
 )
 news_lines <- c(
   "# marginplyr 0.1.0.9000",
@@ -101,7 +102,8 @@ initial_files <- list(
   DESCRIPTION = c(
     "Package: marginplyr",
     "Version: 0.1.0",
-    "Config/marginplyr/cran-status: unpublished"
+    "Config/marginplyr/cran-status: unpublished",
+    "Config/Needs/release: attachment, devtools, rhub, roxygen2"
   ),
   `NEWS.md` = c("# marginplyr 0.1.0", "", "* Initial submission."),
   `README.qmd` = c(
@@ -138,6 +140,28 @@ initial_files <- list(
     "",
     "## Usage"
   )
+)
+
+release_packages <- character()
+invisible(release_prerequisites(
+  description = read.dcf("DESCRIPTION"),
+  package_available = function(package) {
+    release_packages <<- c(release_packages, package)
+    TRUE
+  }
+))
+expect_identical(
+  release_packages,
+  c("attachment", "devtools", "rhub", "roxygen2"),
+  "the declared release packages"
+)
+expect_release_error(
+  release_prerequisites(
+    description = read.dcf("DESCRIPTION"),
+    package_available = function(package) package != "attachment"
+  ),
+  2L,
+  "a missing release prerequisite"
 )
 
 expect_release_error(
