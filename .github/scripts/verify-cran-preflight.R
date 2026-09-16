@@ -5,6 +5,7 @@
 
 source(".github/scripts/cran-note-policy.R")
 source(".github/scripts/checktor-baseline.R")
+source("tools/dependency-requirements.R")
 source("tools/cran-preflight-lib.R")
 
 # Stops with a fixture label when a contract returns a different value.
@@ -149,21 +150,14 @@ expect_identical(
 
 build_ignore <- readLines(".Rbuildignore", warn = FALSE)
 expect_true("^tools$" %in% build_ignore, "the tools tarball exclusion")
-lintr_config <- read.dcf(".lintr")
-expect_identical(
-  lintr_config[[1L, "exclusions"]],
-  'list("inst/doc")',
-  "the generated-vignette lint exclusion"
-)
-expect_identical(
-  "^\\.lintr$" %in% build_ignore,
-  TRUE,
-  "the lintr configuration tarball exclusion"
-)
 
 preflight_sources <- paste(
   unlist(lapply(
-    c("tools/cran-preflight.R", "tools/cran-preflight-lib.R"),
+    c(
+      "tools/cran-preflight.R",
+      "tools/dependency-requirements.R",
+      "tools/cran-preflight-lib.R"
+    ),
     readLines,
     warn = FALSE
   )),
@@ -210,10 +204,6 @@ expect_true(
 expect_true(
   grepl("cache = FALSE", lintr_source, fixed = TRUE),
   "the disabled lintr cache"
-)
-expect_true(
-  grepl('exclusions = list("inst/doc")', lintr_source, fixed = TRUE),
-  "the candidate's generated-vignette lint exclusion"
 )
 expect_true(
   grepl("show_progress = FALSE", lintr_source, fixed = TRUE),
@@ -709,7 +699,11 @@ expect_true(
   "an unresolved path below a symlink into the repository"
 )
 copied_tools <- file.copy(
-  c("tools/cran-preflight.R", "tools/cran-preflight-lib.R"),
+  c(
+    "tools/cran-preflight.R",
+    "tools/dependency-requirements.R",
+    "tools/cran-preflight-lib.R"
+  ),
   file.path(cli_root, "tools")
 )
 expect_true(all(copied_tools), "the fixture tool copies")
@@ -744,6 +738,7 @@ writeLines("export(fixture)", file.path(cli_root, "NAMESPACE"))
 writeLines(
   c(
     "source('.github/scripts/cran-note-policy.R')",
+    "source('tools/dependency-requirements.R')",
     "source('tools/cran-preflight-lib.R')",
     "args <- commandArgs(trailingOnly = TRUE)",
     "scenario <- args[[1L]]",

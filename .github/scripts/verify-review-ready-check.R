@@ -2,6 +2,7 @@
 # its expensive test, lint, build, and R CMD check subprocesses.
 
 source(".github/scripts/cran-note-policy.R")
+source("tools/dependency-requirements.R")
 source("tools/review-ready-check-lib.R")
 
 expect_identical <- function(actual, expected, label) {
@@ -42,25 +43,39 @@ expect_error(
 )
 
 description <- read.dcf("DESCRIPTION")
-expect_identical(
-  review_ready_package_names(description),
-  c("lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
-  "the declared review packages"
-)
 versioned_review_description <- matrix(
   "alpha (>= 1.0), beta",
   nrow = 1L,
   dimnames = list(NULL, "Config/Needs/review")
 )
+versioned_review_packages <- character()
+versioned_review_prerequisites <- review_ready_prerequisites(
+  description = versioned_review_description,
+  package_available = function(package) {
+    versioned_review_packages <<- c(versioned_review_packages, package)
+    TRUE
+  },
+  find_command = function(command) "/jarl",
+  r_bin = "/R/bin"
+)
 expect_identical(
-  review_ready_package_names(versioned_review_description),
+  versioned_review_prerequisites,
+  list(r = "/R/bin/R", rscript = "/R/bin/Rscript", jarl = "/jarl"),
+  "versioned review prerequisites"
+)
+expect_identical(
+  versioned_review_packages,
   c("alpha", "beta"),
-  "review package names with constraints"
+  "review package derivation with constraints"
 )
 
+fixture_review_packages <- character()
 fixture_prerequisites <- review_ready_prerequisites(
   description = description,
-  package_available = function(package) TRUE,
+  package_available = function(package) {
+    fixture_review_packages <<- c(fixture_review_packages, package)
+    TRUE
+  },
   find_command = function(command) "/jarl",
   r_bin = "/R/bin"
 )
@@ -68,6 +83,11 @@ expect_identical(
   fixture_prerequisites,
   list(r = "/R/bin/R", rscript = "/R/bin/Rscript", jarl = "/jarl"),
   "available prerequisites"
+)
+expect_identical(
+  fixture_review_packages,
+  c("lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
+  "the declared review packages"
 )
 expect_error(
   review_ready_prerequisites(
