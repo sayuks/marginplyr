@@ -33,7 +33,6 @@ Suggests:
     quartabs (>= 0.1.1),
     quarto (>= 1.4),
     RSQLite,
-    spelling,
     testthat (>= 3.0.0),
     tibble,
     tidyr,

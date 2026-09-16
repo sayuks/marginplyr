@@ -91,7 +91,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::lintr, any::pkgload, local::.
+          extra-packages: any::lintr, any::pkgload, any::spelling, local::.
           needs: lint
 
       # Jarl complements rather than replaces lintr. Package-specific rules
@@ -102,6 +102,12 @@ jobs:
       - uses: etiennebacher/setup-jarl@v0.1.1
         with:
           version: "0.6.0"
+
+      - name: Spell-check package
+        run: |
+          findings <- spelling::spell_check_package('.', vignettes = TRUE, use_wordlist = TRUE)
+          if (nrow(findings)) { print(findings); stop('Package spelling found unknown words.', call. = FALSE) }
+        shell: Rscript {0}
 
       # `object_usage_linter()` resolves symbols through the package namespace,
       # so linting a package that is not loaded reports every internal function

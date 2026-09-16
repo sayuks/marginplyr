@@ -144,8 +144,8 @@ package_requirements <- rbind(
 )
 expect_identical(
   intersect(preflight_requirements$package, package_requirements$package),
-  "spelling",
-  "the transitional spelling overlap with Suggests"
+  character(),
+  "preflight-only packages outside Imports and Suggests"
 )
 
 build_ignore <- readLines(".Rbuildignore", warn = FALSE)
@@ -477,6 +477,30 @@ expect_true(
   ),
   "the preflight verifier workflow invocation"
 )
+expect_true(
+  grepl(
+    "extra-packages: any::lintr, any::pkgload, any::spelling, local::.",
+    lint_workflow,
+    fixed = TRUE
+  ),
+  "the lint spelling dependency"
+)
+expect_true(
+  grepl(
+    "findings <- spelling::spell_check_package('.', vignettes = TRUE, use_wordlist = TRUE)",
+    lint_workflow,
+    fixed = TRUE
+  ),
+  "the lint package spelling invocation"
+)
+expect_true(
+  grepl(
+    "if (nrow(findings)) { print(findings); stop('Package spelling found unknown words.', call. = FALSE) }",
+    lint_workflow,
+    fixed = TRUE
+  ),
+  "the lint spelling failure"
+)
 
 fixture_root <- tempfile("marginplyr-preflight-fixture-")
 dir.create(fixture_root)
@@ -589,63 +613,6 @@ expect_identical(
 
 evidence <- file.path(fixture_root, "evidence")
 dir.create(evidence)
-spelling_fixture <- structure(
-  data.frame(
-    word = "ungroup",
-    found = I(list(c(
-      "expand_with_margins.Rd:189",
-      "nest_with_margins.Rd:234"
-    ))),
-    stringsAsFactors = FALSE
-  ),
-  class = c("summary_spellcheck", "data.frame")
-)
-# The preflight verifier has no spelling dependency. This fixture printer makes
-# the generic `print()` call observable while retaining spelling's list shape.
-print.summary_spellcheck <- function(x, ...) {
-  cat("WORD FOUND IN\n")
-  for (index in seq_len(nrow(x))) {
-    cat(x$word[[index]], paste(x$found[[index]], collapse = "\n"), sep = "\n")
-    cat("\n")
-  }
-  invisible(x)
-}
-spelling_state <- new_preflight_state(evidence)
-spelling_output <- capture.output(run_preflight_spelling_step(
-  spelling_state,
-  package_path = package_dir,
-  checker = function(...) spelling_fixture
-))
-expect_true(
-  any(grepl("ungroup", spelling_output, fixed = TRUE)),
-  "the spelling finding word"
-)
-expect_true(
-  all(vapply(
-    c("expand_with_margins.Rd:189", "nest_with_margins.Rd:234"),
-    function(location) any(grepl(location, spelling_output, fixed = TRUE)),
-    logical(1)
-  )),
-  "every spelling finding location"
-)
-expect_identical(
-  spelling_state$steps$status,
-  "failed",
-  "a nonempty spelling result"
-)
-expect_identical(
-  spelling_state$candidate_failed,
-  TRUE,
-  "a spelling finding is a candidate failure"
-)
-expect_identical(
-  preflight_exit_code(
-    candidate_failed = spelling_state$candidate_failed,
-    tool_failed = spelling_state$tool_failed
-  ),
-  1L,
-  "a spelling finding has the candidate exit status"
-)
 
 state <- new_preflight_state(evidence)
 state$candidate_sha <- paste(rep("a", 40L), collapse = "")
