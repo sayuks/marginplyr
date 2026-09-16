@@ -61,6 +61,9 @@ The command takes no options. It runs, in order:
    external-clock verification disabled. The local future-file-timestamp
    comparison remains enabled.
 
+For a spelling finding, correct an actual typo; when the word is intentional,
+add it to `inst/WORDLIST` instead.
+
 It stops on the first failed step. An ERROR or WARNING fails the package check.
 A nonzero or timed-out check process also fails, even when no condition could
 be parsed from its incomplete output. Every NOTE is printed. The shared CRAN
