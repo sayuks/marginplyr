@@ -38,10 +38,11 @@ There is no global `--yes` setting or approval database.
 - One release issue is the current checklist and evidence ledger. It records
   durable summaries and URLs, never credentials, authentication material, raw
   local logs, or an unexpired private win-builder result URL.
-- The repository-external preflight bundle holds the audited tarball, raw logs,
-  and machine-readable evidence. Once its SHA is approved and frozen, it is the
-  canonical candidate tarball. Keep it until monitoring is complete and the
-  GitHub Release assets have been verified.
+- A formal preflight bundle is private, repository-external release evidence:
+  the audited tarball, raw logs, and machine-readable results for one candidate.
+  Its public record is a sanitized issue comment, never its local path or raw
+  contents. Once a passing bundle's SHA is approved and frozen, its tarball is
+  the canonical candidate artifact. Retention and cleanup are stage-4 duties.
 
 Every approval request must name the operation, exact branch/SHA/file or remote
 target, and expected effect. Approval for one checkpoint does not authorize a
@@ -199,9 +200,9 @@ the copy. A later change that can affect dependency usage requires a new audit
 from its own clean preparation commit.
 
 Choose a durable absolute directory outside the repository for the copy and its
-evidence; retain it through the release. The issue ledger records its location
-and summary rather than raw local logs. A release agent records the preparation
-commit SHA, `attachment` version, the exact invocation, console output
+evidence; retain it through the release. The issue ledger records a non-secret
+summary rather than its local location or raw logs. A release agent records the
+preparation commit SHA, `attachment` version, the exact invocation, console output
 (including its exit status), and resulting DESCRIPTION diff. For example:
 
 ```sh
@@ -322,35 +323,115 @@ Purpose: find candidate defects before binding the candidate SHA.
 After the preparation PR is merged, or after the zero-diff preparation evidence
 is approved, show the remote/default-branch target and obtain approval before
 the switch/pull. Synchronize the clean default branch, retain its SHA as the
-audit SHA, then choose a durable absolute directory outside the repository and
-run:
+audit SHA, then make a **formal preflight attempt**. An argument-free
+`Rscript tools/cran-preflight.R` run writes only a diagnostic cache bundle and
+is not part of this ledger.
+
+First derive the public attempt ID and the standard private bundle location.
+The timestamp is UTC and the candidate SHA is the full 40-character value:
 
 ```sh
 git switch main
 git pull --ff-only
 audit_sha=$(git rev-parse HEAD)
+attempt_started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+attempt_id="preflight-${audit_sha}-${attempt_started_at}"
+attempt_root=$(Rscript -e 'cat(tools::R_user_dir("marginplyr", "data"))')
+attempt_output="$attempt_root/release-evidence/<version>/$attempt_id"
 git status --short
-Rscript tools/cran-preflight.R \
-  --output /absolute/external/path/marginplyr-0.1.0-preflight
-printf '%s\n' "$audit_sha"
+printf '%s\n' "$attempt_id"
+printf '%s\n' "$attempt_output"
 ```
 
-This automatic audit is specified in
-[`tools/cran-preflight.md`](cran-preflight.md). It runs package-aware lintr
-against the loaded unpacked candidate and checks spelling, checktor, the exact
-source tarball, and the candidate-tree invariant once each. Success
-evidence is exit 0, the audit SHA, retained tarball path, SHA-256 manifest,
-passing/allowed result summary, and identical before/after worktree records.
-Record the SHA, digest, and durable summary in the release issue after human
-approval; keep raw evidence external.
+Show that resolved absolute path and state its retention purpose: it is the
+release operator's private raw-evidence bundle for this attempt. Obtain explicit
+approval before creating it. An agent cannot select another path. If the
+standard data directory is unavailable, show a durable repository-external
+override and obtain approval for that exact replacement. Do not add a permanent
+agent write grant, and do not make the command interactive.
 
-A candidate finding stops before stage 5. The release agent reads the complete
-audit output and groups candidate-remediable, non-behavioral findings from that
-audit into one remediation PR. A change to public behavior,
-dependencies, or release policy remains a separate PR. After any remediation PR
-merges, restart this stage: its final SHA needs the one authoritative clean
-audit. A tool or infrastructure failure is repaired and rerun into a new
-external directory. Human fallback is the same command and review.
+After approval, run the command once and retain its start and finish times in
+UTC. Let it reach a terminal exit before preparing any GitHub update:
+
+```sh
+Rscript tools/cran-preflight.R --output "$attempt_output"
+attempt_exit=$?
+attempt_finished_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+printf '%s\n' "$attempt_exit"
+printf '%s\n' "$attempt_finished_at"
+```
+
+The audit is specified in [`tools/cran-preflight.md`](cran-preflight.md). It
+runs package-aware lintr against the loaded unpacked candidate and checks spelling, checktor,
+the exact source tarball, and the candidate-tree invariant once each. It neither
+creates nor updates a GitHub issue. The private bundle
+contains the tarball, SHA-256 manifest, raw logs, check directory, and
+machine-readable evidence; do not publish its local absolute path, raw logs,
+credentials, or private URLs.
+
+One terminal attempt produces at most one append-only issue comment. Do not
+post start or progress comments. After classifying the exit, show the proposed
+sanitized attempt comment and the exact release-issue body diff, then obtain
+approval before either external update. The issue body is the sole current
+checklist: its candidate, currently valid evidence, latest formal attempt, and
+one concrete next human action. Comments are immutable attempt history; never
+rewrite an old comment to make it current.
+
+Use this comment template, omitting the artifact fields when no tarball was
+produced. It deliberately contains neither a local path nor raw/private
+evidence:
+
+```markdown
+## Formal preflight attempt
+
+- Attempt: `preflight-<full-candidate-sha>-<UTC timestamp>`
+- Candidate SHA: `<40-char-sha>`
+- Started: `<UTC timestamp>`
+- Finished: `<UTC timestamp>`
+- Terminal exit: `<0 / 1 / 2 / 130>` (`<classification>`)
+- Tarball: `marginplyr_<version>.tar.gz` / not produced
+- SHA-256: `<digest>` / not produced
+- Result: <non-secret summary>
+- Next action: <one concrete action>
+- Superseded by: <attempt-comment link / not applicable>
+```
+
+| Exit | Classification and append-only comment | Current issue-body transition |
+|---|---|---|
+| `0` | `passed`; record the approved passing result and artifact identity. | Mark stage 4 complete, populate Exact local artifact, and advance to candidate freeze. |
+| `1` | `candidate-failed`; record the candidate findings and approved remediation direction. | Leave stage 4 incomplete; next action is the remediation PR. |
+| `2` | `unavailable`; record the tooling or infrastructure classification and rerun condition. | Leave stage 4 incomplete; next action is repair and rerun. |
+| `130` | `interrupted`; record the interruption and required state checks. | Leave stage 4 incomplete; next action is inspect and rerun. |
+
+Every comment contains only the attempt ID and candidate SHA; start and finish
+times in UTC; terminal exit and classification; tarball name and SHA-256 when
+produced; a non-secret result summary; and one next action. It may link to its
+superseding attempt. A candidate finding does not undo a still-valid
+preparation or earlier stage. The release agent reads the complete audit output
+and groups candidate-remediable, non-behavioral findings from that audit into
+one remediation PR. A change to public behavior, dependencies, or release
+policy remains a separate PR. After any remediation PR merges, restart this stage:
+its final SHA needs the one authoritative clean audit. Repair a tooling
+or infrastructure failure and rerun it into a new approved external bundle.
+
+Any tracked candidate change invalidates this preflight and every
+candidate-dependent later result. Reset their current-body checkboxes, add a
+new comment recording the invalidation, and mark the old attempt
+`superseded`; preserve its original comment. The next candidate needs a new
+formal attempt even when a prior bundle remains locally intact.
+
+Retain exit `1`, `2`, and `130` bundles, and superseded bundles, until their
+cause is dispositioned and a later formal attempt reaches a terminal result.
+Retain an approved passing bundle through CRAN submission, publication, and the
+complete 72-hour monitoring window. The command never deletes a formal bundle.
+After monitoring, verify that the matching tarball and `SHA256SUMS` are
+attached to the GitHub Release, show the exact local cleanup targets, and
+obtain explicit deletion approval. Record the cleanup in the checklist before
+closing the release issue. The GitHub Release tarball and manifest remain
+permanent; private local raw logs and check directories do not.
+
+Human fallback: run the same approved command, retain the same private bundle,
+then prepare and approve the same sanitized comment and body update.
 
 ### 5. Freeze the candidate SHA
 
@@ -378,9 +459,9 @@ commands or GitHub's commit page.
 
 Any later tracked change to metadata, documentation, examples, dependencies or
 guards, executable source, or `cran-comments.md` creates a new candidate and
-invalidates the audit and every later stage. Evidence remains in the release
-issue and repository-external bundle, outside the candidate worktree; it never
-creates a candidate itself.
+invalidates the preflight and every later stage as stage 4 specifies. Evidence
+remains in the release issue and private repository-external bundle, outside the candidate worktree;
+it never creates a candidate itself.
 
 ### 6. Require CI for the candidate
 
@@ -703,6 +784,13 @@ At the end of a zero-diff stage 3, replace the initial Next human action with
 before freezing the Candidate SHA.”
 
 ```markdown
+## Latest formal preflight
+
+- Status: pending / passed / candidate-failed / unavailable / interrupted / superseded
+- Attempt comment: <comment link>
+- Candidate SHA: `<40-char-sha>`
+- Next action: <one concrete action>
+
 ## Next human action
 
 - [ ] Review and approve release preparation edits.
@@ -720,16 +808,17 @@ before freezing the Candidate SHA.”
 
 - [ ] Preparation commit SHA: `<40-char-sha>`
 - [ ] `attachment` version and invocation: <version/command>
-- [ ] Console output and DESCRIPTION diff: <external durable location; complete or partial/error>
+- [ ] Console output and DESCRIPTION diff: <complete / partial-error>
 - [ ] Every proposed change has a semantic disposition and maintainer acceptance: <table/link>
 
 ## Exact local artifact
 
 - [ ] Release-readiness audit exit 0
+- [ ] Formal attempt: <attempt ID / comment link>
 - [ ] Audit SHA: `<40-char-sha>`
 - [ ] Retained tarball: `marginplyr_<version>.tar.gz`
 - [ ] SHA-256: `<digest>`
-- [ ] Durable preflight summary: <location or approved summary>
+- [ ] Non-secret preflight summary: <approved summary>
 - [ ] Human approval of the audit result: <issue comment / review>
 
 ## Candidate-SHA evidence
@@ -764,12 +853,33 @@ before freezing the Candidate SHA.”
 - [ ] Site deployment healthy
 - [ ] CRAN flavors monitored for 72 hours
 - [ ] Every new ERROR/WARNING/NOTE has a human disposition
+- [ ] Local formal-bundle cleanup approved and recorded
 ```
 
 For an update, add current CRAN result URLs, reverse-dependency evidence (or a
 reason it is not applicable), downstream communication, and update rationale.
 For an initial release, add the `New submission` explanation and confirmation
 that the unpublished installation policy held until stage 12.
+
+## Pre-policy migration
+
+After this policy is merged, migrate the live 0.1.0 checklist in #554 to the
+template above before release work resumes. First read its current body and
+prepare a body diff that adds `Latest formal preflight`, changes `Preflight` to
+`Release-readiness audit` where needed, adds the formal-attempt field, and
+removes any local-location placeholder. Its current state remains pending; do
+not infer a valid formal attempt from an earlier run. Show the exact diff and
+obtain approval before editing the issue.
+
+Add one sanitized append-only history comment identifying candidate
+`dedda5338b482caca8d1e1deab50806ad27daa29` as a pre-policy attempt that used
+an agent-selected repository-sibling output path without explicit path
+approval. It is unaccepted and must not be promoted or moved into canonical
+evidence. Do not put that local path in the comment. Retain its bundle until a
+later formal attempt reaches a terminal result, then show its cleanup target
+and request deletion approval. Show the proposed comment and obtain approval
+before posting it. #554 is the one live checklist and evidence ledger, while
+this document remains the reusable operating contract.
 
 ## Conversational operation
 
@@ -792,8 +902,10 @@ only a durable non-secret summary for the issue.
 
 After interruption, run stages 1 and 4 read-only checks, inspect the issue's
 next action, and verify every claimed result still names the candidate SHA and
-retained tarball digest. Continue from the first unchecked valid stage. Never
-infer state from a half-run helper or from conversation history.
+retained tarball digest. An interrupted formal attempt remains an append-only
+`interrupted` record; inspect its recorded state and rerun into a new approved
+bundle. Continue from the first unchecked valid stage. Never infer state from a
+half-run helper or from conversation history.
 
 After CRAN rejection, record the non-secret reason and maintainer decision. A
 candidate change goes through a new preparation PR, SHA, preflight bundle, CI,

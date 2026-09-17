@@ -1,18 +1,51 @@
 # Local CRAN preflight
 
 Run the release-readiness audit from a clean repository root, before freezing
-the candidate SHA:
+the candidate SHA. There are two distinct uses of this command: a diagnostic
+cache run and a formal preflight attempt for a release ledger.
 
 ```sh
 Rscript tools/cran-preflight.R
 ```
 
-The command archives clean `HEAD` into an external disposable source tree,
-builds exactly one source tarball, and retains that tarball and its SHA-256 with
-the full evidence bundle. `--output <new-directory>` selects another external
-bundle location; it changes neither checks nor pass criteria. An exit 0 is
-evidence for the SHA the human approves and then freezes; a candidate finding
-stops that path before freezing.
+Without `--output`, the command writes a diagnostic cache run below
+`tools::R_user_dir("marginplyr", "cache")/cran-preflight`. It may create its
+own unique cache directory there without separate approval. The run is useful
+for diagnosing a candidate, but it is not release evidence and is never added
+to the release ledger.
+
+A **formal preflight attempt** is the stage-4 run made with an explicitly
+approved durable `--output` directory. It archives clean `HEAD` into an
+external disposable source tree, builds exactly one source tarball, and retains
+that tarball and its SHA-256 with the full evidence bundle. Its public,
+path-independent identifier is:
+
+```text
+preflight-<full-candidate-sha>-<UTC timestamp>
+```
+
+For example, the standard durable location is:
+
+```text
+tools::R_user_dir("marginplyr", "data")/release-evidence/<version>/<attempt-id>
+```
+
+This is data, not a cache, and is neither a repository sibling nor a directory
+an agent may select silently. Before creating a formal bundle, resolve and show
+the absolute path and state that its purpose is to retain the private evidence
+bundle for that one release attempt. Obtain explicit approval for that path. If
+the standard location is not writable, the release operator may approve a
+different durable, repository-external location. Do not add permanent Codex or
+Claude Code write grants for either location, and do not make this command
+interactive.
+
+`--output <new-directory>` changes neither checks nor pass criteria. An exit 0
+from a formal attempt is evidence for the SHA the human approves and then
+freezes; a candidate finding stops that path before freezing. The release
+operator owns the local bundle. The command never uploads, shares, moves, or
+automatically deletes it; a lost required bundle is invalid evidence and
+requires a new formal attempt, even for the same candidate SHA. No shared raw
+evidence store or particular backup product is required.
 
 The command installs and edits nothing. Before running it, install every
 `Suggests` entry at the version declared in `DESCRIPTION`, plus the packages in
@@ -98,7 +131,10 @@ or release-policy failure, `2` for invocation, prerequisite, tooling, or
 infrastructure failure, and `130` for interruption. Every nonzero result blocks
 release. The printed external bundle path contains the tarball, hash manifest,
 machine-readable results and step table, human summary, full check directory
-and logs, checktor report, and the conditional URL diagnostic.
+and logs, checktor report, and the conditional URL diagnostic. Those raw files,
+the local absolute path, credentials, and private URLs remain in the local
+bundle; only the non-secret summary prescribed by
+[`tools/cran-release.md`](cran-release.md) is public.
 
 ## What follows this gate
 
@@ -107,8 +143,9 @@ Continue with the complete human-and-agent release sequence in
 review, remote checks, the release issue, CRAN submission, publication, and
 post-publication work. This command performs none of them.
 
-For a real release, `--output` must name a durable, repository-external
-directory. Keep its retained tarball available through win-builder, CRAN
-submission, and GitHub Release creation. The candidate-tree invariant above is
-the status of the repository worktree; tools may change disposable external
-build and check trees without changing that candidate.
+For a real release, use the approved formal-attempt procedure in
+[`tools/cran-release.md`](cran-release.md), including its retention and cleanup
+rules. Keep an approved passing bundle through submission, publication, and the
+complete 72-hour monitoring window. The candidate-tree invariant above is the
+status of the repository worktree; tools may change disposable external build
+and check trees without changing that candidate.
