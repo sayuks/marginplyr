@@ -328,13 +328,14 @@ audit SHA, then make a **formal preflight attempt**. An argument-free
 is not part of this ledger.
 
 First derive the public attempt ID and the standard private bundle location.
-The timestamp is UTC and the candidate SHA is the full 40-character value:
+The candidate SHA is the full 40-character value. Use the path-safe basic UTC
+timestamp required by [`tools/cran-preflight.md`](cran-preflight.md):
 
 ```sh
 git switch main
 git pull --ff-only
 audit_sha=$(git rev-parse HEAD)
-attempt_started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+attempt_started_at=$(date -u +%Y%m%dT%H%M%SZ)
 attempt_id="preflight-${audit_sha}-${attempt_started_at}"
 attempt_root=$(Rscript -e 'cat(tools::R_user_dir("marginplyr", "data"))')
 attempt_output="$attempt_root/release-evidence/<version>/$attempt_id"

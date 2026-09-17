@@ -499,6 +499,20 @@ parse_preflight_args <- function(args) {
   if (!is.null(output) && !nzchar(output)) {
     stop("`--output` requires a non-empty directory path.", call. = FALSE)
   }
+  output_path <- if (is.null(output)) NULL else resolve_prospective_path(output)
+  if (
+    !is.null(output) && (
+      grepl(.Platform$path.sep, output, fixed = TRUE) ||
+        grepl(.Platform$path.sep, output_path, fixed = TRUE)
+    )
+  ) {
+    stop(
+      "`--output` must not contain the library path separator `",
+      .Platform$path.sep,
+      "`.",
+      call. = FALSE
+    )
+  }
   list(output = output)
 }
 
@@ -964,6 +978,142 @@ run_rcmdcheck <- function(tarball, evidence_path) {
   list(result = result, check_dir = check_dir, console = console)
 }
 
+# Returns R source that writes a fresh base-only child's two package resolutions
+# as one DCF record.
+marginplyr_candidate_library_identity_child_source <- function() {
+  paste(
+    "resolved_path <- function(expression) {",
+    "  tryCatch(",
+    "    normalizePath(expression(), winslash = '/', mustWork = TRUE),",
+    "    error = function(cnd) ''",
+    "  )",
+    "}",
+    "identity <- data.frame(",
+    "  `Find-Package` = resolved_path(function() find.package(\"marginplyr\")),",
+    paste0(
+      "  `Namespace-Path` = resolved_path(function() ",
+      "getNamespaceInfo(loadNamespace(\"marginplyr\"), \"path\")),"
+    ),
+    "  check.names = FALSE",
+    ")",
+    "write.dcf(identity, '')",
+    sep = "\n"
+  )
+}
+
+# Classifies a candidate-library record; either missing or divergent resolution
+# means the check's package-name-based child could not be verified.
+classify_candidate_library_identity <- function(
+  expected_path,
+  find_package_path,
+  namespace_path
+) {
+  paths <- vapply(
+    list(expected_path, find_package_path, namespace_path),
+    single_line,
+    character(1)
+  )
+  matches <- all(nzchar(paths)) &&
+    identical(paths[[1L]], paths[[2L]]) &&
+    identical(paths[[1L]], paths[[3L]])
+  list(
+    status = if (matches) "passed" else "unavailable",
+    problem = if (matches) NULL else "tool",
+    matches = matches,
+    expected_path = paths[[1L]],
+    find_package_path = paths[[2L]],
+    namespace_path = paths[[3L]],
+    detail = if (matches) {
+      "A fresh base-only child resolved both package paths to the candidate."
+    } else {
+      paste0(
+        "A fresh base-only child did not resolve both package paths to the ",
+        "candidate check library."
+      )
+    }
+  )
+}
+
+# Verifies installed marginplyr through the check-library-first R_LIBS ordering
+# that R CMD check gives package-name-based child processes.
+verify_marginplyr_candidate_library_identity <- function(
+  check_dir,
+  evidence_path,
+  runner = run_system
+) {
+  package <- "marginplyr"
+  check_library <- file.path(check_dir, paste0(package, ".Rcheck"))
+  expected_path <- normalizePath(
+    file.path(check_library, package),
+    winslash = "/",
+    mustWork = FALSE
+  )
+  path_and_libPath <- getFromNamespace("path_and_libPath", "tools")
+  check_libraries <- path_and_libPath(check_library, Sys.getenv("R_LIBS"))
+  r_libs <- if (identical(.Platform$OS.type, "windows")) {
+    check_libraries
+  } else {
+    shQuote(check_libraries)
+  }
+  child <- tryCatch(
+    runner(
+      file.path(R.home("bin"), "R"),
+      c(
+        "--vanilla",
+        "--slave",
+        "-e",
+        marginplyr_candidate_library_identity_child_source()
+      ),
+      stdout = TRUE,
+      env = c(
+        "R_DEFAULT_PACKAGES=NULL",
+        paste0("R_LIBS=", r_libs)
+      )
+    ),
+    error = function(cnd) cnd
+  )
+  child_record <- if (inherits(child, "condition") || child$status != 0L) {
+    NULL
+  } else {
+    tryCatch(
+      read.dcf(textConnection(child$output)),
+      error = function(cnd) NULL
+    )
+  }
+  find_package_path <- if (
+    !is.null(child_record) && "Find-Package" %in% colnames(child_record)
+  ) {
+    child_record[[1L, "Find-Package"]]
+  } else {
+    ""
+  }
+  namespace_path <- if (
+    !is.null(child_record) && "Namespace-Path" %in% colnames(child_record)
+  ) {
+    child_record[[1L, "Namespace-Path"]]
+  } else {
+    ""
+  }
+  identity <- classify_candidate_library_identity(
+    expected_path,
+    find_package_path,
+    namespace_path
+  )
+  write.dcf(
+    data.frame(
+      `Expected-Path` = identity$expected_path,
+      `Find-Package` = identity$find_package_path,
+      `Namespace-Path` = identity$namespace_path,
+      Match = tolower(as.character(identity$matches)),
+      check.names = FALSE
+    ),
+    evidence_path,
+    keep.white = c("Expected-Path", "Find-Package", "Namespace-Path")
+  )
+  identity$evidence <- evidence_path
+  identity
+}
+
 # Answers whether R CMD check could not read a configured repository index.
 # Such a remote outage says nothing about the candidate and keeps the command's
 # infrastructure-failure exit contract.
@@ -1089,6 +1239,14 @@ classify_rcmdcheck_result <- function(result, cran_status) {
     classifications = classifications,
     detail = NULL
   )
+}
+
+# Answers whether R CMD check could have installed the candidate library whose
+# resolution the preflight must retain, including completed tool failures.
+rcmdcheck_requires_candidate_library_identity <- function(result, outcome) {
+  process_status <- suppressWarnings(as.integer(result$status))
+  completed <- identical(process_status, 0L) && !isTRUE(result$timeout)
+  completed || !identical(outcome$status, "unavailable")
 }
 
 # Answers whether any structured check condition reports a URL problem.
@@ -1438,7 +1596,8 @@ run_preflight_pipeline <- function(state, repository_root, description) {
   state$note_classifications <- classifications
   note_path <- write_note_results(classifications, evidence)
 
-  if (identical(outcome$status, "unavailable")) {
+  rcmdcheck_unavailable <- identical(outcome$status, "unavailable")
+  if (rcmdcheck_unavailable) {
     record_preflight_step(
       state,
       "R-CMD-check",
@@ -1448,23 +1607,45 @@ run_preflight_pipeline <- function(state, repository_root, description) {
       outcome$detail
     )
     record_problem(state, outcome$problem)
-    return(invisible(NULL))
+  } else {
+    record_preflight_step(
+      state,
+      "R-CMD-check",
+      outcome$status,
+      proc.time()[["elapsed"]] - started,
+      check$check_dir,
+      sprintf(
+        "%d ERROR(s), %d WARNING(s), %d NOTE(s); classifications: %s.",
+        state$counts[["errors"]], state$counts[["warnings"]],
+        state$counts[["notes"]], note_path
+      )
+    )
+    if (!is.null(outcome$problem)) {
+      record_problem(state, outcome$problem)
+    }
   }
 
-  record_preflight_step(
-    state,
-    "R-CMD-check",
-    outcome$status,
-    proc.time()[["elapsed"]] - started,
-    check$check_dir,
-    sprintf(
-      "%d ERROR(s), %d WARNING(s), %d NOTE(s); classifications: %s.",
-      state$counts[["errors"]], state$counts[["warnings"]],
-      state$counts[["notes"]], note_path
+  if (rcmdcheck_requires_candidate_library_identity(result, outcome)) {
+    identity_started <- proc.time()[["elapsed"]]
+    candidate_identity <- verify_marginplyr_candidate_library_identity(
+      check$check_dir,
+      file.path(evidence, "candidate-library-identity.dcf")
     )
-  )
-  if (!is.null(outcome$problem)) {
-    record_problem(state, outcome$problem)
+    record_preflight_step(
+      state,
+      "candidate-library-identity",
+      candidate_identity$status,
+      proc.time()[["elapsed"]] - identity_started,
+      candidate_identity$evidence,
+      candidate_identity$detail
+    )
+    if (!candidate_identity$matches) {
+      record_problem(state, candidate_identity$problem)
+      return(invisible(NULL))
+    }
+  }
+  if (rcmdcheck_unavailable) {
+    return(invisible(NULL))
   }
 
   started <- proc.time()[["elapsed"]]

@@ -17,8 +17,9 @@ to the release ledger.
 A **formal preflight attempt** is the stage-4 run made with an explicitly
 approved durable `--output` directory. It archives clean `HEAD` into an
 external disposable source tree, builds exactly one source tarball, and retains
-that tarball and its SHA-256 with the full evidence bundle. Its public,
-path-independent identifier is:
+that tarball and its SHA-256 with the full evidence bundle. Its public attempt
+identifier is also the standard evidence-directory component, so its UTC
+timestamp uses the path-safe basic form `YYYYMMDDTHHMMSSZ`:
 
 ```text
 preflight-<full-candidate-sha>-<UTC timestamp>
@@ -39,13 +40,17 @@ different durable, repository-external location. Do not add permanent Codex or
 Claude Code write grants for either location, and do not make this command
 interactive.
 
-`--output <new-directory>` changes neither checks nor pass criteria. An exit 0
-from a formal attempt is evidence for the SHA the human approves and then
-freezes; a candidate finding stops that path before freezing. The release
-operator owns the local bundle. The command never uploads, shares, moves, or
-automatically deletes it; a lost required bundle is invalid evidence and
-requires a new formal attempt, even for the same candidate SHA. No shared raw
-evidence store or particular backup product is required.
+An explicit `--output <new-directory>` and its resolved target must not contain
+`.Platform$path.sep`, because R CMD check adds its installed candidate library
+to `R_LIBS`. The command rejects an unsafe path before candidate build or check
+work with exit `2` (invocation unavailable); it never relocates the bundle.
+A safe `--output` changes neither checks nor pass criteria. An exit 0 from a
+formal attempt is evidence for the SHA the human approves and then freezes; a
+candidate finding stops that path before freezing. The release operator owns the
+local bundle. The command never uploads, shares, moves, or automatically deletes
+it; a lost required bundle is invalid evidence and requires a new formal attempt,
+even for the same candidate SHA. No shared raw evidence store or particular
+backup product is required.
 
 The command installs and edits nothing. Before running it, install every
 `Suggests` entry at the version declared in `DESCRIPTION`, plus the packages in
@@ -105,9 +110,12 @@ The invariant local audit performs, once each:
 4. full `R CMD check --as-cran` through rcmdcheck, against that same tarball,
    with the manual, rebuilt vignettes, full Suggests, and incoming remote
    checks;
-5. one bounded read-only URL diagnostic only when the check reports a URL
+5. a fresh base-only R child that resolves `marginplyr` through the check
+   library and retains its expected path, `find.package()` path,
+   `loadNamespace()` path, and match result;
+6. one bounded read-only URL diagnostic only when the check reports a URL
    problem; and
-6. byte-for-byte comparison of the repository's before/after `git status`
+7. byte-for-byte comparison of the repository's before/after `git status`
    record.
 
 lintr runs with its cache disabled and reports each finding as a candidate-
@@ -128,12 +136,16 @@ checktor's baseline is an independent policy surface.
 
 The evidence summary uses exit `0` for a passing candidate, `1` for a candidate
 or release-policy failure, `2` for invocation, prerequisite, tooling, or
-infrastructure failure, and `130` for interruption. Every nonzero result blocks
-release. The printed external bundle path contains the tarball, hash manifest,
-machine-readable results and step table, human summary, full check directory
-and logs, checktor report, and the conditional URL diagnostic. The canonical
-final evidence files are `results.dcf` for machine-readable terminal evidence,
-`summary.md` for the human-readable summary, and `steps.tsv` for per-stage evidence.
+infrastructure failure, and `130` for interruption. A missing or mismatched
+candidate-library identity is tooling unavailable with exit `2`, never a
+candidate finding or a passing check. Every nonzero result blocks release. The
+printed external bundle path contains the tarball, hash manifest, machine-readable
+results and step table, human summary, full check directory and logs, checktor
+report, candidate-library identity record, and the conditional URL diagnostic.
+The canonical final evidence files are `results.dcf` for machine-readable
+terminal evidence, `summary.md` for the human-readable summary, `steps.tsv` for
+per-stage evidence, and `candidate-library-identity.dcf` for the completed
+check's candidate-library identity.
 Those raw files, the local absolute path, credentials, and private URLs remain
 in the local bundle; only the non-secret summary prescribed by
 [`tools/cran-release.md`](cran-release.md) is public.

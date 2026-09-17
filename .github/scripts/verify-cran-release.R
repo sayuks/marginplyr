@@ -601,14 +601,13 @@ expect_stage_patterns(
 )
 
 preflight <- paste(readLines("tools/cran-preflight.md", warn = FALSE), collapse = "\n")
-expect_stage_patterns(
+expect_stage_markers(
   preflight,
   c(
-    paste0(
-      "`results\\.dcf` for machine-readable terminal evidence,\\s+",
-      "`summary\\.md` for the human-readable summary, and `steps\\.tsv` ",
-      "for per-stage evidence\\."
-    )
+    "`results.dcf` for machine-readable",
+    "terminal evidence, `summary.md` for the human-readable summary, `steps.tsv` for",
+    "per-stage evidence, and `candidate-library-identity.dcf` for the completed",
+    "check's candidate-library identity."
   ),
   "the formal-preflight evidence-file contract"
 )
