@@ -394,10 +394,12 @@ the exact source tarball, candidate-library identity in a fresh base-only
 child, and the candidate-tree invariant once each. It neither creates nor
 updates a GitHub issue. The private bundle contains the tarball, SHA-256
 manifest, raw logs, check directory, machine-readable evidence, and
-`candidate-library-identity.dcf`. A missing or mismatched candidate-library
-identity is tooling unavailable with exit `2`, never a candidate finding or a
-passing check; do not publish the bundle's local absolute path, raw logs,
-credentials, or private URLs.
+`candidate-library-identity.dcf`. That record names the expected candidate
+directory, the fresh child's `find.package()` and `loadNamespace()` paths, and
+their match. A missing or mismatched candidate-library identity is tooling
+unavailable with exit `2`, never a candidate finding or a passing check; do not
+publish the bundle's local absolute path, raw logs, credentials, or private
+URLs.
 
 One terminal attempt produces at most one append-only issue comment. Do not
 post start or progress comments. After classifying the exit, show the proposed
