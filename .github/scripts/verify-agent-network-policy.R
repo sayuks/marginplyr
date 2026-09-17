@@ -25,6 +25,55 @@ url_hosts <- function(urls) {
   ))))
 }
 
+# Finds HTTP(S) targets in the Markdown files R includes in its package URL
+# database. R's own scanner reads these files only when xml2 is installed, but
+# this verifier must give the same answer before lint installs any packages.
+markdown_urls <- function(paths) {
+  paths <- paths[file.exists(paths)]
+  if (length(paths) == 0L) {
+    return(character())
+  }
+  documents <- vapply(
+    paths,
+    function(path) paste(readLines(path, warn = FALSE), collapse = "\n"),
+    character(1)
+  )
+  document_urls <- function(document) {
+    matches <- gregexpr(
+      "]\\(https?://[^[:space:]()]+\\)",
+      document,
+      perl = TRUE
+    )[[1L]]
+    if (identical(matches, -1L)) {
+      return(character())
+    }
+    lengths <- attr(matches, "match.length")
+    urls <- character()
+    for (index in seq_along(matches)) {
+      close <- matches[[index]]
+      depth <- 1L
+      open <- close - 1L
+      while (open > 0L && depth > 0L) {
+        character <- substr(document, open, open)
+        if (identical(character, "]")) {
+          depth <- depth + 1L
+        } else if (identical(character, "[")) {
+          depth <- depth - 1L
+        }
+        open <- open - 1L
+      }
+      is_image <- depth > 0L ||
+        (open > 0L && identical(substr(document, open, open), "!"))
+      if (!is_image) {
+        match <- substr(document, close, close + lengths[[index]] - 1L)
+        urls <- c(urls, sub("^]\\((.*)\\)$", "\\1", match))
+      }
+    }
+    urls
+  }
+  unique(unlist(lapply(documents, document_urls), use.names = FALSE))
+}
+
 # Reads one exact TOML table and refuses entries other than its requested value.
 codex_table_keys <- function(lines, header, value, description) {
   start <- match(header, lines)
@@ -101,7 +150,10 @@ repository_path <- if (
 ) agent_policy_repository_path else "."
 
 standard_urls <- unname(tools:::.get_standard_repository_URLs())
-candidate_urls <- tools:::url_db_from_package_sources(repository_path)$URL
+candidate_urls <- unique(c(
+  tools:::url_db_from_package_sources(repository_path)$URL,
+  markdown_urls(file.path(repository_path, c("README.md", "NEWS.md")))
+))
 
 redirect_source <- paste0(
   "https://contributor-covenant.org/version/2/1/",
