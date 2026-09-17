@@ -675,7 +675,6 @@ expect_stage_patterns(
       "Its public attempt\\s+identifier is also the standard evidence-directory component, ",
       "so its UTC\\s+timestamp uses the path-safe basic form `YYYYMMDDTHHMMSSZ`:"
     ),
-    "UTC\\s+timestamp uses the path-safe basic form `YYYYMMDDTHHMMSSZ`",
     paste0(
       "An explicit `--output <new-directory>` and its resolved target must not contain\\s+",
       "`\\.Platform\\$path\\.sep`, because R CMD check adds its installed candidate library\\s+",
