@@ -351,6 +351,11 @@ standard data directory is unavailable, show a durable repository-external
 override and obtain approval for that exact replacement. Do not add a permanent
 agent write grant, and do not make the command interactive.
 
+The standard location and every approved override are `--output` paths. Their
+spelling and resolved targets must omit `.Platform$path.sep`; otherwise the
+command stops before candidate build or check as invocation unavailable with
+exit `2`, without relocating the bundle.
+
 After approval, run the command once and retain its start and finish times in
 UTC. Let it reach a terminal exit before preparing any GitHub update:
 
@@ -385,10 +390,13 @@ same execution instead of completing and discarding its handle.
 
 The audit is specified in [`tools/cran-preflight.md`](cran-preflight.md). It
 runs package-aware lintr against the loaded unpacked candidate and checks spelling, checktor,
-the exact source tarball, and the candidate-tree invariant once each. It neither
-creates nor updates a GitHub issue. The private bundle
-contains the tarball, SHA-256 manifest, raw logs, check directory, and
-machine-readable evidence; do not publish its local absolute path, raw logs,
+the exact source tarball, candidate-library identity in a fresh base-only
+child, and the candidate-tree invariant once each. It neither creates nor
+updates a GitHub issue. The private bundle contains the tarball, SHA-256
+manifest, raw logs, check directory, machine-readable evidence, and
+`candidate-library-identity.dcf`. A missing or mismatched candidate-library
+identity is tooling unavailable with exit `2`, never a candidate finding or a
+passing check; do not publish the bundle's local absolute path, raw logs,
 credentials, or private URLs.
 
 One terminal attempt produces at most one append-only issue comment. Do not
