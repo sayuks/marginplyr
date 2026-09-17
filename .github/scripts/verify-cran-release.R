@@ -564,14 +564,58 @@ expect_stage_markers(
     "zero-diff preparation evidence",
     "audit SHA",
     "obtain approval before",
+    "path-safe basic UTC",
+    "+%Y%m%dT%H%M%SZ",
     "runs package-aware lintr",
     "checks spelling, checktor",
+    ".Platform$path.sep",
+    "before candidate build or check",
+    "invocation unavailable with",
+    "exit `2`, without relocating the bundle",
+    "candidate-library-identity.dcf",
+    "expected candidate",
+    "fresh child's `find.package()` and `loadNamespace()` paths",
+    "their match",
+    "missing or mismatched candidate-library",
+    "identity is tooling",
+    "unavailable with exit `2`",
+    "never a",
+    "candidate finding or a passing check",
     "candidate-remediable",
     "one remediation PR",
     "one authoritative clean",
     "restart this stage"
   ),
   "the release-readiness audit contract"
+)
+
+expect_stage_patterns(
+  stage_four,
+  c(
+    paste0(
+      "First derive the public attempt ID and the standard private bundle location\\.\\s+",
+      "The candidate SHA is the full 40-character value\\. Use the path-safe basic UTC\\s+",
+      "timestamp required by (?s:.*?)attempt_started_at=\\$\\(date -u \\+%Y%m%dT%H%M%SZ\\)\\s+",
+      "attempt_id=\"preflight-\\$\\{audit_sha\\}-\\$\\{attempt_started_at\\}\""
+    ),
+    paste0(
+      "The standard location and every approved override are `--output` paths\\.\\s+",
+      "Their\\s+spelling and resolved targets must omit `\\.Platform\\$path\\.sep`; ",
+      "otherwise the\\s+command stops before candidate build or check as invocation ",
+      "unavailable with\\s+exit `2`, without relocating the bundle\\."
+    ),
+    "candidate-library identity in a fresh base-only\\s+child",
+    paste0(
+      "`candidate-library-identity\\.dcf`\\. That record names the expected candidate\\s+",
+      "directory, the fresh child's `find\\.package\\(\\)` and `loadNamespace\\(\\)` paths, and\\s+",
+      "their match\\."
+    ),
+    paste0(
+      "A missing or mismatched candidate-library\\s+identity is tooling\\s+unavailable ",
+      "with exit `2`, never a candidate finding or a\\s+passing check;"
+    )
+  ),
+  "the formal-preflight release-playbook contract"
 )
 
 expect_stage_patterns(
@@ -601,16 +645,53 @@ expect_stage_patterns(
 )
 
 preflight <- paste(readLines("tools/cran-preflight.md", warn = FALSE), collapse = "\n")
+expect_stage_markers(
+  preflight,
+  c(
+    "Its public attempt",
+    "path-safe basic form `YYYYMMDDTHHMMSSZ`",
+    "`.Platform$path.sep`",
+    "before candidate build or check",
+    "exit `2` (invocation unavailable)",
+    "expected path, `find.package()` path,",
+    "`loadNamespace()` path, and match result",
+    "A missing or mismatched",
+    "identity is tooling",
+    "unavailable with exit `2`",
+    "never a",
+    "candidate finding or a passing check",
+    "`results.dcf` for machine-readable",
+    "terminal evidence, `summary.md` for the human-readable summary, `steps.tsv` for",
+    "per-stage evidence, and `candidate-library-identity.dcf` for the completed",
+    "check's candidate-library identity."
+  ),
+  "the formal-preflight evidence-file contract"
+)
+
 expect_stage_patterns(
   preflight,
   c(
     paste0(
-      "`results\\.dcf` for machine-readable terminal evidence,\\s+",
-      "`summary\\.md` for the human-readable summary, and `steps\\.tsv` ",
-      "for per-stage evidence\\."
+      "Its public attempt\\s+identifier is also the standard evidence-directory component, ",
+      "so its UTC\\s+timestamp uses the path-safe basic form `YYYYMMDDTHHMMSSZ`:"
+    ),
+    paste0(
+      "An explicit `--output <new-directory>` and its resolved target must not contain\\s+",
+      "`\\.Platform\\$path\\.sep`, because R CMD check adds its installed candidate library\\s+",
+      "to `R_LIBS`\\. The command rejects an unsafe path before candidate build or check\\s+",
+      "work with exit `2` \\(invocation unavailable\\); it never relocates the bundle\\."
+    ),
+    paste0(
+      "a fresh base-only R child that resolves `marginplyr` through the check\\s+",
+      "library and retains its expected path, `find\\.package\\(\\)` path,\\s+",
+      "`loadNamespace\\(\\)` path, and match result;"
+    ),
+    paste0(
+      "A missing or mismatched\\s+candidate-library identity is tooling\\s+unavailable ",
+      "with exit `2`, never a\\s+candidate finding or a passing check\\."
     )
   ),
-  "the formal-preflight evidence-file contract"
+  "the formal-preflight executable contract"
 )
 
 stage_five <- release_playbook_stage(playbook, 5L)

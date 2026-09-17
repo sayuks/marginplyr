@@ -163,6 +163,27 @@ preflight_sources <- paste(
   )),
   collapse = "\n"
 )
+release_playbook <- paste(
+  readLines("tools/cran-release.md", warn = FALSE),
+  collapse = "\n"
+)
+expect_true(
+  grepl(
+    "date -u +%Y%m%dT%H%M%SZ",
+    release_playbook,
+    fixed = TRUE
+  ),
+  "the path-safe formal-attempt timestamp"
+)
+expect_identical(
+  grepl(
+    "attempt_started_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+    release_playbook,
+    fixed = TRUE
+  ),
+  FALSE,
+  "no path-separator formal-attempt identifier timestamp"
+)
 forbidden_calls <- c(
   "roxygenise(", "render(\"README.Rmd\"", "quarto_render(",
   "att_amend_desc(",
@@ -237,6 +258,14 @@ expect_true(
   identity_position < lintr_position && lintr_position < spelling_position,
   "the exact-candidate lint ordering"
 )
+expect_true(
+  grepl(
+    "rcmdcheck_requires_candidate_library_identity",
+    pipeline_source,
+    fixed = TRUE
+  ),
+  "the completed-check candidate-library identity gate"
+)
 lint_report_source <- paste(deparse(report_lint_findings), collapse = "\n")
 for (field in c(
   "lint$filename", "lint$line_number", "lint$column_number",
@@ -275,6 +304,40 @@ expect_identical(
   )),
   1L,
   "one R CMD check invocation"
+)
+safe_output <- parse_preflight_args(c("--output", "safe-evidence"))
+expect_identical(
+  safe_output$output,
+  "safe-evidence",
+  "a safe explicit evidence path"
+)
+unsafe_output <- paste0("unsafe", .Platform$path.sep, "evidence")
+unsafe_parse <- tryCatch(
+  parse_preflight_args(c("--output", unsafe_output)),
+  error = function(cnd) cnd
+)
+expect_true(
+  inherits(unsafe_parse, "condition"),
+  "an explicit evidence path containing the library separator"
+)
+expect_true(
+  grepl("path separator", conditionMessage(unsafe_parse), fixed = TRUE),
+  "the unsafe-output diagnostic"
+)
+unsafe_output_target <- tempfile(paste0("unsafe-output", .Platform$path.sep))
+dir.create(unsafe_output_target)
+safe_output_link <- tempfile("safe-output-link")
+expect_true(
+  file.symlink(unsafe_output_target, safe_output_link),
+  "the unsafe-output target symlink"
+)
+unsafe_resolved_parse <- tryCatch(
+  parse_preflight_args(c("--output", file.path(safe_output_link, "evidence"))),
+  error = function(cnd) cnd
+)
+expect_true(
+  inherits(unsafe_resolved_parse, "condition"),
+  "an explicit output path resolving through the library separator"
 )
 expect_identical(
   grepl("--no-manual", preflight_sources, fixed = TRUE),
@@ -544,6 +607,98 @@ expect_identical(
   "the tarball CRAN status"
 )
 
+candidate_check_dir <- file.path(fixture_root, "candidate check")
+candidate_package_dir <- file.path(
+  candidate_check_dir,
+  "marginplyr.Rcheck",
+  "marginplyr"
+)
+dir.create(candidate_package_dir, recursive = TRUE)
+candidate_identity_evidence <- file.path(
+  fixture_root,
+  "candidate-library-identity.dcf"
+)
+candidate_identity <- verify_marginplyr_candidate_library_identity(
+  candidate_check_dir,
+  candidate_identity_evidence,
+  runner = function(command, args, stdout, env) {
+    expect_identical(
+      command,
+      file.path(R.home("bin"), "R"),
+      "the fresh candidate-library R executable"
+    )
+    expect_true(
+      "--vanilla" %in% args,
+      "the fresh candidate-library R session"
+    )
+    expect_true(
+      "R_DEFAULT_PACKAGES=NULL" %in% env,
+      "the base-only candidate-library R session"
+    )
+    r_libs <- env[startsWith(env, "R_LIBS=")]
+    expect_true(
+      length(r_libs) == 1L && grepl(
+        normalizePath(file.path(candidate_check_dir, "marginplyr.Rcheck")),
+        r_libs,
+        fixed = TRUE
+      ),
+      "the check-library-first candidate-library R session"
+    )
+    transport <- run_system(
+      command,
+      c("--vanilla", "--slave", "-e", "cat('candidate library started')"),
+      env = env
+    )
+    expect_identical(
+      transport$status,
+      0L,
+      "candidate-library environment transport with spaces"
+    )
+    list(
+      status = 0L,
+      output = c(
+        paste0("Find-Package: ", normalizePath(candidate_package_dir)),
+        paste0("Namespace-Path: ", normalizePath(candidate_package_dir))
+      )
+    )
+  }
+)
+expect_identical(
+  candidate_identity$status,
+  "passed",
+  "a matching candidate-library identity"
+)
+expect_true(
+  candidate_identity$matches,
+  "both candidate-library resolutions match"
+)
+candidate_identity_record <- read.dcf(candidate_identity_evidence)
+expect_identical(
+  candidate_identity_record[[1L, "Expected-Path"]],
+  normalizePath(candidate_package_dir),
+  "the retained expected candidate-library path"
+)
+expect_identical(
+  candidate_identity_record[[1L, "Match"]],
+  "true",
+  "the retained candidate-library identity match"
+)
+mismatched_candidate_identity <- classify_candidate_library_identity(
+  normalizePath(candidate_package_dir),
+  normalizePath(candidate_package_dir),
+  normalizePath(candidate_check_dir)
+)
+expect_identical(
+  mismatched_candidate_identity$status,
+  "unavailable",
+  "a mismatched candidate-library identity"
+)
+expect_identical(
+  mismatched_candidate_identity$problem,
+  "tool",
+  "a mismatched candidate-library identity is tooling"
+)
+
 comments <- file.path(fixture_root, "cran-comments.md")
 writeLines(
   c(
@@ -584,6 +739,21 @@ expect_identical(
   preflight_exit_code(candidate_failed = TRUE, tool_failed = FALSE),
   1L,
   "a candidate failure exit"
+)
+expect_true(
+  rcmdcheck_requires_candidate_library_identity(
+    list(status = 0L, timeout = FALSE),
+    list(status = "unavailable")
+  ),
+  "a completed unavailable check retains candidate-library identity"
+)
+expect_identical(
+  rcmdcheck_requires_candidate_library_identity(
+    list(status = 1L, timeout = FALSE),
+    list(status = "unavailable")
+  ),
+  FALSE,
+  "an incomplete unavailable check has no candidate-library identity"
 )
 expect_identical(
   preflight_exit_code(candidate_failed = TRUE, tool_failed = TRUE),
@@ -1066,6 +1236,37 @@ success_status <- run_in_dir(
   file.path(fixture_root, "success.log")
 )
 expect_identical(success_status, 0L, "a successful pipeline subprocess")
+
+unsafe_cli_output <- paste0(
+  file.path(fixture_root, "unsafe-evidence"),
+  .Platform$path.sep,
+  "candidate-library"
+)
+unsafe_cli_log <- file.path(fixture_root, "unsafe-output.log")
+unsafe_cli_status <- run_in_dir(
+  cli_root,
+  rscript,
+  c("tools/cran-preflight.R", "--output", unsafe_cli_output),
+  unsafe_cli_log
+)
+expect_identical(
+  unsafe_cli_status,
+  2L,
+  "an unsafe explicit output path"
+)
+expect_true(
+  grepl(
+    "path separator",
+    paste(readLines(unsafe_cli_log), collapse = "\n"),
+    fixed = TRUE
+  ),
+  "the unsafe explicit-output diagnostic"
+)
+expect_identical(
+  dir.exists(unsafe_cli_output),
+  FALSE,
+  "an unsafe explicit output path creates no evidence directory"
+)
 
 interrupt_status <- run_in_dir(
   cli_root,
