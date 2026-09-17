@@ -27,10 +27,12 @@ with an installation hint rather than changing the library.
 same exact host allowlist used by this preflight. The repository verifier
 derives that list from R's standard repositories and the current candidate
 URLs, includes a candidate URL's required redirect host, rejects either client
-drifting from the other, and rejects extra hosts. It runs in `lint.yaml` before
-the preflight contract fixtures. Neither client setting replaces the home
-directory, filters credentials from the subprocess environment, or grants a
-public-internet wildcard.
+drifting from the other, and rejects extra hosts. The preflight runs it before
+loading the audit pipeline, and `lint.yaml` runs it before the preflight
+contract fixtures. Each client grants write access to the platform-specific
+default evidence-cache directory; neither replaces the home directory, filters
+credentials from the subprocess environment, or grants a public-internet
+wildcard.
 
 Claude Code requires one user-owned setting because it deliberately ignores
 strict allowlisting from repository settings. Merge this into

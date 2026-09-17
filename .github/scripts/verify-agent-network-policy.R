@@ -25,12 +25,14 @@ url_hosts <- function(urls) {
   ))))
 }
 
-# Reads one exact TOML table and refuses entries other than explicit allows.
-codex_allowed_domains <- function(lines) {
-  header <- "[permissions.marginplyr.network.domains]"
+# Reads one exact TOML table and refuses entries other than its requested value.
+codex_table_keys <- function(lines, header, value, description) {
   start <- match(header, lines)
   if (is.na(start)) {
-    stop("Codex configuration has no network-domain table.", call. = FALSE)
+    stop(
+      paste("Codex configuration has no", description, "table."),
+      call. = FALSE
+    )
   }
   following_headers <- which(
     seq_along(lines) > start & grepl("^\\[[^]]+\\]$", lines)
@@ -42,10 +44,20 @@ codex_allowed_domains <- function(lines) {
   }
   entries <- trimws(lines[seq.int(start + 1L, end)])
   entries <- entries[nzchar(entries) & !startsWith(entries, "#")]
-  pattern <- '^"([^"]+)"[[:space:]]*=[[:space:]]*"allow"$'
+  pattern <- paste0(
+    '^"([^"]+)"[[:space:]]*=[[:space:]]*"',
+    value,
+    '"$'
+  )
   if (length(entries) == 0L || any(!grepl(pattern, entries))) {
     stop(
-      "Codex network-domain entries must all be explicit allows.",
+      paste(
+        "Codex",
+        description,
+        "entries must all be explicit",
+        value,
+        "values."
+      ),
       call. = FALSE
     )
   }
@@ -54,33 +66,42 @@ codex_allowed_domains <- function(lines) {
 
 # Reads the repository-owned JSON array in its deliberately one-entry-per-line
 # form, so this base-R verifier needs no package installation before lint.
-claude_allowed_domains <- function(lines) {
-  start <- grep('^[[:space:]]*"allowedDomains"[[:space:]]*:[[:space:]]*\\[$', lines)
+claude_string_array <- function(lines, name) {
+  array_pattern <- paste0(
+    '^[[:space:]]*"',
+    name,
+    '"[[:space:]]*:[[:space:]]*\\[$'
+  )
+  start <- grep(array_pattern, lines)
   if (length(start) != 1L) {
     stop(
-      "Claude Code configuration must have one allowedDomains array.",
+      paste("Claude Code configuration must have one", name, "array."),
       call. = FALSE
     )
   }
   following <- lines[seq.int(start + 1L, length(lines))]
   close <- which(grepl("^[[:space:]]*]", following))
   if (length(close) == 0L) {
-    stop("Claude Code allowedDomains array is not closed.", call. = FALSE)
+    stop(paste("Claude Code", name, "array is not closed."), call. = FALSE)
   }
   entries <- trimws(following[seq_len(close[[1L]] - 1L)])
   entries <- entries[nzchar(entries)]
   pattern <- '^"([^"]+)"[,]?$'
   if (length(entries) == 0L || any(!grepl(pattern, entries))) {
     stop(
-      "Claude Code allowedDomains entries must be JSON strings.",
+      paste("Claude Code", name, "entries must be JSON strings."),
       call. = FALSE
     )
   }
   sort(unique(sub(pattern, "\\1", entries)))
 }
 
+repository_path <- if (
+  exists("agent_policy_repository_path", inherits = FALSE)
+) agent_policy_repository_path else "."
+
 standard_urls <- unname(tools:::.get_standard_repository_URLs())
-candidate_urls <- tools:::url_db_from_package_sources(".")$URL
+candidate_urls <- tools:::url_db_from_package_sources(repository_path)$URL
 
 redirect_source <- paste0(
   "https://contributor-covenant.org/version/2/1/",
@@ -98,10 +119,21 @@ required_domains <- sort(unique(c(
   "www.contributor-covenant.org"
 )))
 
-codex_config <- readLines(".codex/config.toml", warn = FALSE)
-claude_config <- readLines(".claude/settings.json", warn = FALSE)
-codex_domains <- codex_allowed_domains(codex_config)
-claude_domains <- claude_allowed_domains(claude_config)
+codex_config <- readLines(
+  file.path(repository_path, ".codex", "config.toml"),
+  warn = FALSE
+)
+claude_config <- readLines(
+  file.path(repository_path, ".claude", "settings.json"),
+  warn = FALSE
+)
+codex_domains <- codex_table_keys(
+  codex_config,
+  "[permissions.marginplyr.network.domains]",
+  "allow",
+  "network-domain"
+)
+claude_domains <- claude_string_array(claude_config, "allowedDomains")
 
 if (!identical(codex_domains, claude_domains)) {
   stop(
@@ -120,6 +152,34 @@ if (!identical(codex_domains, required_domains)) {
 }
 if (any(codex_domains == "*")) {
   stop("Agent network allowlists must not allow the public internet.", call. = FALSE)
+}
+
+required_cache_paths <- c(
+  "~/.cache/R/marginplyr",
+  "~/Library/Caches/org.R-project.R/R/marginplyr"
+)
+required_codex_write_paths <- c(
+  required_cache_paths,
+  "~/Library/Caches/quarto"
+)
+codex_writable_paths <- codex_table_keys(
+  codex_config,
+  "[permissions.marginplyr.filesystem]",
+  "write",
+  "filesystem-write"
+)
+claude_writable_paths <- claude_string_array(claude_config, "allowWrite")
+if (!identical(codex_writable_paths, sort(required_codex_write_paths))) {
+  stop(
+    "Codex filesystem writes must be limited to agent tool caches.",
+    call. = FALSE
+  )
+}
+if (!identical(claude_writable_paths, sort(required_cache_paths))) {
+  stop(
+    "Claude Code filesystem writes must be limited to preflight evidence caches.",
+    call. = FALSE
+  )
 }
 
 required_codex_lines <- c(
@@ -149,7 +209,7 @@ if (any(!vapply(
   stop("Claude Code sandboxed networking is not fail-closed.", call. = FALSE)
 }
 
-build_ignore <- readLines(".Rbuildignore", warn = FALSE)
+build_ignore <- readLines(file.path(repository_path, ".Rbuildignore"), warn = FALSE)
 if (!all(c("^\\.claude$", "^\\.codex$") %in% build_ignore)) {
   stop("Agent project settings must stay out of the source package.", call. = FALSE)
 }

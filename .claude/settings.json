@@ -4,6 +4,12 @@
     "failIfUnavailable": true,
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": false,
+    "filesystem": {
+      "allowWrite": [
+        "~/.cache/R/marginplyr",
+        "~/Library/Caches/org.R-project.R/R/marginplyr"
+      ]
+    },
     "network": {
       "allowedDomains": [
         "app.codecov.io",

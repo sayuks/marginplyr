@@ -816,6 +816,8 @@ run_in_dir <- function(path, command, args, stdout) {
 cli_root <- file.path(fixture_root, "cli")
 dir.create(file.path(cli_root, "tools"), recursive = TRUE)
 dir.create(file.path(cli_root, ".github", "scripts"), recursive = TRUE)
+dir.create(file.path(cli_root, ".codex"))
+dir.create(file.path(cli_root, ".claude"))
 repository_link <- file.path(fixture_root, "repository-link")
 expect_true(
   file.symlink(cli_root, repository_link),
@@ -835,10 +837,21 @@ copied_tools <- file.copy(
 )
 expect_true(all(copied_tools), "the fixture tool copies")
 copied_policy <- file.copy(
-  ".github/scripts/cran-note-policy.R",
+  c(
+    ".github/scripts/cran-note-policy.R",
+    ".github/scripts/verify-agent-network-policy.R"
+  ),
   file.path(cli_root, ".github", "scripts")
 )
-expect_true(copied_policy, "the fixture policy copy")
+expect_true(all(copied_policy), "the fixture policy copies")
+copied_agent_settings <- file.copy(
+  c(".codex/config.toml", ".claude/settings.json"),
+  c(
+    file.path(cli_root, ".codex", "config.toml"),
+    file.path(cli_root, ".claude", "settings.json")
+  )
+)
+expect_true(all(copied_agent_settings), "the fixture agent settings")
 writeLines(
   c(
     "Package: marginplyr",
@@ -850,6 +863,15 @@ writeLines(
       "Description: A minimal package used to exercise the source-tarball",
       "preflight fixture."
     ),
+    paste0(
+      "URL: https://app.codecov.io/gh/sayuks/marginplyr, ",
+      "https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html,"
+    ),
+    paste0(
+      "    https://github.com/sayuks/marginplyr, ",
+      "https://rdatatable.gitlab.io/data.table/,"
+    ),
+    "    https://sayuks.github.io/marginplyr/",
     "License: MIT",
     "Suggests: marginplyrFixtureMissing",
     "Config/marginplyr/cran-status: unpublished",
@@ -858,7 +880,10 @@ writeLines(
   ),
   file.path(cli_root, "DESCRIPTION")
 )
-writeLines("^tools$", file.path(cli_root, ".Rbuildignore"))
+writeLines(
+  c("^tools$", "^\\.claude$", "^\\.codex$"),
+  file.path(cli_root, ".Rbuildignore")
+)
 dir.create(file.path(cli_root, "R"))
 writeLines("fixture <- function() TRUE", file.path(cli_root, "R", "fixture.R"))
 writeLines("export(fixture)", file.path(cli_root, "NAMESPACE"))
