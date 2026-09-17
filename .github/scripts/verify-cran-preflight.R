@@ -752,8 +752,10 @@ expect_identical(
   "a parsed R CMD check error does not become tooling"
 )
 remote_outage_note <- paste(
-  "checking CRAN incoming feasibility ...Warning: unable to access index",
-  "for repository https://bioconductor.org/packages/3.23/bioc/src/contrib:",
+  paste0(
+    "checking CRAN incoming feasibility ...Warning: unable to access index ",
+    "for repository https://bioconductor.org/packages/3.23/bioc/src/contrib:"
+  ),
   paste0(
     "cannot open URL '",
     "https://bioconductor.org/packages/3.23/bioc/src/contrib/PACKAGES'"
@@ -782,6 +784,63 @@ expect_identical(
   remote_outage$problem,
   "tool",
   "a repository-index outage is not a candidate finding"
+)
+candidate_repository_error <- classify_rcmdcheck_result(
+  list(
+    status = 1L,
+    timeout = FALSE,
+    errors = paste(
+      "checking examples ... ERROR",
+      paste(
+        "unable to access index for repository",
+        "https://bioconductor.org/packages/3.23/bioc/src/contrib:"
+      ),
+      paste0(
+        "cannot open URL '",
+        "https://bioconductor.org/packages/3.23/bioc/src/contrib/PACKAGES'"
+      ),
+      sep = "\n"
+    ),
+    warnings = character(),
+    notes = character()
+  ),
+  "unpublished"
+)
+expect_identical(
+  candidate_repository_error$status,
+  "failed",
+  "a candidate error containing an outage message remains failed"
+)
+expect_identical(
+  candidate_repository_error$problem,
+  "candidate",
+  "a candidate error containing an outage message remains a candidate finding"
+)
+unreviewed_repository_note <- sub(
+  "bioconductor.org",
+  "packages.example.invalid",
+  remote_outage_note,
+  fixed = TRUE
+)
+unreviewed_repository <- classify_rcmdcheck_result(
+  list(
+    status = 0L,
+    timeout = FALSE,
+    errors = character(),
+    warnings = character(),
+    notes = unreviewed_repository_note
+  ),
+  "unpublished"
+)
+expect_identical(
+  unreviewed_repository$status,
+  "failed",
+  "an unreviewed repository host remains a candidate finding"
+)
+expect_identical(
+  unreviewed_repository$problem,
+  "candidate",
+  "an unreviewed repository host does not become tooling"
 )
 expect_identical(
   version_satisfies("1.0.0", ">=", "2.0.0"),
