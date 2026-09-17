@@ -21,6 +21,48 @@ toolchain. The installed `marginplyr` version must equal the candidate version b
 Quarto vignette build runs in a child R process. A missing prerequisite exits
 with an installation hint rather than changing the library.
 
+## Agent sandbox network policy
+
+`.codex/config.toml` and `.claude/settings.json` give sandboxed commands the
+same exact host allowlist used by this preflight. The repository verifier
+derives that list from R's standard repositories and the current candidate
+URLs, includes a candidate URL's required redirect host, rejects either client
+drifting from the other, and rejects extra hosts. The preflight runs it before
+loading the audit pipeline, and `lint.yaml` runs it before the preflight
+contract fixtures. Each client grants write access to the platform-specific
+default evidence-cache directory; neither replaces the home directory, filters
+credentials from the subprocess environment, or grants a public-internet
+wildcard.
+
+Claude Code requires one user-owned setting because it deliberately ignores
+strict allowlisting from repository settings. Merge this into
+`~/.claude/settings.json` once, preserving any other settings:
+
+```json
+{
+  "sandbox": {
+    "network": {
+      "strictAllowlist": true
+    }
+  }
+}
+```
+
+Start a fresh session after changing agent settings. From the repository root,
+run `codex --strict-config doctor --summary --no-color`; its Configuration row
+must say that configuration loaded, and its sandbox row must report restricted
+filesystem access with networking enabled. In Claude Code, run `/sandbox` and
+inspect the Config tab: sandboxing and auto-allow must be enabled, unsandboxed
+retry must be disabled, strict allowlisting must be enabled, and the resolved
+domains must include the tracked project list. These checks confirm that the
+fresh session loaded the project policy before the preflight is attempted.
+
+An unlisted host is therefore denied rather than added or retried outside the
+sandbox. A denial or genuine remote outage leaves the preflight unavailable
+with exit `2`; it does not broaden either allowlist. These settings govern
+local command subprocesses only. Codex hosted web search and Claude Code
+in-process web tools keep their own access controls and are unaffected.
+
 The invariant local audit performs, once each:
 
 1. package-aware lintr against the unpacked candidate, after loading that

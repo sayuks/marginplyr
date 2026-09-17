@@ -1,11 +1,30 @@
-# Quarto 1.10 stores its macOS Sass cache under ~/Library/Caches/quarto.
-# Codex commands inherit the sandbox boundary, so the source-tarball vignette
-# build needs this narrow write grant for Quarto's Deno KV database.
+# CRAN preflight evidence and Quarto's macOS Sass cache live outside the
+# workspace. Codex commands inherit the sandbox boundary, so they need these
+# narrow write grants without replacing the home directory.
 default_permissions = "marginplyr"
 
+[features]
+network_proxy = true
+
 [permissions.marginplyr]
-description = "Edit marginplyr and write Quarto's macOS cache."
+description = "Edit marginplyr, write Quarto's cache, and run CRAN preflight."
 extends = ":workspace"
 
 [permissions.marginplyr.filesystem]
+"~/.cache/R/marginplyr" = "write"
+"~/Library/Caches/org.R-project.R/R/marginplyr" = "write"
 "~/Library/Caches/quarto" = "write"
+
+[permissions.marginplyr.network]
+enabled = true
+mode = "limited"
+
+[permissions.marginplyr.network.domains]
+"app.codecov.io" = "allow"
+"bioconductor.org" = "allow"
+"contributor-covenant.org" = "allow"
+"cran.r-project.org" = "allow"
+"github.com" = "allow"
+"rdatatable.gitlab.io" = "allow"
+"sayuks.github.io" = "allow"
+"www.contributor-covenant.org" = "allow"

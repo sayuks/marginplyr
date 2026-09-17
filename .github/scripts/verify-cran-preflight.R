@@ -751,6 +751,97 @@ expect_identical(
   "candidate",
   "a parsed R CMD check error does not become tooling"
 )
+remote_outage_note <- paste(
+  paste0(
+    "checking CRAN incoming feasibility ...Warning: unable to access index ",
+    "for repository https://bioconductor.org/packages/3.23/bioc/src/contrib:"
+  ),
+  paste0(
+    "cannot open URL '",
+    "https://bioconductor.org/packages/3.23/bioc/src/contrib/PACKAGES'"
+  ),
+  "NOTE",
+  "Maintainer: 'Preflight Fixture <fixture@example.invalid>'",
+  "New submission",
+  sep = "\n"
+)
+remote_outage <- classify_rcmdcheck_result(
+  list(
+    status = 0L,
+    timeout = FALSE,
+    errors = character(),
+    warnings = character(),
+    notes = remote_outage_note
+  ),
+  "unpublished"
+)
+expect_identical(
+  remote_outage$status,
+  "unavailable",
+  "a repository-index outage is unavailable"
+)
+expect_identical(
+  remote_outage$problem,
+  "tool",
+  "a repository-index outage is not a candidate finding"
+)
+candidate_repository_error <- classify_rcmdcheck_result(
+  list(
+    status = 1L,
+    timeout = FALSE,
+    errors = paste(
+      "checking examples ... ERROR",
+      paste(
+        "unable to access index for repository",
+        "https://bioconductor.org/packages/3.23/bioc/src/contrib:"
+      ),
+      paste0(
+        "cannot open URL '",
+        "https://bioconductor.org/packages/3.23/bioc/src/contrib/PACKAGES'"
+      ),
+      sep = "\n"
+    ),
+    warnings = character(),
+    notes = character()
+  ),
+  "unpublished"
+)
+expect_identical(
+  candidate_repository_error$status,
+  "failed",
+  "a candidate error containing an outage message remains failed"
+)
+expect_identical(
+  candidate_repository_error$problem,
+  "candidate",
+  "a candidate error containing an outage message remains a candidate finding"
+)
+unreviewed_repository_note <- sub(
+  "bioconductor.org",
+  "packages.example.invalid",
+  remote_outage_note,
+  fixed = TRUE
+)
+unreviewed_repository <- classify_rcmdcheck_result(
+  list(
+    status = 0L,
+    timeout = FALSE,
+    errors = character(),
+    warnings = character(),
+    notes = unreviewed_repository_note
+  ),
+  "unpublished"
+)
+expect_identical(
+  unreviewed_repository$status,
+  "failed",
+  "an unreviewed repository host remains a candidate finding"
+)
+expect_identical(
+  unreviewed_repository$problem,
+  "candidate",
+  "an unreviewed repository host does not become tooling"
+)
 expect_identical(
   version_satisfies("1.0.0", ">=", "2.0.0"),
   FALSE,
@@ -816,6 +907,8 @@ run_in_dir <- function(path, command, args, stdout) {
 cli_root <- file.path(fixture_root, "cli")
 dir.create(file.path(cli_root, "tools"), recursive = TRUE)
 dir.create(file.path(cli_root, ".github", "scripts"), recursive = TRUE)
+dir.create(file.path(cli_root, ".codex"))
+dir.create(file.path(cli_root, ".claude"))
 repository_link <- file.path(fixture_root, "repository-link")
 expect_true(
   file.symlink(cli_root, repository_link),
@@ -835,10 +928,21 @@ copied_tools <- file.copy(
 )
 expect_true(all(copied_tools), "the fixture tool copies")
 copied_policy <- file.copy(
-  ".github/scripts/cran-note-policy.R",
+  c(
+    ".github/scripts/cran-note-policy.R",
+    ".github/scripts/verify-agent-network-policy.R"
+  ),
   file.path(cli_root, ".github", "scripts")
 )
-expect_true(copied_policy, "the fixture policy copy")
+expect_true(all(copied_policy), "the fixture policy copies")
+copied_agent_settings <- file.copy(
+  c(".codex/config.toml", ".claude/settings.json"),
+  c(
+    file.path(cli_root, ".codex", "config.toml"),
+    file.path(cli_root, ".claude", "settings.json")
+  )
+)
+expect_true(all(copied_agent_settings), "the fixture agent settings")
 writeLines(
   c(
     "Package: marginplyr",
@@ -850,6 +954,15 @@ writeLines(
       "Description: A minimal package used to exercise the source-tarball",
       "preflight fixture."
     ),
+    paste0(
+      "URL: https://app.codecov.io/gh/sayuks/marginplyr, ",
+      "https://contributor-covenant.org/version/2/1/CODE_OF_CONDUCT.html,"
+    ),
+    paste0(
+      "    https://github.com/sayuks/marginplyr, ",
+      "https://rdatatable.gitlab.io/data.table/,"
+    ),
+    "    https://sayuks.github.io/marginplyr/",
     "License: MIT",
     "Suggests: marginplyrFixtureMissing",
     "Config/marginplyr/cran-status: unpublished",
@@ -858,7 +971,10 @@ writeLines(
   ),
   file.path(cli_root, "DESCRIPTION")
 )
-writeLines("^tools$", file.path(cli_root, ".Rbuildignore"))
+writeLines(
+  c("^tools$", "^\\.claude$", "^\\.codex$"),
+  file.path(cli_root, ".Rbuildignore")
+)
 dir.create(file.path(cli_root, "R"))
 writeLines("fixture <- function() TRUE", file.path(cli_root, "R", "fixture.R"))
 writeLines("export(fixture)", file.path(cli_root, "NAMESPACE"))

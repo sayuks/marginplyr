@@ -964,6 +964,63 @@ run_rcmdcheck <- function(tarball, evidence_path) {
   list(result = result, check_dir = check_dir, console = console)
 }
 
+# Answers whether R CMD check could not read a configured repository index.
+# Such a remote outage says nothing about the candidate and keeps the command's
+# infrastructure-failure exit contract.
+rcmdcheck_repository_outage <- function(result) {
+  conditions <- c(result$errors, result$warnings, result$notes)
+  if (length(conditions) == 0L) {
+    return(FALSE)
+  }
+  # The policy verifier and R CMD check both use R's current standard-repository
+  # table, so outage classification must read that same internal authority.
+  standard_repositories <- getFromNamespace(
+    ".get_standard_repository_URLs",
+    "tools"
+  )
+  standard_urls <- unname(standard_repositories())
+  standard_hosts <- sub(
+    "^https?://([^/:?#]+).*$",
+    "\\1",
+    standard_urls,
+    ignore.case = TRUE
+  )
+  condition_is_outage <- function(condition) {
+    lines <- strsplit(condition, "\n", fixed = TRUE)[[1L]]
+    if (!grepl(
+      "^[*]?[[:space:]]*checking CRAN incoming feasibility[[:space:]]+[.]{3}",
+      lines[[1L]],
+      ignore.case = TRUE,
+      perl = TRUE
+    )) {
+      return(FALSE)
+    }
+    index_pattern <- paste0(
+      ".*unable to access index for repository[[:space:]]+",
+      "(https?://[^[:space:]]+):$"
+    )
+    index_lines <- lines[grepl(
+      index_pattern,
+      lines,
+      ignore.case = TRUE,
+      perl = TRUE
+    )]
+    if (length(index_lines) == 0L) {
+      return(FALSE)
+    }
+    urls <- sub(
+      index_pattern,
+      "\\1",
+      index_lines,
+      ignore.case = TRUE,
+      perl = TRUE
+    )
+    hosts <- sub("^https?://([^/:?#]+).*$", "\\1", urls, ignore.case = TRUE)
+    any(tolower(hosts) %in% tolower(standard_hosts))
+  }
+  any(vapply(conditions, condition_is_outage, logical(1)))
+}
+
 # Classifies structured R CMD check output before any conditional follow-up.
 classify_rcmdcheck_result <- function(result, cran_status) {
   process_status <- suppressWarnings(as.integer(result$status))
@@ -990,6 +1047,16 @@ classify_rcmdcheck_result <- function(result, cran_status) {
     counts[["warnings"]] > 0L || any(unknown_notes)
   completed <- identical(process_status, 0L) && !timeout
   status_text <- if (is.na(process_status)) "unavailable" else process_status
+
+  if (rcmdcheck_repository_outage(result)) {
+    return(list(
+      status = "unavailable",
+      problem = "tool",
+      counts = counts,
+      classifications = classifications,
+      detail = "R CMD check could not read a configured repository index."
+    ))
+  }
 
   if (!completed && !has_failures) {
     return(list(
