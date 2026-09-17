@@ -134,4 +134,5 @@
 #'   revenue = sum(revenue),
 #'   .grouping = rollup(region, store)
 #' )
+#' @importFrom utils getS3method
 "_PACKAGE"

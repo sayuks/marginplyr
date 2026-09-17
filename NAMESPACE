@@ -26,3 +26,4 @@ importFrom(dbplyr,
   op_vars,
   sql_build
 )
+importFrom(utils,getS3method)
