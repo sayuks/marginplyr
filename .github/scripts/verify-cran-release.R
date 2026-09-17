@@ -593,6 +593,29 @@ expect_stage_patterns(
   stage_four,
   c(
     paste0(
+      "The standard location and every approved override are `--output` paths\\.\\s+",
+      "Their\\s+spelling and resolved targets must omit `\\.Platform\\$path\\.sep`; ",
+      "otherwise the\\s+command stops before candidate build or check as invocation ",
+      "unavailable with\\s+exit `2`, without relocating the bundle\\."
+    ),
+    "candidate-library identity in a fresh base-only\\s+child",
+    paste0(
+      "`candidate-library-identity\\.dcf`\\. That record names the expected candidate\\s+",
+      "directory, the fresh child's `find\\.package\\(\\)` and `loadNamespace\\(\\)` paths, and\\s+",
+      "their match\\."
+    ),
+    paste0(
+      "A missing or mismatched candidate-library\\s+identity is tooling\\s+unavailable ",
+      "with exit `2`, never a candidate finding or a\\s+passing check;"
+    )
+  ),
+  "the formal-preflight release-playbook contract"
+)
+
+expect_stage_patterns(
+  stage_four,
+  c(
+    paste0(
       "execution identity until it returns a terminal completion result\\. ",
       "Only that\\s+attempt's terminal exit or interruption outcome is evidence\\."
     ),
@@ -637,6 +660,29 @@ expect_stage_markers(
     "check's candidate-library identity."
   ),
   "the formal-preflight evidence-file contract"
+)
+
+expect_stage_patterns(
+  preflight,
+  c(
+    "UTC\\s+timestamp uses the path-safe basic form `YYYYMMDDTHHMMSSZ`",
+    paste0(
+      "An explicit `--output <new-directory>` and its resolved target must not contain\\s+",
+      "`\\.Platform\\$path\\.sep`, because R CMD check adds its installed candidate library\\s+",
+      "to `R_LIBS`\\. The command rejects an unsafe path before candidate build or check\\s+",
+      "work with exit `2` \\(invocation unavailable\\); it never relocates the bundle\\."
+    ),
+    paste0(
+      "a fresh base-only R child that resolves `marginplyr` through the check\\s+",
+      "library and retains its expected path, `find\\.package\\(\\)` path,\\s+",
+      "`loadNamespace\\(\\)` path, and match result;"
+    ),
+    paste0(
+      "A missing or mismatched\\s+candidate-library identity is tooling\\s+unavailable ",
+      "with exit `2`, never a\\s+candidate finding or a passing check\\."
+    )
+  ),
+  "the formal-preflight executable contract"
 )
 
 stage_five <- release_playbook_stage(playbook, 5L)
