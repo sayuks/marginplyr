@@ -1,0 +1,20 @@
+{
+  "sandbox": {
+    "enabled": true,
+    "failIfUnavailable": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false,
+    "network": {
+      "allowedDomains": [
+        "app.codecov.io",
+        "bioconductor.org",
+        "contributor-covenant.org",
+        "cran.r-project.org",
+        "github.com",
+        "rdatatable.gitlab.io",
+        "sayuks.github.io",
+        "www.contributor-covenant.org"
+      ]
+    }
+  }
+}

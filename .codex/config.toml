@@ -3,9 +3,26 @@
 # build needs this narrow write grant for Quarto's Deno KV database.
 default_permissions = "marginplyr"
 
+[features]
+network_proxy = true
+
 [permissions.marginplyr]
-description = "Edit marginplyr and write Quarto's macOS cache."
+description = "Edit marginplyr, write Quarto's cache, and run CRAN preflight."
 extends = ":workspace"
 
 [permissions.marginplyr.filesystem]
 "~/Library/Caches/quarto" = "write"
+
+[permissions.marginplyr.network]
+enabled = true
+mode = "limited"
+
+[permissions.marginplyr.network.domains]
+"app.codecov.io" = "allow"
+"bioconductor.org" = "allow"
+"contributor-covenant.org" = "allow"
+"cran.r-project.org" = "allow"
+"github.com" = "allow"
+"rdatatable.gitlab.io" = "allow"
+"sayuks.github.io" = "allow"
+"www.contributor-covenant.org" = "allow"
