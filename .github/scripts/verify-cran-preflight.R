@@ -751,6 +751,38 @@ expect_identical(
   "candidate",
   "a parsed R CMD check error does not become tooling"
 )
+remote_outage_note <- paste(
+  "checking CRAN incoming feasibility ...Warning: unable to access index",
+  "for repository https://bioconductor.org/packages/3.23/bioc/src/contrib:",
+  paste0(
+    "cannot open URL '",
+    "https://bioconductor.org/packages/3.23/bioc/src/contrib/PACKAGES'"
+  ),
+  "NOTE",
+  "Maintainer: 'Preflight Fixture <fixture@example.invalid>'",
+  "New submission",
+  sep = "\n"
+)
+remote_outage <- classify_rcmdcheck_result(
+  list(
+    status = 0L,
+    timeout = FALSE,
+    errors = character(),
+    warnings = character(),
+    notes = remote_outage_note
+  ),
+  "unpublished"
+)
+expect_identical(
+  remote_outage$status,
+  "unavailable",
+  "a repository-index outage is unavailable"
+)
+expect_identical(
+  remote_outage$problem,
+  "tool",
+  "a repository-index outage is not a candidate finding"
+)
 expect_identical(
   version_satisfies("1.0.0", ">=", "2.0.0"),
   FALSE,
