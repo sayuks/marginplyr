@@ -593,6 +593,12 @@ expect_stage_patterns(
   stage_four,
   c(
     paste0(
+      "First derive the public attempt ID and the standard private bundle location\\.\\s+",
+      "The candidate SHA is the full 40-character value\\. Use the path-safe basic UTC\\s+",
+      "timestamp required by (?s:.*?)attempt_started_at=\\$\\(date -u \\+%Y%m%dT%H%M%SZ\\)\\s+",
+      "attempt_id=\"preflight-\\$\\{audit_sha\\}-\\$\\{attempt_started_at\\}\""
+    ),
+    paste0(
       "The standard location and every approved override are `--output` paths\\.\\s+",
       "Their\\s+spelling and resolved targets must omit `\\.Platform\\$path\\.sep`; ",
       "otherwise the\\s+command stops before candidate build or check as invocation ",
@@ -665,6 +671,10 @@ expect_stage_markers(
 expect_stage_patterns(
   preflight,
   c(
+    paste0(
+      "Its public attempt\\s+identifier is also the standard evidence-directory component, ",
+      "so its UTC\\s+timestamp uses the path-safe basic form `YYYYMMDDTHHMMSSZ`:"
+    ),
     "UTC\\s+timestamp uses the path-safe basic form `YYYYMMDDTHHMMSSZ`",
     paste0(
       "An explicit `--output <new-directory>` and its resolved target must not contain\\s+",
