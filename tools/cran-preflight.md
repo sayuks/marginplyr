@@ -131,9 +131,11 @@ or release-policy failure, `2` for invocation, prerequisite, tooling, or
 infrastructure failure, and `130` for interruption. Every nonzero result blocks
 release. The printed external bundle path contains the tarball, hash manifest,
 machine-readable results and step table, human summary, full check directory
-and logs, checktor report, and the conditional URL diagnostic. Those raw files,
-the local absolute path, credentials, and private URLs remain in the local
-bundle; only the non-secret summary prescribed by
+and logs, checktor report, and the conditional URL diagnostic. The canonical
+final evidence files are `results.dcf` for machine-readable terminal evidence,
+`summary.md` for the human-readable summary, and `steps.tsv` for per-stage evidence.
+Those raw files, the local absolute path, credentials, and private URLs remain
+in the local bundle; only the non-secret summary prescribed by
 [`tools/cran-release.md`](cran-release.md) is public.
 
 ## What follows this gate

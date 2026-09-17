@@ -49,6 +49,18 @@ expect_stage_markers <- function(stage, markers, label) {
   expect_identical(missing, character(), label)
 }
 
+# Requires one complete contract while allowing prose to wrap at a different width.
+expect_stage_patterns <- function(stage, patterns, label) {
+  missing <- patterns[!vapply(
+    patterns,
+    grepl,
+    logical(1L),
+    x = stage,
+    perl = TRUE
+  )]
+  expect_identical(missing, character(), label)
+}
+
 # Checks the failure cases of the release-playbook contract assertions.
 expect_error <- function(expr, message, label) {
   error <- tryCatch({
@@ -560,6 +572,45 @@ expect_stage_markers(
     "restart this stage"
   ),
   "the release-readiness audit contract"
+)
+
+expect_stage_patterns(
+  stage_four,
+  c(
+    paste0(
+      "execution identity until it returns a terminal completion result\\. ",
+      "Only that\\s+attempt's terminal exit or interruption outcome is evidence\\."
+    ),
+    paste0(
+      "Do not infer\\s+completion or interruption from partial output, ",
+      "elapsed time, process absence,\\s+or a separate process check\\."
+    ),
+    paste0(
+      "If the execution identity or terminal result is lost, the evidence is ",
+      "unavailable\\.\\s+Report that before any replacement run, and do not ",
+      "silently rerun the preflight\\."
+    ),
+    paste0(
+      "retain the complete `exec_command` result\\. When it contains a\\s+live ",
+      "`session_id`, continue that same terminal session with `write_stdin` ",
+      "until\\s+a result includes `exit_code`; do not reduce an in-progress ",
+      "result to `\\.output`\\s+alone\\."
+    )
+  ),
+  "the formal-preflight execution-observation contract"
+)
+
+preflight <- paste(readLines("tools/cran-preflight.md", warn = FALSE), collapse = "\n")
+expect_stage_patterns(
+  preflight,
+  c(
+    paste0(
+      "`results\\.dcf` for machine-readable terminal evidence,\\s+",
+      "`summary\\.md` for the human-readable summary, and `steps\\.tsv` ",
+      "for per-stage evidence\\."
+    )
+  ),
+  "the formal-preflight evidence-file contract"
 )
 
 stage_five <- release_playbook_stage(playbook, 5L)

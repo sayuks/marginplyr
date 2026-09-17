@@ -361,6 +361,27 @@ printf '%s\n' "$attempt_exit"
 printf '%s\n' "$attempt_finished_at"
 ```
 
+#### Observing one formal attempt
+
+The preflight can start child processes while it performs its checks. They
+belong to the one audit; they are not the shell execution an agent starts to
+run it. For one audit SHA, start one formal preflight attempt and retain its
+execution identity until it returns a terminal completion result. Only that
+attempt's terminal exit or interruption outcome is evidence. Do not infer
+completion or interruption from partial output, elapsed time, process absence,
+or a separate process check.
+
+If the execution identity or terminal result is lost, the evidence is unavailable.
+Report that before any replacement run, and do not silently rerun the preflight.
+A bundle on disk does not recover a lost shell result.
+
+The following is the current Codex mapping, not a second definition of the
+evidence rule: retain the complete `exec_command` result. When it contains a
+live `session_id`, continue that same terminal session with `write_stdin` until
+a result includes `exit_code`; do not reduce an in-progress result to `.output`
+alone. An outer wrapper preserves the nested result or keeps waiting on the
+same execution instead of completing and discarding its handle.
+
 The audit is specified in [`tools/cran-preflight.md`](cran-preflight.md). It
 runs package-aware lintr against the loaded unpacked candidate and checks spelling, checktor,
 the exact source tarball, and the candidate-tree invariant once each. It neither
