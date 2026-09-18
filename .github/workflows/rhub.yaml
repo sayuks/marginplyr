@@ -66,7 +66,8 @@ jobs:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
       # Local customization: rhub::rhub_setup() generates the surrounding
-      # workflow. Keep this portable across the supported Linux containers.
+      # workflow. This installation is portable across the supported Linux
+      # containers.
       - name: Install portable Quarto from the official tarball
         shell: bash
         run: |
