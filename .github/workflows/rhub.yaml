@@ -61,11 +61,47 @@ jobs:
 
     steps:
       - uses: r-hub/actions/checkout@v1
-      - uses: quarto-dev/quarto-actions/setup@v2
       - uses: r-hub/actions/platform-info@v1
         with:
           token: ${{ secrets.RHUB_TOKEN }}
           job-config: ${{ matrix.config.job-config }}
+      # Local customization: rhub::rhub_setup() generates the surrounding
+      # workflow. Keep this portable across the supported Linux containers.
+      - name: Install portable Quarto from the official tarball
+        shell: bash
+        run: |
+          set -euo pipefail
+          quarto_machine="$(uname -m)"
+          case "$quarto_machine" in
+            x86_64 | amd64)
+              quarto_arch=amd64
+              ;;
+            aarch64 | arm64)
+              quarto_arch=arm64
+              ;;
+            *)
+              echo "::error::Unsupported architecture for Quarto: $quarto_machine" >&2
+              exit 1
+              ;;
+          esac
+
+          quarto_dir="$(mktemp -d)"
+          quarto_archive="$quarto_dir/quarto.tar.gz"
+          curl --fail --location --show-error --silent \
+            "https://quarto.org/download/latest/quarto-linux-${quarto_arch}.tar.gz" \
+            --output "$quarto_archive"
+          tar -xzf "$quarto_archive" -C "$quarto_dir"
+          quarto_executable="$(find "$quarto_dir" -type f -path '*/bin/quarto' -print -quit)"
+          if [ -z "$quarto_executable" ]; then
+            echo "::error::Quarto archive did not contain an executable." >&2
+            exit 1
+          fi
+          quarto_bin_dir="$(dirname "$quarto_executable")"
+          printf '%s\n' "$quarto_bin_dir" >> "$GITHUB_PATH"
+          export PATH="$quarto_bin_dir:$PATH"
+          command -v quarto
+          quarto --version
+          quarto pandoc --version
       - uses: r-hub/actions/setup-deps@v1
         with:
           token: ${{ secrets.RHUB_TOKEN }}
