@@ -533,7 +533,7 @@ linux_containers <- workflow_job(workflow_lines, "linux-containers")
 other_platforms <- workflow_job(workflow_lines, "other-platforms")
 
 expect_identical(
-  any(grepl("quarto-dev/quarto-actions/setup@v2", linux_containers, fixed = TRUE)),
+  any(grepl("quarto-dev/quarto-actions/setup@", linux_containers, fixed = TRUE)),
   FALSE,
   "the Linux containers portable Quarto installation"
 )
@@ -552,6 +552,8 @@ expect_workflow_markers(
     "curl --fail --location --show-error --silent",
     "tar -xzf",
     "quarto_executable=\"$(find",
+    "if [ ! -x \"$quarto_executable\" ]",
+    "did not contain a usable executable",
     "quarto_bin_dir=\"$(dirname \"$quarto_executable\")\"",
     "printf '%s\\n' \"$quarto_bin_dir\" >> \"$GITHUB_PATH\"",
     "GITHUB_PATH",
@@ -574,6 +576,21 @@ expect_identical(
   )],
   character(),
   "the Linux containers package-manager-free Quarto installation"
+)
+linux_containers_text <- paste(linux_containers, collapse = "\n")
+expect_true(
+  grepl(
+    "x86_64 \\| amd64\\)[[:space:]]+quarto_arch=amd64",
+    linux_containers_text
+  ),
+  "the x86_64 and amd64 Quarto architecture mapping"
+)
+expect_true(
+  grepl(
+    "aarch64 \\| arm64\\)[[:space:]]+quarto_arch=arm64",
+    linux_containers_text
+  ),
+  "the aarch64 and arm64 Quarto architecture mapping"
 )
 
 step_index <- function(lines, marker) {

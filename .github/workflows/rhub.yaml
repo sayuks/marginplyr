@@ -93,8 +93,8 @@ jobs:
             --output "$quarto_archive"
           tar -xzf "$quarto_archive" -C "$quarto_dir"
           quarto_executable="$(find "$quarto_dir" -type f -path '*/bin/quarto' -print -quit)"
-          if [ -z "$quarto_executable" ]; then
-            echo "::error::Quarto archive did not contain an executable." >&2
+          if [ ! -x "$quarto_executable" ]; then
+            echo "::error::Quarto archive did not contain a usable executable." >&2
             exit 1
           fi
           quarto_bin_dir="$(dirname "$quarto_executable")"
