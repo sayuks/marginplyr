@@ -503,6 +503,117 @@ for (marker in forbidden) {
   )
 }
 
+# Keeps the one local R-hub customization in place when rhub::rhub_setup()
+# regenerates the otherwise generic workflow.
+workflow_job <- function(lines, name) {
+  start <- grep(paste0("^  ", name, ":$"), lines)
+  expect_identical(
+    length(start),
+    1L,
+    paste("the R-hub workflow", name, "job")
+  )
+  later_jobs <- grep("^  [[:alnum:]-]+:$", lines)
+  end_candidates <- later_jobs[later_jobs > start]
+  end <- if (length(end_candidates)) end_candidates[[1L]] - 1L else length(lines)
+  lines[start:end]
+}
+
+expect_workflow_markers <- function(lines, markers, label) {
+  present <- vapply(
+    markers,
+    function(marker) any(grepl(marker, lines, fixed = TRUE)),
+    logical(1L)
+  )
+  missing <- markers[!present]
+  expect_identical(missing, character(), label)
+}
+
+workflow_lines <- readLines(".github/workflows/rhub.yaml", warn = FALSE)
+linux_containers <- workflow_job(workflow_lines, "linux-containers")
+other_platforms <- workflow_job(workflow_lines, "other-platforms")
+
+expect_identical(
+  any(grepl("quarto-dev/quarto-actions/setup@", linux_containers, fixed = TRUE)),
+  FALSE,
+  "the Linux containers portable Quarto installation"
+)
+expect_workflow_markers(
+  linux_containers,
+  c(
+    "Install portable Quarto from the official tarball",
+    "set -euo pipefail",
+    "x86_64 | amd64)",
+    "quarto_arch=amd64",
+    "aarch64 | arm64)",
+    "quarto_arch=arm64",
+    "Unsupported architecture for Quarto",
+    "https://quarto.org/download/latest/quarto-linux-${quarto_arch}.tar.gz",
+    "mktemp -d",
+    "curl --fail --location --show-error --silent",
+    "tar -xzf",
+    "quarto_executable=\"$(find",
+    "if [ ! -x \"$quarto_executable\" ]",
+    "did not contain a usable executable",
+    "quarto_bin_dir=\"$(dirname \"$quarto_executable\")\"",
+    "printf '%s\\n' \"$quarto_bin_dir\" >> \"$GITHUB_PATH\"",
+    "GITHUB_PATH",
+    "command -v quarto",
+    "quarto --version",
+    "quarto pandoc --version"
+  ),
+  "the Linux containers portable Quarto contract"
+)
+quarto_package_manager_commands <- c(
+  "jq", "sudo", "apt", "apt-get", "dnf", "yum", "checksum"
+)
+expect_identical(
+  quarto_package_manager_commands[vapply(
+    quarto_package_manager_commands,
+    grepl,
+    logical(1L),
+    x = paste(linux_containers, collapse = "\n"),
+    fixed = TRUE
+  )],
+  character(),
+  "the Linux containers package-manager-free Quarto installation"
+)
+linux_containers_text <- paste(linux_containers, collapse = "\n")
+expect_true(
+  grepl(
+    "x86_64 \\| amd64\\)[[:space:]]+quarto_arch=amd64",
+    linux_containers_text
+  ),
+  "the x86_64 and amd64 Quarto architecture mapping"
+)
+expect_true(
+  grepl(
+    "aarch64 \\| arm64\\)[[:space:]]+quarto_arch=arm64",
+    linux_containers_text
+  ),
+  "the aarch64 and arm64 Quarto architecture mapping"
+)
+
+step_index <- function(lines, marker) {
+  matches <- grep(marker, lines, fixed = TRUE)
+  expect_identical(length(matches) > 0L, TRUE, paste("the workflow marker", marker))
+  matches[[1L]]
+}
+
+expect_true(
+  step_index(linux_containers, "r-hub/actions/platform-info@v1") <
+    step_index(linux_containers, "Install portable Quarto from the official tarball"),
+  "platform information before portable Quarto installation"
+)
+expect_true(
+  step_index(linux_containers, "Install portable Quarto from the official tarball") <
+    step_index(linux_containers, "r-hub/actions/setup-deps@v1"),
+  "portable Quarto installation before R-hub dependencies"
+)
+expect_true(
+  any(grepl("quarto-dev/quarto-actions/setup@v2", other_platforms, fixed = TRUE)),
+  "the other-platforms Quarto setup action"
+)
+
 playbook <- readLines("tools/cran-release.md", warn = FALSE)
 stage_three <- release_playbook_stage(playbook, 3L)
 expect_stage_markers(
