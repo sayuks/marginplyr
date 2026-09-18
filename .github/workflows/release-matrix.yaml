@@ -342,7 +342,7 @@ jobs:
       # job if one turns out not to be.
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          install-pandoc: false
+          install-pandoc: true
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
           cache-version: hard-1
@@ -425,7 +425,7 @@ jobs:
       # arrow and duckdb from the restored cache (#64).
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          install-pandoc: false
+          install-pandoc: true
           dependencies: '"hard"'
           extra-packages: any::rcmdcheck, any::testthat, any::quarto
           cache-version: hard-1
@@ -498,6 +498,8 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
+          install-pandoc: true
+          install-quarto: false
           dependencies: '"hard"'
           extra-packages: >-
             any::rcmdcheck, any::testthat, ${{ matrix.backend.packages }}
