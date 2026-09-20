@@ -45,6 +45,20 @@ jobs:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
 
+      # pkgdepends does not yet recognize Zstandard-compressed package
+      # archives. CRAN serves the current macOS knitr and xfun binaries in
+      # that format, while base R can install them. Preinstall them so the
+      # dependency action keeps the installed copies.
+      - name: Preinstall Zstandard-compressed macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          install.packages(
+            c("knitr", "xfun"),
+            dependencies = NA,
+            type = "binary"
+          )
+        shell: Rscript {0}
+
       # R-devel is covered by two jobs answering different questions, and the
       # gate is not this one. The R-devel compatibility gate is
       # `release-matrix.yaml`'s `tarball` job on `ubuntu-latest` / `r: devel`,
