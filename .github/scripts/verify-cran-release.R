@@ -503,7 +503,7 @@ for (marker in forbidden) {
   )
 }
 
-# Keeps the one local R-hub customization in place when rhub::rhub_setup()
+# Keeps the local R-hub customizations in place when rhub::rhub_setup()
 # regenerates the otherwise generic workflow.
 workflow_job <- function(lines, name) {
   start <- grep(paste0("^  ", name, ":$"), lines)
@@ -612,6 +612,28 @@ expect_true(
 expect_true(
   any(grepl("quarto-dev/quarto-actions/setup@v2", other_platforms, fixed = TRUE)),
   "the other-platforms Quarto setup action"
+)
+rhub_zstd_step <- "Preinstall Zstandard-compressed macOS dependencies"
+expect_workflow_markers(
+  other_platforms,
+  c(
+    rhub_zstd_step,
+    "if: runner.os == 'macOS'",
+    "c(\"knitr\", \"xfun\")",
+    "dependencies = NA",
+    "type = \"binary\""
+  ),
+  "the R-hub macOS Zstandard dependency workaround"
+)
+expect_true(
+  step_index(other_platforms, "r-hub/actions/setup-r@v1") <
+    step_index(other_platforms, rhub_zstd_step),
+  "R-hub setup before the macOS dependency workaround"
+)
+expect_true(
+  step_index(other_platforms, rhub_zstd_step) <
+    step_index(other_platforms, "r-hub/actions/setup-deps@v1"),
+  "the macOS dependency workaround before R-hub dependencies"
 )
 
 playbook <- readLines("tools/cran-release.md", warn = FALSE)
