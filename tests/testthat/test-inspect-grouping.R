@@ -1,6 +1,26 @@
 # ADR 0013 owns the decision that a Grouping plan is inspected as an ordinary
 # tibble, which is what these assert through `inspect_grouping()`.
 
+lazy_grouping_join_fixture <- function() {
+  data <- data.frame(
+    year = 2026L,
+    region = "East",
+    store = "A",
+    revenue = 1
+  )
+  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+  list(
+    remote = remote,
+    report = summarize_with_margins(
+      remote,
+      revenue = sum(.data[["revenue"]], na.rm = TRUE),
+      .by = dplyr::all_of("year"),
+      .grouping = rollup(dplyr::all_of(c("region", "store"))),
+      .id = "set"
+    )
+  )
+}
+
 test_that("inspect_grouping describes a rollup in Grouping plan order", {
   data <- data.frame(
     fixed = 1L,
@@ -603,4 +623,45 @@ test_that("inspect_grouping() options use the Package condition seam", {
     rlang::call_name(conditionCall(error)),
     "inspect_grouping"
   )
+})
+
+test_that("a lazy Margin result cannot join its local Grouping plan directly", {
+  fixture <- lazy_grouping_join_fixture()
+  plan <- inspect_grouping(
+    fixture$remote,
+    .by = year,
+    .grouping = rollup(region, store)
+  ) |>
+    dplyr::select(set_id)
+
+  error <- expect_error(
+    dplyr::left_join(fixture$report, plan, by = c(set = "set_id"))
+  )
+
+  expect_match(
+    conditionMessage(error),
+    "must share the same source",
+    fixed = TRUE
+  )
+  expect_match(conditionMessage(error), 'copy = "inline"', fixed = TRUE)
+})
+
+test_that("a list-format Grouping plan cannot be joined as inline SQL", {
+  fixture <- lazy_grouping_join_fixture()
+  plan <- inspect_grouping(
+    fixture$remote,
+    .by = year,
+    .grouping = rollup(region, store),
+    .format = "list"
+  )
+
+  error <- expect_error(suppressWarnings(dplyr::show_query(dplyr::left_join(
+    fixture$report,
+    plan,
+    by = c(set = "set_id"),
+    copy = "inline"
+  ))))
+
+  expect_match(conditionMessage(error), "sql_cast_dispatch", fixed = TRUE)
+  expect_match(conditionMessage(error), 'class "list"', fixed = TRUE)
 })

@@ -67,10 +67,6 @@ has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
 # guard and needs none of its own, dtplyr importing data.table.
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_arrow <- marginplyr_suggest_available("arrow")
-
-# Installs the `must_error` chunk option this document's rejected-call chunks
-# use. AGENTS.md is authoritative for what it does and why it exists.
-source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
 ```
 
 ## One report, two execution locations
@@ -296,7 +292,8 @@ region_db <- copy_to(
 ```{r}
 #| label: declared-level-rejected
 #| eval: !expr has_duckdb
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 region_db |>
   summarize_with_margins(
@@ -454,7 +451,8 @@ sample_sales <- copy_to(
 ```{r}
 #| label: duckdb-ineligible-share-source
 #| eval: !expr has_duckdb
-#| must_error: true
+#| error: true
+#| purl: false
 
 sample_sales |>
   summarize_with_margins(
@@ -525,7 +523,8 @@ permuted. Such an input is refused before any branch is built:
 ```{r}
 #| label: mutable-dtplyr-step
 #| eval: !expr has_dtplyr
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 data.table::as.data.table(january_sales) |>
   dtplyr::lazy_dt(immutable = FALSE) |>
@@ -538,7 +537,8 @@ result contains a list column:
 
 ```{r}
 #| label: nesting-a-sql-table
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 postgres_sales |>
   nest_with_margins(
@@ -571,7 +571,8 @@ explicit execution, before an invalid grouping row is emitted:
 ```{r}
 #| label: dtplyr-ineligible-share-source
 #| eval: !expr has_dtplyr
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 january_sales |>
   dtplyr::lazy_dt() |>
@@ -633,7 +634,8 @@ names — and computing it in R, so marginplyr refuses it before a row is read:
 ```{r}
 #| label: arrow-absorbed-summary
 #| eval: !expr has_arrow
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 arrow::arrow_table(january_sales) |>
   summarize_with_margins(
@@ -660,7 +662,8 @@ checked.
 ```{r}
 #| label: arrow-parent-share
 #| eval: !expr has_arrow
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 arrow::arrow_table(january_sales) |>
   summarize_with_margins(
@@ -673,7 +676,8 @@ arrow::arrow_table(january_sales) |>
 ```{r}
 #| label: arrow-total-share
 #| eval: !expr has_arrow
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 arrow::arrow_table(january_sales) |>
   summarize_with_margins(

@@ -286,12 +286,10 @@ markers <- list(
     "original pre-margin",
     "funion(funion(",
     "Total",
-    # The guide's `must_error` chunks, by the diagnostic each one has to
-    # produce. Every one is marked with the class form, so these markers also
-    # stand for the assertions: prose survives a chunk that stopped running,
-    # and a chunk that started failing for some other reason halts the render
-    # rather than reaching this scan. None of them needs an optional Suggest,
-    # so all of them hold wherever the page is built.
+    # The guide's rejected-call chunks, by the diagnostics they render. Direct
+    # tests own the refusal guarantees; these markers prove the calls still run
+    # and their diagnostics still reach the page. None needs an optional
+    # Suggest, so all of them hold wherever the page is built.
     "Error in `summarize_with_margins()`",
     "Error in `nest_with_margins()`",
     # The `cur_group*()` refusal, quoted one sentence further in than it used
@@ -315,7 +313,7 @@ markers <- list(
     # marker to be chosen from uninterpolated prose, which leaves this phrase
     # alone. It is the weakest marker on this page for that reason, and the
     # nest_with_margins() error header above stands beside it: this guide has
-    # one `must_error` chunk calling that verb, so the pair is this chunk's.
+    # one rejected-call chunk calling that verb, so the pair is this chunk's.
     "must be one of"
   ),
   "docs/vignettes/recipes.html" = c(
@@ -328,11 +326,10 @@ markers <- list(
     "Compute what the summary pass cannot express",
     "share_of_total",
     "expand_with_margins",
-    # The guide's `must_error` chunks, by the diagnostic each one has to
-    # produce. Prose alone would still be there if every chunk stopped running;
-    # a rendered error is proof the call was made and was refused. Only the
-    # three that need no database are listed, so the markers hold wherever the
-    # page is built.
+    # The guide's rejected-call chunks, by the diagnostics they render. Prose
+    # alone would still be there if every chunk stopped running; a rendered
+    # error proves the call ran. Only the three that need no database are
+    # listed, so the markers hold wherever the page is built.
     "Error in `filter()`",
     "Error in `left_join()`",
     "Error in `purrr::map()`"
@@ -376,12 +373,12 @@ markers <- list(
     "treat a simulator-only backend as SQL-generation support",
     "Which claim rests on which is stated in one place",
     # The unconditional half of the mutable-step refusal (ADR 0029). Its
-    # `must_error` chunk is behind `has_dtplyr`, so the prose introducing it is
+    # rejected-call chunk is behind `has_dtplyr`, so the prose introducing it is
     # what a marker can reach, and this run of it holds no apostrophe and no
     # double hyphen — pandoc's `smart` extension rewrites both in prose, where
     # only a code span keeps them literal.
     "builds one branch per grouping set from the step it is given",
-    # The unconditional half of the absorbed-summary section. Its `must_error`
+    # The unconditional half of the absorbed-summary section. Its rejected-call
     # chunk is behind `has_arrow` like the two share refusals below it, so the
     # prose introducing it is what a marker can reach. Chosen from a run of
     # that prose holding no apostrophe: pandoc's `smart` extension renders one
@@ -390,7 +387,7 @@ markers <- list(
     # marker in this file quotes a diagnostic, which reaches the page as a
     # code span.
     "refuses it before a row is read",
-    # The one `must_error` chunk on this page that needs no optional Suggest:
+    # The one rejected-call chunk on this page needing no optional Suggest:
     # nesting a SQL table, refused through the dbplyr simulator. The guide's
     # DuckDB, dtplyr, and Arrow refusals are behind availability guards, so
     # they render nothing where their package is absent and can carry no

@@ -62,10 +62,6 @@ source(system.file("suggests", "guard.R", package = "marginplyr"))
 
 has_duckdb <- marginplyr_suggest_available("DBI") &&
   marginplyr_suggest_available("duckdb")
-
-# Installs the `must_error` chunk option this document's rejected-call chunks
-# use. AGENTS.md is authoritative for what it does and why it exists.
-source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
 ```
 
 ## Put each subtotal with the rows it summarizes
@@ -197,7 +193,8 @@ leaves an `ORDER BY` naming a column that is gone:
 
 ```{r}
 #| label: dropping-a-computed-sort-term
-#| must_error: true
+#| error: true
+#| purl: false
 #| eval: !expr has_duckdb
 
 duckdb_sales |>
@@ -570,7 +567,8 @@ which only the summary knows, so calling one inside `filter()` is rejected:
 
 ```{r}
 #| label: grouping-bit-in-filter
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 retail_sales |>
   summarize_with_margins(
@@ -661,7 +659,8 @@ postgres_report <- postgres_sales |>
 
 ```{r}
 #| label: join-without-copy
-#| must_error: true
+#| error: true
+#| purl: false
 
 postgres_report |>
   left_join(sales_levels, by = c(set = "set_id"))
@@ -727,7 +726,8 @@ list_levels <- inspect_grouping(
 
 ```{r}
 #| label: join-list-format
-#| must_error: true
+#| error: true
+#| purl: false
 
 postgres_report |>
   left_join(list_levels, by = c(set = "set_id"), copy = "inline") |>
@@ -795,7 +795,8 @@ duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
 
 ```{r}
 #| label: nested-aggregate
-#| must_error: true
+#| error: true
+#| purl: false
 #| eval: !expr has_duckdb
 
 duckdb_sales |>

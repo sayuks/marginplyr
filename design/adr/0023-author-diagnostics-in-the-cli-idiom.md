@@ -46,8 +46,9 @@ expanded.
 section, and "`cli_abort()`'s `class` argument carries it through" in
 *Consequences*. `abort_marginplyr()` expands its template with
 `cli::format_inline()` and raises through `rlang::abort()`, whose `class`
-argument carries `marginplyr_error` exactly as `cli_abort()`'s did — the
-`must_error` hook and its twenty vignette chunks are untouched either way.
+argument carries `marginplyr_error` exactly as `cli_abort()`'s did. At that
+point the then-current rejected-call hook and its twenty vignette chunks were
+unchanged; #597 later replaced that mechanism with standard chunk options.
 
 **The line conditions** were written against wrapping that no longer happens,
 and two of them go with it. Condition 1, that the authored prose of a line fits
@@ -518,9 +519,10 @@ snapshot beside it in `test-diagnostic-authoring.R` is what stops a new one
 appearing. The sibling is deleted with the last of those sites, and the gate
 then covers every diagnostic this package raises.
 
-`marginplyr_error` survives, so the `must_error` hook and its twenty vignette
-chunks are untouched: `cli_abort()`'s `class` argument carries it through, and
-the hook reads the class chain rather than the text.
+`marginplyr_error` survived, so the then-current rejected-call hook and its
+twenty vignette chunks needed no change: `cli_abort()`'s `class` argument
+carried it through, and the hook read the class chain rather than the text.
+#597 later removed that hook for reasons outside this decision.
 
 `CONTEXT.md` is unchanged. Package condition, External condition, Condition
 context, and Repeated condition already say everything this decision needed to
