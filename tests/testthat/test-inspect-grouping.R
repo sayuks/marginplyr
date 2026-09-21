@@ -1,6 +1,26 @@
 # ADR 0013 owns the decision that a Grouping plan is inspected as an ordinary
 # tibble, which is what these assert through `inspect_grouping()`.
 
+lazy_grouping_join_fixture <- function() {
+  data <- data.frame(
+    year = 2026L,
+    region = "East",
+    store = "A",
+    revenue = 1
+  )
+  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
+  list(
+    remote = remote,
+    report = summarize_with_margins(
+      remote,
+      revenue = sum(revenue, na.rm = TRUE),
+      .by = year,
+      .grouping = rollup(region, store),
+      .id = "set"
+    )
+  )
+}
+
 test_that("inspect_grouping describes a rollup in Grouping plan order", {
   data <- data.frame(
     fixed = 1L,
@@ -606,29 +626,16 @@ test_that("inspect_grouping() options use the Package condition seam", {
 })
 
 test_that("a lazy Margin result cannot join its local Grouping plan directly", {
-  data <- data.frame(
-    year = 2026L,
-    region = "East",
-    store = "A",
-    revenue = 1
-  )
-  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
-  report <- summarize_with_margins(
-    remote,
-    revenue = sum(revenue, na.rm = TRUE),
-    .by = year,
-    .grouping = rollup(region, store),
-    .id = "set"
-  )
+  fixture <- lazy_grouping_join_fixture()
   plan <- inspect_grouping(
-    remote,
+    fixture$remote,
     .by = year,
     .grouping = rollup(region, store)
   ) |>
     dplyr::select(set_id)
 
   error <- expect_error(
-    dplyr::left_join(report, plan, by = c(set = "set_id"))
+    dplyr::left_join(fixture$report, plan, by = c(set = "set_id"))
   )
 
   expect_match(
@@ -640,29 +647,16 @@ test_that("a lazy Margin result cannot join its local Grouping plan directly", {
 })
 
 test_that("a list-format Grouping plan cannot be joined as inline SQL", {
-  data <- data.frame(
-    year = 2026L,
-    region = "East",
-    store = "A",
-    revenue = 1
-  )
-  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
-  report <- summarize_with_margins(
-    remote,
-    revenue = sum(revenue, na.rm = TRUE),
-    .by = year,
-    .grouping = rollup(region, store),
-    .id = "set"
-  )
+  fixture <- lazy_grouping_join_fixture()
   plan <- inspect_grouping(
-    remote,
+    fixture$remote,
     .by = year,
     .grouping = rollup(region, store),
     .format = "list"
   )
 
   error <- expect_error(suppressWarnings(dplyr::show_query(dplyr::left_join(
-    report,
+    fixture$report,
     plan,
     by = c(set = "set_id"),
     copy = "inline"
