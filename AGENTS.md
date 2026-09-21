@@ -77,48 +77,18 @@ field. `tests/testthat/test-documentation.R` asserts both directions against
 the field, over the Rd topics, the vignette sources, and both halves of the
 README; its comments hold why that gate is shaped as it is.
 
-### Chunks that must fail
+### Rejected calls in vignettes
 
-A vignette showing a rejected call executes it rather than quoting its error,
-so the reader sees the diagnostic their own session would produce. Quarto's
-`error: true` is the wrong option on its own: it *permits* an error without
-requiring one, so a chunk that stops failing renders a success underneath
-prose that still claims a failure, and nothing reports it. knitr and Quarto
-offer no option for the other half, and no package supplies one
-(`investigation/requiring-a-documentation-chunk-to-fail.md`).
+A vignette showing a rejected call executes it rather than wrapping it in
+`try()`, so the reader sees the diagnostic their own session would produce.
+Every such chunk sets both `error: true`, so rendering continues after showing
+the diagnostic, and `purl: false`, so the intentional failure is absent from
+the code R extracts when checking with `--no-build-vignettes`.
 
-`inst/vignette-hooks/must-error.R` therefore defines a `must_error` chunk
-option. It implies `error: true`, and it halts the render naming the chunk when
-a chunk marked with it completes without raising an error. Mark a chunk with it
-instead of `error: true` whenever the surrounding prose asserts that the call
-fails.
-
-It takes two forms. `must_error: true` accepts any error, which is what the
-option has always meant. `must_error: marginplyr_error` additionally requires
-the error to carry that condition class. Prefer the class form wherever the
-prose names what refuses the call: a bare `true` passes when the call fails for
-an unrelated reason — a renamed argument, a typo, a changed column — and the
-reader is then shown a diagnostic the prose does not describe. The class form
-also matches an error a dplyr verb wrapped.
-
-The definition lives under `inst/` so that every vignette reaches it in one
-line rather than carrying a copy:
-
-```r
-source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
-```
-
-That works because vignettes are built against the *installed* package, which
-is also why a working tree whose hook file changed must be reinstalled before
-its vignettes are rendered. The call needs no availability guard even though
-knitr is a Suggest: `VignetteBuilder: quarto` is visible while vignettes are
-rebuilt even under `_R_CHECK_DEPENDS_ONLY_=true`, and quarto imports rmarkdown,
-which imports knitr — the `DBI = FALSE` case from *Dependency metadata*, so a
-guard on knitr in a vignette would never fire
-(`investigation/restoring-knitr-hooks-a-vignette-installs.md`).
-
-`.github/scripts/verify-must-error.R` is the gate, run by `altdoc.yaml` and
-locally with `Rscript .github/scripts/verify-must-error.R`.
+The render owns the displayed diagnostic. A direct unit or integration test
+owns the guarantee that the documented call is refused for the stated reason;
+pin the smallest stable class or message fragment that proves it. Preserve any
+optional-dependency `eval` guard on the vignette chunk.
 
 ### Site verification
 
@@ -129,7 +99,7 @@ requires — from `vignettes/*.qmd`, from the `man/*.Rd` that are not marked
 slots — instead of listing them, so adding a vignette or an exported function
 needs no edit there for its page to be covered. Its header holds what each
 derived page is held to and what the hand-written `markers` adds on top of
-that; write a new marker from a `must_error` chunk's rendered diagnostic where
+that; write a new marker from a rejected-call chunk's rendered diagnostic where
 the page has one.
 
 To run it locally, render first with

@@ -28,7 +28,7 @@ jobs:
           - {os: macos-latest,   r: 'release'}
           - {os: windows-latest, r: 'release'}
           - {os: ubuntu-latest,   r: 'devel', http-user-agent: 'release'}
-          - {os: ubuntu-latest,   r: 'release'}
+          - {os: ubuntu-latest,   r: 'release', no_build_vignettes: true}
           - {os: ubuntu-latest,   r: 'oldrel-1'}
 
     env:
@@ -245,6 +245,12 @@ jobs:
       - name: Check package
         uses: r-lib/actions/check-r-package@v2
         with:
+          # The Ubuntu release row covers R-hub's extracted-code path. Its
+          # preceding R CMD build still renders the vignettes; only the check
+          # skips rebuilding them. Every other row keeps the ordinary path.
+          args: >-
+            c("--no-manual", "--as-cran",
+            ${{ matrix.config.no_build_vignettes && '"--no-build-vignettes"' || 'NULL' }})
           build_args: 'c("--no-manual","--compact-vignettes=gs+qpdf")'
           # Uploaded for successful runs too, not just failures. A NOTE that
           # only appears on a green run is exactly the one nobody reads, and

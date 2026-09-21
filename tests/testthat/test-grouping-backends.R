@@ -2030,6 +2030,41 @@ test_that("native grouping sets remain a subquery after downstream verbs", {
   }
 })
 
+test_that("DuckDB refuses an aggregate nested inside another aggregate", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(
+      year = c(2025L, 2025L),
+      region = c("East", "West"),
+      store = c("A", "B"),
+      revenue = c(1, 2)
+    ),
+    "nested_aggregate",
+    temporary = TRUE
+  )
+
+  error <- expect_error(suppressWarnings(
+    remote |>
+      summarize_with_margins(
+        above_mean_share =
+          sum(revenue[revenue > mean(revenue)]) / sum(revenue),
+        .by = year,
+        .grouping = rollup(region, store)
+      ) |>
+      dplyr::collect()
+  ))
+
+  expect_match(
+    conditionMessage(error),
+    "aggregate function calls cannot be nested",
+    fixed = TRUE
+  )
+})
+
 test_that("unconfirmed SQL dialects use UNION ALL", {
   skip_if_not_installed("dbplyr")
   data <- data.frame(a = "x", b = "u", value = 1)

@@ -1130,6 +1130,49 @@ test_that("DuckDB native and portable Margin orders agree", {
   expect_identical(portable$set, local$set)
 })
 
+test_that("DuckDB refuses an order after its computed term is dropped", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    margin_order_data(),
+    "margin_order_dropped_term",
+    temporary = TRUE
+  )
+
+  error <- expect_error(
+    remote |>
+      summarize_with_margins(
+        units = sum(units, na.rm = TRUE),
+        region_bit = grouping_bit(region),
+        store_bit = grouping_bit(store),
+        .grouping = rollup(region, store)
+      ) |>
+      dplyr::mutate(
+        .by = region,
+        region_units = max(
+          ifelse(store_bit == 1L, units, NA_real_),
+          na.rm = TRUE
+        )
+      ) |>
+      dplyr::arrange(
+        region_bit,
+        dplyr::desc(region_units),
+        region,
+        store_bit,
+        dplyr::desc(units),
+        store
+      ) |>
+      dplyr::select(region, store, units) |>
+      dplyr::collect()
+  )
+
+  expect_match(conditionMessage(error), "region_units", fixed = TRUE)
+  expect_match(conditionMessage(error), "not found", fixed = TRUE)
+})
+
 test_that("DuckDB materializes a sorted Margin result with `compute()`", {
   skip_if_suggest_absent("duckdb", "DBI")
 

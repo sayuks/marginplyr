@@ -117,13 +117,14 @@ against the input. ADR 0005 puts a local refusal in front of both.
 
 ## Documentation consequences
 
-The database-backends vignette shows the refusal in a `must_error:
-marginplyr_error` chunk beside the other dtplyr sections, and
+The database-backends vignette shows the refusal in a rejected-call chunk with
+`error: true` and `purl: false` beside the other dtplyr sections, and
 `.github/scripts/verify-site.R` gains the matching marker. That chunk is behind
 `has_dtplyr` and renders nothing where dtplyr is absent, so the marker is
 quoted from the unconditional prose introducing it rather than from the
 diagnostic — the placement `verify-site.R`'s own comment on the entry states,
-and the one the Arrow refusal beside it already takes.
+and the one the Arrow refusal beside it already takes. A direct test owns the
+refusal contract; #597 moved that ownership out of the rendering mechanism.
 
 `?marginplyr` is unchanged: what a caller catches is the `marginplyr_error`
 that page already promises.

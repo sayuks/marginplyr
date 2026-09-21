@@ -59,10 +59,6 @@ source(system.file("suggests", "guard.R", package = "marginplyr"))
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_tabsets <- marginplyr_suggest_available("quartabs")
-
-# Installs the `must_error` chunk option this document's rejected-call chunks
-# use. AGENTS.md is authoritative for what it does and why it exists.
-source(system.file("vignette-hooks", "must-error.R", package = "marginplyr"))
 ```
 
 ## Start with the report question
@@ -271,7 +267,8 @@ Without it, the default `.duplicates = "error"` catches the overlap:
 
 ```{r}
 #| label: duplicate-grouping-sets
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 retail_sales |>
   summarize_with_margins(
@@ -551,7 +548,8 @@ refused rather than resolved in one direction:
 
 ```{r}
 #| label: grouped-input-with-by
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 retail_sales |>
   group_by(year) |>
@@ -588,7 +586,8 @@ follows [ADR 0011](https://github.com/sayuks/marginplyr/blob/main/design/adr/001
 
 ```{r}
 #| label: drop-false-groups
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 retail_sales |>
   mutate(region = factor(region)) |>
@@ -630,7 +629,8 @@ silently different answer:
 
 ```{r}
 #| label: cur-group-id-rejected
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 retail_sales |>
   summarize_with_margins(
@@ -758,7 +758,8 @@ and asking for one names the rewrite instead of choosing a parent:
 
 ```{r}
 #| label: parent-share-outside-rollup
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 retail_sales |>
   filter(year == 2026L, month == "Jan") |>
@@ -788,7 +789,8 @@ A `grouping_sets()` specification qualifies only when it includes an empty
 
 ```{r}
 #| label: total-share-without-grand-total
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 retail_sales |>
   filter(year == 2026L, month == "Jan") |>
@@ -1038,7 +1040,8 @@ is refused where it is written rather than where a duplicate first appears:
 
 ```{r}
 #| label: nesting-duplicates-keep
-#| must_error: marginplyr_error
+#| error: true
+#| purl: false
 
 january_sales |>
   nest_with_margins(

@@ -18,10 +18,10 @@
 #
 # DESCRIPTION states each constraint once and this file is the only thing that
 # reads one, so there is no second copy to drift. It is sourced rather than
-# exported, in the manner of `inst/vignette-hooks/must-error.R`: a vignette, an
-# example, and `tests/testthat/helper-optional-backends.R` each reach it in one
-# line -- a `source()` call on the `system.file()` path to this file -- and the
-# package's API gains nothing. A caller then guards on
+# exported: a vignette, an example, and
+# `tests/testthat/helper-optional-backends.R` each reach it in one line -- a
+# `source()` call on the `system.file()` path to this file -- and the package's
+# API gains nothing. A caller then guards on
 # `marginplyr_suggest_available()`, which is the only name here any of them
 # uses; the setup chunk of every vignette and the optional-backend section of
 # every example show the pair.

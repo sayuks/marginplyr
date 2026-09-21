@@ -303,9 +303,10 @@ test_that("no shipped page guards on installation alone", {
 cran_status_field <- "Config/marginplyr/cran-status"
 
 # Only `unpublished` and `published` can be read. Any other value stops rather
-# than being treated as either, for the reason a malformed `must_error` header
-# halts a render. Reading and checking are separate so that the refusal is
-# executed by a test today, rather than first attempted on release day.
+# than being treated as either, so a partial release edit cannot silently take
+# one of the two policy branches. Reading and checking are separate so that the
+# refusal is executed by a test today, rather than first attempted on release
+# day.
 checked_cran_status <- function(status) {
   if (!isTRUE(status %in% c("unpublished", "published"))) {
     stop(
