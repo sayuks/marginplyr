@@ -13,9 +13,9 @@ lazy_grouping_join_fixture <- function() {
     remote = remote,
     report = summarize_with_margins(
       remote,
-      revenue = sum(revenue, na.rm = TRUE),
-      .by = year,
-      .grouping = rollup(region, store),
+      revenue = sum(.data[["revenue"]], na.rm = TRUE),
+      .by = dplyr::all_of("year"),
+      .grouping = rollup(dplyr::all_of(c("region", "store"))),
       .id = "set"
     )
   )
