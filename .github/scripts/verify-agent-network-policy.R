@@ -1,10 +1,9 @@
 # Confirms that both agents allow exactly the hosts sandboxed CRAN preflight
-# needs, while Codex also allows api.github.com for the GitHub CLI. Codex uses
-# full proxy mode because gh sends GraphQL POST requests; the host allowlist
-# still applies. Preflight hosts come from R's standard repositories and the
-# URLs in the current package candidate. A redirect the candidate currently
-# follows is named beside its source URL so deleting that URL also deletes the
-# exception.
+# needs plus api.github.com for the GitHub CLI. Codex uses full proxy mode
+# because gh sends GraphQL POST requests; the host allowlist still applies.
+# Preflight hosts come from R's standard repositories and the URLs in the
+# current package candidate. A redirect the candidate currently follows is
+# named beside its source URL so deleting that URL also deletes the exception.
 #
 # Run it locally with:
 #
@@ -189,17 +188,17 @@ codex_domains <- codex_table_keys(
 )
 claude_domains <- claude_string_array(claude_config, "allowedDomains")
 
-if (!identical(codex_domains, sort(unique(c(claude_domains, "api.github.com"))))) {
+if (!identical(codex_domains, claude_domains)) {
   stop(
-    "Codex must allow only Claude Code's preflight hosts plus api.github.com.",
+    "Codex and Claude Code network allowlists differ.",
     call. = FALSE
   )
 }
-if (!identical(claude_domains, required_domains)) {
+if (!identical(codex_domains, sort(unique(c(required_domains, "api.github.com"))))) {
   stop(
     paste0(
-      "Agent preflight allowlists do not exactly match the hosts required by ",
-      "the standard repositories and current candidate URLs."
+      "Agent network allowlists must contain only preflight hosts from the ",
+      "standard repositories and current candidate URLs, plus api.github.com."
     ),
     call. = FALSE
   )
@@ -269,7 +268,7 @@ if (!all(c("^\\.claude$", "^\\.codex$") %in% build_ignore)) {
 }
 
 message(
-  "Verified agent preflight allowlists for ",
+  "Verified matching agent allowlists for ",
   length(required_domains),
-  " required hosts and Codex GitHub API access."
+  " preflight hosts and GitHub API access."
 )
