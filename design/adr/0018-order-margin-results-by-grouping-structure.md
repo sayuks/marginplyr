@@ -450,3 +450,18 @@ and the reason to keep writing it is the one the entries make second: a caller
 who writes the key holds a helper column whose safety depends on the plan, and
 `.sort` needs none. `investigation/writing-a-margin-order-key-by-hand.md` holds
 the measurements, and `vignettes/recipes.qmd` shows what a caller writes.
+
+## Amendment: structured local keys have rowwise missingness
+
+For a local packed data-frame or matrix column, the missingness term in the
+Margin order key is one flag per row. A row is wholly missing only when all its
+scalar components are missing. A partly missing row is not missing as a whole;
+its position among other nonmissing rows follows local dplyr/vctrs value
+ordering, including the component-level treatment of missing values. This
+applies to both fixed keys and grouping dimensions. The value term remains the
+column itself, so neither its ordering nor its result shape is redefined here.
+
+This specifies what `is.na(column)` in the earlier key notation means for a
+structured local column. It remains the scalar predicate on one-dimensional
+columns and on lazy SQL results, where a structured local column is not an
+available key.
