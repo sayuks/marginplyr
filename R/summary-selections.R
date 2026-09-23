@@ -928,11 +928,11 @@ rewrite_local_pick_selection <- function(expr, env, group_vars,
 }
 
 # Returns selected current column names for one local dplyr summary branch.
-# The caller is inside dplyr's summary mask; its current columns include
-# preceding outputs. ADR 0002's snapshot still owns the input schema.
+# The caller is inside a tidyselect selection in dplyr's summary mask, whose
+# current columns include preceding outputs. ADR 0002 owns the input schema.
 local_summary_selection <- function(selection, env, group_vars,
                                     forbidden_names) {
-  data <- dplyr:::peek_mask()$get_current_data(groups = FALSE)
+  data <- tidyselect::peek_data()
   if (is.environment(forbidden_names)) {
     forbidden_names <- c(
       forbidden_names$forbidden_names,
