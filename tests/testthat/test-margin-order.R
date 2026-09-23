@@ -513,12 +513,13 @@ test_that("structured fixed keys sort by row with wholly missing keys last", {
     ncol = 2L
   )
   column <- function(kind) {
-    if (identical(kind, "matrix")) components else {
-      tibble::tibble(
-        code = components[, 1L],
-        day = as.Date(components[, 2L], origin = "2026-01-01")
-      )
+    if (identical(kind, "matrix")) {
+      return(components)
     }
+    tibble::tibble(
+      code = components[, 1L],
+      day = as.Date(components[, 2L], origin = "2026-01-01")
+    )
   }
 
   for (kind in c("packed", "matrix")) {
@@ -578,7 +579,7 @@ test_that("matrix dimensions with typed missing labels retain row shape", {
   }
 })
 
-test_that("structured keys keep occurrence tiebreaking in either Margin order", {
+test_that("structured keys keep occurrence tiebreaking", {
   data <- tibble::tibble(
     key = tibble::tibble(code = c(1L, NA_integer_),
                          part = c(NA_integer_, NA_integer_)),

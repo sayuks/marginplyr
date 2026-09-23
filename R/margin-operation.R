@@ -459,7 +459,7 @@ margin_dictionary_sort_columns <- function(result, backend) {
 }
 
 # Local structured grouping columns have one missingness value per row. The
-# column itself stays in the value term, where dplyr/vctrs orders its components.
+# column itself stays in the value term, where dplyr/vctrs orders components.
 margin_structured_sort_columns <- function(result, plan) {
   if (!is.data.frame(result)) {
     return(character())
