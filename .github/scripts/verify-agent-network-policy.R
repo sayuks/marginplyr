@@ -1,8 +1,10 @@
-# Confirms that Codex and Claude Code give sandboxed CRAN preflight commands
-# the same fail-closed network boundary. The required hosts come from the two
-# sources the preflight itself asks: R's standard repositories and the URLs in
-# the current package candidate. A redirect the candidate currently follows is
-# named beside its source URL so deleting that URL also deletes the exception.
+# Confirms that both agents allow exactly the hosts sandboxed CRAN preflight
+# needs, while Codex also allows api.github.com for the GitHub CLI. Codex uses
+# full proxy mode because gh sends GraphQL POST requests; the host allowlist
+# still applies. Preflight hosts come from R's standard repositories and the
+# URLs in the current package candidate. A redirect the candidate currently
+# follows is named beside its source URL so deleting that URL also deletes the
+# exception.
 #
 # Run it locally with:
 #
@@ -187,16 +189,16 @@ codex_domains <- codex_table_keys(
 )
 claude_domains <- claude_string_array(claude_config, "allowedDomains")
 
-if (!identical(codex_domains, claude_domains)) {
+if (!identical(codex_domains, sort(unique(c(claude_domains, "api.github.com"))))) {
   stop(
-    "Codex and Claude Code network allowlists differ.",
+    "Codex must allow only Claude Code's preflight hosts plus api.github.com.",
     call. = FALSE
   )
 }
-if (!identical(codex_domains, required_domains)) {
+if (!identical(claude_domains, required_domains)) {
   stop(
     paste0(
-      "Agent network allowlists do not exactly match the hosts required by ",
+      "Agent preflight allowlists do not exactly match the hosts required by ",
       "the standard repositories and current candidate URLs."
     ),
     call. = FALSE
@@ -238,10 +240,10 @@ required_codex_lines <- c(
   "network_proxy = true",
   "[permissions.marginplyr.network]",
   "enabled = true",
-  'mode = "limited"'
+  'mode = "full"'
 )
 if (!all(required_codex_lines %in% codex_config)) {
-  stop("Codex sandboxed networking is not fail-closed.", call. = FALSE)
+  stop("Codex proxy must allow GitHub CLI requests.", call. = FALSE)
 }
 
 claude_text <- paste(claude_config, collapse = "\n")
@@ -267,7 +269,7 @@ if (!all(c("^\\.claude$", "^\\.codex$") %in% build_ignore)) {
 }
 
 message(
-  "Verified matching fail-closed agent network allowlists for ",
+  "Verified agent preflight allowlists for ",
   length(required_domains),
-  " required hosts."
+  " required hosts and Codex GitHub API access."
 )
