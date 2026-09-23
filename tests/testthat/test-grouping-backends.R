@@ -2299,7 +2299,7 @@ test_that("DuckDB safely quotes factor identifiers and labels", {
   expect_true("O'Total" %in% levels(result[["odd name"]]))
 })
 
-# A Mutable step is a dtplyr step whose root was built with
+# A Mutable step is a dtplyr step with any contributing root built with
 # `immutable = FALSE`. Every Margin verb taking `.grouping` refuses one, while
 # `inspect_grouping()` accepts one because it builds no grouping-set branch
 # (#451, #513, ADR 0029).
