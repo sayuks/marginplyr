@@ -563,7 +563,11 @@ test_that("DuckDB native scalar summaries retain the empty Grand total", {
 
   query <- build(remote)
   expect_s3_class(query, "tbl_sql")
-  expect_match(dbplyr::sql_render(query), "GROUP BY GROUPING SETS", fixed = TRUE)
+  expect_match(
+    dbplyr::sql_render(query),
+    "GROUP BY GROUPING SETS",
+    fixed = TRUE
+  )
   rows <- dplyr::collect(query) |>
     dplyr::arrange(set, a)
   expect_equal(rows$a, c("x", "y", "Total"))
