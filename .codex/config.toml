@@ -17,9 +17,10 @@ extends = ":workspace"
 
 [permissions.marginplyr.network]
 enabled = true
-mode = "limited"
+mode = "full"
 
 [permissions.marginplyr.network.domains]
+"api.github.com" = "allow"
 "app.codecov.io" = "allow"
 "bioconductor.org" = "allow"
 "contributor-covenant.org" = "allow"

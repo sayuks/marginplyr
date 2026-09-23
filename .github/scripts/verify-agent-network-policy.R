@@ -1,7 +1,8 @@
-# Confirms that Codex and Claude Code give sandboxed CRAN preflight commands
-# the same fail-closed network boundary. The required hosts come from the two
-# sources the preflight itself asks: R's standard repositories and the URLs in
-# the current package candidate. A redirect the candidate currently follows is
+# Confirms that both agents allow exactly the hosts sandboxed CRAN preflight
+# needs plus api.github.com for the GitHub CLI. Codex uses full proxy mode
+# because gh sends GraphQL POST requests; the host allowlist still applies.
+# Preflight hosts come from R's standard repositories and the URLs in the
+# current package candidate. A redirect the candidate currently follows is
 # named beside its source URL so deleting that URL also deletes the exception.
 #
 # Run it locally with:
@@ -193,11 +194,11 @@ if (!identical(codex_domains, claude_domains)) {
     call. = FALSE
   )
 }
-if (!identical(codex_domains, required_domains)) {
+if (!identical(codex_domains, sort(unique(c(required_domains, "api.github.com"))))) {
   stop(
     paste0(
-      "Agent network allowlists do not exactly match the hosts required by ",
-      "the standard repositories and current candidate URLs."
+      "Agent network allowlists must contain only preflight hosts from the ",
+      "standard repositories and current candidate URLs, plus api.github.com."
     ),
     call. = FALSE
   )
@@ -238,10 +239,10 @@ required_codex_lines <- c(
   "network_proxy = true",
   "[permissions.marginplyr.network]",
   "enabled = true",
-  'mode = "limited"'
+  'mode = "full"'
 )
 if (!all(required_codex_lines %in% codex_config)) {
-  stop("Codex sandboxed networking is not fail-closed.", call. = FALSE)
+  stop("Codex proxy must allow GitHub CLI requests.", call. = FALSE)
 }
 
 claude_text <- paste(claude_config, collapse = "\n")
@@ -267,7 +268,7 @@ if (!all(c("^\\.claude$", "^\\.codex$") %in% build_ignore)) {
 }
 
 message(
-  "Verified matching fail-closed agent network allowlists for ",
+  "Verified matching agent allowlists for ",
   length(required_domains),
-  " required hosts."
+  " preflight hosts and GitHub API access."
 )
