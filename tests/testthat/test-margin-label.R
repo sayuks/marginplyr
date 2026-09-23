@@ -944,6 +944,87 @@ test_that("dtplyr rejects a declared collision and stays silent on a value", {
   )
 })
 
+test_that("observed label checks use the named columns on every Margin verb", {
+  skip_if_suggest_absent("dtplyr")
+
+  cases <- list(
+    list(
+      name = "T",
+      values = c("Total", "x"),
+      label = "Total",
+      collision = TRUE
+    ),
+    list(name = "T", values = c("a", "b"), label = "TRUE", collision = FALSE),
+    list(
+      name = "F",
+      values = c("FALSE", "a"),
+      label = "FALSE",
+      collision = TRUE
+    ),
+    list(name = "F", values = c("a", "b"), label = "FALSE", collision = FALSE),
+    list(
+      name = "odd name",
+      values = c("Total", "x"),
+      label = "Total",
+      collision = TRUE
+    )
+  )
+  verbs <- c(
+    "summarize_with_margins",
+    "expand_with_margins",
+    "nest_with_margins",
+    "nest_by_with_margins"
+  )
+
+  run_verb <- function(verb, input, name, label) {
+    grouping <- rlang::inject(rollup(!!rlang::sym(name)))
+    if (identical(verb, "summarize_with_margins")) {
+      return(summarize_with_margins(
+        input,
+        n = dplyr::n(),
+        .grouping = grouping,
+        .margin_label = stats::setNames(label, name),
+        .check_margin_label = TRUE
+      ))
+    }
+    args <- list(
+      .data = input,
+      .grouping = grouping,
+      .margin_label = stats::setNames(label, name),
+      .check_margin_label = TRUE
+    )
+    do.call(get(verb, mode = "function"), args)
+  }
+
+  for (case in cases) {
+    data <- stats::setNames(
+      data.frame(case$values, check.names = FALSE),
+      case$name
+    )
+    for (verb in verbs) {
+      for (backend in c("local", "dtplyr")) {
+        input <- if (identical(backend, "local")) {
+          data
+        } else {
+          dtplyr::lazy_dt(data)
+        }
+        info <- paste(case$name, verb, backend, sep = "/")
+        if (case$collision) {
+          error <- expect_error(
+            run_verb(verb, input, case$name, case$label),
+            paste0("already present in grouping column:\ni `", case$name, "`"),
+            fixed = TRUE,
+            info = info
+          )
+          expect_s3_class(error, "marginplyr_error")
+        } else {
+          expect_no_error(run_verb(verb, input, case$name, case$label))
+        }
+      }
+    }
+  }
+})
+
 # The reproduction #122 was filed with, on the backend it was filed against.
 # DuckDB carries a factor as an `ENUM`, so its levels arrive through the
 # zero-row read ADR 0020 exempts rather than as a factor column, which is a
