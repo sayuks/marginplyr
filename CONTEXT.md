@@ -180,22 +180,22 @@ fewer.
 _Avoid_: Pulling backend, fallback backend, collecting backend
 
 **Mutable step**:
-A dtplyr step whose root was built with `dtplyr::lazy_dt(immutable = FALSE)`,
-which is the caller giving data.table permission to write to their own table.
-It is a property of how the input was constructed rather than of its class,
-and it is therefore finer-grained than a backend kind, one kind holding both,
-which is why it is established by walking the step's parents to its root
-rather than looked up. Nothing below the root separates the derivations that
-destroy the caller's table from the ones that survive: a `filter()` and a
-`select()` over the same mutable root produce the same step class carrying the
-same field value and fall on opposite sides. A Margin verb refuses one before
-any branch is built, because it builds one branch per grouping set from the
-same step and data.table writes each of them to the caller's table by
-reference — leaving a result in which every row carries the Margin label, and
-a table whose columns were dropped or whose names were permuted. Inspection
-builds no branch and accepts one; where a typed selection needs a proxy, it is
-compiled against an isolated zero-row root so the caller's table stays
-unchanged.
+A dtplyr step with at least one contributing root built with
+`dtplyr::lazy_dt(immutable = FALSE)`, which is the caller giving data.table
+permission to write to their own table. It is a property of how the inputs
+were constructed rather than of the resulting step's class, and it is therefore
+finer-grained than a backend kind, one kind holding both. It is established by
+walking every step input to its roots, including both inputs of joins and set
+operations. Nothing below a root separates the derivations that destroy the
+caller's table from the ones that survive: a `filter()` and a `select()` over
+the same mutable root produce the same step class carrying the same field
+value and fall on opposite sides. A Margin verb refuses one before any branch
+is built, because it builds one branch per grouping set from the same step and
+data.table may write to any caller table by reference — leaving a wrong result
+or a source whose columns were dropped or whose names were permuted.
+Inspection builds no branch and accepts one; where a typed selection needs a
+proxy, it is compiled against isolated zero-row roots so every caller table
+stays unchanged.
 _Avoid_: Mutable input, in-place backend
 
 **Sent query**:

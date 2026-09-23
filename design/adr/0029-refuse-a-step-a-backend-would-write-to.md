@@ -1,6 +1,6 @@
 # Refuse a step a backend would write to
 
-A Margin verb refuses a Mutable step — a dtplyr step whose root was built with
+A Margin verb refuses a Mutable step — a dtplyr step with any root built with
 `dtplyr::lazy_dt(immutable = FALSE)` — and refuses it before any branch is
 built. The refusal is a Package condition naming where the input came from, why
 a Margin verb cannot use it, and the one rewrite that fixes it:
@@ -42,11 +42,12 @@ the caller's to decide, read at its strongest: a verb that writes to the
 caller's table has not merely read early, it has changed what the caller can
 read at all.
 
-## The line is drawn at the root, and it over-refuses
+## The line is drawn at every root, and it over-refuses
 
-The refusal is decided by walking `$parent` to the root and asking whether that
-`dtplyr_step_first` carries `implicit_copy = TRUE`, which is `lazy_dt()`'s
-`immutable = FALSE` recorded under the opposite name.
+The refusal is decided by following every step input, including `$parent2` on
+joins and set operations, to its roots and asking whether any one carries
+`implicit_copy = TRUE`, which is `lazy_dt()`'s `immutable = FALSE` recorded
+under the opposite name.
 
 That question is deliberately coarser than the damage. `lazy_dt(d, immutable =
 FALSE) |> filter(...)` returns a correct result today and leaves the table
@@ -218,8 +219,17 @@ A name-only inspection runs its canonical compilation against column names and
 invokes no execution entry point. The earlier name-only validation pass remains
 separate, preserving its warning and evaluation behavior. A typed selection
 still needs a zero-row proxy. For a Mutable step, that proxy is acquired from a
-copy of the step whose root is an isolated zero-row table, so even a derived
-`select()` whose dtplyr call already contains a reference-writing `:=` can
-change neither the caller's columns nor their values. This is inspection-only
-metadata preparation; Margin operations continue to refuse rather than copy,
-as the original decision requires.
+copy of the step whose every root has an isolated zero-row table, so even a
+derived `select()` whose dtplyr call already contains a reference-writing `:=`
+can change none of the caller's tables. This is inspection-only metadata
+preparation; Margin operations continue to refuse rather than copy, as the
+original decision requires.
+
+## Amendment: every contributing input is protected
+
+#601 extends the refusal and inspection isolation to every root in a dtplyr
+input graph. Detection and zero-row proxy construction share the same direct
+step-input discovery. The single-parent walk and single isolated root described
+in the earlier evidence and test strategy are superseded by the graph traversal
+above. The field-unavailable policy, version floor, and grammar-error
+precedence remain as stated.
