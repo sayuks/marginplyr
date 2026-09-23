@@ -409,7 +409,8 @@ order_margin_result <- function(operation, result, execution) {
     plan = operation$plan,
     sort = operation$sort,
     sort_id = key_id,
-    as_character = margin_dictionary_sort_columns(result, operation$backend)
+    as_character = margin_dictionary_sort_columns(result, operation$backend),
+    structured = margin_structured_sort_columns(result, operation$plan)
   )
   if (length(terms) > 0L) {
     result <- dplyr::arrange(result, !!!terms)
@@ -457,6 +458,20 @@ margin_dictionary_sort_columns <- function(result, backend) {
   vapply(fields[is_dictionary], function(field) field$name, character(1))
 }
 
+# Names local data-frame and matrix keys in the plan. The caller holds a result
+# containing every fixed key and dimension named by that plan.
+margin_structured_sort_columns <- function(result, plan) {
+  if (!is.data.frame(result)) {
+    return(character())
+  }
+  columns <- c(plan$by, plan$dimensions)
+  columns[vapply(
+    result[columns],
+    function(column) is.data.frame(column) || is.matrix(column),
+    logical(1)
+  )]
+}
+
 # Where a backend records a window ordering, `arrange()` has written the key
 # into two places and only one of them is a Margin order, so the second is
 # cleared. ADR 0018's *a lazy result carries the order and records no window
@@ -487,17 +502,17 @@ forget_margin_window_order <- function(result, backend) {
 # ascending, because first and last position margins and not missing values.
 #
 # `as_character` names the columns whose value term is cast rather than named.
-# Only the value term takes it: the missingness term is a comparison over the
-# column and every backend accepts that. The cast reaches the key alone, so the
-# result's own column keeps whatever the executor left in it.
+# Only the value term takes it. The cast reaches the key alone, so the result's
+# own column keeps whatever the executor left in it.
 margin_order_terms <- function(plan,
                                sort,
                                sort_id,
-                               as_character = character()) {
+                               as_character = character(),
+                               structured = character()) {
   terms <- unlist(
     lapply(plan$by, function(key) {
       list(
-        margin_missing_last_expr(key),
+        margin_missing_last_expr(key, structured),
         margin_sort_value_expr(key, as_character)
       )
     }),
@@ -525,7 +540,7 @@ margin_order_terms <- function(plan,
     terms <- c(
       terms,
       list(
-        margin_missing_last_expr(dimension),
+        margin_missing_last_expr(dimension, structured),
         margin_sort_value_expr(dimension, as_character)
       )
     )
@@ -549,12 +564,18 @@ margin_sort_value_expr <- function(column, as_character) {
   rlang::expr(as.character(!!pronoun))
 }
 
-# One column's missingness term. Written as a comparison rather than as the
-# bare `is.na()` predicate, because ordering by a boolean is not accepted by
-# every dialect the portable adapter renders for.
-margin_missing_last_expr <- function(column) {
+# One column's missingness term. A local structured column is wholly missing
+# only when every component of the row is missing (ADR 0018). `if_else()`
+# produces an integer because not every dialect sorts booleans.
+margin_missing_last_expr <- function(column, structured) {
+  value <- margin_column_pronoun(column)
+  missing <- if (column %in% structured) {
+    rlang::expr(rowSums(is.na(!!value)) == ncol(!!value))
+  } else {
+    rlang::expr(is.na(!!value))
+  }
   rlang::expr(dplyr::if_else(
-    is.na(!!margin_column_pronoun(column)),
+    !!missing,
     1L,
     0L
   ))

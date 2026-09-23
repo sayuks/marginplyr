@@ -506,6 +506,139 @@ test_that("a fixed key sorts its missing values last", {
   expect_identical(result$units, c(4, 4, 1, 1, 2, 2))
 })
 
+test_that("structured fixed keys sort by row with wholly missing keys last", {
+  components <- matrix(
+    c(NA_integer_, 1L, NA_integer_, 2L, 1L, 1L,
+      2L, NA_integer_, NA_integer_, 1L, 1L, 1L),
+    ncol = 2L
+  )
+  column <- function(kind) {
+    if (identical(kind, "matrix")) {
+      return(components)
+    }
+    tibble::tibble(
+      code = components[, 1L],
+      day = as.Date(components[, 2L], origin = "2026-01-01")
+    )
+  }
+
+  for (kind in c("packed", "matrix")) {
+    data <- tibble::tibble(
+      key = column(kind),
+      batch = c("b", "a", "a", "a", "a", "b"),
+      region = c("West", "East", "West", "East", "West", "East"),
+      units = seq_len(6L)
+    )
+    expected_rows <- rep(c(5L, 6L, 2L, 4L, 1L, 3L), each = 2L)
+
+    for (sort in c("last", "first")) {
+      result <- summarize_with_margins(
+        data,
+        units = sum(units),
+        .by = c(key, batch),
+        .grouping = rollup(region),
+        .id = "set",
+        .sort = sort
+      )
+      info <- paste(kind, sort)
+      expect_identical(result$units, data$units[expected_rows], info = info)
+      expect_identical(result$key, vctrs::vec_slice(data$key, expected_rows),
+                       info = info)
+      expect_identical(result$batch, data$batch[expected_rows], info = info)
+      expect_identical(
+        result$set,
+        rep(if (identical(sort, "last")) c(1L, 2L) else c(2L, 1L), 6L),
+        info = info
+      )
+    }
+  }
+})
+
+test_that("structured dimensions with typed missing labels retain row shape", {
+  components <- matrix(c(NA_integer_, 1L, NA_integer_, 2L,
+                         2L, NA_integer_, NA_integer_, 1L), ncol = 2L)
+  keys <- list(
+    matrix = components,
+    packed = tibble::tibble(
+      code = components[, 1L],
+      day = as.Date(components[, 2L], origin = "2026-01-01")
+    )
+  )
+
+  for (kind in names(keys)) {
+    data <- tibble::tibble(key = keys[[kind]], units = seq_len(4L))
+    for (sort in c("last", "first")) {
+      result <- summarize_with_margins(
+        data,
+        units = sum(units),
+        .grouping = rollup(key),
+        .margin_label = NULL,
+        .id = "set",
+        .sort = sort
+      )
+      detail <- result[result$set == 1L, ]
+      margin <- result[result$set == 2L, ]
+      info <- paste(kind, sort)
+
+      expect_identical(detail$units, c(2L, 4L, 1L, 3L), info = info)
+      expect_identical(detail$key,
+                       vctrs::vec_slice(data$key, c(2L, 4L, 1L, 3L)),
+                       info = info)
+      expect_identical(margin$key, vctrs::vec_init(data$key, 1L), info = info)
+      expect_identical(margin$units, 10L, info = info)
+      expect_identical(result$set[1L],
+                       if (identical(sort, "first")) 2L else 1L,
+                       info = info)
+    }
+  }
+})
+
+test_that("structured keys keep occurrence tiebreaking", {
+  data <- tibble::tibble(
+    key = tibble::tibble(code = c(1L, NA_integer_),
+                         part = c(NA_integer_, NA_integer_)),
+    units = c(2L, 3L)
+  )
+  spec <- grouping_sets(grouping_set(key), grouping_set(key), grouping_set())
+
+  for (sort in c("last", "first")) {
+    result <- summarize_with_margins(
+      data, units = sum(units), .grouping = spec,
+      .margin_label = NULL, .duplicates = "keep",
+      .id = "set", .sort = sort
+    )
+    detail <- result[result$set != 3L, ]
+    expect_identical(detail$units, c(2L, 2L, 3L, 3L))
+    expect_identical(detail$set, c(1L, 2L, 1L, 2L))
+    expect_identical(detail$key,
+                     vctrs::vec_slice(data$key, c(1L, 1L, 2L, 2L)))
+    expect_identical(result$set[1L], if (identical(sort, "first")) 3L else 1L)
+  }
+})
+
+test_that("empty structured keys keep their column shape under Margin order", {
+  for (key in list(
+    tibble::tibble(code = integer(), part = integer()),
+    matrix(integer(), ncol = 2L)
+  )) {
+    data <- tibble::tibble(key = key, units = integer())
+    result <- summarize_with_margins(
+      data, units = sum(units), .by = key,
+      .sort = "last"
+    )
+    expect_identical(nrow(result), 0L)
+    expect_identical(result$key, key)
+
+    dimension <- summarize_with_margins(
+      data, units = sum(units), .grouping = rollup(key),
+      .margin_label = NULL, .sort = "last"
+    )
+    expect_identical(nrow(dimension), 1L)
+    expect_identical(ncol(dimension$key), 2L)
+    expect_true(all(is.na(dimension$key)))
+  }
+})
+
 # Every spelling that compiles to a plan holding one grouping-set occurrence.
 # The bug they shared was not in any of them: a one-occurrence plan makes every
 # Grouping bit constant, so the key reads no Grouping set identifier, and the

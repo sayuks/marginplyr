@@ -347,7 +347,10 @@ rule of its own, because its columns share one Grouping bit.
 values stay ascending, because the choice positions margins and not missing
 values. Every column in the key carries a missingness term, fixed \code{.by} keys
 included, so missing values come last wherever they appear on every backend,
-including those whose own default is the opposite. Under
+including those whose own default is the opposite. For a local packed
+data-frame or matrix key, the missingness term is per row: the key is wholly
+missing only when all its components are missing. Partly missing keys follow
+ordinary local \code{dplyr::arrange()} value order. Under
 \code{.margin_label = NULL} a source missing value and a margin still display
 alike, but they are separated by position, because their Grouping bits
 differ.
