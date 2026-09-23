@@ -159,6 +159,23 @@ validate_margin_label <- function(.data,
     return(invisible(NULL))
   }
 
+  packed <- dimensions[vapply(
+    column_info$prototypes[dimensions], is.data.frame, logical(1)
+  )]
+  labelled_packed <- packed[!vapply(
+    margin_labels[packed], is_missing_margin_label, logical(1)
+  )]
+  if (length(labelled_packed) > 0L) {
+    abort_marginplyr(c(
+      "A non-missing {.arg .margin_label} cannot label packed grouping dimensions:",
+      i = "{.var {labelled_packed}}.",
+      i = paste0(
+        "Use {.code NULL} or {.code NA_character_} for a typed-missing ",
+        "label, or unpack the dimension into separate columns."
+      )
+    ))
+  }
+
   factor_info <- column_info$factors
   na_label_cols <- names(Filter(
     function(label) !is.null(label) && is.na(label),

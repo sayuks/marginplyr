@@ -252,3 +252,14 @@ that promises its row count.
 The rejected alternative stands unnarrowed: normalizing the element class is
 still rejected, and each cost named for it is still a cost, because what is
 rejected is one class across backends and not the naming of a converter.
+
+## Amendment: typed-missing local packed dimensions
+
+A local data-frame column used as a grouping dimension takes a row-sized
+typed-missing Margin value when its label is `NULL` or `NA_character_`. Its
+inner column names and types follow vctrs and dplyr as the branches are
+combined. A string label is refused because a data-frame row has no
+single-string replacement. This changes neither the promise boundary above nor
+the refusal to restore arbitrary column attributes: marginplyr constructs the
+missing row but leaves its subsequent combination to dplyr and vctrs. Lazy
+backends gain no structured-key support from this amendment.

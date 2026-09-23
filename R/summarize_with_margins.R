@@ -578,6 +578,14 @@
 #' a structural conflict for `NA_character_` even when
 #' `.check_margin_label = FALSE`, while `NULL` preserves that level.
 #'
+#' On local data frames, a packed data-frame grouping dimension accepts only
+#' `NULL` or `NA_character_` as its Margin label. Omitting that dimension writes
+#' one row of typed missing inner values, keeping their names and types through
+#' dplyr and vctrs. A non-missing string label is refused; unpack the dimension
+#' into separate columns if it needs display text. As with other columns, this
+#' does not add an attribute-restoration guarantee; see *Result class and
+#' attributes* and ADR 0016.
+#'
 #' Factor columns follow this contract:
 #'
 #' | Margin label | NA level | Missing value | Result |
