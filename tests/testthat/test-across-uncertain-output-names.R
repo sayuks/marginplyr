@@ -158,3 +158,45 @@ test_that("unknown ordinary outputs are not admitted as share sources", {
   ), "unknown preceding ordinary summary `x_total`")
   expect_s3_class(error, "marginplyr_error")
 })
+
+test_that("a delayed single function keeps its share source name", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 2))
+  summarize <- function(delayed) {
+    if (delayed) {
+      delayedAssign("fn", function(value) sum(value))
+    } else {
+      fn <- function(value) sum(value)
+    }
+    summarize_with_margins(
+      data,
+      dplyr::across(x, fn, .names = "{.col}_{.fn}"),
+      share = share_of_parent(x_1),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )
+  }
+
+  delayed <- summarize(TRUE)
+  eager <- summarize(FALSE)
+  expect_equal(delayed, eager)
+  expect_identical(names(delayed), c("group", "x_1", "share"))
+  expect_equal(delayed$share, c(1 / 3, 2 / 3, 1))
+})
+
+test_that("a globally bound single function keeps its share source name", {
+  run_global_call <- function() {
+    assign("marginplyr_test_fn_607", sum, envir = globalenv())
+    on.exit(rm("marginplyr_test_fn_607", envir = globalenv()))
+    eval(quote(summarize_with_margins(
+      data.frame(group = c("a", "b"), x = c(1, 2)),
+      dplyr::across(x, marginplyr_test_fn_607, .names = "{.col}_{.fn}"),
+      share = share_of_parent(x_1),
+      .grouping = rollup(group),
+      .margin_label = NULL
+    )), envir = globalenv())
+  }
+
+  result <- run_global_call()
+  expect_identical(names(result), c("group", "x_1", "share"))
+  expect_equal(result$share, c(1 / 3, 2 / 3, 1))
+})

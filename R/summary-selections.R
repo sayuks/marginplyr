@@ -1335,7 +1335,12 @@ known_across_function_names <- function(parsed, env) {
     if (rlang::is_symbol(package) && rlang::is_symbol(name)) {
       package <- rlang::as_string(package)
       name <- rlang::as_string(name)
-      namespace <- tryCatch(getNamespace(package), error = function(cnd) NULL)
+      # A namespace loaded solely for prediction could run its `.onLoad`.
+      namespace <- if (isNamespaceLoaded(package)) {
+        getNamespace(package)
+      } else {
+        NULL
+      }
       if (!is.null(namespace) &&
             exists(name, envir = namespace, inherits = FALSE) &&
             !bindingIsActive(name, namespace)) {
@@ -1361,8 +1366,10 @@ known_across_function_names <- function(parsed, env) {
           if (bindingIsActive(name, current)) {
             return(character())
           }
-          binding <- if (identical(current, baseenv()) ||
-                           identical(current, asNamespace("base"))) {
+          base_binding <- identical(current, baseenv()) ||
+            identical(current, asNamespace("base"))
+          binding <- if (base_binding ||
+                           !rlang::env_binding_are_lazy(current, name)) {
             get(name, envir = current, inherits = FALSE)
           } else {
             eval(
@@ -1370,7 +1377,10 @@ known_across_function_names <- function(parsed, env) {
               envir = baseenv()
             )
           }
-          if (is.function(binding)) {
+          if (is.function(binding) ||
+                rlang::is_call(binding, "function") ||
+                rlang::is_call(binding, "\\") ||
+                rlang::is_call(binding, "~")) {
             return("1")
           }
           return(character())
