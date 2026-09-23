@@ -376,6 +376,14 @@ validation. What separates them is the declared half: a factor NA level is
 a structural conflict for \code{NA_character_} even when
 \code{.check_margin_label = FALSE}, while \code{NULL} preserves that level.
 
+On local data frames, a packed data-frame grouping dimension accepts only
+\code{NULL} or \code{NA_character_} as its Margin label. Omitting that dimension writes
+one row of typed missing inner values, keeping their names and types through
+dplyr and vctrs. A non-missing string label is refused; unpack the dimension
+into separate columns if it needs display text. As with other columns, this
+does not add an attribute-restoration guarantee; see \emph{Result class and
+attributes} and ADR 0016.
+
 Factor columns follow this contract:\tabular{lrrl}{
    Margin label \tab NA level \tab Missing value \tab Result \cr
    \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr

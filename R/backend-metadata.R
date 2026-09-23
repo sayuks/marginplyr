@@ -131,7 +131,9 @@ margin_column_info <- function(data_proxy,
 
   schema <- proxy_columns(data_proxy, read)
 
-  prototypes <- lapply(schema[dimensions], function(x) x[NA_integer_])
+  prototypes <- lapply(schema[dimensions], function(x) {
+    if (is.data.frame(x)) vctrs::vec_init(x, 1L) else x[NA_integer_]
+  })
   factors <- if (backend$can_restore_factors) {
     lapply(
       names(schema)[vapply(schema, is.factor, logical(1))],
