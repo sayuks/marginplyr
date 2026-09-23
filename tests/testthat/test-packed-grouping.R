@@ -54,7 +54,7 @@ test_that("omitted packed keys are one typed-missing row in every verb", {
   expect_identical(as.integer(table(summary$bit)), c(3L, 1L))
   expect_identical(summary$key[summary$bit == 1L, ], missing_key)
   expect_identical(summary$n[summary$bit == 1L], 3L)
-  expect_true(any(is.na(summary$key$code[summary$bit == 0L])))
+  expect_true(anyNA(summary$key$code[summary$bit == 0L]))
 
   expansion <- expand_with_margins(
     data, .grouping = spec, .margin_label = NULL,
@@ -64,7 +64,7 @@ test_that("omitted packed keys are one typed-missing row in every verb", {
   expect_identical(as.integer(table(expansion$set)), c(3L, 3L))
   expect_identical(expansion$key[expansion$set == 2L, ],
                    missing_key[c(1L, 1L, 1L), ])
-  expect_true(any(is.na(expansion$key$code[expansion$set == 1L])))
+  expect_true(anyNA(expansion$key$code[expansion$set == 1L]))
 
   for (nest in list(nest_with_margins, nest_by_with_margins)) {
     result <- nest(
@@ -76,7 +76,7 @@ test_that("omitted packed keys are one typed-missing row in every verb", {
     expect_identical(result$key[result$set == 2L, ], missing_key)
     expect_identical(sort(vapply(result$data, nrow, integer(1))),
                      c(1L, 1L, 1L, 3L))
-    expect_true(any(is.na(result$key$code[result$set == 1L])))
+    expect_true(anyNA(result$key$code[result$set == 1L]))
   }
 
   missing_character <- summarize_with_margins(
