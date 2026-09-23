@@ -2320,6 +2320,149 @@ mutable_step_data <- function() {
   )
 }
 
+mutable_step_graph_sources <- function(mutable = c(TRUE, FALSE)) {
+  sources <- list(
+    data.table::data.table(region = c("East", "West"), value = c(1L, 2L)),
+    data.table::data.table(region = c("East", "West"), value = c(3L, 4L))
+  )
+  before <- lapply(sources, data.table::copy)
+  steps <- Map(
+    function(source, is_mutable) {
+      dtplyr::lazy_dt(source, immutable = !is_mutable)
+    },
+    sources,
+    mutable
+  )
+  list(sources = sources, before = before, steps = steps)
+}
+
+expect_step_graph_sources_unchanged <- function(graph) {
+  for (i in seq_along(graph$sources)) {
+    expect_identical(graph$sources[[i]], graph$before[[i]])
+  }
+}
+
+mutable_step_graph_shapes <- list(
+  join = function(steps) dplyr::left_join(steps[[1]], steps[[2]], by = "region"),
+  union = function(steps) dplyr::union_all(steps[[1]], steps[[2]]),
+  nested = function(steps) {
+    dplyr::select(
+      dplyr::left_join(
+        dplyr::filter(steps[[1]], value > 0L),
+        dplyr::select(steps[[2]], region, value),
+        by = "region"
+      ),
+      region, value.x
+    )
+  }
+)
+
+test_that("every Margin verb refuses a mutable root in either graph input", {
+  skip_if_suggest_absent("dtplyr")
+
+  for (shape in names(mutable_step_graph_shapes)) {
+    for (mutable in list(c(TRUE, FALSE), c(FALSE, TRUE), c(TRUE, TRUE))) {
+      for (name in names(forwarded_margin_verbs)) {
+        graph <- mutable_step_graph_sources(mutable)
+        step <- mutable_step_graph_shapes[[shape]](graph$steps)
+        error <- expect_error(
+          forwarded_margin_verbs[[name]](step, NULL, rollup(region))
+        )
+        expect_s3_class(error, "marginplyr_error")
+        expect_match(conditionMessage(error), "immutable = TRUE", fixed = TRUE)
+        expect_step_graph_sources_unchanged(graph)
+      }
+    }
+  }
+})
+
+test_that("secondary-root refusal precedes metadata acquisition", {
+  skip_if_suggest_absent("dtplyr")
+  graph <- mutable_step_graph_sources(c(FALSE, TRUE))
+  step <- mutable_step_graph_shapes$join(graph$steps)
+  testthat::local_mocked_bindings(
+    get_col_names = function(...) stop("metadata was read before refusal")
+  )
+
+  error <- expect_error(
+    expand_with_margins(step, .grouping = rollup(region))
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_step_graph_sources_unchanged(graph)
+})
+
+test_that("inspection isolates every mutable graph input", {
+  skip_if_suggest_absent("dtplyr")
+
+  for (shape in names(mutable_step_graph_shapes)) {
+    for (mutable in list(c(TRUE, FALSE), c(FALSE, TRUE), c(TRUE, TRUE))) {
+      graph <- mutable_step_graph_sources(mutable)
+      step <- mutable_step_graph_shapes[[shape]](graph$steps)
+      plan <- inspect_grouping(step, .grouping = rollup(region))
+      expect_step_graph_sources_unchanged(graph)
+      named <- inspect_grouping(
+        step,
+        .by = where(is.numeric),
+        .grouping = rollup(where(is.character))
+      )
+      expect_step_graph_sources_unchanged(graph)
+
+      expected_graph <- mutable_step_graph_sources(c(FALSE, FALSE))
+      expected <- inspect_grouping(
+        mutable_step_graph_shapes[[shape]](expected_graph$steps),
+        .grouping = rollup(region)
+      )
+      expected_named <- inspect_grouping(
+        mutable_step_graph_shapes[[shape]](expected_graph$steps),
+        .by = where(is.numeric),
+        .grouping = rollup(where(is.character))
+      )
+      expect_identical(plan, expected, info = shape)
+      expect_identical(named, expected_named, info = shape)
+      expect_step_graph_sources_unchanged(expected_graph)
+    }
+  }
+})
+
+test_that("typed inspection evaluates only zero-row dtplyr graph sources", {
+  skip_if_suggest_absent("dtplyr")
+  graph <- mutable_step_graph_sources(c(TRUE, TRUE))
+  step <- mutable_step_graph_shapes$nested(graph$steps)
+  dt_eval <- getFromNamespace("dt_eval", "dtplyr")
+  dt_sources <- getFromNamespace("dt_sources", "dtplyr")
+  evaluations <- 0L
+  testthat::local_mocked_bindings(
+    dt_eval = function(x) {
+      evaluations <<- evaluations + 1L
+      sources <- dt_sources(x)
+      expect_length(sources, 2L)
+      expect_true(all(vapply(sources, nrow, integer(1)) == 0L))
+      dt_eval(x)
+    },
+    .package = "dtplyr"
+  )
+
+  inspect_grouping(step, .grouping = rollup(where(is.character)))
+  expect_gt(evaluations, 0L)
+  expect_step_graph_sources_unchanged(graph)
+})
+
+test_that("all-immutable graph inputs preserve uncollected calls and results", {
+  skip_if_suggest_absent("dtplyr")
+
+  for (shape in names(mutable_step_graph_shapes)) {
+    graph <- mutable_step_graph_sources(c(FALSE, FALSE))
+    step <- mutable_step_graph_shapes[[shape]](graph$steps)
+    result <- expand_with_margins(step, .grouping = rollup(region))
+    expect_step_graph_sources_unchanged(graph)
+
+    local_inputs <- lapply(graph$before, as.data.frame)
+    local_step <- mutable_step_graph_shapes[[shape]](local_inputs)
+    expected <- expand_with_margins(local_step, .grouping = rollup(region))
+    expect_equal(as.data.frame(dplyr::collect(result)), as.data.frame(expected))
+  }
+})
+
 test_that("every Margin verb refuses a mutable dtplyr step", {
   skip_if_suggest_absent("dtplyr")
   margin_verbs <- setdiff(verbs_taking(".grouping"), "inspect_grouping")
@@ -2435,6 +2578,7 @@ test_that("the refusal reads the root step and not the step it was given", {
 test_that("an immutable dtplyr step answers as the local input does", {
   skip_if_suggest_absent("dtplyr")
   data <- mutable_step_data()
+  before <- data.table::copy(data)
 
   # The baseline is the same call over a local frame rather than a written-out
   # expectation, which is what "returns the same result it does today" means:
@@ -2445,11 +2589,13 @@ test_that("an immutable dtplyr step answers as the local input does", {
     total = sum(value),
     .grouping = rollup(region)
   )
-  step_result <- dplyr::collect(summarize_with_margins(
+  step_result <- summarize_with_margins(
     dtplyr::lazy_dt(data, immutable = TRUE),
     total = sum(value),
     .grouping = rollup(region)
-  ))
+  )
+  expect_identical(data, before)
+  step_result <- dplyr::collect(step_result)
   expect_equal(as.data.frame(step_result), as.data.frame(local_result))
 
   # A bare `data.table` resolves to the `local` kind, where dplyr's copy

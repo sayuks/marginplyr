@@ -4,17 +4,20 @@ get_col_names <- function(data, ...) {
   as.character(dplyr::tbl_vars(selected))
 }
 
-# A copy of a Mutable step rooted in a zero-row table, used only to acquire an
+# A copy of a Mutable-step graph rooted in zero-row tables, used to acquire an
 # inspection selection proxy. The derived step may already hold a reference-
 # writing `:=` call, so changing its root's permission is too late; replacing
-# the copied root's source gives that call an isolated schema-only table to
+# each copied root's source gives those calls isolated schema-only tables to
 # write to. ADR 0029 records why Margin operations refuse rather than use this
 # rewrite.
 zero_row_dtplyr_proxy_input <- function(.data) {
   stopifnot(inherits(.data, "dtplyr_step"))
   step <- .data
-  if (inherits(step[["parent"]], "dtplyr_step")) {
-    step[["parent"]] <- zero_row_dtplyr_proxy_input(step[["parent"]])
+  inputs <- dtplyr_step_input_fields(step)
+  if (length(inputs) > 0L) {
+    for (field in inputs) {
+      step[[field]] <- zero_row_dtplyr_proxy_input(step[[field]])
+    }
   } else {
     step[["parent"]] <- utils::head(step[["parent"]], n = 0L)
   }

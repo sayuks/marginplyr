@@ -84,12 +84,23 @@ grouping_backend <- function(.data) {
   )
 }
 
-# Whether this input is a Mutable step: a dtplyr step whose root was built with
-# `immutable = FALSE`. `lazy_dt()` records that argument as `implicit_copy` on
-# the `dtplyr_step_first` it returns, inverted -- `TRUE` is the caller waiving
-# the copy.
+# The direct step inputs of a dtplyr query. Joins and set operations carry a
+# second input in `parent2`; inspect every step-valued field so detection and
+# inspection isolation follow the same graph when dtplyr adds another input.
+dtplyr_step_input_fields <- function(step) {
+  names(step)[vapply(
+    step,
+    inherits,
+    logical(1),
+    what = "dtplyr_step"
+  )]
+}
+
+# Whether any input is a Mutable step: one rooted at
+# `lazy_dt(immutable = FALSE)`. `lazy_dt()` records that argument as
+# `implicit_copy` on each `dtplyr_step_first`, inverted.
 #
-# The root is what is read, and every derived step carries the field too. Its
+# A root is what is read, and every derived step carries the field too. Its
 # value there answers a different question: a `filter()` and a `select()` over
 # one mutable root both carry `TRUE`, and only one of them destroys the
 # caller's table, so no step below the root separates the destructive
@@ -97,10 +108,8 @@ grouping_backend <- function(.data) {
 # that does separate them -- whether dtplyr was given permission to write to
 # the caller's table at all.
 #
-# The walk stops where the parent stops being a step, rather than at
-# `dtplyr_step_first` by class: the root's own `parent` holds the
-# `data.table` it was built from, so a class test would be a second reading of
-# the same boundary.
+# The walk stops at each input whose fields hold no further step. Its `parent`
+# holds the source table, so the traversal does not read any rows.
 #
 # Both fields are read with `[[`, whose character index is exact, and not with
 # `$`, which matches a prefix on a list -- so a dtplyr that renamed
@@ -112,11 +121,13 @@ mutable_dtplyr_step <- function(.data) {
   if (!inherits(.data, "dtplyr_step")) {
     return(FALSE)
   }
-  root <- .data
-  while (inherits(root[["parent"]], "dtplyr_step")) {
-    root <- root[["parent"]]
+  inputs <- dtplyr_step_input_fields(.data)
+  if (length(inputs) == 0L) {
+    return(isTRUE(.data[["implicit_copy"]]))
   }
-  isTRUE(root[["implicit_copy"]])
+  any(vapply(inputs, function(field) {
+    mutable_dtplyr_step(.data[[field]])
+  }, logical(1)))
 }
 
 # The refusal a Mutable step earns, raised before any branch is built and so

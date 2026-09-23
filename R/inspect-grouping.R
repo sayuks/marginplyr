@@ -65,10 +65,10 @@
 #' optimizer plan.
 #'
 #' Because inspection builds no grouping-set branch, it also accepts a dtplyr
-#' step rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves the caller's
-#' `data.table` unchanged. Margin verbs refuse the same Mutable step before
-#' building a branch; rebuild it with `immutable = TRUE` before passing it to
-#' one of them.
+#' step with an input rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves
+#' every caller `data.table` unchanged. Margin verbs refuse the same Mutable
+#' step before building a branch; rebuild it with `immutable = TRUE` before
+#' passing it to one of them.
 #'
 #' The [grouping identity guide][guide] walks through inspecting a plan and
 #' reading it back off a Margin result. The [recipes guide][recipes] uses a
