@@ -451,6 +451,19 @@ test_that("local selection planning does not execute caller summaries", {
   )
   expect_identical(calls, 6L)
   expect_identical(predicates, 4L)
+
+  selectors <- 0L
+  selected_name <- function() {
+    selectors <<- selectors + 1L
+    "total"
+  }
+  summarize_with_margins(
+    data,
+    total = sum(value),
+    dplyr::across(dplyr::all_of(selected_name()), identity),
+    .grouping = rollup(group)
+  )
+  expect_identical(selectors, 2L)
 })
 
 test_that("local selectors exclude the complete Grouping plan", {

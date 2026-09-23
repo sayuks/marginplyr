@@ -495,6 +495,11 @@ plan_summary_expressions <- function(dots,
     data_vars = data_vars,
     group_vars = group_vars
   )
+  predictable_names <- if (defer_local) {
+    predictable_local_across_names(original_dots, names(selection_proxy))
+  } else {
+    character()
+  }
   if (
     defer_local && length(dots) > 0L &&
       !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
@@ -592,8 +597,55 @@ plan_summary_expressions <- function(dots,
       assigned_names,
       selection_state = selection_state
     ),
-    requests = summary_plan$requests
+    requests = summary_plan$requests,
+    predictable_names = predictable_names
   )
+}
+
+# Names an unnamed local `across()` only when both its columns and `.names`
+# template are literal. The input is a name list, so no caller function or
+# summary expression runs while reserving internal key names.
+predictable_local_across_names <- function(dots, input_names) {
+  available <- input_names
+  predicted <- character()
+  arg_names <- rlang::names2(dots)
+  for (i in seq_along(dots)) {
+    dot <- dots[[i]]
+    name <- arg_names[[i]]
+    expr <- rlang::quo_get_expr(dot)
+    if (is_across_call(expr) && !nzchar(name)) {
+      parsed <- parse_across_arguments(expr)
+      cols <- parsed$cols
+      template <- parsed$names
+      simple_cols <- rlang::is_symbol(cols) || (
+        rlang::is_call(cols, "c") &&
+          all(vapply(as.list(cols)[-1L], rlang::is_symbol, logical(1)))
+      )
+      literal_template <- is.null(template) || (
+        is.character(template) && length(template) == 1L &&
+          !is.na(template) &&
+          !grepl("{", gsub(
+            "{.fn}", "", gsub("{.col}", "", template, fixed = TRUE),
+            fixed = TRUE
+          ), fixed = TRUE)
+      )
+      if (simple_cols && literal_template) {
+        proxy <- stats::setNames(as.list(seq_along(available)), available)
+        output <- tryCatch(
+          known_across_output_names(
+            expr, rlang::quo_get_env(dot), proxy
+          ),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+        predicted <- c(predicted, output)
+        available <- c(available, output)
+      }
+    }
+    if (nzchar(name)) {
+      available <- c(available, name)
+    }
+  }
+  predicted
 }
 
 # A bare name in the first local selection can only name an input column.

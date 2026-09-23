@@ -1009,6 +1009,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       )
       summary_output_names <- unique(c(
         names(dots)[nzchar(names(dots))],
+        summary_plan$predictable_names,
         known_summary_output_names(
           dots, selection_proxy,
           defer_local = identical(operation$backend$kind, "local")
