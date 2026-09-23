@@ -53,6 +53,15 @@ The ratio table's first row now reads:
 | Row-matched | `local`, `other` | Nothing |
 | dtplyr | `dtplyr` | Rewrites a literal-backtick join key temporarily |
 
+## Amendment (2026-09-23): adapters receive staged Parent key names
+
+The signature described in the original decision is superseded. All three
+adapters now take the prepared operation, staged result, planned requests,
+internal Grouping set identifier name, requested share kind, and the private
+typed Parent key names staged before Margin label conversion. The shared
+mapping uses those keys; the adapter choice still depends only on the prepared
+backend kind. See ADR 0010's typed-key amendment (#600).
+
 ## Amendment: the samplers are source checkers, and none of them samples
 
 The decision above stands in full: there are still two lookups keyed on the

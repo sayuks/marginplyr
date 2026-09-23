@@ -1994,6 +1994,7 @@ execute_shares <- function(operation,
   staged_set_id_name <- margin_summary_stage_set_id(
     staged_result
   )
+  parent_key_names <- staged_result$parent_key_names
   # The eligible-type rule is a property of the source summary, not of the
   # join that follows, so it is settled once here rather than inside the
   # adapter that happens to run. Only where its answer comes from is a backend
@@ -2018,7 +2019,14 @@ execute_shares <- function(operation,
         requests
       ),
       set_id_name = staged_set_id_name,
-      kind = kind
+      kind = kind,
+      parent_key_names = parent_key_names
+    )
+  }
+  if (length(parent_key_names) > 0L) {
+    result <- dplyr::select(
+      result,
+      -dplyr::all_of(unname(parent_key_names))
     )
   }
   if (!is.null(operation$set_id_name)) {
@@ -2064,13 +2072,15 @@ execute_row_matched_shares <- function(operation,
                                        result,
                                        requests,
                                        set_id_name,
-                                       kind) {
+                                       kind,
+                                       parent_key_names) {
   apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
     kind = kind,
+    parent_key_names = parent_key_names,
     sql_join = FALSE,
     parent_mapping_builder = build_lazy_parent_mapping
   )
@@ -2080,13 +2090,15 @@ execute_dtplyr_shares <- function(operation,
                                   result,
                                   requests,
                                   set_id_name,
-                                  kind) {
+                                  kind,
+                                  parent_key_names) {
   apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
     kind = kind,
+    parent_key_names = parent_key_names,
     sql_join = FALSE,
     join_name_rewriter = dtplyr_join_names,
     parent_mapping_builder = build_lazy_parent_mapping
@@ -2097,13 +2109,15 @@ execute_dbplyr_shares <- function(operation,
                                   result,
                                   requests,
                                   set_id_name,
-                                  kind) {
+                                  kind,
+                                  parent_key_names) {
   apply_joined_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
     kind = kind,
+    parent_key_names = parent_key_names,
     sql_join = TRUE,
     parent_mapping_builder = build_dbplyr_parent_mapping
   )
@@ -2562,6 +2576,7 @@ apply_joined_shares <- function(result,
                                 plan,
                                 set_id_name,
                                 kind,
+                                parent_key_names,
                                 sql_join,
                                 join_name_rewriter = NULL,
                                 parent_mapping_builder) {
@@ -2593,7 +2608,8 @@ apply_joined_shares <- function(result,
       denominator_names = denominator_names,
       set_id_name = set_id_name,
       used_names = c(result_names, denominator_names),
-      parent_mapping_builder = parent_mapping_builder
+      parent_mapping_builder = parent_mapping_builder,
+      parent_key_names = parent_key_names
     )
     result <- denominator$result
     mapping <- denominator$mapping
@@ -2754,7 +2770,8 @@ build_parent_denominator <- function(result,
                                      denominator_names,
                                      set_id_name,
                                      used_names,
-                                     parent_mapping_builder) {
+                                     parent_mapping_builder,
+                                     parent_key_names) {
   mapping <- parent_mapping_builder(
     result,
     child_ids = plan$set_ids[!is.na(target_ids)],
@@ -2763,7 +2780,8 @@ build_parent_denominator <- function(result,
     denominator_names = denominator_names,
     plan = plan,
     set_id_name = set_id_name,
-    used_names = used_names
+    used_names = used_names,
+    parent_key_names = parent_key_names
   )
   join_key_names <- new_margin_internal_names(
     length(plan$dimensions),
@@ -2776,14 +2794,16 @@ build_parent_denominator <- function(result,
     plan = plan,
     parent_ids = target_ids,
     set_id_name = set_id_name,
-    join_key_names = join_key_names
+    join_key_names = join_key_names,
+    parent_key_names = parent_key_names
   )
   mapping <- add_lazy_parent_join_keys(
     mapping,
     plan = plan,
     parent_ids = target_ids,
     set_id_name = set_id_name,
-    join_key_names = join_key_names
+    join_key_names = join_key_names,
+    parent_key_names = parent_key_names
   )
   mapping <- dplyr::select(
     mapping,
@@ -2812,7 +2832,8 @@ build_total_denominator <- function(result,
                                     denominator_names,
                                     set_id_name,
                                     used_names,
-                                    parent_mapping_builder) {
+                                    parent_mapping_builder,
+                                    parent_key_names) {
   denominator_id <- unique(target_ids[!is.na(target_ids)])
   stopifnot(length(denominator_id) == 1L)
   key_exprs <- lapply(plan$by, margin_column_pronoun)
@@ -2921,11 +2942,13 @@ build_lazy_parent_mapping <- function(result,
                                       denominator_names,
                                       plan,
                                       set_id_name,
-                                      used_names) {
+                                      used_names,
+                                      parent_key_names) {
   mapping_exprs <- parent_mapping_exprs(
     plan,
     sources = sources,
-    denominator_names = denominator_names
+    denominator_names = denominator_names,
+    parent_key_names = parent_key_names
   )
 
   mappings <- lapply(
@@ -2954,8 +2977,9 @@ build_lazy_parent_mapping <- function(result,
 # The staged-summary projections both Parent mapping strategies share. The
 # caller inserts the child occurrence identifier between the keys and the
 # denominators because its expression differs between the two strategies.
-parent_mapping_exprs <- function(plan, sources, denominator_names) {
-  group_vars <- unique(c(plan$by, plan$dimensions))
+parent_mapping_exprs <- function(plan, sources, denominator_names,
+                                 parent_key_names) {
+  group_vars <- unique(c(plan$by, unname(parent_key_names)))
   key_exprs <- lapply(group_vars, margin_column_pronoun)
   names(key_exprs) <- group_vars
   denominator_exprs <- lapply(sources, margin_column_pronoun)
@@ -2975,7 +2999,8 @@ build_dbplyr_parent_mapping <- function(result,
                                         denominator_names,
                                         plan,
                                         set_id_name,
-                                        used_names) {
+                                        used_names,
+                                        parent_key_names) {
   plan_names <- new_margin_internal_names(
     2L,
     used_names = used_names,
@@ -3001,7 +3026,8 @@ build_dbplyr_parent_mapping <- function(result,
   mapping_exprs <- parent_mapping_exprs(
     plan,
     sources = sources,
-    denominator_names = denominator_names
+    denominator_names = denominator_names,
+    parent_key_names = parent_key_names
   )
   child_id_expr <- stats::setNames(
     list(margin_column_pronoun(child_id_name)),
@@ -3019,7 +3045,8 @@ add_lazy_parent_join_keys <- function(result,
                                       plan,
                                       parent_ids,
                                       set_id_name,
-                                      join_key_names) {
+                                      join_key_names,
+                                      parent_key_names) {
   join_key_exprs <- lapply(
     plan$dimensions,
     function(dimension) {
@@ -3034,7 +3061,7 @@ add_lazy_parent_join_keys <- function(result,
       rlang::expr(
         dplyr::if_else(
           (!!margin_column_pronoun(set_id_name)) %in% !!matching_child_ids,
-          !!margin_column_pronoun(dimension),
+          !!margin_column_pronoun(parent_key_names[[dimension]]),
           NA
         )
       )

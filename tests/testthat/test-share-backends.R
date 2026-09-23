@@ -8,6 +8,95 @@
 # itself defines, so opting out of the establishing rule is what leaves them
 # testing that. The rule itself is covered where it belongs, in the two tests
 # named for it below.
+typed_parent_collision_data <- function() {
+  data.frame(
+    region = c(1e15, 1e15 + 1),
+    store = c("same", "same"),
+    value = c(1, 2),
+    units = c(3L, 6L)
+  )
+}
+
+typed_parent_collision_summary <- function(source, label,
+                                           duplicates = "drop") {
+  # Grouping and summary symbols resolve in the source data mask.
+  # nolint start: object_usage_linter.
+  summarize_with_margins(
+    source,
+    level = grouping_id(region, store),
+    total = sum(value),
+    units = sum(units),
+    share = share_of_parent(total),
+    unit_share = share_of_parent(units),
+    .grouping = rollup(region, store),
+    .duplicates = duplicates,
+    .id = "set",
+    .margin_label = label,
+    .check_share_source = FALSE
+  )
+  # nolint end
+}
+
+expect_typed_parent_collision <- function(result) {
+  result <- dplyr::arrange(result, .data$set, .data$total)
+  expect_identical(
+    names(result),
+    c(
+      "region", "store", "set", "level", "total", "units", "share",
+      "unit_share"
+    )
+  )
+  expect_identical(nrow(result), 5L)
+  expect_equal(result$set, c(1, 1, 2, 2, 3))
+  expect_equal(result$level, c(0, 0, 1, 1, 3))
+  expect_equal(result$total, c(1, 2, 1, 2, 3))
+  expect_equal(result$units, c(3, 6, 3, 6, 9))
+  expect_equal(result$share, c(1, 1, 1 / 3, 2 / 3, 1))
+  expect_equal(result$unit_share, c(1, 1, 1 / 3, 2 / 3, 1))
+}
+
+test_that("dtplyr Parent shares preserve typed keys under display conversion", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(typed_parent_collision_data())
+  for (label in list("Total", NULL)) {
+    query <- typed_parent_collision_summary(source, label)
+    expect_s3_class(query, "dtplyr_step")
+    expect_typed_parent_collision(dplyr::collect(query))
+  }
+})
+
+test_that("SQLite Parent shares preserve typed keys under display conversion", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, typed_parent_collision_data(), "typed_parent_collision",
+    temporary = TRUE
+  )
+  for (label in list("Total", NULL)) {
+    query <- typed_parent_collision_summary(source, label)
+    expect_s3_class(query, "tbl_lazy")
+    expect_typed_parent_collision(dplyr::collect(query))
+  }
+})
+
+test_that("DuckDB Parent shares preserve typed keys in both adapters", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con, typed_parent_collision_data(), "typed_parent_collision",
+    temporary = TRUE
+  )
+  for (duplicates in c("drop", "keep")) {
+    for (label in list("Total", NULL)) {
+      query <- typed_parent_collision_summary(source, label, duplicates)
+      expect_s3_class(query, "tbl_lazy")
+      expect_typed_parent_collision(dplyr::collect(query))
+    }
+  }
+})
+
 test_that("Parent shares preserve columns, grouping, and laziness", {
   data <- data.frame(
     fixed = c("a", "a", "b"),
@@ -2218,18 +2307,21 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   denominator_name <- "..marginplyr_denominator_of_total_1"
   share_name <- "..marginplyr_set_id_1_"
   id_name <- "..marginplyr_share_match_1_"
+  original_key_name <- "..marginplyr_parent_original_1"
   data <- data.frame(
     c(group_name, "x"),
     c(1, 3),
     10:11,
     20:21,
+    30:31,
     check.names = FALSE
   )
   names(data) <- c(
     group_name,
     value_name,
     "..marginplyr_set_id_1",
-    "..marginplyr_share_match_1"
+    "..marginplyr_share_match_1",
+    original_key_name
   )
 
   summarize <- function(source) {
@@ -2237,6 +2329,7 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
       source,
       !!summary_name := sum(.data[[value_name]]),
       !!denominator_name := sum(.data[[value_name]]),
+      !!original_key_name := sum(.data[[original_key_name]]),
       !!share_name := share_of_parent(!!rlang::sym(summary_name)),
       .grouping = rollup(dplyr::all_of(group_name)),
       .margin_label = group_name,

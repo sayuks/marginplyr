@@ -94,6 +94,85 @@ test_that("default Margin labels preserve typed grouping identity", {
   }
 })
 
+test_that(paste0(
+  "Parent shares match original numeric keys ",
+  "after display conversion"
+), {
+  data <- data.frame(
+    region = c(1e15, 1e15 + 1),
+    store = c("same", "same"),
+    value = c(1, 2)
+  )
+  summarize <- function(label) {
+    summarize_with_margins(
+      data,
+      level = grouping_id(region, store),
+      total = sum(value),
+      share = share_of_parent(total),
+      .grouping = rollup(region, store),
+      .margin_label = label
+    )
+  }
+
+  displayed <- summarize("Total")
+  missing <- summarize(NULL)
+  for (result in list(displayed, missing)) {
+    expect_identical(nrow(result), 5L)
+    expect_equal(result$share[result$level == 0L], c(1, 1))
+    expect_equal(result$share[result$level == 1L], c(1 / 3, 2 / 3))
+    expect_identical(result$share[result$level == 3L], 1)
+  }
+  expect_equal(displayed$share, missing$share)
+  expect_equal(displayed$total, missing$total)
+})
+
+test_that(paste0(
+  "typed Parent keys retain partitions, ",
+  "missing values, and duplicates"
+), {
+  data <- data.frame(
+    fixed = c(NA_character_, NA_character_, "A", "A"),
+    region = c(1e15, 1e15 + 1, NA_real_, 1e15),
+    store = "same",
+    child = "c",
+    value = 1:4,
+    units = c(2L, 4L, 6L, 8L)
+  )
+  summarize <- function(label) {
+    summarize_with_margins(
+      data,
+      level = grouping_id(region, store, child),
+      total = sum(value),
+      unit_total = sum(units),
+      share = share_of_parent(total),
+      unit_share = share_of_parent(unit_total),
+      .by = fixed,
+      .grouping = rollup(grouping_set(region, store), child, child),
+      .duplicates = "keep",
+      .id = "set",
+      .margin_label = label
+    ) |>
+      dplyr::arrange(set, fixed, total)
+  }
+
+  for (result in list(summarize("Total"), summarize(NULL))) {
+    expect_identical(nrow(result), 14L)
+    expect_equal(result$set, rep(1:4, c(4, 4, 4, 2)))
+    expect_equal(result$total, c(rep(c(3, 4, 1, 2), 3), 7, 3))
+    expect_equal(result$unit_total, 2 * result$total)
+    expect_equal(
+      result$share,
+      c(rep(1, 8), 3 / 7, 4 / 7, 1 / 3, 2 / 3, 1, 1)
+    )
+    expect_equal(result$unit_share, result$share)
+    expect_identical(result$level, rep(c(0L, 1L, 7L), c(8, 4, 2)))
+    missing_region <- which(
+      result$set == 3L & result$fixed == "A" & is.na(result$region)
+    )
+    expect_identical(result$total[missing_region], 3L)
+  }
+})
+
 test_that("Parent identity separates missing keys from displayed margins", {
   data <- data.frame(
     fixed = c(NA_character_, NA_character_, "A", "A"),

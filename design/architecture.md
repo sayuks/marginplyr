@@ -354,10 +354,10 @@ The responsibilities divide as follows:
   Parent share derives each grouping set's parent with `parent_set_ids()`,
   which skips duplicate occurrences while finding the next strictly less
   detailed set, and matches on the internal Grouping set identifier, the fixed
-  keys, and one join key per dimension that carries the dimension's value only
-  where the parent set includes it and is missing otherwise — computed by the
-  same expression on both sides, and never from a displayed Margin label or
-  the caller-visible `.id`. A Total share's denominator depends on `.by` and
+  keys, and one join key per dimension that carries the original typed value
+  only where the parent set includes it and is missing otherwise — computed by
+  the same expression on both sides, and never from a displayed Margin label
+  or the caller-visible `.id`. A Total share's denominator depends on `.by` and
   nothing else, so its mapping is one read of the grand total occurrence
   matched on the fixed keys alone, with a constant column standing in when
   there are none.
@@ -368,13 +368,13 @@ The responsibilities divide as follows:
   caller's summary expressions and the join overwrites that column in place,
   so a call requesting both kinds runs two passes without either pass being
   visible in the result's column order.
-- **Cleanup** allocates every temporary — denominators, join keys, and the
-  right-hand match names of the SQL join — through
+- **Cleanup** allocates every temporary — typed Parent keys, denominators,
+  join keys, and the right-hand match names of the SQL join — through
   `new_margin_internal_names()` against the names already in the result, and
   drops all of them before returning.
 
 Adapter selection is a lookup on the prepared backend kind, not on the staged
-result's class, and every adapter takes the same five arguments. See
+result's class, and every adapter takes the same six arguments. See
 [ADR 0014](adr/0014-select-parent-share-adapters-from-prepared-backend-kind.md).
 The denominator targets, calculation, and cleanup above are shared; there are
 three adapters, and each says only what its backends do differently. Parent
