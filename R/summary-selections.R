@@ -566,10 +566,27 @@ plan_summary_expressions <- function(dots,
   deferred <- deferred[summary_plan$origin_positions]
   selection_state <- if (defer_local) new.env(parent = emptyenv()) else NULL
   if (defer_local) {
-    selection_state$forbidden_names <- unlist(lapply(
-      summary_plan$requests, `[[`, "outputs"
-    ), use.names = FALSE)
     selection_state$internal_names <- character()
+    share_positions <- which(vapply(
+      original_dots,
+      function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
+      logical(1)
+    ))
+    share_positions <- share_positions[
+      share_positions %in% summary_plan$origin_positions
+    ]
+    stopifnot(length(share_positions) == length(summary_plan$requests))
+    selection_state$by_dot <- lapply(
+      summary_plan$origin_positions,
+      function(position) {
+        state <- new.env(parent = selection_state)
+        state$forbidden_names <- unlist(lapply(
+          summary_plan$requests[share_positions < position],
+          `[[`, "outputs"
+        ), use.names = FALSE)
+        state
+      }
+    )
   }
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
@@ -750,6 +767,14 @@ resolve_summary_selections <- function(dots,
     function(i) {
       dot <- dots[[i]]
       expr <- rlang::quo_get_expr(dot)
+      dot_forbidden_names <- if (
+        is.environment(forbidden_names) &&
+          !is.null(forbidden_names$by_dot)
+      ) {
+        forbidden_names$by_dot[[i]]
+      } else {
+        forbidden_names
+      }
       if (skip_deferred && defer_local[[i]]) {
         return(dot)
       }
@@ -767,7 +792,7 @@ resolve_summary_selections <- function(dots,
           normalize_across_names = normalize_across_names,
           defer_local = defer_local[[i]],
           group_vars = group_vars,
-          forbidden_names = forbidden_names
+          forbidden_names = dot_forbidden_names
         ),
         error = function(cnd) {
           if (allow_missing_selection &&
@@ -933,7 +958,7 @@ local_summary_selection <- function(selection, env, group_vars,
   if (is.environment(forbidden_names)) {
     forbidden_names <- c(
       forbidden_names$forbidden_names,
-      forbidden_names$internal_names
+      get("internal_names", envir = forbidden_names, inherits = TRUE)
     )
   }
   data <- data[setdiff(names(data), c(group_vars, forbidden_names))]

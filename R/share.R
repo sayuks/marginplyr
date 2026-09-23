@@ -1442,6 +1442,16 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
   }
   analyses <- vector("list", length(dots))
   preceding_names <- character()
+  share_positions <- which(vapply(
+    dots,
+    function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
+    logical(1)
+  ))
+  last_share <- if (length(share_positions) > 0L) {
+    max(share_positions)
+  } else {
+    0L
+  }
 
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
@@ -1450,6 +1460,40 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
     env <- rlang::quo_get_env(quo)
     if (contains_share_helper(expr)) {
       analyses[[i]] <- list(records = list())
+      next
+    }
+
+    # No later share can use these records as a source. Keep statically named
+    # outputs visible to earlier shares' forward-reference checks, but leave
+    # selection predicates and naming expressions to the local data mask.
+    if (defer_local && i > last_share && contains_summary_selection(expr)) {
+      output_names <- if (nzchar(output_name)) {
+        output_name
+      } else if (is_across_call(expr)) {
+        predictable_local_across_names(list(quo), c(
+          names(selection_proxy), preceding_names
+        ))
+      } else {
+        character()
+      }
+      eligibility <- if (is_across_call(expr) && nzchar(output_name)) {
+        "named_across"
+      } else if (is_across_call(expr)) {
+        "eligible"
+      } else {
+        "expanded"
+      }
+      analyses[[i]] <- list(records = lapply(output_names, function(name) {
+        list(
+          name = name,
+          position = i,
+          eligibility = eligibility,
+          dependencies = character(),
+          across_input = NA_character_,
+          across_function = NA_integer_
+        )
+      }))
+      preceding_names <- c(preceding_names, output_names)
       next
     }
 

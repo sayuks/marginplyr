@@ -466,6 +466,31 @@ test_that("local selection planning does not execute caller summaries", {
   expect_identical(selectors, 2L)
 })
 
+test_that("selections after shares run caller expressions only in branches", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  name_calls <- 0L
+  selected_name <- function() {
+    name_calls <<- name_calls + 1L
+    "again_{.col}"
+  }
+  predicate_calls <- 0L
+  numeric_probe <- function(x) {
+    predicate_calls <<- predicate_calls + 1L
+    is.numeric(x)
+  }
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_total(total),
+    dplyr::across(dplyr::where(numeric_probe), sum,
+                  .names = selected_name()),
+    .grouping = rollup(group)
+  )
+  expect_identical(name_calls, 2L)
+  expect_identical(predicate_calls, 4L)
+  expect_equal(actual$again_total, c(1, 2, 3))
+})
+
 test_that("local selectors exclude the complete Grouping plan", {
   data <- data.frame(
     region = c("a", "b"),
@@ -523,6 +548,18 @@ test_that("ordinary selections still cannot read preceding shares", {
     .grouping = rollup(group)
   )
   expect_identical(actual$selected, rep("value,total", 3L))
+})
+
+test_that("a later share name does not hide an input from earlier selections", {
+  data <- data.frame(group = c("a", "b"), share = c(10, 20), value = 1:2)
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    selected = paste(names(dplyr::pick(dplyr::everything())), collapse = ","),
+    share = share_of_total(total),
+    .grouping = rollup(group)
+  )
+  expect_identical(actual$selected, rep("share,value,total", 3L))
 })
 
 test_that("lazy summary selections keep their backend limitation", {
