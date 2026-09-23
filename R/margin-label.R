@@ -167,7 +167,10 @@ validate_margin_label <- function(.data,
   )]
   if (length(labelled_packed) > 0L) {
     abort_marginplyr(c(
-      "A non-missing {.arg .margin_label} cannot label packed grouping dimensions:",
+      paste0(
+        "A non-missing {.arg .margin_label} cannot label packed ",
+        "grouping dimensions:"
+      ),
       i = "{.var {labelled_packed}}.",
       i = paste0(
         "Use {.code NULL} or {.code NA_character_} for a typed-missing ",

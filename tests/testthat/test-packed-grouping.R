@@ -173,22 +173,30 @@ test_that("a string label for a packed key names the dimension and remedy", {
   )
   spec <- grouping_set(key)
   operations <- list(
-    function() summarize_with_margins(
-      data, n = dplyr::n(), .grouping = spec,
-      .margin_label = "All", .check_margin_label = FALSE
-    ),
-    function() expand_with_margins(
-      data, .grouping = spec,
-      .margin_label = "All", .check_margin_label = FALSE
-    ),
-    function() nest_with_margins(
-      data, .grouping = spec,
-      .margin_label = "All", .check_margin_label = FALSE
-    ),
-    function() nest_by_with_margins(
-      data, .grouping = spec,
-      .margin_label = "All", .check_margin_label = FALSE
-    )
+    function() {
+      summarize_with_margins(
+        data, n = dplyr::n(), .grouping = spec,
+        .margin_label = "All", .check_margin_label = FALSE
+      )
+    },
+    function() {
+      expand_with_margins(
+        data, .grouping = spec,
+        .margin_label = "All", .check_margin_label = FALSE
+      )
+    },
+    function() {
+      nest_with_margins(
+        data, .grouping = spec,
+        .margin_label = "All", .check_margin_label = FALSE
+      )
+    },
+    function() {
+      nest_by_with_margins(
+        data, .grouping = spec,
+        .margin_label = "All", .check_margin_label = FALSE
+      )
+    }
   )
 
   for (operation in operations) {
