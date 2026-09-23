@@ -1434,6 +1434,7 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
+# Records ordinary outputs and dependencies for a call with a contextual share.
 analyze_ordinary_summaries <- function(dots, selection_proxy,
                                        defer_local = FALSE) {
   dot_names <- names(dots)
@@ -1447,11 +1448,8 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
     function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
     logical(1)
   ))
-  last_share <- if (length(share_positions) > 0L) {
-    max(share_positions)
-  } else {
-    0L
-  }
+  stopifnot(length(share_positions) > 0L)
+  last_share <- max(share_positions)
 
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
@@ -1539,28 +1537,13 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       expression_alias_dependencies(expr, preceding_names),
       selected_dependencies
     ))
-    provenance <- if (defer_local) {
-      tryCatch(
-        across_output_provenance(
-          expr, env, selection_proxy, output_names,
-          expands_own_names = is_across_call(expr) && !nzchar(output_name)
-        ),
-        vctrs_error_subscript_oob = function(cnd) {
-          list(
-            inputs = rep(NA_character_, length(output_names)),
-            functions = rep(NA_integer_, length(output_names))
-          )
-        }
-      )
-    } else {
-      across_output_provenance(
-        expr,
-        env,
-        selection_proxy,
-        output_names,
-        expands_own_names = is_across_call(expr) && !nzchar(output_name)
-      )
-    }
+    provenance <- across_output_provenance(
+      expr,
+      env,
+      selection_proxy,
+      output_names,
+      expands_own_names = is_across_call(expr) && !nzchar(output_name)
+    )
     across_inputs <- provenance$inputs
     across_functions <- provenance$functions
     records <- Map(

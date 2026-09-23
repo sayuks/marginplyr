@@ -509,13 +509,10 @@ plan_summary_expressions <- function(dots,
   if (!defer_local || has_shares) {
     dots <- resolve_summary_selections(
       dots,
-      data_proxy = data_proxy,
-      data_vars = data_vars,
       group_vars = group_vars,
       caller_labels = caller_labels,
       normalize_across_names = FALSE,
       skip_shares = TRUE,
-      allow_missing_selection = defer_local,
       defer_local = deferred,
       skip_deferred = TRUE,
       selection_proxy = selection_proxy
@@ -590,8 +587,6 @@ plan_summary_expressions <- function(dots,
   }
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
-    data_proxy = data_proxy,
-    data_vars = data_vars,
     group_vars = group_vars,
     caller_labels = caller_labels,
     normalize_across_names = identical(backend_kind, "dtplyr"),
@@ -738,25 +733,15 @@ summary_selection_proxy <- function(data_proxy, data_vars, group_vars) {
 # rewrote, whose labels are marginplyr's spelling and not the caller's
 # (ADR 0022).
 resolve_summary_selections <- function(dots,
-                                       data_proxy,
-                                       data_vars,
                                        group_vars,
                                        caller_labels,
+                                       selection_proxy,
                                        normalize_across_names = FALSE,
                                        skip_shares = FALSE,
                                        defer_local = FALSE,
                                        forbidden_names = character(),
-                                       allow_missing_selection = FALSE,
-                                       selection_proxy = NULL,
                                        skip_deferred = FALSE) {
   stopifnot(length(dots) == length(caller_labels))
-  if (is.null(selection_proxy)) {
-    selection_proxy <- summary_selection_proxy(
-      data_proxy,
-      data_vars = data_vars,
-      group_vars = group_vars
-    )
-  }
   if (length(defer_local) == 1L) {
     defer_local <- rep(defer_local, length(dots))
   }
@@ -795,10 +780,6 @@ resolve_summary_selections <- function(dots,
           forbidden_names = dot_forbidden_names
         ),
         error = function(cnd) {
-          if (allow_missing_selection &&
-                inherits(cnd, "vctrs_error_subscript_oob")) {
-            return(rlang::quo_get_expr(dot))
-          }
           if (is_unsupported_predicate(cnd)) {
             abort_selection_predicate(caller_labels[[i]], cnd)
           }
@@ -901,9 +882,6 @@ rewrite_summary_selections <- function(expr,
 # An injected missing selection stays empty rather than taking the default.
 local_summary_selection_expr <- function(selection, env, group_vars,
                                          forbidden_names) {
-  if (rlang::is_missing(selection)) {
-    selection <- rlang::expr(c())
-  }
   if (rlang::is_quosure(selection)) {
     env <- rlang::quo_get_env(selection)
     selection <- rlang::quo_get_expr(selection)

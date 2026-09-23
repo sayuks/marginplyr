@@ -339,6 +339,25 @@ test_that("a named across() source is one packed column, not many summaries", {
   )
 })
 
+test_that("lazy share planning recognizes expanded frame outputs", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = c("a", "b"), value = 1:2),
+    con = dbplyr::simulate_dbi()
+  )
+  error <- expect_error(summarize_with_margins(
+    remote,
+    tibble::tibble(n = sum(value)),
+    share = share_of_total(n),
+    .grouping = rollup(group),
+    .check_share_source = FALSE
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error),
+    "expanded from a data-frame-valued summary"
+  )
+})
+
 test_that(paste0(
   "Parent shares support composite dimensions, fixed keys, ",
   "and duplicates"

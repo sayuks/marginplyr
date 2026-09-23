@@ -466,6 +466,18 @@ test_that("local selection planning does not execute caller summaries", {
   expect_identical(selectors, 2L)
 })
 
+test_that("local across defaults to current ordinary summary columns", {
+  data <- data.frame(group = c("a", "b"), value = 1:2)
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    dplyr::across(.fns = sum, .names = "copy_{.col}"),
+    .grouping = rollup(group)
+  )
+  expect_equal(actual$copy_value, c(1, 2, 3))
+  expect_equal(actual$copy_total, actual$total)
+})
+
 test_that("selections after shares run caller expressions only in branches", {
   data <- data.frame(group = c("a", "b"), value = c(1, 2))
   name_calls <- 0L
@@ -548,6 +560,19 @@ test_that("ordinary selections still cannot read preceding shares", {
     .grouping = rollup(group)
   )
   expect_identical(actual$selected, rep("value,total", 3L))
+})
+
+test_that("an unnamed pick after a share cannot select that share", {
+  data <- data.frame(group = c("a", "b"), value = 1:2)
+  error <- expect_error(summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_total(total),
+    dplyr::pick(share),
+    .grouping = rollup(group)
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "earlier Total share")
 })
 
 test_that("a later share name does not hide an input from earlier selections", {
