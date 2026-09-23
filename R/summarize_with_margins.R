@@ -367,6 +367,17 @@
 #' every branch: a dimension remains excluded even in a grouping set from
 #' which it is omitted.
 #'
+#' On a local data frame, an ordinary selection in a later summary sees
+#' preceding ordinary outputs when it runs. For example, after
+#' `total = sum(value)`, `across(total, ~ .x * 2)` selects `total`, and
+#' `starts_with("tot")`, `everything()`, `where(is.numeric)`, and `pick()` use
+#' the columns and types then in the local data mask. They also see a changed
+#' type when an earlier summary overwrote an ordinary input column. The output
+#' order follows local dplyr summary order. A lazy input retains the alias
+#' limitations of its backend. marginplyr does not execute it locally to
+#' provide this behavior. Contextual shares keep their own source-selection
+#' rules below.
+#'
 #' A selection predicate here is refused against the same inputs it is refused
 #' against in `.by` and `.grouping`, for the same reason and with the same
 #' remedy: see *Fixed columns and grouping dimensions*.
@@ -998,7 +1009,11 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       )
       summary_output_names <- unique(c(
         names(dots)[nzchar(names(dots))],
-        known_summary_output_names(dots, selection_proxy)
+        summary_plan$predictable_names,
+        known_summary_output_names(
+          dots, selection_proxy,
+          defer_local = identical(operation$backend$kind, "local")
+        )
       ))
       check_summary_group_overwrite(
         summary_output_names,

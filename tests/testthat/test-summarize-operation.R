@@ -324,6 +324,280 @@ test_that("summary tidyselect conditions retain their class and cause", {
   expect_match(conditionMessage(error), "Column `unknown` doesn't exist")
 })
 
+test_that("local selectors see preceding ordinary summaries", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  expected <- dplyr::summarise(
+    data,
+    total = sum(value),
+    dplyr::across(total, ~ .x * 2, .names = "double_{.col}"),
+    dplyr::across(
+      dplyr::starts_with("tot"), ~ .x * 3, .names = "triple_{.col}"
+    ),
+    .by = group
+  )
+  expected <- dplyr::bind_rows(
+    expected,
+    dplyr::summarise(
+      data,
+      total = sum(value),
+      dplyr::across(total, ~ .x * 2, .names = "double_{.col}"),
+      dplyr::across(
+        dplyr::starts_with("tot"), ~ .x * 3, .names = "triple_{.col}"
+      )
+    ) |>
+      dplyr::mutate(group = "Total", .before = 1L)
+  )
+
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    dplyr::across(total, ~ .x * 2, .names = "double_{.col}"),
+    dplyr::across(
+      dplyr::starts_with("tot"), ~ .x * 3, .names = "triple_{.col}"
+    ),
+    .grouping = rollup(group)
+  )
+  expect_equal(actual, expected)
+  expect_equal(actual$double_total, c(2, 4, 6))
+})
+
+test_that("local selections use current types and dplyr output order", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  summaries <- function(input, by = NULL) {
+    dplyr::summarise(
+      input,
+      value = as.character(sum(value)),
+      dplyr::across(
+        dplyr::where(is.character), ~ paste0(.x, "!"),
+        .names = "text_{.col}"
+      ),
+      selected = paste(names(dplyr::pick(dplyr::where(is.character))),
+                       collapse = ","),
+      all_seen = paste(names(dplyr::pick(dplyr::everything())),
+                       collapse = ","),
+      .by = {{ by }}
+    )
+  }
+  expected <- dplyr::bind_rows(
+    summaries(data, group),
+    dplyr::mutate(
+      summaries(dplyr::select(data, -group)),
+      group = "Total",
+      .before = 1L
+    )
+  )
+  actual <- summarize_with_margins(
+    data,
+    value = as.character(sum(value)),
+    dplyr::across(
+      dplyr::where(is.character), ~ paste0(.x, "!"),
+      .names = "text_{.col}"
+    ),
+    selected = paste(names(dplyr::pick(dplyr::where(is.character))),
+                     collapse = ","),
+    all_seen = paste(names(dplyr::pick(dplyr::everything())),
+                     collapse = ","),
+    .grouping = rollup(group)
+  )
+  expect_equal(actual, expected)
+  expect_identical(actual$selected, rep("value,text_value", 3L))
+})
+
+test_that("local selection rewrites preserve frame expansion and packing", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  range_frame <- function(x) {
+    data.frame(lo = min(x), hi = max(x))
+  }
+  actual <- summarize_with_margins(
+    data,
+    range_frame(dplyr::pick(value)),
+    packed = range_frame(dplyr::pick(value)),
+    .grouping = rollup(group)
+  )
+  expect_identical(names(actual), c("group", "lo", "hi", "packed"))
+  expect_equal(actual$lo, c(1, 2, 1))
+  expect_equal(actual$hi, c(1, 2, 2))
+  expect_s3_class(actual$packed, "data.frame")
+  expect_equal(actual$packed$lo, actual$lo)
+})
+
+test_that("local selection planning does not execute caller summaries", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  calls <- 0L
+  counted_sum <- function(x) {
+    calls <<- calls + 1L
+    sum(x)
+  }
+  actual <- summarize_with_margins(
+    data,
+    total = counted_sum(value),
+    dplyr::across(total, ~ .x * 2, .names = "double_{.col}"),
+    .grouping = rollup(group)
+  )
+  expect_equal(actual$double_total, c(2, 4, 6))
+  expect_identical(calls, 3L)
+
+  predicates <- 0L
+  numeric_probe <- function(x) {
+    predicates <<- predicates + 1L
+    is.numeric(x)
+  }
+  summarize_with_margins(
+    data,
+    total = counted_sum(value),
+    dplyr::across(dplyr::where(numeric_probe), sum,
+                  .names = "again_{.col}"),
+    .grouping = rollup(group)
+  )
+  expect_identical(calls, 6L)
+  expect_identical(predicates, 4L)
+
+  selectors <- 0L
+  selected_name <- function() {
+    selectors <<- selectors + 1L
+    "total"
+  }
+  summarize_with_margins(
+    data,
+    total = sum(value),
+    dplyr::across(dplyr::all_of(selected_name()), identity),
+    .grouping = rollup(group)
+  )
+  expect_identical(selectors, 2L)
+})
+
+test_that("local across defaults to current ordinary summary columns", {
+  data <- data.frame(group = c("a", "b"), value = 1:2)
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    dplyr::across(.fns = sum, .names = "copy_{.col}"),
+    .grouping = rollup(group)
+  )
+  expect_equal(actual$copy_value, c(1, 2, 3))
+  expect_equal(actual$copy_total, actual$total)
+})
+
+test_that("selections after shares run caller expressions only in branches", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  name_calls <- 0L
+  selected_name <- function() {
+    name_calls <<- name_calls + 1L
+    "again_{.col}"
+  }
+  predicate_calls <- 0L
+  numeric_probe <- function(x) {
+    predicate_calls <<- predicate_calls + 1L
+    is.numeric(x)
+  }
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_total(total),
+    dplyr::across(dplyr::where(numeric_probe), sum,
+                  .names = selected_name()),
+    .grouping = rollup(group)
+  )
+  expect_identical(name_calls, 2L)
+  expect_identical(predicate_calls, 4L)
+  expect_equal(actual$again_total, c(1, 2, 3))
+})
+
+test_that("local selectors exclude the complete Grouping plan", {
+  data <- data.frame(
+    region = c("a", "b"),
+    store = c("x", "y"),
+    value = c(1, 2)
+  )
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    selected = paste(names(dplyr::pick(dplyr::everything())),
+                     collapse = ","),
+    dplyr::across(dplyr::everything(), length,
+                  .names = "again_{.col}"),
+    .grouping = rollup(region, store)
+  )
+  expect_identical(actual$selected, rep("value,total", nrow(actual)))
+  expect_identical(
+    names(actual),
+    c("region", "store", "total", "selected", "again_value",
+      "again_total", "again_selected")
+  )
+})
+
+test_that("local if_any and if_all select preceding outputs", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    positive = dplyr::if_all(total, ~ .x > 0),
+    large = dplyr::if_any(dplyr::starts_with("tot"), ~ .x > 1),
+    .grouping = rollup(group)
+  )
+  expect_identical(actual$positive, rep(TRUE, 3L))
+  expect_identical(actual$large, c(FALSE, TRUE, TRUE))
+})
+
+test_that("ordinary selections still cannot read preceding shares", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  error <- expect_error(summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_total(total),
+    dplyr::across(share, identity),
+    .grouping = rollup(group)
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "share")
+
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_total(total),
+    selected = paste(names(dplyr::pick(dplyr::everything())),
+                     collapse = ","),
+    .grouping = rollup(group)
+  )
+  expect_identical(actual$selected, rep("value,total", 3L))
+})
+
+test_that("an unnamed pick after a share cannot select that share", {
+  data <- data.frame(group = c("a", "b"), value = 1:2)
+  error <- expect_error(summarize_with_margins(
+    data,
+    total = sum(value),
+    share = share_of_total(total),
+    dplyr::pick(share),
+    .grouping = rollup(group)
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "earlier Total share")
+})
+
+test_that("a later share name does not hide an input from earlier selections", {
+  data <- data.frame(group = c("a", "b"), share = c(10, 20), value = 1:2)
+  actual <- summarize_with_margins(
+    data,
+    total = sum(value),
+    selected = paste(names(dplyr::pick(dplyr::everything())), collapse = ","),
+    share = share_of_total(total),
+    .grouping = rollup(group)
+  )
+  expect_identical(actual$selected, rep("share,value,total", 3L))
+})
+
+test_that("lazy summary selections keep their backend limitation", {
+  data <- data.frame(group = c("a", "b"), value = c(1, 2))
+  remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_dbi())
+  expect_error(summarize_with_margins(
+    remote,
+    total = sum(value),
+    dplyr::across(total, ~ .x * 2),
+    .grouping = rollup(group)
+  ), "Column `total` doesn't exist")
+})
+
 # A backend whose selection proxy is the lazy table itself carries no column
 # types, so tidyselect refuses a predicate rather than answering it. The
 # refusal stands -- reading the types would be a query nobody asked for

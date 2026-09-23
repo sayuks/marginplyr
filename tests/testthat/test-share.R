@@ -339,6 +339,25 @@ test_that("a named across() source is one packed column, not many summaries", {
   )
 })
 
+test_that("lazy share planning recognizes expanded frame outputs", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(group = c("a", "b"), value = 1:2),
+    con = dbplyr::simulate_dbi()
+  )
+  error <- expect_error(summarize_with_margins(
+    remote,
+    tibble::tibble(n = sum(value)),
+    share = share_of_total(n),
+    .grouping = rollup(group),
+    .check_share_source = FALSE
+  ))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error),
+    "expanded from a data-frame-valued summary"
+  )
+})
+
 test_that(paste0(
   "Parent shares support composite dimensions, fixed keys, ",
   "and duplicates"
@@ -2651,9 +2670,9 @@ test_that("a failed share selection keeps the original condition", {
     "Total-share `across\\(\\)` selection"
   )
 
-  # The share path adds its own context on top of the condition the ordinary
-  # path propagates unchanged, so the chain below the marginplyr frame is the
-  # same one `summarise()` would have surfaced for the same selection.
+  # The ordinary selection runs in dplyr's local data mask, which adds its own
+  # context around the caller's condition. The share reader still retains the
+  # same original cause under its own context.
   ordinary_error <- expect_error(
     summarize_with_margins(
       data,
@@ -2664,7 +2683,7 @@ test_that("a failed share selection keeps the original condition", {
   )
   expect_s3_class(share_error$parent, class(ordinary_error))
   expect_s3_class(share_error$parent$parent, "my_user_error")
-  expect_s3_class(ordinary_error$parent, "my_user_error")
+  expect_s3_class(ordinary_error$parent$parent$parent, "my_user_error")
 })
 
 test_that("the share-selection reader answers a chain naming nothing", {

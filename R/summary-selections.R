@@ -345,12 +345,15 @@ expand_packed_summary_column <- function(result, name) {
 # is checked once rather than only when a second value says to. The assigned
 # names default to none for the same reason: such a caller wrote every name its
 # dots carry, and ADR 0028 expands only a name marginplyr wrote.
+# `selection_state` carries the local branch's internal key names to deferred
+# selections; the union adapter fills those names before it runs any branch.
 new_summary_arguments <- function(dots,
                                   labels = summary_argument_labels(dots),
                                   assigned_names = rep(
                                     NA_character_,
                                     length(dots)
-                                  )) {
+                                  ),
+                                  selection_state = NULL) {
   stopifnot(
     is.list(dots),
     is.character(labels),
@@ -358,7 +361,12 @@ new_summary_arguments <- function(dots,
     is.character(assigned_names),
     length(assigned_names) == length(dots)
   )
-  list(dots = dots, labels = labels, assigned_names = assigned_names)
+  list(
+    dots = dots,
+    labels = labels,
+    assigned_names = assigned_names,
+    selection_state = selection_state
+  )
 }
 
 # The name `dplyr::summarize()` gives an unnamed argument, for an argument
@@ -408,14 +416,16 @@ dplyr_auto_name <- function(expr) {
 # written here is a column name rather than a condition label: ADR 0022's
 # rejection of reproducing dplyr's spelling reaches the label alone, and its
 # amendment for #439 says so.
-name_rewritten_summary_dots <- function(original, resolved) {
+name_rewritten_summary_dots <- function(original, resolved,
+                                        defer_local = FALSE) {
   stopifnot(length(original) == length(resolved))
   arg_names <- rlang::names2(resolved)
   assigned_names <- rep(NA_character_, length(resolved))
   for (i in which(!nzchar(arg_names))) {
     expr <- rlang::quo_get_expr(original[[i]])
     rewritten <- !identical(expr, rlang::quo_get_expr(resolved[[i]])) ||
-      contains_grouping_helper(expr)
+      contains_grouping_helper(expr) ||
+      (defer_local && contains_summary_selection(expr))
     if (!rewritten || !is.null(data_frame_valued_summary_kind(expr))) {
       next
     }
@@ -426,6 +436,25 @@ name_rewritten_summary_dots <- function(original, resolved) {
     dots = stats::setNames(resolved, arg_names),
     assigned_names = assigned_names
   )
+}
+
+# Whether an evaluated part of a summary contains an ordinary selection helper.
+# The caller uses this only to decide which original dots need local deferral.
+contains_summary_selection <- function(expr) {
+  if (rlang::is_quosure(expr)) {
+    return(contains_summary_selection(rlang::quo_get_expr(expr)))
+  }
+  if (!rlang::is_call(expr)) {
+    return(FALSE)
+  }
+  if (!is.null(static_spelling_name(expr, "selection"))) {
+    return(TRUE)
+  }
+  any(vapply(
+    searched_call_parts(expr, call_name = static_call_name(expr)),
+    contains_summary_selection,
+    logical(1)
+  ))
 }
 
 plan_summary_expressions <- function(dots,
@@ -442,46 +471,128 @@ plan_summary_expressions <- function(dots,
   # 0007 has already captured the dots at the public verb.
   caller_labels <- summary_argument_labels(dots)
   original_dots <- dots
+  defer_local <- identical(backend_kind, "local")
+  has_shares <- any(vapply(
+    dots,
+    function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
+    logical(1)
+  ))
+  deferred <- rep(FALSE, length(dots))
+  if (defer_local) {
+    prior_ordinary <- FALSE
+    for (i in seq_along(dots)) {
+      expr <- rlang::quo_get_expr(dots[[i]])
+      if (contains_share_helper(expr)) {
+        next
+      }
+      deferred[[i]] <- !has_shares ||
+        (prior_ordinary && contains_summary_selection(expr))
+      prior_ordinary <- TRUE
+    }
+  }
   selection_proxy <- summary_selection_proxy(
     data_proxy,
     data_vars = data_vars,
     group_vars = group_vars
   )
-  dots <- resolve_summary_selections(
-    dots,
-    data_proxy = data_proxy,
-    data_vars = data_vars,
-    group_vars = group_vars,
-    caller_labels = caller_labels,
-    normalize_across_names = FALSE,
-    skip_shares = TRUE
-  )
+  predictable_names <- if (defer_local) {
+    predictable_local_across_names(original_dots, names(selection_proxy))
+  } else {
+    character()
+  }
+  if (
+    defer_local && length(dots) > 0L &&
+      !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
+  ) {
+    preflight_local_selection(dots[[1L]], selection_proxy)
+  }
+  if (!defer_local || has_shares) {
+    dots <- resolve_summary_selections(
+      dots,
+      group_vars = group_vars,
+      caller_labels = caller_labels,
+      normalize_across_names = FALSE,
+      skip_shares = TRUE,
+      defer_local = deferred,
+      skip_deferred = TRUE,
+      selection_proxy = selection_proxy
+    )
+  }
+  if (defer_local && has_shares) {
+    for (i in seq_along(dots)) {
+      deferred[[i]] <- deferred[[i]] || (
+        contains_summary_selection(rlang::quo_get_expr(original_dots[[i]])) &&
+          identical(
+            rlang::quo_get_expr(original_dots[[i]]),
+            rlang::quo_get_expr(dots[[i]])
+          )
+      )
+    }
+  }
   # Against the dots this rewrite received, and before share planning moves
   # one: a share summary carries an output name already, and every rewrite
   # below this either answers a named dot or is one of those moves. The labels
   # above are read first because they are the caller's spelling for a Condition
   # context, which a name assigned here would spell `sum(v) = sum(v)`.
-  named <- name_rewritten_summary_dots(original_dots, dots)
-  dots <- named$dots
-  summary_plan <- plan_share_expressions(
-    dots,
-    selection_proxy = selection_proxy,
-    plan = plan,
-    set_id_name = set_id_name,
-    validate_cardinality = wraps_share_sources_in_summary(backend_kind)
+  named <- name_rewritten_summary_dots(
+    original_dots, dots, defer_local = defer_local
   )
+  dots <- named$dots
+  summary_plan <- if (has_shares) {
+    plan_share_expressions(
+      dots,
+      selection_proxy = selection_proxy,
+      plan = plan,
+      set_id_name = set_id_name,
+      validate_cardinality = wraps_share_sources_in_summary(backend_kind),
+      defer_local = defer_local
+    )
+  } else {
+    list(
+      dots = dots,
+      requests = list(),
+      cardinality = list(),
+      origin_positions = seq_along(dots)
+    )
+  }
   # Share planning is the one step that moves a dot, so it reports where each
   # dot it produced came from and both per-dot vectors are subscripted by that.
   # Every other rewrite here answers one dot with one dot in place.
   caller_labels <- caller_labels[summary_plan$origin_positions]
   assigned_names <- named$assigned_names[summary_plan$origin_positions]
+  deferred <- deferred[summary_plan$origin_positions]
+  selection_state <- if (defer_local) new.env(parent = emptyenv()) else NULL
+  if (defer_local) {
+    selection_state$internal_names <- character()
+    share_positions <- which(vapply(
+      original_dots,
+      function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
+      logical(1)
+    ))
+    share_positions <- share_positions[
+      share_positions %in% summary_plan$origin_positions
+    ]
+    stopifnot(length(share_positions) == length(summary_plan$requests))
+    selection_state$by_dot <- lapply(
+      summary_plan$origin_positions,
+      function(position) {
+        state <- new.env(parent = selection_state)
+        state$forbidden_names <- unlist(lapply(
+          summary_plan$requests[share_positions < position],
+          `[[`, "outputs"
+        ), use.names = FALSE)
+        state
+      }
+    )
+  }
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
-    data_proxy = data_proxy,
-    data_vars = data_vars,
     group_vars = group_vars,
     caller_labels = caller_labels,
-    normalize_across_names = identical(backend_kind, "dtplyr")
+    normalize_across_names = identical(backend_kind, "dtplyr"),
+    defer_local = deferred,
+    forbidden_names = if (defer_local) selection_state else character(),
+    selection_proxy = selection_proxy
   )
   if (length(summary_plan$cardinality) > 0L) {
     summary_plan$dots <- wrap_share_sources(
@@ -495,10 +606,89 @@ plan_summary_expressions <- function(dots,
     summaries = new_summary_arguments(
       summary_plan$dots,
       caller_labels,
-      assigned_names
+      assigned_names,
+      selection_state = selection_state
     ),
-    requests = summary_plan$requests
+    requests = summary_plan$requests,
+    predictable_names = predictable_names
   )
+}
+
+# Names an unnamed local `across()` only when both its columns and `.names`
+# template are literal. The input is a name list, so no caller function or
+# summary expression runs while reserving internal key names.
+predictable_local_across_names <- function(dots, input_names) {
+  available <- input_names
+  predicted <- character()
+  arg_names <- rlang::names2(dots)
+  for (i in seq_along(dots)) {
+    dot <- dots[[i]]
+    name <- arg_names[[i]]
+    expr <- rlang::quo_get_expr(dot)
+    if (is_across_call(expr) && !nzchar(name)) {
+      parsed <- parse_across_arguments(expr)
+      cols <- parsed$cols
+      template <- parsed$names
+      simple_cols <- if (rlang::is_symbol(cols)) {
+        rlang::as_string(cols) %in% available
+      } else if (rlang::is_call(cols, "c")) {
+        parts <- as.list(cols)[-1L]
+        all(vapply(parts, rlang::is_symbol, logical(1))) &&
+          all(vapply(parts, rlang::as_string, character(1)) %in% available)
+      } else {
+        FALSE
+      }
+      literal_template <- is.null(template) || (
+        is.character(template) && length(template) == 1L &&
+          !is.na(template) &&
+          !grepl("{", gsub(
+            "{.fn}", "", gsub("{.col}", "", template, fixed = TRUE),
+            fixed = TRUE
+          ), fixed = TRUE)
+      )
+      if (simple_cols && literal_template) {
+        proxy <- stats::setNames(as.list(seq_along(available)), available)
+        output <- tryCatch(
+          known_across_output_names(
+            expr, rlang::quo_get_env(dot), proxy
+          ),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+        predicted <- c(predicted, output)
+        available <- c(available, output)
+      }
+    }
+    if (nzchar(name)) {
+      available <- c(available, name)
+    }
+  }
+  predicted
+}
+
+# A bare name in the first local selection can only name an input column.
+# The empty pair is also statically invalid. Checking these before operation
+# validation preserves tidyselect's condition and refusal order without
+# evaluating a caller predicate.
+preflight_local_selection <- function(dot, selection_proxy) {
+  expr <- rlang::quo_get_expr(dot)
+  selection <- if (is_static_spelling_call(expr, "selection", "across")) {
+    parse_across_arguments(expr)$cols
+  } else if (is_static_spelling_call(expr, "selection", "pick")) {
+    parse_pick_selection(expr)
+  } else {
+    NULL
+  }
+  empty_pair <- rlang::is_call(selection, "(") &&
+    length(selection) == 2L &&
+    rlang::is_missing(selection[[2L]])
+  if (rlang::is_symbol(selection) || empty_pair) {
+    resolve_summary_selection(
+      selection,
+      env = rlang::quo_get_env(dot),
+      data_proxy = selection_proxy
+    )
+  }
+  invisible(NULL)
 }
 
 find_summary_context_helpers <- function(expr) {
@@ -543,24 +733,36 @@ summary_selection_proxy <- function(data_proxy, data_vars, group_vars) {
 # rewrote, whose labels are marginplyr's spelling and not the caller's
 # (ADR 0022).
 resolve_summary_selections <- function(dots,
-                                       data_proxy,
-                                       data_vars,
                                        group_vars,
                                        caller_labels,
+                                       selection_proxy,
                                        normalize_across_names = FALSE,
-                                       skip_shares = FALSE) {
+                                       skip_shares = FALSE,
+                                       defer_local = FALSE,
+                                       forbidden_names = character(),
+                                       skip_deferred = FALSE) {
   stopifnot(length(dots) == length(caller_labels))
-  selection_proxy <- summary_selection_proxy(
-    data_proxy,
-    data_vars = data_vars,
-    group_vars = group_vars
-  )
+  if (length(defer_local) == 1L) {
+    defer_local <- rep(defer_local, length(dots))
+  }
+  stopifnot(length(defer_local) == length(dots))
 
   lapply(
     seq_along(dots),
     function(i) {
       dot <- dots[[i]]
       expr <- rlang::quo_get_expr(dot)
+      dot_forbidden_names <- if (
+        is.environment(forbidden_names) &&
+          !is.null(forbidden_names$by_dot)
+      ) {
+        forbidden_names$by_dot[[i]]
+      } else {
+        forbidden_names
+      }
+      if (skip_deferred && defer_local[[i]]) {
+        return(dot)
+      }
       if (
         skip_shares &&
           contains_share_helper(expr)
@@ -572,7 +774,10 @@ resolve_summary_selections <- function(dots,
           expr,
           env = rlang::quo_get_env(dot),
           data_proxy = selection_proxy,
-          normalize_across_names = normalize_across_names
+          normalize_across_names = normalize_across_names,
+          defer_local = defer_local[[i]],
+          group_vars = group_vars,
+          forbidden_names = dot_forbidden_names
         ),
         error = function(cnd) {
           if (is_unsupported_predicate(cnd)) {
@@ -590,7 +795,10 @@ resolve_summary_selections <- function(dots,
 rewrite_summary_selections <- function(expr,
                                        env,
                                        data_proxy,
-                                       normalize_across_names) {
+                                       normalize_across_names,
+                                       defer_local = FALSE,
+                                       group_vars = character(),
+                                       forbidden_names = character()) {
   if (!rlang::is_call(expr)) {
     return(expr)
   }
@@ -615,7 +823,10 @@ rewrite_summary_selections <- function(expr,
         part,
         env = env,
         data_proxy = data_proxy,
-        normalize_across_names = normalize_across_names
+        normalize_across_names = normalize_across_names,
+        defer_local = defer_local,
+        group_vars = group_vars,
+        forbidden_names = forbidden_names
       )
     }
   )
@@ -632,6 +843,11 @@ rewrite_summary_selections <- function(expr,
   expr <- qualify_static_spelling(expr, "selection", call_name)
 
   if (call_name %in% c("across", "if_any", "if_all")) {
+    if (defer_local) {
+      return(rewrite_local_across_selection(
+        expr, env, group_vars, forbidden_names
+      ))
+    }
     return(rewrite_across_selection(
       expr,
       env,
@@ -641,6 +857,11 @@ rewrite_summary_selections <- function(expr,
     ))
   }
   if (identical(call_name, "pick")) {
+    if (defer_local) {
+      return(rewrite_local_pick_selection(
+        expr, env, group_vars, forbidden_names
+      ))
+    }
     return(rewrite_pick_selection(expr, env, data_proxy))
   }
 
@@ -655,6 +876,78 @@ rewrite_summary_selections <- function(expr,
     "()`.",
     call. = FALSE
   )
+}
+
+# Builds the selection passed to dplyr, preserving the caller's environment.
+# An injected missing selection stays empty rather than taking the default.
+local_summary_selection_expr <- function(selection, env, group_vars,
+                                         forbidden_names) {
+  if (rlang::is_quosure(selection)) {
+    env <- rlang::quo_get_env(selection)
+    selection <- rlang::quo_get_expr(selection)
+  }
+  if (rlang::is_missing(selection)) {
+    selection <- rlang::expr(c())
+  }
+  rlang::call2(
+    "all_of",
+    rlang::call2(
+      marginplyr_private_call("local_summary_selection"),
+      rlang::call2("quote", selection),
+      env,
+      group_vars,
+      forbidden_names
+    ),
+    .ns = "tidyselect"
+  )
+}
+
+# Leaves `.cols` for local dplyr to resolve against its current summary mask.
+rewrite_local_across_selection <- function(expr, env, group_vars,
+                                           forbidden_names) {
+  parsed <- parse_across_arguments(expr)
+  call_args <- parsed$call_args
+  selection <- local_summary_selection_expr(
+    parsed$cols, env, group_vars, forbidden_names
+  )
+  if (parsed$cols_index == 0L) {
+    call_args <- append(list(.cols = selection), call_args)
+  } else {
+    call_args[[parsed$cols_index]] <- selection
+  }
+  rebuild_static_call(expr, call_args)
+}
+
+# Applies the same deferred local selection to `pick()`.
+rewrite_local_pick_selection <- function(expr, env, group_vars,
+                                         forbidden_names) {
+  selection <- local_summary_selection_expr(
+    parse_pick_selection(expr), env, group_vars, forbidden_names
+  )
+  rebuild_static_call(expr, list(selection))
+}
+
+# Returns selected current column names for one local dplyr summary branch.
+# The caller is inside dplyr's summary mask; its current columns include
+# preceding outputs. ADR 0002's snapshot still owns the input schema.
+local_summary_selection <- function(selection, env, group_vars,
+                                    forbidden_names) {
+  data <- dplyr:::peek_mask()$get_current_data(groups = FALSE)
+  if (is.environment(forbidden_names)) {
+    forbidden_names <- c(
+      forbidden_names$forbidden_names,
+      get("internal_names", envir = forbidden_names, inherits = TRUE)
+    )
+  }
+  data <- data[setdiff(names(data), c(group_vars, forbidden_names))]
+  selected <- resolve_summary_selection(
+    selection, env = env, data_proxy = data
+  )
+  source_names <- names(data)[unname(selected)]
+  if (!identical(names(selected), source_names)) {
+    names(source_names) <- names(selected)
+  }
+  source_names
 }
 
 # `call_name` is the caller's answer rather than one asked again here. Asking
@@ -804,7 +1097,8 @@ summary_all_of_expr <- function(selected, data_proxy) {
   rlang::expr(dplyr::all_of(!!source_names))
 }
 
-known_summary_output_names <- function(dots, data_proxy) {
+known_summary_output_names <- function(dots, data_proxy,
+                                       defer_local = FALSE) {
   # A dot carrying its own name is not read for what it packs: dplyr packs a
   # data-frame result under that name rather than unpacking it, so the argument
   # names inside such a dot are not top-level outputs, and `names(dots)` at the
@@ -819,6 +1113,12 @@ known_summary_output_names <- function(dots, data_proxy) {
       function(dot) {
         expr <- rlang::quo_get_expr(dot)
         env <- rlang::quo_get_env(dot)
+        if (defer_local && (
+          identical(data_frame_valued_summary_kind(expr), "pick") ||
+            identical(data_frame_valued_summary_kind(expr), "across")
+        )) {
+          return(character())
+        }
         known_data_frame_output_names(expr, env, data_proxy)
       }
     ),

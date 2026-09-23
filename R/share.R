@@ -712,7 +712,8 @@ plan_share_expressions <- function(dots,
                                    selection_proxy,
                                    plan,
                                    set_id_name,
-                                   validate_cardinality = FALSE) {
+                                   validate_cardinality = FALSE,
+                                   defer_local = FALSE) {
   stopifnot(is.list(dots))
   stopifnot(inherits(plan, "margin_grouping_plan"))
   dot_names <- names(dots)
@@ -720,7 +721,9 @@ plan_share_expressions <- function(dots,
     dot_names <- rep("", length(dots))
   }
 
-  analyses <- analyze_ordinary_summaries(dots, selection_proxy)
+  analyses <- analyze_ordinary_summaries(
+    dots, selection_proxy, defer_local = defer_local
+  )
   ordinary_records <- unlist(
     lapply(analyses, `[[`, "records"),
     recursive = FALSE
@@ -1431,13 +1434,22 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
-analyze_ordinary_summaries <- function(dots, selection_proxy) {
+# Records ordinary outputs and dependencies for a call with a contextual share.
+analyze_ordinary_summaries <- function(dots, selection_proxy,
+                                       defer_local = FALSE) {
   dot_names <- names(dots)
   if (is.null(dot_names)) {
     dot_names <- rep("", length(dots))
   }
   analyses <- vector("list", length(dots))
   preceding_names <- character()
+  share_positions <- which(vapply(
+    dots,
+    function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
+    logical(1)
+  ))
+  stopifnot(length(share_positions) > 0L)
+  last_share <- max(share_positions)
 
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
@@ -1449,34 +1461,75 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
       next
     }
 
+    # No later share can use these records as a source. Keep statically named
+    # outputs visible to earlier shares' forward-reference checks, but leave
+    # selection predicates and naming expressions to the local data mask.
+    if (defer_local && i > last_share && contains_summary_selection(expr)) {
+      output_names <- if (nzchar(output_name)) {
+        output_name
+      } else if (is_across_call(expr)) {
+        predictable_local_across_names(list(quo), c(
+          names(selection_proxy), preceding_names
+        ))
+      } else {
+        character()
+      }
+      eligibility <- if (is_across_call(expr) && nzchar(output_name)) {
+        "named_across"
+      } else if (is_across_call(expr)) {
+        "eligible"
+      } else {
+        "expanded"
+      }
+      analyses[[i]] <- list(records = lapply(output_names, function(name) {
+        list(
+          name = name,
+          position = i,
+          eligibility = eligibility,
+          dependencies = character(),
+          across_input = NA_character_,
+          across_function = NA_integer_
+        )
+      }))
+      preceding_names <- c(preceding_names, output_names)
+      next
+    }
+
     if (nzchar(output_name)) {
       output_names <- output_name
       eligibility <- if (is_across_call(expr)) "named_across" else "eligible"
     } else if (is_across_call(expr)) {
-      output_names <- known_across_output_names(
-        expr,
-        env,
-        selection_proxy
-      )
+      output_names <- if (defer_local) {
+        tryCatch(
+          known_across_output_names(expr, env, selection_proxy),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+      } else {
+        known_across_output_names(expr, env, selection_proxy)
+      }
       eligibility <- "eligible"
     } else {
-      output_names <- known_data_frame_output_names(
-        expr,
-        env,
-        selection_proxy
-      )
+      output_names <- if (defer_local) {
+        tryCatch(
+          known_data_frame_output_names(expr, env, selection_proxy),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+      } else {
+        known_data_frame_output_names(expr, env, selection_proxy)
+      }
       eligibility <- "expanded"
     }
 
     selected_dependencies <- if (is_across_call(expr)) {
-      intersect(
-        known_across_source_names(
-          expr,
-          env,
-          selection_proxy
-        ),
-        preceding_names
-      )
+      selected <- if (defer_local) {
+        tryCatch(
+          known_across_source_names(expr, env, selection_proxy),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+      } else {
+        known_across_source_names(expr, env, selection_proxy)
+      }
+      intersect(selected, preceding_names)
     } else {
       character()
     }
