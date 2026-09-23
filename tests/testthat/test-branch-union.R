@@ -402,6 +402,232 @@ test_that("a no-summary union branch renders off the native path", {
   expect_equal(ordered(dplyr::collect(build(remote))), ordered(build(data)))
 })
 
+test_that("SQLite scalar-only summaries keep one Grand total row", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(a = c("x", "x", "y")),
+    "scalar_only_total",
+    temporary = TRUE
+  )
+
+  bits <- summarize_with_margins(
+    remote,
+    bit = grouping_bit(a),
+    .grouping = rollup(a),
+    .id = "set"
+  )
+  expect_s3_class(bits, "tbl_sql")
+  bit_rows <- dplyr::collect(bits) |>
+    dplyr::arrange(set, a)
+  expect_equal(bit_rows$a, c("x", "y", "Total"))
+  expect_equal(bit_rows$set, c(1L, 1L, 2L))
+  expect_equal(as.integer(bit_rows$bit), c(0L, 0L, 1L))
+
+  ids <- summarize_with_margins(
+    remote,
+    gid = grouping_id(a),
+    .grouping = rollup(a),
+    .id = "set"
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(set, a)
+  expect_equal(ids$a, c("x", "y", "Total"))
+  expect_equal(ids$set, c(1L, 1L, 2L))
+  expect_equal(as.integer(ids$gid), c(0L, 0L, 1L))
+
+  constants <- summarize_with_margins(
+    remote,
+    constant = 7L,
+    .grouping = rollup(a)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(a)
+  expect_equal(constants$a, c("Total", "x", "y"))
+  expect_equal(as.integer(constants$constant), rep(7L, 3L))
+})
+
+test_that("SQLite empty inputs retain scalar Grand total occurrences", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(a = c("x", "y")),
+    "empty_scalar_total",
+    temporary = TRUE
+  ) |>
+    dplyr::filter(FALSE)
+
+  query <- summarize_with_margins(
+    remote,
+    constant = 7L,
+    bit = grouping_bit(a),
+    gid = grouping_id(a),
+    .grouping = grouping_sets(
+      grouping_set(a), grouping_set(), grouping_set()
+    ),
+    .duplicates = "keep",
+    .id = "set"
+  )
+  expect_s3_class(query, "tbl_sql")
+  rows <- dplyr::collect(query) |>
+    dplyr::arrange(set)
+  expect_equal(nrow(rows), 2L)
+  expect_equal(rows$a, c("Total", "Total"))
+  expect_equal(rows$set, c(2L, 3L))
+  expect_equal(as.integer(rows$constant), c(7L, 7L))
+  expect_equal(as.integer(rows$bit), c(1L, 1L))
+  expect_equal(as.integer(rows$gid), c(1L, 1L))
+  expect_setequal(names(rows), c("a", "constant", "bit", "gid", "set"))
+
+  constant_only <- summarize_with_margins(remote, constant = 7L) |>
+    dplyr::collect()
+  expect_equal(nrow(constant_only), 1L)
+  expect_equal(as.integer(constant_only$constant), 7L)
+})
+
+test_that("SQLite scalar summaries respect aggregates and fixed partitions", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(bucket = c("p", "p", "q"), a = c("x", "x", "y")),
+    "partitioned_scalar_total",
+    temporary = TRUE
+  )
+
+  mixed <- summarize_with_margins(
+    remote,
+    constant = 7L,
+    n = dplyr::n(),
+    gid = grouping_id(a),
+    .grouping = rollup(a),
+    .id = "set"
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(set, a)
+  expect_equal(mixed$a, c("x", "y", "Total"))
+  expect_equal(as.integer(mixed$n), c(2L, 1L, 3L))
+  expect_equal(as.integer(mixed$constant), rep(7L, 3L))
+  expect_equal(as.integer(mixed$gid), c(0L, 0L, 1L))
+
+  partitioned <- summarize_with_margins(
+    remote,
+    constant = 7L,
+    .by = bucket,
+    .grouping = rollup(a)
+  ) |>
+    dplyr::collect() |>
+    dplyr::arrange(bucket, a)
+  expect_equal(partitioned$bucket, c("p", "p", "q", "q"))
+  expect_equal(partitioned$a, c("Total", "x", "Total", "y"))
+  expect_equal(as.integer(partitioned$constant), rep(7L, 4L))
+
+  no_partitions <- summarize_with_margins(
+    dplyr::filter(remote, FALSE),
+    constant = 7L,
+    .by = bucket,
+    .grouping = rollup(a)
+  ) |>
+    dplyr::collect()
+  expect_equal(nrow(no_partitions), 0L)
+})
+
+test_that("DuckDB native scalar summaries retain the empty Grand total", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(a = c("x", "x", "y")),
+    "native_scalar_total",
+    temporary = TRUE
+  )
+  build <- function(input) {
+    summarize_with_margins(
+      input,
+      bit = grouping_bit(a),
+      gid = grouping_id(a),
+      .grouping = rollup(a),
+      .id = "set"
+    )
+  }
+
+  query <- build(remote)
+  expect_s3_class(query, "tbl_sql")
+  expect_match(
+    dbplyr::sql_render(query),
+    "GROUP BY GROUPING SETS",
+    fixed = TRUE
+  )
+  rows <- dplyr::collect(query) |>
+    dplyr::arrange(set, a)
+  expect_equal(rows$a, c("x", "y", "Total"))
+  expect_equal(as.integer(rows$set), c(1L, 1L, 2L))
+  expect_equal(as.integer(rows$bit), c(0L, 0L, 1L))
+  expect_equal(as.integer(rows$gid), c(0L, 0L, 1L))
+
+  empty <- dplyr::collect(build(dplyr::filter(remote, FALSE)))
+  expect_equal(empty$a, "Total")
+  expect_equal(as.integer(empty$set), 2L)
+  expect_equal(as.integer(empty$bit), 1L)
+  expect_equal(as.integer(empty$gid), 1L)
+})
+
+test_that("DuckDB portable scalar summaries retain duplicate Grand totals", {
+  skip_if_suggest_absent("duckdb", "DBI")
+
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(a = c("x", "x", "y")),
+    "portable_scalar_total",
+    temporary = TRUE
+  )
+  build <- function(input) {
+    summarize_with_margins(
+      input,
+      constant = 7L,
+      bit = grouping_bit(a),
+      gid = grouping_id(a),
+      .grouping = grouping_sets(
+        grouping_set(a), grouping_set(), grouping_set()
+      ),
+      .duplicates = "keep",
+      .id = "set"
+    )
+  }
+
+  query <- build(remote)
+  expect_s3_class(query, "tbl_sql")
+  expect_match(dbplyr::sql_render(query), "UNION ALL", fixed = TRUE)
+  rows <- dplyr::collect(query) |>
+    dplyr::arrange(set, a)
+  expect_equal(rows$a, c("x", "y", "Total", "Total"))
+  expect_equal(as.integer(rows$set), c(1L, 1L, 2L, 3L))
+  expect_equal(as.integer(rows$constant), rep(7L, 4L))
+  expect_equal(as.integer(rows$bit), c(0L, 0L, 1L, 1L))
+  expect_equal(as.integer(rows$gid), c(0L, 0L, 1L, 1L))
+
+  empty <- dplyr::collect(build(dplyr::filter(remote, FALSE))) |>
+    dplyr::arrange(set)
+  expect_equal(empty$a, c("Total", "Total"))
+  expect_equal(as.integer(empty$set), c(2L, 3L))
+  expect_equal(as.integer(empty$constant), c(7L, 7L))
+  expect_equal(as.integer(empty$bit), c(1L, 1L))
+  expect_equal(as.integer(empty$gid), c(1L, 1L))
+  expect_setequal(names(empty), c("a", "constant", "bit", "gid", "set"))
+})
+
 # The boundary the branch above stops at, and dbplyr's rather than this
 # package's: with no dimension and no identifier there is no column left to put
 # the grand total row on, and a SQL table of no columns cannot be written. It

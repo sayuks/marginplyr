@@ -301,10 +301,9 @@ abort_absorbed_summary <- function(labels) {
 # maintainer's signal is `test-query-policy.R`, which fails when a read
 # happens at all.
 #
-# `placeholder_name` names one column the branch summarizes for itself. Only a
-# caller whose branch would otherwise select nothing at all passes one, and
-# `summarize_margin_union()` is where that is decided and where the column is
-# dropped again.
+# `placeholder_name` names one aggregate column the branch summarizes for
+# itself. `summarize_margin_union()` decides when it is needed and drops it
+# after the result columns are in place.
 summarize_margin_branch <- function(.data,
                                     ...,
                                     .by,
@@ -431,16 +430,11 @@ summarize_margin_union <- function(.data,
     .data <- dplyr::mutate(.data, !!!key_exprs)
   }
 
-  # A branch that summarizes nothing and groups by nothing selects no columns
-  # at all, and the label and identifier `mutate()`s layered on that query give
-  # dbplyr a `lazy_select_query` whose star expansion has no column to read
-  # (#428). Such a branch summarizes a column of its own to stand in the
-  # result's place, dropped once the columns the result keeps are there.
-  #
-  # `n()` and not a literal, because the placeholder has to aggregate: a
-  # constant in a `summarize()` over no groups renders as `SELECT 1 AS x FROM
-  # t`, one row per source row, where `COUNT(*)` is the single grand total row
-  # the branch stands for.
+  # An unpartitioned empty grouping set needs an aggregate in SQL even when
+  # the caller supplies scalar summaries: otherwise each constant is selected
+  # once per source row, and empty input returns no Grand total row. The same
+  # placeholder keeps a no-summary branch renderable on dbplyr (#428).
+  # `n()` supplies the aggregate and is dropped after the result is built.
   placeholder_name <- new_margin_internal_names(
     1L,
     used_names = c(reserved_names, unname(key_names)),
@@ -465,9 +459,9 @@ summarize_margin_union <- function(.data,
         grouping_set = grouping_set,
         sql = FALSE
       )
-      selects_nothing <- length(branch_dots) == 0L &&
-        length(grouping_set) == 0L
-      placeholder <- if (selects_nothing) placeholder_name else NULL
+      needs_placeholder <- length(grouping_set) == 0L &&
+        (length(branch_dots) == 0L || backend$is_sql)
+      placeholder <- if (needs_placeholder) placeholder_name else NULL
 
       # Only the caller's expressions are wrapped. The checks and the branch
       # builders below raise Package conditions, which carry their own context
@@ -564,6 +558,26 @@ summarize_margin_union <- function(.data,
       if (is.null(placeholder)) {
         result
       } else {
+        # A scalar-only SQL result can otherwise have its unused COUNT(*)
+        # removed by dbplyr when the placeholder is selected away. Reference
+        # it through a visible column without changing that column's value.
+        if (backend$is_sql) {
+          output_names <- setdiff(
+            get_col_names(result, dplyr::everything()),
+            placeholder
+          )
+          if (length(output_names) > 0L) {
+            output_name <- output_names[[1L]]
+            result <- dplyr::mutate(
+              result,
+              "{output_name}" := dplyr::if_else(
+                .data[[placeholder]] >= 0L,
+                .data[[output_name]],
+                .data[[output_name]]
+              )
+            )
+          }
+        }
         dplyr::select(result, -dplyr::all_of(placeholder))
       }
     },

@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Portable SQL summaries containing only scalar constants now return one
+  Grand total row per grouping-set occurrence, including on empty input and
+  with `grouping_bit()` or `grouping_id()` (#602).
 * Initial CRAN submission.
 * Added `grouping_set()`, `grouping_sets()`, `rollup()`, `cube()`, and
   `grouping_spec()` for arbitrary SQL-style Grouping plans, including empty
