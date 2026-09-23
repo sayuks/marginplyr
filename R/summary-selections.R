@@ -994,7 +994,7 @@ rewrite_across_selection <- function(expr,
       rlang::eval_tidy(parsed$unpack, env = env),
       error = function(cnd) NULL
     ))
-    function_names <- known_across_function_names(parsed)
+    function_names <- known_across_function_names(parsed, env)
 
     if (
       !is.null(parsed$names) &&
@@ -1222,7 +1222,7 @@ known_across_output_names <- function(expr, env, data_proxy) {
 
   if (is.null(parsed$names)) {
     if (rlang::is_call(parsed$fns, "list")) {
-      function_names <- known_across_function_names(parsed)
+      function_names <- known_across_function_names(parsed, env)
       return(unlist(
         lapply(
           column_names,
@@ -1233,7 +1233,12 @@ known_across_output_names <- function(expr, env, data_proxy) {
         use.names = FALSE
       ))
     }
-    return(column_names)
+    # A bound `.fns` might be a list, whose default names include the function
+    # names. Only a statically single function uses the column names alone.
+    if (length(known_across_function_names(parsed, env)) == 1L) {
+      return(column_names)
+    }
+    return(character())
   }
   names_template <- tryCatch(
     rlang::eval_tidy(parsed$names, env = env),
@@ -1247,7 +1252,7 @@ known_across_output_names <- function(expr, env, data_proxy) {
     return(character())
   }
 
-  function_names <- known_across_function_names(parsed)
+  function_names <- known_across_function_names(parsed, env)
   if (length(function_names) == 0L) {
     return(character())
   }
@@ -1311,12 +1316,69 @@ known_across_source_names <- function(expr, env, data_proxy) {
   get_col_names(data_proxy, dplyr::everything())[unname(selected)]
 }
 
-# `"1"` is what `{.fn}` expands to for a `.fns` that is one function, and for
-# one that was never supplied: dplyr numbers a single function by its position
-# whether the caller wrote it or took the identity default.
-known_across_function_names <- function(parsed) {
-  if (!rlang::is_call(parsed$fns, "list")) {
+# `"1"` is what `{.fn}` expands to for a statically single function or an
+# omitted `.fns`. Resolved function bindings, including namespace exports, are
+# also single. `substitute()` reads a caller binding without forcing a promise;
+# active bindings are left unknown so prediction cannot run caller code.
+known_across_function_names <- function(parsed, env) {
+  if (is.null(parsed$fns) || is.function(parsed$fns) ||
+        rlang::is_call(parsed$fns, "function") ||
+        rlang::is_call(parsed$fns, "\\") ||
+        rlang::is_call(parsed$fns, "~")) {
     return("1")
+  }
+
+  if (rlang::is_call(parsed$fns, "::") ||
+        rlang::is_call(parsed$fns, ":::")) {
+    package <- parsed$fns[[2L]]
+    name <- parsed$fns[[3L]]
+    if (rlang::is_symbol(package) && rlang::is_symbol(name)) {
+      package <- rlang::as_string(package)
+      name <- rlang::as_string(name)
+      namespace <- tryCatch(getNamespace(package), error = function(cnd) NULL)
+      if (!is.null(namespace) &&
+            exists(name, envir = namespace, inherits = FALSE) &&
+            !bindingIsActive(name, namespace)) {
+        binding <- if (rlang::is_call(parsed$fns, "::")) {
+          tryCatch(getExportedValue(package, name), error = function(cnd) NULL)
+        } else {
+          get(name, envir = namespace, inherits = FALSE)
+        }
+        if (is.function(binding)) {
+          return("1")
+        }
+      }
+    }
+    return(character())
+  }
+
+  if (!rlang::is_call(parsed$fns, "list")) {
+    if (rlang::is_symbol(parsed$fns)) {
+      name <- rlang::as_string(parsed$fns)
+      current <- env
+      while (!identical(current, emptyenv())) {
+        if (exists(name, envir = current, inherits = FALSE)) {
+          if (bindingIsActive(name, current)) {
+            return(character())
+          }
+          binding <- if (identical(current, baseenv()) ||
+                           identical(current, asNamespace("base"))) {
+            get(name, envir = current, inherits = FALSE)
+          } else {
+            eval(
+              call("substitute", as.name(name), current),
+              envir = baseenv()
+            )
+          }
+          if (is.function(binding)) {
+            return("1")
+          }
+          return(character())
+        }
+        current <- parent.env(current)
+      }
+    }
+    return(character())
   }
 
   fns <- static_call_args(parsed$fns)
