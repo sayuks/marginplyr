@@ -554,28 +554,42 @@ test_that("structured fixed keys sort by row with wholly missing keys last", {
   }
 })
 
-test_that("matrix dimensions with typed missing labels retain row shape", {
-  key <- matrix(c(NA_integer_, 1L, NA_integer_, 2L,
-                  2L, NA_integer_, NA_integer_, 1L), ncol = 2L)
-  data <- tibble::tibble(key = key, units = seq_len(4L))
-
-  for (sort in c("last", "first")) {
-    result <- summarize_with_margins(
-      data,
-      units = sum(units),
-      .grouping = rollup(key),
-      .margin_label = NULL,
-      .id = "set",
-      .sort = sort
+test_that("structured dimensions with typed missing labels retain row shape", {
+  components <- matrix(c(NA_integer_, 1L, NA_integer_, 2L,
+                         2L, NA_integer_, NA_integer_, 1L), ncol = 2L)
+  keys <- list(
+    matrix = components,
+    packed = tibble::tibble(
+      code = components[, 1L],
+      day = as.Date(components[, 2L], origin = "2026-01-01")
     )
-    detail <- result[result$set == 1L, ]
-    margin <- result[result$set == 2L, ]
+  )
 
-    expect_identical(detail$units, c(2L, 4L, 1L, 3L))
-    expect_identical(detail$key, key[c(2L, 4L, 1L, 3L), , drop = FALSE])
-    expect_identical(margin$key, matrix(NA_integer_, nrow = 1L, ncol = 2L))
-    expect_identical(margin$units, 10L)
-    expect_identical(result$set[1L], if (identical(sort, "first")) 2L else 1L)
+  for (kind in names(keys)) {
+    data <- tibble::tibble(key = keys[[kind]], units = seq_len(4L))
+    for (sort in c("last", "first")) {
+      result <- summarize_with_margins(
+        data,
+        units = sum(units),
+        .grouping = rollup(key),
+        .margin_label = NULL,
+        .id = "set",
+        .sort = sort
+      )
+      detail <- result[result$set == 1L, ]
+      margin <- result[result$set == 2L, ]
+      info <- paste(kind, sort)
+
+      expect_identical(detail$units, c(2L, 4L, 1L, 3L), info = info)
+      expect_identical(detail$key,
+                       vctrs::vec_slice(data$key, c(2L, 4L, 1L, 3L)),
+                       info = info)
+      expect_identical(margin$key, vctrs::vec_init(data$key, 1L), info = info)
+      expect_identical(margin$units, 10L, info = info)
+      expect_identical(result$set[1L],
+                       if (identical(sort, "first")) 2L else 1L,
+                       info = info)
+    }
   }
 })
 

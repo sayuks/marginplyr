@@ -458,8 +458,8 @@ margin_dictionary_sort_columns <- function(result, backend) {
   vapply(fields[is_dictionary], function(field) field$name, character(1))
 }
 
-# Local structured grouping columns have one missingness value per row. The
-# column itself stays in the value term, where dplyr/vctrs orders components.
+# Names local data-frame and matrix keys in the plan. The caller holds a result
+# containing every fixed key and dimension named by that plan.
 margin_structured_sort_columns <- function(result, plan) {
   if (!is.data.frame(result)) {
     return(character())
@@ -565,8 +565,8 @@ margin_sort_value_expr <- function(column, as_character) {
 }
 
 # One column's missingness term. A local structured column is wholly missing
-# only when every component of the row is missing (ADR 0018). The final
-# comparison produces an integer because not every dialect sorts booleans.
+# only when every component of the row is missing (ADR 0018). `if_else()`
+# produces an integer because not every dialect sorts booleans.
 margin_missing_last_expr <- function(column, structured) {
   value <- margin_column_pronoun(column)
   missing <- if (column %in% structured) {
