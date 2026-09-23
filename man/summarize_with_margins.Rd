@@ -423,9 +423,10 @@ preceding ordinary outputs when it runs. For example, after
 \code{starts_with("tot")}, \code{everything()}, \code{where(is.numeric)}, and \code{pick()} use
 the columns and types then in the local data mask. They also see a changed
 type when an earlier summary overwrote an ordinary input column. The output
-order follows local dplyr summary order. A lazy input keeps its backend's
-alias limitations; marginplyr does not execute it locally to provide this
-behavior. Contextual shares keep their own source-selection rules below.
+order follows local dplyr summary order. A lazy input retains the alias
+limitations of its backend. marginplyr does not execute it locally to
+provide this behavior. Contextual shares keep their own source-selection
+rules below.
 
 A selection predicate here is refused against the same inputs it is refused
 against in \code{.by} and \code{.grouping}, for the same reason and with the same
