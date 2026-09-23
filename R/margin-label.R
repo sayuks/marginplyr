@@ -264,7 +264,8 @@ check_observed_label_collision <- function(data,
     read_cols,
     function(col) {
       margin_label <- margin_labels[[col]]
-      column <- rlang::sym(col)
+      # The data pronoun keeps names such as `T` and `F` as columns on dtplyr.
+      column <- rlang::data_sym(col)
       rlang::expr(
         sum(
           dplyr::if_else(
