@@ -2336,14 +2336,16 @@ mutable_step_graph_sources <- function(mutable = c(TRUE, FALSE)) {
   list(sources = sources, before = before, steps = steps)
 }
 
-expect_step_graph_sources_unchanged <- function(graph) {
+expect_graph_sources_unchanged <- function(graph) {
   for (i in seq_along(graph$sources)) {
     expect_identical(graph$sources[[i]], graph$before[[i]])
   }
 }
 
 mutable_step_graph_shapes <- list(
-  join = function(steps) dplyr::left_join(steps[[1]], steps[[2]], by = "region"),
+  join = function(steps) {
+    dplyr::left_join(steps[[1]], steps[[2]], by = "region")
+  },
   union = function(steps) dplyr::union_all(steps[[1]], steps[[2]]),
   nested = function(steps) {
     dplyr::select(
@@ -2370,7 +2372,7 @@ test_that("every Margin verb refuses a mutable root in either graph input", {
         )
         expect_s3_class(error, "marginplyr_error")
         expect_match(conditionMessage(error), "immutable = TRUE", fixed = TRUE)
-        expect_step_graph_sources_unchanged(graph)
+        expect_graph_sources_unchanged(graph)
       }
     }
   }
@@ -2388,7 +2390,7 @@ test_that("secondary-root refusal precedes metadata acquisition", {
     expand_with_margins(step, .grouping = rollup(region))
   )
   expect_s3_class(error, "marginplyr_error")
-  expect_step_graph_sources_unchanged(graph)
+  expect_graph_sources_unchanged(graph)
 })
 
 test_that("inspection isolates every mutable graph input", {
@@ -2399,13 +2401,13 @@ test_that("inspection isolates every mutable graph input", {
       graph <- mutable_step_graph_sources(mutable)
       step <- mutable_step_graph_shapes[[shape]](graph$steps)
       plan <- inspect_grouping(step, .grouping = rollup(region))
-      expect_step_graph_sources_unchanged(graph)
+      expect_graph_sources_unchanged(graph)
       named <- inspect_grouping(
         step,
         .by = where(is.numeric),
         .grouping = rollup(where(is.character))
       )
-      expect_step_graph_sources_unchanged(graph)
+      expect_graph_sources_unchanged(graph)
 
       expected_graph <- mutable_step_graph_sources(c(FALSE, FALSE))
       expected <- inspect_grouping(
@@ -2419,7 +2421,7 @@ test_that("inspection isolates every mutable graph input", {
       )
       expect_identical(plan, expected, info = shape)
       expect_identical(named, expected_named, info = shape)
-      expect_step_graph_sources_unchanged(expected_graph)
+      expect_graph_sources_unchanged(expected_graph)
     }
   }
 })
@@ -2444,7 +2446,7 @@ test_that("typed inspection evaluates only zero-row dtplyr graph sources", {
 
   inspect_grouping(step, .grouping = rollup(where(is.character)))
   expect_gt(evaluations, 0L)
-  expect_step_graph_sources_unchanged(graph)
+  expect_graph_sources_unchanged(graph)
 })
 
 test_that("all-immutable graph inputs preserve uncollected calls and results", {
@@ -2454,7 +2456,7 @@ test_that("all-immutable graph inputs preserve uncollected calls and results", {
     graph <- mutable_step_graph_sources(c(FALSE, FALSE))
     step <- mutable_step_graph_shapes[[shape]](graph$steps)
     result <- expand_with_margins(step, .grouping = rollup(region))
-    expect_step_graph_sources_unchanged(graph)
+    expect_graph_sources_unchanged(graph)
 
     local_inputs <- lapply(graph$before, as.data.frame)
     local_step <- mutable_step_graph_shapes[[shape]](local_inputs)
