@@ -413,7 +413,8 @@ summarize_margin_union <- function(.data,
                                    set_id_name = NULL,
                                    set_id_is_internal = FALSE,
                                    call = NULL,
-                                   input_window_order = list()) {
+                                   input_window_order = list(),
+                                   parent_key_names = character()) {
   source_data <- .data
   dots <- summaries$dots
   group_vars <- unique(c(plan$by, plan$dimensions))
@@ -492,7 +493,10 @@ summarize_margin_union <- function(.data,
       check_summary_output_names(
         setdiff(get_col_names(result, dplyr::everything()), placeholder),
         group_vars = group_vars,
-        internal_names = unname(key_names[setdiff(group_vars, grouping_set)]),
+        internal_names = c(
+          unname(key_names[setdiff(group_vars, grouping_set)]),
+          unname(parent_key_names)
+        ),
         set_id_name = set_id_name,
         set_id_is_internal = set_id_is_internal
       )
@@ -514,8 +518,24 @@ summarize_margin_union <- function(.data,
         assigned_names = summaries$assigned_names,
         group_vars = group_vars,
         set_id_name = set_id_name,
-        set_id_is_internal = set_id_is_internal
+        set_id_is_internal = set_id_is_internal,
+        internal_names = unname(parent_key_names)
       )
+
+      if (length(parent_key_names) > 0L) {
+        original_keys <- lapply(
+          names(parent_key_names),
+          function(dimension) {
+            if (dimension %in% grouping_set) {
+              return(margin_column_pronoun(dimension))
+            }
+            value <- column_info$prototypes[[dimension]]
+            if (is.null(value)) NA else value
+          }
+        )
+        names(original_keys) <- unname(parent_key_names)
+        result <- dplyr::mutate(result, !!!original_keys)
+      }
 
       result <- label_margin_branch(
         result,

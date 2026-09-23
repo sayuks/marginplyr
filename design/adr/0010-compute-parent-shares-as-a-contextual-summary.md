@@ -607,3 +607,17 @@ column is named after the
 summary to rewrite, so that a database's own diagnostic names something the
 caller wrote rather than an internal identifier alone, which
 was #106's DuckDB half.
+
+## Amendment (2026-09-23): Parent matching retains typed grouping keys
+
+The staged Grouping set identifier selects the Parent occurrence, but it does
+not identify a row within that occurrence. Parent matching also needs the
+original typed values of the included grouping dimensions. A displayed Margin
+label can convert distinct values to the same text, so it cannot supply that
+identity even when the Grouping set identifier is retained (#600).
+
+The summary adapters retain private copies of the typed dimension keys before
+applying display labels. Parent mapping and its missing-safe join use those
+copies, alongside fixed partition keys and the staged occurrence identifier.
+They are discarded after shares are calculated. This applies to local,
+dtplyr, native SQL, and portable SQL results without reading the lazy input.

@@ -14,7 +14,8 @@ summarize_margin_native <- function(.data,
                                     reserved_names,
                                     call,
                                     set_id_name = NULL,
-                                    set_id_is_internal = FALSE) {
+                                    set_id_is_internal = FALSE,
+                                    parent_key_names = character()) {
   con <- dbplyr::remote_con(.data)
   dots <- rewrite_grouping_dots(
     summaries$dots,
@@ -83,7 +84,7 @@ summarize_margin_native <- function(.data,
   check_summary_output_names(
     output_names,
     group_vars = group_vars,
-    internal_names = flag_names,
+    internal_names = c(flag_names, unname(parent_key_names)),
     set_id_name = set_id_name,
     set_id_is_internal = set_id_is_internal
   )
@@ -100,6 +101,12 @@ summarize_margin_native <- function(.data,
   )
 
   result <- attach_grouping_sets_query(result, plan$sets)
+
+  if (length(parent_key_names) > 0L) {
+    original_keys <- lapply(names(parent_key_names), margin_column_pronoun)
+    names(original_keys) <- unname(parent_key_names)
+    result <- dplyr::mutate(result, !!!original_keys)
+  }
 
   if (needs_display_flags) {
     labels <- Map(

@@ -1029,7 +1029,9 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         operation,
         summaries = summaries,
         reserved_names = reserved_names,
-        keep_set_identity = has_shares
+        keep_set_identity = has_shares,
+        keep_parent_keys = "parent" %in%
+          share_request_kinds(summary_plan$requests)
       )
 
       if (has_shares) {
@@ -1058,7 +1060,8 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
 stage_margin_summaries <- function(operation,
                                    summaries,
                                    reserved_names,
-                                   keep_set_identity) {
+                                   keep_set_identity,
+                                   keep_parent_keys = FALSE) {
   plan <- operation$plan
   set_id_name <- operation$set_id_name
   if (keep_set_identity) {
@@ -1093,6 +1096,19 @@ stage_margin_summaries <- function(operation,
     reserved_names <- unique(c(reserved_names, set_id_name))
   }
 
+  # Parent matching reads these before display conversion can merge distinct
+  # typed values. The share executor drops them before finalization.
+  parent_key_names <- character()
+  if (keep_parent_keys) {
+    parent_key_names <- new_margin_internal_names(
+      length(plan$dimensions),
+      used_names = reserved_names,
+      prefix = "..marginplyr_parent_original_"
+    )
+    names(parent_key_names) <- plan$dimensions
+    reserved_names <- c(reserved_names, unname(parent_key_names))
+  }
+
   # Both branches above may replace the caller's `.id` with a name allocated
   # here -- for keeping set identity under a share, or for a Margin order. The
   # adapters check their result names against whichever they were handed, and
@@ -1115,7 +1131,8 @@ stage_margin_summaries <- function(operation,
           reserved_names = reserved_names,
           call = operation$call,
           set_id_name = set_id_name,
-          set_id_is_internal = set_id_is_internal
+          set_id_is_internal = set_id_is_internal,
+          parent_key_names = parent_key_names
         )
       } else {
         input_window_order <- if (operation$backend$records_window_order) {
@@ -1134,7 +1151,8 @@ stage_margin_summaries <- function(operation,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal,
           call = operation$call,
-          input_window_order = input_window_order
+          input_window_order = input_window_order,
+          parent_key_names = parent_key_names
         )
       }
     },
@@ -1156,15 +1174,20 @@ stage_margin_summaries <- function(operation,
       "a summary output"
     )
   }
-  new_margin_summary_stage(result, set_id_name, sort_id = sort_id)
+  new_margin_summary_stage(
+    result, set_id_name, sort_id = sort_id,
+    parent_key_names = parent_key_names
+  )
 }
 
-new_margin_summary_stage <- function(result, set_id_name, sort_id = NULL) {
+new_margin_summary_stage <- function(result, set_id_name, sort_id = NULL,
+                                     parent_key_names = character()) {
   structure(
     list(
       result = result,
       set_id_name = set_id_name,
-      sort_id = sort_id
+      sort_id = sort_id,
+      parent_key_names = parent_key_names
     ),
     class = "marginplyr_summary_stage"
   )

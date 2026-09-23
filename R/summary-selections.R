@@ -282,15 +282,15 @@ check_internal_summary_names <- function(output_names, internal_names) {
 # result is built there.
 #
 # The composite check is asked again, of the names that replaced the assigned
-# one. Its internal names are empty here: the branch's `..marginplyr_key_`
-# columns are renamed or gone by this point, and the one internal column still
-# to be added -- the Grouping set identifier -- arrives through
-# `set_id_is_internal` instead.
+# one. The branch's `..marginplyr_key_` columns are renamed or gone by this
+# point. Parent shares supply the typed keys they are about to add;
+# `set_id_is_internal` covers the staged occurrence identifier.
 expand_assigned_data_frames <- function(result,
                                         assigned_names,
                                         group_vars,
                                         set_id_name,
-                                        set_id_is_internal = FALSE) {
+                                        set_id_is_internal = FALSE,
+                                        internal_names = character()) {
   if (!is.data.frame(result)) {
     return(result)
   }
@@ -306,7 +306,7 @@ expand_assigned_data_frames <- function(result,
       use.names = FALSE
     ),
     group_vars = group_vars,
-    internal_names = character(),
+    internal_names = internal_names,
     set_id_name = set_id_name,
     set_id_is_internal = set_id_is_internal
   )
