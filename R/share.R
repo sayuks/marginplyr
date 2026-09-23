@@ -1501,10 +1501,12 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
           expr, env, selection_proxy, output_names,
           expands_own_names = is_across_call(expr) && !nzchar(output_name)
         ),
-        vctrs_error_subscript_oob = function(cnd) list(
-          inputs = rep(NA_character_, length(output_names)),
-          functions = rep(NA_integer_, length(output_names))
-        )
+        vctrs_error_subscript_oob = function(cnd) {
+          list(
+            inputs = rep(NA_character_, length(output_names)),
+            functions = rep(NA_integer_, length(output_names))
+          )
+        }
       )
     } else {
       across_output_provenance(

@@ -504,7 +504,7 @@ plan_summary_expressions <- function(dots,
     defer_local && length(dots) > 0L &&
       !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
   ) {
-    preflight_local_initial_selection(dots[[1L]], selection_proxy)
+    preflight_local_selection(dots[[1L]], selection_proxy)
   }
   if (!defer_local || has_shares) {
     dots <- resolve_summary_selections(
@@ -617,10 +617,15 @@ predictable_local_across_names <- function(dots, input_names) {
       parsed <- parse_across_arguments(expr)
       cols <- parsed$cols
       template <- parsed$names
-      simple_cols <- rlang::is_symbol(cols) || (
-        rlang::is_call(cols, "c") &&
-          all(vapply(as.list(cols)[-1L], rlang::is_symbol, logical(1)))
-      )
+      simple_cols <- if (rlang::is_symbol(cols)) {
+        rlang::as_string(cols) %in% available
+      } else if (rlang::is_call(cols, "c")) {
+        parts <- as.list(cols)[-1L]
+        all(vapply(parts, rlang::is_symbol, logical(1))) &&
+          all(vapply(parts, rlang::as_string, character(1)) %in% available)
+      } else {
+        FALSE
+      }
       literal_template <- is.null(template) || (
         is.character(template) && length(template) == 1L &&
           !is.na(template) &&
@@ -652,7 +657,7 @@ predictable_local_across_names <- function(dots, input_names) {
 # The empty pair is also statically invalid. Checking these before operation
 # validation preserves tidyselect's condition and refusal order without
 # evaluating a caller predicate.
-preflight_local_initial_selection <- function(dot, selection_proxy) {
+preflight_local_selection <- function(dot, selection_proxy) {
   expr <- rlang::quo_get_expr(dot)
   selection <- if (is_static_spelling_call(expr, "selection", "across")) {
     parse_across_arguments(expr)$cols
@@ -766,7 +771,7 @@ resolve_summary_selections <- function(dots,
         ),
         error = function(cnd) {
           if (allow_missing_selection &&
-              inherits(cnd, "vctrs_error_subscript_oob")) {
+                inherits(cnd, "vctrs_error_subscript_oob")) {
             return(rlang::quo_get_expr(dot))
           }
           if (is_unsupported_predicate(cnd)) {
