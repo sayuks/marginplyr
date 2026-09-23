@@ -423,6 +423,11 @@ summarize_margin_union <- function(.data,
     prefix = "..marginplyr_key_"
   )
   names(key_names) <- group_vars
+  # The Grand total branch groups by no key, so dplyr exposes these copies as
+  # selectable columns there. Fill the per-operation exclusion before Map.
+  if (is.environment(summaries$selection_state)) {
+    summaries$selection_state$internal_names <- unname(key_names)
+  }
 
   if (length(group_vars) > 0L) {
     key_exprs <- lapply(group_vars, margin_column_pronoun)

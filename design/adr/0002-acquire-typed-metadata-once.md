@@ -8,6 +8,16 @@ cannot issue duplicate metadata queries or observe a different schema. A
 prepared operation belongs to one public verb call and is not cached, reused,
 or returned to users, which bounds the lifetime of that snapshot.
 
+## Amendment (#604)
+
+The snapshot is the input schema, not the local dplyr data mask after a summary
+has run. Ordinary `across()`, `pick()`, `if_any()`, and `if_all()` selections on
+local data frames read that current mask when their summary executes, so they
+can see preceding ordinary outputs and their current types. This is no new
+input-schema acquisition. The complete Grouping plan's columns remain outside
+the selection. Lazy inputs and contextual-share selection retain their
+existing planning rules.
+
 ## What this does not govern
 
 This decision is about the schema an operation plans against: one snapshot, so

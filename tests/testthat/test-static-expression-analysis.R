@@ -1920,33 +1920,31 @@ test_that("a `get()` call with no name argument raises the caller's error", {
   expect_false(inherits(error, "marginplyr_error"))
 })
 
-test_that("an `across()` `.names` template must name one output per column", {
-  # This one the analysis does detect: it expands the template itself, so it
-  # knows before any backend read that the template names two outputs for one
-  # column. ADR-0005 puts the rejection here rather than leaving it to the
-  # query dplyr would otherwise build.
+test_that("local `across()` leaves `.names` evaluation to dplyr", {
+  # Local selection planning does not evaluate a caller's naming expression.
+  # dplyr rejects the invalid expanded name when the summary executes.
   data <- data.frame(
     region = c("East", "East", "West"),
     units = c(1, 3, 6)
   )
 
+  baseline <- expect_error(dplyr::summarise(
+    data,
+    dplyr::across(c(units), sum, .names = "{c('x','y')}"),
+    .by = region
+  ))
   error <- expect_error(
     summarize_with_margins(
       data,
       dplyr::across(c(units), sum, .names = "{c('x','y')}"),
       .grouping = rollup(region)
     ),
-    "must produce one name per column"
+    "size of `nm` (2) must be compatible",
+    fixed = TRUE
   )
 
-  expect_s3_class(error, "marginplyr_error")
-  # The template is what the caller has to rewrite, so the message quotes it.
-  expect_match(conditionMessage(error), "{c('x','y')}", fixed = TRUE)
-  expect_match(conditionMessage(error), "`units`", fixed = TRUE)
-  expect_identical(
-    rlang::call_name(conditionCall(error)),
-    "summarize_with_margins"
-  )
+  expect_identical(class(error), class(baseline))
+  expect_false(inherits(error, "marginplyr_error"))
 })
 
 test_that("an unnamed `across()` argument is numbered by its own position", {

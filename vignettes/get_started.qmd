@@ -682,6 +682,23 @@ A summary may return a one-row data frame as in dplyr, but none of its output
 columns may be named `year`, `region`, or `store` in this example. Use a new
 summary name or rename the input key first.
 
+On a local data frame, a later ordinary `across()` or `pick()` selection sees
+summaries already computed in the same call. The selection uses the current
+types after an ordinary output overwrites an input column. For example:
+
+```{r}
+data.frame(region = c("East", "West"), value = c(1, 2)) |>
+  summarize_with_margins(
+    total = sum(value),
+    across(total, ~ .x * 2, .names = "double_{.col}"),
+    .grouping = rollup(region)
+  )
+```
+
+The two detail rows and Grand total row have `double_total` values 2, 4, and
+6. Lazy backends retain their own summary-alias limits; this local behavior
+does not collect them. Contextual shares use the separate source rules below.
+
 ## Compare a summary with its rollup parent
 
 `share_of_parent()` divides one preceding named numeric scalar summary by its

@@ -712,7 +712,8 @@ plan_share_expressions <- function(dots,
                                    selection_proxy,
                                    plan,
                                    set_id_name,
-                                   validate_cardinality = FALSE) {
+                                   validate_cardinality = FALSE,
+                                   defer_local = FALSE) {
   stopifnot(is.list(dots))
   stopifnot(inherits(plan, "margin_grouping_plan"))
   dot_names <- names(dots)
@@ -720,7 +721,9 @@ plan_share_expressions <- function(dots,
     dot_names <- rep("", length(dots))
   }
 
-  analyses <- analyze_ordinary_summaries(dots, selection_proxy)
+  analyses <- analyze_ordinary_summaries(
+    dots, selection_proxy, defer_local = defer_local
+  )
   ordinary_records <- unlist(
     lapply(analyses, `[[`, "records"),
     recursive = FALSE
@@ -1431,7 +1434,8 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
-analyze_ordinary_summaries <- function(dots, selection_proxy) {
+analyze_ordinary_summaries <- function(dots, selection_proxy,
+                                       defer_local = FALSE) {
   dot_names <- names(dots)
   if (is.null(dot_names)) {
     dot_names <- rep("", length(dots))
@@ -1453,30 +1457,37 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
       output_names <- output_name
       eligibility <- if (is_across_call(expr)) "named_across" else "eligible"
     } else if (is_across_call(expr)) {
-      output_names <- known_across_output_names(
-        expr,
-        env,
-        selection_proxy
-      )
+      output_names <- if (defer_local) {
+        tryCatch(
+          known_across_output_names(expr, env, selection_proxy),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+      } else {
+        known_across_output_names(expr, env, selection_proxy)
+      }
       eligibility <- "eligible"
     } else {
-      output_names <- known_data_frame_output_names(
-        expr,
-        env,
-        selection_proxy
-      )
+      output_names <- if (defer_local) {
+        tryCatch(
+          known_data_frame_output_names(expr, env, selection_proxy),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+      } else {
+        known_data_frame_output_names(expr, env, selection_proxy)
+      }
       eligibility <- "expanded"
     }
 
     selected_dependencies <- if (is_across_call(expr)) {
-      intersect(
-        known_across_source_names(
-          expr,
-          env,
-          selection_proxy
-        ),
-        preceding_names
-      )
+      selected <- if (defer_local) {
+        tryCatch(
+          known_across_source_names(expr, env, selection_proxy),
+          vctrs_error_subscript_oob = function(cnd) character()
+        )
+      } else {
+        known_across_source_names(expr, env, selection_proxy)
+      }
+      intersect(selected, preceding_names)
     } else {
       character()
     }
@@ -1484,13 +1495,26 @@ analyze_ordinary_summaries <- function(dots, selection_proxy) {
       expression_alias_dependencies(expr, preceding_names),
       selected_dependencies
     ))
-    provenance <- across_output_provenance(
-      expr,
-      env,
-      selection_proxy,
-      output_names,
-      expands_own_names = is_across_call(expr) && !nzchar(output_name)
-    )
+    provenance <- if (defer_local) {
+      tryCatch(
+        across_output_provenance(
+          expr, env, selection_proxy, output_names,
+          expands_own_names = is_across_call(expr) && !nzchar(output_name)
+        ),
+        vctrs_error_subscript_oob = function(cnd) list(
+          inputs = rep(NA_character_, length(output_names)),
+          functions = rep(NA_integer_, length(output_names))
+        )
+      )
+    } else {
+      across_output_provenance(
+        expr,
+        env,
+        selection_proxy,
+        output_names,
+        expands_own_names = is_across_call(expr) && !nzchar(output_name)
+      )
+    }
     across_inputs <- provenance$inputs
     across_functions <- provenance$functions
     records <- Map(
