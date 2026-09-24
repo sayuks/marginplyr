@@ -136,7 +136,11 @@ margin_column_info <- function(data_proxy,
   schema <- proxy_columns(data_proxy, read)
 
   prototypes <- lapply(schema[dimensions], function(x) {
-    if (is.data.frame(x)) vctrs::vec_init(x, 1L) else x[NA_integer_]
+    if (is.data.frame(x) || is.matrix(x)) {
+      vctrs::vec_init(x, 1L)
+    } else {
+      x[NA_integer_]
+    }
   })
   arrow_schema <- attr(data_proxy, "marginplyr_arrow_schema", exact = TRUE)
   if (!is.null(arrow_schema)) {

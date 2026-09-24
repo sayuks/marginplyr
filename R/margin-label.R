@@ -179,6 +179,27 @@ validate_margin_label <- function(.data,
     ))
   }
 
+  matrices <- dimensions[vapply(
+    column_info$prototypes[dimensions], is.matrix, logical(1)
+  )]
+  labelled_matrices <- matrices[!vapply(
+    margin_labels[matrices], is_missing_margin_label, logical(1)
+  )]
+  if (length(labelled_matrices) > 0L) {
+    abort_marginplyr(c(
+      paste0(
+        "A non-missing {.arg .margin_label} cannot label matrix ",
+        "grouping dimensions:"
+      ),
+      i = "{.var {labelled_matrices}}.",
+      i = paste0(
+        "A non-missing scalar label cannot represent a matrix key. ",
+        "Use {.code NULL} or {.code NA_character_} for a typed-missing ",
+        "label, or split the key into separate columns."
+      )
+    ))
+  }
+
   factor_info <- column_info$factors
   na_label_cols <- names(Filter(
     function(label) !is.null(label) && is.na(label),
