@@ -929,6 +929,16 @@ local_summary_selection <- function(selection, env, group_vars,
   source_names
 }
 
+# Answers whether `.unpack` is omitted or evaluates to FALSE. The caller
+# supplies its captured argument and environment; an evaluation error leaves
+# the value unknown.
+across_unpack_is_false <- function(unpack, env) {
+  is.null(unpack) || isFALSE(tryCatch(
+    rlang::eval_tidy(unpack, env = env),
+    error = function(cnd) NULL
+  ))
+}
+
 # `call_name` is the caller's answer rather than one asked again here. Asking
 # again would answer the same, since the shared read answers a formula as no
 # name at all (#163); it would just be a second question about an expression
@@ -969,10 +979,7 @@ rewrite_across_selection <- function(expr,
 
   if (identical(call_name, "across") && normalize_across_names) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
-    unpack_is_false <- is.null(parsed$unpack) || isFALSE(tryCatch(
-      rlang::eval_tidy(parsed$unpack, env = env),
-      error = function(cnd) NULL
-    ))
+    unpack_is_false <- across_unpack_is_false(parsed$unpack, env)
     function_names <- known_across_function_names(parsed, env)
 
     if (
@@ -1196,6 +1203,11 @@ known_injected_argument_name <- function(expr) {
 
 known_across_output_names <- function(expr, env, data_proxy) {
   parsed <- parse_across_arguments(expr)
+  if (!across_unpack_is_false(parsed$unpack, env)) {
+    # The outer names can be replaced by inner names whose schema is only
+    # known after the summary runs. The branch checks those actual names.
+    return(character())
+  }
   cols_expr <- parsed$cols
   column_names <- names(resolve_summary_selection(cols_expr, env, data_proxy))
 

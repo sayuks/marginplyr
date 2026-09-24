@@ -1561,6 +1561,94 @@ test_that("data-frame summaries cannot overwrite grouping columns", {
   )
 })
 
+test_that("unpacked across may reuse the identifier as its outer name", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+
+  result <- summarize_with_margins(
+    data,
+    dplyr::across(x, ~ tibble::tibble(n = sum(.x)),
+                  .names = "out", .unpack = TRUE),
+    .grouping = grouping_set(g),
+    .id = "out"
+  )
+
+  expect_identical(names(result), c("g", "out", "out_n"))
+  expect_identical(result$out, c(1L, 1L))
+  expect_identical(result$out_n, c(1L, 2L))
+})
+
+test_that("unpacked across may reuse a grouping name as its outer name", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+
+  default <- summarize_with_margins(
+    data,
+    dplyr::across(x, ~ tibble::tibble(n = sum(.x)),
+                  .names = "g", .unpack = TRUE),
+    .grouping = grouping_set(g)
+  )
+  custom <- summarize_with_margins(
+    data,
+    dplyr::across(x, ~ tibble::tibble(n = sum(.x)),
+                  .names = "g", .unpack = "{inner}_{outer}"),
+    .grouping = grouping_set(g)
+  )
+
+  expect_identical(names(default), c("g", "g_n"))
+  expect_identical(default$g, c("a", "b"))
+  expect_identical(default$g_n, c(1L, 2L))
+  expect_identical(names(custom), c("g", "n_g"))
+  expect_identical(custom$g, c("a", "b"))
+  expect_identical(custom$n_g, c(1L, 2L))
+})
+
+test_that("unpacked across is checked by its expanded names", {
+  data <- tibble::tibble(fixed = c("p", "q"), g = c("a", "b"), x = 1:2)
+  summary <- function(.x) tibble::tibble(n = sum(.x))
+
+  id_error <- expect_error(summarize_with_margins(
+    data,
+    dplyr::across(x, summary, .names = "out", .unpack = TRUE),
+    .grouping = grouping_set(g),
+    .id = "out_n"
+  ), "`.id`.*`out_n`.*conflicts with a summary output")
+  group_error <- expect_error(summarize_with_margins(
+    data,
+    dplyr::across(x, ~ tibble::tibble(g = sum(.x)),
+                  .names = "out", .unpack = "{inner}"),
+    .grouping = grouping_set(g)
+  ), "cannot overwrite grouping column.*`g`")
+  fixed_error <- expect_error(summarize_with_margins(
+    data,
+    dplyr::across(x, ~ tibble::tibble(fixed = sum(.x)),
+                  .names = "out", .unpack = "{inner}"),
+    .by = fixed,
+    .grouping = grouping_set(g)
+  ), "cannot overwrite grouping column.*`fixed`")
+  packed_error <- expect_error(summarize_with_margins(
+    data,
+    dplyr::across(x, summary, .names = "g", .unpack = FALSE),
+    .grouping = grouping_set(g)
+  ), "cannot overwrite grouping column.*`g`")
+  unpack <- FALSE
+  calls <- 0L
+  counted_summary <- function(.x) {
+    calls <<- calls + 1L
+    tibble::tibble(n = sum(.x))
+  }
+  bound_packed_error <- expect_error(summarize_with_margins(
+    data,
+    dplyr::across(x, counted_summary, .names = "g", .unpack = unpack),
+    .grouping = grouping_set(g)
+  ), "cannot overwrite grouping column.*`g`")
+
+  expect_s3_class(id_error, "marginplyr_error")
+  expect_s3_class(group_error, "marginplyr_error")
+  expect_s3_class(fixed_error, "marginplyr_error")
+  expect_s3_class(packed_error, "marginplyr_error")
+  expect_s3_class(bound_packed_error, "marginplyr_error")
+  expect_identical(calls, 0L)
+})
+
 test_that("a named data-frame summary keeps its packed names to itself", {
   data <- data.frame(group = c("a", "a", "b"), value = 1:3)
 
