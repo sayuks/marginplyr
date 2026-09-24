@@ -345,7 +345,10 @@ validate_margin_operation <- function(operation) {
   )
 }
 
-finalize_margin_operation <- function(operation, execution) {
+# Finish the prepared operation. `type_anchor_columns` are input columns whose
+# SQL types the caller needs carried into the final projection.
+finalize_margin_operation <- function(operation, execution,
+                                      type_anchor_columns = character()) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
   result <- dplyr::ungroup(execution$result)
@@ -371,6 +374,14 @@ finalize_margin_operation <- function(operation, execution) {
   )
 
   result <- order_margin_result(operation, result, execution)
+  if (length(type_anchor_columns) > 0L) {
+    # Share staging wraps the SQL union's typed first SELECT. Put a zero-row
+    # source projection at the final result boundary, after all projections.
+    anchor <- sql_margin_type_anchor(
+      operation$data, result, source_columns = type_anchor_columns
+    )
+    result <- combine_margin_branches(list(anchor, result))
+  }
   # The one recorded query nobody inside the package sends: the caller runs
   # it, so it is recorded here, before it is returned to them.
   record_sent_query("result", result)

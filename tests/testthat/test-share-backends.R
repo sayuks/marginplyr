@@ -80,6 +80,156 @@ test_that("SQLite Parent shares preserve typed keys under display conversion", {
   }
 })
 
+test_that("SQLite shares retain all-missing dimension types", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
+  values <- list(
+    character = NA_character_, integer = NA_integer_, double = NA_real_
+  )
+  labels <- list(`NULL` = NULL, `NA_character_` = NA_character_)
+
+  for (type in names(values)) {
+    source <- dplyr::copy_to(
+      con, data.frame(g = values[[type]], v = 1),
+      paste0("missing_share_dimension_", type), temporary = TRUE
+    )
+    for (label in labels) {
+      control <- summarize_with_margins(
+        source, z = sum(v), .grouping = rollup(g),
+        .margin_label = label
+      ) |>
+        dplyr::collect()
+      for (mode in c("parent", "total", "both")) {
+        query <- switch(
+          mode,
+          parent = summarize_with_margins(
+            source, z = sum(v), p = share_of_parent(z),
+            .grouping = rollup(g), .margin_label = label,
+            .id = "set", .check_share_source = FALSE
+          ),
+          total = summarize_with_margins(
+            source, z = sum(v), t = share_of_total(z),
+            .grouping = rollup(g), .margin_label = label,
+            .id = "set", .check_share_source = FALSE
+          ),
+          both = summarize_with_margins(
+            source, z = sum(v), p = share_of_parent(z),
+            t = share_of_total(z), .grouping = rollup(g),
+            .margin_label = label, .id = "set",
+            .check_share_source = FALSE
+          )
+        )
+        info <- paste(type, mode, if (is.null(label)) "NULL" else "NA")
+        expect_s3_class(query, "tbl_lazy")
+        expect_identical(last_sent_queries()$purpose, "result", info = info)
+        result <- dplyr::collect(query)
+        expect_identical(result$g, control$g, info = info)
+        expect_identical(typeof(result$g), type, info = info)
+        expect_true(all(is.na(result$g)), info = info)
+        expect_identical(result$set, c(1L, 2L), info = info)
+        expect_identical(nrow(result), 2L, info = info)
+        expect_equal(result$z, c(1, 1), info = info)
+        if (mode %in% c("parent", "both")) {
+          expect_equal(result$p, c(1, 1), info = info)
+        }
+        if (mode %in% c("total", "both")) {
+          expect_equal(result$t, c(1, 1), info = info)
+        }
+      }
+    }
+  }
+})
+
+test_that("SQLite Total shares retain types across grouping-set order", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = NA_integer_, v = 1),
+    "missing_total_order", temporary = TRUE
+  )
+  groupings <- list(
+    grouping_sets(grouping_set(g), grouping_set()),
+    grouping_sets(grouping_set(), grouping_set(g))
+  )
+  for (grouping in groupings) {
+    control <- summarize_with_margins(
+      source, z = sum(v), .grouping = grouping,
+      .margin_label = NULL
+    ) |>
+      dplyr::collect()
+    query <- summarize_with_margins(
+      source, z = sum(v), t = share_of_total(z),
+      .grouping = grouping, .margin_label = NULL,
+      .check_share_source = FALSE
+    )
+    result <- dplyr::collect(query)
+    expect_identical(result$g, control$g)
+    expect_identical(typeof(result$g), "integer")
+    expect_identical(nrow(result), 2L)
+    expect_equal(result$z, c(1, 1))
+    expect_equal(result$t, c(1, 1))
+  }
+})
+
+test_that("SQLite shares leave fixed keys and non-missing dimensions typed", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(fixed = c(2L, 2L), g = c("a", NA), v = c(1, 3)),
+    "mixed_share_dimension", temporary = TRUE
+  )
+  control <- summarize_with_margins(
+    source, z = sum(v), .by = fixed, .grouping = rollup(g),
+    .margin_label = NULL
+  ) |>
+    dplyr::collect()
+  query <- summarize_with_margins(
+    source, z = sum(v), p = share_of_parent(z),
+    .by = fixed, .grouping = rollup(g), .margin_label = NULL,
+    .check_share_source = FALSE
+  )
+  result <- dplyr::collect(query)
+  expect_identical(result$fixed, control$fixed)
+  expect_identical(result$g, control$g)
+  expect_identical(typeof(result$fixed), "integer")
+  expect_identical(typeof(result$g), "character")
+  expect_identical(nrow(result), 3L)
+  expect_equal(sort(result$z), c(1, 3, 4))
+  expect_equal(sort(result$p), c(0.25, 0.75, 1))
+})
+
+test_that("SQLite share Margin order survives collection and materialization", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    data.frame(fixed = c("x", "x"), g = c("b", "a"), v = c(3, 1)),
+    "ordered_share_dimension", temporary = TRUE
+  )
+  query <- summarize_with_margins(
+    source, z = sum(v), p = share_of_parent(z),
+    .by = fixed, .grouping = rollup(g), .margin_label = NULL,
+    .sort = "last", .check_share_source = FALSE
+  )
+
+  expect_s3_class(query, "tbl_lazy")
+  expect_match(dbplyr::sql_render(query), "ORDER BY", fixed = TRUE)
+  collected <- dplyr::collect(query)
+  materialized <- dplyr::collect(dplyr::compute(query))
+  for (result in list(collected, materialized)) {
+    expect_identical(result$fixed, c("x", "x", "x"))
+    expect_identical(result$g, c("a", "b", NA_character_))
+    expect_equal(result$z, c(1, 3, 4))
+    expect_equal(result$p, c(0.25, 0.75, 1))
+  }
+})
+
 test_that("DuckDB Parent shares preserve typed keys in both adapters", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -1120,11 +1270,16 @@ test_that("RSQLite Parent mapping does not multiply portable branch families", {
   small_sql <- dbplyr::sql_render(small)
   large_sql <- dbplyr::sql_render(large)
 
-  # Generic SQL stages one branch per set plus its zero-row type anchor. The
-  # Parent join may reference that family a constant two times, never once per
-  # child occurrence (#550).
-  expect_identical(share_query_count(small_sql, table_name), 2L * (3L + 1L))
-  expect_identical(share_query_count(large_sql, table_name), 2L * (5L + 1L))
+  # The Parent join references the staged family twice. The final zero-row
+  # source anchor contributes one more reference, independent of rollup size.
+  expect_identical(
+    share_query_count(small_sql, table_name),
+    2L * (3L + 1L) + 1L
+  )
+  expect_identical(
+    share_query_count(large_sql, table_name),
+    2L * (5L + 1L) + 1L
+  )
   expect_identical(share_query_count(large_sql, "LEFT JOIN"), 1L)
   expect_identical(share_query_count(large_sql, "INNER JOIN"), 1L)
 
