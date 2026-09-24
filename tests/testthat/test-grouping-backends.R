@@ -1442,7 +1442,10 @@ test_that("DuckDB uses validated native summary names in the result", {
     marginplyr_error = identity
   )
   if (inherits(outcome, "marginplyr_error")) {
-    expect_match(conditionMessage(outcome), "cannot overwrite grouping column.*`g`")
+    expect_match(
+      conditionMessage(outcome),
+      "cannot overwrite grouping column.*`g`"
+    )
   } else {
     result <- dplyr::collect(outcome) |>
       dplyr::arrange(g)
