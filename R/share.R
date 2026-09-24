@@ -836,7 +836,7 @@ plan_share_expressions <- function(dots,
     list()
   }
   ordinary_cardinality <- if (isTRUE(validate_ordinary_cardinality)) {
-    share_ordinary_cardinality_records(analyses, requests)
+    share_ordinary_checks(analyses, requests)
   } else {
     list()
   }
@@ -900,7 +900,7 @@ plan_share_expressions <- function(dots,
 # Ordinary summaries outside a share source can expand the staged grouped
 # result after the source itself has passed its scalar check. Keep their
 # caller-facing names for the dtplyr execution-time refusal.
-share_ordinary_cardinality_records <- function(analyses, requests) {
+share_ordinary_checks <- function(analyses, requests) {
   if (length(requests) == 0L) {
     return(list())
   }
@@ -2141,7 +2141,7 @@ execute_shares <- function(operation,
     check_share_source = check_share_source
   )
   if (identical(operation$backend$kind, "dtplyr")) {
-    result <- check_dtplyr_share_grouped_result(
+    result <- guard_dtplyr_grouped_result(
       result,
       plan = operation$plan,
       set_id_name = staged_set_id_name,
@@ -2197,8 +2197,8 @@ execute_shares <- function(operation,
 # Refuse a staged dtplyr result with more than one row per occurrence and
 # grouping key before either share adapter can multiply it in a join. The
 # filter is part of the lazy graph and runs only when the caller executes it.
-check_dtplyr_share_grouped_result <- function(result, plan, set_id_name,
-                                              parent_key_names, pair, call) {
+guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
+                                       parent_key_names, pair, call) {
   dimensions <- if (length(parent_key_names) > 0L) {
     unname(parent_key_names)
   } else {
@@ -2207,7 +2207,7 @@ check_dtplyr_share_grouped_result <- function(result, plan, set_id_name,
   key_names <- unique(c(set_id_name, plan$by, dimensions))
   key_exprs <- lapply(key_names, margin_column_pronoun)
   check <- rlang::call2(
-    marginplyr_private_call("check_dtplyr_share_grouped_keys"),
+    marginplyr_private_call("assert_dtplyr_grouped_keys"),
     !!!key_exprs,
     share_output = pair$output,
     share_kind = pair$kind,
@@ -2216,8 +2216,8 @@ check_dtplyr_share_grouped_result <- function(result, plan, set_id_name,
   dplyr::filter(result, !!check)
 }
 
-check_dtplyr_share_grouped_keys <- function(..., share_output, share_kind,
-                                            call_text) {
+assert_dtplyr_grouped_keys <- function(..., share_output, share_kind,
+                                      call_text) {
   if (vctrs::vec_duplicate_any(vctrs::new_data_frame(list(...)))) {
     abort_marginplyr(
       c(
