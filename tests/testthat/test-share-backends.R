@@ -86,7 +86,9 @@ test_that("SQLite shares retain all-missing dimension types", {
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   old_options <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old_options), add = TRUE)
-  values <- list(character = NA_character_, integer = NA_integer_, double = NA_real_)
+  values <- list(
+    character = NA_character_, integer = NA_integer_, double = NA_real_
+  )
   labels <- list(`NULL` = NULL, `NA_character_` = NA_character_)
 
   for (type in names(values)) {
@@ -1270,8 +1272,14 @@ test_that("RSQLite Parent mapping does not multiply portable branch families", {
 
   # The Parent join references the staged family twice. The final zero-row
   # source anchor contributes one more reference, independent of rollup size.
-  expect_identical(share_query_count(small_sql, table_name), 2L * (3L + 1L) + 1L)
-  expect_identical(share_query_count(large_sql, table_name), 2L * (5L + 1L) + 1L)
+  expect_identical(
+    share_query_count(small_sql, table_name),
+    2L * (3L + 1L) + 1L
+  )
+  expect_identical(
+    share_query_count(large_sql, table_name),
+    2L * (5L + 1L) + 1L
+  )
   expect_identical(share_query_count(large_sql, "LEFT JOIN"), 1L)
   expect_identical(share_query_count(large_sql, "INNER JOIN"), 1L)
 

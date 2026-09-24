@@ -1001,11 +1001,13 @@ summarize_with_margins <- function(.data,
   # A Margin order must remain the outermost SQL clause (ADR 0018); the final
   # type anchor is for the unsorted result, after share staging has wrapped the
   # ordinary union's source-column anchor.
-  final_type_anchor <- if (length(share_kinds) > 0L &&
+  final_type_anchor <- if (
+    length(share_kinds) > 0L &&
       identical(operation$backend$kind, "sql") &&
       length(typed_dimensions) > 0L &&
       !margin_sorting(operation) &&
-      length(operation$plan$sets) > 1L) {
+      length(operation$plan$sets) > 1L
+  ) {
     c(operation$plan$by, typed_dimensions)
   } else {
     character()
