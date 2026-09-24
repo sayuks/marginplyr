@@ -8,12 +8,9 @@
 #
 # What produces the case the guards exist for is `.fns` bound to a variable:
 # the function-name component then lives in the value rather than in the
-# expression, so `known_across_function_names()` cannot read it and falls back
-# to a positional placeholder. That shape is load-bearing rather than
-# incidental, and it used to be spelled out in each test beside a comment
-# saying so -- where an edit that inlined `.fns` back into a literal `list()`
-# would have left every test passing and none of them still reaching a guard
-# (#126).
+# expression, so `known_across_function_names()` cannot read it. That shape is
+# load-bearing: inlining `.fns` as a literal `list()` would leave the tests
+# green without reaching an adapter guard (#126).
 #
 # The assertion is what makes the precondition structural instead of
 # remembered. It asks the predictor directly and refuses to hand back dots the

@@ -1592,7 +1592,7 @@ across_output_provenance <- function(expr,
 
   inputs <- known_across_source_names(expr, env, data_proxy)
   function_count <- length(known_across_function_names(
-    parse_across_arguments(expr)
+    parse_across_arguments(expr), env
   ))
   # A `.names` template the analysis could not expand leaves the output names
   # unknown, so the pairs it would have named cannot be matched to them.
