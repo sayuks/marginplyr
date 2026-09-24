@@ -394,6 +394,31 @@ test_that("dtplyr defers the grouped-row check until explicit execution", {
   expect_gt(evaluations, 0L)
 })
 
+test_that("dtplyr allows row expansion when share across selects no outputs", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = c(2, 4)))
+  ordinary <- summarize_with_margins(
+    source,
+    z = sum(v),
+    extra = 1:2,
+    .grouping = rollup(g)
+  )
+  empty_share <- summarize_with_margins(
+    source,
+    z = sum(v),
+    dplyr::across(
+      starts_with("missing"), share_of_parent, .names = "{.col}_share"
+    ),
+    extra = 1:2,
+    .grouping = rollup(g)
+  )
+  expect_s3_class(empty_share, "dtplyr_step")
+  expect_equal(
+    as.data.frame(dplyr::collect(empty_share)),
+    as.data.frame(dplyr::collect(ordinary))
+  )
+})
+
 test_that("dtplyr integer and double Parent shares match local results", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(
