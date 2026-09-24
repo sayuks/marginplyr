@@ -275,6 +275,7 @@ check_internal_summary_names <- function(output_names, internal_names) {
 # An Assigned summary name is needed for scalar values, while an unnamed frame
 # must expand in dplyr's mask before the next summary runs (ADR 0028).
 # Only local branches use this: lazy backends keep their own naming behavior.
+# The caller supplies one assigned name per dot, in the same order.
 wrap_assigned_local_summaries <- function(dots, assigned_names) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
@@ -292,6 +293,7 @@ wrap_assigned_local_summaries <- function(dots, assigned_names) {
 # Return a frame so dplyr places the output in its mask immediately. An actual
 # frame keeps its own column names; a scalar takes the caller-facing name;
 # `NULL` keeps dplyr's omission behavior.
+# The caller supplies the evaluated value and its Assigned summary name.
 local_assigned_summary_value <- function(value, name) {
   if (is.data.frame(value) || is.null(value)) {
     return(value)

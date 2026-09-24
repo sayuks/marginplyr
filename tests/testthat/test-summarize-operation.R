@@ -455,7 +455,7 @@ test_that("an unnamed rewritten frame is available to later summaries", {
   }
 })
 
-test_that("later local selections see an expanded frame's names and types", {
+test_that("later summaries and selections read a frame without an input total", {
   data <- tibble::tibble(group = c("a", "a", "b"), value = 1:3)
   text_total <- function(columns) {
     data.frame(total = as.character(sum(columns[[1L]])))
