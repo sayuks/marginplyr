@@ -41,7 +41,11 @@ mutable_dtplyr_selection_proxy <- function(.data) {
 grouping_selection_proxy <- function(.data,
                                      backend = grouping_backend(.data)) {
   if (identical(backend$kind, "arrow")) {
-    return(as.data.frame(arrow::schema(.data)))
+    schema <- arrow::schema(.data)
+    proxy <- as.data.frame(schema)
+    # Keep the same snapshot's physical types for omitted Margin dimensions.
+    attr(proxy, "marginplyr_arrow_schema") <- schema
+    return(proxy)
   }
   if (backend$collect_selection_proxy) {
     proxy <- utils::head(.data, n = 0L)
@@ -134,6 +138,21 @@ margin_column_info <- function(data_proxy,
   prototypes <- lapply(schema[dimensions], function(x) {
     if (is.data.frame(x)) vctrs::vec_init(x, 1L) else x[NA_integer_]
   })
+  arrow_schema <- attr(data_proxy, "marginplyr_arrow_schema", exact = TRUE)
+  if (!is.null(arrow_schema)) {
+    # The R prototype loses Arrow widths, precision, and temporal units.
+    prototypes <- Map(
+      function(value, dimension) {
+        arrow::Scalar$create(
+          value,
+          type = arrow_schema$GetFieldByName(dimension)$type
+        )
+      },
+      prototypes,
+      dimensions
+    )
+    names(prototypes) <- dimensions
+  }
   factors <- if (backend$can_restore_factors) {
     lapply(
       names(schema)[vapply(schema, is.factor, logical(1))],
