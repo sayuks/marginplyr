@@ -440,6 +440,12 @@ into separate columns if it needs display text. As with other columns, this
 does not add an attribute-restoration guarantee; see \emph{Result class and
 attributes} and ADR 0016.
 
+A local matrix grouping dimension likewise accepts only \code{NULL} or
+\code{NA_character_} as its Margin label. Its omitted rows retain the matrix
+shape and typed missing components. A non-missing scalar label cannot
+represent the matrix key; split it into separate columns if it needs
+display text. A matrix used only as a fixed \code{.by} key needs no Margin label.
+
 Factor columns follow this contract:\tabular{lrrl}{
    Margin label \tab NA level \tab Missing value \tab Result \cr
    \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
