@@ -188,9 +188,8 @@ is_static_spelling_call <- function(expr, family, name) {
   identical(static_spelling_name(expr, family), name)
 }
 
-# Whether a call is recognized in any of several families, for the one reader
-# that treats them alike: a data-frame-valued summary's output names are
-# predicted the same way whether tibble or base owns the constructor.
+# Whether a call is recognized in either frame family. The output-name reader
+# uses the recognized constructor's own formals to exclude controls.
 is_any_static_spelling_call <- function(expr, families) {
   any(vapply(
     families,

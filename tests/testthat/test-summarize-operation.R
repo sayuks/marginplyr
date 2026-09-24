@@ -421,6 +421,105 @@ test_that("local selection rewrites preserve frame expansion and packing", {
   expect_equal(actual$packed$lo, actual$lo)
 })
 
+test_that("data.frame controls do not collide with an identifier", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  controls <- c(
+    "row.names", "check.rows", "check.names", "fix.empty.names",
+    "stringsAsFactors"
+  )
+
+  for (id in controls) {
+    actual <- summarize_with_margins(
+      data,
+      base::data.frame(
+        x = sum(x), row.names = NULL, check.rows = FALSE,
+        check.names = FALSE, fix.empty.names = TRUE,
+        stringsAsFactors = FALSE
+      ),
+      .grouping = grouping_set(g), .id = id
+    )
+    expect_identical(names(actual), c("g", id, "x"))
+    expect_identical(actual[[id]], c(1L, 1L))
+    expect_identical(actual$x, c(1L, 2L))
+  }
+})
+
+test_that("a grouping column may share a data.frame control name", {
+  data <- tibble::tibble(check.names = c("a", "b"), x = 1:2)
+  actual <- summarize_with_margins(
+    data, data.frame(x = sum(x), check.names = FALSE),
+    .grouping = grouping_set(check.names)
+  )
+
+  expect_identical(names(actual), c("check.names", "x"))
+  expect_identical(actual$check.names, c("a", "b"))
+  expect_identical(actual$x, c(1L, 2L))
+
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      data.frame(
+        setNames(list(sum(x)), "check.names"), check.names = FALSE
+      ),
+      .grouping = grouping_set(check.names)
+    ),
+    "cannot overwrite grouping column"
+  )
+  expect_s3_class(error, "marginplyr_error")
+})
+
+test_that("tibble controls are not outputs but ordinary names are", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  for (id in c(".rows", ".name_repair")) {
+    actual <- summarize_with_margins(
+      data,
+      tibble::tibble(x = sum(x), .rows = 1L, .name_repair = "minimal"),
+      .grouping = grouping_set(g), .id = id
+    )
+    expect_identical(names(actual), c("g", id, "x"))
+    expect_identical(actual[[id]], c(1L, 1L))
+  }
+
+  error <- expect_error(
+    summarize_with_margins(
+      data, tibble::tibble(check.names = sum(x)),
+      .grouping = grouping_set(g), .id = "check.names"
+    ),
+    "`\\.id` \\(`check.names`\\) conflicts with a summary output"
+  )
+  expect_s3_class(error, "marginplyr_error")
+
+  error <- expect_error(
+    suppressWarnings(summarize_with_margins(
+      data, tibble::data_frame(.name_repair = sum(x)),
+      .grouping = grouping_set(g), .id = ".name_repair"
+    )),
+    "`\\.id` \\(`\\.name_repair`\\) conflicts with a summary output"
+  )
+  expect_s3_class(error, "marginplyr_error")
+
+  error <- expect_error(
+    summarize_with_margins(
+      data, data.frame(x = sum(x), check.n = FALSE),
+      .grouping = grouping_set(g), .id = "check.n"
+    ),
+    "`\\.id` \\(`check.n`\\) conflicts with a summary output"
+  )
+  expect_s3_class(error, "marginplyr_error")
+})
+
+test_that("named frame summaries stay packed with constructor controls", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  actual <- summarize_with_margins(
+    data, packed = data.frame(x = sum(x), check.names = FALSE),
+    .grouping = grouping_set(g), .id = "check.names"
+  )
+
+  expect_identical(names(actual), c("g", "check.names", "packed"))
+  expect_s3_class(actual$packed, "data.frame")
+  expect_identical(actual$packed$x, c(1L, 2L))
+})
+
 test_that("an unnamed rewritten frame is available to later summaries", {
   data <- tibble::tibble(
     group = c("a", "a", "b"),

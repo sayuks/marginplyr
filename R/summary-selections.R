@@ -1153,14 +1153,15 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
     if (is.null(arg_names)) {
       arg_names <- rep("", length(call_args))
     }
+    controls <- frame_constructor_controls(expr)
     injected_names <- vapply(
       call_args[arg_names == ""],
       known_injected_argument_name,
       character(1)
     )
-    return(setdiff(
-      c(arg_names[nzchar(arg_names)], injected_names[nzchar(injected_names)]),
-      ".name_repair"
+    return(c(
+      arg_names[nzchar(arg_names) & !arg_names %in% controls],
+      injected_names[nzchar(injected_names) & !injected_names %in% controls]
     ))
   }
 
@@ -1177,6 +1178,22 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   # nothing outside it names a kind, so no call reaches this and it stays a
   # bare `stop()` (ADR 0015).
   stop("Unhandled data-frame-valued summary kind: ", kind, call. = FALSE)
+}
+
+# The formal arguments after `...` that a recognized constructor consumes
+# rather than writes as columns. R matches these only by their full names.
+# `tibble::data_frame()` has only `...`, unlike `tibble::tibble()`.
+frame_constructor_controls <- function(expr) {
+  constructor <- if (is_static_spelling_call(
+    expr, "base_frame", "data.frame"
+  )) {
+    base::data.frame
+  } else if (is_static_spelling_call(expr, "tibble_frame", "tibble")) {
+    tibble::tibble
+  } else {
+    tibble::data_frame
+  }
+  setdiff(names(formals(constructor)), "...")
 }
 
 known_injected_argument_name <- function(expr) {
