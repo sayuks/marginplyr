@@ -97,6 +97,29 @@ test_that("known across shapes still name their actual outputs", {
   expect_s3_class(literal, "marginplyr_error")
 })
 
+test_that("an internal namespace spelling can name a known function", {
+  parsed <- parse_across_arguments(rlang::parse_expr(
+    "dplyr::across(x, base:::sum)"
+  ))
+
+  expect_identical(known_across_function_names(parsed, environment()), "1")
+})
+
+test_that("unavailable and non-function namespace names stay unknown", {
+  unavailable <- parse_across_arguments(rlang::parse_expr(
+    "dplyr::across(x, marginplyr_missing_607::fun)"
+  ))
+  non_function <- parse_across_arguments(quote(dplyr::across(x, base::letters)))
+
+  expect_identical(
+    known_across_function_names(unavailable, environment()), character()
+  )
+  expect_false(isNamespaceLoaded("marginplyr_missing_607"))
+  expect_identical(
+    known_across_function_names(non_function, environment()), character()
+  )
+})
+
 test_that("prediction does not evaluate a function-list expression", {
   data <- data.frame(group = c("a", "b"), x = c(1, 2))
   calls <- 0L
@@ -127,6 +150,25 @@ test_that("prediction does not force a delayed function-list binding", {
     data, dplyr::across(x, fns, .names = "{.col}_{.fn}"),
     .grouping = grouping_set(group), .id = "x_1"
   )
+
+  expect_identical(counter$calls, 1L)
+  expect_identical(names(result), c("group", "x_1", "x_total", "x_avg"))
+})
+
+test_that("prediction does not call an active function-list binding", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 2))
+  counter <- new.env(parent = emptyenv())
+  counter$calls <- 0L
+  result <- local({
+    makeActiveBinding("fns", function() {
+      counter$calls <- counter$calls + 1L
+      list(total = sum, avg = mean)
+    }, environment())
+    summarize_with_margins(
+      data, dplyr::across(x, fns, .names = "{.col}_{.fn}"),
+      .grouping = grouping_set(group), .id = "x_1"
+    )
+  })
 
   expect_identical(counter$calls, 1L)
   expect_identical(names(result), c("group", "x_1", "x_total", "x_avg"))
