@@ -47,11 +47,13 @@ Config/Needs/preflight:
     spelling,
     urlchecker
 Config/Needs/review:
+    covr,
     lintr,
     pkgload,
     rcmdcheck,
     spelling,
-    testthat
+    testthat,
+    yaml
 Config/Needs/release:
     attachment,
     devtools,

@@ -1146,3 +1146,8 @@ test_that("a tidyselect selection failure chains as the reader walks it", {
   )))
   expect_identical(direct_chain[[1L]]$i, refused)
 })
+
+# An empty warning text has no internal grouping key to restate.
+test_that("an empty restatement input remains empty", {
+  expect_identical(restate_margin_keys(character(), c(x = "y")), character())
+})

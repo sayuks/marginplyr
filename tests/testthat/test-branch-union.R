@@ -763,3 +763,12 @@ test_that("a lazy input answering with a local branch is an invariant", {
   expect_no_match(conditionMessage(raised), "Arrow", fixed = TRUE)
   expect_match(conditionMessage(raised), "data.frame", fixed = TRUE)
 })
+
+# A union drops an input window-order term that the result can no longer name.
+test_that("restoring window order ignores missing terms", {
+  result <- dbplyr::lazy_frame(x = 1L)
+  expect_identical(
+    restore_input_window_order(result, list(quote(absent))),
+    result
+  )
+})

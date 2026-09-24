@@ -155,7 +155,9 @@ in the local bundle; only the non-secret summary prescribed by
 Continue with the complete human-and-agent release sequence in
 [`tools/cran-release.md`](cran-release.md). That playbook owns CI, semantic
 review, remote checks, the release issue, CRAN submission, publication, and
-post-publication work. This command performs none of them.
+post-publication work. It checks the exact candidate's coverage CI and Codecov
+report after this audit, as [ADR 0030](../design/adr/0030-require-complete-test-line-coverage.md)
+specifies. This command performs none of them.
 
 For a real release, use the approved formal-attempt procedure in
 [`tools/cran-release.md`](cran-release.md), including its retention and cleanup

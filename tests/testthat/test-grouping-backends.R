@@ -2661,3 +2661,37 @@ test_that("the dtplyr fields the refusal reads still mean what it reads", {
     class = c("dtplyr_step_first", "dtplyr_step")
   )))
 })
+
+# A new backend kind needs an explicit capability profile before execution.
+test_that("unknown backend capabilities fail at the registry", {
+  expect_error(
+    backend_capabilities("missing-backend"),
+    "Unknown marginplyr backend kind", fixed = TRUE
+  )
+})
+
+# dbplyr can change its internal query shape without a public input to express
+# that state, so the adapter is given malformed shapes directly here.
+test_that("native grouping rejects incompatible dbplyr query shapes", {
+  expect_error(
+    attach_grouping_sets_query(list(), list()),
+    "dbplyr query representation has changed", fixed = TRUE
+  )
+  malformed <- structure(list(lazy_query = 1L), class = "tbl_lazy")
+  expect_error(
+    attach_grouping_sets_query(malformed, list()),
+    "dbplyr query representation has changed", fixed = TRUE
+  )
+  expect_error(
+    validate_grouping_sets_query(list()),
+    "dbplyr query representation has changed", fixed = TRUE
+  )
+})
+
+# A missing SQL connection indicates a broken internal backend handoff.
+test_that("SQL grouping requires a connection", {
+  expect_error(
+    grouping_sql_expr("x", NULL),
+    "A database connection is required", fixed = TRUE
+  )
+})

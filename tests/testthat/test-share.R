@@ -2960,3 +2960,73 @@ test_that("a call text keeps a `NULL` the caller wrote", {
     quote(summarize_with_margins(`<environment>`, .margin_label = NULL))
   )
 })
+
+# Registry lookups guard against a caller inside this package introducing a
+# share kind or adapter kind without supplying its executor.
+test_that("unknown share registries fail at the lookup", {
+  expect_error(
+    share_adapter("missing-backend"),
+    "Unknown contextual-share backend kind", fixed = TRUE
+  )
+  expect_error(
+    share_kind_rule("missing-kind"),
+    "Unknown contextual-share kind", fixed = TRUE
+  )
+})
+
+# A public Total share requires a Grand total, while this internal reader can
+# also answer a plan without one for callers checking the plan itself.
+test_that("a plan without a Grand total has no Total denominator", {
+  expect_identical(
+    total_set_ids(list(
+      sets = list("x"), by = character(), set_ids = 1L
+    )),
+    NA_integer_
+  )
+})
+
+# A reflective lookup with no argument cannot name a share or data column.
+test_that("a missing reflective lookup argument names no dependency", {
+  expect_identical(
+    reflective_lookup_symbols(quote(get()), character()), character()
+  )
+})
+
+# Static name prediction must withhold input/function pairing when a template
+# could not name all outputs. The mismatch is passed directly to the reader.
+test_that("unknown across provenance stays unknown", {
+  expect_identical(
+    across_output_provenance(
+      quote(dplyr::across(x, sum)), environment(), data.frame(x = 1L),
+      output_names = c("other", "another"), expands_own_names = TRUE
+    ),
+    list(
+      inputs = c(NA_character_, NA_character_),
+      functions = c(NA_integer_, NA_integer_)
+    )
+  )
+})
+
+# The verb runs preflight first; this direct call protects the planner if an
+# internal caller ever omits that step.
+test_that("share planning still refuses a nested helper", {
+  plan <- compile_grouping_spec(
+    rollup(g), c("g", "v"), duplicates_choices = margin_duplicates_choices
+  )
+  expect_error(
+    plan_share_expressions(
+      list(invalid = rlang::quo(share_of_parent(v) + 1L)),
+      data.frame(g = "a", v = 1L), plan, "set_id"
+    ),
+    "must be the complete right-hand side", fixed = TRUE
+  )
+})
+
+# If analysis cannot uniquely identify a source, it cannot attach a
+# cardinality check to an arbitrary record.
+test_that("cardinality mapping skips an unanalyzed source", {
+  requests <- list(list(
+    kind = "parent", outputs = "part", sources = "total"
+  ))
+  expect_identical(share_cardinality_records(list(), requests), list())
+})

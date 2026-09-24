@@ -9,6 +9,7 @@ name: test-coverage.yaml
 
 permissions:
   contents: read
+  id-token: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -28,28 +29,25 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::covr, any::xml2
+          extra-packages: any::covr, any::xml2, any::yaml
           needs: coverage
 
+      - name: Verify coverage exclusion policy
+        run: Rscript .github/scripts/verify-coverage-policy.R
+
       - name: Test coverage
-        run: |
-          cov <- covr::package_coverage(
-            quiet = FALSE,
-            clean = FALSE,
-            install_path = file.path(normalizePath(Sys.getenv("RUNNER_TEMP"), winslash = "/"), "package")
-          )
-          print(cov)
-          covr::to_cobertura(cov)
-        shell: Rscript {0}
+        run: Rscript tools/coverage-check.R --cobertura cobertura.xml
 
       - uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7
+        if: ${{ always() && hashFiles('cobertura.xml') != '' }}
         with:
-          # Fail if error if not on PR, or if on PR and token is given
-          fail_ci_if_error: ${{ github.event_name != 'pull_request' || secrets.CODECOV_TOKEN }}
+          # Fork PR uploads are auxiliary when Codecov cannot authenticate them.
+          fail_ci_if_error: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository || secrets.CODECOV_TOKEN != '' }}
           files: ./cobertura.xml
           plugins: noop
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
 
       - name: Show testthat output
         if: always()
@@ -63,5 +61,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: coverage-test-failures
-          path: ${{ runner.temp }}/package
+          path: |
+            ${{ runner.temp }}/package
+            cobertura.xml
           retention-days: 7

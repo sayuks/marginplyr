@@ -54,9 +54,11 @@ The command takes no options. It runs, in order:
 2. package spelling, reporting unknown words and their locations only when it
    finds them;
 3. the full testthat suite, including local snapshot expectations;
-4. `jarl check .`;
-5. package-aware lintr after `pkgload::load_all()`; and
-6. a source-tarball `R CMD check --as-cran` against disposable empty local
+4. strict test line coverage through `tools/coverage-check.R`, requiring every
+   measured R source line and every optional Suggest used by the suite;
+5. `jarl check .`;
+6. package-aware lintr after `pkgload::load_all()`; and
+7. a source-tarball `R CMD check --as-cran` against disposable empty local
    CRAN and Bioconductor indexes, with remote incoming checks and
    external-clock verification disabled. The local future-file-timestamp
    comparison remains enabled.
@@ -106,6 +108,7 @@ Record the exact identity and outcome in the pull request:
 - Review-ready check: <40-character commit SHA>
   - package spelling: passed
   - full testthat suite: passed
+  - strict test line coverage: <covered/measured lines, covr version>
   - jarl: passed
   - package-aware lintr: passed
   - source-tarball R CMD check: <errors/warnings/notes and NOTE dispositions>
@@ -117,7 +120,10 @@ Focused tests are the tight feedback loop while changing a module. They do not
 replace the full suite at the boundary. The full suite does not replace the
 source-tarball check: CRAN semantics skip snapshot expectations, while the
 tarball check alone sees package metadata and installed-package boundaries.
-Neither test run replaces jarl or lintr.
+Neither test run replaces jarl or lintr. The line-coverage policy is recorded in
+[ADR 0030](../adr/0030-require-complete-test-line-coverage.md); the coverage
+command rejects source, covr, and Codecov exclusions and reports each uncovered
+file and line without rounding its verdict.
 
 The Review-ready check uses the developer's fully provisioned library. The
 release matrix remains responsible for depends-only, suite-coverage, library

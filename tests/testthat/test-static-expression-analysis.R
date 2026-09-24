@@ -4565,3 +4565,80 @@ test_that("a formula a capture carries keeps its class and environment", {
   expect_true(all(result$kept))
   expect_identical(result$applied, result$units + 100)
 })
+
+# The static selection reader supplies dplyr's default to an empty pick call.
+test_that("empty pick selection reads every column", {
+  expect_identical(
+    parse_pick_selection(quote(dplyr::pick())),
+    quote(dplyr::everything())
+  )
+  expect_identical(
+    known_data_frame_output_names(
+      quote(dplyr::pick(x)), environment(), data.frame(x = 1L)
+    ),
+    "x"
+  )
+})
+
+# Rewriting a contextual across must insert its omitted selection before the
+# function argument, preserving the call's meaning.
+test_that("rewritten across inserts an omitted selection", {
+  expect_identical(
+    rewrite_across_selection(
+      quote(dplyr::across(.fns = sum)), environment(), data.frame(x = 1L),
+      normalize_across_names = FALSE, call_name = "across"
+    ),
+    quote(dplyr::across(.cols = dplyr::all_of("x"), .fns = sum))
+  )
+})
+
+# A forwarded quosure keeps the environment and selection it was written in.
+test_that("selection resolution accepts a forwarded quosure", {
+  expect_identical(
+    names(resolve_summary_selection(
+      rlang::quo(x), environment(), data.frame(x = 1L)
+    )),
+    "x"
+  )
+})
+
+# Calls that are not frame constructors do not promise multiple output names.
+test_that("non-frame expressions have no static frame outputs", {
+  expect_null(data_frame_valued_summary_kind(1L))
+  expect_identical(
+    known_injected_argument_name(quote(identity(x))), ""
+  )
+  expect_identical(
+    known_injected_argument_name(quote(`:=`(paste0("a", "b"), 1L))),
+    ""
+  )
+})
+
+# A statically invalid template cannot be used to predict names. Once glue
+# expands it to multiple names, the package reports the caller's template.
+test_that("across name prediction withholds invalid names", {
+  expect_identical(
+    known_across_output_names(
+      quote(dplyr::across(x, sum, .names = 1L)),
+      environment(), data.frame(x = 1L)
+    ),
+    character()
+  )
+  expect_error(
+    check_across_name_count(c("one", "two"), "{.col*}", "x"),
+    "must produce one name per column", fixed = TRUE
+  )
+})
+
+# A future classifier value must gain a corresponding output-name reader.
+test_that("new frame kinds require a matching name reader", {
+  local_mocked_bindings(
+    data_frame_valued_summary_kind = function(expr) "future"
+  )
+  expect_error(
+    known_data_frame_output_names(
+      quote(future(x)), environment(), data.frame(x = 1L)
+    ),
+    "Unhandled data-frame-valued summary kind", fixed = TRUE
+  )
+})

@@ -61,9 +61,6 @@ nearest_summary_option <- function(name, known_options) {
 
 check_option_named_summaries <- function(dots) {
   dot_names <- names(dots)
-  if (is.null(dot_names)) {
-    return(invisible(NULL))
-  }
   candidates <- unique(dot_names[startsWith(dot_names, ".")])
   if (length(candidates) == 0L) {
     return(invisible(NULL))

@@ -921,3 +921,11 @@ test_that("parentheses leave an injected quosure its own environment", {
     c(30, 70, 100)
   )
 })
+
+# Family names are package-owned, so an unknown one signals an internal typo.
+test_that("static spelling refuses an unregistered family", {
+  expect_error(
+    static_spelling_rule("missing-family"),
+    "Unknown static-spelling family", fixed = TRUE
+  )
+})

@@ -164,7 +164,7 @@ verify_review_ready_test_packages <- function(
   invisible(TRUE)
 }
 
-# Defines the four working-tree checks before the source-tarball boundary.
+# Defines the working-tree checks before the source-tarball boundary.
 review_ready_source_steps <- function(prerequisites) {
   list(
     `Package spelling` = list(
@@ -189,6 +189,11 @@ review_ready_source_steps <- function(prerequisites) {
           "stop_on_failure = TRUE)"
         )
       ),
+      env = character()
+    ),
+    `Strict line coverage` = list(
+      command = prerequisites$rscript,
+      args = "tools/coverage-check.R",
       env = character()
     ),
     `jarl` = list(
