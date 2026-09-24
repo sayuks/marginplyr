@@ -1047,6 +1047,8 @@ wrap_share_sources <- function(dots,
   dots
 }
 
+# Wrap each resolved direct ordinary dot with its cardinality check. Each
+# check names a position in `dots` and the share that requires scalar rows.
 wrap_dtplyr_share_ordinary <- function(dots, checks, call) {
   for (check in checks) {
     position <- check$position
@@ -1068,6 +1070,8 @@ wrap_dtplyr_share_ordinary <- function(dots, checks, call) {
   dots
 }
 
+# Return one ordinary summary value for one grouped row. The caller supplies
+# the evaluated value and the share request whose result needs that shape.
 check_dtplyr_share_ordinary <- function(value, summary, share_output,
                                         share_kind, call_text) {
   if (NROW(value) != 1L) {
@@ -2216,6 +2220,8 @@ guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
   dplyr::filter(result, !!check)
 }
 
+# Return TRUE when aligned staged key columns identify one row per key. The
+# caller evaluates this predicate inside the lazy graph at explicit execution.
 assert_dtplyr_grouped_keys <- function(..., share_output, share_kind,
                                        call_text) {
   if (vctrs::vec_duplicate_any(vctrs::new_data_frame(list(...)))) {
