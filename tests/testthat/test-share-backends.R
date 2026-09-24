@@ -84,7 +84,8 @@ test_that("SQLite shares retain all-missing dimension types", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
-  withr::local_options(marginplyr.audit_sql = TRUE)
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
   values <- list(character = NA_character_, integer = NA_integer_, double = NA_real_)
   labels <- list(`NULL` = NULL, `NA_character_` = NA_character_)
 
