@@ -73,8 +73,8 @@ summarize_margin_native <- function(.data,
   # one Condition context (CONTEXT.md). It is assigned after the restatement
   # rather than inside it, because that function returns the condition
   # untouched when the map is empty, and this half is owed either way.
-  output_names <- tryCatch(
-    native_summary_output_names(.data, dots),
+  resolved_dots <- tryCatch(
+    native_summary_expressions(.data, dots),
     error = function(cnd) {
       cnd <- restate_condition_arguments(cnd, restatements)
       cnd$call <- call
@@ -82,7 +82,7 @@ summarize_margin_native <- function(.data,
     }
   )
   check_summary_output_names(
-    output_names,
+    names(resolved_dots),
     group_vars = group_vars,
     internal_names = c(flag_names, unname(parent_key_names)),
     set_id_name = set_id_name,
@@ -94,7 +94,7 @@ summarize_margin_native <- function(.data,
       .data,
       dplyr::pick(dplyr::all_of(group_vars))
     ),
-    !!!dots,
+    !!!resolved_dots,
     !!!set_id_quos,
     !!!flag_quos,
     .groups = "drop"
@@ -131,23 +131,19 @@ summarize_margin_native <- function(.data,
   result
 }
 
-# What `check_summary_output_names()` needs and the grouped summarize above
-# cannot supply. A summary output that shadows a grouping dimension takes that
-# dimension's place in the result, so the name is present exactly once whether
-# or not the collision happened, and the two cases are indistinguishable there.
-# Building the same expressions over the ungrouped table names the outputs on
-# their own. Every `across()`, `pick()`, and `if_any()` selection was resolved
-# to an `all_of()` literal before either adapter ran, so dropping the grouping
-# cannot change which columns they cover.
-#
-# A lazy summarize computes its result names without reading from the backend,
-# so this stays a locally detectable error rejected before any backend read
-# (ADR 0005).
-native_summary_output_names <- function(.data, dots) {
-  get_col_names(
-    dplyr::summarize(dplyr::ungroup(.data), !!!dots),
-    dplyr::everything()
+# Resolve the caller's summary names once, before adding grouping columns that
+# an output could overwrite. The grouped build uses the resolved expressions,
+# so a stateful `.names` expression cannot change names between validation and
+# construction. The lazy query is built without reading the input (ADR 0020).
+native_summary_expressions <- function(.data, dots) {
+  summary <- dplyr::summarize(dplyr::ungroup(.data), !!!dots)
+  select <- summary$lazy_query$select
+  stopifnot(
+    is.character(select$name),
+    is.list(select$expr),
+    identical(select$name, get_col_names(summary, dplyr::everything()))
   )
+  stats::setNames(select$expr, select$name)
 }
 
 grouping_set_id_sql_expr <- function(plan, con) {
