@@ -272,62 +272,36 @@ check_internal_summary_names <- function(output_names, internal_names) {
   ))
 }
 
-# The columns of a data-frame-valued summary that took an Assigned summary
-# name, put back where dplyr would have put them had the summary stayed
-# unnamed (ADR 0028).
-#
-# Reached from `summarize_margin_union()` only. `use_native` in
-# `stage_margin_summaries()` gates the other adapter on `native_grouping_sets`,
-# which `backend_capabilities()` grants to the two SQL kinds alone, so no local
-# result is built there.
-#
-# The composite check is asked again, of the names that replaced the assigned
-# one. The branch's `..marginplyr_key_` columns are renamed or gone by this
-# point. Parent shares supply the typed keys they are about to add;
-# `set_id_is_internal` covers the staged occurrence identifier.
-expand_assigned_data_frames <- function(result,
-                                        assigned_names,
-                                        group_vars,
-                                        set_id_name,
-                                        set_id_is_internal = FALSE,
-                                        internal_names = character()) {
-  if (!is.data.frame(result)) {
-    return(result)
+# An Assigned summary name is needed for scalar values, while an unnamed frame
+# must expand in dplyr's mask before the next summary runs (ADR 0028).
+# Only local branches use this: lazy backends keep their own naming behavior.
+# The caller supplies one assigned name per dot, in the same order.
+wrap_assigned_local_summaries <- function(dots, assigned_names) {
+  for (i in which(!is.na(assigned_names))) {
+    dot <- dots[[i]]
+    expr <- rlang::call2(
+      marginplyr_private_call("local_assigned_summary_value"),
+      rlang::quo_get_expr(dot),
+      assigned_names[[i]]
+    )
+    dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
+    names(dots)[[i]] <- ""
   }
-  packed <- intersect(assigned_names[!is.na(assigned_names)], names(result))
-  packed <- Filter(function(name) is.data.frame(result[[name]]), packed)
-  if (length(packed) == 0L) {
-    return(result)
-  }
-
-  check_summary_output_names(
-    unlist(
-      lapply(packed, function(name) names(result[[name]])),
-      use.names = FALSE
-    ),
-    group_vars = group_vars,
-    internal_names = internal_names,
-    set_id_name = set_id_name,
-    set_id_is_internal = set_id_is_internal
-  )
-
-  for (name in packed) {
-    result <- expand_packed_summary_column(result, name)
-  }
-  result
+  dots
 }
 
-# `dplyr::mutate()` writes the columns, so `.after` is what puts them where the
-# packed column stood.
-expand_packed_summary_column <- function(result, name) {
-  columns <- as.list(result[[name]])
-  result <- dplyr::mutate(result, !!!columns, .after = dplyr::all_of(name))
-  # An inner column of the assigned name has taken the packed column's place
-  # above, leaving nothing under that name to drop.
-  if (name %in% names(columns)) {
-    return(result)
+# Return a frame so dplyr places the output in its mask immediately. An actual
+# frame keeps its own column names; a scalar takes the caller-facing name;
+# `NULL` keeps dplyr's omission behavior.
+# The caller supplies the evaluated value and its Assigned summary name.
+local_assigned_summary_value <- function(value, name) {
+  if (is.data.frame(value) || is.null(value)) {
+    return(value)
   }
-  dplyr::select(result, -dplyr::all_of(name))
+  vctrs::new_data_frame(
+    stats::setNames(list(value), name),
+    n = vctrs::vec_size(value)
+  )
 }
 
 # What execution carries for the caller's summary arguments: the dots to hand
@@ -344,7 +318,7 @@ expand_packed_summary_column <- function(result, name) {
 # so "no spelling to restore" needs no representation of its own, and a length
 # is checked once rather than only when a second value says to. The assigned
 # names default to none for the same reason: such a caller wrote every name its
-# dots carry, and ADR 0028 expands only a name marginplyr wrote.
+# dots carry, and ADR 0028 applies only to a name marginplyr wrote.
 # `selection_state` carries the local branch's internal key names to deferred
 # selections; the union adapter fills those names before it runs any branch.
 new_summary_arguments <- function(dots,
@@ -384,8 +358,7 @@ dplyr_auto_name <- function(expr) {
 # The name dplyr would have given each unnamed summary marginplyr rewrites,
 # read from what the caller wrote rather than from the rewrite. The named dots
 # arrive beside the Assigned summary name each one took, `NA` where none was
-# assigned: ADR 0028 decides after execution, and a result column carrying a
-# name marginplyr wrote is the only thing it acts on.
+# assigned: ADR 0028 decides from the local value while dplyr evaluates it.
 #
 # dplyr names an unnamed summary by deparsing the expression it receives, and
 # what a rewritten one hands it is marginplyr's spelling: a branch-local `0L`
@@ -402,15 +375,15 @@ dplyr_auto_name <- function(expr) {
 # under any name, and returning a one-row data frame is an ordinary way to
 # write several columns at once. One no rewrite reaches goes on expanding.
 #
-# One a rewrite does reach is named, and is then packed. The recognized
-# data-frame-valued shapes are excluded here rather than left to that, because
+# One a rewrite does reach receives an Assigned summary name. The recognized
+# data-frame-valued shapes are excluded here, because
 # they are the ones a static reading reaches: `across()` and `pick()` are
 # selection helpers and `tibble()` beside one carries the rewrite up, and each
 # names its own outputs whatever a branch rewrote inside it. What is left is a
 # data-frame-valued expression the static reading does not recognize, and no
-# reading separates it from a scalar one: `nrow(pick(v, w))` has to be named
-# and `range_frame(pick(v))` has to not be, which is a question about the
-# value's type. ADR 0028 is where that one is answered.
+# reading separates it from a scalar one: `nrow(pick(v, w))` needs the assigned
+# name, while `range_frame(pick(v))` needs its inner columns to expand. ADR 0028
+# answers that question from the value in the local branch.
 #
 # The label is `dplyr_auto_name()` and not `rlang::as_label()`, because what is
 # written here is a column name rather than a condition label: ADR 0022's
