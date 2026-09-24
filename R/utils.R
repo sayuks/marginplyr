@@ -779,11 +779,7 @@ function_formal_defaults <- function(expr) {
   if (!identical(static_call_name(expr), "function")) {
     return(list())
   }
-  args <- static_call_args(expr)
-  if (!length(args) || !is.pairlist(args[[1L]])) {
-    return(list())
-  }
-  as.list(args[[1L]])
+  as.list(static_call_args(expr)[[1L]])
 }
 
 # Rebuild a function literal's formal pairlist around rewritten defaults.
