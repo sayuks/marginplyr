@@ -289,7 +289,9 @@ test_that("nesting groups by source keys before displaying Margin labels", {
       for (verb_name in names(verbs)) {
         for (keep in c(FALSE, TRUE)) {
           for (sort_option in c("none", "last", "first")) {
-            info <- paste(fixture_name, source_name, verb_name, keep, sort_option)
+            info <- paste(
+              fixture_name, source_name, verb_name, keep, sort_option
+            )
             nested <- verbs[[verb_name]](
               sources[[source_name]],
               .grouping = rollup(g),
@@ -297,7 +299,7 @@ test_that("nesting groups by source keys before displaying Margin labels", {
               .sort = sort_option
             )
             if (identical(verb_name, "nest_with_margins") &&
-                identical(source_name, "dtplyr")) {
+                  identical(source_name, "dtplyr")) {
               expect_s3_class(nested, "dtplyr_step")
               nested <- dplyr::collect(nested)
             }
@@ -377,7 +379,11 @@ test_that("nesting groups by source keys before displaying Margin labels", {
           result <- dplyr::collect(result)
           expect_identical(nrow(result), 2L)
           expect_equal(
-            sort(vapply(result$data, function(cell) cell$value[[1L]], integer(1))),
+            sort(vapply(
+              result$data,
+              function(cell) cell$value[[1L]],
+              integer(1)
+            )),
             1:2
           )
           expect_identical(vapply(result$data, nrow, integer(1)), c(1L, 1L))
