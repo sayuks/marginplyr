@@ -259,6 +259,140 @@ test_that("nesting drops duplicate grouping sets", {
   expect_identical(dplyr::mutate(by_result, n = nrow(data))$n, c(1L, 1L, 2L))
 })
 
+test_that("nesting groups by source keys before displaying Margin labels", {
+  instants <- as.POSIXct(
+    c("2026-11-01 05:30:00", "2026-11-01 06:30:00"),
+    tz = "UTC"
+  )
+  attr(instants, "tzone") <- "America/New_York"
+  fixtures <- list(
+    close_double = data.frame(g = c(1, 1 + 1e-15), value = 1:2),
+    repeated_hour = data.frame(g = instants, value = 1:2)
+  )
+  expect_identical(
+    as.character(fixtures$repeated_hour$g[[1L]]),
+    as.character(fixtures$repeated_hour$g[[2L]])
+  )
+
+  verbs <- list(
+    nest_with_margins = nest_with_margins,
+    nest_by_with_margins = nest_by_with_margins
+  )
+  for (fixture_name in names(fixtures)) {
+    input <- fixtures[[fixture_name]]
+    sources <- list(data_frame = input, tibble = tibble::as_tibble(input))
+    if (suggest_available("dtplyr")) {
+      sources$dtplyr <- dtplyr::lazy_dt(input)
+    }
+
+    for (source_name in names(sources)) {
+      for (verb_name in names(verbs)) {
+        for (keep in c(FALSE, TRUE)) {
+          for (sort_option in c("none", "last", "first")) {
+            info <- paste(
+              fixture_name, source_name, verb_name, keep, sort_option
+            )
+            nested <- verbs[[verb_name]](
+              sources[[source_name]],
+              .grouping = rollup(g),
+              .keep = keep,
+              .sort = sort_option
+            )
+            if (identical(verb_name, "nest_with_margins") &&
+                  identical(source_name, "dtplyr")) {
+              expect_s3_class(nested, "dtplyr_step")
+              nested <- dplyr::collect(nested)
+            }
+            if (identical(verb_name, "nest_by_with_margins")) {
+              expect_s3_class(nested, "rowwise_df")
+              expect_identical(dplyr::group_vars(nested), "g", info = info)
+            } else {
+              expect_identical(
+                dplyr::group_vars(nested),
+                character(),
+                info = info
+              )
+            }
+
+            expect_identical(nrow(nested), 3L, info = info)
+            expect_identical(names(nested), c("g", "data"), info = info)
+            detail <- which(nested$g != "Total")
+            total <- which(nested$g == "Total")
+            expect_identical(length(detail), 2L, info = info)
+            expect_identical(length(total), 1L, info = info)
+            expect_identical(
+              nested$g[detail],
+              rep(as.character(input$g[[1L]]), 2L),
+              info = info
+            )
+            if (identical(sort_option, "last")) {
+              expect_identical(total, 3L, info = info)
+            }
+            if (identical(sort_option, "first")) {
+              expect_identical(total, 1L, info = info)
+            }
+            expect_equal(
+              sort(unlist(lapply(nested$data[detail], function(cell) {
+                cell$value
+              }))),
+              1:2,
+              info = info
+            )
+            expect_equal(sort(nested$data[[total]]$value), 1:2, info = info)
+            expect_identical(
+              sort(vapply(nested$data, nrow, integer(1))),
+              c(1L, 1L, 2L),
+              info = info
+            )
+            if (keep) {
+              for (cell in nested$data[detail]) {
+                expect_identical(
+                  cell$g,
+                  input$g[cell$value],
+                  info = info
+                )
+              }
+              expect_equal(
+                sort(as.numeric(nested$data[[total]]$g)),
+                sort(as.numeric(input$g)),
+                info = info
+              )
+            }
+          }
+        }
+
+        detail_only <- verbs[[verb_name]](
+          sources[[source_name]],
+          .grouping = grouping_set(g)
+        )
+        missing_label <- verbs[[verb_name]](
+          sources[[source_name]],
+          .grouping = grouping_set(g),
+          .margin_label = NULL
+        )
+        fixed <- verbs[[verb_name]](
+          sources[[source_name]],
+          .by = g,
+          .grouping = grouping_set()
+        )
+        for (result in list(detail_only, missing_label, fixed)) {
+          result <- dplyr::collect(result)
+          expect_identical(nrow(result), 2L)
+          expect_equal(
+            sort(vapply(
+              result$data,
+              function(cell) cell$value[[1L]],
+              integer(1)
+            )),
+            1:2
+          )
+          expect_identical(vapply(result$data, nrow, integer(1)), c(1L, 1L))
+        }
+      }
+    }
+  }
+})
+
 # A nesting whose payload has no columns still stands for a known number of
 # source rows, and the count is the only thing left to carry. Every case below
 # pins it, because a cell that lost it is still a data frame and still nests
