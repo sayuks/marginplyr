@@ -2950,3 +2950,20 @@ test_that("a grouping predicate is refused with the argument and the verb", {
   )
   expect_named(answered, c("value", "region", "grade", "n"))
 })
+
+# A package-owned specification kind without a registry rule is an internal
+# invariant failure, as described in ADR 0015.
+test_that("expansion refuses an unregistered Grouping kind", {
+  expect_error(
+    expand_grouping_family(
+      list(spec = list(type = "future")), data.frame(x = 1L)
+    ),
+    "Unknown Grouping specification kind", fixed = TRUE
+  )
+})
+
+# The rule lookup accepts unvalidated kinds from internal readers.
+test_that("invalid Grouping kinds and empty frames yield no match", {
+  expect_null(find_grouping_kind_rule(c("set", "cube")))
+  expect_false(holds_grouping_spec_function(new.env(parent = emptyenv())))
+})

@@ -29,9 +29,11 @@ coverage_verify_policy <- function(root = ".") {
       call. = FALSE)
   }
 
-  yaml <- readLines(file.path(root, "codecov.yml"), warn = FALSE)
-  yaml <- yaml[!grepl("^[[:space:]]*#", yaml)]
-  if (any(grepl("^[[:space:]]*ignore[[:space:]]*:", yaml))) {
+  if (!requireNamespace("yaml", quietly = TRUE)) {
+    stop("Coverage policy verification requires yaml.", call. = FALSE)
+  }
+  config <- yaml::read_yaml(file.path(root, "codecov.yml"))
+  if ("ignore" %in% names(config)) {
     stop("Codecov ignore rules are forbidden.", call. = FALSE)
   }
   invisible(TRUE)

@@ -836,3 +836,10 @@ test_that("reusable-input assertions use the Package condition seam", {
     fixed = TRUE
   )
 })
+
+# substitute() without its expr captures nothing; its env argument evaluates.
+test_that("a missing capture formal leaves call arguments evaluated", {
+  expect_identical(
+    captured_call_parts(quote(substitute(env = parent.frame()))), FALSE
+  )
+})

@@ -35,6 +35,9 @@ unlink(file.path(fixture, ".covrignore"))
 writeLines(c("coverage: {}", "ignore:", "  - R/f.R"),
   file.path(fixture, "codecov.yml"))
 expect_rejected(coverage_verify_policy(fixture), "Codecov ignore")
+writeLines(c("coverage: {}", "'ignore':", "  - R/f.R"),
+  file.path(fixture, "codecov.yml"))
+expect_rejected(coverage_verify_policy(fixture), "Codecov ignore")
 
 gate <- paste(deparse(body(coverage_check)), collapse = "\n")
 required <- c("coverage_verify_policy(root)", "coverage_verify_runtime()",

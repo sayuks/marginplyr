@@ -52,7 +52,8 @@ Config/Needs/review:
     pkgload,
     rcmdcheck,
     spelling,
-    testthat
+    testthat,
+    yaml
 Config/Needs/release:
     attachment,
     devtools,

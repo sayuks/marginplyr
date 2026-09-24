@@ -191,3 +191,17 @@ test_that("reconstruct_factor() works with dtplyr_step", {
     )
   )
 })
+
+# The temporary code must never collide with a factor level or Margin label.
+test_that("factor encoding avoids a reserved missing code", {
+  expect_identical(
+    factor_missing_sentinel(
+      list(levels = "..marginplyr_missing_factor_code"), "Margin"
+    ),
+    "..marginplyr_missing_factor_code_"
+  )
+  expect_identical(
+    encode_factor_for_margin(factor(c("a", NA)), "missing", FALSE),
+    c("a", NA_character_)
+  )
+})

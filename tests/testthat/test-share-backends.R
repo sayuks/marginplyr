@@ -3225,3 +3225,25 @@ test_that("dtplyr reports an across share against the same call", {
     quote(share_of_parent(value_flag))
   )
 })
+
+# A dtplyr lambda checks only columns chosen as share sources; an unrelated
+# column's value passes through unchanged.
+test_that("dtplyr share validation leaves unselected inputs alone", {
+  expect_identical(
+    check_dtplyr_share_scalar(
+      2L, "unselected", list(inputs = "selected"), "call"
+    ),
+    2L
+  )
+})
+
+# An ordinary across with an unnamed function list can be rebuilt unchanged
+# when no share-source checks target that function.
+test_that("dtplyr rebuilds an unnamed unchecked across function", {
+  expect_identical(
+    wrap_dtplyr_share_across(
+      quote(dplyr::across(x, list(sum))), list(), quote(call())
+    ),
+    quote(dplyr::across(x, list(sum)))
+  )
+})

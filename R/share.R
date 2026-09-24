@@ -2084,18 +2084,13 @@ check_total_grouping_kind <- function(plan) {
   ))
 }
 
+# Applies a nonempty set of requested shares to the staged summary result.
 execute_shares <- function(operation,
                            staged_result,
                            requests,
                            check_share_source) {
   check_margin_operation(operation)
   check_margin_summary_stage(staged_result)
-  if (length(requests) == 0L) {
-    return(margin_summary_stage_result(
-      staged_result
-    ))
-  }
-
   result <- margin_summary_stage_result(
     staged_result
   )
