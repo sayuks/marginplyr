@@ -290,7 +290,8 @@ execute_margin_nest <- function(operation, .key, .keep) {
 
       internal_names <- new_margin_internal_names(
         as.integer(is.null(operation$set_id_name)) +
-          if (.keep) length(group_cols) else 0L,
+          (if (.keep) length(group_cols) else 0L) +
+          length(plan$dimensions),
         used_names = unique(c(
           operation$data_vars,
           operation$set_id_name,
@@ -303,14 +304,23 @@ execute_margin_nest <- function(operation, .key, .keep) {
       } else {
         operation$set_id_name
       }
+      available_names <- if (is.null(operation$set_id_name)) {
+        internal_names[-1L]
+      } else {
+        internal_names
+      }
       keep_cols <- if (.keep && length(group_cols) > 0L) {
         stats::setNames(
-          utils::tail(internal_names, length(group_cols)),
+          utils::head(available_names, length(group_cols)),
           group_cols
         )
       } else {
         character()
       }
+      identity_cols <- stats::setNames(
+        utils::tail(available_names, length(plan$dimensions)),
+        plan$dimensions
+      )
       data <- operation$data
       column_info <- operation$column_info
       if (length(keep_cols) > 0L) {
@@ -338,6 +348,56 @@ execute_margin_nest <- function(operation, .key, .keep) {
         )
       }
 
+      # The outer keys are display values after expansion. Copies of the
+      # original dimensions keep distinct source groups separate while each
+      # branch is nested, including values with the same character rendering.
+      factors_by_col <- stats::setNames(
+        column_info$factors,
+        vapply(column_info$factors, function(info) info$col, character(1))
+      )
+      identity_encoded <- vapply(
+        plan$dimensions,
+        function(col) {
+          info <- factors_by_col[[col]]
+          !is.null(info) && isTRUE(info$has_na_in_level) &&
+            isTRUE(info$preserve_missing_value)
+        },
+        logical(1)
+      )
+      identity_exprs <- lapply(
+        plan$dimensions,
+        function(col) {
+          if (!identity_encoded[[col]]) {
+            return(margin_column_pronoun(col))
+          }
+          info <- factors_by_col[[col]]
+          rlang::call2(
+            marginplyr_private_call("encode_factor_for_margin"),
+            margin_column_pronoun(col),
+            missing_sentinel = factor_missing_sentinel(
+              info,
+              margin_label_of(operation$margin_labels, col)
+            ),
+            preserve_missing_value = TRUE
+          )
+        }
+      )
+      names(identity_exprs) <- unname(identity_cols)
+      if (length(identity_exprs) > 0L) {
+        data <- dplyr::mutate(data, !!!identity_exprs)
+      }
+      identity_missing <- lapply(
+        plan$dimensions,
+        function(col) {
+          if (identity_encoded[[col]]) {
+            NA_character_
+          } else {
+            column_info$prototypes[[col]]
+          }
+        }
+      )
+      names(identity_missing) <- plan$dimensions
+
       validate_margin_operation(operation)
 
       expanded <- expand_margin_union(
@@ -346,7 +406,9 @@ execute_margin_nest <- function(operation, .key, .keep) {
         margin_labels = operation$margin_labels,
         column_info = column_info,
         backend = operation$backend,
-        set_id_name = set_col
+        set_id_name = set_col,
+        identity_cols = identity_cols,
+        identity_missing = identity_missing
       )
 
       # Nesting always expands through the portable adapter and already carries
@@ -378,6 +440,7 @@ execute_margin_nest <- function(operation, .key, .keep) {
           expanded,
           group_cols = group_cols,
           set_col = set_col,
+          identity_cols = identity_cols,
           keep_cols = keep_cols,
           .key = .key,
           kind = operation$backend$kind,
@@ -432,14 +495,17 @@ nest_cell_expr <- function(cell_cols, kind) {
   }
 }
 
+# Fold expanded rows into cells by visible keys, set identifier, and original
+# typed dimension keys; remove the private identity columns from the result.
 nest_expanded_margins <- function(.data,
                                   group_cols,
                                   set_col,
+                                  identity_cols,
                                   keep_cols,
                                   .key,
                                   kind,
                                   drop_set_col = TRUE) {
-  outer_cols <- c(group_cols, set_col)
+  outer_cols <- c(group_cols, set_col, unname(identity_cols))
   # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
   # so answers `NULL` for a `dtplyr` step — every payload column would then
   # look absent and be dropped from every cell.
@@ -471,6 +537,9 @@ nest_expanded_margins <- function(.data,
 
   if (drop_set_col) {
     result <- dplyr::select(result, -dplyr::all_of(set_col))
+  }
+  if (length(identity_cols) > 0L) {
+    result <- dplyr::select(result, -dplyr::all_of(unname(identity_cols)))
   }
   result
 }

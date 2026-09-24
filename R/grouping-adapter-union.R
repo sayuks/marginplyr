@@ -623,12 +623,16 @@ restore_input_window_order <- function(result, input_window_order) {
 # `backend` is the operation's own, and it sits among the required arguments
 # rather than after the optional one so that no positional call can reach a
 # different arrangement than the two callers write.
+# Nesting supplies typed `identity_cols` and the missing values to write for
+# dimensions omitted from a branch; other Margin verbs leave them empty.
 expand_margin_union <- function(.data,
                                 plan,
                                 margin_labels,
                                 column_info,
                                 backend,
-                                set_id_name = NULL) {
+                                set_id_name = NULL,
+                                identity_cols = character(),
+                                identity_missing = list()) {
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when
   # given a column needs to be told so by counting. Both halves are read from
@@ -648,6 +652,22 @@ expand_margin_union <- function(.data,
         prototypes = column_info$prototypes,
         factor_info = column_info$factors
       )
+      omitted_identity <- intersect(
+        names(identity_cols),
+        setdiff(plan$dimensions, grouping_set)
+      )
+      if (length(omitted_identity) > 0L) {
+        missing_exprs <- lapply(omitted_identity, function(col) {
+          value <- identity_missing[[col]]
+          if (identical(backend$kind, "dtplyr")) {
+            rlang::expr(rep(!!value, dplyr::n()))
+          } else {
+            value
+          }
+        })
+        names(missing_exprs) <- unname(identity_cols[omitted_identity])
+        result <- dplyr::mutate(result, !!!missing_exprs)
+      }
 
       add_grouping_set_id(
         result,
