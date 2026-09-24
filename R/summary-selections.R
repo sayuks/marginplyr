@@ -1196,6 +1196,11 @@ known_injected_argument_name <- function(expr) {
 
 known_across_output_names <- function(expr, env, data_proxy) {
   parsed <- parse_across_arguments(expr)
+  if (!is.null(parsed$unpack) && !isFALSE(parsed$unpack)) {
+    # The outer names can be replaced by inner names whose schema is only
+    # known after the summary runs. The branch checks those actual names.
+    return(character())
+  }
   cols_expr <- parsed$cols
   column_names <- names(resolve_summary_selection(cols_expr, env, data_proxy))
 
