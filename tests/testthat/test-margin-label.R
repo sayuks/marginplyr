@@ -1299,6 +1299,153 @@ test_that("Arrow applies mixed named labels lazily with typed missing values", {
   expect_true(anyNA(result$second))
 })
 
+test_that("Arrow int64 typed missing dimensions collect in both Margin verbs", {
+  skip_if_suggest_absent("arrow")
+  source <- arrow::Table$create(
+    g = arrow::Array$create(c(1L, 2L), type = arrow::int64())
+  )
+
+  for (label in list(NULL, NA_character_)) {
+    summary <- summarize_with_margins(
+      source, n = dplyr::n(), .grouping = rollup(g),
+      .margin_label = label
+    )
+    expansion <- expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = label
+    )
+    expect_s3_class(summary, "arrow_dplyr_query")
+    expect_s3_class(expansion, "arrow_dplyr_query")
+    expect_true(
+      arrow::schema(summary)$GetFieldByName("g")$type$Equals(arrow::int64())
+    )
+    expect_true(
+      arrow::schema(expansion)$GetFieldByName("g")$type$Equals(arrow::int64())
+    )
+
+    summed <- dplyr::collect(summary)
+    expanded <- dplyr::collect(expansion)
+    expect_equal(sort(summed$n), c(1L, 1L, 2L))
+    expect_identical(sum(is.na(summed$g)), 1L)
+    expect_identical(sort(summed$g[!is.na(summed$g)]), c(1L, 2L))
+    expect_identical(
+      sort(expanded$g, na.last = TRUE),
+      c(1L, 2L, NA_integer_, NA_integer_)
+    )
+  }
+})
+
+test_that("Arrow typed missing dimensions retain physical types", {
+  skip_if_suggest_absent("arrow")
+  time_values <- as.POSIXct("2020-01-01", tz = "UTC") + c(0, 1)
+  day_values <- as.POSIXct("2020-01-01", tz = "UTC") + c(0, 86400)
+  clock_values <- structure(
+    c(1, 2), units = "secs", class = c("hms", "difftime")
+  )
+  cases <- list(
+    int8 = list(arrow::int8(), c(1L, 2L)),
+    int16 = list(arrow::int16(), c(1L, 2L)),
+    int64 = list(arrow::int64(), c(1L, 2L)),
+    uint8 = list(arrow::uint8(), c(1L, 2L)),
+    uint32 = list(arrow::uint32(), c(1L, 2L)),
+    uint64 = list(arrow::uint64(), c(1L, 2L)),
+    float32 = list(arrow::float32(), c(1, 2)),
+    decimal128 = list(arrow::decimal128(10, 2), c(1.25, 2.5)),
+    date64 = list(arrow::date64(), day_values),
+    timestamp_s = list(arrow::timestamp("s", timezone = "UTC"), time_values),
+    timestamp_ms = list(
+      arrow::timestamp("ms", timezone = "America/New_York"), time_values
+    ),
+    timestamp_ns = list(arrow::timestamp("ns", timezone = "UTC"), time_values),
+    large_utf8 = list(arrow::large_utf8(), c("a", "b")),
+    time64 = list(arrow::time64("ns"), clock_values),
+    int32 = list(arrow::int32(), c(1L, 2L)),
+    float64 = list(arrow::float64(), c(1, 2)),
+    date32 = list(arrow::date32(), as.Date(day_values)),
+    timestamp_us = list(arrow::timestamp("us", timezone = "UTC"), time_values),
+    utf8 = list(arrow::utf8(), c("a", "b")),
+    time32 = list(arrow::time32("s"), clock_values)
+  )
+
+  for (case in names(cases)) {
+    type <- cases[[case]][[1L]]
+    values <- cases[[case]][[2L]]
+    source <- arrow::Table$create(
+      g = arrow::Array$create(values, type = type)
+    )
+    summary <- summarize_with_margins(
+      source, n = dplyr::n(), .grouping = rollup(g), .margin_label = NULL
+    )
+    expansion <- expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = NULL
+    )
+
+    for (query in list(summary, expansion)) {
+      expect_true(inherits(query, "arrow_dplyr_query"), info = case)
+      expect_true(
+        arrow::schema(query)$GetFieldByName("g")$type$Equals(type),
+        info = case
+      )
+    }
+    summed <- dplyr::collect(summary)
+    expanded <- dplyr::collect(expansion)
+    expect_identical(nrow(summed), 3L, info = case)
+    expect_equal(sort(summed$n), c(1L, 1L, 2L), info = case)
+    expect_identical(sum(is.na(summed$g)), 1L, info = case)
+    expect_identical(nrow(expanded), 4L, info = case)
+    expect_identical(sum(is.na(expanded$g)), 2L, info = case)
+  }
+})
+
+test_that("Arrow empty input retains a typed Grand total and empty expansion", {
+  skip_if_suggest_absent("arrow")
+  source <- arrow::Table$create(
+    g = arrow::Array$create(integer(), type = arrow::int64())
+  )
+
+  for (label in list(NULL, NA_character_)) {
+    summary <- summarize_with_margins(
+      source, n = dplyr::n(), .grouping = rollup(g),
+      .margin_label = label
+    )
+    expansion <- expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = label
+    )
+    for (query in list(summary, expansion)) {
+      expect_s3_class(query, "arrow_dplyr_query")
+      expect_true(
+        arrow::schema(query)$GetFieldByName("g")$type$Equals(arrow::int64())
+      )
+    }
+    summed <- dplyr::collect(summary)
+    expanded <- dplyr::collect(expansion)
+    expect_identical(nrow(summed), 1L)
+    expect_true(is.na(summed$g[[1L]]))
+    expect_identical(summed$n, 0L)
+    expect_identical(nrow(expanded), 0L)
+  }
+})
+
+test_that("Arrow non-missing text Margin labels still produce text", {
+  skip_if_suggest_absent("arrow")
+  source <- arrow::Table$create(
+    g = arrow::Array$create(c(1L, 2L), type = arrow::int64())
+  )
+  for (query in list(
+    summarize_with_margins(
+      source, n = dplyr::n(), .grouping = rollup(g),
+      .margin_label = "Total"
+    ),
+    expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = "Total"
+    )
+  )) {
+    expect_s3_class(query, "arrow_dplyr_query")
+    result <- dplyr::collect(query)
+    expect_type(result$g, "character")
+    expect_true(any(result$g == "Total"))
+  }
+})
+
 test_that("portable SQL consumes named per-column labels lazily", {
   skip_if_no_sqlite_simulation()
   remote <- dbplyr::tbl_lazy(
