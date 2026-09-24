@@ -261,6 +261,139 @@ test_that("dtplyr rejects non-scalar Parent-share sources on collection", {
   }
 })
 
+test_that("dtplyr refuses unrelated row expansion before joining shares", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = c(2, 4)))
+
+  for (extra in list(rlang::expr(1:2), rlang::expr(unique(v)))) {
+    ordinary <- rlang::inject(summarize_with_margins(
+      source,
+      z = sum(v),
+      extra = !!extra,
+      .grouping = rollup(g)
+    ))
+    expect_s3_class(ordinary, "dtplyr_step")
+    expect_gt(nrow(dplyr::collect(ordinary)), 2L)
+
+    for (shares in c("parent", "total", "both")) {
+      expressions <- list(z = rlang::expr(sum(v)))
+      if (shares %in% c("parent", "both")) {
+        expressions$p <- rlang::expr(share_of_parent(z))
+      }
+      if (shares %in% c("total", "both")) {
+        expressions$t <- rlang::expr(share_of_total(z))
+      }
+      expressions$extra <- extra
+      query <- rlang::inject(summarize_with_margins(
+        source,
+        !!!expressions,
+        .grouping = rollup(g)
+      ))
+      expect_s3_class(query, "dtplyr_step")
+      error <- expect_error(
+        dplyr::collect(query),
+        class = "marginplyr_share_cardinality_error"
+      )
+      expect_s3_class(error, "marginplyr_error")
+      expect_match(conditionMessage(error), "extra")
+      expect_match(conditionMessage(error), "expanded the grouped result")
+      expect_match(conditionMessage(error), if (shares == "total") {
+        "Total share `t`"
+      } else {
+        "Parent share `p`"
+      })
+      expect_identical(rlang::call_name(conditionCall(error)),
+                       "summarize_with_margins")
+    }
+  }
+})
+
+test_that("dtplyr share grouping check accepts scalar ordinary summaries", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = c(2, 4)))
+
+  for (extra in list(rlang::expr(sum(v) + 1), rlang::expr(list(1:2)))) {
+    query <- rlang::inject(summarize_with_margins(
+      source,
+      z = sum(v),
+      p = share_of_parent(z),
+      t = share_of_total(z),
+      extra = !!extra,
+      .grouping = rollup(g)
+    ))
+    expect_s3_class(query, "dtplyr_step")
+    result <- dplyr::collect(query)
+    expect_identical(nrow(result), 3L)
+    shares <- sort(c(2 / 6, 4 / 6, 1))
+    expect_equal(sort(result$p), shares)
+    expect_equal(sort(result$t), shares)
+  }
+})
+
+test_that("dtplyr share grouping check distinguishes retained occurrences", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = c(2, 4)))
+  query <- summarize_with_margins(
+    source,
+    z = sum(v),
+    p = share_of_parent(z),
+    t = share_of_total(z),
+    extra = list(1:2),
+    .grouping = rollup(g, g),
+    .duplicates = "keep",
+    .id = "set"
+  )
+  result <- dplyr::collect(query)
+  expect_identical(nrow(result), 5L)
+  expect_identical(sort(unique(result$set)), 1:3)
+  expect_false(anyNA(result$p))
+  expect_false(anyNA(result$t))
+})
+
+test_that("dtplyr refuses row expansion from an ordinary across", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = c(2, 4)))
+  query <- summarize_with_margins(
+    source,
+    z = sum(v),
+    p = share_of_parent(z),
+    dplyr::across(v, function(x) c(min(x), max(x)), .names = "extra_{.col}"),
+    .grouping = rollup(g)
+  )
+  expect_s3_class(query, "dtplyr_step")
+  error <- expect_error(
+    dplyr::collect(query),
+    class = "marginplyr_share_cardinality_error"
+  )
+  expect_match(conditionMessage(error), "ordinary summary")
+  expect_identical(rlang::call_name(conditionCall(error)),
+                   "summarize_with_margins")
+})
+
+test_that("dtplyr defers the grouped-row check until explicit execution", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = c(2, 4)))
+  evaluations <- 0L
+  expand <- function(x) {
+    evaluations <<- evaluations + 1L
+    unique(x)
+  }
+  query <- summarize_with_margins(
+    source,
+    z = sum(v),
+    p = share_of_parent(z),
+    extra = expand(v),
+    .grouping = rollup(g)
+  )
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(evaluations, 0L)
+  expect_error(
+    dplyr::collect(query),
+    class = "marginplyr_share_cardinality_error"
+  )
+  expect_gt(evaluations, 0L)
+})
+
 test_that("dtplyr integer and double Parent shares match local results", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(

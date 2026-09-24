@@ -713,6 +713,7 @@ plan_share_expressions <- function(dots,
                                    plan,
                                    set_id_name,
                                    validate_cardinality = FALSE,
+                                   validate_ordinary_cardinality = FALSE,
                                    defer_local = FALSE) {
   stopifnot(is.list(dots))
   stopifnot(inherits(plan, "margin_grouping_plan"))
@@ -834,6 +835,11 @@ plan_share_expressions <- function(dots,
   } else {
     list()
   }
+  ordinary_cardinality <- if (isTRUE(validate_ordinary_cardinality)) {
+    share_ordinary_checks(analyses, requests)
+  } else {
+    list()
+  }
 
   keep <- !vapply(planned_dots, is.null, logical(1))
   kept_dots <- planned_dots[keep]
@@ -859,6 +865,12 @@ plan_share_expressions <- function(dots,
       flattened_positions[[original_position]]
     )
   }
+  for (i in seq_along(ordinary_cardinality)) {
+    original_position <- as.character(ordinary_cardinality[[i]]$position)
+    ordinary_cardinality[[i]]$position <- unname(
+      flattened_positions[[original_position]]
+    )
+  }
   planned_dots <- unlist(
     lapply(
       kept_dots,
@@ -876,12 +888,37 @@ plan_share_expressions <- function(dots,
     dots = planned_dots,
     requests = requests,
     cardinality = cardinality,
+    ordinary_cardinality = ordinary_cardinality,
     # Which incoming dot each planned dot came from, for the same reason
     # `flattened_positions` above exists: a share dot is dropped and a
     # placeholder expands into one dot per output, so a consumer holding one
     # value per dot the caller wrote cannot subscript it by position.
     origin_positions = rep(which(keep), widths)
   )
+}
+
+# Ordinary summaries outside a share source can expand the staged grouped
+# result after the source itself has passed its scalar check. Keep their
+# caller-facing names for the dtplyr execution-time refusal.
+share_ordinary_checks <- function(analyses, requests) {
+  if (length(requests) == 0L) {
+    return(list())
+  }
+  source_names <- share_source_names(requests)
+  pair <- share_pairs(requests)[[1L]]
+  records <- unlist(lapply(analyses, `[[`, "records"), recursive = FALSE)
+  lapply(Filter(function(record) {
+    !record$name %in% source_names &&
+      identical(record$eligibility, "eligible") &&
+      is.na(record$across_input)
+  }, records), function(record) {
+    list(
+      position = record$position,
+      summary = record$name,
+      share_output = pair$output,
+      share_kind = pair$kind
+    )
+  })
 }
 
 share_cardinality_records <- function(analyses, requests) {
@@ -1008,6 +1045,55 @@ wrap_share_sources <- function(dots,
     )
   }
   dots
+}
+
+# Wrap each resolved direct ordinary dot with its cardinality check. Each
+# check names a position in `dots` and the share that requires scalar rows.
+wrap_dtplyr_share_ordinary <- function(dots, checks, call) {
+  for (check in checks) {
+    position <- check$position
+    quo <- dots[[position]]
+    expr <- rlang::quo_get_expr(quo)
+    wrapped <- rlang::call2(
+      marginplyr_private_call("check_dtplyr_share_ordinary"),
+      expr,
+      summary = check$summary,
+      share_output = check$share_output,
+      share_kind = check$share_kind,
+      call_text = share_call_text(call)
+    )
+    dots[[position]] <- rlang::new_quosure(
+      wrapped,
+      env = rlang::quo_get_env(quo)
+    )
+  }
+  dots
+}
+
+# Return one ordinary summary value for one grouped row. The caller supplies
+# the evaluated value and the share request whose result needs that shape.
+check_dtplyr_share_ordinary <- function(value, summary, share_output,
+                                        share_kind, call_text) {
+  if (NROW(value) != 1L) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{share_kind_label(share_kind)} {.var {share_output}} cannot be ",
+          "calculated because ordinary summary {.var {summary}} expanded ",
+          "the grouped result."
+        ),
+        i = paste0(
+          "When requesting a share, return one value per grouping row ",
+          "from {.var {summary}}."
+        )
+      ),
+      class = "marginplyr_share_cardinality_error",
+      share_output = share_output,
+      expanded_summary = summary,
+      call = parse_call_text(call_text)
+    )
+  }
+  value
 }
 
 wrap_dtplyr_share_across <- function(expr, checks, call) {
@@ -2058,6 +2144,16 @@ execute_shares <- function(operation,
     requests = requests,
     check_share_source = check_share_source
   )
+  if (identical(operation$backend$kind, "dtplyr")) {
+    result <- guard_dtplyr_grouped_result(
+      result,
+      plan = operation$plan,
+      set_id_name = staged_set_id_name,
+      parent_key_names = parent_key_names,
+      pair = share_pairs(requests)[[1L]],
+      call = operation$call
+    )
+  }
   adapter <- share_adapter(operation$backend$kind)
   # One adapter pass per requested kind. Every pass reads the same staged
   # result and writes over the placeholder column each request reserved in the
@@ -2100,6 +2196,50 @@ execute_shares <- function(operation,
     result,
     -dplyr::all_of(staged_set_id_name)
   )
+}
+
+# Refuse a staged dtplyr result with more than one row per occurrence and
+# grouping key before either share adapter can multiply it in a join. The
+# filter is part of the lazy graph and runs only when the caller executes it.
+guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
+                                        parent_key_names, pair, call) {
+  dimensions <- if (length(parent_key_names) > 0L) {
+    unname(parent_key_names)
+  } else {
+    plan$dimensions
+  }
+  key_names <- unique(c(set_id_name, plan$by, dimensions))
+  key_exprs <- lapply(key_names, margin_column_pronoun)
+  check <- rlang::call2(
+    marginplyr_private_call("assert_dtplyr_grouped_keys"),
+    !!!key_exprs,
+    share_output = pair$output,
+    share_kind = pair$kind,
+    call_text = share_call_text(call)
+  )
+  dplyr::filter(result, !!check)
+}
+
+# Return TRUE when aligned staged key columns identify one row per key. The
+# caller evaluates this predicate inside the lazy graph at explicit execution.
+assert_dtplyr_grouped_keys <- function(..., share_output, share_kind,
+                                       call_text) {
+  if (vctrs::vec_duplicate_any(vctrs::new_data_frame(list(...)))) {
+    abort_marginplyr(
+      c(
+        paste0(
+          "{share_kind_label(share_kind)} {.var {share_output}} cannot be ",
+          "calculated because another ordinary summary expanded the grouped ",
+          "result."
+        ),
+        i = "When requesting a share, return one value per grouping row."
+      ),
+      class = "marginplyr_share_cardinality_error",
+      share_output = share_output,
+      call = parse_call_text(call_text)
+    )
+  }
+  TRUE
 }
 
 share_adapter <- function(backend_kind) {
