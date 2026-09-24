@@ -762,6 +762,17 @@ captured_call_parts <- function(expr,
   captured
 }
 
+# A computed call head is evaluated before the call's arguments. A symbol is
+# only a function lookup; a call in that position can itself run a Contextual
+# helper, including one inside a function literal or an `if` condition.
+evaluated_call_head <- function(expr) {
+  head <- static_call_head(expr)
+  if (rlang::is_call(head)) {
+    return(list(head))
+  }
+  list()
+}
+
 # The arguments of a call a walk analyzes: everything the mask evaluates, and
 # nothing it captures. Every search that descends into a call reaches its parts
 # through this rather than through `static_call_args()` directly, which is what
@@ -785,6 +796,11 @@ evaluated_call_args <- function(expr,
 rewrite_evaluated_call_parts <- function(expr, rewrite) {
   captured <- captured_call_parts(expr)
   language_index <- readable_language_index(expr)
+  head <- static_call_head(expr)
+  evaluated_head <- evaluated_call_head(expr)
+  if (length(evaluated_head)) {
+    head <- rewrite(evaluated_head[[1L]])
+  }
   map_call_parts(
     expr,
     function(part, index) {
@@ -795,7 +811,8 @@ rewrite_evaluated_call_parts <- function(expr, rewrite) {
         return(rewrite_evaluated_language(part, rewrite))
       }
       rewrite(part)
-    }
+    },
+    head = head
   )
 }
 
@@ -806,13 +823,13 @@ rewrite_evaluated_call_parts <- function(expr, rewrite) {
 # `rebuild_static_call()` takes from this list, so an index map that dropped
 # them would turn `across(value, .names = "{.col}")` into a call whose template
 # is a positional argument.
-map_call_parts <- function(expr, map) {
+map_call_parts <- function(expr, map, head = static_call_head(expr)) {
   parts <- static_call_args(expr)
   mapped <- lapply(
     seq_along(parts),
     function(index) map(parts[[index]], index)
   )
-  rebuild_static_call(expr, stats::setNames(mapped, names(parts)))
+  rebuild_static_call(expr, stats::setNames(mapped, names(parts)), head = head)
 }
 
 # Where a rewrite may open a capture: the argument an `eval()` runs, and only
@@ -1016,9 +1033,9 @@ evaluated_language_parts <- function(expr, call_name = static_call_name(expr)) {
   static_language_values(static_call_args(expr)[[index]])
 }
 
-# Everything a search descends into: the arguments the mask evaluates, and the
-# language the call hands `eval()`. Both halves are the boundary #179 draws,
-# read in one place because a search that took only the first half would let
+# Everything a search descends into: the computed head, the arguments the mask
+# evaluates, and the language the call hands `eval()`. Read together, so a
+# search that took only the ordinary arguments would let
 # `eval(quote(cur_group_id()))` run and answer a branch-local identifier, which
 # is the value that guard exists to refuse.
 #
@@ -1032,7 +1049,8 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
   if (is.null(language)) {
     language <- list()
   }
-  c(evaluated_call_args(expr, call_name = call_name), language)
+  c(evaluated_call_head(expr),
+    evaluated_call_args(expr, call_name = call_name), language)
 }
 
 # The language objects an expression is statically known to hand `eval()`, and
