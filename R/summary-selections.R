@@ -1411,24 +1411,32 @@ parse_across_arguments <- function(expr) {
   # `(across(v, sum))` as one argument -- the `across()` call itself -- and hand
   # it to `eval_select()` as a selection (#178).
   call_args <- static_call_args(expr)
-  arg_names <- names(call_args)
-  if (is.null(arg_names)) {
-    arg_names <- rep("", length(call_args))
-  }
-  unnamed <- which(arg_names == "")
-  cols_index <- match(".cols", arg_names, nomatch = 0L)
-  if (cols_index == 0L && length(unnamed) > 0L) {
-    cols_index <- unnamed[[1L]]
-  }
-  fns_index <- match(".fns", arg_names, nomatch = 0L)
-  if (fns_index == 0L) {
-    positional <- setdiff(unnamed, cols_index)
-    if (length(positional) > 0L) {
-      fns_index <- positional[[1L]]
+  # Match unique placeholders against dplyr's formals: R handles partial names
+  # before `...`, while the positions still identify empty or repeated values.
+  helper <- get(static_call_name(expr), envir = asNamespace("dplyr"))
+  markers <- lapply(seq_along(call_args), function(i) {
+    as.name(paste0(".marginplyr_arg_", i))
+  })
+  names(markers) <- names(call_args)
+  matched <- match.call(
+    definition = helper,
+    call = as.call(c(list(as.name("helper")), markers)),
+    expand.dots = FALSE
+  )
+  matched_args <- as.list(matched)[-1L]
+  marker_names <- vapply(markers, as.character, character(1))
+  formal_index <- function(name) {
+    argument <- matched_args[[name]]
+    if (is.null(argument)) {
+      return(0L)
     }
+    match(as.character(argument), marker_names, nomatch = 0L)
   }
-  names_index <- match(".names", arg_names, nomatch = 0L)
-  unpack_index <- match(".unpack", arg_names, nomatch = 0L)
+  cols_index <- formal_index(".cols")
+  fns_index <- formal_index(".fns")
+  names_index <- formal_index(".names")
+  unpack_index <- formal_index(".unpack")
+  arg_names <- rlang::names2(call_args)
   used <- c(cols_index, fns_index, names_index, unpack_index)
   additional <- setdiff(seq_along(call_args), used[used > 0L])
   additional_names <- name_unnamed_by_position(arg_names[additional], "..")
