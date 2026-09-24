@@ -555,6 +555,17 @@ test_that("other unqualified frame spellings honor caller bindings", {
   expect_identical(names(tibble_spelling), c("g", "foo", "z"))
 })
 
+test_that("an unbound frame spelling keeps R's function lookup error", {
+  caller <- new.env(parent = baseenv())
+  caller$data <- base::data.frame(g = c("a", "b"), x = 1:2)
+
+  error <- expect_error(eval(quote(marginplyr::summarize_with_margins(
+    data, tibble(foo = x),
+    .grouping = marginplyr::grouping_set(g), .id = "foo"
+  )), envir = caller), "could not find function")
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
 test_that("caller-bound frame outputs still protect identifiers and groups", {
   data <- tibble::tibble(g = c("a", "b"), x = 1:2)
   tibble <- function(...) data.frame(z = 1L)
