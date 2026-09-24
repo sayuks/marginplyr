@@ -662,7 +662,9 @@ contain statically visible `pick()`, `grouping_bit()`, or `cur_group_id()` calls
 The shared expression readers now visit that head for both searches and
 rewrites. They retain the same capture boundary as ordinary arguments: a
 helper under `quote()` is language data unless the expression is visibly handed
-to `eval()`.
+to `eval()`. A function literal's default expressions are part of the evaluated
+subtree when its function reads them, so the readers descend into its formal
+pairlist as well as its body.
 
 This changes the reach of static analysis, not callable identity. A helper
 spelled inside an evaluated head is recognized; a head whose resulting

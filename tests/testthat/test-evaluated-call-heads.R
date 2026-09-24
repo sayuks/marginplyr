@@ -95,3 +95,48 @@ test_that("quoted helpers in computed call heads remain language data", {
   ))
   expect_s3_class(refused, "marginplyr_error")
 })
+
+test_that("computed function defaults use the summary selection boundary", {
+  data <- tibble::tibble(g = c("a", "a", "b"), x = 1:3)
+  result <- summarize_with_margins(
+    data,
+    out = (function(z = ncol(dplyr::pick(dplyr::everything())))
+      function(dummy) z)()(0),
+    .grouping = rollup(g), .sort = "last"
+  )
+  expect_identical(result$out, c(1L, 1L, 1L))
+})
+
+test_that("computed function defaults rewrite Grouping helpers", {
+  data <- tibble::tibble(g = c("a", "a", "b"), x = 1:3)
+  result <- summarize_with_margins(
+    data,
+    bit = (function(z = grouping_bit(g)) function(dummy) z)()(0),
+    id = (function(z = grouping_id(g)) function(dummy) z)()(0),
+    .grouping = rollup(g), .sort = "last"
+  )
+  expect_identical(result$bit, c(0L, 0L, 1L))
+  expect_identical(result$id, c(0L, 0L, 1L))
+})
+
+test_that("computed function defaults refuse branch-local helpers", {
+  data <- tibble::tibble(g = c("a", "a", "b"), x = 1:3)
+  direct <- expect_error(summarize_with_margins(
+    data, out = cur_group_id(), .grouping = rollup(g)
+  ))
+  computed <- expect_error(summarize_with_margins(
+    data,
+    out = (function(z = cur_group_id()) function(dummy) z)()(0),
+    .grouping = rollup(g)
+  ))
+  expect_s3_class(computed, "marginplyr_error")
+  expect_identical(conditionMessage(computed), conditionMessage(direct))
+
+  quoted <- summarize_with_margins(
+    data,
+    out = (function(z = deparse1(quote(cur_group_id())))
+      function(dummy) z)()(0),
+    .grouping = rollup(g)
+  )
+  expect_identical(quoted$out, rep("cur_group_id()", 3L))
+})

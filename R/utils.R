@@ -566,10 +566,9 @@ call_part_label <- function(part) {
   deparse1(part)
 }
 
-# `head` defaults to the head the node already has, which is what every walk
-# wants: a rewrite of a call's arguments is not a rewrite of what it calls.
-# Passing one is how a recognized spelling is written back qualified
-# (`qualify_static_spelling()`), and it goes through this rather than through
+# `head` defaults to the head the node already has. A caller supplies another
+# when it rewrites a computed head or qualifies a recognized spelling
+# (`qualify_static_spelling()`). It goes through this rather than through
 # `expr[[1L]] <-` so that the quosure and formula attributes are carried across
 # by the one function that knows to carry them.
 rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
@@ -773,6 +772,27 @@ evaluated_call_head <- function(expr) {
   list()
 }
 
+# The default expressions in a function literal's formal pairlist. A default
+# is evaluated if the function reads that argument, so a static walk reads it
+# as it already reads the body. Other pairlists are not function formals.
+function_formal_defaults <- function(expr) {
+  if (!identical(static_call_name(expr), "function")) {
+    return(list())
+  }
+  args <- static_call_args(expr)
+  if (!length(args) || !is.pairlist(args[[1L]])) {
+    return(list())
+  }
+  as.list(args[[1L]])
+}
+
+# Rebuild a function literal's formal pairlist around rewritten defaults.
+# `as.list()` preserves an omitted default as R's missing marker; mapping by
+# index passes it through without binding it to a local name.
+rewrite_function_formals <- function(formals, rewrite) {
+  as.pairlist(lapply(as.list(formals), rewrite))
+}
+
 # The arguments of a call a walk analyzes: everything the mask evaluates, and
 # nothing it captures. Every search that descends into a call reaches its parts
 # through this rather than through `static_call_args()` directly, which is what
@@ -783,9 +803,8 @@ evaluated_call_args <- function(expr,
   static_call_args(expr)[!captured_call_parts(expr, call_name, bound = bound)]
 }
 
-# The call a rewrite gives back once it has descended into the same parts:
-# each evaluated argument replaced by what `rewrite` makes of it, each captured
-# argument left as the caller wrote it.
+# The call a rewrite gives back after visiting its computed head, evaluated
+# arguments, and function defaults. Captured arguments stay as written.
 #
 # The arguments are read by index rather than mapped over, because a rewrite
 # has to put its replacements back in the positions they came from, and the
@@ -807,6 +826,10 @@ rewrite_evaluated_call_parts <- function(expr, rewrite) {
       if (captured[[index]]) {
         return(part)
       }
+      if (index == 1L && identical(static_call_name(expr), "function") &&
+          is.pairlist(part)) {
+        return(rewrite_function_formals(part, rewrite))
+      }
       if (index == language_index) {
         return(rewrite_evaluated_language(part, rewrite))
       }
@@ -816,13 +839,10 @@ rewrite_evaluated_call_parts <- function(expr, rewrite) {
   )
 }
 
-# The call rebuilt around parts a walk mapped one to one. The arguments are
-# read by index rather than mapped over, because a rewrite has to put its
-# replacements back in the positions they came from, and the names have to be
-# carried across with them: they live in the call's pairlist tags, which
-# `rebuild_static_call()` takes from this list, so an index map that dropped
-# them would turn `across(value, .names = "{.col}")` into a call whose template
-# is a positional argument.
+# The call rebuilt around its head and parts a walk mapped one to one.
+# Arguments are read by index so each replacement returns to its position.
+# Names live in pairlist tags, which `rebuild_static_call()` takes from this
+# list; dropping them would make `.names` a positional argument in `across()`.
 map_call_parts <- function(expr, map, head = static_call_head(expr)) {
   parts <- static_call_args(expr)
   mapped <- lapply(
@@ -1033,9 +1053,9 @@ evaluated_language_parts <- function(expr, call_name = static_call_name(expr)) {
   static_language_values(static_call_args(expr)[[index]])
 }
 
-# Everything a search descends into: the computed head, the arguments the mask
-# evaluates, and the language the call hands `eval()`. Read together, so a
-# search that took only the ordinary arguments would let
+# Everything a search descends into: the computed head, evaluated arguments,
+# function defaults, and the language the call hands `eval()`. Reading these
+# together prevents a search over ordinary arguments alone from letting
 # `eval(quote(cur_group_id()))` run and answer a branch-local identifier, which
 # is the value that guard exists to refuse.
 #
@@ -1050,7 +1070,8 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
     language <- list()
   }
   c(evaluated_call_head(expr),
-    evaluated_call_args(expr, call_name = call_name), language)
+    evaluated_call_args(expr, call_name = call_name),
+    function_formal_defaults(expr), language)
 }
 
 # The language objects an expression is statically known to hand `eval()`, and
