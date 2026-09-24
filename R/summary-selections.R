@@ -518,6 +518,7 @@ plan_summary_expressions <- function(dots,
       plan = plan,
       set_id_name = set_id_name,
       validate_cardinality = wraps_share_sources_in_summary(backend_kind),
+      validate_ordinary_cardinality = identical(backend_kind, "dtplyr"),
       defer_local = defer_local
     )
   } else {
@@ -525,6 +526,7 @@ plan_summary_expressions <- function(dots,
       dots = dots,
       requests = list(),
       cardinality = list(),
+      ordinary_cardinality = list(),
       origin_positions = seq_along(dots)
     )
   }
@@ -573,6 +575,13 @@ plan_summary_expressions <- function(dots,
       cardinality = summary_plan$cardinality,
       call = call,
       backend_kind = backend_kind
+    )
+  }
+  if (length(summary_plan$ordinary_cardinality) > 0L) {
+    summary_plan$dots <- wrap_dtplyr_share_ordinary(
+      summary_plan$dots,
+      checks = summary_plan$ordinary_cardinality,
+      call = call
     )
   }
   list(
