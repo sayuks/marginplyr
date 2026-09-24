@@ -1629,11 +1629,24 @@ test_that("unpacked across is checked by its expanded names", {
     dplyr::across(x, summary, .names = "g", .unpack = FALSE),
     .grouping = grouping_set(g)
   ), "cannot overwrite grouping column.*`g`")
+  unpack <- FALSE
+  calls <- 0L
+  counted_summary <- function(.x) {
+    calls <<- calls + 1L
+    tibble::tibble(n = sum(.x))
+  }
+  bound_packed_error <- expect_error(summarize_with_margins(
+    data,
+    dplyr::across(x, counted_summary, .names = "g", .unpack = unpack),
+    .grouping = grouping_set(g)
+  ), "cannot overwrite grouping column.*`g`")
 
   expect_s3_class(id_error, "marginplyr_error")
   expect_s3_class(group_error, "marginplyr_error")
   expect_s3_class(fixed_error, "marginplyr_error")
   expect_s3_class(packed_error, "marginplyr_error")
+  expect_s3_class(bound_packed_error, "marginplyr_error")
+  expect_identical(calls, 0L)
 })
 
 test_that("a named data-frame summary keeps its packed names to itself", {

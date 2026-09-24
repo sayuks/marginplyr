@@ -1196,7 +1196,11 @@ known_injected_argument_name <- function(expr) {
 
 known_across_output_names <- function(expr, env, data_proxy) {
   parsed <- parse_across_arguments(expr)
-  if (!is.null(parsed$unpack) && !isFALSE(parsed$unpack)) {
+  unpack_is_false <- is.null(parsed$unpack) || isFALSE(tryCatch(
+    rlang::eval_tidy(parsed$unpack, env = env),
+    error = function(cnd) NULL
+  ))
+  if (!unpack_is_false) {
     # The outer names can be replaced by inner names whose schema is only
     # known after the summary runs. The branch checks those actual names.
     return(character())
