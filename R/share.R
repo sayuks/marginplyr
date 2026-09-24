@@ -2198,7 +2198,7 @@ execute_shares <- function(operation,
 # grouping key before either share adapter can multiply it in a join. The
 # filter is part of the lazy graph and runs only when the caller executes it.
 guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
-                                       parent_key_names, pair, call) {
+                                        parent_key_names, pair, call) {
   dimensions <- if (length(parent_key_names) > 0L) {
     unname(parent_key_names)
   } else {
@@ -2217,7 +2217,7 @@ guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
 }
 
 assert_dtplyr_grouped_keys <- function(..., share_output, share_kind,
-                                      call_text) {
+                                       call_text) {
   if (vctrs::vec_duplicate_any(vctrs::new_data_frame(list(...)))) {
     abort_marginplyr(
       c(
