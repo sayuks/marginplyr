@@ -63,18 +63,18 @@ summarize_margin_native <- function(.data,
     flag_quos <- list()
   }
 
-  # dbplyr translates the caller's expressions here, this being the first of
-  # the two summarizes below to reach them, and raises where it cannot. That
-  # error is the whole of what ADR 0022 restates in this adapter. The call is
-  # forced out of the check's lazy argument so that the check's own Package
-  # conditions stay outside the catch.
+  # dbplyr translates the caller's expressions here; the grouped summarize
+  # below builds only the internal columns. That error is the whole of what
+  # ADR 0022 restates in this adapter. The call is forced out of the check's
+  # lazy argument so that the check's own Package conditions stay outside the
+  # catch.
   #
   # The blamed call is rewritten alongside the argument, both being parts of
   # one Condition context (CONTEXT.md). It is assigned after the restatement
   # rather than inside it, because that function returns the condition
   # untouched when the map is empty, and this half is owed either way.
-  output_names <- tryCatch(
-    native_summary_output_names(.data, dots),
+  summary_select <- tryCatch(
+    native_summary_select(.data, dots),
     error = function(cnd) {
       cnd <- restate_condition_arguments(cnd, restatements)
       cnd$call <- call
@@ -82,7 +82,7 @@ summarize_margin_native <- function(.data,
     }
   )
   check_summary_output_names(
-    output_names,
+    summary_select$name,
     group_vars = group_vars,
     internal_names = c(flag_names, unname(parent_key_names)),
     set_id_name = set_id_name,
@@ -94,10 +94,20 @@ summarize_margin_native <- function(.data,
       .data,
       dplyr::pick(dplyr::all_of(group_vars))
     ),
-    !!!dots,
     !!!set_id_quos,
     !!!flag_quos,
     .groups = "drop"
+  )
+  # The summary's lazy-query rows already hold dbplyr's partially evaluated
+  # expressions. Feeding them to another `summarize()` would evaluate them a
+  # second time; a `pick()` resolved to a list cannot survive that pass.
+  internal_select <- result$lazy_query$select
+  key_rows <- seq_along(group_vars)
+  internal_rows <- setdiff(seq_len(nrow(internal_select)), key_rows)
+  result$lazy_query$select <- dplyr::bind_rows(
+    internal_select[key_rows, , drop = FALSE],
+    summary_select,
+    internal_select[internal_rows, , drop = FALSE]
   )
 
   result <- attach_grouping_sets_query(result, plan$sets)
@@ -131,23 +141,19 @@ summarize_margin_native <- function(.data,
   result
 }
 
-# What `check_summary_output_names()` needs and the grouped summarize above
-# cannot supply. A summary output that shadows a grouping dimension takes that
-# dimension's place in the result, so the name is present exactly once whether
-# or not the collision happened, and the two cases are indistinguishable there.
-# Building the same expressions over the ungrouped table names the outputs on
-# their own. Every `across()`, `pick()`, and `if_any()` selection was resolved
-# to an `all_of()` literal before either adapter ran, so dropping the grouping
-# cannot change which columns they cover.
-#
-# A lazy summarize computes its result names without reading from the backend,
-# so this stays a locally detectable error rejected before any backend read
-# (ADR 0005).
-native_summary_output_names <- function(.data, dots) {
-  get_col_names(
-    dplyr::summarize(dplyr::ungroup(.data), !!!dots),
-    dplyr::everything()
+# Resolve the caller's summary names once, before adding grouping columns that
+# an output could overwrite. The grouped query uses these resolved select rows,
+# so a stateful `.names` expression cannot change names between validation and
+# construction. The lazy query is built without reading the input (ADR 0020).
+native_summary_select <- function(.data, dots) {
+  summary <- dplyr::summarize(dplyr::ungroup(.data), !!!dots)
+  select <- summary$lazy_query$select
+  stopifnot(
+    is.character(select$name),
+    is.list(select$expr),
+    identical(select$name, get_col_names(summary, dplyr::everything()))
   )
+  select
 }
 
 grouping_set_id_sql_expr <- function(plan, con) {

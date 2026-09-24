@@ -2155,7 +2155,7 @@ test_that("an empty argument does not hide a share helper beside it", {
 # One difference from dplyr is deliberate and is not a shape omitted below.
 # dplyr deprecated an omitted `.cols` and warns about it, while a summary
 # staged here reaches dplyr with its selection already resolved to an
-# `all_of()` literal -- the invariant `native_summary_output_names()` depends
+# `all_of()` literal -- the invariant `native_summary_select()` depends
 # on -- so the call dplyr finally sees omits nothing and its lifecycle warning
 # does not fire. That is what the omitted spelling `across(.fns = sum)` has
 # always done here, and the empty spelling now matches it. The columns and the

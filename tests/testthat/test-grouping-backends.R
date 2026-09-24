@@ -1415,6 +1415,108 @@ test_that("DuckDB rejects a summary output shadowing a dimension", {
   )
 })
 
+test_that("DuckDB uses validated native summary names in the result", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(g = c("a", "b"), x = 1:2),
+    "dynamic_summary_names",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  calls <- 0L
+  name_summary <- function() {
+    calls <<- calls + 1L
+    if (calls <= 2L) "out" else "g"
+  }
+  outcome <- tryCatch(
+    summarize_with_margins(
+      remote,
+      dplyr::across(x, sum, .names = "{name_summary()}"),
+      .grouping = rollup(g),
+      .margin_label = NULL
+    ),
+    marginplyr_error = identity
+  )
+  if (inherits(outcome, "marginplyr_error")) {
+    expect_match(
+      conditionMessage(outcome),
+      "cannot overwrite grouping column.*`g`"
+    )
+  } else {
+    result <- dplyr::collect(outcome) |>
+      dplyr::arrange(g)
+    expect_named(result, c("g", "out"))
+    expect_identical(result$g, c("a", "b", NA_character_))
+    expect_equal(result$out, c(1, 2, 3))
+  }
+})
+
+test_that("DuckDB preserves fixed keys and `.id` under dynamic names", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  remote <- dplyr::copy_to(
+    con,
+    data.frame(fixed = "p", g = c("a", "b"), x = 1:2),
+    "dynamic_protected_names",
+    overwrite = TRUE,
+    temporary = TRUE
+  )
+
+  for (protected in c("fixed", "g", "sid")) {
+    calls <- 0L
+    name_summary <- function() {
+      calls <<- calls + 1L
+      if (calls <= 2L) "out" else protected
+    }
+    outcome <- tryCatch(
+      summarize_with_margins(
+        remote,
+        dplyr::across(x, sum, .names = "{name_summary()}"),
+        .by = fixed,
+        .grouping = rollup(g),
+        .id = "sid",
+        .margin_label = NULL
+      ),
+      marginplyr_error = identity
+    )
+    if (inherits(outcome, "marginplyr_error")) {
+      diagnostic <- if (identical(protected, "sid")) {
+        "`.id` \\(`sid`\\) conflicts with a summary output"
+      } else {
+        paste0("cannot overwrite grouping column.*`", protected, "`")
+      }
+      expect_match(conditionMessage(outcome), diagnostic, info = protected)
+    } else {
+      result <- dplyr::collect(outcome) |>
+        dplyr::arrange(g)
+      expect_named(result, c("fixed", "g", "sid", "out"), info = protected)
+      expect_identical(result$fixed, rep("p", 3L), info = protected)
+      expect_identical(result$g, c("a", "b", NA_character_), info = protected)
+      expect_equal(result$out, c(1, 2, 3), info = protected)
+      expect_equal(result$sid, c(1, 1, 2), info = protected)
+    }
+  }
+
+  stable_name <- function() "out"
+  stable <- summarize_with_margins(
+    remote,
+    dplyr::across(x, sum, .names = "{stable_name()}"),
+    .by = fixed,
+    .grouping = rollup(g),
+    .id = "sid",
+    .margin_label = NULL
+  )
+  expect_identical(
+    get_col_names(stable, dplyr::everything()),
+    c("fixed", "g", "sid", "out")
+  )
+})
+
 test_that("native adapters reject summary outputs on their own columns", {
   data <- shadowed_summary_data()
   postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())

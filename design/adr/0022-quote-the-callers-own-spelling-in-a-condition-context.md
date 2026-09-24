@@ -346,3 +346,12 @@ paid rather than avoided: the alternative is a name that is dplyr's only until
 an expression grows long, which is the defect itself. An rlang that dropped the
 option would put that name back, and the tests are written against dplyr's own
 naming rather than against a spelling, so it would not go unreported.
+
+## Amendment: native names are resolved once
+
+#630 supersedes the paragraph above beginning "It is caught around
+`native_summary_output_names()`". `native_summary_select()` now resolves
+the caller's expressions in an ungrouped lazy summary, and the grouped query
+uses its resolved select rows. The translation error is still caught at the
+ungrouped build and receives the same Condition context. The caller's naming
+expression is no longer handed to both builds.
