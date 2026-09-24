@@ -100,8 +100,9 @@ test_that("computed function defaults use the summary selection boundary", {
   data <- tibble::tibble(g = c("a", "a", "b"), x = 1:3)
   result <- summarize_with_margins(
     data,
-    out = (function(z = ncol(dplyr::pick(dplyr::everything())))
-      function(dummy) z)()(0),
+    out = (function(z = ncol(dplyr::pick(dplyr::everything()))) {
+      function(dummy) z
+    })()(0),
     .grouping = rollup(g), .sort = "last"
   )
   expect_identical(result$out, c(1L, 1L, 1L))
@@ -134,8 +135,9 @@ test_that("computed function defaults refuse branch-local helpers", {
 
   quoted <- summarize_with_margins(
     data,
-    out = (function(z = deparse1(quote(cur_group_id())))
-      function(dummy) z)()(0),
+    out = (function(z = deparse1(quote(cur_group_id()))) {
+      function(dummy) z
+    })()(0),
     .grouping = rollup(g)
   )
   expect_identical(quoted$out, rep("cur_group_id()", 3L))

@@ -827,7 +827,7 @@ rewrite_evaluated_call_parts <- function(expr, rewrite) {
         return(part)
       }
       if (index == 1L && identical(static_call_name(expr), "function") &&
-          is.pairlist(part)) {
+            is.pairlist(part)) {
         return(rewrite_function_formals(part, rewrite))
       }
       if (index == language_index) {
