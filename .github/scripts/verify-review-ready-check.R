@@ -86,7 +86,7 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
+  c("covr", "lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
   "the declared review packages"
 )
 expect_error(
@@ -144,7 +144,8 @@ prerequisites <- list(
 steps <- review_ready_source_steps(prerequisites)
 expect_identical(
   names(steps),
-  c("Package spelling", "Full testthat suite", "jarl", "package-aware lintr"),
+  c("Package spelling", "Full testthat suite", "Strict line coverage",
+    "jarl", "package-aware lintr"),
   "the fixed source-step order"
 )
 expect_true(
@@ -164,6 +165,11 @@ expect_identical(
 expect_true(
   grepl("testthat::test_local", steps[["Full testthat suite"]]$args[[2L]], fixed = TRUE),
   "the full test suite"
+)
+expect_identical(
+  steps[["Strict line coverage"]]$args,
+  "tools/coverage-check.R",
+  "the shared strict coverage gate"
 )
 expect_true(
   grepl("pkgload::load_all", steps[["package-aware lintr"]]$args[[2L]], fixed = TRUE),

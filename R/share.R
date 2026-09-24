@@ -566,9 +566,6 @@ share_of_total <- function(x) {
 # decide which grouping requirement to check before the plan is compiled.
 preflight_shares <- function(dots) {
   dot_names <- names(dots)
-  if (is.null(dot_names)) {
-    dot_names <- rep("", length(dots))
-  }
   kinds <- character()
 
   for (i in seq_along(dots)) {
@@ -718,9 +715,6 @@ plan_share_expressions <- function(dots,
   stopifnot(is.list(dots))
   stopifnot(inherits(plan, "margin_grouping_plan"))
   dot_names <- names(dots)
-  if (is.null(dot_names)) {
-    dot_names <- rep("", length(dots))
-  }
 
   analyses <- analyze_ordinary_summaries(
     dots, selection_proxy, defer_local = defer_local
@@ -1111,28 +1105,13 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
     recognized_positions[recognized_positions > 0L]
   )
   forwarded_args <- call_args[forwarded_positions]
-  # `parsed$fns` is `NULL` for a `.fns` the caller omitted, which is the
-  # identity lambda `across()` applies in its place. It answers the same for a
-  # `.fns` left empty, but no share reaches here with one:
-  # `preflight_share_across_syntax()` requires the helper itself in that
-  # position and refuses anything else, an empty argument included. Asking the
-  # value rather than the index is still what this is written on, because the
-  # index is a position and the position is a separate question -- the one the
-  # write-back below asks, where an empty `.fns` would be replaced in place and
-  # an absent one appended (#174).
-  if (is.null(parsed$fns)) {
-    functions <- list(rlang::expr(~.x))
-    function_names <- ""
-    fns_is_list <- FALSE
+  fns_is_list <- rlang::is_call(parsed$fns, "list")
+  if (fns_is_list) {
+    functions <- static_call_args(parsed$fns)
+    function_names <- names(functions)
   } else {
-    fns_is_list <- rlang::is_call(parsed$fns, "list")
-    if (fns_is_list) {
-      functions <- static_call_args(parsed$fns)
-      function_names <- names(functions)
-    } else {
-      functions <- list(parsed$fns)
-      function_names <- ""
-    }
+    functions <- list(parsed$fns)
+    function_names <- ""
   }
   if (is.null(function_names)) {
     function_names <- rep("", length(functions))
@@ -1208,11 +1187,7 @@ wrap_dtplyr_share_across <- function(expr, checks, call) {
   } else {
     functions[[1L]]
   }
-  if (fns_index == 0L) {
-    call_args <- append(call_args, list(.fns = wrapped_fns))
-  } else {
-    call_args[[fns_index]] <- wrapped_fns
-  }
+  call_args[[fns_index]] <- wrapped_fns
   if (can_inline_forwarded && length(forwarded_positions) > 0L) {
     call_args <- call_args[-forwarded_positions]
   }
@@ -1524,9 +1499,6 @@ unwritable_name <- function(value) {
 analyze_ordinary_summaries <- function(dots, selection_proxy,
                                        defer_local = FALSE) {
   dot_names <- names(dots)
-  if (is.null(dot_names)) {
-    dot_names <- rep("", length(dots))
-  }
   analyses <- vector("list", length(dots))
   preceding_names <- character()
   share_positions <- which(vapply(
@@ -1809,9 +1781,6 @@ plan_across_share <- function(expr,
     character(1),
     "name"
   ))
-  if (contains_selection_predicate(args$cols)) {
-    abort_share_predicate(kind)
-  }
   sources <- resolve_share_selection(
     args$cols,
     env = env,

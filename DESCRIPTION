@@ -47,6 +47,7 @@ Config/Needs/preflight:
     spelling,
     urlchecker
 Config/Needs/review:
+    covr,
     lintr,
     pkgload,
     rcmdcheck,

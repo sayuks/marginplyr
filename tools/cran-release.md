@@ -511,6 +511,11 @@ gh run list --commit "$candidate_sha" \
 Require routine R CMD check, documentation, lint (including both release
 contract verifiers), site, coverage, and the release matrix's release/devel/
 oldrel, depends-only, suite-coverage, library-isolation, and live backend jobs.
+The coverage job must show strict 100% test line coverage for the candidate SHA,
+and Codecov must show its 100% project report for that same SHA. A missing or
+still-processing Codecov report is not release evidence; wait for it or diagnose
+the upload before proceeding. [ADR 0030](../design/adr/0030-require-complete-test-line-coverage.md)
+owns the reason coverage is checked here rather than rerun in formal preflight.
 If no strict manual release-matrix result exists for this SHA, obtain approval
 before dispatch:
 
@@ -521,8 +526,9 @@ gh run watch <run-id> --exit-status
 ```
 
 Verify `headSha` with `gh run view <run-id> --json headSha,conclusion,url`.
-Success evidence is every required green URL at the candidate SHA. Block on a
-failure, cancellation, SHA mismatch, or missing job. Recovery: rerun a transient
+Success evidence is every required green URL and the Codecov report at the
+candidate SHA. Block on a failure, cancellation, SHA mismatch, missing job, or
+missing coverage report. Recovery: rerun a transient
 infrastructure failure after approval and record both outcomes; a package change
 requires a new PR and restarts at stage 4. Human fallback: dispatch and inspect
 the Actions UI.
