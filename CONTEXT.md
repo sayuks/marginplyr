@@ -236,14 +236,13 @@ _Avoid_: Contextual function, masked helper, reserved argument
 **Assigned summary name**:
 The column name marginplyr writes for an unnamed summary it rewrites, read from
 the caller's own expression rather than from the rewrite. It is never a name
-the caller wrote, and it exists only while the query is built: where a local
-result holds a data-frame column under one, that column's own columns take its
-place and the assigned name does not appear, so an unnamed summary expands as
-`dplyr::summarize()` expands it. A name the caller wrote is not one of these
-and packs, as it does under dplyr. Which unnamed summaries take one is decided
-by spelling, and whether one expands is decided from the value after the
-summary runs; ADR 0028 is authoritative for why the two are settled in
-different places.
+the caller wrote, and it exists only while the query is built. On a local
+input, a data-frame value expands into dplyr's summary mask before later
+summaries run, and the assigned name does not appear. A scalar retains that
+name. A name the caller wrote is not one of these and packs, as it does under
+dplyr. Which unnamed summaries take one is decided by spelling, and whether
+one expands is decided from its value while the summary runs; ADR 0028 is
+authoritative for why the two are settled in different places.
 _Avoid_: Generated name, internal summary name, rewritten name
 
 **Option argument**:

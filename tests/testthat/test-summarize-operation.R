@@ -421,6 +421,110 @@ test_that("local selection rewrites preserve frame expansion and packing", {
   expect_equal(actual$packed$lo, actual$lo)
 })
 
+test_that("an unnamed rewritten frame is available to later summaries", {
+  data <- tibble::tibble(
+    group = c("a", "a", "b"),
+    value = 1:3,
+    total = 100
+  )
+  total_frame <- function(columns) {
+    data.frame(total = sum(columns[[1L]]))
+  }
+  detail <- dplyr::summarise(
+    data,
+    total_frame(dplyr::pick(value)),
+    later = sum(total),
+    .by = group
+  )
+
+  cases <- list(
+    list(grouping = grouping_set(group), totals = c(3L, 3L)),
+    list(grouping = rollup(group), totals = c(3L, 3L, 6L))
+  )
+  for (case in cases) {
+    actual <- summarize_with_margins(
+      data,
+      total_frame(dplyr::pick(value)),
+      later = sum(total),
+      .grouping = case$grouping
+    )
+    expect_identical(actual$total[seq_len(2L)], detail$total)
+    expect_identical(actual$later[seq_len(2L)], detail$later)
+    expect_identical(actual$total, case$totals)
+    expect_identical(actual$later, case$totals)
+  }
+})
+
+test_that("later local selections see an expanded frame's names and types", {
+  data <- tibble::tibble(group = c("a", "a", "b"), value = 1:3)
+  text_total <- function(columns) {
+    data.frame(total = as.character(sum(columns[[1L]])))
+  }
+
+  cases <- list(
+    list(grouping = grouping_set(group), totals = c(3L, 3L)),
+    list(grouping = rollup(group), totals = c(3L, 3L, 6L))
+  )
+  for (case in cases) {
+    actual <- summarize_with_margins(
+      data,
+      text_total(dplyr::pick(value)),
+      later = as.integer(total),
+      dplyr::across(
+        dplyr::where(is.character), ~ paste0(.x, "!"),
+        .names = "text_{.col}"
+      ),
+      selected = paste(
+        names(dplyr::pick(dplyr::where(is.character))),
+        collapse = ","
+      ),
+      .grouping = case$grouping
+    )
+    expected <- case$totals
+    expect_identical(actual$later, expected)
+    expect_identical(actual$total, as.character(expected))
+    expect_identical(actual$text_total, paste0(expected, "!"))
+    expect_identical(
+      actual$selected,
+      rep("total,text_total", length(expected))
+    )
+  }
+})
+
+test_that("a later summary can overwrite an expanded frame column", {
+  data <- tibble::tibble(group = c("a", "a", "b"), value = 1:3)
+  total_frame <- function(columns) {
+    data.frame(total = sum(columns[[1L]]))
+  }
+
+  cases <- list(
+    list(grouping = grouping_set(group), rows = 2L),
+    list(grouping = rollup(group), rows = 3L)
+  )
+  for (case in cases) {
+    actual <- summarize_with_margins(
+      data,
+      total_frame(dplyr::pick(value)),
+      total = 999L,
+      .grouping = case$grouping
+    )
+    expect_identical(actual$total, rep(999L, case$rows))
+  }
+})
+
+test_that("an unnamed rewritten NULL summary remains absent", {
+  data <- tibble::tibble(group = c("a", "b"), value = 1:2)
+  empty <- function(columns) NULL
+  actual <- summarize_with_margins(
+    data,
+    empty(dplyr::pick(value)),
+    later = sum(value),
+    .grouping = grouping_set(group)
+  )
+  expect_identical(names(actual), c("group", "later"))
+  expect_identical(actual$later, 1:2)
+})
+
 test_that("local selection planning does not execute caller summaries", {
   data <- data.frame(group = c("a", "b"), value = c(1, 2))
   calls <- 0L
