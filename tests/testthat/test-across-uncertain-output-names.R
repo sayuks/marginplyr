@@ -53,6 +53,104 @@ test_that("a function list can shadow a familiar function name", {
   expect_identical(names(result), c("group", "x_1", "x_total", "x_avg"))
 })
 
+test_that("a caller-bound list function determines across output names", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 2))
+  list <- function(...) base::list(total = sum)
+
+  actual <- summarize_with_margins(
+    data,
+    dplyr::across(x, list(avg = mean), .names = "{.col}_{.fn}"),
+    .grouping = grouping_set(g), .id = "x_avg"
+  )
+
+  expect_identical(names(actual), c("g", "x_avg", "x_total"))
+  expect_identical(actual$x_avg, c(1L, 1L))
+  expect_equal(actual$x_total, c(1, 2))
+})
+
+test_that("qualified base list keeps its own function entries", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 2))
+  list <- function(...) base::list(total = sum)
+
+  actual <- summarize_with_margins(
+    data,
+    dplyr::across(x, base::list(avg = mean),
+                  .names = "{.col}_{.fn}"),
+    .grouping = grouping_set(g), .id = "x_total"
+  )
+
+  expect_identical(names(actual), c("g", "x_total", "x_avg"))
+  expect_equal(actual$x_avg, c(1, 2))
+})
+
+test_that("caller-bound list outputs still protect identifiers and groups", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 2))
+  list <- function(...) base::list(total = sum)
+
+  id_error <- expect_error(summarize_with_margins(
+    data,
+    dplyr::across(x, list(avg = mean), .names = "{.col}_{.fn}"),
+    .grouping = grouping_set(g), .id = "x_total"
+  ), "`.id`.*`x_total`.*conflicts with a summary output")
+  expect_s3_class(id_error, "marginplyr_error")
+
+  group_data <- data.frame(x_total = c("a", "b"), x = c(1, 2))
+  group_error <- expect_error(summarize_with_margins(
+    group_data,
+    dplyr::across(x, list(avg = mean), .names = "{.col}_{.fn}"),
+    .grouping = grouping_set(x_total)
+  ), "cannot overwrite grouping column.*`x_total`")
+  expect_s3_class(group_error, "marginplyr_error")
+})
+
+test_that("list prediction does not force a delayed callee binding", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 2))
+  counter <- new.env(parent = emptyenv())
+  counter$binding <- 0L
+  counter$body <- 0L
+  delayedAssign("list", {
+    counter$binding <- counter$binding + 1L
+    function(...) {
+      counter$body <- counter$body + 1L
+      base::list(total = sum)
+    }
+  })
+
+  actual <- summarize_with_margins(
+    data,
+    dplyr::across(x, list(avg = mean), .names = "{.col}_{.fn}"),
+    .grouping = grouping_set(g), .id = "x_avg"
+  )
+  expect_identical(counter$binding, 1L)
+  expect_identical(counter$body, 1L)
+  expect_identical(names(actual), c("g", "x_avg", "x_total"))
+})
+
+test_that("list prediction does not invoke an active callee binding", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 2))
+  counter <- new.env(parent = emptyenv())
+  counter$binding <- 0L
+  counter$body <- 0L
+  actual <- local({
+    makeActiveBinding("list", function() {
+      counter$binding <- counter$binding + 1L
+      function(...) {
+        counter$body <- counter$body + 1L
+        base::list(total = sum)
+      }
+    }, environment())
+    summarize_with_margins(
+      data,
+      dplyr::across(x, list(avg = mean), .names = "{.col}_{.fn}"),
+      .grouping = grouping_set(g), .id = "x_avg"
+    )
+  })
+
+  expect_identical(counter$binding, 1L)
+  expect_identical(counter$body, 1L)
+  expect_identical(names(actual), c("g", "x_avg", "x_total"))
+})
+
 test_that("actual bound-list collisions are refused after execution", {
   data <- data.frame(group = c("a", "b"), x = c(1, 2))
   fns <- list(total = sum, avg = mean)

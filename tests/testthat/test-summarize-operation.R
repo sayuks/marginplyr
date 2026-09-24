@@ -520,6 +520,116 @@ test_that("named frame summaries stay packed with constructor controls", {
   expect_identical(actual$packed$x, c(1L, 2L))
 })
 
+test_that("a caller-bound frame function determines its summary output", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  tibble <- function(...) data.frame(z = 1L)
+
+  actual <- summarize_with_margins(
+    data, tibble(foo = x),
+    .grouping = grouping_set(g), .id = "foo"
+  )
+
+  expect_identical(names(actual), c("g", "foo", "z"))
+  expect_identical(actual$foo, c(1L, 1L))
+  expect_identical(actual$z, c(1L, 1L))
+})
+
+test_that("other unqualified frame spellings honor caller bindings", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  # This binding must match the base constructor's name to test its lookup.
+  data.frame <- function(...) { # nolint: object_name_linter.
+    base::data.frame(z = 1L)
+  }
+  data_frame <- function(...) base::data.frame(z = 1L)
+
+  base_spelling <- summarize_with_margins(
+    data, data.frame(foo = x),
+    .grouping = grouping_set(g), .id = "foo"
+  )
+  tibble_spelling <- summarize_with_margins(
+    data, data_frame(foo = x),
+    .grouping = grouping_set(g), .id = "foo"
+  )
+
+  expect_identical(names(base_spelling), c("g", "foo", "z"))
+  expect_identical(names(tibble_spelling), c("g", "foo", "z"))
+})
+
+test_that("an unbound frame spelling keeps R's function lookup error", {
+  caller <- new.env(parent = baseenv())
+  caller$data <- base::data.frame(g = c("a", "b"), x = 1:2)
+
+  error <- expect_error(eval(quote(marginplyr::summarize_with_margins(
+    data, tibble(foo = x),
+    .grouping = marginplyr::grouping_set(g), .id = "foo"
+  )), envir = caller), "could not find function")
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
+test_that("caller-bound frame outputs still protect identifiers and groups", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  tibble <- function(...) data.frame(z = 1L)
+
+  id_error <- expect_error(summarize_with_margins(
+    data, tibble(foo = x),
+    .grouping = grouping_set(g), .id = "z"
+  ), "`.id`.*`z`.*conflicts with a summary output")
+  expect_s3_class(id_error, "marginplyr_error")
+
+  group_data <- tibble::tibble(z = c("a", "b"), x = 1:2)
+  group_error <- expect_error(summarize_with_margins(
+    group_data, tibble(foo = x),
+    .grouping = grouping_set(z)
+  ), "cannot overwrite grouping column.*`z`")
+  expect_s3_class(group_error, "marginplyr_error")
+})
+
+test_that("frame prediction does not force a delayed constructor", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  counter <- new.env(parent = emptyenv())
+  counter$binding <- 0L
+  counter$body <- 0L
+  delayedAssign("tibble", {
+    counter$binding <- counter$binding + 1L
+    function(...) {
+      counter$body <- counter$body + 1L
+      data.frame(z = 1L)
+    }
+  })
+
+  actual <- summarize_with_margins(
+    data, tibble(foo = x),
+    .grouping = grouping_set(g), .id = "foo"
+  )
+  expect_identical(counter$binding, 1L)
+  expect_identical(counter$body, 2L)
+  expect_identical(names(actual), c("g", "foo", "z"))
+})
+
+test_that("frame prediction does not invoke an active constructor binding", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  counter <- new.env(parent = emptyenv())
+  counter$binding <- 0L
+  counter$body <- 0L
+  actual <- local({
+    makeActiveBinding("tibble", function() {
+      counter$binding <- counter$binding + 1L
+      function(...) {
+        counter$body <- counter$body + 1L
+        data.frame(z = 1L)
+      }
+    }, environment())
+    summarize_with_margins(
+      data, tibble(foo = x),
+      .grouping = grouping_set(g), .id = "foo"
+    )
+  })
+
+  expect_identical(counter$binding, 2L)
+  expect_identical(counter$body, 2L)
+  expect_identical(names(actual), c("g", "foo", "z"))
+})
+
 test_that("an unnamed rewritten frame is available to later summaries", {
   data <- tibble::tibble(
     group = c("a", "a", "b"),

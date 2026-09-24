@@ -1148,6 +1148,9 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   }
 
   if (identical(kind, "frame")) {
+    if (!is_known_frame_constructor(expr, env)) {
+      return(character())
+    }
     call_args <- static_call_args(expr)
     arg_names <- names(call_args)
     if (is.null(arg_names)) {
@@ -1178,6 +1181,48 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   # nothing outside it names a kind, so no call reaches this and it stays a
   # bare `stop()` (ADR 0015).
   stop("Unhandled data-frame-valued summary kind: ", kind, call. = FALSE)
+}
+
+# A recognized frame spelling predicts its argument names only when ordinary
+# function lookup reaches that constructor. Qualified calls name their owner;
+# an unqualified call may instead reach a caller's function (ADR 0019).
+is_known_frame_constructor <- function(expr, env) {
+  name <- static_call_name(expr)
+  namespace <- static_call_ns(expr)
+  if (!is.null(namespace)) {
+    return(TRUE)
+  }
+  constructor <- if (identical(name, "data.frame")) {
+    base::data.frame
+  } else if (identical(name, "tibble")) {
+    tibble::tibble
+  } else {
+    tibble::data_frame
+  }
+  identical(ordinary_function_binding(name, env), constructor)
+}
+
+# Read a function-position name without forcing a caller promise or invoking an
+# active binding. R skips non-function values in a function position; an
+# unresolved binding leaves its eventual callee unknown to prediction.
+ordinary_function_binding <- function(name, env) {
+  current <- env
+  while (!identical(current, emptyenv())) {
+    if (exists(name, envir = current, inherits = FALSE)) {
+      if (bindingIsActive(name, current) ||
+            (!identical(current, baseenv()) &&
+               !identical(current, asNamespace("base")) &&
+               rlang::env_binding_are_lazy(current, name))) {
+        return(NULL)
+      }
+      binding <- get(name, envir = current, inherits = FALSE)
+      if (is.function(binding)) {
+        return(binding)
+      }
+    }
+    current <- parent.env(current)
+  }
+  NULL
 }
 
 # The formal arguments after `...` that a recognized constructor consumes
@@ -1229,7 +1274,7 @@ known_across_output_names <- function(expr, env, data_proxy) {
   column_names <- names(resolve_summary_selection(cols_expr, env, data_proxy))
 
   if (is.null(parsed$names)) {
-    if (rlang::is_call(parsed$fns, "list")) {
+    if (is_known_function_list_call(parsed$fns, env)) {
       function_names <- known_across_function_names(parsed, env)
       return(unlist(
         lapply(
@@ -1365,7 +1410,7 @@ known_across_function_names <- function(parsed, env) {
     return(character())
   }
 
-  if (!rlang::is_call(parsed$fns, "list")) {
+  if (!is_known_function_list_call(parsed$fns, env)) {
     if (rlang::is_symbol(parsed$fns)) {
       name <- rlang::as_string(parsed$fns)
       current <- env
@@ -1405,6 +1450,20 @@ known_across_function_names <- function(parsed, env) {
     fns_names <- rep("", length(fns))
   }
   name_unnamed_by_position(fns_names, "")
+}
+
+# The arguments of a literal `list()` name across functions only when that
+# call reaches base's constructor. An ordinary caller binding may return a
+# different list, whose entry names remain unknown until across evaluates it.
+is_known_function_list_call <- function(expr, env) {
+  if (!identical(static_call_name(expr), "list")) {
+    return(FALSE)
+  }
+  namespace <- static_call_ns(expr)
+  if (!is.null(namespace)) {
+    return(identical(namespace, "base"))
+  }
+  identical(ordinary_function_binding("list", env), base::list)
 }
 
 # Every caller names the unnamed entries of an argument list by position, which
