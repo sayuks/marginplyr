@@ -198,14 +198,10 @@ Marginplyr's own walk descends into a `function` or `~` written as an
 positions agree — a place where marginplyr previously analysed a helper that
 plain dplyr would have let a binding capture.
 
-It does not descend into a function literal used as a *call head*:
-`(function() cur_group_id())()` has no readable name, so the walk reads it as a
-call to nothing and never visits the body. That blind spot is uniform — the
-analysis and the execution agree, because neither sees it — so it is not the
-disagreement this decision fixes, and it is not introduced by it. It is the
-same conservative reading of a computed head that "Boundary for callable
-identity" above records, and it belongs to #178's question rather than this
-one.
+At the time of this decision, the walk did not descend into a function literal
+used as a *call head*: `(function() cur_group_id())()` had no readable name, so
+its body was not visited. #622 later closed that traversal gap without changing
+which callable names are recognized by static spelling.
 
 The marginplyr-owned helpers need nothing here. `grouping_id()`,
 `grouping_bit()`, `share_of_parent()`, and `share_of_total()` are error stubs
@@ -657,3 +653,19 @@ is a selection containing a specification, which tidyselect refuses and reports
 for itself; the label the position compares is the whole argument's, which is
 not the sub-selection tidyselect refused. That separation is the reason the
 comparison exists, and reading through does not touch it.
+
+## Amendment: traverse evaluated call heads
+
+#622 applies the Contextual helper rule inside a computed function position.
+The call's head is evaluated before its arguments, and a call in that head can
+contain statically visible `pick()`, `grouping_bit()`, or `cur_group_id()` calls.
+The shared expression readers now visit that head for both searches and
+rewrites. They retain the same capture boundary as ordinary arguments: a
+helper under `quote()` is language data unless the expression is visibly handed
+to `eval()`. A function literal's default expressions are part of the evaluated
+subtree when its function reads them, so the readers descend into its formal
+pairlist as well as its body.
+
+This changes the reach of static analysis, not callable identity. A helper
+spelled inside an evaluated head is recognized; a head whose resulting
+function is chosen dynamically still names no Contextual helper by itself.
