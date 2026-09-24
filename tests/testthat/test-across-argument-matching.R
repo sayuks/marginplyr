@@ -59,7 +59,7 @@ test_that("across matches positional arguments around partial names", {
   expect_identical(actual$x_third, 1:2)
 })
 
-test_that("genuine dots reach the function and later formals need exact names", {
+test_that("dots reach the function and later formals need exact names", {
   data <- tibble::tibble(g = c("a", "b"), x = 1:2)
 
   actual <- suppressWarnings(summarize_with_margins(
