@@ -520,7 +520,7 @@ test_that("SQLite internal names avoid case-insensitive collisions", {
   }
 })
 
-test_that("SQLite typed compute removes temporary work after insertion fails", {
+test_that("SQLite typed compute refuses before creating temporary work", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
