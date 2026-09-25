@@ -60,9 +60,13 @@
 #'
 #' A lazy `.data` still returns a local tibble without reading source rows:
 #' inspection uses captured column metadata and the backend-independent
-#' Grouping plan. It is deliberately separate from a SQL execution plan. Use
-#' [dplyr::show_query()] for generated SQL and backend-native tools for an
-#' optimizer plan.
+#' Grouping plan. A derived dtplyr step whose typed metadata cannot be
+#' established without processing source rows is refused when inspection needs
+#' those types. Name-only inspection does not need that read. To inspect such a
+#' step with typed selections, call [dplyr::collect()] on it explicitly and
+#' pass the resulting data frame. The Grouping plan is deliberately separate
+#' from a SQL execution plan. Use [dplyr::show_query()] for generated SQL and
+#' backend-native tools for an optimizer plan.
 #'
 #' Because inspection builds no grouping-set branch, it also accepts a dtplyr
 #' step with an input rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves

@@ -2551,6 +2551,190 @@ test_that("typed inspection evaluates only zero-row dtplyr graph sources", {
   expect_graph_sources_unchanged(graph)
 })
 
+test_that("a dtplyr metadata refusal does not evaluate source rows", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  probe <- function(x) {
+    seen <<- c(seen, length(x))
+    x
+  }
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b", "c"), v = 1:3)) |>
+    dplyr::mutate(v = probe(v))
+
+  error <- expect_error(
+    summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g))
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error), "Can't safely determine column metadata",
+    fixed = TRUE
+  )
+  expect_match(conditionMessage(error), "dplyr::collect()", fixed = TRUE)
+  expect_identical(seen, integer())
+
+  error <- expect_error(
+    inspect_grouping(step, .grouping = rollup(where(is.character)))
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(
+    conditionMessage(error), "Can't safely determine column metadata",
+    fixed = TRUE
+  )
+  expect_identical(seen, integer())
+
+  plan <- inspect_grouping(step, .grouping = rollup(g))
+  expect_identical(nrow(plan), 2L)
+  expect_identical(seen, integer())
+})
+
+test_that("every Margin verb refuses unsafe dtplyr metadata before execution", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  probe <- function(x) {
+    seen <<- c(seen, length(x))
+    x
+  }
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b", "c"), value = 1:3)) |>
+    dplyr::mutate(value = probe(value))
+
+  for (name in names(forwarded_margin_verbs)) {
+    error <- expect_error(
+      forwarded_margin_verbs[[name]](step, NULL, rollup(g)),
+      info = name
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(seen, integer(), info = name)
+  }
+})
+
+test_that("unsafe dtplyr transformations remain refused through later steps", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  probe <- function(x) {
+    seen <<- c(seen, length(x))
+    x
+  }
+  root <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), value = 1:2))
+  steps <- list(
+    dplyr::filter(dplyr::mutate(root, value = probe(value)), value > 0),
+    dplyr::mutate(
+      dplyr::mutate(root, doubled = value * 2),
+      next_value = probe(doubled)
+    )
+  )
+
+  for (step in steps) {
+    error <- expect_error(
+      summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g))
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(seen, integer())
+  }
+})
+
+test_that("a shadowed arithmetic operator cannot certify dtplyr metadata", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  `*` <- function(a, b) {
+    seen <<- c(seen, length(a))
+    factor(a, levels = unique(a))
+  }
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), value = 1:2)) |>
+    dplyr::mutate(derived = value * 2)
+
+  error <- expect_error(
+    summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g))
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_identical(seen, integer())
+})
+
+test_that("a dtplyr filter can supply typed metadata without source rows", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  probe <- function(x) {
+    seen <<- c(seen, length(x))
+    x
+  }
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b", "c"), v = 1:3)) |>
+    dplyr::filter(probe(v) > 0)
+
+  query <- summarize_with_margins(
+    step, n = dplyr::n(), .grouping = rollup(g)
+  )
+  expect_s3_class(query, "dtplyr_step")
+  expect_false(3L %in% seen)
+})
+
+test_that("an empty-root evaluation failure gives the metadata remedy", {
+  skip_if_suggest_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = 1:2)) |>
+    dplyr::filter(v[[1L]] > 0L)
+  expect_identical(nrow(dplyr::collect(step)), 2L)
+
+  error <- expect_error(
+    summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g))
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "dplyr::collect()", fixed = TRUE)
+})
+
+test_that("a value-dependent factor is refused until the caller collects", {
+  skip_if_suggest_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b", "c"), v = 1:3)) |>
+    dplyr::mutate(g = factor(g, levels = unique(g)))
+
+  error <- expect_error(
+    summarize_with_margins(
+      step, n = dplyr::n(), .grouping = rollup(where(is.factor))
+    )
+  )
+  expect_s3_class(error, "marginplyr_error")
+
+  materialized <- dplyr::collect(step)
+  expect_identical(levels(materialized$g), c("a", "b", "c"))
+  result <- summarize_with_margins(
+    materialized, n = dplyr::n(), .grouping = rollup(where(is.factor))
+  )
+  expect_s3_class(result$g, "factor")
+  expect_identical(levels(result$g), c("a", "b", "c", "Total"))
+})
+
+test_that("a plain immutable dtplyr source retains factor metadata", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(
+    g = factor(c("a", "b"), levels = c("a", "b", "unused")),
+    value = c(1L, 2L)
+  ))
+  result <- summarize_with_margins(
+    source,
+    total = sum(value),
+    .grouping = rollup(where(is.factor))
+  ) |>
+    dplyr::collect()
+
+  expect_s3_class(result$g, "factor")
+  expect_identical(levels(result$g), c("a", "b", "unused", "Total"))
+  expect_setequal(result$total, c(1L, 2L, 3L))
+})
+
+test_that("constant and copied columns keep metadata on a dtplyr step", {
+  skip_if_suggest_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(
+    region = factor(c("a", "b"), levels = c("a", "b", "unused")),
+    value = c(1L, 2L)
+  )) |>
+    dplyr::mutate(copy = region, flag = TRUE, tag = "fixed")
+
+  plan <- inspect_grouping(step, .grouping = rollup(where(is.factor)))
+  expect_identical(plan$included[[1L]], "(region, copy)")
+  result <- summarize_with_margins(
+    step, total = sum(value), .grouping = rollup(copy)
+  ) |>
+    dplyr::collect()
+  expect_identical(levels(result$copy), c("a", "b", "unused", "Total"))
+})
+
 test_that("all-immutable graph inputs preserve uncollected calls and results", {
   skip_if_suggest_absent("dtplyr")
 

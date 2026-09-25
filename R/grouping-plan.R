@@ -265,10 +265,10 @@ prepare_grouping_plan <- function(.data,
       }
       # Inspection needs no typed snapshot when names settle both selections.
       # Its canonical pass uses the name proxy too, preserving the two-pass
-      # validation and warning behavior without executing a Mutable step.
+      # validation and warning behavior without evaluating a dtplyr step.
       if (
         !builds_margin_branches &&
-          mutable_step &&
+          identical(backend$kind, "dtplyr") &&
           preflight$name_only &&
           !is.null(by)
       ) {
@@ -283,8 +283,11 @@ prepare_grouping_plan <- function(.data,
           preflight = preflight
         )
       } else {
-        data_proxy <- if (!builds_margin_branches && mutable_step) {
-          mutable_dtplyr_selection_proxy(data)
+        data_proxy <- if (identical(backend$kind, "dtplyr")) {
+          dtplyr_selection_proxy(
+            data,
+            mutable = !builds_margin_branches && mutable_step
+          )
         } else {
           grouping_selection_proxy(data, backend = backend)
         }

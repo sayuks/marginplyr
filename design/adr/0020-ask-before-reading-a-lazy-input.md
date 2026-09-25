@@ -264,3 +264,28 @@ gate has a positive control for that entry and asserts that direct-reader
 inspection invokes no catalogued entry point. The public-verb test compares its
 Grouping plan with the plans from a `Table` and a manually wrapped reader query,
 then consumes the original reader to show every batch remains.
+
+## Amendment (#625): a zero-row result does not permit full-source dtplyr work
+
+The first exemption permits acquiring typed metadata without processing the
+caller's source rows. It does not permit a dtplyr step to evaluate its upstream
+operations over the full input and apply `head(0L)` only afterwards. Such an
+evaluation reads the caller's data and may run their functions before they
+collect the Margin result or finish inspecting the Grouping plan. The exemption
+is therefore about the work performed, not only the row count returned.
+
+For dtplyr, Margin operations and typed `inspect_grouping()` may use source
+schema or a zero-row evaluation only where it faithfully preserves the input's
+derived column types and factor levels. An arbitrary transformation over empty
+roots does not establish that fidelity: its output metadata may depend on the
+source values. When faithful metadata cannot be obtained without processing
+source rows, the call refuses with a Package condition explaining the risk and
+directing a caller who wants the work now to collect the input explicitly and
+pass the resulting data frame. No implicit full-input evaluation or silent
+substitution of empty-input metadata is allowed.
+
+Name-only inspection does not acquire typed metadata. The existing refusal of
+Mutable steps by Margin verbs and the protection of caller-owned tables during
+inspection remain in force. This amendment narrows the dtplyr instance of the
+first exemption; it does not alter DuckDB's zero-row metadata read or the
+second exemption.

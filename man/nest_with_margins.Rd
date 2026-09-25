@@ -475,8 +475,8 @@ marginplyr queries your data} for why the two halves differ.
 
 \section{When marginplyr queries your data}{
 
-Every Margin verb applied to a lazy input builds a query and returns it
-unexecuted. \code{\link[dplyr:show_query]{dplyr::show_query()}} runs nothing, and no row is read until
+A successful Margin verb applied to a lazy input builds a query and returns
+it unexecuted. \code{\link[dplyr:show_query]{dplyr::show_query()}} runs nothing, and no row is read until
 you execute the query yourself -- \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} excepted,
 because its row-wise return shape exists only locally; see its own
 documentation for when it collects.
@@ -493,6 +493,11 @@ columns marginplyr must decompose and later restore -- currently
 decomposition loses. It references your table but reads none of it, and
 it is not a shape marginplyr introduced: \code{\link[dplyr:tbl]{dplyr::tbl()}} already sends an
 equivalent zero-row read for any table reference, on any dbplyr backend.
+For a derived dtplyr step, marginplyr evaluates isolated zero-row sources
+only when that preserves the step's actual column types and factor levels.
+Otherwise it refuses before processing source rows. To run the upstream
+operations now, call \code{\link[dplyr:collect]{dplyr::collect()}} on the step explicitly and pass
+the resulting data frame.
 \item \strong{At most two queries per share request until the SQL dialect answers},
 sent when a share is requested there with \code{.check_share_source} at its
 default of \code{TRUE}, asking whether the dialect converts a
