@@ -373,11 +373,13 @@ property of the object the verb returns: on local data frames and \code{dtplyr}
 steps that is the row order, and on lazy tables it is the outermost query's
 \verb{ORDER BY}, which \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe:
 a materialized result carries the Margin order rather than losing it.
-On a live SQLite result with typed-missing dimensions, \code{compute()} creates
-a table with only the public columns and preserves their types. If all of
-\code{rowid}, \code{oid}, and \verb{_rowid_} are already public column names, ignoring
-case, it refuses before creating the table because SQLite has no remaining
-name for the row order. Direct \code{collect()} remains available.
+Direct \code{compute()} of a live SQLite Margin result that uses marginplyr's
+dedicated type or order boundary is temporarily refused before writing,
+because it could address the wrong destination (#661). This includes sorted
+results and applicable unsorted identifiers and shares. Use direct
+\code{\link[dplyr:collect]{dplyr::collect()}} while the materialization path is being repaired.
+The existing type, public-column, and Margin-order guarantees for direct
+materialization remain the restoration criteria in ADR 0031.
 Whether the order survives further verbs applied to a lazy result is not
 promised, because that depends on dbplyr's query flattening, which
 marginplyr does not own and which changes between releases.
@@ -700,8 +702,8 @@ PostgreSQL SQL with dbplyr's simulator.
 
 SQLite is the other live database. It runs the portable \verb{UNION ALL} path
 end to end: Parent shares under \code{summarize_with_margins()}'s
-\code{.check_share_source = FALSE}, a Margin order through both
-\code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}}, including the missing-value
+\code{.check_share_source = FALSE}, a Margin order through direct
+\code{\link[dplyr:collect]{dplyr::collect()}}, including the missing-value
 placement its own ordering would not produce, the observed half of the
 Margin label collision check, and the queries \code{\link[=last_sent_queries]{last_sent_queries()}}
 records. The refusal that argument's default raises on the dialect is

@@ -160,9 +160,8 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   out
 }
 
-# A zero-row projection declares the requested table's public column types;
-# INSERT fills it with the requested result. Sorted results stage the compound
-# query first, then insert in key order so SQLite rowids preserve Margin order.
+# Direct materialization is temporarily refused at this boundary (issue #661).
+# A downstream query delegates to dbplyr; the direct result still collects.
 #' @exportS3Method dplyr::compute
 #' @noRd
 compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
@@ -175,65 +174,12 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  con <- x$con
-  public <- attr(x, "marginplyr_public_columns")
-  quote <- function(names) {
-    as.character(DBI::dbQuoteIdentifier(con, names))
-  }
-  columns <- paste(quote(public), collapse = ", ")
-  keys <- attr(x, "marginplyr_order_keys")
-  if (length(keys) == 0L) {
-    insert_from <- as.character(dbplyr::sql_render(
-      attr(x, "marginplyr_public_query"), sql_options = sql_options
-    ))
-  } else {
-    rowid_alias <- setdiff(
-      c("rowid", "oid", "_rowid_"), tolower(public)
-    )
-    if (length(rowid_alias) == 0L) {
-      abort_marginplyr(
-        paste0(
-          "Can't materialize this SQLite Margin order: result columns shadow ",
-          "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
-        ),
-        call = rlang::caller_call()
-      )
-    }
-    stage_name <- basename(tempfile(pattern = "marginplyr_order_"))
-    on.exit(try(DBI::dbRemoveTable(con, stage_name), silent = TRUE), add = TRUE)
-    dbplyr::db_compute(
-      con, stage_name, dbplyr::sql_render(x, sql_options = sql_options),
-      temporary = TRUE, analyze = FALSE
-    )
-    insert_from <- paste0(
-      "SELECT ", columns, " FROM ", quote(stage_name), " ORDER BY ",
-      paste(quote(keys), collapse = ", ")
-    )
-  }
-  result <- DBI::dbWithTransaction(con, {
-    result <- dplyr::compute(
-      attr(x, "marginplyr_public_anchor"),
-      name = name,
-      temporary = temporary,
-      overwrite = overwrite,
-      unique_indexes = unique_indexes,
-      indexes = indexes,
-      analyze = FALSE,
-      ...,
-      sql_options = sql_options
-    )
-    table_name <- quote(dbplyr::remote_name(result))
-    insert <- paste0(
-      "INSERT INTO ", table_name, " (", columns, ") ", insert_from
-    )
-    DBI::dbExecute(con, insert)
-    if (analyze) {
-      DBI::dbExecute(con, paste("ANALYZE", table_name))
-    }
-    result
-  })
-  if (length(keys) == 0L) {
-    return(result)
-  }
-  dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
+  abort_marginplyr(
+    paste0(
+      "Direct compute() of this SQLite Margin result is temporarily disabled ",
+      "because materialization can write to a different table than requested. ",
+      "Use collect() to retrieve the result until destination handling is fixed."
+    ),
+    call = rlang::caller_call()
+  )
 }

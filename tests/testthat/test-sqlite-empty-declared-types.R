@@ -24,20 +24,18 @@ test_that("SQLite empty Margin results retain declared package column types", {
         .check_share_source = FALSE
       )
       expected_names <- c("month", "g", "sid", "z", "p", "t", "z_across")
-      for (result in list(
-        dplyr::collect(query),
-        dplyr::collect(dplyr::compute(query))
-      )) {
-        info <- paste(if (is.null(label)) "NULL" else label, sort)
-        expect_identical(nrow(result), 0L, info = info)
-        expect_identical(names(result), expected_names, info = info)
-        expect_identical(result$month, integer(), info = info)
-        expect_identical(result$g, character(), info = info)
-        expect_identical(result$sid, integer(), info = info)
-        expect_identical(result$p, double(), info = info)
-        expect_identical(result$t, double(), info = info)
-        expect_identical(result$z_across, double(), info = info)
-      }
+      expect_error(dplyr::compute(query), "temporarily disabled",
+                   class = "marginplyr_error")
+      result <- dplyr::collect(query)
+      info <- paste(if (is.null(label)) "NULL" else label, sort)
+      expect_identical(nrow(result), 0L, info = info)
+      expect_identical(names(result), expected_names, info = info)
+      expect_identical(result$month, integer(), info = info)
+      expect_identical(result$g, character(), info = info)
+      expect_identical(result$sid, integer(), info = info)
+      expect_identical(result$p, double(), info = info)
+      expect_identical(result$t, double(), info = info)
+      expect_identical(result$z_across, double(), info = info)
     }
   }
 })
@@ -74,25 +72,21 @@ test_that("SQLite empty summary keeps root shares and standalone identifiers", {
     t = share_of_total(z), .by = month, .grouping = rollup(g),
     .margin_label = NULL, .check_share_source = FALSE
   )
-  for (result in list(
-    dplyr::collect(shares_only),
-    dplyr::collect(dplyr::compute(shares_only))
-  )) {
-    expect_identical(result$p, double())
-    expect_identical(result$t, double())
-  }
+  expect_error(dplyr::compute(shares_only), "temporarily disabled",
+               class = "marginplyr_error")
+  result <- dplyr::collect(shares_only)
+  expect_identical(result$p, double())
+  expect_identical(result$t, double())
 
   query <- summarize_with_margins(
     empty, z = sum(v), .by = month, .grouping = grouping_set(g),
     .id = "sid"
   )
-  for (result in list(
-    dplyr::collect(query),
-    dplyr::collect(dplyr::compute(query))
-  )) {
-    expect_identical(result$month, integer())
-    expect_identical(result$g, integer())
-    expect_identical(result$sid, integer())
-    expect_identical(nrow(result), 0L)
-  }
+  expect_error(dplyr::compute(query), "temporarily disabled",
+               class = "marginplyr_error")
+  result <- dplyr::collect(query)
+  expect_identical(result$month, integer())
+  expect_identical(result$g, integer())
+  expect_identical(result$sid, integer())
+  expect_identical(nrow(result), 0L)
 })
