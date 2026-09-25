@@ -512,6 +512,25 @@ show_query(dt_query)
 collect(dt_query)
 ```
 
+A derived dtplyr step can compute column types or factor levels from its source
+values. A request for zero output rows can still run that upstream calculation
+over every source row before discarding them. When marginplyr cannot establish
+faithful metadata from isolated zero-row sources, it refuses the call before
+processing source rows. Collect the step explicitly and pass the resulting data
+frame if you want its upstream operations to run now:
+
+```{r}
+#| label: dtplyr-unsafe-metadata
+#| eval: !expr has_dtplyr
+#| error: true
+#| purl: false
+
+january_sales |>
+  dtplyr::lazy_dt() |>
+  mutate(region = factor(region, levels = unique(region))) |>
+  inspect_grouping(.grouping = rollup(where(is.factor)))
+```
+
 The step has to be built with `immutable = TRUE`, which is what `lazy_dt()`
 does by default. A Margin verb builds one branch per grouping set from the
 step it is given, and when the step was built with `immutable = FALSE`
