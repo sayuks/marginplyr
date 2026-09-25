@@ -123,8 +123,7 @@ expand_with_margins <- function(.data,
   )
   execution <- execute_margin_expand(operation)
   type_anchor_columns <- if (
-    live_sqlite_margin_result(operation) &&
-      (margin_sorting(operation) || !is.null(operation$set_id_name)) &&
+    sqlite_final_anchor_path(operation) &&
       length(operation$plan$sets) > 1L
   ) {
     operation$data_vars

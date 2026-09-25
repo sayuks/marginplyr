@@ -11,6 +11,13 @@ live_sqlite_margin_order <- function(operation) {
   margin_sorting(operation) && live_sqlite_margin_result(operation)
 }
 
+# Whether a live SQLite result can cover the union's source-column type anchor.
+# The caller holds a prepared operation with its sort and identifier choices.
+sqlite_final_anchor_path <- function(operation) {
+  live_sqlite_margin_result(operation) &&
+    (margin_sorting(operation) || !is.null(operation$set_id_name))
+}
+
 # Whether source columns need the SQLite typed-order result (ADR 0031).
 # The caller supplies columns present in the prepared operation's public result.
 sqlite_typed_order_needed <- function(operation, source_columns) {

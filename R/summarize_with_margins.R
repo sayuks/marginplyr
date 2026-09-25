@@ -1023,10 +1023,8 @@ summarize_with_margins <- function(.data,
   )]
   # Share staging, SQLite Margin order, and the public `.id` projection can
   # wrap the union's source-column anchor. The finalizer anchors the result.
-  sqlite_result <- live_sqlite_margin_result(operation)
   has_anchor <- length(share_kinds) > 0L ||
-    (sqlite_result &&
-       (margin_sorting(operation) || !is.null(operation$set_id_name)))
+    sqlite_final_anchor_path(operation)
   anchor_needed <- identical(operation$backend$kind, "sql") &&
     has_anchor &&
     length(typed_dimensions) > 0L &&
