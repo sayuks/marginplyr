@@ -17,6 +17,123 @@ test_that("SQLite Margin order keeps an all-missing dimension typed", {
   expect_equal(result$z, c(1, 1))
 })
 
+test_that("SQLite unsorted identifiers keep typed dimensions in summaries", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
+  values <- list(
+    character = NA_character_, integer = NA_integer_, double = NA_real_
+  )
+
+  for (type in names(values)) {
+    source <- dplyr::copy_to(
+      con,
+      data.frame(fixed = c("a", "b"), g = rep(values[[type]], 2L),
+                 v = c(1, 2)),
+      paste0("unsorted_summary_", type), temporary = TRUE
+    )
+    for (label in list(NULL, NA_character_)) {
+      for (fixed in c(FALSE, TRUE)) {
+        query <- if (fixed) {
+          summarize_with_margins(
+            source, z = sum(v), .by = fixed, .grouping = rollup(g),
+            .margin_label = label, .id = "sid", .sort = "none"
+          )
+        } else {
+          summarize_with_margins(
+            source, z = sum(v), .grouping = rollup(g),
+            .margin_label = label, .id = "sid", .sort = "none"
+          )
+        }
+        expected_names <- if (fixed) {
+          c("fixed", "g", "sid", "z")
+        } else {
+          c("g", "sid", "z")
+        }
+        info <- paste(type, if (is.null(label)) "NULL" else "NA", fixed)
+        expect_identical(as.character(dplyr::tbl_vars(query)), expected_names,
+                         info = info)
+        expect_identical(last_sent_queries()$purpose, "result", info = info)
+        expect_identical(last_sent_queries()$sql,
+                         as.character(dbplyr::sql_render(query)), info = info)
+        result <- dplyr::collect(query)
+        expect_identical(names(result), expected_names, info = info)
+        expect_identical(nrow(result), if (fixed) 4L else 2L, info = info)
+        expect_identical(result$g, rep(values[[type]], nrow(result)),
+                         info = info)
+        result <- if (fixed) {
+          result[order(result$fixed, result$sid), ]
+        } else {
+          result[order(result$sid), ]
+        }
+        expect_identical(result$sid,
+                         if (fixed) c(1L, 2L, 1L, 2L) else c(1L, 2L),
+                         info = info)
+        expect_equal(result$z,
+                     if (fixed) c(1, 1, 2, 2) else c(3, 3), info = info)
+      }
+    }
+  }
+})
+
+test_that("SQLite unsorted identifiers keep typed dimensions in expansions", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  values <- list(
+    character = NA_character_, integer = NA_integer_, double = NA_real_
+  )
+
+  for (type in names(values)) {
+    source <- dplyr::copy_to(
+      con,
+      data.frame(fixed = c("a", "b"), g = rep(values[[type]], 2L),
+                 v = c(1, 2)),
+      paste0("unsorted_expansion_", type), temporary = TRUE
+    )
+    for (label in list(NULL, NA_character_)) {
+      for (fixed in c(FALSE, TRUE)) {
+        query <- if (fixed) {
+          expand_with_margins(
+            source, .by = fixed, .grouping = rollup(g),
+            .margin_label = label, .id = "sid", .sort = "none"
+          )
+        } else {
+          expand_with_margins(
+            source, .grouping = rollup(g),
+            .margin_label = label, .id = "sid", .sort = "none"
+          )
+        }
+        info <- paste(type, if (is.null(label)) "NULL" else "NA", fixed)
+        expected_names <- if (fixed) {
+          c("fixed", "g", "sid", "v")
+        } else {
+          c("g", "sid", "fixed", "v")
+        }
+        expect_identical(as.character(dplyr::tbl_vars(query)),
+                         expected_names, info = info)
+        result <- dplyr::collect(query)
+        expect_identical(names(result), expected_names, info = info)
+        expect_identical(nrow(result), 4L, info = info)
+        expect_identical(result$g, rep(values[[type]], 4L), info = info)
+        result <- if (fixed) {
+          result[order(result$fixed, result$sid), ]
+        } else {
+          result[order(result$sid, result$v), ]
+        }
+        expect_identical(result$sid,
+                         if (fixed) c(1L, 2L, 1L, 2L) else c(1L, 1L, 2L, 2L),
+                         info = info)
+        expect_equal(result$v,
+                     if (fixed) c(1, 1, 2, 2) else c(1, 2, 1, 2),
+                     info = info)
+      }
+    }
+  }
+})
+
 test_that("SQLite materializes a typed Margin order with public columns", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

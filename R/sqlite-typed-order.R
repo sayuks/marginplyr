@@ -1,9 +1,21 @@
-# Whether the prepared Margin operation requests an order on live SQLite.
+# Whether the prepared Margin operation uses a live SQLite connection.
 # The caller has already selected the backend and prepared its Grouping plan.
-live_sqlite_margin_order <- function(operation) {
-  margin_sorting(operation) &&
-    identical(operation$backend$kind, "sql") &&
+live_sqlite_margin_result <- function(operation) {
+  identical(operation$backend$kind, "sql") &&
     inherits(dbplyr::remote_con(operation$data), "SQLiteConnection")
+}
+
+# Whether the prepared Margin operation requests an order on live SQLite.
+# The caller holds a prepared operation.
+live_sqlite_margin_order <- function(operation) {
+  margin_sorting(operation) && live_sqlite_margin_result(operation)
+}
+
+# Whether a live SQLite result can cover the union's source-column type anchor.
+# The caller holds a prepared operation with its sort and identifier choices.
+sqlite_final_anchor_path <- function(operation) {
+  live_sqlite_margin_result(operation) &&
+    (margin_sorting(operation) || !is.null(operation$set_id_name))
 }
 
 # Whether source columns need the SQLite typed-order result (ADR 0031).

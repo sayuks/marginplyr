@@ -405,12 +405,16 @@ test_that(
       "metamorphic_sqlite_empty_input",
       temporary = TRUE
     )
-    expect_expansion_equivalence(
-      input,
-      "empty character-key input",
-      "RSQLite",
-      metamorphic_empty_grouping()
-    )
+    grouping <- metamorphic_empty_grouping()
+    direct <- metamorphic_direct_summary(input, grouping)
+    expanded <- metamorphic_expanded_summary(input, grouping)
+    # The downstream dbplyr summary may lose SQLite's declared type on an
+    # empty derived result; ADR 0031 scopes type preservation to direct results.
+    expect_identical(names(direct), names(expanded))
+    expect_identical(nrow(direct), 0L)
+    expect_identical(nrow(expanded), 0L)
+    expect_identical(direct$region, character())
+    expect_identical(direct$store, character())
   }
 )
 
