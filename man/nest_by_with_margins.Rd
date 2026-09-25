@@ -230,6 +230,10 @@ verb it is built from: \code{\link[=summarize_with_margins]{summarize_with_margi
 those of \code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}. Passing a
 plain data frame therefore returns a plain data frame and passing a tibble
 returns a tibble.
+A live SQLite result with a typed-missing Margin label and a requested
+Margin order uses a lazy subclass to keep the dimension's collected type.
+Its public columns are unchanged; \code{\link[dbplyr:sql_render]{dbplyr::sql_render()}} shows the internal
+ordering columns that SQLite needs in the SQL result.
 
 The input class is not guaranteed to be preserved, and neither are
 object-level attributes of the input or attributes of columns marginplyr
@@ -327,6 +331,11 @@ property of the object the verb returns: on local data frames and \code{dtplyr}
 steps that is the row order, and on lazy tables it is the outermost query's
 \verb{ORDER BY}, which \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe:
 a materialized result carries the Margin order rather than losing it.
+On a live SQLite result with typed-missing dimensions, \code{compute()} creates
+a table with only the public columns and preserves their types. If all of
+\code{rowid}, \code{oid}, and \verb{_rowid_} are already public column names, ignoring
+case, it refuses before creating the table because SQLite has no remaining
+name for the row order. Direct \code{collect()} remains available.
 Whether the order survives further verbs applied to a lazy result is not
 promised, because that depends on dbplyr's query flattening, which
 marginplyr does not own and which changes between releases.
