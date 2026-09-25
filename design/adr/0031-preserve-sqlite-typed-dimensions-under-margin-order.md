@@ -4,6 +4,11 @@ status: accepted
 
 # Preserve SQLite typed dimensions under Margin order
 
+The original decision below records the first implementation. The accepted
+[B-direct amendment](#b-direct-amendment-2026-09-26) supersedes its materialization
+mechanism and the explicitly identified boundaries. Implementation of that
+amendment is pending; this documentation branch changes no package behavior.
+
 Issue #640 exposes a conflict between two existing contracts. An all-missing
 character, integer, or double dimension with a typed-missing Margin label keeps
 its collected type when the source-column anchor is the first arm of the
@@ -94,3 +99,90 @@ materialization refusal; the implementation must test it before doing work.
 [sqlite-rowid]: https://www.sqlite.org/autoinc.html
 [collect]: https://dbplyr.tidyverse.org/reference/collect.tbl_sql.html
 [fetch]: https://dbi.r-dbi.org/reference/dbFetch.html
+
+## B-direct amendment (2026-09-26)
+
+The maintainer accepted B-direct after the
+[2026-09-25 investigation][b-direct-evidence]. Its final prototype retained the
+tested type, Margin order, and public-column guarantees while removing the
+sorted result's full-result intermediate table. It also resolved the observed
+destination, transaction, and downstream-projection defects. These measurements
+support the decision; they are not production release validation. The
+[implementation specification](../specs/sqlite-b-direct.md) owns the acceptance
+matrix, unresolved validation, and existing Issue dispositions. Do not reopen
+the A/B/C selection without new contradictory evidence.
+
+### Retained guarantees and smaller materialization
+
+Keep the direct collection boundary and the existing Margin order key. The
+boundary has two responsibilities: preserving source-column types through the
+zero-row anchor, and restoring types explicitly declared by the package. Its
+scope includes applicable sorted and unsorted summaries and expansions, text
+Margin labels, one-set plans, identifiers, and contextual shares. Character
+text-label declarations, integer identifiers, and double shares also apply to
+empty and nonempty all-missing columns. This does not infer new types for
+ordinary aggregate expressions.
+
+For direct compute, create the public destination with the zero-row type anchor
+and insert the ordered public query directly once. Do not create a full-result
+staging table. The destination contains only public columns. Sorted results
+retain an explicit rowid ORDER BY, with empty window-order metadata so subsequent
+ordinary dplyr selection and renaming remain usable. All three implicit-rowid
+aliases being shadowed, case-insensitively, still refuses sorted compute before
+writes. Direct collect remains available, and unsorted results do not acquire
+that refusal. Later dplyr verbs retain ordinary dbplyr semantics; no additional
+Margin order or direct-result type guarantee attaches to their derived results.
+
+Preserve the established finite-collection validation and warning behavior.
+The original claim of ordinary dbplyr finite-n parity is qualified: the tested
+sorted dedicated boundary accepts a fractional positive limit that the measured
+ordinary dbplyr path rejects; delegated collection retains its current behavior.
+Neither this distinction nor ordinary aggregate
+type inference licenses a regression in the existing result contract.
+
+### Destination safety and explicit metadata exception
+
+Carry one complete, correctly quoted destination identity through every
+operation, including overwrite, index creation, insertion, analysis, and the
+returned table. Refuse before writes an unqualified persistent destination
+shadowed by temp, and an unqualified temporary overwrite whose name is absent
+from temp but exists in main. Equivalent identifier spellings must not bypass
+these checks. Explicit temp with temporary materialization is distinct from a
+non-temp qualified schema. Rowid shadowing is therefore no longer the only
+materialization refusal.
+
+Explicit compute may inspect destination metadata only as needed for safe
+admission and resolution. This replaces the original blanket prohibition on
+extra schema queries; it permits no new source-schema probe or data read during
+lazy construction and adds no unrequested-read exemption to ADR 0020. One DBI
+metadata call can send multiple SQL statements. Supported creation and index
+behavior remains delegated to dbplyr. A qualified-index request that ordinary
+dbplyr cannot support may still fail, with state restored; the package does not
+introduce a separate index implementation to expand that support.
+
+### Transaction ownership and audit scope
+
+One uniquely named private SAVEPOINT owns the mutation interval. Success
+releases only that savepoint; failure rolls back and releases it, preserving
+input, the previous destination, and unrelated caller work. The caller retains
+commit and rollback ownership when an outer transaction exists. Both supported
+in_transaction booleans retain this atomicity; FALSE does not mean no
+transaction-control SQL. The inner dbplyr operation must not begin another
+transaction. Preserve the causal error if rollback or release itself fails,
+and do not claim recovery after connection or whole-transaction failure.
+Successful self-overwrite is not added to the contract.
+
+The Sent query record describes the last tracked Margin verb or inspection
+call during construction, with its result entry matching full direct rendering.
+Finite LIMIT, destination metadata, DDL, INSERT, ANALYZE, and savepoints do not
+become retrospective entries in that global record. Computing an older result
+must not contaminate a newer call's record. Audit remains independent of
+execution, warnings, and errors; it is not a complete DBI execution ledger.
+
+Implementation must reconcile ADR 0016's result-boundary account, ADR 0018's
+materialization mechanism, ADR 0020's explicit-execution account and policy
+gates, and ADR 0027's audit wording, together with the glossary and affected
+public references. This amendment records the accepted decision; the historical
+investigation retains its original evidence and conclusions as dated.
+
+[b-direct-evidence]: https://github.com/sayuks/marginplyr/blob/e6046acd2933d943aba71b81630287f8599262b1/investigation/sqlite-b-direct-2026-09-25/review/README.md
