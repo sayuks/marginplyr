@@ -22,15 +22,10 @@ sqlite_order_value <- function(term) {
 # without putting an outer projection around the typed anchor (ADR 0031).
 sqlite_typed_order_result <- function(operation, unsorted, ordered,
                                       execution, source_columns) {
-  key_id <- if (length(operation$plan$set_ids) > 1L) {
-    execution$sort_id
-  } else {
-    NULL
-  }
   terms <- margin_order_terms(
     plan = operation$plan,
     sort = operation$sort,
-    sort_id = key_id
+    sort_id = execution$sort_id
   )
   public_columns <- as.character(dplyr::tbl_vars(ordered))
   key_names <- new_margin_internal_names(
