@@ -146,7 +146,7 @@ test_that("dtplyr Total shares preserve repeated-hour grouping identity", {
       expect_identical(result$fixed, rep(c("a", "b"), each = 3L))
       expect_equal(result$set, rep(c(1, 1, 2), 2L))
       expect_equal(result$z, c(5, 15, 20, 7, 21, 28))
-      expect_equal(result$t, c(.25, .75, 1, .25, .75, 1))
+      expect_equal(result$t, c(0.25, 0.75, 1, 0.25, 0.75, 1))
     }
   }
 
@@ -157,8 +157,8 @@ test_that("dtplyr Total shares preserve repeated-hour grouping identity", {
   result <- dplyr::arrange(dplyr::collect(combined),
                            .data$fixed, .data$set, .data$z)
   expect_identical(nrow(result), 6L)
-  expect_equal(result$p, c(.25, .75, 1, .25, .75, 1))
-  expect_equal(result$t, c(.25, .75, 1, .25, .75, 1))
+  expect_equal(result$p, c(0.25, 0.75, 1, 0.25, 0.75, 1))
+  expect_equal(result$t, c(0.25, 0.75, 1, 0.25, 0.75, 1))
   expect_identical(as.data.frame(dplyr::collect(source)), data)
 })
 
