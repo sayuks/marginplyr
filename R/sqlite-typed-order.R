@@ -5,7 +5,8 @@ live_sqlite_margin_result <- function(operation) {
     inherits(dbplyr::remote_con(operation$data), "SQLiteConnection")
 }
 
-# Driver types exist only on a live connection, not a dbplyr simulation.
+# Whether a prepared result has a SQLite driver whose empty R types need repair.
+# The caller holds a prepared SQL operation and has not executed its query.
 sqlite_declared_type_result <- function(operation) {
   live_sqlite_margin_result(operation) &&
     !inherits(dbplyr::remote_con(operation$data), "TestConnection")
@@ -94,8 +95,8 @@ sqlite_typed_result_direct <- function(x) {
   identical(x$lazy_query, attr(x, "marginplyr_original_query"))
 }
 
-# The true result query has projected sort columns. Showing it also keeps the
-# Sent query record aligned with the SQL direct collection executes (ADR 0027).
+# Render the query direct collection runs, keeping the Sent query record
+# aligned with that SQL (ADR 0027).
 #' @exportS3Method dbplyr::sql_render
 #' @noRd
 sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
@@ -164,62 +165,44 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  if (length(attr(x, "marginplyr_order_keys")) == 0L) {
-    con <- x$con
-    quote <- function(names) {
-      as.character(DBI::dbQuoteIdentifier(con, names))
-    }
-    return(DBI::dbWithTransaction(con, {
-      result <- dplyr::compute(
-        attr(x, "marginplyr_public_anchor"), name = name,
-        temporary = temporary, overwrite = overwrite,
-        unique_indexes = unique_indexes, indexes = indexes,
-        analyze = FALSE, ..., sql_options = sql_options
-      )
-      table_name <- quote(dbplyr::remote_name(result))
-      columns <- paste(quote(attr(x, "marginplyr_public_columns")),
-                       collapse = ", ")
-      insert <- paste0(
-        "INSERT INTO ", table_name, " (", columns, ") ",
-        as.character(dbplyr::sql_render(
-          attr(x, "marginplyr_public_query"), sql_options = sql_options
-        ))
-      )
-      DBI::dbExecute(con, insert)
-      if (analyze) {
-        DBI::dbExecute(con, paste("ANALYZE", table_name))
-      }
-      result
-    }))
-  }
-  public <- attr(x, "marginplyr_public_columns")
-  rowid_alias <- setdiff(
-    c("rowid", "oid", "_rowid_"), tolower(public)
-  )
-  if (length(rowid_alias) == 0L) {
-    abort_marginplyr(
-      paste0(
-        "Can't materialize this SQLite Margin order: result columns shadow ",
-        "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
-      ),
-      call = rlang::caller_call()
-    )
-  }
-
   con <- x$con
-  stage_name <- basename(tempfile(pattern = "marginplyr_order_"))
-  on.exit(try(DBI::dbRemoveTable(con, stage_name), silent = TRUE), add = TRUE)
-  dbplyr::db_compute(
-    con, stage_name, dbplyr::sql_render(x, sql_options = sql_options),
-    temporary = TRUE, analyze = FALSE
-  )
-  anchor <- attr(x, "marginplyr_public_anchor")
+  public <- attr(x, "marginplyr_public_columns")
   quote <- function(names) {
     as.character(DBI::dbQuoteIdentifier(con, names))
   }
+  columns <- paste(quote(public), collapse = ", ")
+  keys <- attr(x, "marginplyr_order_keys")
+  if (length(keys) == 0L) {
+    insert_from <- as.character(dbplyr::sql_render(
+      attr(x, "marginplyr_public_query"), sql_options = sql_options
+    ))
+  } else {
+    rowid_alias <- setdiff(
+      c("rowid", "oid", "_rowid_"), tolower(public)
+    )
+    if (length(rowid_alias) == 0L) {
+      abort_marginplyr(
+        paste0(
+          "Can't materialize this SQLite Margin order: result columns shadow ",
+          "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+        ),
+        call = rlang::caller_call()
+      )
+    }
+    stage_name <- basename(tempfile(pattern = "marginplyr_order_"))
+    on.exit(try(DBI::dbRemoveTable(con, stage_name), silent = TRUE), add = TRUE)
+    dbplyr::db_compute(
+      con, stage_name, dbplyr::sql_render(x, sql_options = sql_options),
+      temporary = TRUE, analyze = FALSE
+    )
+    insert_from <- paste0(
+      "SELECT ", columns, " FROM ", quote(stage_name), " ORDER BY ",
+      paste(quote(keys), collapse = ", ")
+    )
+  }
   result <- DBI::dbWithTransaction(con, {
     result <- dplyr::compute(
-      anchor,
+      attr(x, "marginplyr_public_anchor"),
       name = name,
       temporary = temporary,
       overwrite = overwrite,
@@ -230,11 +213,8 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
       sql_options = sql_options
     )
     table_name <- quote(dbplyr::remote_name(result))
-    columns <- paste(quote(public), collapse = ", ")
-    keys <- paste(quote(attr(x, "marginplyr_order_keys")), collapse = ", ")
     insert <- paste0(
-      "INSERT INTO ", table_name, " (", columns, ") ",
-      "SELECT ", columns, " FROM ", quote(stage_name), " ORDER BY ", keys
+      "INSERT INTO ", table_name, " (", columns, ") ", insert_from
     )
     DBI::dbExecute(con, insert)
     if (analyze) {
@@ -242,5 +222,8 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     }
     result
   })
+  if (length(keys) == 0L) {
+    return(result)
+  }
   dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
 }
