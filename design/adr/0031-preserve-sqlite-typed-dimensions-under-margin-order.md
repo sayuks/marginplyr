@@ -4,6 +4,17 @@ status: accepted
 
 # Preserve SQLite typed dimensions under Margin order
 
+## Interim implementation status (2026-09-26)
+
+Issue #661 showed that the dedicated direct `compute()` path can write to a
+different SQLite table from the requested destination. Until the approved
+B-direct materializer restores safe direct materialization, this path raises a
+Package condition before any write or transaction change. Direct `collect()`
+remains available. This containment also covers unsorted dedicated results
+with identifiers, shares, or text labels; ordinary dbplyr compute outside the
+dedicated boundary remains available. The decision and permanent acceptance
+criteria below are retained, not waived by this temporary refusal.
+
 Issue #640 exposes a conflict between two existing contracts. An all-missing
 character, integer, or double dimension with a typed-missing Margin label keeps
 its collected type when the source-column anchor is the first arm of the

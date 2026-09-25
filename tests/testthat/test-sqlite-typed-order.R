@@ -223,7 +223,7 @@ test_that("SQLite unsorted identifiers keep typed dimensions in expansions", {
   }
 })
 
-test_that("SQLite materializes a typed Margin order with public columns", {
+test_that("SQLite direct typed compute is temporarily refused", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -236,9 +236,11 @@ test_that("SQLite materializes a typed Margin order with public columns", {
     .margin_label = NULL, .sort = "last"
   )
 
-  computed <- dplyr::compute(query, name = "typed_margin_result")
-  expect_identical(DBI::dbListFields(con, "typed_margin_result"), c("g", "z"))
-  result <- dplyr::collect(computed)
+  before <- DBI::dbListTables(con)
+  expect_error(dplyr::compute(query, name = "typed_margin_result"),
+               "temporarily disabled", class = "marginplyr_error")
+  expect_identical(DBI::dbListTables(con), before)
+  result <- dplyr::collect(query)
   expect_identical(result$g, c(NA_character_, NA_character_))
   expect_equal(result$z, c(1, 1))
 })
@@ -256,15 +258,13 @@ test_that("SQLite expansion keeps a typed dimension and Margin order", {
     .id = "set", .sort = "first"
   )
 
-  for (result in list(
-    dplyr::collect(query),
-    dplyr::collect(dplyr::compute(query))
-  )) {
-    expect_identical(names(result), c("g", "set", "v"))
-    expect_identical(result$g, c(NA_integer_, NA_integer_))
-    expect_identical(result$set, c(2L, 1L))
-    expect_equal(result$v, c(1, 1))
-  }
+  expect_error(dplyr::compute(query), "temporarily disabled",
+               class = "marginplyr_error")
+  result <- dplyr::collect(query)
+  expect_identical(names(result), c("g", "set", "v"))
+  expect_identical(result$g, c(NA_integer_, NA_integer_))
+  expect_identical(result$set, c(2L, 1L))
+  expect_equal(result$v, c(1, 1))
 })
 
 test_that("SQLite contextual shares keep typed dimensions under Margin order", {
@@ -281,16 +281,14 @@ test_that("SQLite contextual shares keep typed dimensions under Margin order", {
     .id = "set", .sort = "last", .check_share_source = FALSE
   )
 
-  for (result in list(
-    dplyr::collect(query),
-    dplyr::collect(dplyr::compute(query))
-  )) {
-    expect_identical(result$g, c(NA_real_, NA_real_))
-    expect_identical(result$set, c(1L, 2L))
-    expect_equal(result$z, c(1, 1))
-    expect_equal(result$p, c(1, 1))
-    expect_equal(result$t, c(1, 1))
-  }
+  expect_error(dplyr::compute(query), "temporarily disabled",
+               class = "marginplyr_error")
+  result <- dplyr::collect(query)
+  expect_identical(result$g, c(NA_real_, NA_real_))
+  expect_identical(result$set, c(1L, 2L))
+  expect_equal(result$z, c(1, 1))
+  expect_equal(result$p, c(1, 1))
+  expect_equal(result$t, c(1, 1))
 })
 
 test_that("SQLite typed Margin order covers either contextual share alone", {
@@ -313,14 +311,12 @@ test_that("SQLite typed Margin order covers either contextual share alone", {
       .grouping = rollup(g), .margin_label = NULL,
       .id = "set", .sort = "first", .check_share_source = FALSE
     )
-    for (result in list(
-      dplyr::collect(query),
-      dplyr::collect(dplyr::compute(query))
-    )) {
-      expect_identical(result$g, c(NA_integer_, NA_integer_))
-      expect_identical(result$set, c(2L, 1L))
-      expect_equal(result$share, c(1, 1))
-    }
+    expect_error(dplyr::compute(query), "temporarily disabled",
+                 class = "marginplyr_error")
+    result <- dplyr::collect(query)
+    expect_identical(result$g, c(NA_integer_, NA_integer_))
+    expect_identical(result$set, c(2L, 1L))
+    expect_equal(result$share, c(1, 1))
   }
 })
 
@@ -380,19 +376,17 @@ test_that("SQLite typed Margin labels retain all scalar source types", {
           .margin_label = label, .id = "set", .sort = sort
         )
         info <- paste(type, if (is.null(label)) "NULL" else "NA", sort)
-        for (result in list(
-          dplyr::collect(query),
-          dplyr::collect(dplyr::compute(query))
-        )) {
-          expect_identical(typeof(result$g), type, info = info)
-          expect_true(all(is.na(result$g)), info = info)
-          expect_identical(
-            result$set,
-            if (identical(sort, "first")) c(2L, 1L) else c(1L, 2L),
-            info = info
-          )
-          expect_equal(result$z, c(1, 1), info = info)
-        }
+        expect_error(dplyr::compute(query), "temporarily disabled",
+                     class = "marginplyr_error")
+        result <- dplyr::collect(query)
+        expect_identical(typeof(result$g), type, info = info)
+        expect_true(all(is.na(result$g)), info = info)
+        expect_identical(
+          result$set,
+          if (identical(sort, "first")) c(2L, 1L) else c(1L, 2L),
+          info = info
+        )
+        expect_equal(result$z, c(1, 1), info = info)
       }
     }
   }
@@ -415,7 +409,7 @@ test_that("SQLite refuses compute when every rowid name is shadowed", {
 
   expect_error(
     dplyr::compute(query, name = "rowid_shadowed_result"),
-    "rowid aliases", class = "marginplyr_error"
+    "temporarily disabled", class = "marginplyr_error"
   )
   expect_identical(DBI::dbListTables(con), before)
   expect_identical(typeof(dplyr::collect(query)$g), "character")
@@ -436,18 +430,16 @@ test_that("SQLite typed Margin order keeps fixed partitions and missingness", {
     .margin_label = NULL, .id = "set", .sort = "last"
   )
 
-  for (result in list(
-    dplyr::collect(query),
-    dplyr::collect(dplyr::compute(query))
-  )) {
-    expect_identical(result$fixed, c(1L, 1L, 2L, 2L, NA_integer_, NA_integer_))
-    expect_identical(result$g, rep(NA_character_, 6L))
-    expect_identical(result$set, rep(c(1L, 2L), 3L))
-    expect_equal(result$z, c(3, 3, 1, 1, 2, 2))
-  }
+  expect_error(dplyr::compute(query), "temporarily disabled",
+               class = "marginplyr_error")
+  result <- dplyr::collect(query)
+  expect_identical(result$fixed, c(1L, 1L, 2L, 2L, NA_integer_, NA_integer_))
+  expect_identical(result$g, rep(NA_character_, 6L))
+  expect_identical(result$set, rep(c(1L, 2L), 3L))
+  expect_equal(result$z, c(3, 3, 1, 1, 2, 2))
 })
 
-test_that("SQLite typed compute honors a persistent name and indexes", {
+test_that("SQLite typed compute leaves a persistent target and index intact", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -456,29 +448,31 @@ test_that("SQLite typed compute honors a persistent name and indexes", {
     "typed_order_persistent", temporary = TRUE
   )
   DBI::dbWriteTable(con, "typed_margin_output", data.frame(old = 1))
+  DBI::dbExecute(con, paste0(
+    "CREATE INDEX typed_margin_output_old ", "ON typed_margin_output(old)"
+  ))
   query <- summarize_with_margins(
     source, z = sum(v), .grouping = rollup(g),
     .margin_label = NULL, .sort = "last"
   )
 
-  computed <- dplyr::compute(
+  expect_error(dplyr::compute(
     query, name = "typed_margin_output", temporary = FALSE,
     overwrite = TRUE, indexes = list("g")
-  )
-  expect_identical(DBI::dbListFields(con, "typed_margin_output"), c("g", "z"))
-  declared <- DBI::dbGetQuery(con, "PRAGMA table_info('typed_margin_output')")
-  expect_identical(declared$type[[1L]], "TEXT")
+  ), "temporarily disabled", class = "marginplyr_error")
+  expect_identical(DBI::dbListFields(con, "typed_margin_output"), "old")
   expect_true(nrow(DBI::dbGetQuery(
     con, "SELECT name FROM sqlite_master WHERE name = 'typed_margin_output'"
   )) == 1L)
-  expect_true(nrow(DBI::dbGetQuery(
+  expect_identical(DBI::dbReadTable(con, "typed_margin_output")$old, 1)
+  expect_identical(DBI::dbGetQuery(
     con, "PRAGMA index_list('typed_margin_output')"
-  )) >= 1L)
+  )$name, "typed_margin_output_old")
   expect_false(any(grepl("^marginplyr_order_", DBI::dbListTables(con))))
-  expect_identical(dplyr::collect(computed)$g, c(NA_character_, NA_character_))
+  expect_identical(dplyr::collect(query)$g, c(NA_character_, NA_character_))
 })
 
-test_that("SQLite typed compute uses an available rowid alias", {
+test_that("SQLite typed compute with partial rowid shadowing is contained", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -492,12 +486,11 @@ test_that("SQLite typed compute uses an available rowid alias", {
     .id = "set", .sort = "first"
   )
 
-  computed <- dplyr::compute(
+  expect_error(dplyr::compute(
     query, name = "typed_order_partial_rowid_result", analyze = FALSE
-  )
-  expect_identical(dplyr::collect(computed)$set, c(2L, 1L))
-  expect_identical(DBI::dbListFields(con, "typed_order_partial_rowid_result"),
-                   c("g", "set", "rowid", "oid"))
+  ), "temporarily disabled", class = "marginplyr_error")
+  expect_false(DBI::dbExistsTable(con, "typed_order_partial_rowid_result"))
+  expect_identical(dplyr::collect(query)$set, c(2L, 1L))
 })
 
 test_that("SQLite internal names avoid case-insensitive collisions", {
@@ -515,21 +508,19 @@ test_that("SQLite internal names avoid case-insensitive collisions", {
       source, .grouping = rollup(g), .margin_label = NULL,
       .id = "set", .sort = sort
     )
-    for (result in list(
-      dplyr::collect(query),
-      dplyr::collect(dplyr::compute(query))
-    )) {
-      expect_identical(result$g, c(NA_character_, NA_character_))
-      expect_equal(result$`..MARGINPLYR_ORDER_1`, c(7, 7))
-      expect_identical(
-        result$set,
-        if (identical(sort, "first")) c(2L, 1L) else c(1L, 2L)
-      )
-    }
+    expect_error(dplyr::compute(query), "temporarily disabled",
+                 class = "marginplyr_error")
+    result <- dplyr::collect(query)
+    expect_identical(result$g, c(NA_character_, NA_character_))
+    expect_equal(result$`..MARGINPLYR_ORDER_1`, c(7, 7))
+    expect_identical(
+      result$set,
+      if (identical(sort, "first")) c(2L, 1L) else c(1L, 2L)
+    )
   }
 })
 
-test_that("SQLite typed compute removes temporary work after insertion fails", {
+test_that("SQLite typed compute refuses before creating temporary work", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -546,6 +537,6 @@ test_that("SQLite typed compute removes temporary work after insertion fails", {
   expect_error(dplyr::compute(
     query, name = "failed_typed_margin_result",
     unique_indexes = list("z")
-  ))
+  ), "temporarily disabled", class = "marginplyr_error")
   expect_identical(DBI::dbListTables(con), before)
 })

@@ -228,6 +228,12 @@ Use `compute()` instead of `collect()` when the next stage should remain in the
 database. It executes the query and stores the result there as a remote table,
 so what reads it afterwards is still a lazy query against the connection:
 
+For now, direct `compute()` of a SQLite Margin result using marginplyr's
+dedicated type or order boundary raises an error before writing. Use
+`collect()` to retrieve that result while the destination fix in #661 is in
+progress. Ordinary dbplyr queries and Margin results outside that boundary
+can still use `compute()`.
+
 ```{r}
 #| eval: !expr has_duckdb
 
