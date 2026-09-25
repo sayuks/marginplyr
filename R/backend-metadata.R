@@ -8,7 +8,8 @@ get_col_names <- function(data, ...) {
 # inspection selection proxy. The derived step may already hold a reference-
 # writing `:=` call, so changing its root's permission is too late; replacing
 # each copied root's source gives those calls isolated schema-only tables to
-# write to. ADR 0029 records why Margin operations refuse rather than use this
+# write to. Row-only predicates are removed because they cannot affect column
+# metadata. ADR 0029 records why Margin operations refuse rather than use this
 # rewrite.
 zero_row_dtplyr_proxy_input <- function(.data) {
   stopifnot(inherits(.data, "dtplyr_step"))
@@ -17,6 +18,10 @@ zero_row_dtplyr_proxy_input <- function(.data) {
   if (length(inputs) > 0L) {
     for (field in inputs) {
       step[[field]] <- zero_row_dtplyr_proxy_input(step[[field]])
+    }
+    if (inherits(step, "dtplyr_step_subset") &&
+          !is.null(dtplyr_metadata_subset_columns(step))) {
+      step[["i"]] <- NULL
     }
   } else {
     step[["parent"]] <- utils::head(step[["parent"]], n = 0L)
@@ -61,11 +66,100 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   FALSE
 }
 
-# Whether a dtplyr step's typed metadata can be read with zero-row roots.
-# Row filtering, projection, grouping, joining, and set operations preserve
-# column types independently of which rows survive. A mutate directly over a
-# root admits constants, column copies, and the arithmetic grammar above;
-# later steps may have renamed or recast a root column of the same name.
+# A join or set over plain atomic roots has no factor levels or class-specific
+# coercion to infer from matched rows. Derived expressions are checked by the
+# step predicate before this condition is used.
+dtplyr_plain_roots <- function(step) {
+  inputs <- dtplyr_step_input_fields(step)
+  if (length(inputs) > 0L) {
+    return(all(vapply(inputs, function(field) {
+      dtplyr_plain_roots(step[[field]])
+    }, logical(1))))
+  }
+  all(vapply(step[["parent"]], function(x) {
+    is.atomic(x) && !is.object(x) && is.null(dim(x)) &&
+      typeof(x) %in% c("logical", "integer", "double", "character")
+  }, logical(1)))
+}
+
+# Even plain join keys can promote from integer to double when real rows
+# match. Require matching input types before using an empty-input result.
+dtplyr_join_set_types_match <- function(step) {
+  tryCatch({
+    left <- dtplyr_selection_proxy(step[["parent"]], mutable = TRUE)
+    right <- dtplyr_selection_proxy(step[["parent2"]], mutable = TRUE)
+    if (inherits(step, "dtplyr_step_join")) {
+      on <- step[["on"]]
+      return(is.list(on) &&
+               length(on[["x"]]) == length(on[["y"]]) &&
+               all(on[["x"]] %in% names(left)) &&
+               all(on[["y"]] %in% names(right)) &&
+               identical(
+                 vapply(on[["x"]], function(col) {
+                   typeof(left[[col]])
+                 }, character(1), USE.NAMES = FALSE),
+                 vapply(on[["y"]], function(col) {
+                   typeof(right[[col]])
+                 }, character(1), USE.NAMES = FALSE)
+               ))
+    }
+    identical(
+      unname(vapply(left, typeof, character(1))),
+      unname(vapply(right, typeof, character(1)))
+    )
+  }, error = function(...) FALSE)
+}
+
+# A subset is metadata preserving only when `j` names existing columns. Its
+# `i` may be any row predicate; the proxy below never evaluates it.
+dtplyr_metadata_subset_columns <- function(step) {
+  parent_vars <- step[["parent"]][["vars"]]
+  j <- step[["j"]]
+  if (is.null(j)) {
+    if (identical(step[["vars"]], parent_vars)) {
+      return(parent_vars)
+    }
+    return(NULL)
+  }
+  if (!is.call(j)) {
+    return(NULL)
+  }
+  if (identical(j[[1L]], as.name(":=")) && length(j) == 3L &&
+        is.null(j[[3L]])) {
+    removed <- j[[2L]]
+    if (is.call(removed) && identical(removed[[1L]], as.name("c"))) {
+      removed <- as.list(removed)[-1L]
+      if (!all(vapply(removed, function(x) {
+        is.character(x) && length(x) == 1L
+      }, logical(1)))) {
+        return(NULL)
+      }
+      removed <- unlist(removed, use.names = FALSE)
+    }
+    if (is.character(removed) &&
+          identical(step[["vars"]], parent_vars[!parent_vars %in% removed])) {
+      return(step[["vars"]])
+    }
+    return(NULL)
+  }
+  if (!identical(j[[1L]], as.name("."))) {
+    return(NULL)
+  }
+  columns <- as.list(j)[-1L]
+  if (length(columns) != length(step[["vars"]]) ||
+        !all(vapply(columns, is.symbol, logical(1)))) {
+    return(NULL)
+  }
+  names <- vapply(columns, as.character, character(1))
+  if (!all(names %in% parent_vars)) {
+    return(NULL)
+  }
+  names
+}
+
+# Whether a dtplyr step's typed metadata can be read without source rows.
+# A mutate directly over a root admits constants, column copies, and the
+# arithmetic grammar above; later steps may have recast a root column.
 dtplyr_metadata_safe_step <- function(step) {
   inputs <- dtplyr_step_input_fields(step)
   if (!all(vapply(inputs, function(field) {
@@ -103,7 +197,13 @@ dtplyr_metadata_safe_step <- function(step) {
   if (inherits(step, "dtplyr_step_call")) {
     return(step[["fun"]] %in% c("setnames", "setcolorder"))
   }
-  inherits(step, c("dtplyr_step_subset", "dtplyr_step_join", "dtplyr_step_set"))
+  if (inherits(step, "dtplyr_step_subset")) {
+    return(!is.null(dtplyr_metadata_subset_columns(step)))
+  }
+  if (inherits(step, c("dtplyr_step_join", "dtplyr_step_set"))) {
+    return(dtplyr_plain_roots(step) && dtplyr_join_set_types_match(step))
+  }
+  FALSE
 }
 
 # The caller can explicitly materialize a step when its derived schema cannot
@@ -131,6 +231,14 @@ abort_unsafe_dtplyr_metadata <- function() {
 dtplyr_selection_proxy <- function(.data, mutable = FALSE) {
   if (!dtplyr_metadata_safe_step(.data)) {
     abort_unsafe_dtplyr_metadata()
+  }
+  if (inherits(.data, "dtplyr_step_subset")) {
+    parent <- dtplyr_selection_proxy(.data[["parent"]], mutable = mutable)
+    columns <- dtplyr_metadata_subset_columns(.data)
+    return(data.table::as.data.table(stats::setNames(
+      lapply(columns, function(column) parent[[column]]),
+      .data[["vars"]]
+    )))
   }
   if (mutable || !inherits(.data, "dtplyr_step_first")) {
     return(tryCatch(

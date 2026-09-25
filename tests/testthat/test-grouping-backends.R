@@ -2534,12 +2534,11 @@ test_that("typed inspection evaluates only zero-row dtplyr graph sources", {
   step <- mutable_step_graph_shapes$nested(graph$steps)
   dt_eval <- getFromNamespace("dt_eval", "dtplyr")
   dt_sources <- getFromNamespace("dt_sources", "dtplyr")
-  evaluations <- 0L
+  source_counts <- integer()
   testthat::local_mocked_bindings(
     dt_eval = function(x) {
-      evaluations <<- evaluations + 1L
       sources <- dt_sources(x)
-      expect_length(sources, 2L)
+      source_counts <<- c(source_counts, length(sources))
       expect_true(all(vapply(sources, nrow, integer(1)) == 0L))
       dt_eval(x)
     },
@@ -2547,7 +2546,7 @@ test_that("typed inspection evaluates only zero-row dtplyr graph sources", {
   )
 
   inspect_grouping(step, .grouping = rollup(where(is.character)))
-  expect_gt(evaluations, 0L)
+  expect_true(2L %in% source_counts)
   expect_graph_sources_unchanged(graph)
 })
 
@@ -2666,17 +2665,87 @@ test_that("a dtplyr filter can supply typed metadata without source rows", {
   expect_false(3L %in% seen)
 })
 
-test_that("an empty-root evaluation failure gives the metadata remedy", {
+test_that("a row-only filter uses parent metadata without evaluating its predicate", {
   skip_if_suggest_absent("dtplyr")
   step <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = 1:2)) |>
     dplyr::filter(v[[1L]] > 0L)
-  expect_identical(nrow(dplyr::collect(step)), 2L)
+  plan <- inspect_grouping(step, .grouping = rollup(where(is.character)))
+  expect_identical(plan$included[[1L]], "(g)")
+  result <- summarize_with_margins(
+    step, n = dplyr::n(), .grouping = rollup(g)
+  )
+  expect_s3_class(result, "dtplyr_step")
+})
+
+test_that("a join proxy omits upstream row-only predicates", {
+  skip_if_suggest_absent("dtplyr")
+  left <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = 1:2)) |>
+    dplyr::filter(v[[1L]] > 0L)
+  right <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), w = 3:4))
+  step <- dplyr::left_join(left, right, by = "g")
+
+  plan <- inspect_grouping(step, .grouping = rollup(where(is.character)))
+  expect_identical(plan$included[[1L]], "(g)")
+})
+
+test_that("a summarise expression cannot substitute zero-row factor levels", {
+  skip_if_suggest_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b"))) |>
+    dplyr::summarise(g2 = factor("a", levels = unique(g)))
+
+  error <- expect_error(
+    summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g2))
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "dplyr::collect()", fixed = TRUE)
+})
+
+test_that("joins with derived factor levels refuse unsafe metadata", {
+  skip_if_suggest_absent("dtplyr")
+  left <- dtplyr::lazy_dt(data.frame(
+    g = factor(c("a", "b"), levels = c("a", "b", "unused"))
+  ))
+  right <- dtplyr::lazy_dt(data.frame(
+    g = factor(c("a", "c"), levels = c("a", "c", "other"))
+  ))
+  step <- dplyr::full_join(left, right, by = "g")
+  expect_identical(
+    levels(dplyr::collect(step)$g),
+    c("a", "b", "unused", "c", "other")
+  )
 
   error <- expect_error(
     summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g))
   )
   expect_s3_class(error, "marginplyr_error")
-  expect_match(conditionMessage(error), "dplyr::collect()", fixed = TRUE)
+})
+
+test_that("a join whose key types promote with matching rows refuses metadata", {
+  skip_if_suggest_absent("dtplyr")
+  left <- dtplyr::lazy_dt(data.frame(g = 1:2))
+  right <- dtplyr::lazy_dt(data.frame(g = c(1, 2.5)))
+  step <- dplyr::full_join(left, right, by = "g")
+  expect_type(dplyr::collect(step)$g, "double")
+
+  error <- expect_error(
+    summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g))
+  )
+  expect_s3_class(error, "marginplyr_error")
+})
+
+test_that("set operations with derived factor levels refuse unsafe metadata", {
+  skip_if_suggest_absent("dtplyr")
+  left <- dtplyr::lazy_dt(data.frame(
+    g = factor(c("a", "b"), levels = c("a", "b", "unused"))
+  ))
+  right <- dtplyr::lazy_dt(data.frame(g = c("a", "c")))
+  step <- dplyr::union_all(left, right)
+  expect_true("c" %in% levels(dplyr::collect(step)$g))
+
+  error <- expect_error(
+    summarize_with_margins(step, n = dplyr::n(), .grouping = rollup(g))
+  )
+  expect_s3_class(error, "marginplyr_error")
 })
 
 test_that("a value-dependent factor is refused until the caller collects", {
