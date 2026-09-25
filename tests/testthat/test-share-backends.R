@@ -65,6 +65,105 @@ test_that("dtplyr Parent shares preserve typed keys under display conversion", {
   }
 })
 
+test_that("dtplyr Total shares distinguish numeric keys with one display", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(g = c(1, 1 + 1e-15), v = c(2, 4))
+  expect_identical(as.character(data$g[[1L]]), as.character(data$g[[2L]]))
+  source <- dtplyr::lazy_dt(data)
+  query <- summarize_with_margins(
+    source, z = sum(v), t = share_of_total(z),
+    .grouping = rollup(g), .id = "set"
+  )
+
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(
+    as.character(dplyr::tbl_vars(query)), c("g", "set", "z", "t")
+  )
+  result <- dplyr::arrange(dplyr::collect(query), .data$set, .data$z)
+  expect_identical(nrow(result), 3L)
+  expect_equal(result$z, c(2, 4, 6))
+  expect_equal(result$t, c(1 / 3, 2 / 3, 1))
+  expect_identical(as.data.frame(dplyr::collect(source)), data)
+
+  retained <- summarize_with_margins(
+    source, z = sum(v), t = share_of_total(z),
+    .grouping = rollup(g, g), .duplicates = "keep", .id = "set"
+  )
+  repeated <- dplyr::arrange(dplyr::collect(retained), .data$set, .data$z)
+  expect_identical(nrow(repeated), 5L)
+  expect_equal(repeated$set, c(1, 1, 2, 2, 3))
+  expect_equal(repeated$z, c(2, 4, 2, 4, 6))
+  expect_equal(repeated$t, c(1 / 3, 2 / 3, 1 / 3, 2 / 3, 1))
+
+  expanded <- summarize_with_margins(
+    source, z = sum(v), t = share_of_total(z), extra = 1:2,
+    .grouping = rollup(g)
+  )
+  error <- expect_error(
+    dplyr::collect(expanded),
+    class = "marginplyr_share_cardinality_error"
+  )
+  expect_match(conditionMessage(error), "ordinary summary `extra` expanded")
+})
+
+test_that("dtplyr Total shares preserve repeated-hour grouping identity", {
+  skip_if_suggest_absent("dtplyr")
+  instants <- as.POSIXct(
+    c("2026-11-01 05:30:00", "2026-11-01 06:30:00"), tz = "UTC"
+  )
+  local_time <- as.POSIXct(
+    as.numeric(instants), origin = "1970-01-01", tz = "America/New_York"
+  )
+  expect_identical(
+    format(local_time, "%Y-%m-%d %H:%M:%S"),
+    rep("2026-11-01 01:30:00", 2L)
+  )
+  data <- data.frame(
+    fixed = rep(c("a", "b"), each = 2L),
+    g = rep(local_time, 2L),
+    v = c(5, 15, 7, 21)
+  )
+  source <- dtplyr::lazy_dt(data)
+  groupings <- list(
+    rollup = rollup(g),
+    cube = cube(g),
+    explicit = grouping_sets(grouping_set(g), grouping_set())
+  )
+
+  for (grouping in groupings) {
+    for (label in list("Total", NULL)) {
+      query <- summarize_with_margins(
+        source, z = sum(v), t = share_of_total(z),
+        .by = fixed, .grouping = grouping, .id = "set",
+        .margin_label = label
+      )
+      expect_s3_class(query, "dtplyr_step")
+      expect_identical(
+        as.character(dplyr::tbl_vars(query)),
+        c("fixed", "g", "set", "z", "t")
+      )
+      result <- dplyr::arrange(dplyr::collect(query),
+                               .data$fixed, .data$set, .data$z)
+      expect_identical(nrow(result), 6L)
+      expect_identical(result$fixed, rep(c("a", "b"), each = 3L))
+      expect_equal(result$set, rep(c(1, 1, 2), 2L))
+      expect_equal(result$z, c(5, 15, 20, 7, 21, 28))
+      expect_equal(result$t, c(0.25, 0.75, 1, 0.25, 0.75, 1))
+    }
+  }
+
+  combined <- summarize_with_margins(
+    source, z = sum(v), p = share_of_parent(z), t = share_of_total(z),
+    .by = fixed, .grouping = rollup(g), .id = "set"
+  )
+  result <- dplyr::arrange(dplyr::collect(combined),
+                           .data$fixed, .data$set, .data$z)
+  expect_identical(nrow(result), 6L)
+  expect_equal(result$p, c(0.25, 0.75, 1, 0.25, 0.75, 1))
+  expect_equal(result$t, c(0.25, 0.75, 1, 0.25, 0.75, 1))
+  expect_identical(as.data.frame(dplyr::collect(source)), data)
+})
+
 test_that("SQLite Parent shares preserve typed keys under display conversion", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

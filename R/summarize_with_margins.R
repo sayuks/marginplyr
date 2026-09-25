@@ -1099,8 +1099,9 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         summaries = summaries,
         reserved_names = reserved_names,
         keep_set_identity = has_shares,
-        keep_parent_keys = "parent" %in%
-          share_request_kinds(summary_plan$requests)
+        keep_typed_keys = "parent" %in%
+          share_request_kinds(summary_plan$requests) ||
+          (has_shares && identical(operation$backend$kind, "dtplyr"))
       )
 
       if (has_shares) {
@@ -1130,7 +1131,7 @@ stage_margin_summaries <- function(operation,
                                    summaries,
                                    reserved_names,
                                    keep_set_identity,
-                                   keep_parent_keys = FALSE) {
+                                   keep_typed_keys = FALSE) {
   plan <- operation$plan
   set_id_name <- operation$set_id_name
   if (keep_set_identity) {
@@ -1165,10 +1166,11 @@ stage_margin_summaries <- function(operation,
     reserved_names <- unique(c(reserved_names, set_id_name))
   }
 
-  # Parent matching reads these before display conversion can merge distinct
-  # typed values. The share executor drops them before finalization.
+  # Parent matching and dtplyr cardinality validation read these before
+  # display conversion can merge distinct typed values. The share executor
+  # drops them before finalization.
   parent_key_names <- character()
-  if (keep_parent_keys) {
+  if (keep_typed_keys) {
     parent_key_names <- new_margin_internal_names(
       length(plan$dimensions),
       used_names = reserved_names,
