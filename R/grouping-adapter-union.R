@@ -36,20 +36,29 @@ combine_margin_branches <- function(branches) {
 # reports a compound column of all SQL NULLs as logical when the omitted branch
 # is first, even if another branch passes a character dimension through. A
 # zero-row anchor keeps each carried source column in the first SELECT without
-# reading it: the query still executes only when the caller collects the
-# Margin operation (ADR 0020).
-sql_margin_type_anchor <- function(.data, branch, source_columns) {
+# reading it. Declared output columns use a top-level SQL cast so SQLite
+# assigns their types when `compute()` creates an empty table. The query still
+# executes only when the caller collects or computes the result (ADR 0020).
+sql_margin_type_anchor <- function(.data, branch, source_columns,
+                                   declared_types = character()) {
   branch_columns <- get_col_names(branch, dplyr::everything())
-  source_columns <- intersect(source_columns, branch_columns)
-  anchor <- dplyr::filter(.data, FALSE)
-  anchor <- dplyr::select(anchor, dplyr::all_of(source_columns))
-  missing_columns <- setdiff(branch_columns, source_columns)
-  if (length(missing_columns) > 0L) {
-    missing_values <- rep(list(NA), length(missing_columns))
-    names(missing_values) <- missing_columns
-    anchor <- dplyr::mutate(anchor, !!!missing_values)
-  }
-  dplyr::select(anchor, dplyr::all_of(branch_columns))
+  source_columns <- intersect(
+    setdiff(source_columns, names(declared_types)), branch_columns
+  )
+  sql_types <- c(integer = "INTEGER", double = "REAL",
+                 character = "TEXT")
+  projections <- stats::setNames(lapply(branch_columns, function(name) {
+    if (name %in% source_columns) {
+      return(rlang::sym(name))
+    }
+    if (name %in% names(declared_types)) {
+      return(dbplyr::sql(paste0(
+        "CAST(NULL AS ", sql_types[[declared_types[[name]]]], ")"
+      )))
+    }
+    NA
+  }), branch_columns)
+  dplyr::transmute(dplyr::filter(.data, FALSE), !!!projections)
 }
 
 # `dplyr::bind_rows()` combines the whole list in one pass, and it is the whole

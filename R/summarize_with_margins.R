@@ -1025,12 +1025,22 @@ summarize_with_margins <- function(.data,
   # wrap the union's source-column anchor. The finalizer anchors the result.
   has_anchor <- length(share_kinds) > 0L ||
     sqlite_final_anchor_path(operation)
-  anchor_needed <- identical(operation$backend$kind, "sql") &&
-    has_anchor &&
-    length(typed_dimensions) > 0L &&
-    length(operation$plan$sets) > 1L
+  anchor_needed <- (
+    identical(operation$backend$kind, "sql") &&
+      has_anchor &&
+      length(typed_dimensions) > 0L &&
+      length(operation$plan$sets) > 1L
+  ) || (
+    sqlite_declared_type_result(operation) &&
+      (length(share_kinds) > 0L || !is.null(operation$set_id_name))
+  )
   final_type_anchor <- if (anchor_needed) {
-    c(operation$plan$by, typed_dimensions)
+    if (live_sqlite_margin_result(operation)) {
+      always_present <- Reduce(intersect, operation$plan$sets)
+      unique(c(operation$plan$by, typed_dimensions, always_present))
+    } else {
+      c(operation$plan$by, typed_dimensions)
+    }
   } else {
     character()
   }
@@ -1084,6 +1094,13 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         operation$set_id_name
       ))
       has_shares <- length(summary_plan$requests) > 0L
+      declare_sqlite_types <- sqlite_declared_type_result(operation)
+      declared_id <- if (!declare_sqlite_types ||
+                           is.null(operation$set_id_name)) {
+        character()
+      } else {
+        stats::setNames("integer", operation$set_id_name)
+      }
 
       validate_margin_operation(operation)
 
@@ -1105,6 +1122,10 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       )
 
       if (has_shares) {
+        share_names <- unlist(
+          lapply(summary_plan$requests, `[[`, "outputs"),
+          use.names = FALSE
+        )
         return(new_margin_execution(
           execute_shares(
             operation,
@@ -1112,12 +1133,20 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
             requests = summary_plan$requests,
             check_share_source = check_share_source
           ),
-          sort_id = margin_summary_stage_sort_id(staged_result)
+          sort_id = margin_summary_stage_sort_id(staged_result),
+          declared_types = if (declare_sqlite_types) {
+            c(declared_id, stats::setNames(
+              rep("double", length(share_names)), share_names
+            ))
+          } else {
+            character()
+          }
         ))
       }
       new_margin_execution(
         margin_summary_stage_result(staged_result),
-        sort_id = margin_summary_stage_sort_id(staged_result)
+        sort_id = margin_summary_stage_sort_id(staged_result),
+        declared_types = declared_id
       )
     },
     call = operation$call

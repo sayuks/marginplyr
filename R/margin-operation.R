@@ -48,9 +48,13 @@ new_margin_operation <- function(data,
 # every column the operation named. Only an executor that puts a column
 # somewhere the finalizer cannot `mutate()` reports one: nesting folds its
 # payload into a cell and rebuilds it there (#421).
-new_margin_execution <- function(result, sort_id = NULL, factor_info = NULL) {
+# `declared_types` names package-created result columns and their promised R
+# types, independent of what an empty SQL result lets its driver infer.
+new_margin_execution <- function(result, sort_id = NULL, factor_info = NULL,
+                                 declared_types = character()) {
   structure(
-    list(result = result, sort_id = sort_id, factor_info = factor_info),
+    list(result = result, sort_id = sort_id, factor_info = factor_info,
+         declared_types = declared_types),
     class = "marginplyr_margin_execution"
   )
 }
@@ -375,11 +379,40 @@ finalize_margin_operation <- function(operation, execution,
 
   unsorted <- result
   result <- order_margin_result(operation, result, execution)
-  if (sqlite_typed_order_needed(operation, type_anchor_columns)) {
-    result <- sqlite_typed_order_result(
-      operation, unsorted, result, execution, type_anchor_columns
+  needs_unsorted_anchor <- live_sqlite_margin_result(operation) &&
+    !margin_sorting(operation) &&
+    length(type_anchor_columns) > 0L &&
+    (length(execution$declared_types) == 0L ||
+       any(operation$plan$dimensions %in% type_anchor_columns) ||
+       any(vapply(operation$margin_labels, is_missing_margin_label,
+                  logical(1))))
+  if (needs_unsorted_anchor) {
+    # Keep the source-column union at the same boundary for direct collection.
+    anchor <- sql_margin_type_anchor(
+      operation$data, result, source_columns = type_anchor_columns
     )
-  } else if (length(type_anchor_columns) > 0L) {
+    result <- combine_margin_branches(list(anchor, result))
+    unsorted <- result
+  }
+  declared_types <- execution$declared_types
+  if (live_sqlite_margin_result(operation) && length(declared_types) > 0L) {
+    text_dimensions <- setdiff(
+      operation$plan$dimensions, type_anchor_columns
+    )
+    declared_types <- c(
+      stats::setNames(rep("character", length(text_dimensions)),
+                      text_dimensions),
+      declared_types
+    )
+  }
+  if (sqlite_typed_result_needed(
+    operation, type_anchor_columns, declared_types
+  )) {
+    result <- sqlite_typed_result(
+      operation, unsorted, result, execution, type_anchor_columns,
+      declared_types
+    )
+  } else if (length(type_anchor_columns) > 0L && !needs_unsorted_anchor) {
     # Share staging wraps the SQL union's typed first SELECT. Put a zero-row
     # source projection at the final result boundary, after all projections.
     anchor <- sql_margin_type_anchor(
