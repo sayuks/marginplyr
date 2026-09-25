@@ -88,8 +88,8 @@ sql_render.marginplyr_sqlite_typed_order <- function(query, ...) {
 #' @exportS3Method dplyr::collect
 #' @noRd
 collect.marginplyr_sqlite_typed_order <- function(x, ..., n = Inf,
-                                                    warn_incomplete = TRUE,
-                                                    sql_options = NULL) {
+                                                  warn_incomplete = TRUE,
+                                                  sql_options = NULL) {
   if (!sqlite_typed_order_direct(x)) {
     return(NextMethod())
   }
@@ -109,12 +109,12 @@ collect.marginplyr_sqlite_typed_order <- function(x, ..., n = Inf,
 #' @exportS3Method dplyr::compute
 #' @noRd
 compute.marginplyr_sqlite_typed_order <- function(x, name = NULL,
-                                                    temporary = TRUE,
-                                                    overwrite = FALSE,
-                                                    unique_indexes = list(),
-                                                    indexes = list(),
-                                                    analyze = TRUE, ...,
-                                                    sql_options = NULL) {
+                                                  temporary = TRUE,
+                                                  overwrite = FALSE,
+                                                  unique_indexes = list(),
+                                                  indexes = list(),
+                                                  analyze = TRUE, ...,
+                                                  sql_options = NULL) {
   if (!sqlite_typed_order_direct(x)) {
     return(NextMethod())
   }

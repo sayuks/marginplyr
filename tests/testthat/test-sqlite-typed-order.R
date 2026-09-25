@@ -118,7 +118,7 @@ test_that("SQLite typed Margin order covers either contextual share alone", {
   }
 })
 
-test_that("SQLite typed Margin order hides internal columns from its R result", {
+test_that("SQLite typed order hides internal columns from the R result", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -192,7 +192,7 @@ test_that("SQLite typed Margin labels retain all scalar source types", {
   }
 })
 
-test_that("SQLite refuses typed materialization when every rowid name is shadowed", {
+test_that("SQLite refuses compute when every rowid name is shadowed", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -294,7 +294,7 @@ test_that("SQLite typed compute uses an available rowid alias", {
                    c("g", "set", "rowid", "oid"))
 })
 
-test_that("SQLite internal sort names avoid case-insensitive column collisions", {
+test_that("SQLite internal names avoid case-insensitive collisions", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
