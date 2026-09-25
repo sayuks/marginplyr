@@ -2774,6 +2774,10 @@ test_that("unrecognized dtplyr subset forms cannot certify column metadata", {
   unknown_step <- root
   class(unknown_step) <- c("dtplyr_step_future", "dtplyr_step")
   expect_false(dtplyr_metadata_safe_step(unknown_step))
+
+  unknown_join <- dplyr::full_join(root, root, by = "region")
+  unknown_join$on <- NULL
+  expect_false(dtplyr_join_set_types_match(unknown_join))
 })
 
 test_that("set operations with derived factor levels refuse unsafe metadata", {
