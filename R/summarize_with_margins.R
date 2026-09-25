@@ -1021,11 +1021,12 @@ summarize_with_margins <- function(.data,
     is_missing_margin_label,
     logical(1)
   )]
-  # Share staging and a live SQLite Margin order can wrap the ordinary union's
-  # source-column anchor. The finalizer places another anchor at the result
-  # boundary in either case (ADR 0031).
-  sqlite_sorted <- live_sqlite_margin_order(operation)
-  has_anchor <- length(share_kinds) > 0L || sqlite_sorted
+  # Share staging, SQLite Margin order, and the public `.id` projection can
+  # wrap the union's source-column anchor. The finalizer anchors the result.
+  sqlite_result <- live_sqlite_margin_result(operation)
+  has_anchor <- length(share_kinds) > 0L ||
+    (sqlite_result &&
+       (margin_sorting(operation) || !is.null(operation$set_id_name)))
   anchor_needed <- identical(operation$backend$kind, "sql") &&
     has_anchor &&
     length(typed_dimensions) > 0L &&
