@@ -53,11 +53,11 @@ The command takes no options. It runs, in order:
    from `DESCRIPTION`;
 2. package spelling, reporting unknown words and their locations only when it
    finds them;
-3. the full testthat suite, including local snapshot expectations;
-4. strict test line coverage through `tools/coverage-check.R`, requiring every
-   measured R source line and every optional Suggest used by the suite;
-5. `jarl check .`;
-6. package-aware lintr after `pkgload::load_all()`; and
+3. `jarl check .`;
+4. package-aware lintr after `pkgload::load_all()`;
+5. the full testthat suite, including local snapshot expectations;
+6. strict test line coverage through `tools/coverage-check.R`, requiring every
+   measured R source line and every optional Suggest used by the suite; and
 7. a source-tarball `R CMD check --as-cran` against disposable empty local
    CRAN and Bioconductor indexes, with remote incoming checks and
    external-clock verification disabled. The local future-file-timestamp
@@ -107,10 +107,10 @@ Record the exact identity and outcome in the pull request:
 ```text
 - Review-ready check: <40-character commit SHA>
   - package spelling: passed
-  - full testthat suite: passed
-  - strict test line coverage: <covered/measured lines, covr version>
   - jarl: passed
   - package-aware lintr: passed
+  - full testthat suite: passed
+  - strict test line coverage: <covered/measured lines, covr version>
   - source-tarball R CMD check: <errors/warnings/notes and NOTE dispositions>
 ```
 

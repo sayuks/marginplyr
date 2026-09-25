@@ -144,8 +144,8 @@ prerequisites <- list(
 steps <- review_ready_source_steps(prerequisites)
 expect_identical(
   names(steps),
-  c("Package spelling", "Full testthat suite", "Strict line coverage",
-    "jarl", "package-aware lintr"),
+  c("Package spelling", "jarl", "package-aware lintr",
+    "Full testthat suite", "Strict line coverage"),
   "the fixed source-step order"
 )
 expect_true(
