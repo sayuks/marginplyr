@@ -180,22 +180,6 @@ review_ready_source_steps <- function(prerequisites) {
       ),
       env = character()
     ),
-    `Full testthat suite` = list(
-      command = prerequisites$rscript,
-      args = c(
-        "-e",
-        paste0(
-          "testthat::test_local('.', reporter = 'summary', ",
-          "stop_on_failure = TRUE)"
-        )
-      ),
-      env = character()
-    ),
-    `Strict line coverage` = list(
-      command = prerequisites$rscript,
-      args = "tools/coverage-check.R",
-      env = character()
-    ),
     `jarl` = list(
       command = prerequisites$jarl,
       args = c("check", "."),
@@ -211,6 +195,22 @@ review_ready_source_steps <- function(prerequisites) {
         )
       ),
       env = "LINTR_ERROR_ON_LINT=true"
+    ),
+    `Full testthat suite` = list(
+      command = prerequisites$rscript,
+      args = c(
+        "-e",
+        paste0(
+          "testthat::test_local('.', reporter = 'summary', ",
+          "stop_on_failure = TRUE)"
+        )
+      ),
+      env = character()
+    ),
+    `Strict line coverage` = list(
+      command = prerequisites$rscript,
+      args = "tools/coverage-check.R",
+      env = character()
     )
   )
 }
