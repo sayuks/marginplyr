@@ -11,11 +11,15 @@ test_that("dedicated SQLite compute refuses before touching destinations", {
             con, data.frame(g = c("a", "b"), v = c(2, 5)),
             "source", temporary = TRUE
           )
-          DBI::dbExecute(con, "CREATE TABLE main.report (g TEXT, sid INTEGER, z REAL)")
+          DBI::dbExecute(con, paste0(
+            "CREATE TABLE main.report ", "(g TEXT, sid INTEGER, z REAL)"
+          ))
           DBI::dbExecute(con, "INSERT INTO main.report VALUES ('keep', 99, -1)")
           DBI::dbExecute(con, "CREATE INDEX report_g ON report(g)")
           DBI::dbExecute(con, "ANALYZE main.report")
-          DBI::dbExecute(con, "CREATE TABLE temp.report (g TEXT, sid INTEGER, z REAL)")
+          DBI::dbExecute(con, paste0(
+            "CREATE TABLE temp.report ", "(g TEXT, sid INTEGER, z REAL)"
+          ))
           DBI::dbExecute(con, "INSERT INTO temp.report VALUES ('temp', 98, -2)")
           DBI::dbExecute(con, "CREATE TABLE other.sentinel (value TEXT)")
           DBI::dbExecute(con, "INSERT INTO other.sentinel VALUES ('other')")
@@ -63,16 +67,15 @@ test_that("dedicated SQLite compute refuses before touching destinations", {
                            "keep")
           expect_identical(DBI::dbGetQuery(con, "SELECT * FROM temp.report")$g,
                            "temp")
-          expect_identical(DBI::dbGetQuery(con,
-                                           "SELECT * FROM other.sentinel")$value,
-                           "other")
+          other <- DBI::dbGetQuery(con, "SELECT * FROM other.sentinel")
+          expect_identical(other$value, "other")
           expect_identical(dplyr::collect(source)$g, c("a", "b"))
           expect_identical(dplyr::collect(source)$v, c(2, 5))
           expect_identical(DBI::dbGetQuery(con, "SELECT * FROM caller")$value,
                            if (outer) "prior work" else character())
           if (outer) {
             if (identical(sort, "last") &&
-                identical(destination, "qualified")) {
+                  identical(destination, "qualified")) {
               DBI::dbCommit(con)
               expect_identical(DBI::dbGetQuery(con,
                                                "SELECT * FROM caller")$value,
@@ -93,7 +96,7 @@ test_that("dedicated SQLite compute refuses before touching destinations", {
   }
 })
 
-test_that("SQLite containment preserves direct collection and compute controls", {
+test_that("SQLite containment preserves collection and compute controls", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)

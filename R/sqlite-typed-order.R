@@ -178,7 +178,8 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     paste0(
       "Direct compute() of this SQLite Margin result is temporarily disabled ",
       "because materialization can write to a different table than requested. ",
-      "Use collect() to retrieve the result until destination handling is fixed."
+      "Use collect() to retrieve the result until destination handling ",
+      "is fixed."
     ),
     call = rlang::caller_call()
   )

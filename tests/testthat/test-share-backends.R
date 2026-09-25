@@ -302,7 +302,7 @@ test_that("SQLite shares leave fixed keys and non-missing dimensions typed", {
   expect_equal(sort(result$p), c(0.25, 0.75, 1))
 })
 
-test_that("SQLite share Margin order collects while direct compute is contained", {
+test_that("SQLite share order collects while direct compute is contained", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)

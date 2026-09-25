@@ -448,7 +448,9 @@ test_that("SQLite typed compute leaves a persistent target and index intact", {
     "typed_order_persistent", temporary = TRUE
   )
   DBI::dbWriteTable(con, "typed_margin_output", data.frame(old = 1))
-  DBI::dbExecute(con, "CREATE INDEX typed_margin_output_old ON typed_margin_output(old)")
+  DBI::dbExecute(con, paste0(
+    "CREATE INDEX typed_margin_output_old ", "ON typed_margin_output(old)"
+  ))
   query <- summarize_with_margins(
     source, z = sum(v), .grouping = rollup(g),
     .margin_label = NULL, .sort = "last"
