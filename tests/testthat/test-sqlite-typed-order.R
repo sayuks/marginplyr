@@ -17,6 +17,95 @@ test_that("SQLite Margin order keeps an all-missing dimension typed", {
   expect_equal(result$z, c(1, 1))
 })
 
+test_that("SQLite direct Margin collection accepts finite prefixes", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = 1:2, v = c(2, 4)),
+    "typed_order_prefix", temporary = TRUE
+  )
+  old_options <- options(warn = 2)
+  on.exit(options(old_options), add = TRUE)
+
+  for (sort in c("first", "last")) {
+    query <- summarize_with_margins(
+      source, z = sum(v), .grouping = rollup(g),
+      .margin_label = NULL, .sort = sort
+    )
+    expected_g <- if (identical(sort, "first")) {
+      c(NA_integer_, 1L, 2L)
+    } else {
+      c(1L, 2L, NA_integer_)
+    }
+    expected_z <- if (identical(sort, "first")) c(6, 2, 4) else c(2, 4, 6)
+    for (n in 0:4) {
+      result <- dplyr::collect(query, n = n)
+      expect_identical(names(result), c("g", "z"))
+      expected_rows <- seq_len(min(n, 3L))
+      expect_identical(result$g, expected_g[expected_rows])
+      if (n == 0L) {
+        expect_length(result$z, 0L)
+      } else {
+        expect_equal(result$z, expected_z[expected_rows])
+      }
+    }
+    expect_identical(dplyr::collect(query, n = 1.9)$g, expected_g[1L])
+  }
+})
+
+test_that("SQLite direct Margin collection validates limits like dbplyr", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = 1:2, v = c(2, 4)),
+    "typed_order_limits", temporary = TRUE
+  )
+  query <- summarize_with_margins(
+    source, z = sum(v), .grouping = rollup(g),
+    .margin_label = NULL, .sort = "last"
+  )
+
+  for (n in list(-1L, "1", c(1L, 2L))) {
+    expect_error(dplyr::collect(source, n = n), "non-negative integer")
+    expect_error(dplyr::collect(query, n = n), "non-negative integer")
+  }
+  expect_identical(dplyr::collect(query)$g, c(1L, 2L, NA_integer_))
+  expect_identical(
+    dplyr::collect(query, n = Inf, warn_incomplete = FALSE)$g,
+    c(1L, 2L, NA_integer_)
+  )
+  expect_identical(
+    dplyr::collect(query, n = 1L, warn_incomplete = FALSE)$g, 1L
+  )
+})
+
+test_that("SQLite ordinary collection paths accept finite prefixes", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(2, 4)),
+    "typed_order_controls", temporary = TRUE
+  )
+  unsorted <- summarize_with_margins(
+    source, z = sum(v), .grouping = rollup(g),
+    .margin_label = NULL, .sort = "none"
+  )
+  labelled <- summarize_with_margins(
+    source, z = sum(v), .grouping = rollup(g),
+    .margin_label = "All", .sort = "last"
+  )
+  old_options <- options(warn = 2)
+  on.exit(options(old_options), add = TRUE)
+
+  for (query in list(source, unsorted, labelled)) {
+    expect_identical(nrow(dplyr::collect(query, n = 0L)), 0L)
+    expect_identical(nrow(dplyr::collect(query, n = 1L)), 1L)
+  }
+})
+
 test_that("SQLite unsorted identifiers keep typed dimensions in summaries", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
