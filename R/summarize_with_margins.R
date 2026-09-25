@@ -1024,12 +1024,7 @@ summarize_with_margins <- function(.data,
   # Share staging and a live SQLite Margin order can wrap the ordinary union's
   # source-column anchor. The finalizer places another anchor at the result
   # boundary in either case (ADR 0031).
-  sqlite_sorted <- if (identical(operation$backend$kind, "sql")) {
-    margin_sorting(operation) &&
-      inherits(dbplyr::remote_con(operation$data), "SQLiteConnection")
-  } else {
-    FALSE
-  }
+  sqlite_sorted <- live_sqlite_margin_order(operation)
   has_anchor <- length(share_kinds) > 0L || sqlite_sorted
   anchor_needed <- identical(operation$backend$kind, "sql") &&
     has_anchor &&

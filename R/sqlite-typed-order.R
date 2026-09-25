@@ -1,11 +1,15 @@
-# A live SQLite connection needs the typed source-column anchor to remain the
-# first arm of the outermost UNION ALL (ADR 0031). Simulators do not execute
-# queries and retain the ordinary dbplyr result path.
-sqlite_typed_order_needed <- function(operation, source_columns) {
-  length(source_columns) > 0L &&
-    margin_sorting(operation) &&
+# Whether the prepared Margin operation requests an order on live SQLite.
+# The caller has already selected the backend and prepared its Grouping plan.
+live_sqlite_margin_order <- function(operation) {
+  margin_sorting(operation) &&
     identical(operation$backend$kind, "sql") &&
     inherits(dbplyr::remote_con(operation$data), "SQLiteConnection")
+}
+
+# Whether source columns need the SQLite typed-order result (ADR 0031).
+# The caller supplies columns present in the prepared operation's public result.
+sqlite_typed_order_needed <- function(operation, source_columns) {
+  length(source_columns) > 0L && live_sqlite_margin_order(operation)
 }
 
 # `margin_order_terms()` includes `desc()` only for a Grouping bit. Negating
@@ -17,9 +21,9 @@ sqlite_order_value <- function(term) {
   term
 }
 
-# The public query is the ordinary dbplyr result. The companion UNION is what
-# direct collection executes; it carries sort columns only so SQLite can order
-# without putting an outer projection around the typed anchor (ADR 0031).
+# Builds a public lazy result with a typed, ordered companion query (ADR 0031).
+# The caller passes one prepared operation, its query before and after applying
+# Margin order, the matching execution, and source columns in both queries.
 sqlite_typed_order_result <- function(operation, unsorted, ordered,
                                       execution, source_columns) {
   terms <- margin_order_terms(
