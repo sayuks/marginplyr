@@ -2733,6 +2733,49 @@ test_that("a join whose key types promote with matching rows refuses metadata", 
   expect_s3_class(error, "marginplyr_error")
 })
 
+test_that("unrecognized dtplyr subset forms cannot certify column metadata", {
+  skip_if_suggest_absent("dtplyr")
+  root <- dtplyr::lazy_dt(data.frame(region = c("a", "b"), value = 1:2))
+  row_only <- dplyr::filter(root, value > 0L)
+
+  mismatch <- row_only
+  mismatch$vars <- "region"
+  expect_null(dtplyr_metadata_subset_columns(mismatch))
+
+  noncall <- row_only
+  noncall$j <- "region"
+  expect_null(dtplyr_metadata_subset_columns(noncall))
+
+  removed <- dplyr::mutate(root, doubled = value * 2) |>
+    dplyr::select(region)
+  expect_identical(dtplyr_metadata_subset_columns(removed), "region")
+
+  literal_drop <- removed
+  literal_drop$j <- quote(`:=`(c("value", "doubled"), NULL))
+  expect_identical(dtplyr_metadata_subset_columns(literal_drop), "region")
+
+  dynamic_drop <- removed
+  dynamic_drop$j <- quote(`:=`(c("value", unknown), NULL))
+  expect_null(dtplyr_metadata_subset_columns(dynamic_drop))
+
+  wrong_drop <- removed
+  wrong_drop$j <- quote(`:=`("value", NULL))
+  expect_null(dtplyr_metadata_subset_columns(wrong_drop))
+
+  computed <- row_only
+  computed$j <- quote(sum(value))
+  expect_null(dtplyr_metadata_subset_columns(computed))
+
+  absent <- row_only
+  absent$j <- quote(.(missing_column))
+  absent$vars <- "missing_column"
+  expect_null(dtplyr_metadata_subset_columns(absent))
+
+  unknown_step <- root
+  class(unknown_step) <- c("dtplyr_step_future", "dtplyr_step")
+  expect_false(dtplyr_metadata_safe_step(unknown_step))
+})
+
 test_that("set operations with derived factor levels refuse unsafe metadata", {
   skip_if_suggest_absent("dtplyr")
   left <- dtplyr::lazy_dt(data.frame(
