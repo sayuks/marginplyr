@@ -30,9 +30,10 @@ remember_sent_query_backend <- function(backend) {
   invisible(NULL)
 }
 
-# Renders for the record without using rlang's warning frequency state. dbplyr
-# warns about implicit NA removal while translating SQL; the actual render must
-# still own that warning when `warn = 2`. A refused translation leaves NA.
+# Renders for the record without using rlang's warning frequency state. The
+# caller holds the lazy SQL query for an audited site. dbplyr warns about
+# implicit NA removal while translating SQL; the actual render must still own
+# that warning when `warn = 2`. A refused translation leaves NA.
 render_sent_query_sql <- function(query) {
   old <- options(rlib_warning_verbosity = "quiet")
   on.exit(options(old), add = TRUE)
