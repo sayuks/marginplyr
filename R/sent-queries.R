@@ -30,22 +30,32 @@ remember_sent_query_backend <- function(backend) {
   invisible(NULL)
 }
 
+# Renders for the record without using rlang's warning frequency state. The
+# caller holds the lazy SQL query for an audited site. dbplyr warns about
+# implicit NA removal while translating SQL; the actual render must still own
+# that warning when `warn = 2`. A refused translation leaves NA.
+render_sent_query_sql <- function(query) {
+  old <- options(rlib_warning_verbosity = "quiet")
+  on.exit(options(old), add = TRUE)
+  tryCatch(
+    as.character(dbplyr::sql_render(query)),
+    error = function(cnd) NA_character_
+  )
+}
+
 # Appends one row for `query`, which the caller is about to send under
 # `purpose`. A no-op unless the remembered flags say this call is audited and
 # its input is SQL, so a site checks neither and takes no backend.
 #
-# The render is `dbplyr::sql_render()`, client-side, sending nothing. A
-# translation dbplyr refuses raises here rather than when the query was built,
-# and the row is kept with `sql = NA` (ADR 0027).
+# The render is client-side, sending nothing. A translation dbplyr refuses
+# raises here rather than when the query was built, and the row is kept with
+# `sql = NA` (ADR 0027).
 record_sent_query <- function(purpose, query) {
   stopifnot(rlang::is_string(purpose))
   if (!isTRUE(sent_queries$audited) || !isTRUE(sent_queries$is_sql)) {
     return(invisible(NULL))
   }
-  sql <- tryCatch(
-    as.character(dbplyr::sql_render(query)),
-    error = function(cnd) NA_character_
-  )
+  sql <- render_sent_query_sql(query)
   stopifnot(is.character(sql), length(sql) == 1L)
   sent_queries$rows <- dplyr::bind_rows(
     sent_queries$rows,
