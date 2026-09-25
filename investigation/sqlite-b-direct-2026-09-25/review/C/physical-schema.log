@@ -1,0 +1,44 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+  cid  name type notnull dflt_value pk
+1   0 fixed  INT       0         NA  0
+2   1     g            0         NA  0
+3   2    id            0         NA  0
+4   3     z            0         NA  0
+5   4     t            0         NA  0
+tibble [2 × 5] (S3: tbl_df/tbl/data.frame)
+ $ fixed: int [1:2] 1 1
+ $ g    : logi [1:2] NA NA
+ $ id   : int [1:2] 1 2
+ $ z    : num [1:2] 1 1
+ $ t    : num [1:2] 1 1
+<SQL> SELECT *
+FROM `caseFALSE`
+  fixed  g id z t
+1     1 NA  1 1 1
+2     1 NA  2 1 1
+  cid  name type notnull dflt_value pk
+1   0 fixed  INT       0         NA  0
+2   1     g            0         NA  0
+3   2    id            0         NA  0
+4   3     z            0         NA  0
+5   4     t            0         NA  0
+tibble [0 × 5] (S3: tbl_df/tbl/data.frame)
+ $ fixed: int(0) 
+ $ g    : logi(0) 
+ $ id   : int(0) 
+ $ z    : logi(0) 
+ $ t    : num(0) 
+<SQL> SELECT *
+FROM `caseTRUE`
+[1] fixed g     id    z     t    
+<0 rows> (or 0-length row.names)

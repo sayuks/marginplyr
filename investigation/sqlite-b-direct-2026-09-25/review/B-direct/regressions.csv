@@ -1,0 +1,65 @@
+"file","test","nb","failed","error","warning","skipped"
+"test-margin-order.R","a rollup puts each subtotal after the rows it summarizes",3,0,FALSE,0,FALSE
+"test-margin-order.R","`first` reverses the Grouping bits and nothing else",2,0,FALSE,0,FALSE
+"test-margin-order.R","row order is unspecified by default",2,0,FALSE,0,FALSE
+"test-margin-order.R","all four Margin verbs order their results",8,0,FALSE,0,FALSE
+"test-margin-order.R","`.sort` is validated with the common Margin choice matcher",12,0,FALSE,0,FALSE
+"test-margin-order.R","each fixed key is one contiguous, self-contained block",3,0,FALSE,0,FALSE
+"test-margin-order.R","a factor dimension orders by its restored levels",2,0,FALSE,0,FALSE
+"test-margin-order.R","`.margin_label_position` moves levels and not rows",3,0,FALSE,0,FALSE
+"test-margin-order.R","a composite dimension orders as the one dimension it is",3,0,FALSE,0,FALSE
+"test-margin-order.R","margins and source missing values separate by position",2,0,FALSE,0,FALSE
+"test-margin-order.R","duplicate occurrences come out adjacent and in plan order",4,0,FALSE,0,FALSE
+"test-margin-order.R","a Margin order composes with contextual shares",3,0,FALSE,0,FALSE
+"test-margin-order.R","a native summary keeps its plan and adds no visible column",6,0,FALSE,0,FALSE
+"test-margin-order.R","a native summary reuses `.id` rather than staging its own",2,0,FALSE,0,FALSE
+"test-margin-order.R","a Margin order leaves no window ordering to inherit",3,0,FALSE,0,FALSE
+"test-margin-order.R","the portable adapter keeps its branch identifier resolvable",12,0,FALSE,0,FALSE
+"test-margin-order.R","missing values sort last within a Grouping bit group",2,0,FALSE,0,FALSE
+"test-margin-order.R","a fixed key sorts its missing values last",3,0,FALSE,0,FALSE
+"test-margin-order.R","structured fixed keys sort by row with wholly missing keys last",16,0,FALSE,0,FALSE
+"test-margin-order.R","structured dimensions with typed missing labels retain row shape",20,0,FALSE,0,FALSE
+"test-margin-order.R","structured keys keep occurrence tiebreaking",8,0,FALSE,0,FALSE
+"test-margin-order.R","empty structured keys keep their column shape under Margin order",10,0,FALSE,0,FALSE
+"test-margin-order.R","a one-occurrence plan carries its `ORDER BY` on a lazy backend",36,0,FALSE,0,FALSE
+"test-margin-order.R","a one-occurrence plan keeps its native plan and its order",24,0,FALSE,0,FALSE
+"test-margin-order.R","`.id` on a one-occurrence plan leaves the key what it was",4,0,FALSE,0,FALSE
+"test-margin-order.R","`.sort = ""none""` records no order on a one-occurrence plan",12,0,FALSE,0,FALSE
+"test-margin-order.R","`.sort = ""none""` clears no window ordering",1,0,FALSE,0,FALSE
+"test-margin-order.R","`.sort = ""none""` preserves portable window ordering",2,0,FALSE,0,FALSE
+"test-margin-order.R","portable window ordering keeps only summary columns",1,0,FALSE,0,FALSE
+"test-margin-order.R","DuckDB executes a Margin order on its native plan",32,0,FALSE,0,FALSE
+"test-margin-order.R","DuckDB native and portable Margin orders agree",9,0,FALSE,0,FALSE
+"test-margin-order.R","DuckDB refuses an order after its computed term is dropped",3,0,FALSE,0,FALSE
+"test-margin-order.R","DuckDB materializes a sorted Margin result with `compute()`",20,0,FALSE,0,FALSE
+"test-margin-order.R","DuckDB orders a factor dimension by its restored levels",2,0,FALSE,0,FALSE
+"test-margin-order.R","RSQLite executes a portable Margin order end to end",28,0,FALSE,0,FALSE
+"test-margin-order.R","RSQLite materializes a portable Margin order with `compute()`",15,0,FALSE,0,FALSE
+"test-margin-order.R","RSQLite places missing values where its own default would not",4,0,FALSE,0,FALSE
+"test-margin-order.R","dtplyr executes a Margin order end to end",26,0,FALSE,0,FALSE
+"test-margin-order.R","dtplyr orders a factor dimension by its restored levels",3,0,FALSE,0,FALSE
+"test-margin-order.R","Arrow executes a Margin order end to end",27,0,FALSE,0,FALSE
+"test-margin-order.R","Arrow orders a factor dimension whose label inserts nothing",8,0,FALSE,0,FALSE
+"test-margin-order.R","Arrow orders a factor fixed key, which holds no Margin label",6,0,FALSE,0,FALSE
+"test-margin-order.R","Arrow orders repeated nonconstant Grouping bits",48,0,FALSE,0,FALSE
+"test-sqlite-empty-declared-types.R","SQLite empty Margin results retain declared package column types",144,0,FALSE,0,FALSE
+"test-sqlite-empty-declared-types.R","SQLite empty driver projections do not promise aggregate types",1,0,FALSE,0,FALSE
+"test-sqlite-empty-declared-types.R","SQLite empty summary keeps root shares and standalone identifiers",15,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite Margin order keeps an all-missing dimension typed",3,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite direct Margin collection accepts finite prefixes",32,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite direct Margin collection validates limits like dbplyr",9,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite ordinary collection paths accept finite prefixes",6,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite unsorted identifiers keep typed dimensions in summaries",96,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite unsorted identifiers keep typed dimensions in expansions",72,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite materializes a typed Margin order with public columns",3,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite expansion keeps a typed dimension and Margin order",8,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite contextual shares keep typed dimensions under Margin order",10,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite typed Margin order covers either contextual share alone",12,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite typed order hides internal columns from the R result",10,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite typed Margin labels retain all scalar source types",96,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite refuses compute when every rowid name is shadowed",3,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite typed Margin order keeps fixed partitions and missingness",8,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite typed compute honors a persistent name and indexes",6,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite typed compute uses an available rowid alias",2,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite internal names avoid case-insensitive collisions",12,0,FALSE,0,FALSE
+"test-sqlite-typed-order.R","SQLite typed compute removes temporary work after insertion fails",2,0,FALSE,0,FALSE

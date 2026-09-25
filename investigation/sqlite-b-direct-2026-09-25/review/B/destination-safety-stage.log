@@ -1,0 +1,29 @@
+PASS ambiguous bare refused none string 
+PASS ambiguous bare refused none ident 
+PASS ambiguous bare refused none Id 
+PASS ambiguous bare refused none AsIs 
+PASS ambiguous bare refused none literal_dot 
+PASS ambiguous bare refused last string 
+PASS ambiguous bare refused last ident 
+PASS ambiguous bare refused last Id 
+PASS ambiguous bare refused last AsIs 
+PASS ambiguous bare refused last literal_dot 
+PASS bare indexes/analyze none FALSE FALSE 
+PASS bare indexes/analyze none FALSE TRUE 
+PASS bare indexes/analyze none TRUE FALSE 
+PASS bare indexes/analyze none TRUE TRUE 
+PASS bare indexes/analyze last FALSE FALSE 
+PASS bare indexes/analyze last FALSE TRUE 
+PASS bare indexes/analyze last TRUE FALSE 
+PASS bare indexes/analyze last TRUE TRUE 
+PASS explicit main with temp shadow none indexes FALSE correct destination 
+PASS explicit main with temp shadow none indexes TRUE ordinary syntax error+rollback 
+PASS explicit main with temp shadow last indexes FALSE correct destination 
+PASS explicit main with temp shadow last indexes TRUE ordinary syntax error+rollback 
+TOTAL 22 PASS
+PASS temp overwrite protects main string 
+PASS temp overwrite protects main ident 
+PASS temp overwrite protects main Id 
+PASS temp overwrite protects main AsIs 
+PASS temp overwrite protects main literal_dot 
+FINAL TOTAL 27 PASS

@@ -1,0 +1,36 @@
+{
+  "base": "6a5f611d41bd462f3c933edea1dd0b9861d6e892",
+  "original_root": "/private/tmp/marginplyr-sqlite-design-20260925",
+  "replay_root": "/private/tmp/marginplyr-b-direct-replay-20260926",
+  "changes": [
+    {
+      "script": "A/qualified-failure.R",
+      "replacements": 1
+    },
+    {
+      "script": "B/build-direct.initial.py",
+      "replacements": 1
+    },
+    {
+      "script": "B/build-prototype.initial.py",
+      "replacements": 1
+    },
+    {
+      "script": "B/public-cases.R",
+      "replacements": 2
+    },
+    {
+      "script": "C/prepare.py",
+      "replacements": 1
+    },
+    {
+      "script": "independent/B-direct/run-655.py",
+      "replacements": 1
+    },
+    {
+      "script": "independent/run-655.py",
+      "replacements": 1
+    }
+  ],
+  "note": "Literal root-path substitutions only, in executable script copies."
+}

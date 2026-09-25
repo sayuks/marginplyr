@@ -1,0 +1,6 @@
+[1] 0
+[1] 0
+PASS qualified index failure rolls back only own work; old destination + other schema + caller transaction preserved
+PASS subsequent qualified overwrite/analyze succeeds
+     tbl idx stat
+1 report  NA    3

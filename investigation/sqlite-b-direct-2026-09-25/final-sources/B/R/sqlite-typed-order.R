@@ -1,0 +1,264 @@
+# Whether the prepared Margin operation uses a live SQLite connection.
+# The caller has already selected the backend and prepared its Grouping plan.
+live_sqlite_margin_result <- function(operation) {
+  identical(operation$backend$kind, "sql") &&
+    inherits(dbplyr::remote_con(operation$data), "SQLiteConnection")
+}
+
+# Whether a prepared result has a SQLite driver whose empty R types need repair.
+# The caller holds a prepared SQL operation and has not executed its query.
+sqlite_declared_type_result <- function(operation) {
+  live_sqlite_margin_result(operation) &&
+    !inherits(dbplyr::remote_con(operation$data), "TestConnection")
+}
+
+# Whether a live SQLite result can cover the union's source-column type anchor.
+# The caller holds a prepared operation with its sort and identifier choices.
+sqlite_final_anchor_path <- function(operation) {
+  live_sqlite_margin_result(operation) &&
+    (margin_sorting(operation) || !is.null(operation$set_id_name))
+}
+
+# Whether a live SQLite result needs its declared types at the result boundary.
+# The caller supplies source columns and package-created output types.
+sqlite_typed_result_needed <- function(operation, source_columns,
+                                       declared_types) {
+  live_sqlite_margin_result(operation) &&
+    (length(declared_types) > 0L ||
+       (length(source_columns) > 0L && margin_sorting(operation)))
+}
+
+# `margin_order_terms()` includes `desc()` only for a Grouping bit. Negating
+# that bit gives the same ascending order and can be projected as a SQL column.
+sqlite_order_value <- function(term) {
+  if (rlang::is_call(term, "desc", ns = "dplyr")) {
+    return(rlang::expr(-(!!term[[2L]])))
+  }
+  term
+}
+
+# Builds a public lazy result with a typed companion query (ADR 0031).
+# The caller passes one prepared operation, its query before and after applying
+# Margin order, the matching execution, and source columns in both queries.
+sqlite_typed_result <- function(operation, unsorted, ordered,
+                                execution, source_columns, declared_types) {
+  terms <- if (margin_sorting(operation)) {
+    margin_order_terms(
+      plan = operation$plan,
+      sort = operation$sort,
+      sort_id = execution$sort_id
+    )
+  } else {
+    list()
+  }
+  public_columns <- as.character(dplyr::tbl_vars(ordered))
+  key_names <- new_margin_internal_names(
+    length(terms),
+    used_names = tolower(c(operation$data_vars, dplyr::tbl_vars(unsorted))),
+    prefix = "..marginplyr_order_"
+  )
+  keys <- stats::setNames(lapply(terms, sqlite_order_value), key_names)
+  staged <- if (length(keys) > 0L) {
+    dplyr::mutate(unsorted, !!!keys)
+  } else {
+    unsorted
+  }
+  staged <- dplyr::select(
+    staged, dplyr::all_of(public_columns), dplyr::all_of(key_names)
+  )
+  anchor <- sql_margin_type_anchor(
+    operation$data, staged, source_columns = source_columns,
+    declared_types = declared_types
+  )
+  typed_union <- combine_margin_branches(list(anchor, staged))
+  public_anchor <- sql_margin_type_anchor(
+    operation$data, ordered, source_columns = source_columns,
+    declared_types = declared_types
+  )
+
+  public_query <- ordered
+  class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
+  attr(ordered, "marginplyr_typed_union") <- typed_union
+  attr(ordered, "marginplyr_public_anchor") <- public_anchor
+  attr(ordered, "marginplyr_order_keys") <- key_names
+  attr(ordered, "marginplyr_public_columns") <- public_columns
+  attr(ordered, "marginplyr_public_query") <- public_query
+  attr(ordered, "marginplyr_declared_types") <- declared_types
+  attr(ordered, "marginplyr_original_query") <- ordered$lazy_query
+  ordered
+}
+
+# A downstream dplyr verb changes the public lazy query. From that point the
+# object follows dbplyr as ADR 0018 specifies for tables derived from a Margin
+# result; the companion query is only for the direct result.
+sqlite_typed_result_direct <- function(x) {
+  identical(x$lazy_query, attr(x, "marginplyr_original_query"))
+}
+
+# Render the query direct collection runs, keeping the Sent query record
+# aligned with that SQL (ADR 0027).
+#' @exportS3Method dbplyr::sql_render
+#' @noRd
+sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
+  if (!sqlite_typed_result_direct(query)) {
+    return(NextMethod())
+  }
+  union <- attr(query, "marginplyr_typed_union")
+  keys <- attr(query, "marginplyr_order_keys")
+  if (length(keys) == 0L) {
+    return(dbplyr::sql_render(
+      attr(query, "marginplyr_public_query"), ...
+    ))
+  }
+  sql <- as.character(dbplyr::sql_render(union, ...))
+  quoted <- as.character(DBI::dbQuoteIdentifier(query$con, keys))
+  dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
+}
+
+# Direct sorted collection drops the internal sort columns after reading the
+# anchored compound query. Unsorted collection keeps dbplyr's result query and
+# its condition context. Both restore declared R types when no rows return.
+#' @exportS3Method dplyr::collect
+#' @noRd
+collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
+                                                   warn_incomplete = TRUE,
+                                                   sql_options = NULL) {
+  if (!sqlite_typed_result_direct(x)) {
+    return(NextMethod())
+  }
+  if (length(attr(x, "marginplyr_order_keys")) == 0L) {
+    out <- dplyr::collect(
+      attr(x, "marginplyr_public_query"), ..., n = n,
+      warn_incomplete = warn_incomplete, sql_options = sql_options
+    )
+  } else {
+    if (identical(n, Inf)) {
+      n <- -1L
+    } else {
+      # Match dbplyr's head() validation before limiting the compound query.
+      utils::head(attr(x, "marginplyr_public_query"), n = n)
+      n <- trunc(n)
+    }
+    sql <- dbplyr::sql_render(x, sql_options = sql_options)
+    if (n >= 0) {
+      sql <- dbplyr::sql(paste0(
+        as.character(sql),
+        "\nLIMIT ", format(n, scientific = FALSE, trim = TRUE)
+      ))
+    }
+    out <- dbplyr::db_collect(
+      x$con, sql, n = n, warn_incomplete = warn_incomplete, ...
+    )
+  }
+  out <- out[attr(x, "marginplyr_public_columns")]
+  for (name in names(attr(x, "marginplyr_declared_types"))) {
+    type <- attr(x, "marginplyr_declared_types")[[name]]
+    if (all(is.na(out[[name]]))) {
+      out[[name]] <- rep(vector(type, 1L)[NA_integer_], nrow(out))
+    }
+  }
+  out
+}
+
+# THROWAWAY DESIGN PROTOTYPE B: the typed temporary table owns the schema
+# repair; dbplyr owns every statement targeting the user's destination.
+#' @exportS3Method dplyr::compute
+#' @noRd
+compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
+                                                   temporary = TRUE,
+                                                   overwrite = FALSE,
+                                                   unique_indexes = list(),
+                                                   indexes = list(),
+                                                   analyze = TRUE, ...,
+                                                   sql_options = NULL,
+                                                   in_transaction = FALSE) {
+  if (!sqlite_typed_result_direct(x)) {
+    return(NextMethod())
+  }
+  stopifnot(is.logical(in_transaction), length(in_transaction) == 1L,
+            !is.na(in_transaction))
+  con <- x$con
+  public <- attr(x, "marginplyr_public_columns")
+  sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
+  rowid_alias <- setdiff(c("rowid", "oid", "_rowid_"), tolower(public))
+  if (sorted && length(rowid_alias) == 0L) {
+    abort_marginplyr(
+      paste0("Can't materialize this SQLite Margin order: result columns shadow ",
+             "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."),
+      call = rlang::caller_call()
+    )
+  }
+  # Normalize once through dbplyr's public identifier API, including Id,
+  # ident, AsIs, and quoted literal names. A compute-time destination lookup
+  # refuses ambiguous bare persistent writes before indexes or overwrite run.
+  if (!is.null(name)) {
+    name <- dbplyr::as_table_path(name, con)
+    parts <- dbplyr::table_path_components(name, con)[[1L]]
+    if (length(parts) == 1L && (!temporary || overwrite)) {
+      temp_exists <- DBI::dbExistsTable(
+        con, DBI::Id(schema = "temp", table = parts[[1L]])
+      )
+      if (!temporary && temp_exists) {
+        abort_marginplyr("A temporary table shadows the persistent destination.")
+      }
+      if (temporary && overwrite && !temp_exists &&
+          DBI::dbExistsTable(con, DBI::Id(schema = "main", table = parts[[1L]]))) {
+        abort_marginplyr("Overwriting the temporary destination would drop a main table.")
+      }
+    }
+  }
+  savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
+  stage_name <- basename(tempfile(pattern = "marginplyr_typed_"))
+  DBI::dbBegin(con, name = savepoint)
+  completed <- FALSE
+  on.exit({
+    if (!completed) DBI::dbRollback(con, name = savepoint)
+  }, add = TRUE)
+  stage <- dplyr::compute(
+    attr(x, "marginplyr_public_anchor"), name = stage_name,
+    temporary = TRUE, analyze = FALSE, in_transaction = FALSE,
+    sql_options = sql_options
+  )
+  stage_id <- DBI::Id(schema = "temp", table = stage_name)
+  stage_sql <- as.character(DBI::dbQuoteIdentifier(con, stage_id))
+  columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")
+  insert <- paste0(
+    "INSERT INTO ", stage_sql, " (", columns, ") ",
+    dbplyr::sql_render(attr(x, "marginplyr_public_query"),
+                       sql_options = sql_options)
+  )
+  DBI::dbExecute(con, insert)
+  # Give dbplyr a qualified source so a destination with the same base name
+  # cannot redirect its SELECT. The constructor has all public vars already.
+  stage <- dplyr::tbl(con, stage_id, vars = public)
+  if (sorted) {
+    stage <- dbplyr::window_order(
+      dplyr::arrange(stage, !!dbplyr::sql(rowid_alias[[1L]]))
+    )
+  }
+  result <- dplyr::compute(
+    stage, name = name, temporary = temporary, overwrite = overwrite,
+    unique_indexes = unique_indexes, indexes = indexes, analyze = analyze,
+    ..., sql_options = sql_options, in_transaction = FALSE
+  )
+  destination <- if (is.null(name)) {
+    dbplyr::as_table_path(dbplyr::remote_name(result), con)
+  } else {
+    name
+  }
+  parts <- dbplyr::table_path_components(destination, con)[[1L]]
+  if (length(parts) == 1L) {
+    destination <- dbplyr::as_table_path(
+      DBI::Id(schema = if (temporary) "temp" else "main", table = parts[[1L]]), con
+    )
+    result <- dplyr::tbl(con, destination, vars = public)
+  }
+  table_sql <- as.character(destination)
+  DBI::dbRemoveTable(con, stage_id)
+  DBI::dbCommit(con, name = savepoint)
+  completed <- TRUE
+  if (!sorted) return(result)
+  dbplyr::window_order(
+    dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
+  )
+}

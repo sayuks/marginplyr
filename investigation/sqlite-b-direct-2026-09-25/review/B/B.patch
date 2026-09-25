@@ -1,0 +1,199 @@
+--- a/R/sqlite-typed-order.R
++++ b/R/sqlite-typed-order.R
+@@ -151,18 +151,17 @@
+     )
+   }
+   out <- out[attr(x, "marginplyr_public_columns")]
+-  if (nrow(out) == 0L) {
+-    for (name in names(attr(x, "marginplyr_declared_types"))) {
+-      type <- attr(x, "marginplyr_declared_types")[[name]]
+-      out[[name]] <- vector(type, 0L)
++  for (name in names(attr(x, "marginplyr_declared_types"))) {
++    type <- attr(x, "marginplyr_declared_types")[[name]]
++    if (all(is.na(out[[name]]))) {
++      out[[name]] <- rep(vector(type, 1L)[NA_integer_], nrow(out))
+     }
+   }
+   out
+ }
+ 
+-# A zero-row projection declares the requested table's public column types;
+-# INSERT fills it with the requested result. Sorted results stage the compound
+-# query first, then insert in key order so SQLite rowids preserve Margin order.
++# THROWAWAY DESIGN PROTOTYPE B: the typed temporary table owns the schema
++# repair; dbplyr owns every statement targeting the user's destination.
+ #' @exportS3Method dplyr::compute
+ #' @noRd
+ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
+@@ -171,69 +170,95 @@
+                                                    unique_indexes = list(),
+                                                    indexes = list(),
+                                                    analyze = TRUE, ...,
+-                                                   sql_options = NULL) {
++                                                   sql_options = NULL,
++                                                   in_transaction = FALSE) {
+   if (!sqlite_typed_result_direct(x)) {
+     return(NextMethod())
+   }
++  stopifnot(is.logical(in_transaction), length(in_transaction) == 1L,
++            !is.na(in_transaction))
+   con <- x$con
+   public <- attr(x, "marginplyr_public_columns")
+-  quote <- function(names) {
+-    as.character(DBI::dbQuoteIdentifier(con, names))
+-  }
+-  columns <- paste(quote(public), collapse = ", ")
+-  keys <- attr(x, "marginplyr_order_keys")
+-  if (length(keys) == 0L) {
+-    insert_from <- as.character(dbplyr::sql_render(
+-      attr(x, "marginplyr_public_query"), sql_options = sql_options
+-    ))
+-  } else {
+-    rowid_alias <- setdiff(
+-      c("rowid", "oid", "_rowid_"), tolower(public)
+-    )
+-    if (length(rowid_alias) == 0L) {
+-      abort_marginplyr(
+-        paste0(
+-          "Can't materialize this SQLite Margin order: result columns shadow ",
+-          "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+-        ),
+-        call = rlang::caller_call()
++  sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
++  rowid_alias <- setdiff(c("rowid", "oid", "_rowid_"), tolower(public))
++  if (sorted && length(rowid_alias) == 0L) {
++    abort_marginplyr(
++      paste0("Can't materialize this SQLite Margin order: result columns shadow ",
++             "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."),
++      call = rlang::caller_call()
++    )
++  }
++  # Normalize once through dbplyr's public identifier API, including Id,
++  # ident, AsIs, and quoted literal names. A compute-time destination lookup
++  # refuses ambiguous bare persistent writes before indexes or overwrite run.
++  if (!is.null(name)) {
++    name <- dbplyr::as_table_path(name, con)
++    parts <- dbplyr::table_path_components(name, con)[[1L]]
++    if (length(parts) == 1L && (!temporary || overwrite)) {
++      temp_exists <- DBI::dbExistsTable(
++        con, DBI::Id(schema = "temp", table = parts[[1L]])
+       )
+-    }
+-    stage_name <- basename(tempfile(pattern = "marginplyr_order_"))
+-    on.exit(try(DBI::dbRemoveTable(con, stage_name), silent = TRUE), add = TRUE)
+-    dbplyr::db_compute(
+-      con, stage_name, dbplyr::sql_render(x, sql_options = sql_options),
+-      temporary = TRUE, analyze = FALSE
+-    )
+-    insert_from <- paste0(
+-      "SELECT ", columns, " FROM ", quote(stage_name), " ORDER BY ",
+-      paste(quote(keys), collapse = ", ")
+-    )
+-  }
+-  result <- DBI::dbWithTransaction(con, {
+-    result <- dplyr::compute(
+-      attr(x, "marginplyr_public_anchor"),
+-      name = name,
+-      temporary = temporary,
+-      overwrite = overwrite,
+-      unique_indexes = unique_indexes,
+-      indexes = indexes,
+-      analyze = FALSE,
+-      ...,
+-      sql_options = sql_options
+-    )
+-    table_name <- quote(dbplyr::remote_name(result))
+-    insert <- paste0(
+-      "INSERT INTO ", table_name, " (", columns, ") ", insert_from
+-    )
+-    DBI::dbExecute(con, insert)
+-    if (analyze) {
+-      DBI::dbExecute(con, paste("ANALYZE", table_name))
+-    }
+-    result
+-  })
+-  if (length(keys) == 0L) {
+-    return(result)
+-  }
+-  dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
+-}
++      if (!temporary && temp_exists) {
++        abort_marginplyr("A temporary table shadows the persistent destination.")
++      }
++      if (temporary && overwrite && !temp_exists &&
++          DBI::dbExistsTable(con, DBI::Id(schema = "main", table = parts[[1L]]))) {
++        abort_marginplyr("Overwriting the temporary destination would drop a main table.")
++      }
++    }
++  }
++  savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
++  stage_name <- basename(tempfile(pattern = "marginplyr_typed_"))
++  DBI::dbBegin(con, name = savepoint)
++  completed <- FALSE
++  on.exit({
++    if (!completed) DBI::dbRollback(con, name = savepoint)
++  }, add = TRUE)
++  stage <- dplyr::compute(
++    attr(x, "marginplyr_public_anchor"), name = stage_name,
++    temporary = TRUE, analyze = FALSE, in_transaction = FALSE,
++    sql_options = sql_options
++  )
++  stage_id <- DBI::Id(schema = "temp", table = stage_name)
++  stage_sql <- as.character(DBI::dbQuoteIdentifier(con, stage_id))
++  columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")
++  insert <- paste0(
++    "INSERT INTO ", stage_sql, " (", columns, ") ",
++    dbplyr::sql_render(attr(x, "marginplyr_public_query"),
++                       sql_options = sql_options)
++  )
++  DBI::dbExecute(con, insert)
++  # Give dbplyr a qualified source so a destination with the same base name
++  # cannot redirect its SELECT. The constructor has all public vars already.
++  stage <- dplyr::tbl(con, stage_id, vars = public)
++  if (sorted) {
++    stage <- dbplyr::window_order(
++      dplyr::arrange(stage, !!dbplyr::sql(rowid_alias[[1L]]))
++    )
++  }
++  result <- dplyr::compute(
++    stage, name = name, temporary = temporary, overwrite = overwrite,
++    unique_indexes = unique_indexes, indexes = indexes, analyze = analyze,
++    ..., sql_options = sql_options, in_transaction = FALSE
++  )
++  destination <- if (is.null(name)) {
++    dbplyr::as_table_path(dbplyr::remote_name(result), con)
++  } else {
++    name
++  }
++  parts <- dbplyr::table_path_components(destination, con)[[1L]]
++  if (length(parts) == 1L) {
++    destination <- dbplyr::as_table_path(
++      DBI::Id(schema = if (temporary) "temp" else "main", table = parts[[1L]]), con
++    )
++    result <- dplyr::tbl(con, destination, vars = public)
++  }
++  table_sql <- as.character(destination)
++  DBI::dbRemoveTable(con, stage_id)
++  DBI::dbCommit(con, name = savepoint)
++  completed <- TRUE
++  if (!sorted) return(result)
++  dbplyr::window_order(
++    dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
++  )
++}
+--- a/R/expand_with_margins.R
++++ b/R/expand_with_margins.R
+@@ -156,6 +156,12 @@
+       backend = operation$backend,
+       set_id_name = set_id_name
+     ),
+-    sort_id = sort_id
++    sort_id = sort_id,
++    declared_types = if (sqlite_declared_type_result(operation) &&
++                         !is.null(operation$set_id_name)) {
++      stats::setNames("integer", operation$set_id_name)
++    } else {
++      character()
++    }
+   )
+ }

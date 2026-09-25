@@ -1,0 +1,110 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+PASS 661_destination none in_schema  logi TRUE 
+PASS 661_destination none DBI_Id  logi TRUE 
+PASS 661_destination first in_schema  logi TRUE 
+PASS 661_destination first DBI_Id  logi TRUE 
+PASS 661_destination last in_schema  logi TRUE 
+PASS 661_destination last DBI_Id  logi TRUE 
+PASS 662_transaction none FALSE FALSE  logi TRUE 
+PASS 662_transaction none FALSE TRUE  logi TRUE 
+PASS 662_transaction none TRUE FALSE  logi TRUE 
+PASS 662_transaction none TRUE TRUE  logi TRUE 
+PASS 662_transaction last FALSE FALSE  logi TRUE 
+PASS 662_transaction last FALSE TRUE  logi TRUE 
+PASS 662_transaction last TRUE FALSE  logi TRUE 
+PASS 662_transaction last TRUE TRUE  logi TRUE 
+PASS 663_downstream first select  logi TRUE 
+PASS 663_downstream first rename  logi TRUE 
+PASS 663_downstream first filter  logi TRUE 
+PASS 663_downstream first mutate  logi TRUE 
+PASS 663_downstream first arrange  logi TRUE 
+PASS 663_downstream last select  logi TRUE 
+PASS 663_downstream last rename  logi TRUE 
+PASS 663_downstream last filter  logi TRUE 
+PASS 663_downstream last mutate  logi TRUE 
+PASS 663_downstream last arrange  logi TRUE 
+PASS 665_empty_expansion none text direct  logi TRUE 
+PASS 665_empty_expansion none text compute  logi TRUE 
+PASS 665_empty_expansion none typed direct  logi TRUE 
+PASS 665_empty_expansion none typed compute  logi TRUE 
+PASS 665_empty_expansion first text direct  logi TRUE 
+PASS 665_empty_expansion first text compute  logi TRUE 
+PASS 665_empty_expansion first typed direct  logi TRUE 
+PASS 665_empty_expansion first typed compute  logi TRUE 
+PASS 665_empty_expansion last text direct  logi TRUE 
+PASS 665_empty_expansion last text compute  logi TRUE 
+PASS 665_empty_expansion last typed direct  logi TRUE 
+PASS 665_empty_expansion last typed compute  logi TRUE 
+PASS 666_share total sum first 0  logi TRUE 
+PASS 666_share total sum first 1  logi TRUE 
+PASS 666_share total sum first 2  logi TRUE 
+PASS 666_share total sum first Inf  logi TRUE 
+PASS 666_share total sum last 0  logi TRUE 
+PASS 666_share total sum last 1  logi TRUE 
+PASS 666_share total sum last 2  logi TRUE 
+PASS 666_share total sum last Inf  logi TRUE 
+PASS 666_share total mean first 0  logi TRUE 
+PASS 666_share total mean first 1  logi TRUE 
+PASS 666_share total mean first 2  logi TRUE 
+PASS 666_share total mean first Inf  logi TRUE 
+PASS 666_share total mean last 0  logi TRUE 
+PASS 666_share total mean last 1  logi TRUE 
+PASS 666_share total mean last 2  logi TRUE 
+PASS 666_share total mean last Inf  logi TRUE 
+PASS 666_share parent sum first 0  logi TRUE 
+PASS 666_share parent sum first 1  logi TRUE 
+PASS 666_share parent sum first 2  logi TRUE 
+PASS 666_share parent sum first Inf  logi TRUE 
+PASS 666_share parent sum last 0  logi TRUE 
+PASS 666_share parent sum last 1  logi TRUE 
+PASS 666_share parent sum last 2  logi TRUE 
+PASS 666_share parent sum last Inf  logi TRUE 
+PASS 666_share parent mean first 0  logi TRUE 
+PASS 666_share parent mean first 1  logi TRUE 
+PASS 666_share parent mean first 2  logi TRUE 
+PASS 666_share parent mean first Inf  logi TRUE 
+PASS 666_share parent mean last 0  logi TRUE 
+PASS 666_share parent mean last 1  logi TRUE 
+PASS 666_share parent mean last 2  logi TRUE 
+PASS 666_share parent mean last Inf  logi TRUE 
+PASS normal_all_null_source character first direct  logi TRUE 
+PASS normal_all_null_source character first finite  logi TRUE 
+FAIL normal_all_null_source character first compute typeof(r$g) == type is not TRUE 
+PASS normal_all_null_source character last direct  logi TRUE 
+PASS normal_all_null_source character last finite  logi TRUE 
+FAIL normal_all_null_source character last compute typeof(r$g) == type is not TRUE 
+PASS normal_all_null_source integer first direct  logi TRUE 
+PASS normal_all_null_source integer first finite  logi TRUE 
+FAIL normal_all_null_source integer first compute typeof(r$g) == type is not TRUE 
+PASS normal_all_null_source integer last direct  logi TRUE 
+PASS normal_all_null_source integer last finite  logi TRUE 
+FAIL normal_all_null_source integer last compute typeof(r$g) == type is not TRUE 
+PASS normal_all_null_source double first direct  logi TRUE 
+PASS normal_all_null_source double first finite  logi TRUE 
+FAIL normal_all_null_source double first compute typeof(r$g) == type is not TRUE 
+PASS normal_all_null_source double last direct  logi TRUE 
+PASS normal_all_null_source double last finite  logi TRUE 
+FAIL normal_all_null_source double last compute typeof(r$g) == type is not TRUE 
+FAIL materialized_explicit_order first isTRUE(all.equal(as.data.frame(r), as.data.frame(expected))) is not TRUE 
+FAIL materialized_explicit_order last isTRUE(all.equal(as.data.frame(r), as.data.frame(expected))) is not TRUE 
+PASS failure_atomic_overwrite_unique FALSE  logi TRUE 
+PASS failure_atomic_overwrite_unique TRUE  logi TRUE 
+PASS audit_result_sql_and_no_execution_record  logi TRUE 
+PASS finite_validation -1  logi TRUE 
+PASS finite_validation 1  logi TRUE 
+PASS finite_validation 1,2  logi TRUE 
+PASS finite_validation 1.9  logi TRUE 
+PASS finite_validation 0  logi TRUE 
+PASS finite_validation Inf  logi TRUE 
+PASS ordinary_dbplyr_control  logi TRUE 
+TOTAL 98 PASS 90 FAIL 8 

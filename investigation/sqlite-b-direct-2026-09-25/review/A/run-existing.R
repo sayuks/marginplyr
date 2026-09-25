@@ -1,0 +1,6 @@
+args <- commandArgs(TRUE)
+Sys.setenv(NOT_CRAN='true')
+res <- testthat::test_local(args[[1L]], filter='sqlite', reporter='summary', stop_on_failure=FALSE)
+frame <- as.data.frame(res)
+print(frame[c('file','test','nb','failed','error','warning','skipped')])
+cat('TOTAL:', sum(frame$nb), 'FAILURES:',sum(frame$failed),'ERRORS:',sum(frame$error),'\n')

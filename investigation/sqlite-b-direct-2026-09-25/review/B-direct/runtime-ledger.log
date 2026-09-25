@@ -1,0 +1,182 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+[1] "dbSendQuery"
+CONSTRUCT
+character(0)
+DIRECT
+SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `id`,
+  NULL AS `z`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `id`,
+  `z`,
+  CASE WHEN (`id` IN (2)) THEN 1 WHEN NOT (`id` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `id` AS `..marginplyr_order_4`
+FROM (
+  SELECT `g`, NULL AS `z`, NULL AS `id`
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *, 1 AS `id`
+  FROM (
+    SELECT `..marginplyr_key_1` AS `g`, SUM(`v`) AS `z`
+    FROM (
+      SELECT *, `g` AS `..marginplyr_key_1`
+      FROM `source`
+    ) AS `q01`
+    GROUP BY `..marginplyr_key_1`
+  ) AS `q01`
+
+  UNION ALL
+
+  SELECT
+    CASE WHEN (`..marginplyr_placeholder_1` >= 0) THEN `g` WHEN NOT (`..marginplyr_placeholder_1` >= 0) THEN `g` END AS `g`,
+    `z`,
+    `id`
+  FROM (
+    SELECT *, 2 AS `id`
+    FROM (
+      SELECT NULL AS `g`, *
+      FROM (
+        SELECT SUM(`v`) AS `z`, COUNT(*) AS `..marginplyr_placeholder_1`
+        FROM (
+          SELECT *, `g` AS `..marginplyr_key_1`
+          FROM `source`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+FINITE
+SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `id`,
+  NULL AS `z`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `id`,
+  `z`,
+  CASE WHEN (`id` IN (2)) THEN 1 WHEN NOT (`id` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `id` AS `..marginplyr_order_4`
+FROM (
+  SELECT `g`, NULL AS `z`, NULL AS `id`
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *, 1 AS `id`
+  FROM (
+    SELECT `..marginplyr_key_1` AS `g`, SUM(`v`) AS `z`
+    FROM (
+      SELECT *, `g` AS `..marginplyr_key_1`
+      FROM `source`
+    ) AS `q01`
+    GROUP BY `..marginplyr_key_1`
+  ) AS `q01`
+
+  UNION ALL
+
+  SELECT
+    CASE WHEN (`..marginplyr_placeholder_1` >= 0) THEN `g` WHEN NOT (`..marginplyr_placeholder_1` >= 0) THEN `g` END AS `g`,
+    `z`,
+    `id`
+  FROM (
+    SELECT *, 2 AS `id`
+    FROM (
+      SELECT NULL AS `g`, *
+      FROM (
+        SELECT SUM(`v`) AS `z`, COUNT(*) AS `..marginplyr_placeholder_1`
+        FROM (
+          SELECT *, `g` AS `..marginplyr_key_1`
+          FROM `source`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+LIMIT 1
+COMPUTE
+SELECT name FROM pragma_database_list;
+SELECT name FROM pragma_database_list
+SELECT name FROM (SELECT * FROM `temp`.sqlite_master) WHERE (type = 'table' OR type = 'view') AND (lower(name) = $name) ORDER BY name
+
+SAVEPOINT `marginplyr_savepoint_127836bbefbdd`
+CREATE TABLE
+`report` AS
+SELECT `g`, CAST(NULL AS INTEGER) AS `id`, NULL AS `z`
+FROM `source`
+WHERE (0)
+INSERT INTO `main`.`report` (`g`, `id`, `z`) SELECT `g`, `id`, `z`
+FROM (
+  SELECT `g`, NULL AS `z`, NULL AS `id`
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *, 1 AS `id`
+  FROM (
+    SELECT `..marginplyr_key_1` AS `g`, SUM(`v`) AS `z`
+    FROM (
+      SELECT *, `g` AS `..marginplyr_key_1`
+      FROM `source`
+    ) AS `q01`
+    GROUP BY `..marginplyr_key_1`
+  ) AS `q01`
+
+  UNION ALL
+
+  SELECT
+    CASE WHEN (`..marginplyr_placeholder_1` >= 0) THEN `g` WHEN NOT (`..marginplyr_placeholder_1` >= 0) THEN `g` END AS `g`,
+    `z`,
+    `id`
+  FROM (
+    SELECT *, 2 AS `id`
+    FROM (
+      SELECT NULL AS `g`, *
+      FROM (
+        SELECT SUM(`v`) AS `z`, COUNT(*) AS `..marginplyr_placeholder_1`
+        FROM (
+          SELECT *, `g` AS `..marginplyr_key_1`
+          FROM `source`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+) AS `q01`
+ORDER BY
+  CASE WHEN (`id` IN (2)) THEN 1 WHEN NOT (`id` IN (2)) THEN 0 END,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END,
+  `g`,
+  `id`
+ANALYZE `main`.`report`
+RELEASE SAVEPOINT `marginplyr_savepoint_127836bbefbdd`
+Untracing function "dbSendQuery" in package "namespace:DBI"

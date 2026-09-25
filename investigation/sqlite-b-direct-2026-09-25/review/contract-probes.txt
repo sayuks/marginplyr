@@ -1,0 +1,168 @@
+R version 4.6.1 (2026-06-24) 
+dplyr 1.2.1 
+dbplyr 2.6.0 
+DBI 1.3.0 
+RSQLite 3.53.3 
+summary text none FALSE : FALSE 
+summary text none TRUE : TRUE 
+summary text last FALSE : FALSE 
+summary text last TRUE : TRUE 
+summary typed none FALSE : FALSE 
+summary typed none TRUE : TRUE 
+summary typed last FALSE : TRUE 
+summary typed last TRUE : TRUE 
+expand text none FALSE : FALSE 
+expand text none TRUE : FALSE 
+expand text last FALSE : TRUE 
+expand text last TRUE : TRUE 
+expand typed none FALSE : FALSE 
+expand typed none TRUE : FALSE 
+expand typed last FALSE : TRUE 
+expand typed last TRUE : TRUE 
+audit_unchanged_after_finite_collect TRUE 
+audit_unchanged_after_compute TRUE 
+audit_result_matches_full_render TRUE 
+
+### dbplyr compute.tbl_sql
+function (x, name = NULL, temporary = TRUE, overwrite = FALSE, 
+    unique_indexes = list(), indexes = list(), analyze = TRUE, 
+    ..., sql_options = NULL, cte = deprecated()) 
+{
+    check_bool(temporary)
+    rlang::check_exclusive(sql_options, cte, .require = FALSE)
+    if (lifecycle::is_present(cte)) {
+        lifecycle::deprecate_warn(when = "2.4.0", what = "compute(cte)", 
+            with = I("compute(sql_options = sql_options(cte = TRUE))"))
+        sql_options <- dbplyr::sql_options(cte = cte)
+    }
+    if (is.null(name)) {
+        if (!temporary) {
+            lifecycle::deprecate_stop("2.3.3", what = "compute(name = 'must be provided when `temporary = FALSE`')")
+        }
+        name <- unique_table_name()
+    }
+    name <- as_table_path(name, x$con)
+    vars <- op_vars(x)
+    compute_check_indexes(x, indexes)
+    compute_check_indexes(x, unique_indexes)
+    x_aliased <- select(x, !!!syms(vars))
+    sql <- db_sql_render(x$con, x_aliased$lazy_query, sql_options = sql_options)
+    name <- db_compute(x$con, name, sql, temporary = temporary, 
+        overwrite = overwrite, unique_indexes = unique_indexes, 
+        indexes = indexes, analyze = analyze, ...)
+    window_order(group_by(dplyr::tbl(x$con, from = name, vars = colnames(x)), 
+        !!!syms(op_grps(x))), !!!op_sort(x))
+}
+<bytecode: 0xb65bb6890>
+<environment: namespace:dbplyr>
+
+### dbplyr db_compute.DBIConnection
+function (con, table, sql, ..., overwrite = FALSE, temporary = TRUE, 
+    unique_indexes = list(), indexes = list(), analyze = TRUE, 
+    in_transaction = FALSE) 
+{
+    table <- as_table_path(table, con)
+    new <- sql_table_temporary(con, table, temporary)
+    table <- new$table
+    temporary <- new$temporary
+    with_transaction(con, in_transaction, "Can't copy query to table {.field {format(table, con = con)}}.", 
+        {
+            table <- dbplyr_save_query(con, sql, table, ..., 
+                temporary = temporary, overwrite = overwrite)
+            create_indexes(con, table, unique_indexes, unique = TRUE)
+            create_indexes(con, table, indexes)
+            if (analyze) 
+                dbplyr_analyze(con, table)
+        })
+    table
+}
+<bytecode: 0xb65a8be70>
+<environment: namespace:dbplyr>
+
+### dbplyr remote_name
+function (x, null_if_local = TRUE) 
+{
+    table <- remote_table_path(x, null_if_local = null_if_local)
+    if (is.sql(table) || is.null(table)) {
+        NULL
+    }
+    else if (inherits(x, "tbl_lazy")) {
+        table_path_name(table, x$con)
+    }
+    else {
+        table
+    }
+}
+<bytecode: 0xb68f06388>
+<environment: namespace:dbplyr>
+
+### dbplyr remote_table
+function (x, null_if_local = TRUE) 
+{
+    check_bool(null_if_local)
+    table <- remote_table_path(x, null_if_local = null_if_local)
+    if (is.null(table) || is.sql(table)) {
+        table
+    }
+    else {
+        sql(unclass(table))
+    }
+}
+<bytecode: 0xb66d60158>
+<environment: namespace:dbplyr>
+
+### dbplyr rename_order
+function (order_vars, select_vars) 
+{
+    order_names <- purrr::map_chr(order_vars, function(var) all_names(var)[[1]])
+    order_vars <- order_vars[order_names %in% select_vars]
+    order_vars[] <- replace_sym(order_vars, select_vars, syms(names(select_vars)))
+    order_vars
+}
+<bytecode: 0xb67ce2158>
+<environment: namespace:dbplyr>
+
+### dbplyr collect.tbl_sql
+function (x, ..., n = Inf, warn_incomplete = TRUE, sql_options = NULL, 
+    cte = deprecated()) 
+{
+    rlang::check_exclusive(sql_options, cte, .require = FALSE)
+    if (lifecycle::is_present(cte)) {
+        lifecycle::deprecate_warn(when = "2.4.0", what = "collect(cte)", 
+            with = I("collect(sql_options = sql_options(cte = TRUE))"))
+        sql_options <- dbplyr::sql_options(cte = cte)
+    }
+    if (identical(n, Inf)) {
+        n <- -1
+    }
+    else {
+        x <- head(x, n)
+    }
+    sql <- db_sql_render(x$con, x, sql_options = sql_options)
+    withCallingHandlers(out <- db_collect(x$con, sql, n = n, 
+        warn_incomplete = warn_incomplete, ...), error = function(cnd) {
+        cli_abort("Failed to collect lazy table.", parent = cnd)
+    })
+    dplyr::grouped_df(out, intersect(op_grps(x), names(out)))
+}
+<bytecode: 0xb66d66008>
+<environment: namespace:dbplyr>
+
+### dbplyr with_transaction
+function (con, in_transaction, msg, code, call = caller_env(), 
+    env = caller_env()) 
+{
+    if (in_transaction) {
+        DBI::dbBegin(con)
+        on.exit(DBI::dbRollback(con))
+    }
+    withCallingHandlers(code, error = function(cnd) {
+        cli_abort(msg, parent = cnd, call = call, .envir = env)
+    })
+    if (in_transaction) {
+        on.exit()
+        DBI::dbCommit(con)
+    }
+}
+<bytecode: 0xb681a6078>
+<environment: namespace:dbplyr>

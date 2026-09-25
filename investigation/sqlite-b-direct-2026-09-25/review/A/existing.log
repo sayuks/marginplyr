@@ -1,0 +1,71 @@
+sqlite-empty-declared-types: ................................................................................................................................................................
+sqlite-typed-order: ......................................................................................................................................................................................................................................................................................................................................................................................................
+
+══ DONE ════════════════════════════════════════════════════════════════════════
+                                 file
+1  test-sqlite-empty-declared-types.R
+2  test-sqlite-empty-declared-types.R
+3  test-sqlite-empty-declared-types.R
+4           test-sqlite-typed-order.R
+5           test-sqlite-typed-order.R
+6           test-sqlite-typed-order.R
+7           test-sqlite-typed-order.R
+8           test-sqlite-typed-order.R
+9           test-sqlite-typed-order.R
+10          test-sqlite-typed-order.R
+11          test-sqlite-typed-order.R
+12          test-sqlite-typed-order.R
+13          test-sqlite-typed-order.R
+14          test-sqlite-typed-order.R
+15          test-sqlite-typed-order.R
+16          test-sqlite-typed-order.R
+17          test-sqlite-typed-order.R
+18          test-sqlite-typed-order.R
+19          test-sqlite-typed-order.R
+20          test-sqlite-typed-order.R
+21          test-sqlite-typed-order.R
+                                                                test  nb failed
+1   SQLite empty Margin results retain declared package column types 144      0
+2     SQLite empty driver projections do not promise aggregate types   1      0
+3  SQLite empty summary keeps root shares and standalone identifiers  15      0
+4           SQLite Margin order keeps an all-missing dimension typed   3      0
+5            SQLite direct Margin collection accepts finite prefixes  32      0
+6       SQLite direct Margin collection validates limits like dbplyr   9      0
+7            SQLite ordinary collection paths accept finite prefixes   6      0
+8     SQLite unsorted identifiers keep typed dimensions in summaries  96      0
+9    SQLite unsorted identifiers keep typed dimensions in expansions  72      0
+10      SQLite materializes a typed Margin order with public columns   3      0
+11         SQLite expansion keeps a typed dimension and Margin order   8      0
+12 SQLite contextual shares keep typed dimensions under Margin order  10      0
+13    SQLite typed Margin order covers either contextual share alone  12      0
+14       SQLite typed order hides internal columns from the R result  10      0
+15         SQLite typed Margin labels retain all scalar source types  96      0
+16          SQLite refuses compute when every rowid name is shadowed   3      0
+17  SQLite typed Margin order keeps fixed partitions and missingness   8      0
+18         SQLite typed compute honors a persistent name and indexes   6      0
+19                SQLite typed compute uses an available rowid alias   2      0
+20           SQLite internal names avoid case-insensitive collisions  12      0
+21 SQLite typed compute removes temporary work after insertion fails   2      0
+   error warning skipped
+1  FALSE       0   FALSE
+2  FALSE       0   FALSE
+3  FALSE       0   FALSE
+4  FALSE       0   FALSE
+5  FALSE       0   FALSE
+6  FALSE       0   FALSE
+7  FALSE       0   FALSE
+8  FALSE       0   FALSE
+9  FALSE       0   FALSE
+10 FALSE       0   FALSE
+11 FALSE       0   FALSE
+12 FALSE       0   FALSE
+13 FALSE       0   FALSE
+14 FALSE       0   FALSE
+15 FALSE       0   FALSE
+16 FALSE       0   FALSE
+17 FALSE       0   FALSE
+18 FALSE       0   FALSE
+19 FALSE       0   FALSE
+20 FALSE       0   FALSE
+21 FALSE       0   FALSE
+TOTAL: 550 FAILURES: 0 ERRORS: 0 

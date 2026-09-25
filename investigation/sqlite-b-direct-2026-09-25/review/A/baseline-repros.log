@@ -1,0 +1,219 @@
+
+CASE #661 sorted in_schema FALSE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #661 sorted in_schema TRUE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #661 sorted Id FALSE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #661 sorted Id TRUE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #661 unsorted in_schema FALSE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #661 unsorted in_schema TRUE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #661 unsorted Id FALSE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #661 unsorted Id TRUE 
+FAIL [1] "Attributes: < Component “row.names”: Numeric: lengths (4, 1) differ >"; [2] "Component “g”: Lengths (4, 1) differ (string compare on first 1)"     ; [3] "Component “id”: Numeric: lengths (4, 1) differ"                       ; [4] "Component “total”: Numeric: lengths (4, 1) differ"                     
+
+CASE #662 sorted active= FALSE in_transaction= FALSE failure= FALSE 
+PASS atomic target / marker ownership / subsequent compute / cleanup preserved 
+
+CASE #662 sorted active= FALSE in_transaction= FALSE failure= TRUE 
+PASS atomic target / marker ownership / subsequent compute / cleanup preserved 
+
+CASE #662 sorted active= FALSE in_transaction= TRUE failure= FALSE 
+FAIL !inherits(result, "error") is not TRUE 
+
+CASE #662 sorted active= FALSE in_transaction= TRUE failure= TRUE 
+FAIL grepl("UNIQUE constraint failed", conditionMessage(result), fixed = TRUE) is not TRUE 
+
+CASE #662 sorted active= TRUE in_transaction= FALSE failure= FALSE 
+FAIL !inherits(result, "error") is not TRUE 
+
+CASE #662 sorted active= TRUE in_transaction= FALSE failure= TRUE 
+FAIL grepl("UNIQUE constraint failed", conditionMessage(result), fixed = TRUE) is not TRUE 
+
+CASE #662 sorted active= TRUE in_transaction= TRUE failure= FALSE 
+FAIL !inherits(result, "error") is not TRUE 
+
+CASE #662 sorted active= TRUE in_transaction= TRUE failure= TRUE 
+FAIL grepl("UNIQUE constraint failed", conditionMessage(result), fixed = TRUE) is not TRUE 
+
+CASE #662 unsorted active= FALSE in_transaction= FALSE failure= FALSE 
+PASS atomic target / marker ownership / subsequent compute / cleanup preserved 
+
+CASE #662 unsorted active= FALSE in_transaction= FALSE failure= TRUE 
+PASS atomic target / marker ownership / subsequent compute / cleanup preserved 
+
+CASE #662 unsorted active= FALSE in_transaction= TRUE failure= FALSE 
+FAIL !inherits(result, "error") is not TRUE 
+
+CASE #662 unsorted active= FALSE in_transaction= TRUE failure= TRUE 
+FAIL grepl("UNIQUE constraint failed", conditionMessage(result), fixed = TRUE) is not TRUE 
+
+CASE #662 unsorted active= TRUE in_transaction= FALSE failure= FALSE 
+FAIL !inherits(result, "error") is not TRUE 
+
+CASE #662 unsorted active= TRUE in_transaction= FALSE failure= TRUE 
+FAIL grepl("UNIQUE constraint failed", conditionMessage(result), fixed = TRUE) is not TRUE 
+
+CASE #662 unsorted active= TRUE in_transaction= TRUE failure= FALSE 
+FAIL !inherits(result, "error") is not TRUE 
+
+CASE #662 unsorted active= TRUE in_transaction= TRUE failure= TRUE 
+FAIL grepl("UNIQUE constraint failed", conditionMessage(result), fixed = TRUE) is not TRUE 
+
+CASE #663 first 
+FAIL ℹ In index: 1.
+Caused by error:
+! Result must be length 1, not 0. 
+WARNINGS: Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+
+CASE #663 last 
+FAIL ℹ In index: 1.
+Caused by error:
+! Result must be length 1, not 0. 
+
+CASE #665 none Total explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 none Total explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 none NULL explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 none NULL explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 none NA explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 none NA explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 first Total explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 first Total explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 first NULL explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 first NULL explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 first NA explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 first NA explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 last Total explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 last Total explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 last NULL explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 last NULL explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 last NA explicit= FALSE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #665 last NA explicit= TRUE 
+FAIL [1] "Modes: logical, numeric"              ; [2] "target is logical, current is numeric" 
+
+CASE #666 first Total sum missing 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first Total sum zero 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first Total mean missing 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first Total mean zero 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NULL sum missing 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NULL sum zero 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NULL mean missing 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NULL mean zero 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NA sum missing 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NA sum zero 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NA mean missing 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 first NA mean zero 
+PASS Parent/Total/across declarations preserved over 0/1/2/3/4/Inf 
+
+CASE #666 last Total sum missing 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last Total sum zero 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last Total mean missing 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last Total mean zero 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NULL sum missing 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NULL sum zero 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NULL mean missing 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NULL mean zero 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NA sum missing 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NA sum zero 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NA mean missing 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE #666 last NA mean zero 
+FAIL typeof(out[[col]]) == "double" is not TRUE 
+
+CASE source overwrite atomic refusal (unsorted dedicated) 
+PASS self overwrite refuses atomically; source unchanged 
+
+SUMMARY
+
+FAIL PASS 
+  52   17 

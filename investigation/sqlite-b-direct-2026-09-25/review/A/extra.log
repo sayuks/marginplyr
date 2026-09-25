@@ -1,0 +1,81 @@
+[1] 0
+
+CASE qualified index/analyze/overwrite success 
+[1] "ERROR Can't copy query to table `other`.`report`.\nCaused by error in `dbplyr_create_index()`:\n! Can't create index on table `other`.`report`.\nℹ Using SQL: CREATE INDEX `report_g` ON `other`.`report` (`g`)\nCaused by error:\n! near \".\": syntax error"
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+
+CASE ordinary dbplyr qualified index control 
+[1] "ERROR Can't copy query to table `other`.`ordinary`.\nCaused by error in `dbplyr_create_index()`:\n! Can't create index on table `other`.`ordinary`.\nℹ Using SQL: CREATE INDEX `ordinary_g` ON `other`.`ordinary` (`g`)\nCaused by error:\n! near \".\": syntax error"
+
+CASE overwrite input atomic refusal 
+[1] "Can't copy query to table `source`.\nCaused by error in `dbplyr_save_query()`:\n! Can't save query to table `source`.\nℹ Using SQL: CREATE TABLE `source` AS SELECT CAST(NULL AS TEXT) AS `g`,\n  CAST(NULL AS INTEGER) AS `id`, NULL AS `total` FROM `source` WHERE (0)\nCaused by error:\n! no such table: source"
+
+CASE ordinary overwrite input control 
+<error/rlang_error>
+Error in `db_compute()`:
+! Can't copy query to table `source`.
+Caused by error in `dbplyr_save_query()`:
+! Can't save query to table `source`.
+ℹ Using SQL: CREATE TABLE `source` AS SELECT * FROM `source`
+Caused by error:
+! no such table: source
+---
+Backtrace:
+     ▆
+  1. ├─global run(...)
+  2. │ ├─base::print(...)
+  3. │ ├─base::tryCatch(...)
+  4. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  5. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  6. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  7. │ └─base::force(expr)
+  8. ├─base::tryCatch(...)
+  9. │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 10. │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 11. │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 12. ├─dplyr::compute(...)
+ 13. └─dbplyr:::compute.tbl_sql(...)
+ 14.   ├─dbplyr::db_compute(...)
+ 15.   └─dbplyr:::db_compute.DBIConnection(...)
+ 16.     ├─dbplyr:::with_transaction(...)
+ 17.     │ └─base::withCallingHandlers(...)
+ 18.     └─dbplyr:::dbplyr_save_query(con, sql, table, ..., temporary = temporary, overwrite = overwrite)
+[1] FALSE
+NULL
+
+CASE bare persistent destination competing TEMP FALSE 
+[1] g     id    total
+<0 rows> (or 0-length row.names)
+         g id total
+1 sentinel 99    -1
+2        a  1     2
+3        b  1     5
+4    Total  2     7
+# A tibble: 4 × 3
+  g           id total
+  <chr>    <int> <dbl>
+1 sentinel    99    -1
+2 a            1     2
+3 b            1     5
+4 Total        2     7
+[1] TRUE
+
+CASE bare persistent destination competing TEMP TRUE 
+[1] g     id    total
+<0 rows> (or 0-length row.names)
+         g id total
+1 sentinel 99    -1
+2        a  1     2
+3        b  1     5
+4    Total  2     7
+# A tibble: 4 × 3
+  g           id total
+  <chr>    <int> <dbl>
+1 sentinel    99    -1
+2 a            1     2
+3 b            1     5
+4 Total        2     7
+[1] TRUE

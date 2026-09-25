@@ -1,0 +1,87 @@
+--- R/sqlite-typed-order.R	2026-09-25 16:07:24
++++ /private/tmp/marginplyr-sqlite-design-20260925/variants/A/R/sqlite-typed-order.R	2026-09-25 23:27:55
+@@ -117,7 +117,7 @@
+ 
+ # Direct sorted collection drops the internal sort columns after reading the
+ # anchored compound query. Unsorted collection keeps dbplyr's result query and
+-# its condition context. Both restore declared R types when no rows return.
++# its condition context. Both restore declared R types for all-missing columns.
+ #' @exportS3Method dplyr::collect
+ #' @noRd
+ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
+@@ -151,10 +151,11 @@
+     )
+   }
+   out <- out[attr(x, "marginplyr_public_columns")]
+-  if (nrow(out) == 0L) {
+-    for (name in names(attr(x, "marginplyr_declared_types"))) {
+-      type <- attr(x, "marginplyr_declared_types")[[name]]
+-      out[[name]] <- vector(type, 0L)
++  for (name in names(attr(x, "marginplyr_declared_types"))) {
++    type <- attr(x, "marginplyr_declared_types")[[name]]
++    if (length(out[[name]]) == 0L || all(is.na(out[[name]]))) {
++      out[[name]] <- rep(NA, nrow(out))
++      storage.mode(out[[name]]) <- type
+     }
+   }
+   out
+@@ -170,7 +171,8 @@
+                                                    overwrite = FALSE,
+                                                    unique_indexes = list(),
+                                                    indexes = list(),
+-                                                   analyze = TRUE, ...,
++                                                   analyze = TRUE,
++                                                   in_transaction = FALSE, ...,
+                                                    sql_options = NULL) {
+   if (!sqlite_typed_result_direct(x)) {
+     return(NextMethod())
+@@ -182,6 +184,15 @@
+   }
+   columns <- paste(quote(public), collapse = ", ")
+   keys <- attr(x, "marginplyr_order_keys")
++  savepoint <- quote(basename(tempfile(pattern = "marginplyr_savepoint_")))
++  DBI::dbExecute(con, paste("SAVEPOINT", savepoint))
++  completed <- FALSE
++  on.exit({
++    if (!completed) {
++      DBI::dbExecute(con, paste("ROLLBACK TO", savepoint))
++      DBI::dbExecute(con, paste("RELEASE", savepoint))
++    }
++  }, add = TRUE)
+   if (length(keys) == 0L) {
+     insert_from <- as.character(dbplyr::sql_render(
+       attr(x, "marginplyr_public_query"), sql_options = sql_options
+@@ -210,7 +221,7 @@
+       paste(quote(keys), collapse = ", ")
+     )
+   }
+-  result <- DBI::dbWithTransaction(con, {
++  result <- {
+     result <- dplyr::compute(
+       attr(x, "marginplyr_public_anchor"),
+       name = name,
+@@ -222,7 +233,7 @@
+       ...,
+       sql_options = sql_options
+     )
+-    table_name <- quote(dbplyr::remote_name(result))
++    table_name <- as.character(dbplyr::remote_table(result))
+     insert <- paste0(
+       "INSERT INTO ", table_name, " (", columns, ") ", insert_from
+     )
+@@ -231,9 +242,13 @@
+       DBI::dbExecute(con, paste("ANALYZE", table_name))
+     }
+     result
+-  })
++  }
++  DBI::dbExecute(con, paste("RELEASE", savepoint))
++  completed <- TRUE
+   if (length(keys) == 0L) {
+     return(result)
+   }
+-  dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
++  dbplyr::window_order(
++    dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
++  )
+ }

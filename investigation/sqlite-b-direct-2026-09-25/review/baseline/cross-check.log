@@ -1,0 +1,118 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+FAIL 661_destination none in_schema nrow(got) == 3L is not TRUE 
+FAIL 661_destination none DBI_Id nrow(got) == 3L is not TRUE 
+FAIL 661_destination first in_schema nrow(got) == 3L is not TRUE 
+FAIL 661_destination first DBI_Id nrow(got) == 3L is not TRUE 
+FAIL 661_destination last in_schema nrow(got) == 3L is not TRUE 
+FAIL 661_destination last DBI_Id nrow(got) == 3L is not TRUE 
+PASS 662_transaction none FALSE FALSE  logi TRUE 
+FAIL 662_transaction none FALSE TRUE cannot start a transaction within a transaction 
+FAIL 662_transaction none TRUE FALSE cannot start a transaction within a transaction 
+FAIL 662_transaction none TRUE TRUE cannot start a transaction within a transaction 
+PASS 662_transaction last FALSE FALSE  logi TRUE 
+FAIL 662_transaction last FALSE TRUE cannot start a transaction within a transaction 
+FAIL 662_transaction last TRUE FALSE cannot start a transaction within a transaction 
+FAIL 662_transaction last TRUE TRUE cannot start a transaction within a transaction 
+FAIL 663_downstream first select ℹ In index: 1.
+Caused by error:
+! Result must be length 1, not 0. 
+FAIL 663_downstream first rename ℹ In index: 1.
+Caused by error:
+! Result must be length 1, not 0. 
+PASS 663_downstream first filter  logi TRUE 
+PASS 663_downstream first mutate  logi TRUE 
+PASS 663_downstream first arrange  logi TRUE 
+FAIL 663_downstream last select ℹ In index: 1.
+Caused by error:
+! Result must be length 1, not 0. 
+FAIL 663_downstream last rename ℹ In index: 1.
+Caused by error:
+! Result must be length 1, not 0. 
+PASS 663_downstream last filter  logi TRUE 
+PASS 663_downstream last mutate  logi TRUE 
+PASS 663_downstream last arrange  logi TRUE 
+FAIL 665_empty_expansion none text direct identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion none text compute identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion none typed direct identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion none typed compute identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion first text direct identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion first text compute identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion first typed direct identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion first typed compute identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion last text direct identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion last text compute identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion last typed direct identical(r$set, integer()) is not TRUE 
+FAIL 665_empty_expansion last typed compute identical(r$set, integer()) is not TRUE 
+PASS 666_share total sum first 0  logi TRUE 
+PASS 666_share total sum first 1  logi TRUE 
+PASS 666_share total sum first 2  logi TRUE 
+PASS 666_share total sum first Inf  logi TRUE 
+PASS 666_share total sum last 0  logi TRUE 
+FAIL 666_share total sum last 1 typeof(r$s) == "double" is not TRUE 
+FAIL 666_share total sum last 2 typeof(r$s) == "double" is not TRUE 
+PASS 666_share total sum last Inf  logi TRUE 
+PASS 666_share total mean first 0  logi TRUE 
+PASS 666_share total mean first 1  logi TRUE 
+PASS 666_share total mean first 2  logi TRUE 
+PASS 666_share total mean first Inf  logi TRUE 
+PASS 666_share total mean last 0  logi TRUE 
+FAIL 666_share total mean last 1 typeof(r$s) == "double" is not TRUE 
+FAIL 666_share total mean last 2 typeof(r$s) == "double" is not TRUE 
+PASS 666_share total mean last Inf  logi TRUE 
+PASS 666_share parent sum first 0  logi TRUE 
+PASS 666_share parent sum first 1  logi TRUE 
+PASS 666_share parent sum first 2  logi TRUE 
+PASS 666_share parent sum first Inf  logi TRUE 
+PASS 666_share parent sum last 0  logi TRUE 
+FAIL 666_share parent sum last 1 typeof(r$s) == "double" is not TRUE 
+FAIL 666_share parent sum last 2 typeof(r$s) == "double" is not TRUE 
+PASS 666_share parent sum last Inf  logi TRUE 
+PASS 666_share parent mean first 0  logi TRUE 
+PASS 666_share parent mean first 1  logi TRUE 
+PASS 666_share parent mean first 2  logi TRUE 
+PASS 666_share parent mean first Inf  logi TRUE 
+PASS 666_share parent mean last 0  logi TRUE 
+FAIL 666_share parent mean last 1 typeof(r$s) == "double" is not TRUE 
+FAIL 666_share parent mean last 2 typeof(r$s) == "double" is not TRUE 
+PASS 666_share parent mean last Inf  logi TRUE 
+PASS normal_all_null_source character first direct  logi TRUE 
+PASS normal_all_null_source character first finite  logi TRUE 
+PASS normal_all_null_source character first compute  logi TRUE 
+PASS normal_all_null_source character last direct  logi TRUE 
+PASS normal_all_null_source character last finite  logi TRUE 
+PASS normal_all_null_source character last compute  logi TRUE 
+PASS normal_all_null_source integer first direct  logi TRUE 
+PASS normal_all_null_source integer first finite  logi TRUE 
+PASS normal_all_null_source integer first compute  logi TRUE 
+PASS normal_all_null_source integer last direct  logi TRUE 
+PASS normal_all_null_source integer last finite  logi TRUE 
+PASS normal_all_null_source integer last compute  logi TRUE 
+PASS normal_all_null_source double first direct  logi TRUE 
+PASS normal_all_null_source double first finite  logi TRUE 
+PASS normal_all_null_source double first compute  logi TRUE 
+PASS normal_all_null_source double last direct  logi TRUE 
+PASS normal_all_null_source double last finite  logi TRUE 
+PASS normal_all_null_source double last compute  logi TRUE 
+PASS materialized_explicit_order first  logi TRUE 
+PASS materialized_explicit_order last  logi TRUE 
+PASS failure_atomic_overwrite_unique FALSE  logi TRUE 
+PASS failure_atomic_overwrite_unique TRUE  logi TRUE 
+PASS audit_result_sql_and_no_execution_record  logi TRUE 
+PASS finite_validation -1  logi TRUE 
+PASS finite_validation 1  logi TRUE 
+PASS finite_validation 1,2  logi TRUE 
+PASS finite_validation 1.9  logi TRUE 
+PASS finite_validation 0  logi TRUE 
+PASS finite_validation Inf  logi TRUE 
+PASS ordinary_dbplyr_control  logi TRUE 
+TOTAL 98 PASS 62 FAIL 36 

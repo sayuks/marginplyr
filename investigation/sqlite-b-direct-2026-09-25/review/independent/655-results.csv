@@ -1,0 +1,63 @@
+"case","pass","detail"
+"implicit sorted collect expected-warning-failure",TRUE,"ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours."
+"implicit sorted collect same-error",TRUE,""
+"implicit sorted collect record",TRUE,""
+"implicit sorted collect verbosity-restored",TRUE,""
+"implicit sorted collect source-preserved",TRUE,""
+"implicit sorted compute expected-warning-failure",TRUE,"ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours."
+"implicit sorted compute same-error",TRUE,""
+"implicit sorted compute record",TRUE,""
+"implicit sorted compute verbosity-restored",TRUE,""
+"implicit sorted compute source-preserved",TRUE,""
+"implicit unsorted collect expected-warning-failure",TRUE,"ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours."
+"implicit unsorted collect same-error",TRUE,""
+"implicit unsorted collect record",TRUE,""
+"implicit unsorted collect verbosity-restored",TRUE,""
+"implicit unsorted collect source-preserved",TRUE,""
+"implicit unsorted compute expected-warning-failure",TRUE,"ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours."
+"implicit unsorted compute same-error",TRUE,""
+"implicit unsorted compute record",TRUE,""
+"implicit unsorted compute verbosity-restored",TRUE,""
+"implicit unsorted compute source-preserved",TRUE,""
+"explicit sorted collect no-error",TRUE,""
+"explicit sorted collect same-values",TRUE,""
+"explicit sorted collect record",TRUE,""
+"explicit sorted collect verbosity-restored",TRUE,""
+"explicit sorted collect source-preserved",TRUE,""
+"explicit sorted compute no-error",TRUE,""
+"explicit sorted compute same-values",TRUE,""
+"explicit sorted compute record",TRUE,""
+"explicit sorted compute verbosity-restored",TRUE,""
+"explicit sorted compute source-preserved",TRUE,""
+"explicit unsorted collect no-error",TRUE,""
+"explicit unsorted collect same-values",TRUE,""
+"explicit unsorted collect record",TRUE,""
+"explicit unsorted collect verbosity-restored",TRUE,""
+"explicit unsorted collect source-preserved",TRUE,""
+"explicit unsorted compute no-error",TRUE,""
+"explicit unsorted compute same-values",TRUE,""
+"explicit unsorted compute record",TRUE,""
+"explicit unsorted compute verbosity-restored",TRUE,""
+"explicit unsorted compute source-preserved",TRUE,""

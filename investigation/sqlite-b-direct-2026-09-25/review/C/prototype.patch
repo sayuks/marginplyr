@@ -1,0 +1,126 @@
+--- a/R/sqlite-typed-order.R
++++ b/R/sqlite-typed-order.R
+@@ -151,10 +151,10 @@
+     )
+   }
+   out <- out[attr(x, "marginplyr_public_columns")]
+-  if (nrow(out) == 0L) {
++  if (TRUE) {
+     for (name in names(attr(x, "marginplyr_declared_types"))) {
+       type <- attr(x, "marginplyr_declared_types")[[name]]
+-      out[[name]] <- vector(type, 0L)
++      out[[name]] <- switch(type, integer = as.integer(out[[name]]), double = as.double(out[[name]]), character = as.character(out[[name]]))
+     }
+   }
+   out
+@@ -165,75 +165,29 @@
+ # query first, then insert in key order so SQLite rowids preserve Margin order.
+ #' @exportS3Method dplyr::compute
+ #' @noRd
+-compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
+-                                                   temporary = TRUE,
+-                                                   overwrite = FALSE,
+-                                                   unique_indexes = list(),
+-                                                   indexes = list(),
+-                                                   analyze = TRUE, ...,
+-                                                   sql_options = NULL) {
+-  if (!sqlite_typed_result_direct(x)) {
+-    return(NextMethod())
+-  }
++compute.marginplyr_sqlite_typed_result <- function(x, ..., in_transaction = FALSE) {
++  if (!sqlite_typed_result_direct(x)) return(NextMethod())
++  # THROWAWAY C: dbplyr owns the physical destination. A savepoint still owns
++  # atomicity because removing it would expose caller state on index failure.
+   con <- x$con
+-  public <- attr(x, "marginplyr_public_columns")
+-  quote <- function(names) {
+-    as.character(DBI::dbQuoteIdentifier(con, names))
+-  }
+-  columns <- paste(quote(public), collapse = ", ")
+-  keys <- attr(x, "marginplyr_order_keys")
+-  if (length(keys) == 0L) {
+-    insert_from <- as.character(dbplyr::sql_render(
+-      attr(x, "marginplyr_public_query"), sql_options = sql_options
+-    ))
+-  } else {
+-    rowid_alias <- setdiff(
+-      c("rowid", "oid", "_rowid_"), tolower(public)
+-    )
+-    if (length(rowid_alias) == 0L) {
+-      abort_marginplyr(
+-        paste0(
+-          "Can't materialize this SQLite Margin order: result columns shadow ",
+-          "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+-        ),
+-        call = rlang::caller_call()
+-      )
+-    }
+-    stage_name <- basename(tempfile(pattern = "marginplyr_order_"))
+-    on.exit(try(DBI::dbRemoveTable(con, stage_name), silent = TRUE), add = TRUE)
+-    dbplyr::db_compute(
+-      con, stage_name, dbplyr::sql_render(x, sql_options = sql_options),
+-      temporary = TRUE, analyze = FALSE
+-    )
+-    insert_from <- paste0(
+-      "SELECT ", columns, " FROM ", quote(stage_name), " ORDER BY ",
+-      paste(quote(keys), collapse = ", ")
+-    )
+-  }
+-  result <- DBI::dbWithTransaction(con, {
+-    result <- dplyr::compute(
+-      attr(x, "marginplyr_public_anchor"),
+-      name = name,
+-      temporary = temporary,
+-      overwrite = overwrite,
+-      unique_indexes = unique_indexes,
+-      indexes = indexes,
+-      analyze = FALSE,
+-      ...,
+-      sql_options = sql_options
+-    )
+-    table_name <- quote(dbplyr::remote_name(result))
+-    insert <- paste0(
+-      "INSERT INTO ", table_name, " (", columns, ") ", insert_from
+-    )
+-    DBI::dbExecute(con, insert)
+-    if (analyze) {
+-      DBI::dbExecute(con, paste("ANALYZE", table_name))
+-    }
+-    result
+-  })
+-  if (length(keys) == 0L) {
+-    return(result)
+-  }
+-  dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
++  token <- paste0("marginplyr_c_", basename(tempfile()))
++  id <- as.character(DBI::dbQuoteIdentifier(con, token))
++  DBI::dbExecute(con, paste("SAVEPOINT", id))
++  committed <- FALSE
++  on.exit(if (!committed) {
++    DBI::dbExecute(con, paste("ROLLBACK TO", id))
++    DBI::dbExecute(con, paste("RELEASE", id))
++  }, add = TRUE)
++  public_query <- attr(x, "marginplyr_public_query")
++  result <- dplyr::compute(public_query, ..., in_transaction = FALSE)
++  DBI::dbExecute(con, paste("RELEASE", id))
++  committed <- TRUE
++  plain <- result
++  class(result) <- c("marginplyr_sqlite_typed_result", class(result))
++  attr(result, "marginplyr_public_query") <- plain
++  attr(result, "marginplyr_public_columns") <- attr(x, "marginplyr_public_columns")
++  attr(result, "marginplyr_order_keys") <- character()
++  attr(result, "marginplyr_declared_types") <- attr(x, "marginplyr_declared_types")
++  attr(result, "marginplyr_original_query") <- result$lazy_query
++  result
+ }
+--- a/R/expand_with_margins.R
++++ b/R/expand_with_margins.R
+@@ -156,6 +156,7 @@
+       backend = operation$backend,
+       set_id_name = set_id_name
+     ),
+-    sort_id = sort_id
++    sort_id = sort_id,
++    declared_types = if (is.null(operation$set_id_name)) character() else stats::setNames("integer", operation$set_id_name)
+   )
+ }

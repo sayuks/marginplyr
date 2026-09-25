@@ -1,0 +1,19 @@
+PASS original review byte equality: 154 files
+PASS A final R source byte equality: 25 files
+PASS B final R source byte equality: 25 files
+PASS B-direct final R source byte equality: 25 files
+PASS C final R source byte equality: 25 files
+PASS A661-stop final R source byte equality: 25 files
+PASS B original SHA256 list: 25 files
+PASS B-direct original SHA256 list: 25 files
+PASS A original source-hash JSON: 25 files
+PASS B original source-hash JSON: 25 files
+PASS B-direct original source-hash JSON: 25 files
+PASS C original source-hash JSON: 25 files
+PASS A661-stop original source-hash JSON: 25 files
+PASS original B-direct.patch applies to BASE_COMMIT and reproduces all 25 final R source files exactly
+PASS A non-R baseline file equality: 240 files; final R source plus git archive reconstructs all tracked package files
+PASS B non-R baseline file equality: 240 files; final R source plus git archive reconstructs all tracked package files
+PASS B-direct non-R baseline file equality: 240 files; final R source plus git archive reconstructs all tracked package files
+PASS C non-R baseline file equality: 240 files; final R source plus git archive reconstructs all tracked package files
+PASS A661-stop non-R baseline file equality: 240 files; final R source plus git archive reconstructs all tracked package files

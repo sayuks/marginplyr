@@ -1,0 +1,62 @@
+PASS implicit sorted collect expected-warning-failure ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+PASS implicit sorted collect same-error  
+PASS implicit sorted collect record  
+PASS implicit sorted collect verbosity-restored  
+PASS implicit sorted collect source-preserved  
+PASS implicit sorted compute expected-warning-failure ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+PASS implicit sorted compute same-error  
+PASS implicit sorted compute record  
+PASS implicit sorted compute verbosity-restored  
+PASS implicit sorted compute source-preserved  
+PASS implicit unsorted collect expected-warning-failure ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+PASS implicit unsorted collect same-error  
+PASS implicit unsorted collect record  
+PASS implicit unsorted collect verbosity-restored  
+PASS implicit unsorted collect source-preserved  
+PASS implicit unsorted compute expected-warning-failure ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! (converted from warning) Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+PASS implicit unsorted compute same-error  
+PASS implicit unsorted compute record  
+PASS implicit unsorted compute verbosity-restored  
+PASS implicit unsorted compute source-preserved  
+PASS explicit sorted collect no-error  
+PASS explicit sorted collect same-values  
+PASS explicit sorted collect record  
+PASS explicit sorted collect verbosity-restored  
+PASS explicit sorted collect source-preserved  
+PASS explicit sorted compute no-error  
+PASS explicit sorted compute same-values  
+PASS explicit sorted compute record  
+PASS explicit sorted compute verbosity-restored  
+PASS explicit sorted compute source-preserved  
+PASS explicit unsorted collect no-error  
+PASS explicit unsorted collect same-values  
+PASS explicit unsorted collect record  
+PASS explicit unsorted collect verbosity-restored  
+PASS explicit unsorted collect source-preserved  
+PASS explicit unsorted compute no-error  
+PASS explicit unsorted compute same-values  
+PASS explicit unsorted compute record  
+PASS explicit unsorted compute verbosity-restored  
+PASS explicit unsorted compute source-preserved  

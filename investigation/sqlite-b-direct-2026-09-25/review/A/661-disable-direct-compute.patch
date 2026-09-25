@@ -1,0 +1,18 @@
+--- R/sqlite-typed-order.R	2026-09-25 16:07:24
++++ /private/tmp/marginplyr-sqlite-design-20260925/variants/A661-stop/R/sqlite-typed-order.R	2026-09-25 23:26:10
+@@ -175,6 +175,15 @@
+   if (!sqlite_typed_result_direct(x)) {
+     return(NextMethod())
+   }
++  abort_marginplyr(
++    paste0(
++      "Direct compute() of this SQLite Margin result is temporarily disabled ",
++      "because materialization can write to a different table than requested. ",
++      "Use collect() to retrieve the result until the destination handling ",
++      "has been corrected."
++    ),
++    call = rlang::caller_call()
++  )
+   con <- x$con
+   public <- attr(x, "marginplyr_public_columns")
+   quote <- function(names) {

@@ -1,0 +1,11 @@
+--- R/sqlite-typed-order.R	2026-09-25 16:07:24
++++ /private/tmp/marginplyr-sqlite-design-20260925/variants/A/R/sqlite-typed-order.R	2026-09-25 23:20:45
+@@ -222,7 +222,7 @@
+       ...,
+       sql_options = sql_options
+     )
+-    table_name <- quote(dbplyr::remote_name(result))
++    table_name <- as.character(dbplyr::remote_table(result))
+     insert <- paste0(
+       "INSERT INTO ", table_name, " (", columns, ") ", insert_from
+     )

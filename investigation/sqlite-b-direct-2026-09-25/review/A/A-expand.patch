@@ -1,0 +1,16 @@
+--- R/expand_with_margins.R	2026-09-25 14:19:07
++++ /private/tmp/marginplyr-sqlite-design-20260925/variants/A/R/expand_with_margins.R	2026-09-25 23:20:45
+@@ -156,6 +156,12 @@
+       backend = operation$backend,
+       set_id_name = set_id_name
+     ),
+-    sort_id = sort_id
++    sort_id = sort_id,
++    declared_types = if (sqlite_declared_type_result(operation) &&
++                           !is.null(operation$set_id_name)) {
++      stats::setNames("integer", operation$set_id_name)
++    } else {
++      character()
++    }
+   )
+ }

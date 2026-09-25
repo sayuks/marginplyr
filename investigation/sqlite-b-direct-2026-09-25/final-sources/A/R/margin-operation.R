@@ -1,0 +1,658 @@
+new_margin_operation <- function(data,
+                                 backend,
+                                 data_vars,
+                                 data_proxy,
+                                 plan,
+                                 column_info,
+                                 set_id_name,
+                                 margin_label,
+                                 margin_labels,
+                                 margin_label_position,
+                                 check_margin_label,
+                                 sort,
+                                 call) {
+  structure(
+    list(
+      data = data,
+      backend = backend,
+      data_vars = data_vars,
+      data_proxy = data_proxy,
+      plan = plan,
+      column_info = column_info,
+      set_id_name = set_id_name,
+      margin_label = margin_label,
+      margin_labels = margin_labels,
+      margin_label_position = margin_label_position,
+      check_margin_label = check_margin_label,
+      sort = sort,
+      call = call
+    ),
+    class = "marginplyr_margin_operation"
+  )
+}
+
+# What an executor leaves the finalizer to work with. A Margin order is a
+# property of the Grouping plan, so the key itself is built by the finalizer;
+# all an executor reports is `sort_id`, the Grouping set identifier column its
+# query left behind for the key's Grouping bits to be read from. The finalizer
+# drops that column again unless the caller asked for it with `.id`.
+#
+# One identifier serves every adapter because it is the only form of the key
+# that stays resolvable in the `FROM` clause of the query carrying the
+# `ORDER BY`. A Grouping bit is nameable in SQL only as `GROUPING(d)`, which
+# resolves in the aggregate query alone, and dbplyr discards the ordering of
+# any query it goes on to wrap in a subquery — which labelling the omitted
+# dimensions and placing the grouping columns both do.
+#
+# `factor_info` is the columns the finalizer can still reach, and `NULL` says
+# every column the operation named. Only an executor that puts a column
+# somewhere the finalizer cannot `mutate()` reports one: nesting folds its
+# payload into a cell and rebuilds it there (#421).
+# `declared_types` names package-created result columns and their promised R
+# types, independent of what an empty SQL result lets its driver infer.
+new_margin_execution <- function(result, sort_id = NULL, factor_info = NULL,
+                                 declared_types = character()) {
+  structure(
+    list(result = result, sort_id = sort_id, factor_info = factor_info,
+         declared_types = declared_types),
+    class = "marginplyr_margin_execution"
+  )
+}
+
+margin_sorting <- function(operation) {
+  !identical(operation$sort, "none")
+}
+
+# The Grouping set identifier a Margin order reads its Grouping bits from: the
+# caller's `.id` when there is one, and otherwise an internal column the
+# finalizer drops again. Every executor allocates it only after it has chosen
+# an adapter, so that asking for an order never changes which one runs.
+margin_sort_identifier <- function(operation, set_id_name, used_names) {
+  if (!margin_sorting(operation)) {
+    return(NULL)
+  }
+  if (!is.null(set_id_name)) {
+    return(set_id_name)
+  }
+  new_margin_internal_names(
+    1L,
+    used_names = used_names,
+    prefix = "..marginplyr_sort_"
+  )
+}
+
+check_margin_operation <- function(operation) {
+  stopifnot(inherits(operation, "marginplyr_margin_operation"))
+  invisible(operation)
+}
+
+# Package conditions report the Margin verb the caller wrote rather than the
+# internal frame that raised them. An External condition passes through with
+# its own class, diagnostic, and cause. Its Condition context is restated where
+# a grouping-set branch raises one, by `with_branch_conditions()`, rather than
+# here: the grouping values in that context are reported under internal column
+# names, and the branch is the only frame that knows what they stand for.
+with_margin_error_call <- function(expr, call) {
+  tryCatch(
+    expr,
+    error = function(cnd) {
+      if (inherits(cnd, "marginplyr_error")) {
+        cnd$call <- call
+      }
+      stop(cnd)
+    }
+  )
+}
+
+# One vocabulary per shared option, so a choice list and the guards that
+# re-check it cannot drift apart. The public verbs still spell their defaults
+# out literally because those formals are the documented signature; a test in
+# test-grouping-interface.R holds each formal to the constant it mirrors.
+# Verb-specific vocabularies live with the verb that owns them, and a verb that
+# narrows one hands its own list down rather than being re-checked against the
+# wider one: see `duplicates_choices` below.
+margin_duplicates_choices <- c("error", "drop", "keep")
+
+margin_label_position_choices <- c("last", "first")
+
+margin_sort_choices <- c("none", "last", "first")
+
+# An option argument admits its documented spellings and nothing else.
+# `match.arg()` also resolved any unambiguous prefix of one, so `.sort = "f"`
+# and `.duplicates = "k"` were accepted (#110). Nothing documents a prefix, so
+# every one of them was API by accident: a later value sharing a prefix would
+# have redefined what an accepted abbreviation resolves to. The one
+# `match.arg()` behaviour the signatures rely on is kept: an untouched formal
+# default arrives as the whole vocabulary and stands for its first entry.
+#
+# `match.arg(NULL, choices)` returned that first entry too, so a `NULL` written
+# by a caller used to select the default silently. The `identical()` guard below
+# is the whole of what refuses one now, and refusing it is a documented contract
+# rather than a leftover of the rewrite (#144): `CONTEXT.md`'s *Option argument*
+# entry holds the refusal and why an Option argument is the one kind with no
+# absent case for a `NULL` to name, and the *Option arguments* section on
+# `?summarize_with_margins` states the contract to the caller.
+#
+# `rlang::arg_match()` and `rlang::arg_match0()` were measured against this
+# helper rather than adopted. They agree with it on every input but one -- both
+# accept a permutation of the vocabulary and return its first entry, where the
+# `identical()` guard requires the order too, so they are looser on exactly the
+# input #210 asks about. What they would add is a "Did you mean" suggestion,
+# and what they would cost is the `NULL` diagnostic naming the vocabulary,
+# which the help page promises, and ownership of a sentence the tests compare
+# whole. The measurements, the diagnostics, and what a migration would have to
+# carry are in investigation/rlang-arg-match-for-option-arguments.md.
+match_margin_choice <- function(value, choices, arg_name) {
+  call <- rlang::caller_call()
+  if (identical(value, choices)) {
+    return(choices[[1L]])
+  }
+  if (rlang::is_string(value) && value %in% choices) {
+    return(value)
+  }
+  # The vocabulary is a list of alternatives, which is the case ADR 0023 gives
+  # `{.or}`: the bare comma this used to join with was one of the three
+  # spellings that ADR converged, and `"error", "drop", or "keep"` is what the
+  # defaults answer for three entries and `"error" or "drop"` for two. It stays
+  # in the line that offers it, the vocabulary being the verb's own and not
+  # something the caller decides the length of.
+  abort_marginplyr(
+    "{.arg {arg_name}} must be one of {.or {.val {choices}}}.",
+    call = call
+  )
+}
+
+# `duplicates_choices` has no default because it is the one vocabulary a verb
+# may narrow, and a default here is what let the nesting verbs be validated
+# against a list their own formals exclude. Every caller states the list its
+# own signature documents.
+normalize_margin_options <- function(.margin_label,
+                                     .margin_label_position,
+                                     .check_margin_label,
+                                     .duplicates,
+                                     .sort,
+                                     duplicates_choices,
+                                     .id = NULL) {
+  assert_logical_scalar(.check_margin_label)
+  .id <- normalize_margin_id(.id)
+
+  list(
+    set_id_name = .id,
+    margin_label = normalize_margin_label(.margin_label),
+    margin_label_position = match_margin_choice(
+      .margin_label_position,
+      choices = margin_label_position_choices,
+      arg_name = ".margin_label_position"
+    ),
+    check_margin_label = .check_margin_label,
+    duplicates = match_margin_choice(
+      .duplicates,
+      choices = duplicates_choices,
+      arg_name = ".duplicates"
+    ),
+    sort = match_margin_choice(
+      .sort,
+      choices = margin_sort_choices,
+      arg_name = ".sort"
+    )
+  )
+}
+
+normalize_margin_id <- function(.id) {
+  if (is.null(.id)) {
+    return(NULL)
+  }
+  if (
+    !is.character(.id) ||
+      length(.id) != 1L ||
+      is.na(.id) ||
+      !nzchar(.id)
+  ) {
+    abort_marginplyr(paste0(
+      "{.arg .id} must be {.code NULL} or one non-missing, non-empty ",
+      "character string."
+    ))
+  }
+  .id
+}
+
+# `where` names what the identifier collided with, and it arrives interpolated
+# as a value: each caller writes its own phrase, so a template built from it
+# would be a template bound elsewhere, which the structural gate refuses.
+#
+# Three of the four phrases name no subject -- `a summary output` twice and
+# `a source column` -- and lose no markup by arriving that way. The nesting one
+# does name one, and spells it in backticks it typed itself:
+# ``nesting `.key` ``. cli does not interpret a value, so those bytes are what
+# a reader sees, which are the bytes `{.arg .key}` would have rendered. What is
+# lost is that the style table stops deciding it -- a later cli styling
+# `{.arg}` differently would style the three subjects in this sentence's own
+# template and not that one. Recorded rather than fixed: what a caller passes
+# has to stay a value.
+#
+# `{(.id)}` for the reason `execute_margin_nest()` records: cli reads a `{}`
+# expression opening with a dot as one of its own styles.
+check_margin_id_collision <- function(.id, names, where) {
+  if (!is.null(.id) && .id %in% names) {
+    abort_marginplyr("{.arg .id} ({.var {(.id)}}) conflicts with {where}.")
+  }
+  invisible(NULL)
+}
+
+# `carried_columns` answers which of the input's columns the verb's result
+# holds beside the Margin dimensions, given the input's column names and the
+# compiled plan. Each verb hands in its own answer rather than a word naming
+# its kind, the shape `abort_margin_label_collision()` takes, because the
+# answer is a property of the verb: only a column the result holds can have
+# its factor levels rebuilt after the branch union (#415).
+prepare_margin_operation <- function(.data,
+                                     by_quo,
+                                     grouping_quo,
+                                     .margin_label,
+                                     .margin_label_position,
+                                     .check_margin_label,
+                                     .duplicates,
+                                     .sort,
+                                     duplicates_choices,
+                                     carried_columns,
+                                     .id = NULL,
+                                     validate_grouping = NULL,
+                                     call = rlang::caller_call()) {
+  stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
+  stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
+  stopifnot(is.function(carried_columns))
+
+  with_margin_error_call(
+    {
+      options <- normalize_margin_options(
+        .margin_label = .margin_label,
+        .margin_label_position = .margin_label_position,
+        .check_margin_label = .check_margin_label,
+        .duplicates = .duplicates,
+        .sort = .sort,
+        duplicates_choices = duplicates_choices,
+        .id = .id
+      )
+      set_id_name <- options$set_id_name
+      .margin_label <- options$margin_label
+      .margin_label_position <- options$margin_label_position
+      .check_margin_label <- options$check_margin_label
+      .duplicates <- options$duplicates
+      .sort <- options$sort
+
+      grouping <- prepare_grouping_plan(
+        .data,
+        by_quo = by_quo,
+        grouping_quo = grouping_quo,
+        .duplicates = .duplicates,
+        duplicates_choices = duplicates_choices,
+        builds_margin_branches = TRUE,
+        validate_grouping = validate_grouping,
+        validate_names = function(data_vars) {
+          check_margin_id_collision(
+            set_id_name,
+            data_vars,
+            "a source column"
+          )
+        },
+        call = call
+      )
+      data <- grouping$data
+      backend <- grouping$backend
+      data_vars <- grouping$data_vars
+      data_proxy <- grouping$data_proxy
+      plan <- grouping$plan
+      column_info <- margin_column_info(
+        data_proxy,
+        plan$dimensions,
+        backend = backend,
+        carried = carried_columns(data_vars, plan)
+      )
+      margin_labels <- resolve_margin_labels(
+        .margin_label,
+        dimensions = plan$dimensions
+      )
+
+      new_margin_operation(
+        data = data,
+        backend = backend,
+        data_vars = data_vars,
+        data_proxy = data_proxy,
+        plan = plan,
+        column_info = column_info,
+        set_id_name = set_id_name,
+        margin_label = .margin_label,
+        margin_labels = margin_labels,
+        margin_label_position = .margin_label_position,
+        check_margin_label = .check_margin_label,
+        sort = .sort,
+        call = call
+      )
+    },
+    call = call
+  )
+}
+
+validate_margin_operation <- function(operation) {
+  check_margin_operation(operation)
+  with_margin_error_call(
+    validate_margin_label(
+      operation$data,
+      dimensions = operation$plan$dimensions,
+      by = operation$plan$by,
+      .margin_label = operation$margin_label,
+      margin_labels = operation$margin_labels,
+      .check_margin_label = operation$check_margin_label,
+      column_info = operation$column_info
+    ),
+    call = operation$call
+  )
+}
+
+# Finish the prepared operation. `type_anchor_columns` are input columns whose
+# SQL types the caller needs carried into the final projection.
+finalize_margin_operation <- function(operation, execution,
+                                      type_anchor_columns = character()) {
+  check_margin_operation(operation)
+  stopifnot(inherits(execution, "marginplyr_margin_execution"))
+  result <- dplyr::ungroup(execution$result)
+  factor_info <- execution$factor_info
+  if (is.null(factor_info)) {
+    factor_info <- operation$column_info$factors
+  }
+  result <- restore_margin_factors(
+    result,
+    factor_info = factor_info,
+    margin_labels = operation$margin_labels,
+    position = operation$margin_label_position
+  )
+  margin_cols <- c(
+    operation$plan$by,
+    operation$plan$dimensions,
+    operation$set_id_name
+  )
+  result <- dplyr::select(
+    result,
+    dplyr::all_of(margin_cols),
+    dplyr::everything()
+  )
+
+  unsorted <- result
+  result <- order_margin_result(operation, result, execution)
+  needs_unsorted_anchor <- live_sqlite_margin_result(operation) &&
+    !margin_sorting(operation) &&
+    length(type_anchor_columns) > 0L &&
+    (length(execution$declared_types) == 0L ||
+       any(operation$plan$dimensions %in% type_anchor_columns) ||
+       any(vapply(operation$margin_labels, is_missing_margin_label,
+                  logical(1))))
+  if (needs_unsorted_anchor) {
+    # Keep the source-column union at the same boundary for direct collection.
+    anchor <- sql_margin_type_anchor(
+      operation$data, result, source_columns = type_anchor_columns
+    )
+    result <- combine_margin_branches(list(anchor, result))
+    unsorted <- result
+  }
+  declared_types <- execution$declared_types
+  if (live_sqlite_margin_result(operation) && length(declared_types) > 0L) {
+    text_dimensions <- setdiff(
+      operation$plan$dimensions, type_anchor_columns
+    )
+    declared_types <- c(
+      stats::setNames(rep("character", length(text_dimensions)),
+                      text_dimensions),
+      declared_types
+    )
+  }
+  if (sqlite_typed_result_needed(
+    operation, type_anchor_columns, declared_types
+  )) {
+    result <- sqlite_typed_result(
+      operation, unsorted, result, execution, type_anchor_columns,
+      declared_types
+    )
+  } else if (length(type_anchor_columns) > 0L && !needs_unsorted_anchor) {
+    # Share staging wraps the SQL union's typed first SELECT. Put a zero-row
+    # source projection at the final result boundary, after all projections.
+    anchor <- sql_margin_type_anchor(
+      operation$data, result, source_columns = type_anchor_columns
+    )
+    result <- combine_margin_branches(list(anchor, result))
+  }
+  # The one recorded query nobody inside the package sends: the caller runs
+  # it, so it is recorded here, before it is returned to them.
+  record_sent_query("result", result)
+  result
+}
+
+# Ordering comes last so that the `ORDER BY` is the outermost one, and after
+# factor restoration so that a factor dimension sorts by its restored levels
+# rather than by the character values the branches carried.
+order_margin_result <- function(operation, result, execution) {
+  if (!margin_sorting(operation)) {
+    return(result)
+  }
+
+  sort_id <- execution$sort_id
+  # An invariant, not a Package condition (ADR-0015): an executor that reports
+  # no identifier to derive the Grouping bits from would return the rows in an
+  # order that only looks sorted.
+  stopifnot(
+    length(operation$plan$dimensions) == 0L || !is.null(sort_id)
+  )
+
+  # The identifier the key reads, and `NULL` where it reads none (ADR 0018).
+  # Both the terms and the position of the projection below derive from this
+  # one variable, so no term can name a column the projection has taken away.
+  key_id <- if (length(operation$plan$set_ids) > 1L) sort_id else NULL
+  staged_id <- margin_staged_sort_identifier(operation, sort_id)
+
+  # A staged identifier the key does not read is dropped before the ordering
+  # rather than after it (ADR 0018).
+  if (!is.null(staged_id) && is.null(key_id)) {
+    result <- dplyr::select(result, -dplyr::all_of(staged_id))
+  }
+
+  terms <- margin_order_terms(
+    plan = operation$plan,
+    sort = operation$sort,
+    sort_id = key_id,
+    as_character = margin_dictionary_sort_columns(result, operation$backend),
+    structured = margin_structured_sort_columns(result, operation$plan)
+  )
+  if (length(terms) > 0L) {
+    result <- dplyr::arrange(result, !!!terms)
+  }
+  if (!is.null(staged_id) && !is.null(key_id)) {
+    result <- dplyr::select(result, -dplyr::all_of(staged_id))
+  }
+  forget_margin_window_order(result, backend = operation$backend)
+}
+
+# The Grouping set identifier the finalizer drops again: the one an executor
+# staged for the order alone. An identifier the caller asked for with `.id` is
+# the result's own column and is never dropped.
+margin_staged_sort_identifier <- function(operation, sort_id) {
+  if (identical(sort_id, operation$set_id_name)) NULL else sort_id
+}
+
+# The result columns the key has to cast rather than name. Empty unless the
+# backend holds `refuses_dictionary_sort`, which is where why it does is
+# recorded.
+#
+# `arrow::schema()` answers from the query's own type metadata, so this adds no
+# query (ADR 0020); it is the read `grouping_selection_proxy()` performs for
+# the same reason. The result is read rather than the input, because what the
+# key names is the result's columns: a labelled dimension crossed the union as
+# character and is not a dictionary by now, whatever the input held.
+#
+# The field's own type is asked rather than `as.data.frame()`'s factor, which
+# would answer the same question through R's conversion. That spelling is what
+# `grouping_selection_proxy()` needs, having to hand the proxy back as a data
+# frame; here nothing needs the conversion, and writing `as.data.frame()`
+# without needing it would put this function in `test-query-policy.R`'s
+# reaching set -- the static scan matches that entry point by name, its subject
+# test being available only to the tracer.
+margin_dictionary_sort_columns <- function(result, backend) {
+  if (!backend$refuses_dictionary_sort) {
+    return(character())
+  }
+  fields <- arrow::schema(result)$fields
+  is_dictionary <- vapply(
+    fields,
+    function(field) inherits(field$type, "DictionaryType"),
+    logical(1)
+  )
+  vapply(fields[is_dictionary], function(field) field$name, character(1))
+}
+
+# Names local data-frame and matrix keys in the plan. The caller holds a result
+# containing every fixed key and dimension named by that plan.
+margin_structured_sort_columns <- function(result, plan) {
+  if (!is.data.frame(result)) {
+    return(character())
+  }
+  columns <- c(plan$by, plan$dimensions)
+  columns[vapply(
+    result[columns],
+    function(column) is.data.frame(column) || is.matrix(column),
+    logical(1)
+  )]
+}
+
+# Where a backend records a window ordering, `arrange()` has written the key
+# into two places and only one of them is a Margin order, so the second is
+# cleared. ADR 0018's *a lazy result carries the order and records no window
+# ordering* is authoritative for which is which, for why clearing it takes
+# nothing away, and for the `ORDER BY` it leaves alone.
+forget_margin_window_order <- function(result, backend) {
+  if (!backend$records_window_order) {
+    return(result)
+  }
+  dbplyr::window_order(result)
+}
+
+# The key of ADR 0018, built from the Grouping plan alone:
+#
+#   is.na(by1), by1, …, bit(d1), is.na(d1), d1, …, [set_id]
+#
+# Fixed-key priority and the Grouping set identifier tiebreak are consequences
+# of following the result's own leading grouping columns, not separate rules,
+# and a composite dimension needs no special case because its columns share a
+# Grouping bit.
+#
+# Every column in the key carries a missingness term, fixed keys included, so
+# that missing values come last wherever they appear rather than wherever the
+# dialect puts them. A fixed key takes no Grouping bit, because it is in every
+# grouping set and never holds a Margin label.
+#
+# `"first"` reverses the Grouping bits alone. Missingness and values stay
+# ascending, because first and last position margins and not missing values.
+#
+# `as_character` names the columns whose value term is cast rather than named.
+# Only the value term takes it. The cast reaches the key alone, so the result's
+# own column keeps whatever the executor left in it.
+margin_order_terms <- function(plan,
+                               sort,
+                               sort_id,
+                               as_character = character(),
+                               structured = character()) {
+  terms <- unlist(
+    lapply(plan$by, function(key) {
+      list(
+        margin_missing_last_expr(key, structured),
+        margin_sort_value_expr(key, as_character)
+      )
+    }),
+    recursive = FALSE
+  )
+
+  seen_margin_ids <- list()
+  for (dimension in plan$dimensions) {
+    margin_ids <- margin_grouping_bit_ids(plan, dimension)
+    if (
+      !is.null(sort_id) &&
+        !is.null(margin_ids) &&
+        !any(vapply(seen_margin_ids, identical, logical(1), margin_ids))
+    ) {
+      bit <- margin_grouping_bit_expr(sort_id, margin_ids)
+      terms <- c(terms, list(
+        if (identical(sort, "first")) {
+          rlang::expr(dplyr::desc(!!bit))
+        } else {
+          bit
+        }
+      ))
+      seen_margin_ids <- c(seen_margin_ids, list(margin_ids))
+    }
+    terms <- c(
+      terms,
+      list(
+        margin_missing_last_expr(dimension, structured),
+        margin_sort_value_expr(dimension, as_character)
+      )
+    )
+  }
+
+  if (!is.null(sort_id)) {
+    terms <- c(terms, list(margin_column_pronoun(sort_id)))
+  }
+  terms
+}
+
+# One column's value term, cast where the backend will not sort the column as
+# it stands. The cast is `as.character()` and not a wider coercion because the
+# only such column is a dictionary one, whose values are already strings: a
+# numeric cast to character would order lexicographically and put 10 before 9.
+margin_sort_value_expr <- function(column, as_character) {
+  pronoun <- margin_column_pronoun(column)
+  if (!(column %in% as_character)) {
+    return(pronoun)
+  }
+  rlang::expr(as.character(!!pronoun))
+}
+
+# One column's missingness term. A local structured column is wholly missing
+# only when every component of the row is missing (ADR 0018). `if_else()`
+# produces an integer because not every dialect sorts booleans.
+margin_missing_last_expr <- function(column, structured) {
+  value <- margin_column_pronoun(column)
+  missing <- if (column %in% structured) {
+    rlang::expr(rowSums(is.na(!!value)) == ncol(!!value))
+  } else {
+    rlang::expr(is.na(!!value))
+  }
+  rlang::expr(dplyr::if_else(
+    !!missing,
+    1L,
+    0L
+  ))
+}
+
+# The Grouping-set occurrences where one dimension is absent. `NULL` when the
+# plan makes its Grouping bit constant, so a key term would order nothing.
+margin_grouping_bit_ids <- function(plan, dimension) {
+  margin_ids <- as.integer(
+    plan$set_ids[plan$grouping_masks[, dimension] == 1L]
+  )
+  if (
+    length(margin_ids) == 0L ||
+      length(margin_ids) == length(plan$set_ids)
+  ) {
+    return(NULL)
+  }
+  margin_ids
+}
+
+# One Grouping bit read from the identifier the adapter left in the result.
+# `margin_order_terms()` emits this only once for equal occurrence ids: the
+# repeated term is redundant by ADR 0018 and Arrow cannot materialize two
+# expressions under the same internal field name.
+margin_grouping_bit_expr <- function(sort_id, margin_ids) {
+  rlang::expr(dplyr::if_else(
+    (!!margin_column_pronoun(sort_id)) %in% !!margin_ids,
+    1L,
+    0L
+  ))
+}

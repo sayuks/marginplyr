@@ -1,0 +1,19 @@
+temporary FALSE dbExists bare FALSE 
+# A tibble: 3 × 3
+  g        id total
+  <chr> <int> <dbl>
+1 a         1     2
+2 b         1     5
+3 <NA>      2     7
+    name
+1 report
+temporary TRUE dbExists bare FALSE 
+# A tibble: 3 × 3
+  g        id total
+  <chr> <int> <dbl>
+1 a         1     2
+2 b         1     5
+3 <NA>      2     7
+    name
+1 report
+PASS attached-only unrelated sentinel preserved for temporary FALSE/TRUE

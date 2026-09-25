@@ -1,0 +1,28 @@
+PASS data.table first known-rejection When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM. 
+PASS data.table first source-preserved  
+PASS data.frame first control  
+PASS data.frame first source-preserved  
+PASS dtplyr first control  
+PASS dtplyr first source-preserved  
+PASS data.table last known-rejection When i is a data.table (or character vector), the columns to join by must be specified using the 'on=' argument (see ?data.table); by keying x (i.e., x is sorted and marked as such, see ?setkey); or by using 'on = .NATURAL' to indicate using the shared column names between x and i (i.e., a natural join). Keyed joins might have further speed benefits on very large data due to x being sorted in RAM. 
+PASS data.table last source-preserved  
+PASS data.frame last control  
+PASS data.frame last source-preserved  
+PASS dtplyr last control  
+PASS dtplyr last source-preserved  
+PASS data.table none  
+PASS data.table none source-preserved  
+PASS data.frame none control  
+PASS data.frame none source-preserved  
+PASS dtplyr none control  
+PASS dtplyr none source-preserved  
+PASS data.frame first fixed-id-missing-values  
+PASS data.frame first fixed-id-margin-order  
+PASS dtplyr first fixed-id-missing-values  
+PASS dtplyr first fixed-id-margin-order  
+PASS rich first source-preserved  
+PASS data.frame last fixed-id-missing-values  
+PASS data.frame last fixed-id-margin-order  
+PASS dtplyr last fixed-id-missing-values  
+PASS dtplyr last fixed-id-margin-order  
+PASS rich last source-preserved  
