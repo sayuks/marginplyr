@@ -465,3 +465,11 @@ This specifies what `is.na(column)` in the earlier key notation means for a
 structured local column. It remains the scalar predicate on one-dimensional
 columns and on lazy SQL results, where a structured local column is not an
 available key.
+
+## Amendment: typed-missing SQLite results keep the anchor outermost
+
+ADR 0031 replaces this decision's projection-after-order mechanism for live
+SQLite results whose typed-missing dimensions need the source-column anchor.
+The Margin order key and its direct-result scope are unchanged. The special
+result class hides the ordering columns that SQLite requires in the outermost
+compound `SELECT`; its `compute()` path preserves the public table schema.

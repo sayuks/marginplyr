@@ -373,8 +373,13 @@ finalize_margin_operation <- function(operation, execution,
     dplyr::everything()
   )
 
+  unsorted <- result
   result <- order_margin_result(operation, result, execution)
-  if (length(type_anchor_columns) > 0L) {
+  if (sqlite_typed_order_needed(operation, type_anchor_columns)) {
+    result <- sqlite_typed_order_result(
+      operation, unsorted, result, execution, type_anchor_columns
+    )
+  } else if (length(type_anchor_columns) > 0L) {
     # Share staging wraps the SQL union's typed first SELECT. Put a zero-row
     # source projection at the final result boundary, after all projections.
     anchor <- sql_margin_type_anchor(

@@ -122,7 +122,19 @@ expand_with_margins <- function(.data,
     call = call
   )
   execution <- execute_margin_expand(operation)
-  finalize_margin_operation(operation, execution)
+  type_anchor_columns <- if (
+    margin_sorting(operation) &&
+      identical(operation$backend$kind, "sql") &&
+      inherits(dbplyr::remote_con(operation$data), "SQLiteConnection") &&
+      length(operation$plan$sets) > 1L
+  ) {
+    operation$data_vars
+  } else {
+    character()
+  }
+  finalize_margin_operation(
+    operation, execution, type_anchor_columns = type_anchor_columns
+  )
 }
 
 execute_margin_expand <- function(operation) {

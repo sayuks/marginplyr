@@ -103,18 +103,19 @@ lazy_execution_entry_points <- function() {
   data.frame(
     package = c(
       "dplyr", "dplyr", "dplyr", "dplyr", "base", "tibble",
-      "DBI", "DBI", "DBI", "DBI", "DBI",
-      "dbplyr", "arrow"
+      "DBI", "DBI", "DBI", "DBI", "DBI", "DBI",
+      "dbplyr", "dbplyr", "dbplyr", "arrow"
     ),
     name = c(
       "collect", "compute", "pull", "explain", "as.data.frame", "as_tibble",
       "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable",
-      "remote_query_plan", "as_arrow_table"
+      "dbExecute", "db_collect", "db_compute", "remote_query_plan",
+      "as_arrow_table"
     ),
     subject_test = c(
       FALSE, FALSE, FALSE, FALSE, TRUE, TRUE,
-      FALSE, FALSE, FALSE, FALSE, FALSE,
-      FALSE, FALSE
+      FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+      FALSE, FALSE, FALSE, FALSE
     ),
     stringsAsFactors = FALSE
   )
@@ -169,7 +170,7 @@ test_that("marginplyr functions reaching an execution entry point", {
     entry_point_targets()
   )
 
-  expect_snapshot(reach)
+  expect_snapshot(cat(reach, sep = "\n"))
 })
 
 # ADR 0020's subject is a read marginplyr *causes*, not one it issues. Every

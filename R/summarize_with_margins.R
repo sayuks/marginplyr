@@ -225,6 +225,10 @@
 #' those of [dplyr::mutate()] combined with [dplyr::union_all()]. Passing a
 #' plain data frame therefore returns a plain data frame and passing a tibble
 #' returns a tibble.
+#' A live SQLite result with a typed-missing Margin label and a requested
+#' Margin order uses a lazy subclass to keep the dimension's collected type.
+#' Its public columns are unchanged; [dbplyr::sql_render()] shows the internal
+#' ordering columns that SQLite needs in the SQL result.
 #'
 #' The input class is not guaranteed to be preserved, and neither are
 #' object-level attributes of the input or attributes of columns marginplyr
@@ -319,6 +323,11 @@
 #' steps that is the row order, and on lazy tables it is the outermost query's
 #' `ORDER BY`, which [dplyr::collect()] and [dplyr::compute()] both observe:
 #' a materialized result carries the Margin order rather than losing it.
+#' On a live SQLite result with typed-missing dimensions, `compute()` creates
+#' a table with only the public columns and preserves their types. If all of
+#' `rowid`, `oid`, and `_rowid_` are already public column names, ignoring
+#' case, it refuses before creating the table because SQLite has no remaining
+#' name for the row order. Direct `collect()` remains available.
 #' Whether the order survives further verbs applied to a lazy result is not
 #' promised, because that depends on dbplyr's query flattening, which
 #' marginplyr does not own and which changes between releases.
@@ -1012,14 +1021,16 @@ summarize_with_margins <- function(.data,
     is_missing_margin_label,
     logical(1)
   )]
-  # A Margin order must remain the outermost SQL clause (ADR 0018); the final
-  # type anchor is for the unsorted result, after share staging has wrapped the
-  # ordinary union's source-column anchor.
+  # Share staging and a live SQLite Margin order can wrap the ordinary union's
+  # source-column anchor. The finalizer places another anchor at the result
+  # boundary in either case (ADR 0031).
   final_type_anchor <- if (
-    length(share_kinds) > 0L &&
-      identical(operation$backend$kind, "sql") &&
+    identical(operation$backend$kind, "sql") &&
+    (length(share_kinds) > 0L || (
+      margin_sorting(operation) &&
+        inherits(dbplyr::remote_con(operation$data), "SQLiteConnection")
+    )) &&
       length(typed_dimensions) > 0L &&
-      !margin_sorting(operation) &&
       length(operation$plan$sets) > 1L
   ) {
     c(operation$plan$by, typed_dimensions)
