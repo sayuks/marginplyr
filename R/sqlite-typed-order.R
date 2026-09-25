@@ -134,8 +134,18 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   } else {
     if (identical(n, Inf)) {
       n <- -1L
+    } else {
+      # Match dbplyr's head() validation before limiting the compound query.
+      utils::head(attr(x, "marginplyr_public_query"), n = n)
+      n <- trunc(n)
     }
     sql <- dbplyr::sql_render(x, sql_options = sql_options)
+    if (n >= 0) {
+      sql <- dbplyr::sql(paste0(
+        as.character(sql),
+        "\nLIMIT ", format(n, scientific = FALSE, trim = TRUE)
+      ))
+    }
     out <- dbplyr::db_collect(
       x$con, sql, n = n, warn_incomplete = warn_incomplete, ...
     )
