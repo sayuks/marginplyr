@@ -90,18 +90,18 @@ dtplyr_join_set_types_match <- function(step) {
     right <- dtplyr_selection_proxy(step[["parent2"]], mutable = TRUE)
     if (inherits(step, "dtplyr_step_join")) {
       on <- step[["on"]]
-      return(is.list(on) &&
-               length(on[["x"]]) == length(on[["y"]]) &&
-               all(on[["x"]] %in% names(left)) &&
-               all(on[["y"]] %in% names(right)) &&
-               identical(
-                 vapply(on[["x"]], function(col) {
-                   typeof(left[[col]])
-                 }, character(1), USE.NAMES = FALSE),
-                 vapply(on[["y"]], function(col) {
-                   typeof(right[[col]])
-                 }, character(1), USE.NAMES = FALSE)
-               ))
+      if (!is.list(on) || length(on[["x"]]) != length(on[["y"]]) ||
+            !all(on[["x"]] %in% names(left)) ||
+            !all(on[["y"]] %in% names(right))) {
+        return(FALSE)
+      }
+      left_types <- vapply(on[["x"]], function(col) {
+        typeof(left[[col]])
+      }, character(1), USE.NAMES = FALSE)
+      right_types <- vapply(on[["y"]], function(col) {
+        typeof(right[[col]])
+      }, character(1), USE.NAMES = FALSE)
+      return(identical(left_types, right_types))
     }
     identical(
       unname(vapply(left, typeof, character(1))),

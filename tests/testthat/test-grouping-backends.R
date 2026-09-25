@@ -2665,7 +2665,7 @@ test_that("a dtplyr filter can supply typed metadata without source rows", {
   expect_false(3L %in% seen)
 })
 
-test_that("a row-only filter uses parent metadata without evaluating its predicate", {
+test_that("a row-only filter uses parent metadata", {
   skip_if_suggest_absent("dtplyr")
   step <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = 1:2)) |>
     dplyr::filter(v[[1L]] > 0L)
@@ -2720,7 +2720,7 @@ test_that("joins with derived factor levels refuse unsafe metadata", {
   expect_s3_class(error, "marginplyr_error")
 })
 
-test_that("a join whose key types promote with matching rows refuses metadata", {
+test_that("a join with promoted key types refuses metadata", {
   skip_if_suggest_absent("dtplyr")
   left <- dtplyr::lazy_dt(data.frame(g = 1:2))
   right <- dtplyr::lazy_dt(data.frame(g = c(1, 2.5)))
