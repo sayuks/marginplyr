@@ -76,7 +76,9 @@ test_that("dtplyr Total shares distinguish numeric keys with one display", {
   )
 
   expect_s3_class(query, "dtplyr_step")
-  expect_identical(as.character(dplyr::tbl_vars(query)), c("g", "set", "z", "t"))
+  expect_identical(
+    as.character(dplyr::tbl_vars(query)), c("g", "set", "z", "t")
+  )
   result <- dplyr::arrange(dplyr::collect(query), .data$set, .data$z)
   expect_identical(nrow(result), 3L)
   expect_equal(result$z, c(2, 4, 6))
