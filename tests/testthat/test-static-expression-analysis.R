@@ -4603,6 +4603,19 @@ test_that("frame output names wait for the evaluated value", {
   )
 })
 
+# A nonlocal share plan can identify pick's selected column without running a
+# frame constructor or treating its argument spelling as an output name.
+test_that("nonlocal share analysis records pick output names", {
+  dots <- rlang::quos(dplyr::pick(x), share = share_of_total(x))
+  analyses <- analyze_ordinary_summaries(
+    dots, data.frame(x = 1L), defer_local = FALSE
+  )
+  expect_identical(
+    unname(vapply(analyses[[1L]]$records, `[[`, character(1), "name")), "x"
+  )
+  expect_identical(analyses[[1L]]$records[[1L]]$eligibility, "expanded")
+})
+
 # jarl-ignore missing_argument: The empty injected name is under test.
 test_that("frame argument candidates serve planning without output claims", {
   expect_identical(
