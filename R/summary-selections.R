@@ -301,58 +301,6 @@ local_assigned_summary_value <- function(value, name) {
   )
 }
 
-# A later contextual share cannot replace a column an unnamed frame expands.
-# The caller supplies evaluated frame names and planned share output kinds.
-check_frame_share_names <- function(output_names, share_output_kinds) {
-  conflicts <- intersect(output_names, names(share_output_kinds))
-  if (length(conflicts) > 0L) {
-    name <- conflicts[[1L]]
-    # The cli template reads this binding; codetools cannot follow it.
-    kind <- share_output_kinds[[name]] # nolint: object_usage_linter.
-    abort_marginplyr(paste0(
-      "{share_kind_modifier(kind)} output name {.var {name}} conflicts ",
-      "with an ordinary summary."
-    ))
-  }
-  invisible(NULL)
-}
-
-# An unnamed expression can produce a frame through any caller function, not
-# only a constructor spelling. Inspect its evaluated value before dplyr can
-# insert it into the mask and a later share placeholder can replace a column.
-wrap_local_share_summaries <- function(dots, share_output_kinds) {
-  if (length(share_output_kinds) == 0L) {
-    return(dots)
-  }
-  share_positions <- which(names(dots) %in% names(share_output_kinds))
-  stopifnot(length(share_positions) > 0L)
-  first_share <- min(share_positions)
-  for (i in which(!nzchar(rlang::names2(dots)))) {
-    dot <- dots[[i]]
-    # dplyr handles a selection after a share in its own deferred mask.
-    # Wrapping it changes when that selection runs.
-    if (i > first_share && !is.null(data_frame_valued_summary_kind(
-      rlang::quo_get_expr(dot)
-    ))) {
-      next
-    }
-    expr <- rlang::call2(
-      marginplyr_private_call("local_share_summary_value"),
-      rlang::quo_get_expr(dot), share_output_kinds
-    )
-    dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
-  }
-  dots
-}
-
-# Return a summary unchanged after checking a frame's actual column names.
-local_share_summary_value <- function(value, share_output_kinds) {
-  if (is.data.frame(value)) {
-    check_frame_share_names(names(value), share_output_kinds)
-  }
-  value
-}
-
 # Check the names of an unnamed frame when its value exists, before dplyr can
 # replace a grouping key with a same-named column in its summary mask.
 local_frame_summary_value <- function(value, group_vars, internal_names,
@@ -403,33 +351,27 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
 # is checked once rather than only when a second value says to. The assigned
 # names default to none for the same reason: such a caller wrote every name its
 # dots carry, and ADR 0028 applies only to a name marginplyr wrote.
-# `selection_state` carries the local branch's internal key names to deferred
-# selections; the union adapter fills those names before it runs any branch.
-# `share_output_kinds` lets local branches reject a frame's actual names before
-# a later contextual share placeholder can replace one of them.
+# `selection_state` carries local internal key and share placeholder names to
+# deferred selections; the union adapter fills key names before any branch.
 new_summary_arguments <- function(dots,
                                   labels = summary_argument_labels(dots),
                                   assigned_names = rep(
                                     NA_character_,
                                     length(dots)
                                   ),
-                                  selection_state = NULL,
-                                  share_output_kinds = character()) {
+                                  selection_state = NULL) {
   stopifnot(
     is.list(dots),
     is.character(labels),
     length(labels) == length(dots),
     is.character(assigned_names),
-    length(assigned_names) == length(dots),
-    is.character(share_output_kinds),
-    length(share_output_kinds) == length(names(share_output_kinds))
+    length(assigned_names) == length(dots)
   )
   list(
     dots = dots,
     labels = labels,
     assigned_names = assigned_names,
-    selection_state = selection_state,
-    share_output_kinds = share_output_kinds
+    selection_state = selection_state
   )
 }
 
@@ -629,6 +571,7 @@ plan_summary_expressions <- function(dots,
   selection_state <- if (defer_local) new.env(parent = emptyenv()) else NULL
   if (defer_local) {
     selection_state$internal_names <- character()
+    selection_state$share_aliases <- character()
     share_positions <- which(vapply(
       original_dots,
       function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
@@ -679,17 +622,7 @@ plan_summary_expressions <- function(dots,
       summary_plan$dots,
       caller_labels,
       assigned_names,
-      selection_state = selection_state,
-      share_output_kinds = stats::setNames(
-        rep(
-          vapply(summary_plan$requests, `[[`, character(1), "kind"),
-          times = vapply(summary_plan$requests, function(request) {
-            length(request$outputs)
-          }, integer(1))
-        ),
-        unlist(lapply(summary_plan$requests, `[[`, "outputs"),
-               use.names = FALSE)
-      )
+      selection_state = selection_state
     ),
     requests = summary_plan$requests,
     predictable_names = predictable_names
@@ -1018,7 +951,8 @@ local_summary_selection <- function(selection, env, group_vars,
   if (is.environment(forbidden_names)) {
     forbidden_names <- c(
       forbidden_names$forbidden_names,
-      get("internal_names", envir = forbidden_names, inherits = TRUE)
+      get("internal_names", envir = forbidden_names, inherits = TRUE),
+      get("share_aliases", envir = forbidden_names, inherits = TRUE)
     )
   }
   data <- data[setdiff(names(data), c(group_vars, forbidden_names))]

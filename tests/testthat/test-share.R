@@ -379,7 +379,7 @@ test_that("share collisions use expanded frame output names", {
     s = share_of_total(total), .grouping = rollup(g)
   ), "Total-share output name `s` conflicts with an ordinary summary")
   expect_s3_class(function_error, "marginplyr_error")
-  expect_identical(calls, 1L)
+  expect_identical(calls, 2L)
 
   across_error <- expect_error(summarize_with_margins(
     data, total = sum(x),
@@ -387,6 +387,13 @@ test_that("share collisions use expanded frame output names", {
     s = share_of_total(total), .grouping = rollup(g)
   ), "Total-share output name `s` conflicts with an ordinary summary")
   expect_s3_class(across_error, "marginplyr_error")
+
+  later_across_error <- expect_error(summarize_with_margins(
+    data, total = sum(x), s = share_of_total(total),
+    dplyr::across(x, ~ tibble::tibble(s = 99L), .unpack = "{inner}"),
+    .grouping = rollup(g)
+  ), "Total-share output name `s` conflicts with an ordinary summary")
+  expect_s3_class(later_across_error, "marginplyr_error")
 })
 
 test_that("omitted frame candidates do not block share outputs or sources", {
@@ -399,6 +406,7 @@ test_that("omitted frame candidates do not block share outputs or sources", {
     data, total = sum(x), tibble::tibble(s = NULL),
     s = share_of_total(total), .grouping = rollup(g)
   )
+  expect_identical(names(actual), c("g", "total", "s"))
   expect_identical(actual[1L, names(expected)], expected)
   expect_identical(actual$s, c(1, 1))
 
@@ -408,6 +416,18 @@ test_that("omitted frame candidates do not block share outputs or sources", {
   )
   expect_identical(source$s, c(1L, 1L))
   expect_identical(source$ratio, c(1, 1))
+
+  source_data <- tibble::tibble(g = "a", x = 1L, s = 2L)
+  source_expected <- dplyr::summarise(
+    source_data, tibble::tibble(s = NULL), z = sum(s), .by = g
+  )
+  source_actual <- summarize_with_margins(
+    source_data, tibble::tibble(s = NULL), z = sum(s),
+    p = share_of_total(z), .grouping = rollup(g)
+  )
+  expect_identical(names(source_actual), c("g", "z", "p"))
+  expect_identical(source_actual[1L, names(source_expected)], source_expected)
+  expect_identical(source_actual$p, c(1, 1))
 
   expected_across <- dplyr::summarise(
     data, total = sum(x),

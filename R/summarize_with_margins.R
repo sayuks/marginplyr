@@ -1102,6 +1102,27 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         operation$set_id_name
       ))
       has_shares <- length(summary_plan$requests) > 0L
+      share_names <- unlist(
+        lapply(summary_plan$requests, `[[`, "outputs"), use.names = FALSE
+      )
+      local_share <- has_shares && identical(
+        operation$backend$kind, "local"
+      )
+      share_aliases <- if (local_share) {
+        stats::setNames(new_margin_internal_names(
+          length(share_names), used_names = reserved_names,
+          prefix = "..marginplyr_share_"
+        ), share_names)
+      } else {
+        character()
+      }
+      if (local_share) {
+        share_positions <- match(share_names, names(summaries$dots))
+        stopifnot(!anyNA(share_positions))
+        names(summaries$dots)[share_positions] <- unname(share_aliases)
+        reserved_names <- c(reserved_names, unname(share_aliases))
+        summaries$selection_state$share_aliases <- unname(share_aliases)
+      }
       declare_sqlite_types <- sqlite_declared_type_result(operation)
       declared_id <- if (!declare_sqlite_types ||
                            is.null(operation$set_id_name)) {
@@ -1129,11 +1150,13 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
           (has_shares && identical(operation$backend$kind, "dtplyr"))
       )
 
-      if (has_shares) {
-        share_names <- unlist(
-          lapply(summary_plan$requests, `[[`, "outputs"),
-          use.names = FALSE
+      if (local_share) {
+        staged_result <- restore_local_share_names(
+          staged_result, share_aliases, summary_plan$requests
         )
+      }
+
+      if (has_shares) {
         return(new_margin_execution(
           execute_shares(
             operation,
@@ -1159,6 +1182,30 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
     },
     call = operation$call
   )
+}
+
+# Keep local share placeholders under internal names until all ordinary
+# summaries have expanded. A public share name in the staged result then came
+# from an ordinary summary and cannot be silently replaced by the share join.
+restore_local_share_names <- function(staged_result, aliases, requests) {
+  result <- margin_summary_stage_result(staged_result)
+  conflicts <- intersect(names(result), names(aliases))
+  if (length(conflicts) > 0L) {
+    name <- conflicts[[1L]]
+    pair <- Filter(function(pair) identical(pair$output, name),
+                   share_pairs(requests))[[1L]]
+    # The cli template reads this binding; codetools cannot follow it.
+    kind <- pair$kind # nolint: object_usage_linter.
+    abort_marginplyr(paste0(
+      "{share_kind_modifier(kind)} output name {.var {name}} conflicts ",
+      "with an ordinary summary."
+    ))
+  }
+  rename_pairs <- rlang::set_names(
+    rlang::syms(unname(aliases)), names(aliases)
+  )
+  staged_result$result <- dplyr::rename(result, !!!rename_pairs)
+  staged_result
 }
 
 # `summaries` is what `new_summary_arguments()` built: the caller's summary

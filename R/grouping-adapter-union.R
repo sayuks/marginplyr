@@ -485,9 +485,6 @@ summarize_margin_union <- function(.data,
           branch_dots,
           summaries$assigned_names
         )
-        branch_dots <- wrap_local_share_summaries(
-          branch_dots, summaries$share_output_kinds
-        )
       }
       needs_placeholder <- length(grouping_set) == 0L &&
         (length(branch_dots) == 0L || backend$is_sql)

@@ -1644,7 +1644,10 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       across_functions
     )
     analyses[[i]] <- list(records = records)
-    preceding_names <- c(preceding_names, output_names)
+    # An argument name alone cannot establish a preceding alias dependency.
+    if (!identical(eligibility, "frame_candidate")) {
+      preceding_names <- c(preceding_names, output_names)
+    }
   }
 
   analyses
