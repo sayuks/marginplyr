@@ -1588,7 +1588,9 @@ test_that("unpack callbacks are evaluated only by dplyr's summary", {
     expected <- run(FALSE, changing)
     actual <- run(TRUE, changing)
     expect_identical(actual$calls, expected$calls)
-    expect_identical(names(actual$result), c("g", "set", names(expected$result)[-1L]))
+    expect_identical(
+      names(actual$result), c("g", "set", names(expected$result)[-1L])
+    )
     expect_identical(actual$result[names(expected$result)], expected$result)
   }
 })
