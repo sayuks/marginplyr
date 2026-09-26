@@ -276,11 +276,8 @@ check_internal_summary_names <- function(output_names, internal_names) {
 wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           internal_names, set_id_name,
                                           set_id_is_internal,
-                                          share_sources = character(),
-                                          source_definitions = NULL) {
-  if (is.null(source_definitions)) {
-    source_definitions <- rep(list(character()), length(dots))
-  }
+                                          share_sources,
+                                          source_definitions) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
     expr <- rlang::call2(
@@ -366,17 +363,9 @@ local_frame_summary_value <- function(value, name, group_vars, internal_names,
 # Wrap its value so frames expand and scalars keep their dplyr-assigned name.
 wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
                                        set_id_name, set_id_is_internal,
-                                       share_sources = character(),
-                                       source_definitions = NULL,
-                                       auto_names = NULL) {
-  if (is.null(source_definitions)) {
-    source_definitions <- rep(list(character()), length(dots))
-  }
-  if (is.null(auto_names)) {
-    auto_names <- vapply(dots, function(dot) {
-      dplyr_auto_name(rlang::quo_get_expr(dot))
-    }, character(1))
-  }
+                                       share_sources,
+                                       source_definitions,
+                                       auto_names) {
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     if (nzchar(rlang::names2(dots)[[i]])) {
@@ -421,8 +410,8 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
 # names default to none for the same reason: such a caller wrote every name its
 # dots carry, and ADR 0028 applies only to a name marginplyr wrote.
 # `selection_state` carries local internal keys and share placeholders to
-# deferred selections, and output names to the union adapter. The adapter
-# fills key names before any branch.
+# deferred selections. `frame_state` carries output names to the union adapter;
+# direct adapter callers receive empty protections and their dots' auto names.
 new_summary_arguments <- function(dots,
                                   labels = summary_argument_labels(dots),
                                   assigned_names = rep(
@@ -437,11 +426,23 @@ new_summary_arguments <- function(dots,
     is.character(assigned_names),
     length(assigned_names) == length(dots)
   )
+  frame_state <- if (is.environment(selection_state)) {
+    selection_state
+  } else {
+    list(
+      share_sources = character(),
+      source_definitions = rep(list(character()), length(dots)),
+      auto_names = vapply(dots, function(dot) {
+        dplyr_auto_name(rlang::quo_get_expr(dot))
+      }, character(1))
+    )
+  }
   list(
     dots = dots,
     labels = labels,
     assigned_names = assigned_names,
-    selection_state = selection_state
+    selection_state = selection_state,
+    frame_state = frame_state
   )
 }
 

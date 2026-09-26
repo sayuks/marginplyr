@@ -425,6 +425,7 @@ summarize_margin_union <- function(.data,
                                    parent_key_names = character()) {
   source_data <- .data
   dots <- summaries$dots
+  frame_state <- summaries$frame_state
   group_vars <- unique(c(plan$by, plan$dimensions))
   key_names <- new_margin_internal_names(
     length(group_vars),
@@ -480,21 +481,9 @@ summarize_margin_union <- function(.data,
           internal_names = c(unname(key_names), unname(parent_key_names)),
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal,
-          share_sources = if (is.environment(summaries$selection_state)) {
-            summaries$selection_state$share_sources
-          } else {
-            character()
-          },
-          source_definitions = if (is.environment(summaries$selection_state)) {
-            summaries$selection_state$source_definitions
-          } else {
-            NULL
-          },
-          auto_names = if (is.environment(summaries$selection_state)) {
-            summaries$selection_state$auto_names
-          } else {
-            NULL
-          }
+          share_sources = frame_state$share_sources,
+          source_definitions = frame_state$source_definitions,
+          auto_names = frame_state$auto_names
         )
         branch_dots <- wrap_assigned_local_summaries(
           branch_dots,
@@ -503,16 +492,8 @@ summarize_margin_union <- function(.data,
           internal_names = c(unname(key_names), unname(parent_key_names)),
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal,
-          share_sources = if (is.environment(summaries$selection_state)) {
-            summaries$selection_state$share_sources
-          } else {
-            character()
-          },
-          source_definitions = if (is.environment(summaries$selection_state)) {
-            summaries$selection_state$source_definitions
-          } else {
-            NULL
-          }
+          share_sources = frame_state$share_sources,
+          source_definitions = frame_state$source_definitions
         )
       }
       needs_placeholder <- length(grouping_set) == 0L &&
