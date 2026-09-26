@@ -487,6 +487,14 @@ test_that("dynamic outputs named like internal share columns remain intact", {
   )
   expect_identical(across$..marginplyr_share_1, c(99L, 99L))
   expect_identical(across$s, c(1, 1))
+
+  reused <- summarize_with_margins(
+    data, total = sum(x), s = share_of_total(total),
+    dplyr::across(x, identity), .grouping = rollup(g)
+  )
+  expect_identical(names(reused), c("g", "total", "s", "x"))
+  expect_identical(reused$x, c(1L, 1L))
+  expect_identical(reused$s, c(1, 1))
 })
 
 test_that(paste0(

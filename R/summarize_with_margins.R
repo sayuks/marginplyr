@@ -1115,7 +1115,12 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         share_next_names <- lapply(share_positions, function(position) {
           later <- seq_along(ordinary_names) > position &
             !(seq_along(ordinary_names) %in% share_positions)
-          ordinary_names[later & nzchar(ordinary_names)]
+          unlist(lapply(which(later), function(index) {
+            c(
+              ordinary_names[[index]][nzchar(ordinary_names[[index]])],
+              summary_plan$predictable_by_dot[[index]]
+            )
+          }), use.names = FALSE)
         })
         share_order <- new.env(parent = emptyenv())
         share_order$seen <- vector("list", length(share_names))
@@ -1231,11 +1236,9 @@ add_local_share_columns <- function(staged_result, share_names,
     unseen <- setdiff(names(result), c(
       seen_names[[i]], technical_names
     ))
-    next_names <- if (length(unseen) > 0L) {
-      unseen
-    } else {
-      intersect(share_next_names[[i]], names(result))
-    }
+    next_names <- intersect(
+      names(result), c(unseen, share_next_names[[i]])
+    )
     if (length(next_names) > 0L) {
       ordinary <- names(result)[-length(names(result))]
       result <- result[append(
