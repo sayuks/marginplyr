@@ -122,7 +122,12 @@ expand_with_margins <- function(.data,
     call = call
   )
   execution <- execute_margin_expand(operation)
-  type_anchor_columns <- if (sqlite_final_anchor_path(operation)) {
+  # A final anchor on a one-set order without `.id` exposes an unused sort id.
+  type_anchor_columns <- if (
+    sqlite_final_anchor_path(operation) &&
+      (length(operation$plan$sets) > 1L ||
+         !is.null(operation$set_id_name))
+  ) {
     operation$data_vars
   } else {
     character()
