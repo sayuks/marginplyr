@@ -1197,6 +1197,55 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   stop("Unhandled data-frame-valued summary kind: ", kind, call. = FALSE)
 }
 
+# Constructor argument names are only candidates for share diagnostics and
+# internal-name reservation. Omission, expansion, and repair can change the
+# actual schema, which local_frame_summary_value() checks after evaluation.
+frame_argument_candidates <- function(expr, env) {
+  if (!identical(data_frame_valued_summary_kind(expr), "frame") ||
+        !is_known_frame_constructor(expr, env)) {
+    return(character())
+  }
+  call_args <- static_call_args(expr)
+  arg_names <- unname(rlang::names2(call_args))
+  controls <- frame_constructor_controls(expr)
+  injected_names <- vapply(
+    call_args[arg_names == ""], known_injected_argument_name, character(1)
+  )
+  unname(c(
+    arg_names[nzchar(arg_names) & !arg_names %in% controls],
+    injected_names[nzchar(injected_names) & !injected_names %in% controls]
+  ))
+}
+
+# Gather unnamed constructor candidates for reserving internal adapter names.
+# Named summaries remain packed under their caller-written outer name.
+summary_frame_candidates <- function(dots) {
+  unnamed <- dots[!nzchar(rlang::names2(dots))]
+  unlist(lapply(unnamed, function(dot) {
+    frame_argument_candidates(
+      rlang::quo_get_expr(dot), rlang::quo_get_env(dot)
+    )
+  }), use.names = FALSE)
+}
+
+# Qualified constructors name their owner; an unqualified spelling may reach
+# a caller's own function through ordinary lookup (ADR 0019).
+is_known_frame_constructor <- function(expr, env) {
+  name <- static_call_name(expr)
+  namespace <- static_call_ns(expr)
+  if (!is.null(namespace)) {
+    return(TRUE)
+  }
+  constructor <- if (identical(name, "data.frame")) {
+    base::data.frame
+  } else if (identical(name, "tibble")) {
+    tibble::tibble
+  } else {
+    tibble::data_frame
+  }
+  identical(ordinary_function_binding(name, env), constructor)
+}
+
 # Read a function-position name without forcing a caller promise or invoking an
 # active binding. R skips non-function values in a function position; an
 # unresolved binding leaves its eventual callee unknown to prediction.
@@ -1218,6 +1267,38 @@ ordinary_function_binding <- function(name, env) {
     current <- parent.env(current)
   }
   NULL
+}
+
+# A recognized constructor consumes these full formal names as controls.
+frame_constructor_controls <- function(expr) {
+  constructor <- if (is_static_spelling_call(
+    expr, "base_frame", "data.frame"
+  )) {
+    base::data.frame
+  } else if (is_static_spelling_call(expr, "tibble_frame", "tibble")) {
+    tibble::tibble
+  } else {
+    tibble::data_frame
+  }
+  setdiff(names(formals(constructor)), "...")
+}
+
+# Read only literal injected names, without evaluating a naming expression.
+known_injected_argument_name <- function(expr) {
+  if (!rlang::is_call(expr, ":=") || length(expr) != 3L) {
+    return("")
+  }
+  # An empty LHS must be inspected by subscript: assigning it errors (#174).
+  if (
+    is.character(expr[[2L]]) && length(expr[[2L]]) == 1L &&
+      !is.na(expr[[2L]])
+  ) {
+    return(expr[[2L]])
+  }
+  if (is_name_part(expr[[2L]])) {
+    return(rlang::as_name(expr[[2L]]))
+  }
+  ""
 }
 
 known_across_output_names <- function(expr, env, data_proxy) {

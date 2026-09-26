@@ -4603,6 +4603,48 @@ test_that("frame output names wait for the evaluated value", {
   )
 })
 
+# jarl-ignore missing_argument: The empty injected name is under test.
+test_that("frame argument candidates serve planning without output claims", {
+  expect_identical(
+    frame_argument_candidates(
+      quote(tibble::tibble(g = NULL, total = 1L)), environment()
+    ),
+    c("g", "total")
+  )
+  expect_identical(
+    frame_argument_candidates(
+      quote(data.frame("a b" = 1L, check.names = TRUE)), environment()
+    ),
+    "a b"
+  )
+  expect_identical(
+    frame_argument_candidates(
+      quote(tibble::tibble("internal" := 1L)), environment()
+    ),
+    "internal"
+  )
+  expect_identical(
+    known_injected_argument_name(quote(`:=`(, 1L))), ""
+  )
+  expect_identical(
+    known_injected_argument_name(quote(identity(x))), ""
+  )
+  expect_identical(
+    known_injected_argument_name(quote(`:=`(paste0("a", "b"), 1L))),
+    ""
+  )
+  expect_identical(
+    known_injected_argument_name(quote(x := 1L)), "x"
+  )
+  local({
+    tibble <- function(...) data.frame(z = 1L)
+    expect_identical(
+      frame_argument_candidates(quote(tibble(g = 1L)), environment()),
+      character()
+    )
+  })
+})
+
 # A statically invalid template cannot be used to predict names. Once glue
 # expands it to multiple names, the package reports the caller's template.
 test_that("across name prediction withholds invalid names", {

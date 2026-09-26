@@ -1575,7 +1575,11 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       }
       eligibility <- "eligible"
     } else {
-      output_names <- if (defer_local) {
+      output_names <- if (identical(
+        data_frame_valued_summary_kind(expr), "frame"
+      )) {
+        frame_argument_candidates(expr, env)
+      } else if (defer_local) {
         tryCatch(
           known_data_frame_output_names(expr, env, selection_proxy),
           vctrs_error_subscript_oob = function(cnd) character()

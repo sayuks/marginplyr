@@ -1098,6 +1098,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       reserved_names <- unique(c(
         operation$data_vars,
         summary_output_names,
+        summary_frame_candidates(dots),
         operation$set_id_name
       ))
       has_shares <- length(summary_plan$requests) > 0L
