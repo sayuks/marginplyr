@@ -1235,8 +1235,8 @@ check_local_share_markers <- function(result, markers) {
 }
 
 # Restores public share names after all local branches have been combined.
-# The caller passes the original aliases and tokens; their list cells prove
-# that no ordinary output replaced a marker during branch combination.
+# The caller passes aliases and tokens whose markers passed each branch check;
+# nonempty result cells are checked again before the placeholders are reset.
 restore_local_share_names <- function(staged_result, aliases,
                                       tokens, requests) {
   result <- margin_summary_stage_result(staged_result)
