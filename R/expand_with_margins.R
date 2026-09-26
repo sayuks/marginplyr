@@ -155,7 +155,7 @@ execute_margin_expand <- function(operation) {
     ),
     sort_id = sort_id,
     declared_types = if (sqlite_declared_type_result(operation) &&
-                          !is.null(operation$set_id_name)) {
+                           !is.null(operation$set_id_name)) {
       stats::setNames("integer", operation$set_id_name)
     } else {
       character()
