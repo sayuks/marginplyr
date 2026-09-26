@@ -474,6 +474,13 @@ summarize_margin_union <- function(.data,
         sql = FALSE
       )
       if (is.data.frame(.data)) {
+        branch_dots <- wrap_local_frame_summaries(
+          branch_dots,
+          group_vars = group_vars,
+          internal_names = c(unname(key_names), unname(parent_key_names)),
+          set_id_name = set_id_name,
+          set_id_is_internal = set_id_is_internal
+        )
         branch_dots <- wrap_assigned_local_summaries(
           branch_dots,
           summaries$assigned_names
@@ -501,6 +508,15 @@ summarize_margin_union <- function(.data,
         conditions = conditions,
         restatements = branch_argument_map(branch_dots, summaries$labels)
       )
+
+      # Branch binding drops the token attribute of an empty list marker.
+      if (is.data.frame(.data) &&
+            is.environment(summaries$selection_state) &&
+            !is.null(summaries$selection_state$share_markers)) {
+        check_local_share_markers(
+          result, summaries$selection_state$share_markers
+        )
+      }
 
       # Without the placeholder: what this asks about is the names the summary
       # produced, and that column is the adapter's own.

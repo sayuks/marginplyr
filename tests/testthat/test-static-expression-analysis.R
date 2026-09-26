@@ -2767,21 +2767,12 @@ test_that("an empty argument answers as omitted wherever the walk reads one", {
     rm(x, )
     x
   }))
-  injected <- known_injected_argument_name(quote(`:=`(, 1)))
-  # The contrast, in both spellings of a name this can read: the empty
-  # argument has to fall through the same branch a readable name is taken by,
-  # rather than the branch taking it under the name `""`.
-  injected_symbol <- known_injected_argument_name(quote(x := 1))
-  injected_string <- known_injected_argument_name(quote("x" := 1))
 
   expect_identical(subset, "value")
   expect_identical(pronoun, character())
   expect_identical(looped, "share")
   expect_identical(assigned, "share")
   expect_identical(removed, c("share", "x"))
-  expect_identical(injected, "")
-  expect_identical(injected_symbol, "x")
-  expect_identical(injected_string, "x")
 })
 
 # jarl-ignore missing_argument: Empty arguments are the behavior under test.
@@ -4602,9 +4593,52 @@ test_that("selection resolution accepts a forwarded quosure", {
   )
 })
 
-# Calls that are not frame constructors do not promise multiple output names.
-test_that("non-frame expressions have no static frame outputs", {
+# Constructor argument names cannot predict the expanded frame schema.
+test_that("frame output names wait for the evaluated value", {
   expect_null(data_frame_valued_summary_kind(1L))
+  expect_identical(
+    known_data_frame_output_names(quote(tibble::tibble(x = 1L)),
+                                  environment(), data.frame()),
+    character()
+  )
+})
+
+# A nonlocal share plan can identify pick's selected column without running a
+# frame constructor or treating its argument spelling as an output name.
+test_that("nonlocal share analysis records pick output names", {
+  dots <- rlang::quos(dplyr::pick(x), share = share_of_total(x))
+  analyses <- analyze_ordinary_summaries(
+    dots, data.frame(x = 1L), defer_local = FALSE
+  )
+  expect_identical(
+    unname(vapply(analyses[[1L]]$records, `[[`, character(1), "name")), "x"
+  )
+  expect_identical(analyses[[1L]]$records[[1L]]$eligibility, "expanded")
+})
+
+# jarl-ignore missing_argument: The empty injected name is under test.
+test_that("frame argument candidates serve planning without output claims", {
+  expect_identical(
+    frame_argument_candidates(
+      quote(tibble::tibble(g = NULL, total = 1L)), environment()
+    ),
+    c("g", "total")
+  )
+  expect_identical(
+    frame_argument_candidates(
+      quote(data.frame("a b" = 1L, check.names = TRUE)), environment()
+    ),
+    "a b"
+  )
+  expect_identical(
+    frame_argument_candidates(
+      quote(tibble::tibble("internal" := 1L)), environment()
+    ),
+    "internal"
+  )
+  expect_identical(
+    known_injected_argument_name(quote(`:=`(, 1L))), ""
+  )
   expect_identical(
     known_injected_argument_name(quote(identity(x))), ""
   )
@@ -4612,6 +4646,16 @@ test_that("non-frame expressions have no static frame outputs", {
     known_injected_argument_name(quote(`:=`(paste0("a", "b"), 1L))),
     ""
   )
+  expect_identical(
+    known_injected_argument_name(quote(x := 1L)), "x"
+  )
+  local({
+    tibble <- function(...) data.frame(z = 1L)
+    expect_identical(
+      frame_argument_candidates(quote(tibble(g = 1L)), environment()),
+      character()
+    )
+  })
 })
 
 # A statically invalid template cannot be used to predict names. Once glue
