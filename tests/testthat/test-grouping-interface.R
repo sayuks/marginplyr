@@ -1619,6 +1619,42 @@ test_that("active unpack bindings retain dplyr's evaluation behavior", {
   expect_identical(run(TRUE), run(FALSE))
 })
 
+test_that("delayed unpack bindings are forced by dplyr only", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  run <- function(margin) {
+    env <- rlang::env(data = data, calls = 0L)
+    delayedAssign("unpack", {
+      calls <- calls + 1L
+      FALSE
+    }, assign.env = env, eval.env = env)
+    result <- if (margin) {
+      evalq(summarize_with_margins(
+        data, dplyr::across(x, sum, .unpack = unpack),
+        observed = calls, .grouping = grouping_set(g)
+      ), env)
+    } else {
+      evalq(dplyr::summarise(
+        data, dplyr::across(x, sum, .unpack = unpack),
+        observed = calls, .by = g
+      ), env)
+    }
+    list(result = result, calls = env$calls)
+  }
+  expect_identical(run(TRUE), run(FALSE))
+})
+
+test_that("unbound unpack names retain dplyr's evaluation error", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  expected <- expect_error(dplyr::summarise(
+    data, dplyr::across(x, sum, .unpack = unknown_unpack), .by = g
+  ), "unknown_unpack")
+  actual <- expect_error(summarize_with_margins(
+    data, dplyr::across(x, sum, .unpack = unknown_unpack),
+    .grouping = grouping_set(g)
+  ), "unknown_unpack")
+  expect_identical(actual$parent$message, expected$parent$message)
+})
+
 test_that("unpacked across may reuse the identifier as its outer name", {
   data <- tibble::tibble(g = c("a", "b"), x = 1:2)
 
