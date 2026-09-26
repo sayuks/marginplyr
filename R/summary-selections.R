@@ -931,7 +931,8 @@ local_summary_selection <- function(selection, env, group_vars,
 
 # Answers whether `.unpack` is known to be FALSE without evaluating an
 # expression, forcing a promise, or reading an active binding. Unknown values
-# are left to dplyr when it evaluates the summary.
+# are left to dplyr when it evaluates the summary. The caller supplies the
+# captured argument and its environment.
 across_unpack_is_false <- function(unpack, env) {
   if (is.null(unpack) || isFALSE(unpack)) {
     return(TRUE)
