@@ -223,17 +223,6 @@ sqlite_with_compute_savepoint <- function(con, destination, code) {
   })
 }
 
-# Validate a public compute flag before destination inspection or mutation.
-sqlite_compute_bool <- function(value, name) {
-  if (!rlang::is_bool(value)) {
-    abort_marginplyr(
-      paste0("`", name, "` must be TRUE or FALSE."),
-      call = rlang::caller_call()
-    )
-  }
-  invisible(NULL)
-}
-
 # Materialize the public query directly into the typed destination (ADR 0031).
 # The caller holds the unmodified direct result; later dplyr verbs delegate.
 #' @exportS3Method dplyr::compute
@@ -249,10 +238,22 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  sqlite_compute_bool(temporary, "temporary")
-  sqlite_compute_bool(overwrite, "overwrite")
-  sqlite_compute_bool(analyze, "analyze")
-  sqlite_compute_bool(in_transaction, "in_transaction")
+  if (!rlang::is_bool(temporary)) {
+    abort_marginplyr("`temporary` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
+  if (!rlang::is_bool(overwrite)) {
+    abort_marginplyr("`overwrite` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
+  if (!rlang::is_bool(analyze)) {
+    abort_marginplyr("`analyze` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
+  if (!rlang::is_bool(in_transaction)) {
+    abort_marginplyr("`in_transaction` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
   con <- x$con
   public <- attr(x, "marginplyr_public_columns")
   sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
