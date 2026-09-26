@@ -321,9 +321,9 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     if (nzchar(rlang::names2(dots)[[i]]) ||
-        !identical(data_frame_valued_summary_kind(
-          rlang::quo_get_expr(dot)
-        ), "frame")) {
+      !identical(data_frame_valued_summary_kind(
+        rlang::quo_get_expr(dot)
+      ), "frame")) {
       next
     }
     expr <- rlang::call2(
