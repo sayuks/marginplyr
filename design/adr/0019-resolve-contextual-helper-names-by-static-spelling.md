@@ -32,12 +32,12 @@ carries the term.
 The criterion is what a name *is*, not what marginplyr happens to look at. A
 spelling marginplyr merely reads is not covered by it: `tibble()`,
 `data.frame()`, and `tibble::data_frame()` are examined as possible
-data-frame-valued summaries. Their actual output names are checked after
-evaluation, since constructor argument names can differ from the columns
-produced (#674). They are ordinary functions that really run, and a caller who
-binds `tibble` gets their own function. Nothing about their meaning arises from
-rewriting, so they are not Contextual helpers and this decision does not
-reserve them.
+data-frame-valued summaries. Their argument names can reserve internal names
+and classify share diagnostics, but actual output collisions are checked after
+evaluation, since argument names can differ from the columns produced (#674).
+They are ordinary functions that really run, and a caller who binds `tibble`
+gets their own function. Nothing about their meaning arises from rewriting, so
+they are not Contextual helpers and this decision does not reserve them.
 
 ### Namespace forms
 
@@ -107,9 +107,9 @@ binding cannot win, and asserting that of a constructor would assert the
 opposite of the entry above. Three families are not Contextual helpers: the
 Grouping specification constructors, and the data-frame constructors
 `tibble()`, `tibble::data_frame()`, and `data.frame()`, whose spellings are
-read only to recognize a possible data-frame-valued summary and which run
-whatever the caller has bound. The value's actual column names, rather than
-the constructor's argument names, determine any output collision (#674).
+read to recognize a possible data-frame-valued summary and candidate argument
+names, and which run whatever the caller has bound. The value's actual column
+names, rather than those candidates, determine any output collision (#674).
 
 Every entry in the table is a function, so asking about one family builds that
 family alone. That is not an optimization: the share family derives from
