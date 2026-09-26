@@ -320,11 +320,10 @@ inputs, including composite dimensions. Lazy results remain lazy: ordinary
 summaries are followed by one denominator mapping and join per requested
 kind, shared by every measure requested of that kind, however many measures
 are requested.
-On live SQLite, full direct \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double
-share even when the result is empty or its share values are all missing.
-Finite collection returns the requested prefix; the type of a nonempty
-all-missing share prefix remains driver-dependent. Direct \code{\link[dplyr:compute]{dplyr::compute()}}
-writes a typed table containing only public columns, and a sorted result
+On live SQLite, direct \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double share
+when the result is empty or a finite prefix contains only missing shares.
+Direct \code{\link[dplyr:compute]{dplyr::compute()}} writes a typed table containing only public
+columns, and a sorted result
 reads back in Margin order. A sorted compute refuses before writing when
 public columns shadow all SQLite rowid aliases. Later dplyr verbs use
 ordinary dbplyr behavior, including its ordering rules. See

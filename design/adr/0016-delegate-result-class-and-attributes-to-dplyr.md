@@ -269,7 +269,8 @@ backends gain no structured-key support from this amendment.
 ADR 0031 makes one result-class exception for live SQLite results needing a
 source-column anchor or a package-declared output type. The dedicated lazy
 class hides SQL ordering columns from sorted direct collection, keeps the
-source dimension's collected type, and restores currently declared types on
-empty results. Direct compute creates a typed table with public columns only;
-later dplyr verbs return to ordinary dbplyr behavior. This exception restores
-properties marginplyr constructed, not arbitrary input attributes or classes.
+source dimension's collected type, and restores package-declared types in
+empty or all-missing columns. Direct compute creates a typed table with public
+columns only; later dplyr verbs return to ordinary dbplyr behavior. This
+exception restores properties marginplyr constructed, not arbitrary input
+attributes or classes.

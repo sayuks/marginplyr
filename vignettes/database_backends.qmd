@@ -233,7 +233,9 @@ with public columns only. A sorted result keeps its Margin order when collected
 directly from the returned lazy table. Subsequent `select()`, `rename()`,
 `filter()`, `mutate()`, and `arrange()` use ordinary dbplyr behavior and may
 change that order. `collect(query, n = ...)` limits the direct result; a
-materialized table can be collected with ordinary dbplyr limits.
+materialized table can be collected with ordinary dbplyr limits. For a direct
+Margin result, an empty SQLite expansion keeps its integer `.id`, and a finite
+prefix of missing contextual shares keeps double share columns.
 
 SQLite refuses a bare persistent destination shadowed by a temporary table,
 or a bare temporary overwrite that would find a table in `main`. Supply an

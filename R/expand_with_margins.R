@@ -122,10 +122,7 @@ expand_with_margins <- function(.data,
     call = call
   )
   execution <- execute_margin_expand(operation)
-  type_anchor_columns <- if (
-    sqlite_final_anchor_path(operation) &&
-      length(operation$plan$sets) > 1L
-  ) {
+  type_anchor_columns <- if (sqlite_final_anchor_path(operation)) {
     operation$data_vars
   } else {
     character()
@@ -156,6 +153,12 @@ execute_margin_expand <- function(operation) {
       backend = operation$backend,
       set_id_name = set_id_name
     ),
-    sort_id = sort_id
+    sort_id = sort_id,
+    declared_types = if (sqlite_declared_type_result(operation) &&
+                          !is.null(operation$set_id_name)) {
+      stats::setNames("integer", operation$set_id_name)
+    } else {
+      character()
+    }
   )
 }
