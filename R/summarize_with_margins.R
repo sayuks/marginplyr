@@ -1122,7 +1122,8 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
           position <- share_positions[[i]]
           summaries$dots[[position]] <- rlang::new_quosure(
             rlang::call2(
-              "local_share_marker", unname(share_aliases[[i]]),
+              marginplyr_private_call("local_share_marker"),
+              unname(share_aliases[[i]]),
               share_tokens[[i]]
             ),
             env = environment()
