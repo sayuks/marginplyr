@@ -385,7 +385,7 @@ relation so the staged summary is not repeated once per child occurrence:
 | Adapter | Backend kinds | Difference from the shared work |
 |---|---|---|
 | Row-matched | `local`, `other` | Nothing |
-| dtplyr | `dtplyr` | Temporarily rewrites a literal-backtick join key |
+| dtplyr | `dtplyr` | Temporarily rewrites join keys containing parser syntax |
 | General dbplyr | `duckdb`, `postgres`, `sql` | Inline Parent plan and missing-safe `sql_on` join |
 
 The Row-matched adapter adding nothing is the point rather than an oversight:
@@ -393,7 +393,7 @@ it names the contract that a lazy non-SQL backend joins exactly as local data
 does. `other` cannot have its source types checked first because nothing is
 materialized to check; its validation happens earlier, inside the ordinary
 summary. dtplyr takes that same validation path, but its join translation needs
-the temporary rewrite where a fixed key contains a literal backtick. Collapsing
+the temporary rewrite where a fixed key contains parser syntax. Collapsing
 either difference into another adapter would make it invisible at the seam that
 has to honour it.
 

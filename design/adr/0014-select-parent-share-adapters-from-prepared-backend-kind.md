@@ -32,11 +32,12 @@ constant staged-summary definitions to one. The inline relation removes the
 grouping-set-proportional repetition through an existing dbplyr interface and
 leaves later dplyr composition ordinary.
 
-## Amendment: dtplyr rewrites a literal-backtick join key
+## Amendment: dtplyr rewrites join keys containing parser syntax
 
 The ratio-adapter table's Row-matched row no longer includes `dtplyr`.
 `execute_dtplyr_shares()` is a distinct adapter which supplies the one behavior
-its join needs: when any staged join key contains a literal backtick, it gives
+its join needs: when any staged join key contains a literal backtick or a
+comparison operator (`<`, `>`, `<=`, `>=`, `==`, or `!=`), it gives
 both join relations collision-free internal key names and restores the left
 relation's original names immediately afterwards. The shared mapping, join,
 ratio, and cleanup remain shared.
@@ -51,7 +52,7 @@ The ratio table's first row now reads:
 | Adapter | Backend kinds | What it adds to the shared work |
 |---|---|---|
 | Row-matched | `local`, `other` | Nothing |
-| dtplyr | `dtplyr` | Rewrites a literal-backtick join key temporarily |
+| dtplyr | `dtplyr` | Rewrites join keys containing parser syntax temporarily |
 
 ## Amendment (2026-09-23): adapters receive staged Parent key names
 

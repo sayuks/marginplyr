@@ -520,6 +520,56 @@ test_that("named frame summaries stay packed with constructor controls", {
   expect_identical(actual$packed$x, c(1L, 2L))
 })
 
+test_that("frame argument names are checked after their output expands", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  compare <- function(expr, id = "set") {
+    expected <- rlang::eval_tidy(
+      rlang::expr(dplyr::summarise(data, !!expr, .by = g))
+    )
+    actual <- rlang::eval_tidy(rlang::expr(summarize_with_margins(
+      data, !!expr, .grouping = grouping_set(g), .id = !!id
+    )))
+    expect_identical(names(actual), c("g", id, names(expected)[-1L]))
+    expect_identical(actual[[id]], 1L)
+    expect_identical(actual[names(expected)], expected)
+  }
+
+  compare(quote(tibble::tibble(g = NULL, total = sum(x))))
+  compare(quote(data.frame(g = data.frame(total = sum(x)))))
+  compare(quote(data.frame(g = matrix(
+    c(sum(x), sum(x) + 1L), nrow = 1L,
+    dimnames = list(NULL, c("lo", "hi"))
+  ))))
+  compare(quote(tibble::tibble(
+    g = sum(x), .name_repair = function(nm) paste0(nm, "_out")
+  )))
+  compare(quote(data.frame("a b" = sum(x))), id = "a b")
+})
+
+test_that("frame collisions use expanded names, and named frames stay packed", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  group_error <- expect_error(summarize_with_margins(
+    data, data.frame(foo = data.frame(g = sum(x))),
+    .grouping = grouping_set(g)
+  ), "cannot overwrite grouping column.*`g`")
+  id_error <- expect_error(summarize_with_margins(
+    data, data.frame(foo = data.frame(set = sum(x))),
+    .grouping = grouping_set(g), .id = "set"
+  ), "`.id`.*`set`.*conflicts with a summary output")
+  expect_s3_class(group_error, "marginplyr_error")
+  expect_s3_class(id_error, "marginplyr_error")
+
+  expected <- dplyr::summarise(
+    data, packed = data.frame(g = sum(x)), .by = g
+  )
+  actual <- summarize_with_margins(
+    data, packed = data.frame(g = sum(x)),
+    .grouping = grouping_set(g), .id = "set"
+  )
+  expect_identical(names(actual), c("g", "set", "packed"))
+  expect_identical(actual[c("g", "packed")], expected)
+})
+
 test_that("a caller-bound frame function determines its summary output", {
   data <- tibble::tibble(g = c("a", "b"), x = 1:2)
   tibble <- function(...) data.frame(z = 1L)

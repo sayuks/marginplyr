@@ -3096,6 +3096,76 @@ test_that("dtplyr shares join fixed keys containing literal backticks", {
   }
 })
 
+test_that("dtplyr shares join literal comparison-operator fixed keys", {
+  skip_if_suggest_absent("dtplyr")
+  values <- c("p", "p", "q", "q", NA_character_, NA_character_)
+  data <- data.frame(
+    group = rep(c("x", "y"), 3L),
+    value = c(1, 3, 2, 2, 4, 6)
+  )
+
+  for (key in c("a<b", "a>b", "a<=b", "a>=b", "a==b", "a!=b")) {
+    source <- data
+    source[[key]] <- values
+    source <- source[c(key, "group", "value")]
+    step <- dtplyr::lazy_dt(source)
+
+    for (helper in c("share_of_parent", "share_of_total")) {
+      share <- rlang::call2(helper, rlang::sym("total"))
+      summarize <- function(input) {
+        rlang::inject(summarize_with_margins(
+          input,
+          total = sum(value),
+          fraction = !!share,
+          .by = dplyr::all_of(key),
+          .grouping = rollup(group),
+          .id = "set",
+          .margin_label = NULL
+        ))
+      }
+      expected <- summarize(source)
+      query <- summarize(step)
+
+      expect_s3_class(query, "dtplyr_step")
+      expect_identical(
+        as.character(dplyr::tbl_vars(query)),
+        names(expected),
+        info = paste(key, helper)
+      )
+      actual <- dplyr::collect(query)
+      arrange_result <- function(result) {
+        dplyr::arrange(result, .data[[key]], set, group)
+      }
+      expect_equal(
+        as.data.frame(arrange_result(actual)),
+        as.data.frame(arrange_result(expected)),
+        info = paste(key, helper)
+      )
+      expect_identical(nrow(actual), 9L, info = paste(key, helper))
+      expect_identical(as.data.frame(dplyr::collect(step)), source)
+    }
+  }
+
+  # The name repair must not make an invalid share source eligible.
+  invalid_source <- data
+  invalid_source[["a!=b"]] <- values
+  for (helper in c("share_of_parent", "share_of_total")) {
+    share <- rlang::call2(helper, rlang::sym("label"))
+    invalid <- rlang::inject(summarize_with_margins(
+      dtplyr::lazy_dt(invalid_source),
+      label = paste(value, collapse = ""),
+      fraction = !!share,
+      .by = dplyr::all_of("a!=b"),
+      .grouping = rollup(group)
+    ))
+    error <- expect_error(
+      dplyr::collect(invalid),
+      "plain integer or double scalar"
+    )
+    expect_s3_class(error, "marginplyr_error")
+  }
+})
+
 # The two backends below answer an injected share selection today, and for
 # reasons that are not the local backend's: dtplyr carries the caller's call as
 # text, which no second defusal reads, and a lazy backend wraps no source in the

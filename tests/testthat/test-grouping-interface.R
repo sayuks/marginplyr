@@ -1561,6 +1561,100 @@ test_that("data-frame summaries cannot overwrite grouping columns", {
   )
 })
 
+test_that("unpack callbacks are evaluated only by dplyr's summary", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  run <- function(margin, changing) {
+    calls <- 0L
+    unpack <- function() {
+      calls <<- calls + 1L
+      if (changing) calls > 1L else FALSE
+    }
+    summary <- function(x) tibble::tibble(value = sum(x) + calls)
+    result <- if (margin) {
+      summarize_with_margins(
+        data, dplyr::across(x, summary, .unpack = unpack()),
+        observed = calls, .grouping = grouping_set(g), .id = "set"
+      )
+    } else {
+      dplyr::summarise(
+        data, dplyr::across(x, summary, .unpack = unpack()),
+        observed = calls, .by = g
+      )
+    }
+    list(result = result, calls = calls)
+  }
+
+  for (changing in c(FALSE, TRUE)) {
+    expected <- run(FALSE, changing)
+    actual <- run(TRUE, changing)
+    expect_identical(actual$calls, expected$calls)
+    expect_identical(
+      names(actual$result), c("g", "set", names(expected$result)[-1L])
+    )
+    expect_identical(actual$result[names(expected$result)], expected$result)
+  }
+})
+
+test_that("active unpack bindings retain dplyr's evaluation behavior", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  run <- function(margin) {
+    env <- rlang::env(data = data, calls = 0L)
+    makeActiveBinding("unpack", function() {
+      env$calls <- env$calls + 1L
+      FALSE
+    }, env)
+    result <- if (margin) {
+      evalq(summarize_with_margins(
+        data, dplyr::across(x, sum, .unpack = unpack),
+        observed = calls, .grouping = grouping_set(g)
+      ), env)
+    } else {
+      evalq(dplyr::summarise(
+        data, dplyr::across(x, sum, .unpack = unpack),
+        observed = calls, .by = g
+      ), env)
+    }
+    list(result = result, calls = env$calls)
+  }
+  expect_identical(run(TRUE), run(FALSE))
+})
+
+test_that("delayed unpack bindings are forced by dplyr only", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  run <- function(margin) {
+    env <- rlang::env(data = data, calls = 0L)
+    delayedAssign("unpack", {
+      calls <- calls + 1L
+      FALSE
+    }, assign.env = env, eval.env = env)
+    result <- if (margin) {
+      evalq(summarize_with_margins(
+        data, dplyr::across(x, sum, .unpack = unpack),
+        observed = calls, .grouping = grouping_set(g)
+      ), env)
+    } else {
+      evalq(dplyr::summarise(
+        data, dplyr::across(x, sum, .unpack = unpack),
+        observed = calls, .by = g
+      ), env)
+    }
+    list(result = result, calls = env$calls)
+  }
+  expect_identical(run(TRUE), run(FALSE))
+})
+
+test_that("unbound unpack names retain dplyr's evaluation error", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  expected <- expect_error(dplyr::summarise(
+    data, dplyr::across(x, sum, .unpack = unknown_unpack), .by = g
+  ), "unknown_unpack")
+  actual <- expect_error(summarize_with_margins(
+    data, dplyr::across(x, sum, .unpack = unknown_unpack),
+    .grouping = grouping_set(g)
+  ), "unknown_unpack")
+  expect_identical(actual$parent$message, expected$parent$message)
+})
+
 test_that("unpacked across may reuse the identifier as its outer name", {
   data <- tibble::tibble(g = c("a", "b"), x = 1:2)
 
