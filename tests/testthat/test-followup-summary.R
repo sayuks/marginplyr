@@ -3,11 +3,15 @@ test_that("dynamic local frames cannot replace grouping keys", {
   frame <- function(x) {
     stats::setNames(data.frame(sum(x)), "..marginplyr_key_1")
   }
+  unpack <- "{inner}"
   summaries <- list(
     rlang::quo(frame(v)),
     rlang::quo(frame(dplyr::pick(v)[[1L]])),
     rlang::quo(dplyr::across(
       v, function(x) frame(x), .unpack = "{inner}"
+    )),
+    rlang::quo(dplyr::across(
+      v, function(x) frame(x), .unpack = unpack
     ))
   )
   for (summary in summaries) {
@@ -30,6 +34,21 @@ test_that("dynamic local frames cannot replace grouping keys", {
     class = "marginplyr_error"
   )
   expect_match(conditionMessage(one_set), "internal grouping columns")
+  unpack_calls <- 0L
+  dynamic_unpack <- function() {
+    unpack_calls <<- unpack_calls + 1L
+    "{inner}"
+  }
+  dynamic <- expect_error(
+    summarize_with_margins(
+      data,
+      dplyr::across(v, frame, .unpack = dynamic_unpack()),
+      .grouping = grouping_set(g)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(dynamic), "internal grouping columns")
+  expect_identical(unpack_calls, 1L)
 
   explicit <- summarize_with_margins(
     data, `..marginplyr_key_1` = sum(v), .grouping = grouping_set(g)
@@ -107,6 +126,7 @@ test_that("unrelated shares do not rerun local across naming", {
 test_that("expanded local frames cannot redefine a share source", {
   data <- tibble::tibble(g = c("a", "b"), v = c(1, 3))
   frame <- function(x) data.frame(total = max(x))
+  unpack <- "{inner}"
   for (helper in list(rlang::quo(share_of_parent(total)),
                       rlang::quo(share_of_total(total)))) {
     for (frame_expr in list(
@@ -114,6 +134,9 @@ test_that("expanded local frames cannot redefine a share source", {
       rlang::quo(frame(v)),
       rlang::quo(dplyr::across(
         v, frame, .unpack = "{inner}"
+      )),
+      rlang::quo(dplyr::across(
+        v, frame, .unpack = unpack
       ))
     )) {
       for (after in c(FALSE, TRUE)) {
@@ -140,6 +163,17 @@ test_that("expanded local frames cannot redefine a share source", {
       }
     }
   }
+
+  dynamic_unpack <- function() "{inner}"
+  dynamic_error <- expect_error(
+    summarize_with_margins(
+      data, total = sum(v),
+      dplyr::across(v, frame, .unpack = dynamic_unpack()),
+      p = share_of_total(total), .grouping = rollup(g)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(dynamic_error), "defined exactly once")
 
   omitted <- summarize_with_margins(
     data, total = sum(v), tibble::tibble(total = NULL),

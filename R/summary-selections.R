@@ -342,23 +342,6 @@ check_local_frame_output_names <- function(output_names, group_vars,
   invisible(NULL)
 }
 
-# Keep a frame's actual names, or give a scalar the name dplyr would have used.
-# The caller holds the original expression's auto name and protected columns.
-local_frame_summary_value <- function(value, name, group_vars, internal_names,
-                                      set_id_name, set_id_is_internal,
-                                      protected_sources) {
-  if (is.data.frame(value)) {
-    check_local_frame_output_names(
-      names(value), group_vars, internal_names, set_id_name,
-      set_id_is_internal, protected_sources
-    )
-  }
-  local_assigned_summary_value(
-    value, name, group_vars, internal_names, set_id_name,
-    set_id_is_internal, protected_sources
-  )
-}
-
 # An unnamed result may be a frame regardless of its written expression.
 # Wrap its value so frames expand and scalars keep their dplyr-assigned name.
 wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
@@ -374,16 +357,17 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
     expr <- rlang::quo_get_expr(dot)
     if (identical(data_frame_valued_summary_kind(expr), "across")) {
       unpack <- parse_across_arguments(expr)$unpack
-      # dplyr owns ordinary `across()` naming and invalid `.unpack` errors.
-      # A literal unpack can expose inner names before the branch checks them.
-      known_unpack <- isTRUE(unpack) ||
-        (is.character(unpack) && length(unpack) == 1L && !is.na(unpack))
-      if (!known_unpack) {
+      # dplyr owns ordinary `across()` naming. An unpack that may expose
+      # inner names is checked after dplyr evaluates it in its data mask.
+      empty_unpack <- rlang::is_quosure(unpack) &&
+        rlang::is_missing(rlang::quo_get_expr(unpack))
+      if (empty_unpack ||
+            across_unpack_is_false(unpack, rlang::quo_get_env(dot))) {
         next
       }
     }
     expr <- rlang::call2(
-      marginplyr_private_call("local_frame_summary_value"),
+      marginplyr_private_call("local_assigned_summary_value"),
       expr, auto_names[[i]], group_vars, internal_names,
       set_id_name,
       set_id_is_internal,
@@ -1307,7 +1291,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
 
 # Constructor argument names are only candidates for share diagnostics and
 # internal-name reservation. Omission, expansion, and repair can change the
-# actual schema, which local_frame_summary_value() checks after evaluation.
+# actual schema, which local_assigned_summary_value() checks after evaluation.
 frame_argument_candidates <- function(expr, env) {
   if (!identical(data_frame_valued_summary_kind(expr), "frame") ||
         !is_known_frame_constructor(expr, env)) {
