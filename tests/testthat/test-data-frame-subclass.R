@@ -9,13 +9,6 @@
 # `data.table` failed before any grouping happened, with data.table's join
 # diagnostic and nothing naming the input class as the reason (#176).
 #
-# Every assertion below compares a raw `data.table` against the same data as a
-# base `data.frame`, because the claim is agreement rather than any particular
-# result: a literal would go on passing if both paths broke the same way. What
-# these deliberately do not assert is the result's own class. ADR 0016 leaves
-# that to the dplyr verb each Margin verb ends in, and pinning it for a subclass
-# would convert a described behavior into a promise.
-#
 # `summarise_with_margins()` is deliberately not swept alongside the verbs
 # below. "British and American summary spellings are synonyms" in
 # `test-grouping-interface.R` asserts it is the same object with the same
