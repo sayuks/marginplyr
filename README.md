@@ -389,6 +389,10 @@ Grouping plan. Simulation verifies generated SQL but does not claim live
 execution against every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
+On live SQLite, direct `compute()` of a Margin result can retain its
+declared types and Margin order in a table containing only public
+columns; the guide explains destination safety and later dplyr
+operations.
 
 ## Keep the rows behind each total
 

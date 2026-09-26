@@ -24,8 +24,11 @@ test_that("SQLite empty Margin results retain declared package column types", {
         .check_share_source = FALSE
       )
       expected_names <- c("month", "g", "sid", "z", "p", "t", "z_across")
-      expect_error(dplyr::compute(query), "temporarily disabled",
-                   class = "marginplyr_error")
+      computed <- dplyr::collect(dplyr::compute(query))
+      expect_identical(names(computed), expected_names)
+      expect_identical(computed$sid, integer())
+      expect_identical(computed$p, double())
+      expect_identical(computed$t, double())
       result <- dplyr::collect(query)
       info <- paste(if (is.null(label)) "NULL" else label, sort)
       expect_identical(nrow(result), 0L, info = info)
@@ -72,8 +75,7 @@ test_that("SQLite empty summary keeps root shares and standalone identifiers", {
     t = share_of_total(z), .by = month, .grouping = rollup(g),
     .margin_label = NULL, .check_share_source = FALSE
   )
-  expect_error(dplyr::compute(shares_only), "temporarily disabled",
-               class = "marginplyr_error")
+  expect_identical(dplyr::collect(dplyr::compute(shares_only))$p, double())
   result <- dplyr::collect(shares_only)
   expect_identical(result$p, double())
   expect_identical(result$t, double())
@@ -82,8 +84,7 @@ test_that("SQLite empty summary keeps root shares and standalone identifiers", {
     empty, z = sum(v), .by = month, .grouping = grouping_set(g),
     .id = "sid"
   )
-  expect_error(dplyr::compute(query), "temporarily disabled",
-               class = "marginplyr_error")
+  expect_identical(dplyr::collect(dplyr::compute(query))$sid, integer())
   result <- dplyr::collect(query)
   expect_identical(result$month, integer())
   expect_identical(result$g, integer())

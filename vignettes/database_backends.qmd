@@ -228,11 +228,20 @@ Use `compute()` instead of `collect()` when the next stage should remain in the
 database. It executes the query and stores the result there as a remote table,
 so what reads it afterwards is still a lazy query against the connection:
 
-For now, direct `compute()` of a SQLite Margin result using marginplyr's
-dedicated type or order boundary raises an error before writing. Use
-`collect()` to retrieve that result while the destination fix in #661 is in
-progress. Ordinary dbplyr queries and Margin results outside that boundary
-can still use `compute()`.
+On SQLite, direct `compute()` of a dedicated Margin result creates a typed table
+with public columns only. A sorted result keeps its Margin order when collected
+directly from the returned lazy table. Subsequent `select()`, `rename()`,
+`filter()`, `mutate()`, and `arrange()` use ordinary dbplyr behavior and may
+change that order. `collect(query, n = ...)` limits the direct result; a
+materialized table can be collected with ordinary dbplyr limits.
+
+SQLite refuses a bare persistent destination shadowed by a temporary table,
+or a bare temporary overwrite that would find a table in `main`. Supply an
+explicit schema or another name. Sorted compute also refuses when public
+columns shadow all three implicit rowid aliases. Direct collection still works.
+Compute uses a private savepoint, so an existing caller transaction remains
+under the caller's commit or rollback control. Ordinary dbplyr may reject
+indexes on qualified destinations; such a failed compute restores the target.
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -766,6 +775,10 @@ your own `collect()` is what runs it, exactly as in the sections above:
 collect(audit_query)
 ```
 
+The record belongs to the last Margin verb or inspection call during query
+construction. A later finite `collect()` or `compute()` does not append its
+LIMIT, destination checks, savepoint, table creation, INSERT, or ANALYZE SQL.
+Computing an older query therefore does not change the record of a newer call.
 Recording adds no query of its own. The capture is `dbplyr::sql_render()`,
 which renders in your session and sends nothing, so the `"selection_proxy"`
 row above was sent whether or not you were recording. *When marginplyr queries

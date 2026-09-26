@@ -1,5 +1,6 @@
 ADR
 CMD
+DDL
 Codecov
 DuckDB
 DuckDB's
@@ -28,6 +29,8 @@ presentational
 quartabs
 rollup
 rollups
+rowid
+savepoint
 subqueries
 subquery
 tabset
