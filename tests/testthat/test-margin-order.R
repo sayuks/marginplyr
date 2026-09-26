@@ -1709,3 +1709,83 @@ test_that("Arrow orders repeated nonconstant Grouping bits", {
     }
   }
 })
+
+test_that("ordered dtplyr expansion preserves .BY beside BY", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(
+    g = c("y", "x"), .BY = c(3L, 1L), BY = c(30L, 10L)
+  )
+
+  groupings <- list(rollup = rollup(g), one_set = grouping_set(g))
+  for (grouping_name in names(groupings)) {
+    for (sort in c("last", "first")) {
+      for (id in list(NULL, "set")) {
+        expected <- expand_with_margins(
+          input, .grouping = groupings[[grouping_name]], .sort = sort, .id = id
+        )
+        query <- expand_with_margins(
+          dtplyr::lazy_dt(input), .grouping = groupings[[grouping_name]],
+          .sort = sort, .id = id
+        )
+        actual <- dplyr::collect(query)
+        info <- paste(grouping_name, sort,
+                      if (is.null(id)) "internal" else "requested")
+        expect_identical(names(actual), as.character(dplyr::tbl_vars(query)),
+                         info = info)
+        expect_identical(names(actual), names(expected), info = info)
+        expect_equal(actual, tibble::as_tibble(expected), info = info)
+      }
+    }
+  }
+})
+
+test_that("ordered dtplyr summary preserves a .BY output", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(g = c("y", "x"), value = c(3L, 1L))
+
+  for (sort in c("last", "first")) {
+    for (id in list(NULL, "set")) {
+      expected <- summarize_with_margins(
+        input, .BY = sum(value), .grouping = rollup(g),
+        .sort = sort, .id = id
+      )
+      query <- summarize_with_margins(
+        dtplyr::lazy_dt(input), .BY = sum(value),
+        .grouping = rollup(g), .sort = sort, .id = id
+      )
+      actual <- dplyr::collect(query)
+      info <- paste(sort, if (is.null(id)) "internal" else "requested")
+      expect_identical(names(actual), as.character(dplyr::tbl_vars(query)),
+                       info = info)
+      expect_identical(names(actual), names(expected), info = info)
+      expect_equal(actual, tibble::as_tibble(expected), info = info)
+    }
+  }
+})
+
+test_that("dtplyr special input names survive both Margin orders", {
+  skip_if_suggest_absent("dtplyr")
+
+  for (column in c(".I", ".SD", ".GRP", ".NGRP")) {
+    input <- tibble::tibble(g = c("y", "x"), value = c(3L, 1L))
+    names(input)[2L] <- column
+    for (sort in c("none", "last", "first")) {
+      query <- expand_with_margins(
+        dtplyr::lazy_dt(input), .grouping = rollup(g), .sort = sort
+      )
+      actual <- dplyr::collect(query)
+      info <- paste(column, sort)
+      expect_identical(names(actual), as.character(dplyr::tbl_vars(query)),
+                       info = info)
+      expect_identical(names(actual), c("g", column), info = info)
+      expect_equal(base::sort(actual[[column]]), c(1L, 1L, 3L, 3L),
+                   info = info)
+      if (!identical(sort, "none")) {
+        expected <- expand_with_margins(
+          input, .grouping = rollup(g), .sort = sort
+        )
+        expect_equal(actual, tibble::as_tibble(expected), info = info)
+      }
+    }
+  }
+})

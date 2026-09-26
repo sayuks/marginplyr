@@ -465,7 +465,8 @@ order_margin_result <- function(operation, result, execution) {
   # A staged identifier the key does not read is dropped before the ordering
   # rather than after it (ADR 0018).
   if (!is.null(staged_id) && is.null(key_id)) {
-    result <- dplyr::select(result, -dplyr::all_of(staged_id))
+    result <- drop_margin_staged_identifier(result, staged_id,
+                                            operation$backend)
   }
 
   terms <- margin_order_terms(
@@ -479,7 +480,8 @@ order_margin_result <- function(operation, result, execution) {
     result <- dplyr::arrange(result, !!!terms)
   }
   if (!is.null(staged_id) && !is.null(key_id)) {
-    result <- dplyr::select(result, -dplyr::all_of(staged_id))
+    result <- drop_margin_staged_identifier(result, staged_id,
+                                            operation$backend)
   }
   forget_margin_window_order(result, backend = operation$backend)
 }
@@ -489,6 +491,16 @@ order_margin_result <- function(operation, result, execution) {
 # the result's own column and is never dropped.
 margin_staged_sort_identifier <- function(operation, sort_id) {
   if (identical(sort_id, operation$set_id_name)) NULL else sort_id
+}
+
+# Drop only the staged identifier, leaving every public column's name intact.
+# dtplyr translates select() to a data.table projection that interprets names
+# such as `.BY` and `.I` specially; mutate(NULL) uses `:=` instead.
+drop_margin_staged_identifier <- function(result, staged_id, backend) {
+  if (identical(backend$kind, "dtplyr")) {
+    return(dplyr::mutate(result, !!staged_id := NULL))
+  }
+  dplyr::select(result, -dplyr::all_of(staged_id))
 }
 
 # The result columns the key has to cast rather than name. Empty unless the
