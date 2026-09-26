@@ -474,6 +474,13 @@ summarize_margin_union <- function(.data,
         sql = FALSE
       )
       if (is.data.frame(.data)) {
+        branch_dots <- wrap_local_frame_summaries(
+          branch_dots,
+          group_vars = group_vars,
+          internal_names = c(unname(key_names), unname(parent_key_names)),
+          set_id_name = set_id_name,
+          set_id_is_internal = set_id_is_internal
+        )
         branch_dots <- wrap_assigned_local_summaries(
           branch_dots,
           summaries$assigned_names

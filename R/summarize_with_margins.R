@@ -1265,7 +1265,9 @@ stage_margin_summaries <- function(operation,
     },
     error = function(cnd) {
       parent <- cnd$parent
-      if (keep_set_identity && inherits(parent, "marginplyr_error")) {
+      # dplyr wraps a Package condition raised while it evaluates an unnamed
+      # frame; return that condition with its class and diagnostic intact.
+      if (inherits(parent, "marginplyr_error")) {
         stop(parent)
       }
       stop(cnd)
