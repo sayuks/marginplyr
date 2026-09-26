@@ -226,3 +226,210 @@ test_that("ordinary local selections see prior summaries beside shares", {
     "depends on earlier summary alias"
   )
 })
+
+test_that("dynamic false unpack keeps ordinary function factory evaluation", {
+  run <- function(dynamic) {
+    calls <- 0L
+    make_fn <- function() {
+      calls <<- calls + 1L
+      offset <- calls
+      function(x) x + offset
+    }
+    data <- tibble::tibble(x = 1)
+    result <- if (dynamic) {
+      summarize_with_margins(
+        data, dplyr::across(x, make_fn(), .unpack = identity(FALSE)),
+        .grouping = grouping_set()
+      )
+    } else {
+      summarize_with_margins(
+        data, dplyr::across(x, make_fn(), .unpack = FALSE),
+        .grouping = grouping_set()
+      )
+    }
+    list(result = result, calls = calls)
+  }
+  literal <- run(FALSE)
+  dynamic <- run(TRUE)
+  expect_identical(literal$result$x, 2)
+  expect_identical(literal$calls, 1L)
+  expect_identical(dynamic, literal)
+})
+
+test_that("false unpack bindings retain local group results", {
+  skip_if_suggest_absent("data.table")
+  data <- tibble::tibble(g = c("a", "a", "b"), x = c(1, 2, 3))
+  inputs <- list(data, as.data.frame(data), data.table::as.data.table(data))
+  for (input in inputs) {
+    run <- function(mode, listed) {
+      calls <- 0L
+      reads <- 0L
+      make_fn <- function() {
+        calls <<- calls + 1L
+        offset <- calls
+        function(x) sum(x) + offset
+      }
+      binding <- new.env(parent = environment())
+      if (mode == "delayed") {
+        delayedAssign("unpack", identity(FALSE), assign.env = binding)
+      } else if (mode == "active") {
+        makeActiveBinding("unpack", function() {
+          reads <<- reads + 1L
+          FALSE
+        }, binding)
+      }
+      expression <- if (listed) {
+        if (mode == "literal") {
+          quote(summarize_with_margins(
+            input, dplyr::across(x, list(a = make_fn()),
+                                 .unpack = FALSE),
+            .grouping = grouping_set(g)
+          ))
+        } else {
+          quote(summarize_with_margins(
+            input, dplyr::across(x, list(a = make_fn()),
+                                 .unpack = unpack),
+            .grouping = grouping_set(g)
+          ))
+        }
+      } else if (mode == "literal") {
+        quote(summarize_with_margins(
+          input, dplyr::across(x, make_fn(), .unpack = FALSE),
+          .grouping = grouping_set(g)
+        ))
+      } else {
+        quote(summarize_with_margins(
+          input, dplyr::across(x, make_fn(), .unpack = unpack),
+          .grouping = grouping_set(g)
+        ))
+      }
+      result <- eval(expression, binding)
+      list(result = as.data.frame(result), calls = calls, reads = reads)
+    }
+    for (listed in c(FALSE, TRUE)) {
+      literal <- run("literal", listed)
+      delayed <- run("delayed", listed)
+      active <- run("active", listed)
+      expect_identical(literal$calls, 1L)
+      expect_identical(delayed$result, literal$result)
+      expect_identical(active$result, literal$result)
+      expect_identical(delayed$calls, literal$calls)
+      expect_identical(active$calls, literal$calls)
+      expect_identical(active$reads, 1L)
+    }
+  }
+})
+
+test_that("unrelated share leaves packed across selection to local dplyr", {
+  run <- function(with_share) {
+    calls <- 0L
+    choose <- function() {
+      calls <<- calls + 1L
+      if (calls == 1L) "x" else "y"
+    }
+    data <- tibble::tibble(x = 1, y = 10)
+    result <- if (with_share) {
+      summarize_with_margins(
+        data, total = sum(x),
+        packed = dplyr::across(dplyr::all_of(choose()), sum),
+        p = share_of_total(total), .grouping = grouping_set()
+      )
+    } else {
+      summarize_with_margins(
+        data, total = sum(x),
+        packed = dplyr::across(dplyr::all_of(choose()), sum),
+        p = 1, .grouping = grouping_set()
+      )
+    }
+    list(result = result, calls = calls)
+  }
+  control <- run(FALSE)
+  actual <- run(TRUE)
+  expect_identical(control$calls, 1L)
+  expect_identical(actual, control)
+  expect_identical(actual$result$packed$x, 1)
+})
+
+test_that("packed predicates see prior values beside shares", {
+  data <- tibble::tibble(g = c("a", "b"), x = c(1, 2),
+                         y = c(-10, -20))
+  for (helper in list(rlang::quo(share_of_parent(total)),
+                      rlang::quo(share_of_total(total)))) {
+    actual <- rlang::inject(summarize_with_margins(
+      data, total = sum(x),
+      packed = dplyr::across(dplyr::where(~ all(.x > 0)), sum),
+      p = !!helper, .grouping = rollup(g)
+    ))
+    expect_named(actual$packed, c("x", "total"))
+    expect_identical(actual$packed$x, c(1, 2, 3))
+    expect_identical(actual$packed$total, c(1, 2, 3))
+    expect_equal(actual$p, c(1 / 3, 2 / 3, 1))
+  }
+})
+
+test_that("packed selectors use active bindings beside shares", {
+  data <- tibble::tibble(g = c("a", "b"), x = c(1, 2))
+  for (helper in list(rlang::quo(share_of_parent(total)),
+                      rlang::quo(share_of_total(total)))) {
+    run <- function(with_share) {
+      reads <- 0L
+      binding <- new.env(parent = environment())
+      makeActiveBinding("selected", function() {
+        reads <<- reads + 1L
+        "total"
+      }, binding)
+      result <- if (with_share) {
+        evalq(rlang::inject(summarize_with_margins(
+          data, total = sum(x),
+          before = dplyr::across(dplyr::all_of(selected), identity),
+          p = !!helper,
+          after = dplyr::across(dplyr::all_of(selected), identity),
+          .grouping = rollup(g)
+        )), binding)
+      } else {
+        evalq(summarize_with_margins(
+          data, total = sum(x),
+          before = dplyr::across(dplyr::all_of(selected), identity),
+          p = 1,
+          after = dplyr::across(dplyr::all_of(selected), identity),
+          .grouping = rollup(g)
+        ), binding)
+      }
+      list(result = result, reads = reads)
+    }
+    actual <- run(TRUE)
+    control <- run(FALSE)
+    expect_identical(actual$reads, control$reads)
+    expect_identical(actual$result$before$total, actual$result$total)
+    expect_identical(actual$result$after$total, actual$result$total)
+    expect_equal(actual$result$p, c(1 / 3, 2 / 3, 1))
+  }
+})
+
+test_that("dynamic false unpack keeps factory counts beside shares", {
+  run <- function(dynamic) {
+    calls <- 0L
+    factory <- function() {
+      calls <<- calls + 1L
+      offset <- calls
+      function(x) sum(x) + offset
+    }
+    data <- tibble::tibble(g = c("a", "b"), x = c(1, 2))
+    result <- if (dynamic) {
+      summarize_with_margins(
+        data, total = sum(x),
+        dplyr::across(x, factory(), .names = "other",
+                      .unpack = identity(FALSE)),
+        p = share_of_total(total), .grouping = rollup(g)
+      )
+    } else {
+      summarize_with_margins(
+        data, total = sum(x),
+        dplyr::across(x, factory(), .names = "other", .unpack = FALSE),
+        p = share_of_total(total), .grouping = rollup(g)
+      )
+    }
+    list(result = result, calls = calls)
+  }
+  expect_identical(run(TRUE), run(FALSE))
+})

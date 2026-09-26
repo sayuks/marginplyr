@@ -141,7 +141,21 @@ reconstruct_factor.data.frame <- function(data,
 
 #' @exportS3Method
 #' @noRd
-reconstruct_factor.dtplyr_step <- reconstruct_factor.data.frame
+reconstruct_factor.dtplyr_step <- function(data,
+                                           info,
+                                           .margin_name,
+                                           position = "last") {
+  dtplyr_safe_column_reads(
+    data, info$col,
+    function(source, safe_name) {
+      safe_info <- info
+      safe_info$col <- safe_name(info$col)
+      reconstruct_factor.data.frame(
+        source, safe_info, .margin_name, position = position
+      )
+    }
+  )
+}
 
 # https://github.com/duckdb/duckdb-r/issues/188#issuecomment-2294095426
 #' @exportS3Method

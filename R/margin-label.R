@@ -476,36 +476,48 @@ label_margin_branch <- function(.data,
   )
   encoded_factor_cols <- character()
   if (length(encoded_factors) > 0L) {
-    encoded_exprs <- lapply(
-      encoded_factors,
-      function(info) {
-        col <- info$col
-        # The head is qualified because dtplyr defers this expression
-        # (`marginplyr_private_call()`, #491).
-        rlang::call2(
-          marginplyr_private_call("encode_factor_for_margin"),
-          margin_column_pronoun(col),
-          missing_sentinel = sentinels[[col]],
-          preserve_missing_value = TRUE
-        )
-      }
-    )
     encoded_factor_cols <- vapply(
       encoded_factors,
       function(info) info$col,
       character(1)
     )
-    names(encoded_exprs) <- encoded_factor_cols
-    .data <- dplyr::mutate(.data, !!!encoded_exprs)
+    .data <- dtplyr_safe_column_reads(
+      .data, encoded_factor_cols,
+      function(source, safe_name) {
+        encoded_exprs <- lapply(encoded_factors, function(info) {
+          col <- info$col
+          # The head is qualified because dtplyr defers this expression
+          # (`marginplyr_private_call()`, #491).
+          rlang::call2(
+            marginplyr_private_call("encode_factor_for_margin"),
+            margin_column_pronoun(safe_name(col)),
+            missing_sentinel = sentinels[[col]],
+            preserve_missing_value = TRUE
+          )
+        })
+        names(encoded_exprs) <- unname(vapply(
+          encoded_factor_cols, safe_name, character(1)
+        ))
+        dplyr::mutate(source, !!!encoded_exprs)
+      }
+    )
   }
   labelled_as_character <- setdiff(
     labelled_included,
     encoded_factor_cols
   )
   if (length(labelled_as_character) > 0L) {
-    .data <- dplyr::mutate(
-      .data,
-      dplyr::across(dplyr::all_of(labelled_as_character), as.character)
+    .data <- dtplyr_safe_column_reads(
+      .data, labelled_as_character,
+      function(source, safe_name) {
+        safe_columns <- unname(vapply(
+          labelled_as_character, safe_name, character(1)
+        ))
+        dplyr::mutate(
+          source,
+          dplyr::across(dplyr::all_of(safe_columns), as.character)
+        )
+      }
     )
   }
   # dtplyr renders a scalar overwrite as data.table `:=`, which recycles the
@@ -517,47 +529,46 @@ label_margin_branch <- function(.data,
   # ones that are not character already, for which it replaces the column with
   # itself.
   dtplyr_full_size_label <- inherits(.data, "dtplyr_step")
-  dtplyr_columns <- if (dtplyr_full_size_label) {
-    get_col_names(.data, dplyr::everything())
-  } else {
-    character()
-  }
-  values <- lapply(
-    omitted,
-    function(col) {
-      # Expansion carries the omitted dimension, so its length avoids dtplyr's
-      # `n()` translation to `.N` when the input also names that column. A
-      # summary branch may have removed the dimension and keeps its `n()` path.
-      branch_size <- if (col %in% dtplyr_columns) {
-        rlang::expr(length(!!margin_column_pronoun(col)))
-      } else {
-        rlang::expr(dplyr::n())
-      }
-      label <- margin_labels[[col]]
-      if (!is_missing_margin_label(label)) {
-        if (dtplyr_full_size_label) {
-          return(rlang::expr(rep(!!label, !!branch_size)))
-        }
-        return(label)
-      }
-      if (col %in% missing_label_encoded) {
-        # The typed missing this margin row carries, spelled as the included
-        # branches spell one. `as.character()` of the prototype cannot: it is
-        # `NA`, which is also what a value on the NA level becomes, and the
-        # union is where the two would stop being distinguishable (ADR 0012).
-        # Full size for the reason the labelled arm above is, and with no
-        # backend test because `drops_na_factor_level_on_union`, which
-        # `missing_label_encoded` requires, is dtplyr's alone.
-        return(rlang::expr(rep(!!sentinels[[col]], !!branch_size)))
-      }
-      value <- prototypes[[col]]
-      if (is.null(value)) NA else value
-    }
-  )
-
   if (length(omitted) > 0L) {
-    names(values) <- omitted
-    .data <- dplyr::mutate(.data, !!!values)
+    .data <- dtplyr_safe_column_reads(
+      .data, omitted,
+      function(source, safe_name) {
+        dtplyr_columns <- if (dtplyr_full_size_label) {
+          get_col_names(source, dplyr::everything())
+        } else {
+          character()
+        }
+        values <- lapply(omitted, function(col) {
+          # Expansion carries the omitted dimension, so its length avoids
+          # dtplyr's `n()` translation to `.N` when the input also names that
+          # column. A summary branch may have removed the dimension.
+          source_col <- safe_name(col)
+          branch_size <- if (source_col %in% dtplyr_columns) {
+            rlang::expr(length(!!margin_column_pronoun(source_col)))
+          } else {
+            rlang::expr(dplyr::n())
+          }
+          label <- margin_labels[[col]]
+          if (!is_missing_margin_label(label)) {
+            if (dtplyr_full_size_label) {
+              return(rlang::expr(rep(!!label, !!branch_size)))
+            }
+            return(label)
+          }
+          if (col %in% missing_label_encoded) {
+            # The typed missing this margin row carries, spelled as the
+            # included branches spell one (ADR 0012).
+            return(rlang::expr(rep(!!sentinels[[col]], !!branch_size)))
+          }
+          value <- prototypes[[col]]
+          if (is.null(value)) NA else value
+        })
+        names(values) <- vapply(
+          omitted, safe_name, character(1), USE.NAMES = FALSE
+        )
+        dplyr::mutate(source, !!!values)
+      }
+    )
   }
 
   dplyr::select(

@@ -54,8 +54,9 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
   public_columns <- as.character(dplyr::tbl_vars(ordered))
   key_names <- new_margin_internal_names(
     length(terms),
-    used_names = tolower(c(operation$data_vars, dplyr::tbl_vars(unsorted))),
-    prefix = "..marginplyr_order_"
+    used_names = c(operation$data_vars, dplyr::tbl_vars(unsorted)),
+    prefix = "..marginplyr_order_",
+    backend = operation$backend
   )
   keys <- stats::setNames(lapply(terms, sqlite_order_value), key_names)
   staged <- if (length(keys) > 0L) {

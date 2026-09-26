@@ -77,7 +77,8 @@ margin_sort_identifier <- function(operation, set_id_name, used_names) {
   new_margin_internal_names(
     1L,
     used_names = used_names,
-    prefix = "..marginplyr_sort_"
+    prefix = "..marginplyr_sort_",
+    backend = operation$backend
   )
 }
 
@@ -302,6 +303,11 @@ prepare_margin_operation <- function(.data,
       data_vars <- grouping$data_vars
       data_proxy <- grouping$data_proxy
       plan <- grouping$plan
+      check_margin_sql_public_names(
+        unique(c(plan$by, plan$dimensions,
+                 carried_columns(data_vars, plan), set_id_name)),
+        backend
+      )
       column_info <- margin_column_info(
         data_proxy,
         plan$dimensions,

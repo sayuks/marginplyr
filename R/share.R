@@ -1555,6 +1555,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
         "expanded"
       }
       selected_dependencies <- if (is_across_call(expr) &&
+                                     !nzchar(output_name) &&
                                      length(output_names) > 0L) {
         available <- unique(c(names(selection_proxy), preceding_names))
         proxy <- vctrs::new_data_frame(
@@ -1616,7 +1617,8 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       )) "frame_candidate" else "expanded"
     }
 
-    selected_dependencies <- if (is_across_call(expr)) {
+    selected_dependencies <- if (is_across_call(expr) &&
+                                   !nzchar(output_name)) {
       selected <- if (defer_local) {
         tryCatch(
           known_across_source_names(expr, env, selection_proxy),
@@ -2757,7 +2759,7 @@ share_helper_names <- function(kinds) {
 # Everything else is `new_margin_internal_names()`'s collision rule unchanged,
 # one call per source with the names allocated so far added to `used_names`, so
 # that two sources cannot be handed one name.
-share_denominator_names <- function(sources, used_names) {
+share_denominator_names <- function(sources, used_names, backend = NULL) {
   denominator_names <- character()
   for (source in sources) {
     denominator_names <- c(
@@ -2765,7 +2767,8 @@ share_denominator_names <- function(sources, used_names) {
       new_margin_internal_names(
         1L,
         used_names = c(used_names, denominator_names),
-        prefix = paste0("..marginplyr_denominator_of_", source, "_")
+        prefix = paste0("..marginplyr_denominator_of_", source, "_"),
+        backend = backend
       )
     )
   }
@@ -2788,9 +2791,11 @@ apply_joined_shares <- function(result,
   pairs <- share_pairs(requests)
   sources <- share_source_names(requests)
   result_names <- get_col_names(result, dplyr::everything())
+  backend <- grouping_backend(result)
   denominator_names <- share_denominator_names(
     sources,
-    used_names = result_names
+    used_names = result_names,
+    backend = backend
   )
 
   # The cleanup at the end of this function drops whatever internal columns
@@ -2825,7 +2830,8 @@ apply_joined_shares <- function(result,
           denominator_names,
           key_names
         ),
-        prefix = "..marginplyr_share_match_"
+        prefix = "..marginplyr_share_match_",
+        backend = backend
       )
       rename_pairs <- rlang::set_names(
         rlang::syms(join_names),
@@ -2881,53 +2887,57 @@ apply_joined_shares <- function(result,
     }
   }
 
-  share_exprs <- lapply(
-    pairs,
-    function(pair) {
-      source <- pair$source
-      denominator <- denominator_names[[source]]
-      if (length(joined_ids) == 0L) {
-        # No denominator was joined, so nothing else in the staged query names
-        # the source: this is what binds it there, for the reason the ratio's
-        # own `* 1L` below gives (#446). Both arms are `1.0`, and the condition
-        # is an `IS NULL`, which SQL never answers with `NULL`, so no third
-        # value leaks from the `CASE` dbplyr renders without an `ELSE`.
-        return(rlang::expr(
+  result <- dtplyr_safe_column_reads(
+    result, sources,
+    function(share_result, safe_name) {
+      share_exprs <- lapply(pairs, function(pair) {
+        source <- safe_name(pair$source)
+        denominator <- denominator_names[[pair$source]]
+        if (length(joined_ids) == 0L) {
+          # No denominator was joined, so nothing else in the staged query
+          # names the source: this is what binds it there, for the reason the
+          # ratio's own `* 1L` below gives (#446). Both arms are `1.0`, and
+          # the condition is an `IS NULL`, which SQL never answers with `NULL`,
+          # so no third value leaks from the `CASE` dbplyr renders without an
+          # `ELSE`.
+          return(rlang::expr(
+            dplyr::if_else(
+              is.na((!!margin_column_pronoun(source)) * 1L),
+              1.0,
+              1.0
+            )
+          ))
+        }
+        rlang::expr(
           dplyr::if_else(
-            is.na((!!margin_column_pronoun(source)) * 1L),
+            (!!margin_column_pronoun(set_id_name)) %in% !!own_denominator_ids,
             1.0,
-            1.0
-          )
-        ))
-      }
-      rlang::expr(
-        dplyr::if_else(
-          (!!margin_column_pronoun(set_id_name)) %in% !!own_denominator_ids,
-          1.0,
-          dplyr::if_else(
-            is.na(!!margin_column_pronoun(source)) |
-              is.na(!!margin_column_pronoun(denominator)) |
-              (!!margin_column_pronoun(denominator)) == 0,
-            NA_real_,
-            # `* 1L` binds the source by type, which is what refuses a
-            # character one on a dialect classified as refusing; the cast alone
-            # accepts a numeric-looking character column there (#429). The
-            # literal is `1L` because a double one changes the source's
-            # declared type, which `DuckDB shares a source at its declared
-            # type's maximum` fails on. The denominator holds the source's
-            # type, so a second copy there refuses nothing new. The cast stays:
-            # it is what makes the ratio a double. The verdict this rests on is
-            # measured with an aggregate while this is arithmetic, so a dialect
-            # answering the two differently reproduces #429 here.
-            as.double((!!margin_column_pronoun(source)) * 1L) /
-              as.double(!!margin_column_pronoun(denominator))
+            dplyr::if_else(
+              is.na(!!margin_column_pronoun(source)) |
+                is.na(!!margin_column_pronoun(denominator)) |
+                (!!margin_column_pronoun(denominator)) == 0,
+              NA_real_,
+              # `* 1L` binds the source by type, which is what refuses a
+              # character one on a dialect classified as refusing; the cast
+              # alone accepts a numeric-looking character column there (#429).
+              # The literal is `1L` because a double one changes the source's
+              # declared type, which `DuckDB shares a source at its declared
+              # type's maximum` fails on. The denominator holds the source's
+              # type, so a second copy there refuses nothing new. The cast
+              # stays: it is what makes the ratio a double. The verdict this
+              # rests on is measured with an aggregate while this is
+              # arithmetic, so a dialect answering the two differently
+              # reproduces #429 here.
+              as.double((!!margin_column_pronoun(source)) * 1L) /
+                as.double(!!margin_column_pronoun(denominator))
+            )
           )
         )
-      )
+      })
+      names(share_exprs) <- vapply(pairs, `[[`, character(1), "output")
+      dplyr::mutate(share_result, !!!share_exprs)
     }
   )
-  names(share_exprs) <- vapply(pairs, `[[`, character(1), "output")
-  result <- dplyr::mutate(result, !!!share_exprs)
 
   internal_names <- c(
     unname(denominator_names),
@@ -2987,7 +2997,8 @@ build_parent_denominator <- function(result,
   join_key_names <- new_margin_internal_names(
     length(plan$dimensions),
     used_names = used_names,
-    prefix = "..marginplyr_parent_key_"
+    prefix = "..marginplyr_parent_key_",
+    backend = grouping_backend(result)
   )
   names(join_key_names) <- plan$dimensions
   result <- add_lazy_parent_join_keys(
@@ -3037,17 +3048,26 @@ build_total_denominator <- function(result,
                                     parent_key_names) {
   denominator_id <- unique(target_ids[!is.na(target_ids)])
   stopifnot(length(denominator_id) == 1L)
-  key_exprs <- lapply(plan$by, margin_column_pronoun)
-  names(key_exprs) <- plan$by
-  denominator_exprs <- lapply(sources, margin_column_pronoun)
-  names(denominator_exprs) <- unname(denominator_names[sources])
-  mapping <- dplyr::transmute(
-    dplyr::filter(
-      result,
-      .data[[set_id_name]] == !!denominator_id
-    ),
-    !!!key_exprs,
-    !!!denominator_exprs
+  mapping <- dtplyr_safe_column_reads(
+    result, c(plan$by, sources),
+    function(source_data, safe_name) {
+      key_exprs <- lapply(plan$by, function(name) {
+        margin_column_pronoun(safe_name(name))
+      })
+      names(key_exprs) <- plan$by
+      denominator_exprs <- lapply(sources, function(name) {
+        margin_column_pronoun(safe_name(name))
+      })
+      names(denominator_exprs) <- unname(denominator_names[sources])
+      dplyr::transmute(
+        dplyr::filter(
+          source_data,
+          .data[[set_id_name]] == !!denominator_id
+        ),
+        !!!key_exprs,
+        !!!denominator_exprs
+      )
+    }
   )
 
   if (length(plan$by) > 0L) {
@@ -3066,7 +3086,8 @@ build_total_denominator <- function(result,
   partition_name <- new_margin_internal_names(
     1L,
     used_names = used_names,
-    prefix = "..marginplyr_total_key_"
+    prefix = "..marginplyr_total_key_",
+    backend = grouping_backend(result)
   )
   partition_expr <- stats::setNames(
     list(rlang::expr(1L)),
@@ -3145,13 +3166,6 @@ build_lazy_parent_mapping <- function(result,
                                       set_id_name,
                                       used_names,
                                       parent_key_names) {
-  mapping_exprs <- parent_mapping_exprs(
-    plan,
-    sources = sources,
-    denominator_names = denominator_names,
-    parent_key_names = parent_key_names
-  )
-
   mappings <- lapply(
     child_ids,
     function(child_id) {
@@ -3164,11 +3178,23 @@ build_lazy_parent_mapping <- function(result,
         list(rlang::expr(as.integer(!!child_id))),
         set_id_name
       )
-      dplyr::transmute(
-        parent_rows,
-        !!!mapping_exprs$keys,
-        !!!child_id_expr,
-        !!!mapping_exprs$denominators
+      dtplyr_safe_column_reads(
+        parent_rows, c(plan$by, unname(parent_key_names), sources),
+        function(source_data, safe_name) {
+          mapping_exprs <- parent_mapping_exprs(
+            plan,
+            sources = sources,
+            denominator_names = denominator_names,
+            parent_key_names = parent_key_names,
+            safe_name = safe_name
+          )
+          dplyr::transmute(
+            source_data,
+            !!!mapping_exprs$keys,
+            !!!child_id_expr,
+            !!!mapping_exprs$denominators
+          )
+        }
       )
     }
   )
@@ -3179,11 +3205,15 @@ build_lazy_parent_mapping <- function(result,
 # caller inserts the child occurrence identifier between the keys and the
 # denominators because its expression differs between the two strategies.
 parent_mapping_exprs <- function(plan, sources, denominator_names,
-                                 parent_key_names) {
+                                 parent_key_names, safe_name = identity) {
   group_vars <- unique(c(plan$by, unname(parent_key_names)))
-  key_exprs <- lapply(group_vars, margin_column_pronoun)
+  key_exprs <- lapply(group_vars, function(name) {
+    margin_column_pronoun(safe_name(name))
+  })
   names(key_exprs) <- group_vars
-  denominator_exprs <- lapply(sources, margin_column_pronoun)
+  denominator_exprs <- lapply(sources, function(name) {
+    margin_column_pronoun(safe_name(name))
+  })
   names(denominator_exprs) <- unname(denominator_names[sources])
   list(keys = key_exprs, denominators = denominator_exprs)
 }
@@ -3205,7 +3235,8 @@ build_dbplyr_parent_mapping <- function(result,
   plan_names <- new_margin_internal_names(
     2L,
     used_names = used_names,
-    prefix = "..marginplyr_parent_plan_"
+    prefix = "..marginplyr_parent_plan_",
+    backend = grouping_backend(result)
   )
   child_id_name <- plan_names[[1L]]
   parent_id_name <- plan_names[[2L]]
