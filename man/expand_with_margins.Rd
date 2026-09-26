@@ -491,6 +491,14 @@ either rewrite, collection changes \code{.check_margin_label}'s default from
 
 \section{Database backend coverage}{
 
+On live SQLite and DuckDB, identifiers differing only in ASCII letter case
+name the same SQL column. A Margin result refuses two public columns that
+would coexist under that rule, naming both spellings and asking you to
+rename one. This includes fixed keys, dimensions, summary and share outputs,
+\code{.id}, and carried expansion columns. A summary can still replace an unused
+source column. Internal SQL aliases are allocated away from equivalent
+caller names. Other backends retain their own name rules.
+
 DuckDB and PostgreSQL use native \verb{GROUP BY GROUPING SETS} SQL. Automated
 tests execute DuckDB queries against a live in-memory database and verify
 PostgreSQL SQL with dbplyr's simulator.

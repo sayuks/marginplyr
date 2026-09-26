@@ -356,7 +356,8 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
     }
     expr <- rlang::quo_get_expr(dot)
     if (identical(data_frame_valued_summary_kind(expr), "across")) {
-      unpack <- parse_across_arguments(expr)$unpack
+      parsed <- parse_across_arguments(expr)
+      unpack <- parsed$unpack
       # dplyr owns ordinary `across()` naming. An unpack that may expose
       # inner names is checked after dplyr evaluates it in its data mask.
       empty_unpack <- rlang::is_quosure(unpack) &&
@@ -364,6 +365,22 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       if (empty_unpack ||
             across_unpack_is_false(unpack, rlang::quo_get_env(dot))) {
         next
+      }
+      if (!isTRUE(unpack) && !is.character(unpack)) {
+        # dplyr expands a top-level across with false unpack once. This
+        # frame-name check nests it, so cache arguments that nested across
+        # reads repeatedly across local groups.
+        call_args <- parsed$call_args
+        for (index in c(parsed$fns_index, parsed$unpack_index)) {
+          if (index > 0L) {
+            call_args[[index]] <- rlang::call2(
+              marginplyr_private_call("local_once_across_arg"),
+              call_args[[index]],
+              new.env(parent = emptyenv())
+            )
+          }
+        }
+        expr <- rebuild_static_call(expr, call_args)
       }
     }
     expr <- rlang::call2(
@@ -376,6 +393,15 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
     dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
   }
   dots
+}
+
+# Cache one branch's argument value when frame checking nests an across call.
+# The promise is forced only at dplyr's first read, after preceding summaries.
+local_once_across_arg <- function(value, cache) {
+  if (!exists("value", envir = cache, inherits = FALSE)) {
+    cache$value <- value
+  }
+  cache$value
 }
 
 # What execution carries for the caller's summary arguments: the dots to hand

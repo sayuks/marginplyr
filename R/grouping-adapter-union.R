@@ -328,12 +328,25 @@ summarize_margin_branch <- function(.data,
     summarize_dots[[placeholder_name]] <- rlang::quo(dplyr::n())
   }
 
-  result <- withCallingHandlers(
+  # An output named `.data` must reach dplyr's dynamic dots before argument
+  # matching. Other calls keep early injection so Arrow can recover the
+  # originating expression from its call when reporting an absorbing summary.
+  run_summary <- function() {
+    if (".data" %in% names(summarize_dots)) {
+      return(dplyr::summarize(
+        .data = .data,
+        !!!summarize_dots,
+        .by = dplyr::all_of(.by)
+      ))
+    }
     rlang::inject(dplyr::summarize(
       .data = .data,
       !!!summarize_dots,
       .by = dplyr::all_of(.by)
-    )),
+    ))
+  }
+  result <- withCallingHandlers(
+    run_summary(),
     warning = function(cnd) {
       if (is_absorbing_backend_warning(cnd, .data)) {
         abort_absorbed_summary(
@@ -430,7 +443,8 @@ summarize_margin_union <- function(.data,
   key_names <- new_margin_internal_names(
     length(group_vars),
     used_names = reserved_names,
-    prefix = "..marginplyr_key_"
+    prefix = "..marginplyr_key_",
+    backend = backend
   )
   names(key_names) <- group_vars
   # The Grand total branch groups by no key, so dplyr exposes these copies as
@@ -440,9 +454,24 @@ summarize_margin_union <- function(.data,
   }
 
   if (length(group_vars) > 0L) {
-    key_exprs <- lapply(group_vars, margin_column_pronoun)
-    names(key_exprs) <- unname(key_names)
-    .data <- dplyr::mutate(.data, !!!key_exprs)
+    .data <- dtplyr_safe_column_reads(
+      .data, group_vars,
+      function(source, safe_name) {
+        key_exprs <- lapply(group_vars, function(name) {
+          margin_column_pronoun(safe_name(name))
+        })
+        names(key_exprs) <- unname(key_names)
+        dplyr::mutate(source, !!!key_exprs)
+      }
+    )
+    if (identical(backend$kind, "dtplyr")) {
+      special_keys <- intersect(
+        group_vars, c(".N", ".I", ".SD", ".GRP", ".NGRP")
+      )
+      if (length(special_keys) > 0L) {
+        .data <- dplyr::select(.data, -dplyr::all_of(special_keys))
+      }
+    }
   }
 
   # An unpartitioned empty grouping set needs an aggregate in SQL even when
@@ -453,7 +482,8 @@ summarize_margin_union <- function(.data,
   placeholder_name <- new_margin_internal_names(
     1L,
     used_names = c(reserved_names, unname(key_names)),
-    prefix = "..marginplyr_placeholder_"
+    prefix = "..marginplyr_placeholder_",
+    backend = backend
   )
 
   conditions <- new_branch_conditions(
@@ -540,6 +570,17 @@ summarize_margin_union <- function(.data,
         set_id_name = set_id_name,
         set_id_is_internal = set_id_is_internal
       )
+      if (backend$is_sql) {
+        public_outputs <- setdiff(
+          get_col_names(result, dplyr::everything()),
+          c(unname(key_names), placeholder)
+        )
+        check_margin_sql_public_names(
+          unique(c(group_vars, public_outputs,
+                   if (!set_id_is_internal) set_id_name)),
+          backend
+        )
+      }
 
       if (length(grouping_set) > 0L) {
         rename_pairs <- rlang::set_names(

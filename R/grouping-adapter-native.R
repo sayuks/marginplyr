@@ -46,7 +46,8 @@ summarize_margin_native <- function(.data,
     flag_names <- new_margin_internal_names(
       length(labelled_dimensions),
       used_names = reserved_names,
-      prefix = "..marginplyr_grouping_"
+      prefix = "..marginplyr_grouping_",
+      backend = grouping_backend(.data)
     )
     flag_quos <- lapply(
       labelled_dimensions,
@@ -87,6 +88,11 @@ summarize_margin_native <- function(.data,
     internal_names = c(flag_names, unname(parent_key_names)),
     set_id_name = set_id_name,
     set_id_is_internal = set_id_is_internal
+  )
+  check_margin_sql_public_names(
+    unique(c(group_vars, summary_select$name,
+             if (!set_id_is_internal) set_id_name)),
+    grouping_backend(.data)
   )
 
   result <- dplyr::summarize(

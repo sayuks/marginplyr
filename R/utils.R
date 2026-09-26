@@ -13,6 +13,44 @@ margin_column_pronoun <- function(name) {
   rlang::call2("[[", rlang::sym(".data"), name)
 }
 
+# Evaluate a generated dtplyr expression while its input columns cannot be
+# mistaken for data.table special variables. `read` names the columns the
+# expression reads; `transform` receives their temporary names and returns a
+# lazy step. Rename is lazy and leaves the caller's source untouched.
+dtplyr_safe_column_reads <- function(.data, read, transform) {
+  if (!inherits(.data, "dtplyr_step")) {
+    return(transform(.data, function(name) name))
+  }
+  special <- intersect(
+    read,
+    intersect(c(".N", ".I", ".SD", ".GRP", ".NGRP"),
+              get_col_names(.data, dplyr::everything()))
+  )
+  if (length(special) == 0L) {
+    return(transform(.data, function(name) name))
+  }
+  aliases <- new_margin_internal_names(
+    length(special),
+    used_names = get_col_names(.data, dplyr::everything()),
+    prefix = "..marginplyr_dtplyr_column_"
+  )
+  names(aliases) <- special
+  renamed <- dplyr::rename(
+    .data, !!!rlang::set_names(rlang::syms(special), unname(aliases))
+  )
+  safe_name <- function(name) {
+    if (name %in% special) unname(aliases[[name]]) else name
+  }
+  result <- transform(renamed, safe_name)
+  retained <- aliases[aliases %in% get_col_names(result, dplyr::everything())]
+  if (length(retained) == 0L) {
+    return(result)
+  }
+  dplyr::rename(
+    result, !!!rlang::set_names(rlang::syms(unname(retained)), names(retained))
+  )
+}
+
 # How an internal function is spelled as the head of an expression a backend
 # defers. `name` is that function's name in this namespace.
 #

@@ -641,6 +641,14 @@
 #' marginplyr queries your data* for why the two halves differ.
 #'
 #' @section Database backend coverage:
+#' On live SQLite and DuckDB, identifiers differing only in ASCII letter case
+#' name the same SQL column. A Margin result refuses two public columns that
+#' would coexist under that rule, naming both spellings and asking you to
+#' rename one. This includes fixed keys, dimensions, summary and share outputs,
+#' `.id`, and carried expansion columns. A summary can still replace an unused
+#' source column. Internal SQL aliases are allocated away from equivalent
+#' caller names. Other backends retain their own name rules.
+#'
 #' DuckDB and PostgreSQL use native `GROUP BY GROUPING SETS` SQL. Automated
 #' tests execute DuckDB queries against a live in-memory database and verify
 #' PostgreSQL SQL with dbplyr's simulator.
@@ -1086,6 +1094,11 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
           defer_local = identical(operation$backend$kind, "local")
         )
       ))
+      check_margin_sql_public_names(
+        unique(c(group_vars, summary_output_names,
+                 operation$set_id_name)),
+        operation$backend
+      )
       check_summary_group_overwrite(
         summary_output_names,
         group_vars = group_vars
@@ -1283,7 +1296,8 @@ stage_margin_summaries <- function(operation,
     set_id_name <- new_margin_internal_names(
       1L,
       used_names = reserved_names,
-      prefix = "..marginplyr_set_id_"
+      prefix = "..marginplyr_set_id_",
+      backend = operation$backend
     )
     reserved_names <- c(reserved_names, set_id_name)
   }
@@ -1319,7 +1333,8 @@ stage_margin_summaries <- function(operation,
     parent_key_names <- new_margin_internal_names(
       length(plan$dimensions),
       used_names = reserved_names,
-      prefix = "..marginplyr_parent_original_"
+      prefix = "..marginplyr_parent_original_",
+      backend = operation$backend
     )
     names(parent_key_names) <- plan$dimensions
     reserved_names <- c(reserved_names, unname(parent_key_names))

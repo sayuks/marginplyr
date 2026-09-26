@@ -297,7 +297,8 @@ execute_margin_nest <- function(operation, .key, .keep) {
           operation$set_id_name,
           .key
         )),
-        prefix = "..marginplyr_nest_"
+        prefix = "..marginplyr_nest_",
+        backend = operation$backend
       )
       set_col <- if (is.null(operation$set_id_name)) {
         internal_names[[1L]]
