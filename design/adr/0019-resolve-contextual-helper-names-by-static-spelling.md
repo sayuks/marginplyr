@@ -31,12 +31,13 @@ carries the term.
 
 The criterion is what a name *is*, not what marginplyr happens to look at. A
 spelling marginplyr merely reads is not covered by it: `tibble()`,
-`data.frame()`, and `tibble::data_frame()` are examined by
-`known_summary_output_names()` so that a data-frame-valued summary's output
-names are known before the query is built, but they are ordinary functions that
-really run, and a caller who binds `tibble` gets their own function. Nothing
-about their meaning arises from rewriting, so they are not Contextual helpers
-and this decision does not reserve them.
+`data.frame()`, and `tibble::data_frame()` are examined as possible
+data-frame-valued summaries. Their actual output names are checked after
+evaluation, since constructor argument names can differ from the columns
+produced (#674). They are ordinary functions that really run, and a caller who
+binds `tibble` gets their own function. Nothing about their meaning arises from
+rewriting, so they are not Contextual helpers and this decision does not
+reserve them.
 
 ### Namespace forms
 
@@ -106,8 +107,9 @@ binding cannot win, and asserting that of a constructor would assert the
 opposite of the entry above. Three families are not Contextual helpers: the
 Grouping specification constructors, and the data-frame constructors
 `tibble()`, `tibble::data_frame()`, and `data.frame()`, whose spellings are
-read only to predict a data-frame-valued summary's output names and which run
-whatever the caller has bound.
+read only to recognize a possible data-frame-valued summary and which run
+whatever the caller has bound. The value's actual column names, rather than
+the constructor's argument names, determine any output collision (#674).
 
 Every entry in the table is a function, so asking about one family builds that
 family alone. That is not an optimization: the share family derives from
@@ -334,8 +336,8 @@ rather than in what runs. Both are read through, however many pairs deep.
 **One place, not one place per family.** The reading lives in the shared
 readers of `R/utils.R` — the name, the namespace, the head, and the arguments —
 so every analysis that reads an expression inherits it: the registry's four
-recognition sites, the constructor gate, the data-frame output-name
-prediction, the share dependency walk, and the two rewrites. That is what the
+recognition sites, the constructor gate, the data-frame summary shape
+recognition, the share dependency walk, and the two rewrites. That is what the
 ticket asks for over a fix at the sites that had been demonstrated, and it is
 the same argument the registry itself rests on. Name and operands are read
 through the same unwrapping, so no node is named as its content and
