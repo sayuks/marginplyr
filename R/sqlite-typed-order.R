@@ -160,9 +160,9 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   out
 }
 
-# Resolve the destination before any write. A bare persistent name shadowed by
-# temp, or a bare temporary overwrite that would find main, is unsafe on SQLite.
-# The caller has requested compute and supplied a dbplyr-supported table name.
+# Resolve an explicit destination before any write. A bare persistent name
+# shadowed by temp, or a bare temporary overwrite that would find main, is
+# unsafe on SQLite. The caller may omit the name for dbplyr to generate one.
 sqlite_compute_destination <- function(con, name, temporary, overwrite) {
   if (is.null(name)) {
     return(NULL)
@@ -198,7 +198,7 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
 }
 
 # Apply materialization within one owned SQLite savepoint. DBI's named rollback
-# also releases it; a caller's enclosing transaction is untouched.
+# also releases it; only the caller commits or rolls back an enclosing transaction.
 sqlite_with_compute_savepoint <- function(con, destination, code) {
   savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
   DBI::dbBegin(con, name = savepoint)
