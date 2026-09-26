@@ -731,8 +731,13 @@ plan_share_expressions <- function(dots,
     lapply(analyses, `[[`, "records"),
     recursive = FALSE
   )
+  # Constructor argument names help diagnose a proposed source, but are not
+  # confirmed outputs until its frame has been evaluated.
+  certain_records <- Filter(function(record) {
+    !identical(record$eligibility, "frame_candidate")
+  }, ordinary_records)
   ordinary_names <- vapply(
-    ordinary_records,
+    certain_records,
     `[[`,
     character(1),
     "name"
@@ -740,6 +745,7 @@ plan_share_expressions <- function(dots,
   ordinary_counts <- table(ordinary_names)
   planning_context <- list(
     all_records = ordinary_records,
+    certain_records = certain_records,
     ordinary_counts = ordinary_counts,
     conflicting_names = unique(c(
       plan$by,
@@ -929,6 +935,10 @@ share_cardinality_records <- function(analyses, requests) {
     lapply(analyses, `[[`, "records"),
     recursive = FALSE
   )
+  # A candidate cannot identify the source expression to wrap at runtime.
+  records <- Filter(function(record) {
+    !identical(record$eligibility, "frame_candidate")
+  }, records)
   cardinality <- list()
   seen_sources <- character()
 
@@ -1587,7 +1597,9 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       } else {
         known_data_frame_output_names(expr, env, selection_proxy)
       }
-      eligibility <- "expanded"
+      eligibility <- if (identical(
+        data_frame_valued_summary_kind(expr), "frame"
+      )) "frame_candidate" else "expanded"
     }
 
     selected_dependencies <- if (is_across_call(expr)) {
@@ -1973,10 +1985,8 @@ validate_share_request <- function(outputs,
         "summary {.var {source}}."
       ))
     }
-    if (
-      !is.na(context$ordinary_counts[[source]]) &&
-        context$ordinary_counts[[source]] != 1L
-    ) {
+    source_count <- context$ordinary_counts[source]
+    if (!is.na(source_count) && source_count != 1L) {
       abort_marginplyr(c(
         paste0(
           "{label} {.var {output}} requires source summary {.var {source}} ",
@@ -1985,7 +1995,15 @@ validate_share_request <- function(outputs,
         i = "Use one uniquely named ordinary summary."
       ))
     }
-    record <- preceding[[max(which(preceding_names == source))]]
+    source_records <- preceding[which(preceding_names == source)]
+    certain_source <- Filter(function(record) {
+      !identical(record$eligibility, "frame_candidate")
+    }, source_records)
+    record <- if (length(certain_source) > 0L) {
+      utils::tail(certain_source, 1L)[[1L]]
+    } else {
+      utils::tail(source_records, 1L)[[1L]]
+    }
     if (!identical(record$eligibility, "eligible")) {
       abort_ineligible_share_source(
         label = label,
@@ -2010,7 +2028,7 @@ validate_share_request <- function(outputs,
     outputs,
     unique(c(
       context$conflicting_names,
-      all_names,
+      vapply(context$certain_records, `[[`, character(1), "name"),
       shares$names
     ))
   )
@@ -3566,7 +3584,14 @@ abort_share_source_name <- function(source, preceding, context, kind) {
     character(1),
     "name"
   )
-  occurrences <- sum(all_names == source)
+  certain_names <- vapply(
+    context$certain_records, `[[`, character(1), "name"
+  )
+  occurrences <- if (source %in% certain_names) {
+    sum(certain_names == source)
+  } else {
+    sum(all_names == source)
+  }
   if (occurrences > 1L) {
     abort_marginplyr(
       c(

@@ -358,6 +358,72 @@ test_that("lazy share planning recognizes expanded frame outputs", {
   )
 })
 
+test_that("share collisions use expanded frame output names", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  error <- expect_error(summarize_with_margins(
+    data,
+    total = sum(x),
+    data.frame(foo = data.frame(s = 99L)),
+    s = share_of_total(total),
+    .grouping = rollup(g)
+  ), "Total-share output name `s` conflicts with an ordinary summary")
+  expect_s3_class(error, "marginplyr_error")
+
+  calls <- 0L
+  frame <- function() {
+    calls <<- calls + 1L
+    tibble::tibble(s = 99L)
+  }
+  function_error <- expect_error(summarize_with_margins(
+    data, total = sum(x), frame(),
+    s = share_of_total(total), .grouping = rollup(g)
+  ), "Total-share output name `s` conflicts with an ordinary summary")
+  expect_s3_class(function_error, "marginplyr_error")
+  expect_identical(calls, 1L)
+
+  across_error <- expect_error(summarize_with_margins(
+    data, total = sum(x),
+    dplyr::across(x, ~ tibble::tibble(s = 99L), .unpack = "{inner}"),
+    s = share_of_total(total), .grouping = rollup(g)
+  ), "Total-share output name `s` conflicts with an ordinary summary")
+  expect_s3_class(across_error, "marginplyr_error")
+})
+
+test_that("omitted frame candidates do not block share outputs or sources", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  expected <- dplyr::summarise(
+    data, total = sum(x), tibble::tibble(s = NULL), s = 1,
+    .by = g
+  )
+  actual <- summarize_with_margins(
+    data, total = sum(x), tibble::tibble(s = NULL),
+    s = share_of_total(total), .grouping = rollup(g)
+  )
+  expect_identical(actual[1L, names(expected)], expected)
+  expect_identical(actual$s, c(1, 1))
+
+  source <- summarize_with_margins(
+    data, tibble::tibble(s = NULL), s = sum(x),
+    ratio = share_of_total(s), .grouping = rollup(g)
+  )
+  expect_identical(source$s, c(1L, 1L))
+  expect_identical(source$ratio, c(1, 1))
+
+  expected_across <- dplyr::summarise(
+    data, total = sum(x),
+    dplyr::across(x, ~ tibble::tibble(kept = sum(.x)),
+                  .names = "s", .unpack = TRUE),
+    s = 1, .by = g
+  )
+  actual_across <- summarize_with_margins(
+    data, total = sum(x),
+    dplyr::across(x, ~ tibble::tibble(kept = sum(.x)),
+                  .names = "s", .unpack = TRUE),
+    s = share_of_total(total), .grouping = rollup(g)
+  )
+  expect_identical(actual_across[1L, names(expected_across)], expected_across)
+})
+
 test_that(paste0(
   "Parent shares support composite dimensions, fixed keys, ",
   "and duplicates"
