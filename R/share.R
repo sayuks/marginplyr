@@ -713,6 +713,15 @@ abort_ambiguous_parent <- function(call = rlang::caller_call()) {
   )
 }
 
+# Returns only records confirmed as ordinary summary outputs. The caller has
+# ordinary analysis records, whose frame argument candidates still need the
+# frame's runtime value before they can establish an output name.
+confirmed_share_records <- function(records) {
+  Filter(function(record) {
+    !identical(record$eligibility, "frame_candidate")
+  }, records)
+}
+
 plan_share_expressions <- function(dots,
                                    selection_proxy,
                                    plan,
@@ -733,9 +742,7 @@ plan_share_expressions <- function(dots,
   )
   # Constructor argument names help diagnose a proposed source, but are not
   # confirmed outputs until its frame has been evaluated.
-  certain_records <- Filter(function(record) {
-    !identical(record$eligibility, "frame_candidate")
-  }, ordinary_records)
+  certain_records <- confirmed_share_records(ordinary_records)
   ordinary_names <- vapply(
     certain_records,
     `[[`,
@@ -936,9 +943,7 @@ share_cardinality_records <- function(analyses, requests) {
     recursive = FALSE
   )
   # A candidate cannot identify the source expression to wrap at runtime.
-  records <- Filter(function(record) {
-    !identical(record$eligibility, "frame_candidate")
-  }, records)
+  records <- confirmed_share_records(records)
   cardinality <- list()
   seen_sources <- character()
 
@@ -1999,9 +2004,7 @@ validate_share_request <- function(outputs,
       ))
     }
     source_records <- preceding[which(preceding_names == source)]
-    certain_source <- Filter(function(record) {
-      !identical(record$eligibility, "frame_candidate")
-    }, source_records)
+    certain_source <- confirmed_share_records(source_records)
     record <- if (length(certain_source) > 0L) {
       utils::tail(certain_source, 1L)[[1L]]
     } else {

@@ -444,6 +444,51 @@ test_that("omitted frame candidates do not block share outputs or sources", {
   expect_identical(actual_across[1L, names(expected_across)], expected_across)
 })
 
+test_that("dynamic outputs named like internal share columns remain intact", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  frame_calls <- 0L
+  frame <- function() {
+    frame_calls <<- frame_calls + 1L
+    stats::setNames(data.frame(99L), "..marginplyr_share_1")
+  }
+
+  before <- summarize_with_margins(
+    data, total = sum(x), frame(), s = share_of_total(total),
+    .grouping = rollup(g)
+  )
+  expect_identical(
+    names(before), c("g", "total", "..marginplyr_share_1", "s")
+  )
+  expect_identical(before$..marginplyr_share_1, c(99L, 99L))
+  expect_identical(before$s, c(1, 1))
+  expect_identical(frame_calls, 2L)
+
+  after <- summarize_with_margins(
+    data, total = sum(x), s = share_of_total(total), frame(),
+    .grouping = rollup(g)
+  )
+  expect_identical(
+    names(after), c("g", "total", "s", "..marginplyr_share_1")
+  )
+  expect_identical(after$..marginplyr_share_1, c(99L, 99L))
+  expect_identical(after$s, c(1, 1))
+  expect_identical(frame_calls, 4L)
+
+  across <- summarize_with_margins(
+    data, total = sum(x), s = share_of_total(total),
+    dplyr::across(
+      x, ~ tibble::tibble(..marginplyr_share_1 = 99L),
+      .unpack = "{inner}"
+    ),
+    .grouping = rollup(g)
+  )
+  expect_identical(
+    names(across), c("g", "total", "s", "..marginplyr_share_1")
+  )
+  expect_identical(across$..marginplyr_share_1, c(99L, 99L))
+  expect_identical(across$s, c(1, 1))
+})
+
 test_that(paste0(
   "Parent shares support composite dimensions, fixed keys, ",
   "and duplicates"
