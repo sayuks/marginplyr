@@ -117,7 +117,7 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
 
 # Direct sorted collection drops the internal sort columns after reading the
 # anchored compound query. Unsorted collection keeps dbplyr's result query and
-# its condition context. Both restore declared R types when no rows return.
+# its condition context. Both restore declared R types for all-missing columns.
 #' @exportS3Method dplyr::collect
 #' @noRd
 collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
@@ -151,10 +151,10 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
     )
   }
   out <- out[attr(x, "marginplyr_public_columns")]
-  if (nrow(out) == 0L) {
-    for (name in names(attr(x, "marginplyr_declared_types"))) {
+  for (name in names(attr(x, "marginplyr_declared_types"))) {
+    if (all(is.na(out[[name]]))) {
       type <- attr(x, "marginplyr_declared_types")[[name]]
-      out[[name]] <- vector(type, 0L)
+      out[[name]] <- as.vector(out[[name]], mode = type)
     }
   }
   out

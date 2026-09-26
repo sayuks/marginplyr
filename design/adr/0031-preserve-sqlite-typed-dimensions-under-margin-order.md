@@ -7,8 +7,8 @@ status: accepted
 The original decision below records the first implementation. The accepted
 [B-direct amendment](#b-direct-amendment-2026-09-26) supersedes its
 materialization mechanism and the explicitly identified boundaries. The shared
-materializer for #661, #662, and #663 is implemented; the separate #665/#666
-declared-type work remains pending.
+materializer for #661, #662, and #663 is implemented. The #665/#666 boundary
+registers expansion identifiers and applies declarations to all-missing results.
 
 Issue #640 exposes a conflict between two existing contracts. An all-missing
 character, integer, or double dimension with a typed-missing Margin label keeps
@@ -123,8 +123,8 @@ text-label declarations, integer identifiers, and double shares also apply to
 empty and nonempty all-missing columns. This does not infer new types for
 ordinary aggregate expressions.
 
-The #665/#666 extension of the declared-type boundary is separate work; the
-materializer here retains the declarations already present.
+The #665/#666 extension declares expansion identifiers independently of the
+materializer and applies existing declarations to all-missing finite results.
 
 For direct compute, create the public destination with the zero-row type anchor
 and insert the ordered public query directly once. Do not create a full-result
