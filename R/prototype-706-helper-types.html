@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PROTOTYPE #706 — Grouping helper の型境界</title>
+<style>
+  :root { color-scheme: light; font-family: system-ui, sans-serif; color: #182334; background: #f5f7fa; }
+  body { max-width: 900px; margin: 0 auto; padding: 28px 18px 60px; line-height: 1.5; }
+  h1 { margin: 0 0 8px; font-size: 1.55rem; }
+  h2 { margin: 0 0 10px; font-size: 1.1rem; }
+  p { margin: 8px 0 18px; }
+  .tag { display: inline-block; padding: 3px 8px; border-radius: 4px; background: #ffe6ae; font-size: .75rem; font-weight: 700; }
+  .panel { background: white; border: 1px solid #d8e0e9; border-radius: 10px; padding: 18px; margin: 16px 0; }
+  .fields, .compare { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .field, .result { background: #f5f7fa; border-radius: 7px; padding: 11px 13px; }
+  .field b, .result b { display: block; font-size: .78rem; color: #526477; }
+  .result strong { font-size: 1.3rem; }
+  button { border: 1px solid #a8b8c9; border-radius: 7px; padding: 8px 11px; margin: 3px; background: #fff; color: #182334; cursor: pointer; }
+  button:hover, button:focus { border-color: #166d77; background: #e9f5f4; }
+  button.active { border-color: #166d77; background: #166d77; color: white; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 14px; }
+  .scenario { display: none; }
+  .scenario.active { display: block; }
+  .note { border-left: 3px solid #166d77; padding: 8px 12px; background: #edf6f5; }
+  code { font-family: ui-monospace, SFMono-Regular, monospace; }
+</style>
+</head>
+<body>
+<span class="tag">PROTOTYPE — 破棄する実験</span>
+<h1>Grouping helper の型は、どこまで保証するか</h1>
+<p>検討する問い：SQLite の直接結果で、<code>grouping_bit()</code> と <code>grouping_id()</code> をそのまま出力した列だけを整数型として宣言すると、空結果の型を安定させながら、式で包んだ列と <code>n()</code> は従来の扱いに残せるか。</p>
+
+<section class="panel">
+  <h2>現在の状態</h2>
+  <div id="state" class="fields"></div>
+  <div id="comparison" class="compare" style="margin-top:12px"></div>
+  <p id="meaning" class="note"></p>
+</section>
+
+<section class="panel">
+  <h2>自由に変更</h2>
+  <div id="controls"></div>
+</section>
+
+<section class="panel">
+  <h2>順に試す</h2>
+  <div id="tabs" class="tabs"></div>
+  <div id="walkthroughs"></div>
+</section>
+
+<p>この画面は型境界の試作品です。実際の SQLite と R の挙動は、隣の <code>prototype-706-helper-types.R</code> で試した組み合わせに基づきます。HTML は R や SQL を実行しません。</p>
+
+<script>
+// Portable, pure model. The DOM below only calls these functions.
+const Model = (() => {
+  const initial = Object.freeze({
+    backend: "sqlite", rows: "empty", expression: "bit", boundary: "collect",
+    setId: true, sort: "last", lastAction: "開始"
+  });
+  const labels = {
+    bit: "bit = grouping_bit(g)", mask: "mask = grouping_id()",
+    wrapped: "wrapped = as.integer(grouping_id())", count: "nn = n()"
+  };
+  function reduce(state, action) {
+    if (action.type === "reset") return { ...initial, ...action.state, lastAction: "シナリオ開始" };
+    return { ...state, [action.type]: action.value, lastAction: action.label };
+  }
+  function isDeclared(state) {
+    return state.backend === "sqlite" && state.boundary !== "derived" &&
+      (state.expression === "bit" || state.expression === "mask");
+  }
+  function inferredType(state) {
+    if (state.boundary === "derived") return "backend に委譲";
+    if (state.backend === "local" || state.rows === "populated") return "integer";
+    if (state.boundary === "collect") return "logical";
+    if (state.expression === "wrapped" && !state.setId) return "integer";
+    return "logical";
+  }
+  function result(state, proposed) {
+    const declared = proposed && isDeclared(state);
+    const type = declared ? "integer" : inferredType(state);
+    const selected = type === "backend に委譲" ? "backend 次第" :
+      type === "integer" ? (state.setId ? "sid, value" : "value") :
+      (state.setId ? "sid" : "なし");
+    return { type, declared, selected, expression: labels[state.expression] };
+  }
+  return { initial, labels, reduce, isDeclared, result };
+})();
+</script>
+
+<script>
+const actions = [
+  ["backend", "入力", [["sqlite", "SQLite"], ["local", "ローカル"]]],
+  ["rows", "行数", [["empty", "空結果"], ["populated", "非空結果"]]],
+  ["expression", "出力式", [["bit", "Grouping bit"], ["mask", "Grouping identifier"], ["wrapped", "式で包む"], ["count", "n()"]]],
+  ["boundary", "結果の境界", [["collect", "直接 collect"], ["compute", "直接 compute → collect"], ["derived", "後続 dplyr verb"]]],
+  ["setId", ".id", [[true, "あり"], [false, "なし"]]],
+  ["sort", ".sort", [["last", "last"], ["none", "none"]]]
+];
+const scenarios = [
+  {
+    title: "空結果の直接出力",
+    description: "型が変わる原例。helper を直接出力した列だけに整数宣言を足します。",
+    state: { backend: "sqlite", rows: "empty", expression: "bit", boundary: "collect", setId: true, sort: "last" },
+    steps: [["expression", "mask", "Grouping identifier に変える"], ["boundary", "compute", "直接 compute も見る"]]
+  },
+  {
+    title: "式で包む",
+    description: "外側の式が結果を決めます。helper を含むだけでは宣言しません。",
+    state: { backend: "sqlite", rows: "empty", expression: "bit", boundary: "collect", setId: true, sort: "last" },
+    steps: [["expression", "wrapped", "as.integer() で包む"], ["setId", false, ".id を外す"], ["boundary", "compute", "直接 compute を見る"]]
+  },
+  {
+    title: "境界の外",
+    description: "n() と、後続の dplyr verb が作った結果には新しい型保証を付けません。",
+    state: { backend: "sqlite", rows: "empty", expression: "mask", boundary: "collect", setId: true, sort: "last" },
+    steps: [["expression", "count", "n() に変える"], ["expression", "mask", "helper に戻す"], ["boundary", "derived", "後続 dplyr verb を通す"]]
+  }
+];
+let state = { ...Model.initial };
+let activeScenario = 0;
+let nextStep = 0;
+function dispatch(action) { state = Model.reduce(state, action); render(); }
+function field(label, value) { return `<div class="field"><b>${label}</b>${value}</div>`; }
+function button(label, action, active = false) {
+  const b = document.createElement("button");
+  b.textContent = label;
+  b.className = active ? "active" : "";
+  b.onclick = () => dispatch(action);
+  return b;
+}
+function render() {
+  document.getElementById("state").innerHTML = [
+    field("入力", state.backend === "sqlite" ? "SQLite" : "ローカル"),
+    field("行数", state.rows === "empty" ? "0 行" : "1 行"),
+    field("出力", `<code>${Model.labels[state.expression]}</code>`),
+    field("境界", { collect: "直接 collect", compute: "直接 compute → collect", derived: "後続 dplyr verb" }[state.boundary]),
+    field(".id", state.setId ? "あり" : "なし"),
+    field(".sort", state.sort),
+    field("直前の操作", state.lastAction)
+  ].join("");
+  const current = Model.result(state, false);
+  const proposed = Model.result(state, true);
+  document.getElementById("comparison").innerHTML = [
+    `<div class="result"><b>現在</b><strong>${current.type}</strong><div>where(is.numeric): ${current.selected}</div></div>`,
+    `<div class="result"><b>試作の保証</b><strong>${proposed.type}</strong><div>where(is.numeric): ${proposed.selected}</div></div>`
+  ].join("");
+  document.getElementById("meaning").textContent = proposed.declared ?
+    "この列だけを integer と宣言。collect は空の R 列を復元し、compute は整数型の空テーブルを先に作ります。" :
+    "この列には整数宣言を付けません。型は既存の処理、または backend に委ねます。";
+  const controls = document.getElementById("controls");
+  controls.replaceChildren();
+  for (const [key, title, choices] of actions) {
+    const group = document.createElement("div");
+    const name = document.createElement("b");
+    name.textContent = title + "：";
+    group.append(name);
+    for (const [value, label] of choices) {
+      group.append(button(label, { type: key, value, label }, state[key] === value));
+    }
+    controls.append(group);
+  }
+  const tabs = document.getElementById("tabs");
+  tabs.replaceChildren();
+  scenarios.forEach((scenario, i) => {
+    const b = document.createElement("button");
+    b.textContent = scenario.title;
+    b.className = i === activeScenario ? "active" : "";
+    b.onclick = () => { activeScenario = i; nextStep = 0; dispatch({ type: "reset", state: scenario.state }); };
+    tabs.append(b);
+  });
+  const walks = document.getElementById("walkthroughs");
+  walks.replaceChildren();
+  const scenario = scenarios[activeScenario];
+  const p = document.createElement("p");
+  p.textContent = scenario.description;
+  walks.append(p);
+  scenario.steps.forEach(([type, value, label], i) => {
+    const b = document.createElement("button");
+    b.textContent = `${i + 1}. ${label}`;
+    b.disabled = i !== nextStep;
+    b.onclick = () => { nextStep += 1; dispatch({ type, value, label }); };
+    walks.append(b);
+  });
+}
+render();
+</script>
+</body>
+</html>
