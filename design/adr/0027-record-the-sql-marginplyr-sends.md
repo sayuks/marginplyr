@@ -7,6 +7,12 @@ the columns `purpose` and `sql` and no others; and it belongs to a single call,
 emptied at the top of `prepare_grouping_plan()`. Each row is written before its
 query is sent, which is the promise `CONTEXT.md`'s **Sent query** entry states.
 
+The call is the last tracked Margin verb or inspection during query
+construction. Later collection or materialization does not retrospectively
+append LIMIT, destination metadata, savepoints, DDL, INSERT, or ANALYZE SQL.
+Computing an older result does not change a newer call's record. The record is
+not a complete DBI execution ledger.
+
 The capture is `dbplyr::sql_render()` and nothing else. It is client-side, sends
 nothing, and is not one of the execution entry points
 `lazy_execution_entry_points()` catalogs, so **ADR 0020 is not amended**: this

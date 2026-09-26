@@ -16,10 +16,11 @@
       10     DBI           dbFetch        FALSE
       11     DBI       dbReadTable        FALSE
       12     DBI         dbExecute        FALSE
-      13  dbplyr        db_collect        FALSE
-      14  dbplyr        db_compute        FALSE
-      15  dbplyr remote_query_plan        FALSE
-      16   arrow    as_arrow_table        FALSE
+      13     DBI     dbExistsTable        FALSE
+      14  dbplyr        db_collect        FALSE
+      15  dbplyr        db_compute        FALSE
+      16  dbplyr remote_query_plan        FALSE
+      17   arrow    as_arrow_table        FALSE
 
 # marginplyr functions reaching an execution entry point
 
@@ -29,6 +30,7 @@
       check_dialect_share_sources
       check_observed_label_collision
       collect.marginplyr_sqlite_typed_result
+      compute.marginplyr_sqlite_typed_result
       dtplyr_join_set_types_match
       dtplyr_metadata_safe_step
       dtplyr_selection_proxy
@@ -46,6 +48,7 @@
       probe_share_dialect
       probe_share_dialect_answer
       share_dialect_verdict
+      sqlite_compute_destination
       summarise_with_margins
       summarize_with_margins
       validate_margin_label

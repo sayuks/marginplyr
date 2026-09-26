@@ -225,10 +225,13 @@
 #' those of [dplyr::mutate()] combined with [dplyr::union_all()]. Passing a
 #' plain data frame therefore returns a plain data frame and passing a tibble
 #' returns a tibble.
-#' A live SQLite result with a typed-missing Margin label and a requested
-#' Margin order uses a lazy subclass to keep the dimension's collected type.
-#' Its public columns are unchanged; [dbplyr::sql_render()] shows the internal
-#' ordering columns that SQLite needs in the SQL result.
+#' A live SQLite result uses a lazy subclass when source-column anchors or
+#' package-declared output types require it. Direct collection preserves source
+#' types and restores declared types on empty results. Sorted direct collection
+#' hides internal ordering columns from returned data, while
+#' [dbplyr::sql_render()] shows them in the SQL result.
+#' Direct materialization creates a typed table with public columns only.
+#' Later dplyr verbs use ordinary dbplyr behavior.
 #'
 #' The input class is not guaranteed to be preserved, and neither are
 #' object-level attributes of the input or attributes of columns marginplyr
@@ -323,13 +326,15 @@
 #' steps that is the row order, and on lazy tables it is the outermost query's
 #' `ORDER BY`, which [dplyr::collect()] and [dplyr::compute()] both observe:
 #' a materialized result carries the Margin order rather than losing it.
-#' Direct `compute()` of a live SQLite Margin result that uses marginplyr's
-#' dedicated type or order boundary is temporarily refused before writing,
-#' because it could address the wrong destination (#661). This includes sorted
-#' results and applicable unsorted identifiers and shares. Use direct
-#' [dplyr::collect()] while the materialization path is being repaired.
-#' The existing type, public-column, and Margin-order guarantees for direct
-#' materialization remain the restoration criteria in ADR 0031.
+#' On live SQLite, direct `compute()` of a dedicated result inserts the public
+#' query into a typed table. A sorted result is read back in Margin order using
+#' an available implicit rowid alias. If its public columns shadow all three
+#' aliases (`rowid`, `oid`, and `_rowid_`), sorted compute refuses before
+#' writes. Direct collection remains available. Unsafe unqualified names that
+#' could address a different SQLite schema are refused before writes. Use an
+#' explicit schema or another name to resolve such a destination. An existing
+#' caller transaction retains commit and rollback ownership; compute uses its
+#' own savepoint. Ordinary later verbs can change the result's order.
 #' Whether the order survives further verbs applied to a lazy result is not
 #' promised, because that depends on dbplyr's query flattening, which
 #' marginplyr does not own and which changes between releases.

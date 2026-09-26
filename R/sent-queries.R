@@ -90,10 +90,13 @@ record_sent_query <- function(purpose, query) {
 #'   `writeLines(x$sql)`.
 #'
 #' @section What the record promises:
-#' The record holds the SQL marginplyr sent, not the execution marginplyr
-#' caused. An audited call on a data frame, a dtplyr table, or an Arrow table
-#' therefore records nothing, and that zero-row answer is correct rather than
-#' a hole.
+#' The record belongs to the last Margin verb or inspection call during query
+#' construction. It holds the SQL that call sent and a render of its result,
+#' not a complete ledger of later execution. Finite collection and direct
+#' materialization do not append LIMIT, destination metadata, savepoint, DDL,
+#' INSERT, or ANALYZE statements. Computing an older result leaves a newer
+#' call's record unchanged. An audited call on a data frame, dtplyr, or Arrow
+#' table therefore records nothing; that zero-row answer is correct.
 #'
 #' `"result"` is the one `purpose` promised: the query the Margin verb returns
 #' unexecuted, rendered before it is handed to you, which your own

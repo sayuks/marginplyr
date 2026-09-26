@@ -293,11 +293,11 @@ second exemption.
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing
-it. Its direct `collect()` reaches `dbplyr::db_collect()` only when the caller
-collects the result. Its direct `compute()` reaches `dbplyr::db_compute()` and
-`DBI::dbExecute()` only when the caller requests materialization; the latter
-creates and populates the requested table inside a transaction. The zero-row
-source projection that declares that table's column types also runs only at
-that explicit `compute()` boundary. These entry points join the structural
-query-policy snapshot so a later call during lazy construction becomes visible.
-Neither exemption for unrequested reads changes.
+it. Direct `collect()` reaches `dbplyr::db_collect()` only when requested.
+Direct `compute()` may query destination metadata to avoid an unsafe name, then
+uses a private savepoint, `dbplyr::db_compute()`, and `DBI::dbExecute()` to
+create and populate the requested typed table. The destination checks and
+zero-row type projection run only at that explicit compute boundary. The
+structural query-policy snapshot covers these execution entry points so a
+future construction-time call becomes visible. Neither exemption for
+unrequested reads changes.

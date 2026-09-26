@@ -302,7 +302,7 @@ test_that("SQLite shares leave fixed keys and non-missing dimensions typed", {
   expect_equal(sort(result$p), c(0.25, 0.75, 1))
 })
 
-test_that("SQLite share order collects while direct compute is contained", {
+test_that("SQLite share order survives direct compute", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -320,8 +320,11 @@ test_that("SQLite share order collects while direct compute is contained", {
   expect_s3_class(query, "tbl_lazy")
   expect_match(dbplyr::sql_render(query), "ORDER BY", fixed = TRUE)
   collected <- dplyr::collect(query)
-  expect_error(dplyr::compute(query), "temporarily disabled",
-               class = "marginplyr_error")
+  computed <- dplyr::collect(dplyr::compute(query))
+  expect_identical(computed$fixed, c("x", "x", "x"))
+  expect_identical(computed$g, c("a", "b", NA_character_))
+  expect_equal(computed$z, c(1, 3, 4))
+  expect_equal(computed$p, c(0.25, 0.75, 1))
   result <- collected
   expect_identical(result$fixed, c("x", "x", "x"))
   expect_identical(result$g, c("a", "b", NA_character_))

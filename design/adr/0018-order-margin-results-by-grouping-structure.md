@@ -473,3 +473,10 @@ SQLite results whose typed-missing dimensions need the source-column anchor.
 The Margin order key and its direct-result scope are unchanged. The special
 result class hides the ordering columns that SQLite requires in the outermost
 compound `SELECT`; its `compute()` path preserves the public table schema.
+
+The B-direct amendment to ADR 0031 replaces the old full-result staging step.
+Direct compute inserts the ordered public query into an empty typed table and
+returns a lazy table explicitly ordered by an available implicit rowid alias.
+That rowid expression carries no window ordering, so ordinary select and rename
+can operate on the returned table. Derived tables have ordinary dbplyr order
+semantics; the direct materialized result retains this decision's Margin order.

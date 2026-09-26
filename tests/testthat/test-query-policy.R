@@ -99,22 +99,26 @@ find_local_assignment <- function(fn, var_name) {
 # reaches `DBI::dbGetQuery()` from inside dbplyr, where the walk over `R/`
 # cannot follow (ADR 0027). Neither takes a positive control: one for
 # "marginplyr does not call this" would be marginplyr calling it.
+# `DBI::dbExistsTable()` sends destination metadata queries during explicit
+# SQLite compute; the catalog keeps that call visible if it moves into lazy
+# construction.
 lazy_execution_entry_points <- function() {
   data.frame(
     package = c(
       "dplyr", "dplyr", "dplyr", "dplyr", "base", "tibble",
-      "DBI", "DBI", "DBI", "DBI", "DBI", "DBI",
+      "DBI", "DBI", "DBI", "DBI", "DBI", "DBI", "DBI",
       "dbplyr", "dbplyr", "dbplyr", "arrow"
     ),
     name = c(
       "collect", "compute", "pull", "explain", "as.data.frame", "as_tibble",
       "dbGetQuery", "dbSendQuery", "dbSendStatement", "dbFetch", "dbReadTable",
-      "dbExecute", "db_collect", "db_compute", "remote_query_plan",
+      "dbExecute", "dbExistsTable", "db_collect", "db_compute",
+      "remote_query_plan",
       "as_arrow_table"
     ),
     subject_test = c(
       FALSE, FALSE, FALSE, FALSE, TRUE, TRUE,
-      FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
+      FALSE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE,
       FALSE, FALSE, FALSE, FALSE
     ),
     stringsAsFactors = FALSE
@@ -365,6 +369,29 @@ test_that("the counter reports entry-point invocations rather than reads", {
     count_entry_point_invocations(dplyr::collect(table)),
     1L
   )
+})
+
+test_that("SQLite destination inspection starts only at explicit compute", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(2, 5)),
+    "query_policy_sqlite_source", temporary = TRUE
+  )
+  expect_identical(count_entry_point_invocations(
+    summarize_with_margins(
+      source, z = sum(v, na.rm = TRUE), .grouping = rollup(g),
+      .id = "sid", .sort = "last"
+    )
+  ), 0L)
+  query <- summarize_with_margins(
+    source, z = sum(v, na.rm = TRUE), .grouping = rollup(g),
+    .id = "sid", .sort = "last"
+  )
+  expect_gt(count_entry_point_invocations(dplyr::compute(
+    query, name = "query_policy_sqlite_target", temporary = FALSE
+  )), 0L)
 })
 
 test_that("the exempt selection proxy materializes no caller rows", {

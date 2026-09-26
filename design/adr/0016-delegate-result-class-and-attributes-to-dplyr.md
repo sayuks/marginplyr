@@ -264,10 +264,12 @@ the refusal to restore arbitrary column attributes: marginplyr constructs the
 missing row but leaves its subsequent combination to dplyr and vctrs. Lazy
 backends gain no structured-key support from this amendment.
 
-## Amendment: the SQLite typed-order result owns its public columns
+## Amendment: the SQLite declared-type result owns its public columns
 
-ADR 0031 makes one result-class exception for a live SQLite Margin result with
-a typed-missing dimension and requested Margin order. The dedicated lazy class
-hides SQL ordering columns from the public result while retaining the source
-dimension's collected type. This exception restores a property marginplyr
-constructed; it does not restore arbitrary input attributes or classes.
+ADR 0031 makes one result-class exception for live SQLite results needing a
+source-column anchor or a package-declared output type. The dedicated lazy
+class hides SQL ordering columns from sorted direct collection, keeps the
+source dimension's collected type, and restores currently declared types on
+empty results. Direct compute creates a typed table with public columns only;
+later dplyr verbs return to ordinary dbplyr behavior. This exception restores
+properties marginplyr constructed, not arbitrary input attributes or classes.

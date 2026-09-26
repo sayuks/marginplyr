@@ -160,8 +160,72 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   out
 }
 
-# Direct materialization is temporarily refused at this boundary (issue #661).
-# A downstream query delegates to dbplyr; the direct result still collects.
+# Resolve an explicit destination before any write. A bare persistent name
+# shadowed by temp, or a bare temporary overwrite that would find main, is
+# unsafe on SQLite. The caller may omit the name for dbplyr to generate one.
+sqlite_compute_destination <- function(con, name, temporary, overwrite) {
+  if (is.null(name)) {
+    return(NULL)
+  }
+  destination <- dbplyr::as_table_path(name, con)
+  parts <- dbplyr::table_path_components(destination, con)[[1L]]
+  if (length(parts) == 1L && (!temporary || overwrite)) {
+    table <- parts[[1L]]
+    temp_exists <- DBI::dbExistsTable(
+      con, DBI::Id(schema = "temp", table = table)
+    )
+    if (!temporary && temp_exists) {
+      abort_marginplyr(
+        paste0(
+          "A temporary table shadows the persistent destination; ",
+          "use an explicit schema or another name."
+        ),
+        call = rlang::caller_call()
+      )
+    }
+    if (temporary && overwrite && !temp_exists &&
+          DBI::dbExistsTable(con, DBI::Id(schema = "main", table = table))) {
+      abort_marginplyr(
+        paste0(
+          "A temporary overwrite would target a table in main; ",
+          "use an explicit schema or another name."
+        ),
+        call = rlang::caller_call()
+      )
+    }
+  }
+  destination
+}
+
+# Apply materialization within one owned SQLite savepoint. DBI's named rollback
+# also releases it; only the caller commits or rolls back an enclosing
+# transaction.
+sqlite_with_compute_savepoint <- function(con, destination, code) {
+  savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
+  DBI::dbBegin(con, name = savepoint)
+  tryCatch({
+    value <- code(destination)
+    DBI::dbCommit(con, name = savepoint)
+    value
+  }, error = function(err) {
+    tryCatch(
+      DBI::dbRollback(con, name = savepoint),
+      error = function(cleanup) {
+        rlang::abort(
+          paste0(
+            "SQLite compute failed; its savepoint rollback failed: ",
+            conditionMessage(cleanup)
+          ),
+          parent = err
+        )
+      }
+    )
+    stop(err)
+  })
+}
+
+# Materialize the public query directly into the typed destination (ADR 0031).
+# The caller holds the unmodified direct result; later dplyr verbs delegate.
 #' @exportS3Method dplyr::compute
 #' @noRd
 compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
@@ -170,17 +234,88 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
                                                    unique_indexes = list(),
                                                    indexes = list(),
                                                    analyze = TRUE, ...,
-                                                   sql_options = NULL) {
+                                                   sql_options = NULL,
+                                                   in_transaction = FALSE) {
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  abort_marginplyr(
-    paste0(
-      "Direct compute() of this SQLite Margin result is temporarily disabled ",
-      "because materialization can write to a different table than requested. ",
-      "Use collect() to retrieve the result until destination handling ",
-      "is fixed."
-    ),
-    call = rlang::caller_call()
+  if (!rlang::is_bool(temporary)) {
+    abort_marginplyr("`temporary` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
+  if (!rlang::is_bool(overwrite)) {
+    abort_marginplyr("`overwrite` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
+  if (!rlang::is_bool(analyze)) {
+    abort_marginplyr("`analyze` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
+  if (!rlang::is_bool(in_transaction)) {
+    abort_marginplyr("`in_transaction` must be TRUE or FALSE.",
+                     call = rlang::caller_call())
+  }
+  con <- x$con
+  public <- attr(x, "marginplyr_public_columns")
+  sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
+  rowid_alias <- setdiff(c("rowid", "oid", "_rowid_"), tolower(public))
+  if (sorted && length(rowid_alias) == 0L) {
+    abort_marginplyr(
+      paste0(
+        "Can't materialize this SQLite Margin order: result columns shadow ",
+        "all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+      ),
+      call = rlang::caller_call()
+    )
+  }
+  destination <- sqlite_compute_destination(con, name, temporary, overwrite)
+  insert_from <- dbplyr::sql_render(
+    attr(x, "marginplyr_public_query"), sql_options = sql_options
   )
+  columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")
+  sqlite_with_compute_savepoint(con, destination, function(destination) {
+    anchor <- attr(x, "marginplyr_public_anchor")
+    # Leave an absent sql_options argument absent: dbplyr's deprecated cte
+    # option in ... is exclusive with a supplied sql_options, even NULL.
+    if (is.null(sql_options)) {
+      result <- dplyr::compute(
+        anchor, name = destination, temporary = temporary,
+        overwrite = overwrite, unique_indexes = unique_indexes,
+        indexes = indexes, analyze = FALSE, ..., in_transaction = FALSE
+      )
+    } else {
+      result <- dplyr::compute(
+        anchor, name = destination, temporary = temporary,
+        overwrite = overwrite, unique_indexes = unique_indexes,
+        indexes = indexes, analyze = FALSE, ..., sql_options = sql_options,
+        in_transaction = FALSE
+      )
+    }
+    if (is.null(destination)) {
+      destination <- dbplyr::as_table_path(dbplyr::remote_name(result), con)
+    }
+    parts <- dbplyr::table_path_components(destination, con)[[1L]]
+    if (length(parts) == 1L) {
+      destination <- dbplyr::as_table_path(
+        DBI::Id(
+          schema = if (temporary) "temp" else "main", table = parts[[1L]]
+        ),
+        con
+      )
+    }
+    table_sql <- as.character(destination)
+    DBI::dbExecute(con, paste0(
+      "INSERT INTO ", table_sql, " (", columns, ") ", as.character(insert_from)
+    ))
+    if (analyze) {
+      DBI::dbExecute(con, paste("ANALYZE", table_sql))
+    }
+    result <- dplyr::tbl(con, destination, vars = public)
+    if (sorted) {
+      result <- dbplyr::window_order(
+        dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
+      )
+    }
+    result
+  })
 }
