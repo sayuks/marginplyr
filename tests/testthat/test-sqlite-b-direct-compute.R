@@ -13,7 +13,7 @@ test_that("qualified SQLite compute writes and reads one destination", {
   DBI::dbExecute(con, "ANALYZE main.report")
   main_before <- DBI::dbGetQuery(con, "SELECT * FROM main.report")
   main_schema_before <- DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM main.sqlite_master ORDER BY type, name"
   )
   main_stats_before <- DBI::dbGetQuery(con, "SELECT * FROM main.sqlite_stat1")
   expected <- data.frame(g = c("a", "b", "Total"),
@@ -36,7 +36,7 @@ test_that("qualified SQLite compute writes and reads one destination", {
     expect_identical(DBI::dbGetQuery(con, "SELECT * FROM main.report"),
                      main_before)
     expect_identical(DBI::dbGetQuery(
-      con, "SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name"
+      con, "SELECT * FROM main.sqlite_master ORDER BY type, name"
     ), main_schema_before)
     expect_identical(DBI::dbGetQuery(con, "SELECT * FROM main.sqlite_stat1"),
                      main_stats_before)
@@ -69,7 +69,7 @@ test_that("qualified SQLite compute writes and reads one destination", {
   expect_identical(DBI::dbGetQuery(con, "SELECT * FROM main.report"),
                    main_before)
   expect_identical(DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM main.sqlite_master ORDER BY type, name"
   ), main_schema_before)
   expect_identical(DBI::dbGetQuery(con, "SELECT * FROM main.sqlite_stat1"),
                    main_stats_before)
@@ -107,10 +107,10 @@ test_that("unsafe bare destinations are refused before mutation", {
   DBI::dbExecute(con, "ANALYZE main.persistent")
   before <- DBI::dbListTables(con)
   temp_schema_before <- DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM temp.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM temp.sqlite_master ORDER BY type, name"
   )
   main_schema_before <- DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM main.sqlite_master ORDER BY type, name"
   )
   temp_stats_before <- DBI::dbGetQuery(con, "SELECT * FROM temp.sqlite_stat1")
   main_stats_before <- DBI::dbGetQuery(con, "SELECT * FROM main.sqlite_stat1")
@@ -126,10 +126,10 @@ test_that("unsafe bare destinations are refused before mutation", {
   expect_identical(DBI::dbGetQuery(con, "SELECT value FROM temp.report")$value,
                    "temp")
   expect_identical(DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM temp.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM temp.sqlite_master ORDER BY type, name"
   ), temp_schema_before)
   expect_identical(DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM main.sqlite_master ORDER BY type, name"
   ), main_schema_before)
   expect_identical(DBI::dbGetQuery(con, "SELECT * FROM temp.sqlite_stat1"),
                    temp_stats_before)
@@ -147,7 +147,7 @@ test_that("unsafe bare destinations are refused before mutation", {
                    "temp")
 
   main_schema_before <- DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM main.sqlite_master ORDER BY type, name"
   )
   main_stats_before <- DBI::dbGetQuery(con, "SELECT * FROM main.sqlite_stat1")
   for (name in list("persistent", "PERSISTENT",
@@ -170,10 +170,10 @@ test_that("unsafe bare destinations are refused before mutation", {
   expect_identical(DBI::dbGetQuery(con, "SELECT * FROM main.sqlite_stat1"),
                    main_stats_before)
   expect_identical(DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM temp.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM temp.sqlite_master ORDER BY type, name"
   ), temp_schema_before)
   expect_identical(DBI::dbGetQuery(
-    con, "SELECT type, name, tbl_name, sql FROM main.sqlite_master ORDER BY type, name"
+    con, "SELECT * FROM main.sqlite_master ORDER BY type, name"
   ), main_schema_before)
   out <- dplyr::compute(query, name = "safe_report", temporary = TRUE)
   expect_identical(dplyr::collect(out)$sid, c(1L, 1L, 2L))
@@ -463,9 +463,8 @@ test_that("ordinary temporary SQLite compute retains indexes and analysis", {
     con, "PRAGMA temp.index_list('temp_index_report')"
   )
   expect_identical(nrow(index_list), 1L)
-  expect_identical(DBI::dbGetQuery(con,
-    "SELECT tbl FROM temp.sqlite_stat1 WHERE tbl = 'temp_index_report'"
-  )$tbl, "temp_index_report")
+  stats <- DBI::dbGetQuery(con, "SELECT tbl FROM temp.sqlite_stat1")
+  expect_true("temp_index_report" %in% stats$tbl)
   expect_false(DBI::dbExistsTable(
     con, DBI::Id(schema = "main", table = "temp_index_report")
   ))

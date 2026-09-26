@@ -198,7 +198,8 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
 }
 
 # Apply materialization within one owned SQLite savepoint. DBI's named rollback
-# also releases it; only the caller commits or rolls back an enclosing transaction.
+# also releases it; only the caller commits or rolls back an enclosing
+# transaction.
 sqlite_with_compute_savepoint <- function(con, destination, code) {
   savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
   DBI::dbBegin(con, name = savepoint)
