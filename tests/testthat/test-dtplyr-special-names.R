@@ -138,6 +138,34 @@ test_that("dtplyr special source summaries support Parent and Total shares", {
   }
 })
 
+test_that("dtplyr special share sources support empty input", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(g = character(), value = numeric())
+  source <- dtplyr::lazy_dt(input)
+  for (column in c(".I", ".GRP", ".NGRP")) {
+    total <- function(data) {
+      summarize_with_margins(
+        data, !!column := sum(value),
+        p = share_of_total(!!rlang::sym(column))
+      )
+    }
+    parent <- function(data) {
+      summarize_with_margins(
+        data, !!column := sum(value),
+        p = share_of_parent(!!rlang::sym(column)),
+        .grouping = rollup(g), .margin_label = NULL
+      )
+    }
+    for (run in list(total, parent)) {
+      query <- run(source)
+      expect_s3_class(query, "dtplyr_step")
+      expect_equal(dplyr::collect(query), tibble::as_tibble(run(input)),
+                   info = column)
+    }
+  }
+  expect_identical(dplyr::collect(source), input)
+})
+
 test_that("dtplyr special dimensions cover empty inputs and one-set plans", {
   skip_if_suggest_absent("dtplyr")
   for (column in c(".N", ".I", ".SD", ".GRP", ".NGRP")) {

@@ -9,9 +9,7 @@ margin_identifier_key <- function(names, backend = NULL) {
   chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", names)
 }
 
-# Only names that coexist in the public result belong here. A summary may
-# replace an unrelated input payload; checking every source name would refuse
-# ordinary summary replacement.
+# Compare coexisting public result names under ADR 0032's SQL identifier rule.
 check_margin_sql_public_names <- function(names, backend) {
   keys <- margin_identifier_key(names, backend)
   for (i in seq_along(keys)) {

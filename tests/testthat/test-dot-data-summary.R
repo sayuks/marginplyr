@@ -60,6 +60,21 @@ test_that(".data summary names survive lazy portable evaluation", {
     duck_con <- duckdb_test_connection()
     on.exit(DBI::dbDisconnect(duck_con, shutdown = TRUE), add = TRUE)
     source <- dplyr::copy_to(duck_con, data, temporary = TRUE)
+    ordinary <- dplyr::collect(dplyr::summarize(
+      source, "{name}" := dplyr::n(), .by = g
+    ))
+    expect_identical(names(ordinary), c("g", ".data"))
+    expect_equal(ordinary[[".data"]], 1)
+
+    native <- summarize_with_margins(
+      source, "{name}" := dplyr::n(), .grouping = rollup(g)
+    )
+    expect_s3_class(native, "tbl_lazy")
+    expect_match(dbplyr::sql_render(native), "GROUPING SETS")
+    native_result <- as.data.frame(dplyr::collect(native))
+    expect_identical(names(native_result), c("g", ".data"))
+    expect_equal(native_result[[".data"]], c(1, 1))
+
     query <- summarize_with_margins(
       source, "{name}" := dplyr::n(), .grouping = rollup(g),
       .duplicates = "keep", .id = "set"

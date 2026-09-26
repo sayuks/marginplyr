@@ -133,6 +133,15 @@ test_that("DuckDB protects names on native and portable plans", {
     expect_match(conditionMessage(native_error), "G", fixed = TRUE)
   }
 
+  portable_error <- expect_error(summarize_with_margins(
+    remote, G = sum(v),
+    .grouping = grouping_sets(grouping_set(g), grouping_set(g)),
+    .duplicates = "keep", .id = "set"
+  ))
+  expect_s3_class(portable_error, "marginplyr_error")
+  expect_match(conditionMessage(portable_error), "g", fixed = TRUE)
+  expect_match(conditionMessage(portable_error), "G", fixed = TRUE)
+
   portable <- dplyr::collect(summarize_with_margins(
     remote, n = dplyr::n(),
     .grouping = grouping_sets(grouping_set(g), grouping_set(g)),
