@@ -1,5 +1,6 @@
 # PROTOTYPE ONLY: metadata injection into a direct SQLite Margin result.
-# Run from the prototype worktree: Rscript R/prototype-706-helper-types.R
+# Run from the prototype worktree: Rscript R/prototype-706-helper-types.Rproto
+# The .Rproto extension keeps pkgload from sourcing this disposable probe.
 suppressPackageStartupMessages(pkgload::load_all(
   Sys.getenv("MARGINPLYR_SOURCE", "."), quiet = TRUE
 ))
