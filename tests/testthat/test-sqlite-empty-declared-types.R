@@ -84,10 +84,12 @@ test_that("SQLite empty summary keeps root shares and standalone identifiers", {
     empty, z = sum(v), .by = month, .grouping = grouping_set(g),
     .id = "sid"
   )
-  expect_identical(dplyr::collect(dplyr::compute(query))$sid, integer())
+  computed <- dplyr::collect(dplyr::compute(query))
+  expect_identical(computed$g, character())
+  expect_identical(computed$sid, integer())
   result <- dplyr::collect(query)
   expect_identical(result$month, integer())
-  expect_identical(result$g, integer())
+  expect_identical(result$g, character())
   expect_identical(result$sid, integer())
   expect_identical(nrow(result), 0L)
 })

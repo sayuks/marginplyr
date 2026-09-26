@@ -301,6 +301,41 @@ local_assigned_summary_value <- function(value, name) {
   )
 }
 
+# Check the names of an unnamed frame when its value exists, before dplyr can
+# replace a grouping key with a same-named column in its summary mask.
+local_frame_summary_value <- function(value, group_vars, internal_names,
+                                      set_id_name, set_id_is_internal) {
+  if (is.data.frame(value)) {
+    check_summary_output_names(
+      names(value), group_vars, internal_names, set_id_name,
+      set_id_is_internal
+    )
+  }
+  value
+}
+
+# A frame constructor's arguments are not necessarily its output columns.
+# Wrap its evaluated value, leaving dplyr to expand it in the same mask.
+wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
+                                       set_id_name, set_id_is_internal) {
+  for (i in seq_along(dots)) {
+    dot <- dots[[i]]
+    if (nzchar(rlang::names2(dots)[[i]]) ||
+      !identical(data_frame_valued_summary_kind(
+        rlang::quo_get_expr(dot)
+      ), "frame")) {
+      next
+    }
+    expr <- rlang::call2(
+      marginplyr_private_call("local_frame_summary_value"),
+      rlang::quo_get_expr(dot), group_vars, internal_names, set_id_name,
+      set_id_is_internal
+    )
+    dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
+  }
+  dots
+}
+
 # What execution carries for the caller's summary arguments: the dots to hand
 # dplyr, beside the caller's own label for each and the Assigned summary name
 # for each. Constructed at the one point all three are final -- after every
@@ -316,8 +351,8 @@ local_assigned_summary_value <- function(value, name) {
 # is checked once rather than only when a second value says to. The assigned
 # names default to none for the same reason: such a caller wrote every name its
 # dots carry, and ADR 0028 applies only to a name marginplyr wrote.
-# `selection_state` carries the local branch's internal key names to deferred
-# selections; the union adapter fills those names before it runs any branch.
+# `selection_state` carries local internal key and share placeholder names to
+# deferred selections; the union adapter fills key names before any branch.
 new_summary_arguments <- function(dots,
                                   labels = summary_argument_labels(dots),
                                   assigned_names = rep(
@@ -536,6 +571,7 @@ plan_summary_expressions <- function(dots,
   selection_state <- if (defer_local) new.env(parent = emptyenv()) else NULL
   if (defer_local) {
     selection_state$internal_names <- character()
+    selection_state$share_aliases <- character()
     share_positions <- which(vapply(
       original_dots,
       function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
@@ -915,7 +951,8 @@ local_summary_selection <- function(selection, env, group_vars,
   if (is.environment(forbidden_names)) {
     forbidden_names <- c(
       forbidden_names$forbidden_names,
-      get("internal_names", envir = forbidden_names, inherits = TRUE)
+      get("internal_names", envir = forbidden_names, inherits = TRUE),
+      get("share_aliases", envir = forbidden_names, inherits = TRUE)
     )
   }
   data <- data[setdiff(names(data), c(group_vars, forbidden_names))]
@@ -1129,18 +1166,14 @@ known_summary_output_names <- function(dots, data_proxy,
 }
 
 # Which data-frame-valued shape a summary is written as, or `NULL` for one that
-# is not recognized as any. Two readers need the recognition and each needs a
-# different half of it: `known_data_frame_output_names()` reads which outputs
-# the shape produces, and `name_rewritten_summary_dots()` reads that dplyr
-# expands them rather than naming one column for the summary. Answering both
-# from here is what keeps a shape added for one from being invisible to the
-# other.
+# is not recognized as any. Name assignment and local frame checking both
+# use this spelling classification; actual frame names are read from the value
+# when the summary runs.
 #
 # Two frame families rather than one, because the owner differs and the owner
 # is what recognition tests: tibble owns `tibble()` and `data_frame()`, base
 # owns `data.frame()`. Neither is a Contextual helper -- nothing rewrites them,
-# and a caller who binds `tibble` gets their own function -- so what is read
-# here is only which output names the summary is going to produce (ADR 0019).
+# and a caller who binds `tibble` gets their own function (ADR 0019).
 data_frame_valued_summary_kind <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(NULL)
@@ -1164,24 +1197,7 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   }
 
   if (identical(kind, "frame")) {
-    if (!is_known_frame_constructor(expr, env)) {
-      return(character())
-    }
-    call_args <- static_call_args(expr)
-    arg_names <- names(call_args)
-    if (is.null(arg_names)) {
-      arg_names <- rep("", length(call_args))
-    }
-    controls <- frame_constructor_controls(expr)
-    injected_names <- vapply(
-      call_args[arg_names == ""],
-      known_injected_argument_name,
-      character(1)
-    )
-    return(c(
-      arg_names[nzchar(arg_names) & !arg_names %in% controls],
-      injected_names[nzchar(injected_names) & !injected_names %in% controls]
-    ))
+    return(character())
   }
 
   if (identical(kind, "pick")) {
@@ -1199,9 +1215,39 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
   stop("Unhandled data-frame-valued summary kind: ", kind, call. = FALSE)
 }
 
-# A recognized frame spelling predicts its argument names only when ordinary
-# function lookup reaches that constructor. Qualified calls name their owner;
-# an unqualified call may instead reach a caller's function (ADR 0019).
+# Constructor argument names are only candidates for share diagnostics and
+# internal-name reservation. Omission, expansion, and repair can change the
+# actual schema, which local_frame_summary_value() checks after evaluation.
+frame_argument_candidates <- function(expr, env) {
+  if (!identical(data_frame_valued_summary_kind(expr), "frame") ||
+        !is_known_frame_constructor(expr, env)) {
+    return(character())
+  }
+  call_args <- static_call_args(expr)
+  arg_names <- unname(rlang::names2(call_args))
+  controls <- frame_constructor_controls(expr)
+  injected_names <- vapply(
+    call_args[arg_names == ""], known_injected_argument_name, character(1)
+  )
+  unname(c(
+    arg_names[nzchar(arg_names) & !arg_names %in% controls],
+    injected_names[nzchar(injected_names) & !injected_names %in% controls]
+  ))
+}
+
+# Gather unnamed constructor candidates for reserving internal adapter names.
+# Named summaries remain packed under their caller-written outer name.
+summary_frame_candidates <- function(dots) {
+  unnamed <- dots[!nzchar(rlang::names2(dots))]
+  unlist(lapply(unnamed, function(dot) {
+    frame_argument_candidates(
+      rlang::quo_get_expr(dot), rlang::quo_get_env(dot)
+    )
+  }), use.names = FALSE)
+}
+
+# Qualified constructors name their owner; an unqualified spelling may reach
+# a caller's own function through ordinary lookup (ADR 0019).
 is_known_frame_constructor <- function(expr, env) {
   name <- static_call_name(expr)
   namespace <- static_call_ns(expr)
@@ -1241,9 +1287,7 @@ ordinary_function_binding <- function(name, env) {
   NULL
 }
 
-# The formal arguments after `...` that a recognized constructor consumes
-# rather than writes as columns. R matches these only by their full names.
-# `tibble::data_frame()` has only `...`, unlike `tibble::tibble()`.
+# A recognized constructor consumes these full formal names as controls.
 frame_constructor_controls <- function(expr) {
   constructor <- if (is_static_spelling_call(
     expr, "base_frame", "data.frame"
@@ -1257,18 +1301,14 @@ frame_constructor_controls <- function(expr) {
   setdiff(names(formals(constructor)), "...")
 }
 
+# Read only literal injected names, without evaluating a naming expression.
 known_injected_argument_name <- function(expr) {
   if (!rlang::is_call(expr, ":=") || length(expr) != 3L) {
     return("")
   }
-
-  # By subscript, because a name-position argument the caller left empty is R's
-  # missing marker: `lhs <- expr[[2L]]` binds it and raises `missingArgError`
-  # on the first read of that name (#174). It names no output, which is what
-  # the fall-through below already says.
+  # An empty LHS must be inspected by subscript: assigning it errors (#174).
   if (
-    is.character(expr[[2L]]) &&
-      length(expr[[2L]]) == 1L &&
+    is.character(expr[[2L]]) && length(expr[[2L]]) == 1L &&
       !is.na(expr[[2L]])
   ) {
     return(expr[[2L]])
