@@ -1098,9 +1098,42 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       reserved_names <- unique(c(
         operation$data_vars,
         summary_output_names,
+        summary_frame_candidates(dots),
         operation$set_id_name
       ))
       has_shares <- length(summary_plan$requests) > 0L
+      share_names <- unlist(
+        lapply(summary_plan$requests, `[[`, "outputs"), use.names = FALSE
+      )
+      local_share <- has_shares && identical(
+        operation$backend$kind, "local"
+      )
+      if (local_share) {
+        share_positions <- match(share_names, names(summaries$dots))
+        stopifnot(!anyNA(share_positions))
+        share_aliases <- stats::setNames(new_margin_internal_names(
+          length(share_names), used_names = reserved_names,
+          prefix = "..marginplyr_share_"
+        ), share_names)
+        share_tokens <- stats::setNames(lapply(
+          share_names, function(name) new.env(parent = emptyenv())
+        ), unname(share_aliases))
+        for (i in seq_along(share_positions)) {
+          position <- share_positions[[i]]
+          summaries$dots[[position]] <- rlang::new_quosure(
+            rlang::call2(
+              marginplyr_private_call("local_share_marker"),
+              unname(share_aliases[[i]]),
+              share_tokens[[i]]
+            ),
+            env = environment()
+          )
+          names(summaries$dots)[position] <- unname(share_aliases[[i]])
+        }
+        reserved_names <- c(reserved_names, unname(share_aliases))
+        summaries$selection_state$share_aliases <- unname(share_aliases)
+        summaries$selection_state$share_markers <- share_tokens
+      }
       declare_sqlite_types <- sqlite_declared_type_result(operation)
       declared_id <- if (!declare_sqlite_types ||
                            is.null(operation$set_id_name)) {
@@ -1128,11 +1161,14 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
           (has_shares && identical(operation$backend$kind, "dtplyr"))
       )
 
-      if (has_shares) {
-        share_names <- unlist(
-          lapply(summary_plan$requests, `[[`, "outputs"),
-          use.names = FALSE
+      if (local_share) {
+        staged_result <- restore_local_share_names(
+          staged_result, share_aliases, share_tokens,
+          summary_plan$requests
         )
+      }
+
+      if (has_shares) {
         return(new_margin_execution(
           execute_shares(
             operation,
@@ -1158,6 +1194,79 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
     },
     call = operation$call
   )
+}
+
+# Returns one token in a list column at the share's original dot position.
+# The caller gives an alias absent from input and known output names. A frame
+# that created the alias earlier in this branch is visible in the mask here.
+local_share_marker <- function(alias, token) {
+  if (alias %in% names(dplyr::pick(dplyr::everything()))) {
+    abort_share_alias_collision(alias)
+  }
+  structure(list(token), marginplyr_share_token = token)
+}
+
+# Rejects an ordinary output using a reserved local share alias. The caller
+# supplies the alias that was present in the summary mask or staged result.
+abort_share_alias_collision <- function(alias) {
+  abort_marginplyr(paste0(
+    "Ordinary summary output {.var {alias}} conflicts with an internal ",
+    "share column."
+  ))
+}
+
+# Checks each local branch before binding can discard zero-row list attributes.
+# The caller passes a dplyr branch and its per-alias tokens; nonempty columns
+# carry token cells, while an empty marker carries its token as an attribute.
+check_local_share_markers <- function(result, markers) {
+  for (alias in names(markers)) {
+    value <- result[[alias]]
+    valid <- if (length(value) > 0L) {
+      is.list(value) && all(vapply(
+        value, identical, logical(1), markers[[alias]]
+      ))
+    } else {
+      identical(attr(value, "marginplyr_share_token"), markers[[alias]])
+    }
+    if (!valid) {
+      abort_share_alias_collision(alias)
+    }
+  }
+  invisible(NULL)
+}
+
+# Restores public share names after all local branches have been combined.
+# The caller passes aliases and tokens whose markers passed each branch check;
+# nonempty result cells are checked again before the placeholders are reset.
+restore_local_share_names <- function(staged_result, aliases,
+                                      tokens, requests) {
+  result <- margin_summary_stage_result(staged_result)
+  conflicts <- intersect(names(result), names(aliases))
+  if (length(conflicts) > 0L) {
+    name <- conflicts[[1L]]
+    pair <- Filter(function(pair) identical(pair$output, name),
+                   share_pairs(requests))[[1L]]
+    # The cli template reads this binding; codetools cannot follow it.
+    kind <- pair$kind # nolint: object_usage_linter.
+    abort_marginplyr(paste0(
+      "{share_kind_modifier(kind)} output name {.var {name}} conflicts ",
+      "with an ordinary summary."
+    ))
+  }
+  for (alias in unname(aliases)) {
+    value <- result[[alias]]
+    if (!is.list(value) || !all(vapply(
+      value, identical, logical(1), tokens[[alias]]
+    ))) {
+      abort_share_alias_collision(alias)
+    }
+    result[[alias]] <- rep(NA_real_, nrow(result))
+  }
+  rename_pairs <- rlang::set_names(
+    rlang::syms(unname(aliases)), names(aliases)
+  )
+  staged_result$result <- dplyr::rename(result, !!!rename_pairs)
+  staged_result
 }
 
 # `summaries` is what `new_summary_arguments()` built: the caller's summary
@@ -1265,7 +1374,9 @@ stage_margin_summaries <- function(operation,
     },
     error = function(cnd) {
       parent <- cnd$parent
-      if (keep_set_identity && inherits(parent, "marginplyr_error")) {
+      # dplyr wraps a Package condition raised while it evaluates an unnamed
+      # frame; return that condition with its class and diagnostic intact.
+      if (inherits(parent, "marginplyr_error")) {
         stop(parent)
       }
       stop(cnd)
