@@ -9,13 +9,6 @@
 # `data.table` failed before any grouping happened, with data.table's join
 # diagnostic and nothing naming the input class as the reason (#176).
 #
-# Every assertion below compares a raw `data.table` against the same data as a
-# base `data.frame`, because the claim is agreement rather than any particular
-# result: a literal would go on passing if both paths broke the same way. What
-# these deliberately do not assert is the result's own class. ADR 0016 leaves
-# that to the dplyr verb each Margin verb ends in, and pinning it for a subclass
-# would convert a described behavior into a promise.
-#
 # `summarise_with_margins()` is deliberately not swept alongside the verbs
 # below. "British and American summary spellings are synonyms" in
 # `test-grouping-interface.R` asserts it is the same object with the same
@@ -83,6 +76,98 @@ test_that("expand_with_margins() accepts a raw data.table", {
       .id = "set"
     )
   })
+})
+
+test_that("ordered expansion accepts a one-row data.table", {
+  skip_if_suggest_absent("data.table")
+  data <- data.table::data.table(g = "a")
+  before <- serialize(data, NULL)
+
+  for (sort in c("first", "last")) {
+    result <- expand_with_margins(
+      data, .grouping = rollup(g), .sort = sort
+    )
+    expect_identical(names(result), "g")
+    expect_identical(nrow(result), 2L)
+    expect_identical(
+      result$g,
+      if (identical(sort, "first")) c("Total", "a") else c("a", "Total")
+    )
+    expect_identical(serialize(data, NULL), before)
+  }
+})
+
+test_that("ordered data.table expansion keeps fixed and missing keys", {
+  skip_if_suggest_absent("data.table")
+  data <- data.table::data.table(
+    value = c(20L, 10L, 30L),
+    region = c("b", "a", NA_character_),
+    fixed = c(2L, 1L, 1L)
+  )
+  before <- serialize(data, NULL)
+
+  for (sort in c("first", "last")) {
+    result <- expand_with_margins(
+      data,
+      .by = fixed,
+      .grouping = rollup(region),
+      .id = "set",
+      .sort = sort
+    )
+
+    expect_identical(names(result), c("fixed", "region", "set", "value"))
+    expect_identical(nrow(result), 6L)
+    if (identical(sort, "last")) {
+      expect_identical(result$fixed, c(1L, 1L, 1L, 1L, 2L, 2L))
+      expect_identical(result$region,
+                       c("a", NA_character_, "Total", "Total", "b", "Total"))
+      expect_identical(result$set, c(1L, 1L, 2L, 2L, 1L, 2L))
+      expect_identical(result$value[c(1L, 2L, 5L, 6L)],
+                       c(10L, 30L, 20L, 20L))
+      expect_identical(base::sort(result$value[3:4]), c(10L, 30L))
+    } else {
+      expect_identical(result$fixed, c(1L, 1L, 1L, 1L, 2L, 2L))
+      expect_identical(result$region,
+                       c("Total", "Total", "a", NA_character_, "Total", "b"))
+      expect_identical(result$set, c(2L, 2L, 1L, 1L, 2L, 1L))
+      expect_identical(base::sort(result$value[1:2]), c(10L, 30L))
+      expect_identical(result$value[3:6], c(10L, 30L, 20L, 20L))
+    }
+    expect_identical(serialize(data, NULL), before)
+  }
+})
+
+test_that("unordered data.table expansion remains available", {
+  skip_if_suggest_absent("data.table")
+  data <- data.table::data.table(g = "a")
+  before <- serialize(data, NULL)
+  result <- expand_with_margins(data, .grouping = rollup(g), .sort = "none")
+
+  expect_identical(nrow(result), 2L)
+  expect_identical(sort(result$g), c("Total", "a"))
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("ordered expansion keeps the plain data.frame control", {
+  data <- data.frame(g = "a")
+  before <- serialize(data, NULL)
+  result <- expand_with_margins(data, .grouping = rollup(g), .sort = "last")
+
+  expect_identical(result$g, c("a", "Total"))
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("ordered expansion keeps the immutable dtplyr control", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(g = "a")
+  source <- dtplyr::lazy_dt(data, immutable = TRUE)
+  before <- serialize(data, NULL)
+  result <- dplyr::collect(expand_with_margins(
+    source, .grouping = rollup(g), .sort = "last"
+  ))
+
+  expect_identical(result$g, c("a", "Total"))
+  expect_identical(serialize(data, NULL), before)
 })
 
 test_that("the nesting verbs accept a raw data.table", {

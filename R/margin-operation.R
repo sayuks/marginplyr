@@ -515,8 +515,11 @@ margin_structured_sort_columns <- function(result, plan) {
   }
   columns <- c(plan$by, plan$dimensions)
   columns[vapply(
-    result[columns],
-    function(column) is.data.frame(column) || is.matrix(column),
+    columns,
+    function(name) {
+      column <- result[[name]]
+      is.data.frame(column) || is.matrix(column)
+    },
     logical(1)
   )]
 }
