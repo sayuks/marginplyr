@@ -32,6 +32,20 @@ prototype_declare <- function(x, source, declared) {
   x
 }
 
+prototype_direct_declarations <- function(dots) {
+  direct <- vapply(dots, function(dot) {
+    !is.null(marginplyr:::grouping_helper_name(rlang::quo_get_expr(dot)))
+  }, logical(1))
+  stats::setNames(rep("integer", sum(direct)), names(dots)[direct])
+}
+
+declared_helpers <- prototype_direct_declarations(rlang::quos(
+  bit = grouping_bit(g),
+  mask = grouping_id(),
+  wrapped = as.integer(grouping_id())
+))
+print(declared_helpers)
+
 run_case <- function(rows, sort, set_id) {
   input <- if (rows == "empty") dplyr::filter(source, v < 0) else source
   direct <- summarize_with_margins(
@@ -42,9 +56,7 @@ run_case <- function(rows, sort, set_id) {
     .grouping = grouping_set(g), .id = set_id,
     .margin_label = NULL, .sort = sort
   )
-  declared <- prototype_declare(
-    direct, source, c(bit = "integer", mask = "integer")
-  )
+  declared <- prototype_declare(direct, source, declared_helpers)
   type_vec <- function(value) vapply(value, typeof, character(1))
   data.frame(
     rows = rows, sort = sort, set_id = !is.null(set_id),
