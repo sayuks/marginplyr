@@ -479,11 +479,40 @@ summarize_margin_union <- function(.data,
           group_vars = group_vars,
           internal_names = c(unname(key_names), unname(parent_key_names)),
           set_id_name = set_id_name,
-          set_id_is_internal = set_id_is_internal
+          set_id_is_internal = set_id_is_internal,
+          share_sources = if (is.environment(summaries$selection_state)) {
+            summaries$selection_state$share_sources
+          } else {
+            character()
+          },
+          source_definitions = if (is.environment(summaries$selection_state)) {
+            summaries$selection_state$source_definitions
+          } else {
+            NULL
+          },
+          auto_names = if (is.environment(summaries$selection_state)) {
+            summaries$selection_state$auto_names
+          } else {
+            NULL
+          }
         )
         branch_dots <- wrap_assigned_local_summaries(
           branch_dots,
-          summaries$assigned_names
+          summaries$assigned_names,
+          group_vars = group_vars,
+          internal_names = c(unname(key_names), unname(parent_key_names)),
+          set_id_name = set_id_name,
+          set_id_is_internal = set_id_is_internal,
+          share_sources = if (is.environment(summaries$selection_state)) {
+            summaries$selection_state$share_sources
+          } else {
+            character()
+          },
+          source_definitions = if (is.environment(summaries$selection_state)) {
+            summaries$selection_state$source_definitions
+          } else {
+            NULL
+          }
         )
       }
       needs_placeholder <- length(grouping_set) == 0L &&

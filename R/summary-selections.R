@@ -273,13 +273,22 @@ check_internal_summary_names <- function(output_names, internal_names) {
 # must expand in dplyr's mask before the next summary runs (ADR 0028).
 # Only local branches use this: lazy backends keep their own naming behavior.
 # The caller supplies one assigned name per dot, in the same order.
-wrap_assigned_local_summaries <- function(dots, assigned_names) {
+wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
+                                          internal_names, set_id_name,
+                                          set_id_is_internal,
+                                          share_sources = character(),
+                                          source_definitions = NULL) {
+  if (is.null(source_definitions)) {
+    source_definitions <- rep(list(character()), length(dots))
+  }
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
     expr <- rlang::call2(
       marginplyr_private_call("local_assigned_summary_value"),
       rlang::quo_get_expr(dot),
-      assigned_names[[i]]
+      assigned_names[[i]], group_vars, internal_names, set_id_name,
+      set_id_is_internal,
+      setdiff(share_sources, source_definitions[[i]])
     )
     dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
     names(dots)[[i]] <- ""
@@ -288,11 +297,21 @@ wrap_assigned_local_summaries <- function(dots, assigned_names) {
 }
 
 # Return a frame so dplyr places the output in its mask immediately. An actual
-# frame keeps its own column names; a scalar takes the caller-facing name;
-# `NULL` keeps dplyr's omission behavior.
+# frame keeps its own checked column names; a scalar takes the caller-facing
+# name; `NULL` keeps dplyr's omission behavior.
 # The caller supplies the evaluated value and its Assigned summary name.
-local_assigned_summary_value <- function(value, name) {
-  if (is.data.frame(value) || is.null(value)) {
+local_assigned_summary_value <- function(value, name, group_vars,
+                                         internal_names, set_id_name,
+                                         set_id_is_internal,
+                                         protected_sources) {
+  if (is.data.frame(value)) {
+    check_local_frame_output_names(
+      names(value), group_vars, internal_names, set_id_name,
+      set_id_is_internal, protected_sources
+    )
+    return(value)
+  }
+  if (is.null(value)) {
     return(value)
   }
   vctrs::new_data_frame(
@@ -301,35 +320,74 @@ local_assigned_summary_value <- function(value, name) {
   )
 }
 
-# Check the names of an unnamed frame when its value exists, before dplyr can
-# replace a grouping key with a same-named column in its summary mask.
-local_frame_summary_value <- function(value, group_vars, internal_names,
-                                      set_id_name, set_id_is_internal) {
-  if (is.data.frame(value)) {
-    check_summary_output_names(
-      names(value), group_vars, internal_names, set_id_name,
-      set_id_is_internal
-    )
+# Check the names a local frame actually produced before dplyr can replace a
+# grouping key or share source with a same-named column in its summary mask.
+check_local_frame_output_names <- function(output_names, group_vars,
+                                           internal_names, set_id_name,
+                                           set_id_is_internal,
+                                           protected_sources) {
+  check_summary_output_names(
+    output_names, group_vars, internal_names, set_id_name,
+    set_id_is_internal
+  )
+  duplicate <- intersect(output_names, protected_sources)
+  if (length(duplicate) > 0L) {
+    # cli reads this source name from the condition template below.
+    source <- duplicate[[1L]] # nolint: object_usage_linter.
+    abort_marginplyr(c(
+      paste0(
+        "Contextual share requires source summary {.var {source}} ",
+        "to be defined exactly once."
+      ),
+      i = "Use one uniquely named ordinary summary."
+    ))
   }
-  value
+  invisible(NULL)
 }
 
-# A frame constructor's arguments are not necessarily its output columns.
-# Wrap its evaluated value, leaving dplyr to expand it in the same mask.
+# Keep a frame's actual names, or give a scalar the name dplyr would have used.
+# The caller holds the original expression's auto name and protected columns.
+local_frame_summary_value <- function(value, name, group_vars, internal_names,
+                                      set_id_name, set_id_is_internal,
+                                      protected_sources) {
+  if (is.data.frame(value)) {
+    check_local_frame_output_names(
+      names(value), group_vars, internal_names, set_id_name,
+      set_id_is_internal, protected_sources
+    )
+  }
+  local_assigned_summary_value(
+    value, name, group_vars, internal_names, set_id_name,
+    set_id_is_internal, protected_sources
+  )
+}
+
+# An unnamed result may be a frame regardless of its written expression.
+# Wrap its value so frames expand and scalars keep their dplyr-assigned name.
 wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
-                                       set_id_name, set_id_is_internal) {
+                                       set_id_name, set_id_is_internal,
+                                       share_sources = character(),
+                                       source_definitions = NULL,
+                                       auto_names = NULL) {
+  if (is.null(source_definitions)) {
+    source_definitions <- rep(list(character()), length(dots))
+  }
+  if (is.null(auto_names)) {
+    auto_names <- vapply(dots, function(dot) {
+      dplyr_auto_name(rlang::quo_get_expr(dot))
+    }, character(1))
+  }
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
-    if (nzchar(rlang::names2(dots)[[i]]) ||
-      !identical(data_frame_valued_summary_kind(
-        rlang::quo_get_expr(dot)
-      ), "frame")) {
+    if (nzchar(rlang::names2(dots)[[i]])) {
       next
     }
     expr <- rlang::call2(
       marginplyr_private_call("local_frame_summary_value"),
-      rlang::quo_get_expr(dot), group_vars, internal_names, set_id_name,
-      set_id_is_internal
+      rlang::quo_get_expr(dot), auto_names[[i]], group_vars, internal_names,
+      set_id_name,
+      set_id_is_internal,
+      setdiff(share_sources, source_definitions[[i]])
     )
     dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
   }
@@ -351,8 +409,9 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
 # is checked once rather than only when a second value says to. The assigned
 # names default to none for the same reason: such a caller wrote every name its
 # dots carry, and ADR 0028 applies only to a name marginplyr wrote.
-# `selection_state` carries local internal key and share placeholder names to
-# deferred selections; the union adapter fills key names before any branch.
+# `selection_state` carries local internal keys and share placeholders to
+# deferred selections, and output names to the union adapter. The adapter
+# fills key names before any branch.
 new_summary_arguments <- function(dots,
                                   labels = summary_argument_labels(dots),
                                   assigned_names = rep(
@@ -572,6 +631,22 @@ plan_summary_expressions <- function(dots,
   if (defer_local) {
     selection_state$internal_names <- character()
     selection_state$share_aliases <- character()
+    selection_state$auto_names <- vapply(original_dots, function(dot) {
+      dplyr_auto_name(rlang::quo_get_expr(dot))
+    }, character(1))[summary_plan$origin_positions]
+    selection_state$share_sources <- unique(share_source_names(
+      summary_plan$requests
+    ))
+    selection_state$source_definitions <- rep(
+      list(character()), length(summary_plan$dots)
+    )
+    for (record in summary_plan$cardinality) {
+      position <- record$position
+      selection_state$source_definitions[[position]] <- unique(c(
+        selection_state$source_definitions[[position]],
+        record$source_summary
+      ))
+    }
     share_positions <- which(vapply(
       original_dots,
       function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
@@ -650,6 +725,9 @@ predictable_local_across_names <- function(dots, input_names) {
         parts <- as.list(cols)[-1L]
         all(vapply(parts, rlang::is_symbol, logical(1))) &&
           all(vapply(parts, rlang::as_string, character(1)) %in% available)
+      } else if (identical(static_call_name(cols), "all_of") &&
+                   length(cols) == 2L && is.character(cols[[2L]])) {
+        all(cols[[2L]] %in% available)
       } else {
         FALSE
       }

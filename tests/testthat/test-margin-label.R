@@ -1,6 +1,94 @@
 # Margin labels through the public verbs. ADR 0012 owns the contract separating
 # a factor's NA level from a missing Margin value, which these assert.
 
+# A Margin result without `.sort` has no promised row order. Factor codes keep
+# a source value on an NA level distinct from a typed-missing Margin value.
+canonical_dot_n_rows <- function(result) {
+  group <- result$g
+  order_rows <- if (is.factor(group)) {
+    order(result[[".N"]], is.na(group), as.integer(group))
+  } else {
+    order(result[[".N"]], is.na(group), group)
+  }
+  rows <- as.data.frame(result[order_rows, , drop = FALSE])
+  row.names(rows) <- NULL
+  rows
+}
+
+test_that("dtplyr expansion preserves an unrelated .N column", {
+  skip_if_suggest_absent("dtplyr")
+  data <- tibble::tibble(g = c("x", "y"), .N = c(7, 9))
+  original <- data
+  source <- dtplyr::lazy_dt(data)
+  source_before <- dplyr::collect(source)
+  expected <- expand_with_margins(data, .grouping = rollup(g))
+
+  control <- dplyr::collect(dplyr::union_all(
+    source,
+    dplyr::mutate(source, g = "Total")
+  ))
+  expect_identical(
+    canonical_dot_n_rows(control), canonical_dot_n_rows(expected)
+  )
+
+  query <- expand_with_margins(source, .grouping = rollup(g))
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(data, original)
+  expect_identical(dplyr::collect(source), source_before)
+
+  result <- dplyr::collect(query)
+  expect_identical(
+    canonical_dot_n_rows(result), canonical_dot_n_rows(expected)
+  )
+  expect_identical(sort(result[[".N"]][result$g == "Total"]), c(7, 9))
+  expect_identical(sort(result[[".N"]][result$g != "Total"]), c(7, 9))
+  expect_identical(data, original)
+  expect_identical(dplyr::collect(source), source_before)
+})
+
+test_that("dtplyr labels .N inputs of every size and factor form", {
+  skip_if_suggest_absent("dtplyr")
+
+  for (factor_group in c(FALSE, TRUE)) {
+    for (size in 0:2) {
+      group <- if (factor_group) {
+        structure(
+          seq_len(size), levels = c("x", NA_character_), class = "factor"
+        )
+      } else {
+        c("x", "y")[seq_len(size)]
+      }
+      data <- tibble::tibble(g = group, .N = c(7, 9)[seq_len(size)])
+      original <- data
+      source <- dtplyr::lazy_dt(data)
+      source_before <- dplyr::collect(source)
+
+      for (missing_label in c(FALSE, TRUE)) {
+        label <- if (missing_label) NULL else "Total"
+        info <- paste(factor_group, size, missing_label, sep = "/")
+        expected <- expand_with_margins(
+          data, .grouping = rollup(g), .margin_label = label
+        )
+        query <- expand_with_margins(
+          source, .grouping = rollup(g), .margin_label = label
+        )
+        expect_s3_class(query, "dtplyr_step")
+        expect_identical(data, original, info = info)
+        expect_identical(dplyr::collect(source), source_before, info = info)
+
+        result <- dplyr::collect(query)
+        expect_identical(nrow(result), 2L * size, info = info)
+        expect_identical(
+          canonical_dot_n_rows(result), canonical_dot_n_rows(expected),
+          info = info
+        )
+        expect_identical(data, original, info = info)
+        expect_identical(dplyr::collect(source), source_before, info = info)
+      }
+    }
+  }
+})
+
 test_that("named Margin labels apply per dimension and default to last", {
   data <- data.frame(
     first = factor(c("a", "b"), levels = c("a", "b")),
