@@ -419,7 +419,10 @@ test_that("SQLite stores numeric dimensions with text Margin labels as text", {
                 .id = if (id) "sid" else NULL
               )
               query <- if (identical(verb, "summary")) {
-                do.call(summarize_with_margins, c(args, list(z = quote(sum(v)))))
+                do.call(
+                  summarize_with_margins,
+                  c(args, list(z = quote(sum(v))))
+                )
               } else {
                 do.call(expand_with_margins, args)
               }
