@@ -517,13 +517,26 @@ label_margin_branch <- function(.data,
   # ones that are not character already, for which it replaces the column with
   # itself.
   dtplyr_full_size_label <- inherits(.data, "dtplyr_step")
+  dtplyr_columns <- if (dtplyr_full_size_label) {
+    get_col_names(.data, dplyr::everything())
+  } else {
+    character()
+  }
   values <- lapply(
     omitted,
     function(col) {
+      # Expansion carries the omitted dimension, so its length avoids dtplyr's
+      # `n()` translation to `.N` when the input also names that column. A
+      # summary branch may have removed the dimension and keeps its `n()` path.
+      branch_size <- if (col %in% dtplyr_columns) {
+        rlang::expr(length(!!margin_column_pronoun(col)))
+      } else {
+        rlang::expr(dplyr::n())
+      }
       label <- margin_labels[[col]]
       if (!is_missing_margin_label(label)) {
         if (dtplyr_full_size_label) {
-          return(rlang::expr(rep(!!label, dplyr::n())))
+          return(rlang::expr(rep(!!label, !!branch_size)))
         }
         return(label)
       }
@@ -535,7 +548,7 @@ label_margin_branch <- function(.data,
         # Full size for the reason the labelled arm above is, and with no
         # backend test because `drops_na_factor_level_on_union`, which
         # `missing_label_encoded` requires, is dtplyr's alone.
-        return(rlang::expr(rep(!!sentinels[[col]], dplyr::n())))
+        return(rlang::expr(rep(!!sentinels[[col]], !!branch_size)))
       }
       value <- prototypes[[col]]
       if (is.null(value)) NA else value

@@ -554,6 +554,156 @@ test_that("structured fixed keys sort by row with wholly missing keys last", {
   }
 })
 
+test_that("packed matrix fixed keys put wholly missing rows last", {
+  data <- tibble::tibble(
+    key = tibble::tibble(
+      matrix_part = matrix(c(NA_real_, NA_real_, NA_real_, 1), nrow = 2L),
+      scalar_part = c(NA_real_, NA_real_)
+    ),
+    region = c("x", "y"),
+    units = 1:2
+  )
+
+  for (sort in c("last", "first")) {
+    results <- list(
+      summary = summarize_with_margins(
+        data, units = sum(units), .by = key,
+        .grouping = rollup(region), .id = "set", .sort = sort
+      ),
+      expand = expand_with_margins(
+        data, .by = key, .grouping = rollup(region),
+        .id = "set", .sort = sort
+      ),
+      nest = nest_with_margins(
+        data, .by = key, .grouping = rollup(region),
+        .id = "set", .sort = sort
+      ),
+      nest_by = nest_by_with_margins(
+        data, .by = key, .grouping = rollup(region),
+        .id = "set", .sort = sort
+      )
+    )
+    expected_set <- rep(
+      if (identical(sort, "last")) c(1L, 2L) else c(2L, 1L), 2L
+    )
+    expected_region <- if (identical(sort, "last")) {
+      c("y", "Total", "x", "Total")
+    } else {
+      c("Total", "y", "Total", "x")
+    }
+
+    for (verb in names(results)) {
+      result <- results[[verb]]
+      info <- paste(verb, sort)
+      expect_identical(
+        result$key, vctrs::vec_slice(data$key, c(2L, 2L, 1L, 1L)),
+        info = info
+      )
+      expect_identical(result$region, expected_region, info = info)
+      expect_identical(result$set, expected_set, info = info)
+      actual_units <- if (verb %in% c("nest", "nest_by")) {
+        vapply(result$data, function(part) part$units, integer(1))
+      } else {
+        result$units
+      }
+      expect_identical(actual_units, c(2L, 2L, 1L, 1L), info = info)
+    }
+  }
+})
+
+test_that("partly missing packed matrix keys retain local value order", {
+  data <- tibble::tibble(
+    key = tibble::tibble(
+      matrix_part = matrix(c(NA_real_, NA_real_, NA_real_,
+                             NA_real_, 2, 1), nrow = 3L),
+      scalar_part = c(NA_real_, NA_real_, NA_real_)
+    ),
+    units = 1:3
+  )
+  expect_identical(dplyr::arrange(data, key)$units, c(3L, 2L, 1L))
+
+  for (sort in c("last", "first")) {
+    result <- expand_with_margins(data, .by = key, .sort = sort)
+    expect_identical(result$units, c(3L, 2L, 1L), info = sort)
+    expect_identical(result$key, vctrs::vec_slice(data$key, c(3L, 2L, 1L)),
+                     info = sort)
+  }
+})
+
+test_that("three-dimensional array fixed keys follow their values", {
+  data <- tibble::tibble(
+    key = array(c(2L, 1L), dim = c(2L, 1L, 1L)),
+    region = c("x", "y"),
+    units = 1:2
+  )
+  expect_identical(dplyr::arrange(data, key)$units, c(2L, 1L))
+  matrix_data <- data
+  matrix_data$key <- matrix(data$key, nrow = 2L)
+  expect_identical(
+    expand_with_margins(matrix_data, .by = key, .sort = "last")$units,
+    c(2L, 1L)
+  )
+
+  unsorted <- list(
+    summary = summarize_with_margins(data, units = sum(units), .by = key),
+    expand = expand_with_margins(data, .by = key),
+    nest = nest_with_margins(data, .by = key),
+    nest_by = nest_by_with_margins(data, .by = key)
+  )
+  for (verb in names(unsorted)) {
+    result <- unsorted[[verb]]
+    expect_identical(nrow(result), 2L, info = verb)
+    expect_identical(dim(result$key), c(2L, 1L, 1L), info = verb)
+    expect_identical(base::sort(as.vector(result$key)), c(1L, 2L), info = verb)
+  }
+
+  for (sort in c("last", "first")) {
+    results <- list(
+      summary = summarize_with_margins(
+        data, units = sum(units), .by = key,
+        .grouping = rollup(region), .id = "set", .sort = sort
+      ),
+      expand = expand_with_margins(
+        data, .by = key, .grouping = rollup(region),
+        .id = "set", .sort = sort
+      ),
+      nest = nest_with_margins(
+        data, .by = key, .grouping = rollup(region),
+        .id = "set", .sort = sort
+      ),
+      nest_by = nest_by_with_margins(
+        data, .by = key, .grouping = rollup(region),
+        .id = "set", .sort = sort
+      )
+    )
+    expected_set <- rep(
+      if (identical(sort, "last")) c(1L, 2L) else c(2L, 1L), 2L
+    )
+    expected_region <- if (identical(sort, "last")) {
+      c("y", "Total", "x", "Total")
+    } else {
+      c("Total", "y", "Total", "x")
+    }
+
+    for (verb in names(results)) {
+      result <- results[[verb]]
+      info <- paste(verb, sort)
+      expect_identical(
+        result$key, vctrs::vec_slice(data$key, c(2L, 2L, 1L, 1L)),
+        info = info
+      )
+      expect_identical(result$region, expected_region, info = info)
+      expect_identical(result$set, expected_set, info = info)
+      actual_units <- if (verb %in% c("nest", "nest_by")) {
+        vapply(result$data, function(part) part$units, integer(1))
+      } else {
+        result$units
+      }
+      expect_identical(actual_units, c(2L, 2L, 1L, 1L), info = info)
+    }
+  }
+})
+
 test_that("structured dimensions with typed missing labels retain row shape", {
   components <- matrix(c(NA_integer_, 1L, NA_integer_, 2L,
                          2L, NA_integer_, NA_integer_, 1L), ncol = 2L)

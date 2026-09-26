@@ -1524,14 +1524,6 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
   dot_names <- names(dots)
   analyses <- vector("list", length(dots))
   preceding_names <- character()
-  share_positions <- which(vapply(
-    dots,
-    function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
-    logical(1)
-  ))
-  stopifnot(length(share_positions) > 0L)
-  last_share <- max(share_positions)
-
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
     output_name <- dot_names[[i]]
@@ -1542,10 +1534,10 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       next
     }
 
-    # No later share can use these records as a source. Keep statically named
-    # outputs visible to earlier shares' forward-reference checks, but leave
-    # selection predicates and naming expressions to the local data mask.
-    if (defer_local && i > last_share && contains_summary_selection(expr)) {
+    # Local dplyr resolves selections after preceding summaries have entered
+    # its mask. Predict only literal names here, leaving naming expressions
+    # and selection predicates to that execution.
+    if (defer_local && i > 1L && contains_summary_selection(expr)) {
       output_names <- if (nzchar(output_name)) {
         output_name
       } else if (is_across_call(expr)) {
@@ -1562,12 +1554,29 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       } else {
         "expanded"
       }
+      selected_dependencies <- if (is_across_call(expr) &&
+                                     length(output_names) > 0L) {
+        available <- unique(c(names(selection_proxy), preceding_names))
+        proxy <- vctrs::new_data_frame(
+          stats::setNames(rep(list(NA), length(available)), available),
+          n = 1L
+        )
+        intersect(
+          known_across_source_names(expr, env, proxy), preceding_names
+        )
+      } else {
+        character()
+      }
+      dependencies <- unique(c(
+        expression_alias_dependencies(expr, preceding_names),
+        selected_dependencies
+      ))
       analyses[[i]] <- list(records = lapply(output_names, function(name) {
         list(
           name = name,
           position = i,
           eligibility = eligibility,
-          dependencies = character(),
+          dependencies = dependencies,
           across_input = NA_character_,
           across_function = NA_integer_
         )

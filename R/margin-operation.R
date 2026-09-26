@@ -533,7 +533,7 @@ margin_dictionary_sort_columns <- function(result, backend) {
   vapply(fields[is_dictionary], function(field) field$name, character(1))
 }
 
-# Names local data-frame and matrix keys in the plan. The caller holds a result
+# Names local structured keys in the plan. The caller holds a result
 # containing every fixed key and dimension named by that plan.
 margin_structured_sort_columns <- function(result, plan) {
   if (!is.data.frame(result)) {
@@ -544,7 +544,7 @@ margin_structured_sort_columns <- function(result, plan) {
     columns,
     function(name) {
       column <- result[[name]]
-      is.data.frame(column) || is.matrix(column)
+      is.data.frame(column) || is.array(column)
     },
     logical(1)
   )]
@@ -643,12 +643,12 @@ margin_sort_value_expr <- function(column, as_character) {
 }
 
 # One column's missingness term. A local structured column is wholly missing
-# only when every component of the row is missing (ADR 0018). `if_else()`
-# produces an integer because not every dialect sorts booleans.
+# only when every scalar component of the row is missing (ADR 0018).
+# `if_else()` produces an integer because not every dialect sorts booleans.
 margin_missing_last_expr <- function(column, structured) {
   value <- margin_column_pronoun(column)
   missing <- if (column %in% structured) {
-    rlang::expr(rowSums(is.na(!!value)) == ncol(!!value))
+    rlang::expr(vctrs::vec_detect_missing(!!value))
   } else {
     rlang::expr(is.na(!!value))
   }
