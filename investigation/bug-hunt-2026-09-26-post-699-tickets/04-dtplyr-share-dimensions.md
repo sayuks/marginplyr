@@ -22,6 +22,8 @@ Evidence: finding 4 and the `dtplyr_share` probe in the companion investigation.
 - [ ] Return a lazy dtplyr query and introduce no source materialization during construction. Keep existing Mutable-step refusals.
 - [ ] Add public-API regressions and pass the Review-ready check.
 
+When `.sort = "none"`, compare row multisets after normalization; row order is unspecified. Assert Margin order only for `"first"` and `"last"`. Public column order remains part of the result contract.
+
 ## Blocked by
 
 None (can start immediately).

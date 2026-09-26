@@ -22,6 +22,8 @@ Evidence: finding 5 and the `dtplyr_projection` probe in the companion investiga
 - [ ] Preserve previous special-column repairs for Margin order, labelling, ordinary summaries, and shares; do not forbid supported names globally.
 - [ ] Add focused public-API regressions and pass the Review-ready check.
 
+When `.sort = "none"`, compare row multisets after normalization; row order is unspecified. Assert Margin order only for `"first"` and `"last"`. Public column order remains part of the result contract.
+
 ## Blocked by
 
 None (can start immediately).

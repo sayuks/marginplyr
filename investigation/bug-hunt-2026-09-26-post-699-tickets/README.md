@@ -20,3 +20,20 @@ The unpack cases share one ordinary-evaluation boundary, and the two pronoun
 names share one label conversion. The dtplyr findings remain separate because
 one repairs original share-key copying and one repairs expansion projection;
 shared files alone create no blocking edge.
+
+## Publication (2026-09-26)
+
+The user approved these five independent repair units. The following GitHub
+Issues were published and read back to verify their full bodies, open states,
+`bug` / `ready-for-agent` labels, and empty native blocking dependencies:
+
+- [#700](https://github.com/sayuks/marginplyr/issues/700): ordinary across argument evaluation.
+- [#701](https://github.com/sayuks/marginplyr/issues/701): first packed selection beside shares.
+- [#702](https://github.com/sayuks/marginplyr/issues/702): pronoun-named dimensions (P1).
+- [#703](https://github.com/sayuks/marginplyr/issues/703): dtplyr original share keys.
+- [#704](https://github.com/sayuks/marginplyr/issues/704): dtplyr expansion projection.
+
+Each published body links to the investigation and executable probes at the
+fixed evidence commit `2b2b9e73e6d7381c260595e3c472597a7c92160e`.
+[PR #705](https://github.com/sayuks/marginplyr/pull/705) preserves the evidence
+and this preparation/publication record; it does not implement the repairs.

@@ -19,7 +19,7 @@ Evidence: finding 2 and the `first_packed` probe in the companion investigation.
 - [ ] Cover a packed across as the first ordinary dot and after preceding summaries; include direct selector expressions, callbacks, and active bindings that read ordinary n().
 - [ ] Cover Parent and Total shares, one and multiple detail groups, rollups, and all three supported local frame classes. Preserve preceding-summary visibility where such summaries exist.
 - [ ] Keep Contextual share outputs excluded from ordinary selection as documented. A constant substituted for a share output must not be used as an oracle if the selector selects that constant column.
-- [ ] Packed share sources, duplicate source definitions, ineligible numeric sources, and disallowed earlier-summary dependencies remain refused with their existing public contract. Preserve #694 and unrelated naming-callback protections.
+- [ ] Packed share sources, duplicate source definitions, ineligible share sources, including non-scalar and non-numeric sources, and disallowed earlier-summary dependencies remain refused with their existing public contract. Preserve #694 and unrelated naming-callback protections.
 - [ ] Add focused public-API regressions and pass the Review-ready check. No additional source read is needed.
 
 ## Blocked by
