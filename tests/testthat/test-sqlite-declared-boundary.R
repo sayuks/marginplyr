@@ -125,6 +125,28 @@ test_that("SQLite share prefixes retain declared types across share forms", {
       expect_identical(typeof(full[[name]]), "double")
       expect_identical(dplyr::collect(query, n = 0L)[[name]], double())
     }
+    prefix <- dplyr::collect(query, n = 1L)
+    expect_identical(nrow(prefix), 1L)
+    for (name in c("parent", "total", "z_across")) {
+      expect_identical(typeof(prefix[[name]]), "double")
+    }
+    materialized <- dplyr::compute(
+      query, name = paste0("declared_share_materialized_", sort)
+    )
+    materialized_prefix <- dplyr::collect(materialized, n = 1L)
+    expect_identical(nrow(materialized_prefix), 1L)
+    for (name in c("parent", "total", "z_across")) {
+      expect_identical(typeof(materialized_prefix[[name]]), "double")
+    }
+    expect_identical(DBI::dbListFields(
+      con, paste0("declared_share_materialized_", sort)
+    ), names(full))
+    if (identical(sort, "first")) {
+      expect_identical(prefix$p, "A")
+      expect_identical(prefix$g, "Total")
+      expect_identical(prefix$parent, 1)
+      expect_identical(materialized_prefix$parent, 1)
+    }
     if (identical(sort, "last")) {
       expect_identical(full$p, c("A", "A", "A", "B", "B"))
       expect_identical(full$g, c("x", "y", "Total", "z", "Total"))
@@ -140,14 +162,7 @@ test_that("SQLite share prefixes retain declared types across share forms", {
       }
       mixed <- dplyr::collect(query, n = 3L)
       expect_identical(mixed$parent, c(NA_real_, NA_real_, 1))
-      materialized <- dplyr::compute(
-        query, name = "declared_share_materialized"
-      )
-      expect_identical(dplyr::collect(materialized, n = 1L)$parent,
-                       NA_real_)
-      expect_identical(DBI::dbListFields(
-        con, "declared_share_materialized"
-      ), names(full))
+      expect_identical(materialized_prefix$parent, NA_real_)
       selected <- dplyr::collect(dplyr::select(materialized, p, g, parent))
       expect_identical(names(selected), c("p", "g", "parent"))
       expect_identical(selected$parent, full$parent)
@@ -156,6 +171,31 @@ test_that("SQLite share prefixes retain declared types across share forms", {
   expect_identical(DBI::dbGetQuery(
     con, "SELECT p, g, v FROM declared_share_matrix ORDER BY p, g"
   ), input)
+})
+
+test_that("identifier-only SQLite expansion keeps the construction audit", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(x = 1L), "declared_audit_source", temporary = TRUE
+  )
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
+  first <- expand_with_margins(dplyr::filter(source, x > 1L), .id = "set")
+  first_record <- last_sent_queries()
+  expect_identical(first_record$purpose, "result")
+  expect_identical(first_record$sql, as.character(dbplyr::sql_render(first)))
+
+  second <- expand_with_margins(source, .id = "other")
+  second_record <- last_sent_queries()
+  expect_identical(second_record$purpose, "result")
+  expect_identical(second_record$sql, as.character(dbplyr::sql_render(second)))
+  expect_false(identical(first_record$sql, second_record$sql))
+  dplyr::collect(first, n = 1L)
+  expect_identical(last_sent_queries(), second_record)
+  dplyr::compute(first, name = "declared_audit_output")
+  expect_identical(last_sent_queries(), second_record)
 })
 
 test_that("missing mean shares retain double types without driver inference", {
