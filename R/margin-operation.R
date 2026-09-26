@@ -395,9 +395,23 @@ finalize_margin_operation <- function(operation, execution,
     unsorted <- result
   }
   declared_types <- execution$declared_types
-  if (live_sqlite_margin_result(operation) && length(declared_types) > 0L) {
-    text_dimensions <- setdiff(
-      operation$plan$dimensions, type_anchor_columns
+  if (live_sqlite_margin_result(operation)) {
+    # A non-missing display label needs a character declaration even when the
+    # source dimension is among the type-anchor columns.
+    labelled_dimensions <- if (sqlite_declared_type_result(operation)) {
+      names(operation$margin_labels)[!vapply(
+        operation$margin_labels, is_missing_margin_label, logical(1)
+      )]
+    } else {
+      character()
+    }
+    text_dimensions <- union(
+      labelled_dimensions,
+      if (length(declared_types) > 0L) {
+        setdiff(operation$plan$dimensions, type_anchor_columns)
+      } else {
+        character()
+      }
     )
     declared_types <- c(
       stats::setNames(rep("character", length(text_dimensions)),
