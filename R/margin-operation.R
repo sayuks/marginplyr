@@ -396,8 +396,8 @@ finalize_margin_operation <- function(operation, execution,
   }
   declared_types <- execution$declared_types
   if (live_sqlite_margin_result(operation)) {
-    # A non-missing display label makes the dimension character even when its
-    # source column also supplies a type anchor for other result columns.
+    # A non-missing display label needs a character declaration even when the
+    # source dimension is among the type-anchor columns.
     labelled_dimensions <- if (sqlite_declared_type_result(operation)) {
       names(operation$margin_labels)[!vapply(
         operation$margin_labels, is_missing_margin_label, logical(1)
