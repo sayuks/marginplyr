@@ -296,6 +296,43 @@ test_that("analysis failure rolls back the owned SQLite savepoint", {
   expect_equal(nrow(dplyr::collect(out)), 3L)
 })
 
+test_that("failed rollback retains the causal SQLite compute error", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(2, 5)),
+    "b_direct_rollback_source", temporary = TRUE
+  )
+  query <- summarize_with_margins(
+    source, z = sum(v, na.rm = TRUE), .grouping = rollup(g),
+    .id = "sid", .sort = "last"
+  )
+  suppressMessages(trace(
+    "dbExecute", where = asNamespace("DBI"), print = FALSE,
+    tracer = function() {
+      statement <- as.character(get("statement", envir = parent.frame()))
+      if (grepl("^ANALYZE", statement)) {
+        stop("injected analysis failure")
+      }
+      if (grepl("^ROLLBACK TO", statement)) {
+        stop("injected rollback failure")
+      }
+    }
+  ))
+  on.exit(suppressMessages(untrace("dbExecute", where = asNamespace("DBI"))),
+          add = TRUE)
+  err <- tryCatch(
+    dplyr::compute(query, name = "rollback_report"),
+    error = identity
+  )
+  expect_match(conditionMessage(err), "savepoint rollback failed")
+  expect_match(conditionMessage(err$parent), "injected analysis failure")
+  # The injected failure prevented package cleanup; the test owns recovery.
+  DBI::dbExecute(con, "ROLLBACK")
+  expect_false(DBI::dbExistsTable(con, "rollback_report"))
+})
+
 test_that("qualified-index failure restores a SQLite destination", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
