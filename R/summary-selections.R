@@ -382,9 +382,20 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
     if (nzchar(rlang::names2(dots)[[i]])) {
       next
     }
+    expr <- rlang::quo_get_expr(dot)
+    if (identical(data_frame_valued_summary_kind(expr), "across")) {
+      unpack <- parse_across_arguments(expr)$unpack
+      # dplyr owns ordinary `across()` naming and invalid `.unpack` errors.
+      # A literal unpack can expose inner names before the branch checks them.
+      known_unpack <- isTRUE(unpack) ||
+        (is.character(unpack) && length(unpack) == 1L && !is.na(unpack))
+      if (!known_unpack) {
+        next
+      }
+    }
     expr <- rlang::call2(
       marginplyr_private_call("local_frame_summary_value"),
-      rlang::quo_get_expr(dot), auto_names[[i]], group_vars, internal_names,
+      expr, auto_names[[i]], group_vars, internal_names,
       set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]])
