@@ -1111,28 +1111,27 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       if (local_share) {
         share_positions <- match(share_names, names(summaries$dots))
         stopifnot(!anyNA(share_positions))
-        ordinary_names <- names(summaries$dots)
-        share_next_names <- lapply(share_positions, function(position) {
-          later <- seq_along(ordinary_names) > position &
-            !(seq_along(ordinary_names) %in% share_positions)
-          unlist(lapply(which(later), function(index) {
-            c(
-              ordinary_names[[index]][nzchar(ordinary_names[[index]])],
-              summary_plan$predictable_by_dot[[index]]
-            )
-          }), use.names = FALSE)
-        })
-        share_order <- new.env(parent = emptyenv())
-        share_order$seen <- vector("list", length(share_names))
+        share_aliases <- stats::setNames(new_margin_internal_names(
+          length(share_names), used_names = reserved_names,
+          prefix = "..marginplyr_share_"
+        ), share_names)
+        share_tokens <- stats::setNames(lapply(
+          share_names, function(name) new.env(parent = emptyenv())
+        ), unname(share_aliases))
         for (i in seq_along(share_positions)) {
           position <- share_positions[[i]]
           summaries$dots[[position]] <- rlang::new_quosure(
-            rlang::call2("local_share_order_marker", share_order, i),
+            rlang::call2(
+              "local_share_marker", unname(share_aliases[[i]]),
+              share_tokens[[i]]
+            ),
             env = environment()
           )
-          names(summaries$dots)[position] <- ""
-          summaries$assigned_names[[position]] <- NA_character_
+          names(summaries$dots)[position] <- unname(share_aliases[[i]])
         }
+        reserved_names <- c(reserved_names, unname(share_aliases))
+        summaries$selection_state$share_aliases <- unname(share_aliases)
+        summaries$selection_state$share_markers <- share_tokens
       }
       declare_sqlite_types <- sqlite_declared_type_result(operation)
       declared_id <- if (!declare_sqlite_types ||
@@ -1162,9 +1161,9 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       )
 
       if (local_share) {
-        staged_result <- add_local_share_columns(
-          staged_result, share_names, share_next_names,
-          share_order$seen, group_vars, summary_plan$requests
+        staged_result <- restore_local_share_names(
+          staged_result, share_aliases, share_tokens,
+          summary_plan$requests
         )
       }
 
@@ -1196,25 +1195,52 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
   )
 }
 
-# Captures the visible summary names at a share's position without creating
-# a column. The caller supplies an environment shared by local branches; the
-# first branch establishes each position's names and later branches reuse it.
-local_share_order_marker <- function(state, position) {
-  if (is.null(state$seen[[position]])) {
-    state$seen[[position]] <- names(dplyr::pick(dplyr::everything()))
+# Returns one token in a list column at the share's original dot position.
+# The caller gives an alias absent from input and known output names. A frame
+# that created the alias earlier in this branch is visible in the mask here.
+local_share_marker <- function(alias, token) {
+  if (alias %in% names(dplyr::pick(dplyr::everything()))) {
+    abort_share_alias_collision(alias)
   }
-  tibble::tibble()
+  structure(list(token), marginplyr_share_token = token)
 }
 
-# Adds share columns to a local staged result after ordinary summaries expand.
-# The caller replaced each share dot with a zero-column marker, so any public
-# share name already in the staged result is an ordinary output. Its snapshots
-# and later named dots place each share beside the caller's ordinary columns.
-add_local_share_columns <- function(staged_result, share_names,
-                                    share_next_names, seen_names,
-                                    group_vars, requests) {
+# Rejects an ordinary output using a reserved local share alias. The caller
+# supplies the alias that was present in the summary mask or staged result.
+abort_share_alias_collision <- function(alias) {
+  abort_marginplyr(paste0(
+    "Ordinary summary output {.var {alias}} conflicts with an internal ",
+    "share column."
+  ))
+}
+
+# Checks each local branch before binding can discard zero-row list attributes.
+# The caller passes a dplyr branch and its per-alias tokens; nonempty columns
+# carry token cells, while an empty marker carries its token as an attribute.
+check_local_share_markers <- function(result, markers) {
+  for (alias in names(markers)) {
+    value <- result[[alias]]
+    valid <- if (length(value) > 0L) {
+      is.list(value) && all(vapply(
+        value, identical, logical(1), markers[[alias]]
+      ))
+    } else {
+      identical(attr(value, "marginplyr_share_token"), markers[[alias]])
+    }
+    if (!valid) {
+      abort_share_alias_collision(alias)
+    }
+  }
+  invisible(NULL)
+}
+
+# Restores public share names after all local branches have been combined.
+# The caller passes the original aliases and tokens; their list cells prove
+# that no ordinary output replaced a marker during branch combination.
+restore_local_share_names <- function(staged_result, aliases,
+                                      tokens, requests) {
   result <- margin_summary_stage_result(staged_result)
-  conflicts <- intersect(names(result), share_names)
+  conflicts <- intersect(names(result), names(aliases))
   if (length(conflicts) > 0L) {
     name <- conflicts[[1L]]
     pair <- Filter(function(pair) identical(pair$output, name),
@@ -1226,27 +1252,19 @@ add_local_share_columns <- function(staged_result, share_names,
       "with an ordinary summary."
     ))
   }
-  for (i in seq_along(share_names)) {
-    name <- share_names[[i]]
-    result[[name]] <- rep(NA_real_, nrow(result))
-    technical_names <- c(
-      group_vars, staged_result$set_id_name, staged_result$sort_id,
-      unname(staged_result$parent_key_names), share_names
-    )
-    unseen <- setdiff(names(result), c(
-      seen_names[[i]], technical_names
-    ))
-    next_names <- intersect(
-      names(result), c(unseen, share_next_names[[i]])
-    )
-    if (length(next_names) > 0L) {
-      ordinary <- names(result)[-length(names(result))]
-      result <- result[append(
-        ordinary, name, after = match(next_names[[1L]], ordinary) - 1L
-      )]
+  for (alias in unname(aliases)) {
+    value <- result[[alias]]
+    if (!is.list(value) || !all(vapply(
+      value, identical, logical(1), tokens[[alias]]
+    ))) {
+      abort_share_alias_collision(alias)
     }
+    result[[alias]] <- rep(NA_real_, nrow(result))
   }
-  staged_result$result <- result
+  rename_pairs <- rlang::set_names(
+    rlang::syms(unname(aliases)), names(aliases)
+  )
+  staged_result$result <- dplyr::rename(result, !!!rename_pairs)
   staged_result
 }
 

@@ -509,6 +509,15 @@ summarize_margin_union <- function(.data,
         restatements = branch_argument_map(branch_dots, summaries$labels)
       )
 
+      # Branch binding drops the token attribute of an empty list marker.
+      if (is.data.frame(.data) &&
+            is.environment(summaries$selection_state) &&
+            !is.null(summaries$selection_state$share_markers)) {
+        check_local_share_markers(
+          result, summaries$selection_state$share_markers
+        )
+      }
+
       # Without the placeholder: what this asks about is the names the summary
       # produced, and that column is the adapter's own.
       check_summary_output_names(

@@ -444,49 +444,77 @@ test_that("omitted frame candidates do not block share outputs or sources", {
   expect_identical(actual_across[1L, names(expected_across)], expected_across)
 })
 
-test_that("dynamic outputs named like internal share columns remain intact", {
+test_that("internal share marker collisions reject dynamic outputs", {
   data <- tibble::tibble(g = "a", x = 1L)
-  frame_calls <- 0L
   frame <- function() {
-    frame_calls <<- frame_calls + 1L
     stats::setNames(data.frame(99L), "..marginplyr_share_1")
   }
-
-  before <- summarize_with_margins(
+  before <- expect_error(summarize_with_margins(
     data, total = sum(x), frame(), s = share_of_total(total),
     .grouping = rollup(g)
-  )
-  expect_identical(
-    names(before), c("g", "total", "..marginplyr_share_1", "s")
-  )
-  expect_identical(before$..marginplyr_share_1, c(99L, 99L))
-  expect_identical(before$s, c(1, 1))
-  expect_identical(frame_calls, 2L)
+  ), "conflicts with an internal share column")
+  expect_s3_class(before, "marginplyr_error")
 
-  after <- summarize_with_margins(
+  after <- expect_error(summarize_with_margins(
     data, total = sum(x), s = share_of_total(total), frame(),
     .grouping = rollup(g)
-  )
-  expect_identical(
-    names(after), c("g", "total", "s", "..marginplyr_share_1")
-  )
-  expect_identical(after$..marginplyr_share_1, c(99L, 99L))
-  expect_identical(after$s, c(1, 1))
-  expect_identical(frame_calls, 4L)
+  ), "conflicts with an internal share column")
+  expect_s3_class(after, "marginplyr_error")
 
-  across <- summarize_with_margins(
+  across <- expect_error(summarize_with_margins(
     data, total = sum(x), s = share_of_total(total),
     dplyr::across(
       x, ~ tibble::tibble(..marginplyr_share_1 = 99L),
       .unpack = "{inner}"
     ),
     .grouping = rollup(g)
+  ), "conflicts with an internal share column")
+  expect_s3_class(across, "marginplyr_error")
+
+  empty <- data[FALSE, ]
+  expect_error(summarize_with_margins(
+    empty, total = sum(x), frame(), s = share_of_total(total),
+    .grouping = rollup(g)
+  ), "conflicts with an internal share column")
+  expect_error(summarize_with_margins(
+    empty, total = sum(x), s = share_of_total(total), frame(),
+    .grouping = rollup(g)
+  ), "conflicts with an internal share column")
+})
+
+test_that("local share markers preserve order with reused input names", {
+  data <- tibble::tibble(g = "a", x = 1L)
+  frame_calls <- 0L
+  frame <- function() {
+    frame_calls <<- frame_calls + 1L
+    data.frame(x = 99L)
+  }
+  before <- summarize_with_margins(
+    data, total = sum(x), frame(), s = share_of_total(total),
+    .grouping = rollup(g)
   )
-  expect_identical(
-    names(across), c("g", "total", "s", "..marginplyr_share_1")
+  expect_identical(names(before), c("g", "total", "x", "s"))
+  expect_identical(before$x, c(99L, 99L))
+  expect_identical(before$s, c(1, 1))
+
+  after <- summarize_with_margins(
+    data, total = sum(x), s = share_of_total(total), frame(),
+    .grouping = rollup(g)
   )
-  expect_identical(across$..marginplyr_share_1, c(99L, 99L))
-  expect_identical(across$s, c(1, 1))
+  expect_identical(names(after), c("g", "total", "s", "x"))
+  expect_identical(after$x, c(99L, 99L))
+  expect_identical(after$s, c(1, 1))
+  expect_identical(frame_calls, 4L)
+
+  multiple <- summarize_with_margins(
+    data, total = sum(x), s = share_of_total(total), frame(),
+    p = share_of_total(total), .grouping = rollup(g)
+  )
+  expect_identical(names(multiple), c("g", "total", "s", "x", "p"))
+  expect_identical(multiple$x, c(99L, 99L))
+  expect_identical(multiple$s, c(1, 1))
+  expect_identical(multiple$p, c(1, 1))
+  expect_identical(frame_calls, 6L)
 
   reused <- summarize_with_margins(
     data, total = sum(x), s = share_of_total(total),
@@ -495,6 +523,27 @@ test_that("dynamic outputs named like internal share columns remain intact", {
   expect_identical(names(reused), c("g", "total", "s", "x"))
   expect_identical(reused$x, c(1L, 1L))
   expect_identical(reused$s, c(1, 1))
+})
+
+test_that("staged share markers become numeric placeholders before execution", {
+  token <- new.env(parent = emptyenv())
+  alias <- "..marginplyr_share_1"
+  aliases <- stats::setNames(alias, "s")
+  tokens <- stats::setNames(list(token), alias)
+  staged <- new_margin_summary_stage(
+    tibble::tibble(total = 1L, ..marginplyr_share_1 = list(token)),
+    set_id_name = NULL
+  )
+  restored <- restore_local_share_names(
+    staged, aliases, tokens, requests = list()
+  )
+  expect_identical(names(restored$result), c("total", "s"))
+  expect_identical(restored$result$s, NA_real_)
+
+  staged$result[[alias]] <- list(new.env(parent = emptyenv()))
+  expect_error(restore_local_share_names(
+    staged, aliases, tokens, requests = list()
+  ), "conflicts with an internal share column")
 })
 
 test_that(paste0(
