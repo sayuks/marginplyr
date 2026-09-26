@@ -390,6 +390,88 @@ test_that("SQLite typed Margin labels retain all scalar source types", {
   }
 })
 
+test_that("SQLite stores numeric dimensions with text Margin labels as text", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  values <- list(integer = 1:2, double = c(1.5, 2.5))
+  case <- 0L
+
+  for (type in names(values)) {
+    source <- dplyr::copy_to(
+      con, data.frame(g = values[[type]], v = c(2, 4)),
+      paste0("text_label_source_", type), temporary = TRUE
+    )
+    for (label in c("Total", "01")) {
+      for (verb in c("summary", "expansion")) {
+        for (plan in c("rollup", "one_set")) {
+          for (sort in c("none", "first", "last")) {
+            for (id in c(FALSE, TRUE)) {
+              case <- case + 1L
+              grouping <- if (identical(plan, "rollup")) {
+                rollup(g)
+              } else {
+                grouping_set(g)
+              }
+              args <- list(
+                .data = source, .grouping = grouping,
+                .margin_label = label, .sort = sort,
+                .id = if (id) "sid" else NULL
+              )
+              query <- if (identical(verb, "summary")) {
+                do.call(summarize_with_margins, c(args, list(z = quote(sum(v)))))
+              } else {
+                do.call(expand_with_margins, args)
+              }
+              info <- paste(type, label, verb, plan, sort, id)
+              direct <- dplyr::collect(query)
+              name <- paste0("text_label_result_", case)
+              saved <- dplyr::compute(query, name = name)
+              materialized <- dplyr::collect(saved)
+              reopened <- dplyr::tbl(
+                con, DBI::Id(schema = "temp", table = name)
+              )
+              if (!identical(sort, "none")) {
+                reopened <- dplyr::arrange(reopened, !!dbplyr::sql("rowid"))
+              }
+              reopened <- dplyr::collect(reopened)
+              if (identical(sort, "none")) {
+                by_columns <- function(x) {
+                  dplyr::arrange(x, dplyr::across(dplyr::everything()))
+                }
+                direct <- by_columns(direct)
+                materialized <- by_columns(materialized)
+                reopened <- by_columns(reopened)
+              }
+              direct <- tibble::as_tibble(direct)
+              materialized <- tibble::as_tibble(materialized)
+              reopened <- tibble::as_tibble(reopened)
+              expect_identical(materialized, direct, info = info)
+              expect_identical(reopened, direct, info = info)
+              expect_identical(typeof(direct$g), "character", info = info)
+              declaration <- DBI::dbGetQuery(
+                con, paste0("PRAGMA temp.table_info(\"", name, "\")")
+              )
+              expect_identical(declaration$type[declaration$name == "g"],
+                               "TEXT", info = info)
+              storage <- DBI::dbGetQuery(con, paste0(
+                "SELECT typeof(g) AS kind, quote(g) AS spelling FROM temp.\"",
+                name, "\""
+              ))
+              expect_true(all(storage$kind == "text"), info = info)
+              expect_identical(
+                sort(storage$spelling),
+                sort(paste0("'", materialized$g, "'")),
+                info = info
+              )
+            }
+          }
+        }
+      }
+    }
+  }
+})
+
 test_that("SQLite refuses compute when every rowid name is shadowed", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
