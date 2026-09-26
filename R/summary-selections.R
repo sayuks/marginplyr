@@ -966,14 +966,30 @@ local_summary_selection <- function(selection, env, group_vars,
   source_names
 }
 
-# Answers whether `.unpack` is omitted or evaluates to FALSE. The caller
-# supplies its captured argument and environment; an evaluation error leaves
-# the value unknown.
+# Answers whether `.unpack` is known to be FALSE without evaluating an
+# expression, forcing a promise, or reading an active binding. Unknown values
+# are left to dplyr when it evaluates the summary. The caller supplies the
+# captured argument and its environment.
 across_unpack_is_false <- function(unpack, env) {
-  is.null(unpack) || isFALSE(tryCatch(
-    rlang::eval_tidy(unpack, env = env),
-    error = function(cnd) NULL
-  ))
+  if (is.null(unpack) || isFALSE(unpack)) {
+    return(TRUE)
+  }
+  if (!rlang::is_symbol(unpack)) {
+    return(FALSE)
+  }
+  name <- rlang::as_string(unpack)
+  current <- env
+  while (!identical(current, emptyenv())) {
+    if (exists(name, envir = current, inherits = FALSE)) {
+      if (bindingIsActive(name, current) ||
+            rlang::env_binding_are_lazy(current, name)) {
+        return(FALSE)
+      }
+      return(isFALSE(get(name, envir = current, inherits = FALSE)))
+    }
+    current <- parent.env(current)
+  }
+  FALSE
 }
 
 # `call_name` is the caller's answer rather than one asked again here. Asking
