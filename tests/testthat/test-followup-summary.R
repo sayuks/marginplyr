@@ -666,6 +666,26 @@ test_that("dynamic false unpack preserves inline function environments", {
   }
 })
 
+test_that("dynamic unpack leaves unusual across arguments to dplyr", {
+  data <- tibble::tibble(x = 1:2)
+  expected_error <- expect_error(dplyr::summarise(
+    data, dplyr::across(x, 1L, .unpack = identity(FALSE))
+  ))
+  actual_error <- expect_error(summarize_with_margins(
+    data, dplyr::across(x, 1L, .unpack = identity(FALSE))
+  ))
+  expect_identical(conditionMessage(actual_error),
+                   conditionMessage(expected_error))
+
+  expected <- dplyr::summarise(
+    data, dplyr::across(x, sum, .names = 1L, .unpack = identity(FALSE))
+  )
+  actual <- summarize_with_margins(
+    data, dplyr::across(x, sum, .names = 1L, .unpack = identity(FALSE))
+  )
+  expect_identical(actual, expected)
+})
+
 test_that("dynamic unpack keeps branch scope beside unrelated Total shares", {
   skip_if_suggest_absent("data.table")
   data <- tibble::tibble(g = c("a", "b", "b"), x = c(1, 10, 20))
