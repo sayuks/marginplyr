@@ -1,6 +1,7 @@
 # Follow-up: maintenance cost of zero-row output types
 
 Investigated: 2026-09-27
+Revised: 2026-09-27 — investigation/zero-row-type-policy-independent-2026-09-27/README.md
 Baseline: 9af58d87ca8c49ff267df66d368e1059885f5b38
 Status: comparison evidence; no public contract change adopted
 
@@ -160,6 +161,16 @@ track actual helper output names, beyond the initial three-line direct-call
 extension. A schema-stability requirement would justify that work, but the
 conversation had not established one. Future positive demand could justify a
 deliberate extension; this note did not adopt a decision or change the package.
+
+## Revisions (2026-09-27)
+
+The [independent reassessment](../zero-row-type-policy-independent-2026-09-27/README.md)
+superseded this note's recommendation. It demonstrated that much of the test
+consolidation was achievable while retaining the zero-type promise, so the full
+133-line implementation/test reduction was not attributable to withdrawing it.
+It also measured an empty Boolean Parquet schema changing subsequently read
+nonempty grouping identifiers. The original observations above remain dated
+evidence; their product weighting was reconsidered.
 
 ## Limits and replay
 

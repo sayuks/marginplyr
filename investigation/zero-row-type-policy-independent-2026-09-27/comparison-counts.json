@@ -1,0 +1,23 @@
+[
+  {
+    "variant": "restored",
+    "before": 7432,
+    "after": 7326,
+    "net_removed": 106,
+    "fraction_of_previous_119_saving": 0.8907563025210085
+  },
+  {
+    "variant": "path-restored",
+    "before": 7432,
+    "after": 7333,
+    "net_removed": 99,
+    "fraction_of_previous_119_saving": 0.8319327731092437
+  },
+  {
+    "variant": "matrix-preserved",
+    "before": 7432,
+    "after": 7351,
+    "net_removed": 81,
+    "fraction_of_previous_119_saving": 0.680672268907563
+  }
+]

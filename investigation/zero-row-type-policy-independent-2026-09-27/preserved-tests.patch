@@ -1,0 +1,252 @@
+--- a/tests/testthat/test-sqlite-empty-declared-types.R
++++ b/tests/testthat/test-sqlite-empty-declared-types.R
+@@ -1,65 +1,83 @@
+-test_that("SQLite empty Margin results retain declared package column types", {
++test_that("SQLite empty results preserve declared types through collection", {
+   skip_if_suggest_absent("RSQLite", "DBI")
+   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+   on.exit(DBI::dbDisconnect(con), add = TRUE)
+-  source <- dplyr::copy_to(
+-    con, data.frame(month = 1L, g = "a", v = 3),
+-    "empty_declared_types", temporary = TRUE
+-  )
++  input <- data.frame(month = 1L, g = "a", v = 3)
++  source <- dplyr::copy_to(con, input, "empty_shape", temporary = TRUE)
+   empty <- dplyr::filter(source, month == 2L)
+-
++  case <- 0L
+   for (label in list("Total", NULL, NA_character_)) {
+-    for (sort in c("none", "last", "first")) {
+-      query <- summarize_with_margins(
+-        empty,
+-        z = sum(v, na.rm = TRUE),
+-        p = share_of_parent(z),
+-        t = share_of_total(z),
+-        dplyr::across(z, share_of_total, .names = "{.col}_across"),
+-        .by = month,
+-        .grouping = rollup(g),
+-        .margin_label = label,
+-        .id = "sid",
+-        .sort = sort,
+-        .check_share_source = FALSE
++    for (sort in c("none", "first", "last")) {
++      queries <- list(
++        summarize_with_margins(
++          empty, z = sum(v), p = share_of_parent(z), t = share_of_total(z),
++          dplyr::across(z, share_of_total, .names = "{.col}_across"),
++          .by = month, .grouping = rollup(g), .id = "sid", .sort = sort,
++          .margin_label = label,
++          .check_share_source = FALSE
++        ),
++        summarize_with_margins(
++          empty, z = sum(v), p = share_of_parent(z), t = share_of_total(z),
++          .by = month, .grouping = rollup(g), .margin_label = NULL,
++          .check_share_source = FALSE
++        ),
++        summarize_with_margins(
++          empty, z = sum(v), .by = month, .grouping = grouping_set(g),
++          .id = "sid"
++        ),
++        expand_with_margins(
++          empty, .grouping = grouping_set(g), .id = "sid", .sort = sort,
++          .margin_label = label
++        ),
++        expand_with_margins(empty, .id = "sid"),
++        expand_with_margins(
++          empty, .grouping = rollup(g), .id = "sid", .sort = sort,
++          .margin_label = label
++        )
+       )
+-      expected_names <- c("month", "g", "sid", "z", "p", "t", "z_across")
+-      computed <- dplyr::collect(dplyr::compute(query))
+-      expect_identical(names(computed), expected_names)
+-      expect_identical(computed$sid, integer())
+-      expect_identical(computed$p, double())
+-      expect_identical(computed$t, double())
+-      result <- dplyr::collect(query)
+-      info <- paste(if (is.null(label)) "NULL" else label, sort)
+-      expect_identical(nrow(result), 0L, info = info)
+-      expect_identical(names(result), expected_names, info = info)
+-      expect_identical(result$month, integer(), info = info)
+-      expect_identical(result$g, character(), info = info)
+-      expect_identical(result$sid, integer(), info = info)
+-      expect_identical(result$p, double(), info = info)
+-      expect_identical(result$t, double(), info = info)
+-      expect_identical(result$z_across, double(), info = info)
++      expected_names <- list(
++        c("month", "g", "sid", "z", "p", "t", "z_across"),
++        c("month", "g", "z", "p", "t"), c("month", "g", "sid", "z"),
++        c("g", "sid", "month", "v"),
++        c("sid", "month", "g", "v"), c("g", "sid", "month", "v")
++      )
++      for (i in seq_along(queries)) {
++        query <- queries[[i]]
++        case <- case + 1L
++        name <- paste0("empty_shape_", case)
++        computed <- dplyr::compute(query, name = name)
++        expect_identical(DBI::dbListFields(con, name),
++                         expected_names[[i]])
++        results <- list(dplyr::collect(query), dplyr::collect(query, n = 1L),
++                        dplyr::collect(computed))
++        for (boundary in seq_along(results)) {
++          result <- results[[boundary]]
++          expect_identical(names(result), expected_names[[i]])
++          expect_identical(nrow(result), 0L)
++          if ("sid" %in% names(result)) {
++            expect_identical(result$sid, integer())
++          }
++          for (name in intersect(c("p", "t", "z_across"), names(result))) {
++            expect_identical(result[[name]], double())
++          }
++          expect_identical(result$month, integer())
++          if ("v" %in% names(result)) {
++            expect_identical(result$v, double())
++          }
++          if (i != 2L && boundary != 2L) {
++            expect_identical(result$g, character(), info = paste("query", i))
++          }
++        }
++      }
+     }
+   }
+-})
+-
+-test_that("SQLite empty driver projections do not promise aggregate types", {
+-  skip_if_suggest_absent("RSQLite", "DBI")
+-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+-  on.exit(DBI::dbDisconnect(con), add = TRUE)
++  expect_identical(dplyr::collect(expand_with_margins(
++    data.frame(x = integer()), .id = "set"
++  ))$set, integer())
+   raw <- DBI::dbGetQuery(con, "SELECT CAST(NULL AS REAL) AS x WHERE 0")
+   expect_identical(raw$x, logical())
+-})
+-
+-test_that("SQLite empty summary keeps root shares and standalone identifiers", {
+-  skip_if_suggest_absent("RSQLite", "DBI")
+-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+-  on.exit(DBI::dbDisconnect(con), add = TRUE)
+-  source <- dplyr::copy_to(
+-    con, data.frame(month = 1L, g = 1L, v = 3),
+-    "empty_declared_root", temporary = TRUE
+-  )
+-  empty <- dplyr::filter(source, month == 2L)
++  populated <- dplyr::collect(expand_with_margins(source, .id = "sid"))
++  expect_identical(populated$sid, 1L)
+   root <- summarize_with_margins(
+     empty, z = sum(v), p = share_of_parent(z), t = share_of_total(z),
+     .grouping = rollup(g), .id = "sid", .margin_label = NULL,
+@@ -69,27 +87,6 @@
+   expect_identical(root$sid, 2L)
+   expect_identical(root$p, 1)
+   expect_identical(root$t, 1)
+-
+-  shares_only <- summarize_with_margins(
+-    empty, z = sum(v), p = share_of_parent(z),
+-    t = share_of_total(z), .by = month, .grouping = rollup(g),
+-    .margin_label = NULL, .check_share_source = FALSE
+-  )
+-  expect_identical(dplyr::collect(dplyr::compute(shares_only))$p, double())
+-  result <- dplyr::collect(shares_only)
+-  expect_identical(result$p, double())
+-  expect_identical(result$t, double())
+-
+-  query <- summarize_with_margins(
+-    empty, z = sum(v), .by = month, .grouping = grouping_set(g),
+-    .id = "sid"
+-  )
+-  computed <- dplyr::collect(dplyr::compute(query))
+-  expect_identical(computed$g, character())
+-  expect_identical(computed$sid, integer())
+-  result <- dplyr::collect(query)
+-  expect_identical(result$month, integer())
+-  expect_identical(result$g, character())
+-  expect_identical(result$sid, integer())
+-  expect_identical(nrow(result), 0L)
++  expect_identical(DBI::dbGetQuery(con, "SELECT month, g, v FROM empty_shape"),
++                   input)
+ })
+--- a/tests/testthat/test-sqlite-declared-boundary.R
++++ b/tests/testthat/test-sqlite-declared-boundary.R
+@@ -1,81 +1,3 @@
+-test_that("empty SQLite expansion keeps its integer Grouping set identifier", {
+-  skip_if_suggest_absent("RSQLite", "DBI")
+-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+-  on.exit(DBI::dbDisconnect(con), add = TRUE)
+-  source <- dplyr::copy_to(
+-    con, data.frame(x = 1L), "declared_expansion_source", temporary = TRUE
+-  )
+-  empty <- dplyr::filter(source, x > 1L)
+-  query <- expand_with_margins(empty, .id = "set")
+-
+-  for (result in list(dplyr::collect(query), dplyr::collect(query, n = 1L),
+-                      dplyr::collect(dplyr::compute(query)))) {
+-    expect_identical(names(result), c("set", "x"))
+-    expect_identical(result$x, integer())
+-    expect_identical(result$set, integer())
+-    expect_identical(nrow(result), 0L)
+-  }
+-  expect_identical(dplyr::collect(expand_with_margins(
+-    data.frame(x = integer()), .id = "set"
+-  ))$set, integer())
+-  expect_identical(DBI::dbGetQuery(
+-    con, "SELECT x FROM declared_expansion_source"
+-  )$x, 1L)
+-})
+-
+-test_that("SQLite expansion declarations survive plans, labels, and order", {
+-  skip_if_suggest_absent("RSQLite", "DBI")
+-  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+-  on.exit(DBI::dbDisconnect(con), add = TRUE)
+-  input <- data.frame(g = c("a", "b"), x = 1:2)
+-  source <- dplyr::copy_to(
+-    con, input, "declared_expansion_matrix", temporary = TRUE
+-  )
+-  empty <- dplyr::filter(source, x > 2L)
+-  case <- 0L
+-  for (label in list("Total", NULL, NA_character_)) {
+-    for (sort in c("none", "first", "last")) {
+-      for (plan in c("one", "rollup")) {
+-        case <- case + 1L
+-        query <- if (identical(plan, "one")) {
+-          expand_with_margins(
+-            empty, .grouping = grouping_set(g), .id = "set",
+-            .margin_label = label, .sort = sort
+-          )
+-        } else {
+-          expand_with_margins(
+-            empty, .grouping = rollup(g), .id = "set",
+-            .margin_label = label, .sort = sort
+-          )
+-        }
+-        computed <- dplyr::compute(
+-          query, name = paste0("declared_expansion_case_", case)
+-        )
+-        for (result in list(dplyr::collect(query),
+-                            dplyr::collect(computed))) {
+-          expect_identical(names(result), c("g", "set", "x"))
+-          expect_identical(result$g, character())
+-          expect_identical(result$set, integer())
+-          expect_identical(result$x, integer())
+-          expect_identical(nrow(result), 0L)
+-        }
+-        limited <- dplyr::collect(query, n = 1L)
+-        expect_identical(names(limited), c("g", "set", "x"))
+-        expect_identical(limited$set, integer())
+-        expect_identical(nrow(limited), 0L)
+-        expect_identical(DBI::dbListFields(
+-          con, paste0("declared_expansion_case_", case)
+-        ), c("g", "set", "x"))
+-      }
+-    }
+-  }
+-  populated <- dplyr::collect(expand_with_margins(source, .id = "set"))
+-  expect_identical(populated$set, c(1L, 1L))
+-  expect_identical(DBI::dbGetQuery(
+-    con, "SELECT g, x FROM declared_expansion_matrix ORDER BY x"
+-  ), input)
+-})
+-
+ test_that("finite SQLite collection keeps all-missing shares double", {
+   skip_if_suggest_absent("RSQLite", "DBI")
+   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

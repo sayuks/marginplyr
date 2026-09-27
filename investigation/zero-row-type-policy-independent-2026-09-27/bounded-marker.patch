@@ -1,0 +1,174 @@
+--- a/R/grouping-context.R
++++ b/R/grouping-context.R
+@@ -129,22 +129,23 @@
+                                   plan,
+                                   grouping_set = NULL,
+                                   sql = FALSE,
+-                                  con = NULL) {
++                                  con = NULL,
++                                  mark_outputs = FALSE) {
+   stopifnot(is.list(dots), inherits(plan, "margin_grouping_plan"))
+
+   rewritten <- lapply(
+     dots,
+     function(quo) {
+-      rlang::new_quosure(
+-        rewrite_grouping_expr(
+-          rlang::quo_get_expr(quo),
+-          plan = plan,
+-          grouping_set = grouping_set,
+-          sql = sql,
+-          con = con
+-        ),
+-        env = rlang::quo_get_env(quo)
++      expr <- rlang::quo_get_expr(quo)
++      rewritten <- rewrite_grouping_expr(
++        expr, plan = plan, grouping_set = grouping_set, sql = sql, con = con
+       )
++      if (mark_outputs) {
++        rewritten <- mark_grouping_output_values(
++          expr, rewritten, rlang::quo_get_env(quo)
++        )
++      }
++      rlang::new_quosure(rewritten, env = rlang::quo_get_env(quo))
+     }
+   )
+   stats::setNames(rewritten, names(dots))
+@@ -398,3 +399,66 @@
+     terms
+   )
+ }
++
++# Reads the result expression through parentheses and one-expression blocks.
++grouping_output_leaf <- function(expr) {
++  expr <- unparenthesized_value(expr)
++  if (rlang::is_call(expr, "{") && length(expr) == 2L) {
++    return(grouping_output_leaf(expr[[2L]]))
++  }
++  expr
++}
++
++# Marks only helper-valued outputs, before dbplyr expands their actual names.
++mark_grouping_output_values <- function(original, rewritten, env) {
++  if (!is.null(grouping_helper_name(grouping_output_leaf(original)))) {
++    return(structure(grouping_output_leaf(rewritten),
++                     marginplyr_grouping_output = TRUE))
++  }
++  if (!is_across_call(original)) return(rewritten)
++  parsed <- parse_across_arguments(original)
++  if (parsed$fns_index == 0L) return(rewritten)
++  rewritten_args <- static_call_args(rewritten)
++  mark_lambda <- function(original, rewritten) {
++    # Parenthesized function-list entries remain the backend's own reading.
++    original <- unparenthesized_value(original)
++    index <- if (rlang::is_call(original, "~") && length(original) == 2L) {
++      1L
++    } else if (rlang::is_call(original, "function")) {
++      2L
++    } else {
++      return(rewritten)
++    }
++    args <- static_call_args(original)
++    if (is.null(grouping_helper_name(grouping_output_leaf(args[[index]])))) {
++      return(rewritten)
++    }
++    rewritten_parts <- static_call_args(rewritten)
++    rewritten_parts[[index]] <- structure(
++      grouping_output_leaf(rewritten_parts[[index]]),
++      marginplyr_grouping_output = TRUE
++    )
++    rebuild_static_call(rewritten, rewritten_parts)
++  }
++  fns <- unparenthesized_value(parsed$fns)
++  rewritten_fns <- unparenthesized_value(rewritten_args[[parsed$fns_index]])
++  rewritten_args[[parsed$fns_index]] <- if (is_known_function_list_call(fns, env)) {
++    rebuild_static_call(rewritten_fns, Map(
++      mark_lambda, static_call_args(fns), static_call_args(rewritten_fns)
++    ))
++  } else {
++    mark_lambda(fns, rewritten_fns)
++  }
++  rebuild_static_call(rewritten, rewritten_args)
++}
++
++# Reads helper result provenance after dbplyr expands summary outputs.
++grouping_marked_output <- function(expr) {
++  isTRUE(attr(expr, "marginplyr_grouping_output"))
++}
++
++# Drops helper provenance after partial evaluation, before SQL translation.
++strip_grouping_output_markers <- function(expr) {
++  attr(expr, "marginplyr_grouping_output") <- NULL
++  expr
++}
+--- a/R/grouping-adapter-union.R
++++ b/R/grouping-adapter-union.R
+@@ -502,7 +502,8 @@
+         dots,
+         plan = plan,
+         grouping_set = grouping_set,
+-        sql = FALSE
++        sql = FALSE,
++        mark_outputs = is.environment(summaries$grouping_type_state)
+       )
+       if (is.data.frame(.data)) {
+         branch_dots <- wrap_local_frame_summaries(
+@@ -548,6 +549,21 @@
+         conditions = conditions,
+         restatements = branch_argument_map(branch_dots, summaries$labels)
+       )
++
++      if (is.environment(summaries$grouping_type_state)) {
++        select <- result$lazy_query$select
++        outputs <- select$name[vapply(select$expr, grouping_marked_output,
++                                      logical(1))]
++        previous <- summaries$grouping_type_state$names
++        summaries$grouping_type_state$names <- if (is.null(previous)) {
++          outputs
++        } else {
++          intersect(previous, outputs)
++        }
++        result$lazy_query$select$expr <- lapply(
++          select$expr, strip_grouping_output_markers
++        )
++      }
+
+       # Branch binding drops the token attribute of an empty list marker.
+       if (is.data.frame(.data) &&
+--- a/R/summarize_with_margins.R
++++ b/R/summarize_with_margins.R
+@@ -1047,7 +1047,7 @@
+       length(operation$plan$sets) > 1L
+   ) || (
+     sqlite_declared_type_result(operation) &&
+-      (length(share_kinds) > 0L || !is.null(operation$set_id_name))
++      length(execution$declared_types) > 0L
+   )
+   final_type_anchor <- if (anchor_needed) {
+     if (live_sqlite_margin_result(operation)) {
+@@ -1148,6 +1148,11 @@
+         summaries$selection_state$share_markers <- share_tokens
+       }
+       declare_sqlite_types <- sqlite_declared_type_result(operation)
++      summaries$grouping_type_state <- if (declare_sqlite_types) {
++        new.env(parent = emptyenv())
++      } else {
++        NULL
++      }
+       declared_id <- if (!declare_sqlite_types ||
+                            is.null(operation$set_id_name)) {
+         character()
+@@ -1173,6 +1178,13 @@
+           share_request_kinds(summary_plan$requests) ||
+           (has_shares && identical(operation$backend$kind, "dtplyr"))
+       )
++
++      if (declare_sqlite_types) {
++        outputs <- summaries$grouping_type_state$names
++        declared_id <- c(declared_id, stats::setNames(
++          rep("integer", length(outputs)), outputs
++        ))
++      }
+
+       if (local_share) {
+         staged_result <- restore_local_share_names(

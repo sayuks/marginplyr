@@ -1,0 +1,10 @@
+{
+  "cases": 56,
+  "successful": 56,
+  "same_names": 56,
+  "same_name_evaluations": 56,
+  "nonempty_same_column_values_and_types": 28,
+  "nonempty_same_computed_column_values_and_types": 28,
+  "finite_empty_declared_types": 56,
+  "changed_class_cases": ["empty/multi/last/noid", "full/multi/last/noid"]
+}

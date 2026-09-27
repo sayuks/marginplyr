@@ -1,0 +1,17 @@
+{
+  "restored": {
+    "covered": 1396,
+    "lost_probes": 18,
+    "gained_probes": 0
+  },
+  "path-restored": {
+    "covered": 1414,
+    "lost_probes": 0,
+    "gained_probes": 0
+  },
+  "matrix-preserved": {
+    "covered": 1414,
+    "lost_probes": 0,
+    "gained_probes": 0
+  }
+}
