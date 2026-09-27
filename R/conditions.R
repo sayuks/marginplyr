@@ -177,14 +177,18 @@ with_branch_conditions <- function(expr,
 # An error arrives with its context in addressable fields: `$message` holds the
 # argument bullet, `$body` the grouping-value bullet, and `$call` the internal
 # `dplyr::summarize()` the adapter issued. A generated glue name check adds a
-# wrapper around the caller's cause; remove that wrapper before reporting it.
+# wrapper around the caller's cause; promote a Package refusal or remove the
+# wrapper around a caller-template error before reporting it.
 #
 # Errors are not deduplicated, and there is nothing to deduplicate: branches
 # run in sequence, so the first error aborts the operation and no second
 # occurrence is ever raised.
 restate_branch_error <- function(cnd, conditions, restatements) {
   if (!is.null(cnd$parent) &&
-        inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
+        inherits(cnd$parent$parent, "marginplyr_error")) {
+    cnd <- cnd$parent$parent
+  } else if (!is.null(cnd$parent) &&
+             inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
     cnd$parent <- cnd$parent$parent$parent
   }
   cnd <- restate_condition_arguments(cnd, restatements)

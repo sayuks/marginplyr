@@ -889,5 +889,19 @@ test_that("changing dynamic unpack still checks packed output names", {
     dplyr::across(total, frame, .unpack = identity(FALSE)),
     p = share_of_total(total), .grouping = rollup(g)
   ), class = "marginplyr_error")
+  expect_s3_class(source_default, "marginplyr_error")
   expect_match(conditionMessage(source_default), "defined exactly once")
+  expect_false(grepl("local_checked_glue_name", conditionMessage(source_default),
+                     fixed = TRUE))
+
+  template <- "{inner}"
+  string_collision <- expect_error(summarize_with_margins(
+    data, dplyr::across(x, function(z) data.frame(g = sum(z)),
+                        .unpack = template),
+    .grouping = grouping_set(g)
+  ), class = "marginplyr_error")
+  expect_s3_class(string_collision, "marginplyr_error")
+  expect_match(conditionMessage(string_collision), "cannot overwrite grouping")
+  expect_false(grepl("local_checked_glue_name",
+                     conditionMessage(string_collision), fixed = TRUE))
 })
