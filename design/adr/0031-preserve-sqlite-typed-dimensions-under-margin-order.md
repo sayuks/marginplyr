@@ -126,6 +126,11 @@ ordinary aggregate expressions.
 The #665/#666 extension declares expansion identifiers independently of the
 materializer and applies existing declarations to all-missing finite results.
 
+ADR 0033 adds direct Grouping-helper outputs to the declared-type boundary,
+including zero rows, while retaining backend-specific numeric representations.
+That extension is accepted and pending implementation in #706; it leaves this
+amendment's collection, materialization, and downstream-delegation scope intact.
+
 For direct compute, create the public destination with the zero-row type anchor
 and insert the ordered public query directly once. Do not create a full-result
 staging table. The destination contains only public columns. Sorted results
