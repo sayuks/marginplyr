@@ -1,0 +1,136 @@
+{
+  "R/summarize_with_margins.R": {
+    "rewrite": [
+      [
+        228,
+        234
+      ],
+      [
+        269,
+        274
+      ],
+      [
+        887,
+        889
+      ]
+    ],
+    "reduce_empty_display": [
+      [
+        908,
+        911
+      ]
+    ],
+    "why": "Keep direct boundary and nonempty .id/Grand-total contracts; remove empty integer clause; show nrow(empty_partitions) only."
+  },
+  "R/share.R": {
+    "rewrite": [
+      [
+        291,
+        297
+      ],
+      [
+        311,
+        318
+      ],
+      [
+        486,
+        488
+      ]
+    ],
+    "reduce_empty_display": [
+      [
+        507,
+        510
+      ]
+    ],
+    "why": "Keep empty input row semantics and root double 1; remove zero-row double promise; retain all-missing nonempty double and materialization."
+  },
+  "vignettes/database_backends.qmd": {
+    "rewrite": [
+      [
+        235,
+        238
+      ]
+    ],
+    "why": "Remove empty expansion integer promise; keep finite nonempty share contract and collection-limit explanation."
+  },
+  "CONTEXT.md": {
+    "rewrite": [
+      [
+        128,
+        129
+      ],
+      [
+        139,
+        140
+      ]
+    ],
+    "why": "Qualify always-double wording as a promise for returned values/nonempty columns under the new common boundary."
+  },
+  "design/adr/0010-compute-parent-shares-as-a-contextual-summary.md": {
+    "rewrite_or_amend": [
+      [
+        66,
+        71
+      ],
+      [
+        375,
+        376
+      ]
+    ],
+    "why": "Empty input may return 1 row, which remains double; remove only zero-row type decision and matching docs obligation."
+  },
+  "design/adr/0016-delegate-result-class-and-attributes-to-dplyr.md": {
+    "rewrite_or_amend": [
+      [
+        269,
+        276
+      ]
+    ],
+    "why": "SQLite result-class exception remains for source types and nonempty all-missing shares."
+  },
+  "design/adr/0031-preserve-sqlite-typed-dimensions-under-margin-order.md": {
+    "rewrite_or_amend": [
+      [
+        5,
+        8
+      ],
+      [
+        117,
+        127
+      ]
+    ],
+    "why": "Record withdrawal of #665/empty .id-share type guarantees while retaining all-missing nonempty, type anchor, compute, savepoint, and order."
+  },
+  "design/specs/sqlite-b-direct.md": {
+    "pure_zero_type_stories": [
+      [
+        49,
+        54
+      ]
+    ],
+    "rewrite_or_supersede": [
+      [
+        14,
+        22
+      ],
+      [
+        34,
+        36
+      ],
+      [
+        290,
+        292
+      ],
+      [
+        365,
+        366
+      ],
+      [
+        384,
+        385
+      ]
+    ],
+    "why": "Six lines of zero-row type-only user stories may retire; shared accepted materialization requirements remain. Mark affected historical acceptance criteria superseded rather than erase evidence."
+  }
+}

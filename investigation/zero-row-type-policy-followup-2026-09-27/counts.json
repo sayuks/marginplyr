@@ -1,0 +1,52 @@
+[
+  {
+    "file": "tests/testthat/test-sqlite-empty-declared-types.R",
+    "before": 95,
+    "after": 61,
+    "net_removed": 34,
+    "tests_before": 3,
+    "tests_after": 1,
+    "assertion_calls_before": 25,
+    "assertion_calls_after": 9
+  },
+  {
+    "file": "tests/testthat/test-sqlite-declared-boundary.R",
+    "before": 224,
+    "after": 144,
+    "net_removed": 80,
+    "tests_before": 6,
+    "tests_after": 4,
+    "assertion_calls_before": 62,
+    "assertion_calls_after": 43
+  },
+  {
+    "file": "tests/testthat/test-margin-id.R",
+    "before": 472,
+    "after": 472,
+    "net_removed": 0,
+    "tests_before": 17,
+    "tests_after": 17,
+    "assertion_calls_before": 56,
+    "assertion_calls_after": 56
+  },
+  {
+    "file": "tests/testthat/test-share.R",
+    "before": 3220,
+    "after": 3219,
+    "net_removed": 1,
+    "tests_before": 90,
+    "tests_after": 90,
+    "assertion_calls_before": 354,
+    "assertion_calls_after": 353
+  },
+  {
+    "file": "tests/testthat/test-share-backends.R",
+    "before": 3421,
+    "after": 3417,
+    "net_removed": 4,
+    "tests_before": 81,
+    "tests_after": 81,
+    "assertion_calls_before": 378,
+    "assertion_calls_after": 376
+  }
+]

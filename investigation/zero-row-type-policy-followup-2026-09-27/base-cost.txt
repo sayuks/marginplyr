@@ -1,0 +1,12 @@
+COMPUTE STATEMENTS 1 
+CREATE TEMPORARY TABLE
+`trace_output` AS
+SELECT `..marginplyr_key_1` AS `g`, SUM(`v`) AS `z`, 0 AS `mask`
+FROM (
+  SELECT *, `g` AS `..marginplyr_key_1`
+  FROM `input`
+) AS `q01`
+GROUP BY `..marginplyr_key_1` 
+---
+elapsed seconds: 0.021, 0.0189999999999999, 0.02, 0.019, 0.019, 0.018, 0.018 
+median elapsed: 0.019 

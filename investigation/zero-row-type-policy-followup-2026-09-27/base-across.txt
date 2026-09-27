@@ -1,0 +1,94 @@
+
+CASE: formula empty: FALSE 
+NULL
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: fn empty: FALSE 
+NULL
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: block empty: FALSE 
+NULL
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: paren empty: FALSE 
+NULL
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: mixed empty: FALSE 
+NULL
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "integer"   "integer" "character"   "integer"   "integer" 
+ out_w_text 
+"character" 
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "integer"   "integer" "character"   "integer"   "integer" 
+ out_w_text 
+"character" 
+
+CASE: formula empty: TRUE 
+NULL
+          g           v           w 
+"character"   "logical"   "logical" 
+          g           v           w 
+"character"   "logical"   "logical" 
+
+CASE: fn empty: TRUE 
+NULL
+          g           v           w 
+"character"   "logical"   "logical" 
+          g           v           w 
+"character"   "logical"   "logical" 
+
+CASE: block empty: TRUE 
+NULL
+          g           v           w 
+"character"   "logical"   "logical" 
+          g           v           w 
+"character"   "logical"   "logical" 
+
+CASE: paren empty: TRUE 
+NULL
+          g           v           w 
+"character"   "logical"   "logical" 
+          g           v           w 
+"character"   "logical"   "logical" 
+
+CASE: mixed empty: TRUE 
+NULL
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "logical"   "logical"   "logical"   "logical"   "logical" 
+ out_w_text 
+  "logical" 
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "logical"   "logical" "character"   "logical"   "logical" 
+ out_w_text 
+"character" 
+
+DYNAMIC .names; empty: FALSE 
+<dplyr:::vars>
+[1] "g"   "v_2"
+NULL
+# A tibble: 1 × 2
+  g       v_2
+  <chr> <int>
+1 a         0
+
+DYNAMIC .names; empty: TRUE 
+<dplyr:::vars>
+[1] "g"   "v_4"
+NULL
+# A tibble: 0 × 2
+# ℹ 2 variables: g <chr>, v_4 <lgl>

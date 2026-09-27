@@ -1,6 +1,7 @@
 # Zero-row type policy comparison for #706
 
 Investigated: 2026-09-27
+Revised: 2026-09-27 — investigation/zero-row-type-policy-followup-2026-09-27/README.md
 Baseline: 9af58d87ca8c49ff267df66d368e1059885f5b38
 Status: throwaway comparison; no package policy adopted
 
@@ -136,6 +137,14 @@ change, not merely a documentation clarification.
 The earlier narrow helper prototype on this branch did not exercise source-key
 preservation or the additional collector paths. This matrix qualified its
 inference that registering helper columns alone was sufficient for adoption.
+
+## Revisions (2026-09-27)
+
+The [follow-up comparison](../zero-row-type-policy-followup-2026-09-27/README.md)
+measured an additional 119-line test consolidation and a broader +50-line
+helper extension. It also reproduced a dynamic-name defect in that extension.
+The +3-line measurement above remained the direct-call-only prototype's size;
+it did not establish the cost of a complete helper guarantee.
 
 ## Replay
 

@@ -1,0 +1,109 @@
+
+CASE: formula empty: FALSE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: fn empty: FALSE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: block empty: FALSE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: paren empty: FALSE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: mixed empty: FALSE 
+out_v_mask  out_v_bit out_w_mask  out_w_bit 
+ "integer"  "integer"  "integer"  "integer" 
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "integer"   "integer" "character"   "integer"   "integer" 
+ out_w_text 
+"character" 
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "integer"   "integer" "character"   "integer"   "integer" 
+ out_w_text 
+"character" 
+
+CASE: formula empty: TRUE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: fn empty: TRUE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: block empty: TRUE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: paren empty: TRUE 
+        v         w 
+"integer" "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+          g           v           w 
+"character"   "integer"   "integer" 
+
+CASE: mixed empty: TRUE 
+out_v_mask  out_v_bit out_w_mask  out_w_bit 
+ "integer"  "integer"  "integer"  "integer" 
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "integer"   "integer"   "logical"   "integer"   "integer" 
+ out_w_text 
+  "logical" 
+          g  out_v_mask   out_v_bit  out_v_text  out_w_mask   out_w_bit 
+"character"   "integer"   "integer"   "logical"   "integer"   "integer" 
+ out_w_text 
+  "logical" 
+
+DYNAMIC .names; empty: FALSE 
+<dplyr:::vars>
+[1] "g"   "v_3"
+      v_2 
+"integer" 
+Assigned data `as.vector(out[[name]], mode = type)` must be compatible
+with existing data.
+✖ Existing data has 1 row.
+✖ Assigned data has 0 rows.
+ℹ Row updates require a list value. Do you need `list()` or `as.list()`?
+Caused by error in `vectbl_recycle_rhs_rows()`:
+! Can't recycle input of size 0 to size 1. 
+
+DYNAMIC .names; empty: TRUE 
+<dplyr:::vars>
+[1] "g"   "v_6"
+      v_5 
+"integer" 
+# A tibble: 0 × 3
+# ℹ 3 variables: g <chr>, v_6 <lgl>, v_5 <int>

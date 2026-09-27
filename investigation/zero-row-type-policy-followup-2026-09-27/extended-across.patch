@@ -1,0 +1,118 @@
+diff --git a/R/grouping-context.R b/R/grouping-context.R
+index bad9ef5..655a4d6 100644
+--- a/R/grouping-context.R
++++ b/R/grouping-context.R
+@@ -398,3 +398,52 @@ grouping_id_sql_expr <- function(vars, con) {
+     terms
+   )
+ }
++
++# PROTOTYPE: name outputs whose entire scalar expression is a grouping helper.
++# Across repeats the same reading over each literal lambda body.
++grouping_output_names <- function(dots, selection_proxy) {
++  unlist(Map(function(dot, name) {
++    expr <- rlang::quo_get_expr(dot)
++    if (!is.null(grouping_helper_name(expr))) {
++      return(name)
++    }
++    if (nzchar(name) || !is_across_call(expr)) {
++      return(character())
++    }
++    env <- rlang::quo_get_env(dot)
++    parsed <- parse_across_arguments(expr)
++    if (parsed$fns_index > 0L) {
++      parsed$call_args[[parsed$fns_index]] <- unparenthesized_value(parsed$fns)
++      expr <- rebuild_static_call(expr, parsed$call_args)
++      parsed <- parse_across_arguments(expr)
++    }
++    fns <- if (is_known_function_list_call(parsed$fns, env)) {
++      static_call_args(parsed$fns)
++    } else {
++      list(parsed$fns)
++    }
++    direct <- vapply(fns, function(fn) {
++      fn <- unparenthesized_value(fn)
++      body <- if (rlang::is_call(fn, "~") && length(fn) == 2L) {
++        fn[[2L]]
++      } else if (rlang::is_call(fn, "function")) {
++        fn[[3L]]
++      } else {
++        return(FALSE)
++      }
++      body <- unparenthesized_value(body)
++      while (rlang::is_call(body, "{") && length(body) == 2L) {
++        body <- unparenthesized_value(body[[2L]])
++      }
++      !is.null(grouping_helper_name(body))
++    }, logical(1))
++    if (!any(direct)) {
++      return(character())
++    }
++    outputs <- known_across_output_names(expr, env, selection_proxy)
++    provenance <- across_output_provenance(
++      expr, env, selection_proxy, outputs, expands_own_names = TRUE
++    )
++    outputs[!is.na(provenance$functions) & direct[provenance$functions]]
++  }, dots, rlang::names2(dots)), use.names = FALSE)
++}
+diff --git a/R/sqlite-typed-order.R b/R/sqlite-typed-order.R
+index 4857368..3dbb707 100644
+--- a/R/sqlite-typed-order.R
++++ b/R/sqlite-typed-order.R
+@@ -151,7 +151,7 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
+       x$con, sql, n = n, warn_incomplete = warn_incomplete, ...
+     )
+   }
+-  out <- out[attr(x, "marginplyr_public_columns")]
++  out <- tibble::as_tibble(out[attr(x, "marginplyr_public_columns")])
+   for (name in names(attr(x, "marginplyr_declared_types"))) {
+     if (all(is.na(out[[name]]))) {
+       type <- attr(x, "marginplyr_declared_types")[[name]]
+diff --git a/R/summarize_with_margins.R b/R/summarize_with_margins.R
+index dd89728..b19b043 100644
+--- a/R/summarize_with_margins.R
++++ b/R/summarize_with_margins.R
+@@ -1047,7 +1047,7 @@ summarize_with_margins <- function(.data,
+       length(operation$plan$sets) > 1L
+   ) || (
+     sqlite_declared_type_result(operation) &&
+-      (length(share_kinds) > 0L || !is.null(operation$set_id_name))
++      length(execution$declared_types) > 0L
+   )
+   final_type_anchor <- if (anchor_needed) {
+     if (live_sqlite_margin_result(operation)) {
+@@ -1148,11 +1148,12 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+         summaries$selection_state$share_markers <- share_tokens
+       }
+       declare_sqlite_types <- sqlite_declared_type_result(operation)
+-      declared_id <- if (!declare_sqlite_types ||
+-                           is.null(operation$set_id_name)) {
+-        character()
++      declared_integer <- if (declare_sqlite_types) {
++        integer_names <- c(operation$set_id_name,
++                           grouping_output_names(dots, selection_proxy))
++        stats::setNames(rep("integer", length(integer_names)), integer_names)
+       } else {
+-        stats::setNames("integer", operation$set_id_name)
++        character()
+       }
+ 
+       validate_margin_operation(operation)
+@@ -1191,7 +1192,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+           ),
+           sort_id = margin_summary_stage_sort_id(staged_result),
+           declared_types = if (declare_sqlite_types) {
+-            c(declared_id, stats::setNames(
++            c(declared_integer, stats::setNames(
+               rep("double", length(share_names)), share_names
+             ))
+           } else {
+@@ -1202,7 +1203,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+       new_margin_execution(
+         margin_summary_stage_result(staged_result),
+         sort_id = margin_summary_stage_sort_id(staged_result),
+-        declared_types = declared_id
++        declared_types = declared_integer
+       )
+     },
+     call = operation$call

@@ -1,0 +1,82 @@
+
+direct
+collect rows 0 
+          p           g         sid          nn         bit        mask 
+"character" "character"   "integer"   "logical"   "logical"   "logical" 
+      share 
+   "double" 
+compute_then_collect rows 0 
+          p           g         sid          nn         bit        mask 
+"character" "character"   "integer"   "logical"   "logical"   "logical" 
+      share 
+   "double" 
+
+filter
+collect rows 0 
+          p           g         sid          nn         bit        mask 
+"character"   "logical"   "logical"   "logical"   "logical"   "logical" 
+      share 
+  "logical" 
+compute_then_collect rows 0 
+          p           g         sid          nn         bit        mask 
+"character"   "logical"   "logical"   "logical"   "logical"   "logical" 
+      share 
+  "logical" 
+
+select_subset
+collect rows 0 
+      sid       bit     share 
+"logical" "logical" "logical" 
+compute_then_collect rows 0 
+      sid       bit     share 
+"logical" "logical" "logical" 
+
+rename
+collect rows 0 
+          p           g        sid2          nn         bit        mask 
+"character"   "logical"   "logical"   "logical"   "logical"   "logical" 
+      share 
+  "logical" 
+compute_then_collect rows 0 
+          p           g        sid2          nn         bit        mask 
+"character"   "logical"   "logical"   "logical"   "logical"   "logical" 
+      share 
+  "logical" 
+
+mutate
+collect rows 0 
+          p           g         sid          nn         bit        mask 
+"character"   "logical"   "logical"   "logical"   "logical"   "logical" 
+      share       added 
+  "logical"   "logical" 
+compute_then_collect rows 0 
+          p           g         sid          nn         bit        mask 
+"character"   "logical"   "logical"   "logical"   "logical"   "logical" 
+      share       added 
+  "logical"   "logical" 
+
+bind_rows(empty, populated)
+          p           g         sid          nn         bit        mask 
+"character" "character"   "integer"   "integer"   "integer"   "integer" 
+      share 
+   "double" 
+
+bind_rows(empty, empty)
+          p           g         sid          nn         bit        mask 
+"character" "character"   "integer"   "logical"   "logical"   "logical" 
+      share 
+   "double" 
+
+empty numeric columns
+[1] "sid"   "share"
+empty  across-created columns
+[1] "sid_copy"   "share_copy"
+
+populated numeric columns
+[1] "sid"   "nn"    "bit"   "mask"  "share"
+populated  across-created columns
+[1] "sid_copy"   "nn_copy"    "bit_copy"   "mask_copy"  "share_copy"
+
+versions
+   dplyr   dbplyr  RSQLite      DBI   tibble 
+ "1.2.1"  "2.6.0" "3.53.3"  "1.3.0"  "3.3.1" 

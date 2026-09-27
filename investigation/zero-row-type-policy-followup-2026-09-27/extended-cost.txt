@@ -1,0 +1,26 @@
+COMPUTE STATEMENTS 4 
+SAVEPOINT `marginplyr_savepoint_278b420f2837` 
+---
+CREATE TEMPORARY TABLE
+`trace_output` AS
+SELECT `g`, NULL AS `z`, CAST(NULL AS INTEGER) AS `mask`
+FROM `input`
+WHERE (0) 
+---
+INSERT INTO `temp`.`trace_output` (`g`, `z`, `mask`) SELECT `g`, NULL AS `z`, NULL AS `mask`
+FROM `input`
+WHERE (0)
+
+UNION ALL
+
+SELECT `..marginplyr_key_1` AS `g`, SUM(`v`) AS `z`, 0 AS `mask`
+FROM (
+  SELECT *, `g` AS `..marginplyr_key_1`
+  FROM `input`
+) AS `q01`
+GROUP BY `..marginplyr_key_1` 
+---
+RELEASE SAVEPOINT `marginplyr_savepoint_278b420f2837` 
+---
+elapsed seconds: 0.034, 0.022, 0.023, 0.0229999999999999, 0.0229999999999999, 0.024, 0.0229999999999999 
+median elapsed: 0.023 
