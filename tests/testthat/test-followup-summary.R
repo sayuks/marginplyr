@@ -640,6 +640,32 @@ test_that("dynamic unpack matches ordinary dplyr across local frame classes", {
   }
 })
 
+test_that("dynamic false unpack preserves inline function environments", {
+  skip_if_suggest_absent("data.table")
+  data <- tibble::tibble(g = c("a", "b", "b"), x = c(1, 10, 20))
+  inputs <- list(data, as.data.frame(data), data.table::as.data.table(data))
+  functions <- list(
+    rlang::expr(~ sum(.x) + dplyr::n()),
+    rlang::expr(function(.x) sum(.x) + dplyr::n()),
+    rlang::expr(list(a = ~ sum(.x), b = ~ sum(.x) + dplyr::n()))
+  )
+  for (input in inputs) {
+    for (fns in functions) {
+      across <- rlang::call2(
+        "across", rlang::sym("x"), fns,
+        .unpack = rlang::expr(identity(FALSE)), .ns = "dplyr"
+      )
+      expected <- eval(rlang::expr(dplyr::summarise(
+        dplyr::group_by(input, g), !!across, .groups = "drop"
+      )))
+      actual <- eval(rlang::expr(summarize_with_margins(
+        input, !!across, .grouping = grouping_set(g)
+      )))
+      expect_identical(as.data.frame(actual), as.data.frame(expected))
+    }
+  }
+})
+
 test_that("dynamic unpack keeps branch scope beside unrelated Total shares", {
   skip_if_suggest_absent("data.table")
   data <- tibble::tibble(g = c("a", "b", "b"), x = c(1, 10, 20))
@@ -821,7 +847,27 @@ test_that("changing dynamic unpack still checks packed output names", {
   key <- expect_error(run("..marginplyr_key_1"),
                       class = "marginplyr_error")
   expect_match(conditionMessage(key), "internal grouping columns")
+  public <- expect_error(run("g"), class = "marginplyr_error")
+  expect_match(conditionMessage(public), "cannot overwrite grouping column")
+  id_reads <- 0L
+  id_unpack <- function() {
+    id_reads <<- id_reads + 1L
+    id_reads == 1L
+  }
+  id <- expect_error(summarize_with_margins(
+    data, dplyr::across(x, frame, .names = "set",
+                        .unpack = id_unpack()),
+    .grouping = grouping_set(g), .id = "set"
+  ), class = "marginplyr_error")
+  expect_match(conditionMessage(id), "conflicts with a summary output")
   source <- expect_error(run("total", share = TRUE),
                          class = "marginplyr_error")
   expect_match(conditionMessage(source), "defined exactly once")
+
+  source_default <- expect_error(summarize_with_margins(
+    data, total = sum(x),
+    dplyr::across(total, frame, .unpack = identity(FALSE)),
+    p = share_of_total(total), .grouping = rollup(g)
+  ), class = "marginplyr_error")
+  expect_match(conditionMessage(source_default), "defined exactly once")
 })
