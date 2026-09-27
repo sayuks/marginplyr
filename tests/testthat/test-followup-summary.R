@@ -729,4 +729,99 @@ test_that("dynamic unpack retains custom glue and invalid diagnostics", {
   ))
   expect_identical(actual_error$parent$message,
                    expected_error$parent$message)
+
+  for (unpack in c("{outer", "{unknown}")) {
+    expected_error <- expect_error(dplyr::summarise(
+      data, dplyr::across(x, frame, .unpack = unpack)
+    ))
+    actual_error <- expect_error(summarize_with_margins(
+      data, dplyr::across(x, frame, .unpack = unpack)
+    ))
+    expect_identical(actual_error$parent$message,
+                     expected_error$parent$message)
+    expect_identical(conditionMessage(actual_error),
+                     conditionMessage(expected_error))
+  }
+
+  unpack <- identity(FALSE)
+  suffix <- "post"
+  name_template <- "{toupper(.col)}_{suffix}"
+  expected <- dplyr::summarise(
+    data, dplyr::across(x, sum, .names = name_template,
+                        .unpack = unpack)
+  )
+  actual <- summarize_with_margins(
+    data, dplyr::across(x, sum, .names = name_template,
+                        .unpack = unpack)
+  )
+  expect_identical(actual, expected)
+  for (name_template in c("{.col", "{unknown}")) {
+    expected_error <- expect_error(dplyr::summarise(
+      data, dplyr::across(x, sum, .names = name_template,
+                          .unpack = unpack)
+    ))
+    actual_error <- expect_error(summarize_with_margins(
+      data, dplyr::across(x, sum, .names = name_template,
+                          .unpack = unpack)
+    ))
+    expect_identical(conditionMessage(actual_error),
+                     conditionMessage(expected_error))
+  }
+
+  grouped <- tibble::tibble(g = "a", x = 1)
+  run <- function(margin) {
+    name_reads <- 0L
+    name <- function() {
+      name_reads <<- name_reads + 1L
+      "g"
+    }
+    unpack <- identity(TRUE)
+    result <- if (margin) {
+      summarize_with_margins(
+        grouped, dplyr::across(x, frame, .names = name(),
+                               .unpack = unpack),
+        .grouping = grouping_set(g)
+      )
+    } else {
+      dplyr::summarise(
+        dplyr::group_by(grouped, g),
+        dplyr::across(x, frame, .names = name(), .unpack = unpack),
+        .groups = "drop"
+      )
+    }
+    list(result = result, name_reads = name_reads)
+  }
+  expect_identical(run(TRUE), run(FALSE))
+})
+
+test_that("changing dynamic unpack still checks packed output names", {
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  frame <- function(x) data.frame(value = sum(x))
+  run <- function(target, share = FALSE) {
+    reads <- 0L
+    unpack <- function() {
+      reads <<- reads + 1L
+      reads == 1L
+    }
+    name <- function() target
+    if (share) {
+      summarize_with_margins(
+        data, total = sum(x),
+        dplyr::across(x, frame, .names = name(), .unpack = unpack()),
+        p = share_of_total(total), .grouping = rollup(g)
+      )
+    } else {
+      summarize_with_margins(
+        data,
+        dplyr::across(x, frame, .names = name(), .unpack = unpack()),
+        .grouping = grouping_set(g)
+      )
+    }
+  }
+  key <- expect_error(run("..marginplyr_key_1"),
+                      class = "marginplyr_error")
+  expect_match(conditionMessage(key), "internal grouping columns")
+  source <- expect_error(run("total", share = TRUE),
+                         class = "marginplyr_error")
+  expect_match(conditionMessage(source), "defined exactly once")
 })

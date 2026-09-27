@@ -368,16 +368,31 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       }
       if (!isTRUE(unpack) && !is.character(unpack)) {
         # Keep across at the top level so dplyr expands a FALSE unpack in its
-        # ordinary phase. A TRUE or string unpack checks each actual name as
-        # dplyr constructs it from the evaluated frame.
+        # ordinary phase. The two arguments check names at whichever phase
+        # dplyr chooses from the value it actually reads.
         call_args <- parsed$call_args
+        state <- new.env(parent = emptyenv())
+        state$name_rules <- list(
+          group_vars = group_vars,
+          internal_names = internal_names,
+          set_id_name = set_id_name,
+          set_id_is_internal = set_id_is_internal,
+          protected_sources = setdiff(
+            share_sources, source_definitions[[i]]
+          )
+        )
         index <- parsed$unpack_index
         call_args[[index]] <- rlang::call2(
           marginplyr_private_call("local_checked_unpack_arg"),
-          call_args[[index]], group_vars, internal_names,
-          set_id_name, set_id_is_internal,
-          setdiff(share_sources, source_definitions[[i]])
+          call_args[[index]], state
         )
+        index <- parsed$names_index
+        if (index > 0L && !rlang::is_missing(call_args[[index]])) {
+          call_args[[index]] <- rlang::call2(
+            marginplyr_private_call("local_checked_across_names_arg"),
+            call_args[[index]], state
+          )
+        }
         expr <- rebuild_static_call(expr, call_args)
         dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
         next
@@ -395,38 +410,73 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
   dots
 }
 
-# The top-level across call lets dplyr choose its own expansion phase. For an
-# unpacked frame, its glue template is where the actual output name exists.
-local_checked_unpack_arg <- function(value, group_vars, internal_names,
-                                     set_id_name, set_id_is_internal,
-                                     protected_sources) {
+# Returns dplyr's unpack argument, adding a name check only for an unpacked
+# frame. Its caller places it in the original top-level across call.
+local_checked_unpack_arg <- function(value, state) {
+  state$unpack <- value
   if (!isTRUE(value) &&
         !(is.character(value) && length(value) == 1L && !is.na(value))) {
     return(value)
   }
   spec <- if (isTRUE(value)) "{outer}_{inner}" else value
-  args <- lapply(
-    list(spec, group_vars, internal_names, set_id_name,
-         set_id_is_internal, protected_sources),
-    deparse1
-  )
   paste0(
     "{marginplyr:::local_checked_unpack_name(",
-    args[[1L]], ", outer, inner, ",
-    paste(args[-1L], collapse = ", "), ")}"
+    deparse1(spec), ", outer, inner, ",
+    deparse1(state$name_rules), ")}"
   )
 }
 
-# Called by dplyr's unpack glue once it has both the outer and inner names.
-local_checked_unpack_name <- function(spec, outer, inner, group_vars,
-                                      internal_names, set_id_name,
-                                      set_id_is_internal, protected_sources) {
-  names <- as.character(glue::glue(spec, .envir = parent.frame()))
+# Returns dplyr's naming template, checking its expanded outer names only when
+# dplyr has read FALSE unpacking. The unpack argument has run first.
+local_checked_across_names_arg <- function(value, state) {
+  if (!isFALSE(state$unpack) ||
+        !(is.character(value) && length(value) == 1L && !is.na(value))) {
+    return(value)
+  }
+  paste0(
+    "{marginplyr:::local_checked_across_name(",
+    deparse1(value), ", .col, .fn, ",
+    deparse1(state$name_rules), ")}"
+  )
+}
+
+# Returns the checked output names once dplyr's unpack glue supplies the outer
+# and inner values. The supplied template keeps the caller's glue environment.
+local_checked_unpack_name <- function(spec, outer, inner, name_rules) {
+  names <- local_checked_glue_name(spec, parent.frame())
   check_local_frame_output_names(
-    names, group_vars, internal_names, set_id_name,
-    set_id_is_internal, protected_sources
+    names, name_rules$group_vars, name_rules$internal_names,
+    name_rules$set_id_name, name_rules$set_id_is_internal,
+    name_rules$protected_sources
   )
   names
+}
+
+# Returns checked outer names for a FALSE unpack after dplyr's naming glue
+# supplies the selected column and function labels.
+local_checked_across_name <- function(spec, .col, .fn, name_rules) {
+  names <- local_checked_glue_name(spec, parent.frame())
+  check_local_frame_output_names(
+    names, name_rules$group_vars, name_rules$internal_names,
+    name_rules$set_id_name, name_rules$set_id_is_internal,
+    name_rules$protected_sources
+  )
+  names
+}
+
+# Returns the caller's glue result while tagging its errors so the generated
+# outer interpolation can be removed from the condition chain.
+local_checked_glue_name <- function(spec, env) {
+  tryCatch(
+    as.character(glue::glue(spec, .envir = env)),
+    error = function(cnd) {
+      rlang::abort(
+        "Failed to evaluate the caller's name template.",
+        class = "marginplyr_inner_glue_error",
+        parent = cnd
+      )
+    }
+  )
 }
 
 # What execution carries for the caller's summary arguments: the dots to hand
