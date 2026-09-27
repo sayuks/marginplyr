@@ -4,9 +4,9 @@ status: accepted
 
 # Preserve declared types in empty Margin results
 
-The maintainer accepted this decision on 2026-09-28 for #706. Implementation of
-the Grouping-helper extension is pending. A Margin result keeps the types of
-the columns whose types marginplyr determines, including when it contains zero
+The maintainer accepted this decision for #706; it was recorded on 2026-09-28.
+Implementation of the Grouping-helper extension is pending. A Margin result
+keeps the types of the columns whose types marginplyr determines, including zero
 rows. Existing Grouping set identifier and share guarantees are retained, and
 direct Grouping-helper outputs join that boundary.
 

@@ -1,6 +1,7 @@
 # Preserve declared types in empty Margin results
 
-Decision: accepted by the maintainer on 2026-09-28. Implementation: pending in
+Decision: accepted by the maintainer. Specified: 2026-09-28.
+Implementation: pending in
 [#706](https://github.com/sayuks/marginplyr/issues/706).
 [ADR 0033](../adr/0033-preserve-declared-types-in-empty-margin-results.md) owns
 the contract and the rejected alternatives. This document specifies the work
