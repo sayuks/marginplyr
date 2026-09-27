@@ -686,6 +686,22 @@ test_that("dynamic unpack leaves unusual across arguments to dplyr", {
   expect_identical(actual, expected)
 })
 
+test_that("empty across names retain dplyr defaults under dynamic unpack", {
+  data <- tibble::tibble(x = 1:2)
+  frame <- function(z) data.frame(value = sum(z))
+  for (unpack in c(FALSE, TRUE)) {
+    expected <- dplyr::summarise(
+      data, dplyr::across(x, frame, .names = ,
+                          .unpack = identity(unpack))
+    )
+    actual <- summarize_with_margins(
+      data, dplyr::across(x, frame, .names = ,
+                          .unpack = identity(unpack))
+    )
+    expect_identical(actual, expected)
+  }
+})
+
 test_that("dynamic unpack keeps branch scope beside unrelated Total shares", {
   skip_if_suggest_absent("data.table")
   data <- tibble::tibble(g = c("a", "b", "b"), x = c(1, 10, 20))
@@ -894,6 +910,14 @@ test_that("changing dynamic unpack still checks packed output names", {
   expect_false(grepl(
     "local_checked_glue_name", conditionMessage(source_default), fixed = TRUE
   ))
+
+  source_missing <- expect_error(summarize_with_margins(
+    data, total = sum(x),
+    dplyr::across(total, frame, .names = , .unpack = identity(FALSE)),
+    p = share_of_total(total), .grouping = rollup(g)
+  ), class = "marginplyr_error")
+  expect_s3_class(source_missing, "marginplyr_error")
+  expect_match(conditionMessage(source_missing), "defined exactly once")
 
   template <- "{inner}"
   string_collision <- expect_error(summarize_with_margins(

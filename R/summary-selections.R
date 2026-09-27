@@ -394,12 +394,17 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
           )
         }
         index <- parsed$names_index
-        if (index > 0L && !rlang::is_missing(call_args[[index]])) {
+        if (index > 0L) {
+          value <- if (rlang::is_missing(call_args[[index]])) {
+            NULL
+          } else {
+            call_args[[index]]
+          }
           call_args[[index]] <- rlang::call2(
             marginplyr_private_call("local_checked_across_names_arg"),
-            call_args[[index]], state
+            value, state
           )
-        } else if (index == 0L) {
+        } else {
           call_args <- append(call_args, list(.names = rlang::call2(
             marginplyr_private_call("local_checked_across_names_arg"),
             NULL, state
