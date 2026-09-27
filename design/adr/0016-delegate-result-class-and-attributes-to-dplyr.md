@@ -274,3 +274,7 @@ empty or all-missing columns. Direct compute creates a typed table with public
 columns only; later dplyr verbs return to ordinary dbplyr behavior. This
 exception restores properties marginplyr constructed, not arbitrary input
 attributes or classes.
+
+ADR 0033 extends this declared-type boundary to direct Grouping-helper outputs
+under its ownership rule, including zero rows. Its implementation remains
+pending in #706.
