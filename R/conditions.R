@@ -188,7 +188,7 @@ restate_branch_error <- function(cnd, conditions, restatements) {
         inherits(cnd$parent$parent, "marginplyr_error")) {
     cnd <- cnd$parent$parent
   } else if (!is.null(cnd$parent) &&
-             inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
+               inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
     cnd$parent <- cnd$parent$parent$parent
   }
   cnd <- restate_condition_arguments(cnd, restatements)

@@ -891,8 +891,9 @@ test_that("changing dynamic unpack still checks packed output names", {
   ), class = "marginplyr_error")
   expect_s3_class(source_default, "marginplyr_error")
   expect_match(conditionMessage(source_default), "defined exactly once")
-  expect_false(grepl("local_checked_glue_name", conditionMessage(source_default),
-                     fixed = TRUE))
+  expect_false(grepl(
+    "local_checked_glue_name", conditionMessage(source_default), fixed = TRUE
+  ))
 
   template <- "{inner}"
   string_collision <- expect_error(summarize_with_margins(
