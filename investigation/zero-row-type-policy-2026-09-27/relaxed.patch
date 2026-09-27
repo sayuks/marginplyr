@@ -1,0 +1,71 @@
+diff --git a/R/expand_with_margins.R b/R/expand_with_margins.R
+index 6ef6c3c..4b4abd0 100644
+--- a/R/expand_with_margins.R
++++ b/R/expand_with_margins.R
+@@ -158,12 +158,6 @@ execute_margin_expand <- function(operation) {
+       backend = operation$backend,
+       set_id_name = set_id_name
+     ),
+-    sort_id = sort_id,
+-    declared_types = if (sqlite_declared_type_result(operation) &&
+-                           !is.null(operation$set_id_name)) {
+-      stats::setNames("integer", operation$set_id_name)
+-    } else {
+-      character()
+-    }
++    sort_id = sort_id
+   )
+ }
+diff --git a/R/sqlite-typed-order.R b/R/sqlite-typed-order.R
+index 4857368..cf1aab2 100644
+--- a/R/sqlite-typed-order.R
++++ b/R/sqlite-typed-order.R
+@@ -24,8 +24,7 @@ sqlite_final_anchor_path <- function(operation) {
+ sqlite_typed_result_needed <- function(operation, source_columns,
+                                        declared_types) {
+   live_sqlite_margin_result(operation) &&
+-    (length(declared_types) > 0L ||
+-       (length(source_columns) > 0L && margin_sorting(operation)))
++    (length(declared_types) > 0L || length(source_columns) > 0L)
+ }
+ 
+ # `margin_order_terms()` includes `desc()` only for a Grouping bit. Negating
+diff --git a/R/summarize_with_margins.R b/R/summarize_with_margins.R
+index dd89728..3ca8da6 100644
+--- a/R/summarize_with_margins.R
++++ b/R/summarize_with_margins.R
+@@ -1148,12 +1148,6 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+         summaries$selection_state$share_markers <- share_tokens
+       }
+       declare_sqlite_types <- sqlite_declared_type_result(operation)
+-      declared_id <- if (!declare_sqlite_types ||
+-                           is.null(operation$set_id_name)) {
+-        character()
+-      } else {
+-        stats::setNames("integer", operation$set_id_name)
+-      }
+ 
+       validate_margin_operation(operation)
+ 
+@@ -1191,9 +1185,9 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+           ),
+           sort_id = margin_summary_stage_sort_id(staged_result),
+           declared_types = if (declare_sqlite_types) {
+-            c(declared_id, stats::setNames(
++            stats::setNames(
+               rep("double", length(share_names)), share_names
+-            ))
++            )
+           } else {
+             character()
+           }
+@@ -1201,8 +1195,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+       }
+       new_margin_execution(
+         margin_summary_stage_result(staged_result),
+-        sort_id = margin_summary_stage_sort_id(staged_result),
+-        declared_types = declared_id
++        sort_id = margin_summary_stage_sort_id(staged_result)
+       )
+     },
+     call = operation$call

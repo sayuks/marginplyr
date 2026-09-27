@@ -1,0 +1,52 @@
+relaxed 
+nonempty observations 352 
+
+FALSE 
+  127 
+                   rows changed  before   after
+helper-13/collect0    0     sid integer logical
+[1] key         rows        names_equal rows_equal  data_equal  class_equal
+[7] changed     before      after      
+<0 rows> (or 0-length row.names)
+public names and row counts stable: TRUE 
+nonempty data/type differences: 0 
+nonempty class differences: 0 
+extended 
+nonempty observations 352 
+
+FALSE  TRUE 
+  200     4 
+                     rows                                      changed
+helper-1/collect0       0                                     bit,mask
+helper-5/collect        1                                             
+helper-7/collect0       0                                part,bit,mask
+helper-25/compute       0                             bit,mask,wrapped
+spelling-109/collect    0              ((grouping_id())),qualified,bit
+spelling-109/compute    0 ((grouping_id())),qualified,bit,text,wrapped
+                                                        before
+helper-1/collect0                              logical,logical
+helper-5/collect                                              
+helper-7/collect0                      logical,logical,logical
+helper-25/compute                      logical,logical,integer
+spelling-109/collect                   logical,logical,logical
+spelling-109/compute logical,logical,logical,character,integer
+                                                       after
+helper-1/collect0                            integer,integer
+helper-5/collect                                            
+helper-7/collect0                  character,integer,integer
+helper-25/compute                    integer,integer,logical
+spelling-109/collect                 integer,integer,integer
+spelling-109/compute integer,integer,integer,logical,logical
+                                key rows names_equal rows_equal data_equal
+helper-5/collect   helper-5/collect    1        TRUE       TRUE       TRUE
+helper-5/collect1 helper-5/collect1    1        TRUE       TRUE       TRUE
+helper-9/collect   helper-9/collect    1        TRUE       TRUE       TRUE
+helper-9/collect1 helper-9/collect1    1        TRUE       TRUE       TRUE
+                  class_equal changed before after
+helper-5/collect        FALSE                     
+helper-5/collect1       FALSE                     
+helper-9/collect        FALSE                     
+helper-9/collect1       FALSE                     
+public names and row counts stable: TRUE 
+nonempty data/type differences: 0 
+nonempty class differences: 4 

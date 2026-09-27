@@ -1,0 +1,50 @@
+diff --git a/R/summarize_with_margins.R b/R/summarize_with_margins.R
+index dd89728..ede754e 100644
+--- a/R/summarize_with_margins.R
++++ b/R/summarize_with_margins.R
+@@ -1047,7 +1047,7 @@ summarize_with_margins <- function(.data,
+       length(operation$plan$sets) > 1L
+   ) || (
+     sqlite_declared_type_result(operation) &&
+-      (length(share_kinds) > 0L || !is.null(operation$set_id_name))
++      length(execution$declared_types) > 0L
+   )
+   final_type_anchor <- if (anchor_needed) {
+     if (live_sqlite_margin_result(operation)) {
+@@ -1148,11 +1148,14 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+         summaries$selection_state$share_markers <- share_tokens
+       }
+       declare_sqlite_types <- sqlite_declared_type_result(operation)
+-      declared_id <- if (!declare_sqlite_types ||
+-                           is.null(operation$set_id_name)) {
+-        character()
++      declared_integer <- if (declare_sqlite_types) {
++        direct_grouping <- vapply(dots, function(dot) {
++          !is.null(grouping_helper_name(rlang::quo_get_expr(dot)))
++        }, logical(1))
++        integer_names <- c(operation$set_id_name, names(dots)[direct_grouping])
++        stats::setNames(rep("integer", length(integer_names)), integer_names)
+       } else {
+-        stats::setNames("integer", operation$set_id_name)
++        character()
+       }
+ 
+       validate_margin_operation(operation)
+@@ -1191,7 +1194,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+           ),
+           sort_id = margin_summary_stage_sort_id(staged_result),
+           declared_types = if (declare_sqlite_types) {
+-            c(declared_id, stats::setNames(
++            c(declared_integer, stats::setNames(
+               rep("double", length(share_names)), share_names
+             ))
+           } else {
+@@ -1202,7 +1205,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
+       new_margin_execution(
+         margin_summary_stage_result(staged_result),
+         sort_id = margin_summary_stage_sort_id(staged_result),
+-        declared_types = declared_id
++        declared_types = declared_integer
+       )
+     },
+     call = operation$call
