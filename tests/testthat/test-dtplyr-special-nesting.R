@@ -154,10 +154,12 @@ test_that("dtplyr special factor nesting retains levels and missing groups", {
   )
   source <- dtplyr::lazy_dt(input)
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
-    run <- function(data) verb(
-      data, .grouping = rollup(.N), .margin_label = list(.N = NULL),
-      .keep = TRUE, .id = "set", .sort = "last"
-    )
+    run <- function(data) {
+      verb(
+        data, .grouping = rollup(.N), .margin_label = list(.N = NULL),
+        .keep = TRUE, .id = "set", .sort = "last"
+      )
+    }
     actual <- run(source)
     if (identical(verb, nest_with_margins)) actual <- dplyr::collect(actual)
     expected <- run(input)
@@ -198,10 +200,12 @@ test_that("dtplyr nesting keeps control names and occupied temporary names", {
   )
   source <- dtplyr::lazy_dt(input)
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
-    run <- function(data) verb(
-      data, .by = .N, .grouping = rollup(g), .keep = TRUE,
-      .key = "..marginplyr_dtplyr_column_1__", .id = "set", .sort = "last"
-    )
+    run <- function(data) {
+      verb(
+        data, .by = .N, .grouping = rollup(g), .keep = TRUE,
+        .key = "..marginplyr_dtplyr_column_1__", .id = "set", .sort = "last"
+      )
+    }
     actual <- run(source)
     if (identical(verb, nest_with_margins)) actual <- dplyr::collect(actual)
     expected <- run(input)
