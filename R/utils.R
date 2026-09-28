@@ -16,8 +16,10 @@ margin_column_pronoun <- function(name) {
 # Evaluate a generated dtplyr expression while its input columns cannot be
 # mistaken for data.table special variables. `read` names the columns the
 # expression reads; `transform` receives their temporary names and returns a
-# lazy step. Rename is lazy and leaves the caller's source untouched.
-dtplyr_safe_column_reads <- function(.data, read, transform) {
+# lazy step. `reserved` keeps its output names out of the alias set. Rename is
+# lazy and leaves the caller's source untouched.
+dtplyr_safe_column_reads <- function(.data, read, transform,
+                                     reserved = character()) {
   if (!inherits(.data, "dtplyr_step")) {
     return(transform(.data, function(name) name))
   }
@@ -31,7 +33,7 @@ dtplyr_safe_column_reads <- function(.data, read, transform) {
   }
   aliases <- new_margin_internal_names(
     length(special),
-    used_names = get_col_names(.data, dplyr::everything()),
+    used_names = c(get_col_names(.data, dplyr::everything()), reserved),
     prefix = "..marginplyr_dtplyr_column_"
   )
   names(aliases) <- special

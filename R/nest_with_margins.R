@@ -325,9 +325,16 @@ execute_margin_nest <- function(operation, .key, .keep) {
       data <- operation$data
       column_info <- operation$column_info
       if (length(keep_cols) > 0L) {
-        keep_exprs <- lapply(group_cols, margin_column_pronoun)
-        names(keep_exprs) <- unname(keep_cols)
-        data <- dplyr::mutate(data, !!!keep_exprs)
+        data <- dtplyr_safe_column_reads(
+          data, group_cols,
+          function(source, safe_name) {
+            keep_exprs <- lapply(group_cols, function(col) {
+              margin_column_pronoun(safe_name(col))
+            })
+            names(keep_exprs) <- unname(keep_cols)
+            dplyr::mutate(source, !!!keep_exprs)
+          }
+        )
         # A `.keep` copy is made here, after `prepare_margin_operation()` read
         # the input's schema, so no `factor_info` entry names it and the encode
         # arm would not see it. The copy holds the source column's values, so
@@ -365,27 +372,33 @@ execute_margin_nest <- function(operation, .key, .keep) {
         },
         logical(1)
       )
-      identity_exprs <- lapply(
-        plan$dimensions,
-        function(col) {
-          if (!identity_encoded[[col]]) {
-            return(margin_column_pronoun(col))
+      if (length(identity_cols) > 0L) {
+        data <- dtplyr_safe_column_reads(
+          data, plan$dimensions,
+          function(source, safe_name) {
+            identity_exprs <- lapply(
+              plan$dimensions,
+              function(col) {
+                value <- margin_column_pronoun(safe_name(col))
+                if (!identity_encoded[[col]]) {
+                  return(value)
+                }
+                info <- factors_by_col[[col]]
+                rlang::call2(
+                  marginplyr_private_call("encode_factor_for_margin"),
+                  value,
+                  missing_sentinel = factor_missing_sentinel(
+                    info,
+                    margin_label_of(operation$margin_labels, col)
+                  ),
+                  preserve_missing_value = TRUE
+                )
+              }
+            )
+            names(identity_exprs) <- unname(identity_cols)
+            dplyr::mutate(source, !!!identity_exprs)
           }
-          info <- factors_by_col[[col]]
-          rlang::call2(
-            marginplyr_private_call("encode_factor_for_margin"),
-            margin_column_pronoun(col),
-            missing_sentinel = factor_missing_sentinel(
-              info,
-              margin_label_of(operation$margin_labels, col)
-            ),
-            preserve_missing_value = TRUE
-          )
-        }
-      )
-      names(identity_exprs) <- unname(identity_cols)
-      if (length(identity_exprs) > 0L) {
-        data <- dplyr::mutate(data, !!!identity_exprs)
+        )
       }
       identity_missing <- lapply(
         plan$dimensions,
@@ -490,14 +503,29 @@ nest_cell_expr <- function(cell_cols, kind) {
   )
   # Per backend (ADR 0016).
   if (identical(kind, "dtplyr")) {
+    # `as.data.table.list()` refuses `.SD` as a column name. Build the fresh
+    # cell under a private name, then restore the caller's spelling on it.
+    special <- intersect(names(columns), ".SD")
+    if (length(special) > 0L) {
+      aliases <- new_margin_internal_names(
+        length(special), used_names = names(columns),
+        prefix = "..marginplyr_cell_"
+      )
+      names(columns)[match(special, names(columns))] <- aliases
+      return(rlang::expr(data.table::setnames(
+        data.table::as.data.table(list(!!!columns)),
+        !!aliases, !!special
+      )))
+    }
     rlang::expr(data.table::as.data.table(list(!!!columns)))
   } else {
     rlang::expr(dplyr::as_tibble(list(!!!columns)))
   }
 }
 
-# Fold expanded rows into cells by visible keys, set identifier, and original
-# typed dimension keys; remove the private identity columns from the result.
+# Fold expanded rows into cells by public keys, set identifier, and original
+# typed dimension keys. dtplyr uses safe aliases during the fold, then restores
+# public names; private identity columns are removed from the result.
 nest_expanded_margins <- function(.data,
                                   group_cols,
                                   set_col,
@@ -530,19 +558,34 @@ nest_expanded_margins <- function(.data,
     cell_cols <- cell_cols[order(leading)]
   }
 
-  result <- dplyr::summarize(
-    .data,
-    "{.key}" := list(!!nest_cell_expr(cell_cols, kind)),
-    .by = dplyr::all_of(outer_cols)
-  )
+  dtplyr_safe_column_reads(
+    .data, get_col_names(.data, dplyr::everything()),
+    function(source, safe_name) {
+      safe_cells <- stats::setNames(
+        vapply(unname(cell_cols), safe_name, character(1), USE.NAMES = FALSE),
+        names(cell_cols)
+      )
+      safe_outer <- vapply(
+        outer_cols, safe_name, character(1), USE.NAMES = FALSE
+      )
+      result <- dplyr::summarize(
+        source,
+        "{.key}" := list(!!nest_cell_expr(safe_cells, kind)),
+        .by = dplyr::all_of(safe_outer)
+      )
 
-  if (drop_set_col) {
-    result <- dplyr::select(result, -dplyr::all_of(set_col))
-  }
-  if (length(identity_cols) > 0L) {
-    result <- dplyr::select(result, -dplyr::all_of(unname(identity_cols)))
-  }
-  result
+      if (drop_set_col) {
+        result <- dplyr::select(result, -dplyr::all_of(safe_name(set_col)))
+      }
+      if (length(identity_cols) > 0L) {
+        result <- dplyr::select(
+          result, -dplyr::all_of(unname(identity_cols))
+        )
+      }
+      result
+    },
+    reserved = .key
+  )
 }
 
 utils::globalVariables(":=")
