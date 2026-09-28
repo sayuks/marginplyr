@@ -1051,10 +1051,15 @@ summarize_with_margins <- function(.data,
     sqlite_declared_type_result(operation) &&
       (length(share_kinds) > 0L || !is.null(operation$set_id_name))
   )
+  sqlite_env_output <- live_sqlite_margin_result(operation) &&
+    ".env" %in% setdiff(
+      get_col_names(execution$result, dplyr::everything()),
+      c(operation$plan$by, operation$plan$dimensions)
+    )
   anchor_needed <- existing_anchor_needed || (
     sqlite_declared_type_result(operation) &&
       length(execution$declared_types) > 0L
-  )
+  ) || sqlite_env_output
   final_type_anchor <- if (anchor_needed) {
     if (live_sqlite_margin_result(operation)) {
       always_present <- Reduce(intersect, operation$plan$sets)
@@ -1067,6 +1072,7 @@ summarize_with_margins <- function(.data,
   }
   finalize_margin_operation(
     operation, execution, type_anchor_columns = final_type_anchor,
+    sqlite_env_output = sqlite_env_output,
     restore_tibble = !existing_anchor_needed &&
       length(execution$declared_types) > 0L
   )

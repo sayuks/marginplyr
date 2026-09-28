@@ -80,6 +80,12 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
   )
 
   public_query <- ordered
+  if (".env" %in% public_columns) {
+    ordered <- sqlite_env_output_query(ordered)
+    typed_union <- sqlite_env_output_query(typed_union)
+    public_anchor <- sqlite_env_output_query(public_anchor)
+    public_query <- sqlite_env_output_query(public_query)
+  }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
   attr(ordered, "marginplyr_typed_union") <- typed_union
   attr(ordered, "marginplyr_public_anchor") <- public_anchor
@@ -285,9 +291,24 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     anchor <- attr(x, "marginplyr_public_anchor")
-    # Leave an absent sql_options argument absent: dbplyr's deprecated cte
-    # option in ... is exclusive with a supplied sql_options, even NULL.
-    if (is.null(sql_options)) {
+    if (".env" %in% public) {
+      # dbplyr's compute() selects every column by symbol before creating the
+      # table; tidyselect reads its generated `.env` symbol as the pronoun.
+      if (is.null(destination)) {
+        destination <- dbplyr::as_table_path(
+          basename(tempfile(pattern = "marginplyr_result_")), con
+        )
+      }
+      anchor_sql <- dbplyr::sql_render(anchor, sql_options = sql_options)
+      created <- dbplyr::db_compute(
+        con, destination, anchor_sql, temporary = temporary,
+        overwrite = overwrite, unique_indexes = unique_indexes,
+        indexes = indexes, analyze = FALSE, ..., in_transaction = FALSE
+      )
+      result <- dplyr::tbl(con, created, vars = public)
+    } else if (is.null(sql_options)) {
+      # Leave an absent sql_options argument absent: dbplyr's deprecated cte
+      # option in ... is exclusive with a supplied sql_options, even NULL.
       result <- dplyr::compute(
         anchor, name = destination, temporary = temporary,
         overwrite = overwrite, unique_indexes = unique_indexes,
