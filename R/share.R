@@ -1058,7 +1058,7 @@ wrap_share_sources <- function(dots,
     }
     dots[[position]] <- rlang::new_quosure(
       wrapped,
-      env = rlang::quo_get_env(quo)
+      env = wrapped_summary_env(quo)
     )
   }
   dots
@@ -1081,7 +1081,7 @@ wrap_dtplyr_share_ordinary <- function(dots, checks, call) {
     )
     dots[[position]] <- rlang::new_quosure(
       wrapped,
-      env = rlang::quo_get_env(quo)
+      env = wrapped_summary_env(quo)
     )
   }
   dots
