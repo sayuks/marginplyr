@@ -33,6 +33,24 @@ test_that("direct SQLite Grouping helpers stay numeric without rows", {
   }
 })
 
+test_that("existing sorted SQLite summaries keep their collection class", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, tibble::tibble(g = "a", v = 1),
+    "existing_sorted_class", temporary = TRUE
+  )
+  query <- summarize_with_margins(
+    source,
+    total = sum(v, na.rm = TRUE),
+    .grouping = rollup(g), .sort = "last"
+  )
+  result <- dplyr::collect(query)
+  expect_identical(class(result), "data.frame")
+  expect_identical(result$total, c(1, 1))
+})
+
 test_that("finite zero-row fetch and computed schema retain helper types", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
@@ -300,7 +318,7 @@ test_that("Arrow keeps numeric direct Grouping helpers on empty input", {
   expect_true(is.numeric(result$mask))
 })
 
-test_that("DuckDB keeps native Grouping helper values numeric", {
+test_that("DuckDB keeps native and portable helper outputs numeric", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -321,4 +339,22 @@ test_that("DuckDB keeps native Grouping helper values numeric", {
   computed <- dplyr::collect(dplyr::compute(query))
   expect_true(is.numeric(computed$bit))
   expect_true(is.numeric(computed$mask))
+
+  portable <- summarize_with_margins(
+    dplyr::filter(source, p < 0),
+    bit = grouping_bit(g), mask = grouping_id(),
+    .by = p, .grouping = rollup(g),
+    .duplicates = "keep", .id = "sid"
+  )
+  expect_match(dbplyr::sql_render(portable), "UNION ALL", fixed = TRUE)
+  for (output in list(
+    dplyr::collect(portable),
+    dplyr::collect(dplyr::compute(portable))
+  )) {
+    expect_identical(nrow(output), 0L)
+    expect_identical(names(output), c("p", "g", "sid", "bit", "mask"))
+    expect_identical(output$sid, integer())
+    expect_true(is.numeric(output$bit))
+    expect_true(is.numeric(output$mask))
+  }
 })

@@ -1067,7 +1067,8 @@ summarize_with_margins <- function(.data,
   }
   finalize_margin_operation(
     operation, execution, type_anchor_columns = final_type_anchor,
-    restore_tibble = !existing_anchor_needed
+    restore_tibble = !existing_anchor_needed &&
+      length(execution$declared_types) > 0L
   )
 }
 
