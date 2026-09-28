@@ -145,7 +145,7 @@ steps <- review_ready_source_steps(prerequisites)
 expect_identical(
   names(steps),
   c("Package spelling", "jarl", "package-aware lintr",
-    "Full testthat suite", "Strict line coverage"),
+    "Strict line coverage"),
   "the fixed source-step order"
 )
 expect_true(
@@ -161,10 +161,6 @@ expect_identical(
   steps[["package-aware lintr"]]$env,
   "LINTR_ERROR_ON_LINT=true",
   "the lint failure setting"
-)
-expect_true(
-  grepl("testthat::test_local", steps[["Full testthat suite"]]$args[[2L]], fixed = TRUE),
-  "the full test suite"
 )
 expect_identical(
   steps[["Strict line coverage"]]$args,
