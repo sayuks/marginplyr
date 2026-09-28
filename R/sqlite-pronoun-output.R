@@ -1,13 +1,12 @@
-# Quote dbplyr's generated pass-through projections for a public `.env` column.
-# The caller has a lazy SQLite query; caller summary expressions stay intact.
+# Quote generated SQLite references to a public `.env` output (ADR 0031).
+# The caller passes an unrendered lazy result with that output.
 sqlite_env_output_query <- function(result) {
   result$lazy_query <- sqlite_env_select_query(result$lazy_query)
   result
 }
 
-# dbplyr represents a pass-through column as a bare symbol. Its SQL translator
-# evaluates `.env` as the tidy-evaluation pronoun, so generated references
-# need an identifier instead. Nested selects and union arms can each carry one.
+# Quote generated references in a lazy query and its nested inputs.
+# The caller passes a dbplyr query from a SQLite Margin summary.
 sqlite_env_select_query <- function(query) {
   if (inherits(query, "lazy_select_query")) {
     if (!identical(query$select_operation, "summarise")) {
@@ -30,7 +29,8 @@ sqlite_env_select_query <- function(query) {
   query
 }
 
-# Keep lexical pronoun access intact while quoting bare column references.
+# Quote bare `.env` in a generated select or order expression.
+# The caller has excluded summary nodes; pronoun access stays lexical.
 sqlite_env_reference <- function(expr) {
   if (identical(expr, as.name(".env"))) {
     return(dbplyr::ident(".env"))

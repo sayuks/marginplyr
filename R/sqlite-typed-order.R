@@ -271,8 +271,13 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     abort_marginplyr("`in_transaction` must be TRUE or FALSE.",
                      call = rlang::caller_call())
   }
+  sql_options_given <- !missing(sql_options)
   con <- x$con
   public <- attr(x, "marginplyr_public_columns")
+  if (".env" %in% public && is.null(name) && !temporary) {
+    abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
+                     call = rlang::caller_call())
+  }
   sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
   rowid_alias <- setdiff(c("rowid", "oid", "_rowid_"), tolower(public))
   if (sorted && length(rowid_alias) == 0L) {
@@ -294,16 +299,27 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     if (".env" %in% public) {
       # dbplyr's compute() selects every column by symbol before creating the
       # table; tidyselect reads its generated `.env` symbol as the pronoun.
+      dots <- rlang::list2(...)
+      anchor_options <- sql_options
+      if ("cte" %in% names(dots)) {
+        if (sql_options_given) {
+          rlang::abort("Exactly one of `sql_options` and `cte` may be supplied.")
+        }
+        anchor_options <- dbplyr::sql_options(cte = dots[["cte"]])
+        dots[["cte"]] <- NULL
+        rlang::warn("The `cte` argument is deprecated; use `sql_options`.")
+      }
       if (is.null(destination)) {
         destination <- dbplyr::as_table_path(
           basename(tempfile(pattern = "marginplyr_result_")), con
         )
       }
-      anchor_sql <- dbplyr::sql_render(anchor, sql_options = sql_options)
-      created <- dbplyr::db_compute(
+      anchor_sql <- dbplyr::sql_render(anchor, sql_options = anchor_options)
+      created <- rlang::exec(
+        dbplyr::db_compute,
         con, destination, anchor_sql, temporary = temporary,
         overwrite = overwrite, unique_indexes = unique_indexes,
-        indexes = indexes, analyze = FALSE, ..., in_transaction = FALSE
+        indexes = indexes, analyze = FALSE, !!!dots, in_transaction = FALSE
       )
       result <- dplyr::tbl(con, created, vars = public)
     } else if (is.null(sql_options)) {

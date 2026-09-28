@@ -279,3 +279,37 @@ test_that("SQLite .env summaries read input when collected", {
   expect_identical(dplyr::collect(dplyr::compute(summary_query))[[".env"]],
                    2L)
 })
+
+test_that("SQLite .env materialization keeps dbplyr compute options", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = "east", v = 2L),
+    "env_compute_options_source", temporary = TRUE
+  )
+  output <- ".env"
+  query <- summarize_with_margins(
+    source, !!output := dplyr::n(), .grouping = rollup(g),
+    .sort = "last"
+  )
+  with_options <- dplyr::compute(
+    query, name = "env_with_options",
+    sql_options = dbplyr::sql_options(cte = TRUE)
+  )
+  expect_identical(dplyr::collect(with_options)[[".env"]], c(1L, 1L))
+  deprecated <- suppressWarnings(dplyr::compute(
+    query, name = "env_deprecated_cte", cte = TRUE
+  ))
+  expect_identical(dplyr::collect(deprecated)[[".env"]], c(1L, 1L))
+  expect_error(dplyr::compute(
+    query, name = "env_exclusive_options", cte = TRUE,
+    sql_options = dbplyr::sql_options(cte = TRUE)
+  ), "Exactly one")
+  expect_false(DBI::dbExistsTable(con, "env_exclusive_options"))
+
+  tables_before <- DBI::dbListTables(con)
+  expect_error(dplyr::compute(query, temporary = FALSE),
+               "must be provided")
+  expect_identical(DBI::dbListTables(con), tables_before)
+})
