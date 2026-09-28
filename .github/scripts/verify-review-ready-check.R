@@ -521,3 +521,23 @@ expect_true(grepl("Event ID 1000", review_ready_crash_guidance("Windows"), fixed
   "Windows Application Error guidance")
 expect_true(grepl("coredumpctl info", review_ready_crash_guidance("Linux"), fixed = TRUE),
   "Linux metadata guidance")
+
+local({
+  variables <- c("QUARTO_PATH", "QUARTO_DENO")
+  previous <- Sys.getenv(variables, unset = NA_character_)
+  on.exit({
+    Sys.unsetenv(variables[is.na(previous)])
+    if (!all(is.na(previous))) {
+      do.call(Sys.setenv, as.list(previous[!is.na(previous)]))
+    }
+  })
+  bin <- file.path(diagnostic_fixture, "windows", "bin")
+  dir.create(file.path(bin, "tools", "x86_64"), recursive = TRUE)
+  quarto <- file.path(bin, "quarto.exe")
+  deno <- file.path(bin, "tools", "x86_64", "deno.exe")
+  expect_true(all(file.create(c(quarto, deno))), "Windows executable path fixtures")
+  Sys.setenv(QUARTO_PATH = quarto, QUARTO_DENO = "")
+  versions <- review_ready_render_versions()
+  expect_true(grepl(normalizePath(deno, winslash = "/"), versions[["Deno"]], fixed = TRUE),
+    "Windows bundled Deno is identified even when it cannot execute on this host")
+})

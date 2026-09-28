@@ -381,12 +381,8 @@ review_ready_tool_version <- function(command) {
 # Deno, rather than an unrelated Deno on PATH.
 review_ready_render_versions <- function() {
   quarto <- Sys.getenv("QUARTO_PATH", unname(Sys.which("quarto")))
-  executable <- if (.Platform$OS.type == "windows") "quarto.exe" else "quarto"
-  if (dir.exists(quarto)) {
-    quarto <- file.path(quarto, executable)
-  }
   deno <- Sys.getenv("QUARTO_DENO")
-  if (!nzchar(deno) && file.exists(quarto)) {
+  if (!nzchar(deno) && file.exists(quarto) && !dir.exists(quarto)) {
     bin <- dirname(normalizePath(quarto, winslash = "/"))
     architecture <- if (grepl("arm|aarch64", Sys.info()[["machine"]])) {
       "aarch64"
@@ -394,7 +390,8 @@ review_ready_render_versions <- function() {
       "x86_64"
     }
     candidates <- file.path(bin, c(
-      paste0("tools/", architecture, "/deno"), "tools/deno.exe", "tools/deno"
+      paste0("tools/", architecture, "/deno"),
+      "tools/x86_64/deno.exe", "tools/deno.exe", "tools/deno"
     ))
     found <- candidates[file.exists(candidates)]
     if (length(found) > 0L) {

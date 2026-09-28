@@ -30,8 +30,9 @@ offsets were recorded here.
 
 Both recorded macOS 26.6.2, build `25G83`, and `EXC_BAD_ACCESS`, `SIGSEGV`,
 `KERN_INVALID_ADDRESS at 0x0000000000000000`. Their arm64 Deno image UUID was
-`4c4c4435-5555-3144-a10b-c1c14dc2d9bc`. The first frame had offset zero in a
-different image; the following Deno offsets were identical:
+`4c4c4435-5555-3144-a10b-c1c14dc2d9bc`. The first frame resolved to address zero
+in an image-table placeholder with zero base, size, and UUID; the following
+Deno offsets were identical:
 
 ```text
 29888468 29886848 29888192 23717972 2798292
@@ -105,6 +106,15 @@ and [Deno release history inspected at `b157cd27`](https://github.com/denoland/d
 did not establish a matching fix either. These findings did not justify a
 particular version pin or skipping vignette checks.
 
+For diagnostic version discovery, the
+[Windows release workflow](https://github.com/quarto-dev/quarto-cli/blob/v1.10.18/.github/workflows/create-release.yml)
+and [Windows launcher](https://github.com/quarto-dev/quarto-cli/blob/v1.10.18/package/scripts/windows/quarto.cmd)
+identified `bin/quarto.exe` and `bin/tools/x86_64/deno.exe`, with `QUARTO_DENO`
+overriding the latter. The
+[R package's executable lookup](https://github.com/quarto-dev/quarto-r/blob/bd2329aa6d85675418419b63d587891bdc50b59f/R/quarto.R)
+used `QUARTO_PATH` as an executable path without directory completion, and
+otherwise searched PATH. The installed quarto R package 1.5.1 agreed.
+
 ## Portable native-report guidance verified
 
 Apple's [Console guide](https://support.apple.com/guide/console/reports-cnsl664be99a/1.1/mac/26)
@@ -148,8 +158,64 @@ every OS installation generated a native crash report.
 
 ## Local experiments
 
-The upstream-source investigation above performed no check or render
-repetitions. Any same-SHA experimental run needed its order, start/end times,
-versions, outcome, available report identity, and shared cache/process state
-recorded here; fresh disposable check directories alone would not vary the
-shared state identified in #712.
+The user explicitly authorized four sequential renders: two with the existing
+Deno cache and two with an isolated Deno cache. No failed Review-ready check
+was retried. The experiment ran after a successful Review-ready invocation had
+finished, so that invocation could not overlap the renders.
+
+All four used `recipes.qmd` from the same `git archive` of
+`53446493aa2e4bf82e539000fe8629d3331a61f9`, copied to a fresh working directory
+for each run. That archive was installed once with `R CMD INSTALL` into a
+dedicated temporary R library. Each separate R process prepended that library
+to `.libPaths()` and invoked
+`quarto::quarto_render("vignettes/recipes.qmd", quiet = FALSE)`.
+The versions were Quarto 1.10.18, Deno 2.7.14, R 4.6.1, and macOS 26.6.2
+(`25G83`, arm64). The Quarto/Deno installation and R library were unchanged
+between runs.
+
+| Order | Deno cache condition | Start UTC, 2026-09-28 | End UTC | Exit | HTML bytes |
+| --- | --- | --- | --- | --- | --- |
+| 1 | Existing cache | 02:08:37.257614 | 02:08:41.326004 | 0 | 254921 |
+| 2 | Existing cache, reused after 1 | 02:08:51.857329 | 02:08:55.953886 | 0 | 254921 |
+| 3 | Empty isolated cache | 02:09:06.136553 | 02:09:10.359159 | 0 | 254921 |
+| 4 | Isolated cache, reused after 3 | 02:09:20.829220 | 02:09:24.940810 | 0 | 254921 |
+
+Runs 1–2 used `~/Library/Caches/deno` (15 files, 6,726,040 bytes before and
+after both runs). Its file metadata changed after each render. For runs 3–4,
+only `DENO_DIR` changed, to an initially empty temporary directory. It held
+12 files / 1,886,224 bytes after run 3 and 12 files / 1,923,304 bytes after
+run 4. This was a Deno-cache contrast, not merely another disposable source
+directory. The normal cache was neither removed nor replaced.
+
+Quarto's `~/Library/Caches/quarto` stayed shared across all four runs. It held
+13 files / 51,897 bytes throughout, and the SHA-256 of its sorted relative
+filenames, sizes, and modification times stayed
+`f88f19cd8e3c34422818916ac06fdc4605927aabd90d8018c49bb3f16373e477`.
+The [Quarto v1.10.18 app-directory implementation](https://github.com/quarto-dev/quarto-cli/blob/v1.10.18/src/core/appdirs.ts)
+derived that macOS location from `HOME`; the experiment did not override HOME
+or change the user's Quarto state. It therefore did not isolate all shared
+state.
+
+Before and after each run, `ps -axo pid=,comm=` succeeded and showed no
+process whose executable basename was `deno`, `quarto`, `R`, or `Rscript`.
+These were boundary observations, not continuous process monitoring. The
+`deno*.ips` directory inventory before and after each run contained only the
+two reports identified above; no new matching report was observed. All four
+console logs ended with `Output created: recipes.html` and contained no
+`ERROR`, `WARNING`, `Error`, `Warning`, or `Segmentation` match.
+
+The per-run JSON observations and console logs were retained locally under
+`/private/tmp/marginplyr-712-experiment-mjom8hcr/` as `run-1.json` through
+`run-4.json` and corresponding `.log` files. A separate command selected each
+run number; the harness refused to overwrite a recorded run and contained no
+retry loop.
+
+This bounded experiment did not reproduce the crash. Success under both cache
+conditions neither supported nor ruled out an intermittent shared-state
+failure. It exercised the affected vignette, not the complete preceding
+coverage/build/check process sequence, and did not vary Quarto's shared
+cache or continuously observe other processes. No causal mechanism or matching
+upstream fix was established, so no version pin, cache reset, or vignette
+bypass was justified. Acceptance criterion 4 of #712 remained unmet; the issue
+needed to remain open, with diagnostic retention available for a future
+failure.
