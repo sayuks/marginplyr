@@ -61,11 +61,15 @@ source(".github/scripts/ci-helpers.R")
 exempt <- data.frame(
   file = c(
     "design/agents/code-review.md",
-    "design/agents/code-review.md"
+    "design/agents/code-review.md",
+    rep("tools/cran-release.md", 3L)
   ),
   path = c(
     "design/review-dispositions.md",
-    "docs/agents/issue-tracker.md"
+    "docs/agents/issue-tracker.md",
+    "audit_root/preparation-sha.txt",
+    "audit_root/attachment-invocation.txt",
+    "audit_root/attachment-console.txt"
   ),
   reason = c(
     paste(
@@ -75,7 +79,11 @@ exempt <- data.frame(
     paste(
       "the left column of a table of what the skill looks for, so the row",
       "exists to say this repository has no such file"
-    )
+    ),
+    rep(paste(
+      "Stage 3 generates this audit record below an explicitly external",
+      "absolute audit_root, not in the repository"
+    ), 3L)
   ),
   stringsAsFactors = FALSE
 )

@@ -879,6 +879,24 @@ local({
   classifier_identity <- recovered$identity(recovered$tarball)
   expect_true(review_ready_native_crash(recovered$crash, classifier_identity, "Darwin"),
     "the full macOS launcher signature is eligible")
+  # R's --as-cran print_time() adds CPU/elapsed seconds or minutes before ERROR.
+  for (timing in c("[3s/34s]", "[1m/11m]")) {
+    fixture <- make_retry_fixture(function(crash) {
+      crash$errors <- sub("... ERROR", paste("...", timing, "ERROR"),
+        crash$errors, fixed = TRUE)
+      list(crash, empty_result)
+    })
+    capture.output(timed_outcome <- fixture$run())
+    expect_identical(timed_outcome$attempts, 2L,
+      paste("the standard R timing", timing, "retains recovery"))
+  }
+  for (timing in c("[3s/1m]", "[unknown]", "[3s]")) {
+    result <- recovered$crash
+    result$errors <- sub("... ERROR", paste("...", timing, "ERROR"),
+      result$errors, fixed = TRUE)
+    expect_identical(review_ready_native_crash(result, classifier_identity, "Darwin"),
+      FALSE, paste("an unsupported timing", timing, "is refused"))
+  }
   for (system in c("Linux", "Windows", "unknown")) {
     expect_identical(review_ready_native_crash(recovered$crash, classifier_identity, system),
       FALSE, paste(system, "has no verified native-crash predicate"))

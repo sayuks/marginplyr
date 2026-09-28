@@ -547,8 +547,9 @@ review_ready_native_crash <- function(result, tool_identity, system) {
   if (length(launcher) != 1L || is.na(launcher) || !nzchar(launcher)) return(FALSE)
   lines <- trimws(strsplit(result$errors, "\n", fixed = TRUE)[[1L]])
   lines <- chartr("‘’", "''", lines[nzchar(lines)])
-  if (length(lines) < 3L || !grepl(
-    "^(\\* )?checking re-building of vignette outputs [.][.][.] ERROR$", lines[[1L]]) ||
+  header <- paste0("^(\\* )?checking re-building of vignette outputs [.][.][.] ",
+    "(\\[([0-9]+s/[0-9]+s|[0-9]+m/[0-9]+m)\\] )?ERROR$")
+  if (length(lines) < 3L || !grepl(header, lines[[1L]]) ||
       lines[[2L]] != "Error(s) in re-building vignettes:") return(FALSE)
   cursor <- 3L
   failed <- character()
