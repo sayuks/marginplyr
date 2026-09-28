@@ -211,3 +211,16 @@ materializer renders the type anchor and gives it to `dbplyr::db_compute()`
 for this output name, then uses the existing public-column insertion and
 destination safety path. Construction remains lazy; the materialization work
 occurs only when the caller invokes `compute()`.
+
+## `.env` grouping-key amendment (2026-09-28)
+
+Issue #722 applies the identifier-safe direct SQLite boundary to a source
+column named `.env` when it is a fixed `.by` key or Grouping dimension. The
+portable summary adapter copies source keys into private grouping columns.
+dbplyr's generated projection of the source `.env` column can then resolve the
+bare name as its lexical pronoun when SQL is rendered. Direct dbplyr grouping
+on that name has the same limitation. Route every public `.env` summary result
+column through the existing quoted-reference path, including keys as well as
+summary outputs and requested identifiers. Leave caller summary expressions under
+their ordinary lexical meaning. Construction still sends no data-read query;
+the caller's `collect()` or `compute()` executes the result.

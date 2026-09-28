@@ -357,10 +357,10 @@ validate_margin_operation <- function(operation) {
 
 # Finish the prepared operation. `type_anchor_columns` are input columns whose
 # SQL types the caller needs carried into the final projection.
-# `sqlite_env_output` routes summary names that need the direct SQLite boundary.
+# `sqlite_env_column` routes a public `.env` column through identifier quoting.
 finalize_margin_operation <- function(operation, execution,
                                       type_anchor_columns = character(),
-                                      sqlite_env_output = FALSE,
+                                      sqlite_env_column = FALSE,
                                       restore_tibble = FALSE) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
@@ -430,7 +430,7 @@ finalize_margin_operation <- function(operation, execution,
   }
   if (sqlite_typed_result_needed(
     operation, type_anchor_columns, declared_types
-  ) || sqlite_env_output) {
+  ) || sqlite_env_column) {
     result <- sqlite_typed_result(
       operation, unsorted, result, execution, type_anchor_columns,
       declared_types, restore_tibble = restore_tibble

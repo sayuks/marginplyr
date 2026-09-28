@@ -394,6 +394,32 @@ test_that("SQLite destination inspection starts only at explicit compute", {
   )), 0L)
 })
 
+test_that("SQLite .env summary keys add no construction read", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    data.frame(.env = c("east", NA_character_), g = c("a", "b"),
+               check.names = FALSE),
+    "query_policy_env_keys", temporary = TRUE
+  )
+  expect_gt(count_entry_point_invocations(dplyr::collect(source)), 0L)
+  expect_identical(count_entry_point_invocations(
+    summarize_with_margins(
+      source, rows = dplyr::n(),
+      .grouping = rollup(tidyselect::all_of(".env")), .sort = "last"
+    )
+  ), 0L)
+  expect_identical(count_entry_point_invocations(
+    summarize_with_margins(
+      source, rows = dplyr::n(),
+      .by = tidyselect::all_of(".env"), .grouping = rollup(g),
+      .sort = "first"
+    )
+  ), 0L)
+})
+
 test_that("the exempt selection proxy materializes no caller rows", {
   skip_if_suggest_absent("duckdb", "DBI")
   capture <- new.env(parent = emptyenv())

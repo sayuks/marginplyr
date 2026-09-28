@@ -1,5 +1,5 @@
-# Quote generated SQLite references to a public `.env` output (ADR 0031).
-# The caller passes an unrendered lazy result with that output.
+# Quote generated SQLite references to a public `.env` column (ADR 0031).
+# The caller passes an unrendered lazy result with that column.
 sqlite_env_output_query <- function(result) {
   result$lazy_query <- sqlite_env_select_query(result$lazy_query)
   result
