@@ -1537,7 +1537,8 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
     # Local dplyr resolves selections after preceding summaries have entered
     # its mask. Predict only literal names here, leaving naming expressions
     # and selection predicates to that execution.
-    if (defer_local && i > 1L && contains_summary_selection(expr)) {
+    if (defer_local && contains_summary_selection(expr) &&
+          (i > 1L || nzchar(output_name))) {
       output_names <- if (nzchar(output_name)) {
         output_name
       } else if (is_across_call(expr)) {
