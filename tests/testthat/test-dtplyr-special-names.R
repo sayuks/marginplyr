@@ -301,8 +301,9 @@ test_that("dtplyr special dimensions retain typed share keys", {
           if (factor_dimension) {
             values <- factor(values, levels = c("a", "b"))
           }
-          input <- tibble::tibble(key = values, value = rep(c(2, 3),
-                                                          length.out = size))
+          input <- tibble::tibble(
+            key = values, value = rep(c(2, 3), length.out = size)
+          )
           names(input)[1L] <- column
           source <- dtplyr::lazy_dt(input)
           grouping <- rollup(dplyr::all_of(column))
@@ -374,8 +375,10 @@ test_that("dtplyr expansion preserves special names in every column role", {
       for (label in list("Total", NULL, NA_character_)) {
         for (sort in sorts) {
           size <- match(sort, sorts) - 1L
-          input <- tibble::tibble(g = rep(c("a", "b"), length.out = size),
-                                  special = seq_len(size), value = seq_len(size))
+          input <- tibble::tibble(
+            g = rep(c("a", "b"), length.out = size),
+            special = seq_len(size), value = seq_len(size)
+          )
           if (identical(role, "payload")) {
             input <- input[c("special", "g", "value")]
           }
