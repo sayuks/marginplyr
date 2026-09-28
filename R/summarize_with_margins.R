@@ -228,6 +228,8 @@
 #' A live SQLite result uses a lazy subclass when source-column anchors or
 #' package-declared output types require it. Direct collection preserves source
 #' types and restores package-declared types in empty or all-missing columns.
+#' Direct [grouping_bit()] and [grouping_id()] summary outputs, including
+#' supported literal `across()` lambdas, remain numeric with zero rows.
 #' Sorted direct collection hides internal ordering columns from returned
 #' data, while [dbplyr::sql_render()] shows them in the SQL result.
 #' Direct materialization creates a typed table with public columns only.
@@ -1040,7 +1042,7 @@ summarize_with_margins <- function(.data,
   # wrap the union's source-column anchor. The finalizer anchors the result.
   has_anchor <- length(share_kinds) > 0L ||
     sqlite_final_anchor_path(operation)
-  anchor_needed <- (
+  existing_anchor_needed <- (
     identical(operation$backend$kind, "sql") &&
       has_anchor &&
       length(typed_dimensions) > 0L &&
@@ -1048,6 +1050,10 @@ summarize_with_margins <- function(.data,
   ) || (
     sqlite_declared_type_result(operation) &&
       (length(share_kinds) > 0L || !is.null(operation$set_id_name))
+  )
+  anchor_needed <- existing_anchor_needed || (
+    sqlite_declared_type_result(operation) &&
+      length(execution$declared_types) > 0L
   )
   final_type_anchor <- if (anchor_needed) {
     if (live_sqlite_margin_result(operation)) {
@@ -1060,7 +1066,8 @@ summarize_with_margins <- function(.data,
     character()
   }
   finalize_margin_operation(
-    operation, execution, type_anchor_columns = final_type_anchor
+    operation, execution, type_anchor_columns = final_type_anchor,
+    restore_tibble = !existing_anchor_needed
   )
 }
 
@@ -1148,6 +1155,11 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         summaries$selection_state$share_markers <- share_tokens
       }
       declare_sqlite_types <- sqlite_declared_type_result(operation)
+      summaries$grouping_type_state <- if (declare_sqlite_types) {
+        new.env(parent = emptyenv())
+      } else {
+        NULL
+      }
       declared_id <- if (!declare_sqlite_types ||
                            is.null(operation$set_id_name)) {
         character()
@@ -1173,6 +1185,13 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
           share_request_kinds(summary_plan$requests) ||
           (has_shares && identical(operation$backend$kind, "dtplyr"))
       )
+
+      if (declare_sqlite_types) {
+        outputs <- summaries$grouping_type_state$names
+        declared_id <- c(declared_id, stats::setNames(
+          rep("integer", length(outputs)), outputs
+        ))
+      }
 
       if (local_share) {
         staged_result <- restore_local_share_names(

@@ -81,9 +81,14 @@
 #'   `UNION ALL` path receive that same constant as a literal in their own
 #'   query. Only a backend actually running native `GROUP BY GROUPING SETS`
 #'   emits SQL `GROUPING()`, so PostgreSQL falls back to the literal whenever
-#'   `.duplicates = "keep"` sends it down the portable path. In every remote
-#'   case the collected type comes from the backend, so cast explicitly when a
-#'   downstream calculation depends on it.
+#'   `.duplicates = "keep"` sends it down the portable path.
+#'
+#'   A direct output of either helper remains numeric even when a remote Margin
+#'   result has zero rows. This includes a supported literal `across()` lambda
+#'   whose entire result is the helper. Direct `collect()` and supported direct
+#'   `compute()` retain the type; backends may return integer or double.
+#'   Expressions around a helper, ordinary summaries, and later lazy dplyr
+#'   transformations follow the type rules of their backend.
 #' @family grouping plans and grouping identity
 #' @family contextual summary helpers
 #' @export
@@ -129,22 +134,23 @@ rewrite_grouping_dots <- function(dots,
                                   plan,
                                   grouping_set = NULL,
                                   sql = FALSE,
-                                  con = NULL) {
+                                  con = NULL,
+                                  mark_outputs = FALSE) {
   stopifnot(is.list(dots), inherits(plan, "margin_grouping_plan"))
 
   rewritten <- lapply(
     dots,
     function(quo) {
-      rlang::new_quosure(
-        rewrite_grouping_expr(
-          rlang::quo_get_expr(quo),
-          plan = plan,
-          grouping_set = grouping_set,
-          sql = sql,
-          con = con
-        ),
-        env = rlang::quo_get_env(quo)
+      expr <- rlang::quo_get_expr(quo)
+      rewritten <- rewrite_grouping_expr(
+        expr, plan = plan, grouping_set = grouping_set, sql = sql, con = con
       )
+      if (mark_outputs) {
+        rewritten <- mark_grouping_output_values(
+          expr, rewritten, rlang::quo_get_env(quo)
+        )
+      }
+      rlang::new_quosure(rewritten, env = rlang::quo_get_env(quo))
     }
   )
   stats::setNames(rewritten, names(dots))
@@ -397,4 +403,68 @@ grouping_id_sql_expr <- function(vars, con) {
     },
     terms
   )
+}
+
+# Reads the result expression through parentheses and one-expression blocks.
+grouping_output_leaf <- function(expr) {
+  expr <- unparenthesized_value(expr)
+  if (rlang::is_call(expr, "{") && length(expr) == 2L) {
+    return(grouping_output_leaf(expr[[2L]]))
+  }
+  expr
+}
+
+# Marks only helper-valued outputs, before dbplyr expands their actual names.
+mark_grouping_output_values <- function(original, rewritten, env) {
+  if (!is.null(grouping_helper_name(grouping_output_leaf(original)))) {
+    return(structure(grouping_output_leaf(rewritten),
+                     marginplyr_grouping_output = TRUE))
+  }
+  if (!is_across_call(original)) return(rewritten)
+  parsed <- parse_across_arguments(original)
+  if (is.null(parsed$fns)) return(rewritten)
+  rewritten_args <- static_call_args(rewritten)
+  mark_lambda <- function(original, rewritten) {
+    original <- unparenthesized_value(original)
+    index <- if (rlang::is_call(original, "~") && length(original) == 2L) {
+      1L
+    } else if (rlang::is_call(original, "function")) {
+      2L
+    } else {
+      return(rewritten)
+    }
+    args <- static_call_args(original)
+    if (is.null(grouping_helper_name(grouping_output_leaf(args[[index]])))) {
+      return(rewritten)
+    }
+    rewritten_parts <- static_call_args(rewritten)
+    rewritten_parts[[index]] <- structure(
+      grouping_output_leaf(rewritten_parts[[index]]),
+      marginplyr_grouping_output = TRUE
+    )
+    rebuild_static_call(rewritten, rewritten_parts)
+  }
+  fns <- unparenthesized_value(parsed$fns)
+  rewritten_fns <- unparenthesized_value(rewritten_args[[parsed$fns_index]])
+  rewritten_args[[parsed$fns_index]] <- if (
+    is_known_function_list_call(fns, env)
+  ) {
+    rebuild_static_call(rewritten_fns, Map(
+      mark_lambda, static_call_args(fns), static_call_args(rewritten_fns)
+    ))
+  } else {
+    mark_lambda(fns, rewritten_fns)
+  }
+  rebuild_static_call(rewritten, rewritten_args)
+}
+
+# Reads helper result provenance after dbplyr expands summary outputs.
+grouping_marked_output <- function(expr) {
+  isTRUE(attr(expr, "marginplyr_grouping_output"))
+}
+
+# Drops helper provenance after partial evaluation, before SQL translation.
+strip_grouping_output_markers <- function(expr) {
+  attr(expr, "marginplyr_grouping_output") <- NULL
+  expr
 }

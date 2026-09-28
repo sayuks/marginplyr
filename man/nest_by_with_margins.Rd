@@ -233,6 +233,8 @@ returns a tibble.
 A live SQLite result uses a lazy subclass when source-column anchors or
 package-declared output types require it. Direct collection preserves source
 types and restores package-declared types in empty or all-missing columns.
+Direct \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} summary outputs, including
+supported literal \code{across()} lambdas, remain numeric with zero rows.
 Sorted direct collection hides internal ordering columns from returned
 data, while \code{\link[dbplyr:sql_render]{dbplyr::sql_render()}} shows them in the SQL result.
 Direct materialization creates a typed table with public columns only.

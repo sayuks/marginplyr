@@ -23,9 +23,14 @@ substituted before execution. Arrow and every backend taking the portable
 \verb{UNION ALL} path receive that same constant as a literal in their own
 query. Only a backend actually running native \verb{GROUP BY GROUPING SETS}
 emits SQL \code{GROUPING()}, so PostgreSQL falls back to the literal whenever
-\code{.duplicates = "keep"} sends it down the portable path. In every remote
-case the collected type comes from the backend, so cast explicitly when a
-downstream calculation depends on it.
+\code{.duplicates = "keep"} sends it down the portable path.
+
+A direct output of either helper remains numeric even when a remote Margin
+result has zero rows. This includes a supported literal \code{across()} lambda
+whose entire result is the helper. Direct \code{collect()} and supported direct
+\code{compute()} retain the type; backends may return integer or double.
+Expressions around a helper, ordinary summaries, and later lazy dplyr
+transformations follow the type rules of their backend.
 }
 \description{
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} are contextual summary helpers for

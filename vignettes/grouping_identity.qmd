@@ -46,6 +46,13 @@ compares all four values side by side and states their duplicate-occurrence
 rules. The rest of this article works through what that comparison means in
 practice.
 
+Local frames and dtplyr return integer Grouping bits and identifiers. Remote
+backends may use integer or double representations. A direct helper summary,
+including a supported literal `across()` lambda returning the helper, stays
+numeric when a Margin result has zero rows and is directly collected or
+materialized. An enclosing arithmetic or conversion expression and a later
+lazy transformation use their own type rules.
+
 ## Why a rollup skips Grouping identifier 2
 
 Inspect a two-dimension rollup:

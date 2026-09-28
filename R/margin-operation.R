@@ -358,7 +358,8 @@ validate_margin_operation <- function(operation) {
 # Finish the prepared operation. `type_anchor_columns` are input columns whose
 # SQL types the caller needs carried into the final projection.
 finalize_margin_operation <- function(operation, execution,
-                                      type_anchor_columns = character()) {
+                                      type_anchor_columns = character(),
+                                      restore_tibble = FALSE) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
   result <- dplyr::ungroup(execution$result)
@@ -430,7 +431,7 @@ finalize_margin_operation <- function(operation, execution,
   )) {
     result <- sqlite_typed_result(
       operation, unsorted, result, execution, type_anchor_columns,
-      declared_types
+      declared_types, restore_tibble = restore_tibble
     )
   } else if (length(type_anchor_columns) > 0L && !needs_unsorted_anchor) {
     # Share staging wraps the SQL union's typed first SELECT. Put a zero-row

@@ -236,6 +236,11 @@ change that order. `collect(query, n = ...)` limits the direct result; a
 materialized table can be collected with ordinary dbplyr limits. For a direct
 Margin result, an empty SQLite expansion keeps its integer `.id`, and a finite
 prefix of missing contextual shares keeps double share columns.
+Direct `grouping_bit()` and `grouping_id()` outputs also stay numeric when a
+SQLite result has zero rows, including outputs from supported literal
+`across()` lambdas. Other remote backends may represent the same values as
+integer or double. The guarantee ends at direct collection or supported direct
+materialization; later lazy verbs follow ordinary backend type rules.
 
 SQLite refuses a bare persistent destination shadowed by a temporary table,
 or a bare temporary overwrite that would find a table in `main`. Supply an

@@ -40,8 +40,10 @@ sqlite_order_value <- function(term) {
 # Builds a public lazy result with a typed companion query (ADR 0031).
 # The caller passes one prepared operation, its query before and after applying
 # Margin order, the matching execution, and source columns in both queries.
+# `restore_tibble` preserves the class of a sorted result newly routed here.
 sqlite_typed_result <- function(operation, unsorted, ordered,
-                                execution, source_columns, declared_types) {
+                                execution, source_columns, declared_types,
+                                restore_tibble = FALSE) {
   terms <- if (margin_sorting(operation)) {
     margin_order_terms(
       plan = operation$plan,
@@ -85,6 +87,7 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
   attr(ordered, "marginplyr_public_columns") <- public_columns
   attr(ordered, "marginplyr_public_query") <- public_query
   attr(ordered, "marginplyr_declared_types") <- declared_types
+  attr(ordered, "marginplyr_restore_tibble") <- restore_tibble
   attr(ordered, "marginplyr_original_query") <- ordered$lazy_query
   ordered
 }
@@ -152,6 +155,12 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
     )
   }
   out <- out[attr(x, "marginplyr_public_columns")]
+  # A sorted helper-only result otherwise changes from dbplyr's tibble to the
+  # data frame returned by the compound-query collector (ADR 0033).
+  if (isTRUE(attr(x, "marginplyr_restore_tibble")) &&
+        length(attr(x, "marginplyr_order_keys")) > 0L) {
+    out <- tibble::as_tibble(out)
+  }
   for (name in names(attr(x, "marginplyr_declared_types"))) {
     if (all(is.na(out[[name]]))) {
       type <- attr(x, "marginplyr_declared_types")[[name]]
