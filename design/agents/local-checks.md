@@ -100,7 +100,8 @@ be parsed from its incomplete output. Every NOTE is printed. The shared CRAN
 NOTE policy identifies an existing classification; every other NOTE needs a
 written explanation before the commit is review-ready. The command remains
 non-mutating and removes its disposable checkout, tarball, and check directory
-when it finishes.
+when it finishes. A failed source-tarball check first retains the diagnostics
+described below.
 
 Record the exact identity and outcome in the pull request:
 
@@ -112,6 +113,36 @@ Record the exact identity and outcome in the pull request:
   - strict test line coverage and snapshots: <covered/measured lines, covr version>
   - source-tarball R CMD check: <errors/warnings/notes and NOTE dispositions>
 ```
+
+### Failed source-tarball checks
+
+Every failed source-tarball check, including an exception before `rcmdcheck`
+returns, prints a `Review-ready failure diagnostics:` directory. It is under
+`file.path(tools::R_user_dir("marginplyr", "cache"), "review-ready-failures")`,
+outside the repository and the disposable workspace. Each invocation gets its
+own directory containing the available check, console, test, and vignette text
+logs, the committed SHA, UTC start/failure times, R/OS/Quarto/Deno versions, and
+the process exit/timeout or error state. An unavailable exit status or version
+is recorded as unavailable. Source trees, tarballs, native crash reports, and
+memory images are not included. Successful checks create no bundle. Retained
+bundles are not pruned automatically; remove them manually after investigation.
+If retention itself fails, the command reports that error and still fails.
+
+The bundle includes platform guidance: a candidate `.ips` location and Console
+on macOS, Application Error events in the Windows Application log, or
+`coredumpctl` metadata on Linux with systemd-coredump. Match the executable and
+failure time before associating a native report with the invocation. If the
+facility or report is unavailable, record that limitation and use the portable
+bundle; do not enable dump collection or change OS settings for this check.
+
+The command never retries a failed check. A repeat is an explicit human action
+on a recorded SHA, with its own outcome; a later pass does not replace earlier
+failure evidence. Investigations may compare a bounded, manually selected
+sequence of same-SHA runs while recording versions, timestamps, outcomes,
+native-report identities where available, and shared cache/process state.
+Fresh disposable workspaces alone are not an independent condition: every
+normal invocation already uses one. Such experiments are outside the normal
+gate, and neither a passing run nor failure to reproduce establishes a fix.
 
 ## Roles outside the boundary
 

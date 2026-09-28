@@ -332,3 +332,192 @@ expect_true(
   grepl("review_ready_check_cli", entrypoint, fixed = TRUE),
   "the public entry point"
 )
+
+# The checker is an external-process boundary. Its fixture leaves the same
+# kinds of files as R CMD check, without depending on a native crash.
+diagnostic_fixture <- tempfile("review-ready-diagnostics-")
+dir.create(diagnostic_fixture)
+on.exit(unlink(diagnostic_fixture, recursive = TRUE), add = TRUE)
+fixture_package <- file.path(diagnostic_fixture, "fixture")
+dir.create(fixture_package)
+writeLines(c(
+  "Package: fixture",
+  "Version: 0.0.1",
+  "Config/marginplyr/cran-status: unpublished"
+), file.path(fixture_package, "DESCRIPTION"))
+fixture_tarball <- file.path(diagnostic_fixture, "fixture.tar.gz")
+local({
+  previous <- setwd(diagnostic_fixture)
+  on.exit(setwd(previous))
+  utils::tar(fixture_tarball, "fixture/DESCRIPTION", compression = "gzip")
+})
+diagnostic_root <- file.path(diagnostic_fixture, "retained")
+check_workspace <- file.path(diagnostic_fixture, "workspace")
+dir.create(check_workspace)
+checker_calls <- 0L
+failed_checker <- function(path, ..., check_dir) {
+  checker_calls <<- checker_calls + 1L
+  check_root <- file.path(check_dir, "fixture.Rcheck")
+  dir.create(file.path(check_root, "tests"), recursive = TRUE, showWarnings = FALSE)
+  writeLines("check failed", file.path(check_root, "00check.log"))
+  writeLines("vignette failed", file.path(check_root, "recipes.log"))
+  writeLines("test failed", file.path(check_root, "tests", "test.Rout.fail"))
+  writeLines("do not retain", file.path(check_root, "core"))
+  writeLines("do not retain", file.path(check_root, "native.ips"))
+  child <- review_ready_run_system(
+    file.path(R.home("bin"), "Rscript"),
+    c("-e", "cat('child process failed\\n'); quit(status = 17L)"),
+    directory = check_root,
+    capture = TRUE
+  )
+  result <- empty_result
+  result$status <- child$status
+  result$stdout <- child$output
+  result
+}
+failure_output <- capture.output(expect_error(
+  run_review_ready_rcmdcheck(
+    fixture_tarball, check_workspace, clean_identity,
+    checker = failed_checker, diagnostic_root = diagnostic_root
+  ),
+  "The source-tarball R CMD check did not pass.",
+  "a simulated child-process failure"
+))
+expect_identical(checker_calls, 1L, "no automatic retry")
+bundles <- normalizePath(list.dirs(diagnostic_root, recursive = FALSE, full.names = TRUE))
+expect_identical(length(bundles), 1L, "one retained failure bundle")
+expect_true(
+  any(grepl(bundles[[1L]], failure_output, fixed = TRUE)),
+  "the printed diagnostic location"
+)
+bundle_files <- list.files(bundles[[1L]], recursive = TRUE)
+expect_true(
+  all(c("metadata.txt", "stdout.txt", "console.log",
+    "check/fixture.Rcheck/00check.log", "check/fixture.Rcheck/recipes.log",
+    "check/fixture.Rcheck/tests/test.Rout.fail") %in% bundle_files),
+  "available check, console, and vignette logs"
+)
+expect_true(
+  !any(grepl("[.]tar|DESCRIPTION|native[.]ips|core", bundle_files)),
+  "no source archive or native memory/report collection"
+)
+metadata <- readLines(file.path(bundles[[1L]], "metadata.txt"))
+expect_true(any(grepl(fixture_sha, metadata, fixed = TRUE)), "retained SHA")
+expect_true(any(grepl("Process status: 17", metadata, fixed = TRUE)), "retained exit status")
+expect_true(
+  all(vapply(c("Started (UTC):", "Failed (UTC):", "R:", "OS:", "Quarto:", "Deno:"),
+    function(label) any(startsWith(metadata, label)), logical(1))),
+  "execution identity and versions"
+)
+expect_true(
+  any(grepl("child process failed", readLines(file.path(bundles[[1L]], "stdout.txt")),
+    fixed = TRUE)),
+  "the child console output"
+)
+
+throwing_checker <- function(path, ..., check_dir) {
+  failed_checker(path, check_dir = check_dir)
+  cat("console before exception\n")
+  message("message before exception")
+  stop("check crashed before returning a result", call. = FALSE)
+}
+exception_output <- capture.output(expect_error(
+  run_review_ready_rcmdcheck(
+    fixture_tarball, check_workspace, clean_identity,
+    checker = throwing_checker, diagnostic_root = diagnostic_root
+  ),
+  "check crashed before returning a result",
+  "an exception before the check returns"
+))
+bundles <- list.dirs(diagnostic_root, recursive = FALSE, full.names = TRUE)
+expect_identical(length(bundles), 2L, "an exception also retains diagnostics")
+thrown_bundle <- bundles[vapply(bundles, function(bundle) {
+  any(grepl("check crashed before returning a result",
+    readLines(file.path(bundle, "error.txt")), fixed = TRUE))
+}, logical(1))]
+expect_identical(length(thrown_bundle), 1L, "the original exception is retained")
+console <- readLines(file.path(thrown_bundle, "console.log"))
+expect_true(
+  all(c("console before exception", "message before exception") %in% console),
+  "console output survives an exception"
+)
+
+# External commands are simulated to reach the CLI's cleanup/error boundary
+# without running coverage or installing a package in this focused verifier.
+observed_workspace <- NULL
+fixture_runner <- function(command, args, directory, ...) {
+  if (identical(command, "git")) {
+    archive <- sub("^--output=", "", args[startsWith(args, "--output=")])
+    observed_workspace <<- dirname(archive)
+    previous <- setwd(fixture_package)
+    on.exit(setwd(previous))
+    utils::tar(archive, "DESCRIPTION")
+  } else if (identical(args[1:2], c("CMD", "build"))) {
+    file.copy(fixture_tarball, directory)
+  }
+  list(status = 0L, output = character())
+}
+run_fixture_cli <- function(checker) {
+  review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites,
+    runner = fixture_runner, checker = checker, diagnostic_root = diagnostic_root
+  )
+}
+success_output <- capture.output({
+  success_status <- run_fixture_cli(function(...) empty_result)
+})
+expect_identical(success_status, 0L, "the successful CLI status")
+expect_true(!dir.exists(observed_workspace), "successful workspace cleanup")
+expect_identical(
+  length(list.dirs(diagnostic_root, recursive = FALSE)), 2L,
+  "success creates no diagnostic bundle"
+)
+failure_output <- capture.output({
+  failure_status <- run_fixture_cli(throwing_checker)
+})
+expect_identical(failure_status, 1L, "the failing CLI status")
+expect_true(!dir.exists(observed_workspace), "failed workspace cleanup")
+expect_identical(
+  length(list.dirs(diagnostic_root, recursive = FALSE)), 3L,
+  "diagnostics outlive failed workspace cleanup"
+)
+expect_identical(checker_calls, 3L, "each failed invocation ran its checker only once")
+
+child_script <- file.path(diagnostic_fixture, "failed-cli.R")
+writeLines(c(
+  'source(".github/scripts/cran-note-policy.R")',
+  'source("tools/dependency-requirements.R")',
+  'source("tools/review-ready-check-lib.R")'
+), child_script)
+dump(c(
+  "empty_result", "fixture_package", "fixture_tarball", "diagnostic_root",
+  "checker_calls", "observed_workspace", "clean_identity", "prerequisites",
+  "failed_checker", "throwing_checker", "fixture_runner", "run_fixture_cli"
+), file = child_script, append = TRUE)
+cat("quit(status = run_fixture_cli(throwing_checker), save = 'no')\n",
+  file = child_script, append = TRUE)
+child_cli <- review_ready_run_system(
+  file.path(R.home("bin"), "Rscript"), child_script,
+  directory = getwd(), capture = TRUE
+)
+expect_identical(child_cli$status, 1L, "the failed CLI's process exit")
+expect_true(
+  any(grepl("Review-ready failure diagnostics:", child_cli$output, fixed = TRUE)),
+  "the failing child CLI prints its bundle path"
+)
+expect_identical(
+  length(list.dirs(diagnostic_root, recursive = FALSE)), 4L,
+  "the bundle survives the CLI process exit"
+)
+
+for (system in c("Darwin", "Windows", "Linux", "unknown")) {
+  guidance <- review_ready_crash_guidance(system)
+  expect_true(grepl("unavailable", guidance, fixed = TRUE), paste(system, "fallback"))
+  expect_true(grepl("not copied", guidance, fixed = TRUE), paste(system, "no collection"))
+}
+expect_true(grepl("deno-*.ips", review_ready_crash_guidance("Darwin"), fixed = TRUE),
+  "a candidate macOS crash-report location")
+expect_true(grepl("Event ID 1000", review_ready_crash_guidance("Windows"), fixed = TRUE),
+  "Windows Application Error guidance")
+expect_true(grepl("coredumpctl info", review_ready_crash_guidance("Linux"), fixed = TRUE),
+  "Linux metadata guidance")

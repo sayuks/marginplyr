@@ -362,60 +362,218 @@ report_review_ready_notes <- function(result, outcome) {
   invisible()
 }
 
-# Runs the source-tarball check without remote incoming checks, which are the
-# release flow's responsibility.
-run_review_ready_rcmdcheck <- function(tarball, workspace) {
-  cat("\n==> Source-tarball R CMD check --as-cran\n")
-  result <- rcmdcheck::rcmdcheck(
-    tarball,
-    args = "--as-cran",
-    build_args = NULL,
-    check_dir = file.path(workspace, "check"),
-    error_on = "never",
-    env = review_ready_rcmdcheck_env(),
-    repos = review_ready_offline_repositories(workspace)
-  )
-  outcome <- review_ready_check_outcome(
-    result,
-    cran_status = cran_status_from_tarball(tarball)
-  )
-  cat(
-    "\nR CMD check process status: ", outcome$process_status, ".\n",
-    "R CMD check: ", outcome$errors, " ERROR(s), ",
-    outcome$warnings, " WARNING(s), ", outcome$notes, " NOTE(s).\n",
-    sep = ""
-  )
-  report_review_ready_notes(result, outcome)
-  if (!outcome$passed) {
-    stop("The source-tarball R CMD check did not pass.", call. = FALSE)
+# Reads a tool version without letting an unavailable tool hide the check error.
+review_ready_tool_version <- function(command) {
+  if (!nzchar(command)) {
+    return("unavailable (executable not found)")
   }
-  outcome
+  tryCatch({
+    output <- suppressWarnings(system2(
+      command, "--version", stdout = TRUE, stderr = TRUE, timeout = 5
+    ))
+    status <- attr(output, "status")
+    paste(c(command, output, if (!is.null(status)) paste("exit", status)),
+      collapse = " | ")
+  }, error = function(cnd) paste(command, conditionMessage(cnd), sep = " | "))
+}
+
+# Identifies the Quarto on the check's search path and its bundled or overridden
+# Deno, rather than an unrelated Deno on PATH.
+review_ready_render_versions <- function() {
+  quarto <- Sys.getenv("QUARTO_PATH", unname(Sys.which("quarto")))
+  executable <- if (.Platform$OS.type == "windows") "quarto.exe" else "quarto"
+  if (dir.exists(quarto)) {
+    quarto <- file.path(quarto, executable)
+  }
+  deno <- Sys.getenv("QUARTO_DENO")
+  if (!nzchar(deno) && file.exists(quarto)) {
+    bin <- dirname(normalizePath(quarto, winslash = "/"))
+    architecture <- if (grepl("arm|aarch64", Sys.info()[["machine"]])) {
+      "aarch64"
+    } else {
+      "x86_64"
+    }
+    candidates <- file.path(bin, c(
+      paste0("tools/", architecture, "/deno"), "tools/deno.exe", "tools/deno"
+    ))
+    found <- candidates[file.exists(candidates)]
+    if (length(found) > 0L) {
+      deno <- found[[1L]]
+    }
+  }
+  c(Quarto = review_ready_tool_version(quarto), Deno = review_ready_tool_version(deno))
+}
+
+# Offers native crash metadata locations without reading reports or changing
+# crash collection. A missing native report does not invalidate the bundle.
+review_ready_crash_guidance <- function(system = Sys.info()[["sysname"]]) {
+  switch(system,
+    Darwin = paste(
+      "macOS: candidate reports: ~/Library/Logs/DiagnosticReports/deno-*.ips",
+      "(also /Library/Logs/DiagnosticReports/). Open Console > Crash Reports",
+      "and match the executable, timestamp, and image UUID."
+    ),
+    Windows = paste(
+      "Windows: Event Viewer > Windows Logs > Application; look for",
+      "Application Error (Event ID 1000) at the failure time and match",
+      "the executable and faulting module."
+    ),
+    Linux = paste(
+      "Linux with systemd-coredump: inspect coredumpctl list and",
+      "coredumpctl info for the executable and failure time (metadata only).",
+      "Do not use coredumpctl dump or debug."
+    ),
+    "Consult the operating system's application crash log for this timestamp."
+  ) |>
+    paste(
+      "If the facility or matching report is unavailable, retain this bundle",
+      "and record that absence; no OS setting change or memory dump is needed.",
+      "Native reports are not copied automatically."
+    )
+}
+
+# Retains only diagnostic text outside the repository before workspace cleanup.
+# The caller supplies the original error even when rcmdcheck returned no result.
+preserve_review_ready_failure <- function(
+  workspace, identity, started, result, error, diagnostic_root
+) {
+  dir.create(diagnostic_root, recursive = TRUE, showWarnings = FALSE)
+  root <- normalizePath(diagnostic_root, winslash = "/", mustWork = TRUE)
+  repository <- normalizePath(identity$root, winslash = "/", mustWork = TRUE)
+  if (identical(root, repository) || startsWith(root, paste0(repository, "/"))) {
+    stop("The diagnostic directory must be outside the repository.", call. = FALSE)
+  }
+  bundle <- tempfile(
+    paste0(format(started, "%Y%m%dT%H%M%SZ-", tz = "UTC"),
+      substr(identity$sha, 1L, 12L), "-"),
+    tmpdir = root
+  )
+  if (!dir.create(bundle, mode = "0700")) {
+    stop("Could not create the diagnostic bundle: ", bundle, call. = FALSE)
+  }
+  cat("Review-ready failure diagnostics: ", bundle, "\n", sep = "")
+  status <- if (is.null(result$status)) "unavailable (check raised an error)" else result$status
+  metadata <- c(
+    paste("Commit:", identity$sha),
+    paste("Started (UTC):", format(started, tz = "UTC", usetz = TRUE)),
+    paste("Failed (UTC):", format(Sys.time(), tz = "UTC", usetz = TRUE)),
+    paste("Process status:", status),
+    paste("Timeout:", if (is.null(result$timeout)) "unavailable" else result$timeout),
+    paste("Error class:", paste(class(error), collapse = ", ")),
+    paste("R:", R.version.string),
+    paste("OS:", paste(Sys.info()[c("sysname", "release", "version", "machine")], collapse = " | "))
+  )
+  writeLines(metadata, file.path(bundle, "metadata.txt"))
+  writeLines(conditionMessage(error), file.path(bundle, "error.txt"))
+  for (stream in c("stdout", "stderr")) {
+    writeLines(as.character(c(result[[stream]], error[[stream]])),
+      file.path(bundle, paste0(stream, ".txt")))
+  }
+  logs <- list.files(workspace,
+    pattern = "([.]log|[.]Rout([.]fail|[.]save)?)$",
+    recursive = TRUE, all.files = TRUE
+  )
+  logs <- logs[logs == "console.log" | startsWith(logs, "check/")]
+  for (relative in logs) {
+    destination <- file.path(bundle, relative)
+    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
+    if (!file.copy(file.path(workspace, relative), destination)) {
+      cat("Could not retain log: ", relative, "\n", file = stderr(), sep = "")
+    }
+  }
+  versions <- review_ready_render_versions()
+  cat(paste(names(versions), versions, sep = ": "),
+    file = file.path(bundle, "metadata.txt"), sep = "\n", append = TRUE)
+  guidance <- review_ready_crash_guidance()
+  writeLines(guidance, file.path(bundle, "native-crash-guidance.txt"))
+  cat(guidance, "\n")
+  invisible(bundle)
+}
+
+# Runs the source-tarball check once. A failed result or an exception preserves
+# diagnostics before the caller removes the disposable workspace.
+run_review_ready_rcmdcheck <- function(
+  tarball, workspace, identity, diagnostic_root,
+  checker = rcmdcheck::rcmdcheck
+) {
+  cat("\n==> Source-tarball R CMD check --as-cran\n")
+  started <- Sys.time()
+  result <- NULL
+  tryCatch({
+    console <- file(file.path(workspace, "console.log"), open = "wt")
+    sink(console, split = TRUE)
+    result <- tryCatch(withCallingHandlers(checker(
+      tarball,
+      args = "--as-cran",
+      build_args = NULL,
+      check_dir = file.path(workspace, "check"),
+      error_on = "never",
+      env = review_ready_rcmdcheck_env(),
+      repos = review_ready_offline_repositories(workspace)
+    ), message = function(cnd) {
+      cat(conditionMessage(cnd), file = console)
+    }, warning = function(cnd) {
+      cat(conditionMessage(cnd), "\n", file = console)
+    }), finally = {
+      sink()
+      close(console)
+    })
+    outcome <- review_ready_check_outcome(
+      result,
+      cran_status = cran_status_from_tarball(tarball)
+    )
+    cat(
+      "\nR CMD check process status: ", outcome$process_status, ".\n",
+      "R CMD check: ", outcome$errors, " ERROR(s), ",
+      outcome$warnings, " WARNING(s), ", outcome$notes, " NOTE(s).\n",
+      sep = ""
+    )
+    report_review_ready_notes(result, outcome)
+    if (!outcome$passed) {
+      stop("The source-tarball R CMD check did not pass.", call. = FALSE)
+    }
+    outcome
+  }, error = function(cnd) {
+    tryCatch(
+      preserve_review_ready_failure(workspace, identity, started, result, cnd, diagnostic_root),
+      error = function(retention_error) {
+        cat("Could not retain all diagnostics: ", conditionMessage(retention_error),
+          "\n", file = stderr(), sep = "")
+      }
+    )
+    stop(cnd)
+  })
 }
 
 # Runs the complete fixed check and returns the identity and NOTE disposition.
 run_review_ready_check <- function(
   repository_root,
   identity = review_ready_identity(repository_root),
-  prerequisites = review_ready_prerequisites()
+  prerequisites = review_ready_prerequisites(),
+  runner = review_ready_run_system,
+  checker = rcmdcheck::rcmdcheck,
+  diagnostic_root = file.path(tools::R_user_dir("marginplyr", "cache"), "review-ready-failures")
 ) {
   workspace <- tempfile("marginplyr-review-ready-")
   dir.create(workspace)
   on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
-  source_root <- archive_review_ready_source(identity, workspace)
+  source_root <- archive_review_ready_source(identity, workspace, runner = runner)
 
   cat("Review-ready commit: ", identity$sha, "\n", sep = "")
   cat("Disposable source: ", source_root, "\n", sep = "")
   verify_review_ready_test_packages(source_root)
   steps <- review_ready_source_steps(prerequisites)
   for (label in names(steps)) {
-    run_review_ready_step(label, steps[[label]], source_root)
+    run_review_ready_step(label, steps[[label]], source_root, runner = runner)
   }
   tarball <- build_review_ready_tarball(
     source_root,
     workspace,
-    prerequisites$r
+    prerequisites$r,
+    runner = runner
   )
-  outcome <- run_review_ready_rcmdcheck(tarball, workspace)
+  outcome <- run_review_ready_rcmdcheck(tarball, workspace, identity,
+    checker = checker, diagnostic_root = diagnostic_root)
 
   cat("\nReview-ready check passed for ", identity$sha, ".\n", sep = "")
   if (length(outcome$unexpected_notes) > 0L) {
@@ -429,10 +587,10 @@ run_review_ready_check <- function(
 }
 
 # Command-line boundary: invalid invocation or any failed step exits nonzero.
-review_ready_check_cli <- function(args, expected_root) {
+review_ready_check_cli <- function(args, expected_root, ...) {
   result <- tryCatch({
     parse_review_ready_args(args)
-    run_review_ready_check(expected_root)
+    run_review_ready_check(expected_root, ...)
     0L
   }, error = function(cnd) {
     cat("Review-ready check failed: ", conditionMessage(cnd), "\n", file = stderr(), sep = "")
