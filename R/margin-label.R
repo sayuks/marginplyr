@@ -427,6 +427,8 @@ abort_observed_label_collision <- function(bad_cols, bad_labels) {
   ))
 }
 
+# One grouping-set branch after label conversion. The caller supplies a
+# validated plan, per-dimension labels, and typed column metadata.
 label_margin_branch <- function(.data,
                                 plan,
                                 grouping_set,
@@ -513,10 +515,13 @@ label_margin_branch <- function(.data,
         safe_columns <- unname(vapply(
           labelled_as_character, safe_name, character(1)
         ))
-        dplyr::mutate(
-          source,
-          dplyr::across(dplyr::all_of(safe_columns), as.character)
-        )
+        # `across()` resolves these names as pronouns when a source column is
+        # named `.data` or `.env`; the generated lookup must name the column.
+        conversions <- lapply(safe_columns, function(col) {
+          rlang::expr(as.character(!!margin_column_pronoun(col)))
+        })
+        names(conversions) <- safe_columns
+        dplyr::mutate(source, !!!conversions)
       }
     )
   }
