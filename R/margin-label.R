@@ -576,9 +576,15 @@ label_margin_branch <- function(.data,
     )
   }
 
-  dplyr::select(
-    .data,
-    dplyr::all_of(c(plan$by, plan$dimensions)),
-    dplyr::everything()
+  # dtplyr can turn a pure reorder into a projection that evaluates specials.
+  dtplyr_safe_column_reads(
+    .data, get_col_names(.data, dplyr::everything()),
+    function(source, safe_name) {
+      keys <- vapply(
+        c(plan$by, plan$dimensions), safe_name, character(1),
+        USE.NAMES = FALSE
+      )
+      dplyr::select(source, dplyr::all_of(keys), dplyr::everything())
+    }
   )
 }
