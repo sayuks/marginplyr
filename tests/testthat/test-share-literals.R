@@ -163,7 +163,7 @@ test_that("literal shares work on eager data.table without changing input", {
   expect_identical(data, before)
 })
 
-test_that("literal source failures retain Package condition identity and call", {
+test_that("literal source failures retain condition identity and call", {
   data <- data.frame(group = c("x", "y"), v = c(1, 3))
   cases <- list(
     logical = list(value = TRUE, class = "marginplyr_error",
@@ -199,7 +199,9 @@ test_that("literal source failures retain Package condition identity and call", 
 
       expect_s3_class(error, case$class)
       expect_s3_class(error, "marginplyr_error")
-      expect_identical(error$share_output, "share", info = paste(kind, case_name))
+      expect_identical(
+        error$share_output, "share", info = paste(kind, case_name)
+      )
       expect_identical(error$source_summary, "total",
                        info = paste(kind, case_name))
       expect_identical(rlang::call_name(conditionCall(error)),
@@ -212,7 +214,7 @@ test_that("literal source failures retain Package condition identity and call", 
   }
 })
 
-test_that("literal wrapping leaves expression and environment controls intact", {
+test_that("literal wrapping preserves expression and environment controls", {
   data <- data.frame(v = 3)
   caller_value <- 4
   quosure_env <- rlang::env(injected_value = 5)
