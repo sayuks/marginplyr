@@ -1,0 +1,18 @@
+AArch64 SQLite-original
+
+{
+uint64_t init=0;
+uint64_t alloc=0;
+0:X1=init; 0:X3=alloc;
+1:X1=init; 1:X3=alloc;
+}
+ P0                      | P1                         ;
+ MOV X0,#1               | LDR X8,[X3]                ;
+ STR X0,[X1]             | MOV X6,X8                  ;
+ DMB ISH                 | CBNZ X8,Rpublished         ;
+ STR X0,[X3]             | B Rdone                    ;
+ Wdone: NOP              | Rpublished: MOV X8,X1      ;
+                         | LDR X8,[X8]                ;
+                         | DMB ISH                    ;
+                         | Rdone: NOP                 ;
+exists (1:X6=1 /\ 1:X8=0)

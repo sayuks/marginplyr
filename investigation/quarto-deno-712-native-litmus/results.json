@@ -1,0 +1,295 @@
+{
+  "selftest_execution": {
+    "command": [
+      "/private/tmp/marginplyr-712-native-litmus/native-litmus",
+      "selftest"
+    ],
+    "started_utc": "2026-09-28T03:15:43.554711+00:00",
+    "exit": 0
+  },
+  "records": [
+    {
+      "name": "selftest",
+      "stdout": [
+        {
+          "kind": "serial_selftest",
+          "reader": "original",
+          "seed_init": 0,
+          "seed_alloc": 0,
+          "guard": 0,
+          "callback": 0,
+          "ok": true
+        },
+        {
+          "kind": "serial_selftest",
+          "reader": "original",
+          "seed_init": 1,
+          "seed_alloc": 1,
+          "guard": 1,
+          "callback": 1,
+          "ok": true
+        },
+        {
+          "kind": "serial_selftest",
+          "reader": "original",
+          "seed_init": 0,
+          "seed_alloc": 1,
+          "guard": 1,
+          "callback": 0,
+          "ok": true
+        },
+        {
+          "kind": "serial_selftest",
+          "reader": "barrier",
+          "seed_init": 0,
+          "seed_alloc": 0,
+          "guard": 0,
+          "callback": 0,
+          "ok": true
+        },
+        {
+          "kind": "serial_selftest",
+          "reader": "barrier",
+          "seed_init": 1,
+          "seed_alloc": 1,
+          "guard": 1,
+          "callback": 1,
+          "ok": true
+        },
+        {
+          "kind": "serial_selftest",
+          "reader": "barrier",
+          "seed_init": 0,
+          "seed_alloc": 1,
+          "guard": 1,
+          "callback": 0,
+          "ok": true
+        }
+      ],
+      "stdout_sha256": "e348ffbc573f01cf26a14bfaf2a3b9036d6fcdc85bbbc485a70611dc864f1f59",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "trial-1-original",
+      "stdout": [
+        {
+          "kind": "configuration",
+          "reader": "original",
+          "iterations": 1000000,
+          "proc_translated": 0,
+          "slot_distance": 16,
+          "init_mod128": 120,
+          "alloc_mod128": 8,
+          "delay_max": 63,
+          "watchdog_seconds": 30
+        },
+        {
+          "kind": "progress",
+          "completed": 250000,
+          "guard_zero": 232439,
+          "published": 17561,
+          "inconsistent": 0,
+          "seconds": 0.039784
+        },
+        {
+          "kind": "progress",
+          "completed": 500000,
+          "guard_zero": 457786,
+          "published": 42214,
+          "inconsistent": 0,
+          "seconds": 0.078536
+        },
+        {
+          "kind": "progress",
+          "completed": 750000,
+          "guard_zero": 694694,
+          "published": 55306,
+          "inconsistent": 0,
+          "seconds": 0.131236
+        },
+        {
+          "kind": "result",
+          "completed": 1000000,
+          "guard_zero": 942769,
+          "published": 57231,
+          "inconsistent": 0,
+          "seconds": 0.175766
+        }
+      ],
+      "stdout_sha256": "79dc9223b0a8a7d6a048290274bcae58faa63b7e720e2bc918e20b0b073020ca",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "trial-2-barrier",
+      "stdout": [
+        {
+          "kind": "configuration",
+          "reader": "barrier",
+          "iterations": 1000000,
+          "proc_translated": 0,
+          "slot_distance": 16,
+          "init_mod128": 120,
+          "alloc_mod128": 8,
+          "delay_max": 63,
+          "watchdog_seconds": 30
+        },
+        {
+          "kind": "progress",
+          "completed": 250000,
+          "guard_zero": 236518,
+          "published": 13482,
+          "inconsistent": 0,
+          "seconds": 0.04362
+        },
+        {
+          "kind": "progress",
+          "completed": 500000,
+          "guard_zero": 473859,
+          "published": 26141,
+          "inconsistent": 0,
+          "seconds": 0.086165
+        },
+        {
+          "kind": "progress",
+          "completed": 750000,
+          "guard_zero": 717985,
+          "published": 32015,
+          "inconsistent": 0,
+          "seconds": 0.132864
+        },
+        {
+          "kind": "result",
+          "completed": 1000000,
+          "guard_zero": 954451,
+          "published": 45549,
+          "inconsistent": 0,
+          "seconds": 0.176864
+        }
+      ],
+      "stdout_sha256": "6e720c3a4fe9200d36861b191f90ed94d85a1584ba8f39cf56209317da7316a2",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "trial-3-barrier",
+      "stdout": [
+        {
+          "kind": "configuration",
+          "reader": "barrier",
+          "iterations": 1000000,
+          "proc_translated": 0,
+          "slot_distance": 16,
+          "init_mod128": 120,
+          "alloc_mod128": 8,
+          "delay_max": 63,
+          "watchdog_seconds": 30
+        },
+        {
+          "kind": "progress",
+          "completed": 250000,
+          "guard_zero": 238786,
+          "published": 11214,
+          "inconsistent": 0,
+          "seconds": 0.052367
+        },
+        {
+          "kind": "progress",
+          "completed": 500000,
+          "guard_zero": 480984,
+          "published": 19016,
+          "inconsistent": 0,
+          "seconds": 0.101852
+        },
+        {
+          "kind": "progress",
+          "completed": 750000,
+          "guard_zero": 715101,
+          "published": 34899,
+          "inconsistent": 0,
+          "seconds": 0.147933
+        },
+        {
+          "kind": "result",
+          "completed": 1000000,
+          "guard_zero": 957015,
+          "published": 42985,
+          "inconsistent": 0,
+          "seconds": 0.192769
+        }
+      ],
+      "stdout_sha256": "a46729a3ca3ba86805d9c5a69794aa1cdb42ffdede2e6af6e142fe531e9b2e2a",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "trial-4-original",
+      "stdout": [
+        {
+          "kind": "configuration",
+          "reader": "original",
+          "iterations": 1000000,
+          "proc_translated": 0,
+          "slot_distance": 16,
+          "init_mod128": 120,
+          "alloc_mod128": 8,
+          "delay_max": 63,
+          "watchdog_seconds": 30
+        },
+        {
+          "kind": "progress",
+          "completed": 250000,
+          "guard_zero": 239091,
+          "published": 10909,
+          "inconsistent": 0,
+          "seconds": 0.053408
+        },
+        {
+          "kind": "progress",
+          "completed": 500000,
+          "guard_zero": 483972,
+          "published": 16028,
+          "inconsistent": 0,
+          "seconds": 0.098122
+        },
+        {
+          "kind": "progress",
+          "completed": 750000,
+          "guard_zero": 716961,
+          "published": 33039,
+          "inconsistent": 0,
+          "seconds": 0.142342
+        },
+        {
+          "kind": "result",
+          "completed": 1000000,
+          "guard_zero": 952783,
+          "published": 47217,
+          "inconsistent": 0,
+          "seconds": 0.185684
+        }
+      ],
+      "stdout_sha256": "eb74ce4bb0835b52b0b93e37a432685b2f3624da1e605fa82986526f5801111e",
+      "stderr": "",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ],
+  "host": {
+    "cpu": "Apple M4",
+    "cores": {
+      "performance": 4,
+      "efficiency": 6
+    },
+    "cache_line_bytes": 128,
+    "macos": "26.6.2",
+    "build": "25G83",
+    "compiler": "Apple clang 17.0.0 (clang-1700.6.3.2)",
+    "target": "arm64-apple-darwin25.6.0"
+  },
+  "control_instructions": {
+    "C11_acquire": "LDAPR",
+    "C11_release": "STLR"
+  },
+  "measured_reader_delta": "one DMB ISH inserted before the callback LDR"
+}

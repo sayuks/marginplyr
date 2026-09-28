@@ -1,0 +1,57 @@
+digraph G {
+
+
+/* legend */
+label="Test SQLite-original, Generic[withcatdep](Unknown)";
+
+
+/* init events */
+eiid4 [label="e: W[init]q=0\lInit", shape="box", color="blue"];
+eiid5 [label="f: W[alloc]q=0\lInit", shape="box", color="blue"];
+
+/* the unlocked events */
+subgraph cluster_proc0 { rank=sink; label = "Thread 0"; color=magenta; shape=box;
+eiid0 [label="a: W[init]q=1\lproc:P0 poi:1\lSTR X0,[X1]", shape="box", color="blue"];
+eiid9 [label="j: DMB ISH\lproc:P0 poi:2\lDMB ISH", shape="box", color="blue"];
+eiid1 [label="b: W[alloc]q=1\lproc:P0 poi:3\lSTR X0,[X3]", shape="box", color="blue"];
+eiid12 [label="m: Empty\lproc:P0 poi:4\lNOP", shape="box", color="blue"];
+}
+subgraph cluster_proc1 { rank=sink; label = "Thread 1"; color=magenta; shape=box;
+eiid2 [label="c: R[alloc]q=1\lproc:P1 poi:0\lLDR X8,[X3]", shape="box", color="blue"];
+eiid18 [label="s: Branching(bcc)\lproc:P1 poi:2\lCBNZ X8,.+8", shape="box", color="blue"];
+eiid3 [label="d: R[init]q=0\lproc:P1 poi:4\lLDR X8,[X8]", shape="box", color="blue"];
+eiid23 [label="x: DMB ISH\lproc:P1 poi:5\lDMB ISH", shape="box", color="blue"];
+eiid24 [label="y: Empty\lproc:P1 poi:6\lNOP", shape="box", color="blue"];
+}
+
+/* the intra_causality_data edges */
+
+
+/* the intra_causality_control edges */
+
+/* the poi edges */
+eiid0 -> eiid9 [label="po", color="black", fontcolor="black"];
+eiid1 -> eiid12 [label="po", color="black", fontcolor="black"];
+eiid2 -> eiid18 [label="po", color="black", fontcolor="black"];
+eiid3 -> eiid23 [label="po", color="black", fontcolor="black"];
+eiid9 -> eiid1 [label="po", color="black", fontcolor="black"];
+eiid18 -> eiid3 [label="po", color="black", fontcolor="black"];
+eiid23 -> eiid24 [label="po", color="black", fontcolor="black"];
+/* the rfmap edges */
+
+
+/* The viewed-before edges */
+eiid1 -> eiid2 [label="rf", color="red", fontcolor="red"];
+eiid4 -> eiid3 [label="rf", color="red", fontcolor="red"];
+eiid0 -> eiid1 [label="dmb.sy", color="darkgreen", fontcolor="darkgreen"];
+eiid0 -> eiid12 [label="dmb.sy", color="darkgreen", fontcolor="darkgreen"];
+eiid2 -> eiid24 [label="dmb.sy", color="darkgreen", fontcolor="darkgreen"];
+eiid3 -> eiid24 [label="dmb.sy", color="darkgreen", fontcolor="darkgreen"];
+eiid18 -> eiid24 [label="dmb.sy", color="darkgreen", fontcolor="darkgreen"];
+eiid2 -> eiid3 [label="ctrl", color="indigo", fontcolor="indigo"];
+eiid2 -> eiid23 [label="ctrl", color="indigo", fontcolor="indigo"];
+eiid2 -> eiid24 [label="ctrl", color="indigo", fontcolor="indigo"];
+eiid3 -> eiid0 [label="ca", color="blue", fontcolor="blue"];
+eiid4 -> eiid0 [label="ca", color="blue", fontcolor="blue"];
+eiid5 -> eiid1 [label="ca", color="blue", fontcolor="blue"];
+}

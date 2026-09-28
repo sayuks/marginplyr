@@ -94,9 +94,10 @@ definition of the evidence rule:
 For a spelling finding, correct an actual typo; when the word is intentional,
 add it to `inst/WORDLIST` instead.
 
-It stops on the first failed step. An ERROR or WARNING fails the package check.
-A nonzero or timed-out check process also fails, even when no condition could
-be parsed from its incomplete output. Every NOTE is printed. The shared CRAN
+An ERROR or WARNING fails a package-check attempt. A nonzero or timed-out
+check process also fails, even when no condition could be parsed from its
+incomplete output. A failed step ends the invocation except for the single
+native-crash retry described below. Every NOTE is printed. The shared CRAN
 NOTE policy identifies an existing classification; every other NOTE needs a
 written explanation before the commit is review-ready. The command remains
 non-mutating and removes its disposable checkout, tarball, and check directory
@@ -114,19 +115,26 @@ Record the exact identity and outcome in the pull request:
   - source-tarball R CMD check: <errors/warnings/notes and NOTE dispositions>
 ```
 
+When the native-crash retry is used, record `passed-after-retry` or `failed`,
+both attempt outcomes, the retry eligibility reason, and the retained first
+failure's diagnostic directory. A `passed-after-retry` result permits review
+under the same NOTE disposition requirements as an ordinary pass.
+
 ### Failed source-tarball checks
 
 Every failed source-tarball check, including an exception before `rcmdcheck`
-returns, prints a `Review-ready failure diagnostics:` directory. It is under
+returns, attempts to retain diagnostics and reports the created directory as
+`Review-ready failure diagnostics:`. It is under
 `file.path(tools::R_user_dir("marginplyr", "cache"), "review-ready-failures")`,
-outside the repository and the disposable workspace. Each invocation gets its
-own directory containing the available check, console, test, and vignette text
-logs, the committed SHA, UTC start/failure times, R/OS/Quarto/Deno versions, and
-the process exit/timeout or error state. An unavailable exit status or version
+outside the repository and the disposable workspace. Each failed attempt gets
+its own directory containing the available check, console, test, and vignette
+text logs, the committed SHA, UTC start/failure times, R/OS/Quarto/Deno versions,
+and the process exit/timeout or error state. An unavailable exit status or version
 is recorded as unavailable. Source trees, tarballs, native crash reports, and
-memory images are not included. Successful checks create no bundle. Retained
-bundles are not pruned automatically; remove them manually after investigation.
-If retention itself fails, the command reports that error and still fails.
+memory images are not included. A first-attempt pass creates no failure bundle;
+a retry pass retains the first failure's bundle. Retained bundles are not
+pruned automatically; remove them manually after investigation. If retention
+is incomplete, the command reports that failure and does not retry.
 
 The bundle includes platform guidance: a candidate `.ips` location and Console
 on macOS, Application Error events in the Windows Application log, or
@@ -135,14 +143,52 @@ failure time before associating a native report with the invocation. If the
 facility or report is unavailable, record that limitation and use the portable
 bundle; do not enable dump collection or change OS settings for this check.
 
-The command never retries a failed check. A repeat is an explicit human action
-on a recorded SHA, with its own outcome; a later pass does not replace earlier
-failure evidence. Investigations may compare a bounded, manually selected
-sequence of same-SHA runs while recording versions, timestamps, outcomes,
-native-report identities where available, and shared cache/process state.
-Fresh disposable workspaces alone are not an independent condition: every
-normal invocation already uses one. Such experiments are outside the normal
-gate, and neither a passing run nor failure to reproduce establishes a fix.
+### One retry after a native rendering crash
+
+On macOS, the invocation may retry the source-tarball check once when its
+failed vignette-rebuilding output contains the supported Quarto launcher
+diagnostic identifying a SIGSEGV of the Deno command it launched. The
+diagnostic must belong to that attempt and match its recorded Quarto launcher
+and supported Deno invocation form. A generic Quarto error, outer R exit code,
+quoted crash text, or native report alone does not establish eligibility.
+This identifies a supported failure form, not the SQLite mechanism or a crash
+UUID.
+
+Initially, the result must have exit status 1, no timeout, exactly one ERROR,
+zero WARNINGs, and no test failure. That ERROR must contain exactly one failed
+HTML `.qmd` rebuilding segment with the launcher diagnostic and the measured
+Quarto R 1.5.1 error wrapper: the CLI failure is followed by failure to evaluate
+the cli expression `QUARTO_DENO`, ending with `object 'QUARTO_DENO' not found`.
+Other successfully rebuilt vignette segments are allowed. Unknown wrappers
+are refused; extending support requires observed wrapper evidence and
+corresponding verifier fixtures.
+
+Complete preservation of the first attempt's available diagnostic text and
+metadata is also required. Independent failures, ambiguous evidence, a checker
+exception without a result, or incomplete retention end the invocation as
+failed. A missing or delayed `.ips` does not prevent retry when the portable
+evidence satisfies these conditions; the command does not wait for or collect
+a native report.
+
+Record content hashes of the tarball, Quarto launcher, its `quarto.js`, and
+Deno executable, together with the canonical Quarto/Deno executable paths and
+versions, before the first attempt. Immediately before retry, require those
+identities to remain available and unchanged. An identity change or inability
+to establish identity prevents retry. Do not rebuild the tarball, change
+caches, or switch installed tools for the retry.
+
+The retry runs the complete `R CMD check --as-cran`, including tests and
+vignettes, on that same tarball in a fresh check directory. Preserve separate
+logs and outcomes for both attempts. The already completed spelling, lint,
+coverage, snapshots, and build stages are not repeated. There is no third
+attempt; any retry failure, timeout, or exception fails the invocation.
+
+A successful retry yields the explicit overall result `passed-after-retry`,
+while the first attempt remains failed. The final attempt must satisfy the
+ordinary ERROR, WARNING, exit, timeout, and NOTE rules above. This recovery
+policy applies only to the local macOS gate; it does not extend to other
+platforms, CI, or formal release preflight. A passing retry is not evidence
+that the crash was prevented or its cause resolved.
 
 ## Roles outside the boundary
 

@@ -1,6 +1,7 @@
 # Quarto Deno crash during local Review-ready checks
 
 Investigated: 2026-09-28
+Revised: 2026-09-28 — operational disposition in `design/specs/review-ready-native-crash-retry.md`
 Primary input: [#712](https://github.com/sayuks/marginplyr/issues/712)
 
 ## Finding and limits
@@ -219,3 +220,13 @@ upstream fix was established, so no version pin, cache reset, or vignette
 bypass was justified. Acceptance criterion 4 of #712 remained unmet; the issue
 needed to remain open, with diagnostic retention available for a future
 failure.
+
+## Revisions (2026-09-28)
+
+The maintainer ended further root-cause investigation and accepted the
+[bounded recovery policy](../design/specs/review-ready-native-crash-retry.md).
+This superseded the recommendation to keep #712 open for more causal
+evidence or further experiments. Closure was conditional on implementing
+and verifying that policy under the [local-check contract](../design/agents/local-checks.md#one-retry-after-a-native-rendering-crash).
+The historical failure mechanism remained unconfirmed; this disposition did
+not alter the recorded evidence or claim that the crash had been prevented.
