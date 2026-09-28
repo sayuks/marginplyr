@@ -591,18 +591,24 @@ summarize_margin_union <- function(.data,
       }
 
       if (length(parent_key_names) > 0L) {
-        original_keys <- lapply(
-          names(parent_key_names),
-          function(dimension) {
-            if (dimension %in% grouping_set) {
-              return(margin_column_pronoun(dimension))
-            }
-            value <- column_info$prototypes[[dimension]]
-            if (is.null(value)) NA else value
+        # Included dimensions can still be data.table specials after grouping.
+        result <- dtplyr_safe_column_reads(
+          result, intersect(names(parent_key_names), grouping_set),
+          function(source, safe_name) {
+            original_keys <- lapply(
+              names(parent_key_names),
+              function(dimension) {
+                if (dimension %in% grouping_set) {
+                  return(margin_column_pronoun(safe_name(dimension)))
+                }
+                value <- column_info$prototypes[[dimension]]
+                if (is.null(value)) NA else value
+              }
+            )
+            names(original_keys) <- unname(parent_key_names)
+            dplyr::mutate(source, !!!original_keys)
           }
         )
-        names(original_keys) <- unname(parent_key_names)
-        result <- dplyr::mutate(result, !!!original_keys)
       }
 
       result <- label_margin_branch(

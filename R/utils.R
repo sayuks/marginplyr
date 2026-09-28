@@ -23,7 +23,7 @@ dtplyr_safe_column_reads <- function(.data, read, transform) {
   }
   special <- intersect(
     read,
-    intersect(c(".N", ".I", ".SD", ".GRP", ".NGRP"),
+    intersect(c(".N", ".I", ".SD", ".GRP", ".NGRP", ".BY"),
               get_col_names(.data, dplyr::everything()))
   )
   if (length(special) == 0L) {
