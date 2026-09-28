@@ -303,7 +303,9 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
       anchor_options <- sql_options
       if ("cte" %in% names(dots)) {
         if (sql_options_given) {
-          rlang::abort("Exactly one of `sql_options` and `cte` may be supplied.")
+          rlang::abort(
+            "Exactly one of `sql_options` and `cte` may be supplied."
+          )
         }
         anchor_options <- dbplyr::sql_options(cte = dots[["cte"]])
         dots[["cte"]] <- NULL
