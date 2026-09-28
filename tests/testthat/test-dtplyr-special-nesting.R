@@ -1,22 +1,42 @@
-# Compare complete typed outer keys and cell row multisets. A row signature
-# includes the cell's row count because a zero-column cell has no values to
-# serialize, and unordered Margin results have no promised row position.
-special_nesting_signatures <- function(result, sort, key = "data") {
+# Compare typed outer keys and cell row multisets as values. Serialization
+# bytes can differ for equal vectors, and unordered results have no row order.
+special_nesting_rows <- function(result, key = "data") {
   outer <- setdiff(names(result), key)
-  signatures <- vapply(seq_len(nrow(result)), function(i) {
+  lapply(seq_len(nrow(result)), function(i) {
     cell <- tibble::as_tibble(result[[key]][[i]])
     if (ncol(cell) > 0L) {
       cell <- cell[vctrs::vec_order(cell), , drop = FALSE]
     }
-    row <- list(
+    list(
       outer = as.list(result[i, outer, drop = FALSE]),
       cell_names = names(cell),
       cell_rows = nrow(cell),
       cell_values = as.list(cell)
     )
-    paste(as.integer(serialize(row, NULL)), collapse = ",")
-  }, character(1))
-  if (identical(sort, "none")) sort(signatures) else signatures
+  })
+}
+
+expect_special_nesting_rows <- function(actual, expected, sort, key = "data",
+                                        info = NULL) {
+  actual_rows <- special_nesting_rows(actual, key)
+  expected_rows <- special_nesting_rows(expected, key)
+  if (!identical(sort, "none")) {
+    expect_identical(actual_rows, expected_rows, info = info)
+    return(invisible(NULL))
+  }
+  remaining <- seq_along(expected_rows)
+  matches <- length(actual_rows) == length(expected_rows)
+  for (row in actual_rows) {
+    hit <- remaining[vapply(
+      expected_rows[remaining], identical, logical(1), row
+    )]
+    if (length(hit) == 0L) {
+      matches <- FALSE
+      break
+    }
+    remaining <- remaining[remaining != hit[[1L]]]
+  }
+  expect_true(matches && length(remaining) == 0L, info = info)
 }
 
 test_that("dtplyr fixed special keys nest the one-row reproduction", {
@@ -104,10 +124,7 @@ test_that("dtplyr special nesting preserves typed groups and source rows", {
         }
         expected <- run(verb, input)
         expect_identical(names(actual), names(expected), info = info)
-        expect_identical(
-          special_nesting_signatures(actual, sort),
-          special_nesting_signatures(expected, sort), info = info
-        )
+        expect_special_nesting_rows(actual, expected, sort, info = info)
         sets <- if (identical(plan, "rollup")) 2L else 1L
         expect_identical(
           sum(vapply(actual$data, nrow, integer(1))),
@@ -163,10 +180,7 @@ test_that("dtplyr special factor nesting retains levels and missing groups", {
     actual <- run(source)
     if (identical(verb, nest_with_margins)) actual <- dplyr::collect(actual)
     expected <- run(input)
-    expect_identical(
-      special_nesting_signatures(actual, "last"),
-      special_nesting_signatures(expected, "last")
-    )
+    expect_special_nesting_rows(actual, expected, "last")
     expect_identical(levels(actual$.N), levels(expected$.N))
     expect_identical(
       sum(vapply(actual$data, nrow, integer(1))), 6L
@@ -211,11 +225,8 @@ test_that("dtplyr nesting keeps control names and occupied temporary names", {
     expected <- run(input)
     expect_identical(names(actual), c(".N", "g", "set",
                                       "..marginplyr_dtplyr_column_1__"))
-    expect_identical(
-      special_nesting_signatures(actual, "last",
-                                 "..marginplyr_dtplyr_column_1__"),
-      special_nesting_signatures(expected, "last",
-                                 "..marginplyr_dtplyr_column_1__")
+    expect_special_nesting_rows(
+      actual, expected, "last", "..marginplyr_dtplyr_column_1__"
     )
     expect_identical(
       names(actual[["..marginplyr_dtplyr_column_1__"]][[1L]]), names(input)
