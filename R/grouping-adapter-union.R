@@ -755,16 +755,31 @@ expand_margin_union <- function(.data,
         setdiff(plan$dimensions, grouping_set)
       )
       if (length(omitted_identity) > 0L) {
-        missing_exprs <- lapply(omitted_identity, function(col) {
-          value <- identity_missing[[col]]
-          if (identical(backend$kind, "dtplyr")) {
-            rlang::expr(rep(!!value, dplyr::n()))
-          } else {
-            value
+        # dtplyr translates `n()` to `.N`, which cannot be evaluated beside a
+        # source column of that name. An existing column supplies branch size.
+        size_col <- if (identical(backend$kind, "dtplyr")) {
+          get_col_names(result, dplyr::everything())[[1L]]
+        } else {
+          NULL
+        }
+        result <- dtplyr_safe_column_reads(
+          result, size_col,
+          function(source, safe_name) {
+            missing_exprs <- lapply(omitted_identity, function(col) {
+              value <- identity_missing[[col]]
+              if (!is.null(size_col)) {
+                size <- rlang::expr(length(
+                  !!margin_column_pronoun(safe_name(size_col))
+                ))
+                rlang::expr(rep(!!value, !!size))
+              } else {
+                value
+              }
+            })
+            names(missing_exprs) <- unname(identity_cols[omitted_identity])
+            dplyr::mutate(source, !!!missing_exprs)
           }
-        })
-        names(missing_exprs) <- unname(identity_cols[omitted_identity])
-        result <- dplyr::mutate(result, !!!missing_exprs)
+        )
       }
 
       add_grouping_set_id(
