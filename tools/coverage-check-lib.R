@@ -100,6 +100,15 @@ coverage_check <- function(cobertura = NULL, root = ".") {
   }, add = TRUE)
   Sys.setenv(MARGINPLYR_REQUIRED_SUGGESTS = paste(packages, collapse = ","))
 
+  previous_not_cran <- Sys.getenv("NOT_CRAN", unset = NA_character_)
+  on.exit(if (is.na(previous_not_cran)) {
+    Sys.unsetenv("NOT_CRAN")
+  } else {
+    Sys.setenv(NOT_CRAN = previous_not_cran)
+  }, add = TRUE)
+  # test_check() skips snapshots in a noninteractive process unless this is set.
+  Sys.setenv(NOT_CRAN = "true")
+
   temporary <- Sys.getenv("RUNNER_TEMP", unset = tempdir())
   install_path <- file.path(normalizePath(temporary, winslash = "/"), "package")
   cov <- covr::package_coverage(path = root, type = "tests", quiet = FALSE,

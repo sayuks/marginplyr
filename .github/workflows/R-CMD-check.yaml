@@ -238,10 +238,10 @@ jobs:
       #
       # Snapshots run in `release-matrix.yaml`'s `backend` jobs, which set
       # `NOT_CRAN` because they prove behavior rather than emulate CRAN, and
-      # whose uploaded check directory carries any `.new.md` diff. Keeping them
-      # to those jobs is deliberate: #23 holds snapshots to diagnostic meaning
-      # rather than byte-for-byte wording, and comparing five platforms' error
-      # text would fail on formatting that was never a promise.
+      # whose uploaded check directory carries any `.new.md` diff. The local
+      # Review-ready and CI coverage runs also enable them (ADR 0030). This
+      # five-platform CRAN matrix leaves them skipped: #23 holds snapshots to
+      # diagnostic meaning rather than byte-for-byte wording across platforms.
       - name: Check package
         uses: r-lib/actions/check-r-package@v2
         with:

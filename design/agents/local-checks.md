@@ -55,10 +55,10 @@ The command takes no options. It runs, in order:
    finds them;
 3. `jarl check .`;
 4. package-aware lintr after `pkgload::load_all()`;
-5. the full testthat suite, including local snapshot expectations;
-6. strict test line coverage through `tools/coverage-check.R`, requiring every
+5. strict test line coverage through `tools/coverage-check.R`, which runs the
+   full testthat suite with snapshot expectations enabled and requires every
    measured R source line and every optional Suggest used by the suite; and
-7. a source-tarball `R CMD check --as-cran` against disposable empty local
+6. a source-tarball `R CMD check --as-cran` against disposable empty local
    CRAN and Bioconductor indexes, with remote incoming checks and
    external-clock verification disabled. The local future-file-timestamp
    comparison remains enabled.
@@ -109,15 +109,14 @@ Record the exact identity and outcome in the pull request:
   - package spelling: passed
   - jarl: passed
   - package-aware lintr: passed
-  - full testthat suite: passed
-  - strict test line coverage: <covered/measured lines, covr version>
+  - strict test line coverage and snapshots: <covered/measured lines, covr version>
   - source-tarball R CMD check: <errors/warnings/notes and NOTE dispositions>
 ```
 
 ## Roles outside the boundary
 
 Focused tests are the tight feedback loop while changing a module. They do not
-replace the full suite at the boundary. The full suite does not replace the
+replace the full suite in the coverage step. That suite does not replace the
 source-tarball check: CRAN semantics skip snapshot expectations, while the
 tarball check alone sees package metadata and installed-package boundaries.
 Neither test run replaces jarl or lintr. The line-coverage policy is recorded in
