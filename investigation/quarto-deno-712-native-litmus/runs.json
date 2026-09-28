@@ -1,0 +1,58 @@
+[
+  {
+    "order": 1,
+    "variant": "original",
+    "command": [
+      "/private/tmp/marginplyr-712-native-litmus/native-litmus",
+      "original",
+      "1000000"
+    ],
+    "started_utc": "2026-09-28T03:17:28.731717+00:00",
+    "status": "completed",
+    "exit": 0,
+    "elapsed_seconds": 0.203424917,
+    "finished_utc": "2026-09-28T03:17:28.935488+00:00"
+  },
+  {
+    "order": 2,
+    "variant": "barrier",
+    "command": [
+      "/private/tmp/marginplyr-712-native-litmus/native-litmus",
+      "barrier",
+      "1000000"
+    ],
+    "started_utc": "2026-09-28T03:17:28.935882+00:00",
+    "status": "completed",
+    "exit": 0,
+    "elapsed_seconds": 0.20208337499999998,
+    "finished_utc": "2026-09-28T03:17:29.138071+00:00"
+  },
+  {
+    "order": 3,
+    "variant": "barrier",
+    "command": [
+      "/private/tmp/marginplyr-712-native-litmus/native-litmus",
+      "barrier",
+      "1000000"
+    ],
+    "started_utc": "2026-09-28T03:17:29.138532+00:00",
+    "status": "completed",
+    "exit": 0,
+    "elapsed_seconds": 0.19815537500000002,
+    "finished_utc": "2026-09-28T03:17:29.336811+00:00"
+  },
+  {
+    "order": 4,
+    "variant": "original",
+    "command": [
+      "/private/tmp/marginplyr-712-native-litmus/native-litmus",
+      "original",
+      "1000000"
+    ],
+    "started_utc": "2026-09-28T03:17:29.337154+00:00",
+    "status": "completed",
+    "exit": 0,
+    "elapsed_seconds": 0.20532137500000003,
+    "finished_utc": "2026-09-28T03:17:29.542620+00:00"
+  }
+]

@@ -1,0 +1,226 @@
+{
+  "investigated": "2026-09-28",
+  "repository_sha": "e5be3359f4cc7c56256c2570009c55be62c0e710",
+  "engine": {
+    "url": "https://diy.inria.fr/www/jerd.js",
+    "bytes": 5553987,
+    "sha256": "0fb55e9b6ee23521b08a6cea9cfc6145881337f6e73859760e9d30fb53ed721e",
+    "compiler_header": "js_of_ocaml 5.4.0; effects=false; kind=exe; use-js-string=true",
+    "herd_release_and_engine_source_commit": "not recovered from distributed asset; do not infer from model closure"
+  },
+  "runtime": {
+    "node": "v26.7.0",
+    "os": "macOS 26.6.2 (25G83)",
+    "arch": "arm64"
+  },
+  "config": "model aarch64.cat\n",
+  "entrypoint": "runHerd('', '', litmus, 'model aarch64.cat\\n')",
+  "model_upstream_commit": "cd32a878db23656a24bc5cb31f71b04d1400a7c9",
+  "model_closure": {
+    "stdlib.cat": {
+      "bytes": 1606,
+      "sha256": "07c82123805526143c7c2421edd3399cc0454a660add2976eb35b930f914547b",
+      "git_blob": "172468cdbd996b88d8749fd1531f5e76bee169c9",
+      "matches_upstream_commit": true
+    },
+    "aarch64.cat": {
+      "bytes": 6434,
+      "sha256": "645c6a73876d2a6aa5076bd61aca35c254a51b16d411205958834353fbae2738",
+      "git_blob": "b33c20a161cff5ce487df3b9192d006b75bdf909",
+      "matches_upstream_commit": true
+    },
+    "aarch64hwreqs.cat": {
+      "bytes": 6216,
+      "sha256": "328dd442a0c73553cfe01e4641202d5cd3c32c52415d1e302d654729185b3e4d",
+      "git_blob": "5c30453a1cacd081a6e4e631a21fcaab99730f5c",
+      "matches_upstream_commit": true
+    },
+    "aarch64deps.cat": {
+      "bytes": 3618,
+      "sha256": "1e7e53e2f76650920e774cd7a56e6c6073a26e57bbae58362e74dc0cf0f0fb9f",
+      "git_blob": "c04efda1c71f87f9d83e9269b2b58ccb073ce15e",
+      "matches_upstream_commit": true
+    },
+    "aarch64util.cat": {
+      "bytes": 4999,
+      "sha256": "f684070b727899e8461593c73a98f3191f8cb5af8e32489be8b9f4f64b05fa67",
+      "git_blob": "e74aab31ad1abc6db4388729bc6902c77a82172d",
+      "matches_upstream_commit": true
+    },
+    "cos.cat": {
+      "bytes": 93,
+      "sha256": "d5c9581821cca37855f5099439f2e176fd6f3ddc3baa09e0153fa4a4d905459f",
+      "git_blob": "d50481a7e918181d7b5c2bdfb01541ab58f7d4af",
+      "matches_upstream_commit": true
+    },
+    "cos-ok-opt.cat": {
+      "bytes": 878,
+      "sha256": "5d63ea4237c7a905cc60e739f5011dc4c7bb2e35c5f6072393d11a25a4967982",
+      "git_blob": "cae260c2fc041e8f2849f2fdabf7e2007933c2bf",
+      "matches_upstream_commit": true
+    },
+    "cross.cat": {
+      "bytes": 754,
+      "sha256": "8b2dbe9cc3175d5bd8067ab80b4c6024949c743d16e47b13f8230c52ca06bbde",
+      "git_blob": "6398af93a0d104a888916a3057c81bbefa18e931",
+      "matches_upstream_commit": true
+    },
+    "cos-no-opt.cat": {
+      "bytes": 281,
+      "sha256": "2c3d73a446502c08788e7fecd8ccfce3af7482da0da1b542b3a4890a160840df",
+      "git_blob": "2f850150e4d8d6a2f489f9f463f59898b522b6ac",
+      "matches_upstream_commit": true
+    },
+    "aarch64fences.cat": {
+      "bytes": 2242,
+      "sha256": "c9296dea55d4ca23b9f29ab0b703118962ff95e367c71a28cceed62fba552a9e",
+      "git_blob": "b07788c49f6a35a7f7bd15a664373e4f32d04c5a",
+      "matches_upstream_commit": true
+    },
+    "aarch64bbm.cat": {
+      "bytes": 3349,
+      "sha256": "89d0ec5c2a55d684b3cd0205bcf3dba9297439187f5a867b4bc5f897eeb11f94",
+      "git_blob": "79c96e9ad3ce22539c5001cede79a2766cc250e3",
+      "matches_upstream_commit": true
+    },
+    "aarch64memattrs.cat": {
+      "bytes": 3197,
+      "sha256": "c1c644ab01bc1470428d1435dd7b98cc27e823a92bf3cb1367cdf06b8d300640",
+      "git_blob": "27e49fafacfe5041144d792187a39f58d752c86d",
+      "matches_upstream_commit": true
+    },
+    "aarch64show.cat": {
+      "bytes": 340,
+      "sha256": "2d2e08a27b81f7aa9df143b6ac5737816c485de7ce35e09a0be16da4f86cc857",
+      "git_blob": "3cd58d54da78a51728acf8a40acb66a228a60057",
+      "matches_upstream_commit": true
+    },
+    "aarch64loc.cat": {
+      "bytes": 862,
+      "sha256": "bf2ac0bdb981f62fad8e340559c86dc8af27bb85bd5f4f28f731653cb2683032",
+      "git_blob": "e6cdb926e48c4dab4665ead6bf2745ead7cea171",
+      "matches_upstream_commit": true
+    },
+    "enumerations.cat": {
+      "bytes": 3661,
+      "sha256": "1bd204d83ce0cd1a7be1af56c0ee8eb870821455f76ef1518303033179f74af1",
+      "git_blob": "db8d2a2def56ce2e66b2cd7cd68be21df3e457cd",
+      "matches_upstream_commit": true
+    }
+  },
+  "runs": [
+    {
+      "order": 1,
+      "name": "original",
+      "evaluations": 1,
+      "input_sha256": "dc56d8406d717fce59f43287e99a7a829b30f0da1e7615734859860c5cca1c05",
+      "stdout_sha256": "78dd2cd869d31404831912307296031b3c217ee7a4f393df4eda417b422ff8fe",
+      "stderr_bytes": 0,
+      "execution": {
+        "command": [
+          "node",
+          "/private/tmp/marginplyr-712-arm-model/run-herd.cjs",
+          "/private/tmp/marginplyr-712-arm-model/tests/original.litmus"
+        ],
+        "shell_exit": 0,
+        "individual_node_exit": "not separately recorded; complete herd output preserved"
+      }
+    },
+    {
+      "order": 2,
+      "name": "reader-dmb-ish",
+      "evaluations": 1,
+      "input_sha256": "f621d48fbb1017bc954d36ea7f0e6561ea8e2f5308ddadc1d8cce65347f7dd27",
+      "stdout_sha256": "58537cab56067962160909822f37943383f4a1cc5b33793883523144db015983",
+      "stderr_bytes": 0,
+      "execution": {
+        "name": "reader-dmb-ish",
+        "command": [
+          "node",
+          "/private/tmp/marginplyr-712-arm-model/run-herd.cjs",
+          "/private/tmp/marginplyr-712-arm-model/tests/reader-dmb-ish.litmus"
+        ],
+        "started_utc": "2026-09-28T03:02:47.782174+00:00",
+        "elapsed_seconds": 0.263312208,
+        "exit": 0
+      }
+    },
+    {
+      "order": 3,
+      "name": "reader-dmb-ishld",
+      "evaluations": 1,
+      "input_sha256": "91217f6b262504bf25814cd5f2f0c7e0fc402fa4e71dafad3a49b8bbf296cf11",
+      "stdout_sha256": "0aec465c32a8499503e39ea06e5367b98894ce9a3acab5ea33126375795f427e",
+      "stderr_bytes": 0,
+      "execution": {
+        "name": "reader-dmb-ishld",
+        "command": [
+          "node",
+          "/private/tmp/marginplyr-712-arm-model/run-herd.cjs",
+          "/private/tmp/marginplyr-712-arm-model/tests/reader-dmb-ishld.litmus"
+        ],
+        "started_utc": "2026-09-28T03:02:48.045752+00:00",
+        "elapsed_seconds": 0.25313704100000006,
+        "exit": 0
+      }
+    },
+    {
+      "order": 4,
+      "name": "reader-only",
+      "evaluations": 1,
+      "input_sha256": "352ad464c2be46d1fd2319f3b6786be84c393a77b2d510c20b4848af5f95b6cb",
+      "stdout_sha256": "b1ead8050e9ba929e4181d57a23b7c6295ba9dfecf099fa40737ee85b4f92923",
+      "stderr_bytes": 0,
+      "execution": {
+        "name": "reader-only",
+        "command": [
+          "node",
+          "/private/tmp/marginplyr-712-arm-model/run-herd.cjs",
+          "/private/tmp/marginplyr-712-arm-model/tests/reader-only.litmus"
+        ],
+        "started_utc": "2026-09-28T03:02:48.299152+00:00",
+        "elapsed_seconds": 0.259926875,
+        "exit": 0
+      }
+    },
+    {
+      "order": 5,
+      "name": "writer-guard",
+      "evaluations": 1,
+      "input_sha256": "630614ad209542e62aafc53ae42732da7fc78be20551f08607ebf64541803c42",
+      "stdout_sha256": "448bce90c1608964cc384caa1c06369b3374fadc0728a14cf5962a00d20f1d13",
+      "stderr_bytes": 0,
+      "execution": {
+        "name": "writer-guard",
+        "command": [
+          "node",
+          "/private/tmp/marginplyr-712-arm-model/run-herd.cjs",
+          "/private/tmp/marginplyr-712-arm-model/tests/writer-guard.litmus"
+        ],
+        "started_utc": "2026-09-28T03:02:48.559353+00:00",
+        "elapsed_seconds": 0.256343,
+        "exit": 0
+      }
+    },
+    {
+      "order": 6,
+      "name": "reader-ldar",
+      "evaluations": 1,
+      "input_sha256": "f5b38d14801845153b3df10c012e21e53cc773dc2adb61c0c17d1b3f54db2fc8",
+      "stdout_sha256": "7290a51c610bbf854aaef0640613d868c017d6d02ffba6c5aa2d4ebaa75e441d",
+      "stderr_bytes": 0,
+      "execution": {
+        "name": "reader-ldar",
+        "command": [
+          "node",
+          "/private/tmp/marginplyr-712-arm-model/run-herd.cjs",
+          "/private/tmp/marginplyr-712-arm-model/tests/reader-ldar.litmus"
+        ],
+        "started_utc": "2026-09-28T03:02:48.815955+00:00",
+        "elapsed_seconds": 0.24359679199999995,
+        "exit": 0
+      }
+    }
+  ],
+  "raw_artifact_directory": "/private/tmp/marginplyr-712-arm-model"
+}

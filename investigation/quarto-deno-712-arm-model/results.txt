@@ -1,0 +1,80 @@
+Test SQLite-original Allowed
+States 3
+1:X6=0; 1:X8=0;
+1:X6=1; 1:X8=0;
+1:X6=1; 1:X8=1;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (1:X6=1 /\ 1:X8=0)
+Observation SQLite-original Sometimes 1 2
+Time SQLite-original 0.07
+Hash=cfeeac59b264e1fd2107439d483cab8c
+
+Test SQLite-reader-dmb-ish Allowed
+States 2
+1:X6=0; 1:X8=0;
+1:X6=1; 1:X8=1;
+No
+Witnesses
+Positive: 0 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (1:X6=1 /\ 1:X8=0)
+Observation SQLite-reader-dmb-ish Never 0 2
+Time SQLite-reader-dmb-ish 0.09
+Hash=aaa5f2d57555879f2381312898423557
+
+Test SQLite-reader-dmb-ishld Allowed
+States 2
+1:X6=0; 1:X8=0;
+1:X6=1; 1:X8=1;
+No
+Witnesses
+Positive: 0 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (1:X6=1 /\ 1:X8=0)
+Observation SQLite-reader-dmb-ishld Never 0 2
+Time SQLite-reader-dmb-ishld 0.07
+Hash=6f0f85fadb2dd0f0a2029ea20312c8bd
+
+Test SQLite-reader-only Allowed
+States 3
+1:X6=0; 1:X8=0;
+1:X6=1; 1:X8=0;
+1:X6=1; 1:X8=1;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (1:X6=1 /\ 1:X8=0)
+Observation SQLite-reader-only Sometimes 1 2
+Time SQLite-reader-only 0.07
+Hash=b2bea037a73d268ca75f408cca4f5f2a
+
+Test SQLite-writer-guard Allowed
+States 3
+1:X6=0; 1:X8=0;
+1:X6=1; 1:X8=0;
+1:X6=1; 1:X8=1;
+Ok
+Witnesses
+Positive: 1 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (1:X6=1 /\ 1:X8=0)
+Observation SQLite-writer-guard Sometimes 1 2
+Time SQLite-writer-guard 0.09
+Hash=1ccc990d61586553c5910afa85e60fa9
+
+Test SQLite-reader-ldar Allowed
+States 2
+1:X6=0; 1:X8=0;
+1:X6=1; 1:X8=1;
+No
+Witnesses
+Positive: 0 Negative: 2
+Flag Assuming-common-inner-shareable-domain
+Condition exists (1:X6=1 /\ 1:X8=0)
+Observation SQLite-reader-ldar Never 0 2
+Time SQLite-reader-ldar 0.08
+Hash=9d8126ca59ec3c402f6b69e1e200e2fa

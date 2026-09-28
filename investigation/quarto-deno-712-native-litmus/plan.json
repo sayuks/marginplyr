@@ -1,0 +1,41 @@
+{
+  "recorded_before_concurrent_execution_utc": "2026-09-28T03:15:43.554124+00:00",
+  "repository_sha": "e5be3359f4cc7c56256c2570009c55be62c0e710",
+  "order": [
+    "original",
+    "barrier",
+    "barrier",
+    "original"
+  ],
+  "iterations_each": 1000000,
+  "watchdog_seconds_each": 30,
+  "outer_timeout_seconds_each": 35,
+  "max_concurrent_iterations_total": 4000000,
+  "retry": false,
+  "delays": "xorshift32 per-role seeds 0x712a713b and 0x713b712a; 0..63 nop/subs/b.ne loops before each measurement, identical schedule across trials",
+  "layout": "128-byte alignment; init offset120, alloc136 (distance16)",
+  "scheduler": "default; not pinned; no QoS/TSO setting changes",
+  "binary_uuid": "0ED19942-3746-3906-A9B3-E2D3DC515F3C",
+  "compile": [
+    "xcrun",
+    "clang",
+    "-arch",
+    "arm64",
+    "-std=c11",
+    "-O2",
+    "-Wall",
+    "-Wextra",
+    "-Werror",
+    "-pthread",
+    "harness.c",
+    "probe.S",
+    "-o",
+    "native-litmus"
+  ],
+  "hashes": {
+    "harness.c": "6aefe62465b9afb983828e5357c837dc0a22c0f0c321efda8c9652c3da53b90c",
+    "probe.S": "324a61a97b36ffedc1be9400873fa3e93cbbf106d1cab7e24d018963c813f6da",
+    "native-litmus": "774fc49b6f14bbc0a1e7b57554342e83cd67d4a67785b404ba847cb6de66505e",
+    "disassembly.txt": "c6ccb999cb5fccf4fa108a2ae933aacd2af4c3ba80a928c6573da5281a22f35d"
+  }
+}
