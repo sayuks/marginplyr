@@ -502,7 +502,8 @@ summarize_margin_union <- function(.data,
         dots,
         plan = plan,
         grouping_set = grouping_set,
-        sql = FALSE
+        sql = FALSE,
+        mark_outputs = is.environment(summaries$grouping_type_state)
       )
       if (is.data.frame(.data)) {
         branch_dots <- wrap_local_frame_summaries(
@@ -548,6 +549,21 @@ summarize_margin_union <- function(.data,
         conditions = conditions,
         restatements = branch_argument_map(branch_dots, summaries$labels)
       )
+
+      if (is.environment(summaries$grouping_type_state)) {
+        select <- result$lazy_query$select
+        outputs <- select$name[vapply(select$expr, grouping_marked_output,
+                                      logical(1))]
+        previous <- summaries$grouping_type_state$names
+        summaries$grouping_type_state$names <- if (is.null(previous)) {
+          outputs
+        } else {
+          intersect(previous, outputs)
+        }
+        result$lazy_query$select$expr <- lapply(
+          select$expr, strip_grouping_output_markers
+        )
+      }
 
       # Branch binding drops the token attribute of an empty list marker.
       if (is.data.frame(.data) &&
