@@ -422,7 +422,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]])
     )
-    dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
+    dots[[i]] <- rlang::new_quosure(expr, env = wrapped_summary_env(dot))
   }
   dots
 }

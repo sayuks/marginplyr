@@ -72,6 +72,18 @@ marginplyr_private_call <- function(name) {
   )
 }
 
+# Return the evaluation environment after staging a call around a summary.
+# A literal captured in the empty environment has no names to resolve, but the
+# staged namespace operator needs base. Other expressions keep their capture.
+wrapped_summary_env <- function(quo) {
+  env <- rlang::quo_get_env(quo)
+  if (identical(env, rlang::empty_env()) &&
+        !is.language(rlang::quo_get_expr(quo))) {
+    return(rlang::base_env())
+  }
+  env
+}
+
 assert_logical_scalar <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
