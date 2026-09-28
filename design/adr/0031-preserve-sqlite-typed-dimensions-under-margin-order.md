@@ -194,3 +194,20 @@ public references. This amendment records the accepted decision; the historical
 investigation retains its original evidence and conclusions as dated.
 
 [b-direct-evidence]: https://github.com/sayuks/marginplyr/blob/e6046acd2933d943aba71b81630287f8599262b1/investigation/sqlite-b-direct-2026-09-25/review/README.md
+
+## `.env` summary output amendment (2026-09-28)
+
+Issue #721 extends the direct SQLite result boundary to a public summary
+column named `.env`, whether it is an ordinary summary output or the requested
+Grouping set identifier. The boundary applies even when no declared type or
+Margin order would otherwise require it. dbplyr's generated projections and
+ordering expressions can refer to that column as a bare `.env` symbol, which
+its SQL translator reads as the lexical pronoun. The direct query quotes those
+generated column references while leaving caller summary expressions intact.
+
+For direct materialization, dbplyr's `compute()` selects every output by bare
+symbol before table creation, reaching the same pronoun collision. The SQLite
+materializer renders the type anchor and gives it to `dbplyr::db_compute()`
+for this output name, then uses the existing public-column insertion and
+destination safety path. Construction remains lazy; the materialization work
+occurs only when the caller invokes `compute()`.
