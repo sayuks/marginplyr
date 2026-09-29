@@ -1,0 +1,7 @@
+case: current-r46
+R version 4.6.1 (2026-06-24)
+R.home: /Library/Frameworks/R.framework/Resources
+PostgreSQL: PostgreSQL 17.11 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit
+.libPaths: /private/tmp/marginplyr-745-20260930/current-lib | /private/tmp/marginplyr-minver-kalaij/lib-control | /Library/Frameworks/R.framework/Versions/4.6/Resources/library
+source reads before collection: 0
+source reads after collection and computation: 160

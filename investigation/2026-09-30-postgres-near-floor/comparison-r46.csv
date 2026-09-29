@@ -1,0 +1,8 @@
+"case","values_identical","names_identical","rows_identical","types_identical","classes_identical"
+"plan",TRUE,TRUE,TRUE,TRUE,TRUE
+"summary_collect",TRUE,TRUE,TRUE,TRUE,TRUE
+"shares_collect",TRUE,TRUE,TRUE,TRUE,TRUE
+"expansion_collect",TRUE,TRUE,TRUE,TRUE,TRUE
+"summary_compute",TRUE,TRUE,TRUE,TRUE,TRUE
+"shares_compute",TRUE,TRUE,TRUE,TRUE,TRUE
+"expansion_compute",TRUE,TRUE,TRUE,TRUE,TRUE

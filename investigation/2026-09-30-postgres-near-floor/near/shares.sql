@@ -1,0 +1,234 @@
+SELECT
+  "period",
+  "region",
+  "store",
+  "..marginplyr_set_id_1" AS "set_id",
+  "total",
+  "parent",
+  CASE WHEN ("..marginplyr_set_id_1" IN (3)) THEN 1.0 WHEN NOT ("..marginplyr_set_id_1" IN (3)) THEN (CASE WHEN (("total" IS NULL) OR ("..marginplyr_denominator_of_total_1" IS NULL) OR "..marginplyr_denominator_of_total_1" = 0.0) THEN NULL WHEN NOT (("total" IS NULL) OR ("..marginplyr_denominator_of_total_1" IS NULL) OR "..marginplyr_denominator_of_total_1" = 0.0) THEN (CAST("total" * 1 AS NUMERIC) / CAST("..marginplyr_denominator_of_total_1" AS NUMERIC)) END) END AS "grand"
+FROM (
+  SELECT "LHS".*, "RHS".*
+  FROM (
+    SELECT
+      "period",
+      "region",
+      "store",
+      "total",
+      CASE WHEN ("..marginplyr_set_id_1" IN (3)) THEN 1.0 WHEN NOT ("..marginplyr_set_id_1" IN (3)) THEN (CASE WHEN (("total" IS NULL) OR ("..marginplyr_denominator_of_total_1" IS NULL) OR "..marginplyr_denominator_of_total_1" = 0.0) THEN NULL WHEN NOT (("total" IS NULL) OR ("..marginplyr_denominator_of_total_1" IS NULL) OR "..marginplyr_denominator_of_total_1" = 0.0) THEN (CAST("total" * 1 AS NUMERIC) / CAST("..marginplyr_denominator_of_total_1" AS NUMERIC)) END) END AS "parent",
+      "grand",
+      "..marginplyr_set_id_1",
+      "..marginplyr_parent_original_1",
+      "..marginplyr_parent_original_2"
+    FROM (
+      SELECT "LHS".*, "RHS".*
+      FROM (
+        SELECT
+          *,
+          CASE WHEN ("..marginplyr_set_id_1" IN (1)) THEN "..marginplyr_parent_original_1" WHEN NOT ("..marginplyr_set_id_1" IN (1)) THEN NULL END AS "..marginplyr_parent_key_1",
+          CASE WHEN (FALSE) THEN "..marginplyr_parent_original_2" WHEN NOT (FALSE) THEN NULL END AS "..marginplyr_parent_key_2"
+        FROM (
+          SELECT
+            "period",
+            CASE WHEN ("..marginplyr_grouping_1" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_1" = 1) THEN (CAST("region" AS TEXT)) END AS "region",
+            CASE WHEN ("..marginplyr_grouping_2" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_2" = 1) THEN (CAST("store" AS TEXT)) END AS "store",
+            "total",
+            "parent",
+            "grand",
+            "..marginplyr_set_id_1",
+            "..marginplyr_parent_original_1",
+            "..marginplyr_parent_original_2"
+          FROM (
+            SELECT
+              *,
+              "region" AS "..marginplyr_parent_original_1",
+              "store" AS "..marginplyr_parent_original_2"
+            FROM (
+              SELECT
+                "period",
+                "region",
+                "store",
+                SUM("value") AS "total",
+                NULL AS "parent",
+                NULL AS "grand",
+                CASE WHEN GROUPING("region") = 0 AND GROUPING("store") = 0 THEN 1 WHEN GROUPING("region") = 0 AND GROUPING("store") = 1 THEN 2 WHEN GROUPING("region") = 1 AND GROUPING("store") = 1 THEN 3 END AS "..marginplyr_set_id_1",
+                GROUPING("region") AS "..marginplyr_grouping_1",
+                GROUPING("store") AS "..marginplyr_grouping_2"
+              FROM "source_probe"
+              GROUP BY GROUPING SETS (("period", "region", "store"), ("period", "region"), ("period"))
+            ) AS "q01"
+          ) AS "q01"
+        ) AS "q01"
+      ) AS "LHS"
+      LEFT JOIN (
+        SELECT
+          "..marginplyr_set_id_1" AS "..marginplyr_share_match_1",
+          "period" AS "..marginplyr_share_match_2",
+          CASE WHEN ("..marginplyr_set_id_1" IN (1)) THEN "..marginplyr_parent_original_1" WHEN NOT ("..marginplyr_set_id_1" IN (1)) THEN NULL END AS "..marginplyr_share_match_3",
+          CASE WHEN (FALSE) THEN "..marginplyr_parent_original_2" WHEN NOT (FALSE) THEN NULL END AS "..marginplyr_share_match_4",
+          "..marginplyr_denominator_of_total_1"
+        FROM (
+          SELECT
+            "period",
+            "..marginplyr_parent_original_1",
+            "..marginplyr_parent_original_2",
+            "..marginplyr_parent_plan_1" AS "..marginplyr_set_id_1",
+            "total" AS "..marginplyr_denominator_of_total_1"
+          FROM (
+            SELECT
+              "period",
+              CASE WHEN ("..marginplyr_grouping_1" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_1" = 1) THEN (CAST("region" AS TEXT)) END AS "region",
+              CASE WHEN ("..marginplyr_grouping_2" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_2" = 1) THEN (CAST("store" AS TEXT)) END AS "store",
+              "total",
+              "parent",
+              "grand",
+              "..marginplyr_set_id_1",
+              "..marginplyr_parent_original_1",
+              "..marginplyr_parent_original_2"
+            FROM (
+              SELECT
+                *,
+                "region" AS "..marginplyr_parent_original_1",
+                "store" AS "..marginplyr_parent_original_2"
+              FROM (
+                SELECT
+                  "period",
+                  "region",
+                  "store",
+                  SUM("value") AS "total",
+                  NULL AS "parent",
+                  NULL AS "grand",
+                  CASE WHEN GROUPING("region") = 0 AND GROUPING("store") = 0 THEN 1 WHEN GROUPING("region") = 0 AND GROUPING("store") = 1 THEN 2 WHEN GROUPING("region") = 1 AND GROUPING("store") = 1 THEN 3 END AS "..marginplyr_set_id_1",
+                  GROUPING("region") AS "..marginplyr_grouping_1",
+                  GROUPING("store") AS "..marginplyr_grouping_2"
+                FROM "source_probe"
+                GROUP BY GROUPING SETS (("period", "region", "store"), ("period", "region"), ("period"))
+              ) AS "q01"
+            ) AS "q01"
+          ) AS "LHS"
+          INNER JOIN (
+            SELECT
+              CAST("..marginplyr_parent_plan_1" AS INTEGER) AS "..marginplyr_parent_plan_1",
+              CAST("..marginplyr_parent_plan_2" AS INTEGER) AS "..marginplyr_parent_plan_2"
+            FROM (              VALUES (1, 2), (2, 3)) AS drvd("..marginplyr_parent_plan_1", "..marginplyr_parent_plan_2")
+          ) AS "RHS"
+            ON ("LHS"."..marginplyr_set_id_1" = "RHS"."..marginplyr_parent_plan_2")
+        ) AS "q01"
+      ) AS "RHS"
+        ON ((("LHS"."..marginplyr_set_id_1" = "RHS"."..marginplyr_share_match_1") OR ("LHS"."..marginplyr_set_id_1" IS NULL AND "RHS"."..marginplyr_share_match_1" IS NULL)) AND (("LHS"."period" = "RHS"."..marginplyr_share_match_2") OR ("LHS"."period" IS NULL AND "RHS"."..marginplyr_share_match_2" IS NULL)) AND (("LHS"."..marginplyr_parent_key_1" = "RHS"."..marginplyr_share_match_3") OR ("LHS"."..marginplyr_parent_key_1" IS NULL AND "RHS"."..marginplyr_share_match_3" IS NULL)) AND (("LHS"."..marginplyr_parent_key_2" = "RHS"."..marginplyr_share_match_4") OR ("LHS"."..marginplyr_parent_key_2" IS NULL AND "RHS"."..marginplyr_share_match_4" IS NULL)))
+    ) AS "q01"
+  ) AS "LHS"
+  LEFT JOIN (
+    SELECT
+      "period" AS "..marginplyr_share_match_1",
+      "total" AS "..marginplyr_denominator_of_total_1"
+    FROM (
+      SELECT "LHS".*, "RHS".*
+      FROM (
+        SELECT
+          *,
+          CASE WHEN ("..marginplyr_set_id_1" IN (1)) THEN "..marginplyr_parent_original_1" WHEN NOT ("..marginplyr_set_id_1" IN (1)) THEN NULL END AS "..marginplyr_parent_key_1",
+          CASE WHEN (FALSE) THEN "..marginplyr_parent_original_2" WHEN NOT (FALSE) THEN NULL END AS "..marginplyr_parent_key_2"
+        FROM (
+          SELECT
+            "period",
+            CASE WHEN ("..marginplyr_grouping_1" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_1" = 1) THEN (CAST("region" AS TEXT)) END AS "region",
+            CASE WHEN ("..marginplyr_grouping_2" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_2" = 1) THEN (CAST("store" AS TEXT)) END AS "store",
+            "total",
+            "parent",
+            "grand",
+            "..marginplyr_set_id_1",
+            "..marginplyr_parent_original_1",
+            "..marginplyr_parent_original_2"
+          FROM (
+            SELECT
+              *,
+              "region" AS "..marginplyr_parent_original_1",
+              "store" AS "..marginplyr_parent_original_2"
+            FROM (
+              SELECT
+                "period",
+                "region",
+                "store",
+                SUM("value") AS "total",
+                NULL AS "parent",
+                NULL AS "grand",
+                CASE WHEN GROUPING("region") = 0 AND GROUPING("store") = 0 THEN 1 WHEN GROUPING("region") = 0 AND GROUPING("store") = 1 THEN 2 WHEN GROUPING("region") = 1 AND GROUPING("store") = 1 THEN 3 END AS "..marginplyr_set_id_1",
+                GROUPING("region") AS "..marginplyr_grouping_1",
+                GROUPING("store") AS "..marginplyr_grouping_2"
+              FROM "source_probe"
+              GROUP BY GROUPING SETS (("period", "region", "store"), ("period", "region"), ("period"))
+            ) AS "q01"
+          ) AS "q01"
+        ) AS "q01"
+      ) AS "LHS"
+      LEFT JOIN (
+        SELECT
+          "..marginplyr_set_id_1" AS "..marginplyr_share_match_1",
+          "period" AS "..marginplyr_share_match_2",
+          CASE WHEN ("..marginplyr_set_id_1" IN (1)) THEN "..marginplyr_parent_original_1" WHEN NOT ("..marginplyr_set_id_1" IN (1)) THEN NULL END AS "..marginplyr_share_match_3",
+          CASE WHEN (FALSE) THEN "..marginplyr_parent_original_2" WHEN NOT (FALSE) THEN NULL END AS "..marginplyr_share_match_4",
+          "..marginplyr_denominator_of_total_1"
+        FROM (
+          SELECT
+            "period",
+            "..marginplyr_parent_original_1",
+            "..marginplyr_parent_original_2",
+            "..marginplyr_parent_plan_1" AS "..marginplyr_set_id_1",
+            "total" AS "..marginplyr_denominator_of_total_1"
+          FROM (
+            SELECT
+              "period",
+              CASE WHEN ("..marginplyr_grouping_1" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_1" = 1) THEN (CAST("region" AS TEXT)) END AS "region",
+              CASE WHEN ("..marginplyr_grouping_2" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_2" = 1) THEN (CAST("store" AS TEXT)) END AS "store",
+              "total",
+              "parent",
+              "grand",
+              "..marginplyr_set_id_1",
+              "..marginplyr_parent_original_1",
+              "..marginplyr_parent_original_2"
+            FROM (
+              SELECT
+                *,
+                "region" AS "..marginplyr_parent_original_1",
+                "store" AS "..marginplyr_parent_original_2"
+              FROM (
+                SELECT
+                  "period",
+                  "region",
+                  "store",
+                  SUM("value") AS "total",
+                  NULL AS "parent",
+                  NULL AS "grand",
+                  CASE WHEN GROUPING("region") = 0 AND GROUPING("store") = 0 THEN 1 WHEN GROUPING("region") = 0 AND GROUPING("store") = 1 THEN 2 WHEN GROUPING("region") = 1 AND GROUPING("store") = 1 THEN 3 END AS "..marginplyr_set_id_1",
+                  GROUPING("region") AS "..marginplyr_grouping_1",
+                  GROUPING("store") AS "..marginplyr_grouping_2"
+                FROM "source_probe"
+                GROUP BY GROUPING SETS (("period", "region", "store"), ("period", "region"), ("period"))
+              ) AS "q01"
+            ) AS "q01"
+          ) AS "LHS"
+          INNER JOIN (
+            SELECT
+              CAST("..marginplyr_parent_plan_1" AS INTEGER) AS "..marginplyr_parent_plan_1",
+              CAST("..marginplyr_parent_plan_2" AS INTEGER) AS "..marginplyr_parent_plan_2"
+            FROM (              VALUES (1, 2), (2, 3)) AS drvd("..marginplyr_parent_plan_1", "..marginplyr_parent_plan_2")
+          ) AS "RHS"
+            ON ("LHS"."..marginplyr_set_id_1" = "RHS"."..marginplyr_parent_plan_2")
+        ) AS "q01"
+      ) AS "RHS"
+        ON ((("LHS"."..marginplyr_set_id_1" = "RHS"."..marginplyr_share_match_1") OR ("LHS"."..marginplyr_set_id_1" IS NULL AND "RHS"."..marginplyr_share_match_1" IS NULL)) AND (("LHS"."period" = "RHS"."..marginplyr_share_match_2") OR ("LHS"."period" IS NULL AND "RHS"."..marginplyr_share_match_2" IS NULL)) AND (("LHS"."..marginplyr_parent_key_1" = "RHS"."..marginplyr_share_match_3") OR ("LHS"."..marginplyr_parent_key_1" IS NULL AND "RHS"."..marginplyr_share_match_3" IS NULL)) AND (("LHS"."..marginplyr_parent_key_2" = "RHS"."..marginplyr_share_match_4") OR ("LHS"."..marginplyr_parent_key_2" IS NULL AND "RHS"."..marginplyr_share_match_4" IS NULL)))
+    ) AS "q01"
+    WHERE ("..marginplyr_set_id_1" = 3)
+  ) AS "RHS"
+    ON ((("LHS"."period" = "RHS"."..marginplyr_share_match_1") OR ("LHS"."period" IS NULL AND "RHS"."..marginplyr_share_match_1" IS NULL)))
+) AS "q01"
+ORDER BY
+  CASE WHEN (("period" IS NULL)) THEN 1 WHEN NOT (("period" IS NULL)) THEN 0 END,
+  "period",
+  CASE WHEN ("..marginplyr_set_id_1" IN (3)) THEN 1 WHEN NOT ("..marginplyr_set_id_1" IN (3)) THEN 0 END,
+  CASE WHEN (("region" IS NULL)) THEN 1 WHEN NOT (("region" IS NULL)) THEN 0 END,
+  "region",
+  CASE WHEN ("..marginplyr_set_id_1" IN (2, 3)) THEN 1 WHEN NOT ("..marginplyr_set_id_1" IN (2, 3)) THEN 0 END,
+  CASE WHEN (("store" IS NULL)) THEN 1 WHEN NOT (("store" IS NULL)) THEN 0 END,
+  "store",
+  "..marginplyr_set_id_1"

@@ -1,0 +1,36 @@
+* installing *source* package ‘timechange’ ...
+** this is package ‘timechange’ version ‘0.4.0’
+** package ‘timechange’ successfully unpacked and MD5 sums checked
+** using staged installation
+** libs
+using C compiler: ‘Apple clang version 17.0.0 (clang-1700.6.3.2)’
+using C++ compiler: ‘Apple clang version 17.0.0 (clang-1700.6.3.2)’
+using SDK: ‘MacOSX26.2.sdk’
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c common.cpp -o common.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cpp11.cpp -o cpp11.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c get.cpp -o get.o
+clang -arch arm64 -std=gnu2x -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2  -c parse.c -o parse.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c round.cpp -o round.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c tzone.cpp -o tzone.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c update.cpp -o update.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/time_zone_fixed.cc -o cctz/src/time_zone_fixed.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/time_zone_if.cc -o cctz/src/time_zone_if.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/time_zone_impl.cc -o cctz/src/time_zone_impl.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/time_zone_info.cc -o cctz/src/time_zone_info.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/time_zone_libc.cc -o cctz/src/time_zone_libc.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/time_zone_lookup.cc -o cctz/src/time_zone_lookup.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/time_zone_posix.cc -o cctz/src/time_zone_posix.o
+clang++ -arch arm64 -std=gnu++17 -I"/private/tmp/marginplyr-minver-kalaij/r45-home/include" -DNDEBUG -I. -I./cctz/src/ -I'/private/tmp/marginplyr-minver-kalaij/lib-r45/cpp11/include' -I/opt/R/arm64/include    -fPIC  -falign-functions=64 -Wall -g -O2   -c cctz/src/zone_info_source.cc -o cctz/src/zone_info_source.o
+ar rcs libcctz.a ./cctz/src/time_zone_fixed.o ./cctz/src/time_zone_if.o ./cctz/src/time_zone_impl.o ./cctz/src/time_zone_info.o ./cctz/src/time_zone_libc.o ./cctz/src/time_zone_lookup.o ./cctz/src/time_zone_posix.o ./cctz/src/zone_info_source.o
+clang++ -arch arm64 -std=gnu++17 -dynamiclib -Wl,-headerpad_max_install_names -undefined dynamic_lookup -L/private/tmp/marginplyr-minver-kalaij/r45-home/lib -L/opt/R/arm64/lib -o timechange.so common.o cpp11.o get.o parse.o round.o tzone.o update.o -L. -lcctz -L/Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/lib -lR
+installing to /private/tmp/marginplyr-745-20260930/current-r45-lib/00LOCK-timechange/00new/timechange/libs
+** R
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (timechange)

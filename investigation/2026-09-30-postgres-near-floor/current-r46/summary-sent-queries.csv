@@ -1,0 +1,29 @@
+"purpose","sql"
+"result","SELECT
+  ""period"",
+  CASE WHEN (""..marginplyr_grouping_1"" = 1) THEN 'Total' WHEN NOT (""..marginplyr_grouping_1"" = 1) THEN (CAST(""region"" AS TEXT)) END AS ""region"",
+  CASE WHEN (""..marginplyr_grouping_2"" = 1) THEN 'Total' WHEN NOT (""..marginplyr_grouping_2"" = 1) THEN (CAST(""store"" AS TEXT)) END AS ""store"",
+  ""set_id"",
+  ""total""
+FROM (
+  SELECT
+    ""period"",
+    ""region"",
+    ""store"",
+    SUM(""value"") AS ""total"",
+    CASE WHEN GROUPING(""region"") = 0 AND GROUPING(""store"") = 0 THEN 1 WHEN GROUPING(""region"") = 0 AND GROUPING(""store"") = 1 THEN 2 WHEN GROUPING(""region"") = 1 AND GROUPING(""store"") = 1 THEN 3 END AS ""set_id"",
+    GROUPING(""region"") AS ""..marginplyr_grouping_1"",
+    GROUPING(""store"") AS ""..marginplyr_grouping_2""
+  FROM ""source_probe""
+  GROUP BY GROUPING SETS ((""period"", ""region"", ""store""), (""period"", ""region""), (""period""))
+) AS ""q01""
+ORDER BY
+  CASE WHEN ((""period"" IS NULL)) THEN 1 WHEN NOT ((""period"" IS NULL)) THEN 0 END,
+  ""period"",
+  CASE WHEN (""set_id"" IN (3)) THEN 1 WHEN NOT (""set_id"" IN (3)) THEN 0 END,
+  CASE WHEN ((""region"" IS NULL)) THEN 1 WHEN NOT ((""region"" IS NULL)) THEN 0 END,
+  ""region"",
+  CASE WHEN (""set_id"" IN (2, 3)) THEN 1 WHEN NOT (""set_id"" IN (2, 3)) THEN 0 END,
+  CASE WHEN ((""store"" IS NULL)) THEN 1 WHEN NOT ((""store"" IS NULL)) THEN 0 END,
+  ""store"",
+  ""set_id"""

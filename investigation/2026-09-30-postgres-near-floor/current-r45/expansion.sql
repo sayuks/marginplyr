@@ -1,0 +1,41 @@
+SELECT "period", "region", "store", "set_id", "value"
+FROM (
+  SELECT *, 1 AS "set_id"
+  FROM (
+    SELECT
+      "period",
+      CAST("region" AS TEXT) AS "region",
+      CAST("store" AS TEXT) AS "store",
+      "value"
+    FROM "source_probe"
+  ) AS "q01"
+
+  UNION ALL
+
+  SELECT *, 2 AS "set_id"
+  FROM (
+    SELECT "period", "region", 'Total' AS "store", "value"
+    FROM (
+      SELECT "period", CAST("region" AS TEXT) AS "region", "store", "value"
+      FROM "source_probe"
+    ) AS "q01"
+  ) AS "q01"
+
+  UNION ALL
+
+  SELECT *, 3 AS "set_id"
+  FROM (
+    SELECT "period", 'Total' AS "region", 'Total' AS "store", "value"
+    FROM "source_probe"
+  ) AS "q01"
+) AS "q01"
+ORDER BY
+  CASE WHEN (("period" IS NULL)) THEN 1 WHEN NOT (("period" IS NULL)) THEN 0 END,
+  "period",
+  CASE WHEN ("set_id" IN (3)) THEN 1 WHEN NOT ("set_id" IN (3)) THEN 0 END,
+  CASE WHEN (("region" IS NULL)) THEN 1 WHEN NOT (("region" IS NULL)) THEN 0 END,
+  "region",
+  CASE WHEN ("set_id" IN (2, 3)) THEN 1 WHEN NOT ("set_id" IN (2, 3)) THEN 0 END,
+  CASE WHEN (("store" IS NULL)) THEN 1 WHEN NOT (("store" IS NULL)) THEN 0 END,
+  "store",
+  "set_id"

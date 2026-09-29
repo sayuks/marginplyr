@@ -1,0 +1,216 @@
+* installing *source* package ‘RPostgres’ ...
+** this is package ‘RPostgres’ version ‘1.4.10’
+** package ‘RPostgres’ successfully unpacked and MD5 sums checked
+** using staged installation
+Found pg_config includedir and libdir (PostgreSQL 17.11 (Homebrew))!
+Using PKG_CFLAGS=-I/opt/homebrew/include/postgresql@17
+Using PKG_LIBS=-L/opt/homebrew/lib/postgresql@17 -lpq
+** libs
+using C compiler: ‘Apple clang version 17.0.0 (clang-1700.6.3.2)’
+using C++ compiler: ‘Apple clang version 17.0.0 (clang-1700.6.3.2)’
+using SDK: ‘MacOSX26.2.sdk’
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c DbColumn.cpp -o DbColumn.o
+In file included from DbColumn.cpp:3:
+In file included from ./DbColumn.h:8:
+In file included from vendor/boost/shared_ptr.hpp:17:
+In file included from vendor/boost/smart_ptr/shared_ptr.hpp:17:
+In file included from vendor/boost/smart_ptr/detail/shared_count.hpp:25:
+In file included from vendor/boost/smart_ptr/bad_weak_ptr.hpp:20:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c DbColumnDataSource.cpp -o DbColumnDataSource.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c DbColumnDataSourceFactory.cpp -o DbColumnDataSourceFactory.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c DbColumnStorage.cpp -o DbColumnStorage.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c DbConnection.cpp -o DbConnection.o
+In file included from DbConnection.cpp:2:
+In file included from ./DbConnection.h:4:
+In file included from vendor/boost/noncopyable.hpp:15:
+In file included from vendor/boost/core/noncopyable.hpp:12:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c DbDataFrame.cpp -o DbDataFrame.o
+In file included from DbDataFrame.cpp:2:
+In file included from ./DbDataFrame.h:4:
+In file included from vendor/boost/container/stable_vector.hpp:23:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+In file included from DbDataFrame.cpp:2:
+In file included from ./DbDataFrame.h:4:
+In file included from vendor/boost/container/stable_vector.hpp:42:
+In file included from vendor/boost/container/detail/allocator_version_traits.hpp:27:
+In file included from vendor/boost/container/detail/multiallocation_chain.hpp:32:
+vendor/boost/intrusive/slist.hpp:1939:14: warning: variable 'node_count' set but not used [-Wunused-but-set-variable]
+ 1939 |       size_t node_count = 0;
+      |              ^
+In file included from DbDataFrame.cpp:7:
+vendor/boost/bind.hpp:36:1: warning: The practice of declaring the Bind placeholders (_1, _2, ...) in the global namespace is deprecated. Please use <boost/bind/bind.hpp> + using namespace boost::placeholders, or define BOOST_BIND_GLOBAL_PLACEHOLDERS to retain the current behavior. [-W#pragma-messages]
+   36 | BOOST_PRAGMA_MESSAGE(
+      | ^
+vendor/boost/config/pragma_message.hpp:24:34: note: expanded from macro 'BOOST_PRAGMA_MESSAGE'
+   24 | # define BOOST_PRAGMA_MESSAGE(x) _Pragma(BOOST_STRINGIZE(message(x)))
+      |                                  ^
+<scratch space>:33:2: note: expanded from here
+   33 |  message("The practice of declaring the Bind placeholders (_1, _2, ...) " "in the global namespace is deprecated. Please use " "<boost/bind/bind.hpp> + using namespace boost::placeholders, " "or define BOOST_BIND_GLOBAL_PLACEHOLDERS to retain the current behavior.")
+      |  ^
+3 warnings generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c DbResult.cpp -o DbResult.o
+In file included from DbResult.cpp:2:
+In file included from ./DbResult.h:4:
+In file included from vendor/boost/noncopyable.hpp:15:
+In file included from vendor/boost/core/noncopyable.hpp:12:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c PqColumnDataSource.cpp -o PqColumnDataSource.o
+In file included from PqColumnDataSource.cpp:2:
+In file included from vendor/boost/lexical_cast.hpp:21:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c PqColumnDataSourceFactory.cpp -o PqColumnDataSourceFactory.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c PqDataFrame.cpp -o PqDataFrame.o
+In file included from PqDataFrame.cpp:2:
+In file included from ./PqDataFrame.h:4:
+In file included from ./DbDataFrame.h:4:
+In file included from vendor/boost/container/stable_vector.hpp:23:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+In file included from PqDataFrame.cpp:2:
+In file included from ./PqDataFrame.h:4:
+In file included from ./DbDataFrame.h:4:
+In file included from vendor/boost/container/stable_vector.hpp:42:
+In file included from vendor/boost/container/detail/allocator_version_traits.hpp:27:
+In file included from vendor/boost/container/detail/multiallocation_chain.hpp:32:
+vendor/boost/intrusive/slist.hpp:1939:14: warning: variable 'node_count' set but not used [-Wunused-but-set-variable]
+ 1939 |       size_t node_count = 0;
+      |              ^
+2 warnings generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c PqResult.cpp -o PqResult.o
+In file included from PqResult.cpp:2:
+In file included from ./PqResult.h:4:
+In file included from ./DbResult.h:4:
+In file included from vendor/boost/noncopyable.hpp:15:
+In file included from vendor/boost/core/noncopyable.hpp:12:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c PqResultImpl.cpp -o PqResultImpl.o
+In file included from PqResultImpl.cpp:2:
+In file included from ./PqResultImpl.h:4:
+In file included from vendor/boost/noncopyable.hpp:15:
+In file included from vendor/boost/core/noncopyable.hpp:12:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+In file included from PqResultImpl.cpp:6:
+In file included from ./PqDataFrame.h:4:
+In file included from ./DbDataFrame.h:4:
+In file included from vendor/boost/container/stable_vector.hpp:42:
+In file included from vendor/boost/container/detail/allocator_version_traits.hpp:27:
+In file included from vendor/boost/container/detail/multiallocation_chain.hpp:32:
+vendor/boost/intrusive/slist.hpp:1939:14: warning: variable 'node_count' set but not used [-Wunused-but-set-variable]
+ 1939 |       size_t node_count = 0;
+      |              ^
+2 warnings generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c PqResultSource.cpp -o PqResultSource.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c PqUtils.cpp -o PqUtils.o
+clang -arch arm64 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2  -c RPostgres-init.c -o RPostgres-init.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c connection.cpp -o connection.o
+In file included from connection.cpp:2:
+In file included from ./RPostgres_types.h:6:
+In file included from ./DbConnection.h:4:
+In file included from vendor/boost/noncopyable.hpp:15:
+In file included from vendor/boost/core/noncopyable.hpp:12:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c cpp11.cpp -o cpp11.o
+In file included from cpp11.cpp:4:
+In file included from ./RPostgres_types.h:6:
+In file included from ./DbConnection.h:4:
+In file included from vendor/boost/noncopyable.hpp:15:
+In file included from vendor/boost/core/noncopyable.hpp:12:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c encode.cpp -o encode.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c encrypt.cpp -o encrypt.o
+clang++ -arch arm64 -std=gnu++20 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I/opt/homebrew/include/postgresql@17 -Ivendor -DRCPP_DEFAULT_INCLUDE_CALL=false -DRCPP_USING_UTF8_ERROR_STRING -DBOOST_NO_AUTO_PTR -I'/private/tmp/marginplyr-minver-kalaij/lib-control/cpp11/include' -I/opt/R/arm64/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2   -c result.cpp -o result.o
+In file included from result.cpp:2:
+In file included from ./RPostgres_types.h:6:
+In file included from ./DbConnection.h:4:
+In file included from vendor/boost/noncopyable.hpp:15:
+In file included from vendor/boost/core/noncopyable.hpp:12:
+In file included from vendor/boost/config.hpp:48:
+vendor/boost/config/stdlib/libcpp.hpp:98:11: warning: 'BOOST_NO_AUTO_PTR' macro redefined [-Wmacro-redefined]
+   98 | #  define BOOST_NO_AUTO_PTR
+      |           ^
+<command line>:4:9: note: previous definition is here
+    4 | #define BOOST_NO_AUTO_PTR 1
+      |         ^
+1 warning generated.
+clang++ -arch arm64 -std=gnu++20 -dynamiclib -Wl,-headerpad_max_install_names -undefined dynamic_lookup -L/Library/Frameworks/R.framework/Resources/lib -L/opt/R/arm64/lib -o RPostgres.so DbColumn.o DbColumnDataSource.o DbColumnDataSourceFactory.o DbColumnStorage.o DbConnection.o DbDataFrame.o DbResult.o PqColumnDataSource.o PqColumnDataSourceFactory.o PqDataFrame.o PqResult.o PqResultImpl.o PqResultSource.o PqUtils.o RPostgres-init.o connection.o cpp11.o encode.o encrypt.o result.o -L/opt/homebrew/lib/postgresql@17 -lpq -F/Library/Frameworks/R.framework/.. -framework R
+installing to /private/tmp/marginplyr-745-20260930/current-lib/00LOCK-RPostgres/00new/RPostgres/libs
+** R
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** checking absolute paths in shared objects and dynamic libraries
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (RPostgres)
