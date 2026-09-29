@@ -1,0 +1,4 @@
+R version 4.1.0 (2021-05-18)
+R.home: /private/tmp/marginplyr-744-r410/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources
+.libPaths: /private/tmp/marginplyr-744-r410/lib-r410 | /private/tmp/marginplyr-744-r410/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library
+marginplyr: /private/tmp/marginplyr-744-r410/lib-r410/marginplyr
