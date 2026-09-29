@@ -1,0 +1,4 @@
+R version 4.5.2 (2025-10-31)
+R.home: /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources
+.libPaths: /private/tmp/marginplyr-minver-kalaij/lib-r45near | /Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library
+marginplyr: /private/tmp/marginplyr-minver-kalaij/lib-r45near/marginplyr
