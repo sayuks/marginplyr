@@ -77,7 +77,8 @@ test_that("DuckDB preserves .env summary values and type across plans", {
       materialized <- dplyr::compute(query, name = paste0(
         "env_summary_matrix_", plan, "_", sort
       ))
-      for (result in list(dplyr::collect(query), dplyr::collect(materialized))) {
+      results <- list(dplyr::collect(query), dplyr::collect(materialized))
+      for (result in results) {
         actual <- as.data.frame(result)
         if (identical(sort, "none")) {
           actual <- actual[vctrs::vec_order(actual), , drop = FALSE]
