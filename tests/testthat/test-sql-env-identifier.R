@@ -14,7 +14,11 @@ test_that("SQL dialects render .env Grouping set identifiers", {
       con = getExportedValue("dbplyr", simulator)()
     )
     for (plan in c("one", "rollup")) {
-      grouping <- if (identical(plan, "one")) grouping_set(g) else rollup(g)
+      grouping <- if (identical(plan, "one")) {
+        grouping_set(tidyselect::all_of("g"))
+      } else {
+        rollup(tidyselect::all_of("g"))
+      }
       for (portable in c(FALSE, TRUE)) {
         summary <- summarize_with_margins(
           remote, rows = dplyr::n(), .grouping = grouping,
@@ -48,10 +52,15 @@ check_sql_env_identifier <- function(con, source_name) {
   case <- 0L
 
   for (plan in c("one", "rollup")) {
-    grouping <- if (identical(plan, "one")) grouping_set(g) else rollup(g)
+    grouping <- if (identical(plan, "one")) {
+      grouping_set(tidyselect::all_of("g"))
+    } else {
+      rollup(tidyselect::all_of("g"))
+    }
     for (kind in c("summary", "expansion")) {
-      for (portable in if (identical(kind, "summary")) c(FALSE, TRUE) else
-           FALSE) {
+      portable_choices <- if (identical(kind, "summary")) c(FALSE, TRUE) else
+        FALSE
+      for (portable in portable_choices) {
         case <- case + 1L
         query <- if (identical(kind, "summary")) {
           summarize_with_margins(
