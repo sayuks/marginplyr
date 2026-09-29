@@ -420,6 +420,34 @@ test_that("SQLite .env summary keys add no construction read", {
   ), 0L)
 })
 
+test_that("SQL .env summary outputs add no construction read", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = "east", value = 2L),
+    "query_policy_env_summary_output", temporary = TRUE
+  )
+  output <- ".env"
+
+  for (sort in c("none", "first", "last")) {
+    ordinary <- count_entry_point_invocations(
+      summarize_with_margins(
+        source, rows = dplyr::n(),
+        .grouping = rollup(g), .sort = sort
+      )
+    )
+    # DuckDB's zero-row type read is permitted by ADR 0020.
+    expect_gt(ordinary, 0L)
+    expect_identical(count_entry_point_invocations(
+      summarize_with_margins(
+        source, !!output := dplyr::n(),
+        .grouping = rollup(g), .sort = sort
+      )
+    ), ordinary, info = sort)
+  }
+})
+
 test_that("SQLite .env expansion payload adds no construction read", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
