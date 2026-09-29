@@ -224,3 +224,17 @@ column through the existing quoted-reference path, including keys as well as
 summary outputs and requested identifiers. Leave caller summary expressions under
 their ordinary lexical meaning. Construction still sends no data-read query;
 the caller's `collect()` or `compute()` executes the result.
+
+## SQL expansion payload amendment (2026-09-29)
+
+Issue #730 applies quoted generated `.env` references to portable SQL
+expansion on every dbplyr dialect. The source column is ordinary payload,
+including in branches that omit a different Grouping dimension. Quoting is
+applied at the result boundary, after projections and Margin order are built,
+so the returned query and its Sent query record describe the same SQL.
+
+DuckDB's `compute()` selects each result column through tidyselect before
+materializing it; a generated `.env` symbol resolves to the pronoun there.
+For a DuckDB expansion carrying that column, render the public query
+and pass it to `dbplyr::db_compute()` with the caller's materialization options.
+The query remains lazy until `collect()` or `compute()` is requested.

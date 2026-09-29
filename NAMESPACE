@@ -2,6 +2,7 @@
 
 S3method(dbplyr::sql_render,marginplyr_sqlite_typed_result)
 S3method(dplyr::collect,marginplyr_sqlite_typed_result)
+S3method(dplyr::compute,marginplyr_duckdb_env)
 S3method(dplyr::compute,marginplyr_sqlite_typed_result)
 S3method(op_vars,lazy_grouping_sets_query)
 S3method(print,margin_grouping_spec)

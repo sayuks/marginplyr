@@ -133,7 +133,8 @@ expand_with_margins <- function(.data,
     character()
   }
   finalize_margin_operation(
-    operation, execution, type_anchor_columns = type_anchor_columns
+    operation, execution, type_anchor_columns = type_anchor_columns,
+    sql_expansion = TRUE
   )
 }
 
