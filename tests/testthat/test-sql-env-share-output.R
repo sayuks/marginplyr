@@ -1,9 +1,5 @@
 test_that("SQL dialects render .env Parent and Total share outputs", {
-  source <- data.frame(
-    g = c("east", "east", "west", "west"),
-    h = c("one", "two", "one", "two"),
-    value = c(2, 3, 5, 7)
-  )
+  source <- data.frame(g = c("east", "west"), value = c(2, 3))
   simulators <- available_simulators(c(
     "simulate_access", "simulate_dbi", "simulate_hana",
     "simulate_hive", "simulate_impala", "simulate_mariadb",
@@ -61,9 +57,8 @@ expect_sql_env_share_output <- function(backend) {
     h = c("one", "two", "one", "two"),
     value = c(2, 3, 5, 7)
   )
-  remote <- dplyr::copy_to(
-    con, source, paste0("env_share_output_", backend), temporary = TRUE
-  )
+  source_table <- paste0("env_share_output_", backend)
+  remote <- dplyr::copy_to(con, source, source_table, temporary = TRUE)
   output <- ".env"
   offset <- 4
 
@@ -88,10 +83,13 @@ expect_sql_env_share_output <- function(backend) {
     if (identical(backend, "SQLite")) {
       expect_identical(sent$purpose, "result")
     } else {
-      expect_identical(setdiff(
-        sent$purpose, c("selection_proxy", "share_dialect",
-                        "share_dialect_control", "result")
-      ), character(), info = paste(sent$purpose, collapse = ", "))
+      # The selection proxy names the source, but its query reads zero rows.
+      sent_before_result <- head(sent$sql, -1L)
+      reads_source <- grepl(source_table, sent_before_result, fixed = TRUE)
+      expect_true(any(reads_source))
+      expect_true(all(grepl(
+        "LIMIT 0", sent_before_result[reads_source], fixed = TRUE
+      )))
     }
 
     destination <- paste0("env_share_output_", backend, "_", kind)
