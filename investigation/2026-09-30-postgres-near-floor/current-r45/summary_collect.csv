@@ -1,0 +1,12 @@
+"period","region","store","set_id","total"
+"P1","A","x",1,2
+"P1","A","y",1,3
+"P1","A","Total",2,5
+"P1","B","x",1,5
+"P1","B","Total",2,5
+"P1","Total","Total",3,10
+"P2","A","x",1,7
+"P2","A","Total",2,7
+"P2","B",,1,11
+"P2","B","Total",2,11
+"P2","Total","Total",3,18

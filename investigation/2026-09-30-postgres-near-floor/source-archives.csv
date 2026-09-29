@@ -1,0 +1,6 @@
+archive,sha256,origin
+RPostgres_1.4.10.tar.gz,f73424438dbab7eb94e75b0732d62e7d25dd52040cac99b07b9c71f0a1fd03e9,CRAN source tarball
+hms_1.1.4.tar.gz,efc525f797b62b3740d06c6fa8202593ab5aa4fc1edeefb76b6eb9be89e87b94,CRAN source tarball
+lubridate_1.9.5.tar.gz,0bc5d10e5a34285d4f9e9c572c058c386b9e1515d8faebc1496b2680138280a8,CRAN source tarball
+marginplyr_0.1.0.tar.gz,195b0855b3c1991ee5085bbc44d7fe42f6dcc8bd6d713e24e7a39189d9209acc,git archive 032690964f6c94a1430c3c094968309bd6ee17eb; R CMD build --no-build-vignettes --no-manual
+timechange_0.4.0.tar.gz,6dc8ff9d339d3c4cff7ddf3800383f3e94f41c021f6c7bacccf971e187f73feb,CRAN source tarball

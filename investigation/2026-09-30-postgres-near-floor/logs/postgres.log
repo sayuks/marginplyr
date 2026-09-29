@@ -1,0 +1,63 @@
+2026-09-30 00:32:02.734 JST [33752] LOG:  starting PostgreSQL 17.11 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit
+2026-09-30 00:32:02.734 JST [33752] LOG:  listening on Unix socket "/private/tmp/marginplyr-745-20260930/socket/.s.PGSQL.55475"
+2026-09-30 00:32:02.736 JST [33755] LOG:  database system was shut down at 2026-09-30 00:32:02 JST
+2026-09-30 00:32:02.737 JST [33752] LOG:  database system is ready to accept connections
+2026-09-30 00:34:58.248 JST [36038] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:34:58.248 JST [36038] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:34:58.248 JST [36038] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:35:29.437 JST [36059] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:35:29.437 JST [36059] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:35:29.437 JST [36059] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:36:03.147 JST [36090] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:36:03.147 JST [36090] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:36:03.147 JST [36090] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:36:03.309 JST [36091] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:36:03.309 JST [36091] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:36:03.309 JST [36091] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:37:02.723 JST [33753] LOG:  checkpoint starting: time
+2026-09-30 00:37:20.557 JST [36147] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:37:20.557 JST [36147] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:37:20.557 JST [36147] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:37:20.920 JST [36159] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:37:20.920 JST [36159] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:37:20.920 JST [36159] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:38:28.985 JST [36187] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:38:28.985 JST [36187] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:38:28.985 JST [36187] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:38:29.836 JST [36203] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:38:29.836 JST [36203] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:38:29.836 JST [36203] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:38:44.249 JST [33753] LOG:  checkpoint complete: wrote 1001 buffers (6.1%); 0 WAL file(s) added, 0 removed, 0 recycled; write=101.519 s, sync=0.006 s, total=101.526 s; sync files=310, longest=0.001 s, average=0.001 s; distance=5004 kB, estimate=5004 kB; lsn=0/1AB7048, redo lsn=0/19FDC08
+2026-09-30 00:40:40.758 JST [37378] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:40:40.758 JST [37378] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:40:40.758 JST [37378] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:41:47.030 JST [37468] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:41:47.030 JST [37468] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:41:47.030 JST [37468] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:41:47.781 JST [37480] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:41:47.781 JST [37480] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:41:47.781 JST [37480] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:41:48.654 JST [37498] ERROR:  function sum(unknown) is not unique at character 8
+2026-09-30 00:41:48.654 JST [37498] HINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+2026-09-30 00:41:48.654 JST [37498] STATEMENT:  SELECT SUM('x') AS "p"
+	FROM (SELECT 1 AS z) AS "q01"
+2026-09-30 00:42:02.251 JST [33753] LOG:  checkpoint starting: time
+2026-09-30 00:42:13.255 JST [33753] LOG:  checkpoint complete: wrote 110 buffers (0.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=11.001 s, sync=0.001 s, total=11.005 s; sync files=39, longest=0.001 s, average=0.001 s; distance=1205 kB, estimate=4624 kB; lsn=0/1B2B448, redo lsn=0/1B2B3B8
+2026-09-30 00:45:01.347 JST [33752] LOG:  received fast shutdown request
+2026-09-30 00:45:01.347 JST [33752] LOG:  aborting any active transactions
+2026-09-30 00:45:01.348 JST [33752] LOG:  background worker "logical replication launcher" (PID 33758) exited with exit code 1
+2026-09-30 00:45:01.348 JST [33753] LOG:  shutting down
+2026-09-30 00:45:01.348 JST [33753] LOG:  checkpoint starting: shutdown immediate
+2026-09-30 00:45:01.351 JST [33753] LOG:  checkpoint complete: wrote 59 buffers (0.4%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.001 s, total=0.003 s; sync files=16, longest=0.001 s, average=0.001 s; distance=265 kB, estimate=4188 kB; lsn=0/1B6D830, redo lsn=0/1B6D830
+2026-09-30 00:45:01.352 JST [33752] LOG:  database system is shut down
