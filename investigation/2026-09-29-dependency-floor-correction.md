@@ -63,10 +63,9 @@ worktrees because they were present under that directory, so it was discarded.
 The replay used the clean staged source described above. That was an
 installation-harness correction, not product evidence.
 
-The package boundary decision and the alternative of an upstream correction
-are in [ADR 0034][adr]. The full suite, source-tarball check, lint, and
-coverage belong to the repository's Review-ready check; this replay isolates
-the dependency floor and selected public paths.
+The full suite, source-tarball check, lint, and coverage belong to the
+repository's Review-ready check; this replay isolates the dependency floor
+and selected public paths.
 
 [db-desc]: https://github.com/tidyverse/dbplyr/blob/v2.6.0/DESCRIPTION
 [db-ns]: https://github.com/tidyverse/dbplyr/blob/v2.6.0/NAMESPACE
@@ -75,4 +74,3 @@ the dependency floor and selected public paths.
 [dplyr-news]: https://dplyr.tidyverse.org/news/index.html#dplyr-120
 [db-release]: https://github.com/tidyverse/dbplyr/releases/tag/v2.6.0
 [prior]: 2026-09-29-minimum-dependency-compatibility.md
-[adr]: ../design/adr/0034-require-loadable-dbplyr-dependency-floor.md
