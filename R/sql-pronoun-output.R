@@ -26,6 +26,11 @@ sql_env_select_query <- function(query) {
       query$unions$table, sql_env_output_query
     )
   }
+  if (inherits(query, "lazy_multi_join_query")) {
+    query$joins$table <- lapply(
+      query$joins$table, sql_env_select_query
+    )
+  }
   query
 }
 
