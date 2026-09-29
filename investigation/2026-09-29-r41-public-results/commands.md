@@ -1,88 +1,111 @@
-# Commands used for issue #744
+# Replaying issue #744
 
-The historical scratch root was `/private/tmp/marginplyr-744`. The R 4.5.2
-control library and baseline source tarball came from the adjacent
-`/private/tmp/marginplyr-minver-kalaij` experiment. These absolute paths are
-observations, not installation requirements. The checked-in `source-manifest.csv`
-fixes the 30 source versions, URLs, SHA-256 hashes, and installation order.
+The historical scratch root was `/private/tmp/marginplyr-744`. Use a new
+scratch directory for a new run. The R 4.5.2 control library and baseline
+tarball were created by the [earlier investigation](../2026-09-29-minimum-dependency-compatibility.md).
+The source tarball was built from commit
+`b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0`; its recorded SHA-256 is in
+`source-manifest.csv`. If the earlier artifact is gone, rebuild the source
+package from that commit in a disposable checkout and record the new tarball
+hash before using the scripts below.
 
-```sh
-mkdir -p /private/tmp/marginplyr-744
-curl -fL --retry 3 --output /private/tmp/marginplyr-744/R-4.1.3-arm64.pkg \
-  https://cran.r-project.org/bin/macosx/big-sur-arm64/base/R-4.1.3-arm64.pkg
-shasum -a 256 /private/tmp/marginplyr-744/R-4.1.3-arm64.pkg
-pkgutil --expand-full /private/tmp/marginplyr-744/R-4.1.3-arm64.pkg \
-  /private/tmp/marginplyr-744/pkg-expanded
-```
+For a rebuilt tarball, copy `source-manifest.csv` into the scratch directory,
+replace only the `marginplyr` row's `sha256` with `shasum -a 256` of that new
+tarball, and pass `--manifest "$scratch/source-manifest.csv"` to
+`replay-setup.py`. Pass the same scratch manifest to both `audit-graph.R`
+calls. Preserve the checked-in manifest as the record of this run; the
+rebuilt artifact is a distinct replay.
 
-The expanded framework's `Resources/bin/R` has a compiled-in wrapper path to
-`/Library/Frameworks/R.framework/Resources`. The experiment copied it to
-`/private/tmp/marginplyr-744/R41` and replaced that path in both copies with
-`/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources`.
-It then wrote this disposable `Makevars-r41`:
-
-```make
-LIBR = -L/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/lib -lR
-```
-
-All R 4.1 commands used these environment variables (and fresh processes):
+These commands run from the repository root on macOS arm64. `replay-setup.py`
+downloads and checksums the R 4.1.3 installer and all 30 selected source
+archives, expands R only under the scratch directory, redirects both R wrapper
+scripts to that framework, and creates a case-local `Makevars-r41`. With
+`--install`, it installs every source in manifest order and writes a separate
+log with the command and source hash for each package. It does not install R
+or packages into normal libraries.
 
 ```sh
-export DYLD_LIBRARY_PATH=/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/lib
-export R_LIBS=/private/tmp/marginplyr-744/lib-r41
-export R_LIBS_USER=/private/tmp/marginplyr-744/lib-r41
-export R_LIBS_SITE=/private/tmp/marginplyr-744/lib-r41
+scratch=/private/tmp/marginplyr-744
+baseline=/private/tmp/marginplyr-minver-kalaij/artifacts/marginplyr_0.1.0.tar.gz
+artifact=investigation/2026-09-29-r41-public-results
+python3 "$artifact/replay-setup.py" "$scratch" "$baseline"
+```
+
+Set the isolation variables before R 4.1 commands:
+
+```sh
+export DYLD_LIBRARY_PATH="$scratch/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/lib"
+export R_LIBS="$scratch/lib-r41" R_LIBS_USER="$scratch/lib-r41" R_LIBS_SITE="$scratch/lib-r41"
 export R_PROFILE_USER=/dev/null R_ENVIRON_USER=/dev/null
-export R_MAKEVARS_USER=/private/tmp/marginplyr-744/Makevars-r41
-/private/tmp/marginplyr-744/R41 --vanilla --slave -e 'print(R.version.string); print(.libPaths())'
+export R_MAKEVARS_USER="$scratch/Makevars-r41"
+"$scratch/R41" --vanilla --slave -e 'print(R.version.string); print(.libPaths())'
+"$scratch/R41" --vanilla --slave -f "$artifact/audit-graph.R" --args \
+  source "$artifact/source-manifest.csv" "$scratch/sources" "$scratch/source-graph-check.csv"
+python3 "$artifact/replay-setup.py" "$scratch" "$baseline" --install
+"$scratch/R41" --vanilla --slave -f "$artifact/audit-graph.R" --args \
+  installed "$artifact/source-manifest.csv" "$scratch/lib-r41" "$scratch/installed-graph-check.csv"
 ```
 
-Each CRAN URL in `source-manifest.csv` was downloaded into a separate `sources/`
-file and its SHA-256 verified before installation. The marginplyr row used the
-historical `marginplyr_0.1.0.tar.gz` from source commit
-`b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0`. For a new host without that
-artifact, archive that commit into a disposable directory and build a fresh
-source tarball; retain the commit identity and record the new tarball's hash.
-The source `DESCRIPTION` fields were audited against R 4.1.3 and the selected
-versions before installation. The recorded row-by-row verdict is
-`source-graph-check.csv`. Installation followed `source-manifest.csv` order:
+The original R 4.1.3 run used the same archives and installation order, then
+audited the installed packages. A source-identity confirmation reran the
+marginplyr installation after checking the tarball hash and recorded the
+installed and loaded copy in `install-identity-r41.log`:
 
 ```sh
-/private/tmp/marginplyr-744/R41 CMD INSTALL \
-  --library=/private/tmp/marginplyr-744/lib-r41 \
-  /private/tmp/marginplyr-744/sources/cli_3.6.2.tar.gz
-# Repeat for each subsequent manifest row; the marginplyr row uses its baseline tarball.
+"$artifact/verify-install-source.sh" "$baseline" \
+  6ac5800bc60c5edddfb6de1a752f32aeaa8d00abe5e369e215593bb5b2746ba0 \
+  b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0 \
+  "$scratch/R41" "$scratch/lib-r41" "$scratch/install-identity-r41.log"
 ```
 
-The installed graph was audited again with the same constraint scanner used in
-the [earlier experiment](../2026-09-29-minimum-dependency-compatibility.md):
+For the R 4.5.2 control, use its separately isolated library and the
+`r45-home/bin/R` wrapper from the earlier experiment. The explicit `env`
+invocations below keep its R 4.5.2 library separate from the R 4.1.3
+settings. Fresh-process source confirmation, probes, and comparison were:
 
 ```sh
-HUNT_ROOT=/private/tmp/marginplyr-744 HUNT_MODE=r41 \
-HUNT_LIB=/private/tmp/marginplyr-744/lib-r41 \
-/private/tmp/marginplyr-744/R41 --vanilla --slave \
-  -f /private/tmp/marginplyr-minver-kalaij/audit-deps.R
+"$scratch/R41" --vanilla --slave -f "$artifact/probe.R" --args \
+  "$scratch/lib-r41" "$scratch/case-r41"
+control_lib=/private/tmp/marginplyr-minver-kalaij/lib-r45near
+control_r=/private/tmp/marginplyr-minver-kalaij/r45-home/bin/R
+env -u DYLD_LIBRARY_PATH \
+  R_MAKEVARS_USER=/private/tmp/marginplyr-minver-kalaij/Makevars-r45 \
+  R_LIBS="$control_lib" R_LIBS_USER="$control_lib" R_LIBS_SITE="$control_lib" \
+  "$artifact/verify-install-source.sh" "$baseline" \
+  6ac5800bc60c5edddfb6de1a752f32aeaa8d00abe5e369e215593bb5b2746ba0 \
+  b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0 \
+  "$control_r" "$control_lib" "$scratch/install-identity-r45-control.log"
+env -u DYLD_LIBRARY_PATH -u R_MAKEVARS_USER \
+  R_LIBS="$control_lib" R_LIBS_USER="$control_lib" R_LIBS_SITE="$control_lib" \
+  "$control_r" --vanilla --slave \
+  -f "$artifact/probe.R" --args \
+  "$control_lib" "$scratch/control"
+Rscript --vanilla "$artifact/compare.R" \
+  "$scratch/control/results.rds" "$scratch/case-r41/results.rds" \
+  "$scratch/comparison.csv"
 ```
 
-From the repository root, the public probes and comparison were:
+The R 4.1.3 `probe.R` process writes the R version, `.libPaths()`, loaded
+namespace versions and paths, case results, and diagnostics. The R 4.5.2
+process writes the same fields to a separate directory. The committed CSVs
+and logs are copies of those outputs with line endings and trailing spaces
+normalized for version control.
+
+## Harness failure reproduction
+
+Before `replay-setup.py` redirected the *internal* extracted
+`Resources/bin/R` wrapper, the outer `R41` wrapper selected R 4.1.3 but
+`R CMD INSTALL` invoked the internal wrapper, which pointed to the host's
+`/Library/Frameworks/R.framework/Resources/include`. With only the outer
+wrapper redirected, this command reproduced the first failure:
 
 ```sh
-/private/tmp/marginplyr-744/R41 --vanilla --slave \
-  -f investigation/2026-09-29-r41-public-results/probe.R --args \
-  /private/tmp/marginplyr-744/lib-r41 /private/tmp/marginplyr-744/case-r41
-# In a separate shell with R_LIBS, R_LIBS_USER, and R_LIBS_SITE set to
-# /private/tmp/marginplyr-minver-kalaij/lib-r45near:
-/private/tmp/marginplyr-minver-kalaij/R45 --vanilla --slave \
-  -f investigation/2026-09-29-r41-public-results/probe.R --args \
-  /private/tmp/marginplyr-minver-kalaij/lib-r45near \
-  /private/tmp/marginplyr-744/control
-Rscript --vanilla investigation/2026-09-29-r41-public-results/compare.R \
-  /private/tmp/marginplyr-744/control/results.rds \
-  /private/tmp/marginplyr-744/case-r41/results.rds \
-  /private/tmp/marginplyr-744/comparison.csv
+"$scratch/R41" CMD INSTALL --library="$scratch/lib-r41" \
+  "$scratch/sources/cli_3.6.2.tar.gz"
 ```
 
-The R 4.1 `DYLD_LIBRARY_PATH` is unset for the R 4.5.2 control. The probe
-writes environment, loaded-namespace, and RDS result files in each output
-directory. Its console output and the audit/install terminal summaries were
-copied into this directory as logs.
+The compiler then reported undeclared `Rf_findVar` and `STRING_PTR` from
+`cli` sources. The saved [failure excerpt](harness-wrapper-failures.md)
+records that diagnostic and the separate R 4.5.2 wrapper mistake found while
+confirming source identity. Both resolved by using a case-local internal
+wrapper; neither reached a marginplyr public call.

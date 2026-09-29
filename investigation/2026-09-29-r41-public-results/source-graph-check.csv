@@ -1,82 +1,82 @@
-"package","field","dependency","operator","required","actual","source","valid"
-"cli","Depends","R",">=","3.4","4.1.3","R 4.1.3",TRUE
-"cli","Imports","utils","","","4.1.3",".Library",TRUE
-"rlang","Depends","R",">=","4.0.0","4.1.3","R 4.1.3",TRUE
-"rlang","Imports","utils","","","4.1.3",".Library",TRUE
-"glue","Depends","R",">=","3.4","4.1.3","R 4.1.3",TRUE
-"glue","Imports","methods","","","4.1.3",".Library",TRUE
-"lifecycle","Depends","R",">=","3.6","4.1.3","R 4.1.3",TRUE
+"package","field","dependency","operator","required","actual","location","valid"
+"cli","Depends","R",">=","3.4","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"cli","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
+"rlang","Depends","R",">=","4.0.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"rlang","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
+"glue","Depends","R",">=","3.4","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"glue","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
+"lifecycle","Depends","R",">=","3.6","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "lifecycle","Imports","cli",">=","3.4.0","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "lifecycle","Imports","rlang",">=","1.1.0","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
-"vctrs","Depends","R",">=","4.0.0","4.1.3","R 4.1.3",TRUE
+"vctrs","Depends","R",">=","4.0.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "vctrs","Imports","cli",">=","3.4.0","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "vctrs","Imports","glue","","","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
 "vctrs","Imports","lifecycle",">=","1.0.3","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
 "vctrs","Imports","rlang",">=","1.1.7","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
-"blob","Imports","methods","","","4.1.3",".Library",TRUE
+"blob","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
 "blob","Imports","rlang","","","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "blob","Imports","vctrs",">=","0.2.1","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
-"DBI","Depends","methods","","","4.1.3",".Library",TRUE
-"DBI","Depends","R",">=","3.0.0","4.1.3","R 4.1.3",TRUE
-"generics","Depends","R",">=","3.6","4.1.3","R 4.1.3",TRUE
-"generics","Imports","methods","","","4.1.3",".Library",TRUE
-"magrittr","Depends","R",">=","3.4.0","4.1.3","R 4.1.3",TRUE
-"utf8","Depends","R",">=","2.10","4.1.3","R 4.1.3",TRUE
+"DBI","Depends","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
+"DBI","Depends","R",">=","3.0.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"generics","Depends","R",">=","3.6","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"generics","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
+"magrittr","Depends","R",">=","3.4.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"utf8","Depends","R",">=","2.10","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "pillar","Imports","cli",">=","2.3.0","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "pillar","Imports","glue","","","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
 "pillar","Imports","lifecycle","","","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
 "pillar","Imports","rlang",">=","1.0.2","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "pillar","Imports","utf8",">=","1.1.0","1.2.6","https://cran.r-project.org/src/contrib/utf8_1.2.6.tar.gz",TRUE
-"pillar","Imports","utils","","","4.1.3",".Library",TRUE
+"pillar","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
 "pillar","Imports","vctrs",">=","0.5.0","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
-"R6","Depends","R",">=","3.6","4.1.3","R 4.1.3",TRUE
-"pkgconfig","Imports","utils","","","4.1.3",".Library",TRUE
-"tibble","Depends","R",">=","3.4.0","4.1.3","R 4.1.3",TRUE
+"R6","Depends","R",">=","3.6","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"pkgconfig","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
+"tibble","Depends","R",">=","3.4.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "tibble","Imports","cli","","","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "tibble","Imports","lifecycle",">=","1.0.0","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
 "tibble","Imports","magrittr","","","2.0.5","https://cran.r-project.org/src/contrib/magrittr_2.0.5.tar.gz",TRUE
-"tibble","Imports","methods","","","4.1.3",".Library",TRUE
+"tibble","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
 "tibble","Imports","pillar",">=","1.8.1","1.11.1","https://cran.r-project.org/src/contrib/pillar_1.11.1.tar.gz",TRUE
 "tibble","Imports","pkgconfig","","","2.0.3","https://cran.r-project.org/src/contrib/pkgconfig_2.0.3.tar.gz",TRUE
 "tibble","Imports","rlang",">=","1.0.2","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
-"tibble","Imports","utils","","","4.1.3",".Library",TRUE
+"tibble","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
 "tibble","Imports","vctrs",">=","0.5.0","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
-"withr","Depends","R",">=","3.6.0","4.1.3","R 4.1.3",TRUE
-"withr","Imports","graphics","","","4.1.3",".Library",TRUE
-"withr","Imports","grDevices","","","4.1.3",".Library",TRUE
-"tidyselect","Depends","R",">=","3.4","4.1.3","R 4.1.3",TRUE
+"withr","Depends","R",">=","3.6.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"withr","Imports","graphics","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/graphics",TRUE
+"withr","Imports","grDevices","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/grDevices",TRUE
+"tidyselect","Depends","R",">=","3.4","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "tidyselect","Imports","cli",">=","3.3.0","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "tidyselect","Imports","glue",">=","1.3.0","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
 "tidyselect","Imports","lifecycle",">=","1.0.3","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
 "tidyselect","Imports","rlang",">=","1.0.4","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "tidyselect","Imports","vctrs",">=","0.5.2","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
 "tidyselect","Imports","withr","","","3.0.3","https://cran.r-project.org/src/contrib/withr_3.0.3.tar.gz",TRUE
-"dplyr","Depends","R",">=","4.1.0","4.1.3","R 4.1.3",TRUE
+"dplyr","Depends","R",">=","4.1.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "dplyr","Imports","cli",">=","3.6.2","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "dplyr","Imports","generics","","","0.1.4","https://cran.r-project.org/src/contrib/generics_0.1.4.tar.gz",TRUE
 "dplyr","Imports","glue",">=","1.3.2","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
 "dplyr","Imports","lifecycle",">=","1.0.5","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
 "dplyr","Imports","magrittr",">=","1.5","2.0.5","https://cran.r-project.org/src/contrib/magrittr_2.0.5.tar.gz",TRUE
-"dplyr","Imports","methods","","","4.1.3",".Library",TRUE
+"dplyr","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
 "dplyr","Imports","pillar",">=","1.9.0","1.11.1","https://cran.r-project.org/src/contrib/pillar_1.11.1.tar.gz",TRUE
 "dplyr","Imports","R6","","","2.6.1","https://cran.r-project.org/src/contrib/R6_2.6.1.tar.gz",TRUE
 "dplyr","Imports","rlang",">=","1.1.7","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "dplyr","Imports","tibble",">=","3.2.0","3.3.1","https://cran.r-project.org/src/contrib/tibble_3.3.1.tar.gz",TRUE
 "dplyr","Imports","tidyselect",">=","1.2.0","1.2.1","https://cran.r-project.org/src/contrib/tidyselect_1.2.1.tar.gz",TRUE
-"dplyr","Imports","utils","","","4.1.3",".Library",TRUE
+"dplyr","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
 "dplyr","Imports","vctrs",">=","0.7.1","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
-"purrr","Depends","R",">=","4.1","4.1.3","R 4.1.3",TRUE
+"purrr","Depends","R",">=","4.1","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "purrr","Imports","cli",">=","3.6.1","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "purrr","Imports","lifecycle",">=","1.0.3","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
 "purrr","Imports","magrittr",">=","1.5.0","2.0.5","https://cran.r-project.org/src/contrib/magrittr_2.0.5.tar.gz",TRUE
 "purrr","Imports","rlang",">=","1.1.1","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "purrr","Imports","vctrs",">=","0.6.3","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
 "purrr","LinkingTo","cli","","","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
-"stringi","Depends","R",">=","3.4","4.1.3","R 4.1.3",TRUE
-"stringi","Imports","tools","","","4.1.3",".Library",TRUE
-"stringi","Imports","utils","","","4.1.3",".Library",TRUE
-"stringi","Imports","stats","","","4.1.3",".Library",TRUE
-"stringr","Depends","R",">=","4.1.0","4.1.3","R 4.1.3",TRUE
+"stringi","Depends","R",">=","3.4","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"stringi","Imports","tools","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/tools",TRUE
+"stringi","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
+"stringi","Imports","stats","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/stats",TRUE
+"stringr","Depends","R",">=","4.1.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "stringr","Imports","cli","","","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "stringr","Imports","glue",">=","1.6.1","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
 "stringr","Imports","lifecycle",">=","1.0.3","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
@@ -84,8 +84,8 @@
 "stringr","Imports","rlang",">=","1.0.0","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "stringr","Imports","stringi",">=","1.5.3","1.8.9","https://cran.r-project.org/src/contrib/stringi_1.8.9.tar.gz",TRUE
 "stringr","Imports","vctrs",">=","0.4.0","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
-"cpp11","Depends","R",">=","4.0.0","4.1.3","R 4.1.3",TRUE
-"tidyr","Depends","R",">=","4.1.0","4.1.3","R 4.1.3",TRUE
+"cpp11","Depends","R",">=","4.0.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"tidyr","Depends","R",">=","4.1.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "tidyr","Imports","cli",">=","3.4.1","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "tidyr","Imports","dplyr",">=","1.1.0","1.2.0","https://cran.r-project.org/src/contrib/Archive/dplyr/dplyr_1.2.0.tar.gz",TRUE
 "tidyr","Imports","glue","","","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
@@ -96,10 +96,10 @@
 "tidyr","Imports","stringr",">=","1.5.0","1.6.0","https://cran.r-project.org/src/contrib/stringr_1.6.0.tar.gz",TRUE
 "tidyr","Imports","tibble",">=","2.1.1","3.3.1","https://cran.r-project.org/src/contrib/tibble_3.3.1.tar.gz",TRUE
 "tidyr","Imports","tidyselect",">=","1.2.1","1.2.1","https://cran.r-project.org/src/contrib/tidyselect_1.2.1.tar.gz",TRUE
-"tidyr","Imports","utils","","","4.1.3",".Library",TRUE
+"tidyr","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
 "tidyr","Imports","vctrs",">=","0.5.2","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
 "tidyr","LinkingTo","cpp11",">=","0.4.0","0.5.5","https://cran.r-project.org/src/contrib/cpp11_0.5.5.tar.gz",TRUE
-"dbplyr","Depends","R",">=","4.1","4.1.3","R 4.1.3",TRUE
+"dbplyr","Depends","R",">=","4.1","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "dbplyr","Imports","blob",">=","1.2.0","1.3.0","https://cran.r-project.org/src/contrib/blob_1.3.0.tar.gz",TRUE
 "dbplyr","Imports","cli",">=","3.6.1","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "dbplyr","Imports","DBI",">=","1.1.3","1.3.0","https://cran.r-project.org/src/contrib/DBI_1.3.0.tar.gz",TRUE
@@ -107,7 +107,7 @@
 "dbplyr","Imports","glue",">=","1.6.2","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
 "dbplyr","Imports","lifecycle",">=","1.0.3","1.0.5","https://cran.r-project.org/src/contrib/lifecycle_1.0.5.tar.gz",TRUE
 "dbplyr","Imports","magrittr","","","2.0.5","https://cran.r-project.org/src/contrib/magrittr_2.0.5.tar.gz",TRUE
-"dbplyr","Imports","methods","","","4.1.3",".Library",TRUE
+"dbplyr","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
 "dbplyr","Imports","pillar",">=","1.9.0","1.11.1","https://cran.r-project.org/src/contrib/pillar_1.11.1.tar.gz",TRUE
 "dbplyr","Imports","purrr",">=","1.0.1","1.2.2","https://cran.r-project.org/src/contrib/purrr_1.2.2.tar.gz",TRUE
 "dbplyr","Imports","R6",">=","2.2.2","2.6.1","https://cran.r-project.org/src/contrib/R6_2.6.1.tar.gz",TRUE
@@ -115,35 +115,35 @@
 "dbplyr","Imports","tibble",">=","3.2.1","3.3.1","https://cran.r-project.org/src/contrib/tibble_3.3.1.tar.gz",TRUE
 "dbplyr","Imports","tidyr",">=","1.3.0","1.3.2","https://cran.r-project.org/src/contrib/tidyr_1.3.2.tar.gz",TRUE
 "dbplyr","Imports","tidyselect",">=","1.2.1","1.2.1","https://cran.r-project.org/src/contrib/tidyselect_1.2.1.tar.gz",TRUE
-"dbplyr","Imports","utils","","","4.1.3",".Library",TRUE
+"dbplyr","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
 "dbplyr","Imports","vctrs",">=","0.6.3","0.7.1","https://cran.r-project.org/src/contrib/Archive/vctrs/vctrs_0.7.1.tar.gz",TRUE
 "dbplyr","Imports","withr",">=","2.5.0","3.0.3","https://cran.r-project.org/src/contrib/withr_3.0.3.tar.gz",TRUE
-"marginplyr","Depends","R",">=","4.1.0","4.1.3","R 4.1.3",TRUE
+"marginplyr","Depends","R",">=","4.1.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "marginplyr","Imports","cli",">=","3.4.0","3.6.2","https://cran.r-project.org/src/contrib/Archive/cli/cli_3.6.2.tar.gz",TRUE
 "marginplyr","Imports","dbplyr",">=","2.6.0","2.6.0","https://cran.r-project.org/src/contrib/dbplyr_2.6.0.tar.gz",TRUE
 "marginplyr","Imports","dplyr",">=","1.1.1","1.2.0","https://cran.r-project.org/src/contrib/Archive/dplyr/dplyr_1.2.0.tar.gz",TRUE
 "marginplyr","Imports","glue","","","1.6.2","https://cran.r-project.org/src/contrib/Archive/glue/glue_1.6.2.tar.gz",TRUE
 "marginplyr","Imports","rlang",">=","1.1.0","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
-"marginplyr","Imports","stats","","","4.1.3",".Library",TRUE
+"marginplyr","Imports","stats","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/stats",TRUE
 "marginplyr","Imports","tidyselect",">=","1.2.0","1.2.1","https://cran.r-project.org/src/contrib/tidyselect_1.2.1.tar.gz",TRUE
-"marginplyr","Imports","utils","","","4.1.3",".Library",TRUE
-"bit","Depends","R",">=","3.4.0","4.1.3","R 4.1.3",TRUE
-"bit64","Depends","R",">=","3.5.0","4.1.3","R 4.1.3",TRUE
+"marginplyr","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
+"bit","Depends","R",">=","3.4.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
+"bit64","Depends","R",">=","3.5.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "bit64","Imports","bit",">=","4.0.0","4.6.0","https://cran.r-project.org/src/contrib/bit_4.6.0.tar.gz",TRUE
-"bit64","Imports","graphics","","","4.1.3",".Library",TRUE
-"bit64","Imports","methods","","","4.1.3",".Library",TRUE
-"bit64","Imports","stats","","","4.1.3",".Library",TRUE
-"bit64","Imports","utils","","","4.1.3",".Library",TRUE
+"bit64","Imports","graphics","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/graphics",TRUE
+"bit64","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
+"bit64","Imports","stats","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/stats",TRUE
+"bit64","Imports","utils","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/utils",TRUE
 "cachem","Imports","rlang","","","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "cachem","Imports","fastmap",">=","1.2.0","1.2.0","https://cran.r-project.org/src/contrib/fastmap_1.2.0.tar.gz",TRUE
 "memoise","Imports","rlang",">=","0.4.10","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "memoise","Imports","cachem","","","1.1.0","https://cran.r-project.org/src/contrib/cachem_1.1.0.tar.gz",TRUE
-"RSQLite","Depends","R",">=","3.1.0","4.1.3","R 4.1.3",TRUE
+"RSQLite","Depends","R",">=","3.1.0","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources",TRUE
 "RSQLite","Imports","bit64","","","4.8.6","https://cran.r-project.org/src/contrib/bit64_4.8.6.tar.gz",TRUE
 "RSQLite","Imports","blob",">=","1.2.0","1.3.0","https://cran.r-project.org/src/contrib/blob_1.3.0.tar.gz",TRUE
 "RSQLite","Imports","DBI",">=","1.2.0","1.3.0","https://cran.r-project.org/src/contrib/DBI_1.3.0.tar.gz",TRUE
 "RSQLite","Imports","memoise","","","2.0.1","https://cran.r-project.org/src/contrib/memoise_2.0.1.tar.gz",TRUE
-"RSQLite","Imports","methods","","","4.1.3",".Library",TRUE
+"RSQLite","Imports","methods","","","4.1.3","/private/tmp/marginplyr-744/pkg-expanded/R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources/library/methods",TRUE
 "RSQLite","Imports","pkgconfig","","","2.0.3","https://cran.r-project.org/src/contrib/pkgconfig_2.0.3.tar.gz",TRUE
 "RSQLite","Imports","rlang","","","1.1.7","https://cran.r-project.org/src/contrib/Archive/rlang/rlang_1.1.7.tar.gz",TRUE
 "RSQLite","LinkingTo","cpp11",">=","0.4.0","0.5.5","https://cran.r-project.org/src/contrib/cpp11_0.5.5.tar.gz",TRUE

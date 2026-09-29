@@ -1,0 +1,26 @@
+source_commit=b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0
+source_tarball=/private/tmp/marginplyr-minver-kalaij/artifacts/marginplyr_0.1.0.tar.gz
+source_sha256=6ac5800bc60c5edddfb6de1a752f32aeaa8d00abe5e369e215593bb5b2746ba0
+R=/private/tmp/marginplyr-minver-kalaij/r45-home/bin/R
+case_lib=/private/tmp/marginplyr-minver-kalaij/lib-r45near
+R_version=4.5.2
+libPaths=/private/tmp/marginplyr-minver-kalaij/lib-r45near|/Library/Frameworks/R.framework/Versions/4.5-arm64/Resources/library
+* installing *source* package ‘marginplyr’ ...
+** this is package ‘marginplyr’ version ‘0.1.0’
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (marginplyr)
+installed_version=0.1.0
+loaded_path=/private/tmp/marginplyr-minver-kalaij/lib-r45near/marginplyr
+built=R 4.5.2; ; 2026-09-29 14:44:45 UTC; unix

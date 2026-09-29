@@ -45,16 +45,25 @@ other two were outside this local/SQLite probe, not rejected as incompatible.
 All 30 selected package versions matched the corresponding control versions.
 No invalid graph was installed.
 
-The sources' own DESCRIPTION fields passed the pre-install
+The [replay setup](2026-09-29-r41-public-results/replay-setup.py) checks all
+source hashes before installation; its [verification log](2026-09-29-r41-public-results/source-verification.log)
+records each archive. The sources' own DESCRIPTION fields passed the pre-install
 [`source-graph-check.csv`](2026-09-29-r41-public-results/source-graph-check.csv).
 After installation, [`installed-manifest-r41.csv`](2026-09-29-r41-public-results/installed-manifest-r41.csv)
 and [`installed-graph-check-r41.csv`](2026-09-29-r41-public-results/installed-graph-check-r41.csv)
-confirmed actual versions, locations, and the same zero-violation result.
+confirmed actual versions, locations, and the same zero-violation result. Both
+constraint scans can be rerun with the checked-in
+[`audit-graph.R`](2026-09-29-r41-public-results/audit-graph.R).
 The [installation status](2026-09-29-r41-public-results/install-status.log)
 and [audit log](2026-09-29-r41-public-results/audit-installed-r41.log)
-recorded successful completion. The package source was installed from the
-hashed tarball in the source manifest; its installed path and version were
-then verified in a fresh process.
+recorded successful completion. A later
+[hash-checked installation command](2026-09-29-r41-public-results/verify-install-source.sh)
+reinstalled the baseline tarball in both libraries. Its
+[R 4.1.3](2026-09-29-r41-public-results/install-identity-r41.log) and
+[R 4.5.2](2026-09-29-r41-public-results/install-identity-r45-control.log)
+logs join the source commit and SHA-256 to the exact `R CMD INSTALL` input,
+successful installation, and fresh-process loaded path, version, and `Built`
+field. The public probes were rerun after these installations.
 
 ## Public-call comparison
 
@@ -100,7 +109,11 @@ each call.
   Redirecting that wrapper to the extracted R 4.1.3 framework let the same
   source build and load. A later output-directory name `r41` collided with
   the `R41` wrapper on this case-insensitive filesystem; `case-r41` resolved
-  that logging-path error. Neither failure reached a marginplyr public call.
+  that logging-path error. A first R 4.5.2 source-confirmation attempt also
+  reached the host R wrapper and crashed during lazy loading; the case-local
+  R 4.5 wrapper installed the unchanged source. The
+  [failure excerpts and commands](2026-09-29-r41-public-results/harness-wrapper-failures.md)
+  record all three harness mistakes. None reached a marginplyr public call.
 - **Invalid dependency graph avoided:** duckdb 1.5.5 requires R >= 4.2.0 and
   was omitted. The selected graph itself had no declared violation.
 - **Upstream difference and environment block:** none remained in the selected
