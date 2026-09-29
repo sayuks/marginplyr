@@ -27,15 +27,28 @@ if (mode == "source") {
 }
 
 base <- rownames(installed.packages(lib.loc = .Library))
+parse_dependencies <- function(raw) {
+  entries <- strsplit(raw, ",", fixed = TRUE)[[1L]]
+  pattern <- "^\\s*([[:alpha:]][[:alnum:].]*)\\s*(?:\\(\\s*(>=|<=|==|=|>|<)\\s*([[:alnum:].-]+)\\s*\\))?\\s*$"
+  matches <- regmatches(entries, regexec(pattern, entries, perl = TRUE))
+  if (any(lengths(matches) == 0L)) {
+    stop("Unrecognized dependency declaration: ", raw)
+  }
+  lapply(matches, function(x) list(
+    name = x[[2L]],
+    operator = if (length(x) >= 3L) x[[3L]] else "",
+    version = if (length(x) >= 4L) x[[4L]] else ""
+  ))
+}
 checks <- list()
 for (p in manifest$package) {
   desc <- describe(p)
   for (field in c("Depends", "Imports", "LinkingTo")) {
     raw <- desc[field]
     if (length(raw) == 0L || is.na(raw) || !nzchar(raw)) next
-    dependencies <- tools:::.split_dependencies(raw)
-    for (q in names(dependencies)) {
-      dep <- dependencies[[q]]
+    dependencies <- parse_dependencies(raw)
+    for (dep in dependencies) {
+      q <- dep$name
       selected <- match(q, manifest$package)
       if (q == "R") {
         actual <- as.character(getRversion())
@@ -50,8 +63,8 @@ for (p in manifest$package) {
         actual <- NA_character_
         location <- NA_character_
       }
-      operator <- if (is.null(dep$op)) "" else as.character(dep$op)
-      required <- if (is.null(dep$version)) "" else as.character(dep$version)
+      operator <- dep$operator
+      required <- dep$version
       cmp <- if (is.na(actual) || !nzchar(required)) NA_integer_ else utils::compareVersion(actual, required)
       valid <- !is.na(actual) && (operator == "" || switch(
         operator, ">=" = cmp >= 0L, ">" = cmp > 0L,
@@ -70,7 +83,7 @@ write.csv(checks, output_path, row.names = FALSE, na = "")
 if (mode == "source") unlink(desc_dir, recursive = TRUE)
 cat(R.version.string, "\n")
 cat(nrow(manifest), "packages;", nrow(checks), "constraints;", sum(!checks$valid), "violations\n")
-if (any(!checks$valid)) {
+if (!all(checks$valid)) {
   print(checks[!checks$valid, , drop = FALSE], row.names = FALSE)
   quit(status = 2L)
 }
