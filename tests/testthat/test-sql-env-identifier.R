@@ -111,7 +111,8 @@ test_that("DuckDB keeps .env identifiers through collection and compute", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  withr::local_options(marginplyr.audit_sql = TRUE)
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
   check_sql_env_identifier(con, "env_id_duckdb")
 })
 
@@ -119,6 +120,7 @@ test_that("SQLite keeps .env identifiers through collection and compute", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
-  withr::local_options(marginplyr.audit_sql = TRUE)
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
   check_sql_env_identifier(con, "env_id_sqlite")
 })
