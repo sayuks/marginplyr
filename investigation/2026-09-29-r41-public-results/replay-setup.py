@@ -1,4 +1,4 @@
-"""Prepare and optionally install the recorded R 4.1.3 source graph on macOS arm64."""
+"""Prepare and optionally install the recorded R 4.1 source graph on macOS arm64."""
 
 import argparse
 import csv
@@ -9,8 +9,10 @@ import shutil
 import subprocess
 
 HERE = Path(__file__).resolve().parent
-R_PKG_URL = "https://cran.r-project.org/bin/macosx/big-sur-arm64/base/R-4.1.3-arm64.pkg"
-R_PKG_SHA = "d973134c1417afeb8c54a8bd0b53ddbc47719e0e30fd9c2122a71d13a57106c4"
+R_PKG_SHA = {
+    "4.1.0": "0de3f60670d51f0e9721aecc5f01c0542b8a25b51cb2b537566b8451afb94452",
+    "4.1.3": "d973134c1417afeb8c54a8bd0b53ddbc47719e0e30fd9c2122a71d13a57106c4",
+}
 OLD_HOME = "/Library/Frameworks/R.framework/Resources"
 
 
@@ -31,6 +33,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", type=Path, help="Disposable scratch directory")
     parser.add_argument("baseline_tarball", type=Path, help="Tarball built from b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0")
+    parser.add_argument("--r-version", choices=R_PKG_SHA, default="4.1.3")
     parser.add_argument("--manifest", type=Path, default=HERE / "source-manifest.csv", help="Source manifest; use a scratch copy for rebuilt tarballs")
     parser.add_argument("--install", action="store_true", help="Install all selected sources after preparation")
     args = parser.parse_args()
@@ -41,14 +44,16 @@ def main():
     if sha256(args.baseline_tarball) != expected_baseline:
         raise RuntimeError("Baseline tarball differs from the recorded source identity")
 
-    installer = root / "R-4.1.3-arm64.pkg"
-    fetch(R_PKG_URL, installer, R_PKG_SHA)
+    installer_name = f"R-{args.r_version}-arm64.pkg"
+    installer = root / installer_name
+    fetch(f"https://cran.r-project.org/bin/macosx/big-sur-arm64/base/{installer_name}",
+          installer, R_PKG_SHA[args.r_version])
     expanded = root / "pkg-expanded"
     if not expanded.exists():
         subprocess.run(["pkgutil", "--expand-full", str(installer), str(expanded)], check=True)
     home = expanded / "R-fw.pkg/Payload/R.framework/Versions/4.1-arm64/Resources"
     if not (home / "bin/exec/R").exists():
-        raise RuntimeError("R 4.1.3 framework missing from expanded installer")
+        raise RuntimeError(f"R {args.r_version} framework missing from expanded installer")
     for wrapper in (home / "bin/R", root / "R41"):
         if not wrapper.exists():
             shutil.copyfile(home / "bin/R", wrapper)

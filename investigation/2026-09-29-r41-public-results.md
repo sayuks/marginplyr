@@ -1,6 +1,7 @@
 # Public Margin results on R 4.1.3
 
 Investigated: 2026-09-29
+Revised: 2026-09-30 — `investigation/2026-09-30-r410-public-results.md`
 Issue: #744
 Package source: `b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0`
 Host: macOS arm64
@@ -130,3 +131,12 @@ databases, and permanent CI configuration were unchanged.
 [prior]: 2026-09-29-minimum-dependency-compatibility.md
 [floor]: 2026-09-29-dependency-floor-correction.md
 [r41]: https://cran.r-project.org/bin/macosx/big-sur-arm64/base/R-4.1.3-arm64.pkg
+
+## Revisions (2026-09-30)
+
+The [follow-up investigation](2026-09-30-r410-public-results.md) tested the
+exact declared minimum, R 4.1.0, with the same 30-package source graph and
+marginplyr tarball. Source installation, loading, and all six public-call
+outcomes matched a fresh R 4.1.3 control. The original R 4.1.0 limitation
+above remains the accurate scope of the investigation on 2026-09-29; R 4.1.0
+is no longer unverified after the follow-up.

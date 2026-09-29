@@ -1,0 +1,7 @@
+"case","control_status","candidate_status","values_identical","columns_identical","row_counts_identical","types_identical","error_class_identical","diagnostic_identical","warnings_identical"
+"plan","ok","ok",TRUE,TRUE,TRUE,TRUE,,,TRUE
+"summary","ok","ok",TRUE,TRUE,TRUE,TRUE,,,TRUE
+"shares","ok","ok",TRUE,TRUE,TRUE,TRUE,,,TRUE
+"no_grand_total","error","error",,,,,TRUE,TRUE,TRUE
+"sqlite_collect","ok","ok",TRUE,TRUE,TRUE,TRUE,,,TRUE
+"sqlite_compute","ok","ok",TRUE,TRUE,TRUE,TRUE,,,TRUE
