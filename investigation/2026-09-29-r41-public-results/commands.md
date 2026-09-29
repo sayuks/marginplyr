@@ -11,10 +11,9 @@ hash before using the scripts below.
 
 For a rebuilt tarball, copy `source-manifest.csv` into the scratch directory,
 replace only the `marginplyr` row's `sha256` with `shasum -a 256` of that new
-tarball, and pass `--manifest "$scratch/source-manifest.csv"` to
-`replay-setup.py`. Pass the same scratch manifest to both `audit-graph.R`
-calls. Preserve the checked-in manifest as the record of this run; the
-rebuilt artifact is a distinct replay.
+tarball, then replace the `manifest=...` line below with
+`manifest="$scratch/source-manifest.csv"`. Preserve the checked-in manifest as
+the record of this run; the rebuilt artifact is a distinct replay.
 
 These commands run from the repository root on macOS arm64. `replay-setup.py`
 downloads and checksums the R 4.1.3 installer and all 30 selected source
@@ -28,7 +27,9 @@ or packages into normal libraries.
 scratch=/private/tmp/marginplyr-744
 baseline=/private/tmp/marginplyr-minver-kalaij/artifacts/marginplyr_0.1.0.tar.gz
 artifact=investigation/2026-09-29-r41-public-results
-python3 "$artifact/replay-setup.py" "$scratch" "$baseline"
+manifest=${manifest:-"$artifact/source-manifest.csv"}
+baseline_sha=$(python3 -c 'import csv,sys; print(next(row["sha256"] for row in csv.DictReader(open(sys.argv[1])) if row["package"] == "marginplyr"))' "$manifest")
+python3 "$artifact/replay-setup.py" "$scratch" "$baseline" --manifest "$manifest"
 ```
 
 Set the isolation variables before R 4.1 commands:
@@ -40,10 +41,10 @@ export R_PROFILE_USER=/dev/null R_ENVIRON_USER=/dev/null
 export R_MAKEVARS_USER="$scratch/Makevars-r41"
 "$scratch/R41" --vanilla --slave -e 'print(R.version.string); print(.libPaths())'
 "$scratch/R41" --vanilla --slave -f "$artifact/audit-graph.R" --args \
-  source "$artifact/source-manifest.csv" "$scratch/sources" "$scratch/source-graph-check.csv"
-python3 "$artifact/replay-setup.py" "$scratch" "$baseline" --install
+  source "$manifest" "$scratch/sources" "$scratch/source-graph-check.csv"
+python3 "$artifact/replay-setup.py" "$scratch" "$baseline" --manifest "$manifest" --install
 "$scratch/R41" --vanilla --slave -f "$artifact/audit-graph.R" --args \
-  installed "$artifact/source-manifest.csv" "$scratch/lib-r41" "$scratch/installed-graph-check.csv"
+  installed "$manifest" "$scratch/lib-r41" "$scratch/installed-graph-check.csv"
 ```
 
 The original R 4.1.3 run used the same archives and installation order, then
@@ -53,7 +54,7 @@ installed and loaded copy in `install-identity-r41.log`:
 
 ```sh
 "$artifact/verify-install-source.sh" "$baseline" \
-  6ac5800bc60c5edddfb6de1a752f32aeaa8d00abe5e369e215593bb5b2746ba0 \
+  "$baseline_sha" \
   b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0 \
   "$scratch/R41" "$scratch/lib-r41" "$scratch/install-identity-r41.log"
 ```
@@ -72,7 +73,7 @@ env -u DYLD_LIBRARY_PATH \
   R_MAKEVARS_USER=/private/tmp/marginplyr-minver-kalaij/Makevars-r45 \
   R_LIBS="$control_lib" R_LIBS_USER="$control_lib" R_LIBS_SITE="$control_lib" \
   "$artifact/verify-install-source.sh" "$baseline" \
-  6ac5800bc60c5edddfb6de1a752f32aeaa8d00abe5e369e215593bb5b2746ba0 \
+  "$baseline_sha" \
   b0a1fa6c77ae8a691c179f7bfd0d73da54325ae0 \
   "$control_r" "$control_lib" "$scratch/install-identity-r45-control.log"
 env -u DYLD_LIBRARY_PATH -u R_MAKEVARS_USER \
