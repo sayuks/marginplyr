@@ -132,9 +132,19 @@ expand_with_margins <- function(.data,
   } else {
     character()
   }
-  finalize_margin_operation(
-    operation, execution, type_anchor_columns = type_anchor_columns
+  result <- finalize_margin_operation(
+    operation, execution, type_anchor_columns = type_anchor_columns,
+    sqlite_env_column = live_sqlite_margin_result(operation) &&
+      ".env" %in% operation$data_vars,
+    sql_env_column = operation$backend$is_sql &&
+      ".env" %in% operation$data_vars
   )
+  if (operation$backend$is_sql &&
+        inherits(dbplyr::remote_con(operation$data), "duckdb_connection") &&
+        ".env" %in% operation$data_vars) {
+    class(result) <- c("marginplyr_duckdb_env", class(result))
+  }
+  result
 }
 
 execute_margin_expand <- function(operation) {

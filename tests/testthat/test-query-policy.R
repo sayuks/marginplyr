@@ -420,6 +420,24 @@ test_that("SQLite .env summary keys add no construction read", {
   ), 0L)
 })
 
+test_that("SQLite .env expansion payload adds no construction read", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    data.frame(g = c("east", "west"), .env = c("red", "blue"),
+               check.names = FALSE),
+    "query_policy_env_expansion", temporary = TRUE
+  )
+
+  expect_identical(count_entry_point_invocations(
+    expand_with_margins(
+      source, .grouping = rollup(g), .id = "sid", .sort = "last"
+    )
+  ), 0L)
+})
+
 test_that("the exempt selection proxy materializes no caller rows", {
   skip_if_suggest_absent("duckdb", "DBI")
   capture <- new.env(parent = emptyenv())
@@ -464,6 +482,16 @@ test_that("the exempt selection proxy materializes no caller rows", {
     total = sum(v, na.rm = TRUE),
     .grouping = rollup(where(is.character)),
     .margin_label = NULL
+  )
+  expansion_table <- dplyr::copy_to(
+    con,
+    data.frame(k = c("E", "W"), .env = c("red", "blue"),
+               check.names = FALSE),
+    "zero_row_env_expansion", temporary = TRUE
+  )
+  class(expansion_table) <- c("margin_zero_row_probe", class(expansion_table))
+  expand_with_margins(
+    expansion_table, .grouping = rollup(k), .id = "sid", .sort = "first"
   )
 
   expect_identical(capture$rows, 0L)

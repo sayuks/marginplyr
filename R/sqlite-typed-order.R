@@ -81,10 +81,10 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
 
   public_query <- ordered
   if (".env" %in% public_columns) {
-    ordered <- sqlite_env_output_query(ordered)
-    typed_union <- sqlite_env_output_query(typed_union)
-    public_anchor <- sqlite_env_output_query(public_anchor)
-    public_query <- sqlite_env_output_query(public_query)
+    ordered <- sql_env_output_query(ordered)
+    typed_union <- sql_env_output_query(typed_union)
+    public_anchor <- sql_env_output_query(public_anchor)
+    public_query <- sql_env_output_query(public_query)
   }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
   attr(ordered, "marginplyr_typed_union") <- typed_union

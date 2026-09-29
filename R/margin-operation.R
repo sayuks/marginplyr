@@ -361,6 +361,7 @@ validate_margin_operation <- function(operation) {
 finalize_margin_operation <- function(operation, execution,
                                       type_anchor_columns = character(),
                                       sqlite_env_column = FALSE,
+                                      sql_env_column = FALSE,
                                       restore_tibble = FALSE) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
@@ -442,6 +443,10 @@ finalize_margin_operation <- function(operation, execution,
       operation$data, result, source_columns = type_anchor_columns
     )
     result <- combine_margin_branches(list(anchor, result))
+  }
+  if (sql_env_column &&
+        !inherits(result, "marginplyr_sqlite_typed_result")) {
+    result <- sql_env_output_query(result)
   }
   # The one recorded query nobody inside the package sends: the caller runs
   # it, so it is recorded here, before it is returned to them.
