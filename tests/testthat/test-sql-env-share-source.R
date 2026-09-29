@@ -36,6 +36,8 @@ expect_sql_env_share_values <- function(backend) {
     value = c(2, 3, 5, 7)
   )
   source_name <- ".env"
+  # Grouping specifications capture source-column names for later selection.
+  # nolint start: object_usage_linter.
   plans <- list(
     rollup = rollup(g),
     composite = rollup(g, h),
@@ -43,6 +45,7 @@ expect_sql_env_share_values <- function(backend) {
     cube = cube(g),
     explicit = grouping_sets(grouping_set(g), grouping_set())
   )
+  # nolint end
   if (identical(backend, "SQLite")) {
     con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   } else {
@@ -61,6 +64,9 @@ expect_sql_env_share_values <- function(backend) {
   for (plan_name in names(plans)) {
     grouping <- plans[[plan_name]]
     duplicates <- if (identical(plan_name, "repeated")) "keep" else "drop"
+    # Summary expressions resolve columns and the staged `.env` source in
+    # dplyr's data mask; these names are not lexical bindings here.
+    # nolint start: object_usage_linter.
     if (plan_name %in% c("rollup", "composite", "repeated")) {
       local <- summarize_with_margins(
         source, !!source_name := sum(value),
@@ -88,6 +94,7 @@ expect_sql_env_share_values <- function(backend) {
         .check_share_source = !identical(backend, "SQLite")
       )
     }
+    # nolint end
     sent <- last_sent_queries()
     expect_identical(tail(sent$purpose, 1L), "result")
     if (identical(backend, "SQLite")) {
