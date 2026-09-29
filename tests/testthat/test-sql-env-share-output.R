@@ -63,6 +63,8 @@ expect_sql_env_share_output <- function(backend) {
   offset <- 4
 
   for (kind in c("parent", "total")) {
+    # The source, summary, and pronoun names resolve in dplyr's mask.
+    # nolint start: object_usage_linter.
     query <- if (identical(kind, "parent")) {
       summarize_with_margins(
         remote, amount = sum(value + .env$offset, na.rm = TRUE),
@@ -78,6 +80,7 @@ expect_sql_env_share_output <- function(backend) {
         .check_share_source = !identical(backend, "SQLite")
       )
     }
+    # nolint end
     sent <- last_sent_queries()
     expect_identical(tail(sent$purpose, 1L), "result")
     if (identical(backend, "SQLite")) {
