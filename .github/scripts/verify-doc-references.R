@@ -60,11 +60,13 @@ source(".github/scripts/ci-helpers.R")
 # one goes stale, in either direction, so this cannot outlive what it excuses.
 exempt <- data.frame(
   file = c(
+    ".github/workflows/R-CMD-check.yaml",
     "design/agents/code-review.md",
     "design/agents/code-review.md",
     rep("tools/cran-release.md", 3L)
   ),
   path = c(
+    "Meta/features.rds",
     "design/review-dispositions.md",
     "docs/agents/issue-tracker.md",
     "audit_root/preparation-sha.txt",
@@ -72,6 +74,11 @@ exempt <- data.frame(
     "audit_root/attachment-console.txt"
   ),
   reason = c(
+    paste(
+      "R writes this metadata inside an installed package library, outside",
+      "the repository; the workflow comment names the file loadNamespace()",
+      "compares against R_INTERNALS_UUID"
+    ),
     paste(
       "past tense: #288 retired the file, and the sentence records that it",
       "has no successor"
