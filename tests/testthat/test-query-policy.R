@@ -420,6 +420,57 @@ test_that("SQLite .env summary keys add no construction read", {
   ), 0L)
 })
 
+test_that("DuckDB .env summary keys add no construction read", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    data.frame(.env = c("east", NA_character_), g = c("a", "b"),
+               check.names = FALSE),
+    "query_policy_duckdb_env_keys", temporary = TRUE
+  )
+  control <- dplyr::copy_to(
+    con,
+    data.frame(key = c("east", NA_character_), g = c("a", "b")),
+    "query_policy_duckdb_control_keys", temporary = TRUE
+  )
+
+  for (role in c("dimension", "fixed")) {
+    for (plan in c("one", "rollup")) {
+      count <- function(data, key) {
+        grouping <- if (identical(role, "dimension")) {
+          if (identical(plan, "one")) {
+            grouping_set(tidyselect::all_of(key))
+          } else {
+            rollup(tidyselect::all_of(key))
+          }
+        } else if (identical(plan, "one")) {
+          grouping_set(g)
+        } else {
+          rollup(g)
+        }
+        count_entry_point_invocations(
+          if (identical(role, "dimension")) {
+            summarize_with_margins(
+              data, rows = dplyr::n(), .grouping = grouping,
+              .id = "sid", .sort = "last"
+            )
+          } else {
+            summarize_with_margins(
+              data, rows = dplyr::n(),
+              .by = tidyselect::all_of(key), .grouping = grouping,
+              .id = "sid", .sort = "last"
+            )
+          }
+        )
+      }
+      expect_identical(count(source, ".env"), count(control, "key"),
+                       info = paste(role, plan))
+    }
+  }
+})
+
 test_that("SQL .env summary outputs add no construction read", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

@@ -109,6 +109,12 @@ summarize_margin_native <- function(.data,
   # second time; a `pick()` resolved to a list cannot survive that pass.
   internal_select <- result$lazy_query$select
   key_rows <- seq_along(group_vars)
+  if (".env" %in% group_vars) {
+    # dbplyr reads generated bare key references as rlang's pronoun (ADR 0031).
+    key_row <- match(".env", group_vars)
+    internal_select$expr[[key_row]] <- dbplyr::ident(".env")
+    result$lazy_query$group_by[[key_row]] <- dbplyr::ident(".env")
+  }
   internal_rows <- setdiff(seq_len(nrow(internal_select)), key_rows)
   result$lazy_query$select <- dplyr::bind_rows(
     internal_select[key_rows, , drop = FALSE],

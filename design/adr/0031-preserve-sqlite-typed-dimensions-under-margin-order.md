@@ -238,3 +238,13 @@ materializing it; a generated `.env` symbol resolves to the pronoun there.
 For a DuckDB expansion carrying that column, render the public query
 and pass it to `dbplyr::db_compute()` with the caller's materialization options.
 The query remains lazy until `collect()` or `compute()` is requested.
+
+## SQL summary grouping-key amendment (2026-09-29)
+
+Issue #731 extends the quoted-reference path to `.env` fixed keys and Grouping
+dimensions in SQL Margin summaries. The native `GROUPING SETS` adapter places
+generated key references in both its summary SELECT and its GROUP BY. Quote
+those two references while leaving the caller's summary expressions under their
+ordinary lexical meaning. The portable adapter continues to use the direct
+result boundary. Construction retains ADR 0020's source-row policy; the caller
+executes the result by collecting or materializing it.
