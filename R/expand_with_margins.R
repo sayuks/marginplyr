@@ -135,7 +135,7 @@ expand_with_margins <- function(.data,
   finalize_margin_operation(
     operation, execution, type_anchor_columns = type_anchor_columns,
     sql_env_column = operation$backend$is_sql &&
-      ".env" %in% operation$data_vars
+      ".env" %in% c(operation$data_vars, operation$set_id_name)
   )
 }
 
