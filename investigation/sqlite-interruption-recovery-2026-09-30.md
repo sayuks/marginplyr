@@ -60,10 +60,12 @@ render and verification passed 21 pages and the search index.
 ## Evidence and reproduction
 
 The [evidence directory](sqlite-interruption-recovery-2026-09-30/) contains
-acceptance.tar.gz, the complete supervisor summary and manifest, archive
+acceptance.rds, the complete supervisor summary and manifest, archive
 hashes, and the focused-test, Review-ready, structural and site logs. Each
 archived case includes configuration, environment, reached/delivery records,
-before/immediate/final state, worker log, and verdict.
+before/immediate/final state, worker log, and verdict. Each RDS archive holds a
+`files` list mapping relative paths to the original raw file bytes; `readRDS()`
+reads it without executing the archived scripts.
 
 From a clean committed checkout, run:
 
@@ -82,7 +84,7 @@ were evidence for the recorded snapshots.
 
 ## Harness development
 
-The separate harness-development.tar.gz retains earlier incomplete runs, each
+The separate harness-development.rds retains earlier incomplete runs, each
 with its own snapshot and manifest. They were not acceptance evidence. The
 first used Sys.sleep at protected checkpoints, which delivered SIGINT despite
 R interruption suspension on this measured build. Subsequent runs exposed an
