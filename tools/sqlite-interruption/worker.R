@@ -34,12 +34,15 @@ write_json(list(
 deliver <- switch(configuration$mode,
   sigint = function() {
     write_json(list(pid = Sys.getpid(), checkpoint = configuration$checkpoint,
+                    interrupts_suspended = .Internal(interruptsSuspended()),
                     reached_utc = format(Sys.time(), tz = "UTC", usetz = TRUE)),
                "reached.json")
     # A pending interrupt must be able to wait out a protected handoff. The
     # supervisor's resume file also lets that handoff return and deliver it.
+    # Sys.sleep() can deliver SIGINT even inside suspendInterrupts() on this R;
+    # a reached-checkpoint barrier must not override the transition's protection.
     while (!file.exists(file.path(directory, "resume"))) {
-      Sys.sleep(0.01)
+      invisible(NULL)
     }
   },
   controlled = rlang::interrupt,
@@ -59,14 +62,21 @@ results <- test_that("supervised SQLite interruption acceptance", {
     on.exit(sqlite_interrupt_unhook(state), add = TRUE)
     out <- NULL
     outcome <- tryCatch({
-      out <- dplyr::compute(
+      captured <- tryCatch({
+        out <- dplyr::compute(
         fixture$query,
         name = if (configuration$schema == "main") "report" else fixture$destination,
         temporary = configuration$schema == "temp", overwrite = configuration$overwrite,
         indexes = if (configuration$checkpoint == "index") list("g") else list(),
         in_transaction = configuration$flag
       )
-      list(kind = "success")
+        list(kind = "success")
+      }, interrupt = function(err) list(kind = "interrupt", condition = condition_info(err)),
+         error = function(err) list(kind = "error", condition = condition_info(err)))
+      # Flush a deferred signal before any observation. R need not deliver it at
+      # the exact instruction restoring interrupt eligibility after a handoff.
+      Sys.sleep(0)
+      captured
     }, interrupt = function(err) list(kind = "interrupt", condition = condition_info(err)),
        error = function(err) list(kind = "error", condition = condition_info(err)))
     # No probe, retry, caller decision, test rollback or disposal precedes this.

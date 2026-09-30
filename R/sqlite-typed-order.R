@@ -218,33 +218,37 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
 # code; only the caller commits or rolls back an enclosing transaction.
 sqlite_with_compute_savepoint <- function(con, destination, code) {
   savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
+  released <- FALSE
   restore <- function(err) {
-    step <- "rollback"
-    tryCatch({
-      DBI::dbExecute(con, paste(
-        "ROLLBACK TO", DBI::dbQuoteIdentifier(con, savepoint)
-      ))
-      step <- "release"
-      DBI::dbCommit(con, name = savepoint)
-    }, error = function(cleanup) {
-      rlang::abort(
-        paste0(
-          "SQLite compute failed; its savepoint ", step, " failed: ",
-          conditionMessage(cleanup)
-        ),
-        parent = err, cleanup = cleanup
-      )
-    })
+    if (!released) {
+      step <- "rollback"
+      tryCatch({
+        DBI::dbExecute(con, paste(
+          "ROLLBACK TO", DBI::dbQuoteIdentifier(con, savepoint)
+        ))
+        step <- "release"
+        DBI::dbCommit(con, name = savepoint)
+      }, error = function(cleanup) {
+        rlang::abort(
+          paste0(
+            "SQLite compute failed; its savepoint ", step, " failed: ",
+            conditionMessage(cleanup)
+          ),
+          parent = err, cleanup = cleanup
+        )
+      })
+    }
     stop(err)
   }
   # Ownership handoffs and cleanup stay protected; the computation, including
   # final lazy-table preparation, stays interruptible. A deferred interrupt
-  # after successful release escapes outside the restoration handler.
+  # after successful release must observe the completed ownership handoff.
   suspendInterrupts(tryCatch({
     # dbBegin() can raise after SQLite has acquired the savepoint.
     DBI::dbBegin(con, name = savepoint)
     value <- allowInterrupts(code(destination))
     DBI::dbCommit(con, name = savepoint)
+    released <- TRUE
     value
   }, error = restore, interrupt = restore))
 }

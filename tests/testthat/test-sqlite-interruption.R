@@ -199,3 +199,50 @@ test_that("unusable SQLite state reports incomplete interrupt recovery", {
     })
   }
 })
+
+test_that("caller ownership survives each destination kind", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  for (flag in c(FALSE, TRUE)) {
+    for (commit in c(FALSE, TRUE)) {
+      for (schema in c("main", "temp", "other")) {
+        for (overwrite in c(FALSE, TRUE)) {
+          sqlite_interrupt_fixture(function(fixture) {
+            con <- fixture$con
+            DBI::dbBegin(con)
+            DBI::dbExecute(con, "INSERT INTO sentinel VALUES ('caller')")
+            state <- sqlite_interrupt_hook("insert")
+            on.exit(sqlite_interrupt_unhook(state), add = TRUE)
+            condition <- tryCatch(
+              dplyr::compute(
+                fixture$query, name = fixture$destination,
+                temporary = schema == "temp", overwrite = overwrite,
+                in_transaction = flag
+              ),
+              interrupt = identity, error = identity
+            )
+            expect_s3_class(condition, "interrupt")
+            expect_sqlite_restored(fixture, state, outer = TRUE)
+            sqlite_interrupt_unhook(state)
+            if (commit) {
+              expect_true(DBI::dbCommit(con))
+            } else {
+              expect_true(DBI::dbRollback(con))
+            }
+            expect_false(RSQLite::sqliteIsTransacting(con))
+            expect_identical(sqlite_interrupt_state(con), fixture$before)
+            expect_identical(
+              DBI::dbReadTable(fixture$observer, "sentinel")$value,
+              if (commit) c("baseline", "caller") else "baseline"
+            )
+            if (overwrite) {
+              expect_identical(DBI::dbReadTable(con, fixture$destination),
+                               data.frame(old = 42L))
+            } else {
+              expect_false(DBI::dbExistsTable(con, fixture$destination))
+            }
+          }, schema = schema, overwrite = overwrite, sorted = FALSE)
+        }
+      }
+    }
+  }
+})

@@ -41,7 +41,7 @@ sqlite_interrupt_fixture <- function(code, schema = "main", overwrite = TRUE,
       .id = "sid", .sort = if (sorted) "last" else "none"
     )
   }
-  code(list(
+  fixture <- list(
     con = con, observer = observer, input = input, query = query,
     schema = schema, overwrite = overwrite,
     destination = DBI::Id(schema = schema, table = "report"),
@@ -53,7 +53,8 @@ sqlite_interrupt_fixture <- function(code, schema = "main", overwrite = TRUE,
       data.frame(g = c("a", "b", "Total"), sid = c(1L, 1L, 2L),
                  z = c(2, 5, 7))
     }
-  ))
+  )
+  code(fixture)
 }
 
 # Read physical schema, indexes and optimizer statistics before any recovery
@@ -66,7 +67,15 @@ sqlite_interrupt_state <- function(con) {
       )),
       statistics = DBI::dbGetQuery(con, paste0(
         "SELECT * FROM ", schema, ".sqlite_stat1 ORDER BY tbl, idx"
-      ))
+      )),
+      samples = if (DBI::dbExistsTable(
+        con, DBI::Id(schema = schema, table = "sqlite_stat4")
+      )) {
+        DBI::dbGetQuery(con, paste0(
+          "SELECT tbl, idx, neq, nlt, ndlt, hex(sample) AS sample FROM ",
+          schema, ".sqlite_stat4 ORDER BY tbl, idx, sample"
+        ))
+      }
     )
   }), c("main", "temp", "other"))
 }

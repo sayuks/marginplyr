@@ -47,6 +47,11 @@ for flag in [False, True]:
     for schema, overwrite in itertools.product(["main", "temp", "other"], [False, True]):
         for checkpoint in ["insert", "analyze", "result"]:
             add(checkpoint, flag=flag, schema=schema, overwrite=overwrite)
+    for schema, overwrite, commit in itertools.product(
+        ["main", "temp", "other"], [False, True], [False, True]
+    ):
+        add("insert", flag=flag, schema=schema, overwrite=overwrite,
+            sorted=False, outer=True, commit=commit)
     for sorted_result, expansion in itertools.product([False, True], [False, True]):
         add("result", flag=flag, sorted=sorted_result, expansion=expansion)
     for mode in ["healthy", "error", "controlled"]:
