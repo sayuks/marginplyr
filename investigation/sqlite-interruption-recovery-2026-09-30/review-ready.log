@@ -1,0 +1,144 @@
+Review-ready commit: a9d3cdf0c5b770d9608f57cc82fa231a8740f09e
+Disposable source: /var/folders/jv/m3wxfdhx765fl9k6nym08g0r0000gn/T//RtmpLl4XXR/marginplyr-review-ready-14a8e76d0d77c/source
+
+==> Test dependency syntax
+
+==> Package spelling
+Package spelling passed.
+
+==> jarl
+── Summary ──────────────────────────────────────
+All checks passed!
+
+==> package-aware lintr
+ℹ No lints found.
+
+==> Strict line coverage
+* installing *source* package ‘marginplyr’ ...
+** this is package ‘marginplyr’ version ‘0.1.0’
+** using non-staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** tests
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+  converting help for package ‘marginplyr’
+    expand_with_margins                     example
+    grouping_bit                            example
+    grouping_set                            example
+    inspect_grouping                        example
+    last_sent_queries                       example
+    marginplyr-package                      example
+    nest_by_with_margins                    example
+    nest_with_margins                       example
+    share_of_parent                         example
+    summarize_with_margins                  example
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded
+* DONE (marginplyr)
+Running specific tests for package ‘marginplyr’
+  Running ‘testthat.R’
+covr 3.6.5.9001: 8033/8033 lines (100%).
+Strict line coverage passed.
+
+==> Build source tarball
+* checking for file ‘/var/folders/jv/m3wxfdhx765fl9k6nym08g0r0000gn/T//RtmpLl4XXR/marginplyr-review-ready-14a8e76d0d77c/source/DESCRIPTION’ ... OK
+* preparing ‘marginplyr’:
+* checking DESCRIPTION meta-information ... OK
+* installing the package (it is needed to build vignettes)
+* creating vignettes ... OK
+* checking for LF line-endings in source and make files and shell scripts
+* checking for empty or unneeded directories
+* building ‘marginplyr_0.1.0.tar.gz’
+
+
+==> Source-tarball R CMD check --as-cran
+R CMD check attempt 1.
+── R CMD check ─────────────────────────────────────────────────────────────────
+* using log directory ‘/private/var/folders/jv/m3wxfdhx765fl9k6nym08g0r0000gn/T/RtmpLl4XXR/marginplyr-review-ready-14a8e76d0d77c/check-attempt-14a8e1cb5ea8a/check/marginplyr.Rcheck’
+* using R version 4.6.1 (2026-06-24)
+* using platform: aarch64-apple-darwin23
+* R was compiled by
+    Apple clang version 17.0.0 (clang-1700.3.19.1)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Tahoe 26.6.2
+* using session charset: UTF-8
+* current time: 2026-09-30 09:50:22 UTC
+* using option ‘--as-cran’
+* checking for file ‘marginplyr/DESCRIPTION’ ... OK
+* this is package ‘marginplyr’ version ‘0.1.0’
+* package encoding: UTF-8
+* checking CRAN incoming feasibility ... OK
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘marginplyr’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking ‘build’ directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking use of S3 registration ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... OK
+* checking data for non-ASCII characters ... OK
+* checking LazyData ... OK
+* checking data for ASCII and uncompressed saves ... OK
+* checking installed files from ‘inst/doc’ ... OK
+* checking files in ‘vignettes’ ... OK
+* checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ...
+  Running ‘testthat.R’ [270s/270s]
+ [270s/271s] OK
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... OK
+* checking re-building of vignette outputs ... [16s/15s] OK
+* checking PDF version of manual ... OK
+* checking HTML version of manual ... OK
+* checking for non-standard things in the check directory ... OK
+* checking for detritus in the temp directory ... OK
+* DONE
+
+Status: OK
+
+
+R CMD check process status: 0.
+R CMD check: 0 ERROR(s), 0 WARNING(s), 0 NOTE(s).
+No NOTEs.
+
+Review-ready check passed for a9d3cdf0c5b770d9608f57cc82fa231a8740f09e.

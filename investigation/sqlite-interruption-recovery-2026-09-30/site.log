@@ -1,0 +1,96 @@
+* installing *source* package ‘marginplyr’ ...
+** this is package ‘marginplyr’ version ‘0.1.0’
+** using staged installation
+** R
+** data
+*** moving datasets to lazyload DB
+** inst
+** byte-compile and prepare package for lazy loading
+** help
+*** installing help indices
+** building package indices
+** installing vignettes
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (marginplyr)
+ℹ Updated altdoc/pkgdown.yml file.
+
+── Basic files ─────────────────────────────────────────────────────────────────
+✔ 'NEWS' imported.
+✔ 'CODE_OF_CONDUCT' imported.
+✔ 'LICENSE' imported.
+✔ 'README' imported.
+→ Altdoc does not render README.qmd automatically to markdown. Please ensure that your README.md file is in sync.
+
+── Man pages ───────────────────────────────────────────────────────────────────
+ℹ Found 11 man pages to convert.
+⠙ Converting function reference 1/11: expand_with_margins
+✔ Converting function reference 1/11: expand_with_margins [942ms]
+
+⠙ Converting function reference 2/11: grouping_bit
+✔ Converting function reference 2/11: grouping_bit [287ms]
+
+⠙ Converting function reference 3/11: grouping_set
+✔ Converting function reference 3/11: grouping_set [247ms]
+
+⠙ Converting function reference 4/11: inspect_grouping
+✔ Converting function reference 4/11: inspect_grouping [293ms]
+
+⠙ Converting function reference 5/11: last_sent_queries
+✔ Converting function reference 5/11: last_sent_queries [264ms]
+
+⠙ Converting function reference 6/11: marginplyr-package
+✔ Converting function reference 6/11: marginplyr-package [50ms]
+
+⠙ Converting function reference 7/11: nest_by_with_margins
+✔ Converting function reference 7/11: nest_by_with_margins [302ms]
+
+⠙ Converting function reference 8/11: nest_with_margins
+⠹ Converting function reference 8/11: nest_with_margins
+✔ Converting function reference 8/11: nest_with_margins [221ms]
+
+⠙ Converting function reference 9/11: retail_sales
+✔ Converting function reference 9/11: retail_sales [22ms]
+
+⠙ Converting function reference 10/11: share_of_parent
+✔ Converting function reference 10/11: share_of_parent [270ms]
+
+⠙ Converting function reference 11/11: summarize_with_margins
+✔ Converting function reference 11/11: summarize_with_margins [359ms]
+
+
+── Vignettes ───────────────────────────────────────────────────────────────────
+
+── Update HTML ─────────────────────────────────────────────────────────────────
+✔ HTML updated.
+
+── Complete ────────────────────────────────────────────────────────────────────
+✔ Documentation updated.
+## Verified site output
+
+21 page(s) derived from 5 vignette source(s), 11 help topic(s), and 4 imported file(s), plus the search index.
+
+- `docs/index.html` — with markers
+- `docs/vignettes/completing_keys.html` — with markers
+- `docs/vignettes/database_backends.html` — with markers
+- `docs/vignettes/get_started.html` — with markers
+- `docs/vignettes/grouping_identity.html` — with markers
+- `docs/vignettes/recipes.html` — with markers
+- `docs/man/expand_with_margins.html`
+- `docs/man/grouping_bit.html`
+- `docs/man/grouping_set.html`
+- `docs/man/inspect_grouping.html` — with markers
+- `docs/man/last_sent_queries.html`
+- `docs/man/marginplyr-package.html` — with markers
+- `docs/man/nest_by_with_margins.html`
+- `docs/man/nest_with_margins.html` — with markers
+- `docs/man/retail_sales.html`
+- `docs/man/share_of_parent.html` — with markers
+- `docs/man/summarize_with_margins.html` — with markers
+- `docs/NEWS.html`
+- `docs/LICENSE.html`
+- `docs/CODE_OF_CONDUCT.html`
+- `docs/CITATION.html`
+- `docs/search.json`
+

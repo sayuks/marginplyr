@@ -181,7 +181,7 @@ and do not claim recovery after connection or whole-transaction failure.
 Successful self-overwrite is not added to the contract.
 
 The [catchable-interruption amendment](#catchable-interruption-amendment-2026-09-30)
-selects the interruption guarantee; its implementation is pending.
+selects the implemented interruption guarantee.
 
 The Sent query record describes the last tracked Margin verb or inspection
 call during construction, with its result entry matching full direct rendering.
@@ -270,6 +270,7 @@ cancellation, backend-aborted transactions, invalid connections, failed cleanup,
 timeouts, and process termination do not gain an unconditional recovery promise.
 Issue #756 owns competing-condition precedence and reporting details.
 
-This is an accepted target, with implementation and public-contract publication
-pending. The [specification's interruption amendment](../specs/sqlite-b-direct.md#catchable-interruption-amendment-755)
+The implementation and public-contract publication are complete in #755.
+[Acceptance evidence](../../investigation/sqlite-interruption-recovery-2026-09-30.md)
+records the verified snapshots and limits. The [specification's interruption amendment](../specs/sqlite-b-direct.md#catchable-interruption-amendment-755)
 owns the observable acceptance matrix and publication requirements.

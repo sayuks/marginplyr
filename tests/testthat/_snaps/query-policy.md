@@ -50,6 +50,7 @@
       probe_share_dialect_answer
       share_dialect_verdict
       sqlite_compute_destination
+      sqlite_with_compute_savepoint
       summarise_with_margins
       summarize_with_margins
       validate_margin_label

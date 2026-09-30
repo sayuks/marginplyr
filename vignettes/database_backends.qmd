@@ -250,6 +250,25 @@ Compute uses a private savepoint, so an existing caller transaction remains
 under the caller's commit or rollback control. Ordinary dbplyr may reject
 indexes on qualified destinations; such a failed compute restores the target.
 
+For dedicated summary and expansion results, both `in_transaction` values
+restore an overwritten destination's data, schema, indexes, and affected
+statistics, or remove a new destination, on an ordinary error or catchable R
+user interrupt before successful savepoint release. Cleanup releases that
+savepoint, preserves source tables and earlier caller work, and leaves an outer
+caller transaction open. This requires the connection and transaction to
+survive and cleanup SQL to succeed. A primary interrupt remains an interrupt;
+failed cleanup reports its step and cause together with the triggering condition.
+
+Successful release ends restoration responsibility, even if an interrupt
+prevents the R value reaching you. Outermost release persists the completed
+result; inner release leaves it and earlier work under your commit or rollback.
+Native SQLite cancellation can abort an entire transaction, including earlier
+caller work a savepoint cannot restore. Native-statement cancellation and
+native timeouts have not been verified for this path. Invalid connections,
+failed cleanup, process termination, and fatal signals have no recovery or
+automatic connection-repair guarantee. A timeout receives recovery only when
+it unwinds through R with usable backend state.
+
 ```{r}
 #| eval: !expr has_duckdb
 

@@ -397,7 +397,23 @@ writes. Direct collection remains available. Unsafe unqualified names that
 could address a different SQLite schema are refused before writes. Use an
 explicit schema or another name to resolve such a destination. An existing
 caller transaction retains commit and rollback ownership; compute uses its
-own savepoint. Ordinary later verbs can change the result's order.
+own savepoint, with either \code{in_transaction} value. Before successful
+savepoint release, an ordinary error or catchable R user interrupt restores
+the previous destination's data, schema, indexes, and affected statistics,
+or removes a newly created destination, then releases the savepoint. This
+requires a surviving connection and transaction and successful cleanup.
+Source tables and earlier caller work remain intact; the caller's outer
+transaction stays open. A primary interrupt propagates as an interrupt;
+failed cleanup reports its step and cause with the triggering condition.
+Successful release ends restoration responsibility even if an interrupt
+prevents the R value reaching the caller. Outermost release persists the
+result; inner release leaves it under the caller's commit or rollback.
+Native SQLite cancellation can abort a whole transaction, losing caller
+work a savepoint cannot restore. Invalid connections, failed cleanup,
+process termination, and fatal signals have no recovery or connection-repair
+guarantee. A timeout receives recovery only if it unwinds through R with
+usable backend state; native-statement cancellation and native timeouts
+are unverified. Ordinary later verbs can change the result's order.
 Whether the order survives further verbs applied to a lazy result is not
 promised, because that depends on dbplyr's query flattening, which
 marginplyr does not own and which changes between releases.

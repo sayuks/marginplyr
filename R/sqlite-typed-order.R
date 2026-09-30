@@ -213,32 +213,44 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
   destination
 }
 
-# Apply materialization within one owned SQLite savepoint. DBI's named rollback
-# also releases it; only the caller commits or rolls back an enclosing
-# transaction.
+# Apply materialization within one owned SQLite savepoint (ADR 0031).
+# The caller supplies a live connection and prepares the complete result in
+# code; only the caller commits or rolls back an enclosing transaction.
 sqlite_with_compute_savepoint <- function(con, destination, code) {
   savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
-  tryCatch({
-    # dbBegin() can raise after SQLite has acquired the savepoint.
-    DBI::dbBegin(con, name = savepoint)
-    value <- code(destination)
-    DBI::dbCommit(con, name = savepoint)
-    value
-  }, error = function(err) {
-    tryCatch(
-      DBI::dbRollback(con, name = savepoint),
-      error = function(cleanup) {
+  released <- FALSE
+  restore <- function(err) {
+    if (!released) {
+      step <- "rollback"
+      tryCatch({
+        DBI::dbExecute(con, paste(
+          "ROLLBACK TO", DBI::dbQuoteIdentifier(con, savepoint)
+        ))
+        step <- "release"
+        DBI::dbCommit(con, name = savepoint)
+      }, error = function(cleanup) {
         rlang::abort(
           paste0(
-            "SQLite compute failed; its savepoint rollback failed: ",
+            "SQLite compute failed; its savepoint ", step, " failed: ",
             conditionMessage(cleanup)
           ),
-          parent = err
+          parent = err, cleanup = cleanup
         )
-      }
-    )
+      })
+    }
     stop(err)
-  })
+  }
+  # Ownership handoffs and cleanup stay protected; the computation, including
+  # final lazy-table preparation, stays interruptible. A deferred interrupt
+  # after successful release must observe the completed ownership handoff.
+  suspendInterrupts(tryCatch({
+    # dbBegin() can raise after SQLite has acquired the savepoint.
+    DBI::dbBegin(con, name = savepoint)
+    value <- allowInterrupts(code(destination))
+    DBI::dbCommit(con, name = savepoint)
+    released <- TRUE
+    value
+  }, error = restore, interrupt = restore))
 }
 
 # Materialize the public query directly into the typed destination (ADR 0031).
