@@ -264,10 +264,8 @@ and cleanup; keep the materialization itself interruptible. Successful release
 ends this recovery responsibility, committing only when no outer transaction
 exists. An interrupt after that boundary does not reverse completed work.
 
-The rejected alternative leaves interruption recovery to the caller. The
-[dated investigation](../../investigation/exception-safety-recovery-2026-09-30.md)
-found that a residual private savepoint affected even subsequent successful
-writes, so retry alone did not restore normal connection use. Native statement
+Leaving interruption recovery to the caller is rejected; #755 owns the
+evidence and rationale. Native statement
 cancellation, backend-aborted transactions, invalid connections, failed cleanup,
 timeouts, and process termination do not gain an unconditional recovery promise.
 Issue #756 owns competing-condition precedence and reporting details.
