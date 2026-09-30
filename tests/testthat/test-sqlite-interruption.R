@@ -246,3 +246,191 @@ test_that("caller ownership survives each destination kind", {
     }
   }
 })
+
+# #756 requires an execution error followed by interruption after real rollback.
+test_that("SQLite drains queued event-loop interruption within compute", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  first <- structure(list(message = "queued cancellation"),
+                     class = c("interrupt", "condition"))
+  pending <- NULL
+  sleep <- base::Sys.sleep
+  # Windows sleep skips event processing at zero milliseconds. Model that
+  # system boundary so public compute and a later probe expose a queued signal.
+  testthat::local_mocked_bindings(
+    Sys.sleep = function(time) {
+      if (round(time * 1000) > 0L && !is.null(pending)) {
+        cnd <- pending
+        pending <<- NULL
+        withRestarts(signalCondition(cnd), resume = function() NULL)
+      }
+      sleep(time)
+    },
+    .package = "base"
+  )
+  sqlite_interrupt_fixture(function(fixture) {
+    state <- sqlite_interrupt_hook(
+      "before_cleanup_release", deliver = function() {
+        pending <<- first
+      }
+    )
+    on.exit(sqlite_interrupt_unhook(state), add = TRUE)
+    outcome <- tryCatch(
+      dplyr::compute(fixture$query, name = "report", temporary = FALSE,
+                     overwrite = TRUE),
+      interrupt = identity, error = identity
+    )
+    expect_s3_class(outcome, "interrupt")
+    expect_false(inherits(outcome, "error"))
+    expect_identical(outcome$interrupt, first)
+    expect_identical(outcome$parent, state$execution_error)
+    expect_identical(state$counts, c(rollback = 1L, release = 1L))
+    expect_sqlite_restored(fixture, state)
+    probe <- tryCatch(Sys.sleep(0.001), interrupt = identity)
+    expect_null(probe)
+  })
+})
+
+test_that("SQLite cleanup interruption retains the earlier execution error", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  for (flag in c(FALSE, TRUE)) {
+    for (outer in c(FALSE, TRUE)) {
+      sqlite_interrupt_fixture(function(fixture) {
+        con <- fixture$con
+        if (outer) {
+          DBI::dbBegin(con)
+          DBI::dbExecute(con, "INSERT INTO sentinel VALUES ('caller')")
+        }
+        state <- sqlite_interrupt_hook("before_cleanup_release")
+        on.exit(sqlite_interrupt_unhook(state), add = TRUE)
+        outcome <- tryCatch(
+          dplyr::compute(fixture$query, name = "report", temporary = FALSE,
+                         overwrite = TRUE, in_transaction = flag),
+          interrupt = identity, error = identity
+        )
+        expect_s3_class(outcome, "interrupt")
+        expect_false(inherits(outcome, "error"))
+        expect_s3_class(outcome$parent, "error")
+        expect_match(conditionMessage(outcome$parent),
+                     "ordinary INSERT checkpoint failure")
+        expect_sqlite_restored(fixture, state, outer)
+        expect_null(tryCatch(Sys.sleep(0.001), interrupt = identity))
+        sqlite_interrupt_unhook(state)
+        if (outer) DBI::dbRollback(con)
+        expect_true(DBI::dbBegin(con))
+        expect_true(DBI::dbCommit(con))
+      })
+    }
+  }
+})
+
+test_that("further cleanup interrupts finish once and retain causes", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  first <- structure(list(message = "first cancellation"),
+                     class = c("interrupt", "condition"))
+  second <- structure(list(message = "second cancellation"),
+                      class = c("interrupt", "condition"))
+  cause <- rlang::error_cnd(message = "execution failed",
+                            parent = simpleError("original cause"))
+  for (trigger in c("insert", "rollback")) {
+    for (again in c("rollback", "cleanup_release")) {
+      sqlite_interrupt_fixture(function(fixture) {
+        state <- sqlite_interrupt_hook(
+          trigger, execution_error = cause,
+          deliver = function() sqlite_checkpoint_interrupt(first),
+          repeat_checkpoint = again,
+          deliver_repeat = function() sqlite_checkpoint_interrupt(second)
+        )
+        on.exit(sqlite_interrupt_unhook(state), add = TRUE)
+        outcome <- tryCatch(
+          dplyr::compute(fixture$query, name = "report", temporary = FALSE,
+                         overwrite = TRUE),
+          interrupt = identity, error = identity
+        )
+        expect_s3_class(outcome, "interrupt")
+        if (trigger == "rollback") {
+          expect_identical(outcome$interrupt, first)
+          expect_identical(outcome$parent, cause)
+        } else {
+          expect_identical(outcome, first)
+        }
+        expect_true(state$repeated)
+        expect_identical(state$counts, c(rollback = 1L, release = 1L))
+        expect_sqlite_restored(fixture, state)
+        expect_null(tryCatch(Sys.sleep(0.001), interrupt = identity))
+      })
+    }
+  }
+})
+
+# A cleanup condition's message method is a foreign diagnostic boundary. It
+# can observe interruption after SQL failed, before the public error is ready.
+test_that("cleanup failure retains interrupts before and after failure", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  first <- structure(list(message = "first cancellation"),
+                     class = c("interrupt", "condition"))
+  second <- structure(list(message = "second cancellation"),
+                      class = c("interrupt", "condition"))
+  cause <- rlang::error_cnd(message = "execution failed",
+                            parent = simpleError("original execution cause"))
+  original <- serialize(cause, NULL)
+  for (step in c("rollback", "release")) {
+    for (before in c(FALSE, TRUE)) {
+      sqlite_interrupt_fixture(function(fixture) {
+        cleanup <- structure(
+          list(message = paste("injected", step), call = NULL,
+               parent = simpleError("original cleanup cause")),
+          class = c("competing_cleanup", "error", "condition")
+        )
+        notified <- FALSE
+        method <- function(cnd) {
+          if (!notified) {
+            notified <<- TRUE
+            sqlite_checkpoint_interrupt(if (before) second else first)
+          }
+          cnd$message
+        }
+        registerS3method("conditionMessage", "competing_cleanup", method,
+                         envir = asNamespace("base"))
+        on.exit(rm(
+          "conditionMessage.competing_cleanup",
+          envir = asNamespace("base")$.__S3MethodsTable__.
+        ), add = TRUE)
+        state <- sqlite_interrupt_hook(
+          "insert", cleanup_failure = step, cleanup_condition = cleanup,
+          deliver = function() stop(cause),
+          before_cleanup_failure = function() {
+            if (before) sqlite_checkpoint_interrupt(first)
+          }
+        )
+        on.exit(sqlite_interrupt_unhook(state), add = TRUE)
+        outcome <- tryCatch(
+          dplyr::compute(fixture$query, name = "report", temporary = FALSE,
+                         overwrite = TRUE),
+          interrupt = identity, error = identity
+        )
+        expect_s3_class(outcome, "error")
+        expect_false(inherits(outcome, "marginplyr_error"))
+        expect_match(outcome$message, paste("savepoint", step, "failed"))
+        expect_identical(outcome$cleanup, cleanup)
+        expect_s3_class(outcome$parent, "interrupt")
+        expect_identical(outcome$parent$interrupt, first)
+        expect_identical(outcome$parent$parent, cause)
+        expect_identical(serialize(cause, NULL), original)
+        expect_true(RSQLite::sqliteIsTransacting(fixture$con))
+        expect_identical(DBI::dbReadTable(fixture$observer, "report"),
+                         data.frame(old = 42L))
+        expect_identical(DBI::dbReadTable(fixture$con, "sentinel")$value,
+                         "baseline")
+        if (step == "release") {
+          expect_identical(DBI::dbReadTable(fixture$con, "report"),
+                           data.frame(old = 42L))
+        } else {
+          expect_equal(DBI::dbReadTable(fixture$con, "report"),
+                       fixture$expected)
+        }
+        sqlite_interrupt_unhook(state)
+        DBI::dbRollback(fixture$con)
+      })
+    }
+  }
+})

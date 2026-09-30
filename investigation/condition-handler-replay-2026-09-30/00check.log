@@ -1,0 +1,60 @@
+* using log directory ‘/private/tmp/marginplyr-replay-probe-package.Rcheck’
+* using R version 4.6.1 (2026-06-24)
+* using platform: aarch64-apple-darwin23
+* R was compiled by
+    Apple clang version 17.0.0 (clang-1700.3.19.1)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Tahoe 26.6.2
+* using session charset: UTF-8
+* current time: 2026-09-30 13:35:36 UTC
+* using options ‘--no-manual --no-vignettes’
+* checking for file ‘marginplyr-replay-probe-package/DESCRIPTION’ ... OK
+* this is package ‘replayprobe’ version ‘0.0.1’
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘replayprobe’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking DESCRIPTION meta-information ... NOTE
+License components which are templates and need '+ file LICENSE':
+  MIT
+Checking should be performed on sources prepared by ‘R CMD build’.
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... WARNING
+Found .Internal calls in the following functions:
+  ‘interleave’ ‘read_stack’
+with calls to .Internal functions
+  ‘.addCondHands’ ‘.resetCondHands’
+
+Packages should not call .Internal(): it is not part of the API, for
+use only by R itself and subject to change without notice.
+* checking for missing documentation entries ... WARNING
+Undocumented code objects:
+  ‘capture_replay’
+All user-level objects in a package should have documentation entries.
+See chapter ‘Writing R documentation files’ in the ‘Writing R
+Extensions’ manual.
+* checking examples ... NONE
+* DONE
+Status: 2 WARNINGs, 1 NOTE

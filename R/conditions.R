@@ -120,6 +120,43 @@ abort_selection_predicate <- function(label, parent) {
   )
 }
 
+# Select an interrupt from retained original objects (ADR 0035). The caller
+# has recorded the first interrupt and any earlier error or replay failure.
+margin_interrupt_outcome <- function(conditions) {
+  original <- conditions$interrupt
+  if (is.null(conditions$error) && is.null(conditions$replay_error)) {
+    return(original)
+  }
+  structure(
+    list(message = original$message, call = original$call,
+         interrupt = original, parent = conditions$error,
+         replay_error = conditions$replay_error),
+    class = c("interrupt", "condition")
+  )
+}
+
+# Notify handlers with the retained causes, then use native interruption if no
+# exiting handler takes the notification (ADR 0035).
+signal_margin_interrupt <- function(cnd) {
+  signalCondition(cnd)
+  rlang::interrupt()
+}
+
+# Finish a protected resource transition or diagnostic selection once. Native
+# interrupts supply the resume restart; synthetic notifications can return.
+# Flush cleanup-queued interruption before leaving this operation's handlers.
+coalesce_margin_interrupts <- function(expr, conditions) {
+  suspendInterrupts(withCallingHandlers({
+    value <- expr
+    # A zero sleep skips Windows event processing, leaving UserBreak queued.
+    allowInterrupts(Sys.sleep(0.001))
+    value
+  }, interrupt = function(cnd) {
+    conditions$interrupt <- conditions$interrupt %||% cnd
+    tryInvokeRestart("resume")
+  }))
+}
+
 # What an External condition raised while one grouping-set branch runs is
 # reported with. `keys` maps each `..marginplyr_key_N` column the branch
 # grouped by to the column the caller named, and `call` is the Margin verb the
@@ -145,6 +182,8 @@ new_branch_conditions <- function(keys, call = NULL) {
   conditions$call <- call
   conditions$warnings <- list()
   conditions$error <- NULL
+  conditions$interrupt <- NULL
+  conditions$replay_error <- NULL
   conditions
 }
 
@@ -165,6 +204,9 @@ with_branch_conditions <- function(expr,
   tryCatch(
     withCallingHandlers(
       expr,
+      interrupt = function(cnd) {
+        conditions$interrupt <- conditions$interrupt %||% cnd
+      },
       warning = function(cnd) {
         buffer_branch_warning(cnd, conditions, restatements)
         invokeRestart("muffleWarning")
@@ -375,8 +417,9 @@ written_message_lines <- function(lines, runs) {
 # saying how many further grouping sets raised it. The conditions are replayed
 # in the order the branches raised them, and the reported occurrence is the
 # first, so a plan that raises nothing new reads as one branch's report.
-# An ordinary branch error takes precedence over an error from replay, including
-# R's warn = 2 conversion; without one, replay errors propagate as raised.
+# ADR 0035 selects outcomes from caught conditions: interruption survives a
+# caught replay failure; otherwise the earlier branch error takes precedence.
+# With neither pending, replay errors propagate as raised.
 #
 # The count line is marginplyr's own sentence and is inside ADR 0023's rule,
 # where everything else this module writes is outside it: the only value
@@ -387,21 +430,33 @@ written_message_lines <- function(lines, runs) {
 # ADR 0021's contract is untouched. The warning's identity is computed when a
 # branch buffers it, before this line exists.
 report_branch_warnings <- function(conditions) {
-  for (entry in conditions$warnings) {
-    cnd <- entry$condition
-    if (entry$count > 1L) {
-      cnd$message <- paste0(
-        cnd$message,
-        "\n",
-        rlang::format_error_bullets(c(i = cli::pluralize(
-          "{entry$count - 1L} further grouping set{?s} raised this warning."
-        )))
-      )
+  tryCatch({
+    for (entry in conditions$warnings) {
+      cnd <- entry$condition
+      if (entry$count > 1L) {
+        cnd$message <- paste0(
+          cnd$message,
+          "\n",
+          rlang::format_error_bullets(c(i = cli::pluralize(
+            "{entry$count - 1L} further grouping set{?s} raised this warning."
+          )))
+        )
+      }
+      warning(cnd)
     }
-    tryCatch(
-      warning(cnd),
-      error = function(cnd) stop(conditions$error %||% cnd)
+  }, error = function(cnd) {
+    conditions$replay_error <- cnd
+  }, interrupt = function(cnd) {
+    conditions$interrupt <- conditions$interrupt %||% cnd
+  })
+  if (!is.null(conditions$interrupt)) {
+    outcome <- coalesce_margin_interrupts(
+      margin_interrupt_outcome(conditions), conditions
     )
+    signal_margin_interrupt(outcome)
+  }
+  if (!is.null(conditions$replay_error)) {
+    stop(conditions$error %||% conditions$replay_error)
   }
   invisible(NULL)
 }

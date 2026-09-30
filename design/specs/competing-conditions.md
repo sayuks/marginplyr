@@ -1,20 +1,23 @@
 # Competing conditions during interruption
 
 Decision: accepted under the maintainer's delegation. Specified: 2026-09-30.
+Amended by the maintainer: 2026-10-01, available-handler boundary.
 [Issue #756](https://github.com/sayuks/marginplyr/issues/756) owns implementation;
 [ADR 0035](../adr/0035-preserve-competing-conditions-at-interruption.md) owns the
-priority and rejected alternatives. Implementation and public-contract
-publication are pending; this specification does not describe shipped behavior.
+priority, handler boundary, and rejected alternatives. The implementation pull
+request records validation and publication evidence for this specification.
 
 ## Outcome and retained information
 
-Select the outcome within the package-owned operation boundary, rather than
-letting the last exit handler decide it.
+Select the outcome from conditions caught while package handlers remain
+available within the package-owned operation boundary. The table does not
+extend capture into an older caller handler where R makes those package
+handlers unavailable.
 
-| Conditions observed before propagation | Escaping outcome |
+| Conditions caught before propagation | Escaping outcome |
 | --- | --- |
 | Execution error, successful cleanup, no interrupt | Original execution error under ADRs 0015/0021 and #754 |
-| Catchable user interrupt, successful cleanup | Interrupt, with the original interrupt retained |
+| Caught user interrupt, successful cleanup | Interrupt, with the original interrupt retained |
 | Execution error followed by interrupt during successful cleanup | Interrupt, with the original execution error retained as its parent |
 | Failed cleanup, with execution error, interrupt, or both | Error reporting incomplete cleanup, with the triggering conditions and cleanup failure retained |
 | Warning replay fails while an error or interrupt is pending | Pending outcome; replay does not replace it |
@@ -34,8 +37,8 @@ notification per interrupt. No new stable condition subclass is promised.
 For an interrupt carrying competing diagnostic information, `$interrupt` retains
 the original interrupt object, and `$parent` retains the original execution
 error when one preceded it. Preserve that error's own parent chain, class,
-diagnostic, and Condition context; do not relink or reclassify it. If replay
-fails during interrupt unwind, `$replay_error` retains that failure separately
+diagnostic, and Condition context; do not relink or reclassify it. If a replay
+failure is caught during interrupt unwind, `$replay_error` retains it separately
 from the execution-error parent. Absent information may be `NULL` or absent.
 A lone interrupt with no additional information needs no wrapper.
 
@@ -43,11 +46,11 @@ A cleanup failure remains an ordinary error outside `marginplyr_error`, as it
 is not a call correction within the public interface. Its diagnostic identifies
 the failed rollback or release step; `$cleanup` retains the cleanup condition,
 and `$parent` retains the triggering execution error or interrupt outcome above.
-If interruption is observed before propagation, that interrupt outcome is the
+If interruption is caught before propagation, that interrupt outcome is the
 cleanup error's parent, retaining any earlier execution error. This also applies
 when the first interrupt arrives after cleanup has already failed, during
-diagnostic preparation. A further interrupt must not erase a cleanup failure
-already observed or replace the first retained interrupt.
+diagnostic preparation. A further caught interrupt must not erase a cleanup
+failure already observed or replace the first retained interrupt.
 Preserve original-condition objects in these fields; wording and narrower
 classes remain implementation details.
 
@@ -75,20 +78,36 @@ extend the resource owner's lifetime beyond that existing boundary.
 Attempt buffered-warning replay during interrupt unwind in the existing
 first-occurrence order, with the existing identity, count, and Condition context.
 Calling warning handlers can observe and muffle a replayed warning normally.
-An error from replay, including R's `warn = 2` conversion or an error raised by
-a warning handler, ends replay and is retained as `$replay_error`; the interrupt
-still escapes. Remaining warnings are not promised delivery, and replay is not
-restarted. Do not change the caller's `warn` option to implement this policy.
+An error caught during replay, including R's `warn = 2` conversion after
+returning warning handlers, ends replay and is retained as `$replay_error`;
+the interrupt still escapes. Remaining warnings are not promised delivery,
+and replay is not restarted. Do not change the caller's `warn` option to
+implement this policy.
 
-A further catchable interrupt during replay ends the remaining replay and joins
+A further interrupt caught during replay ends the remaining replay and joins
 the pending cancellation. If an ordinary execution error was pending instead,
 the interrupt becomes the outcome and retains that error as its parent. Keep
 the first interrupt once cancellation has been established; additional
 interrupts do not replace its diagnostic information or rerun cleanup. Runtime
 signals may coalesce, so their exact number is not promised. Do not shield
-arbitrary user warning handlers for the duration of their work. Handler-initiated
-nonlocal transfers that bypass package handling, fatal signals, and process
-termination do not gain a completion guarantee.
+arbitrary user warning handlers for the duration of their work.
+
+When an older caller warning handler runs, R makes newer package handlers
+unavailable. Errors or interrupts raised there, and caller restarts that leave
+the operation, follow native R control flow when they bypass package handling.
+They may replace an already pending interrupt or execution error without
+retaining it, and a handler failure is not guaranteed in `$replay_error`.
+This includes an older handler reached by a nested warning inside another
+callback. Preserve normal handler availability and existing caller restart
+tokens; do not isolate, re-register, or silently wrap caller callbacks.
+Fatal signals and process termination likewise gain no completion guarantee.
+
+Optional caller guidance may show a caller-owned catcher inside the warning
+callback. It can retain the callback's failure separately, then muffle that
+warning and subsequent warnings. The caller decides how to handle the operation
+outcome and callback failure, including a successful value with a captured
+failure. This does not add a package function, replay restart, or guarantee over
+noncooperating older handlers.
 
 ## Incomplete cleanup and limits
 
@@ -121,9 +140,9 @@ transaction decisions, reconnect, or test disposal.
 | SQLite execution error, real rollback-to completed, interrupt before real cleanup release | Prior destination restored; savepoint released; interrupt contains original execution error; no stale queued interrupt replaces the outcome during later inspection |
 | Earlier local branch warnings, later branch interrupt | Earlier side effects prove execution; calling handler observes replay; interrupt escapes at `warn = 1` and `warn = 2`; at 2 the conversion error is separately available |
 | Replay warning muffled at `warn = 2` | Warning handler runs; no conversion error is invented; pending interrupt survives |
-| Replay warning handler raises an error | Interrupt survives with original handler error retained; later warnings need not be delivered |
+| Outer warning handler raises an error or further interrupt that bypasses package handling | Native caller outcome escapes; earlier cancellation or execution-error retention is not promised; original handler failure is not replaced by a package-generated error |
 | Further interrupt during interrupt-triggered rollback or between rollback and release | Successful cleanup finishes once; first interrupt remains observable; no recursive materialization or cleanup retry |
-| Further interrupt during replay or diagnostic selection | First interrupt retains earlier causes; an established incomplete-cleanup error remains the outcome; no successful value is returned |
+| Further interrupt caught during replay or diagnostic selection | First interrupt retains earlier causes; an established incomplete-cleanup error remains the outcome; no successful value is returned |
 | Failed rollback or release, with interruption before or after cleanup failure | Failed step, cleanup condition, earlier execution error and first interrupt remain observable in the selected fields; residual state recorded without a recovery/reuse claim |
 | Invalid connection or simulated whole-transaction abort | Cleanup failure and trigger observable; no automatic repair or caller-transaction takeover; simulation distinct from native cancellation |
 | Interrupt after successful materialization release | Completed work remains; caller ownership and visibility follow existing inner/outer release boundary |
@@ -143,6 +162,14 @@ replay, escaping condition, unchanged input, restored options, and a subsequent
 valid summary in that session. Disable only warnings as an interrupt control;
 remove the interrupt as a healthy or warning-only control. Inspect original
 objects and parent chains, not only rendered messages.
+
+Exercise outer warning-handler errors and interrupts with both a pending
+interrupt and a pending execution error. Compare native caller outcomes and
+retained object identity instead of accepting those cases as successful
+competing-cause preservation. Also cover selected older handlers, ordinary
+direct invocation of a registered callback, nested warnings, and a caller
+restart token captured before the operation. Optional cooperative examples
+must preserve their separate failure record and state their narrower scope.
 
 Actual SIGINT needs a flushed checkpoint and matching worker PID before delivery.
 Capture the public operation's raw outcome before diagnostic rendering or
@@ -166,7 +193,7 @@ are evidence for their recorded snapshots, not verification of this policy.
 
 ## Implementation and publication
 
-Scope a follow-up to condition selection at the existing SQLite savepoint owner
+Scope implementation to condition selection at the existing SQLite savepoint owner
 and portable summary warning-replay boundary. Select the smallest mechanism
 that satisfies the outcomes; this decision prescribes neither handler nesting
 nor an interrupt-resignaling helper. No general backend recovery framework,
@@ -185,7 +212,7 @@ Publish implemented outcomes and structured fields in
 contract in `R/summarize_with_margins.R` and SQLite guidance in
 `vignettes/database_backends.qmd` aligned with ADR 0031. Regenerate affected
 help and run applicable documentation/site verifiers. Public guidance must not
-advertise this accepted policy as available before implementation passes.
+omit the available-handler boundary or describe bypass cases as retained causes.
 
 Run the Review-ready check on the clean committed implementation and applicable
 release-matrix checks under `design/agents/local-checks.md`; record the exact

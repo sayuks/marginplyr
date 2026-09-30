@@ -219,38 +219,64 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
 sqlite_with_compute_savepoint <- function(con, destination, code) {
   savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
   released <- FALSE
-  restore <- function(err) {
-    if (!released) {
-      step <- "rollback"
-      tryCatch({
-        DBI::dbExecute(con, paste(
-          "ROLLBACK TO", DBI::dbQuoteIdentifier(con, savepoint)
-        ))
-        step <- "release"
-        DBI::dbCommit(con, name = savepoint)
-      }, error = function(cleanup) {
-        rlang::abort(
-          paste0(
-            "SQLite compute failed; its savepoint ", step, " failed: ",
-            conditionMessage(cleanup)
-          ),
-          parent = err, cleanup = cleanup
-        )
-      })
+  conditions <- new.env(parent = emptyenv())
+  cleanup <- NULL
+  step <- "rollback"
+  # Acquisition can fail after acquiring ownership; retain that trigger and
+  # attempt cleanup under the same protection as the ownership handoffs.
+  value <- suspendInterrupts({
+    result <- tryCatch({
+      DBI::dbBegin(con, name = savepoint)
+      value <- allowInterrupts(code(destination))
+      DBI::dbCommit(con, name = savepoint)
+      released <- TRUE
+      value
+    }, error = function(cnd) {
+      conditions$error <- cnd
+      NULL
+    }, interrupt = function(cnd) {
+      conditions$interrupt <- cnd
+      NULL
+    })
+    coalesce_margin_interrupts({
+      if (!released &&
+            (!is.null(conditions$error) || !is.null(conditions$interrupt))) {
+        tryCatch({
+          DBI::dbExecute(con, paste(
+            "ROLLBACK TO", DBI::dbQuoteIdentifier(con, savepoint)
+          ))
+          step <- "release"
+          DBI::dbCommit(con, name = savepoint)
+        }, error = function(cnd) {
+          cleanup <<- cnd
+        })
+      }
+      result
+    }, conditions)
+  })
+  failure <- coalesce_margin_interrupts({
+    if (!is.null(cleanup)) {
+      rlang::error_cnd(message = paste0(
+        "SQLite compute failed; its savepoint ", step, " failed: ",
+        conditionMessage(cleanup)
+      ), cleanup = cleanup)
     }
-    stop(err)
+  }, conditions)
+  # Diagnostic preparation can itself observe interruption. Attach causes only
+  # after it finishes, so a cleanup failure keeps priority in that case too.
+  if (!is.null(failure)) {
+    failure$parent <- if (!is.null(conditions$interrupt)) {
+      margin_interrupt_outcome(conditions)
+    } else {
+      conditions$error
+    }
+    stop(failure)
   }
-  # Ownership handoffs and cleanup stay protected; the computation, including
-  # final lazy-table preparation, stays interruptible. A deferred interrupt
-  # after successful release must observe the completed ownership handoff.
-  suspendInterrupts(tryCatch({
-    # dbBegin() can raise after SQLite has acquired the savepoint.
-    DBI::dbBegin(con, name = savepoint)
-    value <- allowInterrupts(code(destination))
-    DBI::dbCommit(con, name = savepoint)
-    released <- TRUE
-    value
-  }, error = restore, interrupt = restore))
+  if (!is.null(conditions$interrupt)) {
+    signal_margin_interrupt(margin_interrupt_outcome(conditions))
+  }
+  if (!is.null(conditions$error)) stop(conditions$error)
+  value
 }
 
 # Materialize the public query directly into the typed destination (ADR 0031).

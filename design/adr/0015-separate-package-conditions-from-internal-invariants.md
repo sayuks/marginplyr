@@ -56,6 +56,6 @@ enters it.
 
 [ADR 0035](0035-preserve-competing-conditions-at-interruption.md) selects the
 escaping outcome when user interruption competes with execution or cleanup
-failure. It retains the original External conditions as diagnostic information
-without reclassifying them; ordinary propagation remains governed here.
-Implementation and public-contract publication of that selection are pending.
+failure. Within its available-handler boundary, it retains the original
+External conditions as diagnostic information without reclassifying them;
+ordinary propagation remains governed here.

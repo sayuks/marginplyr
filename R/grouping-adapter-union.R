@@ -496,208 +496,213 @@ summarize_margin_union <- function(.data,
   # reading of the contract allows.
   on.exit(report_branch_warnings(conditions), add = TRUE)
 
-  branches <- Map(
-    function(grouping_set, set_id) {
-      branch_dots <- rewrite_grouping_dots(
-        dots,
-        plan = plan,
-        grouping_set = grouping_set,
-        sql = FALSE,
-        mark_outputs = is.environment(summaries$grouping_type_state)
-      )
-      if (is.data.frame(.data)) {
-        branch_dots <- wrap_local_frame_summaries(
-          branch_dots,
-          group_vars = group_vars,
-          internal_names = c(unname(key_names), unname(parent_key_names)),
-          set_id_name = set_id_name,
-          set_id_is_internal = set_id_is_internal,
-          share_sources = frame_state$share_sources,
-          source_definitions = frame_state$source_definitions,
-          auto_names = frame_state$auto_names
+  tryCatch({
+    branches <- Map(
+      function(grouping_set, set_id) {
+        branch_dots <- rewrite_grouping_dots(
+          dots,
+          plan = plan,
+          grouping_set = grouping_set,
+          sql = FALSE,
+          mark_outputs = is.environment(summaries$grouping_type_state)
         )
-        branch_dots <- wrap_assigned_local_summaries(
-          branch_dots,
-          summaries$assigned_names,
-          group_vars = group_vars,
-          internal_names = c(unname(key_names), unname(parent_key_names)),
-          set_id_name = set_id_name,
-          set_id_is_internal = set_id_is_internal,
-          share_sources = frame_state$share_sources,
-          source_definitions = frame_state$source_definitions
-        )
-      }
-      needs_placeholder <- length(grouping_set) == 0L &&
-        (length(branch_dots) == 0L || backend$is_sql)
-      placeholder <- if (needs_placeholder) placeholder_name else NULL
-
-      # Only the caller's expressions are wrapped. The checks and the branch
-      # builders below raise Package conditions, which carry their own context
-      # and are never deduplicated.
-      #
-      # The map is built per branch rather than once, because `branch_dots`
-      # is where `grouping_bit()` has become this branch's own constant, and
-      # that is the expression dplyr will quote.
-      result <- with_branch_conditions(
-        summarize_margin_branch(
-          .data = .data,
-          !!!branch_dots,
-          .by = unname(key_names[grouping_set]),
-          caller_labels = summaries$labels,
-          placeholder_name = placeholder
-        ),
-        conditions = conditions,
-        restatements = branch_argument_map(branch_dots, summaries$labels)
-      )
-
-      if (is.environment(summaries$grouping_type_state)) {
-        select <- result$lazy_query$select
-        outputs <- select$name[vapply(select$expr, grouping_marked_output,
-                                      logical(1))]
-        previous <- summaries$grouping_type_state$names
-        summaries$grouping_type_state$names <- if (is.null(previous)) {
-          outputs
-        } else {
-          intersect(previous, outputs)
-        }
-        result$lazy_query$select$expr <- lapply(
-          select$expr, strip_grouping_output_markers
-        )
-      }
-
-      # Branch binding drops the token attribute of an empty list marker.
-      if (is.data.frame(.data) &&
-            is.environment(summaries$selection_state) &&
-            !is.null(summaries$selection_state$share_markers)) {
-        check_local_share_markers(
-          result, summaries$selection_state$share_markers
-        )
-      }
-
-      # Without the placeholder: what this asks about is the names the summary
-      # produced, and that column is the adapter's own.
-      check_summary_output_names(
-        setdiff(get_col_names(result, dplyr::everything()), placeholder),
-        group_vars = group_vars,
-        internal_names = c(
-          unname(key_names[setdiff(group_vars, grouping_set)]),
-          unname(parent_key_names)
-        ),
-        set_id_name = set_id_name,
-        set_id_is_internal = set_id_is_internal
-      )
-      if (backend$is_sql) {
-        public_outputs <- setdiff(
-          get_col_names(result, dplyr::everything()),
-          c(unname(key_names), placeholder)
-        )
-        check_margin_sql_public_names(
-          unique(c(group_vars, public_outputs,
-                   if (!set_id_is_internal) set_id_name)),
-          backend
-        )
-      }
-
-      if (length(grouping_set) > 0L) {
-        rename_pairs <- rlang::set_names(
-          rlang::syms(unname(key_names[grouping_set])),
-          grouping_set
-        )
-        result <- dplyr::rename(result, !!!rename_pairs)
-      }
-
-      if (length(parent_key_names) > 0L) {
-        # Included dimensions can still be data.table specials after grouping.
-        result <- dtplyr_safe_column_reads(
-          result, intersect(names(parent_key_names), grouping_set),
-          function(source, safe_name) {
-            original_keys <- lapply(
-              names(parent_key_names),
-              function(dimension) {
-                if (dimension %in% grouping_set) {
-                  return(margin_column_pronoun(safe_name(dimension)))
-                }
-                value <- column_info$prototypes[[dimension]]
-                if (is.null(value)) NA else value
-              }
-            )
-            names(original_keys) <- unname(parent_key_names)
-            dplyr::mutate(source, !!!original_keys)
-          }
-        )
-      }
-
-      result <- label_margin_branch(
-        result,
-        plan = plan,
-        grouping_set = grouping_set,
-        margin_labels = margin_labels,
-        prototypes = column_info$prototypes,
-        factor_info = column_info$factors
-      )
-
-      # A summary branch holds one row per group rather than one per source
-      # row, and the placeholder above leaves every branch holding a column, so
-      # no identifier column materialises a row and nothing is counted. The
-      # result a `data.table` still cannot hold once every column goes away
-      # again is a documented limit on `summarize_with_margins()`.
-      result <- add_grouping_set_id(
-        result,
-        set_id_name,
-        set_id,
-        count_branch_rows = FALSE
-      )
-
-      # Last, so that the columns the result keeps are all in place before the
-      # branch gives up the only one it had: dropping ahead of the identifier
-      # would hand the same zero-column query to the same `mutate()`.
-      if (is.null(placeholder)) {
-        result
-      } else {
-        # A scalar-only SQL result can otherwise have its unused COUNT(*)
-        # removed by dbplyr when the placeholder is selected away. Reference
-        # it through a visible column without changing that column's value.
-        if (backend$is_sql) {
-          output_names <- setdiff(
-            get_col_names(result, dplyr::everything()),
-            placeholder
+        if (is.data.frame(.data)) {
+          branch_dots <- wrap_local_frame_summaries(
+            branch_dots,
+            group_vars = group_vars,
+            internal_names = c(unname(key_names), unname(parent_key_names)),
+            set_id_name = set_id_name,
+            set_id_is_internal = set_id_is_internal,
+            share_sources = frame_state$share_sources,
+            source_definitions = frame_state$source_definitions,
+            auto_names = frame_state$auto_names
           )
-          if (length(output_names) > 0L) {
-            output_name <- output_names[[1L]]
-            result <- dplyr::mutate(
-              result,
-              "{output_name}" := dplyr::if_else(
-                .data[[placeholder]] >= 0L,
-                .data[[output_name]],
-                .data[[output_name]]
-              )
-            )
-          }
+          branch_dots <- wrap_assigned_local_summaries(
+            branch_dots,
+            summaries$assigned_names,
+            group_vars = group_vars,
+            internal_names = c(unname(key_names), unname(parent_key_names)),
+            set_id_name = set_id_name,
+            set_id_is_internal = set_id_is_internal,
+            share_sources = frame_state$share_sources,
+            source_definitions = frame_state$source_definitions
+          )
         }
-        dplyr::select(result, -dplyr::all_of(placeholder))
-      }
-    },
-    plan$sets,
-    plan$set_ids
-  )
+        needs_placeholder <- length(grouping_set) == 0L &&
+          (length(branch_dots) == 0L || backend$is_sql)
+        placeholder <- if (needs_placeholder) placeholder_name else NULL
 
-  if (
-    identical(backend$kind, "sql") &&
-      length(branches) > 1L &&
-      length(group_vars) > 0L
-  ) {
-    anchor <- sql_margin_type_anchor(
-      source_data,
-      branches[[1L]],
-      source_columns = group_vars
+        # Only the caller's expressions are wrapped. The checks and the branch
+        # builders below raise Package conditions, which carry their own context
+        # and are never deduplicated.
+        #
+        # The map is built per branch rather than once, because `branch_dots`
+        # is where `grouping_bit()` has become this branch's own constant, and
+        # that is the expression dplyr will quote.
+        result <- with_branch_conditions(
+          summarize_margin_branch(
+            .data = .data,
+            !!!branch_dots,
+            .by = unname(key_names[grouping_set]),
+            caller_labels = summaries$labels,
+            placeholder_name = placeholder
+          ),
+          conditions = conditions,
+          restatements = branch_argument_map(branch_dots, summaries$labels)
+        )
+
+        if (is.environment(summaries$grouping_type_state)) {
+          select <- result$lazy_query$select
+          outputs <- select$name[vapply(select$expr, grouping_marked_output,
+                                        logical(1))]
+          previous <- summaries$grouping_type_state$names
+          summaries$grouping_type_state$names <- if (is.null(previous)) {
+            outputs
+          } else {
+            intersect(previous, outputs)
+          }
+          result$lazy_query$select$expr <- lapply(
+            select$expr, strip_grouping_output_markers
+          )
+        }
+
+        # Branch binding drops the token attribute of an empty list marker.
+        if (is.data.frame(.data) &&
+              is.environment(summaries$selection_state) &&
+              !is.null(summaries$selection_state$share_markers)) {
+          check_local_share_markers(
+            result, summaries$selection_state$share_markers
+          )
+        }
+
+        # Without the placeholder: what this asks about is the names the summary
+        # produced, and that column is the adapter's own.
+        check_summary_output_names(
+          setdiff(get_col_names(result, dplyr::everything()), placeholder),
+          group_vars = group_vars,
+          internal_names = c(
+            unname(key_names[setdiff(group_vars, grouping_set)]),
+            unname(parent_key_names)
+          ),
+          set_id_name = set_id_name,
+          set_id_is_internal = set_id_is_internal
+        )
+        if (backend$is_sql) {
+          public_outputs <- setdiff(
+            get_col_names(result, dplyr::everything()),
+            c(unname(key_names), placeholder)
+          )
+          check_margin_sql_public_names(
+            unique(c(group_vars, public_outputs,
+                     if (!set_id_is_internal) set_id_name)),
+            backend
+          )
+        }
+
+        if (length(grouping_set) > 0L) {
+          rename_pairs <- rlang::set_names(
+            rlang::syms(unname(key_names[grouping_set])),
+            grouping_set
+          )
+          result <- dplyr::rename(result, !!!rename_pairs)
+        }
+
+        if (length(parent_key_names) > 0L) {
+          # Included dimensions can still be data.table specials after grouping.
+          result <- dtplyr_safe_column_reads(
+            result, intersect(names(parent_key_names), grouping_set),
+            function(source, safe_name) {
+              original_keys <- lapply(
+                names(parent_key_names),
+                function(dimension) {
+                  if (dimension %in% grouping_set) {
+                    return(margin_column_pronoun(safe_name(dimension)))
+                  }
+                  value <- column_info$prototypes[[dimension]]
+                  if (is.null(value)) NA else value
+                }
+              )
+              names(original_keys) <- unname(parent_key_names)
+              dplyr::mutate(source, !!!original_keys)
+            }
+          )
+        }
+
+        result <- label_margin_branch(
+          result,
+          plan = plan,
+          grouping_set = grouping_set,
+          margin_labels = margin_labels,
+          prototypes = column_info$prototypes,
+          factor_info = column_info$factors
+        )
+
+        # A summary branch holds one row per group rather than one per source
+        # row, and the placeholder leaves every branch holding a column, so no
+        # identifier column materialises a row and nothing is counted. The
+        # result a `data.table` still cannot hold once every column goes away
+        # again is a documented limit on `summarize_with_margins()`.
+        result <- add_grouping_set_id(
+          result,
+          set_id_name,
+          set_id,
+          count_branch_rows = FALSE
+        )
+
+        # Last, so that the columns the result keeps are all in place before the
+        # branch gives up the only one it had: dropping ahead of the identifier
+        # would hand the same zero-column query to the same `mutate()`.
+        if (is.null(placeholder)) {
+          result
+        } else {
+          # A scalar-only SQL result can otherwise have its unused COUNT(*)
+          # removed by dbplyr when the placeholder is selected away. Reference
+          # it through a visible column without changing that column's value.
+          if (backend$is_sql) {
+            output_names <- setdiff(
+              get_col_names(result, dplyr::everything()),
+              placeholder
+            )
+            if (length(output_names) > 0L) {
+              output_name <- output_names[[1L]]
+              result <- dplyr::mutate(
+                result,
+                "{output_name}" := dplyr::if_else(
+                  .data[[placeholder]] >= 0L,
+                  .data[[output_name]],
+                  .data[[output_name]]
+                )
+              )
+            }
+          }
+          dplyr::select(result, -dplyr::all_of(placeholder))
+        }
+      },
+      plan$sets,
+      plan$set_ids
     )
-    branches <- c(list(anchor), branches)
-  }
 
-  restore_input_window_order(
-    combine_margin_branches(branches),
-    input_window_order
-  )
+    if (
+      identical(backend$kind, "sql") &&
+        length(branches) > 1L &&
+        length(group_vars) > 0L
+    ) {
+      anchor <- sql_margin_type_anchor(
+        source_data,
+        branches[[1L]],
+        source_columns = group_vars
+      )
+      branches <- c(list(anchor), branches)
+    }
+
+    restore_input_window_order(
+      combine_margin_branches(branches),
+      input_window_order
+    )
+  }, interrupt = function(cnd) {
+    conditions$interrupt <- conditions$interrupt %||% cnd
+    NULL
+  })
 }
 
 # Restores the input's usable dbplyr window ordering after `UNION ALL` has
