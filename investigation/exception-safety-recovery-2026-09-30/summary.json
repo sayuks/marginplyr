@@ -1,0 +1,19 @@
+{
+  "total_completed": 276,
+  "valid_runs": 256,
+  "excluded": 20,
+  "case_families": 27,
+  "actual_sigint_runs": 54,
+  "classifications": {
+    "No issue within verified scope": 146,
+    "Safety concern requiring interrupt restoration decision": 68,
+    "Confirmed contract violation: ordinary acquisition failure leaves owned savepoint": 3,
+    "Expected failure or upstream behavior": 30,
+    "Confirmed contract violation: warning replay masks original External error": 3,
+    "Safety concern requiring interrupt/cleanup precedence decision": 6
+  },
+  "all_disposed": true,
+  "normal_body_restore_failures": [],
+  "input_row_failures": [],
+  "sentinel_failures": []
+}

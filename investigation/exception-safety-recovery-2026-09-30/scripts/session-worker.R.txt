@@ -1,0 +1,48 @@
+args<-commandArgs(TRUE);root<-args[[1]];case<-args[[2]];mode<-args[[3]];variant<-args[[4]];outdir<-args[[5]]
+.libPaths(file.path(root,"library"),include.site=FALSE);Sys.unsetenv("TESTTHAT");library(marginplyr);library(DBI)
+ns<-asNamespace("marginplyr");json<-function(x,p)jsonlite::write_json(x,p,auto_unbox=TRUE,pretty=TRUE,null="null",na="string")
+cnd_info<-function(c)if(is.null(c))NULL else list(class=class(c),message=conditionMessage(c),call=paste(deparse(conditionCall(c)),collapse=" "),parent=if(!is.null(c$parent))cnd_info(c$parent)else NULL)
+cap<-function(expr)tryCatch(list(kind="success",value=force(expr)),error=function(e)list(kind="error",condition=cnd_info(e)),interrupt=function(e)list(kind="interrupt",condition=cnd_info(e)))
+state<-new.env();state$active<-FALSE;state$hit<-0L;state$purpose<-NULL;state$warnings<-list();state$events<-list();state$handles<-list()
+options(marginplyr.audit_sql=variant!="off")
+opts<-function(){n<-c("rlib_warning_verbosity","lifecycle_verbosity","rlang:::use_as_label_infix","warn","marginplyr.audit_sql");setNames(lapply(n,function(n)list(present=n%in%names(options()),value=getOption(n))),n)}
+con<-DBI::dbConnect(RSQLite::SQLite(),file.path(outdir,"db.sqlite"));DBI::dbExecute(con,"CREATE TABLE sentinel(value TEXT)");DBI::dbExecute(con,"INSERT INTO sentinel VALUES('baseline')")
+duck<-startsWith(case,"dialect") || case=="warning_proxy"
+if(duck){dcon<-DBI::dbConnect(duckdb::duckdb(shared_home=FALSE),dbdir=file.path(outdir,"duck.db"));target<-dcon}else target<-con
+local<-data.frame(g=c("a","b"),v=c(2,5));original<-serialize(local,NULL)
+if(!startsWith(case,"local"))DBI::dbWriteTable(target,"source",local)
+source<-if(startsWith(case,"local"))local else dplyr::tbl(target,"source")
+A<-function()summarize_with_margins(source,z=sum(v,na.rm=TRUE),.grouping=rollup(g),.id="sid",.sort="last")
+a0<-cap(A());stopifnot(a0$kind=="success")
+snapshot<-function(){list(options=opts(),cache=as.list(get("share_dialect_verdicts",ns),all.names=TRUE),audit=cap(last_sent_queries()),input_unchanged=identical(serialize(local,NULL),original),handles_valid=lapply(state$handles,function(h)tryCatch(DBI::dbIsValid(h),error=function(e)NA)),warnings=state$warnings)}
+fault<-function(label){state$hit<-state$hit+1L;state$active<-FALSE;json(list(pid=Sys.getpid(),case=case,mode=mode,boundary=label,state=snapshot()),file.path(outdir,"reached.json"));if(mode=="error")stop(structure(list(message=paste("fault",label),call=NULL),class=c("fault_injected","error","condition")));if(mode=="interrupt")rlang::interrupt();if(mode=="sigint"){writeLines("ready",file.path(outdir,"ready"));repeat Sys.sleep(.05)}}
+if(case=="audit_lifecycle")trace("compile_grouping_spec",where=ns,tracer=quote(if(.GlobalEnv$state$active && identical(getOption("lifecycle_verbosity"),"quiet")).GlobalEnv$fault("discarded name pass while lifecycle option quiet")),print=FALSE)
+if(case=="audit_autoname")trace("as_label",where=asNamespace("rlang"),tracer=quote(if(.GlobalEnv$state$active && identical(getOption("rlang:::use_as_label_infix"),FALSE)).GlobalEnv$fault("automatic summary name while local infix option FALSE")),print=FALSE)
+if(case=="audit_sent") {
+ trace("dbSendQuery",where=asNamespace("DBI"),exit=quote({v<-returnValue(NULL);if(.GlobalEnv$state$active && !is.null(v)).GlobalEnv$state$handles[[length(.GlobalEnv$state$handles)+1L]]<-v}),print=FALSE)
+ trace("dbFetch",where=asNamespace("DBI"),tracer=quote(if(.GlobalEnv$state$active).GlobalEnv$fault("collision query recorded and result acquired before fetch")),print=FALSE)
+}
+if(case=="audit_option")trace("sql_render",where=asNamespace("dbplyr"),tracer=quote(if(.GlobalEnv$state$active && identical(getOption("rlib_warning_verbosity"),"quiet")).GlobalEnv$fault("audit render while temporary quiet option active")),print=FALSE)
+if(startsWith(case,"dialect")){
+ trace("probe_share_dialect_answer",where=ns,tracer=quote({.GlobalEnv$state$purpose<-purpose;.GlobalEnv$state$events[[length(.GlobalEnv$state$events)+1L]]<-purpose}),exit=quote(.GlobalEnv$state$purpose<-NULL),print=FALSE)
+ trace("dbSendQuery",where=asNamespace("DBI"),exit=quote({v<-returnValue(NULL);if(.GlobalEnv$state$active && !is.null(v)).GlobalEnv$state$handles[[length(.GlobalEnv$state$handles)+1L]]<-v}),print=FALSE)
+ if(case=="dialect_control")trace("dbFetch",where=asNamespace("DBI"),tracer=quote(if(.GlobalEnv$state$active && identical(.GlobalEnv$state$purpose,"share_dialect_control")).GlobalEnv$fault("control fetch after real result acquisition")),print=FALSE)
+ if(case=="dialect_cached")trace("share_dialect_verdict",where=ns,exit=quote(if(.GlobalEnv$state$active && identical(returnValue(NULL),"refuses")).GlobalEnv$fault("after measured refuses verdict cached")),print=FALSE)
+}
+if(case=="warning_proxy")source<-source |> dplyr::group_by(g) |> dplyr::summarise(v=sum(v),.groups="drop")
+if(case %in% c("warning_sql","warning_proxy"))options(warn=2)
+if(startsWith(case,"local")){
+ state$count<-0L
+ summary_fun<-function(v){state$count<-state$count+1L;if(state$active && state$count>=3L)fault("later local summary branch");if(case=="local_replay" && state$active)warning("real user summary warning",call.=FALSE);sum(v)}
+ if(case=="local_replay")options(warn=2)
+}
+before<-snapshot();json(before,file.path(outdir,"before.json"));state$active<-TRUE
+B<-function(){if(startsWith(case,"dialect"))summarize_with_margins(source,z=sum(v,na.rm=TRUE),share=share_of_total(z),.grouping=rollup(g))else if(startsWith(case,"local"))summarize_with_margins(source,z=summary_fun(v),.grouping=rollup(g))else if(case=="audit_autoname")summarize_with_margins(source,grouping_id(g),.grouping=rollup(g))else if(case=="audit_sent")summarize_with_margins(source,z=sum(v,na.rm=TRUE),.grouping=rollup(g),.check_margin_label=TRUE)else if(case=="warning_sql")summarize_with_margins(source,z=sum(v),.grouping=rollup(g))else A()}
+b<-cap(withCallingHandlers({candidate<-B();if(case=="warning_sql")dplyr::collect(candidate)else candidate},warning=function(w){state$warnings[[length(state$warnings)+1L]]<-cnd_info(w)}));state$active<-FALSE
+json(snapshot(),file.path(outdir,"after.json"));writeLines("poststate",file.path(outdir,"poststate"));while(!file.exists(file.path(outdir,"resume")))Sys.sleep(.05)
+# Disabling only the real warning cause is allowed; namespace/cache/options are otherwise untouched.
+if(case=="warning_proxy")source<-dplyr::tbl(target,"source") |> dplyr::group_by(g) |> dplyr::summarise(v=sum(v,na.rm=TRUE),.groups="drop")
+a1<-cap(A());retry<-cap(if(case=="warning_sql")A()else B());retry2<-if(startsWith(case,"dialect"))cap(B())else NULL
+json(list(case=case,mode=mode,variant=variant,pid=Sys.getpid(),hit=state$hit,b=b[setdiff(names(b),"value")],A_after=a1[setdiff(names(a1),"value")],retry=retry[setdiff(names(retry),"value")],retry2=if(!is.null(retry2))retry2[setdiff(names(retry2),"value")]else NULL,post_recovery=snapshot(),events=state$events,savepoint_probe=NULL),file.path(outdir,"result.json"));writeLines("observed",file.path(outdir,"done"))
+while(!file.exists(file.path(outdir,"dispose")))Sys.sleep(.05)
+if(duck)DBI::dbDisconnect(dcon,shutdown=TRUE);DBI::dbDisconnect(con);writeLines("disposed",file.path(outdir,"disposed"))

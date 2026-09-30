@@ -1,0 +1,5 @@
+from manage import run
+for case in ['create_after','insert_after']:
+ for variant in ['commit_only','rollback_only']:
+  for mode in ['error','interrupt','sigint']:
+   for rep in [1,2,3]:run(case,mode,variant,rep)

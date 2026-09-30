@@ -1,0 +1,10 @@
+args<-commandArgs(TRUE);root<-args[[1]];out<-args[[2]]
+.libPaths(file.path(root,"library"),include.site=FALSE);library(DBI);library(dplyr)
+cap<-function(x)tryCatch(list(kind="success",value=force(x)),error=function(e)list(kind="error",message=conditionMessage(e)),interrupt=function(e)list(kind="interrupt"))
+run<-function(acquire=FALSE){con<-dbConnect(RSQLite::SQLite(),":memory:");dbWriteTable(con,"source",data.frame(g=c("a","b"),v=c(2,5)));remote<-tbl(con,"source");ustate<<-new.env();ustate$active<-TRUE;ustate$handle<-NULL;ustate$acquire<-acquire
+trace("dbSendQuery",where=asNamespace("DBI"),exit=quote({v<-returnValue(NULL);if(.GlobalEnv$ustate$active && !is.null(v)){.GlobalEnv$ustate$handle<-v;if(.GlobalEnv$ustate$acquire){.GlobalEnv$ustate$active<-FALSE;rlang::interrupt()}}}),print=FALSE)
+if(!acquire)trace("dbFetch",where=asNamespace("DBI"),exit=quote(if(.GlobalEnv$ustate$active&&!is.null(returnValue(NULL))){.GlobalEnv$ustate$active<-FALSE;rlang::interrupt()}),print=FALSE)
+b<-cap(collect(remote));valid<-dbIsValid(ustate$handle);ustate$active<-FALSE;a<-cap(collect(remote));untrace("dbSendQuery",where=asNamespace("DBI"));if(!acquire)untrace("dbFetch",where=asNamespace("DBI"));dbDisconnect(con);list(b=b,result_valid=valid,retry=a$kind)}
+# Use globals for trace environments and run each control as a top-level closure.
+lock<-function(){path<-file.path(out,"lock.sqlite");a<-dbConnect(RSQLite::SQLite(),path);b<-dbConnect(RSQLite::SQLite(),path);dbExecute(a,"PRAGMA busy_timeout=0");dbWriteTable(a,"old",data.frame(value=42));dbBegin(b);dbGetQuery(b,"SELECT * FROM old");dbBegin(a,name="owned");dbExecute(a,"CREATE TABLE new(value INT)");release<-cap(dbCommit(a,name="owned"));rollback<-cap(dbRollback(a,name="owned"));post<-dbReadTable(a,"old");dbRollback(b);dbDisconnect(b);probe<-cap(dbExecute(a,"ROLLBACK TO owned"));dbExecute(a,"ROLLBACK");dbDisconnect(a);list(release=release,rollback=rollback,old=post,remaining_savepoint=probe)}
+jsonlite::write_json(list(lock=lock(),collect_acquired=run(TRUE),collect_fetched=run(FALSE)),file.path(out,"upstream-lock.json"),pretty=TRUE,auto_unbox=TRUE)

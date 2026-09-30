@@ -1,0 +1,109 @@
+args <- commandArgs(TRUE)
+root <- args[[1]]; case <- args[[2]]; mode <- args[[3]]; variant <- args[[4]]; outdir <- args[[5]]
+.libPaths(file.path(root, "library"), include.site = FALSE)
+Sys.unsetenv("TESTTHAT")
+library(marginplyr); library(DBI)
+ns <- asNamespace("marginplyr")
+json <- function(x, path) jsonlite::write_json(x,path,auto_unbox=TRUE,pretty=TRUE,null="null",na="string")
+cnd_info <- function(c) if(is.null(c)) NULL else list(class=class(c),message=conditionMessage(c),call=paste(deparse(conditionCall(c)),collapse=" "),parent=if(!is.null(c$parent)) cnd_info(c$parent) else NULL)
+capture <- function(expr) tryCatch(list(kind="success",value=force(expr)),error=function(e)list(kind="error",condition=cnd_info(e)),interrupt=function(e)list(kind="interrupt",condition=cnd_info(e)))
+state <- new.env(); state$active <- FALSE; state$hit <- 0L; state$events <- list(); state$inserted <- FALSE; state$primary <- FALSE; state$savepoint <- NULL; state$handles <- list()
+opts <- function() {n<-c("rlib_warning_verbosity","lifecycle_verbosity","rlang:::use_as_label_infix","warn","marginplyr.audit_sql");setNames(lapply(n,function(x)list(present=x %in% names(options()),value=getOption(x))),n)}
+options(marginplyr.audit_sql=TRUE)
+con <- DBI::dbConnect(RSQLite::SQLite(),file.path(outdir,"db.sqlite"))
+DBI::dbExecute(con,"PRAGMA journal_mode=DELETE"); DBI::dbExecute(con,"PRAGMA busy_timeout=0")
+DBI::dbExecute(con,"CREATE TABLE source(g TEXT, v REAL)");DBI::dbExecute(con,"INSERT INTO source VALUES ('a',2),('b',5)")
+DBI::dbExecute(con,"CREATE TABLE sentinel(value TEXT)");DBI::dbExecute(con,"INSERT INTO sentinel VALUES ('baseline')")
+if(variant=="attached") DBI::dbExecute(con,paste0("ATTACH DATABASE ", DBI::dbQuoteString(con,file.path(outdir,"attached.sqlite"))," AS other"))
+schema <- if(variant=="temp") "temp" else if(variant=="attached") "other" else "main"
+destination <- if(variant=="attached") DBI::Id(schema="other",table="report") else "report"
+source <- dplyr::tbl(con,"source")
+if(case=="collect_repair")source<-dplyr::filter(source,FALSE)
+q <- summarize_with_margins(source,z=sum(v,na.rm=TRUE),.grouping=rollup(g),.id="sid",.sort="last")
+if(case=="collect_repair")q<-expand_with_margins(source,.grouping=rollup(g),.id="sid",.sort="last")
+if(variant=="env") q<-summarize_with_margins(source, .env=sum(v,na.rm=TRUE),.grouping=rollup(g),.id="sid",.sort="last")
+q_render<-as.character(dbplyr::sql_render(q))
+expected <- as.data.frame(dplyr::collect(q)); qcopy <- serialize(q,NULL); sourcecopy <- serialize(source,NULL)
+source_signature<-serialize(list(class=class(source),query=source$lazy_query),NULL);q_signature<-serialize(list(class=class(q),query=q$lazy_query),NULL)
+health <- function() dplyr::collect(dplyr::compute(q,name="health",temporary=FALSE,overwrite=TRUE,analyze=FALSE))
+a0 <- capture(health()); stopifnot(a0$kind=="success",identical(as.data.frame(a0$value),expected))
+if(variant!="new") {DBI::dbExecute(con,paste0("CREATE TABLE ",schema,".report(old INT)")); DBI::dbExecute(con,paste0("INSERT INTO ",schema,".report VALUES(42)"));DBI::dbExecute(con,paste0("CREATE INDEX ",schema,".old_report_idx ON report(old)"))}
+outer <- variant %in% c("commit","rollback","commit_only","rollback_only")
+if(outer) {DBI::dbBegin(con);DBI::dbExecute(con,"INSERT INTO sentinel VALUES('caller-uncommitted')")}
+snapshot <- function(passive=FALSE) {
+  handles<-lapply(state$handles,function(h) tryCatch(DBI::dbIsValid(h),error=function(e)NA))
+  valid<-DBI::dbIsValid(con)
+  result<-list(valid=valid,query_sql_unchanged=if(valid)identical(q_render,as.character(dbplyr::sql_render(q)))else NA,handles_valid=handles,input_structure_unchanged=identical(source_signature,serialize(list(class=class(source),query=source$lazy_query),NULL)),query_structure_unchanged=identical(q_signature,serialize(list(class=class(q),query=q$lazy_query),NULL)),options=opts(),input_object_unchanged=identical(serialize(source,NULL),sourcecopy),query_object_unchanged=identical(serialize(q,NULL),qcopy),audit=capture(last_sent_queries()),cache=as.list(get("share_dialect_verdicts",ns),all.names=TRUE))
+  if(!valid || passive || (startsWith(case,"collect_") && any(unlist(handles),na.rm=TRUE)))return(result)
+  result$schemas<-lapply(c("main","temp",if(variant=="attached")"other"),function(s) {
+    catalog<-DBI::dbGetQuery(con,paste0("SELECT type,name,tbl_name,sql FROM ",s,".sqlite_master ORDER BY type,name"))
+    tables<-setNames(lapply(catalog$name[catalog$type=="table"],function(t) {
+      id<-DBI::dbQuoteIdentifier(con,DBI::Id(schema=s,table=t));DBI::dbGetQuery(con,paste0("SELECT * FROM ",id))}),catalog$name[catalog$type=="table"])
+    list(schema=s,catalog=catalog,tables=tables)
+  });result
+}
+before<-snapshot();json(before,file.path(outdir,"before.json"))
+fault <- function(label) {
+  state$hit<-state$hit+1L;state$active<-FALSE
+  json(list(case=case,mode=mode,boundary=label,pid=Sys.getpid(),hit=state$hit,side_effects=snapshot(passive=startsWith(case,"collect_"))),file.path(outdir,"reached.json"))
+  if(mode=="error")stop(structure(list(message=paste("fault",case,label),call=NULL),class=c("fault_injected","error","condition")))
+  if(mode=="interrupt")rlang::interrupt()
+  if(mode=="sigint") {writeLines("ready",file.path(outdir,"ready"));repeat Sys.sleep(0.05)}
+  invisible(NULL)
+}
+hook <- function(stage, connection, statement, value=NULL) {
+ if(!identical(connection,con))return(invisible(NULL))
+ sql<-as.character(statement);success<-stage=="after" && !is.null(value)
+ state$events[[length(state$events)+1L]]<-list(stage=stage,sql=sql,success=success)
+ if(grepl("^SAVEPOINT",sql))state$savepoint<-sub('^SAVEPOINT ',"",sql)
+ if(!state$active)return(invisible(NULL))
+ target <- FALSE
+ if(case=="begin_before")target<-stage=="before" && grepl("^SAVEPOINT",sql)
+ if(case=="begin_after")target<-success && grepl("^SAVEPOINT",sql)
+ if(case=="drop_after")target<-success && grepl("^DROP TABLE",sql) && grepl("report",sql)
+ if(case=="create_after")target<-success && grepl("^CREATE.*TABLE",sql) && grepl("report",sql)
+ if(case=="index_after")target<-success && grepl("^CREATE.*INDEX",sql) && grepl("report",sql)
+ if(case %in% c("insert_after","cleanup_between","invalid_cleanup"))target<-success && grepl("^INSERT INTO",sql) && grepl("report",sql)
+ if(case=="analyze_after")target<-success && grepl("^ANALYZE",sql)
+ if(case=="release_after")target<-success && grepl("^RELEASE SAVEPOINT",sql)
+ if(success && grepl("^INSERT INTO",sql) && grepl("report",sql))state$inserted<-TRUE
+ if(case=="cleanup_between") {
+   if(target && !state$primary){state$primary<-TRUE;stop(structure(list(message="primary failure after insert",call=NULL),class=c("fault_injected","error","condition")))}
+   target<-state$primary && success && grepl("^ROLLBACK TO",sql)
+ }
+ if(case=="invalid_cleanup" && target) {state$active<-FALSE;json(snapshot(),file.path(outdir,"before-invalidating.json"));DBI::dbDisconnect(con);stop("primary failure with invalidated connection")}
+ if(target)fault(paste(stage,sql))
+ invisible(NULL)
+}
+trace("dbExecute",where=asNamespace("DBI"),tracer=quote(.GlobalEnv$hook("before",conn,statement)),exit=quote(.GlobalEnv$hook("after",conn,statement,returnValue(NULL))),print=FALSE)
+if(case=="return_after")trace("window_order",where=asNamespace("dbplyr"),tracer=quote(if(.GlobalEnv$state$active && .GlobalEnv$state$inserted).GlobalEnv$fault("return object window_order")),print=FALSE)
+if(case %in% c("collect_acquired","collect_fetched","collect_repair")) {
+
+ trace("dbSendQuery",where=asNamespace("DBI"),exit=quote({v<-returnValue(NULL);if(.GlobalEnv$state$active && !is.null(v)){.GlobalEnv$state$handles[[length(.GlobalEnv$state$handles)+1L]]<-v;if(.GlobalEnv$case=="collect_acquired").GlobalEnv$fault("after dbSendQuery acquired")}}),print=FALSE)
+ trace("dbFetch",where=asNamespace("DBI"),exit=quote(if(.GlobalEnv$state$active && .GlobalEnv$case=="collect_fetched" && !is.null(returnValue(NULL))).GlobalEnv$fault("after successful dbFetch")),print=FALSE)
+}
+if(case=="collect_repair") trace("collect.marginplyr_sqlite_typed_result",where=get(".__S3MethodsTable__.",asNamespace("dplyr")),at=list(c(6,4,2,3,3)),tracer=quote(if(.GlobalEnv$state$active && identical(name,"sid")).GlobalEnv$fault("declared integer type correction after fetch")),print=FALSE)
+reader<-NULL
+if(case=="release_busy") {reader<-DBI::dbConnect(RSQLite::SQLite(),file.path(outdir,"db.sqlite"));DBI::dbBegin(reader);DBI::dbGetQuery(reader,"SELECT * FROM sentinel")}
+state$active<-TRUE
+if(case=="cte_warning")options(warn=2)
+b<-capture(if(case=="cte_warning") dplyr::compute(q,name=destination,temporary=FALSE,overwrite=TRUE,cte=FALSE) else if(startsWith(case,"collect_")) dplyr::collect(q) else dplyr::compute(q,name=destination,temporary=schema=="temp",overwrite=variant!="new",indexes=if(case=="index_after")list("g")else list(),unique_indexes=if(case=="unique_backend")list("sid")else list(),in_transaction=variant=="flag",analyze=TRUE))
+state$active<-FALSE
+# No harness rollback, result clearing, disconnect, or reconnection precedes this snapshot.
+after<-snapshot();json(after,file.path(outdir,"after.json"));json(state$events,file.path(outdir,"events.json"));b_savepoint<-state$savepoint
+writeLines("poststate",file.path(outdir,"poststate"));while(!file.exists(file.path(outdir,"resume")))Sys.sleep(0.05)
+if(!is.null(reader)){DBI::dbRollback(reader);DBI::dbDisconnect(reader)}
+a1<-if(DBI::dbIsValid(con))capture(health())else list(kind="unavailable-invalid-connection")
+retry<-if(variant %in% c("commit_only","rollback_only"))list(kind="not-requested-ownership-control")else if(DBI::dbIsValid(con))capture(if(startsWith(case,"collect_"))dplyr::collect(q)else dplyr::compute(q,name=destination,temporary=schema=="temp",overwrite=TRUE,analyze=TRUE))else list(kind="unavailable-invalid-connection")
+post_recovery<-snapshot()
+# Active existence probe follows the passive observations and normal recovery.
+probe<-if(!outer && DBI::dbIsValid(con)&&!is.null(b_savepoint))capture(DBI::dbExecute(con,paste("ROLLBACK TO",b_savepoint)))else NULL
+# Commit/rollback ownership is tested in a separate run without the active savepoint probe below.
+finish<-NULL
+if(outer)finish<-capture(if(startsWith(variant,"commit"))DBI::dbCommit(con)else DBI::dbRollback(con))
+result<-list(case=case,mode=mode,variant=variant,pid=Sys.getpid(),hit=state$hit,b_savepoint=b_savepoint,expected=expected,b=b[setdiff(names(b),"value")],A_before=a0$kind,A_after=a1[setdiff(names(a1),"value")],A_values=if(a1$kind=="success")as.data.frame(a1$value)else NULL,retry=retry[setdiff(names(retry),"value")],post_recovery=post_recovery,savepoint_probe=probe,outer_finish=finish,events=state$events)
+json(result,file.path(outdir,"result.json"));writeLines("observed",file.path(outdir,"done"))
+# The manager requests resource disposal only after result artifacts exist.
+while(!file.exists(file.path(outdir,"dispose")))Sys.sleep(0.05)
+if(DBI::dbIsValid(con)) {try(DBI::dbExecute(con,"ROLLBACK"),silent=TRUE);DBI::dbDisconnect(con)}
+writeLines("disposed",file.path(outdir,"disposed"))

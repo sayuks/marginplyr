@@ -1,0 +1,25 @@
+args<-commandArgs(TRUE);root<-args[[1]];mode<-args[[2]];outdir<-args[[3]]
+.libPaths(file.path(root,"library"),include.site=FALSE);library(marginplyr);library(DBI)
+con<-dbConnect(RSQLite::SQLite(),file.path(outdir,"minimal.sqlite"))
+dbWriteTable(con,"source",data.frame(g=c("a","b"),v=c(2,5)))
+q<-summarize_with_margins(dplyr::tbl(con,"source"),z=sum(v,na.rm=TRUE),.grouping=rollup(g),.sort="last")
+state<-new.env();state$active<-TRUE;state$name<-NULL
+trace("dbExecute",where=asNamespace("DBI"),exit=quote({
+ if(.GlobalEnv$state$active && grepl(if(.GlobalEnv$mode=="error")"^SAVEPOINT"else"^INSERT INTO",as.character(statement)) && !is.null(returnValue(NULL))) {
+  .GlobalEnv$state$active<-FALSE
+  if(.GlobalEnv$mode=="error")stop("failure after successful savepoint acquisition")else rlang::interrupt()
+ }
+}),print=FALSE)
+capture<-function(x)tryCatch(list(kind="success",value=force(x)),error=function(e)list(kind="error",class=class(e),message=conditionMessage(e)),interrupt=function(e)list(kind="interrupt",class=class(e)))
+control<-capture(dplyr::collect(q))
+b<-capture(dplyr::compute(q,name="report",temporary=FALSE,analyze=FALSE))
+# Observe before any test-side rollback or disconnect.
+post<-list(tables=dbListTables(con),source=dbReadTable(con,"source"),report=if(dbExistsTable(con,"report"))dbReadTable(con,"report")else NULL)
+next_tx<-capture(dbBegin(con))
+retry<-capture(dplyr::compute(q,name="recovered",temporary=FALSE,analyze=FALSE))
+observer<-dbConnect(RSQLite::SQLite(),file.path(outdir,"minimal.sqlite"))
+independent<-list(tables=dbListTables(observer),recovered_visible=dbExistsTable(observer,"recovered"))
+dbDisconnect(observer)
+jsonlite::write_json(list(mode=mode,control=control,b=b,post=post,next_transaction=next_tx,retry=retry[setdiff(names(retry),"value")],independent=independent),file.path(outdir,"minimal.json"),auto_unbox=TRUE,pretty=TRUE,null="null")
+# Observation complete; management may now dispose this experimental database.
+try(dbExecute(con,"ROLLBACK"),silent=TRUE);dbDisconnect(con)

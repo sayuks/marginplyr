@@ -1,0 +1,7 @@
+from manage import run
+for rep in [4,5,6]:
+ for variant in ['new','off']:run('warning_sql','none',variant,rep)
+for rep in [1,2,3]:
+ for mode in ['error','interrupt','sigint']:run('audit_sent',mode,'new',rep)
+for variant in ['commit','rollback']:
+ for mode in ['interrupt','sigint']:run('release_after',mode,variant,1)

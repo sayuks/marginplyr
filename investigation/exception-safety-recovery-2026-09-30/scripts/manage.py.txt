@@ -1,0 +1,54 @@
+import os,sys,json,time,signal,subprocess,pathlib,sqlite3
+ROOT=pathlib.Path(__file__).resolve().parent.parent
+
+def run(case,mode,variant='new',rep=1):
+    name=f'{case}--{mode}--{variant}--{rep}'
+    out=ROOT/'results'/name; out.mkdir(exist_ok=False)
+    env=os.environ.copy(); env.update(HOME=str(ROOT/'home'),TMPDIR=str(ROOT/'tmp'),R_LIBS_USER=str(ROOT/'library'),R_LIBS_SITE='',R_LIBS=str(ROOT/'library'))
+    log=(out/'console.log').open('w')
+    p=subprocess.Popen(['Rscript','--vanilla',str(ROOT/('scripts/session-worker.R' if case.startswith(('audit','dialect','local','warning')) else 'scripts/worker.R')),str(ROOT),case,mode,variant,str(out)],env=env,stdout=log,stderr=subprocess.STDOUT,start_new_session=True)
+    start=time.monotonic(); sent=False; disposed=False; post_observed=False
+    try:
+        while p.poll() is None:
+            if (out/'ready').exists() and not sent:
+                reached=json.loads((out/'reached.json').read_text()); assert reached['pid']==p.pid
+                p.send_signal(signal.SIGINT);sent=True
+            if (out/'poststate').exists() and not post_observed:
+                path=out/'db.sqlite'; c=sqlite3.connect(str(path),timeout=0.1)
+                try:
+                    cats=c.execute("SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name").fetchall()
+                    tables={x[1]:c.execute('SELECT * FROM "'+x[1].replace('"','""')+'"').fetchall() for x in cats if x[0]=='table'}
+                    (out/'immediate-independent.json').write_text(json.dumps({'catalog':cats,'tables':tables},indent=2))
+                except sqlite3.Error as e:
+                    (out/'independent-observer-error.json').write_text(json.dumps({'stage':'immediate' if not post_observed else 'final','class':type(e).__name__,'message':str(e)}))
+                finally:c.close()
+                post_observed=True;(out/'resume').write_text('independent observation complete')
+            if (out/'done').exists() and not disposed:
+                for fn in ['db.sqlite','attached.sqlite']:
+                    path=out/fn
+                    if path.exists():
+                        c=sqlite3.connect(str(path),timeout=0.1)
+                        try:
+                            cats=c.execute("SELECT type,name,tbl_name,sql FROM sqlite_master ORDER BY type,name").fetchall()
+                            tables={x[1]:c.execute('SELECT * FROM "'+x[1].replace('"','""')+'"').fetchall() for x in cats if x[0]=='table'}
+                            (out/(fn+'.independent.json')).write_text(json.dumps({'catalog':cats,'tables':tables},indent=2))
+                        except sqlite3.Error as e:
+                            (out/(fn+'.observer-error.json')).write_text(json.dumps({'class':type(e).__name__,'message':str(e)}))
+                        finally:c.close()
+                (out/'dispose').write_text('dispose after observation');disposed=True
+            if time.monotonic()-start>60:
+                p.terminate();p.wait(timeout=5);break
+            time.sleep(0.02)
+        log.close()
+        result=json.loads((out/'result.json').read_text()) if (out/'result.json').exists() else None
+        info={'case':case,'mode':mode,'variant':variant,'rep':rep,'exit':p.returncode,'sigint_sent':sent,'observed':bool(result),'disposed':(out/'disposed').exists(),'seconds':round(time.monotonic()-start,3)}
+        if result:info.update(hit=result['hit'],B_kind=result['b']['kind'],B_message=(result['b'].get('condition',{}).get('message','') or '')[:160],A_after=result['A_after']['kind'],savepoint_probe=result['savepoint_probe'])
+        (out/'manager.json').write_text(json.dumps(info,indent=2));print(json.dumps(info),flush=True)
+        return info
+    finally:
+        if p.poll() is None:p.terminate();p.wait(timeout=5)
+        for f in list(out.glob('*.sqlite*'))+list(out.glob('duck.db*')):
+            if f.name.endswith('.json'):continue
+            f.unlink()
+
+if __name__=='__main__':run(*sys.argv[1:4],int(sys.argv[4]) if len(sys.argv)>4 else 1)

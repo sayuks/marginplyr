@@ -1,0 +1,13 @@
+args<-commandArgs(TRUE);root<-args[[1]];path<-args[[2]]
+.libPaths(file.path(root,"library"),include.site=FALSE);library(marginplyr)
+cnd<-function(e)list(class=class(e),message=conditionMessage(e),parent=if(!is.null(e$parent))cnd(e$parent)else NULL)
+cap<-function(expr)tryCatch(list(kind="success",value=force(expr)),error=function(e)list(kind="error",condition=cnd(e)))
+x<-data.frame(g=c("a","b"),v=c(2,5));before<-serialize(x,NULL)
+summary_fun<-function(v){if(length(v)>1L)stop(structure(list(message="late failure",call=NULL),class=c("late_failure","error","condition")));warning("early warning",call.=FALSE);sum(v)}
+normal<-cap(summarize_with_margins(x,z=sum(v),.grouping=rollup(g)))
+options(warn=1);warning_mode<-cap(summarize_with_margins(x,z=summary_fun(v),.grouping=rollup(g)))
+options(warn=2);error_mode<-cap(summarize_with_margins(x,z=summary_fun(v),.grouping=rollup(g)))
+retry<-cap(summarize_with_margins(x,z=sum(v),.grouping=rollup(g)))
+# Same late-failure expression with warning source disabled preserves the cause at warn=2.
+without_warning<-cap(summarize_with_margins(x,z={if(length(v)>1L)stop(structure(list(message="late failure",call=NULL),class=c("late_failure","error","condition")));sum(v)},.grouping=rollup(g)))
+jsonlite::write_json(list(normal=normal,warning_mode=warning_mode,error_mode=error_mode,retry=retry,without_warning=without_warning,input_unchanged=identical(before,serialize(x,NULL))),path,pretty=TRUE,auto_unbox=TRUE,null="null")

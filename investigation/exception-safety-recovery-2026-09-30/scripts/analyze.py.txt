@@ -1,0 +1,31 @@
+from pathlib import Path
+import json,csv,collections
+root=Path(__file__).resolve().parent.parent
+rows=[]
+def schemas(x):return {v['schema']:v for v in x.get('schemas',[])}
+for p in sorted((root/'results').glob('*/result.json')):
+ x=json.loads(p.read_text());before=json.loads((p.parent/'before.json').read_text());after=json.loads((p.parent/'after.json').read_text());case=x['case'];mode=x['mode'];rep=int(p.parent.name.split('--')[-1]);variant=x['variant']
+ valid=True;reason=''
+ if case=='collect_repair' and x['hit']==0:valid=False;reason='Injector did not reach type-repair path'
+ if case=='warning_sql' and rep<=3:valid=False;reason='Harness constructed deferred result without executing it'
+ if case=='insert_after' and variant=='new' and rep==1:valid=False;reason='Pilot manager reporting revision; excluded in favor of repetitions 2-4'
+ if case=='begin_after' and mode=='error':classification='Confirmed contract violation: ordinary acquisition failure leaves owned savepoint'
+ elif case=='local_replay' and mode=='error':classification='Confirmed contract violation: warning replay masks original External error'
+ elif case=='local_replay':classification='Safety concern requiring interrupt/cleanup precedence decision'
+ elif case in ['begin_after','drop_after','create_after','index_after','insert_after','analyze_after','return_after','cleanup_between'] and mode in ['interrupt','sigint']:classification='Safety concern requiring interrupt restoration decision'
+ elif case in ['release_busy','invalid_cleanup','release_after','collect_acquired','unique_backend']:classification='Expected failure or upstream behavior'
+ else:classification='No issue within verified scope'
+ if not valid:classification='Injector, observer, or environment problem'
+ b=schemas(before);a=schemas(after)
+ src_same=sent_same=None
+ if 'main' in a and 'main' in b:
+  src_same=a['main']['tables'].get('source')==b['main']['tables'].get('source');sent_same=a['main']['tables'].get('sentinel')==b['main']['tables'].get('sentinel')
+ destination_before={s:v['tables'].get('report') for s,v in b.items()};destination_after={s:v['tables'].get('report') for s,v in a.items()}
+ probe=x.get('savepoint_probe');remaining=probe is not None and probe['kind']=='success'
+ row=dict(run=p.parent.name,case=case,condition=mode,variant=variant,valid_evidence=valid,exclusion_reason=reason,classification=classification,hit=x['hit'],B_kind=x['b']['kind'],source_rows_preserved=src_same,sentinel_rows_preserved=sent_same,options_equal=before['options']==after['options'],audit_equal=before.get('audit')==after.get('audit'),handles_valid=json.dumps(after.get('handles_valid')),destination_before=json.dumps(destination_before),destination_after=json.dumps(destination_after),owned_savepoint_probe_succeeded=remaining,A_after=x['A_after']['kind'],retry=x['retry']['kind'],outer_finish=json.dumps(x.get('outer_finish')),disposed=(p.parent/'disposed').exists(),path=str(p.relative_to(root)))
+ rows.append(row)
+with (root/'cases.csv').open('w') as f:
+ w=csv.DictWriter(f,fieldnames=rows[0]);w.writeheader();w.writerows(rows)
+valid=[x for x in rows if x['valid_evidence']]
+summary=dict(total_completed=len(rows),valid_runs=len(valid),excluded=len(rows)-len(valid),case_families=len(set(x['case'] for x in valid)),actual_sigint_runs=sum(x['condition']=='sigint' for x in valid),classifications=dict(collections.Counter(x['classification'] for x in valid)),all_disposed=all(x['disposed'] for x in rows),normal_body_restore_failures=[x['run'] for x in valid if x['condition']=='error' and x['case'] in ['drop_after','create_after','index_after','insert_after','analyze_after','return_after'] and x['destination_before']!=x['destination_after']],input_row_failures=[x['run'] for x in valid if x['source_rows_preserved'] is False],sentinel_failures=[x['run'] for x in valid if x['sentinel_rows_preserved'] is False])
+(root/'summary.json').write_text(json.dumps(summary,indent=2));print(json.dumps(summary,indent=2))
