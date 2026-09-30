@@ -204,8 +204,8 @@ NA, including an explicitly typed Arrow Scalar, was correct. Ordinary
 union restored the partition value; projecting a single branch did not.
 
 The [standalone script](2026-09-30-arrow-layout-invariance/reproduce.R) retained
-these controls, schema checks, file-count/row-group checks, direct and computed
-results, repeated collection, and generated data. Its `--arrow-only` mode did
+schema checks, file-count/row-group checks, direct and computed results,
+repeated collection, and generated data. Its `--arrow-only` mode did
 not load marginplyr. The observed Arrow-only sequence was:
 
 ```r
