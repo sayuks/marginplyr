@@ -207,6 +207,10 @@ operation. No package staging table should need cleanup because none is
 created. Preserve the causal backend failure if cleanup itself fails; do not
 claim successful rollback when it could not be completed.
 
+The [catchable-interruption amendment](#catchable-interruption-amendment-755)
+adds the selected interruption guarantee and its acceptance matrix;
+implementation is pending.
+
 Overwriting a table used by the input is not a new success guarantee. A rejected
 self-overwrite must leave that input unchanged. Do not add full-result staging
 merely to gain the extra successful self-overwrite demonstrated by B-stage.
@@ -410,3 +414,138 @@ Permanent evidence:
 [final B-direct patch](https://github.com/sayuks/marginplyr/blob/e6046acd2933d943aba71b81630287f8599262b1/investigation/sqlite-b-direct-2026-09-25/review/B/B-direct.patch).
 The archive preserves original evidence bytes and provides separate portable
 replay instructions; initial build scripts are not the final prototype source.
+
+## Catchable-interruption amendment (#755)
+
+Decision: accepted on 2026-09-30 under the maintainer's delegation of technical
+judgment. Implementation and public-contract publication are pending. This
+amendment selects recovery behavior; it is not evidence that the existing
+interrupt path already meets it.
+
+### Recovery boundary and ownership
+
+For a catchable R user interrupt delivered before successful release of the
+package-owned savepoint, restore the database state at savepoint acquisition
+and release that savepoint before leaving the operation, provided the connection
+and transaction survive and cleanup SQL succeeds. An overwritten destination
+regains its prior data, schema, indexes, and affected statistics; a newly
+created destination is absent. Preserve source and unrelated tables. Do not
+return a successful result or silently retry the interrupted operation.
+
+This responsibility begins when SQLite acquires the savepoint, including the
+handoff before the acquisition method returns to R. It covers DROP, CREATE,
+index creation, INSERT, ANALYZE, and preparation of the returned lazy table.
+Protect acquisition/release ownership handoffs and rollback/release cleanup
+from catchable R interruption. Keep the main materialization work interruptible;
+defer interruption only across those critical resource transitions, not across
+the complete computation. An interrupt arriving during rollback must not leave
+an otherwise releasable savepoint behind. Exact competing-condition outcomes,
+including second interrupts and cleanup failure reporting, belong to #756;
+that decision must retain this resource-recovery boundary.
+
+For one primary interrupt with successful cleanup, propagate interruption as
+an interrupt condition, not as an ordinary execution error. For failed cleanup,
+report the failed cleanup step and its cause, with the triggering interrupt
+observable in the condition's causal information; do not promise a new stable
+condition subclass. These minimum outcomes permit recovery implementation
+without waiting for #756. Selection among a pending execution error, a further
+interrupt, and buffered warnings remains outside this implementation ticket.
+
+Earlier uncommitted caller work predates this savepoint and must remain intact.
+Do not commit or roll back an outer caller transaction as a recovery shortcut.
+After interrupted work is restored, caller commit persists their earlier work
+and the restored destination; caller rollback removes their earlier work and
+restores the state before their transaction. Both supported in_transaction
+values, TRUE and FALSE, have this same ownership and interruption guarantee.
+
+Successful backend release is the boundary, including its ownership handoff to
+R before a deferred interrupt is delivered. Without an outer transaction it
+completes persistent work; with one it leaves the completed materialization
+under the caller's commit/rollback decision. Interruption after this boundary
+may prevent the R value reaching the caller, but must not attempt to undo the
+released work or claim that no materialization occurred. Successful release of
+an inner savepoint is not a caller commit.
+
+### Limits and failure reporting
+
+An invalid connection, backend-aborted whole transaction, or failed cleanup
+cannot support an unconditional restoration or same-session reuse guarantee.
+Do not claim completed cleanup in those cases or automatically reconnect,
+commit, or roll back the caller's transaction. Report incomplete recovery with
+the triggering interruption and cleanup cause observable, meeting the minimum
+outcomes above. #756 owns additional competing-condition reporting policy.
+
+Native cancellation inside a SQLite statement is not established by the recorded
+checkpoint SIGINT experiments. SQLite's native interruption API can roll back
+an entire explicit transaction during a write; a private savepoint cannot
+preserve caller work the backend has already removed. State this as a backend
+limit, not as measured behavior of this marginplyr path. A timeout receives
+the applicable ordinary-error or catchable-interrupt recovery only if it
+unwinds through R with usable backend state; native timeout behavior remains
+unverified. Process termination, fatal signals, and forced termination during
+cleanup have no package cleanup guarantee.
+
+### Observable acceptance matrix
+
+Use a disposable SQLite database with independently specified source rows,
+an old destination with distinguishable data/schema/index, an unrelated
+sentinel, and a separate observer connection for persistent-state checks.
+Observe state immediately after interruption, before retry, caller decisions,
+test rollback, reconnect, or disposal can conceal it. A successful retry alone
+does not prove that the original savepoint was released.
+
+| Boundary or scenario | Required observations |
+|---|---|
+| Before acquisition | No owned savepoint or destination change; interruption remains observable |
+| SAVEPOINT acquired, acquisition method not yet returned | Prior destination unchanged; owned savepoint removed; normal connection use resumes |
+| After DROP, CREATE, index creation, INSERT, or ANALYZE | Exact prior destination restored, or new destination absent; source/sentinel unchanged; owned savepoint absent |
+| Final lazy-table preparation before release | Same restoration and release; no successful return |
+| During rollback-to / between rollback-to and release | Interrupt does not prevent otherwise successful restoration and release; condition outcome follows #756 |
+| After successful outermost release, before R return | Completed destination retained and independently visible; owned savepoint absent; no reversal attempted |
+| After successful inner release, before R return | Caller transaction remains open; commit persists the completed result and earlier work; rollback undoes both |
+| Interrupted overwrite with outer transaction, before release | Earlier caller marker remains on the same connection; destination restored; caller commit persists only earlier caller work and restored state; caller rollback restores pre-transaction state |
+| No outer transaction, after completed interruption cleanup | Observer sees prior persistent state; a fresh dbBegin succeeds; a later valid persistent compute is visible independently |
+| Invalid connection, aborted whole transaction, or cleanup failure | No false recovery/reuse claim; interruption and cleanup cause observable; no caller-transaction takeover |
+
+Run pre-release restoration and caller-ownership scenarios with both
+in_transaction choices. Include new and overwritten destinations, temporary
+and persistent tables, an attached schema, and a dedicated unsorted result as
+well as a sorted result. Independently expected values, physical schema,
+indexes, affected statistics, and subsequent connection behavior establish
+acceptance; private helper names and handler shape do not.
+
+Keep controlled interrupt injection and supervisor-delivered actual SIGINT as
+separate evidence. For actual SIGINT require a flushed reached notification
+and worker identity before delivery, then immediate observations in that same
+process. Keep healthy success and ordinary-error controls. Record the source
+snapshot, R/OS/dependency versions, and unverified native-statement, timeout,
+and second-interrupt cases rather than claiming that checkpoint observations
+cover them. Existing measurements belong to the dated investigation's
+*Safety concerns requiring specification decisions* and its archived evidence.
+
+### Implementation and publication follow-up
+
+Scope implementation to the existing dedicated SQLite savepoint owner and its
+public compute boundary. No staging table, new public option, new lazy-input
+read, general backend framework, or automatic connection repair is required.
+Coordinate cleanup interruption and diagnostic behavior with #756; do not
+infer that behavior from an error handler's spelling.
+
+When implementation passes this matrix, publish the recovery boundary and its
+limits in R/summarize_with_margins.R's materialization contract and
+vignettes/database_backends.qmd's SQLite guidance, reachable by both summary
+and expansion users. R/marginplyr-package.R owns any resulting change to public
+condition promises and must follow #756. Regenerate affected help through the
+normal documentation workflow. Until implementation lands, public guidance
+must not describe the selected guarantee as already available.
+
+ADR 0031 owns the adopted responsibility and trade-off; this amendment owns
+acceptance and publication. No new glossary term is needed: savepoints,
+transactions, and interrupts are borrowed technical concepts. Preserve the
+dated investigation as evidence, and complete the package Review-ready and
+applicable release-matrix checks before publishing the implementation for
+review.
+
+Primary boundary references: [SQLite savepoints](https://www.sqlite.org/lang_savepoint.html),
+[SQLite native interruption](https://www.sqlite.org/c3ref/interrupt.html), and
+[R condition handling](https://stat.ethz.ch/R-manual/R-devel/library/base/html/conditions.html).

@@ -180,6 +180,9 @@ transaction. Preserve the causal error if rollback or release itself fails,
 and do not claim recovery after connection or whole-transaction failure.
 Successful self-overwrite is not added to the contract.
 
+The [catchable-interruption amendment](#catchable-interruption-amendment-2026-09-30)
+selects the interruption guarantee; its implementation is pending.
+
 The Sent query record describes the last tracked Margin verb or inspection
 call during construction, with its result entry matching full direct rendering.
 Finite LIMIT, destination metadata, DDL, INSERT, ANALYZE, and savepoints do not
@@ -248,3 +251,25 @@ those two references while leaving the caller's summary expressions under their
 ordinary lexical meaning. The portable adapter continues to use the direct
 result boundary. Construction retains ADR 0020's source-row policy; the caller
 executes the result by collecting or materializing it.
+
+## Catchable-interruption amendment (2026-09-30)
+
+Issue #755 adopts restoration of package-owned SQLite materialization work on
+a catchable R user interrupt before successful savepoint release. With a valid
+connection, a surviving transaction, and successful cleanup, restore the prior
+destination and release the owned savepoint before propagating interruption.
+Preserve earlier caller work and leave the caller's outer transaction open.
+Cover acquisition handoffs, destination mutations, final result preparation,
+and cleanup; keep the materialization itself interruptible. Successful release
+ends this recovery responsibility, committing only when no outer transaction
+exists. An interrupt after that boundary does not reverse completed work.
+
+Leaving interruption recovery to the caller is rejected; #755 owns the
+evidence and rationale. Native statement
+cancellation, backend-aborted transactions, invalid connections, failed cleanup,
+timeouts, and process termination do not gain an unconditional recovery promise.
+Issue #756 owns competing-condition precedence and reporting details.
+
+This is an accepted target, with implementation and public-contract publication
+pending. The [specification's interruption amendment](../specs/sqlite-b-direct.md#catchable-interruption-amendment-755)
+owns the observable acceptance matrix and publication requirements.
