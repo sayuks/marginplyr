@@ -416,8 +416,8 @@ written_message_lines <- function(lines, runs) {
 # saying how many further grouping sets raised it. The conditions are replayed
 # in the order the branches raised them, and the reported occurrence is the
 # first, so a plan that raises nothing new reads as one branch's report.
-# ADR 0035 selects competing outcomes: interruption survives replay failure;
-# otherwise an ordinary branch error takes precedence over an error from replay.
+# ADR 0035 selects outcomes from caught conditions: interruption survives a
+# caught replay failure; otherwise the earlier branch error takes precedence.
 # With neither pending, replay errors propagate as raised.
 #
 # The count line is marginplyr's own sentence and is inside ADR 0023's rule,

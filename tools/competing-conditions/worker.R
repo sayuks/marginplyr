@@ -23,13 +23,14 @@ write_json(list(
     function(pkg) as.character(utils::packageVersion(pkg))
   ), c("DBI", "RSQLite", "dbplyr", "dplyr", "rlang", "testthat", "pkgload"))
 ), "environment.json")
-effects <- numeric()
-replayed <- list()
-checkpoint <- NULL
+notification <- new.env(parent = emptyenv())
+notification$effects <- numeric()
+notification$replayed <- list()
+notification$checkpoint <- NULL
 deliver <- function() {
   write_json(c(list(pid = Sys.getpid(), operation = configuration$operation,
                     reached_utc = format(Sys.time(), tz = "UTC", usetz = TRUE)),
-               checkpoint()), "reached.json")
+               notification$checkpoint()), "reached.json")
   switch(configuration$mode,
     sigint = {
       while (!file.exists(file.path(directory, "resume"))) invisible(NULL)
@@ -50,12 +51,12 @@ results <- test_that("reached competing-condition checkpoint acceptance", {
     on.exit(options(old), add = TRUE)
     input <- data.frame(g = c("a", "b"), v = c(2, 5))
     original <- input
-    checkpoint <- function() list(effects = effects)
+    notification$checkpoint <- function() list(effects = notification$effects)
     branch <- function(v) {
       if (length(v) == 2L) {
         deliver()
       } else {
-        effects <<- c(effects, sum(v))
+        notification$effects <- c(notification$effects, sum(v))
         if (configuration$warnings) warning("earlier warning")
       }
       sum(v)
@@ -63,17 +64,18 @@ results <- test_that("reached competing-condition checkpoint acceptance", {
     raw <- capture(withCallingHandlers(
       summarize_with_margins(input, z = branch(.data$v), .grouping = rollup("g")),
       warning = function(cnd) {
-        replayed[[length(replayed) + 1L]] <<- cnd
+        notification$replayed[[length(notification$replayed) + 1L]] <- cnd
       }
     ))
     saveRDS(raw, file.path(directory, "raw.rds"))
     probe <- capture(Sys.sleep(0))
-    saveRDS(list(raw = raw, probe = probe, effects = effects, replayed = replayed,
+    saveRDS(list(raw = raw, probe = probe, effects = notification$effects,
+                 replayed = notification$replayed,
                  input = input, warn = getOption("warn")),
             file.path(directory, "immediate.rds"))
     expect_identical(probe$kind, "value")
     expect_identical(input, original)
-    expect_identical(effects, c(2, 5))
+    expect_identical(notification$effects, c(2, 5))
     expect_identical(getOption("warn"), configuration$warn)
     if (configuration$mode == "healthy") {
       expect_identical(raw$kind, if (configuration$warnings &&
@@ -82,7 +84,7 @@ results <- test_that("reached competing-condition checkpoint acceptance", {
       expect_identical(raw$kind, "interrupt")
       expect_false(inherits(raw$condition, "error"))
       if (configuration$warnings) {
-        expect_length(replayed, 1L)
+        expect_length(notification$replayed, 1L)
         if (configuration$warn == 2L) {
           expect_s3_class(raw$condition$interrupt, "interrupt")
           expect_s3_class(raw$condition$replay_error, "error")
@@ -106,7 +108,7 @@ results <- test_that("reached competing-condition checkpoint acceptance", {
       state <- sqlite_interrupt_hook("before_cleanup_release", deliver = deliver,
                                      execution_error = cause)
       on.exit(sqlite_interrupt_unhook(state), add = TRUE)
-      checkpoint <- function() list(inserted = state$inserted,
+      notification$checkpoint <- function() list(inserted = state$inserted,
                                     rolled_back = state$rolled_back,
                                     counts = as.list(state$counts))
       raw <- capture(dplyr::compute(fixture$query, name = "report",
