@@ -496,7 +496,7 @@ summarize_margin_union <- function(.data,
   # reading of the contract allows.
   on.exit(report_branch_warnings(conditions), add = TRUE)
 
-  branches <- Map(
+  branches <- tryCatch(Map(
     function(grouping_set, set_id) {
       branch_dots <- rewrite_grouping_dots(
         dots,
@@ -679,7 +679,11 @@ summarize_margin_union <- function(.data,
     },
     plan$sets,
     plan$set_ids
-  )
+  ), interrupt = function(cnd) {
+    conditions$interrupt <- conditions$interrupt %||% cnd
+    NULL
+  })
+  if (!is.null(conditions$interrupt)) return(NULL)
 
   if (
     identical(backend$kind, "sql") &&

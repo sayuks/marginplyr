@@ -83,13 +83,24 @@ sqlite_interrupt_state <- function(con) {
 # Trace DBI/dplyr system boundaries after real statements or result preparation.
 # `deliver` permits a separate SIGINT supervisor to use these same checkpoints.
 sqlite_interrupt_hook <- function(checkpoint, deliver = rlang::interrupt,
-                                  cleanup_failure = NULL) {
+                                  cleanup_failure = NULL,
+                                  execution_error = simpleError(
+                                    "ordinary INSERT checkpoint failure"
+                                  ),
+                                  repeat_checkpoint = NULL,
+                                  deliver_repeat = rlang::interrupt,
+                                  cleanup_condition = NULL,
+                                  before_cleanup_failure = function() NULL) {
   state <- new.env(parent = emptyenv())
   state$hooked <- TRUE
   state$hit <- FALSE
   state$inserted <- FALSE
+  state$rolled_back <- FALSE
   state$savepoint <- NULL
   state$cleanup_failure <- NULL
+  state$execution_error <- execution_error
+  state$repeated <- FALSE
+  state$counts <- c(rollback = 0L, release = 0L)
   patterns <- c(acquire = "^SAVEPOINT ", drop = "^DROP TABLE",
                 create = "^CREATE (TEMPORARY )?TABLE", index = "^CREATE INDEX",
                 insert = "^INSERT INTO", analyze = "^ANALYZE",
@@ -104,6 +115,20 @@ sqlite_interrupt_hook <- function(checkpoint, deliver = rlang::interrupt,
     tracer = function() {
       frame <- parent.frame()
       statement <- as.character(get("statement", envir = frame))
+      if (checkpoint == "before_cleanup_release" && state$rolled_back &&
+            !state$hit && grepl("^RELEASE SAVEPOINT", statement)) {
+        fault()
+      }
+      for (step in names(state$counts)) {
+        pattern <- if (step == "rollback") {
+          "^ROLLBACK TO"
+        } else {
+          "^RELEASE SAVEPOINT"
+        }
+        if (grepl(pattern, statement)) {
+          state$counts[[step]] <- state$counts[[step]] + 1L
+        }
+      }
       if (state$hit && !is.null(cleanup_failure)) {
         pattern <- if (cleanup_failure == "rollback") {
           "^ROLLBACK TO"
@@ -111,9 +136,12 @@ sqlite_interrupt_hook <- function(checkpoint, deliver = rlang::interrupt,
           "^RELEASE SAVEPOINT"
         }
         if (grepl(pattern, statement)) {
-          state$cleanup_failure <- simpleError(
-            paste("injected", cleanup_failure)
-          )
+          state$cleanup_failure <- if (is.null(cleanup_condition)) {
+            simpleError(paste("injected", cleanup_failure))
+          } else {
+            cleanup_condition
+          }
+          before_cleanup_failure()
           stop(state$cleanup_failure)
         }
       }
@@ -127,15 +155,22 @@ sqlite_interrupt_hook <- function(checkpoint, deliver = rlang::interrupt,
       if (grepl("^SAVEPOINT ", statement)) {
         state$savepoint <- sub("^SAVEPOINT ", "", statement)
       }
+      if (grepl("^ROLLBACK TO", statement)) state$rolled_back <- TRUE
       if (grepl("^INSERT INTO", statement)) {
         state$inserted <- TRUE
-        if (checkpoint %in% c("rollback", "cleanup_release")) {
-          stop("ordinary INSERT checkpoint failure")
+        if (checkpoint %in% c("rollback", "cleanup_release",
+                              "before_cleanup_release")) {
+          stop(state$execution_error)
         }
       }
       if (!state$hit && checkpoint %in% names(patterns) &&
             grepl(patterns[[checkpoint]], statement)) {
         fault()
+      }
+      if (state$hit && !state$repeated && !is.null(repeat_checkpoint) &&
+            grepl(patterns[[repeat_checkpoint]], statement)) {
+        state$repeated <- TRUE
+        deliver_repeat()
       }
     }
   ))
@@ -211,4 +246,11 @@ expect_sqlite_restored <- function(fixture, state, outer = FALSE) {
     expect_error(DBI::dbExecute(con, paste("ROLLBACK TO", state$savepoint)),
                  "no such savepoint")
   }
+}
+
+# Resumable controlled notification models catchable interruption at a system
+# checkpoint. Actual SIGINT remains the separate supervisor's observation.
+sqlite_checkpoint_interrupt <- function(cnd) {
+  withRestarts(signalCondition(cnd), resume = function() NULL)
+  rlang::interrupt()
 }
