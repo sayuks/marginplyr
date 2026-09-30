@@ -216,3 +216,11 @@ assert on the rendered message, as #108 anticipated, and a plan whose branches
 raise different diagnostics is asserted alongside the plan whose branches repeat
 one — a test that only checks collapsing would pass just as well if everything
 collapsed.
+
+## Competing-interruption amendment (2026-09-30)
+
+[ADR 0035](0035-preserve-competing-conditions-at-interruption.md) and its
+[specification](../specs/competing-conditions.md) select interrupt-time replay
+and competing-condition outcomes. Implementation and public-contract publication
+are pending. Warning identity and Condition context remain governed here;
+#754's ordinary-error replay behavior is retained.

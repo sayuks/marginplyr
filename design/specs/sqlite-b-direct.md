@@ -438,9 +438,10 @@ Protect acquisition/release ownership handoffs and rollback/release cleanup
 from catchable R interruption. Keep the main materialization work interruptible;
 defer interruption only across those critical resource transitions, not across
 the complete computation. An interrupt arriving during rollback must not leave
-an otherwise releasable savepoint behind. Exact competing-condition outcomes,
-including second interrupts and cleanup failure reporting, belong to #756;
-that decision must retain this resource-recovery boundary.
+an otherwise releasable savepoint behind. [ADR 0035](../adr/0035-preserve-competing-conditions-at-interruption.md)
+selects competing-condition outcomes under #756; its
+[specification](competing-conditions.md) owns the additional acceptance and
+publication requirements, retaining this resource-recovery boundary.
 
 For one primary interrupt with successful cleanup, propagate interruption as
 an interrupt condition, not as an ordinary execution error. For failed cleanup,
@@ -472,7 +473,8 @@ cannot support an unconditional restoration or same-session reuse guarantee.
 Do not claim completed cleanup in those cases or automatically reconnect,
 commit, or roll back the caller's transaction. Report incomplete recovery with
 the triggering interruption and cleanup cause observable, meeting the minimum
-outcomes above. #756 owns additional competing-condition reporting policy.
+outcomes above. [ADR 0035's specification](competing-conditions.md) owns the
+additional competing-condition reporting policy; its implementation is pending.
 
 Native cancellation inside a SQLite statement is not established by the recorded
 checkpoint SIGINT experiments. SQLite's native interruption API can roll back
@@ -527,14 +529,15 @@ cover them. Existing measurements belong to the dated investigation's
 Scope implementation to the existing dedicated SQLite savepoint owner and its
 public compute boundary. No staging table, new public option, new lazy-input
 read, general backend framework, or automatic connection repair is required.
-Coordinate cleanup interruption and diagnostic behavior with #756; do not
+Coordinate cleanup interruption and diagnostic behavior with
+[ADR 0035's specification](competing-conditions.md); do not
 infer that behavior from an error handler's spelling.
 
 When implementation passes this matrix, publish the recovery boundary and its
 limits in R/summarize_with_margins.R's materialization contract and
 vignettes/database_backends.qmd's SQLite guidance, reachable by both summary
 and expansion users. R/marginplyr-package.R owns any resulting change to public
-condition promises and must follow #756. Regenerate affected help through the
+condition promises and must follow ADR 0035. Regenerate affected help through the
 normal documentation workflow. Until implementation lands, public guidance
 must not describe the selected guarantee as already available.
 
