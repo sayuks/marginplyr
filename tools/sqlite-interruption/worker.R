@@ -130,8 +130,15 @@ results <- test_that("supervised SQLite interruption acceptance", {
       expect_false(RSQLite::sqliteIsTransacting(con))
       expect_identical(DBI::dbReadTable(fixture$observer, "sentinel")$value,
                        if (configuration$commit) c("baseline", "caller") else "baseline")
-      expect_equal(DBI::dbReadTable(fixture$observer, fixture$destination),
-                   if (completed && configuration$commit) fixture$expected else data.frame(old = 42L))
+      reader <- if (configuration$schema == "temp") con else fixture$observer
+      if (completed && configuration$commit) {
+        expect_equal(DBI::dbReadTable(reader, fixture$destination), fixture$expected)
+      } else if (configuration$overwrite) {
+        expect_identical(DBI::dbReadTable(reader, fixture$destination),
+                         data.frame(old = 42L))
+      } else {
+        expect_false(DBI::dbExistsTable(reader, fixture$destination))
+      }
     } else {
       expect_true(DBI::dbBegin(con))
       expect_true(DBI::dbCommit(con))
