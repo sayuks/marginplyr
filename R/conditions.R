@@ -125,6 +125,7 @@ abort_selection_predicate <- function(label, parent) {
 # grouped by to the column the caller named, and `call` is the Margin verb the
 # caller wrote -- `NULL` where there is no verb to name, which is how a direct
 # call to an adapter leaves the blamed call as it found it.
+# `error` retains the restated ordinary branch error for exit-time replay.
 #
 # The buffer is what makes a Repeated condition one report: a branch warning is
 # withheld as it is raised and every branch's warnings are replayed together,
@@ -143,6 +144,7 @@ new_branch_conditions <- function(keys, call = NULL) {
   conditions$keys <- keys
   conditions$call <- call
   conditions$warnings <- list()
+  conditions$error <- NULL
   conditions
 }
 
@@ -169,7 +171,8 @@ with_branch_conditions <- function(expr,
       }
     ),
     error = function(cnd) {
-      stop(restate_branch_error(cnd, conditions, restatements))
+      conditions$error <- restate_branch_error(cnd, conditions, restatements)
+      stop(conditions$error)
     }
   )
 }
@@ -372,6 +375,8 @@ written_message_lines <- function(lines, runs) {
 # saying how many further grouping sets raised it. The conditions are replayed
 # in the order the branches raised them, and the reported occurrence is the
 # first, so a plan that raises nothing new reads as one branch's report.
+# An ordinary branch error takes precedence over an error from replay, including
+# R's warn = 2 conversion; without one, replay errors propagate as raised.
 #
 # The count line is marginplyr's own sentence and is inside ADR 0023's rule,
 # where everything else this module writes is outside it: the only value
@@ -393,7 +398,10 @@ report_branch_warnings <- function(conditions) {
         )))
       )
     }
-    warning(cnd)
+    tryCatch(
+      warning(cnd),
+      error = function(cnd) stop(conditions$error %||% cnd)
+    )
   }
   invisible(NULL)
 }

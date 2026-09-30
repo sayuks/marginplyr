@@ -668,6 +668,8 @@ test_that("a branch error's restatement carries no styling and does not vary", {
 # `rollup()` runs the detail set before the Grand total set, so the warning is
 # raised and buffered before the error aborts the operation.
 test_that("a warning a branch raised survives a later branch's error", {
+  old_options <- options(warn = 1L)
+  on.exit(options(old_options), add = TRUE)
   reported <- NULL
   error <- expect_error(withCallingHandlers(
     summarize_branch_diagnostics("unreached", "early warning", fail = TRUE),
@@ -680,6 +682,110 @@ test_that("a warning a branch raised survives a later branch's error", {
   expect_match(conditionMessage(error), "aborting branch", fixed = TRUE)
   expect_length(reported, 1L)
   expect_match(reported[[1L]], "early warning", fixed = TRUE)
+})
+
+test_that("warning replay preserves a later ordinary External error", {
+  data <- data.frame(g = c("a", "b"), v = c(2, 5))
+  original <- unserialize(serialize(data, NULL))
+  cause <- structure(
+    list(message = "late failure", call = NULL),
+    class = c("late_failure", "error", "condition")
+  )
+  warn <- TRUE
+  fail <- TRUE
+  events <- character()
+  summary_fun <- function(v) {
+    if (length(v) > 1L && fail) {
+      events <<- c(events, "late error")
+      stop(cause)
+    }
+    if (warn) {
+      events <<- c(events, "early warning")
+      warning("early warning", call. = FALSE)
+    }
+    sum(v)
+  }
+  run_summary <- function() {
+    # `v` and `g` are columns available only inside the summary data mask.
+    # nolint start: object_usage_linter.
+    summarize_with_margins(
+      data, z = summary_fun(v), .grouping = rollup(g)
+    )
+    # nolint end
+  }
+
+  old_options <- options(warn = 2L)
+  on.exit(options(old_options), add = TRUE)
+  error <- tryCatch(
+    withCallingHandlers(
+      run_summary(),
+      warning = function(cnd) {
+        events <<- c(events, "warning replay")
+      }
+    ),
+    error = identity
+  )
+
+  expect_identical(
+    events, c("early warning", "early warning", "late error", "warning replay")
+  )
+  expect_s3_class(error, "rlang_error")
+  expect_identical(error$parent, cause)
+  expect_match(conditionMessage(error), "late failure", fixed = TRUE)
+  expect_identical(error$call, quote(summarize_with_margins(
+    data, z = summary_fun(v), .grouping = rollup(g)
+  )))
+
+  warn <- FALSE
+  control <- tryCatch(run_summary(), error = identity)
+  expect_identical(class(error), class(control))
+  expect_identical(error$message, control$message)
+  expect_identical(error$parent, control$parent)
+  expect_identical(error$call, control$call)
+  expect_identical(data, original)
+
+  fail <- FALSE
+  expect_identical(run_summary()$z, c(2, 5, 7))
+  expect_identical(data, original)
+  expect_identical(getOption("warn"), 2L)
+})
+
+test_that("warning replay still errors at warn = 2 without an ordinary error", {
+  old_options <- options(warn = 2L)
+  on.exit(options(old_options), add = TRUE)
+  data <- data.frame(g = c("a", "b"), v = c(2, 5))
+  original <- unserialize(serialize(data, NULL))
+  warn <- TRUE
+  totals <- numeric()
+  summary_fun <- function(v) {
+    if (warn && length(v) == 1L) {
+      warning("early warning", call. = FALSE)
+    }
+    total <- sum(v)
+    totals <<- c(totals, total)
+    total
+  }
+  run_summary <- function() {
+    # `v` and `g` are columns available only inside the summary data mask.
+    # nolint start: object_usage_linter.
+    summarize_with_margins(
+      data, z = summary_fun(v), .grouping = rollup(g)
+    )
+    # nolint end
+  }
+
+  error <- tryCatch(run_summary(), error = identity)
+  expect_s3_class(error, "simpleError")
+  expect_match(conditionMessage(error), "converted from warning", fixed = TRUE)
+  expect_match(conditionMessage(error), "early warning", fixed = TRUE)
+  expect_null(error$parent)
+  expect_identical(totals, c(2, 5, 7))
+  expect_identical(data, original)
+
+  warn <- FALSE
+  expect_identical(run_summary()$z, c(2, 5, 7))
+  expect_identical(data, original)
+  expect_identical(getOption("warn"), 2L)
 })
 
 # Asserted on the seam rather than through a verb, because neither case can be
