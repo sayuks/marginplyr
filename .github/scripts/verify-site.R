@@ -324,6 +324,7 @@ markers <- list(
     "Name the grouping set on every row",
     "The same join against a lazy table",
     "Compute what the summary pass cannot express",
+    "Keep warning-handler failures separate from cancellation",
     "share_of_total",
     "expand_with_margins",
     # The guide's rejected-call chunks, by the diagnostics they render. Prose
@@ -447,7 +448,10 @@ markers <- list(
     # promises, not by the name alone: a name survives a section reduced to a
     # cross-reference.
     "Errors and warnings",
-    "is the only class marginplyr promises",
+    "is the only package-specific class marginplyr promises",
+    "handler boundary.",
+    "$replay_error",
+    "$cleanup",
     "Recording the SQL marginplyr sends",
     "switches the record on",
     # The Guides list, by its heading and by one entry's href. No entry's text

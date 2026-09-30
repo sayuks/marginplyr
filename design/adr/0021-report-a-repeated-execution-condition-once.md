@@ -221,6 +221,6 @@ collapsed.
 
 [ADR 0035](0035-preserve-competing-conditions-at-interruption.md) and its
 [specification](../specs/competing-conditions.md) select interrupt-time replay
-and competing-condition outcomes. Implementation and public-contract publication
-are pending. Warning identity and Condition context remain governed here;
-#754's ordinary-error replay behavior is retained.
+and competing-condition outcomes. Its 2026-10-01 amendment bounds preservation
+by R's available-handler boundary. Warning identity and Condition context remain
+governed here; #754's ordinary-error replay behavior is retained.

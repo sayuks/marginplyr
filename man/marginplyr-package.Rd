@@ -61,10 +61,10 @@ Every error marginplyr raises for a call you can correct inherits the
 )
 }\if{html}{\out{</div>}}
 
-\code{"marginplyr_error"} is the only class marginplyr promises. Narrower
-subclasses and the wording of any message are implementation details that
-can change without a deprecation cycle, so match on the class rather than on
-message text.
+\code{"marginplyr_error"} is the only package-specific class marginplyr promises.
+Narrower subclasses and the wording of any message are implementation details
+that can change without a deprecation cycle, so match on the class rather
+than on message text.
 
 The wording is marginplyr's to change; the columns, values, and arguments a
 message quotes are yours, and a marginplyr error spells them as you spelled
@@ -72,7 +72,7 @@ them. Two spellings it cannot keep: a line break and a no-break space inside
 a name are both shown as an ordinary space. This says nothing about the
 errors below, which marginplyr does not write.
 
-Two kinds of error deliberately fall outside the class. Errors raised by
+Other errors deliberately fall outside the class. Errors raised by
 your own summary expressions, by tidyselect, by dplyr, or by a database
 backend propagate with their original class, diagnostic, and cause intact.
 So do marginplyr's internal invariant checks, which report a defect no
@@ -97,6 +97,46 @@ further grouping sets raised it; warnings that differ from each other are
 reported one by one. A lazy input is outside this, and visibly so: its
 summary expressions run when you collect the result rather than while the
 verb runs, so what they raise is the collecting call's to report.
+
+When marginplyr catches competing conditions, successful cleanup is followed
+by the first interrupt, retaining any earlier execution error. An enriched
+interrupt inherits \code{"interrupt"} and \code{"condition"}, not \code{"error"} or
+\code{"marginplyr_error"}. Its \verb{$interrupt} holds the original interrupt and its
+\verb{$parent} holds the earlier execution error, including that error's own
+cause chain. A lone interrupt needs no wrapper. Absent information may be
+\code{NULL} or absent.
+
+Buffered warnings are replayed in first-occurrence order during exit.
+Calling warning handlers can observe and muffle them normally. A caught
+replay error or further interrupt ends replay; remaining warnings need not
+be delivered. During cancellation, \verb{$replay_error} retains a caught replay
+error separately from the execution-error parent. Further caught interrupts
+keep the first interrupt. Without interruption, an earlier execution error
+takes precedence over a caught replay error. Warning-only work still fails
+under \code{options(warn = 2)}; marginplyr does not change that option.
+
+These guarantees follow R's handler boundary. While R invokes a calling
+warning handler registered outside the Margin operation, newer handlers,
+including marginplyr's catchers, are unavailable. An error or interrupt
+raised there can therefore replace the pending outcome without retaining
+it. Other nonlocal transfers, such as
+invoking your own restart, also follow R's ordinary behavior. The
+\emph{Keep warning-handler failures separate from cancellation} recipe in the
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a caller-owned wrapper that keeps a callback
+failure separately from the operation's outcome.
+
+Failed SQLite cleanup takes precedence over conditions marginplyr caught.
+It is an error outside \code{"marginplyr_error"}, identifying the failed rollback
+or release step. Its \verb{$cleanup} holds that step's condition, and \verb{$parent}
+holds the triggering execution error or interrupt outcome above. Further
+caught interrupts do not replace a cleanup failure already observed. See
+\code{\link[=summarize_with_margins]{summarize_with_margins()}} for the materialization boundary and recovery
+limits.
+
+With no exiting interrupt handler, interruption retains native R recovery
+and interruption hooks. A returning calling handler first receives the
+enriched condition, when one is needed, and may then receive a bare native
+notification for the same cancellation.
 }
 
 \section{Recording the SQL marginplyr sends}{

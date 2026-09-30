@@ -256,8 +256,15 @@ statistics, or remove a new destination, on an ordinary error or catchable R
 user interrupt before successful savepoint release. Cleanup releases that
 savepoint, preserves source tables and earlier caller work, and leaves an outer
 caller transaction open. This requires the connection and transaction to
-survive and cleanup SQL to succeed. A primary interrupt remains an interrupt;
-failed cleanup reports its step and cause together with the triggering condition.
+survive and cleanup SQL to succeed. An interrupt caught during cleanup waits
+for the rollback and release attempt. After successful cleanup, the first
+interrupt escapes with an earlier execution error retained in `$parent`.
+If cleanup fails, its error takes precedence: `$cleanup` holds the failed
+rollback or release condition, and `$parent` holds the triggering error or
+interrupt outcome. Further caught interrupts neither retry cleanup nor replace
+an observed cleanup failure. The fields and the boundary for conditions raised
+inside your calling handlers are described under *Errors and warnings* in the
+[package reference](https://sayuks.github.io/marginplyr/man/marginplyr-package.html).
 
 Successful release ends restoration responsibility, even if an interrupt
 prevents the R value reaching you. Outermost release persists the completed

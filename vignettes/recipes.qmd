@@ -874,3 +874,161 @@ writing a summary.
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows the SQL `expand_with_margins()` generates on native and fallback
 backends.
+
+## Keep warning-handler failures separate from cancellation
+
+A warning logger can fail while a summary is already stopping. R runs a
+calling warning handler registered around the summary with newer condition
+handlers unavailable, so that failure can replace the summary's pending error
+or interrupt. The package
+reference's [Errors and warnings][conditions] explains that boundary and the
+conditions marginplyr retains when its handlers remain available.
+
+If you own the warning callback, put its catcher inside the callback. This
+helper returns the operation's value or condition and the callback's first
+failure separately. It muffles the warning whose callback failed and subsequent
+warnings, leaving the caller to decide how to handle the two outcomes. It is
+ordinary caller code, not a marginplyr function.
+
+```{r}
+#| label: warning-handler-guard
+
+guard_warning_callback <- function(expr, handler) {
+  callback_failure <- NULL
+  operation <- tryCatch({
+    value <- withCallingHandlers(expr, warning = function(cnd) {
+      muffle <- findRestart("muffleWarning")
+      if (!is.null(callback_failure)) invokeRestart(muffle)
+      failure <- tryCatch({
+        handler(cnd)
+        NULL
+      }, error = identity, interrupt = identity)
+      if (!is.null(failure)) {
+        callback_failure <<- failure
+        invokeRestart(muffle)
+      }
+    })
+    list(value = value)
+  }, error = function(cnd) list(condition = cnd),
+  interrupt = function(cnd) list(condition = cnd))
+  list(operation = operation, callback_failure = callback_failure)
+}
+```
+
+Here the store and regional summaries produce different warnings, and the
+grand total simulates cancellation with `rlang::interrupt()`. The helper catches
+that interruption;
+the example does not interrupt the surrounding session. The warning logger
+then fails during replay, and both outcomes remain available:
+
+```{r}
+#| label: warning-handler-cancellation
+
+logger_failure <- errorCondition(
+  "The warning logger failed",
+  parent = simpleError("The logging destination is unavailable"),
+  payload = new.env(parent = emptyenv())
+)
+summary_interrupt <- NULL
+callback_calls <- 0L
+warnings_produced <- character()
+cancelled <- guard_warning_callback(
+  summarize_with_margins(
+    retail_sales,
+    revenue = {
+      if (grouping_bit(region) == 1L) {
+        withCallingHandlers(rlang::interrupt(), interrupt = function(cnd) {
+          summary_interrupt <<- cnd
+        })
+      }
+      diagnostic <- if (grouping_bit(store) == 0L) {
+        "Check store revenue"
+      } else {
+        "Check regional revenue"
+      }
+      warnings_produced <<- c(warnings_produced, diagnostic)
+      warning(diagnostic)
+      sum(revenue)
+    },
+    .grouping = rollup(region, store)
+  ),
+  handler = function(cnd) {
+    callback_calls <<- callback_calls + 1L
+    stop(logger_failure)
+  }
+)
+
+c(
+  original_interrupt_retained =
+    identical(cancelled$operation$condition, summary_interrupt),
+  logger_failure_retained =
+    identical(cancelled$callback_failure, logger_failure),
+  callback_ran_once = callback_calls == 1L
+)
+```
+
+```{r}
+#| include: false
+
+stopifnot(
+  inherits(summary_interrupt, "interrupt"),
+  identical(cancelled$operation$condition, summary_interrupt),
+  identical(cancelled$callback_failure, logger_failure),
+  identical(cancelled$callback_failure$parent, logger_failure$parent),
+  identical(cancelled$callback_failure$payload, logger_failure$payload),
+  length(unique(warnings_produced)) == 2L,
+  callback_calls == 1L
+)
+```
+
+The same helper also catches an interrupt raised inside the callback. A
+returning callback leaves ordinary warning handling, including `warn = 2`
+conversion, intact; a callback can still invoke `muffleWarning` itself. The
+helper changes neither the `warn` option nor existing caller restarts.
+
+Without a pending error or interrupt, muffling after a callback failure allows
+the summary to finish. Inspect `callback_failure` before accepting the value:
+
+```{r}
+#| label: warning-handler-value
+
+completed <- guard_warning_callback(
+  summarize_with_margins(
+    retail_sales,
+    revenue = {
+      warning("Check the revenue source")
+      sum(revenue)
+    },
+    .grouping = rollup(region)
+  ),
+  handler = function(cnd) stop(logger_failure)
+)
+
+c(
+  returned_summary = is.data.frame(completed$operation$value),
+  logger_failure_retained =
+    identical(completed$callback_failure, logger_failure)
+)
+```
+
+```{r}
+#| include: false
+
+stopifnot(
+  is.data.frame(completed$operation$value),
+  identical(completed$callback_failure, logger_failure)
+)
+```
+
+This protection covers the callback you wrapped. If it signals another condition
+and an older, unwrapped calling handler fails, that failure can still bypass the
+callback's catcher. A caller restart that exits the helper also takes control
+normally. Wrap each callback whose failures you need to retain; this helper
+does not turn arbitrary caller handlers into package-controlled code.
+
+After capture, `saveRDS(cancelled, "summary-outcome.rds")` can preserve the
+diagnostic values for later inspection. Catch a write failure separately so
+`cancelled` remains available; writing may itself fail or be interrupted, and
+deserializing does not preserve environment reference identity.
+
+[conditions]: https://sayuks.github.io/marginplyr/man/marginplyr-package.html#errors-and-warnings

@@ -269,8 +269,8 @@ evidence and rationale. Native statement
 cancellation, backend-aborted transactions, invalid connections, failed cleanup,
 timeouts, and process termination do not gain an unconditional recovery promise.
 [ADR 0035](0035-preserve-competing-conditions-at-interruption.md) selects
-competing-condition precedence and reporting details under #756; implementation
-and public-contract publication of that selection are pending.
+competing-condition precedence and reporting details under #756, within its
+available-handler boundary.
 
 The implementation and public-contract publication are complete in #755.
 [Acceptance evidence](../../investigation/sqlite-interruption-recovery-2026-09-30.md)

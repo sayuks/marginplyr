@@ -342,8 +342,14 @@
 #' or removes a newly created destination, then releases the savepoint. This
 #' requires a surviving connection and transaction and successful cleanup.
 #' Source tables and earlier caller work remain intact; the caller's outer
-#' transaction stays open. A primary interrupt propagates as an interrupt;
-#' failed cleanup reports its step and cause with the triggering condition.
+#' transaction stays open. An interrupt caught during cleanup waits for the
+#' rollback and release attempt. After successful cleanup, the first interrupt
+#' propagates with an earlier execution error retained as `$parent`. Failed
+#' cleanup takes precedence: its error retains the failed step's condition in
+#' `$cleanup` and the triggering error or interrupt outcome in `$parent`.
+#' Further caught interrupts do not retry cleanup or replace its failure.
+#' *[Errors and warnings][marginplyr-package]* describes these fields and the
+#' native R boundary for conditions raised inside your calling handlers.
 #' Successful release ends restoration responsibility even if an interrupt
 #' prevents the R value reaching the caller. Outermost release persists the
 #' result; inner release leaves it under the caller's commit or rollback.
