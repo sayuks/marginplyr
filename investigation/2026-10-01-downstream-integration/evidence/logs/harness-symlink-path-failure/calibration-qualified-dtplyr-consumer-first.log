@@ -1,0 +1,4 @@
+Error in state("initial") :
+  all(startsWith(paths, file.path(root, "library")) | startsWith(paths,  .... is not TRUE
+Calls: state -> stopifnot
+Execution halted

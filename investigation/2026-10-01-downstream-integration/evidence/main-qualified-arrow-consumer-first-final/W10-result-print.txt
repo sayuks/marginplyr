@@ -1,0 +1,8 @@
+list(id = "W10-result-print", observation = list(class = "arrow_dplyr_query",
+    display = c("Table (query)", "g: string", "sid: int32", "total: double",
+    "rows: int64", "", "* Sorted by if_else(is_in(sid, {value_set=int32:[",
+    "  2", "], null_matching_behavior=SKIP}), 1, 0) [asc], if_else(is_null(g, {nan_is_null=true}), 1, 0) [asc], g [asc], sid [asc]",
+    "See $.data for the source Arrow object"), result = structure(list(
+        g = c("a", "b", NA), sid = c(1L, 1L, 2L), total = c(4,
+        6, 10), rows = c(2L, 1L, 3L)), class = c("tbl_df", "tbl",
+    "data.frame"), row.names = c(NA, -3L))), error = NULL, warnings = character(0))

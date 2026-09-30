@@ -1,0 +1,4 @@
+Error in asNamespace(ns, base.OK = FALSE) :
+  operation not allowed on base namespace
+Calls: state -> lapply -> FUN -> getNamespaceInfo -> asNamespace
+Execution halted

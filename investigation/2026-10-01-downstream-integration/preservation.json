@@ -1,0 +1,9 @@
+{
+  "head": "471b78f64c98049cfa7a43fcc137647d7d4077a9",
+  "tracked_files_unchanged": 556,
+  "dependency_files_equal_to_read_only_origins": 1477,
+  "final_cases": 395,
+  "all_final_cases_passed": true,
+  "durable_bytes": 2332249,
+  "isolation_root": "/private/tmp/marginplyr-downstream-2026-10-01"
+}

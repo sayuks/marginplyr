@@ -1,0 +1,5 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C01-comparator","qualified","local","calibration","backend-first","NO VIOLATION FOUND","Independent comparison mutation controls",""
+"C02-installed-basic","qualified","local","calibration","backend-first","NO VIOLATION FOUND","summarize_with_margins: value; ADR 0016/0018",""
+"C03-lexical-delayed","qualified","local","calibration","backend-first","NO VIOLATION FOUND","ADR 0007; ordinary lexical/data-mask semantics",""
+"C05-no-early-summary","qualified","local","calibration","backend-first","NO VIOLATION FOUND","ADR 0020; ordinary dplyr evaluation per group/set",""

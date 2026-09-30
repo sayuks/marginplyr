@@ -1,0 +1,956 @@
+id,mode,backend,phase,order,status,contract,detail,run
+C01-comparator,direct,arrow,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-arrow-backend-first
+C02-installed-basic,direct,arrow,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-arrow-backend-first
+C01-comparator,direct,dtplyr,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-dtplyr-backend-first
+C02-installed-basic,direct,dtplyr,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-dtplyr-backend-first
+C03-lexical-delayed,direct,dtplyr,calibration,backend-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-direct-dtplyr-backend-first
+C05-no-early-summary,direct,dtplyr,calibration,backend-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-direct-dtplyr-backend-first
+C01-comparator,direct,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-dtplyr-consumer-first
+C02-installed-basic,direct,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-dtplyr-consumer-first
+C03-lexical-delayed,direct,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-direct-dtplyr-consumer-first
+C05-no-early-summary,direct,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-direct-dtplyr-consumer-first
+C01-comparator,direct,duckdb,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-duckdb-backend-first
+C02-installed-basic,direct,duckdb,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-duckdb-backend-first
+C01-comparator,direct,local,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-local-backend-first
+C02-installed-basic,direct,local,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-local-backend-first
+C03-lexical-delayed,direct,local,calibration,backend-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-direct-local-backend-first
+C05-no-early-summary,direct,local,calibration,backend-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-direct-local-backend-first
+C01-comparator,direct,local,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-local-consumer-first
+C02-installed-basic,direct,local,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-local-consumer-first
+C03-lexical-delayed,direct,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-direct-local-consumer-first
+C05-no-early-summary,direct,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-direct-local-consumer-first
+C01-comparator,direct,sqlite,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-sqlite-backend-first
+C02-installed-basic,direct,sqlite,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-sqlite-backend-first
+C06-public-generics,direct,sqlite,calibration,backend-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-direct-sqlite-backend-first
+C01-comparator,direct,sqlite,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-direct-sqlite-consumer-first
+C02-installed-basic,direct,sqlite,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-direct-sqlite-consumer-first
+C06-public-generics,direct,sqlite,calibration,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-direct-sqlite-consumer-first
+C01-comparator,imports,arrow,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-arrow-backend-first
+C02-installed-basic,imports,arrow,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-arrow-backend-first
+C01-comparator,imports,dtplyr,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-dtplyr-backend-first
+C02-installed-basic,imports,dtplyr,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-dtplyr-backend-first
+C03-lexical-delayed,imports,dtplyr,calibration,backend-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-imports-dtplyr-backend-first
+C04-input-inside,imports,dtplyr,calibration,backend-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,calibration-imports-dtplyr-backend-first
+C05-no-early-summary,imports,dtplyr,calibration,backend-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-imports-dtplyr-backend-first
+C01-comparator,imports,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-dtplyr-consumer-first
+C02-installed-basic,imports,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-dtplyr-consumer-first
+C03-lexical-delayed,imports,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-imports-dtplyr-consumer-first
+C04-input-inside,imports,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,calibration-imports-dtplyr-consumer-first
+C05-no-early-summary,imports,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-imports-dtplyr-consumer-first
+C01-comparator,imports,duckdb,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-duckdb-backend-first
+C02-installed-basic,imports,duckdb,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-duckdb-backend-first
+C01-comparator,imports,local,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-local-backend-first
+C02-installed-basic,imports,local,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-local-backend-first
+C03-lexical-delayed,imports,local,calibration,backend-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-imports-local-backend-first
+C05-no-early-summary,imports,local,calibration,backend-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-imports-local-backend-first
+C01-comparator,imports,local,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-local-consumer-first
+C02-installed-basic,imports,local,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-local-consumer-first
+C03-lexical-delayed,imports,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-imports-local-consumer-first
+C05-no-early-summary,imports,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-imports-local-consumer-first
+C01-comparator,imports,sqlite,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-sqlite-backend-first
+C02-installed-basic,imports,sqlite,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-sqlite-backend-first
+C06-public-generics,imports,sqlite,calibration,backend-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-imports-sqlite-backend-first
+C01-comparator,imports,sqlite,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-sqlite-backend-first-final-declaration
+C02-installed-basic,imports,sqlite,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-sqlite-backend-first-final-declaration
+C06-public-generics,imports,sqlite,calibration,backend-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-imports-sqlite-backend-first-final-declaration
+C01-comparator,imports,sqlite,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-imports-sqlite-consumer-first
+C02-installed-basic,imports,sqlite,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-imports-sqlite-consumer-first
+C06-public-generics,imports,sqlite,calibration,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-imports-sqlite-consumer-first
+C01-comparator,qualified,arrow,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-arrow-backend-first
+C02-installed-basic,qualified,arrow,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-arrow-backend-first
+C01-comparator,qualified,dtplyr,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-dtplyr-backend-first
+C02-installed-basic,qualified,dtplyr,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-dtplyr-backend-first
+C03-lexical-delayed,qualified,dtplyr,calibration,backend-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-qualified-dtplyr-backend-first
+C04-input-inside,qualified,dtplyr,calibration,backend-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,calibration-qualified-dtplyr-backend-first
+C05-no-early-summary,qualified,dtplyr,calibration,backend-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-qualified-dtplyr-backend-first
+C01-comparator,qualified,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-dtplyr-consumer-first
+C02-installed-basic,qualified,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-dtplyr-consumer-first
+C03-lexical-delayed,qualified,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-qualified-dtplyr-consumer-first
+C04-input-inside,qualified,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,calibration-qualified-dtplyr-consumer-first
+C05-no-early-summary,qualified,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-qualified-dtplyr-consumer-first
+C01-comparator,qualified,duckdb,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-duckdb-backend-first
+C02-installed-basic,qualified,duckdb,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-duckdb-backend-first
+C01-comparator,qualified,local,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-local-backend-first
+C02-installed-basic,qualified,local,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-local-backend-first
+C03-lexical-delayed,qualified,local,calibration,backend-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-qualified-local-backend-first
+C05-no-early-summary,qualified,local,calibration,backend-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-qualified-local-backend-first
+C01-comparator,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-local-consumer-first
+C02-installed-basic,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-local-consumer-first
+C03-lexical-delayed,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,calibration-qualified-local-consumer-first
+C05-no-early-summary,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,calibration-qualified-local-consumer-first
+C01-comparator,qualified,sqlite,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-sqlite-backend-first
+C02-installed-basic,qualified,sqlite,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-sqlite-backend-first
+C06-public-generics,qualified,sqlite,calibration,backend-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-qualified-sqlite-backend-first
+C01-comparator,qualified,sqlite,calibration,backend-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-sqlite-backend-first-final-declaration
+C02-installed-basic,qualified,sqlite,calibration,backend-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-sqlite-backend-first-final-declaration
+C06-public-generics,qualified,sqlite,calibration,backend-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-qualified-sqlite-backend-first-final-declaration
+C01-comparator,qualified,sqlite,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,calibration-qualified-sqlite-consumer-first
+C02-installed-basic,qualified,sqlite,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,calibration-qualified-sqlite-consumer-first
+C06-public-generics,qualified,sqlite,calibration,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,calibration-qualified-sqlite-consumer-first
+C01-comparator,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-arrow-consumer-first
+C02-installed-basic,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-arrow-consumer-first
+W2-spec-set,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first
+W2-spec-rollup,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first
+W2-spec-cube,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first
+W2-spec-sets,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first
+W2-spec-product,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first
+W1-forward,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-arrow-consumer-first
+W1-splice-quosure,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-arrow-consumer-first
+W1-default-null,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-arrow-consumer-first
+W4-contextual,direct,arrow,main,consumer-first,UNSUPPORTED SPELLING OR WORKFLOW,ADR 0019; grouping_bit/share_of_parent help,"Arrow backends do not support Parent shares and Total shares because marginplyr cannot enforce their scalar-summary contract safely before an Arrow query is constructed.
+ℹ Other Arrow Margin operations remain supported.
+ℹ Omit `share_of_parent()` and `share_of_total()` or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.",main-direct-arrow-consumer-first
+W4-selection,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-arrow-consumer-first
+W5-verb-summary,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-arrow-consumer-first
+W5-verb-expand,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-arrow-consumer-first
+W9-arrow-dataset,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Supported Arrow Dataset; translated expressions; same-process lifetime,,main-direct-arrow-consumer-first
+W10-spec-print,direct,arrow,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-arrow-consumer-first
+W3-query-pair-orders,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-arrow-consumer-first-extra
+W10-result-print,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-direct-arrow-consumer-first-extra
+C01-comparator,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-arrow-consumer-first-final
+C02-installed-basic,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-arrow-consumer-first-final
+W3-query-pair-orders,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-arrow-consumer-first-final
+W10-result-print,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-direct-arrow-consumer-first-final
+W2-spec-set,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first-final
+W2-spec-rollup,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first-final
+W2-spec-cube,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first-final
+W2-spec-sets,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first-final
+W2-spec-product,direct,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-arrow-consumer-first-final
+W1-forward,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-arrow-consumer-first-final
+W1-splice-quosure,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-arrow-consumer-first-final
+W1-default-null,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-arrow-consumer-first-final
+W4-contextual,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-arrow-consumer-first-final
+W4-shadow-contextual,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-arrow-consumer-first-final
+W1-fixed-keys,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-arrow-consumer-first-final
+W4-selection,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-arrow-consumer-first-final
+W5-verb-summary,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-arrow-consumer-first-final
+W5-verb-expand,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-arrow-consumer-first-final
+W9-arrow-dataset,direct,arrow,main,consumer-first,NO VIOLATION FOUND,Supported Arrow Dataset; translated expressions; same-process lifetime,,main-direct-arrow-consumer-first-final
+W10-spec-print,direct,arrow,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-arrow-consumer-first-final
+W4-contextual,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-arrow-consumer-first-followup
+W4-shadow-contextual,direct,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-arrow-consumer-first-followup
+W1-fixed-keys,direct,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-arrow-consumer-first-followup
+C01-comparator,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-dtplyr-consumer-first
+C02-installed-basic,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-dtplyr-consumer-first
+C03-lexical-delayed,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-direct-dtplyr-consumer-first
+C05-no-early-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-direct-dtplyr-consumer-first
+W2-spec-set,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first
+W2-spec-rollup,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first
+W2-spec-cube,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first
+W2-spec-sets,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first
+W2-spec-product,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first
+W1-forward,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-dtplyr-consumer-first
+W1-splice-quosure,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-dtplyr-consumer-first
+W1-default-null,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-dtplyr-consumer-first
+W4-contextual,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-dtplyr-consumer-first
+W4-selection,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-dtplyr-consumer-first
+W5-verb-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first
+W5-verb-expand,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first
+W5-verb-nest,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first
+W5-verb-nest_by,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first
+W5-factor-FALSE-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W5-factor-FALSE-expand,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W5-factor-FALSE-nest,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W5-factor-FALSE-nest_by,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W5-factor-TRUE-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W5-factor-TRUE-expand,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W5-factor-TRUE-nest,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W5-factor-TRUE-nest_by,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first
+W3-quosure-caller,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-direct-dtplyr-consumer-first
+W10-spec-print,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-dtplyr-consumer-first
+C05-no-early-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-direct-dtplyr-consumer-first-count-check
+W3-query-pair-orders,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-dtplyr-consumer-first-extra
+W6-inside-outside-compute,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-direct-dtplyr-consumer-first-extra
+W10-result-print,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-direct-dtplyr-consumer-first-extra
+C01-comparator,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-dtplyr-consumer-first-final
+C02-installed-basic,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-dtplyr-consumer-first-final
+C03-lexical-delayed,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-direct-dtplyr-consumer-first-final
+C05-no-early-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-direct-dtplyr-consumer-first-final
+W3-query-pair-orders,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-dtplyr-consumer-first-final
+W6-inside-outside-compute,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-direct-dtplyr-consumer-first-final
+W10-result-print,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-direct-dtplyr-consumer-first-final
+W2-spec-set,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first-final
+W2-spec-rollup,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first-final
+W2-spec-cube,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first-final
+W2-spec-sets,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first-final
+W2-spec-product,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-dtplyr-consumer-first-final
+W1-forward,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-dtplyr-consumer-first-final
+W1-splice-quosure,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-dtplyr-consumer-first-final
+W1-default-null,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-dtplyr-consumer-first-final
+W4-contextual,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-dtplyr-consumer-first-final
+W4-shadow-contextual,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-dtplyr-consumer-first-final
+W1-fixed-keys,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-dtplyr-consumer-first-final
+W4-selection,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-dtplyr-consumer-first-final
+W5-verb-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first-final
+W5-verb-expand,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first-final
+W5-verb-nest,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first-final
+W5-verb-nest_by,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-dtplyr-consumer-first-final
+W5-factor-FALSE-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W5-factor-FALSE-expand,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W5-factor-FALSE-nest,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W5-factor-FALSE-nest_by,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W5-factor-TRUE-summary,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W5-factor-TRUE-expand,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W5-factor-TRUE-nest,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W5-factor-TRUE-nest_by,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-dtplyr-consumer-first-final
+W3-quosure-caller,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-direct-dtplyr-consumer-first-final
+W10-spec-print,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-dtplyr-consumer-first-final
+W4-contextual,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-dtplyr-consumer-first-followup
+W4-shadow-contextual,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-dtplyr-consumer-first-followup
+W1-fixed-keys,direct,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-dtplyr-consumer-first-followup
+C01-comparator,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-duckdb-consumer-first
+C02-installed-basic,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-duckdb-consumer-first
+W2-spec-set,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first
+W2-spec-rollup,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first
+W2-spec-cube,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first
+W2-spec-sets,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first
+W2-spec-product,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first
+W1-forward,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-duckdb-consumer-first
+W1-splice-quosure,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-duckdb-consumer-first
+W1-default-null,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-duckdb-consumer-first
+W4-contextual,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-duckdb-consumer-first
+W4-selection,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-duckdb-consumer-first
+W5-verb-summary,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-duckdb-consumer-first
+W5-verb-expand,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-duckdb-consumer-first
+W7-native-portable,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-direct-duckdb-consumer-first
+W6-finite-typed,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-direct-duckdb-consumer-first
+W10-audit-print,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-direct-duckdb-consumer-first
+W8-duckdb-env-compute,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,SQL expansion .env boundary; public compute registration,,main-direct-duckdb-consumer-first
+W10-spec-print,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-duckdb-consumer-first
+W3-query-pair-orders,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-duckdb-consumer-first-extra
+W6-inside-outside-compute,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-direct-duckdb-consumer-first-extra
+C01-comparator,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-duckdb-consumer-first-final
+C02-installed-basic,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-duckdb-consumer-first-final
+W3-query-pair-orders,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-duckdb-consumer-first-final
+W6-inside-outside-compute,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-direct-duckdb-consumer-first-final
+W2-spec-set,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first-final
+W2-spec-rollup,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first-final
+W2-spec-cube,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first-final
+W2-spec-sets,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first-final
+W2-spec-product,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-duckdb-consumer-first-final
+W1-forward,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-duckdb-consumer-first-final
+W1-splice-quosure,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-duckdb-consumer-first-final
+W1-default-null,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-duckdb-consumer-first-final
+W4-contextual,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-duckdb-consumer-first-final
+W4-shadow-contextual,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-duckdb-consumer-first-final
+W1-fixed-keys,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-duckdb-consumer-first-final
+W4-selection,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-duckdb-consumer-first-final
+W5-verb-summary,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-duckdb-consumer-first-final
+W5-verb-expand,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-duckdb-consumer-first-final
+W7-native-portable,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-direct-duckdb-consumer-first-final
+W6-finite-typed,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-direct-duckdb-consumer-first-final
+W10-audit-print,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-direct-duckdb-consumer-first-final
+W8-duckdb-env-compute,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,SQL expansion .env boundary; public compute registration,,main-direct-duckdb-consumer-first-final
+W10-spec-print,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-duckdb-consumer-first-final
+W4-contextual,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-duckdb-consumer-first-followup
+W4-shadow-contextual,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-duckdb-consumer-first-followup
+W1-fixed-keys,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-duckdb-consumer-first-followup
+W6-finite-typed,direct,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-direct-duckdb-consumer-first-followup
+C01-comparator,direct,local,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-local-consumer-first
+C02-installed-basic,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-local-consumer-first
+C03-lexical-delayed,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-direct-local-consumer-first
+C05-no-early-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-direct-local-consumer-first
+W2-spec-set,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first
+W2-spec-rollup,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first
+W2-spec-cube,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first
+W2-spec-sets,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first
+W2-spec-product,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first
+W1-forward,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-local-consumer-first
+W1-splice-quosure,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-local-consumer-first
+W1-default-null,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-local-consumer-first
+W4-contextual,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-local-consumer-first
+W4-selection,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-local-consumer-first
+W5-verb-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first
+W5-verb-expand,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first
+W5-verb-nest,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first
+W5-verb-nest_by,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first
+W5-factor-FALSE-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W5-factor-FALSE-expand,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W5-factor-FALSE-nest,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W5-factor-FALSE-nest_by,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W5-factor-TRUE-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W5-factor-TRUE-expand,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W5-factor-TRUE-nest,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W5-factor-TRUE-nest_by,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first
+W3-quosure-caller,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-direct-local-consumer-first
+W10-spec-print,direct,local,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-local-consumer-first
+C05-no-early-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-direct-local-consumer-first-count-check
+W3-query-pair-orders,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-local-consumer-first-extra
+W10-result-print,direct,local,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-direct-local-consumer-first-extra
+C01-comparator,direct,local,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-local-consumer-first-final
+C02-installed-basic,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-local-consumer-first-final
+C03-lexical-delayed,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-direct-local-consumer-first-final
+C05-no-early-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-direct-local-consumer-first-final
+W3-query-pair-orders,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-local-consumer-first-final
+W10-result-print,direct,local,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-direct-local-consumer-first-final
+W2-spec-set,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first-final
+W2-spec-rollup,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first-final
+W2-spec-cube,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first-final
+W2-spec-sets,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first-final
+W2-spec-product,direct,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-local-consumer-first-final
+W1-forward,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-local-consumer-first-final
+W1-splice-quosure,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-local-consumer-first-final
+W1-default-null,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-local-consumer-first-final
+W4-contextual,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-local-consumer-first-final
+W4-shadow-contextual,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-local-consumer-first-final
+W1-fixed-keys,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-local-consumer-first-final
+W4-selection,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-local-consumer-first-final
+W5-verb-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first-final
+W5-verb-expand,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first-final
+W5-verb-nest,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first-final
+W5-verb-nest_by,direct,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-local-consumer-first-final
+W5-factor-FALSE-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W5-factor-FALSE-expand,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W5-factor-FALSE-nest,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W5-factor-FALSE-nest_by,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W5-factor-TRUE-summary,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W5-factor-TRUE-expand,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W5-factor-TRUE-nest,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W5-factor-TRUE-nest_by,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-direct-local-consumer-first-final
+W3-quosure-caller,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-direct-local-consumer-first-final
+W10-spec-print,direct,local,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-local-consumer-first-final
+W4-contextual,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-local-consumer-first-followup
+W4-shadow-contextual,direct,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-local-consumer-first-followup
+W1-fixed-keys,direct,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-local-consumer-first-followup
+C01-comparator,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-sqlite-consumer-first
+C02-installed-basic,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-sqlite-consumer-first
+C06-public-generics,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,main-direct-sqlite-consumer-first
+W2-spec-set,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first
+W2-spec-rollup,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first
+W2-spec-cube,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first
+W2-spec-sets,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first
+W2-spec-product,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first
+W1-forward,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-sqlite-consumer-first
+W1-splice-quosure,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-sqlite-consumer-first
+W1-default-null,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-sqlite-consumer-first
+W4-contextual,direct,sqlite,main,consumer-first,UNSUPPORTED SPELLING OR WORKFLOW,ADR 0019; grouping_bit/share_of_parent help,"marginplyr cannot establish that the source summaries of Parent shares and Total shares are plain integer or double scalars on this backend, because its SQL dialect converts a value of another type to a number rather than refusing it, so an ineligible source summary is indistinguishable from an eligible one.
+ℹ Set `.check_share_source = FALSE` to calculate `share_of_parent()` and `share_of_total()` from sources you have established yourself, or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.",main-direct-sqlite-consumer-first
+W4-selection,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-sqlite-consumer-first
+W5-verb-summary,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-sqlite-consumer-first
+W5-verb-expand,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-sqlite-consumer-first
+W7-native-portable,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-direct-sqlite-consumer-first
+W6-finite-typed,direct,sqlite,main,consumer-first,HARNESS / ENVIRONMENT ISSUE,ADR 0031 direct typed collection/materialization,"identical(typeof(x[[name]]), typeof(y[[name]])) is not TRUE",main-direct-sqlite-consumer-first
+W10-audit-print,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-direct-sqlite-consumer-first
+W10-spec-print,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-sqlite-consumer-first
+W3-query-pair-orders,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-sqlite-consumer-first-extra
+W6-inside-outside-compute,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-direct-sqlite-consumer-first-extra
+C01-comparator,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-direct-sqlite-consumer-first-final
+C02-installed-basic,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-direct-sqlite-consumer-first-final
+C06-public-generics,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,main-direct-sqlite-consumer-first-final
+W3-query-pair-orders,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-direct-sqlite-consumer-first-final
+W6-inside-outside-compute,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-direct-sqlite-consumer-first-final
+W2-spec-set,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first-final
+W2-spec-rollup,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first-final
+W2-spec-cube,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first-final
+W2-spec-sets,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first-final
+W2-spec-product,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-direct-sqlite-consumer-first-final
+W1-forward,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-direct-sqlite-consumer-first-final
+W1-splice-quosure,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-direct-sqlite-consumer-first-final
+W1-default-null,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-direct-sqlite-consumer-first-final
+W4-contextual,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-sqlite-consumer-first-final
+W4-shadow-contextual,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-sqlite-consumer-first-final
+W1-fixed-keys,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-sqlite-consumer-first-final
+W4-selection,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-direct-sqlite-consumer-first-final
+W5-verb-summary,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-sqlite-consumer-first-final
+W5-verb-expand,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-direct-sqlite-consumer-first-final
+W7-native-portable,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-direct-sqlite-consumer-first-final
+W6-finite-typed,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-direct-sqlite-consumer-first-final
+W10-audit-print,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-direct-sqlite-consumer-first-final
+W10-spec-print,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-direct-sqlite-consumer-first-final
+W4-contextual,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-direct-sqlite-consumer-first-followup
+W4-shadow-contextual,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-direct-sqlite-consumer-first-followup
+W1-fixed-keys,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-direct-sqlite-consumer-first-followup
+W6-finite-typed,direct,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-direct-sqlite-consumer-first-followup
+C01-comparator,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-arrow-consumer-first
+C02-installed-basic,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-arrow-consumer-first
+W2-spec-set,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first
+W2-spec-rollup,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first
+W2-spec-cube,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first
+W2-spec-sets,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first
+W2-spec-product,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first
+W1-forward,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-arrow-consumer-first
+W1-splice-quosure,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-arrow-consumer-first
+W1-default-null,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-arrow-consumer-first
+W4-contextual,imports,arrow,main,consumer-first,UNSUPPORTED SPELLING OR WORKFLOW,ADR 0019; grouping_bit/share_of_parent help,"Arrow backends do not support Parent shares and Total shares because marginplyr cannot enforce their scalar-summary contract safely before an Arrow query is constructed.
+ℹ Other Arrow Margin operations remain supported.
+ℹ Omit `share_of_parent()` and `share_of_total()` or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.",main-imports-arrow-consumer-first
+W4-selection,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-arrow-consumer-first
+W5-verb-summary,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-arrow-consumer-first
+W5-verb-expand,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-arrow-consumer-first
+W9-arrow-dataset,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Supported Arrow Dataset; translated expressions; same-process lifetime,,main-imports-arrow-consumer-first
+W10-spec-print,imports,arrow,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-arrow-consumer-first
+W3-query-pair-orders,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-arrow-consumer-first-extra
+W10-result-print,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-imports-arrow-consumer-first-extra
+C01-comparator,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-arrow-consumer-first-final
+C02-installed-basic,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-arrow-consumer-first-final
+W3-query-pair-orders,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-arrow-consumer-first-final
+W10-result-print,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-imports-arrow-consumer-first-final
+W2-spec-set,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first-final
+W2-spec-rollup,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first-final
+W2-spec-cube,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first-final
+W2-spec-sets,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first-final
+W2-spec-product,imports,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-arrow-consumer-first-final
+W1-forward,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-arrow-consumer-first-final
+W1-splice-quosure,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-arrow-consumer-first-final
+W1-default-null,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-arrow-consumer-first-final
+W4-contextual,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-arrow-consumer-first-final
+W4-shadow-contextual,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-arrow-consumer-first-final
+W1-fixed-keys,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-arrow-consumer-first-final
+W4-selection,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-arrow-consumer-first-final
+W5-verb-summary,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-arrow-consumer-first-final
+W5-verb-expand,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-arrow-consumer-first-final
+W9-arrow-dataset,imports,arrow,main,consumer-first,NO VIOLATION FOUND,Supported Arrow Dataset; translated expressions; same-process lifetime,,main-imports-arrow-consumer-first-final
+W10-spec-print,imports,arrow,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-arrow-consumer-first-final
+W4-contextual,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-arrow-consumer-first-followup
+W4-shadow-contextual,imports,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-arrow-consumer-first-followup
+W1-fixed-keys,imports,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-arrow-consumer-first-followup
+C01-comparator,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-dtplyr-consumer-first
+C02-installed-basic,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-dtplyr-consumer-first
+C03-lexical-delayed,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-imports-dtplyr-consumer-first
+C04-input-inside,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,main-imports-dtplyr-consumer-first
+C05-no-early-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-imports-dtplyr-consumer-first
+W2-spec-set,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first
+W2-spec-rollup,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first
+W2-spec-cube,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first
+W2-spec-sets,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first
+W2-spec-product,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first
+W1-forward,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-dtplyr-consumer-first
+W1-splice-quosure,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-dtplyr-consumer-first
+W1-default-null,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-dtplyr-consumer-first
+W4-contextual,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-dtplyr-consumer-first
+W4-selection,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-dtplyr-consumer-first
+W5-verb-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first
+W5-verb-expand,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first
+W5-verb-nest,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first
+W5-verb-nest_by,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first
+W5-factor-FALSE-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W5-factor-FALSE-expand,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W5-factor-FALSE-nest,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W5-factor-FALSE-nest_by,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W5-factor-TRUE-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W5-factor-TRUE-expand,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W5-factor-TRUE-nest,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W5-factor-TRUE-nest_by,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first
+W3-quosure-caller,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-imports-dtplyr-consumer-first
+W10-spec-print,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-dtplyr-consumer-first
+C05-no-early-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-imports-dtplyr-consumer-first-count-check
+W3-query-pair-orders,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-dtplyr-consumer-first-extra
+W6-inside-outside-compute,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-imports-dtplyr-consumer-first-extra
+W10-result-print,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-imports-dtplyr-consumer-first-extra
+C01-comparator,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-dtplyr-consumer-first-final
+C02-installed-basic,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-dtplyr-consumer-first-final
+C03-lexical-delayed,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-imports-dtplyr-consumer-first-final
+C04-input-inside,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,main-imports-dtplyr-consumer-first-final
+C05-no-early-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-imports-dtplyr-consumer-first-final
+W3-query-pair-orders,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-dtplyr-consumer-first-final
+W6-inside-outside-compute,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-imports-dtplyr-consumer-first-final
+W10-result-print,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-imports-dtplyr-consumer-first-final
+W2-spec-set,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first-final
+W2-spec-rollup,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first-final
+W2-spec-cube,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first-final
+W2-spec-sets,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first-final
+W2-spec-product,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-dtplyr-consumer-first-final
+W1-forward,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-dtplyr-consumer-first-final
+W1-splice-quosure,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-dtplyr-consumer-first-final
+W1-default-null,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-dtplyr-consumer-first-final
+W4-contextual,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-dtplyr-consumer-first-final
+W4-shadow-contextual,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-dtplyr-consumer-first-final
+W1-fixed-keys,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-dtplyr-consumer-first-final
+W4-selection,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-dtplyr-consumer-first-final
+W5-verb-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first-final
+W5-verb-expand,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first-final
+W5-verb-nest,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first-final
+W5-verb-nest_by,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-dtplyr-consumer-first-final
+W5-factor-FALSE-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W5-factor-FALSE-expand,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W5-factor-FALSE-nest,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W5-factor-FALSE-nest_by,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W5-factor-TRUE-summary,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W5-factor-TRUE-expand,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W5-factor-TRUE-nest,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W5-factor-TRUE-nest_by,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-dtplyr-consumer-first-final
+W3-quosure-caller,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-imports-dtplyr-consumer-first-final
+W10-spec-print,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-dtplyr-consumer-first-final
+W4-contextual,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-dtplyr-consumer-first-followup
+W4-shadow-contextual,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-dtplyr-consumer-first-followup
+W1-fixed-keys,imports,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-dtplyr-consumer-first-followup
+C01-comparator,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-duckdb-consumer-first
+C02-installed-basic,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-duckdb-consumer-first
+W2-spec-set,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first
+W2-spec-rollup,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first
+W2-spec-cube,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first
+W2-spec-sets,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first
+W2-spec-product,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first
+W1-forward,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-duckdb-consumer-first
+W1-splice-quosure,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-duckdb-consumer-first
+W1-default-null,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-duckdb-consumer-first
+W4-contextual,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-duckdb-consumer-first
+W4-selection,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-duckdb-consumer-first
+W5-verb-summary,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-duckdb-consumer-first
+W5-verb-expand,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-duckdb-consumer-first
+W7-native-portable,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-imports-duckdb-consumer-first
+W6-finite-typed,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-imports-duckdb-consumer-first
+W10-audit-print,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-imports-duckdb-consumer-first
+W8-duckdb-env-compute,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,SQL expansion .env boundary; public compute registration,,main-imports-duckdb-consumer-first
+W10-spec-print,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-duckdb-consumer-first
+W3-query-pair-orders,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-duckdb-consumer-first-extra
+W6-inside-outside-compute,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-imports-duckdb-consumer-first-extra
+C01-comparator,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-duckdb-consumer-first-final
+C02-installed-basic,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-duckdb-consumer-first-final
+W3-query-pair-orders,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-duckdb-consumer-first-final
+W6-inside-outside-compute,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-imports-duckdb-consumer-first-final
+W2-spec-set,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first-final
+W2-spec-rollup,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first-final
+W2-spec-cube,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first-final
+W2-spec-sets,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first-final
+W2-spec-product,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-duckdb-consumer-first-final
+W1-forward,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-duckdb-consumer-first-final
+W1-splice-quosure,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-duckdb-consumer-first-final
+W1-default-null,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-duckdb-consumer-first-final
+W4-contextual,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-duckdb-consumer-first-final
+W4-shadow-contextual,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-duckdb-consumer-first-final
+W1-fixed-keys,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-duckdb-consumer-first-final
+W4-selection,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-duckdb-consumer-first-final
+W5-verb-summary,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-duckdb-consumer-first-final
+W5-verb-expand,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-duckdb-consumer-first-final
+W7-native-portable,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-imports-duckdb-consumer-first-final
+W6-finite-typed,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-imports-duckdb-consumer-first-final
+W10-audit-print,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-imports-duckdb-consumer-first-final
+W8-duckdb-env-compute,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,SQL expansion .env boundary; public compute registration,,main-imports-duckdb-consumer-first-final
+W10-spec-print,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-duckdb-consumer-first-final
+W4-contextual,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-duckdb-consumer-first-followup
+W4-shadow-contextual,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-duckdb-consumer-first-followup
+W1-fixed-keys,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-duckdb-consumer-first-followup
+W6-finite-typed,imports,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-imports-duckdb-consumer-first-followup
+C01-comparator,imports,local,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-local-consumer-first
+C02-installed-basic,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-local-consumer-first
+C03-lexical-delayed,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-imports-local-consumer-first
+C05-no-early-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-imports-local-consumer-first
+W2-spec-set,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first
+W2-spec-rollup,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first
+W2-spec-cube,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first
+W2-spec-sets,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first
+W2-spec-product,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first
+W1-forward,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-local-consumer-first
+W1-splice-quosure,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-local-consumer-first
+W1-default-null,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-local-consumer-first
+W4-contextual,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-local-consumer-first
+W4-selection,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-local-consumer-first
+W5-verb-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first
+W5-verb-expand,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first
+W5-verb-nest,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first
+W5-verb-nest_by,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first
+W5-factor-FALSE-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W5-factor-FALSE-expand,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W5-factor-FALSE-nest,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W5-factor-FALSE-nest_by,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W5-factor-TRUE-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W5-factor-TRUE-expand,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W5-factor-TRUE-nest,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W5-factor-TRUE-nest_by,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first
+W3-quosure-caller,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-imports-local-consumer-first
+W10-spec-print,imports,local,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-local-consumer-first
+C05-no-early-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-imports-local-consumer-first-count-check
+W3-query-pair-orders,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-local-consumer-first-extra
+W10-result-print,imports,local,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-imports-local-consumer-first-extra
+C01-comparator,imports,local,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-local-consumer-first-final
+C02-installed-basic,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-local-consumer-first-final
+C03-lexical-delayed,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-imports-local-consumer-first-final
+C05-no-early-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-imports-local-consumer-first-final
+W3-query-pair-orders,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-local-consumer-first-final
+W10-result-print,imports,local,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-imports-local-consumer-first-final
+W2-spec-set,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first-final
+W2-spec-rollup,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first-final
+W2-spec-cube,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first-final
+W2-spec-sets,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first-final
+W2-spec-product,imports,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-local-consumer-first-final
+W1-forward,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-local-consumer-first-final
+W1-splice-quosure,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-local-consumer-first-final
+W1-default-null,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-local-consumer-first-final
+W4-contextual,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-local-consumer-first-final
+W4-shadow-contextual,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-local-consumer-first-final
+W1-fixed-keys,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-local-consumer-first-final
+W4-selection,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-local-consumer-first-final
+W5-verb-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first-final
+W5-verb-expand,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first-final
+W5-verb-nest,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first-final
+W5-verb-nest_by,imports,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-local-consumer-first-final
+W5-factor-FALSE-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W5-factor-FALSE-expand,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W5-factor-FALSE-nest,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W5-factor-FALSE-nest_by,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W5-factor-TRUE-summary,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W5-factor-TRUE-expand,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W5-factor-TRUE-nest,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W5-factor-TRUE-nest_by,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-imports-local-consumer-first-final
+W3-quosure-caller,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-imports-local-consumer-first-final
+W10-spec-print,imports,local,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-local-consumer-first-final
+W4-contextual,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-local-consumer-first-followup
+W4-shadow-contextual,imports,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-local-consumer-first-followup
+W1-fixed-keys,imports,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-local-consumer-first-followup
+C01-comparator,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-sqlite-consumer-first
+C02-installed-basic,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-sqlite-consumer-first
+C06-public-generics,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,main-imports-sqlite-consumer-first
+W2-spec-set,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first
+W2-spec-rollup,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first
+W2-spec-cube,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first
+W2-spec-sets,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first
+W2-spec-product,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first
+W1-forward,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-sqlite-consumer-first
+W1-splice-quosure,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-sqlite-consumer-first
+W1-default-null,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-sqlite-consumer-first
+W4-contextual,imports,sqlite,main,consumer-first,UNSUPPORTED SPELLING OR WORKFLOW,ADR 0019; grouping_bit/share_of_parent help,"marginplyr cannot establish that the source summaries of Parent shares and Total shares are plain integer or double scalars on this backend, because its SQL dialect converts a value of another type to a number rather than refusing it, so an ineligible source summary is indistinguishable from an eligible one.
+ℹ Set `.check_share_source = FALSE` to calculate `share_of_parent()` and `share_of_total()` from sources you have established yourself, or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.",main-imports-sqlite-consumer-first
+W4-selection,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-sqlite-consumer-first
+W5-verb-summary,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-sqlite-consumer-first
+W5-verb-expand,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-sqlite-consumer-first
+W7-native-portable,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-imports-sqlite-consumer-first
+W6-finite-typed,imports,sqlite,main,consumer-first,HARNESS / ENVIRONMENT ISSUE,ADR 0031 direct typed collection/materialization,"identical(typeof(x[[name]]), typeof(y[[name]])) is not TRUE",main-imports-sqlite-consumer-first
+W10-audit-print,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-imports-sqlite-consumer-first
+W10-spec-print,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-sqlite-consumer-first
+W3-query-pair-orders,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-sqlite-consumer-first-extra
+W6-inside-outside-compute,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-imports-sqlite-consumer-first-extra
+C01-comparator,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-imports-sqlite-consumer-first-final
+C02-installed-basic,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-imports-sqlite-consumer-first-final
+C06-public-generics,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,main-imports-sqlite-consumer-first-final
+W3-query-pair-orders,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-imports-sqlite-consumer-first-final
+W6-inside-outside-compute,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-imports-sqlite-consumer-first-final
+W2-spec-set,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first-final
+W2-spec-rollup,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first-final
+W2-spec-cube,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first-final
+W2-spec-sets,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first-final
+W2-spec-product,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-imports-sqlite-consumer-first-final
+W1-forward,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-imports-sqlite-consumer-first-final
+W1-splice-quosure,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-imports-sqlite-consumer-first-final
+W1-default-null,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-imports-sqlite-consumer-first-final
+W4-contextual,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-sqlite-consumer-first-final
+W4-shadow-contextual,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-sqlite-consumer-first-final
+W1-fixed-keys,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-sqlite-consumer-first-final
+W4-selection,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-imports-sqlite-consumer-first-final
+W5-verb-summary,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-sqlite-consumer-first-final
+W5-verb-expand,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-imports-sqlite-consumer-first-final
+W7-native-portable,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-imports-sqlite-consumer-first-final
+W6-finite-typed,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-imports-sqlite-consumer-first-final
+W10-audit-print,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-imports-sqlite-consumer-first-final
+W10-spec-print,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-imports-sqlite-consumer-first-final
+W4-contextual,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-imports-sqlite-consumer-first-followup
+W4-shadow-contextual,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-imports-sqlite-consumer-first-followup
+W1-fixed-keys,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-imports-sqlite-consumer-first-followup
+W6-finite-typed,imports,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-imports-sqlite-consumer-first-followup
+C01-comparator,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-arrow-consumer-first
+C02-installed-basic,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-arrow-consumer-first
+W2-spec-set,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first
+W2-spec-rollup,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first
+W2-spec-cube,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first
+W2-spec-sets,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first
+W2-spec-product,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first
+W1-forward,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-arrow-consumer-first
+W1-splice-quosure,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-arrow-consumer-first
+W1-default-null,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-arrow-consumer-first
+W4-contextual,qualified,arrow,main,consumer-first,UNSUPPORTED SPELLING OR WORKFLOW,ADR 0019; grouping_bit/share_of_parent help,"Arrow backends do not support Parent shares and Total shares because marginplyr cannot enforce their scalar-summary contract safely before an Arrow query is constructed.
+ℹ Other Arrow Margin operations remain supported.
+ℹ Omit `share_of_parent()` and `share_of_total()` or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.",main-qualified-arrow-consumer-first
+W4-selection,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-arrow-consumer-first
+W5-verb-summary,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-arrow-consumer-first
+W5-verb-expand,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-arrow-consumer-first
+W9-arrow-dataset,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Supported Arrow Dataset; translated expressions; same-process lifetime,,main-qualified-arrow-consumer-first
+W10-spec-print,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-arrow-consumer-first
+W3-query-pair-orders,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-arrow-consumer-first-extra
+W10-result-print,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-qualified-arrow-consumer-first-extra
+C01-comparator,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-arrow-consumer-first-final
+C02-installed-basic,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-arrow-consumer-first-final
+W3-query-pair-orders,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-arrow-consumer-first-final
+W10-result-print,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-qualified-arrow-consumer-first-final
+W2-spec-set,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first-final
+W2-spec-rollup,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first-final
+W2-spec-cube,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first-final
+W2-spec-sets,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first-final
+W2-spec-product,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-arrow-consumer-first-final
+W1-forward,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-arrow-consumer-first-final
+W1-splice-quosure,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-arrow-consumer-first-final
+W1-default-null,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-arrow-consumer-first-final
+W4-contextual,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-arrow-consumer-first-final
+W4-shadow-contextual,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-arrow-consumer-first-final
+W1-fixed-keys,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-arrow-consumer-first-final
+W4-selection,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-arrow-consumer-first-final
+W5-verb-summary,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-arrow-consumer-first-final
+W5-verb-expand,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-arrow-consumer-first-final
+W9-arrow-dataset,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,Supported Arrow Dataset; translated expressions; same-process lifetime,,main-qualified-arrow-consumer-first-final
+W10-spec-print,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-arrow-consumer-first-final
+W4-contextual,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-arrow-consumer-first-followup
+W4-shadow-contextual,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-arrow-consumer-first-followup
+W1-fixed-keys,qualified,arrow,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-arrow-consumer-first-followup
+C01-comparator,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-dtplyr-consumer-first
+C02-installed-basic,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-dtplyr-consumer-first
+C03-lexical-delayed,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-qualified-dtplyr-consumer-first
+C04-input-inside,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,main-qualified-dtplyr-consumer-first
+C05-no-early-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-qualified-dtplyr-consumer-first
+W2-spec-set,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first
+W2-spec-rollup,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first
+W2-spec-cube,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first
+W2-spec-sets,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first
+W2-spec-product,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first
+W1-forward,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-dtplyr-consumer-first
+W1-splice-quosure,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-dtplyr-consumer-first
+W1-default-null,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-dtplyr-consumer-first
+W4-contextual,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-dtplyr-consumer-first
+W4-selection,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-dtplyr-consumer-first
+W5-verb-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first
+W5-verb-expand,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first
+W5-verb-nest,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first
+W5-verb-nest_by,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first
+W5-factor-FALSE-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W5-factor-FALSE-expand,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W5-factor-FALSE-nest,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W5-factor-FALSE-nest_by,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W5-factor-TRUE-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W5-factor-TRUE-expand,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W5-factor-TRUE-nest,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W5-factor-TRUE-nest_by,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first
+W3-quosure-caller,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-qualified-dtplyr-consumer-first
+W10-spec-print,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-dtplyr-consumer-first
+C05-no-early-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-qualified-dtplyr-consumer-first-count-check
+W3-query-pair-orders,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-dtplyr-consumer-first-extra
+W6-inside-outside-compute,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-qualified-dtplyr-consumer-first-extra
+W10-result-print,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-qualified-dtplyr-consumer-first-extra
+C01-comparator,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-dtplyr-consumer-first-final
+C02-installed-basic,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-dtplyr-consumer-first-final
+C03-lexical-delayed,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-qualified-dtplyr-consumer-first-final
+C04-input-inside,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,dtplyr lazy_dt caller environment; ADR 0007,,main-qualified-dtplyr-consumer-first-final
+C05-no-early-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-qualified-dtplyr-consumer-first-final
+W3-query-pair-orders,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-dtplyr-consumer-first-final
+W6-inside-outside-compute,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-qualified-dtplyr-consumer-first-final
+W10-result-print,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-qualified-dtplyr-consumer-first-final
+W2-spec-set,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first-final
+W2-spec-rollup,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first-final
+W2-spec-cube,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first-final
+W2-spec-sets,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first-final
+W2-spec-product,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-dtplyr-consumer-first-final
+W1-forward,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-dtplyr-consumer-first-final
+W1-splice-quosure,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-dtplyr-consumer-first-final
+W1-default-null,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-dtplyr-consumer-first-final
+W4-contextual,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-dtplyr-consumer-first-final
+W4-shadow-contextual,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-dtplyr-consumer-first-final
+W1-fixed-keys,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-dtplyr-consumer-first-final
+W4-selection,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-dtplyr-consumer-first-final
+W5-verb-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first-final
+W5-verb-expand,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first-final
+W5-verb-nest,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first-final
+W5-verb-nest_by,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-dtplyr-consumer-first-final
+W5-factor-FALSE-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W5-factor-FALSE-expand,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W5-factor-FALSE-nest,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W5-factor-FALSE-nest_by,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W5-factor-TRUE-summary,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W5-factor-TRUE-expand,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W5-factor-TRUE-nest,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W5-factor-TRUE-nest_by,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-dtplyr-consumer-first-final
+W3-quosure-caller,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-qualified-dtplyr-consumer-first-final
+W10-spec-print,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-dtplyr-consumer-first-final
+W4-contextual,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-dtplyr-consumer-first-followup
+W4-shadow-contextual,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-dtplyr-consumer-first-followup
+W1-fixed-keys,qualified,dtplyr,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-dtplyr-consumer-first-followup
+C01-comparator,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-duckdb-consumer-first
+C02-installed-basic,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-duckdb-consumer-first
+W2-spec-set,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first
+W2-spec-rollup,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first
+W2-spec-cube,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first
+W2-spec-sets,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first
+W2-spec-product,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first
+W1-forward,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-duckdb-consumer-first
+W1-splice-quosure,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-duckdb-consumer-first
+W1-default-null,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-duckdb-consumer-first
+W4-contextual,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-duckdb-consumer-first
+W4-selection,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-duckdb-consumer-first
+W5-verb-summary,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-duckdb-consumer-first
+W5-verb-expand,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-duckdb-consumer-first
+W7-native-portable,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-qualified-duckdb-consumer-first
+W6-finite-typed,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-qualified-duckdb-consumer-first
+W10-audit-print,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-qualified-duckdb-consumer-first
+W8-duckdb-env-compute,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,SQL expansion .env boundary; public compute registration,,main-qualified-duckdb-consumer-first
+W10-spec-print,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-duckdb-consumer-first
+W3-query-pair-orders,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-duckdb-consumer-first-extra
+W6-inside-outside-compute,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-qualified-duckdb-consumer-first-extra
+C01-comparator,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-duckdb-consumer-first-final
+C02-installed-basic,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-duckdb-consumer-first-final
+W3-query-pair-orders,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-duckdb-consumer-first-final
+W6-inside-outside-compute,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-qualified-duckdb-consumer-first-final
+W2-spec-set,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first-final
+W2-spec-rollup,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first-final
+W2-spec-cube,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first-final
+W2-spec-sets,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first-final
+W2-spec-product,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-duckdb-consumer-first-final
+W1-forward,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-duckdb-consumer-first-final
+W1-splice-quosure,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-duckdb-consumer-first-final
+W1-default-null,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-duckdb-consumer-first-final
+W4-contextual,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-duckdb-consumer-first-final
+W4-shadow-contextual,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-duckdb-consumer-first-final
+W1-fixed-keys,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-duckdb-consumer-first-final
+W4-selection,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-duckdb-consumer-first-final
+W5-verb-summary,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-duckdb-consumer-first-final
+W5-verb-expand,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-duckdb-consumer-first-final
+W7-native-portable,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-qualified-duckdb-consumer-first-final
+W6-finite-typed,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-qualified-duckdb-consumer-first-final
+W10-audit-print,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-qualified-duckdb-consumer-first-final
+W8-duckdb-env-compute,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,SQL expansion .env boundary; public compute registration,,main-qualified-duckdb-consumer-first-final
+W10-spec-print,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-duckdb-consumer-first-final
+W4-contextual,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-duckdb-consumer-first-followup
+W4-shadow-contextual,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-duckdb-consumer-first-followup
+W1-fixed-keys,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-duckdb-consumer-first-followup
+W6-finite-typed,qualified,duckdb,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-qualified-duckdb-consumer-first-followup
+C01-comparator,qualified,local,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-local-consumer-first
+C02-installed-basic,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-local-consumer-first
+C03-lexical-delayed,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-qualified-local-consumer-first
+C05-no-early-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-qualified-local-consumer-first
+W2-spec-set,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first
+W2-spec-rollup,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first
+W2-spec-cube,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first
+W2-spec-sets,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first
+W2-spec-product,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first
+W1-forward,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-local-consumer-first
+W1-splice-quosure,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-local-consumer-first
+W1-default-null,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-local-consumer-first
+W4-contextual,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-local-consumer-first
+W4-selection,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-local-consumer-first
+W5-verb-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first
+W5-verb-expand,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first
+W5-verb-nest,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first
+W5-verb-nest_by,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first
+W5-factor-FALSE-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W5-factor-FALSE-expand,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W5-factor-FALSE-nest,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W5-factor-FALSE-nest_by,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W5-factor-TRUE-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W5-factor-TRUE-expand,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W5-factor-TRUE-nest,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W5-factor-TRUE-nest_by,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first
+W3-quosure-caller,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-qualified-local-consumer-first
+W10-spec-print,qualified,local,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-local-consumer-first
+C05-no-early-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-qualified-local-consumer-first-count-check
+W3-query-pair-orders,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-local-consumer-first-extra
+W10-result-print,qualified,local,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-qualified-local-consumer-first-extra
+C01-comparator,qualified,local,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-local-consumer-first-final
+C02-installed-basic,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-local-consumer-first-final
+C03-lexical-delayed,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,main-qualified-local-consumer-first-final
+C05-no-early-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,main-qualified-local-consumer-first-final
+W3-query-pair-orders,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-local-consumer-first-final
+W10-result-print,qualified,local,main,consumer-first,NO VIOLATION FOUND,Underlying result print dispatch; explicit display after laziness observation,,main-qualified-local-consumer-first-final
+W2-spec-set,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first-final
+W2-spec-rollup,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first-final
+W2-spec-cube,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first-final
+W2-spec-sets,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first-final
+W2-spec-product,qualified,local,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-local-consumer-first-final
+W1-forward,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-local-consumer-first-final
+W1-splice-quosure,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-local-consumer-first-final
+W1-default-null,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-local-consumer-first-final
+W4-contextual,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-local-consumer-first-final
+W4-shadow-contextual,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-local-consumer-first-final
+W1-fixed-keys,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-local-consumer-first-final
+W4-selection,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-local-consumer-first-final
+W5-verb-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first-final
+W5-verb-expand,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first-final
+W5-verb-nest,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first-final
+W5-verb-nest_by,qualified,local,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-local-consumer-first-final
+W5-factor-FALSE-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W5-factor-FALSE-expand,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W5-factor-FALSE-nest,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W5-factor-FALSE-nest_by,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W5-factor-TRUE-summary,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W5-factor-TRUE-expand,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W5-factor-TRUE-nest,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W5-factor-TRUE-nest_by,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0012/0016; #491 factor restoration regression,,main-qualified-local-consumer-first-final
+W3-quosure-caller,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0007; nested quosure environments,,main-qualified-local-consumer-first-final
+W10-spec-print,qualified,local,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-local-consumer-first-final
+W4-contextual,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-local-consumer-first-followup
+W4-shadow-contextual,qualified,local,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-local-consumer-first-followup
+W1-fixed-keys,qualified,local,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-local-consumer-first-followup
+C01-comparator,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-sqlite-consumer-first
+C02-installed-basic,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-sqlite-consumer-first
+C06-public-generics,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,main-qualified-sqlite-consumer-first
+W2-spec-set,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first
+W2-spec-rollup,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first
+W2-spec-cube,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first
+W2-spec-sets,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first
+W2-spec-product,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first
+W1-forward,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-sqlite-consumer-first
+W1-splice-quosure,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-sqlite-consumer-first
+W1-default-null,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-sqlite-consumer-first
+W4-contextual,qualified,sqlite,main,consumer-first,UNSUPPORTED SPELLING OR WORKFLOW,ADR 0019; grouping_bit/share_of_parent help,"marginplyr cannot establish that the source summaries of Parent shares and Total shares are plain integer or double scalars on this backend, because its SQL dialect converts a value of another type to a number rather than refusing it, so an ineligible source summary is indistinguishable from an eligible one.
+ℹ Set `.check_share_source = FALSE` to calculate `share_of_parent()` and `share_of_total()` from sources you have established yourself, or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.",main-qualified-sqlite-consumer-first
+W4-selection,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-sqlite-consumer-first
+W5-verb-summary,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-sqlite-consumer-first
+W5-verb-expand,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-sqlite-consumer-first
+W7-native-portable,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-qualified-sqlite-consumer-first
+W6-finite-typed,qualified,sqlite,main,consumer-first,HARNESS / ENVIRONMENT ISSUE,ADR 0031 direct typed collection/materialization,"identical(typeof(x[[name]]), typeof(y[[name]])) is not TRUE",main-qualified-sqlite-consumer-first
+W10-audit-print,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-qualified-sqlite-consumer-first
+W10-spec-print,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-sqlite-consumer-first
+W3-query-pair-orders,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-sqlite-consumer-first-extra
+W6-inside-outside-compute,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-qualified-sqlite-consumer-first-extra
+C01-comparator,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,main-qualified-sqlite-consumer-first-final
+C02-installed-basic,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,main-qualified-sqlite-consumer-first-final
+C06-public-generics,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,main-qualified-sqlite-consumer-first-final
+W3-query-pair-orders,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007/0018; independent same-process delayed query settings,,main-qualified-sqlite-consumer-first-final
+W6-inside-outside-compute,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Public dplyr compute dispatch within installed consumer and after return,,main-qualified-sqlite-consumer-first-final
+W2-spec-set,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first-final
+W2-spec-rollup,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first-final
+W2-spec-cube,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first-final
+W2-spec-sets,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first-final
+W2-spec-product,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,grouping_set: How an argument is read; ADR 0026,,main-qualified-sqlite-consumer-first-final
+W1-forward,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; dplyr data masking and tidyselect,,main-qualified-sqlite-consumer-first-final
+W1-splice-quosure,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0007; quosure expression/environment,,main-qualified-sqlite-consumer-first-final
+W1-default-null,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Option arguments; .margin_label,,main-qualified-sqlite-consumer-first-final
+W4-contextual,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-sqlite-consumer-first-final
+W4-shadow-contextual,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-sqlite-consumer-first-final
+W1-fixed-keys,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-sqlite-consumer-first-final
+W4-selection,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins: Relationship to dplyr summaries,,main-qualified-sqlite-consumer-first-final
+W5-verb-summary,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-sqlite-consumer-first-final
+W5-verb-expand,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,Margin verb value sections; ADR 0016/0018,,main-qualified-sqlite-consumer-first-final
+W7-native-portable,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins native/fallback; .duplicates and .id,,main-qualified-sqlite-consumer-first-final
+W6-finite-typed,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-qualified-sqlite-consumer-first-final
+W10-audit-print,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,last_sent_queries: What the record promises; result public projection,,main-qualified-sqlite-consumer-first-final
+W10-spec-print,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,margin_grouping_spec print registration; inspect_grouping public tibble,,main-qualified-sqlite-consumer-first-final
+W4-contextual,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019; grouping_bit/share_of_parent help,,main-qualified-sqlite-consumer-first-followup
+W4-shadow-contextual,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0019: caller binding never changes a recognized spelling,,main-qualified-sqlite-consumer-first-followup
+W1-fixed-keys,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,summarize_with_margins .by fixed keys and Margin order,,main-qualified-sqlite-consumer-first-followup
+W6-finite-typed,qualified,sqlite,main,consumer-first,NO VIOLATION FOUND,ADR 0031 direct typed collection/materialization,,main-qualified-sqlite-consumer-first-followup
+C01-comparator,direct,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-direct-dtplyr-consumer-first
+C02-installed-basic,direct,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-direct-dtplyr-consumer-first
+C03-lexical-delayed,direct,dtplyr,calibration,consumer-first,EXPECTED R / UPSTREAM BEHAVIOR,ADR 0007; ordinary lexical/data-mask semantics,"identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE",initial-calibration-direct-dtplyr-consumer-first
+C05-no-early-summary,direct,dtplyr,calibration,consumer-first,EXPECTED R / UPSTREAM BEHAVIOR,ADR 0020; ordinary dplyr evaluation per group/set,"could not find function ""counted""",initial-calibration-direct-dtplyr-consumer-first
+C01-comparator,direct,local,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-direct-local-consumer-first
+C02-installed-basic,direct,local,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-direct-local-consumer-first
+C03-lexical-delayed,direct,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,initial-calibration-direct-local-consumer-first
+C05-no-early-summary,direct,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,initial-calibration-direct-local-consumer-first
+C01-comparator,direct,sqlite,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-direct-sqlite-consumer-first
+C02-installed-basic,direct,sqlite,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-direct-sqlite-consumer-first
+C06-public-generics,direct,sqlite,calibration,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,initial-calibration-direct-sqlite-consumer-first
+C01-comparator,imports,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-imports-dtplyr-consumer-first
+C02-installed-basic,imports,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-imports-dtplyr-consumer-first
+C03-lexical-delayed,imports,dtplyr,calibration,consumer-first,EXPECTED R / UPSTREAM BEHAVIOR,ADR 0007; ordinary lexical/data-mask semantics,"identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE",initial-calibration-imports-dtplyr-consumer-first
+C04-input-inside,imports,dtplyr,calibration,consumer-first,CONSUMER PACKAGE ERROR,dtplyr lazy_dt caller environment; ADR 0007,"[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.",initial-calibration-imports-dtplyr-consumer-first
+C05-no-early-summary,imports,dtplyr,calibration,consumer-first,EXPECTED R / UPSTREAM BEHAVIOR,ADR 0020; ordinary dplyr evaluation per group/set,"could not find function ""counted""",initial-calibration-imports-dtplyr-consumer-first
+C01-comparator,imports,local,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-imports-local-consumer-first
+C02-installed-basic,imports,local,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-imports-local-consumer-first
+C03-lexical-delayed,imports,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,initial-calibration-imports-local-consumer-first
+C05-no-early-summary,imports,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,initial-calibration-imports-local-consumer-first
+C01-comparator,imports,sqlite,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-imports-sqlite-consumer-first
+C02-installed-basic,imports,sqlite,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-imports-sqlite-consumer-first
+C06-public-generics,imports,sqlite,calibration,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,initial-calibration-imports-sqlite-consumer-first
+C01-comparator,qualified,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-qualified-dtplyr-consumer-first
+C02-installed-basic,qualified,dtplyr,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-qualified-dtplyr-consumer-first
+C03-lexical-delayed,qualified,dtplyr,calibration,consumer-first,EXPECTED R / UPSTREAM BEHAVIOR,ADR 0007; ordinary lexical/data-mask semantics,"identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE",initial-calibration-qualified-dtplyr-consumer-first
+C04-input-inside,qualified,dtplyr,calibration,consumer-first,CONSUMER PACKAGE ERROR,dtplyr lazy_dt caller environment; ADR 0007,"[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.",initial-calibration-qualified-dtplyr-consumer-first
+C05-no-early-summary,qualified,dtplyr,calibration,consumer-first,EXPECTED R / UPSTREAM BEHAVIOR,ADR 0020; ordinary dplyr evaluation per group/set,"could not find function ""counted""",initial-calibration-qualified-dtplyr-consumer-first
+C01-comparator,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-qualified-local-consumer-first
+C02-installed-basic,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-qualified-local-consumer-first
+C03-lexical-delayed,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0007; ordinary lexical/data-mask semantics,,initial-calibration-qualified-local-consumer-first
+C05-no-early-summary,qualified,local,calibration,consumer-first,NO VIOLATION FOUND,ADR 0020; ordinary dplyr evaluation per group/set,,initial-calibration-qualified-local-consumer-first
+C01-comparator,qualified,sqlite,calibration,consumer-first,NO VIOLATION FOUND,Independent comparison mutation controls,,initial-calibration-qualified-sqlite-consumer-first
+C02-installed-basic,qualified,sqlite,calibration,consumer-first,NO VIOLATION FOUND,summarize_with_margins: value; ADR 0016/0018,,initial-calibration-qualified-sqlite-consumer-first
+C06-public-generics,qualified,sqlite,calibration,consumer-first,NO VIOLATION FOUND,ADR 0031 B-direct amendment; NAMESPACE public registrations,,initial-calibration-qualified-sqlite-consumer-first

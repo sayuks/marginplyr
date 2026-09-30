@@ -1,0 +1,5 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C01-comparator","direct","dtplyr","calibration","consumer-first","NO VIOLATION FOUND","Independent comparison mutation controls",""
+"C02-installed-basic","direct","dtplyr","calibration","consumer-first","NO VIOLATION FOUND","summarize_with_margins: value; ADR 0016/0018",""
+"C03-lexical-delayed","direct","dtplyr","calibration","consumer-first","UNCLASSIFIED","ADR 0007; ordinary lexical/data-mask semantics","identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE"
+"C05-no-early-summary","direct","dtplyr","calibration","consumer-first","UNCLASSIFIED","ADR 0020; ordinary dplyr evaluation per group/set","could not find function ""counted"""

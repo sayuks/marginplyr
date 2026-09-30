@@ -1,0 +1,4 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C01-comparator","direct","sqlite","calibration","backend-first","NO VIOLATION FOUND","Independent comparison mutation controls",""
+"C02-installed-basic","direct","sqlite","calibration","backend-first","NO VIOLATION FOUND","summarize_with_margins: value; ADR 0016/0018",""
+"C06-public-generics","direct","sqlite","calibration","backend-first","NO VIOLATION FOUND","ADR 0031 B-direct amendment; NAMESPACE public registrations",""

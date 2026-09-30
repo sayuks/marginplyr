@@ -1,0 +1,9 @@
+list(id = "C03-lexical-delayed", observation = list(alpha = structure(list(
+    g = c("a", "b", NA), sid = c(1L, 1L, 2L), total = c(10011,
+    10013, 10017)), row.names = c(NA, -3L), class = c("tbl_df",
+"tbl", "data.frame")), beta = structure(list(g = c("a", "b",
+NA), sid = c(1L, 1L, 2L), total = c(10021, 10023, 10027)), row.names = c(NA,
+-3L), class = c("tbl_df", "tbl", "data.frame")), dplyr_control = structure(list(
+    g = c("a", "b"), total = c(10011, 10013)), row.names = c(NA,
+-2L), class = c("tbl_df", "tbl", "data.frame")), wrapper_returned = TRUE),
+    error = NULL, warnings = character(0))

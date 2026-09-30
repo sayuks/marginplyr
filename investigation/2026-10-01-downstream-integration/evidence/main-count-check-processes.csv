@@ -1,0 +1,7 @@
+tag,exit,detail
+main-direct-local-consumer-first-count-check,0,
+main-qualified-local-consumer-first-count-check,0,
+main-imports-local-consumer-first-count-check,0,
+main-direct-dtplyr-consumer-first-count-check,0,
+main-qualified-dtplyr-consumer-first-count-check,0,
+main-imports-dtplyr-consumer-first-count-check,0,

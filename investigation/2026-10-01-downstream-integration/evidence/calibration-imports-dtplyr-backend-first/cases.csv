@@ -1,0 +1,6 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C01-comparator","imports","dtplyr","calibration","backend-first","NO VIOLATION FOUND","Independent comparison mutation controls",""
+"C02-installed-basic","imports","dtplyr","calibration","backend-first","NO VIOLATION FOUND","summarize_with_margins: value; ADR 0016/0018",""
+"C03-lexical-delayed","imports","dtplyr","calibration","backend-first","NO VIOLATION FOUND","ADR 0007; ordinary lexical/data-mask semantics",""
+"C04-input-inside","imports","dtplyr","calibration","backend-first","NO VIOLATION FOUND","dtplyr lazy_dt caller environment; ADR 0007",""
+"C05-no-early-summary","imports","dtplyr","calibration","backend-first","NO VIOLATION FOUND","ADR 0020; ordinary dplyr evaluation per group/set",""

@@ -1,0 +1,4 @@
+list(id = "W5-factor-FALSE-summary", observation = structure(list(
+    g = structure(1:3, levels = c("a", "b", "Total"), class = "factor"),
+    sid = c(1L, 1L, 2L), rows = c(2L, 1L, 3L)), row.names = c(NA,
+-3L), class = "data.frame"), error = NULL, warnings = character(0))

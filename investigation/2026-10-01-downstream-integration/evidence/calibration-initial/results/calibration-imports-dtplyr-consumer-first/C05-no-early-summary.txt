@@ -1,0 +1,3 @@
+list(id = "C05-no-early-summary", observation = NULL, error = list(
+    class = c("simpleError", "error", "condition"), message = "could not find function \"counted\""),
+    warnings = character(0))

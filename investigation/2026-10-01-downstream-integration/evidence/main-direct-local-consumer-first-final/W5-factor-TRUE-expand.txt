@@ -1,0 +1,5 @@
+list(id = "W5-factor-TRUE-expand", observation = structure(list(
+    g = structure(c(1L, 1L, 2L, 3L, 3L, 3L), levels = c("a",
+    "b", "Total"), class = c("ordered", "factor")), sid = c(1L,
+    1L, 1L, 2L, 2L, 2L), v = c(1, 3, 6, 1, 3, 6)), row.names = c(NA,
+-6L), class = "data.frame"), error = NULL, warnings = character(0))

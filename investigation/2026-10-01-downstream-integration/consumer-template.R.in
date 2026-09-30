@@ -1,0 +1,128 @@
+# Installed consumer fixture. @MP@ and @DP@ select qualified or import calls.
+namespace_offset <- 100
+ordinary <- function(x) sum(x) + namespace_offset
+
+make_spec <- function(cols = "g", kind = "rollup") {
+  force(cols)
+  switch(kind,
+    set = @MP@grouping_set(tidyselect::all_of(cols)),
+    rollup = @MP@rollup(tidyselect::all_of(cols)),
+    cube = @MP@cube(tidyselect::all_of(cols)),
+    sets = @MP@grouping_sets(@MP@grouping_set(tidyselect::all_of(cols)),
+                           @MP@grouping_set()),
+    product = @MP@grouping_spec(@MP@rollup(tidyselect::all_of(cols)))
+  )
+}
+
+report <- function(x, spec = make_spec(), label = NULL,
+                   sort = c("none", "last", "first"),
+                   duplicates = c("error", "drop", "keep")) {
+  @MP@summarize_with_margins(x, total = sum(v), rows = @DP@n(),
+    .grouping = spec, .margin_label = label, .sort = sort,
+    .duplicates = duplicates, .id = "sid")
+}
+
+forward <- function(x, col, dim, ...) {
+  @MP@summarize_with_margins(x, total = sum({{ col }}), ...,
+    .grouping = @MP@rollup({{ dim }}), .margin_label = NULL,
+    .sort = "last", .id = "sid")
+}
+
+splice <- function(x, dots, spec) {
+  @MP@summarize_with_margins(x, !!!dots, .grouping = spec,
+    .margin_label = NULL, .sort = "last", .id = "sid")
+}
+
+lexical <- function(x, offset = 7, inside = FALSE) {
+  force(offset)
+  if (inside) x <- dtplyr::lazy_dt(x)
+  namespace_offset <- offset
+  # The closure ordinary keeps the package namespace; this scalar is local.
+  @MP@summarize_with_margins(x, total = ordinary(v) + namespace_offset,
+    .grouping = @MP@rollup(g), .margin_label = NULL,
+    .sort = "last", .id = "sid")
+}
+
+lexical_baseline <- function(x, offset = 7, inside = FALSE) {
+  force(offset)
+  if (inside) x <- dtplyr::lazy_dt(x)
+  namespace_offset <- offset
+  @DP@summarise(@DP@group_by(x, g),
+    total = ordinary(v) + namespace_offset, .groups = "drop")
+}
+
+quosure_report <- function(x, expression, offset = 7) {
+  force(offset)
+  q <- rlang::enquo(expression)
+  @MP@summarize_with_margins(x, total = (!!q) + offset,
+    .grouping = @MP@rollup(g), .margin_label = NULL,
+    .sort = "last", .id = "sid")
+}
+
+contextual <- function(x, check = TRUE, shares = TRUE) {
+  if (!shares) return(@MP@summarize_with_margins(x, total = sum(v),
+    bit = @MP@grouping_bit(g), gid = @MP@grouping_id(g),
+    .grouping = @MP@rollup(g), .margin_label = NULL,
+    .sort = "last", .id = "sid"))
+  @MP@summarize_with_margins(x, total = sum(v),
+    bit = @MP@grouping_bit(g), gid = @MP@grouping_id(g),
+    parent = @MP@share_of_parent(total), share = @MP@share_of_total(total),
+    .grouping = @MP@rollup(g), .margin_label = NULL,
+    .sort = "last", .id = "sid", .check_share_source = check)
+}
+
+shadow_contextual <- function(x) {
+  grouping_bit <- function(...) -99L
+  across <- function(...) stop("ordinary shadow must not run")
+  @MP@summarize_with_margins(x, across(v, sum, .names = "total"),
+    bit = grouping_bit(g), .grouping = @MP@rollup(g),
+    .margin_label = NULL, .sort = "last", .id = "sid")
+}
+
+fixed <- function(x, fixed_cols = "partition", dim_cols = "g") {
+  force(fixed_cols); force(dim_cols)
+  @MP@summarize_with_margins(x, total = sum(v),
+    .by = tidyselect::all_of(fixed_cols),
+    .grouping = @MP@rollup(tidyselect::all_of(dim_cols)),
+    .margin_label = NULL, .sort = "last", .id = "sid")
+}
+
+selections <- function(x, cols = "v") {
+  force(cols)
+  @MP@summarize_with_margins(x,
+    @DP@across(tidyselect::all_of(cols), sum, .names = "{.col}_total"),
+    .grouping = @MP@rollup(g), .margin_label = NULL, .sort = "last")
+}
+
+verb <- function(x, kind, label = "Total") {
+  spec <- @MP@rollup(g)
+  switch(kind,
+    summary = @MP@summarise_with_margins(x, rows = @DP@n(),
+      .grouping = spec, .margin_label = label, .id = "sid", .sort = "last"),
+    expand = @MP@expand_with_margins(x, .grouping = spec,
+      .margin_label = label, .id = "sid", .sort = "last"),
+    nest = @MP@nest_with_margins(x, .grouping = spec,
+      .margin_label = label, .id = "sid", .sort = "last"),
+    nest_by = @MP@nest_by_with_margins(x, .grouping = spec,
+      .margin_label = label, .id = "sid", .sort = "last")
+  )
+}
+
+inspect <- function(x, spec) {
+  @MP@inspect_grouping(x, .grouping = spec, .format = "list")
+}
+finish <- function(x, action = "collect", name = "consumer_result", n = Inf) {
+  switch(action,
+    collect = @DP@collect(x, n = n),
+    compute = @DP@collect(@DP@compute(x, name = name)),
+    render = @DB@sql_render(x),
+    print = utils::capture.output(print(x))
+  )
+}
+inside_report <- function(x, action = "collect", name = "inside_result") {
+  finish(report(x, sort = "last"), action, name)
+}
+baseline <- function(x) {
+  @DP@summarise(@DP@group_by(x, g), total = sum(v), .groups = "drop")
+}
+audit <- function() @MP@last_sent_queries()

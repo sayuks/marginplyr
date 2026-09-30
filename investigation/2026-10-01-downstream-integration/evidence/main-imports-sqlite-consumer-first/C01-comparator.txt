@@ -1,0 +1,3 @@
+list(id = "C01-comparator", observation = c(value = TRUE, type = TRUE,
+missing = TRUE, duplicate = TRUE, swap = TRUE), error = NULL,
+    warnings = character(0))

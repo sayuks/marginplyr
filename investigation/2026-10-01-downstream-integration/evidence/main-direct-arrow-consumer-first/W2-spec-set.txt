@@ -1,0 +1,9 @@
+list(id = "W2-spec-set", observation = list(alpha = structure(list(
+    set_id = 1L, fixed = list(character(0)), included = list(
+        "g"), omitted = list(character(0)), grouping_bits = list(
+        c(g = 0L)), grouping_id = 0L), row.names = c(NA, -1L), class = c("tbl_df",
+"tbl", "data.frame")), beta = structure(list(set_id = 1L, fixed = list(
+    character(0)), included = list("v"), omitted = list(character(0)),
+    grouping_bits = list(c(v = 0L)), grouping_id = 0L), row.names = c(NA,
+-1L), class = c("tbl_df", "tbl", "data.frame")), specification_class = "margin_grouping_spec"),
+    error = NULL, warnings = character(0))

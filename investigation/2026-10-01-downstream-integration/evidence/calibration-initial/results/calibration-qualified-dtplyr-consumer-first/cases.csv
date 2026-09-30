@@ -1,0 +1,6 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C01-comparator","qualified","dtplyr","calibration","consumer-first","NO VIOLATION FOUND","Independent comparison mutation controls",""
+"C02-installed-basic","qualified","dtplyr","calibration","consumer-first","NO VIOLATION FOUND","summarize_with_margins: value; ADR 0016/0018",""
+"C03-lexical-delayed","qualified","dtplyr","calibration","consumer-first","UNCLASSIFIED","ADR 0007; ordinary lexical/data-mask semantics","identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE"
+"C04-input-inside","qualified","dtplyr","calibration","consumer-first","UNCLASSIFIED","dtplyr lazy_dt caller environment; ADR 0007","[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table."
+"C05-no-early-summary","qualified","dtplyr","calibration","consumer-first","UNCLASSIFIED","ADR 0020; ordinary dplyr evaluation per group/set","could not find function ""counted"""

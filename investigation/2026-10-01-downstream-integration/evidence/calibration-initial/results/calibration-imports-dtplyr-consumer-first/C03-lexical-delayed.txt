@@ -1,0 +1,3 @@
+list(id = "C03-lexical-delayed", observation = NULL, error = list(
+    class = c("simpleError", "error", "condition"), message = "identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE"),
+    warnings = character(0))

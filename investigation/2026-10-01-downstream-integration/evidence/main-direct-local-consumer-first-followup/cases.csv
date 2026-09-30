@@ -1,0 +1,4 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"W4-contextual","direct","local","main","consumer-first","NO VIOLATION FOUND","ADR 0019; grouping_bit/share_of_parent help",""
+"W4-shadow-contextual","direct","local","main","consumer-first","NO VIOLATION FOUND","ADR 0019: caller binding never changes a recognized spelling",""
+"W1-fixed-keys","direct","local","main","consumer-first","NO VIOLATION FOUND","summarize_with_margins .by fixed keys and Margin order",""

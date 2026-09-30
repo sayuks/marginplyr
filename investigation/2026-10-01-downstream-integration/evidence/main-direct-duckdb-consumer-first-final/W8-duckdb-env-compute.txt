@@ -1,0 +1,6 @@
+list(id = "W8-duckdb-env-compute", observation = list(class = c("marginplyr_duckdb_env",
+"tbl_duckdb_connection", "tbl_dbi", "tbl_sql", "tbl_lazy", "tbl"
+), result = structure(list(g = c("a", "a", "b", NA, NA, NA),
+    sid = c(1L, 1L, 1L, 2L, 2L, 2L), .env = c(1, 3, 6, 1, 3,
+    6)), row.names = c(NA, -6L), class = c("tbl_df", "tbl", "data.frame"
+))), error = NULL, warnings = character(0))

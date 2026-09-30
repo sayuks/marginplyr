@@ -1,0 +1,3 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"W3-query-pair-orders","imports","local","main","consumer-first","NO VIOLATION FOUND","ADR 0007/0018; independent same-process delayed query settings",""
+"W10-result-print","imports","local","main","consumer-first","NO VIOLATION FOUND","Underlying result print dispatch; explicit display after laziness observation",""
