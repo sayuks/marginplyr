@@ -1,0 +1,20 @@
+from manage import run
+import sys
+part=sys.argv[1]
+if part=='pilot':
+    for rep in range(2,5):
+        for mode in ['error','interrupt','sigint']:run('insert_after',mode,'new',rep)
+    for mode in ['error','interrupt','sigint']:run('insert_after',mode,'commit',1)
+elif part=='boundaries':
+    for case in ['begin_before','begin_after','drop_after','create_after','index_after','analyze_after','return_after','release_after']:
+        for mode in ['error','interrupt']:run(case,mode,'overwrite',1)
+elif part=='variants':
+    for case in ['create_after','insert_after']:
+        for variant in ['commit','rollback','temp','attached','env','flag']:
+            for mode in ['error','interrupt']:run(case,mode,variant,2)
+elif part=='cleanup':
+    for case,mode in [('release_busy','none'),('unique_backend','none'),('cleanup_between','interrupt'),('cleanup_between','sigint'),('invalid_cleanup','none')]:
+        for rep in range(2,5):run(case,mode,'overwrite',rep)
+elif part=='collect':
+    for case in ['collect_acquired','collect_fetched']:
+        for mode in ['error','interrupt','sigint']:run(case,mode,'new',1)

@@ -1,0 +1,179 @@
+{
+  "R": "R version 4.6.1 (2026-06-24)",
+  "OS": {
+    "sysname": "Darwin",
+    "release": "25.6.0",
+    "machine": "arm64"
+  },
+  "libraries": [
+    "<EXPERIMENT_ROOT>/library",
+    "<R_FRAMEWORK>/Versions/4.6/Resources/library"
+  ],
+  "namespaces": [
+    {
+      "package": "methods",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/methods"
+    },
+    {
+      "package": "R6",
+      "version": "2.6.1",
+      "path": "<EXPERIMENT_ROOT>/library/R6"
+    },
+    {
+      "package": "fastmap",
+      "version": "1.2.0",
+      "path": "<EXPERIMENT_ROOT>/library/fastmap"
+    },
+    {
+      "package": "bit",
+      "version": "4.6.0",
+      "path": "<EXPERIMENT_ROOT>/library/bit"
+    },
+    {
+      "package": "tidyselect",
+      "version": "1.2.1",
+      "path": "<EXPERIMENT_ROOT>/library/tidyselect"
+    },
+    {
+      "package": "magrittr",
+      "version": "2.0.5",
+      "path": "<EXPERIMENT_ROOT>/library/magrittr"
+    },
+    {
+      "package": "cachem",
+      "version": "1.1.0",
+      "path": "<EXPERIMENT_ROOT>/library/cachem"
+    },
+    {
+      "package": "glue",
+      "version": "1.8.1",
+      "path": "<EXPERIMENT_ROOT>/library/glue"
+    },
+    {
+      "package": "blob",
+      "version": "1.3.0",
+      "path": "<EXPERIMENT_ROOT>/library/blob"
+    },
+    {
+      "package": "tibble",
+      "version": "3.3.1",
+      "path": "<EXPERIMENT_ROOT>/library/tibble"
+    },
+    {
+      "package": "memoise",
+      "version": "2.0.1",
+      "path": "<EXPERIMENT_ROOT>/library/memoise"
+    },
+    {
+      "package": "pkgconfig",
+      "version": "2.0.3",
+      "path": "<EXPERIMENT_ROOT>/library/pkgconfig"
+    },
+    {
+      "package": "bit64",
+      "version": "4.8.6",
+      "path": "<EXPERIMENT_ROOT>/library/bit64"
+    },
+    {
+      "package": "dplyr",
+      "version": "1.2.1",
+      "path": "<EXPERIMENT_ROOT>/library/dplyr"
+    },
+    {
+      "package": "generics",
+      "version": "0.1.4",
+      "path": "<EXPERIMENT_ROOT>/library/generics"
+    },
+    {
+      "package": "lifecycle",
+      "version": "1.0.5",
+      "path": "<EXPERIMENT_ROOT>/library/lifecycle"
+    },
+    {
+      "package": "utils",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/utils"
+    },
+    {
+      "package": "cli",
+      "version": "3.6.6",
+      "path": "<EXPERIMENT_ROOT>/library/cli"
+    },
+    {
+      "package": "RSQLite",
+      "version": "3.53.3",
+      "path": "<EXPERIMENT_ROOT>/library/RSQLite"
+    },
+    {
+      "package": "vctrs",
+      "version": "0.7.3",
+      "path": "<EXPERIMENT_ROOT>/library/vctrs"
+    },
+    {
+      "package": "DBI",
+      "version": "1.3.0",
+      "path": "<EXPERIMENT_ROOT>/library/DBI"
+    },
+    {
+      "package": "graphics",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/graphics"
+    },
+    {
+      "package": "grDevices",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/grDevices"
+    },
+    {
+      "package": "stats",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/stats"
+    },
+    {
+      "package": "compiler",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/compiler"
+    },
+    {
+      "package": "base",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/base"
+    },
+    {
+      "package": "pillar",
+      "version": "1.11.1",
+      "path": "<EXPERIMENT_ROOT>/library/pillar"
+    },
+    {
+      "package": "duckdb",
+      "version": "1.5.5",
+      "path": "<EXPERIMENT_ROOT>/library/duckdb"
+    },
+    {
+      "package": "jsonlite",
+      "version": "2.0.0",
+      "path": "<EXPERIMENT_ROOT>/library/jsonlite"
+    },
+    {
+      "package": "rlang",
+      "version": "1.3.0",
+      "path": "<EXPERIMENT_ROOT>/library/rlang"
+    },
+    {
+      "package": "dbplyr",
+      "version": "2.6.0",
+      "path": "<EXPERIMENT_ROOT>/library/dbplyr"
+    },
+    {
+      "package": "datasets",
+      "version": "4.6.1",
+      "path": "<R_FRAMEWORK>/Resources/library/datasets"
+    },
+    {
+      "package": "marginplyr",
+      "version": "0.1.0",
+      "path": "<EXPERIMENT_ROOT>/library/marginplyr"
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+from manage import run
+import sys
+part=sys.argv[1]
+if part=='repeat-boundaries':
+ for rep in [2,3]:
+  for case in ['begin_before','begin_after','drop_after','create_after','index_after','analyze_after','return_after','release_after']:
+   for mode in ['error','interrupt']:run(case,mode,'overwrite',rep)
+elif part=='sessions':
+ for case in ['audit_option','dialect_control','dialect_cached','local_branch','local_replay']:
+  for mode in ['error','interrupt','sigint']:
+   for rep in range(1,4):
+    if rep==1 and mode=='interrupt' and case in ['audit_option','dialect_control','local_branch']:continue
+    run(case,mode,'new',rep)
+elif part=='warnings':
+ for case in ['warning_sql','warning_proxy']:
+  for variant in ['new','off']:
+   for rep in range(1,4):run(case,'none',variant,rep)
+ for rep in range(1,4):run('cte_warning','none','env',rep)
+elif part=='repeat-collect':
+ for case in ['collect_acquired','collect_fetched']:
+  for mode in ['error','interrupt','sigint']:
+   for rep in [2,3]:run(case,mode,'new',rep)

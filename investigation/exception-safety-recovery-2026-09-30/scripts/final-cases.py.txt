@@ -1,0 +1,4 @@
+from manage import run
+for case in ['collect_repair','audit_lifecycle','audit_autoname']:
+ for mode in ['error','interrupt','sigint']:
+  for rep in [1,2,3]:run(case,mode,'new',rep)

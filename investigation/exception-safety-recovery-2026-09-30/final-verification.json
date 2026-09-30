@@ -1,0 +1,31 @@
+{
+  "timestamp": "2026-09-30T02:36:35.886639+00:00",
+  "head": "535e7c87de1149bfcf9c90588c0952e217b33806",
+  "git_status": "",
+  "original_R_files_changed": [],
+  "remaining_experiment_databases": [],
+  "manager_terminal_results": 274,
+  "manager_nonzero_or_unfinished": [],
+  "all_completed_workers_disposed": true,
+  "process_verification": "Owned manager terminal exit results and worker disposal markers; independent ps inventory unavailable under sandbox.",
+  "matrix": {
+    "total_completed": 276,
+    "valid_runs": 256,
+    "excluded": 20,
+    "case_families": 27,
+    "actual_sigint_runs": 54,
+    "classifications": {
+      "No issue within verified scope": 146,
+      "Safety concern requiring interrupt restoration decision": 68,
+      "Confirmed contract violation: ordinary acquisition failure leaves owned savepoint": 3,
+      "Expected failure or upstream behavior": 30,
+      "Confirmed contract violation: warning replay masks original External error": 3,
+      "Safety concern requiring interrupt/cleanup precedence decision": 6
+    },
+    "all_disposed": true,
+    "normal_body_restore_failures": [],
+    "input_row_failures": [],
+    "sentinel_failures": []
+  },
+  "query_SQL_preserved_at_acquisition": true
+}
