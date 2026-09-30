@@ -17,14 +17,14 @@ JSON strings replaced the experiment root, original user library, and R framewor
 
 ## Read an observation without executing an experiment
 
-For example, this printed the immediate state after the calibrated actual-interrupt INSERT pilot:
+Observation paths were logical keys inside `observations.jsonl`, not separate repository files. For example, this printed the immediate state after the calibrated actual-interrupt INSERT pilot by joining its key components:
 
 ```sh
 python3 - <<'PY'
 import json
 from pathlib import Path
 archive = Path('investigation/exception-safety-recovery-2026-09-30')
-wanted = 'results/insert_after--sigint--new--2/after.json'
+wanted = '/'.join(('results', 'insert_after--sigint--new--2', 'after.json'))
 for line in (archive / 'observations.jsonl').open():
     record = json.loads(line)
     if record['path'] == wanted:
@@ -35,7 +35,14 @@ else:
 PY
 ```
 
-The minimum ordinary-error reproduction was under `results/minimal--error--1/minimal.json`, with repetitions 2 and 3. The controlled-interrupt minimum was under `results/minimal--interrupt--1/minimal.json`. Warning-replay controls were under `results/controls/diagnostic-minimal.json` and repetitions `diagnostic-minimal-2.json` and `diagnostic-minimal-3.json`. Plain DBI lock and dbplyr collection comparisons were under `results/controls/upstream-lock.json`.
+Other observations were selected using the following key components, joined with `/` in the same way:
+
+| Observation | Key components |
+| --- | --- |
+| Minimum ordinary-error reproduction | `results`, `minimal--error--1`, `minimal.json` (also repetitions 2 and 3) |
+| Minimum controlled-interrupt reproduction | `results`, `minimal--interrupt--1`, `minimal.json` |
+| Warning-replay controls | `results`, `controls`, `diagnostic-minimal.json` (also `diagnostic-minimal-2.json` and `diagnostic-minimal-3.json`) |
+| Plain DBI lock and dbplyr collection comparisons | `results`, `controls`, `upstream-lock.json` |
 
 ## Pilot admission
 
@@ -57,17 +64,17 @@ The first repetitions were excluded because the condition observer incorrectly a
 
 Use a newly created disposable directory as `bundle`, outside the original working tree. Copy each archived script there under `bundle/scripts/`, removing only its final `.txt` suffix. Create empty `bundle/home/`, `bundle/tmp/`, and `bundle/results/` directories. Provision `bundle/library/` from an isolated copy of the dependency versions recorded here, and install a Git archive of the target SHA into that library. The archived package-source hashes allow comparison with that fixed checkout. No dependencies or binaries were included, so exact replay remained contingent on their availability; silently substituting versions would produce a different experiment.
 
-Run all workers through a newly launched supervisor with `--vanilla`, private HOME/TMPDIR/library variables, and `TESTTHAT` unset. Do not source workers into a normal R session. The archived manager determined its bundle root from its own location and refused existing run directories. Representative commands from the disposable bundle were:
+Run all workers through a newly launched supervisor with `--vanilla`, private HOME/TMPDIR/library variables, and `TESTTHAT` unset. Do not source workers into a normal R session. The archived [manager](scripts/manage.py.txt) determined its bundle root from its own location and refused existing run directories. After reconstructing the scripts, run these representative commands from the disposable bundle's scripts directory:
 
 ```sh
-python3 scripts/manage.py insert_after sigint new 20
-python3 scripts/manage.py begin_after error overwrite 20
-python3 scripts/manage.py local_replay error new 20
-python3 scripts/manage.py collect_repair interrupt new 20
-python3 scripts/run-minimal.py
+python3 manage.py insert_after sigint new 20
+python3 manage.py begin_after error overwrite 20
+python3 manage.py local_replay error new 20
+python3 manage.py collect_repair interrupt new 20
+python3 run-minimal.py
 ```
 
-`run-minimal.py` used fresh minimum-case directory names, so it required an empty results directory. `diagnostic-minimal.R` accepted the bundle root and an output JSON path; `upstream-controls.R` accepted the same arguments. Run them only as separate supervised R processes under the same private environment.
+The archived [minimum-case supervisor](scripts/run-minimal.py.txt) used fresh minimum-case directory names, so it required an empty results directory. The archived [diagnostic minimum](scripts/diagnostic-minimal.R.txt) accepted the bundle root and an output JSON path; the archived [upstream controls](scripts/upstream-controls.R.txt) accepted the same arguments. Run them only as separate supervised R processes under the same private environment.
 
 The recorded limits were 100 source rows, 20 MiB per database, 60 seconds per case, at most two experiment R processes, and a 500 MiB retained bundle. Scripts were experimental evidence and did not constitute enforcement of every resource ceiling. The manager observed before requesting disposal, waited for owned workers to finish, and removed only experimental database files. A replay needs an independent management owner even when product cleanup is intentionally interrupted. Never reset a namespace, cache, connection, or transaction before the product-state verdict. Caller commit and rollback require separate cases, with no retry overwriting the interrupted destination before that decision.
 
