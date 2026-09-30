@@ -218,8 +218,9 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
 # transaction.
 sqlite_with_compute_savepoint <- function(con, destination, code) {
   savepoint <- basename(tempfile(pattern = "marginplyr_savepoint_"))
-  DBI::dbBegin(con, name = savepoint)
   tryCatch({
+    # dbBegin() can raise after SQLite has acquired the savepoint.
+    DBI::dbBegin(con, name = savepoint)
     value <- code(destination)
     DBI::dbCommit(con, name = savepoint)
     value
