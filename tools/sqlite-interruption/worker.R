@@ -44,6 +44,11 @@ deliver <- switch(configuration$mode,
     while (!file.exists(file.path(directory, "resume"))) {
       invisible(NULL)
     }
+    # An eligible checkpoint must deliver the signal here, before fast result
+    # preparation can reach release. Protected handoffs defer it instead.
+    if (!.Internal(interruptsSuspended())) {
+      Sys.sleep(0)
+    }
   },
   controlled = rlang::interrupt,
   error = function() stop("ordinary checkpoint control"),
