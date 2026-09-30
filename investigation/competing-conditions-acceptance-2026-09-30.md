@@ -1,6 +1,7 @@
 # Competing-condition checkpoint acceptance
 
 Investigated: 2026-09-30
+Revised: 2026-09-30 — compressed-connection reproduction in the revisions section
 Source snapshot: a1f833635fedea3d4e8f88ae9fb7988a4d6498a7
 Scope: partial implementation of #756; not completion evidence
 
@@ -37,6 +38,25 @@ python3 tools/competing-conditions/run.py /private/tmp/756-new-acceptance
 The supervisor refused an uncommitted source state and an existing evidence
 directory. It required a checkpoint matching the child PID and operation
 before delivering SIGINT. Each case had a 30-second deadline.
+
+## Revisions (2026-09-30)
+
+The first raw-connection example above failed with `unknown input format`:
+the preserved worker `raw.rds` files were gzip-compressed. The corrected
+reproduction wrapped the connection in `gzcon()`:
+
+```r
+bundle <- readRDS("investigation/competing-conditions-acceptance-2026-09-30.rds")
+connection <- gzcon(rawConnection(bundle$files[["013-summary-sigint/raw.rds"]]))
+outcome <- readRDS(connection)
+close(connection)
+```
+
+With this connection, all ten actual-SIGINT raw outcomes were independently
+read and checked as interrupts outside the error class, with normally returned
+post-capture probes and matching checkpoint/delivery PIDs. The manifest's
+three script hashes also matched the measured source. The retained bytes and
+the original measurement were unchanged.
 
 ## Cases and observations
 
