@@ -64,21 +64,24 @@ results <- test_that("supervised SQLite interruption acceptance", {
     outcome <- tryCatch({
       captured <- tryCatch({
         out <- dplyr::compute(
-        fixture$query,
-        name = if (configuration$schema == "main") "report" else fixture$destination,
-        temporary = configuration$schema == "temp", overwrite = configuration$overwrite,
-        indexes = if (configuration$checkpoint == "index") list("g") else list(),
-        in_transaction = configuration$flag
-      )
+          fixture$query,
+          name = if (configuration$schema == "main") "report" else fixture$destination,
+          temporary = configuration$schema == "temp", overwrite = configuration$overwrite,
+          indexes = if (configuration$checkpoint == "index") list("g") else list(),
+          in_transaction = configuration$flag
+        )
         list(kind = "success")
-      }, interrupt = function(err) list(kind = "interrupt", condition = condition_info(err)),
-         error = function(err) list(kind = "error", condition = condition_info(err)))
+      }, interrupt = function(err) list(kind = "interrupt", condition = err),
+         error = function(err) list(kind = "error", condition = err))
       # Flush a deferred signal before any observation. R need not deliver it at
       # the exact instruction restoring interrupt eligibility after a handoff.
       Sys.sleep(0)
       captured
-    }, interrupt = function(err) list(kind = "interrupt", condition = condition_info(err)),
-       error = function(err) list(kind = "error", condition = condition_info(err)))
+    }, interrupt = function(err) list(kind = "interrupt", condition = err),
+       error = function(err) list(kind = "error", condition = err))
+    if (!is.null(outcome$condition)) {
+      outcome$condition <- condition_info(outcome$condition)
+    }
     # No probe, retry, caller decision, test rollback or disposal precedes this.
     write_json(list(
       outcome = outcome, hit = state$hit, savepoint = state$savepoint,
