@@ -1,62 +1,65 @@
 # Acceptance at the public eager summary boundary selected by #756.
 test_that("interruption after summary evaluation survives exit replay", {
+  run_checkpoint <- function(checkpoint, warn) {
+    old <- options(warn = warn)
+    on.exit(options(old), add = TRUE)
+    input <- data.frame(g = c("a", "b"), v = c(2, 5))
+    original <- input
+    effects <- numeric()
+    reached <- FALSE
+    cancellation <- structure(list(message = "assembly cancellation"),
+                              class = c("interrupt", "condition"))
+    branch <- function(v) {
+      effects <<- c(effects, sum(v))
+      warning("earlier warning")
+      sum(v)
+    }
+    # These checkpoints run after all caller expressions have completed,
+    # while the public summary still owns buffered warnings for exit replay.
+    suppressMessages(trace(
+      checkpoint, where = asNamespace("marginplyr"), print = FALSE,
+      tracer = function() {
+        reached <<- TRUE
+        signalCondition(cancellation)
+        rlang::interrupt()
+      }
+    ))
+    traced <- TRUE
+    on.exit(if (traced) suppressMessages(untrace(
+      checkpoint, where = asNamespace("marginplyr")
+    )), add = TRUE)
+    outcome <- tryCatch(withCallingHandlers(
+      summarize_with_margins(input, z = branch(.data$v),
+                             .grouping = rollup("g")),
+      warning = function(cnd) {
+        if (warn == 1L) invokeRestart("muffleWarning")
+      }
+    ), interrupt = identity, error = identity)
+    suppressMessages(untrace(checkpoint, where = asNamespace("marginplyr")))
+    traced <- FALSE
+    expect_true(reached)
+    expect_identical(effects, c(2, 5, 7))
+    expect_s3_class(outcome, "interrupt")
+    expect_false(inherits(outcome, "error"))
+    if (warn == 2L) {
+      expect_identical(outcome$interrupt, cancellation)
+      expect_s3_class(outcome$replay_error, "error")
+      expect_match(conditionMessage(outcome$replay_error),
+                   "converted from warning")
+    } else {
+      expect_identical(outcome, cancellation)
+    }
+    expect_identical(input, original)
+    expect_identical(getOption("warn"), warn)
+    options(old)
+    expect_equal(
+      summarize_with_margins(input, z = sum(.data$v),
+                             .grouping = rollup("g"))$z, c(2, 5, 7)
+    )
+  }
   checkpoints <- c("combine_margin_branches", "restore_input_window_order")
   for (checkpoint in checkpoints) {
-    for (warn in c(1L, 2L)) {
-      old <- options(warn = warn)
-      on.exit(options(old), add = TRUE)
-      input <- data.frame(g = c("a", "b"), v = c(2, 5))
-      original <- input
-      effects <- numeric()
-      reached <- FALSE
-      cancellation <- structure(list(message = "assembly cancellation"),
-                                class = c("interrupt", "condition"))
-      branch <- function(v) {
-        effects <<- c(effects, sum(v))
-        warning("earlier warning")
-        sum(v)
-      }
-      # These checkpoints run after all caller expressions have completed,
-      # while the public summary still owns buffered warnings for exit replay.
-      suppressMessages(trace(
-        checkpoint, where = asNamespace("marginplyr"), print = FALSE,
-        tracer = function() {
-          reached <<- TRUE
-          signalCondition(cancellation)
-          rlang::interrupt()
-        }
-      ))
-      on.exit(suppressMessages(untrace(
-        checkpoint, where = asNamespace("marginplyr")
-      )), add = TRUE)
-      outcome <- tryCatch(withCallingHandlers(
-        summarize_with_margins(input, z = branch(.data$v),
-                               .grouping = rollup("g")),
-        warning = function(cnd) {
-          if (warn == 1L) invokeRestart("muffleWarning")
-        }
-      ), interrupt = identity, error = identity)
-      suppressMessages(untrace(checkpoint, where = asNamespace("marginplyr")))
-      expect_true(reached)
-      expect_identical(effects, c(2, 5, 7))
-      expect_s3_class(outcome, "interrupt")
-      expect_false(inherits(outcome, "error"))
-      if (warn == 2L) {
-        expect_identical(outcome$interrupt, cancellation)
-        expect_s3_class(outcome$replay_error, "error")
-        expect_match(conditionMessage(outcome$replay_error),
-                     "converted from warning")
-      } else {
-        expect_identical(outcome, cancellation)
-      }
-      expect_identical(input, original)
-      expect_identical(getOption("warn"), warn)
-      options(old)
-      expect_equal(
-        summarize_with_margins(input, z = sum(.data$v),
-                               .grouping = rollup("g"))$z, c(2, 5, 7)
-      )
-    }
+    for (warn in c(1L, 2L)) run_checkpoint(checkpoint, warn)
   }
 })
 
