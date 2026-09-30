@@ -1,0 +1,20 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C01-comparator","imports","arrow","main","consumer-first","NO VIOLATION FOUND","Independent comparison mutation controls",""
+"C02-installed-basic","imports","arrow","main","consumer-first","NO VIOLATION FOUND","summarize_with_margins: value; ADR 0016/0018",""
+"W2-spec-set","imports","arrow","main","consumer-first","NO VIOLATION FOUND","grouping_set: How an argument is read; ADR 0026",""
+"W2-spec-rollup","imports","arrow","main","consumer-first","NO VIOLATION FOUND","grouping_set: How an argument is read; ADR 0026",""
+"W2-spec-cube","imports","arrow","main","consumer-first","NO VIOLATION FOUND","grouping_set: How an argument is read; ADR 0026",""
+"W2-spec-sets","imports","arrow","main","consumer-first","NO VIOLATION FOUND","grouping_set: How an argument is read; ADR 0026",""
+"W2-spec-product","imports","arrow","main","consumer-first","NO VIOLATION FOUND","grouping_set: How an argument is read; ADR 0026",""
+"W1-forward","imports","arrow","main","consumer-first","NO VIOLATION FOUND","ADR 0007; dplyr data masking and tidyselect",""
+"W1-splice-quosure","imports","arrow","main","consumer-first","NO VIOLATION FOUND","ADR 0007; quosure expression/environment",""
+"W1-default-null","imports","arrow","main","consumer-first","NO VIOLATION FOUND","summarize_with_margins: Option arguments; .margin_label",""
+"W4-contextual","imports","arrow","main","consumer-first","UNCLASSIFIED","ADR 0019; grouping_bit/share_of_parent help","Arrow backends do not support Parent shares and Total shares because marginplyr cannot enforce their scalar-summary contract safely before an Arrow query is constructed.
+ℹ Other Arrow Margin operations remain supported.
+ℹ Omit `share_of_parent()` and `share_of_total()` or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call."
+"W4-selection","imports","arrow","main","consumer-first","NO VIOLATION FOUND","summarize_with_margins: Relationship to dplyr summaries",""
+"W5-verb-summary","imports","arrow","main","consumer-first","NO VIOLATION FOUND","Margin verb value sections; ADR 0016/0018",""
+"W5-verb-expand","imports","arrow","main","consumer-first","NO VIOLATION FOUND","Margin verb value sections; ADR 0016/0018",""
+"W9-arrow-dataset","imports","arrow","main","consumer-first","NO VIOLATION FOUND","Supported Arrow Dataset; translated expressions; same-process lifetime",""
+"W10-spec-print","imports","arrow","main","consumer-first","NO VIOLATION FOUND","margin_grouping_spec print registration; inspect_grouping public tibble",""

@@ -1,0 +1,11 @@
+list(id = "W10-audit-print", observation = list(first = structure(list(
+    purpose = c("selection_proxy", "result"), sql = c("SELECT *\nFROM input_1\nLIMIT 0",
+    "SELECT g, sid, total, \"rows\"\nFROM (\n  SELECT\n    g,\n    SUM(v) AS total,\n    COUNT(*) AS \"rows\",\n    CASE WHEN GROUPING(g) = 0 THEN 1 WHEN GROUPING(g) = 1 THEN 2 END AS sid\n  FROM input_1\n  GROUP BY GROUPING SETS ((g), ())\n) AS q01\nORDER BY\n  CASE WHEN (sid IN (2)) THEN 1 WHEN NOT (sid IN (2)) THEN 0 END,\n  CASE WHEN ((g IS NULL)) THEN 1 WHEN NOT ((g IS NULL)) THEN 0 END,\n  g,\n  sid"
+    )), row.names = c(NA, -2L), class = c("tbl_df", "tbl", "data.frame"
+)), last = structure(list(purpose = c("selection_proxy", "result"
+), sql = c("SELECT *\nFROM input_1\nLIMIT 0", "SELECT\n  CASE WHEN (\"..marginplyr_grouping_1\" = 1) THEN 'All' WHEN NOT (\"..marginplyr_grouping_1\" = 1) THEN (TRY_CAST(g AS TEXT)) END AS g,\n  sid,\n  total,\n  \"rows\"\nFROM (\n  SELECT\n    g,\n    SUM(v) AS total,\n    COUNT(*) AS \"rows\",\n    CASE WHEN GROUPING(g) = 0 THEN 1 WHEN GROUPING(g) = 1 THEN 2 END AS sid,\n    GROUPING(g) AS \"..marginplyr_grouping_1\"\n  FROM input_1\n  GROUP BY GROUPING SETS ((g), ())\n) AS q01\nORDER BY\n  CASE WHEN (sid IN (2)) THEN 1 WHEN NOT (sid IN (2)) THEN 0 END,\n  CASE WHEN ((g IS NULL)) THEN 1 WHEN NOT ((g IS NULL)) THEN 0 END,\n  g,\n  sid"
+)), row.names = c(NA, -2L), class = c("tbl_df", "tbl", "data.frame"
+)), printed = c("# A query:  ?? x 4", "# Database: DuckDB 1.5.5 [root@Darwin 25.6.0:R 4.6.1/:memory:]",
+"  g       sid total  rows", "  <chr> <int> <dbl> <dbl>", "1 a         1     4     2",
+"2 b         1     6     1", "3 All       2    10     3")), error = NULL,
+    warnings = character(0))

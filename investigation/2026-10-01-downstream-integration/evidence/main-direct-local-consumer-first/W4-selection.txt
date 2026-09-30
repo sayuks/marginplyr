@@ -1,0 +1,3 @@
+list(id = "W4-selection", observation = structure(list(g = c("a",
+"b", NA), v_total = c(4, 6, 10)), row.names = c(NA, -3L), class = "data.frame"),
+    error = NULL, warnings = character(0))

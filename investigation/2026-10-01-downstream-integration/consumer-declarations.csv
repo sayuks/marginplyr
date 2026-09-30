@@ -1,0 +1,11 @@
+package,imports,qualified_packages
+mpconsumerimportsarrow,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, arrow","rlang, tidyselect, utils"
+mpconsumerimportsdtplyr,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, dtplyr, data.table","dtplyr, rlang, tidyselect, utils"
+mpconsumerimportsduckdb,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, DBI, duckdb","rlang, tidyselect, utils"
+mpconsumerimportslocal,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils","rlang, tidyselect, utils"
+mpconsumerimportssqlite,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, DBI, RSQLite","rlang, tidyselect, utils"
+mpconsumerqualifiedarrow,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, arrow","dbplyr, dplyr, marginplyr, rlang, tidyselect, utils"
+mpconsumerqualifieddtplyr,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, dtplyr, data.table","dbplyr, dplyr, dtplyr, marginplyr, rlang, tidyselect, utils"
+mpconsumerqualifiedduckdb,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, DBI, duckdb","dbplyr, dplyr, marginplyr, rlang, tidyselect, utils"
+mpconsumerqualifiedlocal,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils","dbplyr, dplyr, marginplyr, rlang, tidyselect, utils"
+mpconsumerqualifiedsqlite,"marginplyr, dplyr, dbplyr, rlang, tidyselect, utils, DBI, RSQLite","dbplyr, dplyr, marginplyr, rlang, tidyselect, utils"

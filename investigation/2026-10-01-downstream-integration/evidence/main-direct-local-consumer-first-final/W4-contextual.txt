@@ -1,0 +1,5 @@
+list(id = "W4-contextual", observation = structure(list(g = c("a",
+"b", NA), sid = c(1L, 1L, 2L), total = c(4, 6, 10), bit = c(0L,
+0L, 1L), gid = c(0L, 0L, 1L), parent = c(0.4, 0.6, 1), share = c(0.4,
+0.6, 1)), row.names = c(NA, -3L), class = "data.frame"), error = NULL,
+    warnings = character(0))

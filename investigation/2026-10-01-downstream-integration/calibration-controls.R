@@ -1,0 +1,30 @@
+list(outside_margin = structure(list(g = c("a", "b", NA), sid = c(1L,
+1L, 2L), total = c(10011, 10013, 10017)), row.names = c(NA, -3L
+), class = c("tbl_df", "tbl", "data.frame")), outside_plain = structure(list(
+    g = c("a", "b"), total = c(10011, 10013)), row.names = c(NA,
+-2L), class = c("tbl_df", "tbl", "data.frame")), inside_margin = structure(list(
+    g = c("a", "b", NA), sid = c(1L, 1L, 2L), total = c(111,
+    113, 117)), row.names = c(NA, -3L), class = c("tbl_df", "tbl",
+"data.frame")), inside_plain = structure(list(g = c("a", "b"),
+    total = c(111, 113)), row.names = c(NA, -2L), class = c("tbl_df",
+"tbl", "data.frame")), missing_margin = list(class = c("simpleError",
+"error", "condition"), message = "could not find function \"counted\""),
+    missing_plain = list(class = c("simpleError", "error", "condition"
+    ), message = "could not find function \"counted\""), dtplyr_version = "1.3.3",
+    lazy_dt = c("function (x, name = NULL, immutable = TRUE, key_by = NULL) ",
+    "{", "    groups <- tryCatch(group_vars(x), error = function(e) character())",
+    "    if (!is.data.table(x)) {", "        if (!immutable) {",
+    "            abort(\"`immutable` must be `TRUE` when `x` is not already a data table.\")",
+    "        }", "        x <- as.data.table(x)", "        copied <- TRUE",
+    "    }", "    else {", "        copied <- FALSE", "    }",
+    "    key_by <- enquo(key_by)", "    key_vars <- unname(tidyselect::vars_select(names(x), !!key_by))",
+    "    if (length(key_vars)) {", "        if (immutable && !copied) {",
+    "            x <- data.table::copy(x)", "        }", "        data.table::setkeyv(x, key_vars)",
+    "    }", "    step_first(x, name = name, groups = groups, immutable = immutable, ",
+    "        env = caller_env())", "}"), dt_eval = c("function (x) ",
+    "{", "    env <- as_environment(dt_sources(x), x$env)", "    add_dt_wrappers(env)",
+    "    for (var in names(x$locals)) {", "        env[[var]] <- eval(x$locals[[var]], env)",
+    "    }", "    quo <- new_quosure(dt_call(x), env)", "    eval_tidy(quo)",
+    "}"), search = c(".GlobalEnv", "package:stats", "package:graphics",
+    "package:grDevices", "package:utils", "package:datasets",
+    "package:methods", "Autoloads", "package:base"))

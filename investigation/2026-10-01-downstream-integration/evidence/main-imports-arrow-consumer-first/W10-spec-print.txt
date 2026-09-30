@@ -1,0 +1,6 @@
+list(id = "W10-spec-print", observation = list(display = "<marginplyr Grouping specification: rollup>",
+    plan = structure(list(set_id = 1:2, fixed = list(character(0),
+        character(0)), included = list("g", character(0)), omitted = list(
+        character(0), "g"), grouping_bits = list(c(g = 0L), c(g = 1L)),
+        grouping_id = 0:1), row.names = c(NA, -2L), class = c("tbl_df",
+    "tbl", "data.frame"))), error = NULL, warnings = character(0))

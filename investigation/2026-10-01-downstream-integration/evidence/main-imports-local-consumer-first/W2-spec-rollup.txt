@@ -1,0 +1,10 @@
+list(id = "W2-spec-rollup", observation = list(alpha = structure(list(
+    set_id = 1:2, fixed = list(character(0), character(0)), included = list(
+        "g", character(0)), omitted = list(character(0), "g"),
+    grouping_bits = list(c(g = 0L), c(g = 1L)), grouping_id = 0:1), row.names = c(NA,
+-2L), class = c("tbl_df", "tbl", "data.frame")), beta = structure(list(
+    set_id = 1:2, fixed = list(character(0), character(0)), included = list(
+        "v", character(0)), omitted = list(character(0), "v"),
+    grouping_bits = list(c(v = 0L), c(v = 1L)), grouping_id = 0:1), row.names = c(NA,
+-2L), class = c("tbl_df", "tbl", "data.frame")), specification_class = "margin_grouping_spec"),
+    error = NULL, warnings = character(0))

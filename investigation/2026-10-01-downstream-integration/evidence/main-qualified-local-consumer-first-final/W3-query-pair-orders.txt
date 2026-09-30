@@ -1,0 +1,11 @@
+list(id = "W3-query-pair-orders", observation = list(`1 beta` = structure(list(
+    g = c("Beta", "a", "b"), sid = c(2L, 1L, 1L), total = c(10,
+    4, 6), rows = 3:1), row.names = c(NA, -3L), class = "data.frame"),
+    `1 alpha` = structure(list(g = c("a", "b", "Alpha"), sid = c(1L,
+    1L, 2L), total = c(4, 6, 10), rows = c(2L, 1L, 3L)), row.names = c(NA,
+    -3L), class = "data.frame"), `2 alpha` = structure(list(g = c("a",
+    "b", "Alpha"), sid = c(1L, 1L, 2L), total = c(4, 6, 10),
+        rows = c(2L, 1L, 3L)), row.names = c(NA, -3L), class = "data.frame"),
+    `2 beta` = structure(list(g = c("Beta", "a", "b"), sid = c(2L,
+    1L, 1L), total = c(10, 4, 6), rows = 3:1), row.names = c(NA,
+    -3L), class = "data.frame")), error = NULL, warnings = character(0))

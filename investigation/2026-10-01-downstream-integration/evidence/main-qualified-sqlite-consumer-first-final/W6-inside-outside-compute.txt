@@ -1,0 +1,7 @@
+list(id = "W6-inside-outside-compute", observation = list(outside = structure(list(
+    g = c("a", "b", NA), sid = c(1L, 1L, 2L), total = c(4, 6,
+    10), rows = c(2L, 1L, 3L)), row.names = c(NA, -3L), class = c("tbl_df",
+"tbl", "data.frame")), inside = structure(list(g = c("a", "b",
+NA), sid = c(1L, 1L, 2L), total = c(4, 6, 10), rows = c(2L, 1L,
+3L)), row.names = c(NA, -3L), class = c("tbl_df", "tbl", "data.frame"
+))), error = NULL, warnings = character(0))

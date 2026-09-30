@@ -1,0 +1,3 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C01-comparator","imports","arrow","calibration","backend-first","NO VIOLATION FOUND","Independent comparison mutation controls",""
+"C02-installed-basic","imports","arrow","calibration","backend-first","NO VIOLATION FOUND","summarize_with_margins: value; ADR 0016/0018",""

@@ -1,0 +1,3 @@
+list(id = "C04-input-inside", observation = NULL, error = list(
+    class = c("simpleError", "error", "condition"), message = "[ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table."),
+    warnings = character(0))

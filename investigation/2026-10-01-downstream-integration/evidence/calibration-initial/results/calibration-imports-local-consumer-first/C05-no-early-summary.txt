@@ -1,0 +1,4 @@
+list(id = "C05-no-early-summary", observation = list(before = 3L,
+    after = 3L, result = structure(list(g = c("a", "b", NA),
+        sid = c(1L, 1L, 2L), total = c(4, 6, 10)), row.names = c(NA,
+    -3L), class = "data.frame")), error = NULL, warnings = character(0))

@@ -1,0 +1,8 @@
+<environment: namespace:duckdb>
+duckdb is storing downloaded extensions and secrets under ~/.duckdb:
+ℹ /Users/sayuks/.duckdb
+This persists across sessions and is shared with the DuckDB CLI and other clients.
+ℹ Run duckdb(shared_home = FALSE) to use a temporary directory instead.
+ℹ See ?duckdb_storage for details and alternatives.
+C01-comparator PASS
+C02-installed-basic PASS

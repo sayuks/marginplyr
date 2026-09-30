@@ -1,0 +1,18 @@
+list(stage = "consumer-loaded", search = c(".GlobalEnv", "package:stats",
+"package:graphics", "package:grDevices", "package:utils", "package:datasets",
+"package:methods", "Autoloads", "package:base"), namespaces = c("compiler",
+"graphics", "utils", "grDevices", "stats", "datasets", "mpconsumerqualifiedlocal",
+"methods", "base"), libpaths = c("/private/tmp/marginplyr-downstream-2026-10-01/library",
+"/Library/Frameworks/R.framework/Versions/4.6/Resources/library"
+), versions = list(list(package = "compiler", version = "4.6.1",
+    path = "/Library/Frameworks/R.framework/Versions/4.6/Resources/library/compiler"),
+    list(package = "graphics", version = "4.6.1", path = "/Library/Frameworks/R.framework/Versions/4.6/Resources/library/graphics"),
+    list(package = "utils", version = "4.6.1", path = "/Library/Frameworks/R.framework/Versions/4.6/Resources/library/utils"),
+    list(package = "grDevices", version = "4.6.1", path = "/Library/Frameworks/R.framework/Versions/4.6/Resources/library/grDevices"),
+    list(package = "stats", version = "4.6.1", path = "/Library/Frameworks/R.framework/Versions/4.6/Resources/library/stats"),
+    list(package = "datasets", version = "4.6.1", path = "/Library/Frameworks/R.framework/Versions/4.6/Resources/library/datasets"),
+    list(package = "mpconsumerqualifiedlocal", version = "0.0.1",
+        path = "/private/tmp/marginplyr-downstream-2026-10-01/library/mpconsumerqualifiedlocal"),
+    list(package = "methods", version = "4.6.1", path = "/Library/Frameworks/R.framework/Versions/4.6/Resources/library/methods"),
+    list(package = "base", version = "4.6.1", path = "/Library/Frameworks/R.framework/Resources/library/base")),
+    R = "R version 4.6.1 (2026-06-24)")

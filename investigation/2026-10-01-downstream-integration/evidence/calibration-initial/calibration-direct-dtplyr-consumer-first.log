@@ -1,0 +1,4 @@
+C01-comparator PASS
+C02-installed-basic PASS
+C03-lexical-delayed OBSERVATION identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE
+C05-no-early-summary OBSERVATION could not find function "counted"

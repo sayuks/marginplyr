@@ -1,0 +1,22 @@
+C01-comparator PASS
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+C02-installed-basic PASS
+W2-spec-set PASS
+W2-spec-rollup PASS
+W2-spec-cube PASS
+W2-spec-sets PASS
+W2-spec-product PASS
+W1-forward PASS
+W1-splice-quosure PASS
+W1-default-null PASS
+W4-contextual OBSERVATION Arrow backends do not support Parent shares and Total shares because marginplyr cannot enforce their scalar-summary contract safely before an Arrow query is constructed.
+ℹ Other Arrow Margin operations remain supported.
+ℹ Omit `share_of_parent()` and `share_of_total()` or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.
+W4-selection PASS
+W5-verb-summary PASS
+W5-verb-expand PASS
+W9-arrow-dataset PASS
+W10-spec-print PASS

@@ -1,0 +1,10 @@
+tag,exit,detail
+calibration-direct-local-consumer-first,0,
+calibration-qualified-local-consumer-first,0,
+calibration-imports-local-consumer-first,0,
+calibration-direct-dtplyr-consumer-first,0,
+calibration-qualified-dtplyr-consumer-first,0,
+calibration-imports-dtplyr-consumer-first,0,
+calibration-direct-sqlite-consumer-first,0,
+calibration-qualified-sqlite-consumer-first,0,
+calibration-imports-sqlite-consumer-first,0,

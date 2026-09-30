@@ -1,0 +1,2 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"C05-no-early-summary","qualified","local","main","consumer-first","NO VIOLATION FOUND","ADR 0020; ordinary dplyr evaluation per group/set",""

@@ -1,0 +1,4 @@
+"id","mode","backend","phase","order","status","contract","detail"
+"W3-query-pair-orders","imports","dtplyr","main","consumer-first","NO VIOLATION FOUND","ADR 0007/0018; independent same-process delayed query settings",""
+"W6-inside-outside-compute","imports","dtplyr","main","consumer-first","NO VIOLATION FOUND","Public dplyr compute dispatch within installed consumer and after return",""
+"W10-result-print","imports","dtplyr","main","consumer-first","NO VIOLATION FOUND","Underlying result print dispatch; explicit display after laziness observation",""

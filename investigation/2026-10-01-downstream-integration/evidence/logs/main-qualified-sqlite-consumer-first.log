@@ -1,0 +1,21 @@
+C01-comparator PASS
+C02-installed-basic PASS
+C06-public-generics PASS
+W2-spec-set PASS
+W2-spec-rollup PASS
+W2-spec-cube PASS
+W2-spec-sets PASS
+W2-spec-product PASS
+W1-forward PASS
+W1-splice-quosure PASS
+W1-default-null PASS
+W4-contextual OBSERVATION marginplyr cannot establish that the source summaries of Parent shares and Total shares are plain integer or double scalars on this backend, because its SQL dialect converts a value of another type to a number rather than refusing it, so an ineligible source summary is indistinguishable from an eligible one.
+ℹ Set `.check_share_source = FALSE` to calculate `share_of_parent()` and `share_of_total()` from sources you have established yourself, or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.
+W4-selection PASS
+W5-verb-summary PASS
+W5-verb-expand PASS
+W7-native-portable PASS
+W6-finite-typed OBSERVATION identical(typeof(x[[name]]), typeof(y[[name]])) is not TRUE
+W10-audit-print PASS
+W10-spec-print PASS

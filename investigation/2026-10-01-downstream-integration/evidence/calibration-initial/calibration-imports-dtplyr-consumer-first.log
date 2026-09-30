@@ -1,0 +1,5 @@
+C01-comparator PASS
+C02-installed-basic PASS
+C03-lexical-delayed OBSERVATION identical(as.numeric(ra$total), c(111, 113, 117)) is not TRUE
+C04-input-inside OBSERVATION [ was called on a data.table in an environment that is not data.table-aware (i.e. cedta()), but ':=' was used, implying the owner of this call really intended for data.table methods to be called. See vignette('datatable-importing') for details on properly importing data.table.
+C05-no-early-summary OBSERVATION could not find function "counted"
