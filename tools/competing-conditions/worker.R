@@ -125,8 +125,8 @@ results <- test_that("reached competing-condition checkpoint acceptance", {
                    transacting = RSQLite::sqliteIsTransacting(con), counts = state$counts),
               file.path(directory, "immediate.rds"))
       expect_identical(probe$kind, "value")
-      expect_sqlite_restored(fixture, state, configuration$outer)
       expect_identical(state$counts, c(rollback = 1L, release = 1L))
+      expect_sqlite_restored(fixture, state, configuration$outer)
       if (configuration$mode == "healthy") {
         expect_identical(raw$kind, "error")
         expect_identical(raw$condition, cause)
