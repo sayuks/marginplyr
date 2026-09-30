@@ -51,3 +51,11 @@ interface or attributable to a defect. Both halves of the boundary need the same
 review attention: a Package condition demoted to `stop()` silently drops out of
 the public contract, and an invariant promoted to `abort_marginplyr()` silently
 enters it.
+
+## Competing-interruption amendment (2026-09-30)
+
+[ADR 0035](0035-preserve-competing-conditions-at-interruption.md) selects the
+escaping outcome when user interruption competes with execution or cleanup
+failure. It retains the original External conditions as diagnostic information
+without reclassifying them; ordinary propagation remains governed here.
+Implementation and public-contract publication of that selection are pending.
