@@ -130,7 +130,11 @@ stopifnot(isTRUE(all.equal(values$shares_collect$grand,
                            c(2 / 10, 3 / 10, 5 / 10, 5 / 10, 5 / 10, 1,
                              7 / 18, 7 / 18, 11 / 18, 11 / 18, 1))))
 
-saveRDS(values, file.path(out, "values.rds"))
+dput(values, file.path(out, "values.dput"),
+     control = c("keepNA", "keepInteger", "niceNames", "showAttributes", "digits17"))
+writeLines(trimws(readLines(file.path(out, "values.dput")), which = "right"),
+           file.path(out, "values.dput"))
+stopifnot(identical(values, dget(file.path(out, "values.dput")), num.eq = FALSE))
 utils::write.csv(data.frame(stage = names(construction_reads),
                             source_row_reads = unname(construction_reads)),
                  file.path(out, "construction-reads.csv"), row.names = FALSE)

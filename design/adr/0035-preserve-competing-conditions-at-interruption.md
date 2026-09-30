@@ -51,5 +51,6 @@ the resource transitions ADR 0031 owns.
 Requiring one enriched notification across both handler and default-action
 paths is rejected in favor of preserving native interruption hooks. The
 [signaling investigation](../../investigation/condition-resignaling-2026-09-30.md)
-records a candidate and the observed notification/default-action trade-off;
+records a candidate and the observed notification/default-action trade-off,
+with [text evidence](../../investigation/condition-resignaling-2026-09-30/README.md);
 the specification owns its implementation acceptance.

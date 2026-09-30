@@ -37,8 +37,9 @@
 #   path is spelled. Fifty-six exemptions is not a gate. A renamed directory
 #   is caught through the files under it that anything cites.
 #
-# A candidate's extension has to be one some tracked file carries, derived
-# rather than listed. It is what excludes the `.html` paths `cran-comments.md`
+# A candidate's extension has to be one a tracked file or an explicitly exempt
+# path carries. An exempt installed-package path still needs checking when no
+# tracked file shares its extension. This excludes the `.html` paths `cran-comments.md`
 # names, which are the vignettes the tarball ships rather than anything
 # tracked. The site URLs `R/*.R` roxygen links to never reach it, being
 # stripped as URLs first.
@@ -141,7 +142,7 @@ prose_of <- function(lines, kind) {
 
 # Longest extension first so the alternation cannot stop at `R` inside `Rmd`;
 # `\\b` is what rejects the short match, and the order saves the backtrack.
-extensions <- unique(tools::file_ext(tracked))
+extensions <- unique(tools::file_ext(c(tracked, exempt$path)))
 extensions <- extensions[nzchar(extensions)]
 extensions <- extensions[order(-nchar(extensions))]
 
@@ -236,6 +237,11 @@ probes <- list(
       "      # cites `design/architecture.md`"
     ),
     want = "design/architecture.md"
+  ),
+  list(
+    kind = "yaml",
+    lines = "# installed-package metadata: Meta/features.rds",
+    want = "Meta/features.rds"
   )
 )
 
@@ -284,7 +290,7 @@ for (document in documents) {
 }
 
 # The last way this goes quiet, and the one the probes cannot reach: they read
-# three lines this file holds, so they pass on a repository whose documents
+# fixtures this file holds, so they pass on a repository whose documents
 # this script never opened.
 if (counted == 0L) {
   stop(call. = FALSE, sprintf(

@@ -1,0 +1,14 @@
+{
+  "outcome": {
+    "kind": "error",
+    "condition": {
+      "class": ["simpleError", "error", "condition"],
+      "message": "ordinary checkpoint control",
+      "parent": null,
+      "cleanup": null
+    }
+  },
+  "transacting": false,
+  "caller_commit": false,
+  "completed": false
+}

@@ -1,0 +1,17 @@
+{
+  "cases": 70,
+  "failure_count": 0,
+  "accepted": true,
+  "observations": {
+    "exiting_handlers": "rich object and original cause chain retained",
+    "error_only": "never called; fallback matches native process/callback outcome",
+    "calling_return": "one rich notification then one bare native notification",
+    "default_callbacks": "same as native for default, function/expression error options, interrupt option, and both"
+  },
+  "limitations": [
+    "Controlled rlang interrupts only; no new SIGINT or whole resource-owner implementation tested",
+    "Returning calling handlers observe native fallback as a second bare interrupt",
+    "Handler-initiated nonlocal transfers or errors were not tested",
+    "R 4.6.1 Darwin arm64 and installed dependencies only"
+  ]
+}

@@ -1,7 +1,7 @@
 args <- commandArgs(trailingOnly = TRUE)
 stopifnot(length(args) == 3L)
-near <- readRDS(file.path(args[[1L]], "values.rds"))
-current <- readRDS(file.path(args[[2L]], "values.rds"))
+near <- dget(file.path(args[[1L]], "values.dput"))
+current <- dget(file.path(args[[2L]], "values.dput"))
 stopifnot(identical(names(near), names(current)))
 comparisons <- lapply(names(near), function(name) {
   a <- near[[name]]

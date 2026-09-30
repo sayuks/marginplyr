@@ -1,6 +1,7 @@
 # SQLite catchable-interruption recovery acceptance
 
 Investigated: 2026-09-30
+Revised: 2026-09-30 — `investigation/rds-text-conversion-2026-09-30.md`
 
 ## Snapshots and environment
 
@@ -93,3 +94,16 @@ promise evaluation interrupted before deferred-signal draining, and a fast
 unsorted result crossing release before a queued SIGINT was delivered. The
 worker changes in the final snapshot addressed those observation problems;
 the final complete run above supplied the acceptance verdict.
+
+## Revisions (2026-09-30)
+
+The [text-conversion investigation](rds-text-conversion-2026-09-30.md) established
+that both RDS archives contained only UTF-8 file bytes and an integer format
+field. Their nonempty files were extracted byte-for-byte into `acceptance/` and
+`harness-development/`; `empty-files.txt` retains the 291 zero-byte handshake
+paths, and `archive.dput` retains each format field. The
+[evidence README](sqlite-interruption-recovery-2026-09-30/README.md) gives the
+text layout and integrity commands. `archive-hashes.json` remains the historical
+hash record; the original archives are available in Git snapshot
+`056bae562385e627d6eb4ca2410183d594c0960f`. No acceptance or development
+observation was changed or rerun.

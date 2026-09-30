@@ -1,0 +1,11 @@
+{
+  "checkpoint": "analyze",
+  "mode": "sigint",
+  "flag": false,
+  "schema": "temp",
+  "overwrite": false,
+  "sorted": true,
+  "expansion": false,
+  "outer": false,
+  "commit": false
+}

@@ -274,5 +274,7 @@ and public-contract publication of that selection are pending.
 
 The implementation and public-contract publication are complete in #755.
 [Acceptance evidence](../../investigation/sqlite-interruption-recovery-2026-09-30.md)
-records the verified snapshots and limits. The [specification's interruption amendment](../specs/sqlite-b-direct.md#catchable-interruption-amendment-755)
+records the verified snapshots and limits, with
+[text evidence](../../investigation/sqlite-interruption-recovery-2026-09-30/README.md).
+The [specification's interruption amendment](../specs/sqlite-b-direct.md#catchable-interruption-amendment-755)
 owns the observable acceptance matrix and publication requirements.

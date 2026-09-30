@@ -1,0 +1,35 @@
+── Error: supervised SQLite interruption acceptance ────────────────────────────
+Error: no such table: main.report
+Backtrace:
+     ▆
+  1. └─global sqlite_interrupt_fixture(...)
+  2.   └─code(fixture)
+  3.     ├─testthat::expect_equal(...)
+  4.     │ └─testthat::quasi_label(enquo(object), label)
+  5.     │   └─rlang::eval_bare(expr, quo_get_env(quo))
+  6.     ├─DBI::dbReadTable(fixture$observer, fixture$destination)
+  7.     └─DBI::dbReadTable(fixture$observer, fixture$destination)
+  8.       ├─DBI::dbReadTable(conn, dbQuoteIdentifier(conn, name), ...)
+  9.       └─RSQLite::dbReadTable(conn, dbQuoteIdentifier(conn, name), ...)
+ 10.         └─RSQLite (local) .local(conn, name, ...)
+ 11.           ├─DBI::dbGetQuery(...)
+ 12.           └─DBI::dbGetQuery(...)
+ 13.             └─DBI (local) .local(conn, statement, ...)
+ 14.               ├─DBI::dbSendQuery(conn, statement, ...)
+ 15.               └─RSQLite::dbSendQuery(conn, statement, ...)
+ 16.                 └─RSQLite (local) .local(conn, statement, ...)
+ 17.                   ├─methods::new(...)
+ 18.                   │ ├─methods::initialize(value, ...)
+ 19.                   │ └─methods::initialize(value, ...)
+ 20.                   └─RSQLite:::result_create(conn@ptr, statement)
+Error:
+! Test failed with 1 failure and 12 successes.
+Backtrace:
+    ▆
+ 1. └─testthat::test_that(...)
+ 2.   └─testthat:::test_code(code, parent.frame())
+ 3.     ├─withr (local) `<fn>`()
+ 4.     └─reporter$end_test(context = reporter$.context, test = test)
+ 5.       └─cli::cli_abort(...)
+ 6.         └─rlang::abort(...)
+Execution halted

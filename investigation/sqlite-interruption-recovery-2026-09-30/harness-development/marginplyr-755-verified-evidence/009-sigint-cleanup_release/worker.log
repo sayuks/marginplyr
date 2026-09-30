@@ -1,0 +1,4 @@
+Error in conditionMessage(x) : 
+  promise already under evaluation: recursive default argument reference or earlier problems?
+Calls: test_that ... as.expectation.error -> paste0 -> cnd_message -> conditionMessage
+Execution halted

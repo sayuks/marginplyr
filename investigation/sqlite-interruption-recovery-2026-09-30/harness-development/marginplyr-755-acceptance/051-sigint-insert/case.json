@@ -1,0 +1,11 @@
+{
+  "checkpoint": "insert",
+  "mode": "sigint",
+  "flag": false,
+  "schema": "other",
+  "overwrite": false,
+  "sorted": false,
+  "expansion": false,
+  "outer": true,
+  "commit": true
+}

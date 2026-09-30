@@ -1,0 +1,8 @@
+{
+  "python": "3.9.6 (default, Dec  2 2025, 07:27:58) \n[Clang 17.0.0 (clang-1700.6.3.2)]",
+  "platform": "macOS-26.6.2-arm64-arm-64bit",
+  "scripts": {
+    "probe.R": "8854bd67d104721769ee0a183b750d6654c713e11afc213d17ad34cdd18db3d4",
+    "run.py": "531759e64d82d1b3dcf36c085636b24817f82f6f04d3918d05dac2537fd27520"
+  }
+}

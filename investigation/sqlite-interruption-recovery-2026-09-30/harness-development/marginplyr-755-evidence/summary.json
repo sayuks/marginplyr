@@ -1,0 +1,253 @@
+[
+  {
+    "case": "000-sigint-before",
+    "configuration": {
+      "checkpoint": "before",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80210,
+      "signal": "SIGINT",
+      "time_ns": 1790760645168723000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "001-sigint-acquire",
+    "configuration": {
+      "checkpoint": "acquire",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80251,
+      "signal": "SIGINT",
+      "time_ns": 1790760646352737000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "002-sigint-drop",
+    "configuration": {
+      "checkpoint": "drop",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80266,
+      "signal": "SIGINT",
+      "time_ns": 1790760647637356000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "003-sigint-create",
+    "configuration": {
+      "checkpoint": "create",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80313,
+      "signal": "SIGINT",
+      "time_ns": 1790760648855836000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "004-sigint-index",
+    "configuration": {
+      "checkpoint": "index",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80325,
+      "signal": "SIGINT",
+      "time_ns": 1790760650052881000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "005-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80337,
+      "signal": "SIGINT",
+      "time_ns": 1790760651273309000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "006-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80349,
+      "signal": "SIGINT",
+      "time_ns": 1790760652511823000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "007-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80361,
+      "signal": "SIGINT",
+      "time_ns": 1790760653716421000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "008-sigint-rollback",
+    "configuration": {
+      "checkpoint": "rollback",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80373,
+      "signal": "SIGINT",
+      "time_ns": 1790760654932933000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "009-sigint-cleanup_release",
+    "configuration": {
+      "checkpoint": "cleanup_release",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 80385,
+      "signal": "SIGINT",
+      "time_ns": 1790760656158802000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "010-sigint-release",
+    "configuration": {
+      "checkpoint": "release",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 1,
+    "delivered": {
+      "pid": 80397,
+      "signal": "SIGINT",
+      "time_ns": 1790760657379557000
+    },
+    "verdict": null
+  }
+]

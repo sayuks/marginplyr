@@ -1,6 +1,7 @@
 # Near-floor public results on live PostgreSQL
 
 Investigated: 2026-09-30
+Revised: 2026-09-30 — `investigation/rds-text-conversion-2026-09-30.md`
 Source: issue #745; package commit `032690964f6c94a1430c3c094968309bd6ee17eb`
 Host: macOS arm64; PostgreSQL 17.11 (Homebrew)
 
@@ -105,3 +106,14 @@ RPostgres or transitive-driver versions, and the full package suite under the
 near-floor graph remain unverified. The R 4.6.1 comparison is corroborating
 evidence; the R 4.5.2 comparison isolates the tested dependency differences
 without an R-version change.
+
+## Revisions (2026-09-30)
+
+The [text-conversion investigation](rds-text-conversion-2026-09-30.md) established
+that all three typed `values.rds` objects could be represented by decimal
+`digits17` `.dput` files, preserving values, types and attributes under strict
+`identical()` checks. The probe and comparison scripts write and read
+`values.dput`; the probe also checks its round trip. The original RDS files and
+scripts remain available in Git snapshot
+`056bae562385e627d6eb4ca2410183d594c0960f`. The public-call assertions and the
+recorded comparison CSVs were unchanged; no database experiment was rerun.

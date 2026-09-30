@@ -1,0 +1,29 @@
+{
+  "rlang-internal-cnd.c": {
+    "download_url": "https://raw.githubusercontent.com/r-lib/rlang/ce8a147b712c425fa4eb1d351e621d07ce6e423b/src/internal/cnd.c",
+    "blob_sha": "56061379b206cbfdf8e4c94cfcc6af7a02d7e44e",
+    "sha256": "db423abb01945427a446c8113196a83f0b658f043a6fd55268934001c4108534",
+    "bytes": 6790
+  },
+  "rlang-cnd-signal.R": {
+    "download_url": "https://raw.githubusercontent.com/r-lib/rlang/ce8a147b712c425fa4eb1d351e621d07ce6e423b/R/cnd-signal.R",
+    "blob_sha": "2684060eb68a367edd1dcb80678feca99c6f647c",
+    "sha256": "6265a60b4e06cf727a95343e8b77baa9d6c0499e151d9b72ccaafb2e5e3a50e3",
+    "bytes": 11296
+  },
+  "R-errors.c": {
+    "download_url": "https://raw.githubusercontent.com/wch/r-source/trunk/src/main/errors.c",
+    "blob_sha": "5c88cc52d8403decb58239939a4b2ad3f05d26d5",
+    "sha256": "ad7e9b0494717ff0c32c9ec330aa06f2fc9bc51154e5cab37d566b28b446b6b5",
+    "bytes": 89803,
+    "source_commit": "dd52bae9b393a268965d05bfb824cffdfb8d17e9",
+    "pinned_url": "https://github.com/wch/r-source/blob/dd52bae9b393a268965d05bfb824cffdfb8d17e9/src/main/errors.c",
+    "identity_note": "R Core source from an R SVN mirror; online trunk source explains mechanisms, not an exact installed R build claim."
+  },
+  "official_documents": {
+    "base_conditions": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/conditions.html",
+    "base_options": "https://stat.ethz.ch/R-manual/R-devel/library/base/html/options.html",
+    "rlang_interrupt": "https://rlang.r-lib.org/reference/interrupt.html",
+    "rlang_cnd_signal": "https://rlang.r-lib.org/reference/cnd_signal.html"
+  }
+}

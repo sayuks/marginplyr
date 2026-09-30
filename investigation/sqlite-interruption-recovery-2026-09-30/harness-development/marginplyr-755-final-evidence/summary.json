@@ -1,0 +1,989 @@
+[
+  {
+    "case": "000-sigint-before",
+    "configuration": {
+      "checkpoint": "before",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84644,
+      "signal": "SIGINT",
+      "time_ns": 1790761418013019000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "001-sigint-acquire",
+    "configuration": {
+      "checkpoint": "acquire",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84705,
+      "signal": "SIGINT",
+      "time_ns": 1790761419485366000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "002-sigint-drop",
+    "configuration": {
+      "checkpoint": "drop",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84742,
+      "signal": "SIGINT",
+      "time_ns": 1790761420938637000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "003-sigint-create",
+    "configuration": {
+      "checkpoint": "create",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84818,
+      "signal": "SIGINT",
+      "time_ns": 1790761422215103000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "004-sigint-index",
+    "configuration": {
+      "checkpoint": "index",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84840,
+      "signal": "SIGINT",
+      "time_ns": 1790761423515284000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "005-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84883,
+      "signal": "SIGINT",
+      "time_ns": 1790761424824009000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "006-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84939,
+      "signal": "SIGINT",
+      "time_ns": 1790761426271568000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "007-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 84987,
+      "signal": "SIGINT",
+      "time_ns": 1790761427638496000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "008-sigint-rollback",
+    "configuration": {
+      "checkpoint": "rollback",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85017,
+      "signal": "SIGINT",
+      "time_ns": 1790761428882860000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "009-sigint-cleanup_release",
+    "configuration": {
+      "checkpoint": "cleanup_release",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85029,
+      "signal": "SIGINT",
+      "time_ns": 1790761430098683000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "010-sigint-release",
+    "configuration": {
+      "checkpoint": "release",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85041,
+      "signal": "SIGINT",
+      "time_ns": 1790761431448880000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "011-sigint-acquire",
+    "configuration": {
+      "checkpoint": "acquire",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85066,
+      "signal": "SIGINT",
+      "time_ns": 1790761432814857000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "012-sigint-acquire",
+    "configuration": {
+      "checkpoint": "acquire",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85080,
+      "signal": "SIGINT",
+      "time_ns": 1790761434139170000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "013-sigint-drop",
+    "configuration": {
+      "checkpoint": "drop",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85104,
+      "signal": "SIGINT",
+      "time_ns": 1790761435350717000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "014-sigint-drop",
+    "configuration": {
+      "checkpoint": "drop",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85116,
+      "signal": "SIGINT",
+      "time_ns": 1790761436574484000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "015-sigint-create",
+    "configuration": {
+      "checkpoint": "create",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85128,
+      "signal": "SIGINT",
+      "time_ns": 1790761437771432000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "016-sigint-create",
+    "configuration": {
+      "checkpoint": "create",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85146,
+      "signal": "SIGINT",
+      "time_ns": 1790761439140834000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "017-sigint-index",
+    "configuration": {
+      "checkpoint": "index",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85177,
+      "signal": "SIGINT",
+      "time_ns": 1790761440416540000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "018-sigint-index",
+    "configuration": {
+      "checkpoint": "index",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85191,
+      "signal": "SIGINT",
+      "time_ns": 1790761441748619000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "019-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85224,
+      "signal": "SIGINT",
+      "time_ns": 1790761443052818000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "020-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85242,
+      "signal": "SIGINT",
+      "time_ns": 1790761444406469000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "021-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85269,
+      "signal": "SIGINT",
+      "time_ns": 1790761445776129000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "022-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85398,
+      "signal": "SIGINT",
+      "time_ns": 1790761447013321000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "023-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85438,
+      "signal": "SIGINT",
+      "time_ns": 1790761448319581000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "024-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85492,
+      "signal": "SIGINT",
+      "time_ns": 1790761449627394000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "025-sigint-release",
+    "configuration": {
+      "checkpoint": "release",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85535,
+      "signal": "SIGINT",
+      "time_ns": 1790761450934149000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "026-sigint-release",
+    "configuration": {
+      "checkpoint": "release",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": true,
+      "commit": true
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85562,
+      "signal": "SIGINT",
+      "time_ns": 1790761452295450000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "027-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85586,
+      "signal": "SIGINT",
+      "time_ns": 1790761453582292000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "028-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85611,
+      "signal": "SIGINT",
+      "time_ns": 1790761455041384000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "029-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85637,
+      "signal": "SIGINT",
+      "time_ns": 1790761456302599000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "030-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "temp",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85649,
+      "signal": "SIGINT",
+      "time_ns": 1790761457685267000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "031-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "temp",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85677,
+      "signal": "SIGINT",
+      "time_ns": 1790761458994679000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "032-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "temp",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85711,
+      "signal": "SIGINT",
+      "time_ns": 1790761460458656000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "033-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "temp",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85764,
+      "signal": "SIGINT",
+      "time_ns": 1790761461812648000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "034-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "temp",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85790,
+      "signal": "SIGINT",
+      "time_ns": 1790761463269216000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "035-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "temp",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85802,
+      "signal": "SIGINT",
+      "time_ns": 1790761464768322000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "036-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "other",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85816,
+      "signal": "SIGINT",
+      "time_ns": 1790761466219532000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "037-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "other",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85840,
+      "signal": "SIGINT",
+      "time_ns": 1790761467521724000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "038-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "other",
+      "overwrite": false,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85852,
+      "signal": "SIGINT",
+      "time_ns": 1790761468764888000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "039-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "other",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85864,
+      "signal": "SIGINT",
+      "time_ns": 1790761470083023000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "040-sigint-analyze",
+    "configuration": {
+      "checkpoint": "analyze",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "other",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85877,
+      "signal": "SIGINT",
+      "time_ns": 1790761471515777000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "041-sigint-result",
+    "configuration": {
+      "checkpoint": "result",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "other",
+      "overwrite": true,
+      "sorted": true,
+      "expansion": false,
+      "outer": false,
+      "commit": false
+    },
+    "returncode": 0,
+    "delivered": {
+      "pid": 85901,
+      "signal": "SIGINT",
+      "time_ns": 1790761472957575000
+    },
+    "verdict": {
+      "passed": true
+    }
+  },
+  {
+    "case": "042-sigint-insert",
+    "configuration": {
+      "checkpoint": "insert",
+      "mode": "sigint",
+      "flag": false,
+      "schema": "main",
+      "overwrite": false,
+      "sorted": false,
+      "expansion": false,
+      "outer": true,
+      "commit": false
+    },
+    "returncode": 1,
+    "delivered": {
+      "pid": 85914,
+      "signal": "SIGINT",
+      "time_ns": 1790761474402003000
+    },
+    "verdict": null
+  }
+]

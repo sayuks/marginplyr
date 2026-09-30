@@ -1,6 +1,7 @@
 # Cause-preserving interruption notification
 
 Investigated: 2026-09-30
+Revised: 2026-09-30 — `investigation/rds-text-conversion-2026-09-30.md`
 Repository baseline: `3f0b4e58d29cfcafff6bd38cfb93546816ed7dcc`
 Scope: controlled R condition mechanics; no production package change or new SIGINT
 
@@ -64,7 +65,7 @@ first enriched object and prevented fallback.
 
 ## Evidence and reproduction
 
-[evidence.rds](condition-resignaling-2026-09-30/evidence.rds) retained runnable
+[evidence.rds](https://github.com/sayuks/marginplyr/blob/056bae562385e627d6eb4ca2410183d594c0960f/investigation/condition-resignaling-2026-09-30/evidence.rds) retained runnable
 `probe.R` and `run.py`, complete stdout/stderr/exit/event records for all 70
 cases, summary assertions, script hashes, environment metadata, source URLs and
 identities, and the source-reading notes. Its `files` list mapped names to raw
@@ -97,3 +98,13 @@ handler-initiated nonlocal transfers, or establish other R/OS/dependency version
 The stored replay error was a diagnostic payload, not a real warning conversion
 inside a Margin operation. Resource restoration and true SIGINT precedence
 remained separate implementation acceptance questions.
+
+## Revisions (2026-09-30)
+
+The [text-conversion investigation](rds-text-conversion-2026-09-30.md) established
+that the archive's contents could be retained as text without loss. The original
+archive above remains available at its pinned Git snapshot. Its files were
+extracted byte-for-byte, and its nested environment and archive metadata were
+stored as `.dput` with strict round-trip checks. The [evidence README](condition-resignaling-2026-09-30/README.md)
+replaces the archive-extraction reproduction command above. The observations
+and their limits were unchanged.

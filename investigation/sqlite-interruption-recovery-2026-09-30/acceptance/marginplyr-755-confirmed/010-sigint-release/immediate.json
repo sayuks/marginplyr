@@ -1,0 +1,168 @@
+{
+  "outcome": {
+    "kind": "interrupt",
+    "condition": {
+      "class": ["interrupt", "condition"],
+      "message": null,
+      "parent": null,
+      "cleanup": null
+    }
+  },
+  "hit": true,
+  "savepoint": "`marginplyr_savepoint_15cd57768211b`",
+  "transacting": false,
+  "state": {
+    "main": {
+      "schema": [
+        {
+          "type": "table",
+          "name": "report",
+          "tbl_name": "report",
+          "rootpage": 4,
+          "sql": "CREATE TABLE report(g TEXT,sid INT,z)"
+        },
+        {
+          "type": "table",
+          "name": "sentinel",
+          "tbl_name": "sentinel",
+          "rootpage": 3,
+          "sql": "CREATE TABLE sentinel (value TEXT)"
+        },
+        {
+          "type": "table",
+          "name": "source",
+          "tbl_name": "source",
+          "rootpage": 2,
+          "sql": "CREATE TABLE `source` (\n  `g` TEXT,\n  `v` REAL\n)"
+        },
+        {
+          "type": "table",
+          "name": "sqlite_stat1",
+          "tbl_name": "sqlite_stat1",
+          "rootpage": 6,
+          "sql": "CREATE TABLE sqlite_stat1(tbl,idx,stat)"
+        },
+        {
+          "type": "table",
+          "name": "sqlite_stat4",
+          "tbl_name": "sqlite_stat4",
+          "rootpage": 7,
+          "sql": "CREATE TABLE sqlite_stat4(tbl,idx,neq,nlt,ndlt,sample)"
+        }
+      ],
+      "statistics": [
+        {
+          "tbl": "report",
+          "idx": null,
+          "stat": "3"
+        },
+        {
+          "tbl": "sentinel",
+          "idx": null,
+          "stat": "1"
+        },
+        {
+          "tbl": "source",
+          "idx": null,
+          "stat": "2"
+        }
+      ],
+      "samples": []
+    },
+    "temp": {
+      "schema": [
+        {
+          "type": "table",
+          "name": "sqlite_stat1",
+          "tbl_name": "sqlite_stat1",
+          "rootpage": 2,
+          "sql": "CREATE TABLE sqlite_stat1(tbl,idx,stat)"
+        },
+        {
+          "type": "table",
+          "name": "sqlite_stat4",
+          "tbl_name": "sqlite_stat4",
+          "rootpage": 3,
+          "sql": "CREATE TABLE sqlite_stat4(tbl,idx,neq,nlt,ndlt,sample)"
+        }
+      ],
+      "statistics": [],
+      "samples": []
+    },
+    "other": {
+      "schema": [
+        {
+          "type": "table",
+          "name": "sqlite_stat1",
+          "tbl_name": "sqlite_stat1",
+          "rootpage": 2,
+          "sql": "CREATE TABLE sqlite_stat1(tbl,idx,stat)"
+        },
+        {
+          "type": "table",
+          "name": "sqlite_stat4",
+          "tbl_name": "sqlite_stat4",
+          "rootpage": 3,
+          "sql": "CREATE TABLE sqlite_stat4(tbl,idx,neq,nlt,ndlt,sample)"
+        }
+      ],
+      "statistics": [],
+      "samples": []
+    }
+  },
+  "source": [
+    {
+      "g": "a",
+      "v": 2
+    },
+    {
+      "g": "b",
+      "v": 5
+    }
+  ],
+  "sentinel": [
+    {
+      "value": "baseline"
+    }
+  ],
+  "destination_exists": true,
+  "destination": [
+    {
+      "g": "a",
+      "sid": 1,
+      "z": 2
+    },
+    {
+      "g": "b",
+      "sid": 1,
+      "z": 5
+    },
+    {
+      "g": "Total",
+      "sid": 2,
+      "z": 7
+    }
+  ],
+  "observer_sentinel": [
+    {
+      "value": "baseline"
+    }
+  ],
+  "observer_destination": [
+    {
+      "g": "a",
+      "sid": 1,
+      "z": 2
+    },
+    {
+      "g": "b",
+      "sid": 1,
+      "z": 5
+    },
+    {
+      "g": "Total",
+      "sid": 2,
+      "z": 7
+    }
+  ]
+}

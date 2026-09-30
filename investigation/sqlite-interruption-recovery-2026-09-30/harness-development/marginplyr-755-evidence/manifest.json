@@ -1,0 +1,9 @@
+{
+  "snapshot": "fd020ff67961875d6bf6c8f45d5ba9141acab053",
+  "supervisor_pid": 80189,
+  "scripts": {
+    "tools/sqlite-interruption/run.py": "0d22f2e250286ba1b4df6ebc37b8e263824d471d27a1377755dc82f5d5a64595",
+    "tools/sqlite-interruption/worker.R": "c0fe614d27b4f6e7875bc11c72f48c29b0693b0471cfe3ee9af3e8215852cca8",
+    "tests/testthat/helper-sqlite-interruption.R": "82a2be840000a62d21413702f04bf51f57533711ab887a6a1d198784b0f3551b"
+  }
+}

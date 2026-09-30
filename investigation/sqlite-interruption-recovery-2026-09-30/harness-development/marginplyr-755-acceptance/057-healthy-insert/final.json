@@ -1,0 +1,8 @@
+{
+  "outcome": {
+    "kind": "success"
+  },
+  "transacting": false,
+  "caller_commit": false,
+  "completed": true
+}

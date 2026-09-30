@@ -1,0 +1,22 @@
+── Failure: supervised SQLite interruption acceptance ──────────────────────────
+Expected `outcome$kind` to be identical to `if (configuration$mode == "healthy") "success" else "interrupt"`.
+Differences:
+`actual`:   "error"    
+`expected`: "interrupt"
+
+Backtrace:
+    ▆
+ 1. └─global sqlite_interrupt_fixture(...)
+ 2.   └─code(...)
+ 3.     └─testthat::expect_identical(...)
+Error:
+! Test failed with 1 failure and 12 successes.
+Backtrace:
+    ▆
+ 1. └─testthat::test_that(...)
+ 2.   └─testthat:::test_code(code, parent.frame())
+ 3.     ├─withr (local) `<fn>`()
+ 4.     └─reporter$end_test(context = reporter$.context, test = test)
+ 5.       └─cli::cli_abort(...)
+ 6.         └─rlang::abort(...)
+Execution halted

@@ -1,0 +1,215 @@
+── Failure: supervised SQLite interruption acceptance ──────────────────────────
+Expected `sqlite_interrupt_state(con)` to be identical to `fixture$before`.
+Differences:
+  `attr(actual$main$schema, 'row.names')[3:5]`: 3 4 5  
+`attr(expected$main$schema, 'row.names')[3:6]`: 3 4 5 6
+
+actual$main$schema vs expected$main$schema
+                             type         name     tbl_name rootpage                                                    sql
+- actual$main$schema[1, ]   table report       report              4 CREATE TABLE report(g TEXT,sid INT,v REAL)            
++ expected$main$schema[1, ] index report_old   report              5 CREATE INDEX report_old ON report(old)                
++ expected$main$schema[2, ] table report       report              4 CREATE TABLE report (old INT)                         
+  actual$main$schema[2, ]   table sentinel     sentinel            3 CREATE TABLE sentinel (value TEXT)                    
+  actual$main$schema[3, ]   table source       source              2 CREATE TABLE `source` (
+  `g` TEXT,
+  `v` REAL
+)   
+  actual$main$schema[4, ]   table sqlite_stat1 sqlite_stat1        6 CREATE TABLE sqlite_stat1(tbl,idx,stat)               
+
+`actual$main$schema$type[2:4]`:                         "table" "table" "table"
+`expected$main$schema$type`:    "index" "table" "table" "table" "table" "table"
+
+`actual$main$schema$name[1:3]`:                "report" "sentinel" "source"
+`expected$main$schema$name[1:4]`: "report_old" "report" "sentinel" "source"
+
+    actual$main$schema$tbl_name | expected$main$schema$tbl_name    
+[1] "report"                    | "report"                      [1]
+                                - "report"                      [2]
+[2] "sentinel"                  | "sentinel"                    [3]
+[3] "source"                    | "source"                      [4]
+[4] "sqlite_stat1"              | "sqlite_stat1"                [5]
+
+  `actual$main$schema$rootpage[1:3]`:   4 3 2
+`expected$main$schema$rootpage[1:4]`: 5 4 3 2
+
+lines(actual$main$schema$sql[[1]]) vs lines(expected$main$schema$sql[[1]])
+- "CREATE TABLE report(g TEXT,sid INT,v REAL)"
++ "CREATE INDEX report_old ON report(old)"
+
+`lines(actual$main$schema$sql[[2]])`:   "CREATE TABLE sentinel (value TEXT)"
+`lines(expected$main$schema$sql[[2]])`: "CREATE TABLE report (old INT)"     
+
+lines(actual$main$schema$sql[[3]]) vs lines(expected$main$schema$sql[[3]])
+- "CREATE TABLE `source` ("
+- "  `g` TEXT,"
+- "  `v` REAL"
+- ")"
++ "CREATE TABLE sentinel (value TEXT)"
+
+lines(actual$main$schema$sql[[4]]) vs lines(expected$main$schema$sql[[4]])
+- "CREATE TABLE sqlite_stat1(tbl,idx,stat)"
++ "CREATE TABLE `source` ("
++ "  `g` TEXT,"
++ "  `v` REAL"
++ ")"
+
+lines(actual$main$schema$sql[[5]]) vs lines(expected$main$schema$sql[[5]])
+- "CREATE TABLE sqlite_stat4(tbl,idx,neq,nlt,ndlt,sample)"
++ "CREATE TABLE sqlite_stat1(tbl,idx,stat)"
+
+`lines(actual$main$schema$sql[[6]])` is absent
+`lines(expected$main$schema$sql[[6]])` is a character vector ('CREATE TABLE sqlite_stat4(tbl,idx,neq,nlt,ndlt,sample)')
+
+`actual$main$statistics$idx` is a logical vector (NA, NA, NA)
+`expected$main$statistics$idx` is a character vector ('report_old', NA, NA)
+
+`actual$main$statistics$stat`:   "4"   "1" "2"
+`expected$main$statistics$stat`: "1 1" "1" "2"
+
+  `attr(actual$main$samples, 'row.names')`:  
+`attr(expected$main$samples, 'row.names')`: 1
+
+`actual$main$samples$tbl` is a logical vector ()
+`expected$main$samples$tbl` is a character vector ('report')
+
+`actual$main$samples$idx` is a logical vector ()
+`expected$main$samples$idx` is a character vector ('report_old')
+
+`actual$main$samples$neq` is a logical vector ()
+`expected$main$samples$neq` is a character vector ('1 1')
+
+`actual$main$samples$nlt` is a logical vector ()
+`expected$main$samples$nlt` is a character vector ('0 0')
+
+`actual$main$samples$ndlt` is a logical vector ()
+`expected$main$samples$ndlt` is a character vector ('0 0')
+
+`actual$main$samples$sample` is a logical vector ()
+`expected$main$samples$sample` is a character vector ('0301092A')
+
+Backtrace:
+    ▆
+ 1. └─global sqlite_interrupt_fixture(...)
+ 2.   └─code(fixture)
+ 3.     └─global expect_sqlite_restored(fixture, state, outer = configuration$outer)
+ 4.       └─testthat::expect_identical(sqlite_interrupt_state(con), fixture$before)
+── Failure: supervised SQLite interruption acceptance ──────────────────────────
+Expected `DBI::dbReadTable(con, fixture$destination)` to be identical to `data.frame(old = 42L)`.
+Differences:
+`actual` is length 3
+`expected` is length 1
+
+`names(actual)`:   "g"   "sid" "v"
+`names(expected)`: "old"          
+
+  `attr(actual, 'row.names')`: 1 2 3 4
+`attr(expected, 'row.names')`: 1      
+
+`actual$g` is a character vector ('a', 'b', 'Total', 'Total')
+`expected$g` is absent
+
+`actual$sid` is an integer vector (1, 1, 2, 2)
+`expected$sid` is absent
+
+`actual$v` is a double vector (2, 5, 2, 5)
+`expected$v` is absent
+
+`actual$old` is absent
+`expected$old` is an integer vector (42)
+
+Backtrace:
+    ▆
+ 1. └─global sqlite_interrupt_fixture(...)
+ 2.   └─code(fixture)
+ 3.     └─global expect_sqlite_restored(fixture, state, outer = configuration$outer)
+ 4.       └─testthat::expect_identical(...)
+── Failure: supervised SQLite interruption acceptance ──────────────────────────
+Expected `DBI::dbGetQuery(...)` to be identical to `data.frame(name = "old", type = "INT")`.
+Differences:
+  `attr(actual, 'row.names')`: 1 2 3
+`attr(expected, 'row.names')`: 1    
+
+actual vs expected
+                name type
+- actual[1, ]    g   TEXT
+- actual[2, ]    sid INT 
+- actual[3, ]    v   REAL
++ expected[1, ]  old INT 
+
+`actual$name`:   "g"   "sid" "v"
+`expected$name`: "old"          
+
+`actual$type`:   "TEXT" "INT" "REAL"
+`expected$type`: "INT"              
+
+Backtrace:
+    ▆
+ 1. └─global sqlite_interrupt_fixture(...)
+ 2.   └─code(fixture)
+ 3.     └─global expect_sqlite_restored(fixture, state, outer = configuration$outer)
+ 4.       └─testthat::expect_identical(...)
+── Failure: supervised SQLite interruption acceptance ──────────────────────────
+Expected `...$name` to be identical to "report_old".
+Differences:
+`actual`:               
+`expected`: "report_old"
+
+Backtrace:
+    ▆
+ 1. └─global sqlite_interrupt_fixture(...)
+ 2.   └─code(fixture)
+ 3.     └─global expect_sqlite_restored(fixture, state, outer = configuration$outer)
+ 4.       └─testthat::expect_identical(...)
+── Failure: supervised SQLite interruption acceptance ──────────────────────────
+Expected `...$stat` to be identical to "1 1".
+Differences:
+`actual`:   "4"  
+`expected`: "1 1"
+
+Backtrace:
+    ▆
+ 1. └─global sqlite_interrupt_fixture(...)
+ 2.   └─code(fixture)
+ 3.     └─global expect_sqlite_restored(fixture, state, outer = configuration$outer)
+ 4.       └─testthat::expect_identical(...)
+── Failure: supervised SQLite interruption acceptance ──────────────────────────
+Expected `DBI::dbReadTable(fixture$observer, fixture$destination)` to be identical to `data.frame(old = 42L)`.
+Differences:
+`actual` is length 3
+`expected` is length 1
+
+`names(actual)`:   "g"   "sid" "v"
+`names(expected)`: "old"          
+
+  `attr(actual, 'row.names')`: 1 2 3 4
+`attr(expected, 'row.names')`: 1      
+
+`actual$g` is a character vector ('a', 'b', 'Total', 'Total')
+`expected$g` is absent
+
+`actual$sid` is an integer vector (1, 1, 2, 2)
+`expected$sid` is absent
+
+`actual$v` is a double vector (2, 5, 2, 5)
+`expected$v` is absent
+
+`actual$old` is absent
+`expected$old` is an integer vector (42)
+
+Backtrace:
+    ▆
+ 1. └─global sqlite_interrupt_fixture(...)
+ 2.   └─code(fixture)
+ 3.     └─global expect_sqlite_restored(fixture, state, outer = configuration$outer)
+ 4.       └─testthat::expect_identical(...)
+Error:
+! Test failed with 6 failures and 11 successes.
+Backtrace:
+    ▆
+ 1. └─testthat::test_that(...)
+ 2.   └─testthat:::test_code(code, parent.frame())
+ 3.     ├─withr (local) `<fn>`()
+ 4.     └─reporter$end_test(context = reporter$.context, test = test)
+ 5.       └─cli::cli_abort(...)
+ 6.         └─rlang::abort(...)
+Execution halted

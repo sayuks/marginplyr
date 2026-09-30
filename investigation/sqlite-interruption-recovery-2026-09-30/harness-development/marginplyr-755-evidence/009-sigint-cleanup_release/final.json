@@ -1,0 +1,24 @@
+{
+  "outcome": {
+    "kind": "error",
+    "condition": {
+      "class": ["rlang_error", "error", "condition"],
+      "message": "SQLite compute failed; its savepoint rollback failed: no such savepoint: marginplyr_savepoint_13a01b415f3e",
+      "parent": {
+        "class": ["interrupt", "condition"],
+        "message": null,
+        "parent": null,
+        "cleanup": null
+      },
+      "cleanup": {
+        "class": ["simpleError", "error", "condition"],
+        "message": "no such savepoint: marginplyr_savepoint_13a01b415f3e",
+        "parent": null,
+        "cleanup": null
+      }
+    }
+  },
+  "transacting": false,
+  "caller_commit": false,
+  "completed": false
+}

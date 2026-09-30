@@ -419,7 +419,9 @@ replay instructions; initial build scripts are not the final prototype source.
 Decision: accepted on 2026-09-30 under the maintainer's delegation of technical
 judgment. Implementation and public-contract publication are complete in #755.
 The [acceptance evidence](../../investigation/sqlite-interruption-recovery-2026-09-30.md)
-records the verified snapshots; this amendment owns the recovery requirements.
+records the verified snapshots, with
+[text evidence](../../investigation/sqlite-interruption-recovery-2026-09-30/README.md);
+this amendment owns the recovery requirements.
 
 ### Recovery boundary and ownership
 

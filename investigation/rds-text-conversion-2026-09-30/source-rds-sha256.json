@@ -1,0 +1,11 @@
+{
+  "source_commit": "056bae562385e627d6eb4ca2410183d594c0960f",
+  "files": {
+    "investigation/2026-09-30-postgres-near-floor/current-r45/values.rds": "4977d97daff564eca00f93c3f54f27ccf5bec2dc751691cee0f433d73baa54fa",
+    "investigation/2026-09-30-postgres-near-floor/current-r46/values.rds": "4cad2bce506ed847d8d5760f695d7abef2630c3cce90e113dcf70616e8b5e9df",
+    "investigation/2026-09-30-postgres-near-floor/near/values.rds": "2032387246f6a11178d7574b44c5df5a416df9c8e8dfcb729f4ac5534d441975",
+    "investigation/condition-resignaling-2026-09-30/evidence.rds": "1366ba89d8997caf924694f3a30685435e35bffeb214e1a5e250f0de7fff4e3c",
+    "investigation/sqlite-interruption-recovery-2026-09-30/acceptance.rds": "ede591d7914ca0c8be9ad89c816525281aee8ae78a365441989fbc7db4e2115b",
+    "investigation/sqlite-interruption-recovery-2026-09-30/harness-development.rds": "388b3437ed32705f241f12c94424267dd3c20670c828c40b59905e2c4cb7834c"
+  }
+}

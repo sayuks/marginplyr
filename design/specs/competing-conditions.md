@@ -161,7 +161,8 @@ second-interrupt, native-statement, timeout, platform, and dependency coverage
 explicitly; an unverified case is a limit, not a passing cell. Retain source
 snapshot and environment. The existing
 [fault hunt](../../investigation/exception-safety-recovery-2026-09-30.md) and
-[#755 acceptance](../../investigation/sqlite-interruption-recovery-2026-09-30.md)
+[#755 acceptance](../../investigation/sqlite-interruption-recovery-2026-09-30.md),
+including its [text evidence](../../investigation/sqlite-interruption-recovery-2026-09-30/README.md),
 are evidence for their recorded snapshots, not verification of this policy.
 
 ## Implementation and publication
@@ -174,7 +175,8 @@ new public option, warning-history store, staging table, unrequested input read,
 or automatic connection repair is required.
 
 The [signaling investigation](../../investigation/condition-resignaling-2026-09-30.md)
-records a measured candidate: notify with the enriched condition, and enter the
+and its [text evidence](../../investigation/condition-resignaling-2026-09-30/README.md)
+record a measured candidate: notify with the enriched condition, and enter the
 native interruption path only if no exiting handler takes that notification.
 It established handler dispatch and native-hook behavior on its recorded
 environment, not integrated operation cleanup, actual SIGINT, or other versions.

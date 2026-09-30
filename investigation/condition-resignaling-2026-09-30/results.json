@@ -1,0 +1,3180 @@
+[
+  {
+    "route": "rich_then_native",
+    "handler": "mixed",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "mixed",
+      "default"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"mixed\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "mixed",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "mixed",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "mixed",
+      "default"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"mixed\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "mixed",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "mixed",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "mixed",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"mixed\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "mixed",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "mixed",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "mixed",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"mixed\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "mixed",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "mixed",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "mixed",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"mixed\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "mixed",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "mixed",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "mixed",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"mixed\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "mixed",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "mixed",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "mixed",
+      "interrupt_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"mixed\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "mixed",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "mixed",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "mixed",
+      "interrupt_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"mixed\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "mixed",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "mixed",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "mixed",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"mixed\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "mixed",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "mixed",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "mixed",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"mixed\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "mixed",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_and_exiting",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_and_exiting",
+      "default"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_and_exiting",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_and_exiting",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_and_exiting",
+      "default"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_and_exiting",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_and_exiting",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_and_exiting",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_and_exiting",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_and_exiting",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_and_exiting",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_and_exiting",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_and_exiting",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_and_exiting",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_and_exiting",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_and_exiting",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_and_exiting",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_and_exiting",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_and_exiting",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_and_exiting",
+      "interrupt_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_and_exiting",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_and_exiting",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_and_exiting",
+      "interrupt_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_and_exiting",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_and_exiting",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_and_exiting",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_and_exiting",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_and_exiting",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_and_exiting",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_and_exiting\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_and_exiting",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "condition_only",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "condition_only",
+      "default"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"condition_only\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "condition_only",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "condition_only",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "condition_only",
+      "default"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"condition_only\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "condition_only",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "condition_only",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "condition_only",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"condition_only\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "condition_only",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "condition_only",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "condition_only",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"condition_only\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "condition_only",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "condition_only",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "condition_only",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"condition_only\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "condition_only",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "condition_only",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "condition_only",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"condition_only\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "condition_only",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "condition_only",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "condition_only",
+      "interrupt_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"condition_only\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "condition_only",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "condition_only",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "condition_only",
+      "interrupt_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"condition_only\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "condition_only",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "condition_only",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "condition_only",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"condition_only\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":true}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "condition_only",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": true
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "condition_only",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "condition_only",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"condition_only\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"condition_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"handled\",\"rich\":false}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "condition_only",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "condition_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "handled",
+        "rich": false
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "error_only",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "error_only",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"error_only\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "error_only",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "error_only",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "error_only",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"error_only\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "error_only",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "error_only",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "error_only",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"error_only\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "error_only",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "error_only",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "error_only",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"error_only\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "error_only",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "error_only",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "error_only",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"error_only\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "error_only",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "error_only",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "error_only",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"error_only\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "error_only",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "error_only",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "error_only",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"error_only\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "error_only",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "error_only",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "error_only",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"error_only\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "error_only",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "error_only",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "error_only",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"error_only\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "error_only",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "error_only",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "error_only",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"error_only\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "error_only",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_return",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_return",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_return\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_return",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_return",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_return",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_return\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_return",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_return",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_return",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_return\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_return",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_return",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_return",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_return\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_return",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_return",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_return",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_return\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_return",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_return",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_return",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_return\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_return",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_return",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_return",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_return\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_return",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_return",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_return",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_return\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_return",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "calling_return",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "calling_return",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"calling_return\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "calling_return",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "calling_return",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "calling_return",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"calling_return\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "calling_return",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "global_return",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "global_return",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"global_return\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "global_return",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "global_return",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "global_return",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"global_return\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "global_return",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "global_return",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "global_return",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"global_return\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "global_return",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "global_return",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "global_return",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"global_return\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "global_return",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "global_return",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "global_return",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"global_return\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "global_return",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "global_return",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "global_return",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"global_return\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "global_return",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "global_return",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "global_return",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"global_return\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "global_return",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "global_return",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "global_return",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"global_return\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "global_return",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "global_return",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "global_return",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"global_return\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":true,\"inherits_error\":false,\"parent_retained\":true,\"original_interrupt_retained\":true,\"replay_retained\":true,\"original_error_untouched\":true}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "global_return",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": true,
+        "inherits_error": false,
+        "parent_retained": true,
+        "original_interrupt_retained": true,
+        "replay_retained": true,
+        "original_error_untouched": true
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "global_return",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "global_return",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"global_return\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"calling_handler\",\"class\":[\"interrupt\",\"condition\"],\"rich\":false,\"inherits_error\":false,\"parent_retained\":false,\"original_interrupt_retained\":false,\"replay_retained\":false,\"original_error_untouched\":true}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "global_return",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "calling_handler",
+        "class": [
+          "interrupt",
+          "condition"
+        ],
+        "rich": false,
+        "inherits_error": false,
+        "parent_retained": false,
+        "original_interrupt_retained": false,
+        "replay_retained": false,
+        "original_error_untouched": true
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "no_handler",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "no_handler",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"no_handler\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "no_handler",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "no_handler",
+    "callbacks": "default",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "no_handler",
+      "default"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"no_handler\",\"callbacks\":\"default\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "no_handler",
+        "callbacks": "default",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "no_handler",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "no_handler",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"no_handler\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "no_handler",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "no_handler",
+    "callbacks": "error_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "no_handler",
+      "error_function"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"no_handler\",\"callbacks\":\"error_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "no_handler",
+        "callbacks": "error_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "no_handler",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "no_handler",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"no_handler\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "no_handler",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "no_handler",
+    "callbacks": "error_expression",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "no_handler",
+      "error_expression"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"no_handler\",\"callbacks\":\"error_expression\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"error_option_expression\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "no_handler",
+        "callbacks": "error_expression",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "error_option_expression"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "no_handler",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "no_handler",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"no_handler\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "no_handler",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "no_handler",
+    "callbacks": "interrupt_function",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "no_handler",
+      "interrupt_function"
+    ],
+    "exit_code": 1,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"no_handler\",\"callbacks\":\"interrupt_function\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n",
+    "stderr": "\nExecution halted\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "no_handler",
+        "callbacks": "interrupt_function",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      }
+    ]
+  },
+  {
+    "route": "rich_then_native",
+    "handler": "no_handler",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "rich_then_native",
+      "no_handler",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"rich_then_native\",\"handler\":\"no_handler\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "rich_then_native",
+        "handler": "no_handler",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  },
+  {
+    "route": "native",
+    "handler": "no_handler",
+    "callbacks": "both",
+    "command": [
+      "Rscript",
+      "--vanilla",
+      "/private/tmp/marginplyr-756-signaling-20260930/probe.R",
+      "native",
+      "no_handler",
+      "both"
+    ],
+    "exit_code": 0,
+    "stdout": "{\"event\":\"configuration\",\"route\":\"native\",\"handler\":\"no_handler\",\"callbacks\":\"both\",\"R\":\"4.6.1\",\"rlang\":\"1.3.0\",\"platform\":\"aarch64-apple-darwin23\"}\n{\"event\":\"interrupt_option\"}\n{\"event\":\"end_of_script\"}\n",
+    "stderr": "\n",
+    "events": [
+      {
+        "event": "configuration",
+        "route": "native",
+        "handler": "no_handler",
+        "callbacks": "both",
+        "R": "4.6.1",
+        "rlang": "1.3.0",
+        "platform": "aarch64-apple-darwin23"
+      },
+      {
+        "event": "interrupt_option"
+      },
+      {
+        "event": "end_of_script"
+      }
+    ]
+  }
+]
