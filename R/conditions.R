@@ -144,11 +144,12 @@ signal_margin_interrupt <- function(cnd) {
 
 # Finish a protected resource transition or diagnostic selection once. Native
 # interrupts supply the resume restart; synthetic notifications can return.
-# Flush cleanup-queued SIGINT before leaving this operation's handlers.
+# Flush cleanup-queued interruption before leaving this operation's handlers.
 coalesce_margin_interrupts <- function(expr, conditions) {
   suspendInterrupts(withCallingHandlers({
     value <- expr
-    allowInterrupts(Sys.sleep(0))
+    # A zero sleep skips Windows event processing, leaving UserBreak queued.
+    allowInterrupts(Sys.sleep(0.001))
     value
   }, interrupt = function(cnd) {
     conditions$interrupt <- conditions$interrupt %||% cnd

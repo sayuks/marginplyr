@@ -248,6 +248,48 @@ test_that("caller ownership survives each destination kind", {
 })
 
 # #756 requires an execution error followed by interruption after real rollback.
+test_that("SQLite drains queued event-loop interruption within compute", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  first <- structure(list(message = "queued cancellation"),
+                     class = c("interrupt", "condition"))
+  pending <- NULL
+  sleep <- base::Sys.sleep
+  # Windows sleep skips event processing at zero milliseconds. Model that
+  # system boundary so public compute and a later probe expose a queued signal.
+  testthat::local_mocked_bindings(
+    Sys.sleep = function(time) {
+      if (round(time * 1000) > 0L && !is.null(pending)) {
+        cnd <- pending
+        pending <<- NULL
+        withRestarts(signalCondition(cnd), resume = function() NULL)
+      }
+      sleep(time)
+    },
+    .package = "base"
+  )
+  sqlite_interrupt_fixture(function(fixture) {
+    state <- sqlite_interrupt_hook(
+      "before_cleanup_release", deliver = function() {
+        pending <<- first
+      }
+    )
+    on.exit(sqlite_interrupt_unhook(state), add = TRUE)
+    outcome <- tryCatch(
+      dplyr::compute(fixture$query, name = "report", temporary = FALSE,
+                     overwrite = TRUE),
+      interrupt = identity, error = identity
+    )
+    expect_s3_class(outcome, "interrupt")
+    expect_false(inherits(outcome, "error"))
+    expect_identical(outcome$interrupt, first)
+    expect_identical(outcome$parent, state$execution_error)
+    expect_identical(state$counts, c(rollback = 1L, release = 1L))
+    expect_sqlite_restored(fixture, state)
+    probe <- tryCatch(Sys.sleep(0.001), interrupt = identity)
+    expect_null(probe)
+  })
+})
+
 test_that("SQLite cleanup interruption retains the earlier execution error", {
   skip_if_suggest_absent("RSQLite", "DBI")
   for (flag in c(FALSE, TRUE)) {
@@ -271,7 +313,7 @@ test_that("SQLite cleanup interruption retains the earlier execution error", {
         expect_match(conditionMessage(outcome$parent),
                      "ordinary INSERT checkpoint failure")
         expect_sqlite_restored(fixture, state, outer)
-        expect_null(tryCatch(Sys.sleep(0), interrupt = identity))
+        expect_null(tryCatch(Sys.sleep(0.001), interrupt = identity))
         sqlite_interrupt_unhook(state)
         if (outer) DBI::dbRollback(con)
         expect_true(DBI::dbBegin(con))
@@ -314,7 +356,7 @@ test_that("further cleanup interrupts finish once and retain causes", {
         expect_true(state$repeated)
         expect_identical(state$counts, c(rollback = 1L, release = 1L))
         expect_sqlite_restored(fixture, state)
-        expect_null(tryCatch(Sys.sleep(0), interrupt = identity))
+        expect_null(tryCatch(Sys.sleep(0.001), interrupt = identity))
       })
     }
   }

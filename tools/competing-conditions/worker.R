@@ -34,7 +34,7 @@ deliver <- function() {
   switch(configuration$mode,
     sigint = {
       while (!file.exists(file.path(directory, "resume"))) invisible(NULL)
-      Sys.sleep(0)
+      Sys.sleep(0.001)
     },
     controlled = rlang::interrupt(),
     healthy = NULL
@@ -68,7 +68,7 @@ results <- test_that("reached competing-condition checkpoint acceptance", {
       }
     ))
     saveRDS(raw, file.path(directory, "raw.rds"))
-    probe <- capture(Sys.sleep(0))
+    probe <- capture(Sys.sleep(0.001))
     saveRDS(list(raw = raw, probe = probe, effects = notification$effects,
                  replayed = notification$replayed,
                  input = input, warn = getOption("warn")),
@@ -115,7 +115,7 @@ results <- test_that("reached competing-condition checkpoint acceptance", {
                                     temporary = FALSE, overwrite = TRUE,
                                     in_transaction = configuration$flag))
       saveRDS(raw, file.path(directory, "raw.rds"))
-      probe <- capture(Sys.sleep(0))
+      probe <- capture(Sys.sleep(0.001))
       saveRDS(list(raw = raw, probe = probe, before = fixture$before,
                    state = sqlite_interrupt_state(con),
                    report = DBI::dbReadTable(con, "report"),
