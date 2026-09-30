@@ -208,8 +208,7 @@ created. Preserve the causal backend failure if cleanup itself fails; do not
 claim successful rollback when it could not be completed.
 
 The [catchable-interruption amendment](#catchable-interruption-amendment-755)
-adds the selected interruption guarantee and its acceptance matrix;
-implementation is pending.
+adds the implemented interruption guarantee and its acceptance matrix.
 
 Overwriting a table used by the input is not a new success guarantee. A rejected
 self-overwrite must leave that input unchanged. Do not add full-result staging
@@ -418,9 +417,9 @@ replay instructions; initial build scripts are not the final prototype source.
 ## Catchable-interruption amendment (#755)
 
 Decision: accepted on 2026-09-30 under the maintainer's delegation of technical
-judgment. Implementation and public-contract publication are pending. This
-amendment selects recovery behavior; it is not evidence that the existing
-interrupt path already meets it.
+judgment. Implementation and public-contract publication are complete in #755.
+The [acceptance evidence](../../investigation/sqlite-interruption-recovery-2026-09-30.md)
+records the verified snapshots; this amendment owns the recovery requirements.
 
 ### Recovery boundary and ownership
 

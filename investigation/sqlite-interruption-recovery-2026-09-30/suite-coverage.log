@@ -1,0 +1,15 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+## Suite coverage by construction
+
+1230 tests over 5 single-backend configurations (arrow, duckdb, dtplyr, data.table, RSQLite).
+
+- 0 test(s) executed in 0 configuration(s)
+- 458 test(s) executed in 1 configuration(s)
+- 0 test(s) executed in 2 configuration(s)
+- 0 test(s) executed in 3 configuration(s)
+- 0 test(s) executed in 4 configuration(s)
+- 772 test(s) executed in 5 configuration(s)
+
+Verified: all 1230 tests execute in at least one of arrow, duckdb, dtplyr, data.table, RSQLite.
