@@ -844,3 +844,24 @@ test_that("backend kinds granted the collect_selection_proxy capability", {
 
   expect_snapshot(kinds_with_proxy)
 })
+
+test_that("partition expansion and inspection read no source rows", {
+  skip_if_suggest_absent("arrow")
+  fixture <- arrow_partition_fixture(c(2L, 1L, 1L), 1:3)
+  on.exit(unlink(fixture$path, recursive = TRUE))
+  expect_gt(count_entry_point_invocations(dplyr::collect(fixture$source)), 0L)
+  for (sort in c("none", "first", "last")) {
+    expect_identical(count_entry_point_invocations(expand_with_margins(
+      fixture$source, .grouping = rollup(p), .id = "occurrence",
+      .sort = sort, .margin_label = NULL
+    )), 0L)
+    expect_identical(count_entry_point_invocations(expand_with_margins(
+      fixture$source, .grouping = rollup(p), .sort = sort,
+      .margin_label = "Total"
+    )), 0L)
+  }
+  expect_identical(count_entry_point_invocations(inspect_grouping(
+    fixture$source, .grouping = rollup(p)
+  )), 0L)
+  expect_identical(tools::md5sum(fixture$files), fixture$hashes)
+})

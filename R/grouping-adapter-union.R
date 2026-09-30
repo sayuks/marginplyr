@@ -806,5 +806,24 @@ expand_margin_union <- function(.data,
     branches <- c(list(anchor), branches)
   }
 
+  if (identical(backend$kind, "arrow") && length(plan$dimensions) > 0L) {
+    # Arrow can restore a Dataset partition value over a labelled dimension
+    # when projecting a union (#750). Carry dimensions under private names
+    # across that union so its projection cannot match source partition names.
+    dimensions <- plan$dimensions
+    private <- new_margin_internal_names(
+      length(dimensions),
+      c(get_col_names(.data, dplyr::everything()), set_id_name),
+      prefix = "..marginplyr_arrow_dimension_"
+    )
+    aliases <- stats::setNames(dimensions, private)
+    branches <- lapply(branches, function(branch) {
+      dplyr::rename(branch, dplyr::all_of(aliases))
+    })
+    result <- combine_margin_branches(branches)
+    public <- stats::setNames(private, dimensions)
+    return(dplyr::rename(result, dplyr::all_of(public)))
+  }
+
   combine_margin_branches(branches)
 }

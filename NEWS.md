@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Arrow partition fields used as Grouping dimensions now retain their Margin
+  labels in `expand_with_margins()`, including with `.id` or `.sort`, through
+  direct collection and materialization (#750).
 * Portable SQL summaries containing only scalar constants now return one
   Grand total row per grouping-set occurrence, including on empty input and
   with `grouping_bit()` or `grouping_id()` (#602).
