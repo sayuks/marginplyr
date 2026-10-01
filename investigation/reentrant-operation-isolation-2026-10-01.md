@@ -1,6 +1,7 @@
 # Reentrant Margin operation state isolation
 
 Investigated: 2026-10-01
+Revised: 2026-10-01 — typed-predicate and summary-selection reentry coverage (#778)
 Scope: investigation evidence only; no product fix or adopted specification
 Target: `e0cac536b68ada12563e427223d7e3efffbc7ce5`
 
@@ -279,6 +280,76 @@ follow-up, and rerun through these controls before classification. A clean
 owner-specific oracle after #777 is a fix acceptance activity, not an
 unperformed prerequisite to establishing #778.
 
+## Revisions (2026-10-01, #778)
+
+The campaign's final site-table review identified a concrete additional
+hypothesis: type-dependent `where()` predicates read A's canonical typed
+snapshot, whereas the earlier `all_of()` selections could run in a discarded
+name-only pass. The `.by` predicate similarly resolves after acquiring that
+snapshot. This extends the earlier site's coverage and termination statement;
+it does not change the confirmed shared-audit mechanism or adopt an owner.
+The same campaign and this one note were continued after PR creation.
+
+Additional assertions read in `test-grouping-backends.R` counted one typed
+proxy for dtplyr/DuckDB predicate selections and one Arrow schema acquisition
+for a `.by` predicate. `prepare_grouping_plan()` handed that per-call snapshot
+to both the unresolved fixed-key selection and canonical Grouping compilation.
+Those counts remained product constraints, separate from investigation runs.
+
+| Added site | Valid controls and actual timing | Result and ownership classification |
+|---|---|---|
+| Grouping `where(group_predicate)` | local, DuckDB, immutable dtplyr, Arrow; four column predicates during construction, after A's typed snapshot existed | Each returned `is.character()` for A's typed column after B, matching the normal selection control; correct A/B values and unchanged inputs; the summary record matched neither A nor B, another #778 symptom |
+| `.by = where(fixed_predicate)` | Same four backends; four typed column predicates during construction | A's fixture used integer fixed `f = 1L` and double `v`, so only f was fixed; correct A/B values/IDs/inputs; same #778 audit interference |
+| DuckDB inspection with Grouping predicate | Correct list inspection control; four predicates during typed compilation | Values matched; final record belonged to SQL B alone after A's earlier proxy was reset. This remained an owner-specific #777 observation, not a new independently confirmed omission bug |
+| Ordinary summary `across()` `.cols` and `.names` producers | local, SQLite, DuckDB, dtplyr, Arrow; normal controls had three local evaluations (one per grouping-set branch) and one construction-time evaluation on each lazy backend | Returned A's column/name with unchanged A/B values, types, IDs and inputs; same #778 record mixing or fake local result |
+| `.cols`/`.names` with contextual total-share planning | local and DuckDB; normal and reentrant controls evaluated the producer once, matching cached planning rather than the ordinary local three-branch route | A's fraction was its own total divided by 34; B had different grouping/outputs; source-name/selection cache and share requests remained A's; same audit defect |
+| SQLite ordinary predicate controls | Both Grouping and `.by` were refused before the supplied predicate was evaluated; callback count zero and stable `marginplyr_error` diagnostic | Expected backend boundary: types were not reported without a query the caller had not requested. No B reentry occurred, and no extra implicit type-reading query was required |
+
+The follow-up also read `R/summary-selections.R`'s per-call name-rule state,
+selection rewriting and template evaluation. The existing share assertion
+"Parent planning evaluates across arguments once" measured ordinary and share
+column/name producers separately. Ordinary selection/name producers with
+one-level B reentry were therefore tested independently of aggregation-body
+callbacks, then with a contextual-share request holding that planning state.
+Ten caught/propagated/outer-failure cases at these two additional sites retained
+the required cause classes and external leaf identities and recovered through C.
+
+Eight valid typed-selector summary cases, one inspection case, ten ordinary
+summary-selection/name cases and four share-planning cases were added. The
+final extracted campaign had 132 construction/value cases, 56 diagnostic
+cases and eleven auxiliary/minimal cases, all completing their assertions.
+Sixty-three whole-record signals in the 132 cases overlapped the same audit
+mechanism; none was a discovery quota. A share-planning control could include
+its cold dialect probe while a subsequent call used the legitimate session
+cache: full-record inequality alone was not a defect. Independently attributable
+B/A result rows or a fake local result established the classification.
+
+The ordinary SQLite predicate refusal and a reserved `sqlite_` fixture
+table-name mistake were classified as the backend boundary and fixture setup
+respectively, then excluded from positive reentry cases. The final driver
+omitted unsupported SQLite predicate cases while the auxiliary control checked
+both refusals and zero predicate evaluations. Package-error reasons were compared with a separate ordinary B refusal,
+in addition to class checks. Value/context observations were
+also serialized before B to prevent a shared reference from changing both
+sides of the comparison. The inner local `across()` also used grouping key
+`v` and measure `w`, with different names and values from A: its permitted
+`cur_column()` was asserted to be `w`, and local A resumed with `v` and its
+own `n()`/vector. Normal and derived-input controls passed; immutable dtplyr
+still deferred A's function until collection. An attempted literal-name
+assertion for B's `cur_group()` failed in the non-reentrant Margin control
+because its branch representation contained private keys; that observer
+assumption was removed, rather than classified as a product defect. Existing
+before/after group-context comparisons retained independent snapshots.
+
+The complete updated code blocks below were extracted again. Construction
+cases and diagnostics were replayed in fresh processes; the changed auxiliary
+block was executed again; unchanged minimal sources retained their exact
+successful execution identities. Both linters, applicable repository hygiene
+checks, code-byte identity and one-file diff verification were refreshed.
+The expanded site/state-owner map had no further concrete unexecuted priority
+hypothesis within the adopted one-level workflows. No new ticket or broader
+remedy was warranted by these additional observations.
+
 ## Verification and repository scope
 
 The final note's executable R blocks were extracted outside the repository,
@@ -533,6 +604,7 @@ outer_data <- tibble::tibble(f = "p", g = c("a", "a", "b", "b"),
                              h = c("x", "y", "x", "x"),
                              v = c(1, 3, 10, 20))
 inner_data <- tibble::tibble(k = c("u", "v", "w"), v = c(101, 203, 307))
+if (site %in% c("predicate", "by_predicate")) outer_data$f <- 1L
 original_a <- unserialize(serialize(outer_data, NULL))
 original_b <- unserialize(serialize(inner_data, NULL))
 state$connections <- list()
@@ -581,6 +653,19 @@ run_inner <- function(data = b) {
   if (action == "inspection") {
     marginplyr::inspect_grouping(data, .grouping = marginplyr::rollup("k"),
                                  .format = "list")
+  } else if (site == "across" && inner_kind == "local") {
+    local_data <- dplyr::rename(data,
+                                v = tidyselect::all_of("k"),
+                                w = tidyselect::all_of("v"))
+    original <- unserialize(serialize(local_data, NULL))
+    result <- marginplyr::summarize_with_margins(
+      local_data, dplyr::across("w", inner_column_summary,
+                                .names = "inner_total"),
+      .grouping = marginplyr::rollup("v"), .id = "inner_set",
+      .margin_label = "B_Total", .sort = "first"
+    )
+    stopifnot(identical(local_data, original))
+    result
   } else {
     marginplyr::summarize_with_margins(
       data, inner_total = sum(.data[["v"]], na.rm = TRUE),
@@ -588,6 +673,10 @@ run_inner <- function(data = b) {
       .margin_label = "B_Total", .sort = "first"
     )
   }
+}
+inner_column_summary <- function(x) {
+  stopifnot(dplyr::cur_column() == "w", dplyr::n() == length(x))
+  sum(x, na.rm = TRUE)
 }
 old_b <- if (action == "audit_off") options(marginplyr.audit_sql = FALSE)
 base_b <- run_inner()
@@ -644,6 +733,22 @@ select_f <- function() {
   trigger()
   "f"
 }
+group_predicate <- function(x) {
+  trigger()
+  is.character(x)
+}
+fixed_predicate <- function(x) {
+  trigger()
+  is.integer(x)
+}
+summary_columns <- function() {
+  trigger()
+  "v"
+}
+summary_names <- function() {
+  trigger()
+  "outer_total"
+}
 label_value <- function() {
   trigger()
   "A_Total"
@@ -669,6 +774,7 @@ context_column <- function() {
 }
 summary <- function(x) {
   before <- list(x = x, n = context_n(x))
+  before <- unserialize(serialize(before, NULL))
   state$callback_calls <- state$callback_calls + 1L
   record_event("callback", before)
   enter_inner(x)
@@ -682,6 +788,7 @@ summary <- function(x) {
 across_summary <- function(x) {
   before <- list(x = x, n = context_n(x),
                  column = context_column())
+  before <- unserialize(serialize(before, NULL))
   state$callback_calls <- state$callback_calls + 1L
   record_event("callback", before)
   enter_inner(x)
@@ -703,6 +810,9 @@ run_outer <- function() {
       marginplyr::rollup("g", tidyselect::all_of(select_h()))
     ),
     factory = rlang::quo(factory()),
+    predicate = rlang::quo(
+      marginplyr::rollup(tidyselect::where(group_predicate))
+    ),
     active = rlang::quo(marginplyr::grouping_sets(bound_spec)),
     delayed = rlang::quo(marginplyr::grouping_sets(bound_spec)),
     rlang::quo(marginplyr::rollup("g", "h"))
@@ -719,6 +829,8 @@ run_outer <- function() {
   }
   by <- if (site == "by") {
     rlang::quo(tidyselect::all_of(select_f()))
+  } else if (site == "by_predicate") {
+    rlang::quo(tidyselect::where(fixed_predicate))
   } else {
     rlang::quo(NULL)
   }
@@ -749,17 +861,30 @@ run_outer <- function() {
       dot <- switch(site,
         summary = rlang::quo(summary(.data[["v"]])),
         across = rlang::quo(dplyr::across("v", across_summary)),
+        summary_cols = rlang::quo(dplyr::across(
+          tidyselect::all_of(summary_columns()),
+          ~ sum(.x, na.rm = TRUE), .names = "outer_total"
+        )),
+        summary_names = rlang::quo(dplyr::across(
+          "v", ~ sum(.x, na.rm = TRUE), .names = summary_names()
+        )),
         rlang::quo(sum(.data[["v"]], na.rm = TRUE))
       )
-      if (outer_kind == "arrow") {
+      if (outer_kind == "arrow" &&
+            !site %in% c("summary_cols", "summary_names")) {
         dot <- rlang::new_quosure(rlang::expr(
           sum(!!rlang::sym("v"), na.rm = TRUE)
         ), env = environment())
       }
-      if (site == "across") {
+      if (site %in% c("across", "summary_cols", "summary_names")) {
         call_args <- c(call_args, list(dot))
       } else {
         call_args$outer_total <- dot
+      }
+      if (action == "shared_plan") {
+        call_args$outer_fraction <- rlang::quo(
+          marginplyr::share_of_total(!!rlang::sym("outer_total"))
+        )
       }
     }
   }
@@ -773,6 +898,12 @@ if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
   column <- if (site == "across") "v" else "outer_total"
   stopifnot(identical(as.numeric(value_a[[column]]), c(1, 3, 4, 30, 30, 34)),
             identical(as.integer(value_a$outer_set), c(1L, 1L, 2L, 1L, 2L, 3L)))
+  if (action == "shared_plan") {
+    stopifnot(isTRUE(all.equal(
+      value_a$outer_fraction, value_a$outer_total / 34
+    )))
+    if (outer_kind == "local") stopifnot(control_calls == 1L)
+  }
 } else if (verb == "expand_with_margins") {
   stopifnot(nrow(value_a) == 12L,
             all(table(value_a$outer_set) == 4L), sum(value_a$v) == 102)
@@ -880,6 +1011,18 @@ chain <- function(cnd) {
 audit <- function() {
   tryCatch(marginplyr::last_sent_queries(), error = identity)
 }
+reference_b <- if (kind == "package") {
+  tryCatch(marginplyr::inspect_grouping(b, .duplicates = "invalid"),
+           error = identity)
+} else {
+  NULL
+}
+assert_package_reason <- function(cnd) {
+  stopifnot(any(vapply(chain(cnd), function(cause) {
+    inherits(cause, "marginplyr_error") &&
+      identical(conditionMessage(cause), conditionMessage(reference_b))
+  }, logical(1))))
+}
 leaf <- errorCondition("B cause", class = "inner_cause", token = "B-token",
                        parent = simpleError("B parent"))
 outer_leaf <- errorCondition(
@@ -949,8 +1092,18 @@ selector <- function() {
   maybe_inner()
   "g"
 }
+output_name <- function() {
+  emit("summary name")
+  maybe_inner()
+  "outer_total"
+}
+output_columns <- function() {
+  emit("summary selection")
+  maybe_inner()
+  "v"
+}
 summary <- function(x) {
-  before <- list(x = x, n = dplyr::n())
+  before <- unserialize(serialize(list(x = x, n = dplyr::n()), NULL))
   emit("A summary")
   if (action == "messages") message("A-message")
   if (action %in% c("warnings", "handler", "handler_return")) {
@@ -976,11 +1129,21 @@ run_outer <- function() {
     parameters$.sort <- "last"
   }
   if (verb %in% c("summarize_with_margins", "summarise_with_margins")) {
-    parameters$outer_total <- rlang::quo(if (site == "summary") {
-      summary(.data[["v"]])
+    if (site == "summary_names") {
+      parameters <- c(parameters, list(rlang::quo(dplyr::across(
+        "v", sum, .names = output_name()
+      ))))
+    } else if (site == "summary_cols") {
+      parameters <- c(parameters, list(rlang::quo(dplyr::across(
+        tidyselect::all_of(output_columns()), sum, .names = "outer_total"
+      ))))
     } else {
-      sum(.data[["v"]])
-    })
+      parameters$outer_total <- rlang::quo(if (site == "summary") {
+        summary(.data[["v"]])
+      } else {
+        sum(.data[["v"]])
+      })
+    }
   }
   rlang::inject(getExportedValue("marginplyr", verb)(!!!parameters))
 }
@@ -1034,6 +1197,7 @@ if (action %in% c("propagate", "outer_failure")) {
     if (kind == "package") "marginplyr_error" else "inner_cause"
   }
   stopifnot(any(vapply(chain(actual), inherits, logical(1), required)))
+  if (kind == "package") assert_package_reason(actual)
   if (kind == "external" && action == "propagate") {
     causes <- Filter(function(cnd) inherits(cnd, "inner_cause"), chain(actual))
     stopifnot(length(causes) == 1L, identical(causes[[1L]], leaf))
@@ -1049,6 +1213,7 @@ if (action == "caught") {
   for (cnd in state$caught) {
     required <- if (kind == "package") "marginplyr_error" else "inner_cause"
     stopifnot(any(vapply(chain(cnd), inherits, logical(1), required)))
+    if (kind == "package") assert_package_reason(cnd)
   }
 }
 if (action %in% c("handler", "handler_return")) {
@@ -1089,6 +1254,7 @@ stopifnot(any(vapply(chain(errorCondition("wrapper", parent = leaf)),
           !any(vapply(chain(errorCondition("wrapper")),
                       inherits, logical(1), "inner_cause")))
 saveRDS(list(label = label, actual = actual, caught = state$caught,
+             reference_b = reference_b,
              events = state$events, control_events = control_events,
              observed = state$observed, control_warnings = control_warnings,
              after_a = after_a, inner_records = state$records,
@@ -1130,7 +1296,9 @@ if (mode %in% c("shares", "data_table", "grouped")) {
               identical(result$fraction, c(201, 303, 407, 711) / 711))
   }
   aggregate_a <- function(x) {
-    context_state <- list(n = dplyr::n(), group = dplyr::cur_group(), x = x)
+    context_state <- unserialize(serialize(
+      list(n = dplyr::n(), group = dplyr::cur_group(), x = x), NULL
+    ))
     if (state$reenter) {
       state$events <- c(state$events, "A before B")
       inner()
@@ -1262,6 +1430,33 @@ if (mode == "backend_controls") {
             grepl("Must only be used", conditionMessage(ordinary),
                   fixed = TRUE),
             grepl("Must only be used", conditionMessage(margin), fixed = TRUE))
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  sql_input <- dplyr::copy_to(con, input, "predicate_source")
+  counter <- new.env(parent = emptyenv())
+  counter$calls <- 0L
+  predicate <- function(x) {
+    counter$calls <- counter$calls + 1L
+    is.character(x)
+  }
+  for (selection in c("grouping", "by")) {
+    refused <- tryCatch({
+      if (selection == "grouping") {
+        marginplyr::summarize_with_margins(
+          sql_input, total = sum(.data[["v"]], na.rm = TRUE),
+          .grouping = marginplyr::rollup(tidyselect::where(predicate))
+        )
+      } else {
+        marginplyr::summarize_with_margins(
+          sql_input, total = sum(.data[["v"]], na.rm = TRUE),
+          .by = tidyselect::where(predicate)
+        )
+      }
+    }, error = identity)
+    stopifnot(inherits(refused, "marginplyr_error"), counter$calls == 0L,
+              grepl("doesn't report column types", conditionMessage(refused),
+                    fixed = TRUE))
+  }
+  DBI::dbDisconnect(con)
   table <- arrow::arrow_table(input)
   supported <- marginplyr::summarize_with_margins(
     table, total = sum(!!rlang::sym("v"), na.rm = TRUE),
@@ -1288,7 +1483,8 @@ for outer in ['local','sqlite','duckdb','dtplyr','arrow']:
   for inner in ['local','sqlite']:
    cases.append((outer,inner,'factory',verb,'normal'))
 for outer in ['local','sqlite','duckdb','dtplyr','arrow']:
- for site in ['selector','by','nested_constructor','active','delayed','label']:
+ for site in ['selector','by','predicate','by_predicate','summary_cols','summary_names','nested_constructor','active','delayed','label']:
+  if outer == 'sqlite' and site in ['predicate','by_predicate']:continue
   cases.append((outer,'sqlite',site,'summarize_with_margins','normal'))
 for outer in ['local','dtplyr']:
  for site in ['summary','across']:
@@ -1304,6 +1500,10 @@ for outer,inner,site in [('sqlite','sqlite','factory'),('sqlite','local','select
   cases.append((outer,inner,site,'summarize_with_margins',action))
 for site in ['factory','selector']:
  cases.append(('duckdb','duckdb',site,'summarize_with_margins','portable'))
+cases.append(('duckdb','sqlite','predicate','inspect_grouping','normal'))
+for outer in ['local','duckdb']:
+ for site in ['summary_cols','summary_names']:
+  cases.append((outer,'sqlite',site,'summarize_with_margins','shared_plan'))
 rows=[]
 for case in cases:
  label='-'.join(case)
@@ -1340,6 +1540,11 @@ for verb in ("expand_with_margins", "nest_with_margins", "nest_by_with_margins",
 for action in ("caught","propagate"):
     for kind in ("external","package"):
         cases.append(("summary",action,kind,"1","summarise_with_margins"))
+for site in ("summary_cols", "summary_names"):
+    for action in ("caught", "propagate"):
+        for kind in ("external", "package"):
+            cases.append((site,action,kind,"1"))
+    cases.append((site,"outer_failure","sql","1"))
 rows=[]
 for case in cases:
     label="diagnostic-"+"-".join(case)
