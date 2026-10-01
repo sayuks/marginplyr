@@ -38,6 +38,7 @@
       execute_margin_expand
       execute_margin_nest
       execute_margin_summary
+      execute_share_probe_control
       expand_with_margins
       grouping_selection_proxy
       inspect_grouping

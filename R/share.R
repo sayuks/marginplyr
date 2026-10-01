@@ -388,6 +388,12 @@
 #' share request there asks again rather than inheriting one attempt's failure.
 #' A connection that has recovered gets the verdict its dialect earns.
 #'
+#' Inside a transaction begun through DBI with RPostgres, the table-free
+#' questions are isolated by a savepoint. Up to four additional transaction
+#' control statements preserve earlier work and leave commit or rollback to
+#' you. They read none of your tables and are included in [last_sent_queries()]
+#' when auditing is enabled.
+#'
 #' Cardinality is not established this way at all: a SQL aggregate returns one
 #' value per grouping row by construction, so there is nothing for a dialect
 #' to convert. A non-scalar summary therefore remains a runtime-only
@@ -2543,13 +2549,46 @@ share_dialect_can_be_asked <- function(con) {
 # `vars` is what keeps each of them to the one query its answer needs: without
 # it dbplyr asks the connection for the query's fields before it can build a
 # `tbl`, which is a further query for a schema this frame already knows.
+# RPostgres caller transactions isolate these questions with the controls
+# authorized by ADR 0020's amendment for #774.
 probe_share_dialect <- function(con) {
+  savepoint <- NULL
+  on.exit({
+    if (!is.null(savepoint)) {
+      suspendInterrupts({
+        execute_share_probe_control(con, "ROLLBACK TO SAVEPOINT", savepoint)
+        execute_share_probe_control(con, "RELEASE SAVEPOINT", savepoint)
+      })
+    }
+  }, add = TRUE)
+  # A real RPostgres connection carries its loaded driver's transaction state.
+  # Simulators execute nothing; Redshift does not support PostgreSQL savepoints.
+  if (inherits(con, "PqConnection") &&
+        !inherits(con, c("TestConnection", "RedshiftConnection"))) {
+    established <- tryCatch(suspendInterrupts({
+      if (RPostgres::postgresIsTransacting(con)) {
+        name <- as.character(DBI::dbQuoteIdentifier(
+          con, basename(tempfile("marginplyr_share_"))
+        ))
+        execute_share_probe_control(con, "SAVEPOINT", name)
+        # Cleanup is armed before deferred interrupts can be delivered.
+        savepoint <- name
+      }
+      TRUE
+    }), error = function(cnd) FALSE)
+    if (!established) {
+      return("unknown")
+    }
+  }
   probe <- probe_share_dialect_answer(
     con,
     quote(sum("x", na.rm = TRUE)),
     purpose = "share_dialect"
   )
   if (identical(probe, "raised")) {
+    if (!is.null(savepoint)) {
+      execute_share_probe_control(con, "ROLLBACK TO SAVEPOINT", savepoint)
+    }
     control <- probe_share_dialect_answer(
       con,
       quote(sum(z, na.rm = TRUE)),
@@ -2565,6 +2604,15 @@ probe_share_dialect <- function(con) {
     return("converts")
   }
   "unknown"
+}
+
+# Sends one PostgreSQL savepoint statement for an already quoted name. These
+# controls protect only the table-free probe (ADR 0020, amendment for #774).
+execute_share_probe_control <- function(con, command, name) {
+  sql <- dbplyr::sql(paste(command, name))
+  record_sent_query("share_dialect_transaction", sql)
+  DBI::dbExecute(con, sql)
+  invisible(NULL)
 }
 
 # One table-free question, and which of three things happened to it: executing

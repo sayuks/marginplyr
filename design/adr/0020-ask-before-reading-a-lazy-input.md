@@ -105,6 +105,38 @@ executes nothing — records nothing, precisely so that a live connection
 carrying the same dialect does not inherit it. A transient failure on a live
 connection belongs on that side of the line.
 
+## Amendment: isolate RPostgres caller transactions (#774)
+
+Exemption 2 retains its two table-free questions and measured-only cache. Its
+statement bound expands inside a transaction begun through DBI with RPostgres:
+**at most six statements per unanswered share request**, comprising at most two
+questions and four savepoint controls. No statement reads the caller's tables.
+Autocommit and cached answers retain their existing bounds.
+
+PostgreSQL puts a transaction into an aborted state when the string probe
+raises. Catching that R condition does not recover the transaction, so the
+numeric control cannot answer and a caller's later commit cannot preserve
+earlier work (#774). A savepoint isolates the questions from that earlier work.
+After a failed probe, rollback to the savepoint precedes the numeric control;
+every exit rolls back to and releases that savepoint. These are named-savepoint
+controls, never termination of the caller's transaction. An unanswered attempt
+is still not cached, and a failed cleanup cannot install a measured verdict.
+
+RPostgres's public `postgresIsTransacting()` reads its DBI transaction state
+without a query. It identifies the boundary this amendment protects; it does
+not identify transactions begun with raw SQL. Simulators execute nothing, and
+RPostgres's Redshift driver is excluded because Redshift lacks savepoints.
+The savepoint statements are Sent queries during construction and are recorded
+before sending when audit is enabled, under ADR 0027.
+
+The live acceptance runner, `tools/postgres-share-transactions.R`, starts a fresh
+R process per case and observes transaction state independently before caller
+recovery. It covers standard driver mapping, cold and warmed connections,
+Parent and Total shares, count and sum, audit on/off, read-only and SELECT-only
+callers, commit and rollback, and retry after an unanswered attempt. The
+driver-boundary tests cover cleanup failures without requiring a database in
+CRAN checks.
+
 ## Amendment: two of the four pairs, and the word exact
 
 The rule, the exemptions, and the predicate are unchanged. What is withdrawn is
@@ -142,6 +174,14 @@ available when it is not, which is the whole reason a supporting claim is worth
 correcting on its own.
 
 ## Considered options
+
+**Treat PostgreSQL as refusing without asking it.** Rejected for #774: that
+would replace a measured outcome with a dialect name and withdraw the control's
+distinction between refusal and an unanswered attempt.
+
+**Open or terminate a transaction around the probe.** Rejected for #774: the
+transaction already belongs to the caller. The savepoint protects earlier work
+without acquiring its commit or rollback decision.
 
 **A capability for backends whose queries are cheap.** Rejected: it cannot be
 computed. `kind = "duckdb"` covers a hosted service reached through the same

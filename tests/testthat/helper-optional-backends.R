@@ -181,6 +181,7 @@ optional_suggest_spec <- function() {
     dtplyr = list(asserted = TRUE, companions = "data.table"),
     data.table = list(asserted = TRUE, companions = character()),
     RSQLite = list(asserted = TRUE, companions = "DBI"),
+    RPostgres = list(asserted = TRUE, companions = "DBI"),
     DBI = list(asserted = FALSE, companions = character())
   )
 }
