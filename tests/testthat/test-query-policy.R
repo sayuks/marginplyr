@@ -394,6 +394,29 @@ test_that("SQLite destination inspection starts only at explicit compute", {
   )), 0L)
 })
 
+test_that("SQLite limited Margin inputs add no construction read", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(2L, 9L)), "limited_input"
+  )
+  limited <- head(dplyr::arrange(source, dplyr::desc(.data$v)), 1L)
+  for (input in list(limited, dplyr::collapse(limited))) {
+    expect_identical(count_entry_point_invocations(
+      summarize_with_margins(
+        input, z = sum(.data$v, na.rm = TRUE), .grouping = rollup("g"),
+        .id = "sid", .sort = "last"
+      )
+    ), 0L)
+    expect_identical(count_entry_point_invocations(
+      expand_with_margins(
+        input, .grouping = rollup("g"), .id = "sid", .sort = "last"
+      )
+    ), 0L)
+  }
+})
+
 test_that("SQLite .env summary keys add no construction read", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

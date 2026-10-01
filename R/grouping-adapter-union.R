@@ -32,6 +32,25 @@ combine_margin_branches <- function(branches) {
   union_margin_branches(branches)
 }
 
+# Preserve a prepared SQLite input as one relation before anchors and branches
+# reuse it. Compound operands cannot carry an outer LIMIT or ORDER BY. Keep
+# those clauses inside the rendered input, and retain its window-order metadata.
+# The caller supplies known column names so creating the relation reads nothing
+# (ADR 0020).
+sqlite_margin_input <- function(.data, backend, data_vars) {
+  if (!identical(backend$kind, "sql") ||
+        !inherits(dbplyr::remote_con(.data), "SQLiteConnection") ||
+        (is.null(.data$lazy_query$limit) &&
+           length(.data$lazy_query$order_by) == 0L)) {
+    return(.data)
+  }
+  input_order <- dbplyr::op_sort(.data)
+  relation <- dplyr::tbl(
+    dbplyr::remote_con(.data), dbplyr::sql_render(.data), vars = data_vars
+  )
+  dbplyr::window_order(relation, !!!input_order)
+}
+
 # A generic SQL backend has no schema-only prototype. SQLite consequently
 # reports a compound column of all SQL NULLs as logical when the omitted branch
 # is first, even if another branch passes a character dimension through. A

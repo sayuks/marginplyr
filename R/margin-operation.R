@@ -320,7 +320,7 @@ prepare_margin_operation <- function(.data,
       )
 
       new_margin_operation(
-        data = data,
+        data = sqlite_margin_input(data, backend, data_vars),
         backend = backend,
         data_vars = data_vars,
         data_proxy = data_proxy,
