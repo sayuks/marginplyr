@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* SQLite Parent shares now match equivalent grouping keys under `NOCASE` and
+  `RTRIM` collations, including when children retain different spellings of
+  their Parent key (#767).
 * Arrow partition fields used as Grouping dimensions now retain their Margin
   labels in `expand_with_margins()`, including with `.id` or `.sort`, through
   direct collection and materialization (#750).

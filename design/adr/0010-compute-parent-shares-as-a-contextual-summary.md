@@ -621,3 +621,23 @@ applying display labels. Parent mapping and its missing-safe join use those
 copies, alongside fixed partition keys and the staged occurrence identifier.
 They are discarded after shares are calculated. This applies to local,
 dtplyr, native SQL, and portable SQL results without reading the lazy input.
+
+## Amendment (2026-10-01): Parent matching preserves database equivalence
+
+Retaining the typed value also means retaining the database's comparison
+relation. Distinct stored strings can belong to one Parent group under SQLite
+`NOCASE` or `RTRIM`; their retained spellings must match that group's denominator
+(#767).
+
+SQL Parent joins compare the retained columns directly, with occurrence
+predicates deciding which dimensions constrain each child. They do not derive
+conditional key values with `CASE`, which discards SQLite column collation.
+The portable summary's zero-row anchor projects private Parent keys from their
+source columns as well, so its first SELECT preserves that comparison relation.
+Non-SQL adapters keep their missing-key representation. Fixed keys and missing
+included values retain missing-safe matching.
+
+This adds no query or collation API. The equivalence is that of the input the
+caller supplies, including any expressions they applied before the Margin
+operation; it promises no collation retention for later regrouping of a
+materialized result.

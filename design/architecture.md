@@ -354,10 +354,8 @@ The responsibilities divide as follows:
   Parent share derives each grouping set's parent with `parent_set_ids()`,
   which skips duplicate occurrences while finding the next strictly less
   detailed set, and matches on the internal Grouping set identifier, the fixed
-  keys, and one join key per dimension that carries the original typed value
-  only where the parent set includes it and is missing otherwise — computed by
-  the same expression on both sides, and never from a displayed Margin label
-  or the caller-visible `.id`. A Total share's denominator depends on `.by` and
+  keys, and the retained typed dimensions under ADR 0010's Parent-matching
+  amendments. A Total share's denominator depends on `.by` and
   nothing else, so its mapping is one read of the grand total occurrence
   matched on the fixed keys alone, with a constant column standing in when
   there are none.

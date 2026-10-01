@@ -687,10 +687,16 @@ summarize_margin_union <- function(.data,
         length(branches) > 1L &&
         length(group_vars) > 0L
     ) {
+      # Private Parent keys need the source column's collation in the first
+      # SELECT too; NULL anchors would give their comparisons BINARY semantics.
+      anchor_keys <- stats::setNames(
+        lapply(names(parent_key_names), margin_column_pronoun),
+        unname(parent_key_names)
+      )
       anchor <- sql_margin_type_anchor(
-        source_data,
+        dplyr::mutate(source_data, !!!anchor_keys),
         branches[[1L]],
-        source_columns = group_vars
+        source_columns = c(group_vars, unname(parent_key_names))
       )
       branches <- c(list(anchor), branches)
     }
