@@ -2817,7 +2817,8 @@ apply_joined_shares <- function(result,
       set_id_name = set_id_name,
       used_names = c(result_names, denominator_names),
       parent_mapping_builder = parent_mapping_builder,
-      parent_key_names = parent_key_names
+      parent_key_names = parent_key_names,
+      sql_join = sql_join
     )
     result <- denominator$result
     mapping <- denominator$mapping
@@ -2845,7 +2846,9 @@ apply_joined_shares <- function(result,
         sql_on = lazy_share_sql_on(
           con = dbplyr::remote_con(result),
           left_names = join_names,
-          right_names = right_join_names
+          right_names = right_join_names,
+          key_ids = denominator$key_ids,
+          set_id_name = set_id_name
         ),
         x_as = "LHS",
         y_as = "RHS"
@@ -2983,7 +2986,8 @@ build_parent_denominator <- function(result,
                                      set_id_name,
                                      used_names,
                                      parent_mapping_builder,
-                                     parent_key_names) {
+                                     parent_key_names,
+                                     sql_join) {
   mapping <- parent_mapping_builder(
     result,
     child_ids = plan$set_ids[!is.na(target_ids)],
@@ -2995,6 +2999,22 @@ build_parent_denominator <- function(result,
     used_names = used_names,
     parent_key_names = parent_key_names
   )
+  key_ids <- parent_join_key_ids(plan, target_ids)
+  if (sql_join) {
+    # Compare the retained columns directly: a CASE-derived key loses SQLite
+    # column collation. Occurrence predicates omit absent dimensions instead.
+    join_names <- c(set_id_name, plan$by, unname(parent_key_names))
+    names(key_ids) <- unname(parent_key_names)
+    return(list(
+      result = result,
+      mapping = dplyr::select(
+        mapping, dplyr::all_of(c(join_names, unname(denominator_names)))
+      ),
+      join_names = join_names,
+      key_names = character(),
+      key_ids = key_ids
+    ))
+  }
   join_key_names <- new_margin_internal_names(
     length(plan$dimensions),
     used_names = used_names,
@@ -3005,7 +3025,7 @@ build_parent_denominator <- function(result,
   result <- add_lazy_parent_join_keys(
     result,
     plan = plan,
-    parent_ids = target_ids,
+    key_ids = key_ids,
     set_id_name = set_id_name,
     join_key_names = join_key_names,
     parent_key_names = parent_key_names
@@ -3013,7 +3033,7 @@ build_parent_denominator <- function(result,
   mapping <- add_lazy_parent_join_keys(
     mapping,
     plan = plan,
-    parent_ids = target_ids,
+    key_ids = key_ids,
     set_id_name = set_id_name,
     join_key_names = join_key_names,
     parent_key_names = parent_key_names
@@ -3046,7 +3066,8 @@ build_total_denominator <- function(result,
                                     set_id_name,
                                     used_names,
                                     parent_mapping_builder,
-                                    parent_key_names) {
+                                    parent_key_names,
+                                    sql_join) {
   denominator_id <- unique(target_ids[!is.na(target_ids)])
   stopifnot(length(denominator_id) == 1L)
   mapping <- dtplyr_safe_column_reads(
@@ -3102,7 +3123,10 @@ build_total_denominator <- function(result,
   )
 }
 
-lazy_share_sql_on <- function(con, left_names, right_names) {
+# Missing-safe equality over retained keys. Parent dimensions constrain only
+# the child occurrences named in `key_ids`; other keys always constrain.
+lazy_share_sql_on <- function(con, left_names, right_names,
+                              key_ids = NULL, set_id_name = NULL) {
   stopifnot(length(left_names) == length(right_names))
   # Both are read only from the glue string below, which codetools cannot see.
   # nolint start: object_usage_linter.
@@ -3111,7 +3135,7 @@ lazy_share_sql_on <- function(con, left_names, right_names) {
   # nolint end
   terms <- Map(
     function(left_name, right_name) {
-      dbplyr::sql_glue2(
+      equality <- dbplyr::sql_glue2(
         con,
         paste0(
           "(({.id left_alias}.{.id left_name} = ",
@@ -3119,6 +3143,21 @@ lazy_share_sql_on <- function(con, left_names, right_names) {
           "({.id left_alias}.{.id left_name} IS NULL AND ",
           "{.id right_alias}.{.id right_name} IS NULL))"
         )
+      )
+      if (!left_name %in% names(key_ids)) {
+        return(equality)
+      }
+      ids <- key_ids[[left_name]]
+      if (length(ids) == 0L) {
+        return(dbplyr::sql("(1 = 1)"))
+      }
+      # Glue reads these bindings outside codetools' symbol resolution.
+      # nolint start: object_usage_linter.
+      id_sql <- dbplyr::sql(paste(ids, collapse = ", "))
+      # nolint end
+      dbplyr::sql_glue2(
+        con,
+        "({.id left_alias}.{.id set_id_name} NOT IN ({id_sql}) OR {equality})"
       )
     },
     left_names,
@@ -3274,26 +3313,33 @@ build_dbplyr_parent_mapping <- function(result,
   )
 }
 
+# Child occurrences whose Parent retains each dimension, in plan order.
+# `parent_ids` is indexed by Grouping set identifier and holds a Parent
+# occurrence identifier or NA at every position.
+parent_join_key_ids <- function(plan, parent_ids) {
+  ids <- lapply(plan$dimensions, function(dimension) {
+    plan$set_ids[vapply(plan$set_ids, function(set_id) {
+      parent_id <- parent_ids[[set_id]]
+      !is.na(parent_id) && dimension %in% plan$sets[[parent_id]]
+    }, logical(1))]
+  })
+  stats::setNames(ids, plan$dimensions)
+}
+
+# Non-SQL joins use missing keys for dimensions the Parent omits. `key_ids`
+# identifies which child occurrences retain each dimension in their Parent.
 add_lazy_parent_join_keys <- function(result,
                                       plan,
-                                      parent_ids,
+                                      key_ids,
                                       set_id_name,
                                       join_key_names,
                                       parent_key_names) {
   join_key_exprs <- lapply(
     plan$dimensions,
     function(dimension) {
-      matching_child_ids <- plan$set_ids[vapply(
-        plan$set_ids,
-        function(set_id) {
-          parent_id <- parent_ids[[set_id]]
-          !is.na(parent_id) && dimension %in% plan$sets[[parent_id]]
-        },
-        logical(1)
-      )]
       rlang::expr(
         dplyr::if_else(
-          (!!margin_column_pronoun(set_id_name)) %in% !!matching_child_ids,
+          (!!margin_column_pronoun(set_id_name)) %in% !!key_ids[[dimension]],
           !!margin_column_pronoun(parent_key_names[[dimension]]),
           NA
         )
