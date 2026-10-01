@@ -35,7 +35,7 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           dependencies: '"hard"'
-          extra-packages: any::RPostgres, any::pkgload, local::.
+          extra-packages: any::RPostgres, local::.
           cache-version: postgres-transactions-1
       - name: Verify public transaction preservation in fresh processes
         run: Rscript tools/postgres-share-transactions.R postgres-evidence

@@ -3,12 +3,13 @@
 # Fresh-process public acceptance for #774, against a disposable PostgreSQL.
 # PGHOST/PGPORT/PGUSER/PGDATABASE identify an administrator connection; the
 # runner creates and removes its own tables, sequence, function and reader role.
+# Install the working tree first; every worker loads the installed package.
 # Rscript tools/postgres-share-transactions.R [evidence-directory]
 args <- commandArgs(TRUE)
 worker <- length(args) > 0L && args[[1L]] == "--worker"
 
 run_case <- function(mode, source_kind, heat, audit, termination, access, output) {
-  pkgload::load_all(quiet = TRUE)
+  library(marginplyr)
   admin <- DBI::dbConnect(RPostgres::Postgres())
   on.exit(DBI::dbDisconnect(admin), add = TRUE)
   stem <- paste0("margin774_", Sys.getpid())
@@ -34,12 +35,12 @@ run_case <- function(mode, source_kind, heat, audit, termination, access, output
                  "LANGUAGE plpgsql VOLATILE AS $$ BEGIN PERFORM nextval('",
                  sequence, "'); RETURN v; END $$"))
   if (access == "select-only") {
-    execute(paste("CREATE ROLE", reader, "LOGIN"))
+    execute(paste("CREATE ROLE", reader, "LOGIN PASSWORD 'margin774_reader'"))
     execute(paste("GRANT SELECT ON", paste(tables, collapse = ","), "TO", reader))
     execute(paste("GRANT USAGE, SELECT ON SEQUENCE", sequence, "TO", reader))
   }
   con <- if (access == "select-only") {
-    DBI::dbConnect(RPostgres::Postgres(), user = reader)
+    DBI::dbConnect(RPostgres::Postgres(), user = reader, password = "margin774_reader")
   } else {
     DBI::dbConnect(RPostgres::Postgres())
   }
