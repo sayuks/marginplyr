@@ -32,6 +32,25 @@ combine_margin_branches <- function(branches) {
   union_margin_branches(branches)
 }
 
+# Preserve a prepared SQLite input as one relation before anchors and branches
+# reuse it. Compound operands cannot carry an outer LIMIT or ORDER BY. Keep
+# those clauses inside the rendered input, and retain its window-order metadata.
+# The caller supplies known column names so creating the relation reads nothing
+# (ADR 0020).
+sqlite_margin_input <- function(.data, backend, data_vars) {
+  if (!identical(backend$kind, "sql") ||
+        !inherits(dbplyr::remote_con(.data), "SQLiteConnection") ||
+        (is.null(.data$lazy_query$limit) &&
+           length(.data$lazy_query$order_by) == 0L)) {
+    return(.data)
+  }
+  input_order <- dbplyr::op_sort(.data)
+  relation <- dplyr::tbl(
+    dbplyr::remote_con(.data), dbplyr::sql_render(.data), vars = data_vars
+  )
+  restore_input_window_order(relation, input_order)
+}
+
 # A generic SQL backend has no schema-only prototype. SQLite consequently
 # reports a compound column of all SQL NULLs as logical when the omitted branch
 # is first, even if another branch passes a character dimension through. A
@@ -711,8 +730,8 @@ summarize_margin_union <- function(.data,
   })
 }
 
-# Restores the input's usable dbplyr window ordering after `UNION ALL` has
-# dropped it. ADR 0018's `.sort = "none"` amendment and #493 decide the
+# Restores the input's usable dbplyr window ordering on a composed relation.
+# ADR 0018's `.sort = "none"` amendment and #493 decide the
 # contract; terms the result cannot name follow the native adapter and vanish.
 restore_input_window_order <- function(result, input_window_order) {
   if (length(input_window_order) == 0L) {
@@ -726,7 +745,10 @@ restore_input_window_order <- function(result, input_window_order) {
   if (length(usable) == 0L) {
     return(result)
   }
-  dbplyr::window_order(result, !!!usable)
+  # arrange() accepts expressions that window_order() refuses; these terms
+  # already belong to the input, so preserve them without re-validating them.
+  result$lazy_query$order_vars <- usable
+  result
 }
 
 # `backend` is the operation's own, and it sits among the required arguments
