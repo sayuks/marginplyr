@@ -144,6 +144,50 @@ test_that("SQLite limited summaries retain usable input window ordering", {
   }
 })
 
+test_that("SQLite Margin inputs retain valid ordering expressions", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(id = 1:3, g = c("a", "b", NA_character_),
+                    v = c(2L, -9L, 100L)), "facts"
+  )
+  limited <- head(dplyr::arrange(
+    source, is.na(.data$g), dplyr::desc(abs(.data$v)), .data$id
+  ), 1L)
+  expected <- DBI::dbGetQuery(con, paste(
+    "SELECT g, SUM(v) AS total FROM (SELECT * FROM facts",
+    "ORDER BY g IS NULL, ABS(v) DESC, id LIMIT 1) x GROUP BY g",
+    "UNION ALL SELECT 'Total', SUM(v) FROM (SELECT * FROM facts",
+    "ORDER BY g IS NULL, ABS(v) DESC, id LIMIT 1) x"
+  ))
+
+  for (input in list(limited, dplyr::collapse(limited))) {
+    for (sort in c("none", "last")) {
+      query <- summarize_with_margins(
+        input, total = sum(.data$v, na.rm = TRUE),
+        .grouping = rollup("g"), .sort = sort
+      )
+      expect_equal(as.data.frame(dplyr::collect(query)), expected)
+      expansion <- dplyr::collect(expand_with_margins(
+        input, .grouping = rollup("g"), .sort = sort
+      ))
+      expect_identical(expansion$g, c("b", "Total"))
+      expect_identical(expansion$id, c(2L, 2L))
+      expect_identical(expansion$v, c(-9L, -9L))
+    }
+  }
+
+  arithmetic_order <- dplyr::arrange(source, .data$v + 1L)
+  for (sort in c("none", "last")) {
+    query <- summarize_with_margins(
+      arithmetic_order, total = sum(.data$v, na.rm = TRUE),
+      .grouping = grouping_set(), .sort = sort
+    )
+    expect_equal(dplyr::collect(query)$total, 93)
+  }
+})
+
 ordered_limit_data <- function() {
   data.frame(
     id = 1:8, p = c(rep("P", 5), rep("Q", 3)),

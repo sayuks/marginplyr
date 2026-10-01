@@ -48,7 +48,7 @@ sqlite_margin_input <- function(.data, backend, data_vars) {
   relation <- dplyr::tbl(
     dbplyr::remote_con(.data), dbplyr::sql_render(.data), vars = data_vars
   )
-  dbplyr::window_order(relation, !!!input_order)
+  restore_input_window_order(relation, input_order)
 }
 
 # A generic SQL backend has no schema-only prototype. SQLite consequently
@@ -730,8 +730,8 @@ summarize_margin_union <- function(.data,
   })
 }
 
-# Restores the input's usable dbplyr window ordering after `UNION ALL` has
-# dropped it. ADR 0018's `.sort = "none"` amendment and #493 decide the
+# Restores the input's usable dbplyr window ordering on a composed relation.
+# ADR 0018's `.sort = "none"` amendment and #493 decide the
 # contract; terms the result cannot name follow the native adapter and vanish.
 restore_input_window_order <- function(result, input_window_order) {
   if (length(input_window_order) == 0L) {
@@ -745,7 +745,10 @@ restore_input_window_order <- function(result, input_window_order) {
   if (length(usable) == 0L) {
     return(result)
   }
-  dbplyr::window_order(result, !!!usable)
+  # arrange() accepts expressions that window_order() refuses; these terms
+  # already belong to the input, so preserve them without re-validating them.
+  result$lazy_query$order_vars <- usable
+  result
 }
 
 # `backend` is the operation's own, and it sits among the required arguments
