@@ -9,6 +9,11 @@
 # otherwise carry a copy of both bodies. `test-share-backends.R` reads the
 # cache to assert what is recorded under a dialect, and
 # `test-sent-queries.R` empties it so that the probe sends its queries at all.
+# Returns every recorded verdict for restoration after a cache-observing test.
+snapshot_share_dialect_verdicts <- function() {
+  as.list(share_dialect_verdicts, all.names = TRUE)
+}
+
 empty_share_dialect_verdicts <- function() {
   rm(
     list = ls(share_dialect_verdicts, all.names = TRUE),

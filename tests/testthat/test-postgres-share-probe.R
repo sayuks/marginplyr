@@ -54,7 +54,7 @@ postgres_probe_summary <- function(source) {
 # nolint end
 
 test_that("PostgreSQL shares recover their probe before the control", {
-  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  saved <- snapshot_share_dialect_verdicts()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
   fixture <- postgres_probe_fixture()
   old <- options(marginplyr.audit_sql = TRUE)
@@ -80,7 +80,7 @@ test_that("PostgreSQL shares recover their probe before the control", {
 })
 
 test_that("PostgreSQL autocommit needs no savepoint controls", {
-  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  saved <- snapshot_share_dialect_verdicts()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
   fixture <- postgres_probe_fixture(active = FALSE)
   expect_s3_class(postgres_probe_summary(fixture$source), "tbl_lazy")
@@ -88,7 +88,7 @@ test_that("PostgreSQL autocommit needs no savepoint controls", {
 })
 
 test_that("PostgreSQL probe outcomes release isolation", {
-  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  saved <- snapshot_share_dialect_verdicts()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
   fixture <- postgres_probe_fixture(probe = "converts")
   expect_error(
@@ -111,7 +111,7 @@ test_that("PostgreSQL probe outcomes release isolation", {
 })
 
 test_that("PostgreSQL cannot probe without establishing its isolation", {
-  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  saved <- snapshot_share_dialect_verdicts()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
   fixture <- postgres_probe_fixture(fail_command = "SAVEPOINT")
   expect_error(
@@ -129,7 +129,7 @@ test_that("PostgreSQL cannot probe without establishing its isolation", {
 })
 
 test_that("a PostgreSQL cleanup failure cannot cache a measured answer", {
-  saved <- as.list(share_dialect_verdicts, all.names = TRUE)
+  saved <- snapshot_share_dialect_verdicts()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)
   fixture <- postgres_probe_fixture(
     probe = "converts", fail_command = "RELEASE"
