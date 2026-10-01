@@ -1,19 +1,24 @@
+# Two distinct spellings with one child each, using the declared collation.
+sqlite_collation_source <- function(con, collation, parent_name = "parent") {
+  DBI::dbExecute(con, paste0(
+    "CREATE TABLE input (", DBI::dbQuoteIdentifier(con, parent_name),
+    " TEXT COLLATE ", collation, ", child TEXT, amount INTEGER)"
+  ))
+  DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
+                 params = list("A", "x", 2L))
+  DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
+                 params = list(if (collation == "RTRIM") "A " else "a",
+                               "y", 5L))
+  dplyr::tbl(con, "input")
+}
+
 test_that("SQLite Parent shares preserve source grouping equivalence", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
 
   for (collation in c("BINARY", "NOCASE", "RTRIM")) {
-    DBI::dbExecute(con, paste0(
-      "CREATE TABLE input (parent TEXT COLLATE ", collation,
-      ", child TEXT, amount INTEGER)"
-    ))
-    DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
-                   params = list("A", "x", 2L))
-    DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
-                   params = list(if (collation == "RTRIM") "A " else "a",
-                                 "y", 5L))
-    source <- dplyr::tbl(con, "input")
+    source <- sqlite_collation_source(con, collation)
     oracle <- DBI::dbGetQuery(con, paste(
       "SELECT D.child, D.total, CAST(D.total AS REAL)/P.total AS p",
       "FROM (SELECT parent, child, SUM(amount) total",
@@ -143,17 +148,7 @@ test_that("SQLite shares preserve collation across retrieval options", {
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   sets <- list(c("parent", "child"), "parent", character())
   for (collation in c("NOCASE", "RTRIM")) {
-    DBI::dbExecute(con, paste0(
-      "CREATE TABLE input (parent TEXT COLLATE ", collation,
-      ", child TEXT, amount INTEGER)"
-    ))
-    DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
-                   params = list("A", "x", 2L))
-    DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
-                   params = list(
-                     if (collation == "RTRIM") "A " else "a", "y", 5L
-                   ))
-    source <- dplyr::tbl(con, "input")
+    source <- sqlite_collation_source(con, collation)
     oracle <- collation_rollup_oracle(source, sets)
     for (label in list(NULL, NA_character_, "Margin")) {
       for (id in list(NULL, "set")) {
@@ -196,21 +191,12 @@ test_that("SQLite Parent shares use the equivalence of each derived input", {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   for (collation in c("NOCASE", "RTRIM")) {
-    DBI::dbExecute(con, paste0(
-      "CREATE TABLE input (original TEXT COLLATE ", collation,
-      ", child TEXT, amount INTEGER)"
-    ))
-    DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
-                   params = list("A", "x", 2L))
-    DBI::dbExecute(con, "INSERT INTO input VALUES (?, ?, ?)",
-                   params = list(
-                     if (collation == "RTRIM") "A " else "a", "y", 5L
-                   ))
+    source <- sqlite_collation_source(con, collation, parent_name = "original")
     DBI::dbExecute(con, paste(
       "CREATE VIEW direct_view AS",
       "SELECT original AS parent, child, amount FROM input"
     ))
-    renamed <- dplyr::tbl(con, "input") |>
+    renamed <- source |>
       dplyr::select("original", "child", "amount") |>
       dplyr::rename(parent = "original")
     forms <- list(

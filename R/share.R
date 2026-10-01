@@ -3314,6 +3314,8 @@ build_dbplyr_parent_mapping <- function(result,
 }
 
 # Child occurrences whose Parent retains each dimension, in plan order.
+# `parent_ids` is indexed by Grouping set identifier and holds a Parent
+# occurrence identifier or NA at every position.
 parent_join_key_ids <- function(plan, parent_ids) {
   ids <- lapply(plan$dimensions, function(dimension) {
     plan$set_ids[vapply(plan$set_ids, function(set_id) {
