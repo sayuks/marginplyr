@@ -10,7 +10,7 @@
 # cache to assert what is recorded under a dialect, and
 # `test-sent-queries.R` empties it so that the probe sends its queries at all.
 # Returns every recorded verdict for restoration after a cache-observing test.
-snapshot_share_dialect_verdicts <- function() {
+share_dialect_snapshot <- function() {
   as.list(share_dialect_verdicts, all.names = TRUE)
 }
 
