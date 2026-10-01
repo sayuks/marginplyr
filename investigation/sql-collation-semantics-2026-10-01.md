@@ -8,8 +8,8 @@ Target: `416f040a6ae2dbce378fab9ce08a265584e7a78b`
 This note records the broader coverage and negative results that would be lost
 if only the confirmed bug ticket were retained. The Parent-share defect,
 minimal reproduction, independent denominator SQL, diagnosis and repair
-acceptance criteria were reserved for a separate GitHub Issue. They are not
-duplicated here.
+acceptance criteria were recorded in [Issue #767](https://github.com/sayuks/marginplyr/issues/767).
+They are not duplicated here.
 The observations below describe the investigated snapshot, not later behavior.
 
 The prior [external-consumer investigation](downstream-integration-2026-10-01.md)
@@ -111,7 +111,7 @@ Direct Margin retrieval values and correspondence were examined separately.
 
 ## Repeating the checks and limits
 
-The bug ticket draft contained the self-contained SQLite reproduction, DDL,
+Issue #767 included the self-contained SQLite reproduction, DDL,
 stored-byte and equality probes, ordinary grouping/join oracle and BINARY
 control, all rerun successfully against the investigated installation. For
 broader rechecking, use the fixed source and versions above in a disposable
