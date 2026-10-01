@@ -400,6 +400,12 @@ all end up — so nothing was established about the dialect, and the next
 share request there asks again rather than inheriting one attempt's failure.
 A connection that has recovered gets the verdict its dialect earns.
 
+Inside a transaction begun through DBI with RPostgres, the table-free
+questions are isolated by a savepoint. Up to four additional transaction
+control statements preserve earlier work and leave commit or rollback to
+you. They read none of your tables and are included in \code{\link[=last_sent_queries]{last_sent_queries()}}
+when auditing is enabled.
+
 Cardinality is not established this way at all: a SQL aggregate returns one
 value per grouping row by construction, so there is nothing for a dialect
 to convert. A non-scalar summary therefore remains a runtime-only

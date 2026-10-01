@@ -47,6 +47,7 @@ query it had already sent.
 Two identical calls need not produce identical records: the answer to
 whether a backend can compute a contextual share is cached per SQL dialect
 for the session, so the query that asks it is sent once.
+Savepoint controls used during RPostgres dialect detection are recorded too.
 
 The record is a package environment, which is invisible across \code{fork},
 PSOCK, and callr workers, so a read after a parallel run reports the last

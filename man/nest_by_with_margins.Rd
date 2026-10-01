@@ -504,6 +504,9 @@ connection that cannot be asked -- one built with a
 as unable to answer, which refuses the share by default the same way a
 dialect known to convert does; see \code{.check_share_source} on
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}.
+A transaction begun through DBI with RPostgres adds at most four savepoint
+control statements to isolate these questions, preserving your earlier
+work and leaving commit or rollback to you. They read none of your tables.
 }
 
 Neither query is safe merely because it returns no rows. A read bounded in

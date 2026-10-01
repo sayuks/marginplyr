@@ -43,9 +43,9 @@ render_sent_query_sql <- function(query) {
   )
 }
 
-# Appends one row for `query`, which the caller is about to send under
-# `purpose`. A no-op unless the remembered flags say this call is audited and
-# its input is SQL, so a site checks neither and takes no backend.
+# Appends one row for a lazy query or literal SQL statement about to be sent
+# under `purpose`. A no-op unless this call is audited and its input is SQL.
+# A site checks neither and takes no backend.
 #
 # The render is client-side, sending nothing. A translation dbplyr refuses
 # raises here rather than when the query was built, and the row is kept with
@@ -55,7 +55,11 @@ record_sent_query <- function(purpose, query) {
   if (!isTRUE(sent_queries$audited) || !isTRUE(sent_queries$is_sql)) {
     return(invisible(NULL))
   }
-  sql <- render_sent_query_sql(query)
+  sql <- if (inherits(query, "sql")) {
+    as.character(query)
+  } else {
+    render_sent_query_sql(query)
+  }
   stopifnot(is.character(sql), length(sql) == 1L)
   sent_queries$rows <- dplyr::bind_rows(
     sent_queries$rows,
@@ -110,6 +114,7 @@ record_sent_query <- function(purpose, query) {
 #' Two identical calls need not produce identical records: the answer to
 #' whether a backend can compute a contextual share is cached per SQL dialect
 #' for the session, so the query that asks it is sent once.
+#' Savepoint controls used during RPostgres dialect detection are recorded too.
 #'
 #' The record is a package environment, which is invisible across `fork`,
 #' PSOCK, and callr workers, so a read after a parallel run reports the last
