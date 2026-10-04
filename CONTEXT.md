@@ -199,15 +199,12 @@ stays unchanged.
 _Avoid_: Mutable input, in-place backend
 
 **Sent query**:
-One SQL statement marginplyr gives to a backend while constructing a Margin
-result or inspecting a Grouping plan, recorded with its purpose. Exactly one
-purpose is the caller's result — the query a Margin verb returns unexecuted,
-which the caller runs themselves; every other purpose is a query marginplyr
-sends during that construction, and which those are is not fixed. A Sent query
-is recorded before it is sent, so the record holds what was sent rather than
-what succeeded. A failed call leaves its earlier Sent queries readable. The
-record belongs to the last tracked construction call; later collection and
-materialization statements are outside it.
+The SQL representation recorded with its purpose for one Margin construction
+or Grouping-plan inspection call: `result` denotes the query returned
+unexecuted, while other purposes describe internal queries prepared for
+backend invocation. It describes construction-time SQL, not proof of database
+receipt or completion, and excludes later collection and materialization;
+ADR 0027 owns record lifetime and reentrant ownership.
 _Avoid_: Audit record, context, logged query
 
 **Contextual helper**:

@@ -9,7 +9,7 @@ last_sent_queries()
 \value{
 A tibble with two character columns. \code{purpose} says what the query
 was sent for and \code{sql} holds the statement as it was rendered. Rows are in
-the order the queries were sent, which is the only ordering the record
+the order the queries were recorded, which is the only ordering the record
 carries. There is no print method: a multi-line statement is read with
 \code{writeLines(x$sql)}.
 }
@@ -20,10 +20,23 @@ may send queries of its own on the way. With
 the SQL of one call -- the most recent call to \code{\link[=summarize_with_margins]{summarize_with_margins()}},
 \code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
 or \code{\link[=inspect_grouping]{inspect_grouping()}} -- and this function reads it back. The record is
-emptied at the start of every call, so what it holds belongs to that call
+started afresh for every call, so what it holds belongs to that call
 alone. Piping one Margin verb into another is two calls, and the outer one
 is the most recent: its input runs first and its rows are then emptied,
 leaving the outer call's own.
+}
+\details{
+When user code inside a tracked call A invokes another tracked call B,
+the record belongs to B while B runs, then to A again as soon as B exits.
+A keeps its earlier rows and its own audit setting, including when it
+catches B's error. After A returns or fails, its own complete or partial
+record remains readable; B's rows are not appended or retained separately.
+An error handler running while B is still active can read B's partial
+record. This applies to inspection as well as Margin verbs.
+
+The input \code{.data} is evaluated before that call starts recording. If the
+input fails first, the outer call starts no record. Other arguments do
+not gain this early evaluation, and recording does not restore user options.
 }
 \section{What the record promises}{
 
@@ -40,9 +53,10 @@ unexecuted, rendered before it is handed to you, which your own
 \code{\link[dplyr:collect]{dplyr::collect()}} is still what runs. Every other row is a query marginplyr
 sends for its own reasons, and the names those rows carry are not fixed.
 
-A query is recorded before it is sent, so the record holds what was sent
-rather than what succeeded, and a call that fails leaves readable every
-query it had already sent.
+An internal query is recorded before invoking the backend operation.
+The SQL is a render, not a capture of DBI arguments or proof that the
+database received or completed the query. A call that fails leaves its
+own earlier rows readable; the record contains no execution outcomes.
 
 Two identical calls need not produce identical records: the answer to
 whether a backend can compute a contextual share is cached per SQL dialect

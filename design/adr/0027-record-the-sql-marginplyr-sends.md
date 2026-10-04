@@ -438,6 +438,88 @@ guide each keep what their own audience needs and point at that page for the
 contract. *Four answers, distinguished* above remains this decision's record
 of the answers rather than another copy of the reference page.
 
+## Amendment: restore the active call's record under reentry (2026-10-04)
+
+Accepted for #777 and implemented for #778. This resolves *One call, and which
+call* for supported reentry; it preserves the `.data` forcing boundary
+established above. Each entry point saves its active parent's record and
+registers restoration on exit immediately after beginning its own record.
+The structural entry-point gate checks this registration as well as ordering.
+
+The readable record belongs to the innermost active tracked construction
+call. When that call exits, its enclosing tracked call owns the record again.
+When no enclosing tracked call remains, the exiting call's own record is the
+last record, whether it returned normally or raised. Each call's rows, saved
+audit setting, and backend classification belong to that call alone.
+
+For an outer call A that has begun recording, and a call B entered through
+supported user R code while A runs:
+
+| Observation point | Record owner and contents |
+| --- | --- |
+| Before B begins recording | A, with A's own rows recorded so far |
+| While B is the active tracked call | B, with B's own rows recorded so far |
+| B returns and A's callback resumes | A, preserving its rows from before B |
+| B fails and A catches the failure | A on resumption, with no B rows appended |
+| B's failure propagates out of A | A's partial record after A exits |
+| A fails after B returned successfully | A's partial record after A exits |
+| A returns normally | A's complete own record |
+
+An error handler observing B while B is still active reads B's record. Once
+control has left B for A, it reads A's. B's rows are not retained as a second
+history after that transition; a caller needing them must read them while B
+owns the record. Restoring ownership does not catch, replace, or discard the
+original error or its causes. Ordinary unwinding must release the call's
+recording state; this decision adds no guarantee for process termination.
+
+Each call reads `marginplyr.audit_sql` once when its recording lifetime
+begins, after forcing `.data`. The accessor uses the owner's saved setting,
+not the current option or a nested call's setting. Audited A therefore
+remains readable after unaudited B, while unaudited A remains refused after
+audited B. Restoring record ownership does not restore or otherwise change
+user options. Backend classification likewise cannot leak from B into A:
+local A must not acquire SQL rows or a missing-SQL `result` from SQL B.
+
+Forcing `.data` still precedes the outer call's recording lifetime. In a
+top-level `A(B(data))` pipe, B finishes first, then A starts its own record.
+If evaluating that input fails before A begins recording, B's record remains
+the last one. A refusal after A begins recording leaves A's own partial or
+empty record. Other arguments are not forced early to impose this order.
+
+The policy applies recursively to tracked verbs and inspection. The existing
+four accessor answers, two-column shape, `result` meaning, SQL/non-SQL rules,
+and exclusion of later collection/materialization remain. An independent C
+after A starts with C's own state, including after a failed A.
+
+Active-call restoration is chosen because a callback can inspect the
+operation it is executing, and the outer caller can inspect the operation
+that returned or failed. Latest-started ownership would leave B readable
+after A resumes, even when A then records more work. Completion order alone
+does not specify what A's resumed callback reads. Accumulating both calls
+changes the single-call contract and still requires correct attribution and
+configuration isolation; it is not the remedy for #778. No particular
+storage structure, eager argument forcing, or reentry ban is prescribed.
+
+Regression expectations for #778 are the table above, independently
+attributable A/B rows, preserved A rows across B, entry-time settings, and the
+existing sequential and piped cases. Include SQL-to-SQL, SQL-to-local,
+local-to-SQL, inspection, failures, and a subsequent independent C. Compare
+with independent controls without treating a legitimately cached dialect
+probe as a missing row. Evidence for the existing defect remains in
+[the dated reentry investigation](../../investigation/reentrant-operation-isolation-2026-10-01.md).
+
+## Clarification: a recorded render is not proof of submission (2026-10-04)
+
+*The record holds the statement, not the execution* describes SQL captured by
+rendering before a backend call, or before returning the unexecuted result.
+Its phrase "as it was sent" must not be read as interception of DBI arguments
+or evidence that a server received the statement. `record_sent_query()` and
+`render_sent_query_sql()` record a representation before the execution path
+runs; rendering can itself fail. The current record contains neither an
+execution outcome nor a submission acknowledgement. ADR 0037 owns the scope
+of any later diagnostic extension; this clarification adds no fields or
+observation mechanism.
+
 ## Related decisions
 
 ADR 0020 is the rule this decision does not amend, and its *Related decisions*

@@ -112,7 +112,8 @@ nest_by_with_margins <- function(.data,
                                  .key = "data",
                                  .keep = FALSE) {
   force(.data)
-  reset_sent_queries()
+  sent_query_parent <- reset_sent_queries()
+  on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
   call <- rlang::current_call()
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
