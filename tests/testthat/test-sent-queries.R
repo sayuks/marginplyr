@@ -979,13 +979,20 @@ test_that("every entry point forces its input and then empties the record", {
     function(name) {
       fn <- get(name, envir = ns)
       !identical(nth_statement(fn, 1L), quote(force(.data))) ||
-        !identical(nth_statement(fn, 2L), quote(reset_sent_queries()))
+        !identical(
+          nth_statement(fn, 2L),
+          quote(sent_query_parent <- reset_sent_queries())
+        ) ||
+        !identical(
+          nth_statement(fn, 3L),
+          quote(on.exit(restore_sent_queries(sent_query_parent), add = TRUE))
+        )
     },
     entry_points
   )
   # Named rather than counted: a validation moved above either statement is
   # what this fires on, and which entry point took it is not otherwise in the
-  # report.
+  # report. Restoration must be registered before validation can exit the call.
   expect_identical(misordered, character())
 })
 

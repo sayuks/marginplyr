@@ -1,23 +1,27 @@
-# The Sent queries of one call, read back by `last_sent_queries()`. It is
-# named for what it holds, after `share_dialect_verdicts` in `R/share.R`, and
-# the two are opposite shapes on purpose: that one is a session cache never
-# emptied, this one a log emptied at the start of every call (ADR 0027).
+# The active call's Sent queries, or the last outer call's after it exits.
 sent_queries <- new.env(parent = emptyenv())
 
-# Empties the record for the call beginning now, marks that a call has been
-# recorded in this session, and reads `marginplyr.audit_sql` -- the one
-# reading per call, kept with this call's record (ADR 0027). Anything but
-# `TRUE` is "not audited", and nothing here reports it.
-#
-# Called by every entry point directly after it forces `.data` and ahead of
-# the argument validation each of them opens with (ADR 0027). The backend is
-# not known yet, so the SQL flag starts `FALSE` and
-# `remember_sent_query_backend()` sets it where the backend is computed.
+# Starts a call's record and returns the active parent's state, or NULL for
+# an outer call. Entry points force `.data` first and register restoration
+# immediately afterwards. Backend classification follows during preparation.
 reset_sent_queries <- function() {
+  parent <- if (isTRUE(sent_queries$active)) as.list(sent_queries) else NULL
+  sent_queries$active <- TRUE
   sent_queries$recorded <- TRUE
   sent_queries$audited <- isTRUE(getOption("marginplyr.audit_sql"))
   sent_queries$is_sql <- FALSE
   sent_queries$rows <- dplyr::tibble(purpose = character(), sql = character())
+  invisible(parent)
+}
+
+# Restores the active parent's record on exit, or leaves this outer call's
+# own record readable. The caller holds the state returned at its entry.
+restore_sent_queries <- function(parent) {
+  if (is.null(parent)) {
+    sent_queries$active <- FALSE
+  } else {
+    list2env(parent, envir = sent_queries)
+  }
   invisible(NULL)
 }
 
@@ -82,14 +86,26 @@ record_sent_query <- function(purpose, query) {
 #' the SQL of one call -- the most recent call to [summarize_with_margins()],
 #' [expand_with_margins()], [nest_with_margins()], [nest_by_with_margins()],
 #' or [inspect_grouping()] -- and this function reads it back. The record is
-#' emptied at the start of every call, so what it holds belongs to that call
+#' started afresh for every call, so what it holds belongs to that call
 #' alone. Piping one Margin verb into another is two calls, and the outer one
 #' is the most recent: its input runs first and its rows are then emptied,
 #' leaving the outer call's own.
 #'
+#' When user code inside a tracked call A invokes another tracked call B,
+#' the record belongs to B while B runs, then to A again as soon as B exits.
+#' A keeps its earlier rows and its own audit setting, including when it
+#' catches B's error. After A returns or fails, its own complete or partial
+#' record remains readable; B's rows are not appended or retained separately.
+#' An error handler running while B is still active can read B's partial
+#' record. This applies to inspection as well as Margin verbs.
+#'
+#' The input `.data` is evaluated before that call starts recording. If the
+#' input fails first, the outer call starts no record. Other arguments do
+#' not gain this early evaluation, and recording does not restore user options.
+#'
 #' @return A tibble with two character columns. `purpose` says what the query
 #'   was sent for and `sql` holds the statement as it was rendered. Rows are in
-#'   the order the queries were sent, which is the only ordering the record
+#'   the order the queries were recorded, which is the only ordering the record
 #'   carries. There is no print method: a multi-line statement is read with
 #'   `writeLines(x$sql)`.
 #'
@@ -107,9 +123,10 @@ record_sent_query <- function(purpose, query) {
 #' [dplyr::collect()] is still what runs. Every other row is a query marginplyr
 #' sends for its own reasons, and the names those rows carry are not fixed.
 #'
-#' A query is recorded before it is sent, so the record holds what was sent
-#' rather than what succeeded, and a call that fails leaves readable every
-#' query it had already sent.
+#' An internal query is recorded before invoking the backend operation.
+#' The SQL is a render, not a capture of DBI arguments or proof that the
+#' database received or completed the query. A call that fails leaves its
+#' own earlier rows readable; the record contains no execution outcomes.
 #'
 #' Two identical calls need not produce identical records: the answer to
 #' whether a backend can compute a contextual share is cached per SQL dialect

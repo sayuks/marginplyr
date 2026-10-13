@@ -93,7 +93,8 @@ expand_with_margins <- function(.data,
                                 .id = NULL,
                                 .sort = c("none", "last", "first")) {
   force(.data)
-  reset_sent_queries()
+  sent_query_parent <- reset_sent_queries()
+  on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
   call <- rlang::current_call()
   with_margin_error_call(
     {
