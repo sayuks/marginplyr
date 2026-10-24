@@ -172,6 +172,34 @@ test_that("nested lazy summaries do not execute their input", {
   }
 })
 
+test_that("nested pick selections are expanded in their own data mask", {
+  inner <- tibble::tibble(g = 1, x = 2)
+  independent <- function() {
+    dplyr::mutate(inner, y = rowSums(dplyr::pick(dplyr::everything())))
+  }
+  expected <- tibble::tibble(g = 1, x = 2, y = 3)
+  expect_identical(independent(), expected)
+  for (key in list(10, "a")) {
+    outer <- tibble::tibble(g = key, x = 20)
+    actual <- summarize_with_margins(
+      outer,
+      nested = list(dplyr::mutate(
+        inner, y = rowSums(dplyr::pick(dplyr::everything()))
+      )),
+      picked = list(dplyr::summarise(
+        inner, columns = list(dplyr::pick(g, x))
+      )),
+      control = list(independent()),
+      .grouping = rollup(g)
+    )
+    for (i in seq_len(nrow(actual))) {
+      expect_identical(actual$nested[[i]], expected)
+      expect_identical(actual$nested[[i]], actual$control[[i]])
+      expect_identical(actual$picked[[i]]$columns[[1L]], inner)
+    }
+  }
+})
+
 test_that("nested dplyr selections use their own data mask", {
   outer <- tibble::tibble(g = "a", value = 1)
   inner <- tibble::tibble(g = 1, x = 2)
@@ -186,6 +214,7 @@ test_that("nested dplyr selections use their own data mask", {
     nested = list(dplyr::mutate(
       inner, dplyr::across(dplyr::everything(), ~ .x * 2)
     )),
+    from_outer = list(dplyr::mutate(dplyr::pick(value), value = value * 2)),
     piped = list(dplyr::`%>%`(inner, dplyr::mutate(
       dplyr::across(dplyr::everything(), ~ .x * 2)
     ))),
@@ -201,6 +230,7 @@ test_that("nested dplyr selections use their own data mask", {
   )
   for (i in seq_len(nrow(actual))) {
     expect_identical(actual$nested[[i]], expected)
+    expect_identical(actual$from_outer[[i]], tibble::tibble(value = 2))
     expect_identical(actual$piped[[i]], expected)
     expect_identical(actual$nested[[i]], actual$control[[i]])
     expect_identical(actual$selected[[i]], inner)

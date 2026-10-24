@@ -690,3 +690,7 @@ The shared searches, rewrites, and share dependency walk use one
 argument-ownership reader. Inner column and summary names belong to their
 operation, including names identical to an outer share. The outer dependency
 check still covers the nested input expression.
+
+The selection rewrite places an independent call inside an immediately invoked
+function. dplyr's own `pick()` expansion stops at that function boundary, so it
+cannot expand the nested operation's selection in the enclosing summary mask.

@@ -1044,6 +1044,12 @@ rewrite_summary_selections <- function(expr,
     }
   )
 
+  if (any(independent_mask_call_parts(expr))) {
+    # dplyr expands pick() through nested calls, stopping at function literals.
+    # Keep its enclosing summary from expanding an inner mask's selection.
+    return(rlang::call2(rlang::call2("function", pairlist(), expr)))
+  }
+
   call_name <- static_spelling_name(expr, "selection")
   if (is.null(call_name)) {
     return(expr)
