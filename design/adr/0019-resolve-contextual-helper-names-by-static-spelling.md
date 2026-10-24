@@ -687,9 +687,11 @@ binding or qualify the operation's head. An unrecognized or computed operation
 head retains ordinary recursive traversal. Function literals, their defaults,
 and visibly evaluated language retain the traversal established above.
 
+For a `%>%` pipe with a recognized operation on its right, the left expression
+is the input and the right expression belongs to that operation. Native pipes
+already carry the input argument in R's parsed call.
+
 The shared searches, rewrites, and share dependency walk use one
 argument-ownership reader. Inner column and summary names belong to their
 operation, including names identical to an outer share. The outer dependency
-check still covers the nested input expression. Lexical fallback from an inner
-data mask to outer summary values is outside this static ownership boundary;
-dependent nested operations are not independent-operation controls.
+check still covers the nested input expression.

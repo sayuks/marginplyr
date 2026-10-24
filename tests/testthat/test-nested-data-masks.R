@@ -186,6 +186,9 @@ test_that("nested dplyr selections use their own data mask", {
     nested = list(dplyr::mutate(
       inner, dplyr::across(dplyr::everything(), ~ .x * 2)
     )),
+    piped = list(dplyr::`%>%`(inner, dplyr::mutate(
+      dplyr::across(dplyr::everything(), ~ .x * 2)
+    ))),
     selected = list(dplyr::select(inner, dplyr::where(is.numeric))),
     counted = list(dplyr::count(
       inner, wt = rowSums(dplyr::across(dplyr::everything()))
@@ -198,6 +201,7 @@ test_that("nested dplyr selections use their own data mask", {
   )
   for (i in seq_len(nrow(actual))) {
     expect_identical(actual$nested[[i]], expected)
+    expect_identical(actual$piped[[i]], expected)
     expect_identical(actual$nested[[i]], actual$control[[i]])
     expect_identical(actual$selected[[i]], inner)
     expect_identical(actual$counted[[i]], tibble::tibble(n = 3))

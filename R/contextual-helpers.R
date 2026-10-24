@@ -110,6 +110,13 @@ static_spelling_rules <- function() {
         names = "data.frame"
       )
     },
+    data_pipe = function() {
+      list(
+        namespaces = c("magrittr", "dplyr"),
+        contextual = FALSE,
+        names = "%>%"
+      )
+    },
     dplyr_mask = function() {
       list(
         namespaces = "dplyr",
@@ -152,10 +159,10 @@ static_spelling_rules <- function() {
 independent_mask_call_parts <- function(expr) {
   args <- static_call_args(expr)
   owned <- rep(FALSE, length(args))
-  for (family in c("margin_mask", "dplyr_mask", "dplyr_count_mask")) {
-    if (is.null(static_spelling_name(expr, family))) next
+  rule <- independent_mask_rule(expr)
+  if (!is.null(rule)) {
     owned[] <- TRUE
-    formal <- static_spelling_rule(family)$input
+    formal <- rule$input
     arg_names <- argument_names(args)
     input <- match(formal, arg_names, nomatch = 0L)
     if (input == 0L) {
@@ -164,9 +171,24 @@ independent_mask_call_parts <- function(expr) {
     }
     if (input == 0L) input <- match("", arg_names, nomatch = 0L)
     if (input > 0L) owned[[input]] <- FALSE
-    break
+  } else if (!is.null(static_spelling_name(expr, "data_pipe")) &&
+               length(args) == 2L &&
+               !is.null(independent_mask_rule(args[[2L]]))) {
+    # A pipe supplies the input implicitly; its RHS arguments belong to the
+    # nested operation even when the first written argument is a selection.
+    owned[[2L]] <- TRUE
   }
   owned
+}
+
+# The registry rule for a statically named independent data-mask operation.
+independent_mask_rule <- function(expr) {
+  for (family in c("margin_mask", "dplyr_mask", "dplyr_count_mask")) {
+    if (!is.null(static_spelling_name(expr, family))) {
+      return(static_spelling_rule(family))
+    }
+  }
+  NULL
 }
 
 # The family names, which is everything available without naming one. Reading
