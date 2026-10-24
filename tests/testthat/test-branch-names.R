@@ -44,7 +44,11 @@ expect_suffix_margin_results <- function(data) {
   source_rows <- list(2L, 1L, 1:2, 3L, 3L)
 
   for (multiple in c(FALSE, TRUE)) {
-    spec <- if (multiple) rollup(region...1) else grouping_set(region...1)
+    spec <- if (multiple) {
+      rollup(dplyr::all_of("region...1"))
+    } else {
+      grouping_set(dplyr::all_of("region...1"))
+    }
     for (sort in c("none", "first", "last")) {
       info <- paste("multiple:", multiple, "sort:", sort)
       rows <- if (!multiple) {
@@ -59,7 +63,9 @@ expect_suffix_margin_results <- function(data) {
       normalize <- function(result) {
         result <- dplyr::ungroup(dplyr::collect(result))
         if (sort == "none") {
-          result <- dplyr::arrange(result, account...2, set...3, region...1)
+          result <- dplyr::arrange(
+            result, !!!rlang::syms(c("account...2", "set...3", "region...1"))
+          )
         }
         result
       }
@@ -72,16 +78,16 @@ expect_suffix_margin_results <- function(data) {
 
       summary <- normalize(summarize_with_margins(
         data,
-        sales = sum(sales),
-        sales...1 = sum(sales...1),
-        sales...2 = sum(sales...2),
-        .by = account...2, .grouping = spec, .id = "set...3", .sort = sort
+        sales = sum(!!rlang::sym("sales")),
+        sales...1 = sum(!!rlang::sym("sales...1")),
+        sales...2 = sum(!!rlang::sym("sales...2")),
+        .by = "account...2", .grouping = spec, .id = "set...3", .sort = sort
       ))
       expect_columns(summary, wanted)
 
       expanded <- normalize(expand_with_margins(
         data,
-        .by = account...2, .grouping = spec, .id = "set...3", .sort = sort
+        .by = "account...2", .grouping = spec, .id = "set...3", .sort = sort
       ))
       expect_identical(names(expanded), c(keys, payload), info = info)
       # Rows within one expanded key have no promised order.
@@ -90,22 +96,24 @@ expect_suffix_margin_results <- function(data) {
           expanded[[keys[[2L]]]] == wanted[[keys[[2L]]]][[i]] &
           expanded[[keys[[3L]]]] == wanted[[keys[[3L]]]][[i]]
         actual <- expanded[selected, , drop = FALSE] |>
-          dplyr::arrange(sales)
+          dplyr::arrange(!!rlang::sym("sales"))
         input <- source[cells[[i]], payload, drop = FALSE] |>
-          dplyr::arrange(sales)
+          dplyr::arrange(!!rlang::sym("sales"))
         for (column in payload) {
           expect_identical(actual[[column]], input[[column]], info = info)
         }
       }
       expected_keys <- wanted[rep(seq_len(nrow(wanted)), lengths(cells)), keys]
       for (column in keys) {
-        expect_identical(expanded[[column]], expected_keys[[column]], info = info)
+        expect_identical(
+          expanded[[column]], expected_keys[[column]], info = info
+        )
       }
 
       for (verb in list(nest_with_margins, nest_by_with_margins)) {
         for (keep in c(FALSE, TRUE)) {
           nested <- verb(
-            data, .by = account...2, .grouping = spec, .id = "set...3",
+            data, .by = "account...2", .grouping = spec, .id = "set...3",
             .key = "data...4", .keep = keep, .sort = sort
           )
           if (inherits(nested, "rowwise_df")) {
@@ -117,10 +125,12 @@ expect_suffix_margin_results <- function(data) {
             expect_identical(nested[[column]], wanted[[column]], info = info)
           }
           for (i in seq_along(cells)) {
-            actual <- dplyr::arrange(nested[["data...4"]][[i]], sales)
+            actual <- dplyr::arrange(
+              nested[["data...4"]][[i]], !!rlang::sym("sales")
+            )
             columns <- if (keep) names(source) else payload
             input <- source[cells[[i]], columns, drop = FALSE] |>
-              dplyr::arrange(sales)
+              dplyr::arrange(!!rlang::sym("sales"))
             expect_columns(actual, input)
           }
         }
@@ -129,7 +139,7 @@ expect_suffix_margin_results <- function(data) {
   }
 }
 
-test_that("data frames retain suffix names across Margin verbs and sort modes", {
+test_that("data frames retain suffix names across Margin verbs and sorting", {
   expect_suffix_margin_results(suffix_name_data())
 })
 
@@ -137,7 +147,7 @@ test_that("tibbles retain suffix names across Margin verbs and sort modes", {
   expect_suffix_margin_results(dplyr::as_tibble(suffix_name_data()))
 })
 
-test_that("data tables retain suffix names across Margin verbs and sort modes", {
+test_that("data tables retain suffix names across Margin verbs and sorting", {
   skip_if_suggest_absent("data.table")
   expect_suffix_margin_results(data.table::as.data.table(suffix_name_data()))
 })
