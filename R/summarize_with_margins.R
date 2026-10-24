@@ -768,7 +768,9 @@
 #' and does not repeat cached work. These are prepared representations, not
 #' proof of database receipt or completion; missing SQL denotes a failed
 #' diagnostic render. The default view also includes the unexecuted result
-#' SQL, whereas [dplyr::show_query()] shows only the result query.
+#' SQL, whereas [dplyr::show_query()] shows only the result query. Add
+#' `details = TRUE` to read stored internal outcomes and condition summaries;
+#' an operation's status does not describe the whole public call.
 #'
 #' @family summarize and expand data with margins
 #' @export

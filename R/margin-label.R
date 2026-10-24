@@ -322,8 +322,9 @@ check_observed_label_collision <- function(data,
   )
   names(checks) <- read_cols
   query <- dplyr::summarize(data, !!!checks)
-  record_sent_query("observed_label_collision", query)
-  found <- dplyr::collect(query)
+  found <- with_sent_query(
+    "observed_label_collision", query, dplyr::collect(query)
+  )
   found <- vapply(
     read_cols,
     function(col) {

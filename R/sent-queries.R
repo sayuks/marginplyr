@@ -10,7 +10,11 @@ reset_sent_queries <- function() {
   sent_queries$recorded <- TRUE
   sent_queries$audited <- isTRUE(getOption("marginplyr.audit_sql"))
   sent_queries$is_sql <- FALSE
-  sent_queries$rows <- dplyr::tibble(purpose = character(), sql = character())
+  sent_queries$record <- new.env(parent = emptyenv())
+  sent_queries$record$rows <- dplyr::tibble(
+    purpose = character(), sql = character(), source = character(),
+    status = character(), conditions = list()
+  )
   invisible(parent)
 }
 
@@ -34,42 +38,111 @@ remember_sent_query_backend <- function(backend) {
   invisible(NULL)
 }
 
-# Renders for the record without using rlang's warning frequency state. The
-# caller holds the lazy SQL query for an audited site. dbplyr warns about
-# implicit NA removal while translating SQL; the actual render must still own
-# that warning when `warn = 2`. A refused translation leaves NA.
-render_sent_query_sql <- function(query) {
-  old <- options(rlib_warning_verbosity = "quiet")
-  on.exit(options(old), add = TRUE)
-  tryCatch(
-    as.character(dbplyr::sql_render(query)),
-    error = function(cnd) NA_character_
+# An empty condition summary with the same column types as populated summaries.
+empty_sent_query_conditions <- function() {
+  dplyr::tibble(
+    classes = list(), message = character(), phase = character(),
+    handling = character()
   )
 }
 
-# Appends one prepared SQL representation for a lazy query or literal under
-# `purpose`. A no-op unless this call is audited and its input is SQL.
-# A site checks neither and takes no backend.
-#
-# The render is client-side, sending nothing. A translation dbplyr refuses
-# raises here rather than when the query was built, and the row is kept with
-# `sql = NA` (ADR 0027).
+# Appends only text and classes to the owning row. `entry` identifies that row
+# independently of whichever nested call currently owns the public record.
+record_sent_query_condition <- function(entry, cnd, phase, handling) {
+  rows <- entry$record$rows
+  rows$conditions[[entry$index]] <- dplyr::bind_rows(
+    rows$conditions[[entry$index]],
+    dplyr::tibble(
+      classes = list(class(cnd)), message = conditionMessage(cnd),
+      phase = phase, handling = handling
+    )
+  )
+  entry$record$rows <- rows
+  invisible(NULL)
+}
+
+# Renders an audited row without consuming dbplyr's warning-frequency state
+# (#655). Diagnostic warnings are suppressed; the real operation still owns
+# warning delivery, including conversion to error under the caller's settings.
+render_sent_query_sql <- function(query, entry) {
+  old <- options(rlib_warning_verbosity = "quiet")
+  on.exit(options(old), add = TRUE)
+  tryCatch(
+    withCallingHandlers(
+      as.character(dbplyr::sql_render(query)),
+      warning = function(cnd) {
+        record_sent_query_condition(entry, cnd, "render", "suppressed")
+        invokeRestart("muffleWarning")
+      },
+      interrupt = function(cnd) {
+        record_sent_query_condition(entry, cnd, "render", "propagated")
+      }
+    ),
+    error = function(cnd) {
+      record_sent_query_condition(entry, cnd, "render", "handled")
+      NA_character_
+    }
+  )
+}
+
+# Prepares a lazy query or literal row and returns its private update handle.
+# A site needs neither a backend nor an audit check: inactive/non-SQL calls
+# return NULL. A refused render retains a prepared row with missing SQL.
 record_sent_query <- function(purpose, query) {
   stopifnot(rlang::is_string(purpose))
   if (!isTRUE(sent_queries$audited) || !isTRUE(sent_queries$is_sql)) {
     return(invisible(NULL))
   }
-  sql <- if (inherits(query, "sql")) {
+  record <- sent_queries$record
+  literal <- inherits(query, "sql")
+  record$rows <- dplyr::bind_rows(record$rows, dplyr::tibble(
+    purpose = purpose, sql = NA_character_,
+    source = if (literal) "literal" else "render", status = "prepared",
+    conditions = list(empty_sent_query_conditions())
+  ))
+  entry <- list(record = record, index = nrow(record$rows))
+  sql <- if (literal) {
     as.character(query)
   } else {
-    render_sent_query_sql(query)
+    render_sent_query_sql(query, entry)
   }
   stopifnot(is.character(sql), length(sql) == 1L)
-  sent_queries$rows <- dplyr::bind_rows(
-    sent_queries$rows,
-    dplyr::tibble(purpose = purpose, sql = sql)
+  record$rows$sql[[entry$index]] <- sql
+  invisible(entry)
+}
+
+# Observes one owned backend operation without catching or rethrowing it.
+# `expr` is the backend call alone; its existing suppression/catch surrounds
+# this seam and supplies the handling known there. Nonlocal unwinding without
+# an observed error/interrupt leaves unknown completion, never success.
+with_sent_query <- function(purpose, query, expr,
+                            error_handling = "propagated",
+                            warning_handling = "propagated") {
+  entry <- record_sent_query(purpose, query)
+  if (is.null(entry)) {
+    return(force(expr))
+  }
+  entry$record$rows$status[[entry$index]] <- "invoking"
+  status <- "unknown"
+  on.exit({
+    entry$record$rows$status[[entry$index]] <- status
+  }, add = TRUE)
+  value <- withCallingHandlers(
+    force(expr),
+    warning = function(cnd) {
+      record_sent_query_condition(entry, cnd, "invocation", warning_handling)
+    },
+    error = function(cnd) {
+      record_sent_query_condition(entry, cnd, "invocation", error_handling)
+      status <<- "errored"
+    },
+    interrupt = function(cnd) {
+      record_sent_query_condition(entry, cnd, "invocation", "propagated")
+      status <<- "interrupted"
+    }
   )
-  invisible(NULL)
+  status <- "returned"
+  value
 }
 
 # The first of the four answers below refers to the list of calls the
@@ -106,12 +179,57 @@ record_sent_query <- function(purpose, query) {
 #' @param include_result One nonmissing logical value. `TRUE` (the default)
 #'   includes the prepared, unexecuted result SQL. `FALSE` selects internal
 #'   rows only, without needing their descriptive purpose names.
-#' @return A tibble with two character columns, `purpose` and `sql`, containing
-#'   prepared SQL representations in recording order. Only `"result"` is a
-#'   stable public purpose value; all other purpose names are descriptive.
-#'   A failed diagnostic render leaves `NA_character_` in `sql`. An empty
-#'   view retains both character columns. Read a multi-line statement with
-#'   `writeLines(x$sql[!is.na(x$sql)])`.
+#' @param details One nonmissing logical value. `FALSE` (the default) returns
+#'   the original two columns. `TRUE` selects the stored diagnostic details;
+#'   it does not enable capture or repeat work.
+#' @return A tibble in recording order. By default its two character columns
+#'   are `purpose` and `sql`. With `details = TRUE` the columns are `purpose`,
+#'   `sql`, `source`, `status`, and `conditions`, in that order. The first four
+#'   are character; `conditions` is a list of condition-summary tibbles.
+#'   Empty views retain these column types. Only `"result"` is a stable public
+#'   purpose value; all other purpose names are descriptive.
+#'   A failed diagnostic render leaves `NA_character_` in `sql`. Read a
+#'   multi-line statement with `writeLines(x$sql[!is.na(x$sql)])`.
+#'
+#' @section Diagnostic details:
+#' Details are captured during an audited call even when you first read only
+#' the default view. Both accessor arguments select stored rows and columns.
+#' `source` is `"render"` for an attempted diagnostic render or `"literal"`
+#' for SQL supplied by the package. Neither proves database receipt.
+#'
+#' `status` describes only the owned internal backend operation:
+#' - `"prepared"`: a row exists but no invocation was observed. The
+#'   compatibility `"result"` row stays in this state.
+#' - `"invoking"`: control reached the boundary immediately before the
+#'   backend call, with no terminal observation yet. This can be read while
+#'   the operation is active; it does not prove that the driver body ran.
+#' - `"returned"`: the operation returned normally, possibly with warnings.
+#' - `"errored"`: an error left the operation, even if package logic then
+#'   handled it.
+#' - `"interrupted"`: an interrupt left the operation.
+#' - `"unknown"`: the call unwound without an established terminal observation
+#'   for its invocation attempt.
+#'
+#' Each `conditions` element is an ordered tibble with `classes` (a list of
+#' character class vectors), `message` (character), `phase` (`"render"` or
+#' `"invocation"`), and `handling` (`"handled"`, `"suppressed"`,
+#' `"propagated"`, or `"unknown"`). No observed conditions gives a typed empty
+#' tibble. Summaries retain errors, warnings, and interrupts seen at the owned
+#' boundary, without retaining condition objects, environments, results, or
+#' connections. Handling describes that boundary: `"propagated"` allows user
+#' code to catch the condition later, and handling is stated only when known.
+#' Reading the record never signals these conditions again.
+#'
+#' Render failures retain their summaries independently of invocation status:
+#' missing SQL and a `"returned"` operation can coexist. A failed dialect
+#' question can have a handled error followed by a distinct, successful numeric
+#' control. The probe's existing warning suppression is preserved. Savepoint,
+#' rollback, and release controls each have their own row.
+#'
+#' A label-count query can be `"returned"` before validation refuses a Margin
+#' label collision. That public error belongs to the whole call and is not
+#' attached to the successful SQL row. Neither status nor SQL establishes
+#' server completion or the outcome of the entire public call.
 #'
 #' @section What the record promises:
 #' The record belongs to the last Margin verb or inspection call during query
@@ -139,7 +257,8 @@ record_sent_query <- function(purpose, query) {
 #' An internal query is recorded before invoking the backend operation.
 #' The SQL is a render, not a capture of DBI arguments or proof that the
 #' database received or completed the query. A call that fails leaves its
-#' own earlier rows readable; the record contains no execution outcomes.
+#' own earlier rows readable; the detailed view describes observed internal
+#' outcomes at the package boundary.
 #'
 #' Two identical calls need not produce identical records: the answer to
 #' whether a backend can compute a contextual share is cached per SQL dialect
@@ -223,8 +342,8 @@ record_sent_query <- function(purpose, query) {
 #'     .check_margin_label = TRUE
 #'   )
 #'
-#'   internal <- last_sent_queries(include_result = FALSE)
-#'   internal$purpose
+#'   internal <- last_sent_queries(include_result = FALSE, details = TRUE)
+#'   internal[c("purpose", "status")]
 #'   writeLines(internal$sql[!is.na(internal$sql)])
 #'   sent <- last_sent_queries()
 #'   writeLines(sent$sql[sent$purpose == "result"])
@@ -240,19 +359,34 @@ record_sent_query <- function(purpose, query) {
 #'       .check_margin_label = TRUE
 #'     ),
 #'     marginplyr_error = function(cnd) {
-#'       print(last_sent_queries(include_result = FALSE))
+#'       # The label-count query returned before validation refused the call.
+#'       print(last_sent_queries(include_result = FALSE, details = TRUE))
 #'     }
 #'   )
 #'   # `internal` and its exported copy still describe the first call.
 #'   identical(readRDS(path), internal)
 #'   unlink(path)
+#'
+#'   # A cold DuckDB dialect question errors and the numeric control returns.
+#'   # A cached dialect skips both operations, leaving no artificial rows.
+#'   summarize_with_margins(
+#'     sales_db, revenue = sum(revenue, na.rm = TRUE),
+#'     share = share_of_total(revenue), .grouping = rollup(region)
+#'   )
+#'   details <- last_sent_queries(include_result = FALSE, details = TRUE)
+#'   details$conditions[details$status == "errored"]
 #'   DBI::dbDisconnect(con)
 #'   options(old)
 #' }
-last_sent_queries <- function(include_result = TRUE) {
+last_sent_queries <- function(include_result = TRUE, details = FALSE) {
   if (!rlang::is_bool(include_result)) {
     abort_marginplyr(
       "{.arg include_result} must be one non-missing logical value."
+    )
+  }
+  if (!rlang::is_bool(details)) {
+    abort_marginplyr(
+      "{.arg details} must be one non-missing logical value."
     )
   }
   if (!isTRUE(sent_queries$recorded)) {
@@ -270,9 +404,13 @@ last_sent_queries <- function(include_result = TRUE) {
       )
     ))
   }
-  rows <- sent_queries$rows
+  rows <- sent_queries$record$rows
   if (!include_result) {
     rows <- rows[rows$purpose != "result", , drop = FALSE]
   }
-  dplyr::tibble(purpose = rows$purpose, sql = rows$sql)
+  columns <- c("purpose", "sql")
+  if (details) {
+    columns <- c(columns, "source", "status", "conditions")
+  }
+  rows[, columns, drop = FALSE]
 }

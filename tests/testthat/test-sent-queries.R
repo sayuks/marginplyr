@@ -46,6 +46,8 @@ expect_unaudited <- function() {
 
 expect_nothing_recorded <- function() {
   expect_identical(refusal_names_the_option(), FALSE)
+  expect_error(last_sent_queries(details = TRUE), "No tracked call",
+               class = "marginplyr_error")
 }
 
 expect_sent_nothing <- function() {

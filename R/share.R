@@ -2570,7 +2570,9 @@ probe_share_dialect <- function(con) {
         name <- as.character(DBI::dbQuoteIdentifier(
           con, basename(tempfile("marginplyr_share_"))
         ))
-        execute_share_probe_control(con, "SAVEPOINT", name)
+        execute_share_probe_control(
+          con, "SAVEPOINT", name, error_handling = "handled"
+        )
         # Cleanup is armed before deferred interrupts can be delivered.
         savepoint <- name
       }
@@ -2608,10 +2610,13 @@ probe_share_dialect <- function(con) {
 
 # Sends one PostgreSQL savepoint statement for an already quoted name. These
 # controls protect only the table-free probe (ADR 0020, amendment for #774).
-execute_share_probe_control <- function(con, command, name) {
+execute_share_probe_control <- function(con, command, name,
+                                        error_handling = "propagated") {
   sql <- dbplyr::sql(paste(command, name))
-  record_sent_query("share_dialect_transaction", sql)
-  DBI::dbExecute(con, sql)
+  with_sent_query(
+    "share_dialect_transaction", sql, DBI::dbExecute(con, sql),
+    error_handling = error_handling
+  )
   invisible(NULL)
 }
 
@@ -2643,9 +2648,11 @@ probe_share_dialect_answer <- function(con, expr, purpose, control = FALSE) {
   if (is.null(query)) {
     return("unanswerable")
   }
-  record_sent_query(purpose, query)
   answer <- tryCatch(
-    list(value = suppressMessages(suppressWarnings(dplyr::collect(query)))),
+    list(value = suppressMessages(suppressWarnings(with_sent_query(
+      purpose, query, dplyr::collect(query),
+      error_handling = "handled", warning_handling = "suppressed"
+    )))),
     error = function(cnd) NULL
   )
   if (is.null(answer)) {

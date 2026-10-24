@@ -71,11 +71,12 @@ run_case <- function() {
     ))
   }
   record <- if (audited) last_sent_queries() else NULL
+  details <- if (audited) last_sent_queries(details = TRUE) else NULL
   if (is.null(result$error)) {
     result <- capture_error(dplyr::collect(result$value))
   }
   list(
-    result = result, record = record, sent_sql = sent_sql,
+    result = result, record = record, details = details, sent_sql = sent_sql,
     warning_verbosity_restored = identical(
       getOption("rlib_warning_verbosity"), old_verbosity
     )

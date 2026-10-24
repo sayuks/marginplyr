@@ -123,8 +123,7 @@ choices over information recorded when the existing audit option is enabled;
 neither reruns queries or reconstructs earlier calls. The
 [internal SQL specification](../specs/sql-audit.md) owns defaults, field meanings,
 empty/error cases, observation sites, and acceptance scenarios. This extension
-implements `include_result` in #790; the detailed view remains accepted
-follow-up work in #791.
+implements `include_result` in #790 and the detailed view in #791.
 
 Keep one call's own record in memory and let the caller copy or export it.
 This replaces the automatic SQLite history previously accepted during the
@@ -148,3 +147,21 @@ overstatements. Broader capture investigations remain evidence for their tested
 mechanisms, not obligations of this smaller feature. Acceptance of the design
 does not establish that its condition-observation paths have been implemented
 or verified.
+
+## Amendment: observe owned internal operations (2026-10-24)
+
+[#791](https://github.com/sayuks/marginplyr/issues/791) implements the detailed
+view specified above. The default remains the two-column projection;
+`details = TRUE` selects the stored source, status, and ordered condition
+summaries captured during an audited call. `with_sent_query()` wraps the owned
+backend operation alone at every internal recording site, inside existing
+probe handling. Diagnostic rendering records its conditions separately and
+preserves dbplyr's warning-frequency state. Recording adds no backend work.
+
+Each pending update retains its owning record across nested calls. An
+invocation without an observed terminal outcome becomes `unknown` on unwind;
+the compatibility result stays `prepared`. Public validation after a returned
+label count is outside that SQL row. The specification's detailed schema and
+status definitions, including the absence of a server-completion guarantee,
+remain the contract. ADR 0027 continues to own entry, replacement, and active
+parent restoration.

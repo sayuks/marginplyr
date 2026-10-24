@@ -1,9 +1,9 @@
 # Internal SQL diagnostics
 
-Status: accepted design, 2026-10-24. The maintainer accepted the latest-call
+Status: implemented contract, 2026-10-24. The maintainer accepted the latest-call
 record, internal-only accessor option, and detailed outcome/condition view.
-`include_result` is implemented by #790. The `details` argument and diagnostic
-fields below remain accepted follow-up work in #791.
+`include_result` is implemented by #790; #791 adds `details` and the owned
+operation observer across the internal recording sites below.
 
 ## Current requirement
 
@@ -37,6 +37,7 @@ The existing interface already addresses the core SQL-viewing need:
 - `options(marginplyr.audit_sql = TRUE)` enables recording before a call.
 - `last_sent_queries()` returns that call's two-column `purpose` / `sql` tibble.
 - `last_sent_queries(include_result = FALSE)` selects internal rows.
+- `last_sent_queries(details = TRUE)` selects stored outcomes and conditions.
 - Only the `result` purpose is a stable public value. Excluding it selects
   internal rows without treating other current purpose names as fixed API.
 - Each independent tracked call replaces the last record. A failed call leaves
@@ -66,11 +67,11 @@ column. A small result can still require examining source data. Declared factor
 levels, missing labels, or no remaining columns can avoid that query. Recording
 does not turn the check on; `.check_margin_label = TRUE` requests the check.
 
-The existing record is prepared SQL, not interception of actual DBI arguments
-or proof of receipt/completion. It has no outcome/error/warning columns. Render
-errors become `NA` without a retained cause. Internally handled probe conditions
-and cache reuse are not explained by its two columns. Cached probes must not be
-rerun merely to populate diagnostics. Non-SQL work has no SQL rows.
+The SQL is a prepared representation, not interception of actual DBI arguments
+or proof of receipt/completion. The detailed view adds observed outcomes and
+condition summaries. Render errors leave `NA` with a render summary; handled
+probe errors remain visible at their owned invocation boundary. Cached probes
+are not rerun merely to populate diagnostics. Non-SQL work has no SQL rows.
 
 ## Internal SQL workflow
 
@@ -104,8 +105,7 @@ Keep recording off by default, and preserve the existing exact-TRUE activation
 and entry-time setting. A bad option value remains inactive rather than changing
 the query's behavior; the accessor explains when the call was not recorded.
 
-The current signature is `last_sent_queries(include_result = TRUE)`.
-The accepted follow-up adds `details = FALSE`:
+The signature is `last_sent_queries(include_result = TRUE, details = FALSE)`:
 
 - The no-argument call retains its existing shape and meaning.
 - `include_result = FALSE` is a convenience for the existing result exclusion.
@@ -189,7 +189,7 @@ Do not replay a suppressed condition or emit the same warning again while
 reading the record. With warning-to-error settings, status follows the actual
 observed unwind rather than a separate diagnostic evaluation.
 
-The implementation needs the focused acceptance checks below. It is
+The focused acceptance checks below delimit this implementation. It is
 not enough to wrap the public call in an outer handler and claim all internal
 conditions were observed. Validation that runs no internal SQL has no SQL row;
 the feature is not a general R-expression logger. Cache and no-SQL explanations
@@ -234,7 +234,7 @@ can establish render failures, warnings, and interrupts without claiming that
 an ordinary database must produce them. Driver-private behavior beyond these
 boundaries is not established by these checks.
 
-## Documentation changes to carry with the eventual work
+## Documentation contract
 
 - Make the accessor page the single contract: how to enable before a call,
   view internal SQL, distinguish the unexecuted result, read after failure,
@@ -255,7 +255,7 @@ boundaries is not established by these checks.
   explicitly outside this feature.
 - Preserve the current return type and reentry behavior unless an explicit
   later decision changes them. Regenerate Rd from roxygen if public sources
-  are edited; none have been edited in this specification task.
+  are edited.
 
 ADR 0037's 2026-10-24 amendment owns the narrowed scope and interface decision;
 this specification owns the detailed contract and acceptance cases. The match
@@ -271,18 +271,16 @@ conditions. This resolves the remaining product choices for this specification.
 The exact column/state definitions above make that accepted direction concrete;
 they do not assert implementation or empirical completeness.
 
-This task delivers the specification, the ADR amendment, evidence notes, and
-the public-document correction plan. It does not change R code, generated help,
-dependencies, or public examples. Implementation and its acceptance checks need
-separate authorization. No performance, crash-durability, or server-level audit
-guarantee has been established or adopted.
+The implementation adds public diagnostics and tests without a storage or
+connection dependency. It establishes the owned observation boundary rather
+than driver-private wire behavior. No performance, crash-durability, or
+server-level audit guarantee has been established or adopted.
 
 The approved implementation slices are tracked in GitHub:
 
 1. [#790](https://github.com/sayuks/marginplyr/issues/790) adds the internal-only
    view while preserving the default two-column output.
-2. [#791](https://github.com/sayuks/marginplyr/issues/791), blocked by #790, adds
-   the detailed outcome and condition view across all owned recording sites.
+2. [#791](https://github.com/sayuks/marginplyr/issues/791) adds the detailed
+   outcome and condition view across all owned recording sites.
 
-Each slice includes its tests and public-document updates. Creating these
-tickets does not implement either extension.
+Each slice includes its tests and public-document updates.
