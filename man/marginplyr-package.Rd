@@ -139,11 +139,11 @@ enriched condition, when one is needed, and may then receive a bare native
 notification for the same cancellation.
 }
 
-\section{Recording the SQL marginplyr sends}{
+\section{Recording the SQL marginplyr prepares}{
 
-marginplyr keeps no record of the SQL it sends unless you ask for one.
+marginplyr records prepared SQL representations only when you ask for them.
 \code{options(marginplyr.audit_sql = TRUE)} switches the record on, and
-\code{\link[=last_sent_queries]{last_sent_queries()}} reads back what the most recent call sent:
+\code{\link[=last_sent_queries]{last_sent_queries()}} reads the most recent call's record in recording order:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{# `sales_db` is a lazy table on a SQL connection.
 old <- options(marginplyr.audit_sql = TRUE)
@@ -154,14 +154,19 @@ summarize_with_margins(
   .grouping = rollup(region, store)
 )
 
+internal <- last_sent_queries(include_result = FALSE)
 last_sent_queries()
 options(old)
 }\if{html}{\out{</div>}}
 
-There is one capture, \code{dbplyr::sql_render()}. It renders in your own
-session and sends nothing the call did not already send, so what
-\emph{\link[=summarize_with_margins]{When marginplyr queries your data}} enumerates is
-the same whether or not you are recording.
+The default view includes the prepared, unexecuted result SQL;
+\code{include_result = FALSE} selects internal work. Recording renders queries
+locally or records literal SQL controls, adding no backend operation.
+A missing SQL value means diagnostic rendering failed, and a recorded
+representation does not prove database receipt or completion.
+\emph{\link[=summarize_with_margins]{When marginplyr queries your data}} states which
+internal operations can run. Copy or export the record before the next call
+replaces it; a failed call leaves its own partial record readable.
 
 What the record holds, which calls keep one, and the four answers it gives
 -- three of them could otherwise look alike -- are stated in

@@ -570,18 +570,22 @@ vendor documentation exempts \verb{LIMIT 0} from that rule.
 marginplyr does not try to tell whether a backend bills for a query,
 because nothing it can read distinguishes a free connection from a billed
 one of the same kind -- a local DuckDB file from a hosted DuckDB service,
-or RDS PostgreSQL from Aurora Standard. \code{is.data.frame(.data)} is the only
-predicate that answers "no external system is involved" exactly rather
-than approximately, and it is what sets the default of every check that
-reads your data: a check that reads it is asked for, and a check that does
-not is not. \code{.check_margin_label} scans the grouping columns, so every
-Margin verb defaults it to \code{is.data.frame(.data)}.
+or RDS PostgreSQL from Aurora Standard. \code{.check_margin_label} defaults to
+\code{is.data.frame(.data)}: local data frames are checked by default; lazy
+inputs are checked only when asked. That predicate sets a default and does
+not classify connection cost. The observed check aggregates collision
+counts and retrieves one row, with one count per checked column, rather
+than all unique values. A check with no columns sends no query.
 \code{\link[=summarize_with_margins]{summarize_with_margins()}}'s \code{.check_share_source} reads nothing on any
 backend, so it defaults to \code{TRUE} there.
 
-\code{\link[=last_sent_queries]{last_sent_queries()}} reports what a call actually sent, which is how the
-two unasked queries above are counted against a connection rather than
-taken from this page.
+With recording enabled before the call,
+\link[=last_sent_queries]{last_sent_queries(include_result = FALSE)} reads the
+SQL prepared for internal work in recording order. Recording adds no query
+and does not repeat cached work. These are prepared representations, not
+proof of database receipt or completion; missing SQL denotes a failed
+diagnostic render. The default view also includes the unexecuted result
+SQL, whereas \code{\link[dplyr:show_query]{dplyr::show_query()}} shows only the result query.
 }
 
 \examples{

@@ -758,12 +758,11 @@ The
 [`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
 states where each backend reports these errors.
 
-## Record the SQL marginplyr sends
+## Record the SQL marginplyr prepares
 
-The sections above read one query at a time with `show_query()`. An audit
-usually wants all of them, including the ones marginplyr sends for its own
-reasons. `options(marginplyr.audit_sql = TRUE)` records the SQL of a single
-call, and `last_sent_queries()` reads that record back:
+`show_query()` displays the result query. To inspect auxiliary SQL, enable
+recording **before** the Margin construction or Grouping-plan inspection call.
+`last_sent_queries(include_result = FALSE)` then reads its internal rows:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -782,53 +781,98 @@ audit_sales <- copy_to(
 audit_query <- audit_sales |>
   summarize_with_margins(
     revenue = sum(revenue, na.rm = TRUE),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .check_margin_label = TRUE
   )
 
+internal <- last_sent_queries(include_result = FALSE)
+internal$purpose
+writeLines(internal$sql[!is.na(internal$sql)])
+```
+
+These are prepared SQL representations in recording order. The observed Margin
+label check aggregates collision counts and retrieves one row, with one count
+per checked column; it does not retrieve all unique values. DuckDB's zero-row
+metadata query is a separate internal operation. Recording does not request the
+label check: `.check_margin_label = TRUE` does. A cache hit or a label check
+with no columns adds no artificial query, and recording repeats no cached work.
+
+The default view retains both character columns, `purpose` and `sql`, and
+includes the prepared, unexecuted result SQL:
+
+```{r}
+#| eval: !expr has_duckdb
+
 sent <- last_sent_queries()
-sent$purpose
-```
-
-Those are the purposes this one call sent under, in the order it sent them.
-
-`"result"` is the query `audit_query` holds:
-
-```{r}
-#| eval: !expr has_duckdb
-
 writeLines(sent$sql[sent$purpose == "result"])
-```
-
-That row is a render and not an execution. `audit_query` is still lazy, and
-your own `collect()` is what runs it, exactly as in the sections above:
-
-```{r}
-#| eval: !expr has_duckdb
-
 collect(audit_query)
 ```
 
-The record belongs to the last Margin verb or inspection call during query
-construction. A later finite `collect()` or `compute()` does not append its
-LIMIT, destination checks, savepoint, table creation, INSERT, or ANALYZE SQL.
-Computing an older query therefore does not change the record of a newer call.
-Recording adds no query of its own. The capture is `dbplyr::sql_render()`,
-which renders in your session and sends nothing, so the `"selection_proxy"`
-row above was sent whether or not you were recording. *When marginplyr queries
-your data* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-is what enumerates those queries and says which backends receive them. Match
-on `"result"` and read the rest as context.
+Only `"result"` is a stable public purpose; the internal names are descriptive.
+The result row is a render of `audit_query`; your `collect()` executes it.
+An internal row is recorded before invoking its backend operation, so its
+presence proves neither database receipt nor completion. `NA` SQL means the
+diagnostic render failed. Such rows remain in the internal view, even though
+`writeLines()` above selects only nonmissing text. Reading either view performs
+no rendering, query, fetch, or EXPLAIN and leaves the saved rows intact.
 
-`last_sent_queries()` gives four answers, and three of them could otherwise
-look like an empty record. What tells them apart, which calls keep a record,
-what the record you are holding belongs to, and how to write one out are
-stated in the
-[`last_sent_queries()` reference](https://sayuks.github.io/marginplyr/man/last_sent_queries.html).
+Copy or export the record before another tracked call replaces it. A tibble
+you already hold survives that replacement unchanged:
 
 ```{r}
 #| eval: !expr has_duckdb
 
+record_path <- tempfile(fileext = ".rds")
+saveRDS(internal, record_path)
+```
+
+A failed call leaves its own partial record readable. Here the transformed
+input contains the label `"Total"`, so the observed check refuses the call:
+
+```{r}
+#| eval: !expr has_duckdb
+#| error: true
+#| purl: false
+
+audit_sales |>
+  mutate(region = "Total") |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region),
+    .check_margin_label = TRUE
+  )
+```
+
+Read the failed call's record at the next prompt, or inside an error handler,
+before another tracked call starts:
+
+```{r}
+#| eval: !expr has_duckdb
+
+failed_internal <- last_sent_queries(include_result = FALSE)
+failed_internal$purpose
+identical(readRDS(record_path), internal)
+```
+
+The record is process-local and belongs to the latest call's construction.
+Enabling the option afterwards cannot recover earlier SQL. Nested calls own
+the record while active, then restore their parent's record. A later
+`collect()`, `pull()`, or `compute()` does not append execution SQL; computing
+an older query leaves the newer call's record unchanged. This is an in-memory
+diagnostic for marginplyr's own work, with caller-controlled export.
+
+The [`last_sent_queries()` reference][sent-queries] states the no-record and
+unaudited-call refusals, typed empty views, and nested-call ownership.
+*When marginplyr queries your data* in the [`summarize_with_margins()`
+reference][summary-reference] enumerates the operations and applicable backends.
+
+[sent-queries]: https://sayuks.github.io/marginplyr/man/last_sent_queries.html
+[summary-reference]: https://sayuks.github.io/marginplyr/man/summarize_with_margins.html
+
+```{r}
+#| eval: !expr has_duckdb
+
+unlink(record_path)
 DBI::dbDisconnect(audit_con)
 options(old)
 ```

@@ -353,6 +353,7 @@ markers <- list(
     "never copies, collects, uploads, downloads"
   ),
   "docs/vignettes/database_backends.html" = c(
+    "is already present in grouping column:",
     "One report, two execution locations",
     "GROUP BY GROUPING SETS",
     "Execute in DuckDB",
@@ -363,10 +364,7 @@ markers <- list(
     "Parent shares use a staged lazy query",
     "share_of_total",
     "Completion stays in the lazy input pipeline",
-    # The Sent-query section, by its heading rather than by anything it
-    # renders: every chunk in it is behind `has_duckdb`, so on a machine
-    # without DuckDB the section produces no output for a marker to quote.
-    "Record the SQL marginplyr sends",
+    "Record the SQL marginplyr prepares",
     # The verification section, which states no scope of its own: the
     # `summarize_with_margins()` reference owns that, so a marker naming a
     # backend here would pin a restatement this section does not carry.
@@ -391,11 +389,6 @@ markers <- list(
     # marker in this file quotes a diagnostic, which reaches the page as a
     # code span.
     "refuses it before a row is read",
-    # The one rejected-call chunk on this page needing no optional Suggest:
-    # nesting a SQL table, refused through the dbplyr simulator. The guide's
-    # DuckDB, dtplyr, and Arrow refusals are behind availability guards, so
-    # they render nothing where their package is absent and can carry no
-    # marker — the same reason only three of `recipes.qmd`'s are listed above.
     "Error in `nest_with_margins()`",
     # The nesting whitelist, quoted short of the classes it offers. Those were
     # `toString(valid_classes)` before #223 re-authored the refusal and are
@@ -452,7 +445,7 @@ markers <- list(
     "handler boundary.",
     "$replay_error",
     "$cleanup",
-    "Recording the SQL marginplyr sends",
+    "Recording the SQL marginplyr prepares",
     "switches the record on",
     # The Guides list, by its heading and by one entry's href. No entry's text
     # can serve: all five are vignette titles, and the sidebar renders every

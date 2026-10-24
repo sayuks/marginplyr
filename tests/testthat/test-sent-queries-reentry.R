@@ -118,8 +118,10 @@ test_that("nested SQL inspection preserves both calls' partial records", {
   inner_select <- function() {
     if (nrow(last_sent_queries()) > 0L) {
       expect_identical(last_sent_queries(), inner_record)
+      expect_identical(last_sent_queries(FALSE), inner_record)
       inspect_grouping(data.frame(z = 1))
       expect_identical(last_sent_queries(), inner_record)
+      expect_identical(last_sent_queries(FALSE), inner_record)
       observed$inner <- TRUE
     }
     "k"
@@ -128,6 +130,7 @@ test_that("nested SQL inspection preserves both calls' partial records", {
     before <- last_sent_queries()
     inspect_grouping(inner, .grouping = rollup(all_of(inner_select())))
     expect_identical(last_sent_queries(), before)
+    expect_identical(last_sent_queries(FALSE), before)
     if (nrow(before) > 0L) {
       expect_identical(before, outer_record)
       observed$outer <- TRUE
@@ -140,8 +143,7 @@ test_that("nested SQL inspection preserves both calls' partial records", {
   )
   expect_true(observed$inner)
   expect_true(observed$outer)
-  record <- last_sent_queries()
-  expect_identical(record[record$purpose != "result", ], outer_record)
+  expect_identical(last_sent_queries(FALSE), outer_record)
   expect_identical(dplyr::collect(actual)$total, c(1, 3, 4))
 })
 
@@ -189,6 +191,7 @@ test_that("failure restores the outer partial record and releases ownership", {
           inspect_grouping(inner, .grouping = rollup(all_of(inner_select()))),
           error = function(cnd) {
             expect_identical(last_sent_queries(), inner_record)
+            expect_identical(last_sent_queries(FALSE), inner_record)
             observed$failure <- TRUE
           }
         )
@@ -214,7 +217,7 @@ test_that("failure restores the outer partial record and releases ownership", {
     )
     record <- last_sent_queries()
     if (mode == "caught") {
-      expect_identical(record[record$purpose != "result", ], outer_record)
+      expect_identical(last_sent_queries(FALSE), outer_record)
       expect_identical(dplyr::collect(result)$total, c(1, 3, 4))
     } else {
       expect_true(reentry_has_cause(
@@ -249,6 +252,7 @@ test_that("warning-handler reentry preserves the outer result and record", {
         inner, other = sum(v, na.rm = TRUE), .grouping = rollup(k)
       )
       expect_identical(last_sent_queries(), before)
+      expect_identical(last_sent_queries(FALSE), before)
       invokeRestart("muffleWarning")
     }
   )
