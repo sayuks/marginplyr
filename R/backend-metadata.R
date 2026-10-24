@@ -179,15 +179,22 @@ dtplyr_metadata_safe_step <- function(step) {
     numeric_columns <- names(source)[vapply(source, function(x) {
       is.numeric(x) && !is.object(x)
     }, logical(1))]
-    return(all(vapply(step[["new_vars"]], function(expr) {
-      if (is.null(expr) ||
-            (is.atomic(expr) && length(expr) == 1L && !is.object(expr))) {
+    return(all(vapply(names(step[["new_vars"]]), function(column) {
+      expr <- step[["new_vars"]][[column]]
+      if (is.null(expr)) {
         return(TRUE)
+      }
+      if (is.atomic(expr) && length(expr) == 1L && !is.object(expr)) {
+        # Scalar assignment to an existing column keeps its old metadata on
+        # zero rows, but may replace its type or add factor levels on real rows.
+        return(!column %in% names(source))
       }
       if (is.symbol(expr) && as.character(expr) %in% names(source)) {
         return(TRUE)
       }
-      dtplyr_value_stable_arithmetic(expr, numeric_columns, step[["env"]])
+      dtplyr_value_stable_arithmetic(expr, numeric_columns, step[["env"]]) &&
+        (!column %in% names(source) ||
+           !dtplyr_value_stable_arithmetic(expr, character(), step[["env"]]))
     }, logical(1))))
   }
   if (inherits(step, "dtplyr_step_group")) {
