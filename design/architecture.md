@@ -529,7 +529,8 @@ naming it.
 list, and the contextual-share module calls it for its denominator mappings
 rather than folding its own. It chooses its strategy from the branches, not
 from the operation's backend: an eager list is combined in a single
-`bind_rows()` behind an explicit column check that keeps the strictness
+`vctrs::vec_rbind()` with name validation that preserves valid names, behind an
+explicit column check that keeps the strictness
 `union_all()` supplied, and a lazy one is paired and halved. That makes the
 eager path one pass over the branches and the lazy path `O(n log n)` with
 nesting depth `log2(n)`, in place of the quadratic pairwise fold both used to

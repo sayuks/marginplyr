@@ -183,7 +183,7 @@ backend_capabilities <- function(kind) {
       # branches held -- it does so for a list of one table. Every branch list
       # this kind produces is combined that way, so a dimension carrying such
       # a level has to cross the union as character and be rebuilt after it
-      # (#408). No other kind is granted this: a local frame's `bind_rows()`
+      # (#408). No other kind is granted this: a local frame's `vec_rbind()`
       # keeps the level, and the two that lose it -- duckdb drops it on the
       # way in and arrow refuses the column outright -- lose it before any
       # branch exists, which is outside what marginplyr promises (ADR 0016).
