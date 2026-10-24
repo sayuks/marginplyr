@@ -841,18 +841,23 @@ rewrite_function_formals <- function(formals, rewrite) {
   as.pairlist(lapply(as.list(formals), rewrite))
 }
 
-# The arguments of a call a walk analyzes: everything the mask evaluates, and
-# nothing it captures. Every search that descends into a call reaches its parts
+# The arguments of a call a walk analyzes in the current data mask, excluding
+# language captures and arguments owned by independent operations. A search
+# that descends into a call reaches its parts
 # through this rather than through `static_call_args()` directly, which is what
 # keeps one reading of the boundary from being four.
 evaluated_call_args <- function(expr,
                                 call_name = static_call_name(expr),
                                 bound = character()) {
-  static_call_args(expr)[!captured_call_parts(expr, call_name, bound = bound)]
+  static_call_args(expr)[!(
+    captured_call_parts(expr, call_name, bound = bound) |
+      independent_mask_call_parts(expr)
+  )]
 }
 
 # The call a rewrite gives back after visiting its computed head, evaluated
-# arguments, and function defaults. Captured arguments stay as written.
+# arguments, and function defaults. Captured and independently owned arguments
+# stay as written.
 #
 # The arguments are read by index rather than mapped over, because a rewrite
 # has to put its replacements back in the positions they came from, and the
@@ -861,7 +866,7 @@ evaluated_call_args <- function(expr,
 # dropped them would turn `across(value, .names = "{.col}")` into a call whose
 # template is a positional argument.
 rewrite_evaluated_call_parts <- function(expr, rewrite) {
-  captured <- captured_call_parts(expr)
+  captured <- captured_call_parts(expr) | independent_mask_call_parts(expr)
   language_index <- readable_language_index(expr)
   head <- static_call_head(expr)
   evaluated_head <- evaluated_call_head(expr)
@@ -1101,8 +1106,9 @@ evaluated_language_parts <- function(expr, call_name = static_call_name(expr)) {
   static_language_values(static_call_args(expr)[[index]])
 }
 
-# Everything a search descends into: the computed head, evaluated arguments,
-# function defaults, and the language the call hands `eval()`. Reading these
+# Everything a search descends into in the current operation: the computed
+# head, evaluated arguments, function defaults, and language handed to `eval()`.
+# Independently owned arguments stay with their own operation. Reading these
 # together prevents a search over ordinary arguments alone from letting
 # `eval(quote(cur_group_id()))` run and answer a branch-local identifier, which
 # is the value that guard exists to refuse.

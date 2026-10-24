@@ -104,12 +104,7 @@ The table records per family whether its spellings are Contextual helpers, and
 `contextual_helper_families()` is that subset. The distinction is load-bearing
 rather than descriptive: what a Contextual helper promises is that a caller
 binding cannot win, and asserting that of a constructor would assert the
-opposite of the entry above. Three families are not Contextual helpers: the
-Grouping specification constructors, and the data-frame constructors
-`tibble()`, `tibble::data_frame()`, and `data.frame()`, whose spellings are
-read to recognize a possible data-frame-valued summary and candidate argument
-names, and which run whatever the caller has bound. The value's actual column
-names, rather than those candidates, determine any output collision (#674).
+opposite of the entry above.
 
 Every entry in the table is a function, so asking about one family builds that
 family alone. That is not an optimization: the share family derives from
@@ -671,3 +666,31 @@ pairlist as well as its body.
 This changes the reach of static analysis, not callable identity. A helper
 spelled inside an evaluated head is recognized; a head whose resulting
 function is chosen dynamically still names no Contextual helper by itself.
+
+## Amendment: independent data-mask ownership
+
+#781 bounds Contextual helper recognition to the operation that owns the
+expression. A nested Margin operation or dplyr data-mask verb owns its
+arguments; the enclosing Margin summary neither searches them for its helpers
+nor rewrites them with its Grouping plan or selection proxy. The nested call's
+input expression still belongs to the enclosing scope and is traversed.
+
+The registry records these ordinary operation spellings, their namespaces,
+and their input formal. Recognition follows the same namespace and redundant
+parenthesis rules as other registered spellings; it does not resolve a caller
+binding or qualify the operation's head. An unrecognized or computed operation
+head retains ordinary recursive traversal. Function literals, their defaults,
+and visibly evaluated language retain the traversal established above.
+
+For a `%>%` pipe with a recognized operation on its right, the left expression
+is the input and the right expression belongs to that operation. Native pipes
+already carry the input argument in R's parsed call.
+
+The shared searches, rewrites, and share dependency walk use one
+argument-ownership reader. Inner column and summary names belong to their
+operation, including names identical to an outer share. The outer dependency
+check still covers the nested input expression.
+
+The selection rewrite places an independent call inside an immediately invoked
+function. dplyr's own `pick()` expansion stops at that function boundary, so it
+cannot expand the nested operation's selection in the enclosing summary mask.

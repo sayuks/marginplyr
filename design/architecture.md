@@ -177,6 +177,11 @@ arrived as an injected quosure, which arguments a call captures as language
 rather than evaluating, which primitives resolve a name or evaluate language,
 and which language object a call is statically known to build.
 
+The searches, rewrites, and dependency walk respect data-mask ownership through
+`independent_mask_call_parts()` in `R/contextual-helpers.R`. They traverse a
+nested operation's input expression but leave its other arguments to that
+operation (ADR 0019, *Amendment: independent data-mask ownership*).
+
 It also owns the one reading of a redundant pair of parentheses. `(` is the
 identity function, so `(f)(x)`, `(f(x))`, and `f(x)` are one call written three
 ways, and the readers here answer the three alike — which is what gives every
@@ -243,8 +248,9 @@ recognized without being written down twice. This module therefore reads two
 deep modules as well as `R/utils.R`, and both of those two read it back;
 stated baldly that is a cycle, and what keeps it from being one in practice is
 that every entry in the table is a function, so a family lookup evaluates that
-family's owner and no other. `R/utils.R` is not part of it: the dependency on
-it runs one way, as it does from everything else.
+family's owner and no other. `R/utils.R` reads only the operation-ownership
+families through `independent_mask_call_parts()`; it does not evaluate the
+share family.
 
 That is the property worth checking rather than the layering, because the
 layering alone would not say which module reaches which. Under it, the only
