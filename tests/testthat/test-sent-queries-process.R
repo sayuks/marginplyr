@@ -38,6 +38,7 @@ test_that("audit preserves a deferred result warning failure", {
   expect_false(is.na(on$record$sql))
   expect_match(on$record$sql, "SELECT", fixed = TRUE)
   expect_true(on$warning_verbosity_restored)
+  expect_identical(on$details$status, "prepared")
 })
 
 test_that("audit preserves an internal selection-proxy warning failure", {
@@ -54,6 +55,12 @@ test_that("audit preserves an internal selection-proxy warning failure", {
   expect_false(is.na(on$record$sql))
   expect_match(on$record$sql, "SELECT", fixed = TRUE)
   expect_true(on$warning_verbosity_restored)
+  expect_identical(on$details$status, "errored")
+  observed <- on$details$conditions[[1L]]
+  expect_true(all(observed$phase == "invocation"))
+  expect_identical(observed$handling, c("propagated", "propagated"))
+  expect_true("warning" %in% observed$classes[[1L]])
+  expect_true("error" %in% observed$classes[[2L]])
 })
 
 expect_explicit_audit <- function(case) {

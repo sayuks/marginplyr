@@ -816,6 +816,25 @@ diagnostic render failed. Such rows remain in the internal view, even though
 `writeLines()` above selects only nonmissing text. Reading either view performs
 no rendering, query, fetch, or EXPLAIN and leaves the saved rows intact.
 
+Add `details = TRUE` to read the outcomes and conditions captured during the
+same call, even after reading the default view:
+
+```{r}
+#| eval: !expr has_duckdb
+
+detailed <- last_sent_queries(include_result = FALSE, details = TRUE)
+detailed[c("purpose", "source", "status")]
+detailed$conditions
+```
+
+The zero-row metadata and label-count collections normally have status
+`"returned"`. Each condition summary has `classes`, `message`, `phase`, and
+`handling`; an operation with no observed conditions holds a typed empty tibble.
+The accessor reference defines all statuses and the condition-summary schema.
+`source = "render"` describes how SQL was obtained, independently of whether
+rendering or the backend invocation succeeded. The compatibility result row
+stays `"prepared"`.
+
 Copy or export the record before another tracked call replaces it. A tibble
 you already hold survives that replacement unchanged:
 
@@ -849,10 +868,39 @@ before another tracked call starts:
 ```{r}
 #| eval: !expr has_duckdb
 
-failed_internal <- last_sent_queries(include_result = FALSE)
-failed_internal$purpose
+failed_internal <- last_sent_queries(include_result = FALSE, details = TRUE)
+failed_internal[c("purpose", "status")]
+failed_internal$conditions
 identical(readRDS(record_path), internal)
 ```
+
+The label-count SQL returned before the collision refusal. Its row remains
+`"returned"`, with no condition for that later public validation error. An
+internal operation's status never reports the outcome of the entire public
+call or guarantees server completion.
+
+A contextual share can also run a dialect question. In a fresh R session,
+DuckDB rejects the string aggregate; marginplyr handles that error and runs a
+separate numeric control. This example displays that handled error when the
+dialect has not already been cached:
+
+```{r}
+#| eval: !expr has_duckdb
+
+summarize_with_margins(
+  audit_sales, revenue = sum(revenue, na.rm = TRUE),
+  share = share_of_total(revenue), .grouping = rollup(region)
+)
+probe_details <- last_sent_queries(include_result = FALSE, details = TRUE)
+probe_details[c("purpose", "status")]
+probe_details$conditions[probe_details$status == "errored"]
+```
+
+A cached answer adds no probe or control row. Run the example in a fresh
+session to see the first question. An observed probe error has phase
+`"invocation"` and handling `"handled"`; warnings suppressed by existing probe
+logic remain suppressed. Ordinary invocation conditions propagate as before,
+and reading the record never replays them.
 
 The record is process-local and belongs to the latest call's construction.
 Enabling the option afterwards cannot recover earlier SQL. Nested calls own

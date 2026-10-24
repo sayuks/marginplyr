@@ -90,7 +90,8 @@ backend-native tools for an optimizer plan. With recording enabled before
 inspection, \link[=last_sent_queries]{last_sent_queries(include_result = FALSE)}
 shows its prepared internal SQL, such as DuckDB's zero-row metadata read,
 in recording order. It performs no query on access; missing SQL denotes a
-failed diagnostic render, not proof of database receipt or completion.
+failed diagnostic render, not proof of database receipt or completion. Add
+\code{details = TRUE} for the owned metadata operation's outcome and conditions.
 
 Because inspection builds no grouping-set branch, it also accepts a dtplyr
 step with an input rooted at \code{dtplyr::lazy_dt(immutable = FALSE)} and leaves

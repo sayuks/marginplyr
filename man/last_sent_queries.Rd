@@ -4,20 +4,26 @@
 \alias{last_sent_queries}
 \title{Inspect SQL prepared by the last marginplyr call}
 \usage{
-last_sent_queries(include_result = TRUE)
+last_sent_queries(include_result = TRUE, details = FALSE)
 }
 \arguments{
 \item{include_result}{One nonmissing logical value. \code{TRUE} (the default)
 includes the prepared, unexecuted result SQL. \code{FALSE} selects internal
 rows only, without needing their descriptive purpose names.}
+
+\item{details}{One nonmissing logical value. \code{FALSE} (the default) returns
+the original two columns. \code{TRUE} selects the stored diagnostic details;
+it does not enable capture or repeat work.}
 }
 \value{
-A tibble with two character columns, \code{purpose} and \code{sql}, containing
-prepared SQL representations in recording order. Only \code{"result"} is a
-stable public purpose value; all other purpose names are descriptive.
-A failed diagnostic render leaves \code{NA_character_} in \code{sql}. An empty
-view retains both character columns. Read a multi-line statement with
-\code{writeLines(x$sql[!is.na(x$sql)])}.
+A tibble in recording order. By default its two character columns
+are \code{purpose} and \code{sql}. With \code{details = TRUE} the columns are \code{purpose},
+\code{sql}, \code{source}, \code{status}, and \code{conditions}, in that order. The first four
+are character; \code{conditions} is a list of condition-summary tibbles.
+Empty views retain these column types. Only \code{"result"} is a stable public
+purpose value; all other purpose names are descriptive.
+A failed diagnostic render leaves \code{NA_character_} in \code{sql}. Read a
+multi-line statement with \code{writeLines(x$sql[!is.na(x$sql)])}.
 }
 \description{
 A Margin verb applied to a SQL backend returns its result unexecuted and
@@ -44,6 +50,50 @@ The input \code{.data} is evaluated before that call starts recording. If the
 input fails first, the outer call starts no record. Other arguments do
 not gain this early evaluation, and recording does not restore user options.
 }
+\section{Diagnostic details}{
+
+Details are captured during an audited call even when you first read only
+the default view. Both accessor arguments select stored rows and columns.
+\code{source} is \code{"render"} for an attempted diagnostic render or \code{"literal"}
+for SQL supplied by the package. Neither proves database receipt.
+
+\code{status} describes only the owned internal backend operation:
+\itemize{
+\item \code{"prepared"}: a row exists but no invocation was observed. The
+compatibility \code{"result"} row stays in this state.
+\item \code{"invoking"}: control reached the boundary immediately before the
+backend call, with no terminal observation yet. This can be read while
+the operation is active; it does not prove that the driver body ran.
+\item \code{"returned"}: the operation returned normally, possibly with warnings.
+\item \code{"errored"}: an error left the operation, even if package logic then
+handled it.
+\item \code{"interrupted"}: an interrupt left the operation.
+\item \code{"unknown"}: the call unwound without an established terminal observation
+for its invocation attempt.
+}
+
+Each \code{conditions} element is an ordered tibble with \code{classes} (a list of
+character class vectors), \code{message} (character), \code{phase} (\code{"render"} or
+\code{"invocation"}), and \code{handling} (\code{"handled"}, \code{"suppressed"},
+\code{"propagated"}, or \code{"unknown"}). No observed conditions gives a typed empty
+tibble. Summaries retain errors, warnings, and interrupts seen at the owned
+boundary, without retaining condition objects, environments, results, or
+connections. Handling describes that boundary: \code{"propagated"} allows user
+code to catch the condition later, and handling is stated only when known.
+Reading the record never signals these conditions again.
+
+Render failures retain their summaries independently of invocation status:
+missing SQL and a \code{"returned"} operation can coexist. A failed dialect
+question can have a handled error followed by a distinct, successful numeric
+control. The probe's existing warning suppression is preserved. Savepoint,
+rollback, and release controls each have their own row.
+
+A label-count query can be \code{"returned"} before validation refuses a Margin
+label collision. That public error belongs to the whole call and is not
+attached to the successful SQL row. Neither status nor SQL establishes
+server completion or the outcome of the entire public call.
+}
+
 \section{What the record promises}{
 
 The record belongs to the last Margin verb or inspection call during query
@@ -71,7 +121,8 @@ neither check: a cache hit or a label check with no columns adds no query.
 An internal query is recorded before invoking the backend operation.
 The SQL is a render, not a capture of DBI arguments or proof that the
 database received or completed the query. A call that fails leaves its
-own earlier rows readable; the record contains no execution outcomes.
+own earlier rows readable; the detailed view describes observed internal
+outcomes at the package boundary.
 
 Two identical calls need not produce identical records: the answer to
 whether a backend can compute a contextual share is cached per SQL dialect
@@ -152,8 +203,8 @@ if (
     .check_margin_label = TRUE
   )
 
-  internal <- last_sent_queries(include_result = FALSE)
-  internal$purpose
+  internal <- last_sent_queries(include_result = FALSE, details = TRUE)
+  internal[c("purpose", "status")]
   writeLines(internal$sql[!is.na(internal$sql)])
   sent <- last_sent_queries()
   writeLines(sent$sql[sent$purpose == "result"])
@@ -169,12 +220,22 @@ if (
       .check_margin_label = TRUE
     ),
     marginplyr_error = function(cnd) {
-      print(last_sent_queries(include_result = FALSE))
+      # The label-count query returned before validation refused the call.
+      print(last_sent_queries(include_result = FALSE, details = TRUE))
     }
   )
   # `internal` and its exported copy still describe the first call.
   identical(readRDS(path), internal)
   unlink(path)
+
+  # A cold DuckDB dialect question errors and the numeric control returns.
+  # A cached dialect skips both operations, leaving no artificial rows.
+  summarize_with_margins(
+    sales_db, revenue = sum(revenue, na.rm = TRUE),
+    share = share_of_total(revenue), .grouping = rollup(region)
+  )
+  details <- last_sent_queries(include_result = FALSE, details = TRUE)
+  details$conditions[details$status == "errored"]
   DBI::dbDisconnect(con)
   options(old)
 }

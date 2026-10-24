@@ -160,7 +160,9 @@ options(old)
 }\if{html}{\out{</div>}}
 
 The default view includes the prepared, unexecuted result SQL;
-\code{include_result = FALSE} selects internal work. Recording renders queries
+\code{include_result = FALSE} selects internal work. Add \code{details = TRUE} for
+observed internal outcomes and condition summaries, captured during every
+audited call. Recording renders queries
 locally or records literal SQL controls, adding no backend operation.
 A missing SQL value means diagnostic rendering failed, and a recorded
 representation does not prove database receipt or completion.
