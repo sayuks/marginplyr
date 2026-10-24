@@ -177,11 +177,10 @@ arrived as an injected quosure, which arguments a call captures as language
 rather than evaluating, which primitives resolve a name or evaluate language,
 and which language object a call is statically known to build.
 
-The searches and rewrites also respect independent data-mask ownership through
+The searches, rewrites, and dependency walk respect data-mask ownership through
 `independent_mask_call_parts()` in `R/contextual-helpers.R`. They traverse a
 nested operation's input expression but leave its other arguments to that
-operation (ADR 0019, *Amendment: independent data-mask ownership*). The share
-dependency walk retains its conservative lexical-read analysis.
+operation (ADR 0019, *Amendment: independent data-mask ownership*).
 
 It also owns the one reading of a redundant pair of parentheses. `(` is the
 identity function, so `(f)(x)`, `(f(x))`, and `f(x)` are one call written three

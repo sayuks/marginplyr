@@ -841,14 +841,18 @@ rewrite_function_formals <- function(formals, rewrite) {
   as.pairlist(lapply(as.list(formals), rewrite))
 }
 
-# The arguments of a call a walk analyzes: everything the mask evaluates, and
-# nothing it captures. Every search that descends into a call reaches its parts
+# The arguments of a call a walk analyzes in the current data mask, excluding
+# language captures and arguments owned by independent operations. A search
+# that descends into a call reaches its parts
 # through this rather than through `static_call_args()` directly, which is what
 # keeps one reading of the boundary from being four.
 evaluated_call_args <- function(expr,
                                 call_name = static_call_name(expr),
                                 bound = character()) {
-  static_call_args(expr)[!captured_call_parts(expr, call_name, bound = bound)]
+  static_call_args(expr)[!(
+    captured_call_parts(expr, call_name, bound = bound) |
+      independent_mask_call_parts(expr)
+  )]
 }
 
 # The call a rewrite gives back after visiting its computed head, evaluated
@@ -1120,9 +1124,7 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
     language <- list()
   }
   c(evaluated_call_head(expr),
-    static_call_args(expr)[!(
-      captured_call_parts(expr, call_name) | independent_mask_call_parts(expr)
-    )],
+    evaluated_call_args(expr, call_name = call_name),
     function_formal_defaults(expr), language)
 }
 

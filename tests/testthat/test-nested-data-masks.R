@@ -77,6 +77,35 @@ test_that("nested Margin summaries own Parent and Total share validation", {
   )
   expect_identical(actual$nested[[1L]], expected)
   expect_identical(actual$nested, actual$control)
+
+  with_outer_share <- summarize_with_margins(
+    outer,
+    total = sum(value), parent = share_of_total(total),
+    nested = list(summarize_with_margins(
+      inner, parent = sum(value), overall = share_of_total(parent),
+      .grouping = rollup(h)
+    )),
+    selected = list(dplyr::mutate(
+      tibble::tibble(parent = 2), dplyr::across(parent, ~ .x * 2)
+    )),
+    .grouping = rollup(g)
+  )
+  for (nested in with_outer_share$nested) {
+    expect_identical(nested$parent, c(2, 6, 8))
+    expect_identical(nested$overall, c(0.25, 0.75, 1))
+  }
+  for (selected in with_outer_share$selected) {
+    expect_identical(selected, tibble::tibble(parent = 4))
+  }
+  expect_error(
+    summarize_with_margins(
+      outer, total = sum(value), parent = share_of_total(total),
+      nested = list(dplyr::mutate(tibble::tibble(x = parent), x = x * 2)),
+      .grouping = rollup(g)
+    ),
+    "Ordinary summaries cannot use an earlier Total share",
+    class = "marginplyr_error"
+  )
 })
 
 test_that("operation inputs still evaluate in the enclosing Margin summary", {
