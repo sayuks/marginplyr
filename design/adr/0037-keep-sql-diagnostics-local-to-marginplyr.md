@@ -111,6 +111,9 @@ zero-row metadata, dialect questions, and their controls. Later retrieval,
 connection-wide recording, and tracking derived results were considered and
 removed from this task by that explicit requirement change. This is not an
 inference from the earlier ADR or agreement with a past recommendation.
+The approved tickets [#790](https://github.com/sayuks/marginplyr/issues/790) and
+[#791](https://github.com/sayuks/marginplyr/issues/791) carry this scope and
+interface decision into the two implementation slices.
 
 Retain the existing option, latest-call lifetime, active-parent restoration,
 and two-column default of `last_sent_queries()`. Adopt an `include_result`
