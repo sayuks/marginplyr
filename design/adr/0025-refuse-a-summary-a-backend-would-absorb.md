@@ -184,6 +184,14 @@ and so cannot see a read another package performs on marginplyr's behalf; this o
 counts the backend's own reads while a verb runs, over a summary the backend
 evaluates, an expansion that carries no caller expression, and the refusing path.
 
+## Amendment: generated Margin label transformations (#783)
+
+The refusal also covers generated Margin label mutations in summaries and
+expansions. The Margin label module applies the warning handler and local-result
+guard at those mutations; its Package condition names the transformation rather
+than a caller summary argument. Supported transformations stay lazy, and a
+Dataset's own refusal remains an External condition. ADR 0020 gains no exemption.
+
 ## Related decisions
 
 ADR 0020 is the rule this serves and the one this corrects; its Arrow sentence is

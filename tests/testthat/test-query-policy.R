@@ -643,9 +643,6 @@ test_that("no Arrow read happens while a Margin verb runs", {
     0L
   )
 
-  # An expansion carries no caller expression at all, so it cannot reach an
-  # absorbed one. Asserted rather than assumed, since that is a property of
-  # the signature and signatures change.
   expect_identical(
     count_entry_point_invocations(
       expand_with_margins(table, .grouping = rollup(k))
