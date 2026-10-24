@@ -28,6 +28,7 @@ enum
 enums
 marginplyr's
 nonlocal
+nonmissing
 pre
 presentational
 quartabs
@@ -42,6 +43,7 @@ tabsets
 tibble
 tidyr
 tidyselect
+unaudited
 unclamped
 unexecuted
 ungroup
