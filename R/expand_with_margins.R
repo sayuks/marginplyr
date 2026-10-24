@@ -153,13 +153,16 @@ execute_margin_expand <- function(operation) {
   set_id_name <- if (is.null(sort_id)) operation$set_id_name else sort_id
 
   new_margin_execution(
-    expand_margin_union(
-      operation$data,
-      plan = operation$plan,
-      margin_labels = operation$margin_labels,
-      column_info = operation$column_info,
-      backend = operation$backend,
-      set_id_name = set_id_name
+    with_margin_error_call(
+      expand_margin_union(
+        operation$data,
+        plan = operation$plan,
+        margin_labels = operation$margin_labels,
+        column_info = operation$column_info,
+        backend = operation$backend,
+        set_id_name = set_id_name
+      ),
+      call = operation$call
     ),
     sort_id = sort_id,
     declared_types = if (sqlite_declared_type_result(operation) &&

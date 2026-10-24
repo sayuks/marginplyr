@@ -517,10 +517,8 @@ wraps the branch summary alone in `with_branch_conditions()`, so that the
 checks and builders around it keep raising their Package conditions unchanged.
 
 The same fact gives it a second responsibility, and ADR 0025 is where the
-decision behind it sits. An Absorbing backend answers an expression its own
-engine cannot evaluate by reading the caller's input into R, and the branch
-summary is where that would happen, so it is where the expression is refused
-instead. Two readings raise the refusal and they fail in opposite directions:
+decision behind it sits. Two readings raise the refusal and they fail in
+opposite directions:
 a handler on the backend's own warning, which is raised before it reads, and a
 guard on the branch result's class, which cannot stop matching but answers only
 after the branch has run. Both are scoped by `arrow_input_classes()` from

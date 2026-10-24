@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Generated Arrow Margin label transformations that would automatically
+  collect the input are now refused before collection in summaries and
+  expansions. See *Arrow inputs* in `?summarize_with_margins` (#783).
+
 * `last_sent_queries(include_result = FALSE)` selects the latest call's
   internal SQL while preserving the default two-column record (#790).
 

@@ -570,9 +570,11 @@ contract depends on both the verb and the query's sources:\tabular{llll}{
 }
 
 
-A translatable summary or expansion stays an Arrow query. For a summary
-Arrow cannot translate, a \code{Table} and \code{RecordBatch} (and queries built on
-them) would fall back to R, so marginplyr refuses it before a row is read. A
+A translatable summary or expansion stays an Arrow query. For a summary or
+generated Margin label transformation Arrow cannot translate, a \code{Table} and
+\code{RecordBatch} (and queries built on them) would fall back to R, so marginplyr
+refuses it before a row is read. Collect the input first to perform that
+operation locally, selecting the columns you need before collecting. A
 \code{Dataset} and a query built on one instead keep Arrow's own
 unsupported-expression error. Thus an \code{arrow_dplyr_query} is described by
 its complete source graph, not by its query class alone.
@@ -620,9 +622,9 @@ the same values and are interchangeable.
 
 Arrow inputs reject both after expression planning and common
 Margin-operation validation but before constructing a summary query. Other
-Arrow Margin operations remain supported and lazy, apart from a summary
-Arrow's own engine cannot evaluate, which is refused for its own reason and
-before any row is read. Explicitly collect an Arrow input first when local
+Arrow Margin operations remain supported and lazy, apart from expressions
+Arrow's own engine cannot evaluate, which are refused before any row is read.
+Explicitly collect an Arrow input first when local
 share execution is appropriate.
 
 A row that is its own denominator receives \code{1.0}. Missing numerators or

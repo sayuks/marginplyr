@@ -428,6 +428,42 @@ abort_observed_label_collision <- function(bad_cols, bad_labels) {
   ))
 }
 
+# Refuse generated label mutations that Arrow would evaluate by collecting.
+# The caller supplies named expressions for one prepared grouping-set branch.
+mutate_margin_labels <- function(.data, expressions) {
+  result <- withCallingHandlers(
+    dplyr::mutate(.data, !!!expressions),
+    warning = function(cnd) {
+      if (is_absorbing_backend_warning(cnd, .data)) {
+        abort_absorbed_margin_labels()
+      }
+    }
+  )
+  # As in summarize_margin_branch(), a local result catches a missed warning
+  # (ADR 0025). The handler above is what prevents the read itself.
+  if (inherits(.data, arrow_input_classes()) && is.data.frame(result)) {
+    abort_absorbed_margin_labels()
+  }
+  result
+}
+
+# Generated transformations have no caller summary argument to blame.
+abort_absorbed_margin_labels <- function() {
+  abort_marginplyr(c(
+    paste0(
+      "Arrow cannot evaluate this Margin label transformation, so Arrow ",
+      "would read the whole input to compute it."
+    ),
+    i = "Collect the Arrow input first, then call the Margin verb again.",
+    i = paste0(
+      "Collection changes the default of {.arg .check_margin_label} from ",
+      "{.code FALSE} to {.code TRUE}; set it explicitly when ",
+      "re-running this call."
+    ),
+    i = "Select the columns you need before collecting."
+  ))
+}
+
 # One grouping-set branch after label conversion. The caller supplies a
 # validated plan, per-dimension labels, and typed column metadata.
 label_margin_branch <- function(.data,
@@ -501,7 +537,7 @@ label_margin_branch <- function(.data,
         names(encoded_exprs) <- unname(vapply(
           encoded_factor_cols, safe_name, character(1)
         ))
-        dplyr::mutate(source, !!!encoded_exprs)
+        mutate_margin_labels(source, encoded_exprs)
       }
     )
   }
@@ -522,7 +558,7 @@ label_margin_branch <- function(.data,
           rlang::expr(as.character(!!margin_column_pronoun(col)))
         })
         names(conversions) <- safe_columns
-        dplyr::mutate(source, !!!conversions)
+        mutate_margin_labels(source, conversions)
       }
     )
   }
@@ -572,7 +608,7 @@ label_margin_branch <- function(.data,
         names(values) <- vapply(
           omitted, safe_name, character(1), USE.NAMES = FALSE
         )
-        dplyr::mutate(source, !!!values)
+        mutate_margin_labels(source, values)
       }
     )
   }
