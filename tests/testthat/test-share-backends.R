@@ -2226,11 +2226,17 @@ test_that("DuckDB reports an ineligible share source against its summary", {
   # about the property. The property is which marginplyr identifier a reader is
   # left holding, and the whole of #106's DuckDB half was that it read
   # `..marginplyr_share_value_1`, which names nothing the caller wrote.
+  # Only complete quoted identifiers count: SQL excerpts can cut off a name
+  # before its closing quote.
   message <- conditionMessage(remote_error)
   expect_snapshot(
     unique(unlist(regmatches(
       message,
-      gregexpr("[.][.]marginplyr_[A-Za-z0-9_]+", message)
+      gregexpr(
+        "(?<=\")[.][.]marginplyr_[A-Za-z0-9_]+(?=\")",
+        message,
+        perl = TRUE
+      )
     )))
   )
 })

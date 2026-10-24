@@ -1,0 +1,11 @@
+investigated,commit,script,exit_status,observation
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,01-nested-operation.R,1,"inner bit expected 0,1; observed 0,0 and 1,1"
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,01-nested-mutate.R,1,inner g expected 2; observed 1
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,02-dtplyr-factor.R,1,detail f expected z; observed NA
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,02-dtplyr-selection.R,1,"numeric selection expected v; observed i,v"
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,03-arrow-read.R,1,expected no collect; observed 1 entry and 1 returned row
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,04-name-repair.R,1,expected sales...1; observed sales
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,05-fixed-pronoun.R,1,fixed .env key rejected during generated rename
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,06-postgres-null.R,1,UNION types integer and text cannot be matched
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,07-matrix-source.R,1,expected source refusal; observed generated if_else failure
+2026-10-23,0e3f1dcca46f4d51d4d99cd200cf73540c96133d,08-build-contents.R,1,658 worktree descendants in local source tarball

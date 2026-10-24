@@ -189,7 +189,8 @@ jobs:
   backend-matrix:
     name: Generate the backend matrix
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # This includes R's system dependency downloads; generation has its own limit.
+    timeout-minutes: 30
 
     outputs:
       backend: ${{ steps.generate.outputs.backend }}
@@ -207,6 +208,7 @@ jobs:
 
       - name: Generate the backend matrix
         id: generate
+        timeout-minutes: 2
         run: Rscript .github/scripts/generate-backend-matrix.R
 
   build:

@@ -25,13 +25,15 @@ is_inside <- function(path, directory) {
   startsWith(canonical_path(path), root)
 }
 
+# Read the effective paths directly: DuckDB 2.0 hides deprecated settings
+# from duckdb_settings(), including extension_directory.
 duckdb_storage_directories <- function(con) {
   settings <- DBI::dbGetQuery(
     con,
-    "SELECT name, value FROM duckdb_settings()
-     WHERE name IN ('extension_directory', 'secret_directory')"
+    "SELECT current_setting('extension_directory') AS extension_directory,
+            current_setting('secret_directory') AS secret_directory"
   )
-  stats::setNames(settings$value, settings$name)
+  unlist(settings, use.names = TRUE)
 }
 
 test_that("a test DuckDB connection stores its files under tempdir() alone", {
