@@ -2891,10 +2891,10 @@ apply_joined_shares <- function(result,
         backend = backend
       )
       rename_pairs <- rlang::set_names(
-        rlang::syms(join_names),
+        join_names,
         right_join_names
       )
-      mapping <- dplyr::rename(mapping, !!!rename_pairs)
+      mapping <- dplyr::rename(mapping, dplyr::all_of(rename_pairs))
       result <- dplyr::left_join(
         result,
         mapping,
