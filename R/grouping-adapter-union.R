@@ -80,19 +80,14 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
   dplyr::transmute(dplyr::filter(.data, FALSE), !!!projections)
 }
 
-# `dplyr::bind_rows()` combines the whole list in one pass, and it is the whole
-# of the eager path: `union_all.data.frame()` ends in a `dplyr_reconstruct()`
-# onto its first argument, but that call restores nothing `vec_rbind()` did not
-# already take from the same frame, so reproducing it would add the
-# reconstruction step ADR-0016 forbids an adapter and change no result.
-#
-# What does differ is strictness. `bind_rows()` fills a column a branch does not
-# have with `NA` where `union_all()` rejects the pair, so the check below
-# restores it explicitly: a branch of an unexpected shape is a defect in the
-# builders further down this file, and widening the result would hide it.
+# Combine eager branches with the same columns in one pass. `check_unique`
+# preserves valid suffixes such as `sales...1` that the default name repair
+# rewrites. Class and attributes remain delegated to vctrs (ADR 0016).
+# The column check retains `union_all()`'s strictness: filling a missing column
+# would hide a defect in the branch builders.
 bind_margin_branches <- function(branches) {
   check_branch_columns(branches)
-  dplyr::bind_rows(branches)
+  vctrs::vec_rbind(!!!branches, .name_repair = "check_unique")
 }
 
 # `names()` rather than `get_col_names()`: this runs on data frames only, where

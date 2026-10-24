@@ -93,7 +93,7 @@ test_that("a branch of an unexpected shape is rejected, not filled", {
 # The eager path has to combine the whole list in one pass, which is the
 # property that makes it linear. Withdrawing `union_all()` is how that is
 # asserted without timing anything: a fold of any shape fails, a single
-# `bind_rows()` does not.
+# `vec_rbind()` does not.
 test_that("eager branches are combined without folding pairwise", {
   branches <- lapply(1:4, function(i) data.frame(a = 1:2, b = i))
 
