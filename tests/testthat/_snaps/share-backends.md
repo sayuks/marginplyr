@@ -22,8 +22,8 @@
 # DuckDB reports an ineligible share source against its summary
 
     Code
-      unique(unlist(regmatches(message, gregexpr("[.][.]marginplyr_[A-Za-z0-9_]+",
-        message))))
+      unique(unlist(regmatches(message, gregexpr(
+        "(?<=\")[.][.]marginplyr_[A-Za-z0-9_]+(?=\")", message, perl = TRUE))))
     Output
       [1] "..marginplyr_denominator_of_lab_1"
 
