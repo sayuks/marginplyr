@@ -104,12 +104,7 @@ The table records per family whether its spellings are Contextual helpers, and
 `contextual_helper_families()` is that subset. The distinction is load-bearing
 rather than descriptive: what a Contextual helper promises is that a caller
 binding cannot win, and asserting that of a constructor would assert the
-opposite of the entry above. Three families are not Contextual helpers: the
-Grouping specification constructors, and the data-frame constructors
-`tibble()`, `tibble::data_frame()`, and `data.frame()`, whose spellings are
-read to recognize a possible data-frame-valued summary and candidate argument
-names, and which run whatever the caller has bound. The value's actual column
-names, rather than those candidates, determine any output collision (#674).
+opposite of the entry above.
 
 Every entry in the table is a function, so asking about one family builds that
 family alone. That is not an optimization: the share family derives from
