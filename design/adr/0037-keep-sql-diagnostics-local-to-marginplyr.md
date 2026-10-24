@@ -8,7 +8,7 @@ Accepted on 2026-10-04. marginplyr explains its own internal SQL; it does not
 become a connection-wide execution monitor or persistent audit store. This
 scope decision supersedes the unimplemented proposal in ADR 0036. The original
 decision adopted no new public API or record schema; the 2026-10-24 amendment
-below selects the focused extension. Neither decision claims implementation.
+below selects the focused extension.
 
 ## Need and responsibility
 
