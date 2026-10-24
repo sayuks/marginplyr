@@ -2,16 +2,22 @@
 % Please edit documentation in R/sent-queries.R
 \name{last_sent_queries}
 \alias{last_sent_queries}
-\title{Read back the SQL marginplyr sent in the last call}
+\title{Inspect SQL prepared by the last marginplyr call}
 \usage{
-last_sent_queries()
+last_sent_queries(include_result = TRUE)
+}
+\arguments{
+\item{include_result}{One nonmissing logical value. \code{TRUE} (the default)
+includes the prepared, unexecuted result SQL. \code{FALSE} selects internal
+rows only, without needing their descriptive purpose names.}
 }
 \value{
-A tibble with two character columns. \code{purpose} says what the query
-was sent for and \code{sql} holds the statement as it was rendered. Rows are in
-the order the queries were recorded, which is the only ordering the record
-carries. There is no print method: a multi-line statement is read with
-\code{writeLines(x$sql)}.
+A tibble with two character columns, \code{purpose} and \code{sql}, containing
+prepared SQL representations in recording order. Only \code{"result"} is a
+stable public purpose value; all other purpose names are descriptive.
+A failed diagnostic render leaves \code{NA_character_} in \code{sql}. An empty
+view retains both character columns. Read a multi-line statement with
+\code{writeLines(x$sql[!is.na(x$sql)])}.
 }
 \description{
 A Margin verb applied to a SQL backend returns its result unexecuted and
@@ -41,8 +47,8 @@ not gain this early evaluation, and recording does not restore user options.
 \section{What the record promises}{
 
 The record belongs to the last Margin verb or inspection call during query
-construction. It holds the SQL that call sent and a render of its result,
-not a complete ledger of later execution. Finite collection and direct
+construction. It holds SQL prepared for that call's internal work and a
+render of its unexecuted result. Finite collection and direct
 materialization do not append LIMIT, destination metadata, savepoint, DDL,
 INSERT, or ANALYZE statements. Computing an older result leaves a newer
 call's record unchanged. An audited call on a data frame, dtplyr, or Arrow
@@ -51,7 +57,16 @@ table therefore records nothing; that zero-row answer is correct.
 \code{"result"} is the one \code{purpose} promised: the query the Margin verb returns
 unexecuted, rendered before it is handed to you, which your own
 \code{\link[dplyr:collect]{dplyr::collect()}} is still what runs. Every other row is a query marginplyr
-sends for its own reasons, and the names those rows carry are not fixed.
+prepares for its own work. \code{include_result = FALSE} removes only the
+\code{"result"} rows, retaining internal rows even when their SQL is missing.
+Reading either view does no rendering, query, fetch, or EXPLAIN and changes
+neither the stored rows nor a copy you already hold.
+
+With \code{.check_margin_label = TRUE}, an observed label check aggregates
+collision counts in the database and retrieves one row, with one count per
+checked column. It does not retrieve all unique values. Zero-row SQL
+metadata on DuckDB is a separate internal operation. Recording requests
+neither check: a cache hit or a label check with no columns adds no query.
 
 An internal query is recorded before invoking the backend operation.
 The SQL is a render, not a capture of DBI arguments or proof that the
@@ -81,21 +96,22 @@ other than \code{TRUE} when the call began, and the call is refused with a
 \code{"marginplyr_error"} naming \code{marginplyr.audit_sql}. The option is read
 once, as the call begins; setting it afterwards does not audit a call
 already made.
-\item The call was audited and sent nothing: a zero-row tibble, the only answer
-with zero rows.
-\item A statement had no SQL form on this backend -- a translation dbplyr
-refuses when the query is rendered -- and its row holds \code{NA} in \code{sql}.
-The call itself is unaffected; the refusal is raised when you render or
-collect the result.
+\item The call was audited but the selected view has no SQL rows: a zero-row
+tibble. This includes validation-only refusal and an internal-only view
+of a call that recorded just its result.
+\item A diagnostic render failed, and its row holds \code{NA} in \code{sql}. Recording
+does not raise that render error. The internal backend operation, or a
+later explicit render or collection of the result, may still fail.
 }
 }
 
 \section{Writing the record out}{
 
-marginplyr writes no file. The tibble is what you write, in whatever format
-your audit needs:
+Copy or export the tibble before the next tracked call replaces the record.
+marginplyr keeps no accumulated history and writes no file automatically:
 
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{utils::write.csv(last_sent_queries(), path)
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{internal <- last_sent_queries(include_result = FALSE)
+utils::write.csv(internal, path, row.names = FALSE)
 }\if{html}{\out{</div>}}
 
 For a batch of calls, read the record after each one and bind the pieces:
@@ -132,13 +148,33 @@ if (
   query <- summarize_with_margins(
     .data = sales_db,
     revenue = sum(revenue, na.rm = TRUE),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .check_margin_label = TRUE
   )
 
+  internal <- last_sent_queries(include_result = FALSE)
+  internal$purpose
+  writeLines(internal$sql[!is.na(internal$sql)])
   sent <- last_sent_queries()
-  sent$purpose
   writeLines(sent$sql[sent$purpose == "result"])
+  path <- tempfile(fileext = ".rds")
+  saveRDS(internal, path)
 
+  # A failed call also leaves its own partial record readable.
+  tryCatch(
+    summarize_with_margins(
+      dplyr::mutate(sales_db, region = "Total"),
+      revenue = sum(revenue, na.rm = TRUE),
+      .grouping = rollup(region),
+      .check_margin_label = TRUE
+    ),
+    marginplyr_error = function(cnd) {
+      print(last_sent_queries(include_result = FALSE))
+    }
+  )
+  # `internal` and its exported copy still describe the first call.
+  identical(readRDS(path), internal)
+  unlink(path)
   DBI::dbDisconnect(con)
   options(old)
 }
@@ -147,6 +183,6 @@ if (
 \emph{\link[=summarize_with_margins]{When marginplyr queries your data}} for
 the queries a Margin verb sends without being asked,
 \code{\link[dplyr:show_query]{dplyr::show_query()}} for the result query alone, and \emph{Record the SQL
-marginplyr sends} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database-backends guide} for the record
+marginplyr prepares} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database-backends guide} for the record
 read against a live connection.
 }

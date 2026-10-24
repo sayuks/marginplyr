@@ -129,10 +129,10 @@
 #'
 #' [recipe]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
-#' @section Recording the SQL marginplyr sends:
-#' marginplyr keeps no record of the SQL it sends unless you ask for one.
+#' @section Recording the SQL marginplyr prepares:
+#' marginplyr records prepared SQL representations only when you ask for them.
 #' `options(marginplyr.audit_sql = TRUE)` switches the record on, and
-#' [last_sent_queries()] reads back what the most recent call sent:
+#' [last_sent_queries()] reads the most recent call's record in recording order:
 #'
 #' ```r
 #' # `sales_db` is a lazy table on a SQL connection.
@@ -144,14 +144,19 @@
 #'   .grouping = rollup(region, store)
 #' )
 #'
+#' internal <- last_sent_queries(include_result = FALSE)
 #' last_sent_queries()
 #' options(old)
 #' ```
 #'
-#' There is one capture, `dbplyr::sql_render()`. It renders in your own
-#' session and sends nothing the call did not already send, so what
-#' *[When marginplyr queries your data][summarize_with_margins]* enumerates is
-#' the same whether or not you are recording.
+#' The default view includes the prepared, unexecuted result SQL;
+#' `include_result = FALSE` selects internal work. Recording renders queries
+#' locally or records literal SQL controls, adding no backend operation.
+#' A missing SQL value means diagnostic rendering failed, and a recorded
+#' representation does not prove database receipt or completion.
+#' *[When marginplyr queries your data][summarize_with_margins]* states which
+#' internal operations can run. Copy or export the record before the next call
+#' replaces it; a failed call leaves its own partial record readable.
 #'
 #' What the record holds, which calls keep one, and the four answers it gives
 #' -- three of them could otherwise look alike -- are stated in

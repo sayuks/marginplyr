@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* `last_sent_queries(include_result = FALSE)` selects the latest call's
+  internal SQL while preserving the default two-column record (#790).
+
 * SQLite Parent shares now match equivalent grouping keys under `NOCASE` and
   `RTRIM` collations, including when children retain different spellings of
   their Parent key (#767).

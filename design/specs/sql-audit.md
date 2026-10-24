@@ -2,8 +2,8 @@
 
 Status: accepted design, 2026-10-24. The maintainer accepted the latest-call
 record, internal-only accessor option, and detailed outcome/condition view.
-Product implementation is outside this task. The accessor arguments and
-diagnostic fields specified below are not implemented.
+`include_result` is implemented by #790. The `details` argument and diagnostic
+fields below remain accepted follow-up work in #791.
 
 ## Current requirement
 
@@ -36,6 +36,7 @@ The existing interface already addresses the core SQL-viewing need:
 
 - `options(marginplyr.audit_sql = TRUE)` enables recording before a call.
 - `last_sent_queries()` returns that call's two-column `purpose` / `sql` tibble.
+- `last_sent_queries(include_result = FALSE)` selects internal rows.
 - Only the `result` purpose is a stable public value. Excluding it selects
   internal rows without treating other current purpose names as fixed API.
 - Each independent tracked call replaces the last record. A failed call leaves
@@ -71,7 +72,7 @@ errors become `NA` without a retained cause. Internally handled probe conditions
 and cache reuse are not explained by its two columns. Cached probes must not be
 rerun merely to populate diagnostics. Non-SQL work has no SQL rows.
 
-## Existing usage, without an implementation change
+## Internal SQL workflow
 
 ```r
 old <- options(marginplyr.audit_sql = TRUE)
@@ -83,7 +84,7 @@ tryCatch({
     .check_margin_label = TRUE
   )
   queries <- last_sent_queries()
-  internal <- queries[queries$purpose != "result", ]
+  internal <- last_sent_queries(include_result = FALSE)
   print(internal$purpose)
   writeLines(internal$sql[!is.na(internal$sql)])
   # Rows with NA SQL remain visible in `internal`; they are render failures.
@@ -103,8 +104,8 @@ Keep recording off by default, and preserve the existing exact-TRUE activation
 and entry-time setting. A bad option value remains inactive rather than changing
 the query's behavior; the accessor explains when the call was not recorded.
 
-The future signature is
-`last_sent_queries(include_result = TRUE, details = FALSE)`:
+The current signature is `last_sent_queries(include_result = TRUE)`.
+The accepted follow-up adds `details = FALSE`:
 
 - The no-argument call retains its existing shape and meaning.
 - `include_result = FALSE` is a convenience for the existing result exclusion.

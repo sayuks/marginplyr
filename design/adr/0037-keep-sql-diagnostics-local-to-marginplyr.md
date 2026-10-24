@@ -123,7 +123,8 @@ choices over information recorded when the existing audit option is enabled;
 neither reruns queries or reconstructs earlier calls. The
 [internal SQL specification](../specs/sql-audit.md) owns defaults, field meanings,
 empty/error cases, observation sites, and acceptance scenarios. This extension
-is accepted but unimplemented.
+implements `include_result` in #790; the detailed view remains accepted
+follow-up work in #791.
 
 Keep one call's own record in memory and let the caller copy or export it.
 This replaces the automatic SQLite history previously accepted during the
