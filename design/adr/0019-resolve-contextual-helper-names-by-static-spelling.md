@@ -671,3 +671,23 @@ pairlist as well as its body.
 This changes the reach of static analysis, not callable identity. A helper
 spelled inside an evaluated head is recognized; a head whose resulting
 function is chosen dynamically still names no Contextual helper by itself.
+
+## Amendment: independent data-mask ownership
+
+#781 bounds Contextual helper recognition to the operation that owns the
+expression. A nested Margin operation or dplyr data-mask verb owns its
+arguments; the enclosing Margin summary neither searches them for its helpers
+nor rewrites them with its Grouping plan or selection proxy. The nested call's
+input expression still belongs to the enclosing scope and is traversed.
+
+The registry records these ordinary operation spellings, their namespaces,
+and their input formal. Recognition follows the same namespace and redundant
+parenthesis rules as other registered spellings; it does not resolve a caller
+binding or qualify the operation's head. An unrecognized or computed operation
+head retains ordinary recursive traversal. Function literals, their defaults,
+and visibly evaluated language retain the traversal established above.
+
+The shared searches and rewrites use one argument-ownership reader. The share
+dependency walk keeps its conservative lexical-read analysis: an independent
+data mask can still fall back to the enclosing environment, so ownership does
+not establish that an earlier outer share is unread.

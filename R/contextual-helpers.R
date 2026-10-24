@@ -1,5 +1,5 @@
 # Every spelling a Margin verb recognizes as a Contextual helper or as one of
-# the three families read alongside them, keyed by the family that decides what
+# the families read alongside them, keyed by the family that decides what
 # recognition does. It is the one place those names and the namespaces they may
 # carry are written down, and the one place their namespace test is
 # implemented. ADR 0019's *The recognized spellings live in one registry* is
@@ -109,8 +109,64 @@ static_spelling_rules <- function() {
         contextual = FALSE,
         names = "data.frame"
       )
+    },
+    dplyr_mask = function() {
+      list(
+        namespaces = "dplyr",
+        contextual = FALSE,
+        input = ".data",
+        names = c(
+          "mutate", "transmute", "summarise", "summarize", "reframe",
+          "filter", "arrange", "group_by", "rowwise", "distinct",
+          "select", "rename", "rename_with", "relocate", "slice",
+          "slice_head", "slice_tail", "slice_min", "slice_max", "slice_sample"
+        )
+      )
+    },
+    dplyr_count_mask = function() {
+      list(
+        namespaces = "dplyr",
+        contextual = FALSE,
+        input = "x",
+        names = c("count", "tally", "add_count", "add_tally")
+      )
+    },
+    margin_mask = function() {
+      list(
+        namespaces = "marginplyr",
+        contextual = FALSE,
+        input = ".data",
+        names = c(
+          "summarize_with_margins", "summarise_with_margins",
+          "expand_with_margins", "nest_with_margins", "nest_by_with_margins",
+          "inspect_grouping"
+        )
+      )
     }
   )
+}
+
+# Arguments owned by an independent data-mask operation. Its input is evaluated
+# in the enclosing scope; the remaining arguments belong to the nested call
+# (ADR 0019, *Amendment: independent data-mask ownership*).
+independent_mask_call_parts <- function(expr) {
+  args <- static_call_args(expr)
+  owned <- rep(FALSE, length(args))
+  for (family in c("margin_mask", "dplyr_mask", "dplyr_count_mask")) {
+    if (is.null(static_spelling_name(expr, family))) next
+    owned[] <- TRUE
+    formal <- static_spelling_rule(family)$input
+    arg_names <- argument_names(args)
+    input <- match(formal, arg_names, nomatch = 0L)
+    if (input == 0L) {
+      input <- match(TRUE, nzchar(arg_names) & startsWith(formal, arg_names),
+                     nomatch = 0L)
+    }
+    if (input == 0L) input <- match("", arg_names, nomatch = 0L)
+    if (input > 0L) owned[[input]] <- FALSE
+    break
+  }
+  owned
 }
 
 # The family names, which is everything available without naming one. Reading
