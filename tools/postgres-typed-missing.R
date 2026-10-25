@@ -33,6 +33,12 @@ verify_typed_missing <- function(con) {
     POSIXct = as.POSIXct(c("2026-01-01", "2026-02-01"), tz = "UTC"),
     character = c("x", "y")
   )
+  # `amount` names the preceding summary in the contextual helper.
+  share_requests <- list(
+    none = list(),
+    parent = rlang::exprs(share = share_of_parent(amount)),
+    total = rlang::exprs(share = share_of_total(amount))
+  )
   for (type in names(dimensions)) {
     data <- data.frame(
       g = dimensions[[type]][c(1L, 1L, 2L, NA_integer_)],
@@ -65,13 +71,8 @@ verify_typed_missing <- function(con) {
         }
       }
       for (duplicates in c("keep", "drop")) {
-        for (kind in c("none", "parent", "total")) {
-          # `amount` names the preceding summary in the contextual helper.
-          shares <- switch(kind,
-            none = list(),
-            parent = rlang::exprs(share = share_of_parent(amount)),
-            total = rlang::exprs(share = share_of_total(amount))
-          )
+        for (kind in names(share_requests)) {
+          shares <- share_requests[[kind]]
           summarize <- function(input) {
             summarize_with_margins(
               input, amount = sum(.data$value, na.rm = TRUE), !!!shares,
@@ -94,12 +95,8 @@ verify_typed_missing <- function(con) {
       }
     }
     # Default character display must leave Parent keys in their original type.
-    for (kind in c("none", "parent", "total")) {
-      shares <- switch(kind,
-        none = list(),
-        parent = rlang::exprs(share = share_of_parent(amount)),
-        total = rlang::exprs(share = share_of_total(amount))
-      )
+    for (kind in names(share_requests)) {
+      shares <- share_requests[[kind]]
       query <- build_without_queries(summarize_with_margins(
         source, amount = sum(.data$value, na.rm = TRUE), !!!shares,
         .grouping = rollup(dplyr::all_of("g"), dplyr::all_of("g"),
