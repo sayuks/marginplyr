@@ -320,8 +320,9 @@ option_call_args <- function(verb, grouping = quote(rollup(g))) {
   args
 }
 
-call_with_option <- function(verb, option, value) {
-  args <- option_call_args(verb)
+call_with_option <- function(verb, option, value,
+                             grouping = quote(rollup(g))) {
+  args <- option_call_args(verb, grouping = grouping)
   # Single-bracket assignment from a list, because `args[[option]] <- NULL`
   # removes the element instead of writing one: the call would then omit the
   # option and exercise its default, which is the very thing the `NULL` case
@@ -399,6 +400,81 @@ test_that("every documented option value is accepted", {
   }
 
   expect_identical(refused, character())
+})
+
+test_that("named scalar Option values behave like their unnamed equivalents", {
+  for (case in option_vocabulary_cases()) {
+    for (value in case$values) {
+      expect_identical(
+        call_with_option(case$verb, case$option, c(label = value)),
+        call_with_option(case$verb, case$option, value),
+        info = option_case_label(case, value)
+      )
+    }
+  }
+})
+
+test_that("named duplicate policies refuse, drop, or keep repeated sets", {
+  repeated <- grouping_sets(grouping_set(g), grouping_set(), grouping_set(g))
+  unique_sets <- grouping_sets(grouping_set(g), grouping_set())
+
+  for (case in option_vocabulary_cases()) {
+    if (!identical(case$option, ".duplicates")) {
+      next
+    }
+    expect_error(
+      call_with_option(case$verb, ".duplicates", c(label = "error"), repeated),
+      "Duplicate grouping sets",
+      class = "marginplyr_error"
+    )
+    expect_identical(
+      call_with_option(case$verb, ".duplicates", c(label = "drop"), repeated),
+      call_with_option(case$verb, ".duplicates", "error", unique_sets),
+      info = case$verb
+    )
+    if ("keep" %in% case$values) {
+      expect_identical(
+        call_with_option(case$verb, ".duplicates", c(label = "keep"), repeated),
+        call_with_option(case$verb, ".duplicates", "keep", repeated),
+        info = case$verb
+      )
+    } else {
+      expect_error(
+        call_with_option(case$verb, ".duplicates", c(label = "keep"), repeated),
+        "`\\.duplicates` must be one of",
+        class = "marginplyr_error"
+      )
+    }
+  }
+})
+
+test_that("named Margin order and factor-label position select their values", {
+  data <- data.frame(
+    fixed = c("z", "a"),
+    g = factor(c("b", "a"), levels = c("b", "a")),
+    v = 1:2
+  )
+
+  for (case in option_vocabulary_cases()) {
+    if (!identical(case$option, ".sort")) {
+      next
+    }
+    args <- option_call_args(case$verb)
+    args[[1L]] <- data
+    args$.by <- quote(fixed)
+    args$.margin_label_position <- c(label = "first")
+    unsorted <- eval(rlang::call2(case$verb, !!!args))
+    expect_identical(levels(unsorted$g), c("Total", "b", "a"))
+
+    args$.sort <- c(label = "none")
+    none <- eval(rlang::call2(case$verb, !!!args))
+    expect_identical(none, unsorted, info = case$verb)
+
+    args$.sort <- c(label = "first")
+    first <- eval(rlang::call2(case$verb, !!!args))
+    expect_identical(first$fixed, c("a", "a", "z", "z"))
+    expect_identical(as.character(first$g), c("Total", "a", "Total", "b"))
+  }
 })
 
 test_that("an abbreviation of an option value is rejected", {
