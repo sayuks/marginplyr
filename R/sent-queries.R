@@ -176,11 +176,13 @@ with_sent_query <- function(purpose, query, expr,
   if (is.null(entry)) {
     return(force(expr))
   }
-  entry$record$rows$status[[entry$index]] <- "invoking"
   status <- "unknown"
-  on.exit({
+  # Arm finalization before publishing an invocation, and finish its store
+  # before a pending interrupt can leave the exit handler.
+  on.exit(suspendInterrupts({
     entry$record$rows$status[[entry$index]] <- status
-  }, add = TRUE)
+  }), add = TRUE)
+  entry$record$rows$status[[entry$index]] <- "invoking"
   value <- withCallingHandlers(
     force(expr),
     condition = function(cnd) {
