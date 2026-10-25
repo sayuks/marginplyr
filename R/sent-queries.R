@@ -170,8 +170,8 @@ record_sent_query <- function(purpose, query) {
 observe_sent_query_resumption <- function(frames, reset) {
   marker <- new.env(parent = emptyenv())
   action <- substitute(
-    on.exit({
-      if (!identical(returnValue(marker), marker)) reset()
+    base::on.exit({
+      if (!base::identical(base::returnValue(marker), marker)) reset()
     }, add = TRUE),
     list(marker = marker, reset = reset)
   )

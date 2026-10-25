@@ -71,6 +71,10 @@ test_that("recovery preserves later outcomes, caller restarts, and ownership", {
             depth <<- depth - 1L
           }, add = TRUE)
           if (depth == 2L) return(collect(x, ...))
+          # Driver-local names must not change the observer's bookkeeping.
+          on.exit <- returnValue <- identical <- function(...) {
+            stop("backend-local function was called")
+          }
           withRestarts({
             if (native) rlang::interrupt() else signalCondition(first)
           }, resume_driver = function() {
