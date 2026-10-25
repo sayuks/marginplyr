@@ -57,15 +57,18 @@ sent_query_condition_message <- function(cnd) {
   if (!is.character(fallback) || length(fallback) != 1L) {
     fallback <- NA_character_
   }
-  text <- tryCatch(
-    withCallingHandlers(
-      conditionMessage(cnd),
-      warning = function(cnd) tryInvokeRestart("muffleWarning"),
-      message = function(cnd) tryInvokeRestart("muffleMessage")
+  text <- withRestarts(
+    tryCatch(
+      withCallingHandlers(
+        conditionMessage(cnd),
+        warning = function(cnd) invokeRestart("muffleWarning"),
+        message = function(cnd) invokeRestart("muffleMessage")
+      ),
+      error = function(cnd) fallback
     ),
-    error = function(cnd) fallback,
-    warning = function(cnd) fallback,
-    message = function(cnd) fallback
+    # Bare signals use these local exits rather than a caller's restarts.
+    muffleWarning = function() fallback,
+    muffleMessage = function() fallback
   )
   if (!is.character(text) || length(text) != 1L) {
     text <- fallback
@@ -98,24 +101,25 @@ record_sent_query_condition <- function(entry, cnd, phase, handling) {
 render_sent_query_sql <- function(query, entry) {
   old <- options(rlib_warning_verbosity = "quiet")
   on.exit(options(old), add = TRUE)
-  tryCatch(
-    withCallingHandlers(
-      as.character(dbplyr::sql_render(query)),
-      warning = function(cnd) {
-        record_sent_query_condition(entry, cnd, "render", "suppressed")
-        tryInvokeRestart("muffleWarning")
-      },
-      interrupt = function(cnd) {
-        record_sent_query_condition(entry, cnd, "render", "propagated")
+  withRestarts(
+    tryCatch(
+      withCallingHandlers(
+        as.character(dbplyr::sql_render(query)),
+        warning = function(cnd) {
+          record_sent_query_condition(entry, cnd, "render", "suppressed")
+          invokeRestart("muffleWarning")
+        },
+        interrupt = function(cnd) {
+          record_sent_query_condition(entry, cnd, "render", "propagated")
+        }
+      ),
+      error = function(cnd) {
+        record_sent_query_condition(entry, cnd, "render", "handled")
+        NA_character_
       }
     ),
-    # A directly signalled warning need not offer a muffle restart. End only
-    # this diagnostic render before the warning reaches caller handlers.
-    warning = function(cnd) NA_character_,
-    error = function(cnd) {
-      record_sent_query_condition(entry, cnd, "render", "handled")
-      NA_character_
-    }
+    # A bare warning ends only this render, never a caller's warning handler.
+    muffleWarning = function() NA_character_
   )
 }
 

@@ -1,4 +1,4 @@
-test_that("probe warnings without muffling restarts are not called suppressed", {
+test_that("probe warnings without a restart are recorded as propagated", {
   skip_if_suggest_absent("RSQLite", "DBI")
   saved <- share_dialect_snapshot()
   on.exit(restore_share_dialect_verdicts(saved), add = TRUE)

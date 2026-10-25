@@ -38,6 +38,106 @@ test_that("render warnings without a muffle restart do not invent errors", {
   expect_identical(rows$conditions, list(expected, expected))
 })
 
+test_that("a diagnostic warning cannot take the caller's muffle restart", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  remote <- dplyr::copy_to(
+    con, data.frame(g = "a", v = 1), "caller_restart_source"
+  )
+  testthat::local_mocked_bindings(sql_render = function(...) {
+    signalCondition(simpleWarning("diagnostic warning without a restart"))
+    "SELECT 1"
+  }, .package = "dbplyr")
+  calls <- 0L
+  testthat::local_mocked_bindings(collect = function(...) {
+    calls <<- calls + 1L
+    data.frame(g = 0)
+  }, .package = "dplyr")
+  after <- FALSE
+  withCallingHandlers(
+    warning("caller warning", call. = FALSE),
+    warning = function(cnd) {
+      summarize_with_margins(
+        remote, total = sum(.data$v),
+        .grouping = rollup(dplyr::all_of("g")), .check_margin_label = TRUE
+      )
+      after <<- TRUE
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_identical(calls, 1L)
+  expect_true(after)
+  rows <- last_sent_queries(details = TRUE)
+  expect_identical(rows$status, c("returned", "prepared"))
+})
+
+test_that("formatting cannot take caller warning or message restarts", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  remote <- dplyr::copy_to(
+    con, data.frame(g = "a", v = 1), "formatter_restart_source"
+  )
+  calls <- 0L
+  method <- function(cnd) {
+    calls <<- calls + 1L
+    if (calls == 2L) {
+      secondary <- if (cnd$kind == "warning") {
+        simpleWarning("formatter warning")
+      } else {
+        simpleMessage("formatter message")
+      }
+      signalCondition(secondary)
+    }
+    cnd$message
+  }
+  registerS3method("conditionMessage", "audit_formatter_restart", method,
+                   envir = asNamespace("base"))
+  on.exit(rm(
+    "conditionMessage.audit_formatter_restart",
+    envir = asNamespace("base")$.__S3MethodsTable__.
+  ), add = TRUE)
+  for (kind in c("warning", "message")) {
+    calls <- 0L
+    leaf <- structure(
+      list(message = "driver warning", call = NULL, kind = kind),
+      class = c("audit_formatter_restart", "warning", "condition")
+    )
+    testthat::local_mocked_bindings(collect = function(...) {
+      withRestarts(
+        signalCondition(leaf), ignore_driver_warning = function() NULL
+      )
+      data.frame(g = 0)
+    }, .package = "dplyr")
+    after <- FALSE
+    handle <- function(cnd) {
+      withCallingHandlers(
+        summarize_with_margins(
+          remote, total = sum(.data$v),
+          .grouping = rollup(dplyr::all_of("g")), .check_margin_label = TRUE
+        ),
+        warning = function(cnd) invokeRestart("ignore_driver_warning")
+      )
+      after <<- TRUE
+      invokeRestart(if (kind == "warning") "muffleWarning" else "muffleMessage")
+    }
+    if (kind == "warning") {
+      withCallingHandlers(warning("caller warning"), warning = handle)
+    } else {
+      withCallingHandlers(message("caller message"), message = handle)
+    }
+    expect_true(after)
+    rows <- last_sent_queries(details = TRUE)
+    expect_identical(rows$status, c("returned", "prepared"))
+    expect_identical(rows$conditions[[1L]]$message, leaf$message)
+  }
+})
+
 test_that("condition formatting failures do not replace driver warnings", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
