@@ -703,3 +703,34 @@ test_that("lazy helper arguments use one typed snapshot", {
   )
   expect_identical(inspect_proxy_capture$n, 0L)
 })
+
+test_that("names obtained from selection data keep early-error guarantees", {
+  skip_if_suggest_absent("dtplyr")
+  register_inspect_proxy_methods()
+  source <- dtplyr::lazy_dt(tibble::tibble(a = c("x", "y"), b = c(1, 1)))
+  class(source) <- c("margin_inspect_proxy_counter", class(source))
+  data_alias <- tidyselect::peek_data
+  names_alias <- base::names
+  selections <- list(
+    rlang::expr(tidyselect::all_of(
+      c(names(tidyselect::peek_data()), "absent")
+    )),
+    rlang::expr(tidyselect::all_of(c(names_alias(data_alias()), "absent"))),
+    rlang::expr(tidyselect::all_of(c(tidyselect::peek_vars(), "absent")))
+  )
+  for (selection in selections) {
+    inspect_proxy_capture$n <- 0L
+    expect_error(
+      inspect_grouping(source, .by = !!selection),
+      "absent", class = "vctrs_error_subscript_oob"
+    )
+    expect_identical(inspect_proxy_capture$n, 0L)
+
+    inspect_proxy_capture$n <- 0L
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(!!selection)),
+      "absent", class = "vctrs_error_subscript_oob"
+    )
+    expect_identical(inspect_proxy_capture$n, 0L)
+  }
+})
