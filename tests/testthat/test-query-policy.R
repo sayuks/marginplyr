@@ -421,7 +421,8 @@ test_that("SQLite limited Margin inputs add no construction read", {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   source <- dplyr::copy_to(
-    con, data.frame(g = c("a", "b"), v = c(2L, 9L)), "limited_input"
+    con, data.frame(g = c("a", "b"), v = c(2L, 9L), `TRUE` = c("x", "y"),
+                    check.names = FALSE), "limited_input"
   )
   limited <- head(dplyr::arrange(source, dplyr::desc(.data$v)), 1L)
   for (input in list(limited, dplyr::collapse(limited))) {

@@ -44,9 +44,22 @@ sqlite_margin_input <- function(.data, backend, data_vars) {
            length(.data$lazy_query$order_by) == 0L)) {
     return(.data)
   }
+  sql_margin_input_relation(.data, backend, data_vars)
+}
+
+# Render a SQL input with known columns, retaining window-order metadata and
+# keeping SQLite Boolean-word aliases outside opaque SQL. Expansion asks for
+# an enclosing SELECT so an unchanged branch can be a compound operand.
+sql_margin_input_relation <- function(.data, backend, data_vars,
+                                      enclose = FALSE) {
   input_order <- dbplyr::op_sort(.data)
   # Keep Boolean-word names out of the opaque input SQL (#826).
-  boolean_columns <- sqlite_boolean_columns(data_vars)
+  con <- dbplyr::remote_con(.data)
+  boolean_columns <- if (inherits(con, "SQLiteConnection")) {
+    sqlite_boolean_columns(data_vars)
+  } else {
+    character()
+  }
   private_names <- new_margin_internal_names(
     length(boolean_columns), data_vars, prefix = "..marginplyr_input_",
     backend = backend
@@ -57,9 +70,13 @@ sqlite_margin_input <- function(.data, backend, data_vars) {
     )
     data_vars <- as.character(dplyr::tbl_vars(.data))
   }
-  relation <- dplyr::tbl(
-    dbplyr::remote_con(.data), dbplyr::sql_render(.data), vars = data_vars
-  )
+  input_sql <- dbplyr::sql_render(.data)
+  if (enclose) {
+    input_sql <- dbplyr::sql_query_select(
+      con, dbplyr::sql("*"), dbplyr::sql_query_wrap(con, input_sql)
+    )
+  }
+  relation <- dplyr::tbl(con, input_sql, vars = data_vars)
   if (length(boolean_columns) > 0L) {
     source <- relation$lazy_query
     relation <- dplyr::rename(
@@ -810,16 +827,8 @@ expand_margin_union <- function(.data,
   if (backend$is_sql &&
         inherits(dbplyr::remote_con(.data),
                  c("SQLiteConnection", "duckdb_connection"))) {
-    # dbplyr can inline an unchanged branch into UNION ALL. Keep input clauses
-    # below a SELECT even there; known columns avoid a read (ADR 0020).
-    con <- dbplyr::remote_con(.data)
-    input_sql <- dbplyr::sql_query_select(
-      con, dbplyr::sql("*"),
-      dbplyr::sql_query_wrap(con, dbplyr::sql_render(.data))
-    )
-    .data <- restore_input_window_order(
-      dplyr::tbl(con, input_sql, vars = margin_col_names(.data)),
-      dbplyr::op_sort(.data)
+    .data <- sql_margin_input_relation(
+      .data, backend, margin_col_names(.data), enclose = TRUE
     )
   }
   # An expansion branch is the input's own rows, so a column-less one standing

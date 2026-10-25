@@ -31,7 +31,7 @@ expect_selected_expansion <- function(query, expected, sort) {
       expect_identical(result$g, expected$g)
     }
   }
-  for (n in c(0L, 3L, 4L, 5L)) {
+  for (n in c(0L, 3L, nrow(expected), nrow(expected) + 1L)) {
     result <- dplyr::collect(query, n = n)
     expect_identical(names(result), names(expected))
     expect_identical(nrow(result), min(n, nrow(expected)))
@@ -122,4 +122,37 @@ test_that("DuckDB expansion retains ordered and limited input rows", {
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   check_expansion_input_limits(con)
+})
+
+test_that("SQLite expansion retains Boolean-word input columns", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  for (key in c("TRUE", "FALSE")) {
+    data <- data.frame(g = c("c", "b", "a"), key = c("x", "y", "z"), v = 1:3)
+    names(data)[[2L]] <- key
+    source <- dplyr::copy_to(con, data, paste0("boolean_facts_", key))
+    selected <- head(dplyr::arrange(source, .data$v), 2L)
+    for (input in list(source, selected)) {
+      local <- dplyr::collect(input)
+      for (role in c("dimension", "payload", "fixed")) {
+        dimension <- if (role == "dimension") key else "g"
+        spec <- rollup(dplyr::all_of(dimension))
+        by <- if (role == "fixed") key else NULL
+        for (label in list(NULL, "Total")) {
+          for (sort in c("none", "last")) {
+            expected <- expand_with_margins(
+              local, .by = dplyr::all_of(by), .grouping = spec,
+              .margin_label = label, .id = "set", .sort = sort
+            )
+            query <- expand_with_margins(
+              input, .by = dplyr::all_of(by), .grouping = spec,
+              .margin_label = label, .id = "set", .sort = sort
+            )
+            expect_selected_expansion(query, expected, "none")
+          }
+        }
+      }
+    }
+  }
 })
