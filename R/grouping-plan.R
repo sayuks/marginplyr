@@ -105,9 +105,8 @@ normalize_grouping_input <- function(.data, by_quo) {
 
 # The fixed keys, wherever column names alone settle them: the grouping columns
 # of a grouped input, an absent `.by`, or a selection that names columns.
-# `NULL` says the selection carries a predicate, which no set of names can
-# answer; that one is resolved against the typed snapshot instead, exactly as a
-# Grouping dimension carrying a predicate is.
+# `NULL` defers a selection needing column data to the typed snapshot, as it
+# does for a Grouping dimension.
 resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
   if (length(group_vars) > 0L) {
     # Grouping columns are names dplyr resolved, so they name columns of the
@@ -475,14 +474,13 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (is.null(call_name)) {
     return(FALSE)
   }
-  # The helpers that read names and nothing else. `where()` is the one that
-  # reads column data, so it is absent and answers below.
+  # A helper argument can read column data even when the helper selects names.
   leaf_helpers <- c(
     "all_of", "any_of", "starts_with", "ends_with", "contains",
     "matches", "num_range", "everything", "last_col", "one_of"
   )
   if (call_name %in% leaf_helpers) {
-    return(TRUE)
+    return(!contains_selection_data(expr))
   }
   # A refused spelling fails on itself, so its operands are never reached and a
   # predicate under one settles nothing.
@@ -506,6 +504,19 @@ is_name_only_expr <- function(expr, env, data_vars) {
     env = env,
     data_vars = data_vars
   ))
+}
+
+# Whether an evaluated part of a helper argument reads tidyselect's data.
+# Callers pass the helper call itself; walking its evaluated parts keeps an
+# argument's data read visible through wrappers without evaluating it here.
+contains_selection_data <- function(expr) {
+  if (!rlang::is_call(expr)) {
+    return(FALSE)
+  }
+  if (identical(static_call_name(expr), "peek_data")) {
+    return(TRUE)
+  }
+  any(vapply(searched_call_parts(expr), contains_selection_data, logical(1)))
 }
 
 # Whether this call reads the `.data` pronoun, which the caller holds is named
