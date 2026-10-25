@@ -1,0 +1,216 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+savepoint error WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 1 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction errored
+rollback_before_control error WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction errored
+4 share_dialect_transaction returned
+5 share_dialect_transaction returned
+rollback_cleanup error WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction errored
+release error WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction errored
+savepoint warning WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction returned
+rollback_before_control warning WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction returned
+rollback_cleanup warning WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction returned
+release warning WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction returned
+savepoint interrupt WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 1 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction interrupted
+rollback_before_control interrupt WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction interrupted
+4 share_dialect_transaction returned
+5 share_dialect_transaction returned
+rollback_cleanup interrupt WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction interrupted
+release interrupt WARN2 FALSE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction interrupted
+savepoint error WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 1 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction errored
+rollback_before_control error WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction errored
+4 share_dialect_transaction returned
+5 share_dialect_transaction returned
+rollback_cleanup error WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction errored
+release error WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction errored
+savepoint warning WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 1 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction errored
+rollback_before_control warning WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction errored
+4 share_dialect_transaction returned
+5 share_dialect_transaction returned
+rollback_cleanup warning WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction errored
+release warning WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction errored
+savepoint interrupt WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 1 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction interrupted
+rollback_before_control interrupt WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction interrupted
+4 share_dialect_transaction returned
+5 share_dialect_transaction returned
+rollback_cleanup interrupt WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 5 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction interrupted
+release interrupt WARN2 TRUE BEHAVIOR_IDENTICAL TRUE
+# A tibble: 6 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction interrupted
