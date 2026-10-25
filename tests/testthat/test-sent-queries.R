@@ -954,6 +954,28 @@ nth_statement <- function(fn, n) {
   strip_coverage_wrapper(fn_body[[n + 1L]])
 }
 
+# Whether the second statement publishes ownership and registers restoration
+# in one interrupt shield, with no intervening work.
+protects_sent_query_entry <- function(fn) {
+  entry <- nth_statement(fn, 2L)
+  if (!is.call(entry) || length(entry) != 2L ||
+        !identical(entry[[1L]], quote(suspendInterrupts))) {
+    return(FALSE)
+  }
+  block <- strip_coverage_wrapper(entry[[2L]])
+  if (!is.call(block) || length(block) != 3L ||
+        !identical(block[[1L]], quote(`{`))) {
+    return(FALSE)
+  }
+  identical(
+    strip_coverage_wrapper(block[[2L]]),
+    quote(sent_query_parent <- reset_sent_queries())
+  ) && identical(
+    strip_coverage_wrapper(block[[3L]]),
+    quote(on.exit(restore_sent_queries(sent_query_parent), add = TRUE))
+  )
+}
+
 test_that("every entry point forces its input and then empties the record", {
   ns <- asNamespace("marginplyr")
   # An entry point is an exported function that compiles a Grouping plan of
@@ -972,23 +994,14 @@ test_that("every entry point forces its input and then empties the record", {
   # part-way through one truncates that call's own (ADR 0027).
   expect_setequal(emptying, entry_points)
 
-  # `force(.data)` first and the reset second, in that order. Emptying the
-  # record before the input's promise is forced attributes to this call
-  # whatever the call that wrote `.data` recorded, and forcing the promise
-  # after any other statement is a statement running under the previous call's
-  # record (#455).
+  # Force the input before taking ownership (#455). Publishing the new owner
+  # and registering its restoration share one interrupt shield, so an
+  # interrupt cannot leave ownership active between those two operations.
   misordered <- Filter(
     function(name) {
       fn <- get(name, envir = ns)
       !identical(nth_statement(fn, 1L), quote(force(.data))) ||
-        !identical(
-          nth_statement(fn, 2L),
-          quote(sent_query_parent <- reset_sent_queries())
-        ) ||
-        !identical(
-          nth_statement(fn, 3L),
-          quote(on.exit(restore_sent_queries(sent_query_parent), add = TRUE))
-        )
+        !protects_sent_query_entry(fn)
     },
     entry_points
   )
@@ -996,6 +1009,49 @@ test_that("every entry point forces its input and then empties the record", {
   # what this fires on, and which entry point took it is not otherwise in the
   # report. Restoration must be registered before validation can exit the call.
   expect_identical(misordered, character())
+})
+
+test_that("the entry scan requires reset and restoration in one shield", {
+  protected <- function() {
+    force(.data)
+    suspendInterrupts({
+      sent_query_parent <- reset_sent_queries()
+      on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+    })
+  }
+  unprotected <- function() {
+    force(.data)
+    sent_query_parent <- reset_sent_queries()
+    on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+  }
+  split <- function() {
+    force(.data)
+    suspendInterrupts({
+      sent_query_parent <- reset_sent_queries()
+    })
+    on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+  }
+  reversed <- function() {
+    force(.data)
+    suspendInterrupts({
+      on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+      sent_query_parent <- reset_sent_queries()
+    })
+  }
+  interposed <- function() {
+    force(.data)
+    suspendInterrupts({
+      sent_query_parent <- reset_sent_queries()
+      validate()
+      on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+    })
+  }
+  expect_true(protects_sent_query_entry(protected))
+  expect_false(protects_sent_query_entry(unprotected))
+  expect_false(protects_sent_query_entry(split))
+  expect_false(protects_sent_query_entry(reversed))
+  expect_false(protects_sent_query_entry(interposed))
+  expect_false(protects_sent_query_entry(function() NULL))
 })
 
 test_that("the reset scan tells an opening statement from a later one", {
@@ -1082,12 +1138,35 @@ test_that("the reset scan reads through covr's instrumentation", {
     reset_sent_queries()
   })
 
+  protected <- function() NULL
+  # jarl-ignore if_always_true: This reproduces covr's literal wrappers.
+  body(protected) <- bquote({
+    if (TRUE) {
+      .(counter)("marginplyr/R/inspect-grouping.R:1:1:1:1")
+      force(.data)
+    }
+    if (TRUE) {
+      .(counter)("marginplyr/R/inspect-grouping.R:2:1:2:1")
+      suspendInterrupts({
+        if (TRUE) {
+          .(counter)("marginplyr/R/inspect-grouping.R:3:1:3:1")
+          sent_query_parent <- reset_sent_queries()
+        }
+        if (TRUE) {
+          .(counter)("marginplyr/R/inspect-grouping.R:4:1:4:1")
+          on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+        }
+      })
+    }
+  })
+
   expect_identical(nth_statement(braced, 1L), forced)
   expect_identical(nth_statement(braced, 2L), reset)
   expect_identical(nth_statement(unbraced, 1L), reset)
   # The instrumented body still answers the other reading, which walks rather
   # than counts positions and is what the wrapper leaves alone.
   expect_true(empties_the_record(braced))
+  expect_true(protects_sent_query_entry(protected))
 
   # An `if (TRUE)` a caller wrote is not a wrapper, so the unwrapping may not
   # take it apart: it has no counter in it, and taking it apart would report a
