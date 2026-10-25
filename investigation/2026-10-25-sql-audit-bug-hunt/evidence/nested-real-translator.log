@@ -1,0 +1,41 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+caller delivered warnings:
+[1] "child translator warning"
+parent before nested call:
+# A tibble: 0 × 4
+# ℹ 4 variables: classes <list>, message <chr>, phase <chr>, handling <chr>
+parent after nested call:
+# A tibble: 1 × 4
+  classes   message                  phase      handling
+  <list>    <chr>                    <chr>      <chr>
+1 <chr [3]> child translator warning invocation propagated
+last observed child rows:
+# A tibble: 1 × 5
+  purpose                  sql                          source status conditions
+  <chr>                    <chr>                        <chr>  <chr>  <list>
+1 observed_label_collision "SELECT SUM(CASE WHEN (CAST… render retur… <tibble>
+final parent rows:
+# A tibble: 1 × 5
+  purpose                  sql                          source status conditions
+  <chr>                    <chr>                        <chr>  <chr>  <list>
+1 observed_label_collision "SELECT SUM(CASE WHEN (CAST… render retur… <tibble>
+collected parent result:
+# A tibble: 2 × 2
+  g     total
+  <chr> <dbl>
+1 a         1
+2 Total     1
+Error in main() :
+  identical(state$outer_before, state$outer_after) is not TRUE
+Calls: main -> stopifnot
+Execution halted

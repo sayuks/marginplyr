@@ -1,0 +1,16 @@
+backend	scenario	dbi_call_count	sql_identical	value_identical	warnings_identical	recorded_rows	purposes	statuses
+sqlite	inspect	0	TRUE	TRUE	TRUE	0	(none)	(none)
+sqlite	label	1	TRUE	TRUE	TRUE	2	observed_label_collision|result	returned|prepared
+sqlite	collision	1	TRUE	TRUE	TRUE	1	observed_label_collision	returned
+sqlite	share	1	TRUE	TRUE	TRUE	1	share_dialect	returned
+sqlite	share_cached	0	TRUE	TRUE	TRUE	0	(none)	(none)
+duckdb	inspect	1	TRUE	TRUE	TRUE	1	selection_proxy	returned
+duckdb	label	2	TRUE	TRUE	TRUE	3	selection_proxy|observed_label_collision|result	returned|returned|prepared
+duckdb	collision	2	TRUE	TRUE	TRUE	2	selection_proxy|observed_label_collision	returned|returned
+duckdb	share	3	TRUE	TRUE	TRUE	4	selection_proxy|share_dialect|share_dialect_control|result	returned|errored|returned|prepared
+duckdb	share_cached	1	TRUE	TRUE	TRUE	2	selection_proxy|result	returned|prepared
+postgres	inspect	0	TRUE	TRUE	TRUE	0	(none)	(none)
+postgres	label	1	TRUE	TRUE	TRUE	2	observed_label_collision|result	returned|prepared
+postgres	collision	1	TRUE	TRUE	TRUE	1	observed_label_collision	returned
+postgres	share	10	TRUE	TRUE	TRUE	7	share_dialect_transaction|share_dialect|share_dialect_transaction|share_dialect_control|share_dialect_transaction|share_dialect_transaction|result	returned|errored|returned|returned|returned|returned|prepared
+postgres	share_cached	0	TRUE	TRUE	TRUE	1	result	prepared

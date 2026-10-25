@@ -1,0 +1,3 @@
+Native stress: iterations=4688; caught_interrupts=4646; active_after_exit=TRUE
+Next independent SQL call: rows=0; active=TRUE
+REPRODUCED: native SIGINT left an active owner; next_call_ok=FALSE

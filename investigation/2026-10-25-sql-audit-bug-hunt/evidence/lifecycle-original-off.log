@@ -1,0 +1,7 @@
+AUDIT FALSE RESULT errored
+WARNINGS 2
+(converted from warning) The `ignore_case` argument of `str_like()` is deprecated as of dbplyr 2.6.0.
+ℹ `str_like()` is always case sensitive.
+ℹ Use `str_ilike()` for case insensitive string matching.
+ℹ The deprecated feature was likely used in the dbplyr package.
+  Please report the issue at <https://github.com/tidyverse/dbplyr/issues>.

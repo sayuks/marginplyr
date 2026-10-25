@@ -1,0 +1,3 @@
+Targeted fixture: fired=TRUE; interrupted=TRUE; active_after_exit=TRUE
+Next independent SQL call: rows=0; active=TRUE
+REPRODUCED: interrupted restoration left an active owner.

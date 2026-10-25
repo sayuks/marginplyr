@@ -1,0 +1,32 @@
+BODY return CLEANUP return BEHAVIOR_IDENTICAL TRUE
+return + return status= returned conditions=
+BODY return CLEANUP warning BEHAVIOR_IDENTICAL TRUE
+return + warning status= returned conditions= cleanup
+BODY return CLEANUP error BEHAVIOR_IDENTICAL TRUE
+return + error status= errored conditions= cleanup
+BODY return CLEANUP interrupt BEHAVIOR_IDENTICAL TRUE
+return + interrupt status= interrupted conditions= cleanup
+BODY warning CLEANUP return BEHAVIOR_IDENTICAL TRUE
+warning + return status= returned conditions= body
+BODY warning CLEANUP warning BEHAVIOR_IDENTICAL TRUE
+warning + warning status= returned conditions= body,cleanup
+BODY warning CLEANUP error BEHAVIOR_IDENTICAL TRUE
+warning + error status= errored conditions= body,cleanup
+BODY warning CLEANUP interrupt BEHAVIOR_IDENTICAL TRUE
+warning + interrupt status= interrupted conditions= body,cleanup
+BODY error CLEANUP return BEHAVIOR_IDENTICAL TRUE
+error + return status= errored conditions= body
+BODY error CLEANUP warning BEHAVIOR_IDENTICAL TRUE
+error + warning status= errored conditions= body,cleanup
+BODY error CLEANUP error BEHAVIOR_IDENTICAL TRUE
+error + error status= errored conditions= body,cleanup
+BODY error CLEANUP interrupt BEHAVIOR_IDENTICAL TRUE
+error + interrupt status= interrupted conditions= body,cleanup
+BODY interrupt CLEANUP return BEHAVIOR_IDENTICAL TRUE
+interrupt + return status= interrupted conditions= body
+BODY interrupt CLEANUP warning BEHAVIOR_IDENTICAL TRUE
+interrupt + warning status= interrupted conditions= body,cleanup
+BODY interrupt CLEANUP error BEHAVIOR_IDENTICAL TRUE
+interrupt + error status= errored conditions= body,cleanup
+BODY interrupt CLEANUP interrupt BEHAVIOR_IDENTICAL TRUE
+interrupt + interrupt status= interrupted conditions= body,cleanup

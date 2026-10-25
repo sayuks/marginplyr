@@ -1,0 +1,15 @@
+Fixture=signalCondition; external_signals=1; stored_summaries=2; status=errored
+# A tibble: 2 × 4
+  classes   message       phase      handling
+  <list>    <chr>         <chr>      <chr>
+1 <chr [3]> driver failed invocation propagated
+2 <chr [3]> driver failed invocation propagated
+Fixture=stop; external_signals=1; stored_summaries=2; status=errored
+# A tibble: 2 × 4
+  classes   message       phase      handling
+  <list>    <chr>         <chr>      <chr>
+1 <chr [3]> driver failed invocation propagated
+2 <chr [3]> driver failed invocation propagated
+Error in main() :
+  One signal must produce exactly one stored condition summary.
+Execution halted

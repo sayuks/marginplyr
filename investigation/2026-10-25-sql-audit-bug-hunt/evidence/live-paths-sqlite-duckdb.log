@@ -1,0 +1,75 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+BACKEND sqlite SCENARIO inspect SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 0
+# A tibble: 0 × 3
+# ℹ 3 variables: purpose <chr>, source <chr>, status <chr>
+
+BACKEND sqlite SCENARIO label SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 1
+# A tibble: 2 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+2 result                   render prepared
+
+BACKEND sqlite SCENARIO collision SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 1
+# A tibble: 1 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+
+BACKEND sqlite SCENARIO share SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 1
+# A tibble: 1 × 3
+  purpose       source status
+  <chr>         <chr>  <chr>
+1 share_dialect render returned
+
+BACKEND sqlite SCENARIO share_cached SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 0
+# A tibble: 0 × 3
+# ℹ 3 variables: purpose <chr>, source <chr>, status <chr>
+
+BACKEND duckdb SCENARIO inspect SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 1
+# A tibble: 1 × 3
+  purpose         source status
+  <chr>           <chr>  <chr>
+1 selection_proxy render returned
+
+BACKEND duckdb SCENARIO label SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 2
+# A tibble: 3 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 selection_proxy          render returned
+2 observed_label_collision render returned
+3 result                   render prepared
+
+BACKEND duckdb SCENARIO collision SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 2
+# A tibble: 2 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 selection_proxy          render returned
+2 observed_label_collision render returned
+
+BACKEND duckdb SCENARIO share SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 3
+# A tibble: 4 × 3
+  purpose               source status
+  <chr>                 <chr>  <chr>
+1 selection_proxy       render returned
+2 share_dialect         render errored
+3 share_dialect_control render returned
+4 result                render prepared
+
+BACKEND duckdb SCENARIO share_cached SQL_IDENTICAL TRUE VALUE_IDENTICAL TRUE WARNINGS_IDENTICAL TRUE SQL_COUNT 1
+# A tibble: 2 × 3
+  purpose         source status
+  <chr>           <chr>  <chr>
+1 selection_proxy render returned
+2 result          render prepared

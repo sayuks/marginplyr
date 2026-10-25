@@ -1,0 +1,117 @@
+SQL audit bug-hunt supporting evidence
+Investigated: 2026-10-25
+Snapshot: c62ecdb01d31ca5c2c9ab8baed0dda970dd844e5
+
+Logs named *-replay.log were captured during preservation. Other .log files
+were copied from completed original investigation runs. Trailing horizontal
+whitespace and terminal blank lines were removed; other line content, ordering,
+and recorded values were retained. No R session, PostgreSQL data directory,
+connection credential, downloaded library, or binary RDS artifact is included.
+The two TSV files were derived during preservation from the saved original RDS
+results. Their Boolean comparisons were independently recomputed then; they are
+not fresh database executions. Exact package versions were not recorded in
+these original logs.
+
+live-paths-sqlite-duckdb.log and live-paths-postgres.log
+  Fifteen live cases: five scenarios on each of SQLite, DuckDB, and PostgreSQL.
+  Every case compares audit OFF/ON construction-time DBI generic calls,
+  returned values or condition class/message, and delivered warnings.
+  The harness captured SQL before its later collect() of a returned query, so
+  that collect() was used for the value comparison but excluded from the SQL
+  comparison. Result rows were sorted by g before comparing. PostgreSQL cases
+  ran within a transaction and also checked that SELECT 1 still worked before
+  rolling back. share_cached primed the dialect cache before the measured call.
+  The literal SQL_COUNT in the original logs means calls passing through the
+  mocked DBI::dbExecute(), DBI::dbGetQuery(), and DBI::dbSendQuery() generics.
+  Forwarding between these generics can count one operation more than once;
+  PostgreSQL share's count of 10 is not ten wire submissions. Comparisons
+  normalized generated savepoint names. The matrix calls this dbi_call_count.
+  All fifteen pairs agreed for captured SQL, value, and delivered warnings.
+  live-paths-matrix.tsv is the derived comparison and record-row summary;
+  (none) marks empty purpose/status sequences for zero-row records.
+
+pg-control-failures.log
+  Twenty-four controlled PostgreSQL driver-boundary-double cases; no live
+  PostgreSQL server was used for these cases. The harness reused
+  postgres_probe_fixture() and postgres_probe_summary() from the test suite.
+  Four injection points (SAVEPOINT, first rollback, cleanup rollback, RELEASE)
+  crossed error/warning/interrupt and warn=0/warn=2. Ordinary warn=0 warnings
+  were muffled by the outer observer; warn=2 warnings were left to escalate.
+  BEHAVIOR_IDENTICAL compares result class/message, delivered warnings, and
+  fixture statements with audit OFF/ON, after normalizing savepoint names.
+  All twenty-four pairs agreed. These doubles exercise R-side control flow;
+  they do not establish server-side recovery after a real backend interruption.
+  pg-control-matrix.tsv is the derived comparison and record-status summary.
+
+nested-real-translator.log and nested-real-translator-muffled.log
+  A real in-memory SQLite connection with a custom dbplyr translator that
+  reentered a tracked construction call. The default run's final assertion
+  intentionally failed: an unmuffled child translator warning propagated to
+  the enclosing owned invocation and was observed there too. The control
+  muffled that warning inside the child; the enclosing record then stayed
+  identical before/after reentry. These logs preserve the rejected isolation
+  hypothesis and its control, not a fourth confirmed bug.
+
+cleanup-order-replay.log
+  Output from replay validation during preservation on 2026-10-25 against the
+  same package snapshot. All sixteen operation/cleanup combinations agreed for
+  audit OFF/ON result class/message and delivered warnings. The displayed
+  status followed the condition that escaped the owned operation, including
+  cleanup conditions that replaced an earlier failure. These are R condition
+  doubles, not evidence about asynchronous SIGINT during record restoration.
+
+Replay scripts
+  The .R harnesses were adapted from those investigation scripts: repository
+  paths are relative, result RDS persistence was removed, PostgreSQL uses
+  libpq PG* environment variables, and the live harness defaults to in-memory
+  SQLite/DuckDB. Its count label was clarified to DBI_CALL_COUNT. cleanup-order.R
+  additionally prints each comparison Boolean. These are standalone exploratory
+  harnesses, excluded from the source package with investigation/. They do not
+  amend package code, tests, expected snapshots, or runtime policy. Run each in
+  a fresh process from the repository root with the required packages installed:
+
+  Rscript investigation/2026-10-25-sql-audit-bug-hunt/evidence/live-paths.R
+  Rscript investigation/2026-10-25-sql-audit-bug-hunt/evidence/live-paths.R postgres
+  Rscript investigation/2026-10-25-sql-audit-bug-hunt/evidence/pg-control-failures.R
+  Rscript investigation/2026-10-25-sql-audit-bug-hunt/evidence/nested-real-translator.R
+  Rscript investigation/2026-10-25-sql-audit-bug-hunt/evidence/nested-real-translator.R muffle-child
+  Rscript investigation/2026-10-25-sql-audit-bug-hunt/evidence/cleanup-order.R
+
+  PostgreSQL replay needs an existing disposable database selected by PG*
+  environment variables. It creates a temporary source table and rolls back its
+  explicit transactions. Credentials are supplied by the caller's usual libpq
+  configuration and are not printed. The default nested-translator replay is
+  expected to exit nonzero at its final assertion; muffle-child is expected to
+  pass. cleanup-order.R crosses return/warning/error/interrupt in the owned
+  operation and in its on.exit() cleanup (sixteen driver-double combinations).
+
+Replay validation during preservation (2026-10-25)
+  live-paths.R: exit 0; ten SQLite/DuckDB pairs agreed on all three comparisons.
+  pg-control-failures.R: exit 0; twenty-four driver-double pairs agreed.
+  nested-real-translator.R: exit 1 at the expected final equality assertion.
+  nested-real-translator.R muffle-child: exit 0, equality assertion passed.
+  cleanup-order.R: exit 0; sixteen driver-double pairs agreed.
+  The optional live PostgreSQL replay was not repeated during preservation.
+  The saved logs were checked against their source files with the whitespace
+  normalization described above.
+
+Primary counterexample logs
+  lifecycle-original-off.log and lifecycle-original-on.log preserve the
+  original fresh-process DuckDB comparison at warn=2: off errored, on
+  returned. These came from the minimal metadata-only fixture, not the
+  retained portable harness, which also requests an observed label check.
+  exit-native-original.log preserves the second coordinating native run:
+  no package function replacement; 2,153 calls / 2,110 caught SIGINTs,
+  followed by a zero-row record on an independent SQL call. Its mccollect
+  warning came from terminating the bounded sender, not a backend query.
+  Only trailing horizontal whitespace and terminal blank lines were removed.
+
+Portable counterexample replay validation (2026-10-25)
+  portable-targeted-replay.log: targeted active-binding injection, exit 1;
+  owner remained active and the next independent SQL record was empty.
+  portable-compound-replay.log: both signal forms produced one external
+  signal and two summaries; exit 1 at the intended invariant assertion.
+  portable-native-replay.log: adapted native harness, no package binding
+  replacements; 4,688 calls / 4,646 caught SIGINTs before owner leakage,
+  then an empty independent SQL record; exit 1 at the detected defect.
+  Only trailing horizontal whitespace and terminal blank lines were removed.

@@ -1,0 +1,7 @@
+UNMOCKED RESTORE LEAK iteration 2153 after 2110 interrupts
+next independent SQL rows 0 active TRUE
+Warning message:
+In parallel::mccollect(worker, wait = FALSE) :
+  1 parallel job did not deliver a result
+Error: completed or interrupted calls must release their record owner
+Execution halted
