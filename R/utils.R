@@ -812,7 +812,7 @@ language_capture_formal <- function(call_name) {
 # hides. A qualified head is out of reach of any binding and keeps its capture.
 #
 # A head written inside parentheses is refused for the original three captures,
-# whatever `bound` holds. `(quote)(x)` evaluates its head as a value, so R's function
+# whatever `bound` holds. `(quote)(x)` evaluates its head as a value, so function
 # lookup never runs and *any* binding wins -- a column, a preceding summary, or
 # a caller's own function, none of which this can see. Claiming the capture
 # would stop reporting `x`, which is the silent miss #130 fixed this walk to
@@ -841,9 +841,9 @@ captured_call_parts <- function(expr,
   }
   call_head <- static_call_head(expr)
   namespace <- static_call_ns(expr)
-  if (is_redundant_parens(call_head) &&
-        !(call_name %in% c("bquote", "expr", "quo") &&
-          !is.null(namespace))) {
+  qualified_capture <- call_name %in% c("bquote", "expr", "quo") &&
+    !is.null(namespace)
+  if (is_redundant_parens(call_head) && !qualified_capture) {
     return(captured)
   }
   if (rlang::is_symbol(call_head) && rlang::as_name(call_head) %in% bound) {
@@ -1291,11 +1291,13 @@ static_language_values <- function(expr) {
   captured <- captured_call_parts(expr, call_name)
   if (any(captured) && call_name %in% c("bquote", "expr", "quo")) {
     value <- static_call_args(expr)[captured]
-    if (is_bquote_capture(expr, captured) &&
-      length(bquote_substitution_parts(
-          value[[1L]], splice = bquote_splice_argument(expr)
-        ))) {
-      return(NULL)
+    if (is_bquote_capture(expr, captured)) {
+      substitutions <- bquote_substitution_parts(
+        value[[1L]], splice = bquote_splice_argument(expr)
+      )
+      if (length(substitutions)) {
+        return(NULL)
+      }
     }
     return(value)
   }
