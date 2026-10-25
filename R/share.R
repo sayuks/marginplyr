@@ -1385,7 +1385,8 @@ check_share_scalar <- function(value,
 # the collected result. They share one definition so the handler-visible fields
 # cannot drift away from the message again.
 is_share_source_type <- function(value) {
-  typeof(value) %in% c("integer", "double") && !is.object(value)
+  typeof(value) %in% c("integer", "double") &&
+    !is.object(value) && is.null(dim(value))
 }
 
 abort_share_source_type <- function(value,
@@ -1404,7 +1405,11 @@ abort_share_source_type <- function(value,
   # Read only from the template below, which codetools cannot see.
   # nolint start: object_usage_linter.
   detected_type <- paste(
-    if (is.object(value)) class(value) else typeof(value),
+    if (is.object(value) || !is.null(dim(value))) {
+      class(value)
+    } else {
+      typeof(value)
+    },
     collapse = "/"
   )
   # nolint end
