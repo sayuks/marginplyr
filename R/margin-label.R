@@ -603,6 +603,11 @@ label_margin_branch <- function(.data,
             return(rlang::expr(rep(!!sentinels[[col]], !!branch_size)))
           }
           value <- prototypes[[col]]
+          if (dtplyr_full_size_label && rlang::is_bare_list(value) &&
+                is.null(dim(value))) {
+            # dtplyr parses list calls but refuses injected list objects.
+            return(rlang::expr(rep(list(NULL), !!branch_size)))
+          }
           if (is.null(value)) NA else value
         })
         names(values) <- vapply(
