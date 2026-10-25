@@ -158,3 +158,192 @@ test_that("faithful dtplyr derivations retain metadata and detail values", {
     expect_identical(source, before)
   }
 })
+
+test_that("grouped renamed dtplyr inputs inherit fixed nesting keys", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(data.frame(g = c("b", "a", "b"), value = 1:3)) |>
+    dplyr::rename(`fixed key` = g)
+  grouped <- dplyr::group_by(source, `fixed key`)
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    actual <- verb(grouped, .sort = "last")
+    expected <- verb(source, .by = `fixed key`, .sort = "last")
+    if (identical(verb, nest_with_margins)) {
+      expect_s3_class(actual, "dtplyr_step")
+      actual <- dplyr::collect(actual)
+      expected <- dplyr::collect(expected)
+    }
+    expect_identical(actual, expected)
+    expect_identical(actual[["fixed key"]], c("a", "b"))
+    expect_identical(lapply(actual$data, function(cell) cell$value),
+                     list(2L, c(1L, 3L)))
+  }
+})
+
+test_that("metadata-preserving grouped derivations match explicit fixed keys", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table; only dtplyr is an optional backend here.
+  source <- data.table::data.table(
+    `fixed key` = c("b", "a", "b", "a"),
+    dimension = factor(c("x", "y", "x", "x"), levels = c("y", "x", "unused")),
+    value = c(3L, 2L, 3L, 0L), discard = FALSE
+  )
+  before <- data.table::copy(source)
+  root <- dtplyr::lazy_dt(source)
+  operations <- list(
+    rename = function(x) dplyr::rename(x, `caller value` = value),
+    select = function(x) dplyr::select(x, dimension, value, `fixed key`),
+    filter = function(x) dplyr::filter(x, value > 0L)
+  )
+
+  for (operation in operations) {
+    explicit <- operation(root)
+    steps <- list(
+      dplyr::group_by(explicit, `fixed key`),
+      operation(dplyr::group_by(root, `fixed key`))
+    )
+    for (step in steps) {
+      for (keep in c(FALSE, TRUE)) {
+        for (sort in c("none", "first", "last")) {
+          for (verb in list(nest_with_margins, nest_by_with_margins)) {
+            actual <- verb(
+              step, .grouping = rollup(dimension), .keep = keep,
+              .key = "caller rows", .id = "caller set", .sort = sort
+            )
+            expected <- verb(
+              explicit, .by = `fixed key`, .grouping = rollup(dimension),
+              .keep = keep, .key = "caller rows",
+              .id = "caller set", .sort = sort
+            )
+            if (identical(verb, nest_with_margins)) {
+              expect_s3_class(actual, "dtplyr_step")
+              actual <- dplyr::collect(actual)
+              expected <- dplyr::collect(expected)
+            } else {
+              expect_s3_class(actual, "rowwise_df")
+            }
+            expect_identical(actual, expected)
+            expect_identical(
+              names(actual),
+              c("fixed key", "dimension", "caller set", "caller rows")
+            )
+            expect_identical(
+              levels(actual$dimension), c("y", "x", "unused", "Total")
+            )
+          }
+        }
+      }
+      actual <- dplyr::collect(expand_with_margins(
+        step, .grouping = rollup(dimension), .id = "set", .sort = "last"
+      ))
+      expected <- dplyr::collect(expand_with_margins(
+        explicit, .by = `fixed key`, .grouping = rollup(dimension),
+        .id = "set", .sort = "last"
+      ))
+      expect_identical(actual, expected)
+      actual <- dplyr::collect(summarize_with_margins(
+        step, n = dplyr::n(), .grouping = rollup(dimension), .sort = "first"
+      ))
+      expected <- dplyr::collect(summarize_with_margins(
+        explicit, n = dplyr::n(), .by = `fixed key`,
+        .grouping = rollup(dimension), .sort = "first"
+      ))
+      expect_identical(actual, expected)
+      expect_identical(source, before)
+    }
+  }
+})
+
+test_that("grouped dtplyr planning leaves source rows unread", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  probe <- function(x) {
+    seen <<- c(seen, length(x))
+    x > 0L
+  }
+  source <- data.table::data.table(
+    g = c("b", "a", "b"),
+    dimension = factor(c("x", "y", "x"), levels = c("y", "x", "unused")),
+    value = 1:3, discard = FALSE
+  )
+  before <- data.table::copy(source)
+  root <- dtplyr::lazy_dt(source)
+  derive <- function(x) {
+    x |>
+      dplyr::rename(`caller value` = value) |>
+      dplyr::select(dimension, `caller value`, g) |>
+      dplyr::filter(probe(`caller value`))
+  }
+  explicit <- derive(root)
+  for (step in list(
+    dplyr::group_by(explicit, g),
+    derive(dplyr::group_by(root, g))
+  )) {
+    for (spec in list(rollup(dimension), rollup(where(is.factor)),
+                      rollup(where(is.integer)))) {
+      actual <- inspect_grouping(step, .grouping = spec)
+      expected <- inspect_grouping(explicit, .by = g, .grouping = spec)
+      expect_identical(actual, expected)
+    }
+    query <- nest_with_margins(step, .grouping = rollup(dimension))
+    expect_s3_class(query, "dtplyr_step")
+    expect_s3_class(expand_with_margins(step, .grouping = rollup(dimension)),
+                    "dtplyr_step")
+    expect_s3_class(summarize_with_margins(
+      step, n = dplyr::n(), .grouping = rollup(dimension)
+    ), "dtplyr_step")
+    expect_identical(seen, integer())
+    expect_identical(source, before)
+
+    dplyr::collect(query)
+    expect_true(any(seen > 0L))
+    expect_identical(source, before)
+    seen <- integer()
+    result <- nest_by_with_margins(step, .grouping = rollup(dimension))
+    expect_s3_class(result, "rowwise_df")
+    expect_true(any(seen > 0L))
+    expect_identical(source, before)
+    seen <- integer()
+  }
+})
+
+test_that("grouping wrappers cannot admit unsafe dtplyr metadata", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  probe <- function(x) {
+    seen <<- c(seen, length(x))
+    x
+  }
+  source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+  before <- data.table::copy(source)
+  root <- dtplyr::lazy_dt(source)
+  operations <- list(
+    function(x) dplyr::mutate(x, value = probe(value)),
+    function(x) dplyr::mutate(x, value = factor(value)),
+    function(x) dplyr::mutate(x, value = if (dplyr::n() > 0L) "text" else 0L),
+    function(x) dplyr::mutate(x, value = "text")
+  )
+
+  for (operation in operations) {
+    for (step in list(
+      dplyr::group_by(operation(root), g),
+      operation(dplyr::group_by(root, g))
+    )) {
+      for (verb in forwarded_margin_verbs) {
+        expect_error(
+          verb(step, NULL, grouping_set()),
+          "Can't safely determine column metadata", class = "marginplyr_error"
+        )
+      }
+      expect_error(
+        inspect_grouping(step, .grouping = rollup(where(is.numeric))),
+        "Can't safely determine column metadata", class = "marginplyr_error"
+      )
+      expect_identical(
+        nrow(inspect_grouping(step, .grouping = grouping_set())), 1L
+      )
+      expect_identical(seen, integer())
+      expect_identical(source, before)
+    }
+  }
+})
