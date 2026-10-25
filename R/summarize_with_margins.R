@@ -1091,10 +1091,12 @@ summarize_with_margins <- function(.data,
   sql_env_column <- operation$backend$is_sql &&
     ".env" %in% get_col_names(execution$result, dplyr::everything())
   sqlite_env_column <- sql_env_column && live_sqlite_margin_result(operation)
+  sqlite_boolean_column <- live_sqlite_margin_result(operation) &&
+    length(sqlite_boolean_columns(dplyr::tbl_vars(execution$result))) > 0L
   anchor_needed <- existing_anchor_needed || (
     sqlite_declared_type_result(operation) &&
       length(execution$declared_types) > 0L
-  ) || sqlite_env_column
+  ) || sqlite_env_column || sqlite_boolean_column
   final_type_anchor <- if (anchor_needed) {
     if (live_sqlite_margin_result(operation)) {
       always_present <- Reduce(intersect, operation$plan$sets)

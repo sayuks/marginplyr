@@ -276,3 +276,18 @@ The implementation and public-contract publication are complete in #755.
 [Acceptance evidence](../../investigation/sqlite-interruption-recovery-2026-09-30.md)
 records the verified snapshots and limits. The [specification's interruption amendment](../specs/sqlite-b-direct.md#catchable-interruption-amendment-755)
 owns the observable acceptance matrix and publication requirements.
+
+## Boolean-word public names amendment (#826)
+
+Extend the direct SQLite result boundary to public columns named `TRUE` or
+`FALSE`, including case variants, even when no declared type or Margin order
+otherwise requires it. Keep those aliases private in intermediate summary
+queries and restore their public spelling only in the outermost result. Keep
+source-column anchors and declared output types at that same boundary. Finite
+collection appends its limit without introducing another public-name subquery.
+
+SQLite also loses these names under `CREATE TABLE AS`. Materialize the type
+anchor with private names, then rename the destination columns before inserting
+the public result. Index requests follow those aliases until the columns are
+renamed. All these writes remain inside the existing owned savepoint; they
+introduce no construction-time query or source-data read under ADR 0020.
