@@ -45,9 +45,28 @@ sqlite_margin_input <- function(.data, backend, data_vars) {
     return(.data)
   }
   input_order <- dbplyr::op_sort(.data)
+  # Keep Boolean-word names out of the opaque input SQL (#826).
+  boolean_columns <- sqlite_boolean_columns(data_vars)
+  private_names <- new_margin_internal_names(
+    length(boolean_columns), data_vars, prefix = "..marginplyr_input_",
+    backend = backend
+  )
+  if (length(boolean_columns) > 0L) {
+    .data <- dplyr::rename(
+      .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
+    )
+    data_vars <- as.character(dplyr::tbl_vars(.data))
+  }
   relation <- dplyr::tbl(
     dbplyr::remote_con(.data), dbplyr::sql_render(.data), vars = data_vars
   )
+  if (length(boolean_columns) > 0L) {
+    source <- relation$lazy_query
+    relation <- dplyr::rename(
+      relation, dplyr::all_of(stats::setNames(private_names, boolean_columns))
+    )
+    attr(relation, "marginplyr_boolean_input_query") <- source
+  }
   restore_input_window_order(relation, input_order)
 }
 

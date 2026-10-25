@@ -190,8 +190,8 @@ test_that("SQLite Boolean-word construction leaves the source unread", {
       .package = "DBI"
     )
     summarize_with_margins(
-      source, `FALSE` = sum(v, na.rm = TRUE), .grouping = rollup(`TRUE`),
-      .margin_label = NULL, .sort = "last"
+      dplyr::arrange(source, `TRUE`), `FALSE` = sum(v, na.rm = TRUE),
+      .grouping = rollup(`TRUE`), .margin_label = NULL, .sort = "last"
     )
   }
   query <- build()

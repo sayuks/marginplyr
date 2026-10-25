@@ -86,14 +86,17 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     public_anchor <- sql_env_output_query(public_anchor)
     public_query <- sql_env_output_query(public_query)
   }
-  boolean_columns <- sqlite_boolean_columns(public_columns)
+  boolean_columns <- sqlite_boolean_columns(unique(c(
+    operation$data_vars, public_columns
+  )))
   boolean_aliases <- stats::setNames(new_margin_internal_names(
     length(boolean_columns),
     used_names = c(operation$data_vars, dplyr::tbl_vars(staged)),
     prefix = "..marginplyr_boolean_", backend = operation$backend
   ), boolean_columns)
   if (length(boolean_aliases) > 0L) {
-    source <- operation$data$lazy_query
+    source <- attr(operation$data, "marginplyr_boolean_input_query") %||%
+      operation$data$lazy_query
     typed_union <- sqlite_boolean_query(typed_union, source, boolean_aliases)
     public_anchor <- sqlite_boolean_query(
       public_anchor, source, boolean_aliases, public = FALSE
@@ -101,7 +104,9 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     public_query <- sqlite_boolean_query(public_query, source, boolean_aliases)
   }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
-  attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases
+  attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases[
+    intersect(public_columns, names(boolean_aliases))
+  ]
   attr(ordered, "marginplyr_typed_union") <- typed_union
   attr(ordered, "marginplyr_public_anchor") <- public_anchor
   attr(ordered, "marginplyr_order_keys") <- key_names

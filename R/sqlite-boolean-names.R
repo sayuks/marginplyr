@@ -22,7 +22,7 @@ sqlite_boolean_query <- function(result, source, aliases, public = TRUE) {
         table$lazy_query <- rewrite(table$lazy_query, public)$query
         table
       })
-      return(list(query = query, aliases = input$aliases))
+      return(sqlite_boolean_query_state(query, input$aliases))
     }
     if (inherits(query, "lazy_multi_join_query")) {
       inputs <- c(
@@ -40,8 +40,9 @@ sqlite_boolean_query <- function(result, source, aliases, public = TRUE) {
         query$vars$name <- sqlite_boolean_names(query$vars$name, output_aliases)
       }
       # Share joins match private keys, so ON needs no public rename.
-      return(list(query = query,
-                  aliases = if (public) character() else output_aliases))
+      return(sqlite_boolean_query_state(
+        query, if (public) character() else output_aliases
+      ))
     }
     query$select$expr <- lapply(query$select$expr, sqlite_boolean_reference,
                                 aliases = input$aliases)
@@ -49,12 +50,20 @@ sqlite_boolean_query <- function(result, source, aliases, public = TRUE) {
       query[[field]] <- lapply(query[[field]], sqlite_boolean_reference,
                                aliases = input$aliases)
     }
+    query$select$group_vars <- lapply(
+      query$select$group_vars, sqlite_boolean_names, aliases = input$aliases
+    )
+    query$select$order_vars <- lapply(query$select$order_vars, function(terms) {
+      lapply(terms, sqlite_boolean_reference, aliases = input$aliases)
+    })
     output_aliases <- aliases[intersect(names(aliases), query$select$name)]
     if (!public) {
       positions <- match(names(output_aliases), query$select$name)
       query$select$name[positions] <- unname(output_aliases)
     }
-    list(query = query, aliases = if (public) character() else output_aliases)
+    sqlite_boolean_query_state(
+      query, if (public) character() else output_aliases
+    )
   }
   result$lazy_query <- rewrite(result$lazy_query, public)$query
   result
@@ -80,4 +89,13 @@ sqlite_boolean_names <- function(names, aliases) {
   positions <- match(names, names(aliases))
   names[!is.na(positions)] <- unname(aliases[positions[!is.na(positions)]])
   names
+}
+
+# Keep renamed query outputs aligned with dbplyr's grouping and window metadata.
+# The caller supplies the alias map that the parent query must use.
+sqlite_boolean_query_state <- function(query, aliases) {
+  query$group_vars <- sqlite_boolean_names(query$group_vars, aliases)
+  query$order_vars <- lapply(query$order_vars, sqlite_boolean_reference,
+                             aliases = aliases)
+  list(query = query, aliases = aliases)
 }
