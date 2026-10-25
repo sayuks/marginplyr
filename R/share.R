@@ -1405,7 +1405,11 @@ abort_share_source_type <- function(value,
   # Read only from the template below, which codetools cannot see.
   # nolint start: object_usage_linter.
   detected_type <- paste(
-    if (is.object(value) || !is.null(dim(value))) class(value) else typeof(value),
+    if (is.object(value) || !is.null(dim(value))) {
+      class(value)
+    } else {
+      typeof(value)
+    },
     collapse = "/"
   )
   # nolint end

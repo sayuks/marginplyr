@@ -1,4 +1,4 @@
-test_that("shares reject dimensional numeric sources before ratio calculation", {
+test_that("shares reject dimensional numeric sources during validation", {
   data <- data.frame(group = c("a", "b"), value = c(2, 6))
   sources <- list(
     quote(crossprod(value)),
@@ -74,7 +74,8 @@ test_that("share source expression errors retain their original cause", {
     message = "source failed",
     source_detail = "original failure"
   )
-  for (share in list(quote(share_of_parent(total)), quote(share_of_total(total)))) {
+  shares <- list(quote(share_of_parent(total)), quote(share_of_total(total)))
+  for (share in shares) {
     error <- expect_error(
       rlang::inject(summarize_with_margins(
         data,
