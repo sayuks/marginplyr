@@ -25,7 +25,6 @@ rows <- last_sent_queries(details=TRUE)
 stopifnot(touches>0L, nrow(rows)==1L, rows$purpose=='result', rows$status=='prepared', !is.na(rows$sql))
 stopifnot(nrow(rows$conditions[[1L]])==touches)
 for(i in seq_along(snapshots)) stopifnot(identical(serialize(snapshots[[i]],NULL),serialized[[i]]))
-# Replace record, modify newly returned views, read all projections.
 inspect_grouping(data.frame(z=1))
 for(i in seq_along(snapshots)) stopifnot(identical(serialize(snapshots[[i]],NULL),serialized[[i]]))
 cat('PASS active render copy snapshots:',length(snapshots),'; later render conditions:',nrow(rows$conditions[[1L]]),'\n')
