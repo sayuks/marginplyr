@@ -100,7 +100,10 @@ test_that("a cyclic nested argument is read once before refusal", {
   reads <- 0L
 
   data <- data.frame(region = "E", units = 2)
-  expect_error(inspect_grouping(data, .grouping = s), class = "marginplyr_error")
+  expect_error(
+    inspect_grouping(data, .grouping = s),
+    class = "marginplyr_error"
+  )
   expect_identical(reads, 1L)
   reads <- 0L
   expect_error(
@@ -110,7 +113,7 @@ test_that("a cyclic nested argument is read once before refusal", {
   expect_identical(reads, 1L)
 })
 
-test_that("distinct finite specifications with identical contents are accepted", {
+test_that("distinct finite specifications may have identical contents", {
   reads <- 0L
   env <- rlang::env(rlang::current_env())
   makeActiveBinding("next_spec", function() {

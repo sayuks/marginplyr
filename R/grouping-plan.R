@@ -561,13 +561,17 @@ grouping_name_proxy <- function(data_vars) {
 # `spec` is a specification a caller wrote no arguments for.
 # `ancestors` holds the specifications on this branch only, so independent
 # uses of one specification remain independent readings.
-preflight_grouping_spec <- function(grouping_spec, data_vars, ancestors = list()) {
+preflight_grouping_spec <- function(grouping_spec,
+                                    data_vars,
+                                    ancestors = list()) {
   stopifnot(is.character(data_vars), !anyNA(data_vars))
   validate_grouping_spec_early(grouping_spec)
   if (is.null(grouping_spec)) {
     return(list(spec = NULL, args = list(), name_only = TRUE))
   }
-  if (any(vapply(ancestors, rlang::is_reference, logical(1), y = grouping_spec))) {
+  if (any(vapply(
+    ancestors, rlang::is_reference, logical(1), y = grouping_spec
+  ))) {
     abort_cyclic_grouping_spec()
   }
   ancestors <- c(ancestors, list(grouping_spec))
