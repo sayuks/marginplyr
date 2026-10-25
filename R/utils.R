@@ -1277,8 +1277,8 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
 }
 
 # The language objects or written capture bodies handed to `eval()`, and
-# `NULL` where they are not knowable. An empty list is the third answer and is not
-# the same as `NULL`: a constant evaluates to itself and looks nothing up.
+# `NULL` where they are not knowable. An empty list is a third answer:
+# a constant evaluates to itself and looks nothing up.
 #
 # The constructors that hide a name from the walk need a case, and so do the
 # two that capture one. A name written as a string was never reported by the
