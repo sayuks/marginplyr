@@ -570,7 +570,8 @@ is_name_only_helper_arg <- function(expr,
     return(TRUE)
   }
   if (
-    is.primitive(fn) || identical(environment(fn), baseenv()) ||
+    is.primitive(fn) || isNamespace(environment(fn)) ||
+      identical(environment(fn), baseenv()) ||
       any(vapply(seen, identical, logical(1), fn))
   ) {
     return(FALSE)

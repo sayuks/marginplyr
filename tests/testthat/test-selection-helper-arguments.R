@@ -223,3 +223,21 @@ test_that("a caller's names function cannot hide type-dependent selection", {
     tibble::tibble(b = 1, n = 2L)
   )
 })
+
+test_that("namespace calls in helper arguments remain opaque", {
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  data <- tibble::tibble(a = c("x", "y"), b = c(1, 1))
+  helper <- function() {
+    last_sent_queries()
+    "b"
+  }
+  inspect_bounded <- function() {
+    setTimeLimit(elapsed = 5, transient = FALSE)
+    on.exit(setTimeLimit(cpu = Inf, elapsed = Inf, transient = FALSE),
+            add = TRUE)
+    inspect_grouping(data, .by = tidyselect::all_of(helper()))
+  }
+
+  expect_identical(inspect_bounded()$fixed, "(b)")
+})
