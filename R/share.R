@@ -3019,10 +3019,12 @@ apply_joined_shares <- function(result,
 }
 
 # dtplyr passes join keys through data.table's `on` parser, which reads literal
-# backticks and comparison operators in a key name as join syntax. The staged
-# result owns both sides, so rename their keys only for this join.
+# backticks and comparison operators as syntax and trims surrounding whitespace.
+# The staged result owns both sides, so rename their keys only for this join.
 dtplyr_join_names <- function(join_names, used_names) {
-  if (!any(grepl("`|[<>]|==|!=", join_names))) {
+  if (
+    !any(grepl("`|[<>]|==|!=", join_names) | trimws(join_names) != join_names)
+  ) {
     return(NULL)
   }
   escaped <- new_margin_internal_names(
