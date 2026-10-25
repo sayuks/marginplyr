@@ -135,18 +135,18 @@ Create an output directory, then run each audit setting in a separate process:
 
 ```sh
 audit_capture=$(mktemp -d)
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R sqlite off "$audit_capture/sqlite-off.rds"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R sqlite on "$audit_capture/sqlite-on.rds"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R duckdb off "$audit_capture/duckdb-off.rds"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R duckdb on "$audit_capture/duckdb-on.rds"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/simulators.R off "$audit_capture/sim-off.rds"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/simulators.R on "$audit_capture/sim-on.rds"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/transaction-failures.R "$audit_capture/transaction-failures.rds"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R sqlite off "${audit_capture}/sqlite-off.rds"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R sqlite on "${audit_capture}/sqlite-on.rds"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R duckdb off "${audit_capture}/duckdb-off.rds"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R duckdb on "${audit_capture}/duckdb-on.rds"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/simulators.R off "${audit_capture}/sim-off.rds"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/simulators.R on "${audit_capture}/sim-on.rds"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/transaction-failures.R "${audit_capture}/transaction-failures.rds"
 Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/compare.R "$audit_capture"
 Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/compare-simulators.R "$audit_capture"
 Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/validate-captures.R "$audit_capture"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/matrix.R "$audit_capture/matrix.log"
-Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/storage-extra.R "$audit_capture/storage.log"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/matrix.R "${audit_capture}/matrix.log"
+Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/storage-extra.R "${audit_capture}/storage.log"
 ```
 
 SQLite uses in-memory databases. DuckDB uses disposable connections with

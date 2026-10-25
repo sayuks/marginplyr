@@ -60,7 +60,7 @@ evidence.
 
 ### Native evidence at the unchanged internal renderer
 
-Two independent processes rendered valid `tbl_lazy` aggregate queries through
+Two independent processes rendered valid `tbl_lazy` queries through
 the original `render_sent_query_sql()`. No package function or recording
 binding was replaced. A forked sender delivered one SIGINT per request and
 acknowledged it before the parent began another attempt, preventing an
