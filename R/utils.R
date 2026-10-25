@@ -812,7 +812,7 @@ language_capture_formal <- function(call_name) {
 # hides. A qualified head is out of reach of any binding and keeps its capture.
 #
 # A head written inside parentheses is refused for the original three captures,
-# whatever `bound` holds. `(quote)(x)` evaluates its head as a value, so function
+# regardless of `bound`. `(quote)(x)` evaluates its head as a value, so function
 # lookup never runs and *any* binding wins -- a column, a preceding summary, or
 # a caller's own function, none of which this can see. Claiming the capture
 # would stop reporting `x`, which is the silent miss #130 fixed this walk to
