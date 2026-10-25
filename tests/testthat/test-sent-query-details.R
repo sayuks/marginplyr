@@ -138,6 +138,49 @@ test_that("owned warnings preserve delivery, order, and warning-to-error", {
   })
 })
 
+test_that("one compound signal has one summary and preserves its outcome", {
+  with_detail_source(function(remote) {
+    # A controlled collection boundary supplies overlapping categories that a
+    # real driver need not emit; the public accessor observes each signal.
+    leaf <- errorCondition("compound driver condition", class = "warning")
+    for (terminating in c(FALSE, TRUE)) {
+      testthat::local_mocked_bindings(collect = function(...) {
+        if (terminating) {
+          stop(leaf)
+        }
+        signalCondition(leaf)
+        data.frame(g = 0)
+      }, .package = "dplyr")
+      run <- function(audited) {
+        options(marginplyr.audit_sql = audited)
+        delivered <- list()
+        invoke <- function() {
+          withCallingHandlers(
+            detail_label_check(remote),
+            condition = function(cnd) {
+              delivered[[length(delivered) + 1L]] <<- cnd
+            }
+          )
+        }
+        outcome <- tryCatch(invoke(), error = identity)
+        list(delivered = delivered, outcome = outcome)
+      }
+      off <- run(FALSE)
+      on <- run(TRUE)
+      expect_identical(on, off)
+      expect_identical(on$delivered, list(leaf))
+      expect_identical(on$outcome, leaf)
+      rows <- last_sent_queries(FALSE, TRUE)
+      expect_identical(rows$status, "errored")
+      expect_identical(rows$conditions[[1L]], dplyr::tibble(
+        classes = list(c("warning", "error", "condition")),
+        message = "compound driver condition", phase = "invocation",
+        handling = "propagated"
+      ))
+    }
+  })
+})
+
 test_that("errors and interrupts propagate the original conditions", {
   with_detail_source(function(remote) {
     for (kind in c("error", "interrupt")) {

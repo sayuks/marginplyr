@@ -183,22 +183,25 @@ with_sent_query <- function(purpose, query, expr,
   }, add = TRUE)
   value <- withCallingHandlers(
     force(expr),
-    warning = function(cnd) {
-      handling <- if (identical(warning_handling, "suppressed") &&
-                        is.null(findRestart("muffleWarning"))) {
-        "propagated"
+    condition = function(cnd) {
+      # Probe suppression precedes its error catch when a warning can be
+      # muffled, including one that also inherits from error.
+      if (inherits(cnd, "warning") &&
+            identical(warning_handling, "suppressed") &&
+            !is.null(findRestart("muffleWarning"))) {
+        handling <- "suppressed"
+      } else if (inherits(cnd, "error")) {
+        handling <- error_handling
+        status <<- "errored"
+      } else if (inherits(cnd, "interrupt")) {
+        handling <- "propagated"
+        status <<- "interrupted"
+      } else if (inherits(cnd, "warning")) {
+        handling <- "propagated"
       } else {
-        warning_handling
+        return(NULL)
       }
       record_sent_query_condition(entry, cnd, "invocation", handling)
-    },
-    error = function(cnd) {
-      record_sent_query_condition(entry, cnd, "invocation", error_handling)
-      status <<- "errored"
-    },
-    interrupt = function(cnd) {
-      record_sent_query_condition(entry, cnd, "invocation", "propagated")
-      status <<- "interrupted"
     }
   )
   status <- "returned"
