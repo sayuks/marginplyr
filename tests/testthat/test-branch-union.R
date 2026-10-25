@@ -772,3 +772,15 @@ test_that("restoring window order ignores missing terms", {
     result
   )
 })
+
+# dplyr prevents malformed branch names before the public verbs can bind them.
+# Exercise the binder directly to keep its independent name guard observable.
+test_that("eager binding still rejects duplicate and empty branch names", {
+  for (names in list(c("same", "same"), c("", "other"))) {
+    branch <- stats::setNames(data.frame(a = 1L, b = 2L), names)
+    expect_error(
+      combine_margin_branches(list(branch, branch)),
+      class = "vctrs_error_names"
+    )
+  }
+})

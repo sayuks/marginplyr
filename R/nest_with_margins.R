@@ -537,58 +537,61 @@ nest_expanded_margins <- function(.data,
                                   .key,
                                   kind,
                                   drop_set_col = TRUE) {
-  outer_cols <- c(group_cols, set_col, unname(identity_cols))
-  # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
-  # so answers `NULL` for a `dtplyr` step — every payload column would then
-  # look absent and be dropped from every cell.
-  cell_cols <- rlang::set_names(
-    setdiff(get_col_names(.data, dplyr::everything()), outer_cols)
-  )
-  if (length(keep_cols) > 0L) {
-    # `.keep = TRUE` nests a copy of each grouping column, made upstream under
-    # an internal name so that the outer key and the copy can disagree. The
-    # cell gives each copy back the name the caller wrote, and the grouping
-    # columns lead it. `order()` is stable, so the rest keep the order the
-    # input gave them.
-    restored <- match(unname(cell_cols), unname(keep_cols))
-    named <- !is.na(restored)
-    names(cell_cols)[named] <- names(keep_cols)[restored[named]]
-    leading <- match(
-      names(cell_cols),
-      group_cols,
-      nomatch = length(cell_cols) + 1L
+  with_margin_column_aliases(.data, set_col, function(.data, alias_name) {
+    set_col <- alias_name(set_col)
+    outer_cols <- c(group_cols, set_col, unname(identity_cols))
+    # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
+    # so answers `NULL` for a `dtplyr` step — every payload column would then
+    # look absent and be dropped from every cell.
+    cell_cols <- rlang::set_names(
+      setdiff(get_col_names(.data, dplyr::everything()), outer_cols)
     )
-    cell_cols <- cell_cols[order(leading)]
-  }
+    if (length(keep_cols) > 0L) {
+      # `.keep = TRUE` nests a copy of each grouping column, made upstream under
+      # an internal name so that the outer key and the copy can disagree. The
+      # cell gives each copy back the name the caller wrote, and the grouping
+      # columns lead it. `order()` is stable, so the rest keep the order the
+      # input gave them.
+      restored <- match(unname(cell_cols), unname(keep_cols))
+      named <- !is.na(restored)
+      names(cell_cols)[named] <- names(keep_cols)[restored[named]]
+      leading <- match(
+        names(cell_cols),
+        group_cols,
+        nomatch = length(cell_cols) + 1L
+      )
+      cell_cols <- cell_cols[order(leading)]
+    }
 
-  dtplyr_safe_column_reads(
-    .data, get_col_names(.data, dplyr::everything()),
-    function(source, safe_name) {
-      safe_cells <- stats::setNames(
-        vapply(unname(cell_cols), safe_name, character(1), USE.NAMES = FALSE),
-        names(cell_cols)
-      )
-      safe_outer <- vapply(
-        outer_cols, safe_name, character(1), USE.NAMES = FALSE
-      )
-      result <- dplyr::summarize(
-        source,
-        "{.key}" := list(!!nest_cell_expr(safe_cells, kind)),
-        .by = dplyr::all_of(safe_outer)
-      )
-
-      if (drop_set_col) {
-        result <- dplyr::select(result, -dplyr::all_of(safe_name(set_col)))
-      }
-      if (length(identity_cols) > 0L) {
-        result <- dplyr::select(
-          result, -dplyr::all_of(unname(identity_cols))
+    dtplyr_safe_column_reads(
+      .data, get_col_names(.data, dplyr::everything()),
+      function(source, safe_name) {
+        safe_cells <- stats::setNames(
+          vapply(unname(cell_cols), safe_name, character(1), USE.NAMES = FALSE),
+          names(cell_cols)
         )
-      }
-      result
-    },
-    reserved = .key
-  )
+        safe_outer <- vapply(
+          outer_cols, safe_name, character(1), USE.NAMES = FALSE
+        )
+        result <- dplyr::summarize(
+          source,
+          "{.key}" := list(!!nest_cell_expr(safe_cells, kind)),
+          .by = dplyr::all_of(safe_outer)
+        )
+
+        if (drop_set_col) {
+          result <- dplyr::select(result, -dplyr::all_of(safe_name(set_col)))
+        }
+        if (length(identity_cols) > 0L) {
+          result <- dplyr::select(
+            result, -dplyr::all_of(unname(identity_cols))
+          )
+        }
+        result
+      },
+      reserved = .key
+    )
+  }, reserved = .key)
 }
 
 utils::globalVariables(":=")

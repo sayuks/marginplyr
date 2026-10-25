@@ -158,13 +158,12 @@ nest_by_with_margins <- function(.data,
     )
     if (!is.null(.id)) {
       result <- dplyr::mutate(result, "{.id}" := 1L)
-      result <- dplyr::select(
-        result,
-        dplyr::all_of(.id),
-        dplyr::everything()
-      )
+      result <- reorder_margin_columns(result, .id)
     }
   }
   group_cols <- setdiff(colnames(result), .key)
-  dplyr::rowwise(result, dplyr::all_of(group_cols))
+  with_margin_column_aliases(result, group_cols, function(data, safe_name) {
+    columns <- vapply(group_cols, safe_name, character(1), USE.NAMES = FALSE)
+    dplyr::rowwise(data, dplyr::all_of(columns))
+  })
 }

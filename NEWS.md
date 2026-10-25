@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Local summaries retain dplyr-compatible output names such as `...` and
+  `..1` across grouping sets. Dot-dot `.id` names also work with Margin
+  ordering and nesting (#827).
+
 * Generated Arrow Margin label transformations that would automatically
   collect the input are now refused before collection in summaries and
   expansions. See *Arrow inputs* in `?summarize_with_margins` (#783).

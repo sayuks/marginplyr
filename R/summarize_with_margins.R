@@ -1182,15 +1182,16 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         ), unname(share_aliases))
         for (i in seq_along(share_positions)) {
           position <- share_positions[[i]]
+          alias <- unname(share_aliases[[i]])
+          existing <- rlang::expr(dplyr::pick(dplyr::any_of(!!alias)))
           summaries$dots[[position]] <- rlang::new_quosure(
             rlang::call2(
               marginplyr_private_call("local_share_marker"),
-              unname(share_aliases[[i]]),
-              share_tokens[[i]]
+              alias, share_tokens[[i]], existing
             ),
             env = environment()
           )
-          names(summaries$dots)[position] <- unname(share_aliases[[i]])
+          names(summaries$dots)[position] <- alias
         }
         reserved_names <- c(reserved_names, unname(share_aliases))
         summaries$selection_state$share_aliases <- unname(share_aliases)
@@ -1272,9 +1273,10 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
 
 # Returns one token in a list column at the share's original dot position.
 # The caller gives an alias absent from input and known output names. A frame
-# that created the alias earlier in this branch is visible in the mask here.
-local_share_marker <- function(alias, token) {
-  if (alias %in% names(dplyr::pick(dplyr::everything()))) {
+# that created the alias earlier is captured by the injected `pick()` before
+# this call runs; expanding that selection avoids reading unrelated outputs.
+local_share_marker <- function(alias, token, existing) {
+  if (alias %in% names(existing)) {
     abort_share_alias_collision(alias)
   }
   structure(list(token), marginplyr_share_token = token)
@@ -1336,10 +1338,9 @@ restore_local_share_names <- function(staged_result, aliases,
     }
     result[[alias]] <- rep(NA_real_, nrow(result))
   }
-  rename_pairs <- rlang::set_names(
-    rlang::syms(unname(aliases)), names(aliases)
-  )
-  staged_result$result <- dplyr::rename(result, !!!rename_pairs)
+  result_names <- names(result)
+  result_names[match(unname(aliases), result_names)] <- names(aliases)
+  staged_result$result <- rlang::set_names(result, result_names)
   staged_result
 }
 
@@ -1464,7 +1465,7 @@ stage_margin_summaries <- function(operation,
   if (set_id_is_internal) {
     check_margin_id_collision(
       operation$set_id_name,
-      get_col_names(result, dplyr::everything()),
+      margin_col_names(result),
       "a summary output"
     )
   }
