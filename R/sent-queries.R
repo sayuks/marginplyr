@@ -112,10 +112,14 @@ record_sent_query_condition <- function(entry, cnd, phase, handling) {
 # state. Diagnostic warnings are suppressed; the real operation still owns
 # warning delivery, including conversion to error under the caller's settings.
 render_sent_query_sql <- function(query, entry) {
-  old <- options(
-    rlib_warning_verbosity = "quiet", lifecycle_verbosity = "quiet"
-  )
-  on.exit(options(old), add = TRUE)
+  # A pending cancellation must see both the saved values and their cleanup;
+  # cleanup itself must finish restoring every option before delivery resumes.
+  suspendInterrupts({
+    old <- options(
+      rlib_warning_verbosity = "quiet", lifecycle_verbosity = "quiet"
+    )
+    on.exit(suspendInterrupts(options(old)), add = TRUE)
+  })
   withRestarts(
     withCallingHandlers(
       as.character(dbplyr::sql_render(query)),
