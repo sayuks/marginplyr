@@ -993,3 +993,120 @@ test_that("dtplyr nesting public seams preserve source-row relations", {
   skip_if_suggest_absent("dtplyr")
   expect_nest_relations(nest_metamorphic_source(), "dtplyr")
 })
+
+test_that("named nesting identifiers use their scalar output name", {
+  input <- data.frame(group = c("x", "y"), value = 1:2)
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    for (sort in c("none", "last", "first")) {
+      expected <- verb(
+        input, .grouping = rollup(group), .id = "set", .sort = sort
+      )
+      for (alias in c("alias", "group", "data")) {
+        result <- verb(
+          input, .grouping = rollup(group),
+          .id = stats::setNames("set", alias), .sort = sort
+        )
+        expect_identical(names(result), c("group", "set", "data"))
+        expect_identical(result, expected)
+      }
+    }
+  }
+})
+
+test_that("dtplyr nesting uses named identifiers as scalar output names", {
+  skip_if_suggest_absent("dtplyr")
+  input <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    for (sort in c("none", "last", "first")) {
+      expected <- dplyr::collect(verb(
+        input, .grouping = rollup(group), .id = "set", .sort = sort
+      ))
+      for (alias in c("alias", "group", "data")) {
+        result <- dplyr::collect(verb(
+          input, .grouping = rollup(group),
+          .id = stats::setNames("set", alias), .sort = sort
+        ))
+        expect_identical(names(result), c("group", "set", "data"))
+        expect_identical(result, expected)
+      }
+    }
+  }
+})
+
+test_that("named nesting output names retain the empty ungrouped row", {
+  input <- data.frame(value = integer())
+  for (id in list(NULL, "set", c(alias = "set"), c(set = "set"))) {
+    for (key in list("data", c(alias = "data"), c(alias = "payload"))) {
+      result <- nest_by_with_margins(input, .id = id, .key = key)
+      expect_identical(nrow(result), 1L)
+      expect_identical(names(result), c(unname(id), unname(key)))
+      expect_identical(
+        dplyr::group_vars(result), if (is.null(id)) character() else "set"
+      )
+      expect_identical(result[[unname(key)]], list(tibble::as_tibble(input)))
+      if (!is.null(id)) {
+        expect_identical(result$set, 1L)
+      }
+      nested <- nest_with_margins(input, .id = id, .key = key)
+      expect_identical(nrow(nested), 0L)
+      expect_identical(names(nested), c(unname(id), unname(key)))
+    }
+  }
+})
+
+test_that("dtplyr preserves empty nesting with named output names", {
+  skip_if_suggest_absent("dtplyr")
+  input <- data.frame(value = integer())
+  for (id in list(NULL, "set", c(alias = "set"), c(set = "set"))) {
+    for (key in list("data", c(alias = "data"), c(alias = "payload"))) {
+      result <- nest_by_with_margins(
+        dtplyr::lazy_dt(input), .id = id, .key = key
+      )
+      expect_identical(nrow(result), 1L)
+      expect_identical(names(result), c(unname(id), unname(key)))
+      expect_identical(
+        dplyr::group_vars(result), if (is.null(id)) character() else "set"
+      )
+      cell <- result[[unname(key)]][[1L]]
+      expect_s3_class(cell, "data.table")
+      expect_identical(tibble::as_tibble(cell), tibble::as_tibble(input))
+      if (!is.null(id)) {
+        expect_identical(result$set, 1L)
+      }
+      nested <- dplyr::collect(nest_with_margins(
+        dtplyr::lazy_dt(input), .id = id, .key = key
+      ))
+      expect_identical(nrow(nested), 0L)
+      expect_identical(names(nested), c(unname(id), unname(key)))
+    }
+  }
+})
+
+test_that("named nesting output names validate collisions by value", {
+  input <- data.frame(group = "x", value = 1L)
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    expect_error(
+      verb(input, .grouping = rollup(group), .id = c(alias = "group")),
+      "conflicts with a source column", class = "marginplyr_error"
+    )
+    expect_error(
+      verb(input, .id = c(alias = "data")),
+      "conflicts with nesting `.key`", class = "marginplyr_error"
+    )
+    expect_error(
+      verb(input, .id = c(alias = "set"), .key = c(other = "set")),
+      "conflicts with nesting `.key`", class = "marginplyr_error"
+    )
+    expect_error(
+      verb(input, .grouping = rollup(group), .key = c(alias = "group")),
+      "must not be a grouping column", class = "marginplyr_error"
+    )
+    expect_identical(
+      verb(input, .grouping = rollup(group), .key = c(group = "payload")),
+      verb(input, .grouping = rollup(group), .key = "payload")
+    )
+    for (key in list(c(alias = ""), c(alias = NA_character_))) {
+      expect_error(verb(input, .key = key), class = "marginplyr_error")
+    }
+  }
+})
