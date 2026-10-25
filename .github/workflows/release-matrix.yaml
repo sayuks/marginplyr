@@ -244,6 +244,9 @@ jobs:
           # `cache-version` values protect.
           cache-version: full-1
 
+      - name: Verify local worktrees stay out of source packages
+        run: Rscript .github/scripts/verify-build-exclusions.R
+
       - name: Build source tarball
         run: |
           mkdir tarball

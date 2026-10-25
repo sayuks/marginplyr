@@ -3,6 +3,7 @@
 ^CLAUDE\.md$
 ^\.Rproj\.user$
 ^\.git$
+^\.worktrees$
 ^LICENSE\.md$
 ^CODE_OF_CONDUCT\.md$
 ^README\.qmd$
