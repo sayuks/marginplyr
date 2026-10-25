@@ -1,0 +1,13 @@
+AUDIT on KIND error_interrupt RESULT returned SQL_RENDER_CALLS 35
+ORIGINAL_INTERRUPT FALSE
+# A tibble: 2 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision returned
+2 result                   prepared
+# A tibble: 2 × 4
+  classes   message                        phase  handling
+  <list>    <chr>                          <chr>  <chr>
+1 <chr [3]> compound renderer cancellation render propagated
+2 <chr [3]> compound renderer cancellation render handled
+Ran 2/2 deferred expressions

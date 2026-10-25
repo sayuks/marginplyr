@@ -1,0 +1,4 @@
+  purpose      sql  source   status conditions
+1 fixture SELECT 1 literal invoking
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)

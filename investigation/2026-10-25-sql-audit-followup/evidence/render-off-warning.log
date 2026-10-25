@@ -1,0 +1,3 @@
+AUDIT off KIND warning_interrupt RESULT interrupted SQL_RENDER_CALLS 1
+ORIGINAL_INTERRUPT TRUE
+Ran 2/2 deferred expressions
