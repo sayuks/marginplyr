@@ -371,6 +371,28 @@ test_that("the counter reports entry-point invocations rather than reads", {
   )
 })
 
+test_that("cyclic specifications are refused before any lazy execution", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(region = "E", units = 2), "cyclic_grouping_input"
+  )
+  expect_gt(count_entry_point_invocations(dplyr::collect(source)), 0L)
+  s <- grouping_sets(s, grouping_set())
+
+  expect_identical(count_entry_point_invocations({
+    expect_error(
+      inspect_grouping(source, .grouping = s),
+      class = "marginplyr_error"
+    )
+    expect_error(
+      summarize_with_margins(source, total = sum(units), .grouping = s),
+      class = "marginplyr_error"
+    )
+  }), 0L)
+})
+
 test_that("SQLite destination inspection starts only at explicit compute", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

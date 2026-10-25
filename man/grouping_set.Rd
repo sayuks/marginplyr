@@ -100,6 +100,13 @@ when it is bound to a \code{\link[=grouping_set]{grouping_set()}}, and never in 
 which takes no nested Grouping specification at all. A name bound to
 anything that is not a specification is a column, as it always was.
 
+A nested reference back to an ancestor specification is refused as cyclic.
+When extending a specification, use a different name or inject the previous
+value: after \code{s <- grouping_set(region)}, write
+\code{s <- grouping_sets(!!s, grouping_set())}. Writing \code{grouping_sets(s, ...)}
+under the same name makes \code{s} refer to the new specification itself.
+Reusing a specification in independent branches is allowed.
+
 A dimension is a column of the input, so a name attached to one is
 refused, whether it sits inside a selection or on the constructor's own
 argument: \code{c(area = region)} and \code{rollup(area = region)} are both errors

@@ -77,6 +77,13 @@
 #' which takes no nested Grouping specification at all. A name bound to
 #' anything that is not a specification is a column, as it always was.
 #'
+#' A nested reference back to an ancestor specification is refused as cyclic.
+#' When extending a specification, use a different name or inject the previous
+#' value: after `s <- grouping_set(region)`, write
+#' `s <- grouping_sets(!!s, grouping_set())`. Writing `grouping_sets(s, ...)`
+#' under the same name makes `s` refer to the new specification itself.
+#' Reusing a specification in independent branches is allowed.
+#'
 #' A dimension is a column of the input, so a name attached to one is
 #' refused, whether it sits inside a selection or on the constructor's own
 #' argument: `c(area = region)` and `rollup(area = region)` are both errors

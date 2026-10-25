@@ -559,12 +559,18 @@ grouping_name_proxy <- function(data_vars) {
 # `spec` is `NULL` only for the absent `.grouping`, which
 # `compile_grouping_spec_impl()` fills in. An empty `args` beside any other
 # `spec` is a specification a caller wrote no arguments for.
-preflight_grouping_spec <- function(grouping_spec, data_vars) {
+# `ancestors` holds the specifications on this branch only, so independent
+# uses of one specification remain independent readings.
+preflight_grouping_spec <- function(grouping_spec, data_vars, ancestors = list()) {
   stopifnot(is.character(data_vars), !anyNA(data_vars))
   validate_grouping_spec_early(grouping_spec)
   if (is.null(grouping_spec)) {
     return(list(spec = NULL, args = list(), name_only = TRUE))
   }
+  if (any(vapply(ancestors, rlang::is_reference, logical(1), y = grouping_spec))) {
+    abort_cyclic_grouping_spec()
+  }
+  ancestors <- c(ancestors, list(grouping_spec))
 
   rule <- find_grouping_kind_rule(grouping_spec$type)
   stopifnot(!is.null(rule))
@@ -591,7 +597,7 @@ preflight_grouping_spec <- function(grouping_spec, data_vars) {
       next
     }
 
-    nested_preflight <- preflight_grouping_spec(nested, data_vars)
+    nested_preflight <- preflight_grouping_spec(nested, data_vars, ancestors)
     rule$validate_nested(grouping_spec, nested_preflight$spec)
     name_only <- name_only && nested_preflight$name_only
     args[[i]] <- list(quo = arg, nested = nested_preflight)
@@ -1485,6 +1491,18 @@ abort_ambiguous_nested_name <- function(name) {
     ),
     i = "For the column, write {.code {column}}.",
     i = "For the specification, write {.code {specification}}."
+  ))
+}
+
+# Reports a cyclic specification with constructor rewrites that break it.
+abort_cyclic_grouping_spec <- function() {
+  abort_marginplyr(c(
+    "The Grouping specification contains a cyclic reference.",
+    i = paste0(
+      "Use a different name for an extended specification, or inject its ",
+      "previous value with {.code !!}."
+    ),
+    i = "For example, write {.code s <- grouping_sets(!!s, grouping_set())}."
   ))
 }
 

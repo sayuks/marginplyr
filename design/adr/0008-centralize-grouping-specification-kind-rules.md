@@ -446,6 +446,21 @@ plan, because a reading taken once and a reading taken three times differ only
 where the argument answers differently each time, and an argument that does
 that is one whose count this amendment is about.
 
+## Amendment: refuse a cyclic nested reference (#828)
+
+Structural preflight refuses a specification that is the same object as an
+ancestor on the current branch, with a Package condition under ADR 0015. This
+amends the fixed-condition constraint for cyclic specifications, which previously
+exhausted R's stack. The diagnostic gives two public-constructor rewrites: bind
+an extension to a different name, or inject the previous value with `!!`.
+
+The ancestry is local to one branch, so independent branches may reuse the same
+specification. Identity is object identity rather than equal contents: a caller's
+active binding may return distinct, equal specifications along a finite path.
+The comparison uses the value already read by the preflight and reads no nested
+argument again. The one-reading contract above and ADR 0020's query policy are
+unchanged.
+
 ## Amendment: the condition class of a specification stored as a function
 
 The constraint holding error condition classes fixed is amended a sixth time,
