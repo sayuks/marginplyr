@@ -149,7 +149,7 @@ match_margin_choice <- function(value, choices, arg_name) {
     return(choices[[1L]])
   }
   if (rlang::is_string(value) && value %in% choices) {
-    return(value)
+    return(choices[[match(value, choices)]])
   }
   # The vocabulary is a list of alternatives, which is the case ADR 0023 gives
   # `{.or}`: the bare comma this used to join with was one of the three

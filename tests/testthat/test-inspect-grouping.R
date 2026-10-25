@@ -31,7 +31,8 @@ test_that("inspect_grouping describes a rollup in Grouping plan order", {
   result <- inspect_grouping(
     data,
     .by = fixed,
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .format = c(label = "text")
   )
 
   expect_identical(
@@ -63,7 +64,7 @@ test_that("list inspection preserves exact non-syntactic dimension names", {
   result <- inspect_grouping(
     data,
     .grouping = rollup(`region, west`, `store=number`),
-    .format = "list"
+    .format = c(label = "list")
   )
 
   expect_identical(
