@@ -95,11 +95,13 @@ record_sent_query_condition <- function(entry, cnd, phase, handling) {
   invisible(NULL)
 }
 
-# Renders an audited row without consuming dbplyr's warning-frequency state
-# (#655). Diagnostic warnings are suppressed; the real operation still owns
+# Renders an audited row without consuming rlang or lifecycle warning-frequency
+# state. Diagnostic warnings are suppressed; the real operation still owns
 # warning delivery, including conversion to error under the caller's settings.
 render_sent_query_sql <- function(query, entry) {
-  old <- options(rlib_warning_verbosity = "quiet")
+  old <- options(
+    rlib_warning_verbosity = "quiet", lifecycle_verbosity = "quiet"
+  )
   on.exit(options(old), add = TRUE)
   withRestarts(
     tryCatch(
