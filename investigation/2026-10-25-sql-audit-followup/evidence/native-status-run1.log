@@ -1,0 +1,8 @@
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    ()       ()      ()                      0
+VIOLATION iteration 497 caught 26 status invoking result_interrupt TRUE
+iterations 497 caught 26
+returned   no_row prepared invoking
+     471       24        1        1

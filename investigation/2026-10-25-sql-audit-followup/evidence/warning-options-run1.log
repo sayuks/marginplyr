@@ -1,0 +1,10 @@
+ITERATIONS 20000 INTERRUPTS 19999 OPTIONS_LEAK FALSE
+$rlib_warning_verbosity
+[1] "default"
+
+$lifecycle_verbosity
+[1] "default"
+
+# A tibble: 0 × 5
+# ℹ 5 variables: purpose <chr>, sql <chr>, source <chr>, status <chr>,
+#   conditions <list>

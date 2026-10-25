@@ -1,0 +1,11 @@
+ITERATIONS 1807 INTERRUPTS 1664 OPTIONS_LEAK FALSE
+$rlib_warning_verbosity
+[1] "default"
+
+$lifecycle_verbosity
+[1] "default"
+
+# A tibble: 1 × 5
+  purpose sql   source status   conditions
+  <chr>   <chr> <chr>  <chr>    <list>
+1 result  <NA>  render prepared <tibble [0 × 4]>

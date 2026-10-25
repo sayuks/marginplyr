@@ -1,0 +1,56 @@
+SQL audit second hunt: backend coverage
+Snapshot: 0135a86 (working tree loaded via pkgload::load_all)
+Date: 2026-10-25
+No implementation or repository file was changed.
+
+live-matrix.R: live SQLite, DuckDB, PostgreSQL 17
+  11 off/on pairs each for SQLite and DuckDB, 12 for PostgreSQL (34 pairs).
+  Cases: inspection, typed inspection, observed-label success/collision,
+  missing margin label, no checked column, expansion, summarization,
+  cold dialect probe, cache hit, local non-SQL input; PostgreSQL also a
+  cold dialect probe in a caller-owned transaction.
+  Compared DBI dbSendQuery/dbExecute generic crossings, lazy result classes
+  and variables, inspection column contents, escaping error class/message,
+  and caller-visible warnings. Inspection tibble attributes were not compared.
+  Inner tryCatch retained escaping errors in result, not in the condition list.
+  PostgreSQL caller transaction remained active; subsequent SELECT 9 worked.
+  Tracing generic forwarding counts boundary crossings, not wire submissions.
+  PostgreSQL temporary server was stopped after verification.
+
+compare-live.R: all 34 off/on cases passed exact comparisons after replacing
+  generated savepoint identifiers. Also checks terminal states and sources.
+check-coverage.R: all 34 cases passed recorded internal SQL = traced DBI SQL
+  sequence. For PostgreSQL dbExecute->dbSendQuery consecutive forwarding only,
+  consecutive duplicate crossings were reduced to one.
+  This empirical match is not a broader wire-capture guarantee.
+
+*-off.rds / *-on.rds: captured synthetic-source observations and audit rows.
+
+probe-control-matrix.R with pg-control-failures.log and probe-control-replay.log: copy of previous dated supporting harness,
+  rerun against inspected HEAD. All 24 off/on comparisons agreed. Controlled
+  driver doubles only: 4 control failure positions x error/warning/interrupt
+  x warn0/2. This does not establish server recovery on native interruption.
+
+warning-options.R / warning-options-run{1,2,3,4}.log: bounded native SIGINT stress
+  only against each invoking R child process. No package functions replaced.
+  Public summarize_with_margins over a simulated lazy SQL input. Each call's
+  interrupt delivery occurs inside allowInterrupts; setup, post-call option
+  comparison and sender termination/reaping occur inside suspendInterrupts.
+  Exit 1 means observed global warning-verbosity leak, 2 means no leak in a
+  bounded run or delivery outside the comparison window. No absence proof.
+  First high-frequency run had 20,000 calls /19,999 caught interruptions and
+  no option leak; low-frequency run 2 had 1,807 calls /1,664 caught and none.
+  Initial draft harness used options(names(expected)), which returned only
+  one option and caused a false-positive at its first normal call. Corrected
+  before the retained warning-options-run1.log was recorded.
+
+All data and database objects are synthetic and disposable.
+  Further low-frequency native runs: 1,773 calls /1,688 caught and
+  1,772 calls /1,691 caught, both no option leak. The three low-frequency
+  runs total 5,352 calls /5,043 caught interruptions. Candidate remains
+  unconfirmed; not reported as an additional bug.
+
+Console logs retained in this followup have trailing presentation spaces removed.
+
+The warning-options source is the retained lower-frequency variant.
+Run 1 used a faster stream; the four logs are not four executions of identical source.
