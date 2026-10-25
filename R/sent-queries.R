@@ -117,22 +117,21 @@ render_sent_query_sql <- function(query, entry) {
   )
   on.exit(options(old), add = TRUE)
   withRestarts(
-    tryCatch(
-      withCallingHandlers(
-        as.character(dbplyr::sql_render(query)),
-        warning = function(cnd) {
+    withCallingHandlers(
+      as.character(dbplyr::sql_render(query)),
+      condition = function(cnd) {
+        if (inherits(cnd, "interrupt")) {
+          record_sent_query_condition(entry, cnd, "render", "propagated")
+        } else if (inherits(cnd, "warning")) {
           record_sent_query_condition(entry, cnd, "render", "suppressed")
           invokeRestart("muffleWarning")
-        },
-        interrupt = function(cnd) {
-          record_sent_query_condition(entry, cnd, "render", "propagated")
+        } else if (inherits(cnd, "error")) {
+          record_sent_query_condition(entry, cnd, "render", "handled")
+          invokeRestart("sent_query_render_error")
         }
-      ),
-      error = function(cnd) {
-        record_sent_query_condition(entry, cnd, "render", "handled")
-        NA_character_
       }
     ),
+    sent_query_render_error = function() NA_character_,
     # A bare warning ends only this render, never a caller's warning handler.
     muffleWarning = function() NA_character_
   )
