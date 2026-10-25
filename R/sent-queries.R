@@ -168,6 +168,24 @@ record_sent_query <- function(purpose, query) {
   invisible(entry)
 }
 
+# Runs `reset` when any supplied operation frame returns normally. The caller
+# supplies every frame above its owned boundary: recovery can unwind the
+# signaller before a restart returns. Existing exit actions run first.
+observe_sent_query_resumption <- function(frames, reset) {
+  marker <- new.env(parent = emptyenv())
+  action <- substitute(
+    base::on.exit({
+      if (!base::identical(base::returnValue(marker), marker)) reset()
+    }, add = TRUE),
+    list(marker = marker, reset = reset)
+  )
+  for (frame in frames) {
+    # Bare evaluation attaches the exit action to this frame, not an eval frame.
+    rlang::eval_bare(action, frame)
+  }
+  invisible(NULL)
+}
+
 # Observes one owned backend operation without catching or rethrowing it.
 # `expr` is the backend call alone; its existing suppression/catch surrounds
 # this seam and supplies the handling known there. Nonlocal unwinding without
@@ -180,6 +198,7 @@ with_sent_query <- function(purpose, query, expr,
     return(force(expr))
   }
   status <- "unknown"
+  pending_interrupt <- NULL
   # Arm finalization before publishing an invocation, and finish its store
   # before a pending interrupt can leave the exit handler.
   on.exit(suspendInterrupts({
@@ -198,9 +217,21 @@ with_sent_query <- function(purpose, query, expr,
       } else if (inherits(cnd, "error")) {
         handling <- error_handling
         status <<- "errored"
+        pending_interrupt <<- NULL
       } else if (inherits(cnd, "interrupt")) {
         handling <- "propagated"
         status <<- "interrupted"
+        observation <- new.env(parent = emptyenv())
+        pending_interrupt <<- observation
+        frames <- sys.frames()
+        owner <- which(vapply(frames, identical, logical(1),
+                              parent.env(environment())))
+        observe_sent_query_resumption(
+          frames[seq.int(owner + 1L, length(frames) - 1L)],
+          function() {
+            if (identical(pending_interrupt, observation)) status <<- "unknown"
+          }
+        )
       } else if (inherits(cnd, "warning")) {
         handling <- "propagated"
       } else {
