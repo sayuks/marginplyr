@@ -807,6 +807,21 @@ expand_margin_union <- function(.data,
                                 set_id_name = NULL,
                                 identity_cols = character(),
                                 identity_missing = list()) {
+  if (backend$is_sql &&
+        inherits(dbplyr::remote_con(.data),
+                 c("SQLiteConnection", "duckdb_connection"))) {
+    # dbplyr can inline an unchanged branch into UNION ALL. Keep input clauses
+    # below a SELECT even there; known columns avoid a read (ADR 0020).
+    con <- dbplyr::remote_con(.data)
+    input_sql <- dbplyr::sql_query_select(
+      con, dbplyr::sql("*"),
+      dbplyr::sql_query_wrap(con, dbplyr::sql_render(.data))
+    )
+    .data <- restore_input_window_order(
+      dplyr::tbl(con, input_sql, vars = margin_col_names(.data)),
+      dbplyr::op_sort(.data)
+    )
+  }
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when
   # given a column needs to be told so by counting. Both halves are read from
