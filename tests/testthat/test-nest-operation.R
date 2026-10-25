@@ -994,28 +994,7 @@ test_that("dtplyr nesting public seams preserve source-row relations", {
   expect_nest_relations(nest_metamorphic_source(), "dtplyr")
 })
 
-test_that("named nesting identifiers use their scalar output name", {
-  input <- data.frame(group = c("x", "y"), value = 1:2)
-  for (verb in list(nest_with_margins, nest_by_with_margins)) {
-    for (sort in c("none", "last", "first")) {
-      expected <- verb(
-        input, .grouping = rollup(group), .id = "set", .sort = sort
-      )
-      for (alias in c("alias", "group", "data")) {
-        result <- verb(
-          input, .grouping = rollup(group),
-          .id = stats::setNames("set", alias), .sort = sort
-        )
-        expect_identical(names(result), c("group", "set", "data"))
-        expect_identical(result, expected)
-      }
-    }
-  }
-})
-
-test_that("dtplyr nesting uses named identifiers as scalar output names", {
-  skip_if_suggest_absent("dtplyr")
-  input <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
+expect_named_nesting_identifiers <- function(input) {
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
     for (sort in c("none", "last", "first")) {
       expected <- dplyr::collect(verb(
@@ -1031,6 +1010,17 @@ test_that("dtplyr nesting uses named identifiers as scalar output names", {
       }
     }
   }
+}
+
+test_that("named nesting identifiers use their scalar output name", {
+  expect_named_nesting_identifiers(data.frame(group = c("x", "y"), value = 1:2))
+})
+
+test_that("dtplyr nesting uses named identifiers as scalar output names", {
+  skip_if_suggest_absent("dtplyr")
+  expect_named_nesting_identifiers(dtplyr::lazy_dt(data.frame(
+    group = c("x", "y"), value = 1:2
+  )))
 })
 
 test_that("named nesting output names retain the empty ungrouped row", {
