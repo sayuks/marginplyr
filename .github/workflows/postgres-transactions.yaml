@@ -41,6 +41,8 @@ jobs:
         run: Rscript tools/postgres-share-transactions.R postgres-evidence
       - name: Verify fixed keys named like tidy-evaluation pronouns
         run: Rscript tools/postgres-share-fixed-keys.R
+      - name: Verify typed missing dimensions and private Parent keys
+        run: Rscript tools/postgres-typed-missing.R
       - uses: actions/upload-artifact@v7
         if: always()
         with:

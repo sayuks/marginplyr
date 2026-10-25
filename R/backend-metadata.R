@@ -324,6 +324,25 @@ proxy_columns <- function(data_proxy, cols) {
   columns
 }
 
+# Typed SQL missing values for PostgreSQL dimensions. A scalar subquery over
+# an empty relation is NULL with its selected column's type, including derived
+# columns. The caller supplies the prepared input and resolved dimensions;
+# rendering these expressions sends no query (ADR 0020).
+postgres_margin_prototypes <- function(.data, dimensions) {
+  con <- dbplyr::remote_con(.data)
+  empty <- dplyr::filter(
+    dplyr::select(.data, dplyr::all_of(dimensions)), FALSE
+  )
+  # dbplyr reads a generated bare `.env` reference as its lexical pronoun.
+  empty_sql <- dbplyr::sql_render(sql_env_output_query(empty))
+  stats::setNames(lapply(dimensions, function(column) {
+    dbplyr::build_sql(
+      "(SELECT ", dbplyr::ident(column), " FROM (", empty_sql,
+      ") AS ", dbplyr::ident("..marginplyr_type"), ")", con = con
+    )
+  }), dimensions)
+}
+
 # `carried` names the input columns that reach the result beside the Margin
 # dimensions -- a fixed `.by` key, a column the verb passes through, or one it
 # folds into a cell. They cross the same branch union and lose a declared NA
@@ -344,6 +363,13 @@ margin_column_info <- function(data_proxy,
   read <- unique(c(dimensions, carried))
   if (length(read) == 0L) {
     return(list(factors = list(), prototypes = list()))
+  }
+
+  if (identical(backend$kind, "postgres") && length(dimensions) > 0L) {
+    return(list(
+      factors = list(),
+      prototypes = postgres_margin_prototypes(data_proxy, dimensions)
+    ))
   }
 
   if (!backend$can_read_schema) {
