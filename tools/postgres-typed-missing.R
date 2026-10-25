@@ -140,6 +140,16 @@ verify_typed_missing <- function(con) {
     g = c(NA_real_, 1.5, 2.5), set = c(1L, 2L, 2L), n = c(2L, 1L, 1L)
   ))
 
+  renamed <- dplyr::rename(source, .env = dplyr::all_of("g"))
+  query <- build_without_queries(summarize_with_margins(
+    renamed, n = dplyr::n(),
+    .grouping = rollup(dplyr::all_of(".env")),
+    .margin_label = NULL, .duplicates = "keep", .id = "set", .sort = "last"
+  ))
+  testthat::expect_equal(as.data.frame(dplyr::collect(query)), data.frame(
+    .env = c(1.5, 2.5, NA_real_), set = c(1L, 1L, 2L), n = c(1L, 1L, 2L)
+  ))
+
   empty <- dplyr::filter(source, FALSE)
   query <- build_without_queries(summarize_with_margins(
     empty, n = dplyr::n(), .grouping = rollup(dplyr::all_of("g")),
