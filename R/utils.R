@@ -760,8 +760,8 @@ call_supplies_other_argument <- function(expr, formal, other_names) {
 # code everywhere else.
 #
 # `evalq()` evaluates its captured argument, so it stays outside this boundary.
-# `bquote()`'s explicit substitutions are visited separately. rlang captures
-# require their namespace: a bare `expr()` may be the caller's own function.
+# Qualified bquote's explicit substitutions are visited separately. New captures
+# require their namespace: a bare name may be the caller's own function.
 language_capture_formal <- function(call_name) {
   if (is.null(call_name)) {
     return(NULL)
@@ -849,8 +849,9 @@ captured_call_parts <- function(expr,
   if (rlang::is_symbol(call_head) && rlang::as_name(call_head) %in% bound) {
     return(captured)
   }
-  if (call_name %in% c("expr", "quo")) {
-    if (!identical(namespace, "rlang")) {
+  if (call_name %in% c("bquote", "expr", "quo")) {
+    owner <- if (identical(call_name, "bquote")) "base" else "rlang"
+    if (!identical(namespace, owner)) {
       return(captured)
     }
   } else if (!is.null(namespace) && !identical(namespace, "base")) {
@@ -926,11 +927,9 @@ bquote_substitution_parts <- function(expr, splice = FALSE) {
 # value. Only a literal FALSE, including the default, rules out splicing.
 bquote_splice_argument <- function(expr) {
   matched <- match.call(base::bquote, unparenthesized_call(expr))
-  splice <- as.list(matched)["splice"]
-  if (is.null(splice[[1L]])) {
-    return(FALSE)
-  }
-  splice[[1L]]
+  splice <- c(call_formal_argument(matched, "splice", positional = FALSE),
+              list(FALSE))
+  unparenthesized_value(splice[[1L]])
 }
 
 # A computed call head is evaluated before the call's arguments. A symbol is
@@ -1061,8 +1060,26 @@ readable_language_index <- function(expr, call_name = static_call_name(expr)) {
 # rewrite, and it reached the helper before this ticket exactly as it does
 # after: what a search can recover by parsing, a rewrite cannot put back.
 rewrite_evaluated_language <- function(expr, rewrite) {
-  if (!any(captured_call_parts(expr))) {
+  captured <- captured_call_parts(expr)
+  if (!any(captured)) {
     return(rewrite(expr))
+  }
+  if (is_bquote_capture(expr, captured)) {
+    return(map_call_parts(expr, function(part, index) {
+      if (!captured[[index]]) {
+        return(rewrite(part))
+      }
+      # A substitution runs before the recovered body. Quote its rewritten
+      # operand during the body rewrite so it is visited exactly once, even
+      # where the body's own capture or data-mask boundary would hide it.
+      protected <- map_bquote_substitutions(part, function(operand) {
+        rlang::call2(rlang::expr(base::quote), rewrite(operand))
+      }, splice = bquote_splice_argument(expr))
+      rewritten <- rewrite(protected)
+      map_bquote_substitutions(rewritten, function(operand) {
+        static_call_args(operand)[[1L]]
+      }, splice = bquote_splice_argument(expr))
+    }))
   }
   map_call_parts(expr, function(part, index) rewrite(part))
 }
@@ -1259,8 +1276,8 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
     function_formal_defaults(expr), language)
 }
 
-# The language objects an expression is statically known to hand `eval()`, and
-# `NULL` where it is not knowable. An empty list is the third answer and is not
+# The language objects or written capture bodies handed to `eval()`, and
+# `NULL` where they are not knowable. An empty list is the third answer and is not
 # the same as `NULL`: a constant evaluates to itself and looks nothing up.
 #
 # The constructors that hide a name from the walk need a case, and so do the
@@ -1274,7 +1291,8 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
 # case of its own: the walk of the call's parts reports the symbol under it as
 # it always did.
 #
-# A bquote capture is recoverable only without evaluated substitutions.
+# A bquote capture carries its written body even with substitutions; the
+# `unresolved` attribute records that their resulting language is unknown.
 static_language_values <- function(expr) {
   if (rlang::is_symbol(expr)) {
     # The symbol names a value, and which language object that value holds is
@@ -1296,7 +1314,7 @@ static_language_values <- function(expr) {
         value[[1L]], splice = bquote_splice_argument(expr)
       )
       if (length(substitutions)) {
-        return(NULL)
+        attr(value, "unresolved") <- TRUE
       }
     }
     return(value)

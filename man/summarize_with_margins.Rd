@@ -522,8 +522,10 @@ when \code{splice} is enabled or cannot be determined statically. Build that
 language outside the Margin verb instead.
 
 Both halves are read statically, so both stop where a static reading does.
-A base capture names its function plainly, qualified with \verb{base::} or not;
-\code{expr()} and \code{quo()} require the \verb{rlang::} qualifier. Qualified \code{bquote()},
+\code{quote()}, \code{substitute()}, and \code{expression()} name their primitive plainly,
+qualified with \verb{base::} or not. The additional captures require their
+qualifier: \code{base::bquote()}, \code{rlang::expr()}, and \code{rlang::quo()}.
+Qualified \code{bquote()},
 \code{expr()}, and \code{quo()} also allow parentheses around the head.
 Any other spelling — another namespace, or a head computed
 at run time — is analyzed as ordinary code, which can refuse a call that

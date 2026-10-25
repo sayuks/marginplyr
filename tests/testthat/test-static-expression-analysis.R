@@ -3759,9 +3759,12 @@ test_that("a name the recovery cannot read fails closed, not through", {
     expression_data_symbols(quote(eval(str2lang()))),
     unresolved_lookup_name()
   )
+  # `bquote()` substitutes an expression through `.()`, which this walk cannot
+  # see, so it is unrecognized rather than recovered -- and the symbols under
+  # it are still reported by the walk of the parts.
   expect_identical(
     expression_data_symbols(quote(eval(bquote(share)))),
-    "share"
+    c("share", unresolved_lookup_name())
   )
   expect_identical(
     expression_data_symbols(quote(eval(fns$build()))),
@@ -4072,7 +4075,11 @@ test_that("a capture the walk cannot name plainly is analyzed, not assumed", {
   # `evalq()` captures its first argument and then evaluates it, so it is no
   # boundary: the walk reports the symbols under it, as it always has.
   expect_identical(expression_data_symbols(quote(evalq(share))), "share")
-  expect_identical(expression_data_symbols(quote(bquote(share))), character())
+  # `bquote()` captures too, but `.()` substitutes an expression evaluated in
+  # the enclosing frame -- the mask -- so `bquote(f(.(share)))` really does
+  # read the share. The whole call stays analyzed rather than being read for
+  # the parts of it that are data.
+  expect_identical(expression_data_symbols(quote(bquote(share))), "share")
   expect_identical(
     expression_data_symbols(quote(bquote(f(.(share))))),
     "share"

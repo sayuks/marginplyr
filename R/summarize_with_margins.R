@@ -472,8 +472,10 @@
 #' language outside the Margin verb instead.
 #'
 #' Both halves are read statically, so both stop where a static reading does.
-#' A base capture names its function plainly, qualified with `base::` or not;
-#' `expr()` and `quo()` require the `rlang::` qualifier. Qualified `bquote()`,
+#' `quote()`, `substitute()`, and `expression()` name their primitive plainly,
+#' qualified with `base::` or not. The additional captures require their
+#' qualifier: `base::bquote()`, `rlang::expr()`, and `rlang::quo()`.
+#' Qualified `bquote()`,
 #' `expr()`, and `quo()` also allow parentheses around the head.
 #' Any other spelling — another namespace, or a head computed
 #' at run time — is analyzed as ordinary code, which can refuse a call that

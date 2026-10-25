@@ -63,6 +63,12 @@ test_that("bquote substitutions and recovered language evaluate helpers", {
     captured = eval(rlang::expr(grouping_id(a))),
     bquoted = eval(base::bquote(grouping_bit(a))),
     unquoted = eval(base::bquote(.(grouping_bit(a)))),
+    mixed = eval(base::bquote(grouping_bit(a) + .(0L))),
+    both = eval(base::bquote(grouping_bit(a) + .(grouping_bit(a)))),
+    recaptured = deparse1(eval(base::bquote(base::quote(.(grouping_bit(a)))))),
+    controlled = eval(base::bquote(
+      grouping_bit(a) + .(0L), where = baseenv(), splice = FALSE
+    )),
     null = deparse1(base::bquote(f(.(NULL), .(grouping_bit(a))))),
     .grouping = rollup(a)
   )
@@ -71,6 +77,10 @@ test_that("bquote substitutions and recovered language evaluate helpers", {
   expect_identical(result$captured, result$quoted)
   expect_identical(result$bquoted, result$quoted)
   expect_identical(result$unquoted, result$quoted)
+  expect_identical(result$mixed, result$quoted)
+  expect_identical(result$both, 2L * result$quoted)
+  expect_identical(result$recaptured, c("0L", "0L", "1L"))
+  expect_identical(result$controlled, result$quoted)
   expect_identical(result$null, c("f(NULL, 0L)", "f(NULL, 0L)", "f(NULL, 1L)"))
 })
 
@@ -114,6 +124,24 @@ test_that("only evaluated capture parts depend on preceding shares", {
     ),
     "does not support", class = "marginplyr_error"
   )
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_total(total),
+      read = eval(base::bquote(share + .(0L))),
+      .grouping = rollup(a)
+    ),
+    "`share`", class = "marginplyr_error"
+  )
+  expect_error(
+    summarize_with_margins(
+      data,
+      id = eval(base::bquote(dplyr::cur_group_id() + .(0L))),
+      .grouping = rollup(a)
+    ),
+    "does not support", class = "marginplyr_error"
+  )
 })
 
 test_that("unsupported bquote splicing is refused before rewriting", {
@@ -132,6 +160,12 @@ test_that("unsupported bquote splicing is refused before rewriting", {
     .grouping = rollup(a)
   )
   expect_identical(literal$text, rep("f(..(grouping_bit(a)))", 3L))
+  parenthesized <- summarize_with_margins(
+    data,
+    text = deparse1(base::bquote(f(..(grouping_bit(a))), splice = (FALSE))),
+    .grouping = rollup(a)
+  )
+  expect_identical(parenthesized$text, literal$text)
 })
 
 test_that("capture heads and formals retain their literal syntax", {
@@ -156,8 +190,13 @@ test_that("capture heads and formals retain their literal syntax", {
 test_that("a caller's expr function keeps ordinary lexical lookup", {
   data <- tibble::tibble(a = c("x", "y"))
   expr <- function(x) x + 10L
+  bquote <- function(x) x + 10L
   result <- summarize_with_margins(
     data, value = expr(grouping_bit(a)), .grouping = rollup(a)
   )
   expect_identical(result$value, c(10L, 10L, 11L))
+  from_bquote <- summarize_with_margins(
+    data, value = bquote(grouping_bit(a)), .grouping = rollup(a)
+  )
+  expect_identical(from_bquote$value, result$value)
 })
