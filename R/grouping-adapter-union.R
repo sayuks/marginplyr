@@ -451,6 +451,15 @@ summarize_margin_union <- function(.data,
                                    input_window_order = list(),
                                    parent_key_names = character()) {
   source_data <- .data
+  # Private dtplyr factor keys cross funion() without factor restoration.
+  # Original codes keep a declared NA level distinct from a missing code.
+  dtplyr_factor_keys <- if (identical(backend$kind, "dtplyr")) {
+    intersect(names(parent_key_names), vapply(
+      column_info$factors, function(info) info$col, character(1)
+    ))
+  } else {
+    character()
+  }
   dots <- summaries$dots
   frame_state <- summaries$frame_state
   group_vars <- unique(c(plan$by, plan$dimensions))
@@ -629,11 +638,16 @@ summarize_margin_union <- function(.data,
               original_keys <- lapply(
                 names(parent_key_names),
                 function(dimension) {
-                  if (dimension %in% grouping_set) {
-                    return(margin_column_pronoun(safe_name(dimension)))
+                  key <- if (dimension %in% grouping_set) {
+                    margin_column_pronoun(safe_name(dimension))
+                  } else {
+                    value <- column_info$prototypes[[dimension]]
+                    if (is.null(value)) NA else value
                   }
-                  value <- column_info$prototypes[[dimension]]
-                  if (is.null(value)) NA else value
+                  if (dimension %in% dtplyr_factor_keys) {
+                    key <- rlang::expr(as.integer(!!key))
+                  }
+                  key
                 }
               )
               names(original_keys) <- unname(parent_key_names)
