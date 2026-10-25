@@ -24,11 +24,14 @@ reset_sent_queries <- function() {
 # Restores the active parent's record on exit, or leaves this outer call's
 # own record readable. The caller holds the state returned at its entry.
 restore_sent_queries <- function(parent) {
-  if (is.null(parent)) {
-    sent_queries$active <- FALSE
-  } else {
-    list2env(parent, envir = sent_queries)
-  }
+  # Finish ownership transfer before a pending interrupt can leave cleanup.
+  suspendInterrupts({
+    if (is.null(parent)) {
+      sent_queries$active <- FALSE
+    } else {
+      list2env(parent, envir = sent_queries)
+    }
+  })
   invisible(NULL)
 }
 
