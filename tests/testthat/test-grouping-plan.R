@@ -2202,8 +2202,6 @@ test_that("fixed keys settled by name alone need no typed metadata", {
     resolve_fixed_keys(rlang::quo(NULL), "region", data_vars),
     "region"
   )
-  # A predicate is the one selection column names cannot answer, so it is left
-  # for the typed snapshot.
   expect_null(
     resolve_fixed_keys(rlang::quo(where(is.numeric)), character(), data_vars)
   )
@@ -2236,7 +2234,6 @@ test_that("the name-only reader answers what the names settle", {
   # `one_of()` reads names and nothing else, exactly as `any_of()` does.
   expect_true(name_only(quote(tidyselect::one_of("region"))))
 
-  # `where()` is the one helper that reads column data.
   expect_false(name_only(quote(where(is.numeric))))
 
   # tidyselect refuses a formula on sight, whatever it wraps, so the operand

@@ -666,3 +666,77 @@ test_that("a list-format Grouping plan cannot be joined as inline SQL", {
   expect_match(conditionMessage(error), "sql_cast_dispatch", fixed = TRUE)
   expect_match(conditionMessage(error), 'class "list"', fixed = TRUE)
 })
+
+test_that("lazy helper arguments use one typed snapshot", {
+  skip_if_suggest_absent("dtplyr")
+  register_inspect_proxy_methods()
+  source <- dtplyr::lazy_dt(tibble::tibble(a = c("x", "y"), b = c(1, 1)))
+  class(source) <- c("margin_inspect_proxy_counter", class(source))
+  selection <- rlang::expr(tidyselect::all_of(
+    names(tidyselect::peek_data())[
+      vapply(tidyselect::peek_data(), is.numeric, logical(1))
+    ]
+  ))
+
+  inspect_proxy_capture$n <- 0L
+  fixed <- inspect_grouping(source, .by = !!selection)
+  expect_identical(fixed$fixed, "(b)")
+  expect_identical(inspect_proxy_capture$n, 1L)
+
+  inspect_proxy_capture$n <- 0L
+  dimension <- inspect_grouping(
+    source,
+    .by = a,
+    .grouping = grouping_set(!!selection)
+  )
+  expect_identical(dimension$included, "(b)")
+  expect_identical(inspect_proxy_capture$n, 1L)
+
+  inspect_proxy_capture$n <- 0L
+  expect_error(
+    inspect_grouping(
+      source,
+      .by = !!selection,
+      .grouping = grouping_set(tidyselect::all_of("absent"))
+    ),
+    "absent",
+    class = "vctrs_error_subscript_oob"
+  )
+  expect_identical(inspect_proxy_capture$n, 0L)
+})
+
+test_that("names obtained from selection data keep early-error guarantees", {
+  skip_if_suggest_absent("dtplyr")
+  register_inspect_proxy_methods()
+  source <- dtplyr::lazy_dt(tibble::tibble(a = c("x", "y"), b = c(1, 1)))
+  class(source) <- c("margin_inspect_proxy_counter", class(source))
+  data_alias <- tidyselect::peek_data
+  names_alias <- base::names
+  selections <- list(
+    rlang::expr(tidyselect::all_of(
+      c(names(tidyselect::peek_data()), "absent")
+    )),
+    rlang::expr(tidyselect::all_of(c(names_alias(data_alias()), "absent"))),
+    rlang::expr(tidyselect::all_of(c(tidyselect::peek_vars(), "absent"))),
+    rlang::expr(tidyselect::all_of(setdiff(c("b", "absent"), "b"))),
+    rlang::expr(tidyselect::all_of(unname(c(x = "absent")))),
+    rlang::expr(tidyselect::all_of(tolower("ABSENT"))),
+    rlang::expr(tidyselect::all_of(sort(unique(c("absent", "absent"))))),
+    rlang::expr(tidyselect::all_of(as.character("absent")))
+  )
+  for (selection in selections) {
+    inspect_proxy_capture$n <- 0L
+    expect_error(
+      inspect_grouping(source, .by = !!selection),
+      "absent", class = "vctrs_error_subscript_oob"
+    )
+    expect_identical(inspect_proxy_capture$n, 0L)
+
+    inspect_proxy_capture$n <- 0L
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(!!selection)),
+      "absent", class = "vctrs_error_subscript_oob"
+    )
+    expect_identical(inspect_proxy_capture$n, 0L)
+  }
+})

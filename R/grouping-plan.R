@@ -105,9 +105,8 @@ normalize_grouping_input <- function(.data, by_quo) {
 
 # The fixed keys, wherever column names alone settle them: the grouping columns
 # of a grouped input, an absent `.by`, or a selection that names columns.
-# `NULL` says the selection carries a predicate, which no set of names can
-# answer; that one is resolved against the typed snapshot instead, exactly as a
-# Grouping dimension carrying a predicate is.
+# `NULL` defers a selection needing column data to the typed snapshot, as it
+# does for a Grouping dimension.
 resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
   if (length(group_vars) > 0L) {
     # Grouping columns are names dplyr resolved, so they name columns of the
@@ -475,14 +474,18 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (is.null(call_name)) {
     return(FALSE)
   }
-  # The helpers that read names and nothing else. `where()` is the one that
-  # reads column data, so it is absent and answers below.
+  # A helper argument can read column data even when the helper selects names.
   leaf_helpers <- c(
     "all_of", "any_of", "starts_with", "ends_with", "contains",
     "matches", "num_range", "everything", "last_col", "one_of"
   )
   if (call_name %in% leaf_helpers) {
-    return(TRUE)
+    return(all(vapply(
+      static_call_args(expr),
+      is_name_only_helper_arg,
+      logical(1),
+      env = env
+    )))
   }
   # A refused spelling fails on itself, so its operands are never reached and a
   # predicate under one settles nothing.
@@ -506,6 +509,116 @@ is_name_only_expr <- function(expr, env, data_vars) {
     env = env,
     data_vars = data_vars
   ))
+}
+
+# Whether a helper argument is independent of column types. The caller holds
+# its lexical environment; `bound` names a closure's formals, whose actual
+# arguments were checked before its body. Unknown calls and bindings defer to
+# typed selection rather than running caller code to classify it.
+is_name_only_helper_arg <- function(expr,
+                                    env,
+                                    bound = character(),
+                                    seen = list()) {
+  if (is_name_part(expr)) {
+    name <- as.character(expr)
+    if (name %in% bound) {
+      return(TRUE)
+    }
+    if (selection_binding_deferred(env, name)) {
+      return(FALSE)
+    }
+    value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
+    return(is.atomic(value) && !is.object(value))
+  }
+  if (!rlang::is_call(expr)) {
+    return(rlang::is_missing(expr) || (is.atomic(expr) && !is.object(expr)))
+  }
+  fn <- selection_argument_function(expr, env, bound)
+  if (is.null(fn) || identical(fn, tidyselect::peek_data)) {
+    return(FALSE)
+  }
+  args <- static_call_args(expr)
+  if (
+    identical(fn, base::names) && length(args) == 1L &&
+      rlang::is_call(args[[1L]]) &&
+      identical(selection_argument_function(args[[1L]], env, bound),
+                tidyselect::peek_data) &&
+      length(static_call_args(args[[1L]])) == 0L
+  ) {
+    return(TRUE)
+  }
+  if (!all(vapply(args, is_name_only_helper_arg, logical(1),
+                  env = env, bound = bound, seen = seen))) {
+    return(FALSE)
+  }
+  if (identical(fn, tidyselect::peek_vars)) {
+    return(TRUE)
+  }
+  name_operations <- mget(c(
+    "{", "(", "<-", "<<-", "=", "+", "-", "*", "/", ":", "!", "&", "|",
+    "c", "list", "names", "length", "[", "[[", "$", "return",
+    "setdiff", "union", "intersect", "setequal", "unname", "unique",
+    "duplicated", "sort", "order", "rev", "rep", "rep.int", "rep_len",
+    "as.character", "as.integer", "as.numeric", "as.vector", "which", "match",
+    "is.na", "is.null", "is.character", "is.numeric", "is.logical",
+    "is.integer",
+    "seq", "seq.int", "seq_along", "seq_len", "tolower", "toupper", "trimws",
+    "paste", "paste0", "sprintf", "substr", "substring", "gsub", "sub",
+    "grep", "grepl", "strsplit", "nchar", "nzchar", "unlist", "format"
+  ), envir = baseenv(), inherits = FALSE)
+  if (any(vapply(name_operations, identical, logical(1), fn))) {
+    return(TRUE)
+  }
+  if (
+    is.primitive(fn) || isNamespace(environment(fn)) ||
+      identical(environment(fn), baseenv()) ||
+      any(vapply(seen, identical, logical(1), fn))
+  ) {
+    return(FALSE)
+  }
+  all(vapply(
+    c(as.list(formals(fn)), list(body(fn))),
+    is_name_only_helper_arg,
+    logical(1),
+    env = environment(fn),
+    bound = names(formals(fn)),
+    seen = c(seen, list(fn))
+  ))
+}
+
+# Whether looking up a name would force an active binding or caller promise.
+# Namespace promises load definitions rather than evaluating caller arguments.
+selection_binding_deferred <- function(env, name) {
+  while (!identical(env, emptyenv()) && !rlang::env_has(env, name)) {
+    env <- rlang::env_parent(env)
+  }
+  if (identical(env, emptyenv())) {
+    return(FALSE)
+  }
+  rlang::env_binding_are_active(env, name)[[1L]] ||
+    (!isNamespace(env) && !identical(env, baseenv()) &&
+       rlang::env_binding_are_lazy(env, name)[[1L]])
+}
+
+# A statically named function available without forcing caller bindings, or
+# `NULL` for an unresolved callee. `bound` excludes formals from lexical lookup.
+selection_argument_function <- function(expr, env, bound) {
+  name <- static_call_name(expr)
+  namespace <- static_call_ns(expr)
+  if (is.null(name) || (is.null(namespace) && name %in% bound)) {
+    return(NULL)
+  }
+  if (!is.null(namespace)) {
+    if (!namespace %in% loadedNamespaces()) {
+      return(NULL)
+    }
+    env <- asNamespace(namespace)
+  }
+  if (selection_binding_deferred(env, name)) {
+    return(NULL)
+  }
+  value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
+  if (is.function(value)) value else NULL
 }
 
 # Whether this call reads the `.data` pronoun, which the caller holds is named
