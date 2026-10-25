@@ -533,7 +533,6 @@ is_name_only_helper_arg <- function(expr,
   if (!rlang::is_call(expr)) {
     return(rlang::is_missing(expr) || (is.atomic(expr) && !is.object(expr)))
   }
-  name <- static_call_name(expr)
   fn <- selection_argument_function(expr, env, bound)
   if (is.null(fn) || identical(fn, tidyselect::peek_data)) {
     return(FALSE)
@@ -555,12 +554,18 @@ is_name_only_helper_arg <- function(expr,
   if (identical(fn, tidyselect::peek_vars)) {
     return(TRUE)
   }
-  safe_base <- c(
+  name_operations <- mget(c(
     "{", "(", "<-", "<<-", "=", "+", "-", "*", "/", ":", "!", "&", "|",
-    "c", "list", "names", "length", "paste", "paste0", "[", "[[", "$",
-    "seq_along", "seq_len", "return"
-  )
-  if (name %in% safe_base && identical(fn, get(name, envir = baseenv()))) {
+    "c", "list", "names", "length", "[", "[[", "$", "return",
+    "setdiff", "union", "intersect", "setequal", "unname", "unique",
+    "duplicated", "sort", "order", "rev", "rep", "rep.int", "rep_len",
+    "as.character", "as.integer", "as.numeric", "as.vector", "which", "match",
+    "is.na", "is.null", "is.character", "is.numeric", "is.logical", "is.integer",
+    "seq", "seq.int", "seq_along", "seq_len", "tolower", "toupper", "trimws",
+    "paste", "paste0", "sprintf", "substr", "substring", "gsub", "sub",
+    "grep", "grepl", "strsplit", "nchar", "nzchar", "unlist", "format"
+  ), envir = baseenv(), inherits = FALSE)
+  if (any(vapply(name_operations, identical, logical(1), fn))) {
     return(TRUE)
   }
   if (

@@ -716,7 +716,12 @@ test_that("names obtained from selection data keep early-error guarantees", {
       c(names(tidyselect::peek_data()), "absent")
     )),
     rlang::expr(tidyselect::all_of(c(names_alias(data_alias()), "absent"))),
-    rlang::expr(tidyselect::all_of(c(tidyselect::peek_vars(), "absent")))
+    rlang::expr(tidyselect::all_of(c(tidyselect::peek_vars(), "absent"))),
+    rlang::expr(tidyselect::all_of(setdiff(c("b", "absent"), "b"))),
+    rlang::expr(tidyselect::all_of(unname(c(x = "absent")))),
+    rlang::expr(tidyselect::all_of(tolower("ABSENT"))),
+    rlang::expr(tidyselect::all_of(sort(unique(c("absent", "absent"))))),
+    rlang::expr(tidyselect::all_of(as.character("absent")))
   )
   for (selection in selections) {
     inspect_proxy_capture$n <- 0L
