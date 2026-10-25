@@ -1,0 +1,45 @@
+
+F1: whitespace fixed keys in dtplyr shares
+parent: expected rows=4; actual rows=6
+expected shares: 1, 1, 1, 1
+actual shares: 1, 1.5, 0.666667, 1, 1, 1
+total: expected rows=4; actual rows=8
+expected shares: 1, 1, 1, 1
+actual shares: 1, 1, 1, 1.5, 1, 1, 0.666667, 1
+FAIL: Cross-partition share joins: parent, total
+
+F2: typed selection in fixed keys
+expected:
+# A tibble: 1 × 2
+      b     n
+  <dbl> <int>
+1     1     2
+actual:
+# A tibble: 2 × 3
+  a         b     n
+  <chr> <dbl> <int>
+1 x         1     1
+2 y         1     1
+FAIL: identical(actual, expected) is not TRUE
+
+F3: SQLite Boolean-word output names
+FAIL: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+F4: dot-dot summary output names
+FAIL: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..1" at location 1.
+
+F5: cyclic Grouping specification
+condition class: nodeStackOverflowError, stackOverflowError, error, condition
+node stack overflow
+FAIL: inherits(condition, "marginplyr_error") is not TRUE
+
+F6: NA factor levels in dtplyr shares
+expected rows=3; shares=0.4, 0.6, 1
+FAIL: Total share `share` cannot be calculated because another ordinary summary expanded the grouped result.
+ℹ When requesting a share, return one value per grouping row.
+
+Contract failures: 6/6
