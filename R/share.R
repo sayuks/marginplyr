@@ -2196,10 +2196,7 @@ execute_shares <- function(operation,
     )
   }
   if (length(parent_key_names) > 0L) {
-    result <- dplyr::select(
-      result,
-      -dplyr::all_of(unname(parent_key_names))
-    )
+    result <- drop_margin_columns(result, unname(parent_key_names))
   }
   if (!is.null(operation$set_id_name)) {
     result <- dplyr::mutate(
@@ -2215,10 +2212,7 @@ execute_shares <- function(operation,
   )) {
     return(result)
   }
-  dplyr::select(
-    result,
-    -dplyr::all_of(staged_set_id_name)
-  )
+  drop_margin_staged_identifier(result, staged_set_id_name, operation$backend)
 }
 
 # Refuse a staged dtplyr result with more than one row per occurrence and
@@ -2851,7 +2845,7 @@ apply_joined_shares <- function(result,
   own_denominator_ids <- plan$set_ids[is.na(target_ids)]
   pairs <- share_pairs(requests)
   sources <- share_source_names(requests)
-  result_names <- get_col_names(result, dplyr::everything())
+  result_names <- margin_col_names(result)
   backend <- grouping_backend(result)
   denominator_names <- share_denominator_names(
     sources,
@@ -3010,10 +3004,10 @@ apply_joined_shares <- function(result,
   )
   internal_names <- intersect(
     internal_names,
-    get_col_names(result, dplyr::everything())
+    margin_col_names(result)
   )
   if (length(internal_names) > 0L) {
-    result <- dplyr::select(result, -dplyr::all_of(internal_names))
+    result <- drop_margin_columns(result, internal_names)
   }
   result
 }

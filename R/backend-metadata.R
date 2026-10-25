@@ -1,3 +1,9 @@
+# Read column names from backend metadata without applying selection rules.
+# Newly produced local summary names need not be valid tidyselect names.
+margin_col_names <- function(data) {
+  as.character(dplyr::tbl_vars(data))
+}
+
 get_col_names <- function(data, ...) {
   selected <- dplyr::select(.data = data, ...)
   # Drop the grouping metadata attached to dplyr's variable-name vector.

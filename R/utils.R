@@ -1,3 +1,56 @@
+# Drop known internal columns without revalidating local public output names.
+# Lazy inputs keep their backend's projection behavior.
+drop_margin_columns <- function(data, columns) {
+  if (is.data.frame(data)) {
+    removals <- stats::setNames(rep(list(NULL), length(columns)), columns)
+    return(dplyr::mutate(data, !!!removals))
+  }
+  dplyr::select(data, -dplyr::all_of(columns))
+}
+
+# Evaluate a local operation under safe names for dot-dot columns it reads.
+# Other columns keep their names; any retained aliases are restored afterwards.
+# The caller reserves names its transform creates. Lazy inputs retain their
+# backend's own name handling.
+with_margin_column_aliases <- function(data, read, transform,
+                                       reserved = character()) {
+  special <- if (is.data.frame(data)) {
+    read[grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", read)]
+  } else {
+    character()
+  }
+  if (length(special) == 0L) {
+    return(transform(data, function(name) name))
+  }
+  aliases <- stats::setNames(new_margin_internal_names(
+    length(special), c(names(data), reserved), prefix = "..marginplyr_column_"
+  ), special)
+  renamed <- names(data)
+  renamed[match(special, renamed)] <- unname(aliases)
+  data <- rlang::set_names(data, renamed)
+  result <- transform(data, function(name) {
+    if (name %in% special) unname(aliases[[name]]) else name
+  })
+  restored <- match(names(result), unname(aliases))
+  renamed <- names(result)
+  retained <- !is.na(restored)
+  renamed[retained] <- names(aliases)[restored[retained]]
+  rlang::set_names(result, renamed)
+}
+
+# Move known Margin columns to the front of an ungrouped result. Local
+# selection uses temporary output aliases because tidyselect rejects dot-dot
+# names even when it only reorders columns. dplyr still owns reconstruction.
+reorder_margin_columns <- function(data, leading) {
+  if (!is.data.frame(data)) {
+    return(dplyr::select(data, dplyr::all_of(leading), dplyr::everything()))
+  }
+  columns <- unique(c(leading, margin_col_names(data)))
+  aliases <- stats::setNames(columns, seq_along(columns))
+  result <- dplyr::select(data, dplyr::all_of(aliases))
+  rlang::set_names(result, columns)
+}
+
 # rlang soft-deprecated unquoting inside the `.data` pronoun, and signals a
 # lifecycle condition when `expr()` sees it — twice per Margin operation, into
 # whatever condition handler the caller has installed. Building the call

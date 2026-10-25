@@ -80,14 +80,18 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
   dplyr::transmute(dplyr::filter(.data, FALSE), !!!projections)
 }
 
-# Combine eager branches with the same columns in one pass. `check_unique`
-# preserves valid suffixes such as `sales...1` that the default name repair
-# rewrites. Class and attributes remain delegated to vctrs (ADR 0016).
+# Combine eager branches with the same columns in one pass, preserving their
+# names. Class and attributes remain delegated to vctrs (ADR 0016).
 # The column check retains `union_all()`'s strictness: filling a missing column
 # would hide a defect in the branch builders.
 bind_margin_branches <- function(branches) {
   check_branch_columns(branches)
-  vctrs::vec_rbind(!!!branches, .name_repair = "check_unique")
+  vctrs::vec_rbind(!!!branches, .name_repair = function(names) {
+    if (anyDuplicated(names) || !all(nzchar(names))) {
+      vctrs::vec_as_names(names, repair = "check_unique")
+    }
+    names
+  })
 }
 
 # `names()` rather than `get_col_names()`: this runs on data frames only, where
@@ -592,7 +596,7 @@ summarize_margin_union <- function(.data,
         # Without the placeholder: what this asks about is the names the summary
         # produced, and that column is the adapter's own.
         check_summary_output_names(
-          setdiff(get_col_names(result, dplyr::everything()), placeholder),
+          setdiff(margin_col_names(result), placeholder),
           group_vars = group_vars,
           internal_names = c(
             unname(key_names[setdiff(group_vars, grouping_set)]),
@@ -603,7 +607,7 @@ summarize_margin_union <- function(.data,
         )
         if (backend$is_sql) {
           public_outputs <- setdiff(
-            get_col_names(result, dplyr::everything()),
+            margin_col_names(result),
             c(unname(key_names), placeholder)
           )
           check_margin_sql_public_names(
@@ -618,7 +622,14 @@ summarize_margin_union <- function(.data,
             rlang::syms(unname(key_names[grouping_set])),
             grouping_set
           )
-          result <- dplyr::rename(result, !!!rename_pairs)
+          if (is.data.frame(result)) {
+            result_names <- names(result)
+            positions <- match(unname(key_names[grouping_set]), result_names)
+            result_names[positions] <- grouping_set
+            result <- rlang::set_names(result, result_names)
+          } else {
+            result <- dplyr::rename(result, !!!rename_pairs)
+          }
         }
 
         if (length(parent_key_names) > 0L) {
@@ -674,7 +685,7 @@ summarize_margin_union <- function(.data,
           # it through a visible column without changing that column's value.
           if (backend$is_sql) {
             output_names <- setdiff(
-              get_col_names(result, dplyr::everything()),
+              margin_col_names(result),
               placeholder
             )
             if (length(output_names) > 0L) {
@@ -689,7 +700,11 @@ summarize_margin_union <- function(.data,
               )
             }
           }
-          dplyr::select(result, -dplyr::all_of(placeholder))
+          if (is.data.frame(result)) {
+            dplyr::mutate(result, !!placeholder := NULL)
+          } else {
+            dplyr::select(result, -dplyr::all_of(placeholder))
+          }
         }
       },
       plan$sets,
@@ -732,7 +747,7 @@ restore_input_window_order <- function(result, input_window_order) {
   if (length(input_window_order) == 0L) {
     return(result)
   }
-  result_names <- get_col_names(result, dplyr::everything())
+  result_names <- margin_col_names(result)
   usable <- Filter(
     function(term) all(all.vars(term) %in% result_names),
     input_window_order
@@ -786,7 +801,7 @@ expand_margin_union <- function(.data,
         # dtplyr translates `n()` to `.N`, which cannot be evaluated beside a
         # source column of that name. An existing column supplies branch size.
         size_col <- if (identical(backend$kind, "dtplyr")) {
-          get_col_names(result, dplyr::everything())[[1L]]
+          margin_col_names(result)[[1L]]
         } else {
           NULL
         }

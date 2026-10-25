@@ -381,11 +381,7 @@ finalize_margin_operation <- function(operation, execution,
     operation$plan$dimensions,
     operation$set_id_name
   )
-  result <- dplyr::select(
-    result,
-    dplyr::all_of(margin_cols),
-    dplyr::everything()
-  )
+  result <- reorder_margin_columns(result, margin_cols)
 
   unsorted <- result
   result <- order_margin_result(operation, result, execution)
@@ -487,16 +483,18 @@ order_margin_result <- function(operation, result, execution) {
                                             operation$backend)
   }
 
-  terms <- margin_order_terms(
-    plan = operation$plan,
-    sort = operation$sort,
-    sort_id = key_id,
-    as_character = margin_dictionary_sort_columns(result, operation$backend),
-    structured = margin_structured_sort_columns(result, operation$plan)
+  result <- with_margin_column_aliases(
+    result, key_id, function(data, safe_name) {
+      terms <- margin_order_terms(
+        plan = operation$plan,
+        sort = operation$sort,
+        sort_id = if (is.null(key_id)) NULL else safe_name(key_id),
+        as_character = margin_dictionary_sort_columns(data, operation$backend),
+        structured = margin_structured_sort_columns(data, operation$plan)
+      )
+      if (length(terms) > 0L) dplyr::arrange(data, !!!terms) else data
+    }
   )
-  if (length(terms) > 0L) {
-    result <- dplyr::arrange(result, !!!terms)
-  }
   if (!is.null(staged_id) && !is.null(key_id)) {
     result <- drop_margin_staged_identifier(result, staged_id,
                                             operation$backend)
@@ -512,10 +510,11 @@ margin_staged_sort_identifier <- function(operation, sort_id) {
 }
 
 # Drop only the staged identifier, leaving every public column's name intact.
-# dtplyr translates select() to a data.table projection that interprets names
-# such as `.BY` and `.I` specially; mutate(NULL) uses `:=` instead.
+# Local selection rejects dot-dot output names. dtplyr translates select() to
+# a data.table projection that interprets names such as `.BY` and `.I`
+# specially; mutate(NULL) uses `:=` instead.
 drop_margin_staged_identifier <- function(result, staged_id, backend) {
-  if (identical(backend$kind, "dtplyr")) {
+  if (is.data.frame(result) || identical(backend$kind, "dtplyr")) {
     return(dplyr::mutate(result, !!staged_id := NULL))
   }
   dplyr::select(result, -dplyr::all_of(staged_id))
