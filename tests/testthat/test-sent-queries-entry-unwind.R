@@ -1,5 +1,5 @@
-# Interrupt the first record allocation, then let later tibble calls run. The
-# interrupt occurs before the public entry point can register its restoration.
+# Interrupt the first record allocation, then let later tibble calls run.
+# The previous record survives until a complete recording scope is bound.
 with_entry_interrupt <- function(expr, leaf) {
   original <- dplyr::tibble
   interrupted <- FALSE
@@ -33,13 +33,13 @@ test_that("interrupted record allocation leaves no active outer owner", {
     tryCatch(inspect_grouping(input), interrupt = identity), leaf
   )
   expect_identical(caught, leaf)
-  expect_false(sent_queries$active)
+  expect_null(active_sent_query_scope())
   expect_identical(last_sent_queries(details = TRUE), previous)
 
   fresh <- summarize_with_margins(
     remote, fresh = sum(v, na.rm = TRUE), .grouping = rollup(g)
   )
-  expect_false(sent_queries$active)
+  expect_null(active_sent_query_scope())
   rows <- last_sent_queries(details = TRUE)
   expect_s3_class(rows, "tbl_df")
   expect_identical(rows$purpose, "result")
@@ -70,7 +70,7 @@ test_that("interrupted nested record allocation preserves its active parent", {
     observed$caught <- with_entry_interrupt(
       tryCatch(inspect_grouping(input), interrupt = identity), leaf
     )
-    observed$active <- sent_queries$active
+    observed$active <- !is.null(active_sent_query_scope())
     observed$after <- last_sent_queries(FALSE, TRUE)
     original_collect(x, ...)
   }, .package = "dplyr")
@@ -82,7 +82,7 @@ test_that("interrupted nested record allocation preserves its active parent", {
   expect_identical(observed$caught, leaf)
   expect_true(observed$active)
   expect_identical(observed$after, observed$before)
-  expect_false(sent_queries$active)
+  expect_null(active_sent_query_scope())
   rows <- last_sent_queries(details = TRUE)
   expect_identical(rows$purpose, c("observed_label_collision", "result"))
   expect_identical(rows$status, c("returned", "prepared"))

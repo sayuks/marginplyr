@@ -83,14 +83,16 @@ test_that("the public view excludes additional private record fields", {
   recorded <- last_sent_queries()
   # A future storage field cannot be supplied through the public API. Extend
   # the fixture here to verify the public projection independently of storage.
-  saved <- sent_queries$record$rows
+  saved <- sent_queries$latest$record$rows
   on.exit({
-    sent_queries$record$rows <- saved
+    sent_queries$latest$record$rows <- saved
   }, add = TRUE)
-  sent_queries$record$rows$private <- "private diagnostic"
+  sent_queries$latest$record$rows$private <- "private diagnostic"
   expect_identical(last_sent_queries(), recorded)
   expect_identical(last_sent_queries(FALSE), recorded[FALSE, ])
-  expect_identical(sent_queries$record$rows$private, "private diagnostic")
+  expect_identical(
+    sent_queries$latest$record$rows$private, "private diagnostic"
+  )
 })
 
 test_that("failed internal renders remain readable in either view", {

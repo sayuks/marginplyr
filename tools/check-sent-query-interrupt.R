@@ -9,7 +9,7 @@ if (!identical(.Platform$OS.type, "unix")) {
   stop("This check requires POSIX SIGINT and fork support.", call. = FALSE)
 }
 pkgload::load_all(quiet = TRUE)
-state <- utils::getFromNamespace("sent_queries", "marginplyr")
+active_scope <- utils::getFromNamespace("active_sent_query_scope", "marginplyr")
 
 run_native <- function() {
   target_pid <- Sys.getpid()
@@ -41,7 +41,7 @@ run_native <- function() {
       for (j in seq_len(100L)) invisible(j)
     }), interrupt = identity)
     caught <- caught + as.integer(inherits(outcome, "interrupt"))
-    if (isTRUE(state$active)) {
+    if (!is.null(active_scope())) {
       leaked <- TRUE
       break
     }
@@ -73,7 +73,7 @@ run_native <- function() {
       inherits(rows, "marginplyr_error") &&
         grepl("marginplyr.audit_sql", conditionMessage(rows), fixed = TRUE)
     }
-    if (!valid || isTRUE(state$active)) return(1L)
+    if (!valid || !is.null(active_scope())) return(1L)
   }
   cat("Independent records and saved audit settings: passed\n")
   0L

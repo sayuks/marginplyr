@@ -17,11 +17,12 @@ the invariants observed for the interrupts caught, not exhaustive scheduling
 coverage. Signal coalescing and OS/R scheduling make delivery nondeterministic;
 Windows is outside this check's platform coverage.
 
-`tests/testthat/test-sent-queries-exit-unwind.R` supplies the focused regression.
-On POSIX it places one native signal at an ownership-write checkpoint, leaving
-the restoration function intact. A bounded R loop reaches ordinary interrupt
-checks; `Sys.sleep()` is unsuitable there because its macOS event processing
-can deliver SIGINT inside `suspendInterrupts()`. A separate platform-independent
-backend fixture checks original condition propagation, nested visibility,
-saved settings, retained parent rows and later status updates. Existing entry,
-reentry and piped-call tests cover the rest of ADR 0027's lifetime contract.
+`tests/testthat/test-sent-queries-exit-unwind.R` supplies portable cleanup
+fixtures: a callback's and a backend operation's `on.exit()` raise the original
+interrupt. They check nested visibility, saved settings, retained parent rows,
+and later status updates. The structural entry gate in `test-sent-queries.R`
+requires each entry point to bind its own recording scope after forcing its
+input. Ownership follows those live frames; it requires no exit restoration.
+The cleanup fixtures alone do not reproduce every native delivery window.
+Use this native check alongside them. Existing entry, reentry, and piped-call
+tests cover the rest of ADR 0027's lifetime contract.

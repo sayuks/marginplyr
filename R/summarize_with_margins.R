@@ -1011,8 +1011,8 @@ summarize_with_margins <- function(.data,
                                    .sort = c("none", "last", "first")) {
   force(.data)
   suspendInterrupts({
-    sent_query_parent <- reset_sent_queries()
-    on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+    # The scope is read from this live frame by active_sent_query_scope().
+    sent_query_scope <- reset_sent_queries() # nolint: object_usage_linter.
   })
   call <- rlang::current_call()
   dots <- rlang::enquos(...)
