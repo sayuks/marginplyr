@@ -508,6 +508,22 @@ with independent controls without treating a legitimately cached dialect
 probe as a missing row. Evidence for the existing defect remains in
 [the dated reentry investigation](../../investigation/reentrant-operation-isolation-2026-10-01.md).
 
+## Amendment: ownership follows live recording frames (2026-10-25)
+
+For #810, the reentry amendment's exit-restoration mechanism and its
+registration gate are replaced. Each entry point binds its own complete
+recording state in a local slot, still after forcing `.data` and within the
+entry interrupt shield. The active owner is the innermost live package frame
+holding that slot. An unwound frame cannot own the record, even when an
+interrupt prevents cleanup from starting. No ownership restoration runs on
+exit.
+
+Only an outer call replaces the retained latest record. A nested call's state
+lives in its frame; neither that frame nor a parent chain is retained in the
+record. The structural entry gate checks the local binding and its ordering.
+The reentry table, saved settings, partial outcomes, input forcing, and
+process-local scope remain the contract above.
+
 ## Clarification: a recorded render is not proof of submission (2026-10-04)
 
 *The record holds the statement, not the execution* describes SQL captured by

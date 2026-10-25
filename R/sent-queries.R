@@ -1,35 +1,47 @@
-# The active call's Sent queries, or the last outer call's after it exits.
+# The latest outer call's state. Nested states live only in their call frames.
 sent_queries <- new.env(parent = emptyenv())
 
-# Starts a call's record and returns the active parent's state, or NULL for
-# an outer call. Entry points force `.data` first and register restoration
-# immediately afterwards. Backend classification follows during preparation.
+# Finds the innermost tracked call whose recording lifetime has begun. Only
+# package frames own the local slot; an identically named caller promise must
+# not be inspected or forced. No calling frame is retained in the record.
+active_sent_query_scope <- function() {
+  frames <- sys.frames()
+  namespace <- environment(active_sent_query_scope)
+  for (index in rev(seq_along(frames))) {
+    fn <- sys.function(index)
+    if (is.function(fn) && identical(environment(fn), namespace)) {
+      scope <- get0("sent_query_scope", envir = frames[[index]],
+                    inherits = FALSE)
+      if (is.environment(scope)) {
+        return(scope)
+      }
+    }
+  }
+  NULL
+}
+
+# Returns the active call's state, or the latest outer call's after unwinding.
+current_sent_query_scope <- function() {
+  scope <- active_sent_query_scope()
+  if (is.null(scope)) sent_queries$latest else scope
+}
+
+# Starts a complete record for the entry point's local recording slot. Entry
+# points force `.data` first. Only an outer call replaces the retained record;
+# nested ownership ends with its frame, without interruptible exit cleanup.
 reset_sent_queries <- function() {
-  parent <- if (isTRUE(sent_queries$active)) as.list(sent_queries) else NULL
-  audited <- isTRUE(getOption("marginplyr.audit_sql"))
-  record <- new.env(parent = emptyenv())
-  record$rows <- dplyr::tibble(
+  scope <- new.env(parent = emptyenv())
+  scope$audited <- isTRUE(getOption("marginplyr.audit_sql"))
+  scope$is_sql <- FALSE
+  scope$record <- new.env(parent = emptyenv())
+  scope$record$rows <- dplyr::tibble(
     purpose = character(), sql = character(), source = character(),
     status = character(), conditions = list()
   )
-  # Allocation can unwind before the entry point registers restoration.
-  # Publish only a complete record so the previous owner survives that exit.
-  list2env(list(
-    active = TRUE, recorded = TRUE, audited = audited, is_sql = FALSE,
-    record = record
-  ), envir = sent_queries)
-  invisible(parent)
-}
-
-# Restores the active parent's record on exit, or leaves this outer call's
-# own record readable. The caller holds the state returned at its entry.
-restore_sent_queries <- function(parent) {
-  if (is.null(parent)) {
-    sent_queries$active <- FALSE
-  } else {
-    list2env(parent, envir = sent_queries)
+  if (is.null(active_sent_query_scope())) {
+    sent_queries$latest <- scope
   }
-  invisible(NULL)
+  scope
 }
 
 # Remembers whether this call's input is a SQL backend, reading the one field
@@ -37,7 +49,8 @@ restore_sent_queries <- function(parent) {
 # input the reset above was made for.
 remember_sent_query_backend <- function(backend) {
   stopifnot(inherits(backend, "marginplyr_backend"))
-  sent_queries$is_sql <- isTRUE(backend$is_sql)
+  scope <- current_sent_query_scope()
+  scope$is_sql <- isTRUE(backend$is_sql)
   invisible(NULL)
 }
 
@@ -130,10 +143,11 @@ render_sent_query_sql <- function(query, entry) {
 # return NULL. A refused render retains a prepared row with missing SQL.
 record_sent_query <- function(purpose, query) {
   stopifnot(rlang::is_string(purpose))
-  if (!isTRUE(sent_queries$audited) || !isTRUE(sent_queries$is_sql)) {
+  scope <- current_sent_query_scope()
+  if (!isTRUE(scope$audited) || !isTRUE(scope$is_sql)) {
     return(invisible(NULL))
   }
-  record <- sent_queries$record
+  record <- scope$record
   literal <- inherits(query, "sql")
   record$rows <- dplyr::bind_rows(record$rows, dplyr::tibble(
     purpose = purpose, sql = NA_character_,
@@ -435,13 +449,14 @@ last_sent_queries <- function(include_result = TRUE, details = FALSE) {
       "{.arg details} must be one non-missing logical value."
     )
   }
-  if (!isTRUE(sent_queries$recorded)) {
+  scope <- current_sent_query_scope()
+  if (is.null(scope)) {
     abort_marginplyr(c(
       "No tracked call has run in this session.",
       i = "Run a Margin verb or {.fun inspect_grouping} first."
     ))
   }
-  if (!isTRUE(sent_queries$audited)) {
+  if (!isTRUE(scope$audited)) {
     abort_marginplyr(c(
       "The last tracked call was not audited.",
       i = paste0(
@@ -450,7 +465,7 @@ last_sent_queries <- function(include_result = TRUE, details = FALSE) {
       )
     ))
   }
-  rows <- sent_queries$record$rows
+  rows <- scope$record$rows
   if (!include_result) {
     rows <- rows[rows$purpose != "result", , drop = FALSE]
   }

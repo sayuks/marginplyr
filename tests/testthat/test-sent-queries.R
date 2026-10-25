@@ -954,8 +954,7 @@ nth_statement <- function(fn, n) {
   strip_coverage_wrapper(fn_body[[n + 1L]])
 }
 
-# Whether the second statement publishes ownership and registers restoration
-# in one interrupt shield, with no intervening work.
+# Whether the second statement binds this call's complete scope in one shield.
 protects_sent_query_entry <- function(fn) {
   entry <- nth_statement(fn, 2L)
   if (!is.call(entry) || length(entry) != 2L ||
@@ -963,16 +962,13 @@ protects_sent_query_entry <- function(fn) {
     return(FALSE)
   }
   block <- strip_coverage_wrapper(entry[[2L]])
-  if (!is.call(block) || length(block) != 3L ||
+  if (!is.call(block) || length(block) != 2L ||
         !identical(block[[1L]], quote(`{`))) {
     return(FALSE)
   }
   identical(
     strip_coverage_wrapper(block[[2L]]),
-    quote(sent_query_parent <- reset_sent_queries())
-  ) && identical(
-    strip_coverage_wrapper(block[[3L]]),
-    quote(on.exit(restore_sent_queries(sent_query_parent), add = TRUE))
+    quote(sent_query_scope <- reset_sent_queries())
   )
 }
 
@@ -994,9 +990,8 @@ test_that("every entry point forces its input and then empties the record", {
   # part-way through one truncates that call's own (ADR 0027).
   expect_setequal(emptying, entry_points)
 
-  # Force the input before taking ownership (#455). Publishing the new owner
-  # and registering its restoration share one interrupt shield, so an
-  # interrupt cannot leave ownership active between those two operations.
+  # Force the input before beginning the recording lifetime (#455). Bind the
+  # complete scope before validation or a pending interrupt can run (#810).
   misordered <- Filter(
     function(name) {
       fn <- get(name, envir = ns)
@@ -1007,49 +1002,38 @@ test_that("every entry point forces its input and then empties the record", {
   )
   # Named rather than counted: a validation moved above either statement is
   # what this fires on, and which entry point took it is not otherwise in the
-  # report. Restoration must be registered before validation can exit the call.
+  # report. Ownership follows the bound scope's live frame, not exit cleanup.
   expect_identical(misordered, character())
 })
 
-test_that("the entry scan requires reset and restoration in one shield", {
+test_that("the entry scan requires scope binding in one shield", {
   protected <- function() {
     force(.data)
     suspendInterrupts({
-      sent_query_parent <- reset_sent_queries()
-      on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+      sent_query_scope <- reset_sent_queries()
     })
   }
   unprotected <- function() {
     force(.data)
-    sent_query_parent <- reset_sent_queries()
-    on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+    sent_query_scope <- reset_sent_queries()
   }
   split <- function() {
     force(.data)
     suspendInterrupts({
-      sent_query_parent <- reset_sent_queries()
+      reset_sent_queries()
     })
-    on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
-  }
-  reversed <- function() {
-    force(.data)
-    suspendInterrupts({
-      on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
-      sent_query_parent <- reset_sent_queries()
-    })
+    sent_query_scope <- NULL
   }
   interposed <- function() {
     force(.data)
     suspendInterrupts({
-      sent_query_parent <- reset_sent_queries()
       validate()
-      on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+      sent_query_scope <- reset_sent_queries()
     })
   }
   expect_true(protects_sent_query_entry(protected))
   expect_false(protects_sent_query_entry(unprotected))
   expect_false(protects_sent_query_entry(split))
-  expect_false(protects_sent_query_entry(reversed))
   expect_false(protects_sent_query_entry(interposed))
   expect_false(protects_sent_query_entry(function() NULL))
 })
@@ -1150,11 +1134,7 @@ test_that("the reset scan reads through covr's instrumentation", {
       suspendInterrupts({
         if (TRUE) {
           .(counter)("marginplyr/R/inspect-grouping.R:3:1:3:1")
-          sent_query_parent <- reset_sent_queries()
-        }
-        if (TRUE) {
-          .(counter)("marginplyr/R/inspect-grouping.R:4:1:4:1")
-          on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+          sent_query_scope <- reset_sent_queries()
         }
       })
     }
