@@ -54,6 +54,12 @@ The ratio table's first row now reads:
 | Row-matched | `local`, `other` | Nothing |
 | dtplyr | `dtplyr` | Rewrites join keys containing parser syntax temporarily |
 
+## Amendment (#824): preserve whitespace-bearing dtplyr join keys
+
+The temporary key-name rewrite also applies when `trimws()` changes any join
+key. Both Parent shares and Total shares preserve the caller's exact fixed-key
+partitions and restore their public names after joining.
+
 ## Amendment (2026-09-23): adapters receive staged Parent key names
 
 The signature described in the original decision is superseded. All three
