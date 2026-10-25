@@ -1,0 +1,4 @@
+INCONCLUSIVE mode public iterations 13125 caught 13124 sender_reaped TRUE 
+Warning message:
+In switch(deparse(x[[1L]])[1L], `(` = "(", "call") :
+  closing unused connection 3 (/Users/sayuks/Library/R/arm64/4.6/library/blob/Meta/features.rds)

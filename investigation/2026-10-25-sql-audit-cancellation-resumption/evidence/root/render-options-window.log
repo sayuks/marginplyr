@@ -1,0 +1,13 @@
+Tracing function "render_sent_query_sql" in package
+"namespace:marginplyr"
+[1] "render_sent_query_sql"
+Untracing function "render_sent_query_sql" in package
+"namespace:marginplyr"
+caught interrupt: TRUE 
+expected options: default,default
+actual options: quiet,quiet 
+# A tibble: 1 × 5
+  purpose                  sql   source status   conditions      
+  <chr>                    <chr> <chr>  <chr>    <list>          
+1 observed_label_collision <NA>  render prepared <tibble [0 × 4]>
+warning markers with leak: 0 after manual restoration: 2 

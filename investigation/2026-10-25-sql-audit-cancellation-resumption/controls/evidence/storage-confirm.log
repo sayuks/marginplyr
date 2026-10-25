@@ -1,0 +1,1 @@
+PASS formatter cases: 9 ; cleared weakrefs: 45 ; record replacements: 405 ; inactive settings: 11 ; invalid accessor calls: 26 ; active snapshot copies: 2 
