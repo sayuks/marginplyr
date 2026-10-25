@@ -385,7 +385,7 @@ margin_column_info <- function(data_proxy,
   schema <- proxy_columns(data_proxy, read)
 
   prototypes <- lapply(schema[dimensions], function(x) {
-    if (is.data.frame(x) || is.matrix(x)) {
+    if (is.data.frame(x) || (is.array(x) && length(dim(x)) > 1L)) {
       vctrs::vec_init(x, 1L)
     } else {
       x[NA_integer_]

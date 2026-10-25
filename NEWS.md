@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Local higher-dimensional array grouping dimensions now refuse scalar display
+  labels with an actionable Package condition on both populated and empty
+  input. Typed-missing labels preserve their shape (#834).
+
 * Local summaries retain dplyr-compatible output names such as `...` and
   `..1` across grouping sets. Dot-dot `.id` names also work with Margin
   ordering and nesting (#827).
