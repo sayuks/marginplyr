@@ -86,7 +86,22 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     public_anchor <- sql_env_output_query(public_anchor)
     public_query <- sql_env_output_query(public_query)
   }
+  boolean_columns <- sqlite_boolean_columns(public_columns)
+  boolean_aliases <- stats::setNames(new_margin_internal_names(
+    length(boolean_columns),
+    used_names = c(operation$data_vars, dplyr::tbl_vars(staged)),
+    prefix = "..marginplyr_boolean_", backend = operation$backend
+  ), boolean_columns)
+  if (length(boolean_aliases) > 0L) {
+    source <- operation$data$lazy_query
+    typed_union <- sqlite_boolean_query(typed_union, source, boolean_aliases)
+    public_anchor <- sqlite_boolean_query(
+      public_anchor, source, boolean_aliases, public = FALSE
+    )
+    public_query <- sqlite_boolean_query(public_query, source, boolean_aliases)
+  }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
+  attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases
   attr(ordered, "marginplyr_typed_union") <- typed_union
   attr(ordered, "marginplyr_public_anchor") <- public_anchor
   attr(ordered, "marginplyr_order_keys") <- key_names
@@ -126,8 +141,9 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
 }
 
 # Direct sorted collection drops the internal sort columns after reading the
-# anchored compound query. Unsorted collection keeps dbplyr's result query and
-# its condition context. Both restore declared R types for all-missing columns.
+# anchored compound query. Boolean-word outputs also avoid a finite-collection
+# subquery. Other unsorted results delegate collection to dbplyr. All paths
+# restore declared R types for all-missing columns.
 #' @exportS3Method dplyr::collect
 #' @noRd
 collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
@@ -136,7 +152,8 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  if (length(attr(x, "marginplyr_order_keys")) == 0L) {
+  boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
+  if (length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output) {
     out <- dplyr::collect(
       attr(x, "marginplyr_public_query"), ..., n = n,
       warn_incomplete = warn_incomplete, sql_options = sql_options
@@ -162,9 +179,11 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   }
   out <- out[attr(x, "marginplyr_public_columns")]
   # A sorted helper-only result otherwise changes from dbplyr's tibble to the
-  # data frame returned by the compound-query collector (ADR 0033).
-  if (isTRUE(attr(x, "marginplyr_restore_tibble")) &&
-        length(attr(x, "marginplyr_order_keys")) > 0L) {
+  # data frame returned by the compound-query collector (ADR 0033). Unsorted
+  # Boolean-word results retain the delegated collector's tibble class too.
+  if ((isTRUE(attr(x, "marginplyr_restore_tibble")) &&
+         length(attr(x, "marginplyr_order_keys")) > 0L) ||
+        (boolean_output && length(attr(x, "marginplyr_order_keys")) == 0L)) {
     out <- tibble::as_tibble(out)
   }
   for (name in names(attr(x, "marginplyr_declared_types"))) {
@@ -317,6 +336,15 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
                      call = rlang::caller_call())
   }
+  boolean_aliases <- attr(x, "marginplyr_boolean_aliases")
+  private_indexes <- function(index) {
+    positions <- match(tolower(index), tolower(names(boolean_aliases)))
+    matched <- !is.na(positions)
+    index[matched] <- unname(boolean_aliases[positions[matched]])
+    index
+  }
+  unique_indexes <- lapply(unique_indexes, private_indexes)
+  indexes <- lapply(indexes, private_indexes)
   sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
   rowid_alias <- setdiff(c("rowid", "oid", "_rowid_"), tolower(public))
   if (sorted && length(rowid_alias) == 0L) {
@@ -381,6 +409,14 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     }
     if (is.null(destination)) {
       destination <- dbplyr::as_table_path(dbplyr::remote_name(result), con)
+    }
+    for (column in names(boolean_aliases)) {
+      alias <- boolean_aliases[[column]]
+      DBI::dbExecute(con, paste(
+        "ALTER TABLE", as.character(destination), "RENAME COLUMN",
+        DBI::dbQuoteIdentifier(con, alias), "TO",
+        DBI::dbQuoteIdentifier(con, column)
+      ))
     }
     parts <- dbplyr::table_path_components(destination, con)[[1L]]
     if (length(parts) == 1L) {

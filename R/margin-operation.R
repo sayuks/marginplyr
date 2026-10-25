@@ -429,9 +429,11 @@ finalize_margin_operation <- function(operation, execution,
       declared_types
     )
   }
+  sqlite_boolean_column <- live_sqlite_margin_result(operation) &&
+    length(sqlite_boolean_columns(dplyr::tbl_vars(result))) > 0L
   if (sqlite_typed_result_needed(
     operation, type_anchor_columns, declared_types
-  ) || sqlite_env_column) {
+  ) || sqlite_env_column || sqlite_boolean_column) {
     result <- sqlite_typed_result(
       operation, unsorted, result, execution, type_anchor_columns,
       declared_types, restore_tibble = restore_tibble
