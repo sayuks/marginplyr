@@ -1010,8 +1010,10 @@ summarize_with_margins <- function(.data,
                                    .id = NULL,
                                    .sort = c("none", "last", "first")) {
   force(.data)
-  sent_query_parent <- reset_sent_queries()
-  on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+  suspendInterrupts({
+    sent_query_parent <- reset_sent_queries()
+    on.exit(restore_sent_queries(sent_query_parent), add = TRUE)
+  })
   call <- rlang::current_call()
   dots <- rlang::enquos(...)
   grouping_quo <- rlang::enquo(.grouping)

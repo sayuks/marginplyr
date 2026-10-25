@@ -6,15 +6,18 @@ sent_queries <- new.env(parent = emptyenv())
 # immediately afterwards. Backend classification follows during preparation.
 reset_sent_queries <- function() {
   parent <- if (isTRUE(sent_queries$active)) as.list(sent_queries) else NULL
-  sent_queries$active <- TRUE
-  sent_queries$recorded <- TRUE
-  sent_queries$audited <- isTRUE(getOption("marginplyr.audit_sql"))
-  sent_queries$is_sql <- FALSE
-  sent_queries$record <- new.env(parent = emptyenv())
-  sent_queries$record$rows <- dplyr::tibble(
+  audited <- isTRUE(getOption("marginplyr.audit_sql"))
+  record <- new.env(parent = emptyenv())
+  record$rows <- dplyr::tibble(
     purpose = character(), sql = character(), source = character(),
     status = character(), conditions = list()
   )
+  # Allocation can unwind before the entry point registers restoration.
+  # Publish only a complete record so the previous owner survives that exit.
+  list2env(list(
+    active = TRUE, recorded = TRUE, audited = audited, is_sql = FALSE,
+    record = record
+  ), envir = sent_queries)
   invisible(parent)
 }
 
@@ -46,14 +49,42 @@ empty_sent_query_conditions <- function() {
   )
 }
 
+# A scalar diagnostic without attributes. Formatting belongs to the condition's
+# class; a failing formatter falls back to its stored message without escaping
+# into the backend operation or delivering its own conditions to the caller.
+sent_query_condition_message <- function(cnd) {
+  fallback <- if (is.list(cnd)) .subset2(cnd, "message") else NULL
+  if (!is.character(fallback) || length(fallback) != 1L) {
+    fallback <- NA_character_
+  }
+  text <- tryCatch(
+    withCallingHandlers(
+      conditionMessage(cnd),
+      warning = function(cnd) tryInvokeRestart("muffleWarning"),
+      message = function(cnd) tryInvokeRestart("muffleMessage")
+    ),
+    error = function(cnd) fallback,
+    warning = function(cnd) fallback,
+    message = function(cnd) fallback
+  )
+  if (!is.character(text) || length(text) != 1L) {
+    text <- fallback
+  }
+  attributes(text) <- NULL
+  text
+}
+
 # Appends only text and classes to the owning row. `entry` identifies that row
 # independently of whichever nested call currently owns the public record.
 record_sent_query_condition <- function(entry, cnd, phase, handling) {
+  text <- sent_query_condition_message(cnd)
+  classes <- class(cnd)
+  attributes(classes) <- NULL
   rows <- entry$record$rows
   rows$conditions[[entry$index]] <- dplyr::bind_rows(
     rows$conditions[[entry$index]],
     dplyr::tibble(
-      classes = list(class(cnd)), message = conditionMessage(cnd),
+      classes = list(classes), message = text,
       phase = phase, handling = handling
     )
   )
@@ -72,12 +103,15 @@ render_sent_query_sql <- function(query, entry) {
       as.character(dbplyr::sql_render(query)),
       warning = function(cnd) {
         record_sent_query_condition(entry, cnd, "render", "suppressed")
-        invokeRestart("muffleWarning")
+        tryInvokeRestart("muffleWarning")
       },
       interrupt = function(cnd) {
         record_sent_query_condition(entry, cnd, "render", "propagated")
       }
     ),
+    # A directly signalled warning need not offer a muffle restart. End only
+    # this diagnostic render before the warning reaches caller handlers.
+    warning = function(cnd) NA_character_,
     error = function(cnd) {
       record_sent_query_condition(entry, cnd, "render", "handled")
       NA_character_
@@ -130,7 +164,13 @@ with_sent_query <- function(purpose, query, expr,
   value <- withCallingHandlers(
     force(expr),
     warning = function(cnd) {
-      record_sent_query_condition(entry, cnd, "invocation", warning_handling)
+      handling <- if (identical(warning_handling, "suppressed") &&
+                        is.null(findRestart("muffleWarning"))) {
+        "propagated"
+      } else {
+        warning_handling
+      }
+      record_sent_query_condition(entry, cnd, "invocation", handling)
     },
     error = function(cnd) {
       record_sent_query_condition(entry, cnd, "invocation", error_handling)
