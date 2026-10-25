@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* DuckDB `TIME`, `INTERVAL`, and `BLOB` dimensions now expand with
+  typed-missing Margin labels, preserving values and SQL types through
+  collection and materialization (#836).
+
 * Local summaries retain dplyr-compatible output names such as `...` and
   `..1` across grouping sets. Dot-dot `.id` names also work with Margin
   ordering and nesting (#827).

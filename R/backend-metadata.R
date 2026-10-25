@@ -387,6 +387,10 @@ margin_column_info <- function(data_proxy,
   prototypes <- lapply(schema[dimensions], function(x) {
     if (is.data.frame(x) || is.matrix(x)) {
       vctrs::vec_init(x, 1L)
+    } else if (identical(backend$kind, "duckdb")) {
+      # DuckDB resolves NULL against the included branch's SQL type; its R
+      # proxy can instead be a difftime or list that dbplyr cannot translate.
+      dbplyr::sql("NULL")
     } else {
       x[NA_integer_]
     }

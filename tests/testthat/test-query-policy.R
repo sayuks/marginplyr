@@ -544,6 +544,31 @@ test_that("SQL .env summary outputs add no construction read", {
   }
 })
 
+test_that("DuckDB scalar missing labels add no construction read", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT TIME '12:30:00' AS clock,",
+    "INTERVAL '2 days 3 hours' AS elapsed, 'abc'::BLOB AS binary"
+  )))
+  # Instrument backend entry points because collected rows cannot establish
+  # the construction-time read bound. ADR 0020 permits this zero-row read.
+  metadata <- count_entry_point_invocations(
+    dplyr::collect(utils::head(source, n = 0L))
+  )
+  expect_gt(metadata, 0L)
+  for (label in list(NULL, NA_character_)) {
+    expect_identical(count_entry_point_invocations({
+      query <- expand_with_margins(
+        source, .grouping = rollup(clock, elapsed, binary),
+        .margin_label = label
+      )
+      dbplyr::sql_render(query)
+    }), metadata)
+  }
+})
+
 test_that("SQLite .env expansion payload adds no construction read", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
