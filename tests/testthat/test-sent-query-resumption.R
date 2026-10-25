@@ -59,6 +59,7 @@ test_that("recovery preserves later outcomes, caller restarts, and ownership", {
       run <- function(audited) {
         options(marginplyr.audit_sql = audited)
         delivered <- list()
+        original <- NULL
         cleanup <- character()
         resumed <- 0L
         calls <- 0L
@@ -72,11 +73,17 @@ test_that("recovery preserves later outcomes, caller restarts, and ownership", {
           }, add = TRUE)
           if (depth == 2L) return(collect(x, ...))
           # Driver-local names must not change the observer's bookkeeping.
-          on.exit <- returnValue <- identical <- function(...) {
-            stop("backend-local function was called")
+          for (name in c("on.exit", "returnValue", "identical")) {
+            assign(name, function(...) {
+              stop("backend-local function was called")
+            }, envir = environment())
           }
           withRestarts({
-            if (native) rlang::interrupt() else signalCondition(first)
+            withCallingHandlers({
+              if (native) rlang::interrupt() else signalCondition(first)
+            }, interrupt = function(cnd) {
+              original <<- cnd
+            })
           }, resume_driver = function() {
             resumed <<- resumed + 1L
           })
@@ -107,7 +114,8 @@ test_that("recovery preserves later outcomes, caller restarts, and ownership", {
         expect_identical(cleanup, c("inner", "outer"))
         expect_identical(length(delivered),
                          if (ending == "interrupt") 2L else 1L)
-        if (!native) expect_identical(delivered[[1L]], first)
+        expect_identical(delivered[[1L]], original)
+        if (!native) expect_identical(original, first)
         if (ending == "interrupt") {
           expect_identical(delivered[[2L]], cancellation)
           expect_identical(outcome, cancellation)
