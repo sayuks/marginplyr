@@ -1,0 +1,20 @@
+RLANG_INTERRUPT FALSE ENDING return EXPECTED returned ACTUAL returned RESULT returned 
+# A tibble: 1 × 4
+  classes   message                 phase      handling  
+  <list>    <chr>                   <chr>      <chr>     
+1 <chr [2]> resumable driver signal invocation propagated
+RLANG_INTERRUPT FALSE ENDING leave EXPECTED unknown ACTUAL interrupted RESULT left 
+# A tibble: 1 × 4
+  classes   message                 phase      handling  
+  <list>    <chr>                   <chr>      <chr>     
+1 <chr [2]> resumable driver signal invocation propagated
+RLANG_INTERRUPT TRUE ENDING return EXPECTED returned ACTUAL returned RESULT returned 
+# A tibble: 1 × 4
+  classes   message phase      handling  
+  <list>    <chr>   <chr>      <chr>     
+1 <chr [2]> <NA>    invocation propagated
+RLANG_INTERRUPT TRUE ENDING leave EXPECTED unknown ACTUAL interrupted RESULT left 
+# A tibble: 1 × 4
+  classes   message phase      handling  
+  <list>    <chr>   <chr>      <chr>     
+1 <chr [2]> <NA>    invocation propagated

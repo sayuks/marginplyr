@@ -1,0 +1,64 @@
+Preservation validation: 2026-10-25
+Original retained captures and separate fresh captures were checked.
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/compare.R
+sqlite 111 cases
+duckdb 111 cases
+PASS 222 SQLite/DuckDB off/on pairs: conditions SQL classes values and internal-record matches
+Exit status: 0
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/compare-simulators.R
+PASS 128 simulated dialect cases: construction result/conditions, later rendered SQL/conditions all identical
+Exit status: 0
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/validate-captures.R
+sqlite-off.rds 111 records inspected
+sqlite-on.rds 111 records inspected
+duckdb-off.rds 111 records inspected
+duckdb-on.rds 111 records inspected
+sim-off.rds 128 records inspected
+sim-on.rds 128 records inspected
+transaction-failures.rds 10 records inspected
+PASS retained RDS contains no environments, pointers, functions, weakrefs, or matched path/credential markers
+PASS 10 transaction off/on pairs: conditions, value, live marker, rollback
+PASS historical focused log: 14 files, 1094 expectation markers
+Exit status: 0
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/compare.R <fresh-output-directory>
+sqlite 111 cases
+duckdb 111 cases
+PASS 222 SQLite/DuckDB off/on pairs: conditions SQL classes values and internal-record matches
+Exit status: 0
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/compare-simulators.R <fresh-output-directory>
+PASS 128 simulated dialect cases: construction result/conditions, later rendered SQL/conditions all identical
+Exit status: 0
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/validate-captures.R <fresh-output-directory>
+sqlite-off.rds 111 records inspected
+sqlite-on.rds 111 records inspected
+duckdb-off.rds 111 records inspected
+duckdb-on.rds 111 records inspected
+sim-off.rds 128 records inspected
+sim-on.rds 128 records inspected
+transaction-failures.rds 10 records inspected
+PASS retained RDS contains no environments, pointers, functions, weakrefs, or matched path/credential markers
+PASS 10 transaction off/on pairs: conditions, value, live marker, rollback
+Exit status: 0
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/differential.R sqlite on investigation/2026-10-25-sql-audit-cancellation-resumption/controls/evidence/sqlite-on.rds
+Error in capture_output(args[[3L]]) : 
+  Fresh probes must not write into retained evidence.
+Execution halted
+Expected refusal; exit status: 1
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/simulators.R on <fresh-output-directory>/sim-on.rds
+Error in capture_output(args[[2L]]) : 
+  Output exists; choose a fresh output path.
+Execution halted
+Expected refusal; exit status: 1
+
+$ Rscript investigation/2026-10-25-sql-audit-cancellation-resumption/controls/transaction-failures.R
+Error: Usage: Rscript transaction-failures.R <fresh-output.rds>
+Execution halted
+Expected refusal; exit status: 1

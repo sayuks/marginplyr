@@ -1,0 +1,4 @@
+VIOLATION mode public iteration 2957 caught 2957 actual default,quiet sender_reaped TRUE drained 0 arithmetic 2 
+EVIDENCE /tmp/marginplyr-sql-hunt-20261025/root/native-public-on-public.rds 
+# A tibble: 0 × 2
+# ℹ 2 variables: purpose <chr>, status <chr>

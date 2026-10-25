@@ -1,0 +1,6 @@
+VIOLATION mode internal iteration 959 caught 959 actual quiet,quiet sender_reaped TRUE drained 0 arithmetic 2 
+EVIDENCE /tmp/marginplyr-sql-hunt-20261025/root/native-options-valid-internal.rds 
+# A tibble: 1 × 2
+  purpose status  
+  <chr>   <chr>   
+1 fixture prepared
