@@ -460,9 +460,15 @@ test_that("unnamed selectors preserve context and counts beside shares", {
   data <- tibble::tibble(g = c("a", "b", "b"), x = c(1, 10, 20))
   for (multiple in c(FALSE, TRUE)) {
     grouping <- if (multiple) rollup(g) else grouping_set()
-    helpers <- list(rlang::expr(share_of_total(total)))
+    helpers <- list(
+      rlang::expr(share_of_total(total)),
+      rlang::expr(dplyr::across(total, share_of_total, .names = "share"))
+    )
     if (multiple) {
-      helpers <- c(helpers, list(rlang::expr(share_of_parent(total))))
+      helpers <- c(helpers, list(
+        rlang::expr(share_of_parent(total)),
+        rlang::expr(dplyr::across(total, share_of_parent, .names = "share"))
+      ))
     }
     for (helper in helpers) {
       for (first in c(TRUE, FALSE)) {
@@ -489,10 +495,15 @@ test_that("unnamed selectors preserve context and counts beside shares", {
             } else {
               list(total = rlang::expr(sum(x)), across)
             }
+            share <- if (!with_share) {
+              list(share = rlang::expr(1))
+            } else if (rlang::is_call(helper, "across", ns = "dplyr")) {
+              list(helper)
+            } else {
+              list(share = helper)
+            }
             result <- rlang::inject(summarize_with_margins(
-              data, !!!ordinary,
-              share = !!if (with_share) helper else rlang::expr(1),
-              .grouping = grouping
+              data, !!!ordinary, !!!share, .grouping = grouping
             ))
             list(result = result, contexts = contexts)
           }

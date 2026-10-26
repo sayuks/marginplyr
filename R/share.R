@@ -1529,8 +1529,9 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
-# Whether each share directly names a preceding explicitly named summary.
-# Such shares do not need the first unnamed selection's outputs for planning.
+# Whether each share names one preceding explicitly named summary, directly
+# or through a bare-name across selection. Neither needs the first unnamed
+# selection's outputs for planning. The caller supplies preflighted share syntax.
 shares_use_named_summaries <- function(dots) {
   preceding <- character()
   for (i in seq_along(dots)) {
@@ -1539,10 +1540,12 @@ shares_use_named_summaries <- function(dots) {
       preceding <- c(preceding, rlang::names2(dots)[[i]])
       next
     }
-    if (!is_share_helper_call(expr)) {
-      return(FALSE)
+    args <- if (is_share_helper_call(expr)) {
+      static_call_args(expr)
+    } else {
+      list(parse_across_arguments(expr)$cols)
     }
-    args <- unwrap_injected_args(static_call_args(expr))
+    args <- unwrap_injected_args(args)
     if (length(args) != 1L || !is_name_part(args[[1L]]) ||
           !rlang::as_name(args[[1L]]) %in% preceding) {
       return(FALSE)
