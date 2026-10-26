@@ -269,30 +269,29 @@ nest_margin_pipeline <- function(.data,
     .id = .id,
     call = call
   )
-  with_margin_error_call({
-    if (rowwise && ".rows" %in% c(
-      operation$plan$by, operation$plan$dimensions, operation$set_id_name
-    )) {
-      abort_marginplyr(c(
-        "{.var .rows} cannot be a row-wise identifier.",
-        i = "Rename that outer key or use {.fun nest_with_margins}."
-      ))
-    }
-  }, call = call)
   execution <- execute_margin_nest(
     operation,
     .key = .key,
-    .keep = .keep
+    .keep = .keep,
+    rowwise = rowwise
   )
   finalize_margin_operation(operation, execution)
 }
 
-execute_margin_nest <- function(operation, .key, .keep) {
+# Fold a prepared Margin operation into cells after nesting-specific admission;
+# `rowwise` requires outer keys dplyr can represent as row-wise identifiers.
+execute_margin_nest <- function(operation, .key, .keep, rowwise) {
   check_margin_operation(operation)
   with_margin_error_call(
     {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
+      if (rowwise && ".rows" %in% c(group_cols, operation$set_id_name)) {
+        abort_marginplyr(c(
+          "{.var .rows} cannot be a row-wise identifier.",
+          i = "Rename that outer key or use {.fun nest_with_margins}."
+        ))
+      }
       if (.key %in% group_cols) {
         # `{(.key)}` rather than `{.key}`: cli reads a `{}` expression opening
         # with a dot as one of its own styles, and refuses the literal outright
