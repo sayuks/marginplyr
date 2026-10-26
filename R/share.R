@@ -1529,12 +1529,35 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
+# Whether each share directly names a preceding explicitly named summary.
+# Such shares do not need the first unnamed selection's outputs for planning.
+shares_use_named_summaries <- function(dots) {
+  preceding <- character()
+  for (i in seq_along(dots)) {
+    expr <- rlang::quo_get_expr(dots[[i]])
+    if (!contains_share_helper(expr)) {
+      preceding <- c(preceding, rlang::names2(dots)[[i]])
+      next
+    }
+    if (!is_share_helper_call(expr)) {
+      return(FALSE)
+    }
+    args <- unwrap_injected_args(static_call_args(expr))
+    if (length(args) != 1L || !is_name_part(args[[1L]]) ||
+          !rlang::as_name(args[[1L]]) %in% preceding) {
+      return(FALSE)
+    }
+  }
+  TRUE
+}
+
 # Records ordinary outputs and dependencies for a call with a contextual share.
 analyze_ordinary_summaries <- function(dots, selection_proxy,
                                        defer_local = FALSE) {
   dot_names <- names(dots)
   analyses <- vector("list", length(dots))
   preceding_names <- character()
+  independent_shares <- defer_local && shares_use_named_summaries(dots)
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
     output_name <- dot_names[[i]]
@@ -1549,7 +1572,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
     # its mask. Predict only literal names here, leaving naming expressions
     # and selection predicates to that execution.
     if (defer_local && contains_summary_selection(expr) &&
-          (i > 1L || nzchar(output_name))) {
+          (i > 1L || nzchar(output_name) || independent_shares)) {
       output_names <- if (nzchar(output_name)) {
         output_name
       } else if (is_across_call(expr)) {
@@ -2042,14 +2065,9 @@ validate_share_request <- function(outputs,
       )
     }
     if (length(record$dependencies) > 0L) {
-      abort_marginplyr(c(
-        paste0(
-          "{label} {.var {output}} cannot use source summary {.var {source}} ",
-          "because it depends on earlier summary alias ",
-          "{.var {record$dependencies[[1L]]}}."
-        ),
-        i = "Combine the calculation into one ordinary summary expression."
-      ))
+      abort_share_alias_dependency(
+        kind, output, source, record$dependencies[[1L]]
+      )
     }
   }
 
@@ -2069,6 +2087,37 @@ validate_share_request <- function(outputs,
     ))
   }
   invisible(NULL)
+}
+
+# Check dynamically expanded names against the reads of later share sources.
+# Each check carries statically read symbols, including unresolved lookups.
+check_share_alias_reads <- function(output_names, checks) {
+  for (check in checks) {
+    dependencies <- if (unresolved_lookup_name() %in% check$symbols) {
+      output_names
+    } else {
+      intersect(check$symbols, output_names)
+    }
+    if (length(dependencies) > 0L) {
+      abort_share_alias_dependency(
+        check$share_kind, check$share_output, check$source_summary,
+        dependencies[[1L]]
+      )
+    }
+  }
+  invisible(NULL)
+}
+
+# Refuse one preceding alias read by a Contextual share's source expression.
+abort_share_alias_dependency <- function(kind, output, source, dependency) {
+  abort_marginplyr(c(
+    paste0(
+      "{share_kind_label(kind)} {.var {output}} cannot use source summary ",
+      "{.var {source}} because it depends on earlier summary alias ",
+      "{.var {dependency}}."
+    ),
+    i = "Combine the calculation into one ordinary summary expression."
+  ))
 }
 
 # An ineligible source is refused in the terms of the summary the caller wrote,
