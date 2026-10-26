@@ -487,10 +487,10 @@ is_name_only_expr <- function(expr, env, data_vars) {
       env = env
     )))
   }
-  # A refused spelling fails on itself, so its operands are never reached and a
-  # predicate under one settles nothing.
+  # tidyselect refuses only a bare operator head. Qualified or parenthesized
+  # heads are ordinary calls whose operands can depend on column types.
   if (call_name %in% selection_refused_operators()) {
-    return(TRUE)
+    return(rlang::is_symbol(static_call_head(expr), call_name))
   }
   # The `.data` pronoun. Asked after the name, so a pair of parentheses around
   # the whole pronoun is already off it.

@@ -2305,17 +2305,26 @@ test_that("a selection the names settle is refused before the typed snapshot", {
     quote(region * value),
     quote(region^value),
     quote(region && value),
-    quote(region || value)
+    quote(region || value),
+    quote((where(is.numeric) * region)),
+    quote((where(is.numeric)^region))
   )) {
-    refuse(
-      rlang::call2(
-        "inspect_grouping",
-        quote(data),
-        .grouping = rlang::call2("grouping_set", spelling)
-      ),
-      class = "rlang_error",
-      pattern = "Can't use (arithmetic operator|scalar)"
-    )
+    for (verb in c("inspect_grouping", "summarize_with_margins")) {
+      refuse(
+        rlang::call2(
+          verb,
+          quote(data),
+          .grouping = rlang::call2("grouping_set", spelling)
+        ),
+        class = "rlang_error",
+        pattern = "Can't use (arithmetic operator|scalar)"
+      )
+      refuse(
+        rlang::call2(verb, quote(data), .by = spelling),
+        class = "rlang_error",
+        pattern = "Can't use (arithmetic operator|scalar)"
+      )
+    }
   }
 
   refuse(
