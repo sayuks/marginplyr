@@ -1,0 +1,62 @@
+
+--- F1 ---
+dplyr fixed key b, two count-one rows:
+  b n
+1 1 1
+2 2 1
+Margin actual:
+  a n
+1 x 2
+FAIL F1 
+
+--- F2 ---
+dplyr x: 2, 32 
+Margin x: 1, 30 
+FAIL F2 
+
+--- F3 ---
+with_share: FALSE ; reads: 1 ; error: TRUE 
+with_share: TRUE ; reads: 3 ; error: FALSE 
+# A tibble: 1 × 2
+  total     p
+  <int> <dbl>
+1     3     1
+FAIL F3 
+
+--- F4 ---
+dplyr ordinary columns:
+# A tibble: 1 × 2
+  unused total
+   <int> <int>
+1      3     3
+Margin actual:
+ℹ In argument: `all_of(if (n() == 0L) "x" else character())`.
+Caused by error in `n()`:
+! Must only be used inside data-masking verbs like `mutate()`,
+  `filter()`, and `group_by()`. 
+FAIL F4 
+
+--- F5 ---
+direct reference rejected: TRUE 
+Reflective source:
+# A tibble: 3 × 4
+  g     first total share
+  <chr> <dbl> <dbl> <dbl>
+1 a         2     3 0.333
+2 b         6     7 0.778
+3 Total     8     9 1    
+Later ordinary summary reading earlier share:
+# A tibble: 3 × 4
+  g     total share derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         2  0.25      20
+2 b         6  0.75      60
+3 Total     8  1         80
+FAIL F5 
+
+--- F6 ---
+tidyselect reads: 1 ; selected: a 
+Margin reads: 2 ; selected: b 
+FAIL F6 
+
+0/6 contract assertions passed.
