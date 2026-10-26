@@ -1,0 +1,45 @@
+F1 injected constructor FAIL
+  `grouping_set(a)` is a Grouping specification, but a nested position recognizes one only when it is a call to `grouping_set()`, `grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a name bound to a specification.
+ℹ Anything else is read as a column selection.
+ℹ Assign the specification to a name first, then use that name here.
+F1 embracing wrapper FAIL
+  `grouping_set(a)` is a Grouping specification, but a nested position recognizes one only when it is a call to `grouping_set()`, `grouping_sets()`, `rollup()`, `cube()`, or `grouping_spec()`, or a name bound to a specification.
+ℹ Anything else is read as a column selection.
+ℹ Assign the specification to a name first, then use that name here.
+F2 Grouping dimension FAIL
+  ℹ In argument: `..marginplyr_key_1 = .data[["..0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+F2 fixed key FAIL
+  ℹ In argument: `..marginplyr_key_1 = .data[["..0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+F2 share source ..0 total FAIL
+  ℹ In argument: `..marginplyr_denominator_of_..0_1 = .data[["..0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+F2 share source ..0 parent FAIL
+  ℹ In argument: `..marginplyr_denominator_of_..0_1 = .data[["..0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+F2 share source ..00 total FAIL
+  ℹ In argument: `..marginplyr_denominator_of_..00_1 = .data[["..00"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+F2 share source ..00 parent FAIL
+  ℹ In argument: `..marginplyr_denominator_of_..00_1 = .data[["..00"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+F3 pick total FAIL
+  Total share `share` cannot use `source` because it was expanded from a data-frame-valued summary.
+ℹ Rewrite it as a top-level named summary or a preceding `across()` output.
+F3 pick parent FAIL
+  Parent share `share` cannot use `source` because it was expanded from a data-frame-valued summary.
+ℹ Rewrite it as a top-level named summary or a preceding `across()` output.
+F3 across total FAIL
+  Total share `share` cannot use `source` because it was expanded from a data-frame-valued summary.
+ℹ Rewrite it as a top-level named summary or a preceding `across()` output.
+F3 across parent FAIL
+  Parent share `share` cannot use `source` because it was expanded from a data-frame-valued summary.
+ℹ Rewrite it as a top-level named summary or a preceding `across()` output.
+Failed public-contract checks: 12
