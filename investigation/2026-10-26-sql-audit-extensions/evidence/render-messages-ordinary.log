@@ -1,0 +1,8 @@
+Mode: ordinary
+Messages with auditing off: 1
+Messages with auditing on: 4
+Result values, classes, and original condition identity agree.
+Error in main(if (length(args) >= 1L) args[[1L]] else "ordinary", if (length(args) >=  :
+  identical(off$messages, on$messages) is not TRUE
+Calls: main -> stopifnot
+Execution halted
