@@ -403,6 +403,12 @@ margin_column_info <- function(data_proxy,
     # The R prototype loses Arrow widths, precision, and temporal units.
     prototypes <- Map(
       function(value, dimension) {
+        type <- arrow_schema$GetFieldByName(dimension)$type
+        if (inherits(type, "DictionaryType")) {
+          # The schema's R factor has string levels even for non-string
+          # dictionaries. Cast a null scalar without rebuilding those values.
+          return(arrow::Scalar$create(NA, type = arrow::null())$cast(type))
+        }
         # Arrow cannot rebuild a fixed-size-list Array from its classed R
         # proxy; a bare missing list lets the declared field type supply size.
         if (inherits(value, "arrow_fixed_size_list")) {
@@ -410,7 +416,7 @@ margin_column_info <- function(data_proxy,
         }
         arrow::Scalar$create(
           value,
-          type = arrow_schema$GetFieldByName(dimension)$type
+          type = type
         )
       },
       prototypes,

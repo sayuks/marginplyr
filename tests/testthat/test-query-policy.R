@@ -999,3 +999,32 @@ test_that("fixed-size-list expansion and inspection read no source rows", {
     )), 0L)
   }
 })
+
+test_that("dictionary Margin preparation and inspection read no source rows", {
+  skip_if_suggest_absent("arrow")
+  for (values in arrow_dictionary_values()) {
+    for (empty in c(FALSE, TRUE)) {
+      for (source in arrow_dictionary_sources(values, empty)) {
+        expect_gt(count_entry_point_invocations(suppressWarnings(
+          dplyr::collect(source)
+        )), 0L)
+        reads <- count_entry_point_invocations(suppressWarnings({
+          for (label in list(NULL, NA_character_, "Total")) {
+            for (grouping in list(grouping_set(g), rollup(g))) {
+              expand_with_margins(
+                source, .grouping = grouping, .margin_label = label,
+                .id = "occurrence"
+              )
+              summarize_with_margins(
+                source, n = dplyr::n(), .grouping = grouping,
+                .margin_label = label, .id = "occurrence"
+              )
+            }
+          }
+          inspect_grouping(source, .grouping = rollup(where(is.factor)))
+        }))
+        expect_identical(reads, 0L)
+      }
+    }
+  }
+})
