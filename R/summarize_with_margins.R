@@ -644,11 +644,12 @@
 #' does not add an attribute-restoration guarantee; see *Result class and
 #' attributes* and ADR 0016.
 #'
-#' A local matrix grouping dimension likewise accepts only `NULL` or
-#' `NA_character_` as its Margin label. Its omitted rows retain the matrix
-#' shape and typed missing components. A non-missing scalar label cannot
-#' represent the matrix key; split it into separate columns if it needs
-#' display text. A matrix used only as a fixed `.by` key needs no Margin label.
+#' A local matrix or higher-dimensional array grouping dimension likewise
+#' accepts only `NULL` or `NA_character_` as its Margin label, including on
+#' empty input. Its omitted rows retain the shape and typed missing components.
+#' A non-missing scalar label cannot represent the key; split it into separate
+#' columns if it needs display text. A matrix or array used only as a fixed
+#' `.by` key needs no Margin label.
 #'
 #' Factor columns follow this contract:
 #'

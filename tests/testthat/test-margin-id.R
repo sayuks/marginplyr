@@ -27,7 +27,10 @@ test_that("all Margin verbs validate .id consistently", {
     nest = function(id) nest_with_margins(data, .id = id),
     nest_by = function(id) nest_by_with_margins(data, .id = id)
   )
-  invalid_ids <- list(1, NA_character_, "", c("first", "second"))
+  invalid_ids <- list(
+    1, NA_character_, "", c("first", "second"),
+    c(alias = NA_character_), c(alias = ""), c(alias = 1)
+  )
   public_calls <- c(
     summary = "summarize_with_margins",
     expand = "expand_with_margins",
@@ -469,4 +472,32 @@ test_that("portable .id paths remain lazy", {
     as.character(dplyr::tbl_vars(expansion)),
     c("group", "set", "value")
   )
+})
+
+test_that("dtplyr summaries and expansion use scalar identifier names", {
+  skip_if_suggest_absent("dtplyr")
+  input <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
+  operations <- list(
+    summary = function(id, sort) {
+      summarize_with_margins(
+        input, total = sum(value), .grouping = rollup(group),
+        .id = id, .sort = sort
+      )
+    },
+    expand = function(id, sort) {
+      expand_with_margins(
+        input, .grouping = rollup(group), .id = id, .sort = sort
+      )
+    }
+  )
+  for (operation in operations) {
+    for (sort in c("none", "last", "first")) {
+      expected <- dplyr::collect(operation("set", sort))
+      for (alias in c("alias", "group", "value", "total")) {
+        result <- dplyr::collect(operation(stats::setNames("set", alias), sort))
+        expect_identical(result, expected)
+        expect_true("set" %in% names(result))
+      }
+    }
+  }
 })

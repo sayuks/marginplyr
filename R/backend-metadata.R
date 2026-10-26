@@ -203,9 +203,9 @@ dtplyr_metadata_safe_step <- function(step) {
            !dtplyr_value_stable_arithmetic(expr, character(), step[["env"]]))
     }, logical(1))))
   }
-  if (inherits(step, "dtplyr_step_group")) {
-    return(!is.null(step[["name"]]) &&
-             identical(step[["vars"]], step[["parent"]][["vars"]]))
+  # Grouping and cached-table aliases retain their parent's column metadata.
+  if (inherits(step, c("dtplyr_step_group", "dtplyr_step_assign"))) {
+    return(identical(step[["vars"]], step[["parent"]][["vars"]]))
   }
   if (inherits(step, "dtplyr_step_call")) {
     return(step[["fun"]] %in% c("setnames", "setcolorder"))
@@ -244,6 +244,9 @@ abort_unsafe_dtplyr_metadata <- function() {
 dtplyr_selection_proxy <- function(.data, mutable = FALSE) {
   if (!dtplyr_metadata_safe_step(.data)) {
     abort_unsafe_dtplyr_metadata()
+  }
+  if (inherits(.data, c("dtplyr_step_group", "dtplyr_step_assign"))) {
+    return(dtplyr_selection_proxy(.data[["parent"]], mutable = mutable))
   }
   if (inherits(.data, "dtplyr_step_subset")) {
     parent <- dtplyr_selection_proxy(.data[["parent"]], mutable = mutable)
@@ -385,7 +388,7 @@ margin_column_info <- function(data_proxy,
   schema <- proxy_columns(data_proxy, read)
 
   prototypes <- lapply(schema[dimensions], function(x) {
-    if (is.data.frame(x) || is.matrix(x)) {
+    if (is.data.frame(x) || (is.array(x) && length(dim(x)) > 1L)) {
       vctrs::vec_init(x, 1L)
     } else {
       x[NA_integer_]

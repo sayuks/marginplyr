@@ -179,21 +179,23 @@ validate_margin_label <- function(.data,
     ))
   }
 
-  matrices <- dimensions[vapply(
-    column_info$prototypes[dimensions], is.matrix, logical(1)
+  arrays <- dimensions[vapply(
+    column_info$prototypes[dimensions],
+    function(x) is.array(x) && length(dim(x)) > 1L,
+    logical(1)
   )]
-  labelled_matrices <- matrices[!vapply(
-    margin_labels[matrices], is_missing_margin_label, logical(1)
+  labelled_arrays <- arrays[!vapply(
+    margin_labels[arrays], is_missing_margin_label, logical(1)
   )]
-  if (length(labelled_matrices) > 0L) {
+  if (length(labelled_arrays) > 0L) {
     abort_marginplyr(c(
       paste0(
-        "A non-missing {.arg .margin_label} cannot label matrix ",
+        "A non-missing {.arg .margin_label} cannot label matrix or array ",
         "grouping dimensions:"
       ),
-      i = "{.var {labelled_matrices}}.",
+      i = "{.var {labelled_arrays}}.",
       i = paste0(
-        "A non-missing scalar label cannot represent a matrix key. ",
+        "A non-missing scalar label cannot represent a matrix or array key. ",
         "Use {.code NULL} or {.code NA_character_} for a typed-missing ",
         "label, or split the key into separate columns."
       )
@@ -603,6 +605,11 @@ label_margin_branch <- function(.data,
             return(rlang::expr(rep(!!sentinels[[col]], !!branch_size)))
           }
           value <- prototypes[[col]]
+          if (dtplyr_full_size_label && rlang::is_bare_list(value) &&
+                is.null(dim(value))) {
+            # dtplyr parses list calls but refuses injected list objects.
+            return(rlang::expr(rep(list(NULL), !!branch_size)))
+          }
           if (is.null(value)) NA else value
         })
         names(values) <- vapply(
