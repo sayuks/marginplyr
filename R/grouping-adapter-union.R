@@ -872,7 +872,7 @@ expand_margin_union <- function(.data,
                 size <- rlang::expr(length(
                   !!margin_column_pronoun(safe_name(size_col))
                 ))
-                rlang::expr(rep(!!value, !!size))
+                rlang::expr(vctrs::vec_rep(!!value, !!size))
               } else {
                 value
               }
