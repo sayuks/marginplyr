@@ -75,13 +75,19 @@ sent_query_condition_message <- function(cnd) {
       withCallingHandlers(
         conditionMessage(cnd),
         warning = function(cnd) invokeRestart("muffleWarning"),
-        message = function(cnd) invokeRestart("muffleMessage")
+        message = function(cnd) invokeRestart("muffleMessage"),
+        condition = function(cnd) {
+          if (!inherits(cnd, c("error", "interrupt"))) {
+            invokeRestart("sent_query_format_unavailable")
+          }
+        }
       ),
       error = function(cnd) fallback
     ),
     # Bare signals use these local exits rather than a caller's restarts.
     muffleWarning = function() fallback,
-    muffleMessage = function() fallback
+    muffleMessage = function() fallback,
+    sent_query_format_unavailable = function() fallback
   )
   if (!is.character(text) || length(text) != 1L) {
     text <- fallback
@@ -109,8 +115,8 @@ record_sent_query_condition <- function(entry, cnd, phase, handling) {
 }
 
 # Renders an audited row without consuming rlang or lifecycle warning-frequency
-# state. Diagnostic warnings and messages are suppressed; the real operation
-# still owns delivery, including warning conversion under the caller's settings.
+# state. Diagnostic warnings, messages and severity-free conditions stay local;
+# the real operation owns delivery and warning conversion under caller settings.
 render_sent_query_sql <- function(query, entry) {
   # A pending cancellation must see both the saved values and their cleanup;
   # cleanup itself must finish restoring every option before delivery resumes.
@@ -131,13 +137,15 @@ render_sent_query_sql <- function(query, entry) {
           invokeRestart("muffleWarning")
         } else if (inherits(cnd, "error")) {
           record_sent_query_condition(entry, cnd, "render", "handled")
-          invokeRestart("sent_query_render_error")
+          invokeRestart("sent_query_render_unavailable")
         } else if (inherits(cnd, "message")) {
           invokeRestart("muffleMessage")
+        } else {
+          invokeRestart("sent_query_render_unavailable")
         }
       }
     ),
-    sent_query_render_error = function() NA_character_,
+    sent_query_render_unavailable = function() NA_character_,
     # Bare signals end only this render, never a caller's condition handler.
     muffleWarning = function() NA_character_,
     muffleMessage = function() NA_character_
