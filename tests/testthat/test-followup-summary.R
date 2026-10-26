@@ -553,7 +553,7 @@ test_that("share selection prediction leaves caller bindings to evaluation", {
   }
 })
 
-test_that("share prediction does not force caller promises or active bindings", {
+test_that("share prediction leaves caller promises and active bindings alone", {
   for (active in c(FALSE, TRUE)) {
     ready <- FALSE
     caller <- rlang::env(rlang::current_env())
