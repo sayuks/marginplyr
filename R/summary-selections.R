@@ -833,24 +833,29 @@ plan_summary_expressions <- function(dots,
 # Whether a selection names only known columns without running caller code.
 # This recognizes the literal forms shared by local name prediction and share
 # dependency planning; other selections stay with their ordinary resolver.
-is_literal_summary_selection <- function(cols, available) {
+is_literal_summary_selection <- function(cols, available, allow_names = TRUE) {
   cols <- unwrap_injected_quosure(cols)
   if (rlang::is_missing(cols)) {
     return(FALSE)
   }
+  if (is.character(cols)) {
+    return(all(cols %in% available))
+  }
   if (rlang::is_symbol(cols)) {
-    return(rlang::as_string(cols) %in% available)
+    return(allow_names && rlang::as_string(cols) %in% available)
   }
-  if (rlang::is_call(cols, "c")) {
+  if (rlang::is_call(cols, c("c", "("))) {
     parts <- as.list(cols)[-1L]
-    return(
-      all(vapply(parts, is_name_part, logical(1))) &&
-        all(vapply(parts, rlang::as_string, character(1)) %in% available)
-    )
+    return(all(vapply(
+      parts, is_literal_summary_selection, logical(1),
+      available = available, allow_names = allow_names
+    )))
   }
-  if (identical(static_call_name(cols), "all_of") &&
-        length(cols) == 2L && is.character(cols[[2L]])) {
-    return(all(cols[[2L]] %in% available))
+  if (allow_names && identical(static_call_name(cols), "all_of") &&
+        length(cols) == 2L) {
+    return(is_literal_summary_selection(
+      cols[[2L]], available, allow_names = FALSE
+    ))
   }
   FALSE
 }

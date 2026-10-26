@@ -134,45 +134,50 @@ test_that("DuckDB construction preserves the first across naming failure", {
 })
 
 test_that("unrelated local shares leave first naming in its dplyr context", {
-  run <- function(mode) {
+  run <- function(share = NULL, ordinary = FALSE) {
     reads <- 0L
     template <- function() {
       reads <<- reads + 1L
       paste0("out_", dplyr::n())
     }
     data <- tibble::tibble(x = 1:2)
-    result <- switch(mode,
-      ordinary = dplyr::summarise(
-        data, dplyr::across(x, sum, .names = template()), total = sum(x)
-      ),
-      margin = summarize_with_margins(
-        data, dplyr::across(x, sum, .names = template()), total = sum(x)
-      ),
-      share = summarize_with_margins(
-        data, dplyr::across(x, sum, .names = template()), total = sum(x),
-        p = share_of_total(total)
-      ),
-      across_share = summarize_with_margins(
-        data, dplyr::across(x, sum, .names = template()), total = sum(x),
-        dplyr::across(total, share_of_total, .names = "p")
-      ),
-      across_many = summarize_with_margins(
-        data, dplyr::across(x, sum, .names = template()), total = sum(x),
-        extra = sum(x),
-        dplyr::across(c(total, extra), share_of_total, .names = "{.col}_p")
-      ),
-      across_strings = summarize_with_margins(
-        data, dplyr::across(x, sum, .names = template()), total = sum(x),
-        dplyr::across(dplyr::all_of("total"), share_of_total, .names = "p")
+    shares <- if (is.null(share)) list() else share
+    result <- if (ordinary) {
+      dplyr::summarise(
+        data, dplyr::across(x, sum, .names = template()),
+        total = sum(x), extra = sum(x)
       )
-    )
+    } else {
+      summarize_with_margins(
+        data, dplyr::across(x, sum, .names = template()),
+        total = sum(x), extra = sum(x), !!!shares
+      )
+    }
     list(result = result, reads = reads)
   }
-  baseline <- run("ordinary")
+  baseline <- run(ordinary = TRUE)
   expect_identical(baseline$reads, 1L)
-  for (mode in c("margin", "share", "across_share", "across_many",
-                 "across_strings")) {
-    actual <- run(mode)
+  shares <- list(
+    NULL,
+    rlang::quos(p = share_of_total(total)),
+    rlang::quos(dplyr::across(total, share_of_total, .names = "p")),
+    rlang::quos(dplyr::across("total", share_of_total, .names = "p")),
+    rlang::quos(dplyr::across(c("total"), share_of_total, .names = "p")),
+    rlang::quos(dplyr::across(
+      c(total, extra), share_of_total, .names = "{.col}_p"
+    )),
+    rlang::quos(dplyr::across(
+      dplyr::all_of("total"), share_of_total, .names = "p"
+    )),
+    rlang::quos(dplyr::across(
+      dplyr::all_of(c("total")), share_of_total, .names = "p"
+    )),
+    rlang::quos(dplyr::across(
+      !!rlang::parse_expr("((total))"), share_of_total, .names = "p"
+    ))
+  )
+  for (share in shares) {
+    actual <- run(share)
     expect_identical(actual$reads, baseline$reads)
     expect_identical(actual$result[names(baseline$result)], baseline$result)
   }
