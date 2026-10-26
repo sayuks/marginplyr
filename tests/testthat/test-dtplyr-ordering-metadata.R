@@ -56,23 +56,24 @@ ordering_metadata_cases <- function(immutable, predicate) {
   root <- dtplyr::lazy_dt(source, immutable = immutable)
   steps <- list(
     filter = root,
-    select = dplyr::select(root, g, value, day, category),
-    rename = dplyr::rename(root, renamed = category),
-    relocate = dplyr::relocate(root, category),
-    mutate = dplyr::mutate(root, doubled = value * 2L),
+    select = dplyr::select(root,
+                           dplyr::all_of(c("g", "value", "day", "category"))),
+    rename = dplyr::rename(root, renamed = "category"),
+    relocate = dplyr::relocate(root, "category"),
+    mutate = dplyr::mutate(root, doubled = .data$value * 2L),
     join = dplyr::left_join(
       dtplyr::lazy_dt(left, immutable = immutable),
       dplyr::filter(dtplyr::lazy_dt(right, immutable = immutable),
-                    predicate(weight)), by = "g"
+                    predicate(.data$weight)), by = "g"
     )
   )
   list(
     sources = list(source, left, right),
-    steps = lapply(steps, function(x) dplyr::filter(x, predicate(value)))
+    steps = lapply(steps, function(x) dplyr::filter(x, predicate(.data$value)))
   )
 }
 
-test_that("sorted derivations expose faithful typed metadata without row work", {
+test_that("sorted derivations expose faithful metadata without row work", {
   skip_if_suggest_absent("dtplyr")
   seen <- integer()
   probe <- function(x) {
