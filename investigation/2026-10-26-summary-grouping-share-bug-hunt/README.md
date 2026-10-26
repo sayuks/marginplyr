@@ -52,12 +52,12 @@ identified.
 
 | Probe | Priority | Finding | Ticket |
 | --- | --- | --- | --- |
-| F1 | P2 | Qualified arithmetic selects the wrong fixed key | Pending publication |
-| F2 | P2 | Parenthesized `across()` changes per-group evaluation | Pending publication |
-| F3 | P2 | A failed `.names` expression is retried and its error disappears | Pending publication |
-| F4 | P2 | Adding a share removes an ordinary selector's summary context | Pending publication |
-| F5 | P2 | Explicit mask lookup bypasses share dependency validation | Pending publication |
-| F6 | P3 | A non-specification external binding is read twice | Pending publication |
+| F1 | P2 | Qualified arithmetic selects the wrong fixed key | [#868](https://github.com/sayuks/marginplyr/issues/868) |
+| F2 | P2 | Parenthesized `across()` changes per-group evaluation | [#869](https://github.com/sayuks/marginplyr/issues/869) |
+| F3 | P2 | A failed `.names` expression is retried and its error disappears | [#870](https://github.com/sayuks/marginplyr/issues/870) |
+| F4 | P2 | Adding a share removes an ordinary selector's summary context | [#871](https://github.com/sayuks/marginplyr/issues/871) |
+| F5 | P2 | Explicit mask lookup bypasses share dependency validation | [#872](https://github.com/sayuks/marginplyr/issues/872) |
+| F6 | P3 | A non-specification external binding is read twice | [#873](https://github.com/sayuks/marginplyr/issues/873) |
 
 ### F1: Qualified arithmetic selected the wrong fixed key
 
