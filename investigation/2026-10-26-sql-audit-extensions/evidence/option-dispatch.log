@@ -1,0 +1,19 @@
+$control
+$control$classes
+[1] "tbl_df"     "tbl"        "data.frame"
+
+$control$message
+NULL
+
+
+$actual
+$actual$classes
+[1] "simpleError" "error"       "condition"
+
+$actual$message
+[1] "audit option method ran"
+
+
+Error in main() : !inherits(actual, "condition") is not TRUE
+Calls: main -> stopifnot
+Execution halted
