@@ -19,6 +19,13 @@ independent randomized models described below.
 | 4 | SQLite could collect an identifier named `.data`, but could not materialize it. | Quoted public names in the owned SQLite materializer. |
 | 5 | The reference promised dplyr-equivalent predicates on typed lazy inputs, but value predicates selected a different plan. | Document the metadata-only limit of lazy selection predicates. |
 
+The findings were filed as [#860](https://github.com/sayuks/marginplyr/issues/860),
+[#861](https://github.com/sayuks/marginplyr/issues/861),
+[#862](https://github.com/sayuks/marginplyr/issues/862),
+[#863](https://github.com/sayuks/marginplyr/issues/863), and
+[#864](https://github.com/sayuks/marginplyr/issues/864), respectively. Each received
+`ready-for-agent`; all five could start independently, with no blocking edges.
+
 Each boundary was independently verifiable and had no blocking dependency on
 another. No package implementation, generated documentation, or test-suite
 source was changed. The accompanying script was investigation evidence,
