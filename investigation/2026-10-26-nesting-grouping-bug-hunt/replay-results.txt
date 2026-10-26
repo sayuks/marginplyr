@@ -1,0 +1,87 @@
+Dated replay evidence: 2026-10-26
+Audited package snapshot: 6b91254016dbcce60cc2cc69071f01f69eb8084e
+Console excerpts below normalize trailing whitespace only.
+Expected exit: 0 except reproduce-rows.R (1, confirmed defect).
+
+$ Rscript investigation/2026-10-26-nesting-grouping-bug-hunt/grouping-algebra.R
+passed 250
+passed 500
+passed 750
+passed 1000
+passed 1250
+passed 1500
+
+$ Rscript investigation/2026-10-26-nesting-grouping-bug-hunt/grouping-grammar.R
+Passed grammar and ambiguity combinations: 550
+
+$ Rscript investigation/2026-10-26-nesting-grouping-bug-hunt/local-membership.R
+CHECKS 1422
+
+$ Rscript investigation/2026-10-26-nesting-grouping-bug-hunt/backend-differential.R
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+cases 324 failures 0
+
+$ Rscript investigation/2026-10-26-nesting-grouping-bug-hunt/backend-contracts.R
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+PASS SQL sqlite nest refusals 2 with 0 queries; name-only plus typed inspection total queries 0
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+PASS SQL duckdb nest refusals 2 with 0 queries; name-only plus typed inspection total queries 2
+PASS Arrow reader graph direct inspection 2; nesting refusals 2; complete reader retained
+PASS Arrow reader graph wrapped inspection 2; nesting refusals 2; complete reader retained
+PASS Arrow reader graph join-right inspection 2; nesting refusals 2; complete reader retained
+PASS Arrow reader graph union-right inspection 2; nesting refusals 2; complete reader retained
+# A tibble: 2 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (g)      ()      g=0                     0
+2      2 ()    ()       (g)     g=1                     1
+PASS dtplyr source execution: predicate calls 0 before collection, 2 after; unsafe transformation calls 0 across 2 refusals
+PASS mutable dtplyr graph root typed inspection 1; nesting refusals 2; roots unchanged
+PASS mutable dtplyr graph filter typed inspection 1; nesting refusals 2; roots unchanged
+PASS mutable dtplyr graph select typed inspection 1; nesting refusals 2; roots unchanged
+PASS mutable dtplyr graph join typed inspection 1; nesting refusals 2; roots unchanged
+PASS mutable dtplyr graph union typed inspection 1; nesting refusals 2; roots unchanged
+
+$ Rscript investigation/2026-10-26-nesting-grouping-bug-hunt/rows-boundaries.R
+ backend                 verb      role failed
+  dtplyr nest_by_with_margins dimension      8
+   local nest_by_with_margins dimension      8
+  dtplyr    nest_with_margins dimension      0
+   local    nest_with_margins dimension      8
+  dtplyr nest_by_with_margins     fixed      8
+   local nest_by_with_margins     fixed      8
+  dtplyr    nest_with_margins     fixed      0
+   local    nest_with_margins     fixed      8
+  dtplyr nest_by_with_margins        id      8
+   local nest_by_with_margins        id      8
+  dtplyr    nest_with_margins        id      0
+   local    nest_with_margins        id      8
+  dtplyr nest_by_with_margins       key      0
+   local nest_by_with_margins       key      0
+  dtplyr    nest_with_margins       key      0
+   local    nest_with_margins       key      0
+  dtplyr nest_by_with_margins   payload      0
+   local nest_by_with_margins   payload      0
+  dtplyr    nest_with_margins   payload      0
+   local    nest_with_margins   payload      0
+Observed 160 calls; list-column-name and payload controls all passed.
+
+$ Rscript investigation/2026-10-26-nesting-grouping-bug-hunt/reproduce-rows.R
+ℹ In argument: `dplyr::all_of(unname(identity_cols))`.
+Caused by error in `dplyr::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..marginplyr_nest_1` doesn't exist.
+Error: Confirmed .rows nesting failure; safely named control passed.
+Execution halted
