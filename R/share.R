@@ -1531,7 +1531,7 @@ unwritable_name <- function(value) {
 
 # Whether each share names one preceding explicitly named summary, directly
 # or through a bare-name across selection. Neither needs the first unnamed
-# selection's outputs for planning. The caller supplies preflighted share syntax.
+# selection's outputs for planning. The caller supplies preflighted syntax.
 shares_use_named_summaries <- function(dots) {
   preceding <- character()
   for (i in seq_along(dots)) {
