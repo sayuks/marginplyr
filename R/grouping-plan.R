@@ -663,7 +663,7 @@ grouping_name_proxy <- function(data_vars) {
 
 # The only site that reads a nested argument. It answers with the
 # specification, whether names alone settle the plan, and one record per
-# argument: `quo` is the caller's quosure and `nested` is this function's
+# argument: `quo` is the selection quosure and `nested` is this function's
 # answer for it, a preflight of the same shape for a nested specification and
 # `NULL` for a column selection. Expansion below reads that answer instead of
 # taking one, which is what holds a recognized argument to one evaluation
@@ -706,15 +706,17 @@ preflight_grouping_spec <- function(grouping_spec,
     if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
-    nested <- grouping_arg_spec(arg, data_vars)
-    if (is.null(nested)) {
+    reading <- read_grouping_arg(arg, data_vars)
+    if (is.null(reading$nested)) {
       check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
       name_only <- name_only && is_name_only_selection(arg, data_vars)
-      args[[i]] <- list(quo = arg, nested = NULL)
+      args[[i]] <- reading
       next
     }
 
-    nested_preflight <- preflight_grouping_spec(nested, data_vars, ancestors)
+    nested_preflight <- preflight_grouping_spec(
+      reading$nested, data_vars, ancestors
+    )
     rule$validate_nested(grouping_spec, nested_preflight$spec)
     name_only <- name_only && nested_preflight$name_only
     args[[i]] <- list(quo = arg, nested = nested_preflight)
@@ -1278,72 +1280,43 @@ grouping_constructor_names <- function() {
   ))
 }
 
-# The specification a nested argument is, or `NULL` where it is a column
-# selection. Every caller holds that `arg` carries an expression rather than R's
-# empty argument, wrapped in parentheses or not: `preflight_grouping_spec()`
-# refuses one (#261), and the restart below cannot make one, because
-# `is_parenthesized()` answers `FALSE` for the pair that would hold it. That is
-# what lets the local hold what the quosure carries without the missing marker
-# reaching it.
-grouping_arg_spec <- function(arg, data_vars) {
-  expr <- rlang::quo_get_expr(arg)
-  # A redundantly parenthesized argument is read as the argument it wraps, as
-  # it is wherever a reading is taken from `R/utils.R`'s readers (#178,
-  # ADR 0019). The tests below take none: they ask `is.symbol()` and
-  # `is.language()` about the caller's own expression, so this site restarts on
-  # what the pair wraps rather than inheriting the reading (#259).
-  #
-  # By restart rather than by rebinding `expr`, which is the rule `R/utils.R`
-  # states and `static_spelling_reference_name()` follows: what a pair wraps
-  # may be R's empty argument, and binding the missing marker raises
-  # `missingArgError` on the next read of it (#168, #174). `is_parenthesized()`
-  # answers `FALSE` for a constructed pair holding one, so the restart cannot
-  # repeat.
-  if (is_parenthesized(expr)) {
-    return(grouping_arg_spec(
-      rlang::new_quosure(nested_arg_expr(arg), rlang::quo_get_env(arg)),
-      data_vars
-    ))
-  }
+# Reads a nonempty nested argument into a specification or a selection quosure.
+# A name outside the input can yield an ordinary selection; its preflight value
+# stays in that argument's environment for the typed pass (ADR 0008, #873).
+read_grouping_arg <- function(arg, data_vars) {
+  expr <- nested_arg_expr(arg)
+  env <- rlang::quo_get_env(arg)
+  selection <- list(quo = arg, nested = NULL)
   if (
     is.symbol(expr) &&
-      is_name_only_expr(
-        expr,
-        env = rlang::quo_get_env(arg),
-        data_vars = data_vars
-      )
+      is_name_only_expr(expr, env = env, data_vars = data_vars)
   ) {
-    return(NULL)
+    return(selection)
   }
 
-  # The spelling gates evaluation and nothing else: a nested argument is
-  # ambiguous between a tidyselect selection and a nested specification, and
-  # evaluating every nested call would run `starts_with("re")` outside a
-  # selection context. What runs once the gate opens is whatever the name is
-  # bound to, so a constructor is not a Contextual helper even though it is
-  # read statically (ADR 0019).
-  #
-  # It is not the only thing that evaluates a nested argument any more.
-  # `check_ambiguous_nested_name()` reads only names this gate declined, and
-  # only those it declined because the data holds them, in a position admitting
-  # a nested kind (ADR 0026). So no name is read twice, and a reader auditing
-  # when a caller's nested quosure is forced has that read to count as well.
+  # Spelling gates evaluation: selection helpers need a selection context.
+  # Constructor spellings still run the caller's own function (ADR 0019).
+  # Colliding names are read separately by `check_ambiguous_nested_name()`.
   is_constructor_call <-
     !is.null(static_spelling_name(expr, "grouping_constructor"))
-
   should_evaluate <-
     is_constructor_call ||
     is.symbol(expr) ||
     !is.language(expr)
   if (!should_evaluate) {
-    return(NULL)
+    return(selection)
   }
 
-  value <- rlang::eval_tidy(arg)
+  value <- rlang::eval_tidy(rlang::new_quosure(expr, env))
   if (inherits(value, "margin_grouping_spec")) {
-    return(value)
+    return(list(quo = arg, nested = value))
   }
-  NULL
+  if (is.symbol(expr)) {
+    selection_env <- rlang::env(env)
+    rlang::env_bind(selection_env, !!rlang::as_string(expr) := value)
+    selection$quo <- rlang::quo_set_env(arg, selection_env)
+  }
+  selection
 }
 
 # The gate above reads spellings, so a specification a caller's own function

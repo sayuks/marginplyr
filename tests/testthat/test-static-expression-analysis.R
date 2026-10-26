@@ -864,7 +864,7 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
   # Anything that is not a call has no name to read either. That is deliberate
   # and load-bearing rather than incidental: it is what lets a site ask without
   # a guard of its own, which `share_helper_call_kind()`, `is_across_call()`,
-  # `is_name_only_expr()`, and `grouping_arg_spec()` each rely on.
+  # `is_name_only_expr()`, and `read_grouping_arg()` each rely on.
   expect_null(static_call_name(quote(value)))
   expect_null(static_call_ns(quote(value)))
   expect_null(static_call_name(1L))

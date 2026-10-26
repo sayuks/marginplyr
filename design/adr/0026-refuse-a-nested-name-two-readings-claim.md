@@ -211,7 +211,7 @@ move, and it stays.
 
 The count this ADR sets is unchanged — 1 for a colliding name, from 0 — and it
 is now one row of the table in ADR 0008's amendment for a recognized nested
-argument, which is where the counts of all four shapes are written down.
+argument, which is where the counts of these shapes are written down.
 
 ## Documentation consequences
 
