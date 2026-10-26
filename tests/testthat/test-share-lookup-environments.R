@@ -22,7 +22,8 @@ test_that("explicit mask lookups follow both share dependency rules", {
     get("first", pos = 1L, envir = environment()),
     exists("first", where = 1L, envir = environment()),
     get("first", envir = ),
-    get("first", unknown = environment())
+    get("first", unknown = environment()),
+    eval(substitute(get("first", envir = environment()), env = list()))
   )
 
   for (input in list(data, dbplyr::tbl_lazy(data))) {
