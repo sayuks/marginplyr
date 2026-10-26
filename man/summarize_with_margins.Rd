@@ -182,15 +182,31 @@ Consequently, it participates in \code{.margin_label} type conversion and
 collision checks. Use \code{.by} for columns that must always remain fixed, and
 use \code{.grouping} for dimensions that may become totals.
 
-Both are written as column selections, so a selection predicate —
-\code{\link[tidyselect:where]{tidyselect::where()}} and anything written with it — needs the column types
-of the input. Some lazy backends do not report those without a query, and
-marginplyr sends none you did not ask for, so a predicate written against
-one of them is refused rather than answered. Select the columns by name, or
-collect the input first. A Margin operation on collected data defaults
-\code{.check_margin_label} to \code{TRUE} rather than the lazy-input default \code{FALSE},
-so set it explicitly. Local data and the lazy backends whose types are
-available without a query answer a predicate as dplyr does.
+Both accept selection predicates through \code{\link[tidyselect:where]{tidyselect::where()}}. On local
+data frames, a predicate receives the actual columns and can inspect their
+values. On lazy inputs with available typed metadata, it receives columns
+derived from the schema or a zero-row proxy, not the source values. Use
+predicates that depend only on that available metadata, such as
+\code{where(is.character)} to select character columns.
+
+A value-dependent predicate such as \code{where(~ any(.x == "x"))} cannot find
+source values in a zero-row proxy. For example, with a character column
+\code{a = c("x", "y")}, it selects \code{a} locally but selects no column on a dtplyr
+or Arrow input. In \code{.by}, this changes a summary with two fixed partitions
+into one unpartitioned summary; in \code{grouping_set()}, it leaves an empty
+grouping set instead of the dimension \code{a}. Such predicates can silently
+select different columns on lazy inputs; marginplyr does not detect
+arbitrary value-dependent predicates or collect source rows for them.
+
+For selection based on source values, call \code{\link[dplyr:collect]{dplyr::collect()}} explicitly
+and pass the resulting data frame to the Margin verb or \code{\link[=inspect_grouping]{inspect_grouping()}}.
+A Margin operation on collected data defaults \code{.check_margin_label} to
+\code{TRUE} rather than the lazy-input default \code{FALSE}, so set it explicitly.
+
+Some lazy backends cannot supply readable typed metadata under the query
+policy in \emph{When marginplyr queries your data}. A predicate written against
+one of them is refused. Select the columns by name, or collect the input
+first.
 }
 
 \section{Grouped and row-wise inputs}{
@@ -448,10 +464,13 @@ matches and it is written bare or qualified with the package that owns it,
 so \code{dplyr::across()} is the same request as \code{across()} while
 \code{mypkg::across()} is an ordinary call to another package's function.
 
-Redundant parentheses change nothing, because \code{(} is the identity function:
-\code{(pick)(units)} and \code{(pick(units))} are the same request as \code{pick(units)}. A
-head that has to be evaluated to know what it calls is not a spelling at all,
-so \code{get("pick")(units)} is an ordinary call.
+Parentheses do not change helper recognition: \code{(pick)(units)} and
+\code{(pick(units))} still name \code{pick()}. They can change dplyr's evaluation
+context. An ordinary \code{across()} with parentheses around its head or whole
+call retains per-group evaluation, including a function factory in \code{.fns},
+rather than taking the expansion path of an unnamed top-level \code{across()}.
+A head that has to be evaluated to know what it calls is not a spelling at
+all, so \code{get("pick")(units)} is an ordinary call.
 
 Every other name follows ordinary lookup, \code{\link[dplyr:n]{dplyr::n()}} included, and so do
 the Grouping specification constructors: a nested \code{rollup(region)} is

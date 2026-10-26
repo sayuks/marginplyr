@@ -253,9 +253,9 @@ recognized without being written down twice. This module therefore reads two
 deep modules as well as `R/utils.R`, and both of those two read it back;
 stated baldly that is a cycle, and what keeps it from being one in practice is
 that every entry in the table is a function, so a family lookup evaluates that
-family's owner and no other. `R/utils.R` reads only the operation-ownership
-families through `independent_mask_call_parts()`; it does not evaluate the
-share family.
+family's owner and no other. `R/utils.R` reads the operation-ownership
+families through `independent_mask_call_parts()` and the selection family
+when rebuilding calls; it does not evaluate the share family.
 
 That is the property worth checking rather than the layering, because the
 layering alone would not say which module reaches which. Under it, the only

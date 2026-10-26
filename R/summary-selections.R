@@ -783,9 +783,16 @@ plan_summary_expressions <- function(dots,
         later <- Filter(function(record) record$position > i,
                         summary_plan$cardinality)
         lapply(later, function(record) {
-          record$symbols <- expression_data_symbols(
-            rlang::quo_get_expr(summary_plan$dots[[record$position]])
-          )
+          source <- summary_plan$dots[[record$position]]
+          expr <- rlang::quo_get_expr(source)
+          record$symbols <- expression_data_symbols(expr, lookup = list(
+            env = rlang::quo_get_env(source),
+            mask = c(
+              names(selection_proxy),
+              rlang::names2(summary_plan$dots)[seq_len(record$position - 1L)]
+            ),
+            rebound = lookup_rebound_names(expr)
+          ))
           record
         })
       }
@@ -847,6 +854,35 @@ plan_summary_expressions <- function(dots,
   )
 }
 
+# Whether local name prediction can read a selection as known columns.
+# Other selections stay with their ordinary resolver.
+is_literal_summary_selection <- function(cols, available, allow_names = TRUE) {
+  cols <- unwrap_injected_quosure(cols)
+  if (rlang::is_missing(cols)) {
+    return(FALSE)
+  }
+  if (is.character(cols)) {
+    return(all(cols %in% available))
+  }
+  if (rlang::is_symbol(cols)) {
+    return(allow_names && rlang::as_string(cols) %in% available)
+  }
+  if (rlang::is_call(cols, c("c", "("))) {
+    parts <- as.list(cols)[-1L]
+    return(all(vapply(
+      parts, is_literal_summary_selection, logical(1),
+      available = available, allow_names = allow_names
+    )))
+  }
+  if (allow_names && identical(static_call_name(cols), "all_of") &&
+        length(cols) == 2L) {
+    return(is_literal_summary_selection(
+      cols[[2L]], available, allow_names = FALSE
+    ))
+  }
+  FALSE
+}
+
 # Names an unnamed local `across()` only when both its columns and `.names`
 # template are literal. The input is a name list, so no caller function or
 # summary expression runs while reserving internal key names.
@@ -862,18 +898,7 @@ predictable_local_across_names <- function(dots, input_names) {
       parsed <- parse_across_arguments(expr)
       cols <- parsed$cols
       template <- parsed$names
-      simple_cols <- if (rlang::is_symbol(cols)) {
-        rlang::as_string(cols) %in% available
-      } else if (rlang::is_call(cols, "c")) {
-        parts <- as.list(cols)[-1L]
-        all(vapply(parts, rlang::is_symbol, logical(1))) &&
-          all(vapply(parts, rlang::as_string, character(1)) %in% available)
-      } else if (identical(static_call_name(cols), "all_of") &&
-                   length(cols) == 2L && is.character(cols[[2L]])) {
-        all(cols[[2L]] %in% available)
-      } else {
-        FALSE
-      }
+      simple_cols <- is_literal_summary_selection(cols, available)
       literal_template <- is.null(template) || (
         is.character(template) && length(template) == 1L &&
           !is.na(template) &&
@@ -1289,18 +1314,9 @@ rewrite_across_selection <- function(expr,
   if (identical(call_name, "across")) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
     if (!is.null(parsed$names)) {
-      # A template that does not evaluate is left as the caller wrote it, so
-      # dplyr raises the condition their own argument produces rather than this
-      # frame raising it first (ADR 0015). The two reads of `.names` and
-      # `.unpack` above answer a failure the same way, with the value they use
-      # when the argument is absent; here the value is the argument itself.
-      template <- tryCatch(
-        list(rlang::eval_tidy(parsed$names, env = env)),
-        error = function(cnd) NULL
+      call_args[parsed$names_index] <- list(
+        rlang::eval_tidy(parsed$names, env = env)
       )
-      if (!is.null(template)) {
-        call_args[[parsed$names_index]] <- template[[1L]]
-      }
     }
   }
 
@@ -1581,10 +1597,7 @@ known_across_output_names <- function(expr, env, data_proxy) {
     }
     return(character())
   }
-  names_template <- tryCatch(
-    rlang::eval_tidy(parsed$names, env = env),
-    error = function(cnd) NULL
-  )
+  names_template <- rlang::eval_tidy(parsed$names, env = env)
   if (
     !is.character(names_template) ||
       length(names_template) != 1L ||
@@ -1624,13 +1637,7 @@ expand_across_name <- function(template, column, function_name, env) {
   ))
 }
 
-# The expansion names one output per selected column, so a template that
-# expands to any other number is one `across()` will reject too. That is what
-# separates this from the `character()` the caller above returns: there the
-# template could not be evaluated at all and the analysis simply does not
-# know the names, whereas here it knows them and knows they are wrong. Saying
-# so here reaches the caller before the summary is staged, rather than as a
-# size error out of the query built from it (ADR-0005).
+# Require one expanded name per selected column before staging the summary.
 check_across_name_count <- function(expanded, template, column) {
   if (length(expanded) == 1L) {
     return(expanded)

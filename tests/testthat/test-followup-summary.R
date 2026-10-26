@@ -1139,3 +1139,33 @@ test_that("changing dynamic unpack still checks packed output names", {
   expect_false(grepl("local_checked_glue_name",
                      conditionMessage(string_collision), fixed = TRUE))
 })
+
+test_that("deferred source checks preserve external lookup environments", {
+  outside <- rlang::env(first = 10)
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  for (share in rlang::quos(share_of_total(total), share_of_parent(total))) {
+    ordinary <- rlang::quos(dplyr::across(
+      dplyr::all_of(if (dplyr::n() == 0L) "x" else character()),
+      sum, .names = "first"
+    ))
+    for (lookup in rlang::quos(
+      get("first", envir = outside), get("first", envir = .env$outside)
+    )) {
+      actual <- summarize_with_margins(
+        data, !!!ordinary, total = sum(x) + !!lookup,
+        p = !!share, .grouping = rollup(g)
+      )
+      expect_identical(actual$first, c(1L, 2L, 3L))
+      expect_equal(actual$total, c(11, 12, 13))
+      expect_equal(actual$p, c(11 / 13, 12 / 13, 1))
+    }
+    expect_error(
+      summarize_with_margins(
+        data, !!!ordinary,
+        total = get("first", envir = environment()),
+        p = !!share, .grouping = rollup(g)
+      ),
+      "depends on earlier summary alias `first`", class = "marginplyr_error"
+    )
+  }
+})

@@ -375,7 +375,7 @@ nameable_call <- function(expr) {
   if (identical(spelled, head)) {
     return(unwrapped)
   }
-  rebuild_static_call(unwrapped, static_call_args(unwrapped), head = spelled)
+  rlang::call2(spelled, !!!static_call_args(unwrapped))
 }
 
 # The three readers below read through redundant parentheses, so
@@ -691,6 +691,12 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)
+  # dplyr expands an unnamed top-level across(). Keep a parenthesized call
+  # on its per-group evaluation path even when its head is qualified (ADR 0019).
+  if (identical(static_spelling_name(expr, "selection"), "across") &&
+        (is_parenthesized(expr) || is_parenthesized(static_call_head(expr)))) {
+    return(rlang::call2("(", rebuilt))
+  }
   rebuilt
 }
 
@@ -734,9 +740,8 @@ call_formal_index <- function(args, formal, positional = TRUE) {
 
 # Whether a call supplies an argument beyond the one it takes in `formal`,
 # either by naming one of `other_names` or by leaving one more argument unnamed
-# than `formal` accounts for. Both primitives that ask this ask it about an
-# environment: `get()` and its siblings search the one they are given instead of
-# the mask, and `substitute()` substitutes from it.
+# than `formal` accounts for. Language recovery uses this to recognize an
+# explicit substitution environment.
 call_supplies_other_argument <- function(expr, formal, other_names) {
   args <- static_call_args(expr)
   arg_names <- argument_names(args)

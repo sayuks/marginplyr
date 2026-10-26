@@ -138,15 +138,31 @@
 #' collision checks. Use `.by` for columns that must always remain fixed, and
 #' use `.grouping` for dimensions that may become totals.
 #'
-#' Both are written as column selections, so a selection predicate —
-#' [tidyselect::where()] and anything written with it — needs the column types
-#' of the input. Some lazy backends do not report those without a query, and
-#' marginplyr sends none you did not ask for, so a predicate written against
-#' one of them is refused rather than answered. Select the columns by name, or
-#' collect the input first. A Margin operation on collected data defaults
-#' `.check_margin_label` to `TRUE` rather than the lazy-input default `FALSE`,
-#' so set it explicitly. Local data and the lazy backends whose types are
-#' available without a query answer a predicate as dplyr does.
+#' Both accept selection predicates through [tidyselect::where()]. On local
+#' data frames, a predicate receives the actual columns and can inspect their
+#' values. On lazy inputs with available typed metadata, it receives columns
+#' derived from the schema or a zero-row proxy, not the source values. Use
+#' predicates that depend only on that available metadata, such as
+#' `where(is.character)` to select character columns.
+#'
+#' A value-dependent predicate such as `where(~ any(.x == "x"))` cannot find
+#' source values in a zero-row proxy. For example, with a character column
+#' `a = c("x", "y")`, it selects `a` locally but selects no column on a dtplyr
+#' or Arrow input. In `.by`, this changes a summary with two fixed partitions
+#' into one unpartitioned summary; in `grouping_set()`, it leaves an empty
+#' grouping set instead of the dimension `a`. Such predicates can silently
+#' select different columns on lazy inputs; marginplyr does not detect
+#' arbitrary value-dependent predicates or collect source rows for them.
+#'
+#' For selection based on source values, call [dplyr::collect()] explicitly
+#' and pass the resulting data frame to the Margin verb or [inspect_grouping()].
+#' A Margin operation on collected data defaults `.check_margin_label` to
+#' `TRUE` rather than the lazy-input default `FALSE`, so set it explicitly.
+#'
+#' Some lazy backends cannot supply readable typed metadata under the query
+#' policy in *When marginplyr queries your data*. A predicate written against
+#' one of them is refused. Select the columns by name, or collect the input
+#' first.
 #'
 #' @section Grouped and row-wise inputs:
 #' When `.data` has been grouped with [dplyr::group_by()] and `.by` is `NULL`,
@@ -398,10 +414,13 @@
 #' so `dplyr::across()` is the same request as `across()` while
 #' `mypkg::across()` is an ordinary call to another package's function.
 #'
-#' Redundant parentheses change nothing, because `(` is the identity function:
-#' `(pick)(units)` and `(pick(units))` are the same request as `pick(units)`. A
-#' head that has to be evaluated to know what it calls is not a spelling at all,
-#' so `get("pick")(units)` is an ordinary call.
+#' Parentheses do not change helper recognition: `(pick)(units)` and
+#' `(pick(units))` still name `pick()`. They can change dplyr's evaluation
+#' context. An ordinary `across()` with parentheses around its head or whole
+#' call retains per-group evaluation, including a function factory in `.fns`,
+#' rather than taking the expansion path of an unnamed top-level `across()`.
+#' A head that has to be evaluated to know what it calls is not a spelling at
+#' all, so `get("pick")(units)` is an ordinary call.
 #'
 #' Every other name follows ordinary lookup, [dplyr::n()] included, and so do
 #' the Grouping specification constructors: a nested `rollup(region)` is

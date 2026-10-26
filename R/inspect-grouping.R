@@ -60,7 +60,12 @@
 #'
 #' A lazy `.data` still returns a local tibble without reading source rows:
 #' inspection uses captured column metadata and the backend-independent
-#' Grouping plan. A derived dtplyr step whose typed metadata cannot be
+#' Grouping plan. Predicates in `.by` and `.grouping` use that metadata, not
+#' source values; collect explicitly before inspecting a plan whose selections
+#' depend on values. See
+#' *[Fixed columns and grouping dimensions][summarize_with_margins]* for
+#' type-based and value-dependent examples.
+#' A derived dtplyr step whose typed metadata cannot be
 #' established without processing source rows is refused when inspection needs
 #' those types. Name-only inspection does not need that read. To inspect such a
 #' step with typed selections, call [dplyr::collect()] on it explicitly and
