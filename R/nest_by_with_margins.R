@@ -17,6 +17,11 @@
 #'   `"data"`; this follows [dplyr::nest_by()].
 #' @details A `dtplyr` result is collected before it is made row-wise because
 #'   row-wise data frames are local objects.
+#'
+#'   dplyr reserves `.rows` in row-wise grouping metadata. A fixed `.by` key,
+#'   grouping dimension, or `.id` named `.rows` is therefore refused before
+#'   nesting. Rename that outer key or use [nest_with_margins()] for an
+#'   ungrouped result. A payload column or `.key` named `.rows` is supported.
 #' @return A row-wise data frame grouped by the visible grouping columns and
 #'   `.id` when supplied. This is the return shape whatever the class of
 #'   `.data`, because a row-wise data frame is always a tibble subclass; see
@@ -132,7 +137,8 @@ nest_by_with_margins <- function(.data,
     .id = .id,
     .key = .key,
     .keep = .keep,
-    call = call
+    call = call,
+    rowwise = TRUE
   )
 
   .id <- unname(.id)
