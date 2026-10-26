@@ -3905,7 +3905,9 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
     return(character())
   }
   symbols <- unique(expression_data_symbols(
-    expr, lookup = list(env = env, mask = c(mask, lookup_rebound_names(expr)))
+    expr, lookup = list(
+      env = env, mask = mask, rebound = lookup_rebound_names(expr)
+    )
   ))
   if (unresolved_lookup_name() %in% symbols) {
     return(aliases)
@@ -3915,7 +3917,8 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
 
 # Names that may be rebound while the expression runs. Unlike the walk's
 # definite `bound` set, conditional assignments also prevent a lexical
-# environment value from proving an external lookup.
+# environment value from proving an external lookup. An unresolved reflective
+# assignment reports the lookup marker, excluding every lexical binding.
 lookup_rebound_names <- function(expr) {
   if (!rlang::is_call(expr)) {
     return(character())
@@ -3929,6 +3932,16 @@ lookup_rebound_names <- function(expr) {
     rlang::as_name(expr[[2L]])
   } else {
     character()
+  }
+  if (!is.null(name) &&
+        name %in% c("assign", "delayedAssign", "makeActiveBinding")) {
+    formal <- if (name == "makeActiveBinding") "sym" else "x"
+    assigned <- unlist(lapply(
+      call_formal_argument(expr, formal), static_character_value
+    ), use.names = FALSE)
+    if (is.null(assigned)) {
+      assigned <- unresolved_lookup_name()
+    }
   }
   parts <- evaluated_call_args(expr)
   head <- static_call_head(expr)
@@ -3954,8 +3967,8 @@ lookup_rebound_names <- function(expr) {
 # column read; `{` binds nothing of its own but carries what its statements
 # bind to the statements after them. `local()` needs no case at all: it binds
 # nothing either, and whichever of these its argument is answers it (#162).
-# `lookup` carries the captured environment and known mask names; a quosure
-# supplies its own environment without changing which names the mask shadows.
+# `lookup` carries the captured environment, mask names, and rebindings.
+# A quosure supplies its own environment without changing the latter two.
 expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
   if (rlang::is_quosure(expr)) {
     lookup$env <- rlang::quo_get_env(expr)
@@ -4401,8 +4414,12 @@ lookup_environment_is_external <- function(expr, bound, lookup) {
   if (is.environment(expr)) {
     return(TRUE)
   }
+  if (unresolved_lookup_name() %in% lookup$rebound) {
+    return(FALSE)
+  }
   if (rlang::is_call(expr, c("$", "[["), n = 2L) &&
-        rlang::is_symbol(expr[[2L]], ".env") && !".env" %in% bound) {
+        rlang::is_symbol(expr[[2L]], ".env") &&
+        !".env" %in% c(bound, lookup$rebound)) {
     name <- if (rlang::is_call(expr, "$") && is_name_part(expr[[3L]])) {
       rlang::as_name(expr[[3L]])
     } else {
@@ -4411,7 +4428,7 @@ lookup_environment_is_external <- function(expr, bound, lookup) {
     if (!is.null(name) && length(name) == 1L && !is.null(lookup)) {
       return(lookup_environment_is_external(
         rlang::sym(name), character(),
-        list(env = lookup$env, mask = character())
+        list(env = lookup$env, mask = character(), rebound = lookup$rebound)
       ))
     }
   }
@@ -4419,7 +4436,7 @@ lookup_environment_is_external <- function(expr, bound, lookup) {
     return(FALSE)
   }
   name <- rlang::as_name(expr)
-  if (is.null(lookup) || name %in% c(bound, lookup$mask)) {
+  if (is.null(lookup) || name %in% c(bound, lookup$mask, lookup$rebound)) {
     return(FALSE)
   }
   current <- lookup$env

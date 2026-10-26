@@ -26,6 +26,45 @@ test_that("explicit mask lookups follow both share dependency rules", {
     eval(substitute(get("first", envir = environment()), env = list()))
   )
 
+  rebound <- alist(
+    {
+      if (length(value) > 0L) .env <- list(outside = environment())
+      get("first", envir = .env$outside)
+    },
+    {
+      if (length(value) > 0L) .env <- list(outside = environment())
+      get("first", envir = .env[["outside"]])
+    },
+    {
+      assign("outside", environment())
+      get("first", envir = outside)
+    },
+    {
+      assign(paste0("out", "side"), environment())
+      get("first", envir = outside)
+    },
+    {
+      assign("outside", environment(), envir = .env)
+      get("first", envir = .env$outside)
+    },
+    {
+      delayedAssign("outside", environment())
+      get("first", envir = outside)
+    },
+    {
+      makeActiveBinding("outside", function() environment(), environment())
+      get("first", envir = outside)
+    },
+    {
+      assign(".env", list(outside = environment()))
+      get("first", envir = .env$outside)
+    }
+  )
+  lookups <- c(lookups, lapply(
+    rebound, rlang::new_quosure,
+    env = rlang::env(outside = rlang::env(first = 10))
+  ))
+
   for (input in list(data, dbplyr::tbl_lazy(data))) {
     for (kind in c("parent", "total")) {
       source_share <- rlang::call2(paste0("share_of_", kind), quote(total))
@@ -114,6 +153,19 @@ test_that("actual external environments remain independent of shares", {
       expect_s3_class(lazy, "tbl_lazy")
     }
   }
+})
+
+test_that(".env selects an external environment shadowed by a column", {
+  outside <- rlang::env(first = 10)
+  data <- data.frame(group = c("x", "y"), value = c(20, 60), outside = 1:2)
+  result <- summarize_with_margins(
+    data,
+    total = sum(value),
+    first = share_of_total(total),
+    derived = get("first", envir = .env$outside),
+    .grouping = rollup(group)
+  )
+  expect_equal(result$derived, c(10, 10, 10))
 })
 
 test_that("unresolved lookup environments never run caller code in planning", {
