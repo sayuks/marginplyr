@@ -109,8 +109,8 @@ record_sent_query_condition <- function(entry, cnd, phase, handling) {
 }
 
 # Renders an audited row without consuming rlang or lifecycle warning-frequency
-# state. Diagnostic warnings are suppressed; the real operation still owns
-# warning delivery, including conversion to error under the caller's settings.
+# state. Diagnostic warnings and messages are suppressed; the real operation
+# still owns delivery, including warning conversion under the caller's settings.
 render_sent_query_sql <- function(query, entry) {
   # A pending cancellation must see both the saved values and their cleanup;
   # cleanup itself must finish restoring every option before delivery resumes.
@@ -132,12 +132,15 @@ render_sent_query_sql <- function(query, entry) {
         } else if (inherits(cnd, "error")) {
           record_sent_query_condition(entry, cnd, "render", "handled")
           invokeRestart("sent_query_render_error")
+        } else if (inherits(cnd, "message")) {
+          invokeRestart("muffleMessage")
         }
       }
     ),
     sent_query_render_error = function() NA_character_,
-    # A bare warning ends only this render, never a caller's warning handler.
-    muffleWarning = function() NA_character_
+    # Bare signals end only this render, never a caller's condition handler.
+    muffleWarning = function() NA_character_,
+    muffleMessage = function() NA_character_
   )
 }
 
