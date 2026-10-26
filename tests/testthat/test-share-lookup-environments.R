@@ -71,11 +71,11 @@ test_that("actual external environments remain independent of shares", {
     exists("first", frame = sys.nframe(), envir = outside),
     mget("first", outside, inherits = TRUE)[[1L]]
   )
-  lookups <- c(lookups, list(rlang::expr(get("first", envir = !!outside))))
+  injected <- rlang::expr(get("first", envir = !!outside))
 
   for (kind in c("parent", "total")) {
     source_share <- rlang::call2(paste0("share_of_", kind), quote(total))
-    for (lookup in lookups) {
+    for (lookup in c(lookups, list(injected))) {
       result <- rlang::inject(summarize_with_margins(
         data,
         first = sum(value),
@@ -100,7 +100,8 @@ test_that("actual external environments remain independent of shares", {
       ))
       expect_equal(result$first, c(0.25, 0.75, 1))
       expect_equal(result$derived, rep(if (is_exists) 1 else 10, 3))
-
+    }
+    for (lookup in lookups) {
       lazy <- rlang::inject(summarize_with_margins(
         dbplyr::tbl_lazy(data),
         total = sum(value),
@@ -172,6 +173,10 @@ test_that("mask and local bindings cannot claim an external environment", {
       get("first", envir = parent.env(environment()))
     },
     (function(outside) get("first", envir = outside))(environment()),
+    ({
+      if (length(value) > 0L) outside <- environment()
+      function() get("first", envir = outside)
+    })(),
     {
       for (outside in list(environment())) get("first", envir = outside)
     }

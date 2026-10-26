@@ -3930,8 +3930,13 @@ lookup_rebound_names <- function(expr) {
   } else {
     character()
   }
+  parts <- evaluated_call_args(expr)
+  head <- static_call_head(expr)
+  if (!rlang::is_symbol(head)) {
+    parts <- c(list(head), parts)
+  }
   unique(c(assigned, unlist(lapply(
-    evaluated_call_args(expr), lookup_rebound_names
+    parts, lookup_rebound_names
   ), use.names = FALSE)))
 }
 
