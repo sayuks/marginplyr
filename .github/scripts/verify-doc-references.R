@@ -105,15 +105,35 @@ if (length(tracked) == 0L) {
   ))
 }
 
-# The documents read. Prose lives in these six kinds here; the two exclusions
-# are the ones the header argues for.
-prose_kinds <- c("md", "Rmd", "qmd", "R", "yaml", "yml")
-documents <- tracked[tools::file_ext(tracked) %in% prose_kinds]
-documents <- setdiff(documents, "README.md")
-documents <- documents[
-  !startsWith(documents, "investigation/") |
-    basename(documents) == "README.md"
-]
+# Selects maintained prose from tracked paths using the header's exclusions.
+maintained_documents <- function(paths) {
+  prose_kinds <- c("md", "Rmd", "qmd", "R", "yaml", "yml")
+  documents <- paths[tools::file_ext(paths) %in% prose_kinds]
+  documents <- setdiff(documents, "README.md")
+  documents[
+    !startsWith(documents, "investigation/") |
+      documents == "investigation/README.md"
+  ]
+}
+
+# A runbook is a dated investigation even when its file is named README.md.
+document_probe <- c(
+  "design/README.md", "README.md", "README.qmd", "man/probe.Rd",
+  "investigation/README.md", "investigation/probe.md",
+  "investigation/run/README.md", "investigation/run/probe.R"
+)
+if (!identical(
+  maintained_documents(document_probe),
+  c("design/README.md", "README.qmd", "investigation/README.md")
+)) {
+  stop(call. = FALSE, paste(
+    "The document selector must read maintained prose and the investigation",
+    "convention README, excluding generated files and dated investigations",
+    "including their README runbooks. Fix `maintained_documents()` here."
+  ))
+}
+
+documents <- maintained_documents(tracked)
 
 # A URL's path is not a repository path, and neither is what a `%` spelling
 # stands in for: `"%s/probe-mentioned.R"` names a path the call builds, and
