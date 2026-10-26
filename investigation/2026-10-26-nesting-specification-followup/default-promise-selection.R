@@ -12,10 +12,8 @@ cat('dplyr selection: '); print(names(selection(x)))
 cat('fixed inspection: '); print(fixed(x)$fixed)
 cat('dimension inspection: '); print(grouped(x)$included)
 cat('nest fixed keys: '); print(nested(x))
-if(requireNamespace('dtplyr',quietly=TRUE)) {
-  lazy <- dtplyr::lazy_dt(x)
-  cat('dtplyr dimensions: '); print(grouped(lazy)$included)
-}
+lazy <- dtplyr::lazy_dt(x)
+cat('dtplyr dimensions: '); print(grouped(lazy)$included)
 expected <- 'key'
 stopifnot(identical(names(selection(x)), expected))
 stopifnot(identical(fixed(x)$fixed, list(expected)))

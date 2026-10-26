@@ -224,3 +224,12 @@ list-class ordinary dtplyr grouping refusal: PASS
 raw/complex ordinary dtplyr union refusal: PASS
 raw/complex ordinary dtplyr union refusal: PASS
 empty hms conversion and ordinary union refusal: PASS
+
+Review follow-up, 2026-10-26
+The default-promise-selection.R reproduction was rerun after removing its
+optional-dependency guard: expected exit 1; observed exit 1, with the same
+selected columns, nesting output, and fixed-key assertion as its block above.
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/algebra-depth.R
+expected exit: 0; observed exit: 0
+ASTs measured: 2000 ; maximum constructor nodes on a path: 5 ; maximum depth with root zero: 4

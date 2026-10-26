@@ -1,6 +1,7 @@
 # Nesting and typed Grouping specification follow-up
 
 Investigated: 2026-10-26
+Revised: 2026-10-26 — constructor-depth measurement in `investigation/2026-10-26-nesting-specification-followup/algebra-depth.R`
 
 ## Snapshot and outcome
 
@@ -271,3 +272,18 @@ correct. It did not exercise a live PostgreSQL server, other operating systems,
 older dependencies, unlimited specification depth, or large performance stress
 cases. Internal metadata probes were diagnostic controls for the stated causes,
 not additional public compatibility requirements. No repair was attempted.
+
+## Revisions (2026-10-26)
+
+The coverage table's "depth at most three" described the generator's recursion
+parameter rather than the depth of its resulting constructor tree. A separate
+replay of the same seed and 2,000 generated ASTs measured a maximum of five
+constructor nodes along a path, or depth four when the root is zero. A rollup
+or cube at generator recursion depth three could add a composite grouping-set
+child. `algebra-depth.R` preserved that measurement; the original comparison
+counts, defect reproductions, and ticket boundaries were unchanged.
+
+The default-promise reproduction's direct optional-dependency guard was also
+removed. Like the other saved backend evidence, that script required its
+stated installed dependencies and ran the dtplyr comparison unconditionally.
+Its expected exit remained 1 at the incorrect fixed-key assertion.
