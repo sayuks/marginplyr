@@ -436,6 +436,215 @@ test_that("dynamic false unpack keeps factory counts beside shares", {
   expect_identical(run(TRUE), run(FALSE))
 })
 
+test_that("first unnamed selection keeps its summary context beside a share", {
+  data <- tibble::tibble(x = 1:2)
+  ordinary <- rlang::quos(
+    dplyr::across(
+      dplyr::all_of(if (dplyr::n() == 0L) "x" else character()),
+      sum, .names = "unused"
+    ),
+    total = sum(x)
+  )
+  expected <- dplyr::summarise(data, !!!ordinary)
+  control <- summarize_with_margins(data, !!!ordinary)
+  actual <- summarize_with_margins(
+    data, !!!ordinary, share = share_of_total(total)
+  )
+  expect_identical(expected, tibble::tibble(unused = 3L, total = 3L))
+  expect_identical(control, expected)
+  expect_identical(actual[names(expected)], expected)
+  expect_identical(actual$share, 1)
+})
+
+test_that("unnamed selectors preserve context and counts beside shares", {
+  all_of <- dplyr::all_of
+  data <- tibble::tibble(g = c("a", "b", "b"), x = c(1, 10, 20))
+  for (multiple in c(FALSE, TRUE)) {
+    grouping <- if (multiple) rollup(g) else grouping_set()
+    kinds <- list(rlang::expr(share_of_total))
+    if (multiple) {
+      kinds <- c(kinds, list(rlang::expr(share_of_parent)))
+    }
+    helpers <- list()
+    for (kind in kinds) {
+      helpers <- c(helpers, list(rlang::call2(kind, rlang::sym("total"))))
+      for (selection in rlang::exprs(
+        total, c(total), "total", dplyr::all_of("total"), all_of("total"),
+        dplyr::any_of(c("total")), dplyr::all_of(c("total", "total")),
+        !!rlang::quo(total),
+        !!rlang::new_quosure(quote(all_of("total")), asNamespace("dplyr"))
+      )) {
+        helpers <- c(helpers, list(rlang::expr(dplyr::across(
+          !!selection, !!kind, .names = "share"
+        ))))
+      }
+    }
+    for (helper in helpers) {
+      for (first in c(TRUE, FALSE)) {
+        for (callback in c(TRUE, FALSE)) {
+          run <- function(with_share) {
+            contexts <- integer()
+            choose <- function() {
+              contexts <<- c(contexts, dplyr::n())
+              if (dplyr::n() >= 0L) "x" else "missing"
+            }
+            selector <- if (callback) {
+              rlang::expr(dplyr::all_of(choose()))
+            } else {
+              rlang::expr(dplyr::all_of({
+                contexts <<- c(contexts, dplyr::n())
+                if (dplyr::n() >= 0L) "x" else "missing"
+              }))
+            }
+            across <- rlang::expr(dplyr::across(
+              !!selector, sum, .names = "unused"
+            ))
+            ordinary <- if (first) {
+              list(across, total = rlang::expr(sum(x)))
+            } else {
+              list(total = rlang::expr(sum(x)), across)
+            }
+            share <- if (!with_share) {
+              list(share = rlang::expr(1))
+            } else if (rlang::is_call(helper, "across", ns = "dplyr")) {
+              list(helper)
+            } else {
+              list(share = helper)
+            }
+            result <- rlang::inject(summarize_with_margins(
+              data, !!!ordinary, !!!share, .grouping = grouping
+            ))
+            list(result = result, contexts = contexts)
+          }
+          control <- run(FALSE)
+          actual <- run(TRUE)
+          ordinary_names <- setdiff(names(control$result), "share")
+          expect_identical(actual$contexts, control$contexts)
+          expect_length(actual$contexts, if (multiple) 2L else 1L)
+          expect_identical(names(actual$result), names(control$result))
+          expect_identical(actual$result[ordinary_names],
+                           control$result[ordinary_names])
+          expect_identical(actual$result$unused, actual$result$total)
+          expect_equal(actual$result$share, actual$result$total / 31)
+          expect_type(actual$result$share, "double")
+        }
+      }
+    }
+  }
+})
+
+test_that("share selection prediction leaves caller bindings to evaluation", {
+  data <- tibble::tibble(x = 1:2)
+  for (selection in rlang::exprs(
+    dplyr::all_of(c("total")), all_of("total"), dplyr::all_of(source)
+  )) {
+    caller <- rlang::env(
+      rlang::current_env(), c = function(...) "unused",
+      all_of = function(...) "unused", source = "unused"
+    )
+    share <- rlang::new_quosure(rlang::expr(dplyr::across(
+      !!selection, share_of_total, .names = "share"
+    )), caller)
+    actual <- summarize_with_margins(
+      data, dplyr::across(x, sum, .names = "unused"),
+      total = sum(x), !!share
+    )
+    expect_identical(actual, tibble::tibble(unused = 3L, total = 3L, share = 1))
+  }
+})
+
+test_that("share prediction leaves caller promises and active bindings alone", {
+  for (active in c(FALSE, TRUE)) {
+    ready <- FALSE
+    caller <- rlang::env(rlang::current_env())
+    if (active) {
+      makeActiveBinding("all_of", function() {
+        stopifnot(ready)
+        function(...) "unused"
+      }, caller)
+    } else {
+      delayedAssign("all_of", {
+        stopifnot(ready)
+        function(...) "unused"
+      }, assign.env = caller)
+    }
+    share <- rlang::new_quosure(quote(dplyr::across(
+      all_of("total"), share_of_total, .names = "share"
+    )), caller)
+    actual <- summarize_with_margins(
+      tibble::tibble(x = 1:2),
+      dplyr::across(dplyr::all_of({
+        ready <<- TRUE
+        "x"
+      }), sum, .names = "unused"),
+      total = sum(x), !!share
+    )
+    expect_identical(actual, tibble::tibble(unused = 3L, total = 3L, share = 1))
+  }
+})
+
+test_that("first unnamed selections retain share guards and later visibility", {
+  data <- tibble::tibble(g = c("a", "b"), x = c(1, 2))
+  for (helper in list(rlang::quo(share_of_parent(total)),
+                      rlang::quo(share_of_total(total)))) {
+    actual <- rlang::inject(summarize_with_margins(
+      data,
+      dplyr::across(
+        dplyr::all_of(if (dplyr::n() == 0L) "x" else character()),
+        sum, .names = "unused"
+      ),
+      total = sum(x), share = !!helper,
+      dplyr::across(dplyr::everything(), sum, .names = "seen_{.col}"),
+      .grouping = rollup(g)
+    ))
+    expect_named(actual, c("g", "unused", "total", "share", "seen_x",
+                           "seen_unused", "seen_total"))
+    expect_identical(actual$seen_unused, actual$unused)
+    expect_identical(actual$seen_total, actual$total)
+
+    collision <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      dplyr::across(
+        dplyr::all_of(if (dplyr::n() == 0L) "x" else character()),
+        sum, .names = "total"
+      ),
+      total = sum(x), share = !!helper, .grouping = rollup(g)
+    )), class = "marginplyr_error")
+    expect_match(conditionMessage(collision), "defined exactly once")
+
+    dependency <- expect_error(rlang::inject(summarize_with_margins(
+      data, dplyr::across(x, sum, .names = "unused"),
+      total = unused + 1, share = !!helper, .grouping = rollup(g)
+    )), class = "marginplyr_error")
+    expect_match(conditionMessage(dependency), "earlier summary")
+    dynamic_dependency <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      dplyr::across(
+        dplyr::all_of(if (dplyr::n() == 0L) "x" else character()),
+        sum, .names = "unused"
+      ),
+      total = unused + 1, share = !!helper, .grouping = rollup(g)
+    )), class = "marginplyr_error")
+    expect_match(conditionMessage(dynamic_dependency), "earlier summary")
+    lookup <- "unused"
+    reflective_dependency <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      dplyr::across(dplyr::all_of(if (dplyr::n() == 0L) "x"),
+                    sum, .names = "unused"),
+      total = get(lookup) + 1, share = !!helper, .grouping = rollup(g)
+    )), class = "marginplyr_error")
+    expect_match(conditionMessage(reflective_dependency), "earlier summary")
+
+    share_collision <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      dplyr::across(dplyr::all_of(if (dplyr::n() == 0L) "x"),
+                    sum, .names = "share"),
+      total = sum(x), share = !!helper, .grouping = rollup(g)
+    )), class = "marginplyr_error")
+    expect_match(conditionMessage(share_collision), "conflicts with")
+  }
+})
+
 test_that("first packed selection uses the local summary mask beside a share", {
   data <- tibble::tibble(x = 1)
   expected <- dplyr::summarise(
@@ -929,4 +1138,34 @@ test_that("changing dynamic unpack still checks packed output names", {
   expect_match(conditionMessage(string_collision), "cannot overwrite grouping")
   expect_false(grepl("local_checked_glue_name",
                      conditionMessage(string_collision), fixed = TRUE))
+})
+
+test_that("deferred source checks preserve external lookup environments", {
+  outside <- rlang::env(first = 10)
+  data <- tibble::tibble(g = c("a", "b"), x = 1:2)
+  for (share in rlang::quos(share_of_total(total), share_of_parent(total))) {
+    ordinary <- rlang::quos(dplyr::across(
+      dplyr::all_of(if (dplyr::n() == 0L) "x" else character()),
+      sum, .names = "first"
+    ))
+    for (lookup in rlang::quos(
+      get("first", envir = outside), get("first", envir = .env$outside)
+    )) {
+      actual <- summarize_with_margins(
+        data, !!!ordinary, total = sum(x) + !!lookup,
+        p = !!share, .grouping = rollup(g)
+      )
+      expect_identical(actual$first, c(1L, 2L, 3L))
+      expect_equal(actual$total, c(11, 12, 13))
+      expect_equal(actual$p, c(11 / 13, 12 / 13, 1))
+    }
+    expect_error(
+      summarize_with_margins(
+        data, !!!ordinary,
+        total = get("first", envir = environment()),
+        p = !!share, .grouping = rollup(g)
+      ),
+      "depends on earlier summary alias `first`", class = "marginplyr_error"
+    )
+  }
 })

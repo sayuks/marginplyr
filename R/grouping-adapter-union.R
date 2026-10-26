@@ -578,6 +578,7 @@ summarize_margin_union <- function(.data,
             set_id_is_internal = set_id_is_internal,
             share_sources = frame_state$share_sources,
             source_definitions = frame_state$source_definitions,
+            source_reads = frame_state$source_reads,
             auto_names = frame_state$auto_names
           )
           branch_dots <- wrap_assigned_local_summaries(

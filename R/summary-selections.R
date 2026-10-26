@@ -348,6 +348,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
                                        set_id_name, set_id_is_internal,
                                        share_sources,
                                        source_definitions,
+                                       source_reads,
                                        auto_names) {
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
@@ -358,33 +359,34 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
     if (identical(data_frame_valued_summary_kind(expr), "across")) {
       parsed <- parse_across_arguments(expr)
       unpack <- parsed$unpack
-      # dplyr owns ordinary `across()` naming. An unpack that may expose
-      # inner names is checked after dplyr evaluates it in its data mask.
+      # Keep across at the top level so dplyr owns its expansion context.
+      # Share checks use the names that expansion actually produces.
       empty_unpack <- rlang::is_quosure(unpack) &&
         rlang::is_missing(rlang::quo_get_expr(unpack))
       unpack_is_false <- across_unpack_is_false(unpack, rlang::quo_get_env(dot))
       protected_sources <- setdiff(share_sources, source_definitions[[i]])
-      if (empty_unpack ||
-            (unpack_is_false && length(protected_sources) == 0L)) {
+      if (empty_unpack || (unpack_is_false && length(share_sources) == 0L)) {
         next
       }
-      if (!isTRUE(unpack) && !is.character(unpack)) {
+      if (unpack_is_false || (!isTRUE(unpack) && !is.character(unpack))) {
         # Keep across at the top level so dplyr expands a FALSE unpack in its
         # ordinary phase. The two arguments check names at whichever phase
         # dplyr chooses from the value it actually reads.
         call_args <- parsed$call_args
         state <- new.env(parent = emptyenv())
+        if (unpack_is_false) {
+          state$unpack <- FALSE
+        }
         state$name_rules <- list(
           group_vars = group_vars,
           internal_names = internal_names,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal,
-          protected_sources = protected_sources
+          protected_sources = protected_sources,
+          source_reads = source_reads[[i]]
         )
         index <- parsed$unpack_index
-        if (unpack_is_false) {
-          state$unpack <- FALSE
-        } else {
+        if (index > 0L) {
           call_args[[index]] <- rlang::call2(
             marginplyr_private_call("local_checked_unpack_arg"),
             call_args[[index]], state
@@ -496,6 +498,7 @@ local_checked_glue_name <- function(spec, name_rules) {
       )
     }
   )
+  check_share_alias_reads(names, name_rules$source_reads)
   check_local_frame_output_names(
     names, name_rules$group_vars, name_rules$internal_names,
     name_rules$set_id_name, name_rules$set_id_is_internal,
@@ -542,6 +545,7 @@ new_summary_arguments <- function(dots,
     list(
       share_sources = character(),
       source_definitions = rep(list(character()), length(dots)),
+      source_reads = rep(list(list()), length(dots)),
       auto_names = vapply(dots, function(dot) {
         dplyr_auto_name(rlang::quo_get_expr(dot))
       }, character(1))
@@ -665,7 +669,7 @@ plan_summary_expressions <- function(dots,
   ))
   deferred <- rep(FALSE, length(dots))
   if (defer_local) {
-    named_sources <- local_share_sources_are_named(dots)
+    independent_shares <- shares_use_named_summaries(dots)
     prior_ordinary <- FALSE
     for (i in seq_along(dots)) {
       expr <- rlang::quo_get_expr(dots[[i]])
@@ -674,8 +678,8 @@ plan_summary_expressions <- function(dots,
       }
       deferred[[i]] <- !has_shares || (
         contains_summary_selection(expr) &&
-          (named_sources || prior_ordinary ||
-             nzchar(rlang::names2(dots)[[i]]))
+          (prior_ordinary || nzchar(rlang::names2(dots)[[i]]) ||
+             independent_shares)
       )
       prior_ordinary <- TRUE
     }
@@ -773,6 +777,26 @@ plan_summary_expressions <- function(dots,
         record$source_summary
       ))
     }
+    selection_state$source_reads <- lapply(
+      seq_along(summary_plan$dots),
+      function(i) {
+        later <- Filter(function(record) record$position > i,
+                        summary_plan$cardinality)
+        lapply(later, function(record) {
+          source <- summary_plan$dots[[record$position]]
+          expr <- rlang::quo_get_expr(source)
+          record$symbols <- expression_data_symbols(expr, lookup = list(
+            env = rlang::quo_get_env(source),
+            mask = c(
+              names(selection_proxy),
+              rlang::names2(summary_plan$dots)[seq_len(record$position - 1L)]
+            ),
+            rebound = lookup_rebound_names(expr)
+          ))
+          record
+        })
+      }
+    )
     share_positions <- which(vapply(
       original_dots,
       function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
@@ -830,9 +854,8 @@ plan_summary_expressions <- function(dots,
   )
 }
 
-# Whether a selection names only known columns without running caller code.
-# This recognizes the literal forms shared by local name prediction and share
-# dependency planning; other selections stay with their ordinary resolver.
+# Whether local name prediction can read a selection as known columns.
+# Other selections stay with their ordinary resolver.
 is_literal_summary_selection <- function(cols, available, allow_names = TRUE) {
   cols <- unwrap_injected_quosure(cols)
   if (rlang::is_missing(cols)) {
@@ -1486,14 +1509,19 @@ is_known_frame_constructor <- function(expr, env) {
 
 # Read a function-position name without forcing a caller promise or invoking an
 # active binding. R skips non-function values in a function position; an
-# unresolved binding leaves its eventual callee unknown to prediction.
-ordinary_function_binding <- function(name, env) {
+# unresolved binding leaves its eventual callee unknown to prediction. Known
+# package owners may load their namespace and attached export promises.
+ordinary_function_binding <- function(name, env, owners = character()) {
+  allowed <- c(
+    list(baseenv(), asNamespace("base")),
+    lapply(owners, asNamespace),
+    lapply(intersect(paste0("package:", owners), search()), as.environment)
+  )
   current <- env
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
       if (bindingIsActive(name, current) ||
-            (!identical(current, baseenv()) &&
-               !identical(current, asNamespace("base")) &&
+            (!any(vapply(allowed, identical, logical(1), y = current)) &&
                rlang::env_binding_are_lazy(current, name))) {
         return(NULL)
       }
