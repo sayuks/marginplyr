@@ -403,8 +403,8 @@ Nested specification position recognizes as a specification. It accepts what
 tree was deferred because caching nested interpretation can change quosure or
 symbol evaluation counts" — in the narrow form that sentence describes, and
 changes those counts on purpose. Nothing else about the specification tree is
-normalized: the caller's own quosures are what the passes still resolve a
-column selection from.
+normalized. The later amendment for non-specification bindings below narrows
+which selection quosures retain the caller's environment unchanged.
 
 The structural preflight was already the first reader of every nested argument,
 and it now records what each one resolved to alongside the specification it
@@ -412,23 +412,23 @@ returns. Expansion reads that record instead of asking `grouping_arg_spec()`
 again, so the compilation passes read no nested argument at all — the deferred
 cache, kept to one call rather than held across calls.
 
-**Evaluations.** Four shapes reach a nested position, and this is where their
-counts are written down. Each is a count per call, not per pass.
+**Evaluations.** The following table includes the non-specification binding
+amendment below. Each is a count per call, not per pass.
 
 | The argument | Evaluations | Where |
 | --- | --- | --- |
-| A nested constructor call, and a bare name bound to a specification | 1 | the preflight |
+| A constructor call yielding a specification, and a bare name bound to a specification | 1 | the preflight |
 | A bare name that is a column and is bound to a specification of an admitted kind | 1 | the preflight, per ADR 0026, and then refused |
-| A column selection | 1 per compilation pass — 2 where the plan is settled by names alone, 1 otherwise | each pass, against that pass's own proxy |
+| A non-column name bound to an ordinary selection | 1 | the preflight; the typed pass resolves the retained value |
+| A column selection not already read by preflight | 1 per compilation pass — 2 where the plan is settled by names alone, 1 otherwise | each pass, against that pass's own proxy |
 | A call the spelling declines to evaluate, such as a caller's own function | 1 | the selection resolution that refuses it (#190) |
 
 The first row is what moves, from 3 and 2 to 1 and 1 (#260): a recognized
 argument was read by the preflight and then again by each pass, so its count
 followed the number of passes, which is decided by whether names alone settle
 the plan — a property of the whole specification and not of that argument. It
-no longer does. The other three rows are unchanged, and the second and fourth
-are stated here because a table of what a nested position costs that named only
-some of its arguments would be read as naming all of them.
+no longer does. #260 leaves the other shapes unchanged; #873 repairs the
+non-specification binding case below.
 
 **Timing.** The first reading of every argument is where it was: the preflight
 still reads in argument order, and still stops at the first argument it
@@ -445,6 +445,39 @@ plan and its consumers. A specification that compiled compiles to the same
 plan, because a reading taken once and a reading taken three times differ only
 where the argument answers differently each time, and an argument that does
 that is one whose count this amendment is about.
+
+## Amendment: retain a non-specification binding's selection value (#873)
+
+A name outside the input columns is read in preflight to decide whether it
+holds a nested specification. When it instead holds an ordinary selection, that
+read consumes its single typed-pass evaluation budget. The typed pass resolves
+that value rather than reading the external binding again. An active binding
+alternating between `"a"` and `"b"` therefore selects `a` after one read, as
+`.by` does. The previous second read selected `b` even though no names-only
+compilation ran.
+
+The value is retained per argument occurrence and per public call. Writing the
+name twice still reads it twice; reusing a specification in another call reads
+it again. Its original expression stays intact for tidyselect's selection
+semantics and diagnostics, including external-vector deprecations. Its selection
+quosure receives a child environment binding that name to the retained value,
+with the original environment as parent; neither the caller's binding nor the
+source specification is modified. This is the exception to the unchanged
+quosure-environment constraint for this shape alone.
+
+The first read remains in preflight, before typed metadata acquisition. The
+original expression still determines whether names alone settle the plan, so
+retaining a character vector does not introduce a names-only pass. Recognized
+nested specifications keep their one preflight read; column/specification
+collisions keep ADR 0026's refusal. Ordinary names-only selections still run
+once per compilation pass, and explicit `all_of()` selections are resolved
+in their selection context.
+
+**Considered options.** Injecting the retained value as a literal expression
+would erase the caller's external-name spelling and change tidyselect's
+interpretation of language objects and its deprecation diagnostics. Caching by
+name or on the source specification would share readings across independent
+argument occurrences or calls. Neither preserves this argument's budget.
 
 ## Amendment: refuse a cyclic nested reference (#828)
 

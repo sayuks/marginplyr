@@ -1846,7 +1846,7 @@ test_that("invalid grouping input lists every supported constructor", {
 # Every object is written in both positions a specification is reachable in,
 # because the guard is reached by a different route from each -- the top-level
 # object the caller passed as `.grouping`, and an argument of a well-formed
-# parent, which `grouping_arg_spec()` evaluates and the preflight recurses into.
+# parent, which `read_grouping_arg()` evaluates and the preflight recurses into.
 # #262 reproduced at both, and a fix holding at one and not the other would
 # read as a fix.
 test_that("a malformed Grouping specification is refused by both guards", {
