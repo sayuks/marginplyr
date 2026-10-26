@@ -1544,7 +1544,7 @@ shares_use_named_summaries <- function(dots) {
     } else {
       parse_across_arguments(expr)$cols
     }
-    if (!share_selection_uses_named_summaries(
+    if (!share_selects_named_summaries(
       source, preceding, rlang::quo_get_env(dots[[i]])
     )) {
       return(FALSE)
@@ -1555,10 +1555,10 @@ shares_use_named_summaries <- function(dots) {
 
 # Recognize explicit positive selections without evaluating their expressions.
 # Inside all_of/any_of, symbols are values and c() uses ordinary lookup.
-share_selection_uses_named_summaries <- function(expr, preceding, env,
-                                                literal = FALSE) {
+share_selects_named_summaries <- function(expr, preceding, env,
+                                          literal = FALSE) {
   if (rlang::is_quosure(expr)) {
-    return(share_selection_uses_named_summaries(
+    return(share_selects_named_summaries(
       rlang::quo_get_expr(expr), preceding, rlang::quo_get_env(expr), literal
     ))
   }
@@ -1573,7 +1573,7 @@ share_selection_uses_named_summaries <- function(expr, preceding, env,
       return(FALSE)
     }
     return(all(vapply(
-      static_call_args(expr), share_selection_uses_named_summaries, logical(1),
+      static_call_args(expr), share_selects_named_summaries, logical(1),
       preceding = preceding, env = env, literal = literal
     )))
   }
@@ -1589,7 +1589,7 @@ share_selection_uses_named_summaries <- function(expr, preceding, env,
     namespace %in% c("dplyr", "tidyselect")
   }
   args <- static_call_args(expr)
-  known && length(args) == 1L && share_selection_uses_named_summaries(
+  known && length(args) == 1L && share_selects_named_summaries(
     args[[1L]], preceding, env, literal = TRUE
   )
 }
