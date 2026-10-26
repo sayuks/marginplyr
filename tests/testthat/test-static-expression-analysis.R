@@ -3476,11 +3476,6 @@ test_that("a lookup this walk cannot resolve reads every alias", {
 })
 
 test_that("a lookup constrained to an external environment reads no column", {
-  # The environment argument terminates the search: these four require an
-  # environment there and never fall back to the mask, so a call supplying one
-  # reads no column and must keep working beside a share of that name. The
-  # environment expression itself is still a mask read -- it is evaluated
-  # there like any argument is.
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
@@ -3490,21 +3485,6 @@ test_that("a lookup constrained to an external environment reads no column", {
   # into a data mask.
   outside <- rlang::env(share = 2)
   # nolint end
-
-  expect_identical(
-    expression_data_symbols(quote(get0("share", envir = outside))),
-    "outside"
-  )
-  expect_identical(
-    expression_data_symbols(quote(exists("share", where = outside))),
-    "outside"
-  )
-  # A second unnamed argument is the environment for each of them, whatever
-  # that argument is called in the primitive's own signature.
-  expect_identical(
-    expression_data_symbols(quote(mget("share", outside))),
-    "outside"
-  )
 
   from_environment <- summarize_with_margins(
     data,

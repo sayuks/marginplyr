@@ -740,9 +740,8 @@ call_formal_index <- function(args, formal, positional = TRUE) {
 
 # Whether a call supplies an argument beyond the one it takes in `formal`,
 # either by naming one of `other_names` or by leaving one more argument unnamed
-# than `formal` accounts for. Both primitives that ask this ask it about an
-# environment: `get()` and its siblings search the one they are given instead of
-# the mask, and `substitute()` substitutes from it.
+# than `formal` accounts for. Language recovery uses this to recognize an
+# explicit substitution environment.
 call_supplies_other_argument <- function(expr, formal, other_names) {
   args <- static_call_args(expr)
   arg_names <- argument_names(args)
