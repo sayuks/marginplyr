@@ -29,7 +29,7 @@ test_that("ordinary arithmetic selects fixed keys from input types", {
   }
 })
 
-test_that("ordinary arithmetic selects typed Grouping dimensions without overlap", {
+test_that("arithmetic Grouping dimensions use input types without overlap", {
   data <- tibble::tibble(a = c("x", "x"), b = 1:2)
 
   for (selection in arithmetic_selections()) {

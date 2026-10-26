@@ -2273,21 +2273,21 @@ test_that("a selection the names settle is refused before the typed snapshot", {
   # metadata is acquired, so a refusal that reaches it has already sent the
   # query a lazy backend answers it with.
   data <- data.frame(region = "East", area = "North", value = 1)
-  reads <- 0L
+  reads <- rlang::env(count = 0L)
   local_mocked_bindings(
     grouping_selection_proxy = function(.data, ...) {
-      reads <<- reads + 1L
+      reads$count <- reads$count + 1L
       .data
     }
   )
   # Each refusal is tidyselect's own, raised through the name proxy, so the
   # class it arrives under is the External half ADR 0015 draws.
   refuse <- function(expr, class, pattern) {
-    reads <<- 0L
+    reads$count <- 0L
     error <- expect_error(rlang::eval_tidy(expr), class = class)
     expect_false(inherits(error, "marginplyr_error"))
     expect_match(conditionMessage(error), pattern)
-    expect_identical(reads, 0L)
+    expect_identical(reads$count, 0L)
   }
 
   for (grouping in list(
@@ -2405,12 +2405,12 @@ test_that("a selection the names settle is refused before the typed snapshot", {
 
   # The other half of the rule: a selection carrying a predicate is not
   # settled by names, and still resolves against the snapshot.
-  reads <- 0L
+  reads$count <- 0L
   plan <- inspect_grouping(
     data,
     .grouping = rollup(tidyselect::everything() / where(is.numeric))
   )
-  expect_identical(reads, 1L)
+  expect_identical(reads$count, 1L)
   expect_identical(plan$included, c("(region, area)", "(region)", "()"))
 })
 
