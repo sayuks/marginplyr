@@ -497,7 +497,10 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (call_name %in% c("$", "[[") && is_data_pronoun(expr)) {
     return(TRUE)
   }
-  if (!call_name %in% c(selection_walk_operators(), "(")) {
+  # Only bare heads use tidyselect's operand walk. An ordinary R call reads
+  # lexical bindings even where an operand names an input column.
+  if (!call_name %in% c(selection_walk_operators(), "(") ||
+        !rlang::is_symbol(static_call_head(expr), call_name)) {
     return(FALSE)
   }
 
