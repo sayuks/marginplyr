@@ -188,7 +188,8 @@ nest_with_margins <- function(.data,
     .id = .id,
     .key = .key,
     .keep = .keep,
-    call = call
+    call = call,
+    rowwise = FALSE
   )
 }
 
@@ -198,6 +199,8 @@ nest_with_margins <- function(.data,
 # it out.
 nest_duplicates_choices <- c("error", "drop")
 
+# Prepare and fold either nesting verb. A row-wise request requires outer
+# keys that dplyr can represent before expansion begins.
 nest_margin_pipeline <- function(.data,
                                  by_quo,
                                  grouping_quo,
@@ -209,7 +212,8 @@ nest_margin_pipeline <- function(.data,
                                  .id,
                                  .key,
                                  .keep,
-                                 call) {
+                                 call,
+                                 rowwise) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
 
   with_margin_error_call(
@@ -268,17 +272,26 @@ nest_margin_pipeline <- function(.data,
   execution <- execute_margin_nest(
     operation,
     .key = .key,
-    .keep = .keep
+    .keep = .keep,
+    rowwise = rowwise
   )
   finalize_margin_operation(operation, execution)
 }
 
-execute_margin_nest <- function(operation, .key, .keep) {
+# Fold a prepared Margin operation into cells after nesting-specific admission;
+# `rowwise` requires outer keys dplyr can represent as row-wise identifiers.
+execute_margin_nest <- function(operation, .key, .keep, rowwise) {
   check_margin_operation(operation)
   with_margin_error_call(
     {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
+      if (rowwise && ".rows" %in% c(group_cols, operation$set_id_name)) {
+        abort_marginplyr(c(
+          "{.var .rows} cannot be a row-wise identifier.",
+          i = "Rename that outer key or use {.fun nest_with_margins}."
+        ))
+      }
       if (.key %in% group_cols) {
         # `{(.key)}` rather than `{.key}`: cli reads a `{}` expression opening
         # with a dot as one of its own styles, and refuses the literal outright
@@ -537,9 +550,14 @@ nest_expanded_margins <- function(.data,
                                   .key,
                                   kind,
                                   drop_set_col = TRUE) {
-  with_margin_column_aliases(.data, set_col, function(.data, alias_name) {
+  # dplyr consumes `.rows` when it constructs local grouping keys. Alias
+  # only outer keys; payload and list-column names never enter that metadata.
+  outer_cols <- c(group_cols, set_col, unname(identity_cols))
+  with_margin_column_aliases(.data, outer_cols, function(.data, alias_name) {
     set_col <- alias_name(set_col)
-    outer_cols <- c(group_cols, set_col, unname(identity_cols))
+    outer_cols <- vapply(
+      outer_cols, alias_name, character(1), USE.NAMES = FALSE
+    )
     # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
     # so answers `NULL` for a `dtplyr` step — every payload column would then
     # look absent and be dropped from every cell.
@@ -591,7 +609,7 @@ nest_expanded_margins <- function(.data,
       },
       reserved = .key
     )
-  }, reserved = .key)
+  }, reserved = .key, unsafe = ".rows")
 }
 
 utils::globalVariables(":=")

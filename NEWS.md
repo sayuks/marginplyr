@@ -4,6 +4,10 @@
   `.data`, preserving its integer values, public columns, and Margin order
   without needing an unrelated `.env` column (#863).
 
+* SQLite expansions retain unchanged source-column types through direct
+  collection and materialization without `.id`, including all-missing fixed
+  keys and payloads in one-set and unsorted results (#862).
+
 * Captured Grouping helpers retain their literal syntax in qualified
   `base::bquote()`, `rlang::expr()`, and `rlang::quo()` calls. Explicit `bquote()`
   substitutions still evaluate; unsupported splicing is refused (#832).

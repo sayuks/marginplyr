@@ -26,6 +26,7 @@ Imports:
     vctrs
 Suggests:
     arrow (>= 13.0.0),
+    blob,
     data.table,
     DBI,
     dtplyr (>= 1.3.2),

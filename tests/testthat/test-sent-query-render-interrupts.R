@@ -19,7 +19,10 @@ test_that("diagnostic rendering preserves compound cancellation once", {
     c("interrupt", "error", "condition"),
     c("error", "interrupt", "condition"),
     c("warning", "error", "interrupt", "condition"),
-    c("interrupt", "error", "warning", "condition")
+    c("interrupt", "error", "warning", "condition"),
+    c("message", "interrupt", "condition"),
+    c("interrupt", "message", "condition"),
+    c("message", "warning", "error", "interrupt", "condition")
   )
   for (classes in cases) {
     leaf <- structure(

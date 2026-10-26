@@ -182,7 +182,9 @@ optional_suggest_spec <- function() {
     data.table = list(asserted = TRUE, companions = character()),
     RSQLite = list(asserted = TRUE, companions = "DBI"),
     RPostgres = list(asserted = TRUE, companions = "DBI"),
-    DBI = list(asserted = FALSE, companions = character())
+    DBI = list(asserted = FALSE, companions = character()),
+    # Like DBI, blob is imported by dbplyr and cannot be withheld.
+    blob = list(asserted = FALSE, companions = character())
   )
 }
 

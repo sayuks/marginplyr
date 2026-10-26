@@ -977,3 +977,25 @@ test_that("partition expansion and inspection read no source rows", {
   )), 0L)
   expect_identical(tools::md5sum(fixture$files), fixture$hashes)
 })
+
+test_that("fixed-size-list expansion and inspection read no source rows", {
+  skip_if_suggest_absent("arrow")
+  type <- arrow::fixed_size_list_of(arrow::int32(), 2L)
+  for (values in list(list(1:2, 3:4), list())) {
+    source <- arrow::Table$create(
+      g = arrow::Array$create(values, type = type)
+    )
+    expect_gt(count_entry_point_invocations(dplyr::collect(source)), 0L)
+    for (label in list(NULL, NA_character_)) {
+      for (grouping in list(grouping_set(g), rollup(g))) {
+        expect_identical(count_entry_point_invocations(expand_with_margins(
+          source, .grouping = grouping, .margin_label = label,
+          .id = "occurrence"
+        )), 0L)
+      }
+    }
+    expect_identical(count_entry_point_invocations(inspect_grouping(
+      source, .grouping = grouping_set(where(is.list))
+    )), 0L)
+  }
+})
