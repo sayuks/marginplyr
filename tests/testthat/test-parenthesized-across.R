@@ -13,23 +13,24 @@ test_that("ordinary across keeps the written dplyr evaluation context", {
     identity = identity(across(x, factory()))
   )
   for (name in names(expressions)) {
-    observed <- integer()
+    observed <- new.env(parent = emptyenv())
+    observed$sizes <- integer()
     factory <- function() {
       offset <- dplyr::n()
-      observed <<- c(observed, offset)
+      observed$sizes <- c(observed$sizes, offset)
       function(x) sum(x) + offset
     }
     across <- dplyr::across
     expression <- expressions[[name]]
     expected <- dplyr::summarise(data, !!expression, .by = g)
-    expected_observed <- observed
-    observed <- integer()
+    expected_observed <- observed$sizes
+    observed$sizes <- integer()
     across <- function(...) stop("caller binding ran")
     actual <- summarize_with_margins(
       data, !!expression, .grouping = grouping_set(g)
     )
     expect_equal(actual, expected, info = name)
-    expect_identical(observed, expected_observed, info = name)
+    expect_identical(observed$sizes, expected_observed, info = name)
     expect_equal(
       actual$x, if (name == "across") c(1, 30) else c(2, 32), info = name
     )
