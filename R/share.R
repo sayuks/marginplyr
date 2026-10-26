@@ -1529,12 +1529,40 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
+# Whether every share in preflighted dots reads explicitly named preceding
+# ordinary summaries. Such local calls need no ordinary-selection evaluation
+# to find output names; actual output checks still protect the share sources.
+local_share_sources_are_named <- function(dots) {
+  preceding <- character()
+  dot_names <- rlang::names2(dots)
+  for (i in seq_along(dots)) {
+    expr <- rlang::quo_get_expr(dots[[i]])
+    if (!contains_share_helper(expr)) {
+      preceding <- c(preceding, dot_names[[i]])
+      next
+    }
+    if (is_across_call(expr)) {
+      args <- parse_across_arguments(expr)
+      if (!is_literal_summary_selection(args$cols, preceding)) {
+        return(FALSE)
+      }
+      next
+    }
+    args <- unwrap_injected_args(static_call_args(expr))
+    if (!rlang::as_name(args[[1L]]) %in% preceding) {
+      return(FALSE)
+    }
+  }
+  TRUE
+}
+
 # Records ordinary outputs and dependencies for a call with a contextual share.
 analyze_ordinary_summaries <- function(dots, selection_proxy,
                                        defer_local = FALSE) {
   dot_names <- names(dots)
   analyses <- vector("list", length(dots))
   preceding_names <- character()
+  named_sources <- defer_local && local_share_sources_are_named(dots)
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
     output_name <- dot_names[[i]]
@@ -1549,7 +1577,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
     # its mask. Predict only literal names here, leaving naming expressions
     # and selection predicates to that execution.
     if (defer_local && contains_summary_selection(expr) &&
-          (i > 1L || nzchar(output_name))) {
+          (named_sources || i > 1L || nzchar(output_name))) {
       output_names <- if (nzchar(output_name)) {
         output_name
       } else if (is_across_call(expr)) {
