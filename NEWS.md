@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Captured Grouping helpers retain their literal syntax in qualified
+  `base::bquote()`, `rlang::expr()`, and `rlang::quo()` calls. Explicit `bquote()`
+  substitutions still evaluate; unsupported splicing is refused (#832).
+
 * Local higher-dimensional array grouping dimensions now refuse scalar display
   labels with an actionable Package condition on both populated and empty
   input. Typed-missing labels preserve their shape (#834).

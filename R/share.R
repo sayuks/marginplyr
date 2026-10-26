@@ -4386,7 +4386,7 @@ deferred_call_symbols <- function(expr) {
 # not decidable here, so the node resolves toward over-reporting.
 evaluated_language_symbols <- function(expr, bound) {
   values <- evaluated_language_parts(expr)
-  if (is.null(values)) {
+  if (is.null(values) || isTRUE(attr(values, "unresolved"))) {
     return(unresolved_lookup_name())
   }
   unique(unlist(

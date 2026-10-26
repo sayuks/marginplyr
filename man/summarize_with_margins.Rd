@@ -507,7 +507,8 @@ mean resolving a call head against the calling environment.
 
 Every rule above reads the expression the data mask evaluates. An expression
 captured as language data — the argument of a plainly written
-\code{\link[base:quote]{base::quote()}}, \code{\link[base:substitute]{base::substitute()}}, or \code{\link[base:expression]{base::expression()}} — is a value
+\code{\link[base:quote]{base::quote()}}, \code{\link[base:substitute]{base::substitute()}}, \code{\link[base:expression]{base::expression()}},
+\code{\link[base:bquote]{base::bquote()}}, \code{rlang::expr()}, or \code{rlang::quo()} — is a value
 the summary carries, so marginplyr neither analyzes nor rewrites what is
 inside it: a captured helper name requests nothing, creates no dependency on
 an earlier summary, and reaches the backend as written. Evaluating one with
@@ -515,9 +516,18 @@ an earlier summary, and reaches the backend as written. Evaluating one with
 data mask, so what it holds is analyzed as the code it becomes and every
 rule above applies to it.
 
+In \code{bquote()}, the operand of \code{.()} is evaluated and follows those rules;
+the surrounding language stays literal. Splicing with \code{..()} is refused
+when \code{splice} is enabled or cannot be determined statically. Build that
+language outside the Margin verb instead.
+
 Both halves are read statically, so both stop where a static reading does.
-A capture is one where the call names the primitive plainly, qualified with
-\verb{base::} or not; any other spelling — another namespace, or a head computed
+\code{quote()}, \code{substitute()}, and \code{expression()} name their primitive plainly,
+qualified with \verb{base::} or not. The additional captures require their
+qualifier: \code{base::bquote()}, \code{rlang::expr()}, and \code{rlang::quo()}.
+Qualified \code{bquote()},
+\code{expr()}, and \code{quo()} also allow parentheses around the head.
+Any other spelling — another namespace, or a head computed
 at run time — is analyzed as ordinary code, which can refuse a call that
 only carries language. An evaluation is followed wherever the language it
 runs can be read without running the call, which covers a capture written

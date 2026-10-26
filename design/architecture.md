@@ -230,16 +230,21 @@ here (ADR 0019).
 
 The language-capture primitives are read statically too and are deliberately
 not among them. `language_capture_formal()` and `captured_call_parts()` above
-carry `quote`, `substitute`, and `expression` with a `base` namespace test of
+carry the base primitives and qualified additional captures with namespace tests of
 their own, and it is a different test: a capture is refused where the head
 names a binding the analysis can see, so it answers to the calling environment
 where every family in the registry refuses to.
 
 That difference is what makes the parenthesis reading above split at one point.
-A parenthesized head is a recognized spelling here and is *not* a capture there:
+A bare parenthesized head is a recognized spelling here and is *not* a capture there:
 `(quote)(share)` evaluates its head as a value, so any binding wins and the walk
 reports the read it would otherwise hide, while `(pick)(units)` is dplyr's
 `pick()` however the caller has bound the name.
+
+Qualified `base::bquote()` contributes its explicit substitution operands to the shared
+walks. Its literal language and qualified `rlang::expr()` and `rlang::quo()`
+captures stay unchanged; statically recoverable captures reopen at evaluation.
+Splicing is refused when its control does not rule it out (#832).
 
 Two families derive their spellings from the module that owns them —
 contextual shares from `share_kind_rules()`, Grouping specification

@@ -759,25 +759,19 @@ call_supplies_other_argument <- function(expr, formal, other_names) {
 # call, reading it as a language object where `eval()` runs it and as ordinary
 # code everywhere else.
 #
-# `evalq()` and `bquote()` are deliberately absent. `evalq()` captures its
-# first argument and then evaluates it, so the symbols under it are read;
-# `bquote()` evaluates whatever `.()` wraps in the enclosing frame, which under
-# a data mask is the mask, so `bquote(f(.(share)))` reads the share. Both stay
-# analyzed, which over-reports the parts of them that really are data.
-#
-# rlang's `expr()` and `quo()` are absent for a different reason, and it is the
-# asymmetry below rather than a claim about what they do. Recognizing a name
-# here is a decision to stop reporting what sits under it, and `expr` is a name
-# callers bind -- this package binds it in nearly every function -- so a bare
-# call to one is not evidence of rlang's. Reading them as ordinary code keeps
-# the pre-#179 answer, which is a false refusal at worst.
+# `evalq()` evaluates its captured argument, so it stays outside this boundary.
+# Qualified bquote's explicit substitutions are visited separately. New captures
+# require their namespace: a bare name may be the caller's own function.
 language_capture_formal <- function(call_name) {
   if (is.null(call_name)) {
     return(NULL)
   }
   switch(call_name,
     quote = ,
-    substitute = "expr",
+    substitute = ,
+    bquote = ,
+    expr = ,
+    quo = "expr",
     expression = NA_character_,
     NULL
   )
@@ -817,9 +811,8 @@ language_capture_formal <- function(call_name) {
 # here, and answered in the direction that analyses rather than the one that
 # hides. A qualified head is out of reach of any binding and keeps its capture.
 #
-# A head written inside parentheses is refused a capture outright, whatever
-# `bound` holds, and it is the one place a parenthesized head is not read as the
-# name it spells. `(quote)(x)` evaluates its head as a value, so R's function
+# A head written inside parentheses is refused for the original three captures,
+# regardless of `bound`. `(quote)(x)` evaluates its head as a value, so function
 # lookup never runs and *any* binding wins -- a column, a preceding summary, or
 # a caller's own function, none of which this can see. Claiming the capture
 # would stop reporting `x`, which is the silent miss #130 fixed this walk to
@@ -827,6 +820,8 @@ language_capture_formal <- function(call_name) {
 # does. This is the asymmetry `R/contextual-helpers.R` records: a capture
 # answers to the environment, and a Contextual helper never does, which is why
 # recognizing one through the same parentheses is right there and wrong here.
+# Qualified bquote and rlang captures admit parentheses: their function value
+# is fixed by the namespace rather than supplied by the data mask.
 #
 # Only the share dependency walk passes a set, because it is the only analysis
 # that tracks bindings and the only one whose wrong answer is silence about a
@@ -845,25 +840,96 @@ captured_call_parts <- function(expr,
     return(captured)
   }
   call_head <- static_call_head(expr)
-  if (is_redundant_parens(call_head)) {
+  namespace <- static_call_ns(expr)
+  qualified_capture <- call_name %in% c("bquote", "expr", "quo") &&
+    !is.null(namespace)
+  if (is_redundant_parens(call_head) && !qualified_capture) {
     return(captured)
   }
   if (rlang::is_symbol(call_head) && rlang::as_name(call_head) %in% bound) {
     return(captured)
   }
-  namespace <- static_call_ns(expr)
-  if (!is.null(namespace) && !identical(namespace, "base")) {
+  if (call_name %in% c("bquote", "expr", "quo")) {
+    owner <- if (identical(call_name, "bquote")) "base" else "rlang"
+    if (!identical(namespace, owner)) {
+      return(captured)
+    }
+  } else if (!is.null(namespace) && !identical(namespace, "base")) {
     return(captured)
   }
   if (is.na(formal)) {
     return(rep(TRUE, length(args)))
   }
   index <- call_formal_index(args, formal)
+  if (call_name %in% c("bquote", "expr", "quo")) {
+    partial <- match(TRUE, vapply(argument_names(args), function(name) {
+      nzchar(name) && startsWith(formal, name)
+    }, logical(1)), nomatch = 0L)
+    if (partial != 0L) {
+      index <- partial
+    }
+  }
   if (index == 0L) {
     return(captured)
   }
   captured[[index]] <- TRUE
   captured
+}
+
+# Whether a recognized capture uses bquote's substitution grammar. `captured`
+# is the boundary already established by `captured_call_parts()`.
+is_bquote_capture <- function(expr, captured) {
+  any(captured) && identical(static_call_name(expr), "bquote")
+}
+
+# Visit only bquote's evaluated `.()` operands, retaining the literal tree.
+# bquote reads plain macro heads even inside quoted calls and function formals.
+# Splicing is outside this supported grammar and is refused before rewriting.
+map_bquote_substitutions <- function(expr, visit, splice = FALSE) {
+  if (is.pairlist(expr)) {
+    return(as.pairlist(lapply(
+      as.list(expr), map_bquote_substitutions, visit = visit, splice = splice
+    )))
+  }
+  if (!rlang::is_call(expr)) {
+    return(expr)
+  }
+  head <- expr[[1L]]
+  if (rlang::is_symbol(head, "..") && !identical(splice, FALSE)) {
+    abort_marginplyr(c(
+      "Cannot analyze splicing inside a {.fn bquote} capture.",
+      "i" = "Use {.code .()} or build the language outside the Margin verb."
+    ))
+  }
+  if (rlang::is_symbol(head, ".") && length(expr) >= 2L) {
+    expr[2L] <- list(visit(expr[[2L]]))
+    return(expr)
+  }
+  parts <- lapply(as.list(expr), map_bquote_substitutions,
+                  visit = visit, splice = splice)
+  rebuilt <- as.call(parts)
+  attributes(rebuilt) <- attributes(expr)
+  rebuilt
+}
+
+# The operands a bquote capture evaluates, in their written order. The mapper
+# is also used for rewriting so both walks see exactly the same substitutions.
+bquote_substitution_parts <- function(expr, splice = FALSE) {
+  parts <- list()
+  map_bquote_substitutions(expr, function(part) {
+    parts[length(parts) + 1L] <<- list(part)
+    part
+  }, splice = splice)
+  parts
+}
+
+# bquote's splice control, read as syntax without evaluating the caller's
+# value. Only a literal FALSE, including the default, rules out splicing.
+bquote_splice_argument <- function(expr) {
+  matched <- match.call(base::bquote, unparenthesized_call(expr))
+  splice <- c(call_formal_argument(matched, "splice", positional = FALSE),
+              list(FALSE))
+  unparenthesized_value(splice[[1L]])
 }
 
 # A computed call head is evaluated before the call's arguments. A symbol is
@@ -902,10 +968,16 @@ rewrite_function_formals <- function(formals, rewrite) {
 evaluated_call_args <- function(expr,
                                 call_name = static_call_name(expr),
                                 bound = character()) {
-  static_call_args(expr)[!(
-    captured_call_parts(expr, call_name, bound = bound) |
-      independent_mask_call_parts(expr)
-  )]
+  captured <- captured_call_parts(expr, call_name, bound = bound)
+  args <- static_call_args(expr)
+  if (is_bquote_capture(expr, captured)) {
+    substitutions <- bquote_substitution_parts(
+      args[[which(captured)]], splice = bquote_splice_argument(expr)
+    )
+  } else {
+    substitutions <- list()
+  }
+  c(args[!(captured | independent_mask_call_parts(expr))], substitutions)
 }
 
 # The call a rewrite gives back after visiting its computed head, evaluated
@@ -930,6 +1002,11 @@ rewrite_evaluated_call_parts <- function(expr, rewrite) {
     expr,
     function(part, index) {
       if (captured[[index]]) {
+        if (is_bquote_capture(expr, captured)) {
+          return(map_bquote_substitutions(
+            part, rewrite, splice = bquote_splice_argument(expr)
+          ))
+        }
         return(part)
       }
       if (index == 1L && identical(static_call_name(expr), "function") &&
@@ -983,8 +1060,26 @@ readable_language_index <- function(expr, call_name = static_call_name(expr)) {
 # rewrite, and it reached the helper before this ticket exactly as it does
 # after: what a search can recover by parsing, a rewrite cannot put back.
 rewrite_evaluated_language <- function(expr, rewrite) {
-  if (!any(captured_call_parts(expr))) {
+  captured <- captured_call_parts(expr)
+  if (!any(captured)) {
     return(rewrite(expr))
+  }
+  if (is_bquote_capture(expr, captured)) {
+    return(map_call_parts(expr, function(part, index) {
+      if (!captured[[index]]) {
+        return(rewrite(part))
+      }
+      # A substitution runs before the recovered body. Quote its rewritten
+      # operand during the body rewrite so it is visited exactly once, even
+      # where the body's own capture or data-mask boundary would hide it.
+      protected <- map_bquote_substitutions(part, function(operand) {
+        rlang::call2(rlang::expr(base::quote), rewrite(operand))
+      }, splice = bquote_splice_argument(expr))
+      rewritten <- rewrite(protected)
+      map_bquote_substitutions(rewritten, function(operand) {
+        static_call_args(operand)[[1L]]
+      }, splice = bquote_splice_argument(expr))
+    }))
   }
   map_call_parts(expr, function(part, index) rewrite(part))
 }
@@ -1181,9 +1276,9 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
     function_formal_defaults(expr), language)
 }
 
-# The language objects an expression is statically known to hand `eval()`, and
-# `NULL` where it is not knowable. An empty list is the third answer and is not
-# the same as `NULL`: a constant evaluates to itself and looks nothing up.
+# The language objects or written capture bodies handed to `eval()`, and
+# `NULL` where they are not knowable. An empty list is a third answer:
+# a constant evaluates to itself and looks nothing up.
 #
 # The constructors that hide a name from the walk need a case, and so do the
 # two that capture one. A name written as a string was never reported by the
@@ -1196,9 +1291,8 @@ searched_call_parts <- function(expr, call_name = static_call_name(expr)) {
 # case of its own: the walk of the call's parts reports the symbol under it as
 # it always did.
 #
-# `bquote()` is not among them because `.()` substitutes an expression this
-# walk cannot see, which leaves it with the answer it gives any other
-# unrecognized shape.
+# A bquote capture carries its written body even with substitutions; the
+# `unresolved` attribute records that their resulting language is unknown.
 static_language_values <- function(expr) {
   if (rlang::is_symbol(expr)) {
     # The symbol names a value, and which language object that value holds is
@@ -1211,6 +1305,19 @@ static_language_values <- function(expr) {
   call_name <- static_call_name(expr)
   if (is.null(call_name)) {
     return(NULL)
+  }
+  captured <- captured_call_parts(expr, call_name)
+  if (any(captured) && call_name %in% c("bquote", "expr", "quo")) {
+    value <- static_call_args(expr)[captured]
+    if (is_bquote_capture(expr, captured)) {
+      substitutions <- bquote_substitution_parts(
+        value[[1L]], splice = bquote_splice_argument(expr)
+      )
+      if (length(substitutions)) {
+        attr(value, "unresolved") <- TRUE
+      }
+    }
+    return(value)
   }
   if (identical(call_name, "quote")) {
     return(call_formal_argument(expr, "expr"))
