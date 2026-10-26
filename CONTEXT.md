@@ -213,8 +213,9 @@ rewriting, and which is therefore recognized by spelling and never resolved
 from the calling environment. It is recognized when the name matches and the
 namespace is absent or the owning package; any other qualifier is an ordinary
 call. Redundant parentheses are transparent to that reading, around the name
-or around the whole call, because `(` is the identity function; a head that
-must be evaluated to know what it calls is not recognized at all. A caller
+or around the whole call. This recognition does not erase an evaluation
+boundary selected by the written expression. A head that must be evaluated
+to know what it calls is not recognized at all. A caller
 binding of the same name never changes what a Margin verb does with it, and
 the rewritten call names the owning package so that what executes is what was
 analyzed. An argument one reads as a bare name is resolved the same way —

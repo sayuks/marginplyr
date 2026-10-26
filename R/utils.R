@@ -375,7 +375,7 @@ nameable_call <- function(expr) {
   if (identical(spelled, head)) {
     return(unwrapped)
   }
-  rebuild_static_call(unwrapped, static_call_args(unwrapped), head = spelled)
+  rlang::call2(spelled, !!!static_call_args(unwrapped))
 }
 
 # The three readers below read through redundant parentheses, so
@@ -691,6 +691,12 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)
+  # dplyr expands an unnamed top-level across(). Keep a parenthesized call
+  # on its per-group evaluation path even when its head is qualified (ADR 0019).
+  if (identical(static_spelling_name(expr, "selection"), "across") &&
+        (is_parenthesized(expr) || is_parenthesized(static_call_head(expr)))) {
+    return(rlang::call2("(", rebuilt))
+  }
   rebuilt
 }
 
