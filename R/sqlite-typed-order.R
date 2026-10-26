@@ -44,11 +44,22 @@ sqlite_order_value <- function(term) {
 sqlite_typed_result <- function(operation, unsorted, ordered,
                                 execution, source_columns, declared_types,
                                 restore_tibble = FALSE) {
+  key_id <- if (length(operation$plan$set_ids) > 1L) {
+    execution$sort_id
+  } else {
+    NULL
+  }
+  staged_id <- margin_staged_sort_identifier(operation, execution$sort_id)
+  if (is.null(key_id) && !is.null(staged_id)) {
+    unsorted <- drop_margin_staged_identifier(
+      unsorted, staged_id, operation$backend
+    )
+  }
   terms <- if (margin_sorting(operation)) {
     margin_order_terms(
       plan = operation$plan,
       sort = operation$sort,
-      sort_id = execution$sort_id
+      sort_id = key_id
     )
   } else {
     list()
