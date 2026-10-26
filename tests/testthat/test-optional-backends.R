@@ -298,13 +298,15 @@ test_that("every tracked Suggest is declared in DESCRIPTION", {
   expect_true(all(names(optional_suggests()) %in% declared))
 })
 
-test_that("DBI is untrackable because dbplyr puts it in the hard closure", {
+test_that("DBI and blob are untrackable in dbplyr's hard closure", {
   # The reason `optional_suggests()` records for `DBI = FALSE`, asserted rather
   # than only written down. If dbplyr ever drops DBI, DBI becomes genuinely
   # absent under `_R_CHECK_DEPENDS_ONLY_=true` and belongs in the withheld
   # subset, and this test is what says so.
   expect_match(packageDescription("dbplyr")$Imports, "\\bDBI\\b")
   expect_false(optional_suggests()[["DBI"]])
+  expect_match(packageDescription("dbplyr")$Imports, "\\bblob\\b")
+  expect_false(optional_suggests()[["blob"]])
 })
 
 # A guard that reports a package usable now promises the version DESCRIPTION

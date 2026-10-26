@@ -605,10 +605,22 @@ label_margin_branch <- function(.data,
             return(rlang::expr(rep(!!sentinels[[col]], !!branch_size)))
           }
           value <- prototypes[[col]]
-          if (dtplyr_full_size_label && rlang::is_bare_list(value) &&
+          if (dtplyr_full_size_label && is.list(value) &&
                 is.null(dim(value))) {
-            # dtplyr parses list calls but refuses injected list objects.
-            return(rlang::expr(rep(list(NULL), !!branch_size)))
+            # dtplyr resolves a bound symbol without parsing its list value.
+            # Keep it distinct from columns so it reads this prototype.
+            prototype_name <- new_margin_internal_names(
+              1L, dtplyr_columns, prefix = "..marginplyr_label_"
+            )
+            return(rlang::new_quosure(
+              rlang::expr(vctrs::vec_init(
+                !!rlang::sym(prototype_name), !!branch_size
+              )),
+              env = rlang::env(
+                rlang::base_env(),
+                !!!rlang::set_names(list(value), prototype_name)
+              )
+            ))
           }
           if (is.null(value)) NA else value
         })
