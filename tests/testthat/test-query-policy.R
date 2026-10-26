@@ -421,7 +421,8 @@ test_that("SQLite limited Margin inputs add no construction read", {
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   source <- dplyr::copy_to(
-    con, data.frame(g = c("a", "b"), v = c(2L, 9L)), "limited_input"
+    con, data.frame(g = c("a", "b"), v = c(2L, 9L), `TRUE` = c("x", "y"),
+                    check.names = FALSE), "limited_input"
   )
   limited <- head(dplyr::arrange(source, dplyr::desc(.data$v)), 1L)
   for (input in list(limited, dplyr::collapse(limited))) {
@@ -436,6 +437,39 @@ test_that("SQLite limited Margin inputs add no construction read", {
         input, .grouping = rollup("g"), .id = "sid", .sort = "last"
       )
     ), 0L)
+    expect_identical(count_entry_point_invocations(
+      expand_with_margins(
+        input,
+        .grouping = grouping_sets(grouping_set(), grouping_set("g")),
+        .margin_label = NULL
+      )
+    ), 0L)
+  }
+})
+
+test_that("DuckDB limited expansion adds no construction read", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = c("c", "b", "a"), v = 1:3), "limited_expansion"
+  )
+  ordinary <- count_entry_point_invocations(
+    expand_with_margins(source, .grouping = rollup("g"), .id = "sid")
+  )
+  # DuckDB's zero-row type read is permitted by ADR 0020.
+  expect_gt(ordinary, 0L)
+  limited <- head(dplyr::arrange(source, .data$v), 2L)
+  for (input in list(limited, dplyr::collapse(limited))) {
+    for (spec in list(
+      rollup("g"), grouping_sets(grouping_set(), grouping_set("g"))
+    )) {
+      expect_identical(count_entry_point_invocations(
+        expand_with_margins(
+          input, .grouping = spec, .margin_label = NULL, .id = "sid"
+        )
+      ), ordinary)
+    }
   }
 })
 
@@ -616,6 +650,11 @@ test_that("the exempt selection proxy materializes no caller rows", {
   class(expansion_table) <- c("margin_zero_row_probe", class(expansion_table))
   expand_with_margins(
     expansion_table, .grouping = rollup(k), .id = "sid", .sort = "first"
+  )
+  limited <- head(dplyr::arrange(table, .data$v), 1L)
+  expand_with_margins(
+    limited, .grouping = grouping_sets(grouping_set(), grouping_set("k")),
+    .margin_label = NULL, .id = "sid"
   )
 
   expect_identical(capture$rows, 0L)
