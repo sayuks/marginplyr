@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* SQLite expansions now directly materialize a Grouping set identifier named
+  `.data`, preserving its integer values, public columns, and Margin order
+  without needing an unrelated `.env` column (#863).
+
 * SQLite expansions retain unchanged source-column types through direct
   collection and materialization without `.id`, including all-missing fixed
   keys and payloads in one-set and unsorted results (#862).
