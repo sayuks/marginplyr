@@ -324,9 +324,9 @@ head that must be evaluated to know what it calls is still unresolved.
 **Both positions a caller can write a pair in.** `(grouping_id)(region)` is the
 pair around the head, which the decision above names. `(grouping_id(region))`
 is the pair around the whole call, which it does not, and the two are one
-question: `(` is the identity function, so all three writings of that call
-evaluate identically and R's own parser records the difference in the tree
-rather than in what runs. Both are read through, however many pairs deep.
+question for recognition. Both are read through, however many pairs deep.
+The execution boundary of an ordinary `across()` is governed by the
+*preserve parenthesized across evaluation* amendment below.
 
 **One place, not one place per family.** The reading lives in the shared
 readers of `R/utils.R` — the name, the namespace, the head, and the arguments —
@@ -371,17 +371,9 @@ complete right-hand side. `DESCRIPTION`'s `Config/marginplyr/cran-status` reads
 Two consequences reach expressions this does *not* make recognized, and both
 are recorded rather than avoided.
 
-*A caller's redundant parentheses do not survive into the rewritten
-expression.* The rewrites rebuild every call they descend into, and they
-rebuild it from the node the readers unwrapped, so a summary written
-`sum((a + b))` is staged as `sum(a + b)` and a diagnostic dplyr raises about
-that argument echoes it without the pair. What is evaluated is unchanged —
-the pair is redundant in the tree, not only on the page — and this is the
-normalization the decision above already performs far more visibly, since
-`across(v, mean)` reaches the same diagnostics as
-`dplyr::across(dplyr::all_of("v"), mean)`. Preserving the pair would mean
-rebuilding a node in a spelling the analysis had just been written not to
-distinguish.
+*Rewrites may normalize parentheses outside the ordinary `across()` boundary
+below.* A summary written `sum((a + b))` is staged as `sum(a + b)` and a
+diagnostic dplyr raises about that argument echoes it without the pair.
 
 *A name written as a parenthesized literal is now resolved rather than
 over-reported.* `get(("share"))` reads the share it names; before, the string
@@ -694,3 +686,32 @@ check still covers the nested input expression.
 The selection rewrite places an independent call inside an immediately invoked
 function. dplyr's own `pick()` expansion stops at that function boundary, so it
 cannot expand the nested operation's selection in the enclosing summary mask.
+
+## Amendment: preserve parenthesized across evaluation
+
+#869 separates static recognition from dplyr's syntactic expansion. The F2
+probe in `investigation/2026-10-26-summary-grouping-share-bug-hunt/README.md`
+records a function factory capturing `n()`: a parenthesized `across()` returns
+`2, 32`, while an unparenthesized one returns `1, 30`. The identity-function
+premise of the earlier parentheses amendment does not establish evaluation
+equivalence in a consumer that chooses its path from the syntax tree.
+
+An ordinary `across()` retains an evaluation boundary when its head or whole
+call is parenthesized, however many pairs deep. Rebuilding it retains one
+outer pair around the qualified call, so dplyr evaluates it per group instead
+of promoting it into top-level expansion. Static spelling still determines
+helper admission, owning-package qualification, and grouping-column exclusion.
+Unparenthesized and `identity()`-wrapped calls keep their existing paths.
+Contextual shares retain their own planning rules.
+
+This boundary belongs in `rebuild_static_call()`, which both summary rewrites
+use. The naming-only copy made by `nameable_call()` does not go through that
+execution reconstruction: recognition reads through parentheses, while the
+expression sent to dplyr retains the boundary. The original number and position
+of parentheses need not survive, only the evaluation path they select.
+
+Continuing to erase the boundary is rejected because it changes ordinary
+summary values. Resolving the head from the caller's environment is rejected
+by the existing Contextual helper rule; preserving the boundary does not
+require giving up qualification. Applying a wrapper to every `across()` is
+also rejected because it would change the unparenthesized control's evaluation.
