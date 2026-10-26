@@ -1365,6 +1365,22 @@ test_that("dtplyr expansion verbs label a non-character dimension", {
   }
 })
 
+test_that("dtplyr expands typed-missing classed list dimensions lazily", {
+  skip_if_suggest_absent("dtplyr")
+  data <- tibble::tibble(group = vctrs::list_of(1L, 2L), payload = 11:12)
+  query <- expand_with_margins(
+    dtplyr::lazy_dt(data), .grouping = rollup(group),
+    .margin_label = NULL, .id = "sid"
+  )
+
+  expect_s3_class(query, "dtplyr_step")
+  result <- dplyr::collect(query)
+  expect_identical(result$group, vctrs::list_of(1L, 2L, NULL, NULL))
+  expect_identical(result$payload, c(11L, 12L, 11L, 12L))
+  expect_identical(result$sid, c(1L, 1L, 2L, 2L))
+  expect_identical(dplyr::collect(query), result)
+})
+
 test_that("Arrow applies mixed named labels lazily with typed missing values", {
   skip_if_suggest_absent("arrow")
   data <- data.frame(
