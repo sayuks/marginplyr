@@ -30,6 +30,10 @@ expect_across_naming_failure <- function(data) {
             data, dplyr::across(x, sum, .names = template()),
             p = share_of_total(total)
           ),
+          across_share = summarize_with_margins(
+            data, dplyr::across(x, sum, .names = template()),
+            dplyr::across(total, share_of_total, .names = "p")
+          ),
           unrelated = summarize_with_margins(
             data, dplyr::across(x, sum, .names = template()),
             ordinary = sum(x), p = share_of_total(ordinary)
@@ -51,7 +55,7 @@ expect_across_naming_failure <- function(data) {
       list(error = error, reads = reads, original = original)
     }
     baseline <- run("ordinary")
-    for (mode in c("margin", "share", "unrelated")) {
+    for (mode in c("margin", "share", "across_share", "unrelated")) {
       actual <- run(mode)
       expect_identical(actual$reads, baseline$reads)
       expect_identical(actual$original, baseline$original)
@@ -81,6 +85,11 @@ expect_across_naming_success <- function(data) {
       share = summarize_with_margins(
         data, dplyr::across(x, sum, .names = template()),
         p = share_of_total(total), .check_share_source = FALSE
+      ),
+      across_share = summarize_with_margins(
+        data, dplyr::across(x, sum, .names = template()),
+        dplyr::across(total, share_of_total, .names = "p"),
+        .check_share_source = FALSE
       )
     )
     # nolint end
@@ -89,7 +98,7 @@ expect_across_naming_success <- function(data) {
   baseline <- run("ordinary")
   expect_identical(baseline$reads, 1L)
   expect_identical(baseline$columns, "total")
-  for (mode in c("margin", "share")) {
+  for (mode in c("margin", "share", "across_share")) {
     actual <- run(mode)
     expect_identical(actual$reads, baseline$reads)
     expect_identical(setdiff(actual$columns, "p"), baseline$columns)
@@ -142,13 +151,27 @@ test_that("unrelated local shares leave first naming in its dplyr context", {
       share = summarize_with_margins(
         data, dplyr::across(x, sum, .names = template()), total = sum(x),
         p = share_of_total(total)
+      ),
+      across_share = summarize_with_margins(
+        data, dplyr::across(x, sum, .names = template()), total = sum(x),
+        dplyr::across(total, share_of_total, .names = "p")
+      ),
+      across_many = summarize_with_margins(
+        data, dplyr::across(x, sum, .names = template()), total = sum(x),
+        extra = sum(x),
+        dplyr::across(c(total, extra), share_of_total, .names = "{.col}_p")
+      ),
+      across_strings = summarize_with_margins(
+        data, dplyr::across(x, sum, .names = template()), total = sum(x),
+        dplyr::across(dplyr::all_of("total"), share_of_total, .names = "p")
       )
     )
     list(result = result, reads = reads)
   }
   baseline <- run("ordinary")
   expect_identical(baseline$reads, 1L)
-  for (mode in c("margin", "share")) {
+  for (mode in c("margin", "share", "across_share", "across_many",
+                 "across_strings")) {
     actual <- run(mode)
     expect_identical(actual$reads, baseline$reads)
     expect_identical(actual$result[names(baseline$result)], baseline$result)

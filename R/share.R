@@ -1529,9 +1529,9 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
-# Whether every share reads an explicitly named preceding ordinary summary.
-# Such local calls do not need to evaluate an ordinary selection to find its
-# output names; actual output checks still protect the share sources.
+# Whether every share in preflighted dots reads explicitly named preceding
+# ordinary summaries. Such local calls need no ordinary-selection evaluation
+# to find output names; actual output checks still protect the share sources.
 local_share_sources_are_named <- function(dots) {
   preceding <- character()
   dot_names <- rlang::names2(dots)
@@ -1541,12 +1541,15 @@ local_share_sources_are_named <- function(dots) {
       preceding <- c(preceding, dot_names[[i]])
       next
     }
-    if (!is_share_helper_call(expr)) {
-      return(FALSE)
+    if (is_across_call(expr)) {
+      args <- parse_across_arguments(expr)
+      if (!is_literal_summary_selection(args$cols, preceding)) {
+        return(FALSE)
+      }
+      next
     }
     args <- unwrap_injected_args(static_call_args(expr))
-    if (length(args) != 1L || !is_name_part(args[[1L]]) ||
-          !rlang::as_name(args[[1L]]) %in% preceding) {
+    if (!rlang::as_name(args[[1L]]) %in% preceding) {
       return(FALSE)
     }
   }

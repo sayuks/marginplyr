@@ -830,6 +830,31 @@ plan_summary_expressions <- function(dots,
   )
 }
 
+# Whether a selection names only known columns without running caller code.
+# This recognizes the literal forms shared by local name prediction and share
+# dependency planning; other selections stay with their ordinary resolver.
+is_literal_summary_selection <- function(cols, available) {
+  cols <- unwrap_injected_quosure(cols)
+  if (rlang::is_missing(cols)) {
+    return(FALSE)
+  }
+  if (rlang::is_symbol(cols)) {
+    return(rlang::as_string(cols) %in% available)
+  }
+  if (rlang::is_call(cols, "c")) {
+    parts <- as.list(cols)[-1L]
+    return(
+      all(vapply(parts, is_name_part, logical(1))) &&
+        all(vapply(parts, rlang::as_string, character(1)) %in% available)
+    )
+  }
+  if (identical(static_call_name(cols), "all_of") &&
+        length(cols) == 2L && is.character(cols[[2L]])) {
+    return(all(cols[[2L]] %in% available))
+  }
+  FALSE
+}
+
 # Names an unnamed local `across()` only when both its columns and `.names`
 # template are literal. The input is a name list, so no caller function or
 # summary expression runs while reserving internal key names.
@@ -845,18 +870,7 @@ predictable_local_across_names <- function(dots, input_names) {
       parsed <- parse_across_arguments(expr)
       cols <- parsed$cols
       template <- parsed$names
-      simple_cols <- if (rlang::is_symbol(cols)) {
-        rlang::as_string(cols) %in% available
-      } else if (rlang::is_call(cols, "c")) {
-        parts <- as.list(cols)[-1L]
-        all(vapply(parts, rlang::is_symbol, logical(1))) &&
-          all(vapply(parts, rlang::as_string, character(1)) %in% available)
-      } else if (identical(static_call_name(cols), "all_of") &&
-                   length(cols) == 2L && is.character(cols[[2L]])) {
-        all(cols[[2L]] %in% available)
-      } else {
-        FALSE
-      }
+      simple_cols <- is_literal_summary_selection(cols, available)
       literal_template <- is.null(template) || (
         is.character(template) && length(template) == 1L &&
           !is.na(template) &&
