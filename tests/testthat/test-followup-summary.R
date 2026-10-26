@@ -471,7 +471,8 @@ test_that("unnamed selectors preserve context and counts beside shares", {
       for (selection in rlang::exprs(
         total, c(total), "total", dplyr::all_of("total"), all_of("total"),
         dplyr::any_of(c("total")), dplyr::all_of(c("total", "total")),
-        !!rlang::quo(total)
+        !!rlang::quo(total),
+        !!rlang::new_quosure(quote(all_of("total")), asNamespace("dplyr"))
       )) {
         helpers <- c(helpers, list(rlang::expr(dplyr::across(
           !!selection, !!kind, .names = "share"
@@ -546,6 +547,36 @@ test_that("share selection prediction leaves caller bindings to evaluation", {
     )), caller)
     actual <- summarize_with_margins(
       data, dplyr::across(x, sum, .names = "unused"),
+      total = sum(x), !!share
+    )
+    expect_identical(actual, tibble::tibble(unused = 3L, total = 3L, share = 1))
+  }
+})
+
+test_that("share prediction does not force caller promises or active bindings", {
+  for (active in c(FALSE, TRUE)) {
+    ready <- FALSE
+    caller <- rlang::env(rlang::current_env())
+    if (active) {
+      makeActiveBinding("all_of", function() {
+        stopifnot(ready)
+        function(...) "unused"
+      }, caller)
+    } else {
+      delayedAssign("all_of", {
+        stopifnot(ready)
+        function(...) "unused"
+      }, assign.env = caller)
+    }
+    share <- rlang::new_quosure(quote(dplyr::across(
+      all_of("total"), share_of_total, .names = "share"
+    )), caller)
+    actual <- summarize_with_margins(
+      tibble::tibble(x = 1:2),
+      dplyr::across(dplyr::all_of({
+        ready <<- TRUE
+        "x"
+      }), sum, .names = "unused"),
       total = sum(x), !!share
     )
     expect_identical(actual, tibble::tibble(unused = 3L, total = 3L, share = 1))

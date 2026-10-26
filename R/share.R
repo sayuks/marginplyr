@@ -1583,8 +1583,10 @@ share_selects_named_summaries <- function(expr, preceding, env,
   }
   namespace <- static_call_ns(expr)
   known <- if (is.null(namespace)) {
-    identical(ordinary_function_binding(name, env),
-              getExportedValue("tidyselect", name))
+    identical(
+      ordinary_function_binding(name, env, owners = c("dplyr", "tidyselect")),
+      getExportedValue("tidyselect", name)
+    )
   } else {
     namespace %in% c("dplyr", "tidyselect")
   }

@@ -1493,14 +1493,19 @@ is_known_frame_constructor <- function(expr, env) {
 
 # Read a function-position name without forcing a caller promise or invoking an
 # active binding. R skips non-function values in a function position; an
-# unresolved binding leaves its eventual callee unknown to prediction.
-ordinary_function_binding <- function(name, env) {
+# unresolved binding leaves its eventual callee unknown to prediction. Known
+# package owners may load their namespace and attached export promises.
+ordinary_function_binding <- function(name, env, owners = character()) {
+  allowed <- c(
+    list(baseenv(), asNamespace("base")),
+    lapply(owners, asNamespace),
+    lapply(intersect(paste0("package:", owners), search()), as.environment)
+  )
   current <- env
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
       if (bindingIsActive(name, current) ||
-            (!identical(current, baseenv()) &&
-               !identical(current, asNamespace("base")) &&
+            (!any(vapply(allowed, identical, logical(1), y = current)) &&
                rlang::env_binding_are_lazy(current, name))) {
         return(NULL)
       }
