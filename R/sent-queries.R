@@ -31,7 +31,7 @@ current_sent_query_scope <- function() {
 # nested ownership ends with its frame, without interruptible exit cleanup.
 reset_sent_queries <- function() {
   scope <- new.env(parent = emptyenv())
-  scope$audited <- isTRUE(getOption("marginplyr.audit_sql"))
+  scope$audited <- identical(getOption("marginplyr.audit_sql"), TRUE)
   scope$is_sql <- FALSE
   scope$record <- new.env(parent = emptyenv())
   scope$record$rows <- dplyr::tibble(

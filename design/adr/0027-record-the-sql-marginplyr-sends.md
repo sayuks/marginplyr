@@ -102,10 +102,10 @@ collapsed into an unaccounted-for zero:
 
 Both refusals are Package conditions under ADR 0015: the caller avoids each by
 rewriting a call they wrote — running a Margin verb first, or setting the
-option. Recording itself reads `isTRUE(getOption("marginplyr.audit_sql"))` and
-reports nothing at all, because a garbage option value must not turn a caller's
-`summarize_with_margins()` into an error. The accessor is the surface that
-reports it.
+option. Recording itself compares the option to plain `TRUE` with `identical()`
+and reports nothing at all, because a garbage option value must not turn a
+caller's `summarize_with_margins()` into an error (#859). The accessor is the
+surface that reports it.
 
 The return value is a `dplyr::tibble()`, which ADR 0013 already settled for an
 inspection surface, and no print method, which ADR 0013 already declined for the

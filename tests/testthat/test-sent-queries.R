@@ -134,7 +134,7 @@ test_that("a DuckDB call under the default option records nothing", {
 })
 
 test_that("a value other than TRUE means not audited and raises nothing", {
-  for (value in list("yes", NA, 1)) {
+  for (value in list(NULL, FALSE, "yes", NA, 1, logical(), c(TRUE, TRUE))) {
     with_audit_option(value, {
       expect_no_error(summarize_with_margins(
         sent_queries_data(),
@@ -144,6 +144,83 @@ test_that("a value other than TRUE means not audited and raises nothing", {
       expect_unaudited()
     })
   }
+})
+
+test_that("malformed audit options leave every public entry unchanged", {
+  method_calls <- 0L
+  method <- function(x, ...) {
+    method_calls <<- method_calls + 1L
+    stop("audit option method ran")
+  }
+  generics <- c("is.na", "length", "Ops")
+  for (generic in generics) {
+    registerS3method(generic, "audit_option_passive", method,
+                     envir = asNamespace("base"))
+  }
+  on.exit(rm(
+    list = paste0(generics, ".audit_option_passive"),
+    envir = asNamespace("base")$.__S3MethodsTable__.
+  ), add = TRUE)
+  expect_setequal(names(forwarded_verbs), verbs_taking(".grouping"))
+  local <- data.frame(g = c("a", "a", "b"), value = 1:3)
+  remote <- dbplyr::tbl_lazy(local, con = dbplyr::simulate_sqlite())
+  for (input in list(local, remote)) {
+    for (name in names(forwarded_verbs)) {
+      run <- function() {
+        tryCatch(
+          forwarded_verbs[[name]](input, grouping = rollup(g)),
+          error = identity
+        )
+      }
+      expected <- with_audit_option(FALSE, run())
+      if (inherits(expected, "condition")) {
+        # SQL nesting is refused independently of whether audit is enabled.
+        expect_true(name %in% c("nest_with_margins", "nest_by_with_margins"))
+        expect_s3_class(expected, "marginplyr_error")
+      }
+      for (value in c(FALSE, TRUE)) {
+        malformed <- structure(value, class = "audit_option_passive")
+        actual <- with_audit_option(malformed, run())
+        if (inherits(expected, "condition")) {
+          expect_identical(class(actual), class(expected))
+          expect_identical(conditionMessage(actual), conditionMessage(expected))
+        } else if (inherits(expected, "tbl_lazy")) {
+          expect_s3_class(actual, "tbl_lazy")
+          expect_identical(
+            dbplyr::sql_render(actual), dbplyr::sql_render(expected)
+          )
+        } else {
+          expect_identical(actual, expected)
+        }
+        with_audit_option(TRUE, expect_unaudited())
+      }
+    }
+  }
+  expect_identical(method_calls, 0L)
+})
+
+test_that("a malformed audit setting survives input forcing and reentry", {
+  input <- sent_queries_data()
+  expected <- with_audit_option(FALSE, inspect_grouping(
+    input, .grouping = rollup(g)
+  ))
+  actual <- with_audit_option(TRUE, inspect_grouping(
+    {
+      options(marginplyr.audit_sql = structure(TRUE, class = "audit_setting"))
+      inspect_grouping(input, .grouping = rollup(h))
+      expect_unaudited()
+      input
+    },
+    .grouping = {
+      expect_unaudited()
+      options(marginplyr.audit_sql = TRUE)
+      inspect_grouping(input, .grouping = rollup(h))
+      expect_unaudited()
+      rollup(g)
+    }
+  ))
+  expect_identical(actual, expected)
+  with_audit_option(TRUE, expect_unaudited())
 })
 
 test_that("the option is read at the reset, not when the record is read", {
