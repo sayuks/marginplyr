@@ -457,7 +457,8 @@
 #'
 #' Every rule above reads the expression the data mask evaluates. An expression
 #' captured as language data — the argument of a plainly written
-#' [base::quote()], [base::substitute()], or [base::expression()] — is a value
+#' [base::quote()], [base::substitute()], [base::expression()],
+#' [base::bquote()], `rlang::expr()`, or `rlang::quo()` — is a value
 #' the summary carries, so marginplyr neither analyzes nor rewrites what is
 #' inside it: a captured helper name requests nothing, creates no dependency on
 #' an earlier summary, and reaches the backend as written. Evaluating one with
@@ -465,9 +466,18 @@
 #' data mask, so what it holds is analyzed as the code it becomes and every
 #' rule above applies to it.
 #'
+#' In `bquote()`, the operand of `.()` is evaluated and follows those rules;
+#' the surrounding language stays literal. Splicing with `..()` is refused
+#' when `splice` is enabled or cannot be determined statically. Build that
+#' language outside the Margin verb instead.
+#'
 #' Both halves are read statically, so both stop where a static reading does.
-#' A capture is one where the call names the primitive plainly, qualified with
-#' `base::` or not; any other spelling — another namespace, or a head computed
+#' `quote()`, `substitute()`, and `expression()` name their primitive plainly,
+#' qualified with `base::` or not. The additional captures require their
+#' qualifier: `base::bquote()`, `rlang::expr()`, and `rlang::quo()`.
+#' Qualified `bquote()`,
+#' `expr()`, and `quo()` also allow parentheses around the head.
+#' Any other spelling — another namespace, or a head computed
 #' at run time — is analyzed as ordinary code, which can refuse a call that
 #' only carries language. An evaluation is followed wherever the language it
 #' runs can be read without running the call, which covers a capture written
@@ -634,11 +644,12 @@
 #' does not add an attribute-restoration guarantee; see *Result class and
 #' attributes* and ADR 0016.
 #'
-#' A local matrix grouping dimension likewise accepts only `NULL` or
-#' `NA_character_` as its Margin label. Its omitted rows retain the matrix
-#' shape and typed missing components. A non-missing scalar label cannot
-#' represent the matrix key; split it into separate columns if it needs
-#' display text. A matrix used only as a fixed `.by` key needs no Margin label.
+#' A local matrix or higher-dimensional array grouping dimension likewise
+#' accepts only `NULL` or `NA_character_` as its Margin label, including on
+#' empty input. Its omitted rows retain the shape and typed missing components.
+#' A non-missing scalar label cannot represent the key; split it into separate
+#' columns if it needs display text. A matrix or array used only as a fixed
+#' `.by` key needs no Margin label.
 #'
 #' Factor columns follow this contract:
 #'

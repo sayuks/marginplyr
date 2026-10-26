@@ -214,7 +214,7 @@ normalize_margin_id <- function(.id) {
       "character string."
     ))
   }
-  .id
+  unname(.id)
 }
 
 # `where` names what the identifier collided with, and it arrives interpolated
