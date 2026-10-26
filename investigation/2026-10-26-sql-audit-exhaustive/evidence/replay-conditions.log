@@ -1,0 +1,4 @@
+S3 formatter/condition controls: 128 pairs passed.
+General-condition defect capture: 1 off / 4 on; values and classes agree.
+Secondary formatter conditions: all 8 defect pairs reproduced.
+Minimal secondary-formatter capture: 1 off / 5 on; primary warning unchanged.

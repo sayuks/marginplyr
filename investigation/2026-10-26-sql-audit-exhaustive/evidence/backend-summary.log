@@ -1,0 +1,47 @@
+R: R version 4.6.1 (2026-06-24)
+Platform: aarch64-apple-darwin23
+    dplyr    dbplyr       DBI   RSQLite    duckdb RPostgres   pkgload
+  "1.2.1"   "2.6.0"   "1.3.0"  "3.53.3"   "1.5.5"  "1.4.10"   "1.5.3"
+
+ sqlite 102 cases
+
+observed_label_collision                   result            share_dialect
+                      27                       68                        4
+
+prepared returned
+      68       31
+lazy results: 68
+public refused: 21
+
+ duckdb 102 cases
+
+observed_label_collision                   result          selection_proxy
+                      27                       78                       98
+           share_dialect    share_dialect_control
+                       4                        4
+
+ errored prepared returned
+       4       78      129
+lazy results: 78
+public refused: 7
+
+ postgres 103 cases
+
+ observed_label_collision                    result             share_dialect
+                       27                        79                         5
+    share_dialect_control share_dialect_transaction
+                        5                         4
+
+ errored prepared returned
+       5       79       36
+lazy results: 79
+public refused: 11
+
+Simulators: 528 cases
+
+observed_label_collision                   result
+                     144                      240
+
+ errored prepared
+     144      240
+public refused: 224

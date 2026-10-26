@@ -1,0 +1,11 @@
+tested 100 pairs
+tested 200 pairs
+tested 300 pairs
+tested 400 pairs
+tested 500 pairs
+tested 600 pairs
+list()
+PASS 600 off/on public lifecycle pairs; 540 status assertions
+
+    errored interrupted    returned     unknown
+        264         180          60          96
