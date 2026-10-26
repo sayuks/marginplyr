@@ -1,0 +1,38 @@
+pairs: 307
+failures: 0
+NULL
+order-only: 26
+ [1] "duckdb/base/duplicate_drop"
+ [2] "duckdb/base/composite"
+ [3] "duckdb/base/no_summaries"
+ [4] "duckdb/base/across"
+ [5] "duckdb/base/by_both"
+ [6] "duckdb/base/share_checked_cold"
+ [7] "duckdb/base/share_checked_warm"
+ [8] "duckdb/recursive/duplicate_drop"
+ [9] "duckdb/recursive/composite"
+[10] "duckdb/recursive/missing_label"
+[11] "duckdb/recursive/no_label"
+[12] "duckdb/recursive/duplicate_expansion"
+[13] "duckdb/recursive/no_summaries"
+[14] "duckdb/recursive/across"
+[15] "duckdb/recursive/by_both"
+[16] "duckdb/recursive/share_checked_warm"
+[17] "duckdb/summarized/duplicate_drop"
+[18] "duckdb/summarized/composite"
+[19] "duckdb/summarized/missing_label"
+[20] "duckdb/summarized/no_label"
+[21] "duckdb/summarized/duplicate_expansion"
+[22] "duckdb/summarized/no_summaries"
+[23] "duckdb/summarized/across"
+[24] "duckdb/summarized/share_checked_cold"
+[25] "duckdb/summarized/share_checked_warm"
+[26] "duckdb/extra/share_fixed"
+audit rows:
+
+          selection_proxy  observed_label_collision             share_dialect
+                       98                        81                        13
+    share_dialect_control share_dialect_transaction                    result
+                        9                         4                       225
+Simulator pairs: 528 failures: 0
+character(0)

@@ -1,0 +1,10 @@
+Delivered conditions with auditing off: 1
+Delivered conditions with auditing on: 5
+Result values, classes, and original condition identity agree.
+Error in main(if (length(args)) args[[1L]] else NULL) :
+  identical(off$conditions, on$conditions) is not TRUE
+Calls: main -> stopifnot
+In addition: Warning messages:
+1: SQLite translated SUM
+2: SQLite translated SUM
+Execution halted

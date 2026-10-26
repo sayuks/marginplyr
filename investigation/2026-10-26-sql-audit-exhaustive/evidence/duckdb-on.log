@@ -1,0 +1,7 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Constructing traceable class “nonstandardGenericFunctionWithTrace”
+Environment of class “nonstandardGenericFunction” is locked; using global environment for new class
+Tracing function "dbExecute" in package "namespace:DBI"
+duckdb on 102 cases completed
+Untracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbExecute" in package "namespace:DBI"
