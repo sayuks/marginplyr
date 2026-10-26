@@ -337,7 +337,8 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   sql_options_given <- !missing(sql_options)
   con <- x$con
   public <- attr(x, "marginplyr_public_columns")
-  if (".env" %in% public && is.null(name) && !temporary) {
+  pronoun_output <- any(c(".data", ".env") %in% public)
+  if (pronoun_output && is.null(name) && !temporary) {
     abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
                      call = rlang::caller_call())
   }
@@ -368,9 +369,9 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     anchor <- attr(x, "marginplyr_public_anchor")
-    if (".env" %in% public) {
+    if (pronoun_output) {
       # dbplyr's compute() selects every column by symbol before creating the
-      # table; tidyselect reads its generated `.env` symbol as the pronoun.
+      # table; tidyselect reads generated `.data` and `.env` as pronouns.
       dots <- rlang::list2(...)
       anchor_options <- sql_options
       if ("cte" %in% names(dots)) {

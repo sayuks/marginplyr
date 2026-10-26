@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* SQLite expansions now directly materialize a Grouping set identifier named
+  `.data`, preserving its integer values, public columns, and Margin order
+  without needing an unrelated `.env` column (#863).
+
 * Captured Grouping helpers retain their literal syntax in qualified
   `base::bquote()`, `rlang::expr()`, and `rlang::quo()` calls. Explicit `bquote()`
   substitutions still evaluate; unsupported splicing is refused (#832).

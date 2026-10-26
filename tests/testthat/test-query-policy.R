@@ -414,6 +414,12 @@ test_that("SQLite destination inspection starts only at explicit compute", {
   expect_gt(count_entry_point_invocations(dplyr::compute(
     query, name = "query_policy_sqlite_target", temporary = FALSE
   )), 0L)
+  for (id in c(".data", "sid", ".env")) {
+    expect_identical(count_entry_point_invocations(expand_with_margins(
+      source, .grouping = rollup(g), .id = id, .margin_label = NULL,
+      .sort = "last"
+    )), 0L)
+  }
 })
 
 test_that("SQLite limited Margin inputs add no construction read", {
