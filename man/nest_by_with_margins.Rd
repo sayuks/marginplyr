@@ -119,6 +119,11 @@ This is the row-wise counterpart of \code{\link[=nest_with_margins]{nest_with_ma
 \details{
 A \code{dtplyr} result is collected before it is made row-wise because
 row-wise data frames are local objects.
+
+dplyr reserves \code{.rows} in row-wise grouping metadata. A fixed \code{.by} key,
+grouping dimension, or \code{.id} named \code{.rows} is therefore refused before
+nesting. Rename that outer key or use \code{\link[=nest_with_margins]{nest_with_margins()}} for an
+ungrouped result. A payload column or \code{.key} named \code{.rows} is supported.
 }
 \section{Fixed columns and grouping dimensions}{
 

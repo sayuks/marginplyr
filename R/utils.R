@@ -8,14 +8,16 @@ drop_margin_columns <- function(data, columns) {
   dplyr::select(data, -dplyr::all_of(columns))
 }
 
-# Evaluate a local operation under safe names for dot-dot columns it reads.
+# Evaluate a local operation under safe names for dot-dot columns it reads
+# and any additional names the caller identifies as unsafe for its operation.
 # Other columns keep their names; any retained aliases are restored afterwards.
 # The caller reserves names its transform creates. Lazy inputs retain their
 # backend's own name handling.
 with_margin_column_aliases <- function(data, read, transform,
-                                       reserved = character()) {
+                                       reserved = character(),
+                                       unsafe = character()) {
   special <- if (is.data.frame(data)) {
-    read[grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", read)]
+    read[grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", read) | read %in% unsafe]
   } else {
     character()
   }
