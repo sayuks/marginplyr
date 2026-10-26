@@ -1,0 +1,235 @@
+Source snapshot: bfcdaf76a36d102132cd039c68ba8bc05a4fd465
+Investigated: 2026-10-26
+Four red-capable scripts intentionally fail; other scripts assert dated observations and working controls.
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/asis-controls.R
+expected exit: 0; observed exit: 0
+logical AsIs FALSE rep preserves class TRUE PASS
+logical AsIs TRUE rep preserves class FALSE PASS
+integer AsIs FALSE rep preserves class TRUE PASS
+integer AsIs TRUE rep preserves class FALSE PASS
+double AsIs FALSE rep preserves class TRUE PASS
+double AsIs TRUE rep preserves class FALSE PASS
+character AsIs FALSE rep preserves class TRUE PASS
+character AsIs TRUE rep preserves class FALSE PASS
+Date AsIs FALSE rep preserves class TRUE PASS
+POSIXct AsIs FALSE rep preserves class TRUE PASS
+difftime AsIs FALSE rep preserves class TRUE PASS
+factor AsIs FALSE rep preserves class TRUE PASS
+ordered AsIs FALSE rep preserves class TRUE PASS
+integer64 AsIs FALSE rep preserves class TRUE PASS
+units AsIs FALSE rep preserves class TRUE PASS
+dtplyr rollups: 264 successful controls; 96 expected current-defect observations
+local rollup, dtplyr single-set and fixed-key controls: 1080 PASS
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/default-promise-selection.R
+expected exit: 1; observed exit: 1
+dplyr selection: [1] "key"
+fixed inspection: [[1]]
+[1] "cols" "key"
+
+dimension inspection: [[1]]
+[1] "cols" "key"
+
+nest fixed keys: # A tibble: 2 × 3
+  cols    key data
+  <chr> <dbl> <list>
+1 x         1 <tibble [1 × 0]>
+2 y         1 <tibble [1 × 0]>
+dtplyr dimensions: [[1]]
+[1] "cols" "key"
+
+Error: identical(fixed(x)$fixed, list(expected)) is not TRUE
+Execution halted
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/dtplyr-metadata-sweep.R
+expected exit: 0; observed exit: 0
+REFUSED: immutable_arrange
+REFUSED: immutable_constant_overwrite
+REFUSED: immutable_value_dependent
+REFUSED: mutable_arrange
+REFUSED: mutable_constant_overwrite
+REFUSED: mutable_value_dependent
+PASS: 28 derived steps; 8 multi-input graphs; 150 typed proxy comparisons; 6 refusals (including two setorder gaps); no inspection source reads or caller mutations
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/extended-names.R
+expected exit: 0; observed exit: 0
+calls: 4664 failures: 0
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/grouping-identity.R
+expected exit: 0; observed exit: 0
+identity result checks: 200 rows checked: 1770 PASS
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/name-interactions.R
+expected exit: 0; observed exit: 0
+name interaction checks: 290 failures: 0
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/operator-scope.R
+expected exit: 0; observed exit: 0
+c qualified | expected: b | actual: a
+c parenthesized | expected: b | actual: a
+minus_unary qualified | expected: ERROR: rlang_error | actual: ERROR: rlang_error
+minus_unary parenthesized | expected: ERROR: rlang_error | actual: ERROR: rlang_error
+minus_binary qualified | expected: b | actual: a
+minus_binary parenthesized | expected: b | actual: a
+range qualified | expected: b | actual: a,b
+range parenthesized | expected: b | actual: a,b
+divide qualified | expected: b | actual: a
+divide parenthesized | expected: b | actual: a
+and qualified | expected: ERROR: vctrs_error_subscript_type | actual: ERROR: vctrs_error_subscript_type
+and parenthesized | expected: ERROR: vctrs_error_subscript_type | actual: ERROR: vctrs_error_subscript_type
+or qualified | expected: ERROR: vctrs_error_subscript_type | actual: ERROR: vctrs_error_subscript_type
+or parenthesized | expected: ERROR: vctrs_error_subscript_type | actual: ERROR: vctrs_error_subscript_type
+not qualified | expected: ERROR: vctrs_error_subscript_type | actual: ERROR: vctrs_error_subscript_type
+not parenthesized | expected: ERROR: vctrs_error_subscript_type | actual: ERROR: vctrs_error_subscript_type
+Observed eight wrong selections and eight matching refusals: PASS
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/qualified-operator-coverage.R
+expected exit: 0; observed exit: 0
+inspect_fixed :
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 (a)   ()       ()      ()                      0
+inspect_dimension :
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (a)      ()      a=0                     0
+nest_fixed :
+# A tibble: 2 × 2
+  a     data
+  <chr> <list>
+1 x     <tibble [1 × 1]>
+2 y     <tibble [1 × 1]>
+nest_by_fixed :
+# A tibble: 2 × 2
+# Rowwise:  a
+  a     data
+  <chr> <list>
+1 x     <tibble [1 × 1]>
+2 y     <tibble [1 × 1]>
+nest_dimension :
+# A tibble: 2 × 2
+  a     data
+  <chr> <list>
+1 x     <tibble [1 × 1]>
+2 y     <tibble [1 × 1]>
+nest_by_dimension :
+# A tibble: 2 × 2
+# Rowwise:  a
+  a     data
+  <chr> <list>
+1 x     <tibble [1 × 1]>
+2 y     <tibble [1 × 1]>
+backend inspection, fresh promise per call
+local : (a)
+dtplyr : (a)
+arrow : (a)
+duckdb : (a)
+active-binding early duplicate control
+# A tibble: 2 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (b)      (a)     b=0, a=1                1
+2      2 ()    (a)      (b)     b=1, a=0                2
+marginplyr_error : Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = "drop"` or `"keep"`.
+Observed all public-route and duplicate-refusal symptoms: PASS
+Observed default-promise misselection in all constructor consumers: 10 PASS
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/reproduce-asis-identity.R
+expected exit: 1; observed exit: 1
+local rollup, dtplyr single set, and class-preserving upstream union: PASS
+Error in .set_ops_arg_check(x, y, all, block_list = !all) :
+  Item 2 of x is 'AsIs' but the corresponding item of y is 'numeric'.
+Calls: <Anonymous> ... .set_ops_arg_check -> stopf -> raise_condition -> signal
+Execution halted
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/reproduce-sorted-metadata.R
+expected exit: 1; observed exit: 1
+Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+Error: !inherits(actual, "error") is not TRUE
+Execution halted
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/reproduce-typed-selection.R
+expected exit: 1; observed exit: 1
+expected fixed: b
+actual fixed: a
+Error: identical(observed, expected) is not TRUE
+Execution halted
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/sorted-metadata-controls.R
+expected exit: 0; observed exit: 0
+immutable root : accepted
+immutable filter : accepted
+immutable arrange : accepted
+immutable filter_arrange : marginplyr_error
+isolated sorted-filter proxy faithful; source reads: 0
+explicit collect source reads: 2 ; schema matches proxy
+mutable root : accepted
+mutable filter : accepted
+mutable arrange : marginplyr_error
+mutable filter_arrange : marginplyr_error
+isolated sorted-filter proxy faithful; source reads: 0
+explicit collect source reads: 2 ; schema matches proxy
+parent filter : dtplyr_step_call/dtplyr_step fun= setorder ; safe= FALSE
+parent select : dtplyr_step_call/dtplyr_step fun= setorder ; safe= FALSE
+parent rename : dtplyr_step_call/dtplyr_step fun= setorder ; safe= FALSE
+parent relocate : dtplyr_step_call/dtplyr_step fun= setorder ; safe= FALSE
+parent mutate : dtplyr_step_call/dtplyr_step fun= setorder ; safe= FALSE
+parent group : dtplyr_step_subset/dtplyr_step fun= ; safe= TRUE
+parent join : dtplyr_step_call/dtplyr_step fun= setorder ; safe= FALSE
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/structured-membership.R
+expected exit: 0; observed exit: 0
+structured source membership checks: 2310 failures: 0
+list()
+upstream unsupported types:
+list()
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/typed-selection-algebra.R
+expected exit: 0; observed exit: 0
+passed AST 100 inspection checks 164 valid grammar refusals 18
+passed AST 300 inspection checks 468 valid grammar refusals 66
+passed AST 400 inspection checks 618 valid grammar refusals 91
+passed AST 500 inspection checks 774 valid grammar refusals 113
+passed AST 600 inspection checks 936 valid grammar refusals 132
+passed AST 700 inspection checks 1098 valid grammar refusals 151
+passed AST 800 inspection checks 1256 valid grammar refusals 172
+passed AST 900 inspection checks 1412 valid grammar refusals 194
+passed AST 1000 inspection checks 1558 valid grammar refusals 221
+passed AST 1100 inspection checks 1712 valid grammar refusals 244
+passed AST 1300 inspection checks 2028 valid grammar refusals 286
+passed AST 1400 inspection checks 2190 valid grammar refusals 305
+passed AST 1500 inspection checks 2352 valid grammar refusals 324
+passed AST 1600 inspection checks 2522 valid grammar refusals 339
+passed AST 1700 inspection checks 2672 valid grammar refusals 364
+passed AST 1800 inspection checks 2820 valid grammar refusals 390
+passed AST 1900 inspection checks 2974 valid grammar refusals 413
+passed AST 2000 inspection checks 3120 valid grammar refusals 440
+PASS: 3120 inspect calls, 440 expected grammar refusals
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/upstream-controls.R
+expected exit: 0; observed exit: 0
+POSIXlt ordinary dtplyr mutate: 1 input row became 11 rows
+list-class ordinary dtplyr grouping refusal: PASS
+list-class ordinary dtplyr grouping refusal: PASS
+raw/complex ordinary dtplyr union refusal: PASS
+raw/complex ordinary dtplyr union refusal: PASS
+empty hms conversion and ordinary union refusal: PASS
+
+Review follow-up, 2026-10-26
+The default-promise-selection.R reproduction was rerun after removing its
+optional-dependency guard: expected exit 1; observed exit 1, with the same
+selected columns, nesting output, and fixed-key assertion as its block above.
+
+$ Rscript investigation/2026-10-26-nesting-specification-followup/algebra-depth.R
+expected exit: 0; observed exit: 0
+ASTs measured: 2000 ; maximum constructor nodes on a path: 5 ; maximum depth with root zero: 4
