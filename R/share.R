@@ -1529,9 +1529,8 @@ unwritable_name <- function(value) {
   rlang::sym(paste0("<", class(value)[[1L]], ">"))
 }
 
-# Whether each share names one preceding explicitly named summary, directly
-# or through a bare-name across selection. Neither needs the first unnamed
-# selection's outputs for planning. The caller supplies preflighted syntax.
+# Whether every share source is among the preceding explicitly named summaries.
+# The caller supplies preflighted syntax. Prediction runs no caller code.
 shares_use_named_summaries <- function(dots) {
   preceding <- character()
   for (i in seq_along(dots)) {
@@ -1540,18 +1539,59 @@ shares_use_named_summaries <- function(dots) {
       preceding <- c(preceding, rlang::names2(dots)[[i]])
       next
     }
-    args <- if (is_share_helper_call(expr)) {
-      static_call_args(expr)
+    source <- if (is_share_helper_call(expr)) {
+      unwrap_injected_args(static_call_args(expr))[[1L]]
     } else {
-      list(parse_across_arguments(expr)$cols)
+      parse_across_arguments(expr)$cols
     }
-    args <- unwrap_injected_args(args)
-    if (length(args) != 1L || !is_name_part(args[[1L]]) ||
-          !rlang::as_name(args[[1L]]) %in% preceding) {
+    if (!share_selection_uses_named_summaries(
+      source, preceding, rlang::quo_get_env(dots[[i]])
+    )) {
       return(FALSE)
     }
   }
   TRUE
+}
+
+# Recognize explicit positive selections without evaluating their expressions.
+# Inside all_of/any_of, symbols are values and c() uses ordinary lookup.
+share_selection_uses_named_summaries <- function(expr, preceding, env,
+                                                literal = FALSE) {
+  if (rlang::is_quosure(expr)) {
+    return(share_selection_uses_named_summaries(
+      rlang::quo_get_expr(expr), preceding, rlang::quo_get_env(expr), literal
+    ))
+  }
+  if (is_name_part(expr)) {
+    return(!literal && rlang::as_name(expr) %in% preceding)
+  }
+  if (is.character(expr)) {
+    return(!anyNA(expr) && all(expr %in% preceding))
+  }
+  if (rlang::is_call(expr, "c")) {
+    if (literal && !identical(ordinary_function_binding("c", env), base::c)) {
+      return(FALSE)
+    }
+    return(all(vapply(
+      static_call_args(expr), share_selection_uses_named_summaries, logical(1),
+      preceding = preceding, env = env, literal = literal
+    )))
+  }
+  name <- static_call_name(expr)
+  if (is.null(name) || !name %in% c("all_of", "any_of")) {
+    return(FALSE)
+  }
+  namespace <- static_call_ns(expr)
+  known <- if (is.null(namespace)) {
+    identical(ordinary_function_binding(name, env),
+              getExportedValue("tidyselect", name))
+  } else {
+    namespace %in% c("dplyr", "tidyselect")
+  }
+  args <- static_call_args(expr)
+  known && length(args) == 1L && share_selection_uses_named_summaries(
+    args[[1L]], preceding, env, literal = TRUE
+  )
 }
 
 # Records ordinary outputs and dependencies for a call with a contextual share.

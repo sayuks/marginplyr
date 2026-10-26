@@ -457,18 +457,26 @@ test_that("first unnamed selection keeps its summary context beside a share", {
 })
 
 test_that("unnamed selectors preserve context and counts beside shares", {
+  all_of <- dplyr::all_of
   data <- tibble::tibble(g = c("a", "b", "b"), x = c(1, 10, 20))
   for (multiple in c(FALSE, TRUE)) {
     grouping <- if (multiple) rollup(g) else grouping_set()
-    helpers <- list(
-      rlang::expr(share_of_total(total)),
-      rlang::expr(dplyr::across(total, share_of_total, .names = "share"))
-    )
+    kinds <- list(rlang::expr(share_of_total))
     if (multiple) {
-      helpers <- c(helpers, list(
-        rlang::expr(share_of_parent(total)),
-        rlang::expr(dplyr::across(total, share_of_parent, .names = "share"))
-      ))
+      kinds <- c(kinds, list(rlang::expr(share_of_parent)))
+    }
+    helpers <- list()
+    for (kind in kinds) {
+      helpers <- c(helpers, list(rlang::call2(kind, rlang::sym("total"))))
+      for (selection in rlang::exprs(
+        total, c(total), "total", dplyr::all_of("total"), all_of("total"),
+        dplyr::any_of(c("total")), dplyr::all_of(c("total", "total")),
+        !!rlang::quo(total)
+      )) {
+        helpers <- c(helpers, list(rlang::expr(dplyr::across(
+          !!selection, !!kind, .names = "share"
+        ))))
+      }
     }
     for (helper in helpers) {
       for (first in c(TRUE, FALSE)) {
@@ -521,6 +529,26 @@ test_that("unnamed selectors preserve context and counts beside shares", {
         }
       }
     }
+  }
+})
+
+test_that("share selection prediction leaves caller bindings to evaluation", {
+  data <- tibble::tibble(x = 1:2)
+  for (selection in rlang::exprs(
+    dplyr::all_of(c("total")), all_of("total"), dplyr::all_of(source)
+  )) {
+    caller <- rlang::env(
+      rlang::current_env(), c = function(...) "unused",
+      all_of = function(...) "unused", source = "unused"
+    )
+    share <- rlang::new_quosure(rlang::expr(dplyr::across(
+      !!selection, share_of_total, .names = "share"
+    )), caller)
+    actual <- summarize_with_margins(
+      data, dplyr::across(x, sum, .names = "unused"),
+      total = sum(x), !!share
+    )
+    expect_identical(actual, tibble::tibble(unused = 3L, total = 3L, share = 1))
   }
 })
 
