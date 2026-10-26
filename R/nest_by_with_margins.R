@@ -135,6 +135,8 @@ nest_by_with_margins <- function(.data,
     call = call
   )
 
+  .id <- unname(.id)
+  .key <- unname(.key)
   result <- dplyr::collect(result)
   empty_outer_names <- c(.id, .key)
   if (
