@@ -11,7 +11,8 @@ with_foreign_selection_package <- function(code) {
   writeLines(c(
     "Package: foreignselect", "Version: 0.0.1", "Title: Fixture",
     "Description: Fixture package.", "License: MIT",
-    "Authors@R: person('A', 'B', email = 'a@example.com', role = c('aut', 'cre'))"
+    paste0("Authors@R: person('A', 'B', email = 'a@example.com', ",
+           "role = c('aut', 'cre'))")
   ), file.path(pkg, "DESCRIPTION"))
   writeLines(paste0("export(", helpers, ")"), file.path(pkg, "NAMESPACE"))
   writeLines(c(
@@ -95,7 +96,8 @@ test_that("classification does not evaluate caller functions", {
     stop("classification forced caller binding")
   }, env)
   expect_true(is_name_only_expr(quote(starts_with("k")), env, "key"))
-  expect_false(is_name_only_expr(rlang::call2("starts_with", .ns = "foreignselect"), env, "key"))
+  foreign <- rlang::call2("starts_with", .ns = "foreignselect")
+  expect_false(is_name_only_expr(foreign, env, "key"))
   expect_identical(calls, 0L)
   for (helper in c(
     "all_of", "any_of", "starts_with", "ends_with", "contains", "matches",
@@ -148,7 +150,7 @@ test_that("opaque backends do not acquire source rows for foreign helpers", {
     remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_dbi())
     error <- expect_error(inspect_grouping(
       remote, .by = !!rlang::call2("starts_with", predicate = TRUE,
-                                    .ns = "foreignselect")
+                                   .ns = "foreignselect")
     ), class = "marginplyr_error")
     expect_s3_class(error$parent, "tidyselect_error_predicates_unsupported")
   })

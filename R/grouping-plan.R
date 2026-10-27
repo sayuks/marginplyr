@@ -483,7 +483,7 @@ is_name_only_expr <- function(expr, env, data_vars) {
   # have those semantics only when they name a package that supplies them.
   call_ns <- static_call_ns(expr)
   if (call_name %in% leaf_helpers &&
-      (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr"))) {
+        (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr"))) {
     return(all(vapply(
       static_call_args(expr),
       is_name_only_helper_arg,
