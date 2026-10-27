@@ -519,11 +519,11 @@ margin_staged_sort_identifier <- function(operation, sort_id) {
 }
 
 # Drop only the staged identifier, leaving every public column's name intact.
-# Local selection rejects dot-dot output names. dtplyr translates select() to
-# a data.table projection that interprets names such as `.BY` and `.I`
-# specially; mutate(NULL) uses `:=` instead.
+# Local and Arrow selection reject dot-dot output names. dtplyr translates
+# select() to a data.table projection that interprets names such as `.BY` and
+# `.I` specially; mutate(NULL) uses `:=` instead.
 drop_margin_staged_identifier <- function(result, staged_id, backend) {
-  if (is.data.frame(result) || identical(backend$kind, "dtplyr")) {
+  if (is.data.frame(result) || backend$kind %in% c("dtplyr", "arrow")) {
     return(dplyr::mutate(result, !!staged_id := NULL))
   }
   dplyr::select(result, -dplyr::all_of(staged_id))

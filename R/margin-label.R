@@ -605,7 +605,7 @@ label_margin_branch <- function(.data,
       .data, label_reads,
       function(source, safe_name) {
         dtplyr_columns <- if (dtplyr_full_size_label) {
-          get_col_names(source, dplyr::everything())
+          margin_col_names(source)
         } else {
           character()
         }
