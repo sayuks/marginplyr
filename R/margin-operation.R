@@ -492,7 +492,7 @@ order_margin_result <- function(operation, result, execution) {
         sort = operation$sort,
         sort_id = if (is.null(key_id)) NULL else safe_name(key_id),
         value_types = margin_dictionary_sort_types(data, operation$backend),
-        structured = margin_structured_sort_columns(data, operation$plan)
+        rowwise = margin_rowwise_sort_columns(data, operation$plan)
       )
       if (length(terms) > 0L) dplyr::arrange(data, !!!terms) else data
     }
@@ -557,9 +557,9 @@ margin_dictionary_sort_types <- function(result, backend) {
   )
 }
 
-# Names local structured keys in the plan. The caller holds a result
+# Names local keys needing row-vector missingness. The caller holds a result
 # containing every fixed key and dimension named by that plan.
-margin_structured_sort_columns <- function(result, plan) {
+margin_rowwise_sort_columns <- function(result, plan) {
   if (!is.data.frame(result)) {
     return(character())
   }
@@ -568,7 +568,7 @@ margin_structured_sort_columns <- function(result, plan) {
     columns,
     function(name) {
       column <- result[[name]]
-      is.data.frame(column) || is.array(column)
+      is.list(column) || is.array(column)
     },
     logical(1)
   )]
@@ -610,11 +610,11 @@ margin_order_terms <- function(plan,
                                sort,
                                sort_id,
                                value_types = list(),
-                               structured = character()) {
+                               rowwise = character()) {
   terms <- unlist(
     lapply(plan$by, function(key) {
       list(
-        margin_missing_last_expr(key, structured),
+        margin_missing_last_expr(key, rowwise),
         margin_sort_value_expr(key, value_types)
       )
     }),
@@ -642,7 +642,7 @@ margin_order_terms <- function(plan,
     terms <- c(
       terms,
       list(
-        margin_missing_last_expr(dimension, structured),
+        margin_missing_last_expr(dimension, rowwise),
         margin_sort_value_expr(dimension, value_types)
       )
     )
@@ -666,12 +666,12 @@ margin_sort_value_expr <- function(column, value_types) {
   rlang::call2("cast", pronoun, value_types[[column]], .ns = "arrow")
 }
 
-# One column's missingness term. A local structured column is wholly missing
-# only when every scalar component of the row is missing (ADR 0018).
+# One column's missingness term, using row-vector semantics for local list
+# and array columns (ADR 0018).
 # `if_else()` produces an integer because not every dialect sorts booleans.
-margin_missing_last_expr <- function(column, structured) {
+margin_missing_last_expr <- function(column, rowwise) {
   value <- margin_column_pronoun(column)
-  missing <- if (column %in% structured) {
+  missing <- if (column %in% rowwise) {
     rlang::expr(vctrs::vec_detect_missing(!!value))
   } else {
     rlang::expr(is.na(!!value))

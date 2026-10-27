@@ -328,7 +328,9 @@
 #' including those whose own default is the opposite. For a local packed
 #' data-frame or matrix key, the missingness term is per row: the key is wholly
 #' missing only when all its components are missing. Partly missing keys follow
-#' ordinary local `dplyr::arrange()` value order. Under
+#' ordinary local `dplyr::arrange()` value order. Local list keys use
+#' dplyr/vctrs row-vector missingness: in a plain list, `NULL` is missing,
+#' while an element containing scalar `NA` is nonmissing. Under
 #' `.margin_label = NULL` a source missing value and a margin still display
 #' alike, but they are separated by position, because their Grouping bits
 #' differ.

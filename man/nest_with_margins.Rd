@@ -389,7 +389,9 @@ included, so missing values come last wherever they appear on every backend,
 including those whose own default is the opposite. For a local packed
 data-frame or matrix key, the missingness term is per row: the key is wholly
 missing only when all its components are missing. Partly missing keys follow
-ordinary local \code{dplyr::arrange()} value order. Under
+ordinary local \code{dplyr::arrange()} value order. Local list keys use
+dplyr/vctrs row-vector missingness: in a plain list, \code{NULL} is missing,
+while an element containing scalar \code{NA} is nonmissing. Under
 \code{.margin_label = NULL} a source missing value and a margin still display
 alike, but they are separated by position, because their Grouping bits
 differ.
