@@ -307,8 +307,7 @@
 #' when the source summary is stateful or nondeterministic. SQL shares require
 #' window-function support. A dialect without it, such as Access, reports an
 #' unsupported window when rendering or executing the query. Explicitly
-#' collect that input first to calculate shares locally. No collection or
-#' materialization is performed before the lazy result is returned.
+#' collect that input first to calculate shares locally.
 #' On live SQLite, direct [dplyr::collect()] keeps a declared double share
 #' when the result is empty or a finite prefix contains only missing shares.
 #' Direct [dplyr::compute()] writes a typed table containing only public

@@ -319,8 +319,7 @@ share uses the source value displayed on its denominator row, including
 when the source summary is stateful or nondeterministic. SQL shares require
 window-function support. A dialect without it, such as Access, reports an
 unsupported window when rendering or executing the query. Explicitly
-collect that input first to calculate shares locally. No collection or
-materialization is performed before the lazy result is returned.
+collect that input first to calculate shares locally.
 On live SQLite, direct \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double share
 when the result is empty or a finite prefix contains only missing shares.
 Direct \code{\link[dplyr:compute]{dplyr::compute()}} writes a typed table containing only public

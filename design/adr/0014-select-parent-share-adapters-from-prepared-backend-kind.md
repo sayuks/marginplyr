@@ -18,8 +18,7 @@ keys before Margin-label conversion. The Row-matched adapter keeps its join.
 This supersedes the inline SQL Parent plan and the dtplyr join-key rewrites
 below. Adapter selection and source checking remain separate lookups on the
 prepared backend kind. Ratio rules and output order remain shared. SQL shares
-require window-function support; constructing either lazy result executes and
-materializes nothing, preserving ADR 0020.
+require window-function support.
 
 A dialect whose dbplyr translation rejects windowed `MAX()`, such as Access,
 reports that unsupported operation when SQL is rendered or executed. Callers
