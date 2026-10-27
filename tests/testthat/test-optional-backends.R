@@ -254,7 +254,9 @@ test_that("a backend job installs the package it is for and its companions", {
   # dtplyr declares `Imports: data.table`, so the job installs it regardless;
   # naming it is what keeps `verify-library-isolation.R` from reading a
   # dependency of the requested backend as a cache leak.
-  expect_identical(suggest_job_packages("dtplyr"), c("dtplyr", "data.table"))
+  expect_identical(
+    suggest_job_packages("dtplyr"), c("dtplyr", "data.table", "bit64")
+  )
   expect_identical(suggest_job_packages("data.table"), "data.table")
   expect_error(suggest_job_packages(absent_package), "optional_suggest_spec")
 })

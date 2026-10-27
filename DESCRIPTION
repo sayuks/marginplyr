@@ -26,6 +26,7 @@ Imports:
     vctrs
 Suggests:
     arrow (>= 13.0.0),
+    bit64,
     blob,
     data.table,
     DBI,

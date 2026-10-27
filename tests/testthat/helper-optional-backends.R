@@ -178,10 +178,12 @@ optional_suggest_spec <- function() {
   list(
     arrow = list(asserted = TRUE, companions = character()),
     duckdb = list(asserted = TRUE, companions = "DBI"),
-    dtplyr = list(asserted = TRUE, companions = "data.table"),
+    dtplyr = list(asserted = TRUE, companions = c("data.table", "bit64")),
     data.table = list(asserted = TRUE, companions = character()),
     RSQLite = list(asserted = TRUE, companions = "DBI"),
     RPostgres = list(asserted = TRUE, companions = "DBI"),
+    # bit64 supplies typed-key fixtures in the dtplyr job, not a backend job.
+    bit64 = list(asserted = FALSE, companions = character()),
     DBI = list(asserted = FALSE, companions = character()),
     # Like DBI, blob is imported by dbplyr and cannot be withheld.
     blob = list(asserted = FALSE, companions = character())

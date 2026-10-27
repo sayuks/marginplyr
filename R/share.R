@@ -2347,7 +2347,9 @@ guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
 # caller evaluates this predicate inside the lazy graph at explicit execution.
 assert_dtplyr_grouped_keys <- function(..., share_output, share_kind,
                                        call_text) {
-  if (vctrs::vec_duplicate_any(vctrs::new_data_frame(list(...)))) {
+  keys <- list(...)
+  names(keys) <- as.character(seq_along(keys))
+  if (vctrs::vec_duplicate_any(vctrs::new_data_frame(keys))) {
     abort_marginplyr(
       c(
         paste0(
