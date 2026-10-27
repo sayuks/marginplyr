@@ -810,6 +810,10 @@ plan_summary_expressions <- function(dots,
       summary_plan$origin_positions,
       function(position) {
         state <- new.env(parent = selection_state)
+        state$input_names <- names(selection_proxy)
+        state$source_checks <- Filter(function(record) {
+          summary_plan$origin_positions[[record$position]] == position
+        }, summary_plan$cardinality)
         state$forbidden_names <- unlist(lapply(
           summary_plan$requests[share_positions < position],
           `[[`, "outputs"
@@ -1196,10 +1200,12 @@ rewrite_local_pick_selection <- function(expr, env, group_vars,
 
 # Returns selected current column names for one local dplyr summary branch.
 # The caller is inside a tidyselect selection in dplyr's summary mask, whose
-# current columns include preceding outputs. ADR 0002 owns the input schema.
+# current columns include preceding outputs. Share sources refuse selections
+# of preceding summaries. ADR 0002 owns the input schema.
 local_summary_selection <- function(selection, env, group_vars,
                                     forbidden_names) {
   data <- tidyselect::peek_data()
+  state <- if (is.environment(forbidden_names)) forbidden_names else NULL
   if (is.environment(forbidden_names)) {
     forbidden_names <- c(
       forbidden_names$forbidden_names,
@@ -1212,6 +1218,15 @@ local_summary_selection <- function(selection, env, group_vars,
     selection, env = env, data_proxy = data
   )
   source_names <- names(data)[unname(selected)]
+  if (!is.null(state)) {
+    for (check in state$source_checks) {
+      check$symbols <- source_names
+      check_share_alias_reads(
+        c(check$preceding_names, setdiff(names(data), state$input_names)),
+        list(check)
+      )
+    }
+  }
   if (!identical(names(selected), source_names)) {
     names(source_names) <- names(selected)
   }

@@ -87,7 +87,11 @@ test_that("named selector sources retain provenance and ordering checks", {
 
     for (source in list(
       quote(sum(dplyr::pick(previous))),
-      quote(sum(dplyr::across(previous, identity)))
+      quote(sum(dplyr::across(previous, identity))),
+      quote(sum(dplyr::pick("previous"))),
+      quote(sum(dplyr::across(dplyr::all_of("previous"), identity))),
+      quote(sum(dplyr::pick(dplyr::everything()))),
+      quote(sum(dplyr::across(dplyr::starts_with("prev"), identity)))
     )) {
       error <- expect_error(rlang::inject(summarize_with_margins(
         data,
@@ -163,5 +167,29 @@ test_that("selector sources preserve local evaluation timing and counts", {
     expect_identical(shared$selections, control$selections)
     expect_identical(shared$aggregations, 3L)
     expect_identical(shared$aggregations, control$aggregations)
+  }
+})
+
+test_that("selector sources reject aliases with runtime output names", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3))
+  frame <- function(x) data.frame(previous = sum(x))
+  for (helper in c("share_of_total", "share_of_parent")) {
+    error <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      frame(value),
+      source = sum(dplyr::pick(dplyr::starts_with("prev"))),
+      share = !!rlang::call2(helper, quote(source)),
+      .grouping = rollup(g)
+    )), "depends on earlier summary alias `previous`")
+    expect_s3_class(error, "marginplyr_error")
+
+    error <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      value = sum(value),
+      source = sum(dplyr::across("value", identity)),
+      share = !!rlang::call2(helper, quote(source)),
+      .grouping = rollup(g)
+    )), "depends on earlier summary alias `value`")
+    expect_s3_class(error, "marginplyr_error")
   }
 })
