@@ -1636,7 +1636,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       }
       eligibility <- if (is_across_call(expr) && nzchar(output_name)) {
         "named_across"
-      } else if (is_across_call(expr)) {
+      } else if (nzchar(output_name) || is_across_call(expr)) {
         "eligible"
       } else {
         "expanded"
@@ -2148,7 +2148,6 @@ validate_share_request <- function(outputs,
 }
 
 # Check dynamically expanded names against the reads of later share sources.
-# Each check carries statically read symbols, including unresolved lookups.
 check_share_alias_reads <- function(output_names, checks) {
   for (check in checks) {
     dependencies <- if (unresolved_lookup_name() %in% check$symbols) {

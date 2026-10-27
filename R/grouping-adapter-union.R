@@ -570,6 +570,15 @@ summarize_margin_union <- function(.data,
           mark_outputs = is.environment(summaries$grouping_type_state)
         )
         if (is.data.frame(.data)) {
+          alias_state <- if (is.environment(summaries$selection_state) &&
+                               length(frame_state$share_sources) > 0L) {
+            summaries$selection_state
+          } else {
+            NULL
+          }
+          if (!is.null(alias_state)) {
+            alias_state$summary_aliases <- alias_state$initial_aliases
+          }
           branch_dots <- wrap_local_frame_summaries(
             branch_dots,
             group_vars = group_vars,
@@ -579,7 +588,8 @@ summarize_margin_union <- function(.data,
             share_sources = frame_state$share_sources,
             source_definitions = frame_state$source_definitions,
             source_reads = frame_state$source_reads,
-            auto_names = frame_state$auto_names
+            auto_names = frame_state$auto_names,
+            alias_state = alias_state
           )
           branch_dots <- wrap_assigned_local_summaries(
             branch_dots,
@@ -589,7 +599,8 @@ summarize_margin_union <- function(.data,
             set_id_name = set_id_name,
             set_id_is_internal = set_id_is_internal,
             share_sources = frame_state$share_sources,
-            source_definitions = frame_state$source_definitions
+            source_definitions = frame_state$source_definitions,
+            alias_state = alias_state
           )
         }
         needs_placeholder <- length(grouping_set) == 0L &&
