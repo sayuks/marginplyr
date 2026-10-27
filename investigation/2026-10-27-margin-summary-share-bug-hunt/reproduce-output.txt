@@ -1,0 +1,24 @@
+R version 4.6.1 (2026-06-24)
+     dplyr     dbplyr     dtplyr data.table      arrow     duckdb    RSQLite
+   "1.2.1"    "2.6.0"    "1.3.3" "1.18.6.1"   "25.0.1"    "1.5.5"   "3.53.3"
+     vctrs      bit64
+   "0.7.3"    "4.8.6"
+PASS control: ordinary data-pronoun dependency is refused
+FAIL F1 / #918: parentheses preserve the dependency refusal : Forbidden share read was accepted; baseline out was 100, 300, 400
+PASS control: eager shares use their visible denominator
+# A tibble: 3 × 4
+  g       set     v     s
+  <chr> <int> <dbl> <dbl>
+1 a         1     4  1.33
+2 b         1     5  1.67
+3 <NA>      2     6  1
+FAIL F2 / #919: lazy shares use their visible denominator : Visible denominator mismatch
+PASS control: integer64 Margin summary without shares
+FAIL F3 / #920: integer64 keys support contextual shares : STRING_ELT() can only be applied to a 'character vector', not a 'NULL'
+PASS control: ordinary dtplyr labelled union with fixed .N
+FAIL F4 / #921: display-labelled margins preserve fixed .N : cannot change value of locked binding for '.N'
+PASS control: ordinary Arrow dot-dot summary output
+FAIL F5 / #922: Margin summary preserves Arrow dot-dot output : Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..1" at location 1.
+FAILED CHECKS: 5
