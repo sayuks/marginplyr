@@ -84,7 +84,8 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Includes R and dependency setup before either linter can run.
+    timeout-minutes: 60
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
