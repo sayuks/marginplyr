@@ -296,10 +296,8 @@ parent must be strictly less detailed.
 
 A Total share's denominator is the Grand total set. Every row of it,
 duplicate occurrences included, has a Total share of \code{1.0}, even when its
-source is zero or missing. Duplicate grand total occurrences aggregate the
-same rows and therefore hold the same values, so they are interchangeable
-rather than skipped and which one supplies the denominator is not
-specified.
+source is zero or missing. Which grand total occurrence supplies the
+denominator is not specified.
 
 Empty input gives one Grand total set row or no rows at all, and the share
 column keeps its type either way:\tabular{lrl}{
@@ -316,10 +314,12 @@ where synthetic facts are meant to reach every level.
 \section{Lazy execution boundaries}{
 
 Share execution supports local data frames and lazy dbplyr and dtplyr
-inputs, including composite dimensions. Lazy results remain lazy: ordinary
-summaries are followed by one denominator mapping and join per requested
-kind, shared by every measure requested of that kind, however many measures
-are requested.
+inputs, including composite dimensions. Lazy results remain lazy. Each
+share uses the source value displayed on its denominator row, including
+when the source summary is stateful or nondeterministic. SQL shares require
+window-function support. A dialect without it, such as Access, reports an
+unsupported window when rendering or executing the query. Explicitly
+collect that input first to calculate shares locally.
 On live SQLite, direct \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double share
 when the result is empty or a finite prefix contains only missing shares.
 Direct \code{\link[dplyr:compute]{dplyr::compute()}} writes a typed table containing only public

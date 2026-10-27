@@ -8,6 +8,20 @@ boundaries are `share_of_parent()`'s, unchanged and recorded in ADR 0010.
 Only the denominator differs. This decision records what that one difference
 implies, because in four places it implies something ADR 0010 did not settle.
 
+## Amendment (#919): the displayed denominator includes volatile summaries
+
+The denominator is the displayed value on one matching Grand total set row,
+including when its summary is stateful or nondeterministic. No purity
+restriction is added to eligible sources. The claim below that duplicate
+occurrences necessarily hold the same values is withdrawn; the choice of
+occurrence remains unspecified, and every Grand total set row's own share
+remains one. `CONTEXT.md` and the reference omit that claim.
+
+The lazy mapping described below is superseded by ADR 0014's amendment
+*lazy shares read one staged relation*. Total shares select a grand total
+occurrence within the fixed-key window rather than joining a second
+evaluation of the staged result. Local mapping is unchanged.
+
 ## Decision
 
 A Total share's denominator is the value of the same source summary on the

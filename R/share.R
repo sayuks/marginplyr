@@ -283,10 +283,8 @@
 #'
 #' A Total share's denominator is the Grand total set. Every row of it,
 #' duplicate occurrences included, has a Total share of `1.0`, even when its
-#' source is zero or missing. Duplicate grand total occurrences aggregate the
-#' same rows and therefore hold the same values, so they are interchangeable
-#' rather than skipped and which one supplies the denominator is not
-#' specified.
+#' source is zero or missing. Which grand total occurrence supplies the
+#' denominator is not specified.
 #'
 #' Empty input gives one Grand total set row or no rows at all, and the share
 #' column keeps its type either way:
@@ -304,10 +302,12 @@
 #'
 #' @section Lazy execution boundaries:
 #' Share execution supports local data frames and lazy dbplyr and dtplyr
-#' inputs, including composite dimensions. Lazy results remain lazy: ordinary
-#' summaries are followed by one denominator mapping and join per requested
-#' kind, shared by every measure requested of that kind, however many measures
-#' are requested.
+#' inputs, including composite dimensions. Lazy results remain lazy. Each
+#' share uses the source value displayed on its denominator row, including
+#' when the source summary is stateful or nondeterministic. SQL shares require
+#' window-function support. A dialect without it, such as Access, reports an
+#' unsupported window when rendering or executing the query. Explicitly
+#' collect that input first to calculate shares locally.
 #' On live SQLite, direct [dplyr::collect()] keeps a declared double share
 #' when the result is empty or a finite prefix contains only missing shares.
 #' Direct [dplyr::compute()] writes a typed table containing only public
@@ -2263,10 +2263,7 @@ execute_shares <- function(operation,
     staged_result
   )
   parent_key_names <- staged_result$parent_key_names
-  # The eligible-type rule is a property of the source summary, not of the
-  # join that follows, so it is settled once here rather than inside the
-  # adapter that happens to run. Only where its answer comes from is a backend
-  # question, and that is what the checker below decides.
+  # Source eligibility is settled once before selecting the ratio adapter.
   check_share_sources(
     operation,
     result = result,
@@ -2284,10 +2281,7 @@ execute_shares <- function(operation,
     )
   }
   adapter <- share_adapter(operation$backend$kind)
-  # One adapter pass per requested kind. Every pass reads the same staged
-  # result and writes over the placeholder column each request reserved in the
-  # caller's written order, so the passes are independent and their order is
-  # not visible in the result.
+  # Each pass overwrites the placeholders in the caller's written order.
   for (kind in share_request_kinds(requests)) {
     result <- adapter(
       operation,
@@ -2322,8 +2316,7 @@ execute_shares <- function(operation,
 }
 
 # Refuse a staged dtplyr result with more than one row per occurrence and
-# grouping key before either share adapter can multiply it in a join. The
-# filter is part of the lazy graph and runs only when the caller executes it.
+# grouping key. The filter runs only when the caller executes the lazy graph.
 guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
                                         parent_key_names, pair, call) {
   dimensions <- if (length(parent_key_names) > 0L) {
@@ -2398,9 +2391,7 @@ execute_row_matched_shares <- function(operation,
     plan = operation$plan,
     set_id_name = set_id_name,
     kind = kind,
-    parent_key_names = parent_key_names,
-    sql_join = FALSE,
-    parent_mapping_builder = build_lazy_parent_mapping
+    parent_key_names = parent_key_names
   )
 }
 
@@ -2410,16 +2401,14 @@ execute_dtplyr_shares <- function(operation,
                                   set_id_name,
                                   kind,
                                   parent_key_names) {
-  apply_joined_shares(
+  apply_windowed_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
     kind = kind,
     parent_key_names = parent_key_names,
-    sql_join = FALSE,
-    join_name_rewriter = dtplyr_join_names,
-    parent_mapping_builder = build_lazy_parent_mapping
+    sql_window = FALSE
   )
 }
 
@@ -2429,15 +2418,14 @@ execute_dbplyr_shares <- function(operation,
                                   set_id_name,
                                   kind,
                                   parent_key_names) {
-  apply_joined_shares(
+  apply_windowed_shares(
     result,
     requests = requests,
     plan = operation$plan,
     set_id_name = set_id_name,
     kind = kind,
     parent_key_names = parent_key_names,
-    sql_join = TRUE,
-    parent_mapping_builder = build_dbplyr_parent_mapping
+    sql_window = TRUE
   )
 }
 
@@ -2944,10 +2932,7 @@ apply_joined_shares <- function(result,
                                 plan,
                                 set_id_name,
                                 kind,
-                                parent_key_names,
-                                sql_join,
-                                join_name_rewriter = NULL,
-                                parent_mapping_builder) {
+                                parent_key_names) {
   rule <- share_kind_rule(kind)
   target_ids <- rule$target_ids(plan)
   own_denominator_ids <- plan$set_ids[is.na(target_ids)]
@@ -2961,12 +2946,7 @@ apply_joined_shares <- function(result,
     backend = backend
   )
 
-  # The cleanup at the end of this function drops whatever internal columns
-  # were added, so empty is what it needs when every occurrence is its own
-  # denominator and no join happens — and for `right_join_names`, also on the
-  # non-SQL path, which joins by name and renames nothing.
   key_names <- character()
-  right_join_names <- character()
 
   joined_ids <- plan$set_ids[!is.na(target_ids)]
   if (length(joined_ids) > 0L) {
@@ -2978,82 +2958,119 @@ apply_joined_shares <- function(result,
       denominator_names = denominator_names,
       set_id_name = set_id_name,
       used_names = c(result_names, denominator_names),
-      parent_mapping_builder = parent_mapping_builder,
-      parent_key_names = parent_key_names,
-      sql_join = sql_join
+      parent_key_names = parent_key_names
     )
     result <- denominator$result
     mapping <- denominator$mapping
     join_names <- denominator$join_names
     key_names <- denominator$key_names
-    if (sql_join) {
-      right_join_names <- new_margin_internal_names(
-        length(join_names),
-        used_names = c(
-          result_names,
-          denominator_names,
-          key_names
-        ),
-        prefix = "..marginplyr_share_match_",
-        backend = backend
-      )
-      rename_pairs <- rlang::set_names(
-        join_names,
-        right_join_names
-      )
-      mapping <- dplyr::rename(mapping, dplyr::all_of(rename_pairs))
-      result <- dplyr::left_join(
-        result,
-        mapping,
-        sql_on = lazy_share_sql_on(
-          con = dbplyr::remote_con(result),
-          left_names = join_names,
-          right_names = right_join_names,
-          key_ids = denominator$key_ids,
-          set_id_name = set_id_name
-        ),
-        x_as = "LHS",
-        y_as = "RHS"
-      )
-    } else {
-      escaped_join_names <- if (is.null(join_name_rewriter)) {
-        NULL
-      } else {
-        join_name_rewriter(
-          join_names,
-          used_names = c(result_names, denominator_names, key_names)
-        )
-      }
-      if (!is.null(escaped_join_names)) {
-        result <- dplyr::rename(
-          result,
-          !!!rlang::set_names(rlang::syms(join_names), escaped_join_names)
-        )
-        mapping <- dplyr::rename(
-          mapping,
-          !!!rlang::set_names(rlang::syms(join_names), escaped_join_names)
-        )
-        join_names <- unname(escaped_join_names)
-      }
-      result <- dplyr::left_join(
-        result,
-        mapping,
-        by = join_names,
-        na_matches = "na"
-      )
-      if (!is.null(escaped_join_names)) {
-        result <- dplyr::rename(
-          result,
-          !!!rlang::set_names(
-            rlang::syms(join_names),
-            names(escaped_join_names)
-          )
-        )
-      }
-    }
+    result <- dplyr::left_join(
+      result, mapping, by = join_names, na_matches = "na"
+    )
   }
 
-  result <- margin_safe_column_reads(
+  result <- apply_share_ratios(
+    result, pairs, sources, denominator_names, own_denominator_ids,
+    joined_ids, set_id_name
+  )
+
+  internal_names <- c(
+    unname(denominator_names),
+    key_names
+  )
+  internal_names <- intersect(
+    internal_names,
+    margin_col_names(result)
+  )
+  if (length(internal_names) > 0L) {
+    result <- drop_margin_columns(result, internal_names)
+  }
+  result
+}
+
+# Add shares by reading denominator rows within the same staged relation.
+# The caller supplies typed keys retained before Margin-label conversion.
+apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
+                                  parent_key_names, sql_window) {
+  target_ids <- share_kind_rule(kind)$target_ids(plan)
+  joined_ids <- plan$set_ids[!is.na(target_ids)]
+  sources <- share_source_names(requests)
+  denominator_names <- share_denominator_names(
+    sources, margin_col_names(result), grouping_backend(result)
+  )
+  fixed_names <- stats::setNames(plan$by, plan$by)
+  # dbplyr reads window keys as symbols, including pronoun-like column names.
+  if (sql_window && length(fixed_names) > 0L) {
+    fixed_names[] <- new_margin_internal_names(
+      length(fixed_names),
+      used_names = c(margin_col_names(result), denominator_names),
+      prefix = "..marginplyr_share_partition_",
+      backend = grouping_backend(result)
+    )
+    result <- dplyr::rename(result, dplyr::all_of(
+      stats::setNames(names(fixed_names), unname(fixed_names))
+    ))
+  }
+  targets <- unique(target_ids[!is.na(target_ids)])
+  for (index in seq_along(targets)) {
+    target <- targets[[index]]
+    dimensions <- intersect(plan$dimensions, plan$sets[[target]])
+    keys <- c(unname(fixed_names), unname(parent_key_names[dimensions]))
+    result <- margin_safe_column_reads(
+      result, c(keys, sources, set_id_name),
+      function(data, safe_name) {
+        data <- dplyr::group_by(
+          data, !!!rlang::syms(vapply(keys, safe_name, character(1)))
+        )
+        denominators <- lapply(sources, function(source) {
+          value <- margin_column_pronoun(safe_name(source))
+          identifier <- margin_column_pronoun(safe_name(set_id_name))
+          denominator <- if (sql_window) {
+            # An unframed aggregate window spans the entire partition.
+            rlang::expr(max(dplyr::if_else(
+              (!!identifier) == !!target, !!value, NA
+            ), na.rm = TRUE))
+          } else {
+            rlang::call2(
+              marginplyr_private_call("dtplyr_share_denominator"),
+              value, identifier, target
+            )
+          }
+          if (index > 1L) {
+            denominator <- rlang::expr(dplyr::if_else(
+              (!!identifier) %in% !!plan$set_ids[target_ids %in% target],
+              !!denominator,
+              !!margin_column_pronoun(denominator_names[[source]])
+            ))
+          }
+          denominator
+        })
+        names(denominators) <- unname(denominator_names)
+        dplyr::ungroup(dplyr::mutate(data, !!!denominators))
+      },
+      reserved = unname(denominator_names)
+    )
+  }
+  result <- apply_share_ratios(
+    result, share_pairs(requests), sources, denominator_names,
+    plan$set_ids[is.na(target_ids)], joined_ids, set_id_name
+  )
+  result <- drop_margin_columns(result, intersect(
+    unname(denominator_names), margin_col_names(result)
+  ))
+  dplyr::rename(result, dplyr::all_of(fixed_names))
+}
+
+# Select the one denominator value in a dtplyr partition at execution time.
+# Grouped-result validation has already established one row per occurrence.
+dtplyr_share_denominator <- function(value, identifier, target) {
+  value[match(target, identifier)]
+}
+
+# Apply the shared value rules after denominator columns have been attached.
+apply_share_ratios <- function(result, pairs, sources, denominator_names,
+                               own_denominator_ids, joined_ids, set_id_name) {
+  margin_safe_column_reads(
     result, sources,
     function(share_result, safe_name) {
       share_exprs <- lapply(pairs, function(pair) {
@@ -3104,37 +3121,6 @@ apply_joined_shares <- function(result,
       dplyr::mutate(share_result, !!!share_exprs)
     }
   )
-
-  internal_names <- c(
-    unname(denominator_names),
-    right_join_names,
-    key_names
-  )
-  internal_names <- intersect(
-    internal_names,
-    margin_col_names(result)
-  )
-  if (length(internal_names) > 0L) {
-    result <- drop_margin_columns(result, internal_names)
-  }
-  result
-}
-
-# dtplyr passes join keys through data.table's `on` parser, which reads literal
-# backticks and comparison operators as syntax and trims surrounding whitespace.
-# The staged result owns both sides, so rename their keys only for this join.
-dtplyr_join_names <- function(join_names, used_names) {
-  if (
-    !any(grepl("`|[<>]|==|!=", join_names) | trimws(join_names) != join_names)
-  ) {
-    return(NULL)
-  }
-  escaped <- new_margin_internal_names(
-    length(join_names),
-    used_names = used_names,
-    prefix = "..marginplyr_dtplyr_join_key_"
-  )
-  stats::setNames(escaped, join_names)
 }
 
 # What a kind contributes to the join above is two entries of
@@ -3149,10 +3135,8 @@ build_parent_denominator <- function(result,
                                      denominator_names,
                                      set_id_name,
                                      used_names,
-                                     parent_mapping_builder,
-                                     parent_key_names,
-                                     sql_join) {
-  mapping <- parent_mapping_builder(
+                                     parent_key_names) {
+  mapping <- build_lazy_parent_mapping(
     result,
     child_ids = plan$set_ids[!is.na(target_ids)],
     parent_ids = target_ids,
@@ -3164,21 +3148,6 @@ build_parent_denominator <- function(result,
     parent_key_names = parent_key_names
   )
   key_ids <- parent_join_key_ids(plan, target_ids)
-  if (sql_join) {
-    # Compare the retained columns directly: a CASE-derived key loses SQLite
-    # column collation. Occurrence predicates omit absent dimensions instead.
-    join_names <- c(set_id_name, plan$by, unname(parent_key_names))
-    names(key_ids) <- unname(parent_key_names)
-    return(list(
-      result = result,
-      mapping = dplyr::select(
-        mapping, dplyr::all_of(c(join_names, unname(denominator_names)))
-      ),
-      join_names = join_names,
-      key_names = character(),
-      key_ids = key_ids
-    ))
-  }
   join_key_names <- new_margin_internal_names(
     length(plan$dimensions),
     used_names = used_names,
@@ -3229,9 +3198,7 @@ build_total_denominator <- function(result,
                                     denominator_names,
                                     set_id_name,
                                     used_names,
-                                    parent_mapping_builder,
-                                    parent_key_names,
-                                    sql_join) {
+                                    parent_key_names) {
   denominator_id <- unique(target_ids[!is.na(target_ids)])
   stopifnot(length(denominator_id) == 1L)
   mapping <- margin_safe_column_reads(
@@ -3266,9 +3233,7 @@ build_total_denominator <- function(result,
   }
 
   # Without fixed keys there is one denominator row and nothing to match it
-  # on. A constant column on both sides keeps that case on the same join as
-  # every other, including the missing-safe SQL one, rather than adding a
-  # second join shape that only this case would exercise.
+  # on. A constant column on both sides supplies the shared join key.
   partition_name <- new_margin_internal_names(
     1L,
     used_names = used_names,
@@ -3285,52 +3250,6 @@ build_total_denominator <- function(result,
     join_names = partition_name,
     key_names = partition_name
   )
-}
-
-# Missing-safe equality over retained keys. Parent dimensions constrain only
-# the child occurrences named in `key_ids`; other keys always constrain.
-lazy_share_sql_on <- function(con, left_names, right_names,
-                              key_ids = NULL, set_id_name = NULL) {
-  stopifnot(length(left_names) == length(right_names))
-  # Both are read only from the glue string below, which codetools cannot see.
-  # nolint start: object_usage_linter.
-  left_alias <- "LHS"
-  right_alias <- "RHS"
-  # nolint end
-  terms <- Map(
-    function(left_name, right_name) {
-      equality <- dbplyr::sql_glue2(
-        con,
-        paste0(
-          "(({.id left_alias}.{.id left_name} = ",
-          "{.id right_alias}.{.id right_name}) OR ",
-          "({.id left_alias}.{.id left_name} IS NULL AND ",
-          "{.id right_alias}.{.id right_name} IS NULL))"
-        )
-      )
-      if (!left_name %in% names(key_ids)) {
-        return(equality)
-      }
-      ids <- key_ids[[left_name]]
-      if (length(ids) == 0L) {
-        return(dbplyr::sql("(1 = 1)"))
-      }
-      # Glue reads these bindings outside codetools' symbol resolution.
-      # nolint start: object_usage_linter.
-      id_sql <- dbplyr::sql(paste(ids, collapse = ", "))
-      # nolint end
-      dbplyr::sql_glue2(
-        con,
-        "({.id left_alias}.{.id set_id_name} NOT IN ({id_sql}) OR {equality})"
-      )
-    },
-    left_names,
-    right_names
-  )
-  dbplyr::sql(paste(
-    vapply(terms, as.character, character(1)),
-    collapse = " AND "
-  ))
 }
 
 share_pairs <- function(requests) {
@@ -3405,9 +3324,8 @@ build_lazy_parent_mapping <- function(result,
   combine_margin_branches(mappings)
 }
 
-# The staged-summary projections both Parent mapping strategies share. The
-# caller inserts the child occurrence identifier between the keys and the
-# denominators because its expression differs between the two strategies.
+# Project the staged keys and sources for a row-matched Parent mapping.
+# The caller inserts the child occurrence identifier between them.
 parent_mapping_exprs <- function(plan, sources, denominator_names,
                                  parent_key_names, safe_name = identity) {
   group_vars <- unique(c(plan$by, unname(parent_key_names)))
@@ -3420,61 +3338,6 @@ parent_mapping_exprs <- function(plan, sources, denominator_names,
   })
   names(denominator_exprs) <- unname(denominator_names[sources])
   list(keys = key_exprs, denominators = denominator_exprs)
-}
-
-# A SQL Parent mapping is a relation carried by the query, not one branch per
-# child occurrence. Its two identifiers say which staged Parent row supplies
-# which child occurrence, so one join to the staged result produces every
-# denominator row without executing or materializing either relation. See the
-# 2026-09-12 amendment to ADR 0014.
-build_dbplyr_parent_mapping <- function(result,
-                                        child_ids,
-                                        parent_ids,
-                                        sources,
-                                        denominator_names,
-                                        plan,
-                                        set_id_name,
-                                        used_names,
-                                        parent_key_names) {
-  plan_names <- new_margin_internal_names(
-    2L,
-    used_names = used_names,
-    prefix = "..marginplyr_parent_plan_",
-    backend = grouping_backend(result)
-  )
-  child_id_name <- plan_names[[1L]]
-  parent_id_name <- plan_names[[2L]]
-  parent_plan <- data.frame(
-    child_id = as.integer(child_ids),
-    parent_id = as.integer(unname(parent_ids[child_ids]))
-  )
-  names(parent_plan) <- c(child_id_name, parent_id_name)
-  parent_plan <- dbplyr::copy_inline(
-    dbplyr::remote_con(result),
-    parent_plan
-  )
-  parent_rows <- dplyr::inner_join(
-    result,
-    parent_plan,
-    by = stats::setNames(parent_id_name, set_id_name)
-  )
-
-  mapping_exprs <- parent_mapping_exprs(
-    plan,
-    sources = sources,
-    denominator_names = denominator_names,
-    parent_key_names = parent_key_names
-  )
-  child_id_expr <- stats::setNames(
-    list(margin_column_pronoun(child_id_name)),
-    set_id_name
-  )
-  dplyr::transmute(
-    parent_rows,
-    !!!mapping_exprs$keys,
-    !!!child_id_expr,
-    !!!mapping_exprs$denominators
-  )
 }
 
 # Child occurrences whose Parent retains each dimension, in plan order.
@@ -3603,9 +3466,9 @@ share_placeholder <- function(outputs) {
 # Every contextual share helper, keyed by the kind of denominator its request
 # resolves to. It is the one place a helper is described: the name a caller
 # writes, the two forms a diagnostic needs to name it, what it requires of the
-# compiled Grouping plan, and the denominator mapping it joins. Detection reads
-# the table backwards, from a written name to its kind. A third helper is one
-# entry here and nothing else in this module.
+# compiled Grouping plan, and its row-matched denominator mapping. Detection
+# reads the table backwards, from a written name to its kind. A third helper is
+# one entry here and nothing else in this module.
 #
 # Both term forms are written out because a message uses whichever its sentence
 # needs, and deriving one from the other would make the wording of every

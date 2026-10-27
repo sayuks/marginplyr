@@ -285,7 +285,7 @@ boundaries — is one implementation, which is why the shared machinery is named
 `share_*`. Each request carries its *kind*, and `share_kind_rules()` is the one
 table describing a kind: the name a caller writes, the terms its diagnostics
 use, what it requires of the compiled Grouping plan, and the denominator
-mapping it joins. Detection reads that table backwards, from a written name to
+mapping. Detection reads that table backwards, from a written name to
 its kind, so no message and no branch names a helper independently and a third
 helper is one entry with no second site to answer for it. See
 [ADR 0017](adr/0017-calculate-total-shares-against-the-grand-total-set.md).
@@ -359,52 +359,35 @@ The responsibilities divide as follows:
   every later share on that dialect (ADR 0020); and
   `.check_share_source = FALSE` calculates the share anyway. Arrow is rejected
   before any of this.
-- **Mapping** is the one responsibility a kind supplies for itself, through
-  `share_denominator_rule()`: which occurrence each row's denominator comes
-  from, and the denominator rows with the columns they are matched on. A
-  Parent share derives each grouping set's parent with `parent_set_ids()`,
-  which skips duplicate occurrences while finding the next strictly less
-  detailed set, and matches on the internal Grouping set identifier, the fixed
-  keys, and the retained typed dimensions under ADR 0010's Parent-matching
-  amendments. A Total share's denominator depends on `.by` and
-  nothing else, so its mapping is one read of the grand total occurrence
-  matched on the fixed keys alone, with a constant column standing in when
-  there are none.
-- **Calculation** builds one shared mapping per requested kind, joins each
-  once, and emits every ratio as an explicit double division guarded for a row
-  that is its own denominator, a missing numerator, and a missing or zero
-  denominator. Each request wrote a placeholder column at its position in the
-  caller's summary expressions and the join overwrites that column in place,
-  so a call requesting both kinds runs two passes without either pass being
-  visible in the result's column order.
-- **Cleanup** allocates every temporary — typed Parent keys, denominators,
-  join keys, and the right-hand match names of the SQL join — through
-  `new_margin_internal_names()` against the names already in the result, and
-  drops all of them before returning.
+- **Mapping** derives each row's target occurrence from `share_kind_rules()`.
+  Parent shares skip duplicate occurrences while finding the next strictly
+  less detailed set. Total shares target a Grand total set within the fixed
+  partition. Retained typed keys identify denominators before Margin-label
+  conversion.
+- **Calculation** attaches denominators through the selected adapter and
+  applies shared double-division rules for own-denominator rows, missing
+  numerators, and missing or zero denominators. Each request's placeholder
+  preserves its position in the caller's written expressions.
+- **Cleanup** drops temporary typed keys, denominator columns, and matching
+  or partition aliases allocated through `new_margin_internal_names()`.
 
-Adapter selection is a lookup on the prepared backend kind, not on the staged
-result's class, and every adapter takes the same six arguments. See
+Adapter selection is a lookup on the prepared backend kind. Every adapter
+receives the operation, staged result, planned requests, internal Grouping set
+identifier, requested share kind, and retained typed keys. See
 [ADR 0014](adr/0014-select-parent-share-adapters-from-prepared-backend-kind.md).
-The denominator targets, calculation, and cleanup above are shared; there are
-three adapters, and each says only what its backends do differently. Parent
-mapping construction is also shared by the Row-matched and dtplyr adapters,
-while the general dbplyr adapter carries the occurrence mapping as one inline
-relation so the staged summary is not repeated once per child occurrence:
 
-| Adapter | Backend kinds | Difference from the shared work |
+| Adapter | Backend kinds | Denominator lookup |
 |---|---|---|
-| Row-matched | `local`, `other` | Nothing |
-| dtplyr | `dtplyr` | Temporarily rewrites join keys containing parser syntax |
-| General dbplyr | `duckdb`, `postgres`, `sql` | Inline Parent plan and missing-safe `sql_on` join |
+| Row-matched | `local`, `other` | Missing-safe join |
+| dtplyr | `dtplyr` | Scalar selection within grouped mutation |
+| General dbplyr | `duckdb`, `postgres`, `sql` | Conditional aggregate over a full window partition |
 
-The Row-matched adapter adding nothing is the point rather than an oversight:
-it names the contract that a lazy non-SQL backend joins exactly as local data
-does. `other` cannot have its source types checked first because nothing is
-materialized to check; its validation happens earlier, inside the ordinary
-summary. dtplyr takes that same validation path, but its join translation needs
-the temporary rewrite where a fixed key contains parser syntax. Collapsing
-either difference into another adapter would make it invisible at the seam that
-has to honour it.
+The lazy adapters read one staged relation so a volatile source summary's
+visible denominator is the one used in its shares. Partition keys retain the
+backend's grouping equivalence, including SQL collation and missing keys.
+SQL fixed keys receive private aliases while window partitions are built so
+pronoun-like column names remain columns. No adapter collects or materializes
+an input while constructing the result.
 
 Arrow is rejected at the immediately earlier executor boundary because no
 ordinary-summary query may be staged for a valid Arrow contextual-share

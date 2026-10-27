@@ -444,10 +444,14 @@ missing-safe keys rather than displayed Margin labels; [Parent lookup is
 structural](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#parent-lookup-is-structural)
 works that through, and defines the Grand total set the next section reads.
 
-`share_of_total()` stages the same way and asks less of the query. Its
-denominator depends on the fixed `.by` keys and nothing else, so its mapping
-is one filtered read of a row of the Grand total set, joined on those keys
-alone — and on a constant when, as here, there are none:
+`share_of_total()` stages the same way. Its denominator depends on the fixed
+`.by` keys and nothing else. Both helpers use window functions over the staged
+SQL summaries, so a share agrees with its displayed denominator even for a
+stateful or nondeterministic source summary. A dialect without window support,
+such as Access, reports an unsupported operation when rendering or executing
+the query; explicitly collect its input first to request local shares.
+
+For a window-capable dialect:
 
 ```{r}
 postgres_sales |>

@@ -1,7 +1,7 @@
 test_that("SQL dialects render .env as a Parent and Total share source", {
   source <- data.frame(g = c("east", "west"), value = c(2, 3))
   simulators <- available_simulators(c(
-    "simulate_access", "simulate_dbi", "simulate_hana",
+    "simulate_dbi", "simulate_hana",
     "simulate_hive", "simulate_impala", "simulate_mariadb",
     "simulate_mssql", "simulate_mysql", "simulate_odbc",
     "simulate_oracle", "simulate_postgres", "simulate_redshift",
@@ -147,4 +147,34 @@ test_that("SQL .env source keeps lexical pronouns and source validation", {
   )
   error <- expect_error(dplyr::collect(invalid))
   expect_match(conditionMessage(error), ".env", fixed = TRUE)
+})
+
+test_that("SQLite shares preserve special outputs over joined inputs", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  keys <- dplyr::copy_to(con, data.frame(id = 1:2, g = c("a", "b")), "keys")
+  values <- dplyr::copy_to(
+    con, data.frame(id = 1:2, value = c(2, 3)), "vals"
+  )
+  values <- dplyr::mutate(values, value = .data$value + 0L)
+  source <- dplyr::left_join(keys, values, by = "id")
+  source_name <- ".env"
+  query <- summarize_with_margins(
+    source, !!source_name := sum(.data$value), `TRUE` = sum(.data$value),
+    parent = share_of_parent(.env), total = share_of_total(.env),
+    `FALSE` = share_of_total(`TRUE`),
+    .grouping = rollup(g), .sort = "last", .check_share_source = FALSE
+  )
+  for (result in list(dplyr::collect(query),
+                      dplyr::collect(dplyr::compute(query)))) {
+    expect_identical(names(result),
+                     c("g", ".env", "TRUE", "parent", "total", "FALSE"))
+    expect_identical(result$g, c("a", "b", "Total"))
+    expect_equal(result[[".env"]], c(2, 3, 5))
+    expect_equal(result[["TRUE"]], c(2, 3, 5))
+    expect_equal(result$parent, c(0.4, 0.6, 1))
+    expect_equal(result$total, c(0.4, 0.6, 1))
+    expect_equal(result[["FALSE"]], c(0.4, 0.6, 1))
+  }
 })

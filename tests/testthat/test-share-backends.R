@@ -513,7 +513,7 @@ test_that("dtplyr rejects non-scalar Parent-share sources on collection", {
   }
 })
 
-test_that("dtplyr refuses unrelated row expansion before joining shares", {
+test_that("dtplyr refuses unrelated row expansion before calculating shares", {
   skip_if_suggest_absent("dtplyr")
   source <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), v = c(2, 4)))
 
@@ -1163,7 +1163,7 @@ test_that("a pattern is counted once per occurrence, and none where absent", {
   expect_identical(share_query_count("one and one", "one"), 2L)
 })
 
-test_that("dtplyr batches validated summaries and parent mapping", {
+test_that("dtplyr batches validated summaries without reevaluating a join", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(
     group = c("x", "y"),
@@ -1195,7 +1195,7 @@ test_that("dtplyr batches validated summaries and parent mapping", {
   staged_checks <- share_query_count(many_call, staged_check)
   expect_gt(staged_checks, 0L)
   expect_identical(staged_checks, share_query_count(one_call, staged_check))
-  expect_identical(share_query_count(many_call, "allow.cartesian = TRUE"), 1L)
+  expect_identical(share_query_count(many_call, "allow.cartesian = TRUE"), 0L)
 })
 
 parent_lazy_probe_capture <- new.env(parent = emptyenv())
@@ -1248,7 +1248,7 @@ parent_lazy_probe_counts <- function() {
   )
 }
 
-test_that("PostgreSQL renders one staged Parent-share join for all measures", {
+test_that("PostgreSQL shares reuse one staged summary for all measures", {
   data <- data.frame(
     region = "East",
     store = "A",
@@ -1279,12 +1279,12 @@ test_that("PostgreSQL renders one staged Parent-share join for all measures", {
   many_sql <- dbplyr::sql_render(many)
 
   expect_match(many_sql, "GROUP BY GROUPING SETS", fixed = TRUE)
-  expect_identical(share_query_count(many_sql, "LEFT JOIN"), 1L)
+  expect_identical(share_query_count(many_sql, "LEFT JOIN"), 0L)
   expect_identical(
     share_query_count(many_sql, "GROUP BY GROUPING SETS"),
     share_query_count(one_sql, "GROUP BY GROUPING SETS")
   )
-  expect_match(many_sql, "IS NULL AND", fixed = TRUE)
+  expect_match(many_sql, "PARTITION BY", fixed = TRUE)
   expect_match(many_sql, "CAST(", fixed = TRUE)
 })
 
@@ -1326,13 +1326,13 @@ test_that("DuckDB bounds staged summaries across Parent rollups", {
 
   expect_identical(
     share_query_count(small_sql, "GROUP BY GROUPING SETS"),
-    2L
+    1L
   )
   expect_identical(
     share_query_count(large_sql, "GROUP BY GROUPING SETS"),
-    2L
+    1L
   )
-  expect_identical(share_query_count(large_sql, "LEFT JOIN"), 1L)
+  expect_identical(share_query_count(large_sql, "LEFT JOIN"), 0L)
 })
 
 test_that("RSQLite Parent mapping does not multiply portable branch families", {
@@ -1372,18 +1372,18 @@ test_that("RSQLite Parent mapping does not multiply portable branch families", {
   small_sql <- dbplyr::sql_render(small)
   large_sql <- dbplyr::sql_render(large)
 
-  # The Parent join references the staged family twice. The final zero-row
-  # source anchor contributes one more reference, independent of rollup size.
+  # One staged branch family includes its zero-row type anchor. Finalization
+  # contributes one further source anchor, independent of rollup size.
   expect_identical(
     share_query_count(small_sql, table_name),
-    2L * (3L + 1L) + 1L
+    3L + 2L
   )
   expect_identical(
     share_query_count(large_sql, table_name),
-    2L * (5L + 1L) + 1L
+    5L + 2L
   )
-  expect_identical(share_query_count(large_sql, "LEFT JOIN"), 1L)
-  expect_identical(share_query_count(large_sql, "INNER JOIN"), 1L)
+  expect_identical(share_query_count(large_sql, "LEFT JOIN"), 0L)
+  expect_identical(share_query_count(large_sql, "INNER JOIN"), 0L)
 
   expected <- summarize(data, small_grouping) |>
     dplyr::arrange(set, g1, g2)
@@ -1422,7 +1422,7 @@ test_that("general dbplyr builds a share without reading the caller's data", {
   sql <- dbplyr::sql_render(query)
   expect_identical(parent_lazy_probe_counts(), unread)
   expect_match(sql, "CAST(", fixed = TRUE)
-  expect_match(sql, "LEFT JOIN", fixed = TRUE)
+  expect_match(sql, "OVER", fixed = TRUE)
 
   # A connection that answers nothing cannot say whether its dialect converts,
   # so the default refuses the share rather than calculating one nothing
@@ -1492,7 +1492,6 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     value = 1
   )
   simulators <- available_simulators(c(
-    "simulate_access",
     "simulate_dbi",
     "simulate_hana",
     "simulate_hive",
@@ -1528,10 +1527,10 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
     expect_match(sql, "UNION ALL", fixed = TRUE, info = simulator)
     expect_identical(
       share_query_count(sql, "LEFT JOIN"),
-      1L,
+      0L,
       info = simulator
     )
-    expect_match(sql, "IS NULL AND", fixed = TRUE, info = simulator)
+    expect_match(sql, "PARTITION BY", fixed = TRUE, info = simulator)
     # A simulator has no database behind it, so neither of these executes and
     # each stands for a property a dialect that does execute is held to: the
     # cast for the integer source share `RSQLite executes portable Parent
@@ -1547,6 +1546,19 @@ test_that("fallback simulators render portable staged Parent-share SQL", {
       info = simulator
     )
   }
+})
+
+test_that("Access reports its unsupported share window without execution", {
+  source <- dbplyr::tbl_lazy(
+    data.frame(g = "a", x = 1), con = dbplyr::simulate_access()
+  )
+  query <- summarize_with_margins(
+    source, value = sum(.data$x), share = share_of_total(value),
+    .grouping = rollup(g), .check_share_source = FALSE
+  )
+  expect_s3_class(query, "tbl_lazy")
+  expect_error(dbplyr::sql_render(query),
+               "Window function `max()` is not supported", fixed = TRUE)
 })
 
 test_that("RSQLite executes portable Parent shares end to end", {
@@ -1608,7 +1620,7 @@ test_that("RSQLite executes portable Parent shares end to end", {
 
   expect_s3_class(query, "tbl_lazy")
   expect_match(sql, "UNION ALL", fixed = TRUE)
-  expect_match(sql, "IS NULL AND", fixed = TRUE)
+  expect_match(sql, "PARTITION BY", fixed = TRUE)
   expect_match(sql, "CAST(", fixed = TRUE)
   expect_false(grepl("GROUPING SETS", sql, fixed = TRUE))
 
@@ -2569,8 +2581,6 @@ expect_empty_share_identities <- function(root, partitioned) {
   expect_identical(root$whole, 1)
   expect_identical(nrow(partitioned), 0L)
   expect_type(partitioned$share, "double")
-  # A Total share joins its denominator on the fixed keys, so the empty
-  # partitioned case is the one where that join has nothing on either side.
   expect_type(partitioned$whole, "double")
 }
 
@@ -2722,7 +2732,7 @@ test_that("lazy Parent-share staging avoids adversarial user-name collisions", {
   group_name <- "..marginplyr_parent_key_1"
   value_name <- "value"
   summary_name <- "total"
-  # The name the join reserves for `total`'s denominator, written here as a
+  # The name reserved for `total`'s denominator, written here as a
   # summary of the caller's own so that it is already in the staged result when
   # the allocator asks for it.
   denominator_name <- "..marginplyr_denominator_of_total_1"
@@ -2852,10 +2862,9 @@ test_that("RSQLite executes portable Total shares end to end", {
 
   expect_s3_class(query, "tbl_lazy")
   expect_match(sql, "UNION ALL", fixed = TRUE)
-  # The fixed key is matched with missing-safe identity, and every measure
-  # shares the one denominator join rather than adding a join each.
-  expect_match(sql, "IS NULL AND", fixed = TRUE)
-  expect_identical(share_query_count(sql, "LEFT JOIN"), 1L)
+  # A fixed-key partition preserves missing-safe identity for every measure.
+  expect_match(sql, "PARTITION BY", fixed = TRUE)
+  expect_identical(share_query_count(sql, "LEFT JOIN"), 0L)
   expect_false(grepl("GROUPING SETS", sql, fixed = TRUE))
 
   result <- arrange_result(dplyr::collect(query))
@@ -3004,8 +3013,6 @@ test_that("dtplyr Total shares match local results", {
     )
   }
 
-  # Without fixed keys the denominator is one row and the join key standing in
-  # for a partition is internal: it must not reach the result.
   unpartitioned <- dplyr::collect(summarize_with_margins(
     dtplyr::lazy_dt(data),
     revenue = sum(revenue),
@@ -3017,7 +3024,7 @@ test_that("dtplyr Total shares match local results", {
   expect_equal(sum(unpartitioned$revenue_share), 2)
 })
 
-test_that("dtplyr shares join fixed keys containing literal backticks", {
+test_that("dtplyr shares preserve fixed keys containing literal backticks", {
   skip_if_suggest_absent("dtplyr")
   data <- data.table::as.data.table(setNames(
     data.frame(
@@ -3102,7 +3109,7 @@ test_that("dtplyr shares join fixed keys containing literal backticks", {
   }
 })
 
-test_that("dtplyr shares join literal comparison-operator fixed keys", {
+test_that("dtplyr shares preserve literal comparison-operator fixed keys", {
   skip_if_suggest_absent("dtplyr")
   values <- c("p", "p", "q", "q", NA_character_, NA_character_)
   data <- data.frame(
