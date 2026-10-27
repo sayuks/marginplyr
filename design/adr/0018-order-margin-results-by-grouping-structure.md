@@ -462,9 +462,7 @@ applies to both fixed keys and grouping dimensions. The value term remains the
 column itself, so neither its ordering nor its result shape is redefined here.
 
 This specifies what `is.na(column)` in the earlier key notation means for a
-structured local column. It remains the scalar predicate on one-dimensional
-columns and on lazy SQL results, where a structured local column is not an
-available key.
+structured local column.
 
 ## Amendment: typed-missing SQLite results keep the anchor outermost
 
@@ -480,3 +478,13 @@ returns a lazy table explicitly ordered by an available implicit rowid alias.
 That rowid expression carries no window ordering, so ordinary select and rename
 can operate on the returned table. Derived tables have ordinary dbplyr order
 semantics; the direct materialized result retains this decision's Margin order.
+
+## Amendment: local list keys use row-vector missingness
+
+For a local list key, the missingness term follows dplyr/vctrs row-vector
+missingness (#896). In a plain list, `NULL` is missing; an element containing
+scalar `NA` is nonmissing. This applies to fixed keys and grouping dimensions,
+including dimensions with a typed-missing Margin label represented by `NULL`.
+The Grouping bit still positions margin rows before or after detail rows.
+Classed list-of keys follow their vctrs missingness. The packed data-frame,
+matrix, scalar atomic, and lazy SQL contracts are unchanged.

@@ -506,6 +506,117 @@ test_that("a fixed key sorts its missing values last", {
   expect_identical(result$units, c(4, 4, 1, 1, 2, 2))
 })
 
+test_that("plain-list fixed keys put NULL after NA-valued elements", {
+  data <- tibble::tibble(key = list(NA_integer_, NULL), units = 1:2)
+  original <- data
+  expect_identical(vctrs::vec_detect_missing(data$key), c(FALSE, TRUE))
+  expect_identical(dplyr::arrange(data, key)$units, 1:2)
+
+  for (sort in c("last", "first", "none")) {
+    results <- list(
+      summary = summarize_with_margins(
+        data, units = sum(units), .by = key, .sort = sort
+      ),
+      expand = expand_with_margins(data, .by = key, .sort = sort),
+      nest = nest_with_margins(data, .by = key, .sort = sort),
+      nest_by = nest_by_with_margins(data, .by = key, .sort = sort)
+    )
+    for (verb in names(results)) {
+      result <- results[[verb]]
+      info <- paste(verb, sort)
+      expect_identical(nrow(result), 2L, info = info)
+      expect_identical(result$key, list(NA_integer_, NULL), info = info)
+      expect_identical(vctrs::vec_detect_missing(result$key), c(FALSE, TRUE),
+                       info = info)
+      units <- if (verb %in% c("nest", "nest_by")) {
+        vapply(result$data, function(part) part$units, integer(1))
+      } else {
+        result$units
+      }
+      expect_identical(units, 1:2, info = info)
+    }
+    expect_identical(data, original, info = sort)
+  }
+})
+
+test_that("list-of fixed keys retain row-vector missingness and type", {
+  data <- tibble::tibble(
+    key = vctrs::list_of(NULL, NA_integer_, .ptype = integer()),
+    units = 1:2
+  )
+  original <- data
+  for (sort in c("last", "first")) {
+    result <- expand_with_margins(data, .by = key, .sort = sort)
+    expect_identical(result$key,
+                     vctrs::list_of(NA_integer_, NULL, .ptype = integer()))
+    expect_identical(vctrs::vec_detect_missing(result$key), c(FALSE, TRUE))
+    expect_identical(result$units, 2:1)
+  }
+  expect_identical(expand_with_margins(data, .by = key, .sort = "none"),
+                   data)
+  expect_identical(data, original)
+})
+
+test_that("plain-list dimensions distinguish missing keys from typed margins", {
+  data <- tibble::tibble(key = list(NA_integer_, NULL), units = 1:2)
+  original <- data
+  for (sort in c("last", "first")) {
+    results <- list(
+      summary = summarize_with_margins(
+        data, units = sum(units), .grouping = rollup(key),
+        .margin_label = NULL, .id = "set", .sort = sort
+      ),
+      expand = expand_with_margins(
+        data, .grouping = rollup(key), .margin_label = NULL,
+        .id = "set", .sort = sort
+      ),
+      nest = nest_with_margins(
+        data, .grouping = rollup(key), .margin_label = NULL,
+        .id = "set", .sort = sort
+      ),
+      nest_by = nest_by_with_margins(
+        data, .grouping = rollup(key), .margin_label = NULL,
+        .id = "set", .sort = sort
+      )
+    )
+    for (verb in names(results)) {
+      result <- results[[verb]]
+      info <- paste(verb, sort)
+      detail <- result[result$set == 1L, ]
+      margin <- result[result$set == 2L, ]
+      expanded <- identical(verb, "expand")
+      margin_size <- if (expanded) 2L else 1L
+      expect_identical(nrow(result), 2L + margin_size, info = info)
+      expect_identical(detail$key, list(NA_integer_, NULL), info = info)
+      expect_identical(vctrs::vec_detect_missing(detail$key), c(FALSE, TRUE),
+                       info = info)
+      expect_identical(margin$key, rep(list(NULL), margin_size), info = info)
+      expect_identical(vctrs::vec_detect_missing(margin$key),
+                       rep(TRUE, margin_size), info = info)
+      expect_identical(
+        result$set,
+        if (identical(sort, "first")) {
+          c(rep(2L, margin_size), 1L, 1L)
+        } else {
+          c(1L, 1L, rep(2L, margin_size))
+        },
+        info = info
+      )
+      nested <- verb %in% c("nest", "nest_by")
+      detail_units <- if (nested) {
+        vapply(detail$data, function(part) part$units, integer(1))
+      } else {
+        detail$units
+      }
+      margin_units <- if (nested) margin$data[[1L]]$units else margin$units
+      expect_identical(detail_units, 1:2, info = info)
+      expect_identical(margin_units,
+                       if (nested || expanded) 1:2 else 3L, info = info)
+    }
+    expect_identical(data, original, info = sort)
+  }
+})
+
 test_that("structured fixed keys sort by row with wholly missing keys last", {
   components <- matrix(
     c(NA_integer_, 1L, NA_integer_, 2L, 1L, 1L,
