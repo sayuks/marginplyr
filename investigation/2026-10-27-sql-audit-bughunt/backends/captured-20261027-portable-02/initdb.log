@@ -1,0 +1,22 @@
+The files belonging to this database system will be owned by user "sayuks".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "C".
+The default text search configuration will be set to "english".
+
+Data page checksums are disabled.
+
+creating directory /private/tmp/marginplyr-sql-audit-pg.bvldf6/data ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default "max_connections" ... 100
+selecting default "shared_buffers" ... 128MB
+selecting default time zone ... Asia/Tokyo
+creating configuration files ... ok
+running bootstrap script ... ok
+performing post-bootstrap initialization ... ok
+syncing data to disk ... ok
+
+Success. You can now start the database server using:
+
+    /opt/homebrew/bin/pg_ctl -D /private/tmp/marginplyr-sql-audit-pg.bvldf6/data -l logfile start

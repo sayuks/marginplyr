@@ -1,0 +1,9 @@
+Run from the marginplyr repository root. Each script expects one new output directory and rejects a directory that already exists. The scripts are independent; the order below keeps the short checks first.
+
+task_run=$(mktemp -d /private/tmp/marginplyr-audit-lifetime-XXXXXX)
+Rscript SCRIPT_DIR/lifetime-matrix.R "$task_run/lifetime" > "$task_run/lifetime.log" 2>&1
+Rscript SCRIPT_DIR/arrow-reader.R "$task_run/reader" > "$task_run/reader.log" 2>&1
+Rscript SCRIPT_DIR/nonsql-matrix.R "$task_run/nonsql" > "$task_run/nonsql.log" 2>&1
+Rscript SCRIPT_DIR/nonsql-sql-parent.R "$task_run/sql-parent" > "$task_run/sql-parent.log" 2>&1
+
+Replace SCRIPT_DIR with the directory containing these scripts. Expected comparison counts are 31, 48, 432, and 216 respectively. Each output directory contains summary.rds and session-info.txt; nonsql-matrix.R also stores all 432 final outcomes in outcomes.rds. Rows returned without a guaranteed ordering are compared as multisets. These scripts do not change product code.

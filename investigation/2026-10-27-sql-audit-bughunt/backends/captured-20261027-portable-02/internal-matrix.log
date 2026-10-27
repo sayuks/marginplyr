@@ -1,0 +1,6 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+135 live cases passed: exact internal SQL vs DBI dbSendQuery, returned status, empty conditions
+
+ 0  1  2
+70 57  8
+Untracing function "dbSendQuery" in package "namespace:DBI"
