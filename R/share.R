@@ -975,9 +975,6 @@ share_cardinality_records <- function(analyses, requests) {
       share_output = pair$output,
       source_summary = pair$source,
       share_kind = pair$kind,
-      preceding_names = vapply(Filter(function(record) {
-        record$position < source_records[[1L]]$position
-      }, records), `[[`, character(1), "name"),
       across_input = source_records[[1L]]$across_input,
       across_function = source_records[[1L]]$across_function
     )))

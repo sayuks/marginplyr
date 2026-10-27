@@ -173,6 +173,7 @@ test_that("selector sources preserve local evaluation timing and counts", {
 test_that("selector sources reject aliases with runtime output names", {
   data <- data.frame(g = c("a", "b"), value = c(1, 3))
   frame <- function(x) data.frame(previous = sum(x))
+  overwrite <- function(x) data.frame(value = sum(x))
   for (helper in c("share_of_total", "share_of_parent")) {
     error <- expect_error(rlang::inject(summarize_with_margins(
       data,
@@ -185,6 +186,24 @@ test_that("selector sources reject aliases with runtime output names", {
 
     error <- expect_error(rlang::inject(summarize_with_margins(
       data,
+      overwrite(value),
+      source = sum(dplyr::pick(dplyr::starts_with("val"))),
+      share = !!rlang::call2(helper, quote(source)),
+      .grouping = rollup(g)
+    )), "depends on earlier summary alias `value`")
+    expect_s3_class(error, "marginplyr_error")
+
+    error <- expect_error(rlang::inject(summarize_with_margins(
+      data,
+      dplyr::across(value, sum, .names = paste0("val", "ue")),
+      source = sum(dplyr::pick(dplyr::starts_with("val"))),
+      share = !!rlang::call2(helper, quote(source)),
+      .grouping = rollup(g)
+    )), "depends on earlier summary alias `value`")
+    expect_s3_class(error, "marginplyr_error")
+
+    error <- expect_error(rlang::inject(summarize_with_margins(
+      data,
       value = sum(value),
       source = sum(dplyr::across("value", identity)),
       share = !!rlang::call2(helper, quote(source)),
@@ -192,4 +211,28 @@ test_that("selector sources reject aliases with runtime output names", {
     )), "depends on earlier summary alias `value`")
     expect_s3_class(error, "marginplyr_error")
   }
+})
+
+test_that("tracking across outputs preserves inherited naming bindings", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3))
+  naming <- rlang::env(environment(), ..marginplyr_name_rules_1 = "previous")
+  summary <- rlang::new_quosure(
+    quote(dplyr::across(
+      value, sum, .unpack = ,
+      .names = "{get('..marginplyr_name_rules_1')}"
+    )),
+    rlang::env(naming)
+  )
+  result <- rlang::inject(summarize_with_margins(
+    data,
+    !!summary,
+    source = sum(dplyr::pick(value)),
+    share = share_of_total(source),
+    .grouping = rollup(g)
+  )) |>
+    dplyr::arrange(source)
+
+  expect_equal(result$previous, c(1, 3, 4))
+  expect_equal(result$source, c(1, 3, 4))
+  expect_identical(result$share, c(0.25, 0.75, 1))
 })

@@ -277,7 +277,8 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           internal_names, set_id_name,
                                           set_id_is_internal,
                                           share_sources,
-                                          source_definitions) {
+                                          source_definitions,
+                                          alias_state = NULL) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
     expr <- rlang::call2(
@@ -285,7 +286,7 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
       rlang::quo_get_expr(dot),
       assigned_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
-      setdiff(share_sources, source_definitions[[i]])
+      setdiff(share_sources, source_definitions[[i]]), alias_state, i
     )
     dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
     names(dots)[[i]] <- ""
@@ -300,15 +301,20 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
 local_assigned_summary_value <- function(value, name, group_vars,
                                          internal_names, set_id_name,
                                          set_id_is_internal,
-                                         protected_sources) {
+                                         protected_sources,
+                                         alias_state = NULL, position = NULL) {
+  if (is.null(value)) {
+    return(value)
+  }
+  record_local_summary_aliases(
+    if (is.data.frame(value)) names(value) else name,
+    alias_state, position
+  )
   if (is.data.frame(value)) {
     check_local_frame_output_names(
       names(value), group_vars, internal_names, set_id_name,
       set_id_is_internal, protected_sources
     )
-    return(value)
-  }
-  if (is.null(value)) {
     return(value)
   }
   vctrs::new_data_frame(
@@ -349,7 +355,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
                                        share_sources,
                                        source_definitions,
                                        source_reads,
-                                       auto_names) {
+                                       auto_names, alias_state = NULL) {
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     if (nzchar(rlang::names2(dots)[[i]])) {
@@ -361,11 +367,15 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       unpack <- parsed$unpack
       # Keep across at the top level so dplyr owns its expansion context.
       # Share checks use the names that expansion actually produces.
-      empty_unpack <- rlang::is_quosure(unpack) &&
-        rlang::is_missing(rlang::quo_get_expr(unpack))
+      empty_unpack <- (
+        parsed$unpack_index > 0L &&
+          rlang::is_missing(parsed$call_args[[parsed$unpack_index]])
+      ) || (rlang::is_quosure(unpack) &&
+        rlang::is_missing(rlang::quo_get_expr(unpack)))
       unpack_is_false <- across_unpack_is_false(unpack, rlang::quo_get_env(dot))
       protected_sources <- setdiff(share_sources, source_definitions[[i]])
-      if (empty_unpack || (unpack_is_false && length(share_sources) == 0L)) {
+      if ((empty_unpack && is.null(alias_state)) ||
+            (unpack_is_false && length(share_sources) == 0L)) {
         next
       }
       if (unpack_is_false || (!isTRUE(unpack) && !is.character(unpack))) {
@@ -374,7 +384,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         # dplyr chooses from the value it actually reads.
         call_args <- parsed$call_args
         state <- new.env(parent = emptyenv())
-        if (unpack_is_false) {
+        if (unpack_is_false || empty_unpack) {
           state$unpack <- FALSE
         }
         state$name_rules <- list(
@@ -383,10 +393,26 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal,
           protected_sources = protected_sources,
-          source_reads = source_reads[[i]]
+          source_reads = source_reads[[i]],
+          alias_state = alias_state,
+          position = i
         )
+        state$name_rules_expr <- deparse1(state$name_rules)
+        dot_env <- rlang::quo_get_env(dot)
+        if (!is.null(alias_state)) {
+          binding <- new_margin_internal_names(
+            1L, c(all.names(expr), ls(dot_env, all.names = TRUE)),
+            "..marginplyr_name_rules_"
+          )
+          while (exists(binding, envir = dot_env, inherits = TRUE)) {
+            binding <- paste0(binding, "_")
+          }
+          dot_env <- rlang::env(dot_env)
+          rlang::env_poke(dot_env, binding, state$name_rules)
+          state$name_rules_expr <- binding
+        }
         index <- parsed$unpack_index
-        if (index > 0L) {
+        if (index > 0L && !empty_unpack) {
           call_args[[index]] <- rlang::call2(
             marginplyr_private_call("local_checked_unpack_arg"),
             call_args[[index]], state
@@ -417,7 +443,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
           )))
         }
         expr <- rebuild_static_call(expr, call_args)
-        dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
+        dots[[i]] <- rlang::new_quosure(expr, env = dot_env)
         next
       }
     }
@@ -426,7 +452,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       expr, auto_names[[i]], group_vars, internal_names,
       set_id_name,
       set_id_is_internal,
-      setdiff(share_sources, source_definitions[[i]])
+      setdiff(share_sources, source_definitions[[i]]), alias_state, i
     )
     dots[[i]] <- rlang::new_quosure(expr, env = wrapped_summary_env(dot))
   }
@@ -445,7 +471,7 @@ local_checked_unpack_arg <- function(value, state) {
   paste0(
     "{marginplyr:::local_checked_glue_name(",
     deparse1(spec), ", ",
-    deparse1(state$name_rules), ")}"
+    state$name_rules_expr, ")}"
   )
 }
 
@@ -481,7 +507,7 @@ local_checked_across_names_arg <- function(value, state) {
   paste0(
     "{marginplyr:::local_checked_glue_name(",
     deparse1(value), ", ",
-    deparse1(state$name_rules), ")}"
+    state$name_rules_expr, ")}"
   )
 }
 
@@ -499,12 +525,26 @@ local_checked_glue_name <- function(spec, name_rules) {
     }
   )
   check_share_alias_reads(names, name_rules$source_reads)
+  record_local_summary_aliases(
+    names, name_rules$alias_state, name_rules$position
+  )
   check_local_frame_output_names(
     names, name_rules$group_vars, name_rules$internal_names,
     name_rules$set_id_name, name_rules$set_id_is_internal,
     name_rules$protected_sources
   )
   names
+}
+
+# Retain the actual outputs of one local dot for later source selections.
+# Its state is reset per branch; a dot may report names once per group.
+record_local_summary_aliases <- function(names, state, position) {
+  if (!is.null(state)) {
+    state$summary_aliases[[position]] <- unique(c(
+      state$summary_aliases[[position]], names
+    ))
+  }
+  invisible(NULL)
 }
 
 # What execution carries for the caller's summary arguments: the dots to hand
@@ -777,6 +817,15 @@ plan_summary_expressions <- function(dots,
         record$source_summary
       ))
     }
+    selection_state$initial_aliases <- lapply(
+      seq_along(summary_plan$dots), function(i) {
+        if (is.na(assigned_names[[i]])) {
+          rlang::names2(summary_plan$dots)[[i]]
+        } else {
+          character()
+        }
+      }
+    )
     selection_state$source_reads <- lapply(
       seq_along(summary_plan$dots),
       function(i) {
@@ -807,12 +856,13 @@ plan_summary_expressions <- function(dots,
     ]
     stopifnot(length(share_positions) == length(summary_plan$requests))
     selection_state$by_dot <- lapply(
-      summary_plan$origin_positions,
-      function(position) {
+      seq_along(summary_plan$dots),
+      function(i) {
+        position <- summary_plan$origin_positions[[i]]
         state <- new.env(parent = selection_state)
-        state$input_names <- names(selection_proxy)
+        state$position <- i
         state$source_checks <- Filter(function(record) {
-          summary_plan$origin_positions[[record$position]] == position
+          record$position == i
         }, summary_plan$cardinality)
         state$forbidden_names <- unlist(lapply(
           summary_plan$requests[share_positions < position],
@@ -1222,7 +1272,9 @@ local_summary_selection <- function(selection, env, group_vars,
     for (check in state$source_checks) {
       check$symbols <- source_names
       check_share_alias_reads(
-        c(check$preceding_names, setdiff(names(data), state$input_names)),
+        unlist(get("summary_aliases", envir = state, inherits = TRUE)[
+          seq_len(state$position - 1L)
+        ], use.names = FALSE),
         list(check)
       )
     }
