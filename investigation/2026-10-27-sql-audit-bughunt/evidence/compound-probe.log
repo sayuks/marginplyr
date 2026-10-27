@@ -1,0 +1,53 @@
+warning_level=-1
+classes=warning,interrupt,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,warning,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=warning,error,interrupt,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,error,warning,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+warning_level=0
+classes=warning,interrupt,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,warning,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=warning,error,interrupt,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,error,warning,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+warning_level=1
+classes=warning,interrupt,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,warning,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=warning,error,interrupt,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,error,warning,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+warning_level=2
+classes=warning,interrupt,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=warning,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,warning,condition terminator=stop equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=signal equal=TRUE status=interrupted handling=propagated
+classes=interrupt,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=warning,error,interrupt,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=warning,error,interrupt,condition terminator=warning equal=TRUE status=returned handling=suppressed
+classes=interrupt,error,warning,condition terminator=stop equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=signal equal=TRUE status=errored,errored handling=handled,handled
+classes=interrupt,error,warning,condition terminator=warning equal=TRUE status=returned handling=suppressed
+Compound-condition off/on pairs: 48; failures: 0

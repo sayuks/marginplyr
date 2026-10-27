@@ -1,0 +1,398 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+
+CASE sqlite label off
+# A tibble: 1 × 3
+  purpose source status
+  <chr>   <chr>  <chr>
+1 result  render prepared
+DBI dbSendQuery count 0
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE sqlite label on
+# A tibble: 2 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+2 result                   render prepared
+DBI dbSendQuery count 1
+1 SELECT SUM(CASE WHEN (CAST(`g` AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS `g`
+FROM `audit_live_sqlite`
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE sqlite label collision
+# A tibble: 1 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+DBI dbSendQuery count 1
+1 SELECT SUM(CASE WHEN (CAST(`g` AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS `g`
+FROM (
+  SELECT 'Total' AS `g`
+  FROM `audit_live_sqlite`
+) AS `q01`
+PUBLIC ERROR "Total" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE sqlite cold share
+# A tibble: 2 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+2 share_dialect            render returned
+DBI dbSendQuery count 2
+1 SELECT SUM(CASE WHEN (CAST(`g` AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS `g`
+FROM `audit_live_sqlite`
+2 SELECT SUM('x') AS `p`
+FROM (SELECT 1 AS z) AS `q01`
+PUBLIC ERROR marginplyr cannot establish that the source summaries of Total shares are plain integer or double scalars on this backend, because its SQL dialect converts a value of another type to a number rather than refusing it, so an ineligible source summary is indistinguishable from an eligible one.
+ℹ Set `.check_share_source = FALSE` to calculate `share_of_total()` from sources you have established yourself, or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE sqlite warm share
+# A tibble: 1 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+DBI dbSendQuery count 1
+1 SELECT SUM(CASE WHEN (CAST(`g` AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS `g`
+FROM `audit_live_sqlite`
+PUBLIC ERROR marginplyr cannot establish that the source summaries of Total shares are plain integer or double scalars on this backend, because its SQL dialect converts a value of another type to a number rather than refusing it, so an ineligible source summary is indistinguishable from an eligible one.
+ℹ Set `.check_share_source = FALSE` to calculate `share_of_total()` from sources you have established yourself, or explicitly collect the data before calling `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE duck label off
+# A tibble: 2 × 3
+  purpose         source status
+  <chr>           <chr>  <chr>
+1 selection_proxy render returned
+2 result          render prepared
+DBI dbSendQuery count 1
+1 SELECT *
+FROM audit_live_duck
+LIMIT 0
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE duck label on
+# A tibble: 3 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 selection_proxy          render returned
+2 observed_label_collision render returned
+3 result                   render prepared
+DBI dbSendQuery count 2
+1 SELECT *
+FROM audit_live_duck
+LIMIT 0
+2 SELECT SUM(CASE WHEN (TRY_CAST(g AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS g
+FROM audit_live_duck
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[3]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE duck label collision
+# A tibble: 2 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 selection_proxy          render returned
+2 observed_label_collision render returned
+DBI dbSendQuery count 2
+1 SELECT 'Total' AS g, v
+FROM audit_live_duck
+LIMIT 0
+2 SELECT SUM(CASE WHEN (TRY_CAST(g AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS g
+FROM (
+  SELECT 'Total' AS g
+  FROM audit_live_duck
+) AS q01
+PUBLIC ERROR "Total" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE duck cold share
+# A tibble: 5 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 selection_proxy          render returned
+2 observed_label_collision render returned
+3 share_dialect            render errored
+4 share_dialect_control    render returned
+5 result                   render prepared
+DBI dbSendQuery count 4
+1 SELECT *
+FROM audit_live_duck
+LIMIT 0
+2 SELECT SUM(CASE WHEN (TRY_CAST(g AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS g
+FROM audit_live_duck
+3 SELECT SUM('x') AS p
+FROM (SELECT 1 AS z) AS q01
+4 SELECT SUM(z) AS p
+FROM (SELECT 1 AS z) AS q01
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[3]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   message
+1 Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Binder Error: No function matches the given name and argument types 'sum(VARCHAR)'. You might need to add explicit type casts.\n\tCandidate functions:\n\tsum(DECIMAL) -> DECIMAL\n\tsum(BOOLEAN) -> HUGEINT\n\tsum(SMALLINT) -> HUGEINT\n\tsum(INTEGER) -> HUGEINT\n\tsum(BIGINT) -> HUGEINT\n\tsum(HUGEINT) -> HUGEINT\n\tsum(DOUBLE) -> DOUBLE\n\tsum(BIGNUM) -> BIGNUM\n\n\nLINE 1: SELECT SUM('x') AS p\n               ^\nℹ Context: rapi_prepare\nℹ Error type: BINDER
+       phase handling
+1 invocation  handled
+
+[[4]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[5]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE duck warm share
+# A tibble: 3 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 selection_proxy          render returned
+2 observed_label_collision render returned
+3 result                   render prepared
+DBI dbSendQuery count 2
+1 SELECT *
+FROM audit_live_duck
+LIMIT 0
+2 SELECT SUM(CASE WHEN (TRY_CAST(g AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS g
+FROM audit_live_duck
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[3]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE pg label off
+# A tibble: 1 × 3
+  purpose source status
+  <chr>   <chr>  <chr>
+1 result  render prepared
+DBI dbSendQuery count 0
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE pg label on
+# A tibble: 2 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+2 result                   render prepared
+DBI dbSendQuery count 1
+1 SELECT SUM(CASE WHEN (CAST("g" AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS "g"
+FROM "audit_live_pg"
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE pg label collision
+# A tibble: 1 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+DBI dbSendQuery count 1
+1 SELECT SUM(CASE WHEN (CAST("g" AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS "g"
+FROM (
+  SELECT 'Total' AS "g"
+  FROM "audit_live_pg"
+) AS "q01"
+PUBLIC ERROR "Total" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE pg cold share
+# A tibble: 4 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+2 share_dialect            render errored
+3 share_dialect_control    render returned
+4 result                   render prepared
+DBI dbSendQuery count 3
+1 SELECT SUM(CASE WHEN (CAST("g" AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS "g"
+FROM "audit_live_pg"
+2 SELECT SUM('x') AS "p"
+FROM (SELECT 1 AS z) AS "q01"
+3 SELECT SUM("z") AS "p"
+FROM (SELECT 1 AS z) AS "q01"
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                                                    message
+1 Failed to collect lazy table.\nCaused by error:\n! Failed to prepare query : ERROR:  function sum(unknown) is not unique\nLINE 1: SELECT SUM('x') AS "p"\n               ^\nHINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+       phase handling
+1 invocation  handled
+
+[[3]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[4]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE pg warm share
+# A tibble: 2 × 3
+  purpose                  source status
+  <chr>                    <chr>  <chr>
+1 observed_label_collision render returned
+2 result                   render prepared
+DBI dbSendQuery count 1
+1 SELECT SUM(CASE WHEN (CAST("g" AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS "g"
+FROM "audit_live_pg"
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+CASE pg transaction cold share
+# A tibble: 8 × 3
+  purpose                   source  status
+  <chr>                     <chr>   <chr>
+1 observed_label_collision  render  returned
+2 share_dialect_transaction literal returned
+3 share_dialect             render  errored
+4 share_dialect_transaction literal returned
+5 share_dialect_control     render  returned
+6 share_dialect_transaction literal returned
+7 share_dialect_transaction literal returned
+8 result                    render  prepared
+DBI dbSendQuery count 7
+1 SELECT SUM(CASE WHEN (CAST("g" AS TEXT) = 'Total') THEN 1 ELSE 0 END) AS "g"
+FROM "audit_live_pg"
+2 SAVEPOINT "marginplyr_share_112135b9ad06d"
+3 SELECT SUM('x') AS "p"
+FROM (SELECT 1 AS z) AS "q01"
+4 ROLLBACK TO SAVEPOINT "marginplyr_share_112135b9ad06d"
+5 SELECT SUM("z") AS "p"
+FROM (SELECT 1 AS z) AS "q01"
+6 ROLLBACK TO SAVEPOINT "marginplyr_share_112135b9ad06d"
+7 RELEASE SAVEPOINT "marginplyr_share_112135b9ad06d"
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[3]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                                                    message
+1 Failed to collect lazy table.\nCaused by error:\n! Failed to prepare query : ERROR:  function sum(unknown) is not unique\nLINE 1: SELECT SUM('x') AS "p"\n               ^\nHINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+       phase handling
+1 invocation  handled
+
+[[4]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[5]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[6]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[7]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[8]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+
+16 live scenarios passed; transaction preserved; all 7 transaction-internal SQL rows match dbSendQuery
+Untracing function "dbSendQuery" in package "namespace:DBI"

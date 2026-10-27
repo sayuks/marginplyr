@@ -1,0 +1,32 @@
+a/FALSE/FALSE: returned correct rows
+a/FALSE/TRUE: Failed to interpolate {x}.
+Caused by error:
+! Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+a/TRUE/FALSE: returned correct rows
+a/TRUE/TRUE: Failed to interpolate {x}.
+Caused by error:
+! Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+# A tibble: 1 × 3
+  purpose                  sql   status
+  <chr>                    <chr> <chr>
+1 observed_label_collision <NA>  errored
+Total/FALSE/FALSE: returned correct rows
+Total/FALSE/TRUE: Failed to interpolate {x}.
+Caused by error:
+! Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+Total/TRUE/FALSE: returned correct rows
+Total/TRUE/TRUE: Failed to interpolate {x}.
+Caused by error:
+! Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+# A tibble: 1 × 3
+  purpose                  sql   status
+  <chr>                    <chr> <chr>
+1 observed_label_collision <NA>  errored
+Unsatisfied public-contract cases: 4
+[1] "a/FALSE/TRUE"     "a/TRUE/TRUE"      "Total/FALSE/TRUE" "Total/TRUE/TRUE"
+Error: SQL .env collision checking violates the public contract.
+Execution halted

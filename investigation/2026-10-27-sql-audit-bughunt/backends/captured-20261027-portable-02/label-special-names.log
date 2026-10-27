@@ -1,0 +1,217 @@
+sqlite/.env/FALSE/FALSE/summarize OK
+sqlite/.env/FALSE/FALSE/expand OK
+sqlite/.env/FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+sqlite/.env/FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+sqlite/.env/TRUE/FALSE/summarize OK
+sqlite/.env/TRUE/FALSE/expand OK
+sqlite/.env/TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+sqlite/.env/TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+sqlite/.data/FALSE/FALSE/summarize OK
+sqlite/.data/FALSE/FALSE/expand OK
+sqlite/.data/FALSE/TRUE/summarize OK
+sqlite/.data/FALSE/TRUE/expand OK
+sqlite/.data/TRUE/FALSE/summarize OK
+sqlite/.data/TRUE/FALSE/expand OK
+sqlite/.data/TRUE/TRUE/summarize OK
+sqlite/.data/TRUE/TRUE/expand OK
+sqlite/TRUE/FALSE/FALSE/summarize OK
+sqlite/TRUE/FALSE/FALSE/expand OK
+sqlite/TRUE/FALSE/TRUE/summarize OK
+sqlite/TRUE/FALSE/TRUE/expand OK
+sqlite/TRUE/TRUE/FALSE/summarize OK
+sqlite/TRUE/TRUE/FALSE/expand OK
+sqlite/TRUE/TRUE/TRUE/summarize OK
+sqlite/TRUE/TRUE/TRUE/expand OK
+sqlite/FALSE/FALSE/FALSE/summarize OK
+sqlite/FALSE/FALSE/FALSE/expand OK
+sqlite/FALSE/FALSE/TRUE/summarize OK
+sqlite/FALSE/FALSE/TRUE/expand OK
+sqlite/FALSE/TRUE/FALSE/summarize OK
+sqlite/FALSE/TRUE/FALSE/expand OK
+sqlite/FALSE/TRUE/TRUE/summarize OK
+sqlite/FALSE/TRUE/TRUE/expand OK
+sqlite/T/FALSE/FALSE/summarize OK
+sqlite/T/FALSE/FALSE/expand OK
+sqlite/T/FALSE/TRUE/summarize OK
+sqlite/T/FALSE/TRUE/expand OK
+sqlite/T/TRUE/FALSE/summarize OK
+sqlite/T/TRUE/FALSE/expand OK
+sqlite/T/TRUE/TRUE/summarize OK
+sqlite/T/TRUE/TRUE/expand OK
+sqlite/F/FALSE/FALSE/summarize OK
+sqlite/F/FALSE/FALSE/expand OK
+sqlite/F/FALSE/TRUE/summarize OK
+sqlite/F/FALSE/TRUE/expand OK
+sqlite/F/TRUE/FALSE/summarize OK
+sqlite/F/TRUE/FALSE/expand OK
+sqlite/F/TRUE/TRUE/summarize OK
+sqlite/F/TRUE/TRUE/expand OK
+sqlite/.../FALSE/FALSE/summarize EXPECTED BASELINE FAILURE
+sqlite/.../FALSE/FALSE/expand EXPECTED BASELINE FAILURE
+sqlite/.../FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+sqlite/.../FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+sqlite/.../TRUE/FALSE/summarize EXPECTED BASELINE FAILURE
+sqlite/.../TRUE/FALSE/expand EXPECTED BASELINE FAILURE
+sqlite/.../TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+sqlite/.../TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+sqlite/..1/FALSE/FALSE/summarize EXPECTED BASELINE FAILURE
+sqlite/..1/FALSE/FALSE/expand EXPECTED BASELINE FAILURE
+sqlite/..1/FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+sqlite/..1/FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+sqlite/..1/TRUE/FALSE/summarize EXPECTED BASELINE FAILURE
+sqlite/..1/TRUE/FALSE/expand EXPECTED BASELINE FAILURE
+sqlite/..1/TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+sqlite/..1/TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+sqlite/normal/FALSE/FALSE/summarize OK
+sqlite/normal/FALSE/FALSE/expand OK
+sqlite/normal/FALSE/TRUE/summarize OK
+sqlite/normal/FALSE/TRUE/expand OK
+sqlite/normal/TRUE/FALSE/summarize OK
+sqlite/normal/TRUE/FALSE/expand OK
+sqlite/normal/TRUE/TRUE/summarize OK
+sqlite/normal/TRUE/TRUE/expand OK
+duck/.env/FALSE/FALSE/summarize OK
+duck/.env/FALSE/FALSE/expand OK
+duck/.env/FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+duck/.env/FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+duck/.env/TRUE/FALSE/summarize OK
+duck/.env/TRUE/FALSE/expand OK
+duck/.env/TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+duck/.env/TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+duck/.data/FALSE/FALSE/summarize OK
+duck/.data/FALSE/FALSE/expand OK
+duck/.data/FALSE/TRUE/summarize OK
+duck/.data/FALSE/TRUE/expand OK
+duck/.data/TRUE/FALSE/summarize OK
+duck/.data/TRUE/FALSE/expand OK
+duck/.data/TRUE/TRUE/summarize OK
+duck/.data/TRUE/TRUE/expand OK
+duck/TRUE/FALSE/FALSE/summarize OK
+duck/TRUE/FALSE/FALSE/expand OK
+duck/TRUE/FALSE/TRUE/summarize OK
+duck/TRUE/FALSE/TRUE/expand OK
+duck/TRUE/TRUE/FALSE/summarize OK
+duck/TRUE/TRUE/FALSE/expand OK
+duck/TRUE/TRUE/TRUE/summarize OK
+duck/TRUE/TRUE/TRUE/expand OK
+duck/FALSE/FALSE/FALSE/summarize OK
+duck/FALSE/FALSE/FALSE/expand OK
+duck/FALSE/FALSE/TRUE/summarize OK
+duck/FALSE/FALSE/TRUE/expand OK
+duck/FALSE/TRUE/FALSE/summarize OK
+duck/FALSE/TRUE/FALSE/expand OK
+duck/FALSE/TRUE/TRUE/summarize OK
+duck/FALSE/TRUE/TRUE/expand OK
+duck/T/FALSE/FALSE/summarize OK
+duck/T/FALSE/FALSE/expand OK
+duck/T/FALSE/TRUE/summarize OK
+duck/T/FALSE/TRUE/expand OK
+duck/T/TRUE/FALSE/summarize OK
+duck/T/TRUE/FALSE/expand OK
+duck/T/TRUE/TRUE/summarize OK
+duck/T/TRUE/TRUE/expand OK
+duck/F/FALSE/FALSE/summarize OK
+duck/F/FALSE/FALSE/expand OK
+duck/F/FALSE/TRUE/summarize OK
+duck/F/FALSE/TRUE/expand OK
+duck/F/TRUE/FALSE/summarize OK
+duck/F/TRUE/FALSE/expand OK
+duck/F/TRUE/TRUE/summarize OK
+duck/F/TRUE/TRUE/expand OK
+duck/.../FALSE/FALSE/summarize EXPECTED BASELINE FAILURE
+duck/.../FALSE/FALSE/expand EXPECTED BASELINE FAILURE
+duck/.../FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+duck/.../FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+duck/.../TRUE/FALSE/summarize EXPECTED BASELINE FAILURE
+duck/.../TRUE/FALSE/expand EXPECTED BASELINE FAILURE
+duck/.../TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+duck/.../TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+duck/..1/FALSE/FALSE/summarize EXPECTED BASELINE FAILURE
+duck/..1/FALSE/FALSE/expand EXPECTED BASELINE FAILURE
+duck/..1/FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+duck/..1/FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+duck/..1/TRUE/FALSE/summarize EXPECTED BASELINE FAILURE
+duck/..1/TRUE/FALSE/expand EXPECTED BASELINE FAILURE
+duck/..1/TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+duck/..1/TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+duck/normal/FALSE/FALSE/summarize OK
+duck/normal/FALSE/FALSE/expand OK
+duck/normal/FALSE/TRUE/summarize OK
+duck/normal/FALSE/TRUE/expand OK
+duck/normal/TRUE/FALSE/summarize OK
+duck/normal/TRUE/FALSE/expand OK
+duck/normal/TRUE/TRUE/summarize OK
+duck/normal/TRUE/TRUE/expand OK
+pg/.env/FALSE/FALSE/summarize OK
+pg/.env/FALSE/FALSE/expand OK
+pg/.env/FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+pg/.env/FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+pg/.env/TRUE/FALSE/summarize OK
+pg/.env/TRUE/FALSE/expand OK
+pg/.env/TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+pg/.env/TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+pg/.data/FALSE/FALSE/summarize OK
+pg/.data/FALSE/FALSE/expand OK
+pg/.data/FALSE/TRUE/summarize OK
+pg/.data/FALSE/TRUE/expand OK
+pg/.data/TRUE/FALSE/summarize OK
+pg/.data/TRUE/FALSE/expand OK
+pg/.data/TRUE/TRUE/summarize OK
+pg/.data/TRUE/TRUE/expand OK
+pg/TRUE/FALSE/FALSE/summarize OK
+pg/TRUE/FALSE/FALSE/expand OK
+pg/TRUE/FALSE/TRUE/summarize OK
+pg/TRUE/FALSE/TRUE/expand OK
+pg/TRUE/TRUE/FALSE/summarize OK
+pg/TRUE/TRUE/FALSE/expand OK
+pg/TRUE/TRUE/TRUE/summarize OK
+pg/TRUE/TRUE/TRUE/expand OK
+pg/FALSE/FALSE/FALSE/summarize OK
+pg/FALSE/FALSE/FALSE/expand OK
+pg/FALSE/FALSE/TRUE/summarize OK
+pg/FALSE/FALSE/TRUE/expand OK
+pg/FALSE/TRUE/FALSE/summarize OK
+pg/FALSE/TRUE/FALSE/expand OK
+pg/FALSE/TRUE/TRUE/summarize OK
+pg/FALSE/TRUE/TRUE/expand OK
+pg/T/FALSE/FALSE/summarize OK
+pg/T/FALSE/FALSE/expand OK
+pg/T/FALSE/TRUE/summarize OK
+pg/T/FALSE/TRUE/expand OK
+pg/T/TRUE/FALSE/summarize OK
+pg/T/TRUE/FALSE/expand OK
+pg/T/TRUE/TRUE/summarize OK
+pg/T/TRUE/TRUE/expand OK
+pg/F/FALSE/FALSE/summarize OK
+pg/F/FALSE/FALSE/expand OK
+pg/F/FALSE/TRUE/summarize OK
+pg/F/FALSE/TRUE/expand OK
+pg/F/TRUE/FALSE/summarize OK
+pg/F/TRUE/FALSE/expand OK
+pg/F/TRUE/TRUE/summarize OK
+pg/F/TRUE/TRUE/expand OK
+pg/.../FALSE/FALSE/summarize EXPECTED BASELINE FAILURE
+pg/.../FALSE/FALSE/expand EXPECTED BASELINE FAILURE
+pg/.../FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+pg/.../FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+pg/.../TRUE/FALSE/summarize EXPECTED BASELINE FAILURE
+pg/.../TRUE/FALSE/expand EXPECTED BASELINE FAILURE
+pg/.../TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+pg/.../TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+pg/..1/FALSE/FALSE/summarize EXPECTED BASELINE FAILURE
+pg/..1/FALSE/FALSE/expand EXPECTED BASELINE FAILURE
+pg/..1/FALSE/TRUE/summarize EXPECTED BASELINE FAILURE
+pg/..1/FALSE/TRUE/expand EXPECTED BASELINE FAILURE
+pg/..1/TRUE/FALSE/summarize EXPECTED BASELINE FAILURE
+pg/..1/TRUE/FALSE/expand EXPECTED BASELINE FAILURE
+pg/..1/TRUE/TRUE/summarize EXPECTED BASELINE FAILURE
+pg/..1/TRUE/TRUE/expand EXPECTED BASELINE FAILURE
+pg/normal/FALSE/FALSE/summarize OK
+pg/normal/FALSE/FALSE/expand OK
+pg/normal/FALSE/TRUE/summarize OK
+pg/normal/FALSE/TRUE/expand OK
+pg/normal/TRUE/FALSE/summarize OK
+pg/normal/TRUE/FALSE/expand OK
+pg/normal/TRUE/TRUE/summarize OK
+pg/normal/TRUE/TRUE/expand OK
+216 named cases and 24 one-column collision controls matched baseline
