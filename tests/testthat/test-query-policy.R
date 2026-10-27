@@ -1028,3 +1028,23 @@ test_that("dictionary Margin preparation and inspection read no source rows", {
     }
   }
 })
+
+test_that("ordering numeric dictionary fixed keys reads no source rows", {
+  skip_if_suggest_absent("arrow")
+  values <- c(9L, 10L, -2L, 2L, NA_integer_)
+  for (source in arrow_dictionary_sources(values, FALSE)) {
+    expect_gt(count_entry_point_invocations(suppressWarnings(
+      dplyr::collect(source)
+    )), 0L)
+    for (sort in c("first", "last")) {
+      expect_identical(count_entry_point_invocations(suppressWarnings(
+        expand_with_margins(source, .by = g, .sort = sort)
+      )), 0L)
+      expect_identical(count_entry_point_invocations(suppressWarnings(
+        summarize_with_margins(
+          source, row_id = sum(row_id), .by = g, .sort = sort
+        )
+      )), 0L)
+    }
+  }
+})
