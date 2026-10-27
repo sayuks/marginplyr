@@ -9,7 +9,7 @@ expect_selector_share_ratios <- function(data) {
       source = !!source,
       total_share = share_of_total(source),
       parent_share = share_of_parent(source),
-      .grouping = rollup(g)
+      .grouping = rollup(dplyr::all_of("g"))
     )) |>
       dplyr::collect() |>
       dplyr::arrange(source)
@@ -20,13 +20,13 @@ expect_selector_share_ratios <- function(data) {
   }
 }
 
-test_that("named scalar selector summaries can source local contextual shares", {
+test_that("scalar selector summaries can source local contextual shares", {
   data <- data.frame(g = c("a", "b"), value = c(1, 3))
   expect_selector_share_ratios(data)
   expect_selector_share_ratios(tibble::as_tibble(data))
 })
 
-test_that("named scalar selector summaries can source eager data.table shares", {
+test_that("scalar selector summaries can source eager data.table shares", {
   skip_if_suggest_absent("data.table")
   data <- data.table::data.table(g = c("a", "b"), value = c(1, 3))
   expect_selector_share_ratios(data)
@@ -109,7 +109,7 @@ test_that("named selector sources retain provenance and ordering checks", {
   }
 })
 
-test_that("scalar selector sources preserve local evaluation timing and counts", {
+test_that("selector sources preserve local evaluation timing and counts", {
   data <- data.frame(g = c("a", "b"), value = c(1, 3))
   for (source in list(
     quote(aggregate_selected(dplyr::pick(dplyr::all_of(select_value())))),
@@ -150,7 +150,9 @@ test_that("scalar selector sources preserve local evaluation timing and counts",
         .grouping = rollup(g)
       )) |>
         dplyr::arrange(source)
-      list(result = result, selections = selections, aggregations = aggregations)
+      list(
+        result = result, selections = selections, aggregations = aggregations
+      )
     }
 
     control <- run(FALSE)
