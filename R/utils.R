@@ -40,10 +40,15 @@ with_margin_column_aliases <- function(data, read, transform,
   rlang::set_names(result, renamed)
 }
 
-# Move known Margin columns to the front of an ungrouped result. Local
-# selection uses temporary output aliases because tidyselect rejects dot-dot
-# names even when it only reorders columns. dplyr still owns reconstruction.
+# Move known Margin columns to the front of an ungrouped result. Selection
+# validates dot-dot output names, so local inputs use temporary output aliases
+# and Arrow and dtplyr use relocation when such names occur.
 reorder_margin_columns <- function(data, leading) {
+  if (inherits(data, c("arrow_dplyr_query", "dtplyr_step")) &&
+        any(grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", margin_col_names(data)))) {
+    # Arrow's relocate method captures its selection before tidy evaluation.
+    return(do.call(dplyr::relocate, list(data, leading)))
+  }
   if (!is.data.frame(data)) {
     return(dplyr::select(data, dplyr::all_of(leading), dplyr::everything()))
   }
@@ -84,7 +89,7 @@ margin_safe_column_reads <- function(.data, read, transform,
   special <- intersect(
     read,
     intersect(c(".N", ".I", ".SD", ".GRP", ".NGRP", ".BY"),
-              get_col_names(.data, dplyr::everything()))
+              margin_col_names(.data))
   )
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))

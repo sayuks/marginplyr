@@ -684,6 +684,14 @@ summarize_margin_union <- function(.data,
             positions <- match(unname(key_names[grouping_set]), result_names)
             result_names[positions] <- grouping_set
             result <- rlang::set_names(result, result_names)
+          } else if (backend$kind %in% c("arrow", "dtplyr") &&
+                       any(grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$",
+                                 margin_col_names(result)))) {
+            old <- unname(key_names[grouping_set])
+            values <- stats::setNames(lapply(old, margin_column_pronoun),
+                                      grouping_set)
+            removals <- stats::setNames(rep(list(NULL), length(old)), old)
+            result <- dplyr::mutate(result, !!!values, !!!removals)
           } else {
             result <- dplyr::rename(result, !!!rename_pairs)
           }
