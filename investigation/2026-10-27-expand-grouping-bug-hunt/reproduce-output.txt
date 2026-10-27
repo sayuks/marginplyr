@@ -1,0 +1,89 @@
+R: 4.6.1
+marginplyr: 0.1.0
+dplyr: 1.2.1
+dbplyr: 2.6.0
+rlang: 1.3.0
+vctrs: 0.7.3
+tibble: 3.3.1
+data.table: 1.18.6.1
+DBI: 1.3.0
+RSQLite: 3.53.3
+
+F1: Boolean-word source name beside .env
+PASS F1 source collection TRUE
+PASS F1 inspection TRUE
+FAIL F1 expansion identity TRUE
+  Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+PASS F1 source collection FALSE
+PASS F1 inspection FALSE
+FAIL F1 expansion identity FALSE
+  Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+PASS F1 source collection TrUe
+PASS F1 inspection TrUe
+FAIL F1 expansion identity TrUe
+  Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+PASS F1 source collection FaLsE
+PASS F1 inspection FaLsE
+FAIL F1 expansion identity FaLsE
+  Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+FAIL F1 limited summary
+  Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+PASS F1 name control g/.env
+PASS F1 name control TRUE/.data
+
+F2: raw-containing omitted dimensions
+F2 raw expand_with_margins: 0 passed, 12 failed
+F2 raw summarize_with_margins: 0 passed, 12 failed
+F2 raw nest_with_margins: 0 passed, 12 failed
+F2 raw nest_by_with_margins: 0 passed, 12 failed
+F2 matrix expand_with_margins: 0 passed, 12 failed
+F2 matrix summarize_with_margins: 0 passed, 12 failed
+F2 matrix nest_with_margins: 0 passed, 12 failed
+F2 matrix nest_by_with_margins: 0 passed, 12 failed
+F2 array expand_with_margins: 0 passed, 12 failed
+F2 array summarize_with_margins: 0 passed, 12 failed
+F2 array nest_with_margins: 0 passed, 12 failed
+F2 array nest_by_with_margins: 0 passed, 12 failed
+F2 packed expand_with_margins: 0 passed, 12 failed
+F2 packed summarize_with_margins: 0 passed, 12 failed
+F2 packed nest_with_margins: 0 passed, 12 failed
+F2 packed nest_by_with_margins: 0 passed, 12 failed
+F2 data_table expand_with_margins: 0 passed, 12 failed
+F2 data_table summarize_with_margins: 0 passed, 12 failed
+F2 data_table nest_with_margins: 0 passed, 12 failed
+F2 data_table nest_by_with_margins: 0 passed, 12 failed
+F2 matrix total: 0 passed, 240 failed
+PASS F2 unaffected control expand_with_margins fixed
+PASS F2 unaffected control expand_with_margins payload
+PASS F2 unaffected control expand_with_margins included
+PASS F2 unaffected control expand_with_margins string
+PASS F2 unaffected control summarize_with_margins fixed
+PASS F2 unaffected control summarize_with_margins payload
+PASS F2 unaffected control summarize_with_margins included
+PASS F2 unaffected control summarize_with_margins string
+PASS F2 unaffected control nest_with_margins fixed
+PASS F2 unaffected control nest_with_margins payload
+PASS F2 unaffected control nest_with_margins included
+PASS F2 unaffected control nest_with_margins string
+PASS F2 unaffected control nest_by_with_margins fixed
+PASS F2 unaffected control nest_by_with_margins payload
+PASS F2 unaffected control nest_by_with_margins included
+PASS F2 unaffected control nest_by_with_margins string
+
+F2 minimal actual result:
+# A tibble: 4 × 3
+  g       sid     p
+  <raw> <int> <int>
+1 00        1     1
+2 01        1     2
+3 00        2     1
+4 00        2     2
+
+Assertion groups: 26 passed, 25 failed
+Error: Public-contract assertions failed; see the dated investigation.
+Execution halted
