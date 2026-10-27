@@ -370,8 +370,10 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
       empty_unpack <- (
         parsed$unpack_index > 0L &&
           rlang::is_missing(parsed$call_args[[parsed$unpack_index]])
-      ) || (rlang::is_quosure(unpack) &&
-        rlang::is_missing(rlang::quo_get_expr(unpack)))
+      ) || (
+        rlang::is_quosure(unpack) &&
+          rlang::is_missing(rlang::quo_get_expr(unpack))
+      )
       unpack_is_false <- across_unpack_is_false(unpack, rlang::quo_get_env(dot))
       protected_sources <- setdiff(share_sources, source_definitions[[i]])
       if ((empty_unpack && is.null(alias_state)) ||
