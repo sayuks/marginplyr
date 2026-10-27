@@ -479,7 +479,11 @@ is_name_only_expr <- function(expr, env, data_vars) {
     "all_of", "any_of", "starts_with", "ends_with", "contains",
     "matches", "num_range", "everything", "last_col", "one_of"
   )
-  if (call_name %in% leaf_helpers) {
+  # Bare helpers resolve in tidyselect's context mask; qualified helpers
+  # have those semantics only when they name a package that supplies them.
+  call_ns <- static_call_ns(expr)
+  if (call_name %in% leaf_helpers &&
+        (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr"))) {
     return(all(vapply(
       static_call_args(expr),
       is_name_only_helper_arg,
