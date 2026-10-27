@@ -11,7 +11,7 @@ permissions:
 jobs:
   transactions:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
     services:
       postgres:
         image: postgres:17

@@ -1,0 +1,8 @@
+Package: marginplyrtimezonetest
+Title: Check Windows Arrow Timezone Provisioning
+Version: 0.0.1
+Authors@R: person("CI", "Fixture", email = "ci@example.com", role = c("aut", "cre"))
+Description: Exercise Arrow timestamp conversion with only declared dependencies
+    visible, as in the marginplyr package check.
+License: CC0
+Imports: arrow, dplyr

@@ -163,7 +163,7 @@ test_that("malformed audit options leave every public entry unchanged", {
   ), add = TRUE)
   expect_setequal(names(forwarded_verbs), verbs_taking(".grouping"))
   local <- data.frame(g = c("a", "a", "b"), value = 1:3)
-  remote <- dbplyr::tbl_lazy(local, con = dbplyr::simulate_sqlite())
+  remote <- dbplyr::tbl_lazy(local, con = dbplyr::simulate_postgres())
   for (input in list(local, remote)) {
     for (name in names(forwarded_verbs)) {
       run <- function() {

@@ -178,7 +178,10 @@ jobs:
           # Quarto renders vignettes in a child R process. On Windows, that
           # process cannot see R CMD build's temporary package installation,
           # so install the package itself first, as quarto-r's CI does.
-          extra-packages: any::rcmdcheck, local::.
+          # The Windows provisioning step reads tzdb before check hides it.
+          extra-packages: >-
+            any::rcmdcheck, local::.
+            ${{ runner.os == 'Windows' && ', any::tzdb' || '' }}
           needs: check
           # This matrix is the provisioned one, so it shares the `full-1` cache
           # with `release-matrix.yaml`'s `build` job and with nothing else.
@@ -187,6 +190,10 @@ jobs:
           # each have their own value. The naming scheme, and why one shared
           # `cache-version` broke them, are recorded in that workflow's header.
           cache-version: full-1
+
+      - name: Provision and check Windows Arrow timezone data
+        if: runner.os == 'Windows'
+        run: Rscript .github/scripts/provision-windows-arrow-timezone.R
 
       # Repeats the `Built` assertion after pak has run, because pak resolves
       # against the running R-devel series and a source build it chose would

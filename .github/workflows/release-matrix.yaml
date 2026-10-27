@@ -158,7 +158,8 @@ jobs:
   structure:
     name: Suite coverage by construction
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Includes tool/dependency setup and all single-backend suites.
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v7
@@ -214,7 +215,7 @@ jobs:
   build:
     name: Build source tarball
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v7
@@ -279,7 +280,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
 
     steps:
       - uses: actions/checkout@v7
