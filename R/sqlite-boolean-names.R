@@ -11,8 +11,7 @@ sqlite_boolean_query <- function(result, source, aliases, public = TRUE) {
   rewrite <- function(query, public) {
     unchanged <- list(query = query, aliases = character())
     if (identical(query, source) ||
-          !inherits(query, c("lazy_select_query", "lazy_union_query",
-                             "lazy_multi_join_query"))) {
+          !inherits(query, c("lazy_select_query", "lazy_union_query"))) {
       return(unchanged)
     }
     input <- rewrite(query$x, public && inherits(query, "lazy_union_query"))
@@ -23,26 +22,6 @@ sqlite_boolean_query <- function(result, source, aliases, public = TRUE) {
         table
       })
       return(sqlite_boolean_query_state(query, input$aliases))
-    }
-    if (inherits(query, "lazy_multi_join_query")) {
-      inputs <- c(
-        list(input), lapply(query$joins$table, rewrite, public = FALSE)
-      )
-      query$joins$table <- lapply(inputs[-1L], `[[`, "query")
-      for (i in seq_along(inputs)) {
-        positions <- which(query$vars$table == i)
-        query$vars$var[positions] <- sqlite_boolean_names(
-          query$vars$var[positions], inputs[[i]]$aliases
-        )
-      }
-      output_aliases <- aliases[intersect(names(aliases), query$vars$name)]
-      if (!public) {
-        query$vars$name <- sqlite_boolean_names(query$vars$name, output_aliases)
-      }
-      # Share joins match private keys, so ON needs no public rename.
-      return(sqlite_boolean_query_state(
-        query, if (public) character() else output_aliases
-      ))
     }
     query$select$expr <- lapply(query$select$expr, sqlite_boolean_reference,
                                 aliases = input$aliases)

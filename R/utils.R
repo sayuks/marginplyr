@@ -103,9 +103,6 @@ margin_safe_column_reads <- function(.data, read, transform,
   }
   result <- transform(renamed, safe_name)
   retained <- aliases[aliases %in% get_col_names(result, dplyr::everything())]
-  if (length(retained) == 0L) {
-    return(result)
-  }
   dplyr::rename(
     result, !!!rlang::set_names(rlang::syms(unname(retained)), names(retained))
   )
