@@ -115,8 +115,8 @@ _Avoid_: Report order, result order, row order, sort order
 **Grand total set**:
 The grouping set in which every variable grouping dimension is omitted. A
 Grouping plan contains at most one, except when duplicate occurrences are
-retained; every occurrence of it holds the same values, so which one a
-calculation uses as its denominator is not specified. With fixed `.by`
+retained; which one a calculation uses as its denominator is not specified.
+With fixed `.by`
 columns it holds one row for each fixed partition.
 _Avoid_: Root set, root row, total row, margin row
 

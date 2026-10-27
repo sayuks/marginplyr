@@ -6,6 +6,28 @@ chosen by looking up the backend kind that the Margin operation already
 prepared — never by inspecting the class of the staged ordinary-summary
 result, and never by a chain of capability predicates rebuilt at this seam.
 
+## Amendment (#919): lazy shares read one staged relation
+
+The dtplyr and general dbplyr adapters no longer self-join the staged summary.
+Each denominator is selected within a partition of that same relation: the
+fixed keys and the dimensions retained by the target occurrence. SQL uses a
+conditional `MAX()` window over the entire partition; dtplyr selects the
+target occurrence's scalar during grouped mutation. Both use retained typed
+keys before Margin-label conversion. The Row-matched adapter keeps its join.
+
+This supersedes the inline SQL Parent plan and the dtplyr join-key rewrites
+below. Adapter selection and source checking remain separate lookups on the
+prepared backend kind. Ratio rules and output order remain shared. SQL shares
+require window-function support; constructing either lazy result executes and
+materializes nothing, preserving ADR 0020.
+
+A dialect whose dbplyr translation rejects windowed `MAX()`, such as Access,
+reports that unsupported operation when SQL is rendered or executed. Callers
+can explicitly collect their input and request local shares instead. Keeping
+the old lazy join for those dialects is rejected because it would retain
+#919's mismatch; imposing a deterministic-source restriction is rejected
+because it cannot be established from an arbitrary summary expression.
+
 ## Amendment (2026-09-12): SQL carries the Parent plan as one inline relation
 
 The decision below that Parent mapping construction is shared by every backend
