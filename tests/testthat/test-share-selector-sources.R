@@ -63,12 +63,15 @@ test_that("named selector sources still require one numeric scalar", {
 
 test_that("named selector sources retain provenance and ordering checks", {
   data <- data.frame(g = c("a", "b"), value = c(1, 3))
+  duplicate_sources <- stats::setNames(rlang::quos(
+    sum(dplyr::pick(value)),
+    sum(dplyr::across(value, identity))
+  ), c("source", "source"))
   for (helper in c("share_of_total", "share_of_parent")) {
     share <- rlang::call2(helper, quote(source))
     error <- expect_error(rlang::inject(summarize_with_margins(
       data,
-      source = sum(dplyr::pick(value)),
-      source = sum(dplyr::across(value, identity)),
+      !!!duplicate_sources,
       share = !!share,
       .grouping = rollup(g)
     )), "defined exactly once")
