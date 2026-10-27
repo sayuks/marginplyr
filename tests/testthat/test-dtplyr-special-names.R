@@ -116,10 +116,14 @@ test_that("dtplyr labelled rollups preserve special fixed keys", {
       for (grouped in c(FALSE, TRUE)) {
         local_input <- if (grouped) {
           dplyr::group_by(local, dplyr::across(dplyr::all_of(column)))
-        } else local
+        } else {
+          local
+        }
         lazy_input <- if (grouped) {
           dplyr::group_by(source, dplyr::across(dplyr::all_of(column)))
-        } else source
+        } else {
+          source
+        }
         for (id in list(NULL, "set")) {
           for (sort in c("none", "first", "last")) {
             for (label in list("Total", NULL)) {
