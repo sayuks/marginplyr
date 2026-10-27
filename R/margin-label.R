@@ -303,27 +303,31 @@ check_observed_label_collision <- function(data,
   }
 
   data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
-  checks <- lapply(
-    read_cols,
-    function(col) {
-      margin_label <- margin_labels[[col]]
-      # The data pronoun keeps names such as `T` and `F` as columns on dtplyr.
-      column <- rlang::data_sym(col)
-      rlang::expr(
-        sum(
-          dplyr::if_else(
-            as.character(!!column) == !!margin_label,
-            1L,
-            0L,
-            missing = 0L
-          ),
-          na.rm = TRUE
-        )
+  query <- margin_safe_column_reads(
+    data, read_cols, function(source, safe_name) {
+      checks <- lapply(
+        read_cols,
+        function(col) {
+          margin_label <- margin_labels[[col]]
+          # The pronoun keeps `T` and `F` as columns on dtplyr.
+          column <- margin_column_pronoun(safe_name(col))
+          rlang::expr(
+            sum(
+              dplyr::if_else(
+                as.character(!!column) == !!margin_label,
+                1L,
+                0L,
+                missing = 0L
+              ),
+              na.rm = TRUE
+            )
+          )
+        }
       )
+      names(checks) <- read_cols
+      dplyr::summarize(source, !!!checks)
     }
   )
-  names(checks) <- read_cols
-  query <- dplyr::summarize(data, !!!checks)
   found <- with_sent_query(
     "observed_label_collision", query, dplyr::collect(query)
   )
@@ -522,7 +526,7 @@ label_margin_branch <- function(.data,
       function(info) info$col,
       character(1)
     )
-    .data <- dtplyr_safe_column_reads(
+    .data <- margin_safe_column_reads(
       .data, encoded_factor_cols,
       function(source, safe_name) {
         encoded_exprs <- lapply(encoded_factors, function(info) {
@@ -548,7 +552,7 @@ label_margin_branch <- function(.data,
     encoded_factor_cols
   )
   if (length(labelled_as_character) > 0L) {
-    .data <- dtplyr_safe_column_reads(
+    .data <- margin_safe_column_reads(
       .data, labelled_as_character,
       function(source, safe_name) {
         safe_columns <- unname(vapply(
@@ -574,7 +578,7 @@ label_margin_branch <- function(.data,
   # itself.
   dtplyr_full_size_label <- inherits(.data, "dtplyr_step")
   if (length(omitted) > 0L) {
-    .data <- dtplyr_safe_column_reads(
+    .data <- margin_safe_column_reads(
       .data, omitted,
       function(source, safe_name) {
         dtplyr_columns <- if (dtplyr_full_size_label) {
@@ -633,7 +637,7 @@ label_margin_branch <- function(.data,
   }
 
   # dtplyr can turn a pure reorder into a projection that evaluates specials.
-  dtplyr_safe_column_reads(
+  margin_safe_column_reads(
     .data, margin_col_names(.data),
     function(source, safe_name) {
       keys <- vapply(

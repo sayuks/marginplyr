@@ -485,14 +485,17 @@ order_margin_result <- function(operation, result, execution) {
                                             operation$backend)
   }
 
+  rowwise <- margin_rowwise_sort_columns(result, operation$plan)
   result <- with_margin_column_aliases(
-    result, key_id, function(data, safe_name) {
+    result, c(key_id, operation$plan$by, operation$plan$dimensions),
+    function(data, safe_name) {
       terms <- margin_order_terms(
         plan = operation$plan,
         sort = operation$sort,
         sort_id = if (is.null(key_id)) NULL else safe_name(key_id),
         value_types = margin_dictionary_sort_types(data, operation$backend),
-        rowwise = margin_rowwise_sort_columns(data, operation$plan)
+        rowwise = rowwise,
+        safe_name = safe_name
       )
       if (length(terms) > 0L) dplyr::arrange(data, !!!terms) else data
     }
@@ -610,9 +613,12 @@ margin_order_terms <- function(plan,
                                sort,
                                sort_id,
                                value_types = list(),
-                               rowwise = character()) {
+                               rowwise = character(),
+                               safe_name = identity) {
+  rowwise <- vapply(rowwise, safe_name, character(1), USE.NAMES = FALSE)
   terms <- unlist(
     lapply(plan$by, function(key) {
+      key <- safe_name(key)
       list(
         margin_missing_last_expr(key, rowwise),
         margin_sort_value_expr(key, value_types)
@@ -642,8 +648,8 @@ margin_order_terms <- function(plan,
     terms <- c(
       terms,
       list(
-        margin_missing_last_expr(dimension, rowwise),
-        margin_sort_value_expr(dimension, value_types)
+        margin_missing_last_expr(safe_name(dimension), rowwise),
+        margin_sort_value_expr(safe_name(dimension), value_types)
       )
     )
   }

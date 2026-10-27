@@ -3052,7 +3052,7 @@ apply_joined_shares <- function(result,
     }
   }
 
-  result <- dtplyr_safe_column_reads(
+  result <- margin_safe_column_reads(
     result, sources,
     function(share_result, safe_name) {
       share_exprs <- lapply(pairs, function(pair) {
@@ -3233,7 +3233,7 @@ build_total_denominator <- function(result,
                                     sql_join) {
   denominator_id <- unique(target_ids[!is.na(target_ids)])
   stopifnot(length(denominator_id) == 1L)
-  mapping <- dtplyr_safe_column_reads(
+  mapping <- margin_safe_column_reads(
     result, c(plan$by, sources),
     function(source_data, safe_name) {
       key_exprs <- lapply(plan$by, function(name) {
@@ -3381,7 +3381,7 @@ build_lazy_parent_mapping <- function(result,
         list(rlang::expr(as.integer(!!child_id))),
         set_id_name
       )
-      dtplyr_safe_column_reads(
+      margin_safe_column_reads(
         parent_rows, c(plan$by, unname(parent_key_names), sources),
         function(source_data, safe_name) {
           mapping_exprs <- parent_mapping_exprs(
