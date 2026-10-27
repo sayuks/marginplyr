@@ -479,11 +479,23 @@ wraps_empty_argument <- function(expr) {
 # injection or a constructed call spells it, since the parser rejects
 # `f((), x)`.
 #
-# Asked of the quosure, before anything reads the expression out of it, which
-# is the rule above for every reader a walk asks first (#168, #174).
+# Check each injected quosure before reading its expression: parentheses can
+# enclose a quosure whose payload is itself empty. Each nonempty quosure keeps
+# its own environment for the reader that later evaluates it.
 is_empty_argument <- function(quo) {
-  rlang::quo_is_missing(quo) ||
-    wraps_empty_argument(unparenthesized_value(rlang::quo_get_expr(quo)))
+  repeat {
+    if (rlang::quo_is_missing(quo)) {
+      return(TRUE)
+    }
+    expr <- unparenthesized_value(rlang::quo_get_expr(quo))
+    if (wraps_empty_argument(expr)) {
+      return(TRUE)
+    }
+    if (!rlang::is_quosure(expr)) {
+      return(FALSE)
+    }
+    quo <- expr
+  }
 }
 
 # The head and the arguments of a call a walk descends into, and the node
