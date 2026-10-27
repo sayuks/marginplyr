@@ -122,6 +122,8 @@ test_that("injected specifications retain parent-kind restrictions", {
   }
 })
 
+# Active bindings expose repeated reads that promises cache. These counters
+# observe ADR 0008's single-evaluation contract through the public consumers.
 test_that("injected nested constructors and names are evaluated once", {
   data <- data.frame(region = "E", units = 2)
   forward <- function(x) grouping_sets(({{ x }}))
