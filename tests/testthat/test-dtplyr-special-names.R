@@ -99,6 +99,63 @@ test_that("dtplyr summaries accept special fixed keys", {
   }
 })
 
+test_that("dtplyr labelled rollups preserve special fixed keys", {
+  skip_if_suggest_absent("dtplyr")
+  for (column in c(".N", ".I", ".SD", ".GRP", ".NGRP")) {
+    for (size in 0:2) {
+      input <- data.table::data.table(
+        fixed = c("u", "v")[seq_len(size)],
+        g = c("a", "b")[seq_len(size)],
+        value = c(1, 3)[seq_len(size)]
+      )
+      data.table::setnames(input, "fixed", column)
+      before <- data.table::copy(input)
+      local <- tibble::as_tibble(input)
+      source <- dtplyr::lazy_dt(input)
+      source_before <- dplyr::collect(source)
+      for (grouped in c(FALSE, TRUE)) {
+        local_input <- if (grouped) {
+          dplyr::group_by(local, dplyr::across(dplyr::all_of(column)))
+        } else local
+        lazy_input <- if (grouped) {
+          dplyr::group_by(source, dplyr::across(dplyr::all_of(column)))
+        } else source
+        for (id in list(NULL, "set")) {
+          for (sort in c("none", "first", "last")) {
+            for (label in list("Total", NULL)) {
+              run <- function(data) {
+                if (grouped) {
+                  summarize_with_margins(
+                    data, total = sum(value), .grouping = rollup(g),
+                    .id = id, .sort = sort, .margin_label = label
+                  )
+                } else {
+                  summarize_with_margins(
+                    data, total = sum(value), .by = dplyr::all_of(column),
+                    .grouping = rollup(g), .id = id, .sort = sort,
+                    .margin_label = label
+                  )
+                }
+              }
+              query <- run(lazy_input)
+              expect_s3_class(query, "dtplyr_step")
+              actual <- dplyr::collect(query)
+              expected <- tibble::as_tibble(run(local_input))
+              order_rows <- function(x) {
+                dplyr::arrange(x, dplyr::across(dplyr::all_of(c(column, "g"))))
+              }
+              expect_equal(order_rows(actual), order_rows(expected),
+                           info = paste(column, size, grouped, id, sort, label))
+              expect_identical(input, before)
+              expect_identical(dplyr::collect(source), source_before)
+            }
+          }
+        }
+      }
+    }
+  }
+})
+
 test_that("dtplyr special source summaries support Parent and Total shares", {
   skip_if_suggest_absent("dtplyr")
   input <- tibble::tibble(g = c("a", "b"), value = c(2, 3))

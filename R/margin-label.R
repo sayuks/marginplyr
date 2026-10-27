@@ -578,8 +578,11 @@ label_margin_branch <- function(.data,
   # itself.
   dtplyr_full_size_label <- inherits(.data, "dtplyr_step")
   if (length(omitted) > 0L) {
+    # A summary branch can need n(), which dtplyr translates to data.table's
+    # .N. Hide a fixed column of that name until the label has been assigned.
+    label_reads <- unique(c(omitted, if (dtplyr_full_size_label) ".N"))
     .data <- margin_safe_column_reads(
-      .data, omitted,
+      .data, label_reads,
       function(source, safe_name) {
         dtplyr_columns <- if (dtplyr_full_size_label) {
           get_col_names(source, dplyr::everything())
