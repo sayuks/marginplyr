@@ -141,10 +141,15 @@ test_that("dtplyr labelled rollups preserve special fixed keys", {
               expect_s3_class(query, "dtplyr_step")
               actual <- dplyr::collect(query)
               expected <- tibble::as_tibble(run(local_input))
-              order_rows <- function(x) {
-                dplyr::arrange(x, dplyr::across(dplyr::all_of(c(column, "g"))))
+              if (identical(sort, "none")) {
+                actual <- dplyr::arrange(
+                  actual, dplyr::across(dplyr::all_of(c(column, "g")))
+                )
+                expected <- dplyr::arrange(
+                  expected, dplyr::across(dplyr::all_of(c(column, "g")))
+                )
               }
-              expect_equal(order_rows(actual), order_rows(expected),
+              expect_equal(actual, expected,
                            info = paste(column, size, grouped, id, sort, label))
               expect_identical(input, before)
               expect_identical(dplyr::collect(source), source_before)
