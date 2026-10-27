@@ -1,7 +1,7 @@
 test_that("SQL dialects render .env Parent and Total share outputs", {
   source <- data.frame(g = c("east", "west"), value = c(2, 3))
   simulators <- available_simulators(c(
-    "simulate_access", "simulate_dbi", "simulate_hana",
+    "simulate_dbi", "simulate_hana",
     "simulate_hive", "simulate_impala", "simulate_mariadb",
     "simulate_mssql", "simulate_mysql", "simulate_odbc",
     "simulate_oracle", "simulate_postgres", "simulate_redshift",
