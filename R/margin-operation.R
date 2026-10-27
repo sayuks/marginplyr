@@ -491,7 +491,7 @@ order_margin_result <- function(operation, result, execution) {
         plan = operation$plan,
         sort = operation$sort,
         sort_id = if (is.null(key_id)) NULL else safe_name(key_id),
-        as_character = margin_dictionary_sort_columns(data, operation$backend),
+        value_types = margin_dictionary_sort_types(data, operation$backend),
         structured = margin_structured_sort_columns(data, operation$plan)
       )
       if (length(terms) > 0L) dplyr::arrange(data, !!!terms) else data
@@ -522,7 +522,8 @@ drop_margin_staged_identifier <- function(result, staged_id, backend) {
   dplyr::select(result, -dplyr::all_of(staged_id))
 }
 
-# The result columns the key has to cast rather than name. Empty unless the
+# Dictionary value types keyed by the result columns the sort key must cast.
+# The caller holds the result and its backend. Empty unless the
 # backend holds `refuses_dictionary_sort`, which is where why it does is
 # recorded.
 #
@@ -539,9 +540,9 @@ drop_margin_staged_identifier <- function(result, staged_id, backend) {
 # without needing it would put this function in `test-query-policy.R`'s
 # reaching set -- the static scan matches that entry point by name, its subject
 # test being available only to the tracer.
-margin_dictionary_sort_columns <- function(result, backend) {
+margin_dictionary_sort_types <- function(result, backend) {
   if (!backend$refuses_dictionary_sort) {
-    return(character())
+    return(list())
   }
   fields <- arrow::schema(result)$fields
   is_dictionary <- vapply(
@@ -549,7 +550,11 @@ margin_dictionary_sort_columns <- function(result, backend) {
     function(field) inherits(field$type, "DictionaryType"),
     logical(1)
   )
-  vapply(fields[is_dictionary], function(field) field$name, character(1))
+  fields <- fields[is_dictionary]
+  stats::setNames(
+    lapply(fields, function(field) field$type$value_type),
+    vapply(fields, function(field) field$name, character(1))
+  )
 }
 
 # Names local structured keys in the plan. The caller holds a result
@@ -598,19 +603,19 @@ forget_margin_window_order <- function(result, backend) {
 # `"first"` reverses the Grouping bits alone. Missingness and values stay
 # ascending, because first and last position margins and not missing values.
 #
-# `as_character` names the columns whose value term is cast rather than named.
+# `value_types` maps dictionary columns to the types their value terms use.
 # Only the value term takes it. The cast reaches the key alone, so the result's
 # own column keeps whatever the executor left in it.
 margin_order_terms <- function(plan,
                                sort,
                                sort_id,
-                               as_character = character(),
+                               value_types = list(),
                                structured = character()) {
   terms <- unlist(
     lapply(plan$by, function(key) {
       list(
         margin_missing_last_expr(key, structured),
-        margin_sort_value_expr(key, as_character)
+        margin_sort_value_expr(key, value_types)
       )
     }),
     recursive = FALSE
@@ -638,7 +643,7 @@ margin_order_terms <- function(plan,
       terms,
       list(
         margin_missing_last_expr(dimension, structured),
-        margin_sort_value_expr(dimension, as_character)
+        margin_sort_value_expr(dimension, value_types)
       )
     )
   }
@@ -649,16 +654,16 @@ margin_order_terms <- function(plan,
   terms
 }
 
-# One column's value term, cast where the backend will not sort the column as
-# it stands. The cast is `as.character()` and not a wider coercion because the
-# only such column is a dictionary one, whose values are already strings: a
-# numeric cast to character would order lexicographically and put 10 before 9.
-margin_sort_value_expr <- function(column, as_character) {
+# One column's value term. Dictionary columns are cast to their value type;
+# all others are named directly. The caller supplies dictionary value types
+# from the result schema, so the cast changes no result column (ADR 0018).
+margin_sort_value_expr <- function(column, value_types) {
   pronoun <- margin_column_pronoun(column)
-  if (!(column %in% as_character)) {
+  if (!(column %in% names(value_types))) {
     return(pronoun)
   }
-  rlang::expr(as.character(!!pronoun))
+  # Arrow registers this cast in its query mask; it runs only at execution.
+  rlang::expr(arrow::cast(!!pronoun, !!value_types[[column]]))
 }
 
 # One column's missingness term. A local structured column is wholly missing
