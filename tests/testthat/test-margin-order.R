@@ -1906,6 +1906,77 @@ test_that("Arrow orders a factor fixed key, which holds no Margin label", {
   }
 })
 
+test_that("Arrow orders dictionary fixed keys by their underlying values", {
+  skip_if_suggest_absent("arrow")
+
+  fixtures <- list(
+    integer = list(values = c(9L, 10L, -2L, 2L, NA_integer_),
+                   ordered = c(-2L, 2L, 9L, 10L, NA_integer_),
+                   rows = c(3, 4, 1, 2, 5)),
+    double = list(values = c(9.5, 10.5, -2.5, 2.5, NA_real_),
+                  ordered = c(-2.5, 2.5, 9.5, 10.5, NA_real_),
+                  rows = c(3, 4, 1, 2, 5)),
+    text = list(values = c("9", "10", "-2", "2", NA_character_),
+                ordered = c("-2", "10", "2", "9", NA_character_),
+                rows = c(3, 2, 4, 1, 5))
+  )
+  for (fixture in fixtures) {
+    for (source in arrow_dictionary_sources(fixture$values, FALSE)) {
+      type <- arrow::schema(source)$GetFieldByName("g")$type
+      for (sort in c("first", "last")) {
+        queries <- suppressWarnings(list(
+          expand_with_margins(source, .by = g, .sort = sort),
+          summarize_with_margins(
+            source, row_id = sum(row_id), .by = g, .sort = sort
+          )
+        ))
+        for (query in queries) {
+          expect_s3_class(query, "arrow_dplyr_query")
+          expect_true(
+            arrow::schema(query)$GetFieldByName("g")$type$Equals(type)
+          )
+          result <- dplyr::compute(query)
+          expect_true(result$schema$GetFieldByName("g")$type$Equals(type))
+          # Decode in Arrow: R converts numeric dictionaries to factor levels.
+          expect_identical(result$g$cast(type$value_type)$as_vector(),
+                           fixture$ordered)
+          expect_equal(result$row_id$as_vector(), fixture$rows)
+        }
+      }
+    }
+  }
+})
+
+test_that("Arrow Margin order keeps numeric dictionary partitions together", {
+  skip_if_suggest_absent("arrow")
+
+  values <- c(9L, 10L, -2L, 2L, NA_integer_)
+  for (source in arrow_dictionary_sources(values, FALSE)) {
+    source <- suppressWarnings(dplyr::mutate(source, store = "s1"))
+    type <- arrow::schema(source)$GetFieldByName("g")$type
+    for (sort in c("first", "last")) {
+      queries <- suppressWarnings(list(
+        expand_with_margins(
+          source, .by = g, .grouping = rollup(store), .sort = sort
+        ),
+        summarize_with_margins(
+          source, row_id = sum(row_id), .by = g,
+          .grouping = rollup(store), .sort = sort
+        )
+      ))
+      for (query in queries) {
+        result <- dplyr::compute(query)
+        expect_true(result$schema$GetFieldByName("g")$type$Equals(type))
+        expect_identical(result$g$cast(type$value_type)$as_vector(),
+                         rep(c(-2L, 2L, 9L, 10L, NA_integer_), each = 2))
+        expect_equal(result$row_id$as_vector(), rep(c(3, 4, 1, 2, 5), each = 2))
+        stores <- if (sort == "first") c("Total", "s1") else c("s1", "Total")
+        expect_identical(result$store$as_vector(), rep(stores, 5))
+      }
+    }
+  }
+})
+
 test_that("Arrow orders repeated nonconstant Grouping bits", {
   skip_if_suggest_absent("arrow")
 
