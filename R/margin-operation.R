@@ -345,7 +345,9 @@ validate_margin_operation <- function(operation) {
     validate_margin_label(
       operation$data,
       dimensions = operation$plan$dimensions,
-      omitted = operation$plan$dimensions[colSums(operation$plan$grouping_masks) > 0L],
+      omitted = operation$plan$dimensions[
+        colSums(operation$plan$grouping_masks) > 0L
+      ],
       backend = operation$backend,
       by = operation$plan$by,
       .margin_label = operation$margin_label,

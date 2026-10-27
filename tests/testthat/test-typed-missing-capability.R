@@ -52,8 +52,8 @@ test_that("raw fixed and included keys and explicit labels are preserved", {
                                   .margin_label = NULL)
   expect_identical(included$key, data$key)
   fixed <- summarize_with_margins(data, total = sum(value), .by = fixed,
-                                   .grouping = rollup(value),
-                                   .margin_label = NULL)
+                                  .grouping = rollup(value),
+                                  .margin_label = NULL)
   expect_true(all(fixed$fixed == as.raw(1)))
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
     result <- verb(data, .grouping = rollup(key), .margin_label = "Total",
