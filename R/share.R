@@ -3465,7 +3465,7 @@ share_placeholder <- function(outputs) {
 # Every contextual share helper, keyed by the kind of denominator its request
 # resolves to. It is the one place a helper is described: the name a caller
 # writes, the two forms a diagnostic needs to name it, what it requires of the
-# compiled Grouping plan, and the denominator mapping it joins. Detection reads
+# compiled Grouping plan, and its row-matched denominator mapping. Detection reads
 # the table backwards, from a written name to its kind. A third helper is one
 # entry here and nothing else in this module.
 #

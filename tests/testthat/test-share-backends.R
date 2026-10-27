@@ -3013,8 +3013,6 @@ test_that("dtplyr Total shares match local results", {
     )
   }
 
-  # Without fixed keys the denominator is one row and the join key standing in
-  # for a partition is internal: it must not reach the result.
   unpartitioned <- dplyr::collect(summarize_with_margins(
     dtplyr::lazy_dt(data),
     revenue = sum(revenue),
