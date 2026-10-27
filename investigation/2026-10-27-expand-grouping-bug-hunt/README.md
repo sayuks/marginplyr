@@ -228,6 +228,11 @@ requested work.
 
 ## Ticket boundaries
 
+| Finding | Tracker | Blocking edges |
+| --- | --- | --- |
+| F1 | [#928](https://github.com/sayuks/marginplyr/issues/928), new `bug` / `ready-for-agent` ticket | None |
+| F2 | [#923](https://github.com/sayuks/marginplyr/issues/923), existing `bug` / `ready-for-agent` ticket; [additional evidence](https://github.com/sayuks/marginplyr/issues/923#issuecomment-6441549674) | None |
+
 F1 and F2 required independent fixes and neither blocked the other. Each
 repair could be verified end to end without a preparatory refactor. The
 `to-tickets` breakdown used those two complete behavior slices, reusing #923
@@ -238,3 +243,8 @@ The branch contained repository-only investigation evidence under the existing
 `investigation/` build exclusion. The package-affecting Review-ready check was
 therefore not required by
 [`design/agents/local-checks.md`](../../design/agents/local-checks.md).
+
+Before publication, `jarl check .`, package-aware `lintr::lint_package()`
+after `pkgload::load_all()` (cache disabled), and `git diff --check` passed.
+`Rscript .github/scripts/verify-context-budget.R` passed at 20,008 bytes
+against the 22,005-byte baseline.
