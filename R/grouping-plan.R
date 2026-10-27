@@ -709,6 +709,7 @@ preflight_grouping_spec <- function(grouping_spec,
     if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
+    arg <- nested_arg_quosure(arg)
     reading <- read_grouping_arg(arg, data_vars)
     if (is.null(reading$nested)) {
       check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
@@ -751,6 +752,18 @@ check_named_grouping_args <- function(grouping_spec, rule) {
       vapply(grouping_spec$args[named], rlang::as_label, character(1))
     )
   )
+}
+
+# The innermost quosure carried through redundant parentheses in a nonempty
+# nested argument. Each injected quosure supplies its own captured environment.
+nested_arg_quosure <- function(arg) {
+  repeat {
+    expr <- unparenthesized_value(rlang::quo_get_expr(arg))
+    if (!rlang::is_quosure(expr)) {
+      return(arg)
+    }
+    arg <- expr
+  }
 }
 
 # The spelling a nested position reads an argument by: the caller's expression
