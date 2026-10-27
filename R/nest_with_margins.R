@@ -341,7 +341,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise) {
       data <- operation$data
       column_info <- operation$column_info
       if (length(keep_cols) > 0L) {
-        data <- dtplyr_safe_column_reads(
+        data <- margin_safe_column_reads(
           data, group_cols,
           function(source, safe_name) {
             keep_exprs <- lapply(group_cols, function(col) {
@@ -389,7 +389,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise) {
         logical(1)
       )
       if (length(identity_cols) > 0L) {
-        data <- dtplyr_safe_column_reads(
+        data <- margin_safe_column_reads(
           data, plan$dimensions,
           function(source, safe_name) {
             identity_exprs <- lapply(
@@ -581,7 +581,7 @@ nest_expanded_margins <- function(.data,
       cell_cols <- cell_cols[order(leading)]
     }
 
-    dtplyr_safe_column_reads(
+    margin_safe_column_reads(
       .data, get_col_names(.data, dplyr::everything()),
       function(source, safe_name) {
         safe_cells <- stats::setNames(

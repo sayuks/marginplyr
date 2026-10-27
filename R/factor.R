@@ -145,7 +145,7 @@ reconstruct_factor.dtplyr_step <- function(data,
                                            info,
                                            .margin_name,
                                            position = "last") {
-  dtplyr_safe_column_reads(
+  margin_safe_column_reads(
     data, info$col,
     function(source, safe_name) {
       safe_info <- info

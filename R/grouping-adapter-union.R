@@ -517,7 +517,7 @@ summarize_margin_union <- function(.data,
   }
 
   if (length(group_vars) > 0L) {
-    .data <- dtplyr_safe_column_reads(
+    .data <- margin_safe_column_reads(
       .data, group_vars,
       function(source, safe_name) {
         key_exprs <- lapply(group_vars, function(name) {
@@ -680,7 +680,7 @@ summarize_margin_union <- function(.data,
 
         if (length(parent_key_names) > 0L) {
           # Included dimensions can still be data.table specials after grouping.
-          result <- dtplyr_safe_column_reads(
+          result <- margin_safe_column_reads(
             result, intersect(names(parent_key_names), grouping_set),
             function(source, safe_name) {
               original_keys <- lapply(
@@ -869,7 +869,7 @@ expand_margin_union <- function(.data,
         } else {
           NULL
         }
-        result <- dtplyr_safe_column_reads(
+        result <- margin_safe_column_reads(
           result, size_col,
           function(source, safe_name) {
             missing_exprs <- lapply(omitted_identity, function(col) {
