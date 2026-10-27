@@ -1029,6 +1029,34 @@ test_that("dictionary Margin preparation and inspection read no source rows", {
   }
 })
 
+test_that("re-expanding Arrow Margin results reads no source rows", {
+  skip_if_suggest_absent("arrow")
+  path <- tempfile(fileext = ".parquet")
+  on.exit(unlink(path))
+  for (empty in c(FALSE, TRUE)) {
+    for (source in arrow_reexpansion_sources(path, empty)) {
+      expect_gt(count_entry_point_invocations(dplyr::collect(source)), 0L)
+      reads <- count_entry_point_invocations({
+        for (summary in c(FALSE, TRUE)) {
+          for (first_sort in c("none", "first", "last")) {
+            for (id in list(NULL, "first")) {
+              first <- arrow_reexpansion_first(source, summary, first_sort, id)
+              for (sort in c("none", "first", "last")) {
+                query <- expand_with_margins(
+                  first, .grouping = rollup(h), .margin_label = NULL,
+                  .id = "second", .sort = sort
+                )
+                expect_s3_class(query, "arrow_dplyr_query")
+              }
+            }
+          }
+        }
+      })
+      expect_identical(reads, 0L)
+    }
+  }
+})
+
 test_that("ordering numeric dictionary fixed keys reads no source rows", {
   skip_if_suggest_absent("arrow")
   values <- c(9L, 10L, -2L, 2L, NA_integer_)

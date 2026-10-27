@@ -832,6 +832,12 @@ expand_margin_union <- function(.data,
       .data, backend, margin_col_names(.data), enclose = TRUE
     )
   }
+  if (identical(backend$kind, "arrow")) {
+    # Freeze the public schema before branches change projections: Arrow's
+    # computed sort fields must stay inside their source relation (#895).
+    # collapse() wraps the query without reading or materializing rows.
+    .data <- dplyr::collapse(.data)
+  }
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when
   # given a column needs to be told so by counting. Both halves are read from
