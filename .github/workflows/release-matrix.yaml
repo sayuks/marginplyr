@@ -158,7 +158,8 @@ jobs:
   structure:
     name: Suite coverage by construction
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Includes tool/dependency setup and all single-backend suites.
+    timeout-minutes: 90
 
     steps:
       - uses: actions/checkout@v7

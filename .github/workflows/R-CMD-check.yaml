@@ -178,7 +178,10 @@ jobs:
           # Quarto renders vignettes in a child R process. On Windows, that
           # process cannot see R CMD build's temporary package installation,
           # so install the package itself first, as quarto-r's CI does.
-          extra-packages: any::rcmdcheck, local::.
+          # Arrow's MinGW build reads tzdb at startup for timestamp casts.
+          extra-packages: >-
+            any::rcmdcheck, local::.
+            ${{ runner.os == 'Windows' && ', any::tzdb' || '' }}
           needs: check
           # This matrix is the provisioned one, so it shares the `full-1` cache
           # with `release-matrix.yaml`'s `build` job and with nothing else.
