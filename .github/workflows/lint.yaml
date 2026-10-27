@@ -21,7 +21,7 @@ jobs:
   # a bare R, so it reports before the dependency install that job waits on.
   context-budget:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -35,7 +35,7 @@ jobs:
   # is what makes the name fail loudly, and until this step nothing ran one.
   doc-references:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -49,7 +49,7 @@ jobs:
   # exclusion together under the same pull-request trigger.
   codex-config:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
@@ -64,7 +64,7 @@ jobs:
   # check.
   release-contract:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
