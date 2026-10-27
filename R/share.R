@@ -4179,7 +4179,7 @@ expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
     !is.null(call_name) &&
       call_name %in% c("$", "[[") &&
       length(expr) >= 3L &&
-      rlang::is_symbol(expr[[2L]])
+      is_name_part(unparenthesized_value(expr[[2L]]))
   ) {
     # The bound set is deliberately not consulted here. `.data` is dplyr's
     # contract for reaching a column whatever else is in scope, so a local
@@ -4190,7 +4190,7 @@ expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
     # alone for the same reason, in the over-reporting direction: a caller who
     # does that has already left the contract, and a diagnostic is the safe
     # side to be wrong on.
-    pronoun <- rlang::as_name(expr[[2L]])
+    pronoun <- rlang::as_name(unparenthesized_value(expr[[2L]]))
     if (identical(pronoun, ".env")) {
       return(character())
     }
