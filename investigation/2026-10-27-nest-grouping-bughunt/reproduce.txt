@@ -1,0 +1,4 @@
+raw: checks 50 failures 48
+selectors: checks 48 failures 40
+missing: checks 46 failures 35
+TOTAL: checks 144 failures 123
