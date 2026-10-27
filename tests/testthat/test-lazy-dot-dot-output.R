@@ -5,17 +5,22 @@ expect_lazy_dot_dot_outputs <- function(make_input, materialize) {
       data <- data.frame(group = c("b", "a"), value = c(1L, 2L))
       if (empty) data <- data[FALSE, , drop = FALSE]
       input <- make_input(data)
-      ordinary <- dplyr::summarize(input, !!name := sum(value))
-      plain <- summarize_with_margins(input, !!name := sum(value))
+      ordinary <- dplyr::summarize(input, !!name := sum(.data$value))
+      plain <- summarize_with_margins(input, !!name := sum(.data$value))
       expect_identical(names(materialize(plain)), names(materialize(ordinary)))
-      expect_identical(materialize(plain)[[name]], materialize(ordinary)[[name]])
+      expect_identical(materialize(plain)[[name]],
+                       materialize(ordinary)[[name]])
 
       for (multiple in c(FALSE, TRUE)) {
-        spec <- if (multiple) rollup(group) else grouping_set(group)
+        spec <- if (multiple) {
+          rollup(dplyr::all_of("group"))
+        } else {
+          grouping_set(dplyr::all_of("group"))
+        }
         for (sort in c("first", "last")) {
           for (with_id in c(FALSE, TRUE)) {
             result <- summarize_with_margins(
-              input, !!name := sum(value), .grouping = spec,
+              input, !!name := sum(.data$value), .grouping = spec,
               .id = if (with_id) "set" else NULL, .sort = sort
             )
             expect_s3_class(result, if (inherits(input, "dtplyr_step")) {
@@ -29,12 +34,14 @@ expect_lazy_dot_dot_outputs <- function(make_input, materialize) {
             expected_id <- rep(1L, length(expected_value))
             if (multiple) {
               position <- if (sort == "first") 0L else length(expected_value)
-              expected_group <- append(expected_group, "Total", after = position)
+              expected_group <- append(expected_group, "Total",
+                                       after = position)
               expected_value <- append(expected_value, if (empty) 0L else 3L,
                                        after = position)
               expected_id <- append(expected_id, 2L, after = position)
             }
-            expect_identical(names(result), c("group", if (with_id) "set", name))
+            expect_identical(names(result),
+                             c("group", if (with_id) "set", name))
             expect_identical(result[["group"]], expected_group)
             expect_equal(result[[name]], expected_value)
             if (with_id) expect_identical(result[["set"]], expected_id)
@@ -42,12 +49,12 @@ expect_lazy_dot_dot_outputs <- function(make_input, materialize) {
         }
       }
       expect_error(
-        summarize_with_margins(input, !!name := sum(value), .id = name),
+        summarize_with_margins(input, !!name := sum(.data$value), .id = name),
         class = "marginplyr_error"
       )
       expect_error(
-        summarize_with_margins(input, group = sum(value),
-                               .grouping = grouping_set(group)),
+        summarize_with_margins(input, group = sum(.data$value),
+                               .grouping = grouping_set(dplyr::all_of("group"))),
         class = "marginplyr_error"
       )
     }

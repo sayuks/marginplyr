@@ -8,6 +8,11 @@ drop_margin_columns <- function(data, columns) {
   dplyr::select(data, -dplyr::all_of(columns))
 }
 
+# Recognize names that selection may reject after a backend summary.
+margin_dot_dot_names <- function(names) {
+  grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", names)
+}
+
 # Evaluate a local operation under safe names for dot-dot columns it reads
 # and any additional names the caller identifies as unsafe for its operation.
 # Other columns keep their names; any retained aliases are restored afterwards.
@@ -17,7 +22,7 @@ with_margin_column_aliases <- function(data, read, transform,
                                        reserved = character(),
                                        unsafe = character()) {
   special <- if (is.data.frame(data)) {
-    read[grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", read) | read %in% unsafe]
+    read[margin_dot_dot_names(read) | read %in% unsafe]
   } else {
     character()
   }
@@ -45,7 +50,7 @@ with_margin_column_aliases <- function(data, read, transform,
 # and Arrow and dtplyr use relocation when such names occur.
 reorder_margin_columns <- function(data, leading) {
   if (inherits(data, c("arrow_dplyr_query", "dtplyr_step")) &&
-        any(grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", margin_col_names(data)))) {
+        any(margin_dot_dot_names(margin_col_names(data)))) {
     # Arrow's relocate method captures its selection before tidy evaluation.
     return(do.call(dplyr::relocate, list(data, leading)))
   }
