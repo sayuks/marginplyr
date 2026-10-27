@@ -53,8 +53,10 @@ expect_lazy_dot_dot_outputs <- function(make_input, materialize) {
         class = "marginplyr_error"
       )
       expect_error(
-        summarize_with_margins(input, group = sum(.data$value),
-                               .grouping = grouping_set(dplyr::all_of("group"))),
+        summarize_with_margins(
+          input, group = sum(.data$value),
+          .grouping = grouping_set(dplyr::all_of("group"))
+        ),
         class = "marginplyr_error"
       )
     }
