@@ -144,6 +144,8 @@ margin_label_of <- function(margin_labels, col) {
 
 validate_margin_label <- function(.data,
                                   dimensions,
+                                  omitted,
+                                  backend,
                                   by,
                                   .margin_label,
                                   margin_labels,
@@ -157,6 +159,24 @@ validate_margin_label <- function(.data,
 
   if (length(dimensions) == 0L) {
     return(invisible(NULL))
+  }
+
+  if (backend$kind %in% c("local", "dtplyr")) {
+    missing_dimensions <- omitted[vapply(
+      margin_labels[omitted], is_missing_margin_label, logical(1)
+    )]
+    unsupported <- missing_dimensions[!vapply(
+      column_info$prototypes[missing_dimensions],
+      function(x) vctrs::vec_detect_missing(x)[[1L]],
+      logical(1)
+    )]
+    if (length(unsupported) > 0L) {
+      abort_marginplyr(c(
+        "A typed-missing {.arg .margin_label} cannot be represented for:",
+        i = "{.var {unsupported}}.",
+        i = "Choose a supported non-missing label or change the grouping."
+      ))
+    }
   }
 
   packed <- dimensions[vapply(
