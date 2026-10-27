@@ -1636,7 +1636,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       }
       eligibility <- if (is_across_call(expr) && nzchar(output_name)) {
         "named_across"
-      } else if (is_across_call(expr)) {
+      } else if (nzchar(output_name) || is_across_call(expr)) {
         "eligible"
       } else {
         "expanded"
