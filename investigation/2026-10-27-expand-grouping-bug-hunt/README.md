@@ -162,8 +162,11 @@ its requested missing label, retaining those supported cases. A scalar raw
 dimension could instead use a non-missing display label; a structured raw
 key would need conversion or unpacking.
 
-No raw-label repair ticket was found in the repository's issue history.
-Completed [#605](https://github.com/sayuks/marginplyr/issues/605) and
+The publication-time tracker recheck found an independently filed matching
+repair, [#923](https://github.com/sayuks/marginplyr/issues/923), against the
+same baseline. Its complete body, comments, and labels were read. No duplicate
+ticket was created; the raw 3D-array and 240-case shared-verb evidence belonged
+with that repair. Completed [#605](https://github.com/sayuks/marginplyr/issues/605) and
 [#631](https://github.com/sayuks/marginplyr/issues/631) concerned packed and
 matrix key support, rather than raw missing-value representability.
 
@@ -227,8 +230,9 @@ requested work.
 
 F1 and F2 required independent fixes and neither blocked the other. Each
 repair could be verified end to end without a preparatory refactor. The
-`to-tickets` breakdown used those two complete behavior slices; the user had
-delegated granularity and explicitly waived a breakdown approval round.
+`to-tickets` breakdown used those two complete behavior slices, reusing #923
+for F2; the user had delegated granularity and explicitly waived a breakdown
+approval round.
 
 The branch contained repository-only investigation evidence under the existing
 `investigation/` build exclusion. The package-affecting Review-ready check was
