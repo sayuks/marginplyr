@@ -662,8 +662,8 @@ margin_sort_value_expr <- function(column, value_types) {
   if (!(column %in% names(value_types))) {
     return(pronoun)
   }
-  # Arrow registers this cast in its query mask; it runs only at execution.
-  rlang::expr(arrow::cast(!!pronoun, !!value_types[[column]]))
+  # `cast` is an Arrow query-mask binding, not an exported R function.
+  rlang::call2("cast", pronoun, value_types[[column]], .ns = "arrow")
 }
 
 # One column's missingness term. A local structured column is wholly missing
