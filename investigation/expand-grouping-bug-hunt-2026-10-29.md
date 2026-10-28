@@ -24,17 +24,19 @@ listener. The probes used temporary tables. No production service was contacted.
 | G1 | P2 | [#975](https://github.com/sayuks/marginplyr/issues/975) | Resolve ordinary pronoun-shaped subscripting with typed metadata |
 | S1 | P2 | [#976](https://github.com/sayuks/marginplyr/issues/976) | Reuse a sorted SQLite result through its public schema |
 | S2 | P2 | [#977](https://github.com/sayuks/marginplyr/issues/977) | Retain a selected PostgreSQL input inside every expansion branch |
-| D1 | P2 | [#978](https://github.com/sayuks/marginplyr/issues/978) | Omit a DuckDB STRUCT dimension with a native typed NULL |
+| D1 | P2 | [#973](https://github.com/sayuks/marginplyr/issues/973) | Omit a DuckDB STRUCT dimension with a native typed NULL |
 | A1 | P2 | [#978](https://github.com/sayuks/marginplyr/issues/978) | Omit an Arrow STRUCT dimension with a null parent |
-| N1 | P2 | [#979](https://github.com/sayuks/marginplyr/issues/979) | Preserve supported dot-dot identifiers on Arrow and dtplyr |
+| N1 | P2 | [#979](https://github.com/sayuks/marginplyr/issues/979), [#968](https://github.com/sayuks/marginplyr/issues/968) | Preserve supported dot-dot identifiers on Arrow and dtplyr |
 | S3 | P3 | [#980](https://github.com/sayuks/marginplyr/issues/980) | Compose a wide SQLite plan within compound-query limits |
 
-The seven findings were divided into six tickets, each able to start
-independently. D1 and A1 shared one narrow typed-null prototype contract, so
-one ticket required both backend representations and their distinct
-regressions. N1 kept the same public identifier behavior together across two
-small generated-selection sites. No prefactoring or blocking ticket was
-necessary to make any reproduction verifiable.
+The seven findings were tracked through six new tickets and two existing
+issues. A final tracker refresh found that #973 had independently reported the
+DuckDB prototype defect and #968 covered the dtplyr identifier defect. Their
+expansion evidence was linked there; new #978 and #979 were restricted to
+Arrow. All six new tickets could start independently. The two STRUCT cases
+shared a metadata seam but required backend-specific representations and
+regressions. No prefactoring or blocking ticket was necessary to make any
+reproduction verifiable.
 
 ## G1: ordinary .data subscripting selected the wrong key
 
@@ -228,7 +230,9 @@ failure. An included-only set and the native DuckDB Margin summary succeeded.
 `margin_column_info()` handled the packed data-frame proxy before its DuckDB
 SQL-NULL branch, and `label_margin_branch()` injected that R data frame into
 SQL. The documented typed-missing label behavior was the expected contract;
-no general support for non-missing structured labels was inferred.
+no general support for non-missing structured labels was inferred. Existing
+#973 had reported the same prototype defect for portable summaries; this
+investigation additionally reproduced expansion.
 
 ## A1: omitted Arrow STRUCT dimensions remained valid structs
 
@@ -304,7 +308,8 @@ Closed #827 and #922 were read. Their repaired local/summary-output behavior
 did not cover these lazy expansion sites. SQL expansion also refused these
 names, but ordinary SQL mutation already did so; this investigation did not
 promote that delegated boundary into another finding. dtplyr's default tibble
-collection name repair likewise remained outside this finding.
+collection name repair likewise remained outside this finding. Existing #968
+covered the dtplyr half; new #979 retained the Arrow expansion half.
 
 ## S3: flat SQLite composition exceeded the compound-query limit
 
