@@ -147,8 +147,8 @@ list-column name equal to a source geometry column.
 - Malformed manually forged specification arguments reached internal errors,
   but the constructors could not produce those objects. ADR 0015's
   documented-interface boundary excluded that observation from tickets.
-- Forty-four randomized calls whose outer rowwise identifier was `.rows` were
-  excluded by the documented refusal. The sf comparison retained matching
+- Forty-four randomized calls were excluded by the documented refusal of
+  `.rows` as an outer rowwise key. The sf comparison retained matching
   Package conditions for geometry dimensions whose typed-missing label was
   unrepresentable; it did not count those calls as successful nesting.
 - SQL and Arrow nesting were outside the documented nesting backend set.

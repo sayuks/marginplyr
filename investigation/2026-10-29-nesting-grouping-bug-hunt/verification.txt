@@ -7,7 +7,7 @@ Jarl check .: exit 0.
 Package-aware lintr after pkgload::load_all(): exit 0, no lints.
 Context-budget verifier: exit 0, 20008 / 22005 bytes.
 Documentation-reference verifier: exit 0.
-git diff --check: passed after removing trailing spaces from captured outputs.
+git diff main --check: passed after removing trailing spaces from captured outputs.
 All 18 archived R evidence scripts: parsed successfully.
 reproduce.R observation: exit 0, 20 / 20 defective cases observed.
 reproduce.R --assert: exit 1, intentionally red; 20 / 20 defects observed.
