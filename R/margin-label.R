@@ -329,8 +329,13 @@ check_observed_label_collision <- function(data,
         read_cols,
         function(col) {
           margin_label <- margin_labels[[col]]
-          # The pronoun keeps `T` and `F` as columns on dtplyr.
-          column <- rlang::data_sym(safe_name(col))
+          # SQL translation resolves `.env` as a pronoun even via `.data`;
+          # dtplyr needs the pronoun to read `T` and `F` as columns.
+          column <- if (inherits(source, "tbl_sql") && col == ".env") {
+            dbplyr::ident(col)
+          } else {
+            rlang::data_sym(safe_name(col))
+          }
           rlang::expr(
             sum(
               dplyr::if_else(

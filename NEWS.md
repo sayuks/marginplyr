@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* SQL Margin label collision checks now accept an `.env` grouping dimension
+  and report actual observed collisions with the public column name (#930).
+
 * SQLite expansions now directly materialize a Grouping set identifier named
   `.data`, preserving its integer values, public columns, and Margin order
   without needing an unrelated `.env` column (#863).
