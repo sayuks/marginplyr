@@ -1,0 +1,14 @@
+sf 1.1.2
+ERROR: 72 TOTAL: 72
+
+attr(obj, "sf_column") does not point to a geometry column.\nDid you rename it, without setting st_geometry(obj) <- "newname"?
+                                                                                                                            12
+                                                                                          internal error: can't find sf column
+                                                                                                                            48
+                                                                                            replacement has 0 rows, data has 1
+                                                                                                                            12
+tidyr::nest and dplyr::nest_by positive controls passed.
+reorder_margin_columns output names: g,geometry
+active geometry attribute: 2
+st_geometry error: attr(obj, "sf_column") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- "newname"?

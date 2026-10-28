@@ -1,0 +1,46 @@
+PASS: 80 FAIL: 208 TOTAL: 288
+Failures by verb, plan, and condition class:
+
+nest_by_with_margins fixed tibble_error_column_names_cannot_be_dot_dot
+                                                                    40
+        nest_by_with_margins fixed vctrs_error_names_cannot_be_dot_dot
+                                                                     8
+ nest_by_with_margins none tibble_error_column_names_cannot_be_dot_dot
+                                                                    40
+         nest_by_with_margins none vctrs_error_names_cannot_be_dot_dot
+                                                                     8
+       nest_by_with_margins rollup vctrs_error_names_cannot_be_dot_dot
+                                                                    48
+           nest_with_margins fixed vctrs_error_names_cannot_be_dot_dot
+                                                                     8
+            nest_with_margins none vctrs_error_names_cannot_be_dot_dot
+                                                                     8
+          nest_with_margins rollup vctrs_error_names_cannot_be_dot_dot
+                                                                    48
+
+Minimal demonstrations:
+nest_with_margins(input, .by = g, .key = "..1")
+vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..1" at location 1.
+conditionCall: dplyr::select(result, -dplyr::all_of(safe_name(set_col)))
+nest_with_margins(input, .by = g, .key = "..1", .id = "set")
+names: g,set,..1
+cell rows: 1,1
+nest_with_margins(input, .key = "..1", .sort = "last")
+names: ..1
+cell rows: 2
+nest_with_margins(input, .grouping = rollup(g), .key = "..1",
+    .id = "set")
+vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..1" at location 1.
+conditionCall: dplyr::select(result, -dplyr::all_of(unname(identity_cols)))
+nest_by_with_margins(input, .by = g, .key = "..1", .id = "set")
+tibble_error_column_names_cannot_be_dot_dot Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..1" at location 1.
+conditionCall: as_tibble(data)
