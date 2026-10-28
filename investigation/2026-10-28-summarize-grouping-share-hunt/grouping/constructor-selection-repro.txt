@@ -1,0 +1,45 @@
+grouping_set/grouping_set: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_set/grouping_sets: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_set/rollup: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_set/cube: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_set/grouping_spec: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_sets/grouping_set: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_sets/grouping_sets: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_sets/rollup: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_sets/cube: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_sets/grouping_spec: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+rollup/grouping_set: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+rollup/grouping_sets: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+rollup/rollup: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+rollup/cube: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+rollup/grouping_spec: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+cube/grouping_set: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+cube/grouping_sets: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+cube/rollup: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+cube/cube: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+cube/grouping_spec: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=3
+grouping_spec/grouping_set: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_spec/grouping_sets: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_spec/rollup: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_spec/cube: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+grouping_spec/grouping_spec: inspect reads=2 included=(b); summarize reads=2 names=b,total rows=2
+Normal controls passed. Desired-behavior failures: 125
+Error: grouping_set/grouping_set inspection reads selection once
+grouping_set/grouping_set inspection retains first selection
+grouping_set/grouping_set summary reads selection once
+grouping_set/grouping_set summary groups the first selection
+grouping_set/grouping_set summary produces correct grouping grain
+grouping_set/grouping_sets inspection reads selection once
+grouping_set/grouping_sets inspection retains first selection
+grouping_set/grouping_sets summary reads selection once
+grouping_set/grouping_sets summary groups the first selection
+grouping_set/grouping_sets summary produces correct grouping grain
+grouping_set/rollup inspection reads selection once
+grouping_set/rollup inspection retains first selection
+grouping_set/rollup summary reads selection once
+grouping_set/rollup summary groups the first selection
+grouping_set/rollup summary produces correct grouping grain
+grouping_set/cube inspection reads selection once
+grouping_set/cube inspection retains first selection
+grouping_set
+Execution halted

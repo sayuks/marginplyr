@@ -1,0 +1,48 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+iteration 1 checks 12 failures 0
+iteration 2 checks 24 failures 0
+iteration 3 checks 36 failures 0
+iteration 4 checks 48 failures 0
+iteration 5 checks 60 failures 0
+iteration 6 checks 72 failures 0
+iteration 7 checks 84 failures 0
+iteration 8 checks 96 failures 0
+iteration 9 checks 108 failures 0
+iteration 10 checks 120 failures 0
+iteration 11 checks 132 failures 0
+iteration 12 checks 144 failures 0
+iteration 13 checks 156 failures 0
+iteration 14 checks 168 failures 0
+iteration 15 checks 180 failures 0
+iteration 16 checks 192 failures 0
+iteration 17 checks 204 failures 0
+iteration 18 checks 216 failures 0
+iteration 19 checks 228 failures 0
+iteration 20 checks 240 failures 0
+iteration 21 checks 252 failures 0
+iteration 22 checks 264 failures 0
+iteration 23 checks 276 failures 0
+iteration 24 checks 288 failures 0
+iteration 25 checks 300 failures 0
+iteration 26 checks 312 failures 0
+iteration 27 checks 324 failures 0
+iteration 28 checks 336 failures 0
+iteration 29 checks 348 failures 0
+iteration 30 checks 360 failures 0
+iteration 31 checks 372 failures 0
+iteration 32 checks 384 failures 0
+iteration 33 checks 396 failures 0
+iteration 34 checks 408 failures 0
+iteration 35 checks 420 failures 0
+iteration 36 checks 432 failures 0
+iteration 37 checks 444 failures 0
+iteration 38 checks 456 failures 0
+iteration 39 checks 468 failures 0
+iteration 40 checks 480 failures 0
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+TOTAL 480 MATCHED 450 EXPECTED_REFUSALS 30 FAILURES 0

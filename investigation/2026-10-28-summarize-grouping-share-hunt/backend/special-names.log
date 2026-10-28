@@ -1,0 +1,32 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+name 1 checks 8 failures 0
+name 2 checks 16 failures 0
+name 3 checks 24 failures 0
+name 4 checks 32 failures 0
+name 5 checks 40 failures 0
+name 6 checks 48 failures 0
+name 7 checks 56 failures 0
+name 8 checks 64 failures 0
+name 9 checks 72 failures 0
+name 10 checks 80 failures 0
+name 11 checks 88 failures 0
+name 12 checks 96 failures 0
+name 13 checks 104 failures 0
+name 14 checks 112 failures 0
+name 15 checks 120 failures 0
+name 16 checks 128 failures 0
+name 17 checks 136 failures 0
+name 18 checks 144 failures 0
+name 19 checks 152 failures 0
+name 20 checks 160 failures 0
+name 21 checks 168 failures 0
+name 22 checks 176 failures 0
+name 23 checks 184 failures 0
+name 24 checks 192 failures 0
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+TOTAL 192 FAILURES 0

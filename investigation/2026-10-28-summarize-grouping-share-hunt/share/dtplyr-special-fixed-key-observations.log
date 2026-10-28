@@ -1,0 +1,51 @@
+.N fixed share_of_total direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".N" at locations 1 and 7.
+.N fixed share_of_total across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".N" at locations 1 and 7.
+.N fixed share_of_parent direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".N" at locations 1 and 7.
+.N fixed share_of_parent across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".N" at locations 1 and 7.
+.N dimension share_of_total direct : PASS; no premature evaluation; source unchanged
+.N dimension share_of_total across : PASS; no premature evaluation; source unchanged
+.N dimension share_of_parent direct : PASS; no premature evaluation; source unchanged
+.N dimension share_of_parent across : PASS; no premature evaluation; source unchanged
+.I fixed share_of_total direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".I" at locations 1 and 7.
+.I fixed share_of_total across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".I" at locations 1 and 7.
+.I fixed share_of_parent direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".I" at locations 1 and 7.
+.I fixed share_of_parent across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".I" at locations 1 and 7.
+.I dimension share_of_total direct : PASS; no premature evaluation; source unchanged
+.I dimension share_of_total across : PASS; no premature evaluation; source unchanged
+.I dimension share_of_parent direct : PASS; no premature evaluation; source unchanged
+.I dimension share_of_parent across : PASS; no premature evaluation; source unchanged
+.SD fixed share_of_total direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".SD" at locations 1 and 7.
+.SD fixed share_of_total across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".SD" at locations 1 and 7.
+.SD fixed share_of_parent direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".SD" at locations 1 and 7.
+.SD fixed share_of_parent across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".SD" at locations 1 and 7.
+.SD dimension share_of_total direct : PASS; no premature evaluation; source unchanged
+.SD dimension share_of_total across : PASS; no premature evaluation; source unchanged
+.SD dimension share_of_parent direct : PASS; no premature evaluation; source unchanged
+.SD dimension share_of_parent across : PASS; no premature evaluation; source unchanged
+.GRP fixed share_of_total direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".GRP" at locations 1 and 7.
+.GRP fixed share_of_total across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".GRP" at locations 1 and 7.
+.GRP fixed share_of_parent direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".GRP" at locations 1 and 7.
+.GRP fixed share_of_parent across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".GRP" at locations 1 and 7.
+.GRP dimension share_of_total direct : PASS; no premature evaluation; source unchanged
+.GRP dimension share_of_total across : PASS; no premature evaluation; source unchanged
+.GRP dimension share_of_parent direct : PASS; no premature evaluation; source unchanged
+.GRP dimension share_of_parent across : PASS; no premature evaluation; source unchanged
+.NGRP fixed share_of_total direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".NGRP" at locations 1 and 7.
+.NGRP fixed share_of_total across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".NGRP" at locations 1 and 7.
+.NGRP fixed share_of_parent direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".NGRP" at locations 1 and 7.
+.NGRP fixed share_of_parent across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".NGRP" at locations 1 and 7.
+.NGRP dimension share_of_total direct : PASS; no premature evaluation; source unchanged
+.NGRP dimension share_of_total across : PASS; no premature evaluation; source unchanged
+.NGRP dimension share_of_parent direct : PASS; no premature evaluation; source unchanged
+.NGRP dimension share_of_parent across : PASS; no premature evaluation; source unchanged
+.BY fixed share_of_total direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".BY" at locations 1 and 7.
+.BY fixed share_of_total across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".BY" at locations 1 and 7.
+.BY fixed share_of_parent direct : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".BY" at locations 1 and 7.
+.BY fixed share_of_parent across : vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".BY" at locations 1 and 7.
+.BY dimension share_of_total direct : PASS; no premature evaluation; source unchanged
+.BY dimension share_of_total across : PASS; no premature evaluation; source unchanged
+.BY dimension share_of_parent direct : PASS; no premature evaluation; source unchanged
+.BY dimension share_of_parent across : PASS; no premature evaluation; source unchanged
+fixed-only plan: PASS
+group_by dots from current builder:
+list(.N = ..marginplyr_dtplyr_column_1, ..marginplyr_share_dimension_1 = ..marginplyr_share_dimension_1)

@@ -1,0 +1,6 @@
+Error in dplyr::rename(result, !!!rlang::set_names(rlang::syms(unname(retained)),  :
+  Names must be unique.
+✖ These names are duplicated:
+  * ".N" at locations 1 and 7.
+Calls: collect ... tryCatch -> tryCatchList -> tryCatchOne -> <Anonymous>
+Execution halted

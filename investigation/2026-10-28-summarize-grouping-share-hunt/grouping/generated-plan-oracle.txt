@@ -1,0 +1,1 @@
+PASS: attempts=1500 accepted=1500 skipped=0; independent specification oracle
