@@ -44,6 +44,50 @@ cases <- list(
         sum(is.na(result$g[result$sid == 2L])) == if (i == 5L) 3L else 4L)
     }
   }),
+  registration_boundaries = function() with_connection(function(con) {
+    data <- tibble::tibble(
+      g = factor(c('a', 'b', 'a', NA), levels = c('b', 'a', 'unused')),
+      value = c(2L, 6L, 4L, 8L), day = as.Date('2026-10-01') + 0:3,
+      stamp = as.POSIXct('2026-10-01 12:00:00', tz = 'UTC') + 0:3,
+      items = list(1:2, integer(), NULL, 3L),
+      info = tibble::tibble(flag = c(TRUE, FALSE, NA, TRUE),
+        name = c('u', 'v', 'w', 'z'))
+    )
+    batch <- arrow::record_batch(data)
+    empty <- arrow::RecordBatch$create(vctrs::vec_slice(data, integer()),
+      schema = batch$schema)
+    table <- arrow::Table$create(empty, batch, empty)
+    stopifnot(table$GetColumnByName('value')$num_chunks == 3L)
+    empty_table <- arrow::Table$create(empty)
+    shapes <- list(table, empty_table, empty,
+      arrow::InMemoryDataset$create(empty_table),
+      dplyr::filter(dplyr::select(table, dplyr::everything()), .data$value < 0L))
+    for (i in seq_along(shapes)) {
+      name <- paste0('boundaries_', i)
+      duckdb::duckdb_register_arrow(con, name, shapes[[i]])
+      source <- dplyr::tbl(con, name)
+      control <- dplyr::collect(source)
+      rows <- nrow(control)
+      stopifnot(rows == if (i == 1L) 4L else 0L)
+      summary <- dplyr::collect(summarize_with_margins(source,
+        total = sum(value, na.rm = TRUE), .grouping = rollup(g),
+        .margin_label = NULL, .id = 'sid'))
+      stopifnot(nrow(summary) == if (rows) 4L else 1L,
+        if (rows) summary$total[summary$sid == 2L] == 20 else is.na(summary$total))
+      query <- expand_with_margins(source, .grouping = rollup(g),
+        .margin_label = NULL, .id = 'sid')
+      indices <- rep(order(control$value), 2L)
+      for (result in list(query, dplyr::compute(query))) {
+        result <- dplyr::collect(dplyr::arrange(result, .data$sid, .data$value))
+        stopifnot(nrow(result) == rows * 2L,
+          identical(result$sid, rep(1:2, each = rows)))
+        for (column in c('value', 'day', 'stamp', 'items', 'info')) {
+          stopifnot(identical(result[[column]],
+            vctrs::vec_slice(control[[column]], indices)))
+        }
+      }
+    }
+  }),
   export_null = function() with_connection(function(con) {
     for (empty in c(FALSE, TRUE)) {
       source <- dplyr::tbl(con, dbplyr::sql(paste(
@@ -135,6 +179,26 @@ cases <- list(
     stopifnot(nrow(result) == 1000005L,
       sum(as.double(result$value)) == 500004500010)
   }),
+  stream_close = function() {
+    for (shutdown in c(FALSE, TRUE)) {
+      drv <- duckdb::duckdb(shared_home = FALSE)
+      on.exit(if (DBI::dbIsValid(drv)) duckdb::duckdb_shutdown(drv), add = TRUE)
+      con <- DBI::dbConnect(drv)
+      source <- dplyr::tbl(con, dbplyr::sql(
+        'SELECT i::INTEGER AS value FROM range(1000005) t(i)'))
+      reader <- duckdb::to_arrow_stream(source)
+      first <- reader$read_next_batch()
+      rows <- first$num_rows
+      stopifnot(rows > 0L, rows < 1000005L)
+      DBI::dbDisconnect(con, shutdown = shutdown)
+      stopifnot(!DBI::dbIsValid(con))
+      # The exported stream retains its client context after DBI disconnects.
+      remaining <- dplyr::collect(arrow::as_arrow_table(reader))
+      stopifnot(identical(remaining$value, seq.int(rows, 1000004L)),
+        rows + nrow(remaining) == 1000005L)
+      if (DBI::dbIsValid(drv)) duckdb::duckdb_shutdown(drv)
+    }
+  },
   parser_controls = function() with_connection(function(con) {
     for (literal in c("X'AB'", "B'1010'")) {
       if (literal == "B'1010'" && utils::packageVersion('duckdb') >= '2.0.0') {
@@ -205,7 +269,7 @@ if (length(args) == 3L) {
   writeLines(capture.output(dput(metadata)), file.path(output, 'environment.txt'))
   selected <- names(cases)
   if (utils::packageVersion('duckdb') < '1.5.6') {
-    selected <- setdiff(selected, c('stream_batches', 'stream_invalidation'))
+    selected <- setdiff(selected, c('stream_batches', 'stream_invalidation', 'stream_close'))
   }
   script <- normalizePath(sub('^--file=', '',
     grep('^--file=', commandArgs(FALSE), value = TRUE)))

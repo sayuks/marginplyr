@@ -242,3 +242,7 @@ Arrow 25.0.1 の `arrow::to_arrow()` は `RecordBatchReader` を返した。
 本ノートの「materialized Table」との対比は戻り値を取り違えていた。
 DuckDB 内部の結果の materialization と、利用者が `arrow::as_arrow_table()` で
 再利用可能な Table を作ることを分けて検証した。元の記録は上に残す。
+
+同報告の *Revisions (2026-10-28)* は、レビューで不足が見つかった空 batch、
+日時／複合 payload、未完了 reader の接続切断を追加検証した結果を記録した。
+最終的な独立 harness の成功グループ数は 1.5.5／1.5.6／2.0.0 で 5／8／8 だった。

@@ -1,6 +1,7 @@
 # DuckDB 2.0 compatibility validation
 
 Investigated: 2026-10-28
+Revised: 2026-10-28 — additional Arrow boundary cases measured after Spec review.
 Base: `cb957d9be09440796defde808bf6f04006edd6dd` (latest `origin/main` fetched before validation)
 Package-affecting snapshot: `5eaf65aa527c6d0b8cd503b45637450fa1b8843e`
 
@@ -192,3 +193,32 @@ The full package boundary is `Rscript tools/review-ready-check.R` on a clean,
 committed checkout with the chosen target library inherited by child R
 processes. It is intentionally separate from the standalone integration
 harness and from the repository's platform and dependency-isolation matrix.
+
+
+## Revisions (2026-10-28)
+
+The Spec review of `64f98278e2e82f66735b35b40b75d58f4771936a` found that
+registration with empty batches, temporal/nested payloads, and disconnecting
+an unfinished stream were still missing from the planned integration checks.
+This revision supersedes the initial acceptance-group counts above: the final
+harness passed 5 groups on 1.5.5 and 8 groups on each of 1.5.6 and 2.0.0.
+The three stream-only groups were inapplicable to 1.5.5.
+
+`registration_boundaries` used a Table with three physical chunks (empty,
+nonempty, empty), an empty Table, an empty RecordBatch with the same declared
+schema, an empty Dataset, and a filtered projection returning no rows. Date,
+UTC timestamp, list, and STRUCT payload columns survived direct expansion and
+`compute()` compared with ordinary dbplyr collection from the same registered
+source. Empty input produced no expansion rows and one empty aggregate row.
+These were payload checks, not an extension of structured grouping dimensions.
+
+`stream_close` consumed the first batch of a 1,000,005-row stream, disconnected
+the DBI connection with both `shutdown = FALSE` and `shutdown = TRUE`, verified
+that the DBI handle was invalid, and then obtained exactly the remaining rows.
+Both 1.5.6 and 2.0 retained the stream's client context after disconnect; they
+did not behave like the separate case where a second statement invalidated an
+unfinished stream. Each worker still had the 60-second timeout.
+
+These additional cases and this revision affect excluded investigation files
+only. The package-affecting snapshot and successful Review-ready check above
+remain unchanged.
