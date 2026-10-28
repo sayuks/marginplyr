@@ -1,0 +1,49 @@
+Investigated: 2026-10-28
+Main baseline: ac6ad79ff6026abe5fc45538d6dfefadf03a8ca3
+Working tree: codex/nest-grouping-bug-hunt (investigation artifacts only)
+
+Observed command outcomes (curated execution record, not a full stdout transcript):
+
+Rscript .../reproduce-key.R
+  exit 0; PASS: 80 FAIL: 208 TOTAL: 288
+Rscript .../reproduce-key.R --assert
+  exit 1; BUG REPRODUCED: valid dot-dot .key names do not preserve nesting behavior.
+Rscript .../reproduce-sf.R
+  exit 0; ERROR: 72 TOTAL: 72; upstream nesting controls passed
+Rscript .../reproduce-sf.R --assert
+  exit 1; BUG REPRODUCED: admitted local sf nesting escapes with an internal invariant error.
+
+Saved exploratory sweeps, each executed from the repository root:
+  local-names.R: TOTAL 1800 BAD 96 (dot-dot roles; see note)
+  local-types.R: TOTAL 1056 BAD 12 ERROR 48 (delegated POSIXlt conversion / raw refusal)
+  local-structured.R: 12 partially missing-key order observations; 12 zero-width checks passed
+  dtplyr-names.R: TESTED 667 DIFFS 0
+  dtplyr-types.R: TYPE TESTED 2430 DIFFS 650
+  classify-dtplyr-types.R: CANDIDATES 650 EXTERNAL_ERRORS 396 SUCCESSFUL_OUTPUTS 254 MULTISET_MISMATCHES 0
+    External-error types: complex 108, list 108, list_of 108, raw 72
+  dtplyr-classed.R: TESTED 864 DIFFS 0
+  dtplyr-transforms.R: TESTED 242 DIFFS 0
+  dtplyr-mutation.R: TESTED 96 FAIL 0
+  plan-algebra.R: PASS: 1000 generated trees x keep/drop
+  plan-boundaries.R: PASS: dimension boundaries 0/1/2/30/31/32/64/128
+  backend-inspection.R: CHECKED 192 FAILED 0
+  backend-identity.R: CHECKED 220 FAILED 0
+  dtplyr-inspection-copies.R: CHECKED 216 MISMATCH 0 REFUSED 0
+
+Existing package tests:
+Rscript -e 'testthat::test_local(".", filter="nest|grouping|inspect", reporter="summary", stop_on_failure=FALSE)'
+  exit 0; DONE; no failure/skip/warning summary
+  The first sandboxed attempt halted when testthat could not rewrite an existing
+  snapshot in the managed worktree. The same command was rerun with write access.
+Rscript -e 'testthat::test_local(".", filter="query-policy|margin-order|factor|verb-argument-admission|data-frame-subclass", reporter="summary", stop_on_failure=TRUE)'
+  exit 0; DONE; no failure/skip/warning summary
+
+Repository checks:
+  jarl check .: passed after correcting exploratory script lint findings
+  LINTR_ERROR_ON_LINT=true Rscript -e 'pkgload::load_all(".", quiet=TRUE); lintr::lint_package()': passed
+  Rscript .github/scripts/verify-context-budget.R: 20008 / 22005 bytes, passed
+  Rscript .github/scripts/verify-verifier-invocation.R: all 15 verifiers reached, passed
+
+The intentionally red reproductions did not constitute a package-test change.
+No Review-ready source-tarball check was required for this repository-only
+investigation addition; no package implementation was changed.
