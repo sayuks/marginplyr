@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Filtered dtplyr inputs retain `.SD` columns in typed Grouping selections
+  and both nesting verbs, preserving column names and cell values (#947).
+
 * SQL Margin label collision checks now accept an `.env` grouping dimension
   and report actual observed collisions with the public column name (#930).
 

@@ -251,10 +251,12 @@ dtplyr_selection_proxy <- function(.data, mutable = FALSE) {
   if (inherits(.data, "dtplyr_step_subset")) {
     parent <- dtplyr_selection_proxy(.data[["parent"]], mutable = mutable)
     columns <- dtplyr_metadata_subset_columns(.data)
-    return(data.table::as.data.table(stats::setNames(
-      lapply(columns, function(column) parent[[column]]),
-      .data[["vars"]]
-    )))
+    # The list converter refuses `.SD`; assign names only on the fresh proxy.
+    proxy <- data.table::as.data.table(
+      lapply(columns, function(column) parent[[column]])
+    )
+    data.table::setnames(proxy, .data[["vars"]])
+    return(proxy)
   }
   if (mutable || !inherits(.data, "dtplyr_step_first")) {
     return(tryCatch(

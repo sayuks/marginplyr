@@ -234,3 +234,78 @@ test_that("dtplyr nesting keeps control names and occupied temporary names", {
   }
   expect_identical(dplyr::collect(source), input)
 })
+
+test_that("filtered dtplyr .SD columns retain nesting roles and cell values", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(
+    .SD = c("a", NA_character_, "a"), g = c("x", "y", "x"),
+    value = c(1L, 2L, 1L)
+  )
+  for (predicate in list(rlang::expr(TRUE), rlang::expr(value != 2L),
+                         rlang::expr(FALSE))) {
+    source <- dplyr::filter(dtplyr::lazy_dt(input), !!predicate)
+    collected <- dplyr::collect(source)
+    for (role in c("payload", "fixed", "dimension")) {
+      for (keep in c(FALSE, TRUE)) {
+        for (verb in list(nest_with_margins, nest_by_with_margins)) {
+          run <- function(data) {
+            verb(
+              data, .by = if (identical(role, "fixed")) dplyr::all_of(".SD"),
+              .grouping = if (identical(role, "dimension")) {
+                rollup(.SD)
+              } else {
+                rollup(g)
+              },
+              .keep = keep, .margin_label = NULL, .id = "set", .sort = "last"
+            )
+          }
+          actual <- run(source)
+          if (identical(verb, nest_with_margins)) {
+            expect_s3_class(actual, "dtplyr_step")
+            actual <- dplyr::collect(actual)
+          } else {
+            expect_s3_class(actual, "rowwise_df")
+          }
+          expected <- run(collected)
+          info <- paste(rlang::as_label(predicate), role, keep)
+          expect_identical(names(actual), names(expected), info = info)
+          expect_special_nesting_rows(actual, expected, "last", info = info)
+          expect_identical(
+            sum(vapply(actual$data, nrow, integer(1))),
+            nrow(collected) * 2L, info = info
+          )
+          if (nrow(collected) == 0L) {
+            outer <- setdiff(names(actual), "data")
+            expect_identical(
+              lapply(actual[outer], vctrs::vec_ptype),
+              lapply(expected[outer], vctrs::vec_ptype), info = info
+            )
+            expect_identical(nrow(actual), nrow(expected), info = info)
+          }
+        }
+      }
+    }
+    expect_identical(dplyr::collect(source), collected)
+  }
+})
+
+test_that("filtered single .SD columns preserve empty nesting behavior", {
+  skip_if_suggest_absent("dtplyr")
+  for (rows in c(0L, 1L)) {
+    input <- tibble::tibble(.SD = rep("a", rows))
+    source <- dplyr::filter(dtplyr::lazy_dt(input), TRUE)
+    for (keep in c(FALSE, TRUE)) {
+      for (verb in list(nest_with_margins, nest_by_with_margins)) {
+        actual <- verb(source, .keep = keep)
+        if (identical(verb, nest_with_margins)) actual <- dplyr::collect(actual)
+        expected <- verb(input, .keep = keep)
+        expect_identical(names(actual), "data")
+        expect_identical(nrow(actual), nrow(expected))
+        expect_special_nesting_rows(actual, expected, "none")
+        if (rows == 0L && identical(verb, nest_by_with_margins)) {
+          expect_identical(actual$data[[1L]][[".SD"]], character())
+        }
+      }
+    }
+  }
+})
