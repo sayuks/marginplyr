@@ -1244,8 +1244,12 @@ rewrite_local_across_selection <- function(expr, env, group_vars,
 # Applies the same deferred local selection to `pick()`.
 rewrite_local_pick_selection <- function(expr, env, group_vars,
                                          forbidden_names) {
+  selection <- parse_pick_selection(expr)
+  if (is.null(selection)) {
+    return(expr)
+  }
   selection <- local_summary_selection_expr(
-    parse_pick_selection(expr), env, group_vars, forbidden_names
+    selection, env, group_vars, forbidden_names
   )
   rebuild_static_call(expr, list(selection))
 }
@@ -1394,6 +1398,9 @@ rewrite_across_selection <- function(expr,
 
 rewrite_pick_selection <- function(expr, env, data_proxy) {
   selection <- parse_pick_selection(expr)
+  if (is.null(selection)) {
+    return(expr)
+  }
   selected <- resolve_summary_selection(
     selection,
     env = env,
@@ -1403,12 +1410,12 @@ rewrite_pick_selection <- function(expr, env, data_proxy) {
   rebuild_static_call(expr, list(summary_all_of_expr(selected, data_proxy)))
 }
 
-# Reads a `pick()` call's selection. An empty call selects everything, and both
-# callers need that rule to agree on the columns `pick()` can produce.
+# Reads a `pick()` call's selection, or `NULL` when no input was supplied.
+# An omitted input stays with dplyr or the backend to answer (ADR 0015).
 parse_pick_selection <- function(expr) {
   call_args <- static_call_args(expr)
   if (length(call_args) == 0L) {
-    return(rlang::expr(dplyr::everything()))
+    return(NULL)
   }
   rlang::call2("c", !!!call_args)
 }
@@ -1514,6 +1521,9 @@ known_data_frame_output_names <- function(expr, env, data_proxy) {
 
   if (identical(kind, "pick")) {
     selection <- parse_pick_selection(expr)
+    if (is.null(selection)) {
+      return(character())
+    }
     return(names(resolve_summary_selection(selection, env, data_proxy)))
   }
 
