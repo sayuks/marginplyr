@@ -1076,3 +1076,29 @@ test_that("ordering numeric dictionary fixed keys reads no source rows", {
     }
   }
 })
+
+test_that("Arrow dot-dot expansion identifiers cause no construction reads", {
+  skip_if_suggest_absent("arrow")
+  for (empty in c(FALSE, TRUE)) {
+    data <- data.frame(g = c("b", "a"), value = 1:2)
+    if (empty) data <- data[FALSE, , drop = FALSE]
+    source <- arrow::arrow_table(data)
+    expect_gt(count_entry_point_invocations(dplyr::collect(source)), 0L)
+    reads <- count_entry_point_invocations({
+      for (name in c("...", "..1", "..42")) {
+        for (spec in list(NULL, grouping_set(g), rollup(g))) {
+          for (label in list(NULL, "Total")) {
+            for (sort in c("none", "first", "last")) {
+              query <- expand_with_margins(
+                source, .grouping = spec, .margin_label = label,
+                .id = name, .sort = sort
+              )
+              expect_s3_class(query, "arrow_dplyr_query")
+            }
+          }
+        }
+      }
+    })
+    expect_identical(reads, 0L)
+  }
+})
