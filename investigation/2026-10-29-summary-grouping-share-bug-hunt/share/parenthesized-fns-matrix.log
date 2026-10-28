@@ -1,0 +1,49 @@
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+# A tibble: 29 × 5
+   backend    depth control_ok share_ok     n
+   <chr>      <int> <lgl>      <lgl>    <int>
+ 1 data.table     0 TRUE       TRUE        32
+ 2 data.table     1 TRUE       FALSE       16
+ 3 data.table     1 TRUE       TRUE        16
+ 4 data.table     2 TRUE       FALSE       16
+ 5 data.table     2 TRUE       TRUE        16
+ 6 dtplyr         0 TRUE       TRUE        32
+ 7 dtplyr         1 FALSE      FALSE       12
+ 8 dtplyr         1 TRUE       FALSE        4
+ 9 dtplyr         1 TRUE       TRUE        16
+10 dtplyr         2 FALSE      FALSE       12
+11 dtplyr         2 TRUE       FALSE        4
+12 dtplyr         2 TRUE       TRUE        16
+13 duckdb         0 TRUE       TRUE        32
+14 duckdb         1 FALSE      FALSE        8
+15 duckdb         1 TRUE       FALSE        8
+16 duckdb         1 TRUE       TRUE        16
+17 duckdb         2 FALSE      FALSE        8
+18 duckdb         2 TRUE       FALSE        8
+19 duckdb         2 TRUE       TRUE        16
+20 local          0 TRUE       TRUE        32
+21 local          1 TRUE       FALSE       16
+22 local          1 TRUE       TRUE        16
+23 local          2 TRUE       FALSE       16
+24 local          2 TRUE       TRUE        16
+25 sqlite         0 TRUE       TRUE        32
+26 sqlite         1 TRUE       FALSE       16
+27 sqlite         1 TRUE       TRUE        16
+28 sqlite         2 TRUE       FALSE       16
+29 sqlite         2 TRUE       TRUE        16
+CASES 480 VALID CONTROL BUT SHARE REFUSED 120
+# A tibble: 9 × 3
+  backend    fn_name     n
+  <chr>      <chr>   <int>
+1 data.table formula    16
+2 data.table symbol     16
+3 dtplyr     symbol      8
+4 duckdb     formula     8
+5 duckdb     symbol      8
+6 local      formula    16
+7 local      symbol     16
+8 sqlite     formula    16
+9 sqlite     symbol     16

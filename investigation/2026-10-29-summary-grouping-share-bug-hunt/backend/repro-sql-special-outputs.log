@@ -1,0 +1,4 @@
+sqliteordinary=1; Margin=indexing '...' with non-positive index 0; desired-behavior=FALSE
+duckdbordinary=1; Margin=indexing '...' with non-positive index 0; desired-behavior=FALSE
+Error: Valid SQL summary outputs failed: sqlite, duckdb
+Execution halted

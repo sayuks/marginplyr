@@ -1,0 +1,22 @@
+CLASS dtplyr_step_first dtplyr_step
+DYNAMIC
+# A tibble: 1 × 1
+      .
+  <dbl>
+1     4
+EARLY INJECTION
+[1] "ERROR attempt to replicate non-vector"
+CLASS tbl_SQLiteConnection tbl_dbi tbl_sql tbl_lazy tbl
+DYNAMIC
+# A tibble: 1 × 1
+      .
+  <dbl>
+1     4
+EARLY INJECTION
+[1] "ERROR ℹ In argument: `.data`\nCaused by error in `summarise()`:\n! `data` must be a lazy data frame"
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+DUCKDB PORTABLE
+[1] "ERROR ℹ In argument: `.data`\nCaused by error in `dplyr::summarize()`:\n! `data` must be a lazy data frame"

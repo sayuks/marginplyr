@@ -1,0 +1,132 @@
+INPUT_REFUSED timestamptz Binder Error: No function matches the given name and argument types '+(TIMESTAMP WITH TIME ZONE, INTERVAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	+(TINYINT) -> TINYINT
+	+(TINYINT, TINYINT) -> TINYINT
+	+(SMALLINT) -> SMALLINT
+	+(SMALLINT, SMALLINT) -> SMALLINT
+	+(INTEGER) -> INTEGER
+	+(INTEGER, INTEGER) -> INTEGER
+	+(BIGINT) -> BIGINT
+	+(BIGINT, BIGINT) -> BIGINT
+	+(HUGEINT) -> HUGEINT
+	+(HUGEINT, HUGEINT) -> HUGEINT
+	+(FLOAT) -> FLOAT
+	+(FLOAT, FLOAT) -> FLOAT
+	+(DOUBLE) -> DOUBLE
+	+(DOUBLE, DOUBLE) -> DOUBLE
+	+(DECIMAL) -> DECIMAL
+	+(DECIMAL, DECIMAL) -> DECIMAL
+	+(UTINYINT) -> UTINYINT
+	+(UTINYINT, UTINYINT) -> UTINYINT
+	+(USMALLINT) -> USMALLINT
+	+(USMALLINT, USMALLINT) -> USMALLINT
+	+(UINTEGER) -> UINTEGER
+	+(UINTEGER, UINTEGER) -> UINTEGER
+	+(UBIGINT) -> UBIGINT
+	+(UBIGINT, UBIGINT) -> UBIGINT
+	+(UHUGEINT) -> UHUGEINT
+	+(UHUGEINT, UHUGEINT) -> UHUGEINT
+	+(DATE, INTEGER) -> DATE
+	+(INTEGER, DATE) -> DATE
+	+(INTERVAL, INTERVAL) -> INTERVAL
+	+(DATE, INTERVAL) -> TIMESTAMP
+	+(INTERVAL, DATE) -> TIMESTAMP
+	+(TIME, INTERVAL) -> TIME
+	+(INTERVAL, TIME) -> TIME
+	+(TIMESTAMP, INTERVAL) -> TIMESTAMP
+	+(INTERVAL, TIMESTAMP) -> TIMESTAMP
+	+(TIME WITH TIME ZONE, INTERVAL) -> TIME WITH TIME ZONE
+	+(INTERVAL, TIME WITH TIME ZONE) -> TIME WITH TIME ZONE
+	+(TIME, DATE) -> TIMESTAMP
+	+(DATE, TIME) -> TIMESTAMP
+	+(TIME WITH TIME ZONE, DATE) -> TIMESTAMP WITH TIME ZONE
+	+(DATE, TIME WITH TIME ZONE) -> TIMESTAMP WITH TIME ZONE
+	+([ANY[]...]) -> ANY[]
+	+(BIGNUM, BIGNUM) -> BIGNUM
+
+
+LINE 1: ... REPLACE TABLE inp AS SELECT CAST('2026-10-29' AS TIMESTAMPTZ) + v * INTERVAL '1 hour' AS g, POW(2, ROW_NUMBER() OVER ...
+                                                                          ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER
+FAIL struct:TRUE:none:FALSE ℹ In argument: `g = <df[,2]>`
+Caused by error in `partial_eval()`:
+! Unknown input type: list
+FAIL struct:TRUE:none:TRUE ℹ In argument: `g = <df[,2]>`
+Caused by error in `partial_eval()`:
+! Unknown input type: list
+FAIL struct:TRUE:last:FALSE ℹ In argument: `g = <df[,2]>`
+Caused by error in `partial_eval()`:
+! Unknown input type: list
+FAIL struct:TRUE:last:TRUE ℹ In argument: `g = <df[,2]>`
+Caused by error in `partial_eval()`:
+! Unknown input type: list
+FAIL struct:TRUE:first:FALSE ℹ In argument: `g = <df[,2]>`
+Caused by error in `partial_eval()`:
+! Unknown input type: list
+FAIL struct:TRUE:first:TRUE ℹ In argument: `g = <df[,2]>`
+Caused by error in `partial_eval()`:
+! Unknown input type: list
+PAIRED_REFUSAL struct Total none FALSE
+PAIRED_REFUSAL struct Total none TRUE
+PAIRED_REFUSAL struct Total last FALSE
+PAIRED_REFUSAL struct Total last TRUE
+PAIRED_REFUSAL struct Total first FALSE
+PAIRED_REFUSAL struct Total first TRUE
+FAIL array:TRUE:none:FALSE Failed to collect lazy table.
+Caused by error in `duckdb_result()`:
+! Invalid Error: Conversion Error: Unimplemented type for cast (STRUCT("NULL", "NULL") -> BIGINT[2]) when casting from source column g
+
+LINE 16:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
+             ^
+ℹ Context: rapi_execute
+ℹ Error type: INVALID
+FAIL array:TRUE:none:TRUE Failed to collect lazy table.
+Caused by error in `duckdb_result()`:
+! Invalid Error: Conversion Error: Unimplemented type for cast (STRUCT("NULL", "NULL") -> BIGINT[2]) when casting from source column g
+
+LINE 17:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
+             ^
+ℹ Context: rapi_execute
+ℹ Error type: INVALID
+FAIL array:TRUE:last:FALSE Failed to collect lazy table.
+Caused by error in `duckdb_result()`:
+! Invalid Error: Conversion Error: Unimplemented type for cast (STRUCT("NULL", "NULL") -> BIGINT[2]) when casting from source column g
+
+LINE 16:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
+             ^
+ℹ Context: rapi_execute
+ℹ Error type: INVALID
+FAIL array:TRUE:last:TRUE Failed to collect lazy table.
+Caused by error in `duckdb_result()`:
+! Invalid Error: Conversion Error: Unimplemented type for cast (STRUCT("NULL", "NULL") -> BIGINT[2]) when casting from source column g
+
+LINE 17:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
+             ^
+ℹ Context: rapi_execute
+ℹ Error type: INVALID
+FAIL array:TRUE:first:FALSE Failed to collect lazy table.
+Caused by error in `duckdb_result()`:
+! Invalid Error: Conversion Error: Unimplemented type for cast (STRUCT("NULL", "NULL") -> BIGINT[2]) when casting from source column g
+
+LINE 16:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
+             ^
+ℹ Context: rapi_execute
+ℹ Error type: INVALID
+FAIL array:TRUE:first:TRUE Failed to collect lazy table.
+Caused by error in `duckdb_result()`:
+! Invalid Error: Conversion Error: Unimplemented type for cast (STRUCT("NULL", "NULL") -> BIGINT[2]) when casting from source column g
+
+LINE 17:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
+             ^
+ℹ Context: rapi_execute
+ℹ Error type: INVALID
+PAIRED_REFUSAL array Total none FALSE
+PAIRED_REFUSAL array Total none TRUE
+PAIRED_REFUSAL array Total last FALSE
+PAIRED_REFUSAL array Total last TRUE
+PAIRED_REFUSAL array Total first FALSE
+PAIRED_REFUSAL array Total first TRUE
+CASES 204 PAIRED_REFUSALS 12 FAILURES 12
+Error: length(failures) == 0L is not TRUE
+Execution halted

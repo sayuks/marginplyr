@@ -1,0 +1,6 @@
+Warning messages:
+1: In Ops.factor(a, 1L) : ‘+’ not meaningful for factors
+2: In Ops.factor(a) : ‘-’ not meaningful for factors
+3: In Ops.factor(a, 2L) : ‘/’ not meaningful for factors
+4: In Ops.factor(a, 1L) : ‘+’ not meaningful for factors
+PASS: dtplyr typed metadata 656 comparisons; 152 documented unsafe-step refusals

@@ -1,0 +1,47 @@
+MODERN all_of FALSE
+DPLYR
+$result
+# A tibble: 2 × 2
+  g         x
+  <chr> <dbl>
+1 a         1
+2 b         2
+
+$reads
+[1] 1
+
+MARGIN
+$result
+# A tibble: 2 × 2
+  g         y
+  <chr> <dbl>
+1 a        10
+2 b        20
+
+$reads
+[1] 2
+
+MODERN all_of TRUE
+DPLYR
+$result
+# A tibble: 2 × 2
+  g         x
+  <chr> <dbl>
+1 a         1
+2 b         2
+
+$reads
+[1] 1
+
+MARGIN
+$result
+# A tibble: 2 × 2
+  g         x
+  <chr> <dbl>
+1 a         1
+2 b         2
+
+$reads
+[1] 1
+
+Deprecated bare external-vector selection differs; modern all_of control passed.

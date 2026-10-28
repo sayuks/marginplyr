@@ -1,0 +1,95 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+FAIL 17:fixed:dtplyr name= ..0 indexing '...' with non-positive index 0
+FAIL 17:fixed:sqlite name= ..0 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 17:fixed:duckdb name= ..0 indexing '...' with non-positive index 0
+FAIL 17:dimension:dtplyr name= ..0 indexing '...' with non-positive index 0
+FAIL 17:dimension:sqlite name= ..0 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 17:dimension:duckdb name= ..0 indexing '...' with non-positive index 0
+FAIL 17:output:sqlite name= ..0 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 17:output:duckdb name= ..0 indexing '...' with non-positive index 0
+FAIL 17:identifier:dtplyr name= ..0 indexing '...' with non-positive index 0
+FAIL 17:identifier:sqlite name= ..0 ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 17:identifier:duckdb name= ..0 indexing '...' with non-positive index 0
+FAIL 18:fixed:dtplyr name= ..00 indexing '...' with non-positive index 0
+FAIL 18:fixed:sqlite name= ..00 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 18:fixed:duckdb name= ..00 indexing '...' with non-positive index 0
+FAIL 18:dimension:dtplyr name= ..00 indexing '...' with non-positive index 0
+FAIL 18:dimension:sqlite name= ..00 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 18:dimension:duckdb name= ..00 indexing '...' with non-positive index 0
+FAIL 18:output:sqlite name= ..00 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 18:output:duckdb name= ..00 indexing '...' with non-positive index 0
+FAIL 18:identifier:dtplyr name= ..00 indexing '...' with non-positive index 0
+FAIL 18:identifier:sqlite name= ..00 ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL 18:identifier:duckdb name= ..00 indexing '...' with non-positive index 0
+FAIL 19:fixed:dtplyr name= ..01 ..1 used in an incorrect context, no ... to look in
+FAIL 19:fixed:sqlite name= ..01 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL 19:fixed:duckdb name= ..01 ..1 used in an incorrect context, no ... to look in
+FAIL 19:dimension:dtplyr name= ..01 ..1 used in an incorrect context, no ... to look in
+FAIL 19:dimension:sqlite name= ..01 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL 19:dimension:duckdb name= ..01 ..1 used in an incorrect context, no ... to look in
+FAIL 19:output:sqlite name= ..01 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL 19:output:duckdb name= ..01 ..1 used in an incorrect context, no ... to look in
+FAIL 19:identifier:dtplyr name= ..01 ..1 used in an incorrect context, no ... to look in
+FAIL 19:identifier:sqlite name= ..01 ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL 19:identifier:duckdb name= ..01 ..1 used in an incorrect context, no ... to look in
+FAIL 20:output:sqlite name= ..-1 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index -1
+FAIL 20:output:duckdb name= ..-1 indexing '...' with non-positive index -1
+FAIL 28:output:dtplyr name= . is.data.table(parent) || is_step(parent) is not TRUE
+FAIL 28:output:sqlite name= . ℹ In argument: `.data`
+Caused by error in `dplyr::summarize()`:
+! `data` must be a lazy data frame
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+CHECKS 688 UPSTREAM_REFUSALS 12 FAILURES 37
+Error: length(failures) == 0L is not TRUE
+Execution halted
