@@ -253,7 +253,7 @@ dtplyr_selection_proxy <- function(.data, mutable = FALSE) {
     columns <- dtplyr_metadata_subset_columns(.data)
     # The list converter refuses `.SD`; assign names only on the fresh proxy.
     proxy <- data.table::as.data.table(
-      lapply(columns, function(column) parent[[column]])
+      lapply(unname(columns), function(column) parent[[column]])
     )
     data.table::setnames(proxy, .data[["vars"]])
     return(proxy)
