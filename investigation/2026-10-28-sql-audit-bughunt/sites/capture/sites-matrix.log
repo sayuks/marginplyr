@@ -1,0 +1,1507 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+sqlite/name/safe/normal/summarize OK
+sqlite/name/safe/normal/expand OK
+sqlite/name/safe/normal/inspect OK
+sqlite/name/colliding/normal/summarize ERROR "Total" is already present in grouping column:
+ℹ `normal`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/normal/expand ERROR "Total" is already present in grouping column:
+ℹ `normal`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/normal/inspect OK
+sqlite/name/safe/.env/summarize OK
+sqlite/name/safe/.env/expand OK
+sqlite/name/safe/.env/inspect OK
+sqlite/name/colliding/.env/summarize ERROR "Total" is already present in grouping column:
+ℹ `.env`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.env/expand ERROR "Total" is already present in grouping column:
+ℹ `.env`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.env/inspect OK
+sqlite/name/safe/.data/summarize OK
+sqlite/name/safe/.data/expand OK
+sqlite/name/safe/.data/inspect OK
+sqlite/name/colliding/.data/summarize ERROR "Total" is already present in grouping column:
+ℹ `.data`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.data/expand ERROR "Total" is already present in grouping column:
+ℹ `.data`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.data/inspect OK
+sqlite/name/safe/sum/summarize OK
+sqlite/name/safe/sum/expand OK
+sqlite/name/safe/sum/inspect OK
+sqlite/name/colliding/sum/summarize ERROR "Total" is already present in grouping column:
+ℹ `sum`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/sum/expand ERROR "Total" is already present in grouping column:
+ℹ `sum`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/sum/inspect OK
+sqlite/name/safe/if_else/summarize OK
+sqlite/name/safe/if_else/expand OK
+sqlite/name/safe/if_else/inspect OK
+sqlite/name/colliding/if_else/summarize ERROR "Total" is already present in grouping column:
+ℹ `if_else`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/if_else/expand ERROR "Total" is already present in grouping column:
+ℹ `if_else`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/if_else/inspect OK
+sqlite/name/safe/as.character/summarize OK
+sqlite/name/safe/as.character/expand OK
+sqlite/name/safe/as.character/inspect OK
+sqlite/name/colliding/as.character/summarize ERROR "Total" is already present in grouping column:
+ℹ `as.character`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/as.character/expand ERROR "Total" is already present in grouping column:
+ℹ `as.character`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/as.character/inspect OK
+sqlite/name/safe/NA/summarize OK
+sqlite/name/safe/NA/expand OK
+sqlite/name/safe/NA/inspect OK
+sqlite/name/colliding/NA/summarize ERROR "Total" is already present in grouping column:
+ℹ `NA`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/NA/expand ERROR "Total" is already present in grouping column:
+ℹ `NA`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/NA/inspect OK
+sqlite/name/safe/NULL/summarize OK
+sqlite/name/safe/NULL/expand OK
+sqlite/name/safe/NULL/inspect OK
+sqlite/name/colliding/NULL/summarize ERROR "Total" is already present in grouping column:
+ℹ `NULL`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/NULL/expand ERROR "Total" is already present in grouping column:
+ℹ `NULL`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/NULL/inspect OK
+sqlite/name/safe/NaN/summarize OK
+sqlite/name/safe/NaN/expand OK
+sqlite/name/safe/NaN/inspect OK
+sqlite/name/colliding/NaN/summarize ERROR "Total" is already present in grouping column:
+ℹ `NaN`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/NaN/expand ERROR "Total" is already present in grouping column:
+ℹ `NaN`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/NaN/inspect OK
+sqlite/name/safe/Inf/summarize OK
+sqlite/name/safe/Inf/expand OK
+sqlite/name/safe/Inf/inspect OK
+sqlite/name/colliding/Inf/summarize ERROR "Total" is already present in grouping column:
+ℹ `Inf`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/Inf/expand ERROR "Total" is already present in grouping column:
+ℹ `Inf`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/Inf/inspect OK
+sqlite/name/safe/TRUE/summarize OK
+sqlite/name/safe/TRUE/expand OK
+sqlite/name/safe/TRUE/inspect OK
+sqlite/name/colliding/TRUE/summarize ERROR "Total" is already present in grouping column:
+ℹ `TRUE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/TRUE/expand ERROR "Total" is already present in grouping column:
+ℹ `TRUE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/TRUE/inspect OK
+sqlite/name/safe/FALSE/summarize OK
+sqlite/name/safe/FALSE/expand OK
+sqlite/name/safe/FALSE/inspect OK
+sqlite/name/colliding/FALSE/summarize ERROR "Total" is already present in grouping column:
+ℹ `FALSE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/FALSE/expand ERROR "Total" is already present in grouping column:
+ℹ `FALSE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/FALSE/inspect OK
+sqlite/name/safe/T/summarize OK
+sqlite/name/safe/T/expand OK
+sqlite/name/safe/T/inspect OK
+sqlite/name/colliding/T/summarize ERROR "Total" is already present in grouping column:
+ℹ `T`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/T/expand ERROR "Total" is already present in grouping column:
+ℹ `T`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/T/inspect OK
+sqlite/name/safe/F/summarize OK
+sqlite/name/safe/F/expand OK
+sqlite/name/safe/F/inspect OK
+sqlite/name/colliding/F/summarize ERROR "Total" is already present in grouping column:
+ℹ `F`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/F/expand ERROR "Total" is already present in grouping column:
+ℹ `F`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/F/inspect OK
+sqlite/name/safe/./summarize OK
+sqlite/name/safe/./expand OK
+sqlite/name/safe/./inspect OK
+sqlite/name/colliding/./summarize ERROR "Total" is already present in grouping column:
+ℹ `.`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/./expand ERROR "Total" is already present in grouping column:
+ℹ `.`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/./inspect OK
+sqlite/name/safe/../summarize OK
+sqlite/name/safe/../expand OK
+sqlite/name/safe/../inspect OK
+sqlite/name/colliding/../summarize ERROR "Total" is already present in grouping column:
+ℹ `..`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/../expand ERROR "Total" is already present in grouping column:
+ℹ `..`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/../inspect OK
+sqlite/name/safe/..g/summarize OK
+sqlite/name/safe/..g/expand OK
+sqlite/name/safe/..g/inspect OK
+sqlite/name/colliding/..g/summarize ERROR "Total" is already present in grouping column:
+ℹ `..g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/..g/expand ERROR "Total" is already present in grouping column:
+ℹ `..g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/..g/inspect OK
+sqlite/name/safe/.N/summarize OK
+sqlite/name/safe/.N/expand OK
+sqlite/name/safe/.N/inspect OK
+sqlite/name/colliding/.N/summarize ERROR "Total" is already present in grouping column:
+ℹ `.N`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.N/expand ERROR "Total" is already present in grouping column:
+ℹ `.N`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.N/inspect OK
+sqlite/name/safe/.I/summarize OK
+sqlite/name/safe/.I/expand OK
+sqlite/name/safe/.I/inspect OK
+sqlite/name/colliding/.I/summarize ERROR "Total" is already present in grouping column:
+ℹ `.I`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.I/expand ERROR "Total" is already present in grouping column:
+ℹ `.I`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.I/inspect OK
+sqlite/name/safe/.BY/summarize OK
+sqlite/name/safe/.BY/expand OK
+sqlite/name/safe/.BY/inspect OK
+sqlite/name/colliding/.BY/summarize ERROR "Total" is already present in grouping column:
+ℹ `.BY`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.BY/expand ERROR "Total" is already present in grouping column:
+ℹ `.BY`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/.BY/inspect OK
+sqlite/name/safe/x
+q/summarize OK
+sqlite/name/safe/x
+q/expand OK
+sqlite/name/safe/x
+q/inspect OK
+sqlite/name/colliding/x
+q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x
+q/expand ERROR "Total" is already present in grouping column:
+ℹ `x q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x
+q/inspect OK
+sqlite/name/safe/x	q/summarize OK
+sqlite/name/safe/x	q/expand OK
+sqlite/name/safe/x	q/inspect OK
+sqlite/name/colliding/x	q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x	q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x	q/expand ERROR "Total" is already present in grouping column:
+ℹ `x	q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x	q/inspect OK
+sqlite/name/safe/a`"b/summarize OK
+sqlite/name/safe/a`"b/expand OK
+sqlite/name/safe/a`"b/inspect OK
+sqlite/name/colliding/a`"b/summarize ERROR "Total" is already present in grouping column:
+ℹ `` a`"b ``.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/a`"b/expand ERROR "Total" is already present in grouping column:
+ℹ `` a`"b ``.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/a`"b/inspect OK
+sqlite/name/safe/a'b/summarize OK
+sqlite/name/safe/a'b/expand OK
+sqlite/name/safe/a'b/inspect OK
+sqlite/name/colliding/a'b/summarize ERROR "Total" is already present in grouping column:
+ℹ `a'b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/a'b/expand ERROR "Total" is already present in grouping column:
+ℹ `a'b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/a'b/inspect OK
+sqlite/name/safe/x\q/summarize OK
+sqlite/name/safe/x\q/expand OK
+sqlite/name/safe/x\q/inspect OK
+sqlite/name/colliding/x\q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x\q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x\q/expand ERROR "Total" is already present in grouping column:
+ℹ `x\q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x\q/inspect OK
+sqlite/name/safe/地域/summarize OK
+sqlite/name/safe/地域/expand OK
+sqlite/name/safe/地域/inspect OK
+sqlite/name/colliding/地域/summarize ERROR "Total" is already present in grouping column:
+ℹ `地域`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/地域/expand ERROR "Total" is already present in grouping column:
+ℹ `地域`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/地域/inspect OK
+sqlite/name/safe/a b/summarize OK
+sqlite/name/safe/a b/expand OK
+sqlite/name/safe/a b/inspect OK
+sqlite/name/colliding/a b/summarize ERROR "Total" is already present in grouping column:
+ℹ `a b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/a b/expand ERROR "Total" is already present in grouping column:
+ℹ `a b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/a b/inspect OK
+sqlite/name/safe/x;y--/summarize OK
+sqlite/name/safe/x;y--/expand OK
+sqlite/name/safe/x;y--/inspect OK
+sqlite/name/colliding/x;y--/summarize ERROR "Total" is already present in grouping column:
+ℹ `x;y--`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x;y--/expand ERROR "Total" is already present in grouping column:
+ℹ `x;y--`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/x;y--/inspect OK
+sqlite/name/safe/purpose/summarize OK
+sqlite/name/safe/purpose/expand OK
+sqlite/name/safe/purpose/inspect OK
+sqlite/name/colliding/purpose/summarize ERROR "Total" is already present in grouping column:
+ℹ `purpose`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/purpose/expand ERROR "Total" is already present in grouping column:
+ℹ `purpose`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/purpose/inspect OK
+sqlite/name/safe/sql/summarize OK
+sqlite/name/safe/sql/expand OK
+sqlite/name/safe/sql/inspect OK
+sqlite/name/colliding/sql/summarize ERROR "Total" is already present in grouping column:
+ℹ `sql`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/sql/expand ERROR "Total" is already present in grouping column:
+ℹ `sql`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/sql/inspect OK
+sqlite/name/safe/source/summarize OK
+sqlite/name/safe/source/expand OK
+sqlite/name/safe/source/inspect OK
+sqlite/name/colliding/source/summarize ERROR "Total" is already present in grouping column:
+ℹ `source`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/source/expand ERROR "Total" is already present in grouping column:
+ℹ `source`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/source/inspect OK
+sqlite/name/safe/status/summarize OK
+sqlite/name/safe/status/expand OK
+sqlite/name/safe/status/inspect OK
+sqlite/name/colliding/status/summarize ERROR "Total" is already present in grouping column:
+ℹ `status`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/status/expand ERROR "Total" is already present in grouping column:
+ℹ `status`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/status/inspect OK
+sqlite/name/safe/conditions/summarize OK
+sqlite/name/safe/conditions/expand OK
+sqlite/name/safe/conditions/inspect OK
+sqlite/name/colliding/conditions/summarize ERROR "Total" is already present in grouping column:
+ℹ `conditions`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/conditions/expand ERROR "Total" is already present in grouping column:
+ℹ `conditions`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/conditions/inspect OK
+sqlite/name/safe/result/summarize OK
+sqlite/name/safe/result/expand OK
+sqlite/name/safe/result/inspect OK
+sqlite/name/colliding/result/summarize ERROR "Total" is already present in grouping column:
+ℹ `result`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/result/expand ERROR "Total" is already present in grouping column:
+ℹ `result`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/result/inspect OK
+sqlite/name/safe/g..1/summarize OK
+sqlite/name/safe/g..1/expand OK
+sqlite/name/safe/g..1/inspect OK
+sqlite/name/colliding/g..1/summarize ERROR "Total" is already present in grouping column:
+ℹ `g..1`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/g..1/expand ERROR "Total" is already present in grouping column:
+ℹ `g..1`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/name/colliding/g..1/inspect OK
+sqlite/label/safe/Total OK
+sqlite/label/colliding/Total ERROR "Total" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/ OK
+sqlite/label/colliding/ ERROR "" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/a'b OK
+sqlite/label/colliding/a'b ERROR "a'b" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/a`"b OK
+sqlite/label/colliding/a`"b ERROR "a`\"b" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/
+ OK
+sqlite/label/colliding/
+ ERROR " " is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/	 OK
+sqlite/label/colliding/	 ERROR "\t" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/地域 OK
+sqlite/label/colliding/地域 ERROR "地域" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/NULL OK
+sqlite/label/colliding/NULL ERROR "NULL" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/NaN OK
+sqlite/label/colliding/NaN ERROR "NaN" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/Inf OK
+sqlite/label/colliding/Inf ERROR "Inf" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/1 OK
+sqlite/label/colliding/1 ERROR "1" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/1.0 OK
+sqlite/label/colliding/1.0 ERROR "1.0" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/label/safe/TRUE OK
+sqlite/label/colliding/TRUE ERROR "TRUE" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+sqlite/type/integer OK
+sqlite/type/double OK
+sqlite/type/boolean OK
+sqlite/type/date OK
+sqlite/type/datetime OK
+sqlite/type/blob OK
+duck/name/safe/normal/summarize OK
+duck/name/safe/normal/expand OK
+duck/name/safe/normal/inspect OK
+duck/name/colliding/normal/summarize ERROR "Total" is already present in grouping column:
+ℹ `normal`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/normal/expand ERROR "Total" is already present in grouping column:
+ℹ `normal`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/normal/inspect OK
+duck/name/safe/.env/summarize OK
+duck/name/safe/.env/expand OK
+duck/name/safe/.env/inspect OK
+duck/name/colliding/.env/summarize ERROR "Total" is already present in grouping column:
+ℹ `.env`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.env/expand ERROR "Total" is already present in grouping column:
+ℹ `.env`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.env/inspect OK
+duck/name/safe/.data/summarize OK
+duck/name/safe/.data/expand OK
+duck/name/safe/.data/inspect OK
+duck/name/colliding/.data/summarize ERROR "Total" is already present in grouping column:
+ℹ `.data`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.data/expand ERROR "Total" is already present in grouping column:
+ℹ `.data`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.data/inspect OK
+duck/name/safe/sum/summarize OK
+duck/name/safe/sum/expand OK
+duck/name/safe/sum/inspect OK
+duck/name/colliding/sum/summarize ERROR "Total" is already present in grouping column:
+ℹ `sum`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/sum/expand ERROR "Total" is already present in grouping column:
+ℹ `sum`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/sum/inspect OK
+duck/name/safe/if_else/summarize OK
+duck/name/safe/if_else/expand OK
+duck/name/safe/if_else/inspect OK
+duck/name/colliding/if_else/summarize ERROR "Total" is already present in grouping column:
+ℹ `if_else`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/if_else/expand ERROR "Total" is already present in grouping column:
+ℹ `if_else`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/if_else/inspect OK
+duck/name/safe/as.character/summarize OK
+duck/name/safe/as.character/expand OK
+duck/name/safe/as.character/inspect OK
+duck/name/colliding/as.character/summarize ERROR "Total" is already present in grouping column:
+ℹ `as.character`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/as.character/expand ERROR "Total" is already present in grouping column:
+ℹ `as.character`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/as.character/inspect OK
+duck/name/safe/NA/summarize OK
+duck/name/safe/NA/expand OK
+duck/name/safe/NA/inspect OK
+duck/name/colliding/NA/summarize ERROR "Total" is already present in grouping column:
+ℹ `NA`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/NA/expand ERROR "Total" is already present in grouping column:
+ℹ `NA`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/NA/inspect OK
+duck/name/safe/NULL/summarize OK
+duck/name/safe/NULL/expand OK
+duck/name/safe/NULL/inspect OK
+duck/name/colliding/NULL/summarize ERROR "Total" is already present in grouping column:
+ℹ `NULL`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/NULL/expand ERROR "Total" is already present in grouping column:
+ℹ `NULL`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/NULL/inspect OK
+duck/name/safe/NaN/summarize OK
+duck/name/safe/NaN/expand OK
+duck/name/safe/NaN/inspect OK
+duck/name/colliding/NaN/summarize ERROR "Total" is already present in grouping column:
+ℹ `NaN`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/NaN/expand ERROR "Total" is already present in grouping column:
+ℹ `NaN`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/NaN/inspect OK
+duck/name/safe/Inf/summarize OK
+duck/name/safe/Inf/expand OK
+duck/name/safe/Inf/inspect OK
+duck/name/colliding/Inf/summarize ERROR "Total" is already present in grouping column:
+ℹ `Inf`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/Inf/expand ERROR "Total" is already present in grouping column:
+ℹ `Inf`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/Inf/inspect OK
+duck/name/safe/TRUE/summarize OK
+duck/name/safe/TRUE/expand OK
+duck/name/safe/TRUE/inspect OK
+duck/name/colliding/TRUE/summarize ERROR "Total" is already present in grouping column:
+ℹ `TRUE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/TRUE/expand ERROR "Total" is already present in grouping column:
+ℹ `TRUE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/TRUE/inspect OK
+duck/name/safe/FALSE/summarize OK
+duck/name/safe/FALSE/expand OK
+duck/name/safe/FALSE/inspect OK
+duck/name/colliding/FALSE/summarize ERROR "Total" is already present in grouping column:
+ℹ `FALSE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/FALSE/expand ERROR "Total" is already present in grouping column:
+ℹ `FALSE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/FALSE/inspect OK
+duck/name/safe/T/summarize OK
+duck/name/safe/T/expand OK
+duck/name/safe/T/inspect OK
+duck/name/colliding/T/summarize ERROR "Total" is already present in grouping column:
+ℹ `T`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/T/expand ERROR "Total" is already present in grouping column:
+ℹ `T`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/T/inspect OK
+duck/name/safe/F/summarize OK
+duck/name/safe/F/expand OK
+duck/name/safe/F/inspect OK
+duck/name/colliding/F/summarize ERROR "Total" is already present in grouping column:
+ℹ `F`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/F/expand ERROR "Total" is already present in grouping column:
+ℹ `F`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/F/inspect OK
+duck/name/safe/./summarize OK
+duck/name/safe/./expand OK
+duck/name/safe/./inspect OK
+duck/name/colliding/./summarize ERROR "Total" is already present in grouping column:
+ℹ `.`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/./expand ERROR "Total" is already present in grouping column:
+ℹ `.`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/./inspect OK
+duck/name/safe/../summarize OK
+duck/name/safe/../expand OK
+duck/name/safe/../inspect OK
+duck/name/colliding/../summarize ERROR "Total" is already present in grouping column:
+ℹ `..`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/../expand ERROR "Total" is already present in grouping column:
+ℹ `..`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/../inspect OK
+duck/name/safe/..g/summarize OK
+duck/name/safe/..g/expand OK
+duck/name/safe/..g/inspect OK
+duck/name/colliding/..g/summarize ERROR "Total" is already present in grouping column:
+ℹ `..g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/..g/expand ERROR "Total" is already present in grouping column:
+ℹ `..g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/..g/inspect OK
+duck/name/safe/.N/summarize OK
+duck/name/safe/.N/expand OK
+duck/name/safe/.N/inspect OK
+duck/name/colliding/.N/summarize ERROR "Total" is already present in grouping column:
+ℹ `.N`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.N/expand ERROR "Total" is already present in grouping column:
+ℹ `.N`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.N/inspect OK
+duck/name/safe/.I/summarize OK
+duck/name/safe/.I/expand OK
+duck/name/safe/.I/inspect OK
+duck/name/colliding/.I/summarize ERROR "Total" is already present in grouping column:
+ℹ `.I`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.I/expand ERROR "Total" is already present in grouping column:
+ℹ `.I`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.I/inspect OK
+duck/name/safe/.BY/summarize OK
+duck/name/safe/.BY/expand OK
+duck/name/safe/.BY/inspect OK
+duck/name/colliding/.BY/summarize ERROR "Total" is already present in grouping column:
+ℹ `.BY`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.BY/expand ERROR "Total" is already present in grouping column:
+ℹ `.BY`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/.BY/inspect OK
+duck/name/safe/x
+q/summarize OK
+duck/name/safe/x
+q/expand OK
+duck/name/safe/x
+q/inspect OK
+duck/name/colliding/x
+q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x
+q/expand ERROR "Total" is already present in grouping column:
+ℹ `x q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x
+q/inspect OK
+duck/name/safe/x	q/summarize OK
+duck/name/safe/x	q/expand OK
+duck/name/safe/x	q/inspect OK
+duck/name/colliding/x	q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x	q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x	q/expand ERROR "Total" is already present in grouping column:
+ℹ `x	q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x	q/inspect OK
+duck/name/safe/a`"b/summarize OK
+duck/name/safe/a`"b/expand OK
+duck/name/safe/a`"b/inspect OK
+duck/name/colliding/a`"b/summarize ERROR "Total" is already present in grouping column:
+ℹ `` a`"b ``.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/a`"b/expand ERROR "Total" is already present in grouping column:
+ℹ `` a`"b ``.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/a`"b/inspect OK
+duck/name/safe/a'b/summarize OK
+duck/name/safe/a'b/expand OK
+duck/name/safe/a'b/inspect OK
+duck/name/colliding/a'b/summarize ERROR "Total" is already present in grouping column:
+ℹ `a'b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/a'b/expand ERROR "Total" is already present in grouping column:
+ℹ `a'b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/a'b/inspect OK
+duck/name/safe/x\q/summarize OK
+duck/name/safe/x\q/expand OK
+duck/name/safe/x\q/inspect OK
+duck/name/colliding/x\q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x\q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x\q/expand ERROR "Total" is already present in grouping column:
+ℹ `x\q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x\q/inspect OK
+duck/name/safe/地域/summarize OK
+duck/name/safe/地域/expand OK
+duck/name/safe/地域/inspect OK
+duck/name/colliding/地域/summarize ERROR "Total" is already present in grouping column:
+ℹ `地域`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/地域/expand ERROR "Total" is already present in grouping column:
+ℹ `地域`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/地域/inspect OK
+duck/name/safe/a b/summarize OK
+duck/name/safe/a b/expand OK
+duck/name/safe/a b/inspect OK
+duck/name/colliding/a b/summarize ERROR "Total" is already present in grouping column:
+ℹ `a b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/a b/expand ERROR "Total" is already present in grouping column:
+ℹ `a b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/a b/inspect OK
+duck/name/safe/x;y--/summarize OK
+duck/name/safe/x;y--/expand OK
+duck/name/safe/x;y--/inspect OK
+duck/name/colliding/x;y--/summarize ERROR "Total" is already present in grouping column:
+ℹ `x;y--`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x;y--/expand ERROR "Total" is already present in grouping column:
+ℹ `x;y--`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/x;y--/inspect OK
+duck/name/safe/purpose/summarize OK
+duck/name/safe/purpose/expand OK
+duck/name/safe/purpose/inspect OK
+duck/name/colliding/purpose/summarize ERROR "Total" is already present in grouping column:
+ℹ `purpose`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/purpose/expand ERROR "Total" is already present in grouping column:
+ℹ `purpose`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/purpose/inspect OK
+duck/name/safe/sql/summarize OK
+duck/name/safe/sql/expand OK
+duck/name/safe/sql/inspect OK
+duck/name/colliding/sql/summarize ERROR "Total" is already present in grouping column:
+ℹ `sql`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/sql/expand ERROR "Total" is already present in grouping column:
+ℹ `sql`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/sql/inspect OK
+duck/name/safe/source/summarize OK
+duck/name/safe/source/expand OK
+duck/name/safe/source/inspect OK
+duck/name/colliding/source/summarize ERROR "Total" is already present in grouping column:
+ℹ `source`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/source/expand ERROR "Total" is already present in grouping column:
+ℹ `source`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/source/inspect OK
+duck/name/safe/status/summarize OK
+duck/name/safe/status/expand OK
+duck/name/safe/status/inspect OK
+duck/name/colliding/status/summarize ERROR "Total" is already present in grouping column:
+ℹ `status`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/status/expand ERROR "Total" is already present in grouping column:
+ℹ `status`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/status/inspect OK
+duck/name/safe/conditions/summarize OK
+duck/name/safe/conditions/expand OK
+duck/name/safe/conditions/inspect OK
+duck/name/colliding/conditions/summarize ERROR "Total" is already present in grouping column:
+ℹ `conditions`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/conditions/expand ERROR "Total" is already present in grouping column:
+ℹ `conditions`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/conditions/inspect OK
+duck/name/safe/result/summarize OK
+duck/name/safe/result/expand OK
+duck/name/safe/result/inspect OK
+duck/name/colliding/result/summarize ERROR "Total" is already present in grouping column:
+ℹ `result`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/result/expand ERROR "Total" is already present in grouping column:
+ℹ `result`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/result/inspect OK
+duck/name/safe/g..1/summarize OK
+duck/name/safe/g..1/expand OK
+duck/name/safe/g..1/inspect OK
+duck/name/colliding/g..1/summarize ERROR "Total" is already present in grouping column:
+ℹ `g..1`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/g..1/expand ERROR "Total" is already present in grouping column:
+ℹ `g..1`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/name/colliding/g..1/inspect OK
+duck/label/safe/Total OK
+duck/label/colliding/Total ERROR "Total" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/ OK
+duck/label/colliding/ ERROR "" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/a'b OK
+duck/label/colliding/a'b ERROR "a'b" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/a`"b OK
+duck/label/colliding/a`"b ERROR "a`\"b" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/
+ OK
+duck/label/colliding/
+ ERROR " " is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/	 OK
+duck/label/colliding/	 ERROR "\t" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/地域 OK
+duck/label/colliding/地域 ERROR "地域" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/NULL OK
+duck/label/colliding/NULL ERROR "NULL" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/NaN OK
+duck/label/colliding/NaN ERROR "NaN" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/Inf OK
+duck/label/colliding/Inf ERROR "Inf" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/1 OK
+duck/label/colliding/1 ERROR "1" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/1.0 OK
+duck/label/colliding/1.0 ERROR "1.0" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/label/safe/TRUE OK
+duck/label/colliding/TRUE ERROR "TRUE" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+duck/type/integer OK
+duck/type/double OK
+duck/type/boolean OK
+duck/type/date OK
+duck/type/datetime OK
+duck/type/blob OK
+pg/name/safe/normal/summarize OK
+pg/name/safe/normal/expand OK
+pg/name/safe/normal/inspect OK
+pg/name/colliding/normal/summarize ERROR "Total" is already present in grouping column:
+ℹ `normal`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/normal/expand ERROR "Total" is already present in grouping column:
+ℹ `normal`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/normal/inspect OK
+pg/name/safe/.env/summarize OK
+pg/name/safe/.env/expand OK
+pg/name/safe/.env/inspect OK
+pg/name/colliding/.env/summarize ERROR "Total" is already present in grouping column:
+ℹ `.env`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.env/expand ERROR "Total" is already present in grouping column:
+ℹ `.env`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.env/inspect OK
+pg/name/safe/.data/summarize OK
+pg/name/safe/.data/expand OK
+pg/name/safe/.data/inspect OK
+pg/name/colliding/.data/summarize ERROR "Total" is already present in grouping column:
+ℹ `.data`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.data/expand ERROR "Total" is already present in grouping column:
+ℹ `.data`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.data/inspect OK
+pg/name/safe/sum/summarize OK
+pg/name/safe/sum/expand OK
+pg/name/safe/sum/inspect OK
+pg/name/colliding/sum/summarize ERROR "Total" is already present in grouping column:
+ℹ `sum`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/sum/expand ERROR "Total" is already present in grouping column:
+ℹ `sum`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/sum/inspect OK
+pg/name/safe/if_else/summarize OK
+pg/name/safe/if_else/expand OK
+pg/name/safe/if_else/inspect OK
+pg/name/colliding/if_else/summarize ERROR "Total" is already present in grouping column:
+ℹ `if_else`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/if_else/expand ERROR "Total" is already present in grouping column:
+ℹ `if_else`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/if_else/inspect OK
+pg/name/safe/as.character/summarize OK
+pg/name/safe/as.character/expand OK
+pg/name/safe/as.character/inspect OK
+pg/name/colliding/as.character/summarize ERROR "Total" is already present in grouping column:
+ℹ `as.character`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/as.character/expand ERROR "Total" is already present in grouping column:
+ℹ `as.character`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/as.character/inspect OK
+pg/name/safe/NA/summarize OK
+pg/name/safe/NA/expand OK
+pg/name/safe/NA/inspect OK
+pg/name/colliding/NA/summarize ERROR "Total" is already present in grouping column:
+ℹ `NA`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/NA/expand ERROR "Total" is already present in grouping column:
+ℹ `NA`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/NA/inspect OK
+pg/name/safe/NULL/summarize OK
+pg/name/safe/NULL/expand OK
+pg/name/safe/NULL/inspect OK
+pg/name/colliding/NULL/summarize ERROR "Total" is already present in grouping column:
+ℹ `NULL`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/NULL/expand ERROR "Total" is already present in grouping column:
+ℹ `NULL`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/NULL/inspect OK
+pg/name/safe/NaN/summarize OK
+pg/name/safe/NaN/expand OK
+pg/name/safe/NaN/inspect OK
+pg/name/colliding/NaN/summarize ERROR "Total" is already present in grouping column:
+ℹ `NaN`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/NaN/expand ERROR "Total" is already present in grouping column:
+ℹ `NaN`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/NaN/inspect OK
+pg/name/safe/Inf/summarize OK
+pg/name/safe/Inf/expand OK
+pg/name/safe/Inf/inspect OK
+pg/name/colliding/Inf/summarize ERROR "Total" is already present in grouping column:
+ℹ `Inf`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/Inf/expand ERROR "Total" is already present in grouping column:
+ℹ `Inf`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/Inf/inspect OK
+pg/name/safe/TRUE/summarize OK
+pg/name/safe/TRUE/expand OK
+pg/name/safe/TRUE/inspect OK
+pg/name/colliding/TRUE/summarize ERROR "Total" is already present in grouping column:
+ℹ `TRUE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/TRUE/expand ERROR "Total" is already present in grouping column:
+ℹ `TRUE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/TRUE/inspect OK
+pg/name/safe/FALSE/summarize OK
+pg/name/safe/FALSE/expand OK
+pg/name/safe/FALSE/inspect OK
+pg/name/colliding/FALSE/summarize ERROR "Total" is already present in grouping column:
+ℹ `FALSE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/FALSE/expand ERROR "Total" is already present in grouping column:
+ℹ `FALSE`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/FALSE/inspect OK
+pg/name/safe/T/summarize OK
+pg/name/safe/T/expand OK
+pg/name/safe/T/inspect OK
+pg/name/colliding/T/summarize ERROR "Total" is already present in grouping column:
+ℹ `T`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/T/expand ERROR "Total" is already present in grouping column:
+ℹ `T`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/T/inspect OK
+pg/name/safe/F/summarize OK
+pg/name/safe/F/expand OK
+pg/name/safe/F/inspect OK
+pg/name/colliding/F/summarize ERROR "Total" is already present in grouping column:
+ℹ `F`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/F/expand ERROR "Total" is already present in grouping column:
+ℹ `F`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/F/inspect OK
+pg/name/safe/./summarize OK
+pg/name/safe/./expand OK
+pg/name/safe/./inspect OK
+pg/name/colliding/./summarize ERROR "Total" is already present in grouping column:
+ℹ `.`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/./expand ERROR "Total" is already present in grouping column:
+ℹ `.`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/./inspect OK
+pg/name/safe/../summarize OK
+pg/name/safe/../expand OK
+pg/name/safe/../inspect OK
+pg/name/colliding/../summarize ERROR "Total" is already present in grouping column:
+ℹ `..`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/../expand ERROR "Total" is already present in grouping column:
+ℹ `..`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/../inspect OK
+pg/name/safe/..g/summarize OK
+pg/name/safe/..g/expand OK
+pg/name/safe/..g/inspect OK
+pg/name/colliding/..g/summarize ERROR "Total" is already present in grouping column:
+ℹ `..g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/..g/expand ERROR "Total" is already present in grouping column:
+ℹ `..g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/..g/inspect OK
+pg/name/safe/.N/summarize OK
+pg/name/safe/.N/expand OK
+pg/name/safe/.N/inspect OK
+pg/name/colliding/.N/summarize ERROR "Total" is already present in grouping column:
+ℹ `.N`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.N/expand ERROR "Total" is already present in grouping column:
+ℹ `.N`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.N/inspect OK
+pg/name/safe/.I/summarize OK
+pg/name/safe/.I/expand OK
+pg/name/safe/.I/inspect OK
+pg/name/colliding/.I/summarize ERROR "Total" is already present in grouping column:
+ℹ `.I`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.I/expand ERROR "Total" is already present in grouping column:
+ℹ `.I`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.I/inspect OK
+pg/name/safe/.BY/summarize OK
+pg/name/safe/.BY/expand OK
+pg/name/safe/.BY/inspect OK
+pg/name/colliding/.BY/summarize ERROR "Total" is already present in grouping column:
+ℹ `.BY`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.BY/expand ERROR "Total" is already present in grouping column:
+ℹ `.BY`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/.BY/inspect OK
+pg/name/safe/x
+q/summarize OK
+pg/name/safe/x
+q/expand OK
+pg/name/safe/x
+q/inspect OK
+pg/name/colliding/x
+q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x
+q/expand ERROR "Total" is already present in grouping column:
+ℹ `x q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x
+q/inspect OK
+pg/name/safe/x	q/summarize OK
+pg/name/safe/x	q/expand OK
+pg/name/safe/x	q/inspect OK
+pg/name/colliding/x	q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x	q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x	q/expand ERROR "Total" is already present in grouping column:
+ℹ `x	q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x	q/inspect OK
+pg/name/safe/a`"b/summarize OK
+pg/name/safe/a`"b/expand OK
+pg/name/safe/a`"b/inspect OK
+pg/name/colliding/a`"b/summarize ERROR "Total" is already present in grouping column:
+ℹ `` a`"b ``.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/a`"b/expand ERROR "Total" is already present in grouping column:
+ℹ `` a`"b ``.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/a`"b/inspect OK
+pg/name/safe/a'b/summarize OK
+pg/name/safe/a'b/expand OK
+pg/name/safe/a'b/inspect OK
+pg/name/colliding/a'b/summarize ERROR "Total" is already present in grouping column:
+ℹ `a'b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/a'b/expand ERROR "Total" is already present in grouping column:
+ℹ `a'b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/a'b/inspect OK
+pg/name/safe/x\q/summarize OK
+pg/name/safe/x\q/expand OK
+pg/name/safe/x\q/inspect OK
+pg/name/colliding/x\q/summarize ERROR "Total" is already present in grouping column:
+ℹ `x\q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x\q/expand ERROR "Total" is already present in grouping column:
+ℹ `x\q`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x\q/inspect OK
+pg/name/safe/地域/summarize OK
+pg/name/safe/地域/expand OK
+pg/name/safe/地域/inspect OK
+pg/name/colliding/地域/summarize ERROR "Total" is already present in grouping column:
+ℹ `地域`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/地域/expand ERROR "Total" is already present in grouping column:
+ℹ `地域`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/地域/inspect OK
+pg/name/safe/a b/summarize OK
+pg/name/safe/a b/expand OK
+pg/name/safe/a b/inspect OK
+pg/name/colliding/a b/summarize ERROR "Total" is already present in grouping column:
+ℹ `a b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/a b/expand ERROR "Total" is already present in grouping column:
+ℹ `a b`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/a b/inspect OK
+pg/name/safe/x;y--/summarize OK
+pg/name/safe/x;y--/expand OK
+pg/name/safe/x;y--/inspect OK
+pg/name/colliding/x;y--/summarize ERROR "Total" is already present in grouping column:
+ℹ `x;y--`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x;y--/expand ERROR "Total" is already present in grouping column:
+ℹ `x;y--`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/x;y--/inspect OK
+pg/name/safe/purpose/summarize OK
+pg/name/safe/purpose/expand OK
+pg/name/safe/purpose/inspect OK
+pg/name/colliding/purpose/summarize ERROR "Total" is already present in grouping column:
+ℹ `purpose`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/purpose/expand ERROR "Total" is already present in grouping column:
+ℹ `purpose`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/purpose/inspect OK
+pg/name/safe/sql/summarize OK
+pg/name/safe/sql/expand OK
+pg/name/safe/sql/inspect OK
+pg/name/colliding/sql/summarize ERROR "Total" is already present in grouping column:
+ℹ `sql`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/sql/expand ERROR "Total" is already present in grouping column:
+ℹ `sql`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/sql/inspect OK
+pg/name/safe/source/summarize OK
+pg/name/safe/source/expand OK
+pg/name/safe/source/inspect OK
+pg/name/colliding/source/summarize ERROR "Total" is already present in grouping column:
+ℹ `source`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/source/expand ERROR "Total" is already present in grouping column:
+ℹ `source`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/source/inspect OK
+pg/name/safe/status/summarize OK
+pg/name/safe/status/expand OK
+pg/name/safe/status/inspect OK
+pg/name/colliding/status/summarize ERROR "Total" is already present in grouping column:
+ℹ `status`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/status/expand ERROR "Total" is already present in grouping column:
+ℹ `status`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/status/inspect OK
+pg/name/safe/conditions/summarize OK
+pg/name/safe/conditions/expand OK
+pg/name/safe/conditions/inspect OK
+pg/name/colliding/conditions/summarize ERROR "Total" is already present in grouping column:
+ℹ `conditions`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/conditions/expand ERROR "Total" is already present in grouping column:
+ℹ `conditions`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/conditions/inspect OK
+pg/name/safe/result/summarize OK
+pg/name/safe/result/expand OK
+pg/name/safe/result/inspect OK
+pg/name/colliding/result/summarize ERROR "Total" is already present in grouping column:
+ℹ `result`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/result/expand ERROR "Total" is already present in grouping column:
+ℹ `result`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/result/inspect OK
+pg/name/safe/g..1/summarize OK
+pg/name/safe/g..1/expand OK
+pg/name/safe/g..1/inspect OK
+pg/name/colliding/g..1/summarize ERROR "Total" is already present in grouping column:
+ℹ `g..1`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/g..1/expand ERROR "Total" is already present in grouping column:
+ℹ `g..1`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/name/colliding/g..1/inspect OK
+pg/label/safe/Total OK
+pg/label/colliding/Total ERROR "Total" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/ OK
+pg/label/colliding/ ERROR "" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/a'b OK
+pg/label/colliding/a'b ERROR "a'b" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/a`"b OK
+pg/label/colliding/a`"b ERROR "a`\"b" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/
+ OK
+pg/label/colliding/
+ ERROR " " is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/	 OK
+pg/label/colliding/	 ERROR "\t" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/地域 OK
+pg/label/colliding/地域 ERROR "地域" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/NULL OK
+pg/label/colliding/NULL ERROR "NULL" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/NaN OK
+pg/label/colliding/NaN ERROR "NaN" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/Inf OK
+pg/label/colliding/Inf ERROR "Inf" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/1 OK
+pg/label/colliding/1 ERROR "1" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/1.0 OK
+pg/label/colliding/1.0 ERROR "1.0" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/label/safe/TRUE OK
+pg/label/colliding/TRUE ERROR "TRUE" is already present in grouping column:
+ℹ `g`.
+ℹ Choose another `.margin_label`.
+ℹ Set `.check_margin_label = FALSE` only if you retain `.id`, `grouping_bit()`, or `grouping_id()` to distinguish source and Margin rows.
+pg/type/integer OK
+pg/type/double OK
+pg/type/boolean OK
+pg/type/date OK
+pg/type/datetime OK
+pg/type/blob OK
+TOTAL PAIRS 726
+INTERNAL SENDS PER AUDIT SETTING 758
+
+prepared returned
+     267      758
+
+observed_label_collision                   result          selection_proxy
+                     516                      267                      242
+Untracing function "dbSendQuery" in package "namespace:DBI"

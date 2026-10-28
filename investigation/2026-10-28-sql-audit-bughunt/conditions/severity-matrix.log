@@ -1,0 +1,21 @@
+completed 256 of 2304
+completed 512 of 2304
+completed 768 of 2304
+completed 1024 of 2304
+completed 1280 of 2304
+completed 1536 of 2304
+completed 1792 of 2304
+completed 2048 of 2304
+completed 2304 of 2304
+PASS: 2304 severity pairs across 64 ordered severity sets
+Warning messages:
+1: compound driver severity
+2: compound driver severity
+3: compound driver severity
+4: compound driver severity
+5: compound driver severity
+6: compound driver severity
+7: compound driver severity
+8: compound driver severity
+9: compound driver severity
+10: compound driver severity
