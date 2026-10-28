@@ -234,3 +234,67 @@ test_that("SQLite fixed keys compose Boolean-word and .env columns", {
     expect_identical(as.data.frame(dplyr::collect(computed)), expected)
   }
 })
+
+test_that("SQLite summaries can group a Boolean-word source beside .env", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
+  data <- data.frame(`TRUE` = c("b", "a"), .env = c(2L, 1L),
+                     value = c(3L, 5L), check.names = FALSE)
+  source <- dplyr::copy_to(con, data, "boolean_env_grouped_summary")
+  offset <- 2L
+  source <- dplyr::mutate(source, adjusted = value + .env$offset)
+  for (input in c("plain", "limited", "ordered", "both")) {
+    limited <- input %in% c("limited", "both")
+    ordered <- input %in% c("ordered", "both")
+    selected <- if (ordered) dplyr::arrange(source, value) else source
+    if (limited) selected <- utils::head(selected, 1L)
+    for (id in c("sid", "FALSE")) {
+      for (sort in c("none", "first", "last")) {
+        query <- summarize_with_margins(
+          selected, total = sum(adjusted, na.rm = TRUE) + .env$offset,
+          .grouping = rollup(tidyselect::all_of("TRUE")), .id = id,
+          .margin_label = NULL, .sort = sort
+        )
+        expected <- if (limited) {
+          data.frame(`TRUE` = c("b", NA_character_), sid = c(1L, 2L),
+                     total = c(7L, 7L), check.names = FALSE)
+        } else {
+          data.frame(`TRUE` = c("a", "b", NA_character_),
+                     sid = c(1L, 1L, 2L), total = c(9L, 7L, 14L),
+                     check.names = FALSE)
+        }
+        names(expected)[[2L]] <- id
+        info <- paste(input, id, sort)
+        computed <- dplyr::compute(query, name = "boolean_env_grouped_result",
+                                   overwrite = TRUE)
+        results <- list(dplyr::collect(query), dplyr::collect(computed))
+        for (result in results) {
+          actual <- as.data.frame(result)
+          if (identical(sort, "first")) {
+            expect_identical(actual[[id]][[1L]], 2L, info = info)
+          } else if (identical(sort, "last")) {
+            expect_identical(tail(actual[[id]], 1L), 2L, info = info)
+          }
+          actual <- actual[order(actual[[id]], actual[["TRUE"]]), ]
+          rownames(actual) <- NULL
+          expect_identical(actual, expected, info = info)
+        }
+      }
+    }
+  }
+})
+
+test_that("SQLite limited counts can omit Boolean-word and .env columns", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- data.frame(`TRUE` = "a", .env = 1L, check.names = FALSE)
+  source <- dplyr::copy_to(con, data, "boolean_env_limited_count")
+  source <- utils::head(source, 1L)
+  expect_identical(as.data.frame(dplyr::collect(source)), data)
+  query <- summarize_with_margins(source, rows = dplyr::n())
+  expect_identical(as.data.frame(dplyr::collect(query)), data.frame(rows = 1L))
+})

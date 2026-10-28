@@ -91,7 +91,8 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
   )
 
   public_query <- ordered
-  if (".env" %in% public_columns) {
+  # A dropped source .env can remain in an intermediate projection.
+  if (".env" %in% c(operation$data_vars, public_columns)) {
     ordered <- sql_env_output_query(ordered)
     typed_union <- sql_env_output_query(typed_union)
     public_anchor <- sql_env_output_query(public_anchor)
