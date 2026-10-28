@@ -1,0 +1,18 @@
+# A tibble: 5 × 3
+  id    failed     n
+  <chr> <lgl>  <int>
+1 ...   TRUE      96
+2 ..0   TRUE      96
+3 ..01  TRUE      96
+4 ..1   TRUE      96
+5 ..2   TRUE      96
+Cases: 480 failures: 480
+Local and ordinary-name dtplyr controls all matched; sources all unchanged
+# A tibble: 5 × 3
+  id    error_class                             n
+  <chr> <chr>                               <int>
+1 ...   vctrs_error_names_cannot_be_dot_dot    96
+2 ..0   simpleError                            96
+3 ..01  simpleError                            96
+4 ..1   vctrs_error_names_cannot_be_dot_dot    96
+5 ..2   vctrs_error_names_cannot_be_dot_dot    96

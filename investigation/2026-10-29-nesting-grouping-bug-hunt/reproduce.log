@@ -1,0 +1,26 @@
+PASS ordinary dtplyr mutation/collection: ...
+FAIL nest ... phase= construction stage= nest_expanded_margins()/get_col_names() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..." at location 1.
+FAIL nest_by ... phase= construction stage= nest_expanded_margins()/get_col_names() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..." at location 1.
+FAIL expand ... phase= construction stage= finalize_margin_operation()/reorder_margin_columns() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..." at location 1.
+FAIL summarize ... phase= construction stage= finalize_margin_operation()/reorder_margin_columns() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..." at location 1.
+PASS ordinary dtplyr mutation/collection: ..1
+FAIL nest ..1 phase= construction stage= nest_expanded_margins()/get_col_names() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..1" at location 1.
+FAIL nest_by ..1 phase= construction stage= nest_expanded_margins()/get_col_names() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..1" at location 1.
+FAIL expand ..1 phase= construction stage= finalize_margin_operation()/reorder_margin_columns() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..1" at location 1.
+FAIL summarize ..1 phase= construction stage= finalize_margin_operation()/reorder_margin_columns() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..1" at location 1.
+PASS ordinary dtplyr mutation/collection: ..2
+FAIL nest ..2 phase= construction stage= nest_expanded_margins()/get_col_names() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..2" at location 1.
+FAIL nest_by ..2 phase= construction stage= nest_expanded_margins()/get_col_names() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..2" at location 1.
+FAIL expand ..2 phase= construction stage= finalize_margin_operation()/reorder_margin_columns() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..2" at location 1.
+FAIL summarize ..2 phase= construction stage= finalize_margin_operation()/reorder_margin_columns() class= vctrs_error_names_cannot_be_dot_dot : Names can't be of the form `...` or `..j`. / ✖ These names are invalid: /   * "..2" at location 1.
+PASS ordinary dtplyr mutation/collection: ..0
+FAIL nest ..0 phase= collection stage= dtplyr::dt_eval()/data.table execution class= simpleError : indexing '...' with non-positive index 0
+FAIL nest_by ..0 phase= construction stage= unknown class= simpleError : indexing '...' with non-positive index 0
+FAIL expand ..0 phase= collection stage= dtplyr::dt_eval()/data.table execution class= simpleError : indexing '...' with non-positive index 0
+FAIL summarize ..0 phase= collection stage= dtplyr::dt_eval()/data.table execution class= simpleError : indexing '...' with non-positive index 0
+PASS ordinary dtplyr mutation/collection: ..01
+FAIL nest ..01 phase= collection stage= dtplyr::dt_eval()/data.table execution class= simpleError : ..1 used in an incorrect context, no ... to look in
+FAIL nest_by ..01 phase= construction stage= unknown class= simpleError : ..1 used in an incorrect context, no ... to look in
+FAIL expand ..01 phase= collection stage= dtplyr::dt_eval()/data.table execution class= simpleError : ..1 used in an incorrect context, no ... to look in
+FAIL summarize ..01 phase= collection stage= dtplyr::dt_eval()/data.table execution class= simpleError : ..1 used in an incorrect context, no ... to look in
+Failures: 20 of 20 cases

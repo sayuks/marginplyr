@@ -1,0 +1,20 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+duckdb is storing downloaded extensions and secrets under ~/.duckdb:
+ℹ /Users/sayuks/.duckdb
+This persists across sessions and is shared with the DuckDB CLI and other clients.
+ℹ Run duckdb(shared_home = FALSE) to use a temporary directory instead.
+ℹ See ?duckdb_storage for details and alternatives.
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+PASS: 80 generated plans x 6 input forms; reordered/fixed/default Grouping identifiers and Grouping bits

@@ -1,0 +1,503 @@
+DIFF numeric_special 4 fixed TRUE NULL
+[1] "Component “set”: Mean relative difference: 0.6666667"
+[2] "Component “data”: Component 5: Component 2: 'is.NA' value mismatch: 0 in current 1 in target"
+[3] "Component “data”: Component 5: Component 3: Mean relative difference: 0.25"
+[4] "Component “data”: Component 6: Component 2: 'is.NA' value mismatch: 1 in current 0 in target"
+[5] "Component “data”: Component 6: Component 3: Mean relative difference: 0.3333333"
+DIFF numeric_special 4 fixed TRUE Total
+[1] "Component “g”: 'is.NA' value mismatch: 1 in current 1 in target"
+[2] "Component “set”: Mean relative difference: 0.6666667"
+[3] "Component “data”: Component 5: Component 2: 'is.NA' value mismatch: 0 in current 1 in target"
+[4] "Component “data”: Component 5: Component 3: Mean relative difference: 0.25"
+[5] "Component “data”: Component 6: Component 2: 'is.NA' value mismatch: 1 in current 0 in target"
+[6] "Component “data”: Component 6: Component 3: Mean relative difference: 0.3333333"
+DIFF numeric_special 4 fixed FALSE NULL
+[1] "Component “set”: Mean relative difference: 0.6666667"
+[2] "Component “data”: Component 5: Component 1: Mean relative difference: 0.25"
+[3] "Component “data”: Component 6: Component 1: Mean relative difference: 0.3333333"
+DIFF numeric_special 4 fixed FALSE Total
+[1] "Component “g”: 'is.NA' value mismatch: 1 in current 1 in target"
+[2] "Component “set”: Mean relative difference: 0.6666667"
+[3] "Component “data”: Component 5: Component 1: Mean relative difference: 0.25"
+[4] "Component “data”: Component 6: Component 1: Mean relative difference: 0.3333333"
+DTERR complex 0 payload TRUE NULL unsupported column type found in x or y: [complex]
+DTERR complex 0 payload TRUE Total unsupported column type found in x or y: [complex]
+DTERR complex 0 payload FALSE NULL unsupported column type found in x or y: [complex]
+DTERR complex 0 payload FALSE Total unsupported column type found in x or y: [complex]
+DTERR complex 0 fixed TRUE NULL unsupported column type found in x or y: [complex]
+DTERR complex 0 fixed TRUE Total unsupported column type found in x or y: [complex]
+DTERR complex 0 fixed FALSE NULL unsupported column type found in x or y: [complex]
+DTERR complex 0 fixed FALSE Total unsupported column type found in x or y: [complex]
+DTERR complex 0 dimension TRUE NULL unsupported column type found in x or y: [complex]
+DTERR complex 0 dimension TRUE Total unsupported column type found in x or y: [complex]
+DTERR complex 0 dimension FALSE NULL unsupported column type found in x or y: [complex]
+DTERR complex 0 dimension FALSE Total unsupported column type found in x or y: [complex]
+DTERR complex 4 payload TRUE NULL unsupported column type found in x or y: [complex]
+DTERR complex 4 payload TRUE Total unsupported column type found in x or y: [complex]
+DTERR complex 4 payload FALSE NULL unsupported column type found in x or y: [complex]
+DTERR complex 4 payload FALSE Total unsupported column type found in x or y: [complex]
+DTERR complex 4 fixed TRUE NULL unsupported column type found in x or y: [complex]
+DTERR complex 4 fixed TRUE Total unsupported column type found in x or y: [complex]
+DTERR complex 4 fixed FALSE NULL unsupported column type found in x or y: [complex]
+DTERR complex 4 fixed FALSE Total unsupported column type found in x or y: [complex]
+DTERR complex 4 dimension TRUE NULL unsupported column type found in x or y: [complex]
+DTERR complex 4 dimension TRUE Total unsupported column type found in x or y: [complex]
+DTERR complex 4 dimension FALSE NULL unsupported column type found in x or y: [complex]
+DTERR complex 4 dimension FALSE Total unsupported column type found in x or y: [complex]
+DTERR raw 0 payload TRUE NULL unsupported column type found in x or y: [raw]
+DTERR raw 0 payload TRUE Total unsupported column type found in x or y: [raw]
+DTERR raw 0 payload FALSE NULL unsupported column type found in x or y: [raw]
+DTERR raw 0 payload FALSE Total unsupported column type found in x or y: [raw]
+DTERR raw 0 fixed TRUE NULL unsupported column type found in x or y: [raw]
+DTERR raw 0 fixed TRUE Total unsupported column type found in x or y: [raw]
+DTERR raw 0 fixed FALSE NULL unsupported column type found in x or y: [raw]
+DTERR raw 0 fixed FALSE Total unsupported column type found in x or y: [raw]
+DTERR raw 0 dimension TRUE Total unsupported column type found in x or y: [raw]
+DTERR raw 0 dimension FALSE Total unsupported column type found in x or y: [raw]
+DTERR raw 4 payload TRUE NULL unsupported column type found in x or y: [raw]
+DTERR raw 4 payload TRUE Total unsupported column type found in x or y: [raw]
+DTERR raw 4 payload FALSE NULL unsupported column type found in x or y: [raw]
+DTERR raw 4 payload FALSE Total unsupported column type found in x or y: [raw]
+DTERR raw 4 fixed TRUE NULL unsupported column type found in x or y: [raw]
+DTERR raw 4 fixed TRUE Total unsupported column type found in x or y: [raw]
+DTERR raw 4 fixed FALSE NULL unsupported column type found in x or y: [raw]
+DTERR raw 4 fixed FALSE Total unsupported column type found in x or y: [raw]
+DTERR raw 4 dimension TRUE Total unsupported column type found in x or y: [raw]
+DTERR raw 4 dimension FALSE Total unsupported column type found in x or y: [raw]
+DTERR list 0 fixed TRUE NULL Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 0 fixed TRUE Total Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 0 fixed FALSE NULL Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 0 fixed FALSE Total Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 0 dimension TRUE NULL Invalid input
+DTERR list 0 dimension TRUE Total Invalid input
+DTERR list 0 dimension FALSE NULL Invalid input
+DTERR list 0 dimension FALSE Total Invalid input
+DTERR list 4 fixed TRUE NULL Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 4 fixed TRUE Total Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 4 fixed FALSE NULL Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 4 fixed FALSE Total Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+DTERR list 4 dimension TRUE NULL Invalid input
+DTERR list 4 dimension TRUE Total Invalid input
+DTERR list 4 dimension FALSE NULL Invalid input
+DTERR list 4 dimension FALSE Total Invalid input
+DTERR matrix 0 fixed TRUE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 0 fixed TRUE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 0 fixed FALSE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 0 fixed FALSE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 0 dimension TRUE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DTERR matrix 0 dimension FALSE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DIFF matrix 4 payload TRUE NULL
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 3 components"
+ [3] "Component “data”: Component 1: Component 3: Lengths: 4, 2"
+ [4] "Component “data”: Component 1: Component 3: Attributes: < Modes: list, NULL >"
+ [5] "Component “data”: Component 1: Component 3: Attributes: < Lengths: 1, 0 >"
+ [6] "Component “data”: Component 1: Component 3: Attributes: < names for target but not for current >"
+ [7] "Component “data”: Component 1: Component 3: Attributes: < current is not list-like >"
+ [8] "Component “data”: Component 1: Component 3: target is matrix, current is numeric"
+ [9] "Component “data”: Component 2: Names: 1 string mismatch"
+[10] "Component “data”: Component 2: Length mismatch: comparison on first 3 components"
+[11] "Component “data”: Component 2: Component 3: Lengths: 2, 1"
+[12] "Component “data”: Component 2: Component 3: Attributes: < Modes: list, NULL >"
+[13] "Component “data”: Component 2: Component 3: Attributes: < Lengths: 1, 0 >"
+[14] "Component “data”: Component 2: Component 3: Attributes: < names for target but not for current >"
+[15] "Component “data”: Component 2: Component 3: Attributes: < current is not list-like >"
+[16] "Component “data”: Component 2: Component 3: target is matrix, current is numeric"
+[17] "Component “data”: Component 3: Names: 1 string mismatch"
+[18] "Component “data”: Component 3: Length mismatch: comparison on first 3 components"
+[19] "Component “data”: Component 3: Component 3: Lengths: 2, 1"
+[20] "Component “data”: Component 3: Component 3: Attributes: < Modes: list, NULL >"
+[21] "Component “data”: Component 3: Component 3: Attributes: < Lengths: 1, 0 >"
+[22] "Component “data”: Component 3: Component 3: Attributes: < names for target but not for current >"
+[23] "Component “data”: Component 3: Component 3: Attributes: < current is not list-like >"
+[24] "Component “data”: Component 3: Component 3: target is matrix, current is numeric"
+[25] "Component “data”: Component 4: Names: 1 string mismatch"
+[26] "Component “data”: Component 4: Length mismatch: comparison on first 3 components"
+[27] "Component “data”: Component 4: Component 3: Lengths: 8, 4"
+[28] "Component “data”: Component 4: Component 3: Attributes: < Modes: list, NULL >"
+[29] "Component “data”: Component 4: Component 3: Attributes: < Lengths: 1, 0 >"
+[30] "Component “data”: Component 4: Component 3: Attributes: < names for target but not for current >"
+[31] "Component “data”: Component 4: Component 3: Attributes: < current is not list-like >"
+[32] "Component “data”: Component 4: Component 3: target is matrix, current is numeric"
+DIFF matrix 4 payload TRUE Total
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 3 components"
+ [3] "Component “data”: Component 1: Component 3: Lengths: 4, 2"
+ [4] "Component “data”: Component 1: Component 3: Attributes: < Modes: list, NULL >"
+ [5] "Component “data”: Component 1: Component 3: Attributes: < Lengths: 1, 0 >"
+ [6] "Component “data”: Component 1: Component 3: Attributes: < names for target but not for current >"
+ [7] "Component “data”: Component 1: Component 3: Attributes: < current is not list-like >"
+ [8] "Component “data”: Component 1: Component 3: target is matrix, current is numeric"
+ [9] "Component “data”: Component 2: Names: 1 string mismatch"
+[10] "Component “data”: Component 2: Length mismatch: comparison on first 3 components"
+[11] "Component “data”: Component 2: Component 3: Lengths: 2, 1"
+[12] "Component “data”: Component 2: Component 3: Attributes: < Modes: list, NULL >"
+[13] "Component “data”: Component 2: Component 3: Attributes: < Lengths: 1, 0 >"
+[14] "Component “data”: Component 2: Component 3: Attributes: < names for target but not for current >"
+[15] "Component “data”: Component 2: Component 3: Attributes: < current is not list-like >"
+[16] "Component “data”: Component 2: Component 3: target is matrix, current is numeric"
+[17] "Component “data”: Component 3: Names: 1 string mismatch"
+[18] "Component “data”: Component 3: Length mismatch: comparison on first 3 components"
+[19] "Component “data”: Component 3: Component 3: Lengths: 2, 1"
+[20] "Component “data”: Component 3: Component 3: Attributes: < Modes: list, NULL >"
+[21] "Component “data”: Component 3: Component 3: Attributes: < Lengths: 1, 0 >"
+[22] "Component “data”: Component 3: Component 3: Attributes: < names for target but not for current >"
+[23] "Component “data”: Component 3: Component 3: Attributes: < current is not list-like >"
+[24] "Component “data”: Component 3: Component 3: target is matrix, current is numeric"
+[25] "Component “data”: Component 4: Names: 1 string mismatch"
+[26] "Component “data”: Component 4: Length mismatch: comparison on first 3 components"
+[27] "Component “data”: Component 4: Component 3: Lengths: 8, 4"
+[28] "Component “data”: Component 4: Component 3: Attributes: < Modes: list, NULL >"
+[29] "Component “data”: Component 4: Component 3: Attributes: < Lengths: 1, 0 >"
+[30] "Component “data”: Component 4: Component 3: Attributes: < names for target but not for current >"
+[31] "Component “data”: Component 4: Component 3: Attributes: < current is not list-like >"
+[32] "Component “data”: Component 4: Component 3: target is matrix, current is numeric"
+DIFF matrix 4 payload FALSE NULL
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 2 components"
+ [3] "Component “data”: Component 1: Component 2: Lengths: 4, 2"
+ [4] "Component “data”: Component 1: Component 2: Attributes: < Modes: list, NULL >"
+ [5] "Component “data”: Component 1: Component 2: Attributes: < Lengths: 1, 0 >"
+ [6] "Component “data”: Component 1: Component 2: Attributes: < names for target but not for current >"
+ [7] "Component “data”: Component 1: Component 2: Attributes: < current is not list-like >"
+ [8] "Component “data”: Component 1: Component 2: target is matrix, current is numeric"
+ [9] "Component “data”: Component 2: Names: 1 string mismatch"
+[10] "Component “data”: Component 2: Length mismatch: comparison on first 2 components"
+[11] "Component “data”: Component 2: Component 2: Lengths: 2, 1"
+[12] "Component “data”: Component 2: Component 2: Attributes: < Modes: list, NULL >"
+[13] "Component “data”: Component 2: Component 2: Attributes: < Lengths: 1, 0 >"
+[14] "Component “data”: Component 2: Component 2: Attributes: < names for target but not for current >"
+[15] "Component “data”: Component 2: Component 2: Attributes: < current is not list-like >"
+[16] "Component “data”: Component 2: Component 2: target is matrix, current is numeric"
+[17] "Component “data”: Component 3: Names: 1 string mismatch"
+[18] "Component “data”: Component 3: Length mismatch: comparison on first 2 components"
+[19] "Component “data”: Component 3: Component 2: Lengths: 2, 1"
+[20] "Component “data”: Component 3: Component 2: Attributes: < Modes: list, NULL >"
+[21] "Component “data”: Component 3: Component 2: Attributes: < Lengths: 1, 0 >"
+[22] "Component “data”: Component 3: Component 2: Attributes: < names for target but not for current >"
+[23] "Component “data”: Component 3: Component 2: Attributes: < current is not list-like >"
+[24] "Component “data”: Component 3: Component 2: target is matrix, current is numeric"
+[25] "Component “data”: Component 4: Names: 1 string mismatch"
+[26] "Component “data”: Component 4: Length mismatch: comparison on first 2 components"
+[27] "Component “data”: Component 4: Component 2: Lengths: 8, 4"
+[28] "Component “data”: Component 4: Component 2: Attributes: < Modes: list, NULL >"
+[29] "Component “data”: Component 4: Component 2: Attributes: < Lengths: 1, 0 >"
+[30] "Component “data”: Component 4: Component 2: Attributes: < names for target but not for current >"
+[31] "Component “data”: Component 4: Component 2: Attributes: < current is not list-like >"
+[32] "Component “data”: Component 4: Component 2: target is matrix, current is numeric"
+DIFF matrix 4 payload FALSE Total
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 2 components"
+ [3] "Component “data”: Component 1: Component 2: Lengths: 4, 2"
+ [4] "Component “data”: Component 1: Component 2: Attributes: < Modes: list, NULL >"
+ [5] "Component “data”: Component 1: Component 2: Attributes: < Lengths: 1, 0 >"
+ [6] "Component “data”: Component 1: Component 2: Attributes: < names for target but not for current >"
+ [7] "Component “data”: Component 1: Component 2: Attributes: < current is not list-like >"
+ [8] "Component “data”: Component 1: Component 2: target is matrix, current is numeric"
+ [9] "Component “data”: Component 2: Names: 1 string mismatch"
+[10] "Component “data”: Component 2: Length mismatch: comparison on first 2 components"
+[11] "Component “data”: Component 2: Component 2: Lengths: 2, 1"
+[12] "Component “data”: Component 2: Component 2: Attributes: < Modes: list, NULL >"
+[13] "Component “data”: Component 2: Component 2: Attributes: < Lengths: 1, 0 >"
+[14] "Component “data”: Component 2: Component 2: Attributes: < names for target but not for current >"
+[15] "Component “data”: Component 2: Component 2: Attributes: < current is not list-like >"
+[16] "Component “data”: Component 2: Component 2: target is matrix, current is numeric"
+[17] "Component “data”: Component 3: Names: 1 string mismatch"
+[18] "Component “data”: Component 3: Length mismatch: comparison on first 2 components"
+[19] "Component “data”: Component 3: Component 2: Lengths: 2, 1"
+[20] "Component “data”: Component 3: Component 2: Attributes: < Modes: list, NULL >"
+[21] "Component “data”: Component 3: Component 2: Attributes: < Lengths: 1, 0 >"
+[22] "Component “data”: Component 3: Component 2: Attributes: < names for target but not for current >"
+[23] "Component “data”: Component 3: Component 2: Attributes: < current is not list-like >"
+[24] "Component “data”: Component 3: Component 2: target is matrix, current is numeric"
+[25] "Component “data”: Component 4: Names: 1 string mismatch"
+[26] "Component “data”: Component 4: Length mismatch: comparison on first 2 components"
+[27] "Component “data”: Component 4: Component 2: Lengths: 8, 4"
+[28] "Component “data”: Component 4: Component 2: Attributes: < Modes: list, NULL >"
+[29] "Component “data”: Component 4: Component 2: Attributes: < Lengths: 1, 0 >"
+[30] "Component “data”: Component 4: Component 2: Attributes: < names for target but not for current >"
+[31] "Component “data”: Component 4: Component 2: Attributes: < current is not list-like >"
+[32] "Component “data”: Component 4: Component 2: target is matrix, current is numeric"
+DTERR matrix 4 fixed TRUE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 4 fixed TRUE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 4 fixed FALSE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 4 fixed FALSE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR matrix 4 dimension TRUE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DTERR matrix 4 dimension FALSE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DTERR packed 0 fixed TRUE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 0 fixed TRUE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 0 fixed FALSE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 0 fixed FALSE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 0 dimension TRUE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DTERR packed 0 dimension FALSE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DIFF packed 4 payload TRUE NULL
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 3 components"
+ [3] "Component “data”: Component 1: Component 3: Modes: list, numeric"
+ [4] "Component “data”: Component 1: Component 3: names for target but not for current"
+ [5] "Component “data”: Component 1: Component 3: Attributes: < Modes: list, NULL >"
+ [6] "Component “data”: Component 1: Component 3: Attributes: < Lengths: 2, 0 >"
+ [7] "Component “data”: Component 1: Component 3: Attributes: < names for target but not for current >"
+ [8] "Component “data”: Component 1: Component 3: Attributes: < current is not list-like >"
+ [9] "Component “data”: Component 1: Component 3: Component 1: Numeric: lengths (2, 1) differ"
+[10] "Component “data”: Component 1: Component 3: Component 2: Modes: character, numeric"
+[11] "Component “data”: Component 1: Component 3: Component 2: Lengths: 2, 1"
+[12] "Component “data”: Component 1: Component 3: Component 2: target is character, current is numeric"
+[13] "Component “data”: Component 2: Names: 1 string mismatch"
+[14] "Component “data”: Component 2: Length mismatch: comparison on first 3 components"
+[15] "Component “data”: Component 2: Component 3: Modes: list, numeric"
+[16] "Component “data”: Component 2: Component 3: names for target but not for current"
+[17] "Component “data”: Component 2: Component 3: Attributes: < Modes: list, NULL >"
+[18] "Component “data”: Component 2: Component 3: Attributes: < names for target but not for current >"
+[19] "Component “data”: Component 2: Component 3: Attributes: < current is not list-like >"
+[20] "Component “data”: Component 2: Component 3: Length mismatch: comparison on first 1 components"
+[21] "Component “data”: Component 3: Names: 1 string mismatch"
+[22] "Component “data”: Component 3: Length mismatch: comparison on first 3 components"
+[23] "Component “data”: Component 3: Component 3: Modes: list, numeric"
+[24] "Component “data”: Component 3: Component 3: names for target but not for current"
+[25] "Component “data”: Component 3: Component 3: Attributes: < Modes: list, NULL >"
+[26] "Component “data”: Component 3: Component 3: Attributes: < names for target but not for current >"
+[27] "Component “data”: Component 3: Component 3: Attributes: < current is not list-like >"
+[28] "Component “data”: Component 3: Component 3: Length mismatch: comparison on first 1 components"
+[29] "Component “data”: Component 4: Names: 1 string mismatch"
+[30] "Component “data”: Component 4: Length mismatch: comparison on first 3 components"
+[31] "Component “data”: Component 4: Component 3: Modes: list, numeric"
+[32] "Component “data”: Component 4: Component 3: names for target but not for current"
+[33] "Component “data”: Component 4: Component 3: Attributes: < Modes: list, NULL >"
+[34] "Component “data”: Component 4: Component 3: Attributes: < names for target but not for current >"
+[35] "Component “data”: Component 4: Component 3: Attributes: < current is not list-like >"
+[36] "Component “data”: Component 4: Component 3: Length mismatch: comparison on first 2 components"
+[37] "Component “data”: Component 4: Component 3: Component 1: Numeric: lengths (4, 1) differ"
+[38] "Component “data”: Component 4: Component 3: Component 2: Modes: character, numeric"
+[39] "Component “data”: Component 4: Component 3: Component 2: Lengths: 4, 1"
+[40] "Component “data”: Component 4: Component 3: Component 2: target is character, current is numeric"
+DIFF packed 4 payload TRUE Total
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 3 components"
+ [3] "Component “data”: Component 1: Component 3: Modes: list, numeric"
+ [4] "Component “data”: Component 1: Component 3: names for target but not for current"
+ [5] "Component “data”: Component 1: Component 3: Attributes: < Modes: list, NULL >"
+ [6] "Component “data”: Component 1: Component 3: Attributes: < Lengths: 2, 0 >"
+ [7] "Component “data”: Component 1: Component 3: Attributes: < names for target but not for current >"
+ [8] "Component “data”: Component 1: Component 3: Attributes: < current is not list-like >"
+ [9] "Component “data”: Component 1: Component 3: Component 1: Numeric: lengths (2, 1) differ"
+[10] "Component “data”: Component 1: Component 3: Component 2: Modes: character, numeric"
+[11] "Component “data”: Component 1: Component 3: Component 2: Lengths: 2, 1"
+[12] "Component “data”: Component 1: Component 3: Component 2: target is character, current is numeric"
+[13] "Component “data”: Component 2: Names: 1 string mismatch"
+[14] "Component “data”: Component 2: Length mismatch: comparison on first 3 components"
+[15] "Component “data”: Component 2: Component 3: Modes: list, numeric"
+[16] "Component “data”: Component 2: Component 3: names for target but not for current"
+[17] "Component “data”: Component 2: Component 3: Attributes: < Modes: list, NULL >"
+[18] "Component “data”: Component 2: Component 3: Attributes: < names for target but not for current >"
+[19] "Component “data”: Component 2: Component 3: Attributes: < current is not list-like >"
+[20] "Component “data”: Component 2: Component 3: Length mismatch: comparison on first 1 components"
+[21] "Component “data”: Component 3: Names: 1 string mismatch"
+[22] "Component “data”: Component 3: Length mismatch: comparison on first 3 components"
+[23] "Component “data”: Component 3: Component 3: Modes: list, numeric"
+[24] "Component “data”: Component 3: Component 3: names for target but not for current"
+[25] "Component “data”: Component 3: Component 3: Attributes: < Modes: list, NULL >"
+[26] "Component “data”: Component 3: Component 3: Attributes: < names for target but not for current >"
+[27] "Component “data”: Component 3: Component 3: Attributes: < current is not list-like >"
+[28] "Component “data”: Component 3: Component 3: Length mismatch: comparison on first 1 components"
+[29] "Component “data”: Component 4: Names: 1 string mismatch"
+[30] "Component “data”: Component 4: Length mismatch: comparison on first 3 components"
+[31] "Component “data”: Component 4: Component 3: Modes: list, numeric"
+[32] "Component “data”: Component 4: Component 3: names for target but not for current"
+[33] "Component “data”: Component 4: Component 3: Attributes: < Modes: list, NULL >"
+[34] "Component “data”: Component 4: Component 3: Attributes: < names for target but not for current >"
+[35] "Component “data”: Component 4: Component 3: Attributes: < current is not list-like >"
+[36] "Component “data”: Component 4: Component 3: Length mismatch: comparison on first 2 components"
+[37] "Component “data”: Component 4: Component 3: Component 1: Numeric: lengths (4, 1) differ"
+[38] "Component “data”: Component 4: Component 3: Component 2: Modes: character, numeric"
+[39] "Component “data”: Component 4: Component 3: Component 2: Lengths: 4, 1"
+[40] "Component “data”: Component 4: Component 3: Component 2: target is character, current is numeric"
+DIFF packed 4 payload FALSE NULL
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 2 components"
+ [3] "Component “data”: Component 1: Component 2: Modes: list, numeric"
+ [4] "Component “data”: Component 1: Component 2: names for target but not for current"
+ [5] "Component “data”: Component 1: Component 2: Attributes: < Modes: list, NULL >"
+ [6] "Component “data”: Component 1: Component 2: Attributes: < Lengths: 2, 0 >"
+ [7] "Component “data”: Component 1: Component 2: Attributes: < names for target but not for current >"
+ [8] "Component “data”: Component 1: Component 2: Attributes: < current is not list-like >"
+ [9] "Component “data”: Component 1: Component 2: Component 1: Numeric: lengths (2, 1) differ"
+[10] "Component “data”: Component 1: Component 2: Component 2: Modes: character, numeric"
+[11] "Component “data”: Component 1: Component 2: Component 2: Lengths: 2, 1"
+[12] "Component “data”: Component 1: Component 2: Component 2: target is character, current is numeric"
+[13] "Component “data”: Component 2: Names: 1 string mismatch"
+[14] "Component “data”: Component 2: Length mismatch: comparison on first 2 components"
+[15] "Component “data”: Component 2: Component 2: Modes: list, numeric"
+[16] "Component “data”: Component 2: Component 2: names for target but not for current"
+[17] "Component “data”: Component 2: Component 2: Attributes: < Modes: list, NULL >"
+[18] "Component “data”: Component 2: Component 2: Attributes: < names for target but not for current >"
+[19] "Component “data”: Component 2: Component 2: Attributes: < current is not list-like >"
+[20] "Component “data”: Component 2: Component 2: Length mismatch: comparison on first 1 components"
+[21] "Component “data”: Component 3: Names: 1 string mismatch"
+[22] "Component “data”: Component 3: Length mismatch: comparison on first 2 components"
+[23] "Component “data”: Component 3: Component 2: Modes: list, numeric"
+[24] "Component “data”: Component 3: Component 2: names for target but not for current"
+[25] "Component “data”: Component 3: Component 2: Attributes: < Modes: list, NULL >"
+[26] "Component “data”: Component 3: Component 2: Attributes: < names for target but not for current >"
+[27] "Component “data”: Component 3: Component 2: Attributes: < current is not list-like >"
+[28] "Component “data”: Component 3: Component 2: Length mismatch: comparison on first 1 components"
+[29] "Component “data”: Component 4: Names: 1 string mismatch"
+[30] "Component “data”: Component 4: Length mismatch: comparison on first 2 components"
+[31] "Component “data”: Component 4: Component 2: Modes: list, numeric"
+[32] "Component “data”: Component 4: Component 2: names for target but not for current"
+[33] "Component “data”: Component 4: Component 2: Attributes: < Modes: list, NULL >"
+[34] "Component “data”: Component 4: Component 2: Attributes: < names for target but not for current >"
+[35] "Component “data”: Component 4: Component 2: Attributes: < current is not list-like >"
+[36] "Component “data”: Component 4: Component 2: Length mismatch: comparison on first 2 components"
+[37] "Component “data”: Component 4: Component 2: Component 1: Numeric: lengths (4, 1) differ"
+[38] "Component “data”: Component 4: Component 2: Component 2: Modes: character, numeric"
+[39] "Component “data”: Component 4: Component 2: Component 2: Lengths: 4, 1"
+[40] "Component “data”: Component 4: Component 2: Component 2: target is character, current is numeric"
+DIFF packed 4 payload FALSE Total
+ [1] "Component “data”: Component 1: Names: 1 string mismatch"
+ [2] "Component “data”: Component 1: Length mismatch: comparison on first 2 components"
+ [3] "Component “data”: Component 1: Component 2: Modes: list, numeric"
+ [4] "Component “data”: Component 1: Component 2: names for target but not for current"
+ [5] "Component “data”: Component 1: Component 2: Attributes: < Modes: list, NULL >"
+ [6] "Component “data”: Component 1: Component 2: Attributes: < Lengths: 2, 0 >"
+ [7] "Component “data”: Component 1: Component 2: Attributes: < names for target but not for current >"
+ [8] "Component “data”: Component 1: Component 2: Attributes: < current is not list-like >"
+ [9] "Component “data”: Component 1: Component 2: Component 1: Numeric: lengths (2, 1) differ"
+[10] "Component “data”: Component 1: Component 2: Component 2: Modes: character, numeric"
+[11] "Component “data”: Component 1: Component 2: Component 2: Lengths: 2, 1"
+[12] "Component “data”: Component 1: Component 2: Component 2: target is character, current is numeric"
+[13] "Component “data”: Component 2: Names: 1 string mismatch"
+[14] "Component “data”: Component 2: Length mismatch: comparison on first 2 components"
+[15] "Component “data”: Component 2: Component 2: Modes: list, numeric"
+[16] "Component “data”: Component 2: Component 2: names for target but not for current"
+[17] "Component “data”: Component 2: Component 2: Attributes: < Modes: list, NULL >"
+[18] "Component “data”: Component 2: Component 2: Attributes: < names for target but not for current >"
+[19] "Component “data”: Component 2: Component 2: Attributes: < current is not list-like >"
+[20] "Component “data”: Component 2: Component 2: Length mismatch: comparison on first 1 components"
+[21] "Component “data”: Component 3: Names: 1 string mismatch"
+[22] "Component “data”: Component 3: Length mismatch: comparison on first 2 components"
+[23] "Component “data”: Component 3: Component 2: Modes: list, numeric"
+[24] "Component “data”: Component 3: Component 2: names for target but not for current"
+[25] "Component “data”: Component 3: Component 2: Attributes: < Modes: list, NULL >"
+[26] "Component “data”: Component 3: Component 2: Attributes: < names for target but not for current >"
+[27] "Component “data”: Component 3: Component 2: Attributes: < current is not list-like >"
+[28] "Component “data”: Component 3: Component 2: Length mismatch: comparison on first 1 components"
+[29] "Component “data”: Component 4: Names: 1 string mismatch"
+[30] "Component “data”: Component 4: Length mismatch: comparison on first 2 components"
+[31] "Component “data”: Component 4: Component 2: Modes: list, numeric"
+[32] "Component “data”: Component 4: Component 2: names for target but not for current"
+[33] "Component “data”: Component 4: Component 2: Attributes: < Modes: list, NULL >"
+[34] "Component “data”: Component 4: Component 2: Attributes: < names for target but not for current >"
+[35] "Component “data”: Component 4: Component 2: Attributes: < current is not list-like >"
+[36] "Component “data”: Component 4: Component 2: Length mismatch: comparison on first 2 components"
+[37] "Component “data”: Component 4: Component 2: Component 1: Numeric: lengths (4, 1) differ"
+[38] "Component “data”: Component 4: Component 2: Component 2: Modes: character, numeric"
+[39] "Component “data”: Component 4: Component 2: Component 2: Lengths: 4, 1"
+[40] "Component “data”: Component 4: Component 2: Component 2: target is character, current is numeric"
+DTERR packed 4 fixed TRUE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 4 fixed TRUE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 4 fixed FALSE NULL ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 4 fixed FALSE Total ℹ In argument: `if (role == "fixed") all_of("x")`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `x` doesn't exist.
+DTERR packed 4 dimension TRUE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DTERR packed 4 dimension FALSE NULL Can't select columns that don't exist.
+✖ Column `x` doesn't exist.
+DTERR array 0 payload TRUE NULL Column 4 is NULL; malformed data.table.
+DTERR array 0 payload TRUE Total Column 4 is NULL; malformed data.table.
+DTERR array 0 payload FALSE NULL Column 4 is NULL; malformed data.table.
+DTERR array 0 payload FALSE Total Column 4 is NULL; malformed data.table.
+DTERR array 0 fixed TRUE NULL Column 4 is NULL; malformed data.table.
+DTERR array 0 fixed TRUE Total Column 4 is NULL; malformed data.table.
+DTERR array 0 fixed FALSE NULL Column 4 is NULL; malformed data.table.
+DTERR array 0 fixed FALSE Total Column 4 is NULL; malformed data.table.
+DTERR array 0 dimension TRUE NULL Column 4 is NULL; malformed data.table.
+DTERR array 0 dimension FALSE NULL Column 4 is NULL; malformed data.table.
+DTERR array 4 payload TRUE NULL Column 4 is NULL; malformed data.table.
+DTERR array 4 payload TRUE Total Column 4 is NULL; malformed data.table.
+DTERR array 4 payload FALSE NULL Column 4 is NULL; malformed data.table.
+DTERR array 4 payload FALSE Total Column 4 is NULL; malformed data.table.
+DTERR array 4 fixed TRUE NULL Column 4 is NULL; malformed data.table.
+DTERR array 4 fixed TRUE Total Column 4 is NULL; malformed data.table.
+DTERR array 4 fixed FALSE NULL Column 4 is NULL; malformed data.table.
+DTERR array 4 fixed FALSE Total Column 4 is NULL; malformed data.table.
+DTERR array 4 dimension TRUE NULL Column 4 is NULL; malformed data.table.
+DTERR array 4 dimension FALSE NULL Column 4 is NULL; malformed data.table.
+DTERR rcrd 0 payload TRUE NULL Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 payload TRUE Total Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 payload FALSE NULL Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 payload FALSE Total Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 fixed TRUE NULL Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 fixed TRUE Total Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 fixed FALSE NULL Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 fixed FALSE Total Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 dimension TRUE NULL Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 0 dimension FALSE NULL Column 3 ['x'] is length 1 but column 1 is length 0; malformed data.table.
+DTERR rcrd 4 payload TRUE NULL Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 payload TRUE Total Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 payload FALSE NULL Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 payload FALSE Total Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 fixed TRUE NULL Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 fixed TRUE Total Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 fixed FALSE NULL Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 fixed FALSE Total Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 dimension TRUE NULL Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+DTERR rcrd 4 dimension FALSE NULL Column 3 ['x'] is length 1 but column 1 is length 4; malformed data.table.
+There were 12 warnings (use warnings() to see them)
+         attempt       both_error local_only_error    dt_only_error
+             456               22                0              124
+      difference            equal
+              12              298

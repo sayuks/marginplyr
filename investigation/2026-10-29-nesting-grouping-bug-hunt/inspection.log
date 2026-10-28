@@ -1,0 +1,109 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+duckdb is storing downloaded extensions and secrets under ~/.duckdb:
+ℹ /Users/sayuks/.duckdb
+This persists across sessions and is shared with the DuckDB CLI and other clients.
+ℹ Run duckdb(shared_home = FALSE) to use a temporary directory instead.
+ℹ See ?duckdb_storage for details and alternatives.
+1 local a|
+1 dt a|
+1 sqlite a|
+1 duck a|
+1 arrow a|
+1 batch a|
+2 local a:b|a|
+2 dt a:b|a|
+2 sqlite a:b|a|
+2 duck a:b|a|
+2 arrow a:b|a|
+2 batch a:b|a|
+3 local a|
+3 dt a|
+3 sqlite Can't select with a predicate in `where(is.numeric)`.
+ℹ This input's backend doesn't report column types without a query, and marginplyr sends none you didn't ask for.
+ℹ Select the columns by name, or collect the input first.
+ℹ A Margin operation on collected data defaults `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly.
+Caused by error in `resolve_column_selection()` at marginplyr/R/grouping-plan.R:1383:3:
+! This tidyselect interface doesn't support predicates.
+3 duck a|
+3 arrow a|
+3 batch a|
+4 local b|
+4 dt b|
+4 sqlite Can't select with a predicate in `where(is.character)`.
+ℹ This input's backend doesn't report column types without a query, and marginplyr sends none you didn't ask for.
+ℹ Select the columns by name, or collect the input first.
+ℹ A Margin operation on collected data defaults `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly.
+Caused by error in `resolve_column_selection()` at marginplyr/R/grouping-plan.R:1383:3:
+! This tidyselect interface doesn't support predicates.
+4 duck b|
+4 arrow b|
+4 batch b|
+5 local c|
+5 dt c|
+5 sqlite Can't select with a predicate in `where(is.factor)`.
+ℹ This input's backend doesn't report column types without a query, and marginplyr sends none you didn't ask for.
+ℹ Select the columns by name, or collect the input first.
+ℹ A Margin operation on collected data defaults `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly.
+Caused by error in `resolve_column_selection()` at marginplyr/R/grouping-plan.R:1383:3:
+! This tidyselect interface doesn't support predicates.
+5 duck c|
+5 arrow c|
+5 batch c|
+6 local z|
+6 dt z|
+6 sqlite Can't select with a predicate in `where(function(x) inherits(x, "Date"))`.
+ℹ This input's backend doesn't report column types without a query, and marginplyr sends none you didn't ask for.
+ℹ Select the columns by name, or collect the input first.
+ℹ A Margin operation on collected data defaults `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly.
+Caused by error in `resolve_column_selection()` at marginplyr/R/grouping-plan.R:1383:3:
+! This tidyselect interface doesn't support predicates.
+6 duck z|
+6 arrow z|
+6 batch z|
+7 local a:b:c:z|a:b:c|a:b|a|
+7 dt a:b:c:z|a:b:c|a:b|a|
+7 sqlite a:b:c:z|a:b:c|a:b|a|
+7 duck a:b:c:z|a:b:c|a:b|a|
+7 arrow a:b:c:z|a:b:c|a:b|a|
+7 batch a:b:c:z|a:b:c|a:b|a|
+8 local a:c:z|a:c|a|
+8 dt a:c:z|a:c|a|
+8 sqlite a:c:z|a:c|a|
+8 duck a:c:z|a:c|a|
+8 arrow a:c:z|a:c|a|
+8 batch a:c:z|a:c|a|
+9 local a|
+9 dt a|
+9 sqlite a|
+9 duck a|
+9 arrow a|
+9 batch a|
+10 local a:c|a|
+10 dt a:c|a|
+10 sqlite a:c|a|
+10 duck a:c|a|
+10 arrow a:c|a|
+10 batch a:c|a|
+11 local a:b:c:z|a:b:c|a:b|a|
+11 dt a:b:c:z|a:b:c|a:b|a|
+11 sqlite a:b:c:z|a:b:c|a:b|a|
+11 duck a:b:c:z|a:b:c|a:b|a|
+11 arrow a:b:c:z|a:b:c|a:b|a|
+11 batch a:b:c:z|a:b:c|a:b|a|
+12 local a:b|a|
+12 dt a:b|a|
+12 sqlite a:b|a|
+12 duck a:b|a|
+12 arrow a:b|a|
+12 batch a:b|a|
+PASS: 72 inspection cases matched local plans or the documented SQLite predicate refusal
