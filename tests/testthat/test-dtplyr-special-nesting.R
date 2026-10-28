@@ -235,6 +235,189 @@ test_that("dtplyr nesting keeps control names and occupied temporary names", {
   expect_identical(dplyr::collect(source), input)
 })
 
+test_that("dtplyr nesting reads locked internal names as payload columns", {
+  skip_if_suggest_absent("dtplyr")
+  for (column in c(".SDall", ".xSD", ".iSD")) {
+    input <- tibble::tibble(value = 1L)
+    names(input) <- column
+    for (verb in list(nest_with_margins, nest_by_with_margins)) {
+      result <- verb(dtplyr::lazy_dt(input, immutable = TRUE))
+      if (identical(verb, nest_with_margins)) {
+        expect_s3_class(result, "dtplyr_step")
+        result <- dplyr::collect(result)
+      } else {
+        expect_s3_class(result, "rowwise_df")
+      }
+      expect_identical(names(result), "data", info = column)
+      expect_identical(tibble::as_tibble(result$data[[1L]]), input,
+                       info = column)
+    }
+  }
+})
+
+test_that("dtplyr special names retain nesting roles and original cells", {
+  skip_if_suggest_absent("dtplyr")
+  for (column in c(".SDall", ".xSD", ".iSD", ".ROW")) {
+    for (size in c(0L, 1L, 3L)) {
+      for (role in c("payload", "fixed", "dimension", "id", "key")) {
+        input <- tibble::tibble(
+          g = rep(c("x", "y", "x"), length.out = size),
+          value = rep(c(1L, NA_integer_, 1L), length.out = size),
+          ..marginplyr_dtplyr_column_1 = rep(4L, size),
+          ..marginplyr_dtplyr_column_1_ = rep(5L, size),
+          ..marginplyr_nest_1 = rep(6L, size)
+        )
+        if (role == "payload") names(input)[2L] <- column
+        if (role %in% c("fixed", "dimension")) {
+          input$g <- factor(
+            rep(c("a", NA_character_, "a"), length.out = size),
+            levels = c("a", "unused")
+          )
+          names(input)[1L] <- column
+        }
+        key <- if (role == "key") column else "data"
+        grouping <- if (role == "dimension") {
+          rollup(dplyr::all_of(column))
+        } else if (role == "fixed") {
+          grouping_set()
+        } else {
+          rollup(g)
+        }
+        # dtplyr imports data.table; a second backend guard would hide this test
+        # in the isolated dtplyr job (AGENTS.md, Release matrix).
+        table <- data.table::as.data.table(input)
+        before <- data.table::copy(table)
+        source <- dtplyr::lazy_dt(table, immutable = TRUE)
+        for (keep in c(FALSE, TRUE)) {
+          for (verb in list(nest_with_margins, nest_by_with_margins)) {
+            run <- function(data) {
+              verb(
+                data, .by = if (role == "fixed") dplyr::all_of(column),
+                .grouping = grouping, .keep = keep, .key = key,
+                .id = if (role == "id") column else "set", .sort = "last"
+              )
+            }
+            info <- paste(
+              column, size, role, keep,
+              if (identical(verb, nest_with_margins)) "nest" else "nest_by"
+            )
+            actual <- run(source)
+            if (identical(verb, nest_with_margins)) {
+              expect_s3_class(actual, "dtplyr_step")
+              actual <- dplyr::collect(actual)
+            } else {
+              expect_s3_class(actual, "rowwise_df")
+            }
+            expected <- run(input)
+            expect_identical(names(actual), names(expected), info = info)
+            outer <- setdiff(names(expected), key)
+            expect_identical(as.list(actual[outer]), as.list(expected[outer]),
+                             info = info)
+            expect_special_nesting_rows(actual, expected, "last", key,
+                                        info = info)
+            expect_identical(table, before, info = info)
+          }
+        }
+        expect_identical(dplyr::collect(source), input)
+      }
+    }
+  }
+})
+
+test_that("dtplyr locked nesting names retain the collection boundary", {
+  skip_if_suggest_absent("dtplyr")
+  seen <- integer()
+  probe <- function(x) {
+    seen <<- c(seen, length(x))
+    x > 0L
+  }
+  input <- tibble::tibble(
+    .SDall = c("a", "a", "a"), .xSD = c("x", "y", "x"),
+    .iSD = c(1L, 2L, 1L), ..marginplyr_dtplyr_column_1 = c(3L, 4L, 3L),
+    ..marginplyr_dtplyr_column_1_ = c(5L, 6L, 5L)
+  )
+  for (keep in c(FALSE, TRUE)) {
+    source <- dtplyr::lazy_dt(input, immutable = TRUE) |>
+      dplyr::filter(probe(.iSD))
+    for (verb in list(nest_with_margins, nest_by_with_margins)) {
+      run <- function(data) {
+        verb(
+          data, .by = .SDall, .grouping = rollup(.xSD), .keep = keep,
+          .key = "..marginplyr_dtplyr_column_1__", .sort = "last"
+        )
+      }
+      seen <- integer()
+      actual <- run(source)
+      if (identical(verb, nest_with_margins)) {
+        expect_identical(seen, integer())
+        actual <- dplyr::collect(actual)
+      } else {
+        expect_s3_class(actual, "rowwise_df")
+      }
+      expect_true(any(seen > 0L))
+      expect_special_nesting_rows(
+        actual, run(input), "last", "..marginplyr_dtplyr_column_1__"
+      )
+      expect_identical(dplyr::collect(source), input)
+    }
+  }
+})
+
+test_that("dtplyr .ROW nesting retains typed keys and deferred reads", {
+  skip_if_suggest_absent("dtplyr")
+  for (role in c("dimension", "id")) {
+    input <- tibble::tibble(
+      g = as.Date(c("2026-10-28", NA_character_, "2026-10-28")),
+      value = c(1L, 2L, 1L),
+      ..marginplyr_dtplyr_column_1 = c(3L, 4L, 3L),
+      ..marginplyr_dtplyr_column_1_ = c(5L, 6L, 5L)
+    )
+    dimension <- if (role == "dimension") ".ROW" else "g"
+    names(input)[1L] <- dimension
+    # dtplyr imports data.table; no second optional-backend guard is needed.
+    table <- data.table::as.data.table(input)
+    before <- data.table::copy(table)
+    seen <- integer()
+    probe <- function(x) {
+      seen <<- c(seen, length(x))
+      x > 0L
+    }
+    source <- dtplyr::lazy_dt(table, immutable = TRUE) |>
+      dplyr::filter(probe(value))
+    for (keep in c(FALSE, TRUE)) {
+      for (sort in c("none", "first")) {
+        for (verb in list(nest_with_margins, nest_by_with_margins)) {
+          run <- function(data) {
+            verb(
+              data, .grouping = rollup(dplyr::all_of(dimension)),
+              .id = if (role == "id") ".ROW" else "set",
+              .keep = keep, .margin_label = NULL, .sort = sort,
+              .key = "..marginplyr_dtplyr_column_1__"
+            )
+          }
+          seen <- integer()
+          actual <- run(source)
+          if (identical(verb, nest_with_margins)) {
+            expect_s3_class(actual, "dtplyr_step")
+            expect_identical(seen, integer())
+            actual <- dplyr::collect(actual)
+          } else {
+            expect_s3_class(actual, "rowwise_df")
+          }
+          expect_true(any(seen > 0L))
+          expected <- run(input)
+          expect_identical(names(actual), names(expected))
+          expect_special_nesting_rows(
+            actual, expected, sort, "..marginplyr_dtplyr_column_1__"
+          )
+          expect_identical(table, before)
+        }
+      }
+    }
+    expect_identical(dplyr::collect(source), input)
+  }
+})
+
 test_that("filtered dtplyr special columns retain nesting roles and values", {
   skip_if_suggest_absent("dtplyr")
   columns <- c(

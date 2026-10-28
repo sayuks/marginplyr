@@ -1,0 +1,14 @@
+PASS ordinary source collection
+PASS nest_with_margins local dimension 
+PASS nest_with_margins fixed key 
+REPRODUCED nest_with_margins dimension : .ROW can only be used with := NULL to delete rows 
+REPRODUCED nest_with_margins id : .ROW can only be used with := NULL to delete rows 
+PASS nest_with_margins safe renamed dimension 
+PASS nest_by_with_margins local dimension 
+PASS nest_by_with_margins fixed key 
+REPRODUCED nest_by_with_margins dimension : .ROW can only be used with := NULL to delete rows 
+REPRODUCED nest_by_with_margins id : .ROW can only be used with := NULL to delete rows 
+PASS nest_by_with_margins safe renamed dimension 
+PASS lazy dimension construction; failure was deferred to collection
+REPRODUCED ordinary dtplyr mutation control : .ROW can only be used with := NULL to delete rows 
+PASS source remained unchanged

@@ -1,0 +1,12 @@
+Completed print 
+Completed -.POSIXt 
+Completed Cfastmean 
+Completed order 
+
+pass 
+ 240 
+< table of extent 0 x 0 >
+Candidates: 4 ; nesting calls: 240 
+R: R version 4.6.1 (2026-06-24) 
+data.table: 1.18.6.1 
+dtplyr: 1.3.3 

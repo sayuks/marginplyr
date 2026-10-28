@@ -104,7 +104,8 @@ margin_safe_column_reads <- function(.data, read, transform,
     return(transform(.data, function(name) name))
   }
   special <- intersect(
-    read, c(".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY", ".ROW")
+    read, c(".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY", ".ROW",
+            ".xSD", ".iSD")
   )
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))
