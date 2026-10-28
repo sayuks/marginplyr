@@ -4537,17 +4537,33 @@ test_that("a formula a capture carries keeps its class and environment", {
   expect_identical(result$applied, result$units + 100)
 })
 
-# The static selection reader supplies dplyr's default to an empty pick call.
-test_that("empty pick selection reads every column", {
+# Execution refuses an omitted pick input, so no public result exposes the
+# planner's output-name claim. Check the static reader directly here.
+test_that("empty pick input stays distinct from explicit selections", {
+  expect_null(parse_pick_selection(quote(dplyr::pick())))
   expect_identical(
-    parse_pick_selection(quote(dplyr::pick())),
-    quote(dplyr::everything())
+    known_data_frame_output_names(
+      quote(dplyr::pick()), environment(), data.frame(x = 1L)
+    ),
+    character()
   )
   expect_identical(
     known_data_frame_output_names(
       quote(dplyr::pick(x)), environment(), data.frame(x = 1L)
     ),
     "x"
+  )
+  expect_identical(
+    known_data_frame_output_names(
+      quote(dplyr::pick(dplyr::everything())), environment(), data.frame(x = 1L)
+    ),
+    "x"
+  )
+  expect_identical(
+    known_data_frame_output_names(
+      quote(dplyr::pick(c())), environment(), data.frame(x = 1L)
+    ),
+    character()
   )
 })
 
