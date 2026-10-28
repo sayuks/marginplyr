@@ -1,0 +1,15 @@
+PASS source collection, root typed inspection, filtered name-only inspection
+FAIL filtered typed inspection FALSE FALSE : A column may not be called .SD. That has special meaning.
+FAIL filtered typed inspection FALSE TRUE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest FALSE FALSE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest FALSE TRUE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest FALSE FALSE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest FALSE TRUE : A column may not be called .SD. That has special meaning.
+FAIL filtered typed inspection TRUE FALSE : A column may not be called .SD. That has special meaning.
+FAIL filtered typed inspection TRUE TRUE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest TRUE FALSE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest TRUE TRUE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest TRUE FALSE : A column may not be called .SD. That has special meaning.
+FAIL filtered nest TRUE TRUE : A column may not be called .SD. That has special meaning.
+FAIL mutable typed inspection : A column may not be called .SD. That has special meaning.
+checks 13 failures 13 ; zero predicate rows read; source unchanged
