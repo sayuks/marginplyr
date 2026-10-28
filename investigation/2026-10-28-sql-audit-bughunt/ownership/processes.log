@@ -1,0 +1,4 @@
+PASS process boundary: fork ; 2 child records; parent unchanged
+PASS process boundary: callr ; 2 child records; parent unchanged
+PASS process boundary: PSOCK ; 2 child records; parent unchanged
+PASS total assertions: 31

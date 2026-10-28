@@ -1,0 +1,7 @@
+Snapshot: ac6ad79ff6026abe5fc45538d6dfefadf03a8ca3
+Normal pairs: 726; expected collision refusals: 249; successful calls: 477
+Normal rows per audit-on set: 758 internal (516 counts, 242 metadata), 267 prepared results
+Failure/notice/timeout/transaction pairs: 13; internal rows: 18; prepared results: 5
+Failure-set statuses: 9 errored, 9 returned, 5 prepared
+Total public calls in paired capture: 1478; total internal DBI sends: 1552
+No new bug confirmed by the tested paths. All assertions passed.

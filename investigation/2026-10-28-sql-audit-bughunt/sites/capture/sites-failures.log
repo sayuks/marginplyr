@@ -1,0 +1,222 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+sqlite/unimplemented_expression PASS
+# A tibble: 1 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision errored
+[[1]]
+                        classes
+1 rlang_error, error, condition
+                                                                                           message
+1 Failed to collect lazy table.\nCaused by error:\n! no such function: marginplyr_missing_function
+       phase   handling
+1 invocation propagated
+
+sqlite/dropped_table PASS
+# A tibble: 1 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision errored
+[[1]]
+                        classes
+1 rlang_error, error, condition
+                                                                              message
+1 Failed to collect lazy table.\nCaused by error:\n! no such table: sites_fail_sqlite
+       phase   handling
+1 invocation propagated
+
+duck/unimplemented_expression PASS
+# A tibble: 1 × 2
+  purpose         status
+  <chr>           <chr>
+1 selection_proxy errored
+[[1]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                                                                                          message
+1 Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Catalog Error: Scalar Function with name marginplyr_missing_function does not exist!\nDid you mean "map"?\n\nLINE 1: SELECT marginplyr_missing_function(g) AS g, v\n               ^\nℹ Context: rapi_prepare\nℹ Error type: CATALOG
+       phase   handling
+1 invocation propagated
+
+duck/dropped_table PASS
+# A tibble: 1 × 2
+  purpose         status
+  <chr>           <chr>
+1 selection_proxy errored
+[[1]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                                                   message
+1 Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Catalog Error: Table with name sites_fail_duck does not exist!\nDid you mean "sqlite_schema"?\n\nLINE 2: FROM sites_fail_duck\n             ^\nℹ Context: rapi_prepare\nℹ Error type: CATALOG
+       phase   handling
+1 invocation propagated
+
+pg/unimplemented_expression PASS
+# A tibble: 1 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision errored
+[[1]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                                                                                                               message
+1 Failed to collect lazy table.\nCaused by error:\n! Failed to prepare query : ERROR:  function marginplyr_missing_function(text) does not exist\nLINE 3:   SELECT marginplyr_missing_function(g) AS "g"\n                 ^\nHINT:  No function matches the given name and argument types. You might need to add explicit type casts.
+       phase   handling
+1 invocation propagated
+
+pg/dropped_table PASS
+# A tibble: 1 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision errored
+[[1]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                     message
+1 Failed to collect lazy table.\nCaused by error:\n! Failed to prepare query : ERROR:  relation "sites_fail_pg" does not exist\nLINE 2: FROM "sites_fail_pg"\n             ^
+       phase   handling
+1 invocation propagated
+
+WARNING:  live backend warning
+
+WARNING:  live backend warning
+
+pg/live_warning/-1 PASS
+# A tibble: 2 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision returned
+2 result                   prepared
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+WARNING:  live backend warning
+
+WARNING:  live backend warning
+
+pg/live_warning/0 PASS
+# A tibble: 2 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision returned
+2 result                   prepared
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+WARNING:  live backend warning
+
+WARNING:  live backend warning
+
+pg/live_warning/1 PASS
+# A tibble: 2 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision returned
+2 result                   prepared
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+WARNING:  live backend warning
+
+WARNING:  live backend warning
+
+pg/live_warning/2 PASS
+# A tibble: 2 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision returned
+2 result                   prepared
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+pg/live_statement_timeout PASS
+# A tibble: 1 × 2
+  purpose                  status
+  <chr>                    <chr>
+1 observed_label_collision errored
+[[1]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                              message
+1 Failed to collect lazy table.\nCaused by error:\n! Failed to fetch row : ERROR:  canceling statement due to statement timeout\nCONTEXT:  SQL statement "SELECT pg_sleep(0.1)"\nPL/pgSQL function pg_temp_1.marginplyr_pause(text) line 1 at PERFORM
+       phase   handling
+1 invocation propagated
+
+pg/read_only_transaction_probe PASS
+# A tibble: 7 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction returned
+2 share_dialect             errored
+3 share_dialect_transaction returned
+4 share_dialect_control     returned
+5 share_dialect_transaction returned
+6 share_dialect_transaction returned
+7 result                    prepared
+[[1]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[2]]
+                        classes
+1 rlang_error, error, condition
+                                                                                                                                                                                                                                                                    message
+1 Failed to collect lazy table.\nCaused by error:\n! Failed to prepare query : ERROR:  function sum(unknown) is not unique\nLINE 1: SELECT SUM('x') AS "p"\n               ^\nHINT:  Could not choose a best candidate function. You might need to add explicit type casts.
+       phase handling
+1 invocation  handled
+
+[[3]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[4]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[5]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[6]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+[[7]]
+[1] classes  message  phase    handling
+<0 rows> (or 0-length row.names)
+
+pg/aborted_transaction_probe PASS
+# A tibble: 1 × 2
+  purpose                   status
+  <chr>                     <chr>
+1 share_dialect_transaction errored
+[[1]]
+                        classes
+1 simpleError, error, condition
+                                                                                                              message
+1 Failed to prepare query : ERROR:  current transaction is aborted, commands ignored until end of transaction block\n
+       phase handling
+1 invocation  handled
+
+TOTAL FAILURE/WARNING/TRANSACTION PAIRS 13
+Untracing function "dbSendQuery" in package "namespace:DBI"

@@ -1,0 +1,3 @@
+PASS accessor matrix: 36 valid pairs and 14 invalid flags
+PASS recursive SQL translator reentry: 510 snapshots; depth 8 ; inactive children; caught child refusals; copy stability
+PASS total assertions: 2173

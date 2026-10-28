@@ -1,0 +1,4 @@
+BINARY database equality: FALSE ; matching collision outcome; record stable
+NOCASE database equality: TRUE ; matching collision outcome; record stable
+RTRIM database equality: TRUE ; matching collision outcome; record stable
+PASS: 3 collation controls; no additional defect established
