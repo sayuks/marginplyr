@@ -1,0 +1,21 @@
+ERROR “...” payload local= TRUE dt= TRUE
+ERROR “...” fixed local= TRUE dt= TRUE
+ERROR “...” dimension local= TRUE dt= TRUE
+ERROR “...” id local= FALSE dt= TRUE
+ERROR “..1” payload local= TRUE dt= TRUE
+ERROR “..1” fixed local= TRUE dt= TRUE
+ERROR “..1” dimension local= TRUE dt= TRUE
+ERROR “..1” id local= FALSE dt= TRUE
+ERROR “..2” payload local= TRUE dt= TRUE
+ERROR “..2” fixed local= TRUE dt= TRUE
+ERROR “..2” dimension local= TRUE dt= TRUE
+ERROR “..2” id local= FALSE dt= TRUE
+ERROR “” payload local= TRUE dt= TRUE
+ERROR “” fixed local= TRUE dt= TRUE
+ERROR “” dimension local= TRUE dt= TRUE
+ERROR “” key local= TRUE dt= TRUE
+ERROR “” id local= TRUE dt= TRUE
+         attempt       both_error local_only_error    dt_only_error
+             100               14                0                3
+      difference            equal
+               0               83

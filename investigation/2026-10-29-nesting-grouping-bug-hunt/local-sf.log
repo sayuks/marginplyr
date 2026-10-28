@@ -1,0 +1,14 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+checked 4176 failures 0
+list()
+PASS: 4176 checked cases

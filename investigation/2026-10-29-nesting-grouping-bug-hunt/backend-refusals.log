@@ -1,0 +1,16 @@
+Constructing traceable class “nonstandardGenericFunctionWithTrace”
+Environment of class “nonstandardGenericFunction” is locked; using global environment for new class
+Tracing function "dbGetQuery" in package "namespace:DBI"
+[1] "dbGetQuery"
+PASS sqlite nest refused before dbGetQuery
+PASS sqlite nest_by refused before dbGetQuery
+PASS arrow_table nest refused before dbGetQuery
+PASS arrow_table nest_by refused before dbGetQuery
+PASS arrow_batch nest refused before dbGetQuery
+PASS arrow_batch nest_by refused before dbGetQuery
+PASS arrow_query nest refused before dbGetQuery
+PASS arrow_query nest_by refused before dbGetQuery
+PASS arrow_reader nest refused before dbGetQuery
+PASS arrow_reader nest_by refused before dbGetQuery
+Untracing function "dbGetQuery" in package "namespace:DBI"
+PASS reader remained fully consumable

@@ -1,0 +1,16 @@
+Baseline: 58356a67a79d1d2961eac6b8865d30afdb751d5c
+Investigated: 2026-10-29
+
+Existing test_local filter grouping|nest: exit 0 (18 files).
+Existing test_local selection filters: exit 0 (3 files).
+Jarl check .: exit 0.
+Package-aware lintr after pkgload::load_all(): exit 0, no lints.
+Context-budget verifier: exit 0, 20008 / 22005 bytes.
+Documentation-reference verifier: exit 0.
+git diff main --check: passed after removing trailing spaces from captured outputs.
+All 18 archived R evidence scripts: parsed successfully.
+reproduce.R observation: exit 0, 20 / 20 defective cases observed.
+reproduce.R --assert: exit 1, intentionally red; 20 / 20 defects observed.
+identifier-matrix.R observation: exit 0, 480 / 480 defective cases observed; controls matched and sources unchanged.
+Package-affecting Review-ready check: not applicable; investigation-only artifacts under the existing source-package exclusion.
+CI: no monitoring requested or performed.

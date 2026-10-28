@@ -1,0 +1,21 @@
+pkgload 1.5.3
+testthat 3.3.2
+tibble 3.3.1
+vctrs 0.7.3
+rlang 1.3.0
+tidyselect 1.2.1
+dplyr 1.2.1
+tidyr 1.3.2
+dbplyr 2.6.0
+dtplyr 1.3.3
+data.table 1.18.6.1
+DBI 1.3.0
+RSQLite 3.53.3
+duckdb 1.5.5
+arrow 25.0.1
+sf 1.1.2
+bit64 4.8.6
+hms 1.1.4
+ sysname  release  machine
+"Darwin" "25.6.0"  "arm64"
+[1] "R version 4.6.1 (2026-06-24)"

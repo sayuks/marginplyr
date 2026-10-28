@@ -1,0 +1,20 @@
+
+TYPE complex upstream source preserves: TRUE
+upstream nest: 1
+single cell preserves: TRUE
+local margins: 2
+margins error: simpleError/error/condition unsupported column type found in x or y: [complex]
+single cell preserves: TRUE
+local margins: 2
+margins error: simpleError/error/condition unsupported column type found in x or y: [complex]
+rbindlist type: complex
+
+TYPE raw upstream source preserves: TRUE
+upstream nest: 1
+single cell preserves: TRUE
+local margins: 2
+margins error: simpleError/error/condition unsupported column type found in x or y: [raw]
+single cell preserves: TRUE
+local margins: 2
+margins error: simpleError/error/condition unsupported column type found in x or y: [raw]
+rbindlist type: raw
