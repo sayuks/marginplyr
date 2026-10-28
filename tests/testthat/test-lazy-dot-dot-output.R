@@ -72,3 +72,41 @@ test_that("dtplyr retains dot-dot summary names for data-frame conversion", {
   skip_if_suggest_absent("dtplyr")
   expect_lazy_dot_dot_outputs(dtplyr::lazy_dt, as.data.frame)
 })
+
+test_that("dtplyr omitted .ROW keys preserve dot-dot summary outputs", {
+  skip_if_suggest_absent("dtplyr")
+  input <- data.frame(.ROW = c("b", "a"), value = c(1L, 2L))
+  for (name in c("...", "..1", "..42")) {
+    run <- function(data) {
+      summarize_with_margins(
+        data, !!name := sum(value), .grouping = rollup(.ROW),
+        .margin_label = NULL, .id = "set", .sort = "last"
+      )
+    }
+    expect_identical(as.data.frame(run(dtplyr::lazy_dt(input))), run(input))
+  }
+})
+
+test_that("dtplyr .ROW identifiers preserve dot-dot summary outputs", {
+  skip_if_suggest_absent("dtplyr")
+  for (size in c(0L, 1L, 3L)) {
+    input <- data.frame(
+      g = rep(c("a", NA_character_, "a"), length.out = size),
+      value = rep(c(1L, 2L, 1L), length.out = size)
+    )
+    for (name in c("...", "..1", "..42")) {
+      run <- function(data) {
+        summarize_with_margins(
+          data, !!name := sum(value),
+          ..marginplyr_dtplyr_column_1 = dplyr::n(),
+          ..marginplyr_dtplyr_column_1_ = sum(value),
+          .grouping = rollup(g), .id = ".ROW",
+          .margin_label = NULL, .sort = "last"
+        )
+      }
+      actual <- run(dtplyr::lazy_dt(input))
+      expect_s3_class(actual, "dtplyr_step")
+      expect_identical(as.data.frame(actual), run(input))
+    }
+  }
+})

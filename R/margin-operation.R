@@ -319,6 +319,7 @@ prepare_margin_operation <- function(.data,
         dimensions = plan$dimensions
       )
 
+      data <- dtplyr_margin_input(data, backend)
       new_margin_operation(
         data = sqlite_margin_input(data, backend, data_vars),
         backend = backend,

@@ -32,6 +32,17 @@ combine_margin_branches <- function(branches) {
   union_margin_branches(branches)
 }
 
+# Isolate each dtplyr Margin branch when it executes, even when a row filter
+# returns its source by reference. Preparation has already refused Mutable
+# steps (ADR 0029); building this step reads no rows (ADR 0020).
+dtplyr_margin_input <- function(.data, backend) {
+  if (!identical(backend$kind, "dtplyr")) {
+    return(.data)
+  }
+  step_call <- utils::getFromNamespace("step_call", "dtplyr")
+  step_call(.data, "copy")
+}
+
 # Preserve a prepared SQLite input as one relation before anchors and branches
 # reuse it. Compound operands cannot carry an outer LIMIT or ORDER BY. Keep
 # those clauses inside the rendered input, and retain its window-order metadata.
@@ -469,11 +480,13 @@ add_grouping_set_id <- function(result,
   # Injected for the same reason as the factor methods: a bare `set_id` here
   # resolves against the data mask first, so a grouping column of that name
   # would number every row from its own values instead of the branch's
-  # grouping-set id. The `{set_id_name}` glue is evaluated in this environment
-  # rather than the mask, so only the value needs injecting.
-  dplyr::mutate(
+  # grouping-set id.
+  margin_safe_column_reads(
     result,
-    "{set_id_name}" := !!value
+    if (inherits(result, "dtplyr_step")) set_id_name else character(),
+    function(source, safe_name) {
+      dplyr::mutate(source, !!safe_name(set_id_name) := !!value)
+    }
   )
 }
 

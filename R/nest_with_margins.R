@@ -550,6 +550,8 @@ nest_expanded_margins <- function(.data,
                                   .key,
                                   kind,
                                   drop_set_col = TRUE) {
+  # Subclass summary methods may aggregate payload columns outside the cells.
+  .data <- margin_column_source(.data)
   # dplyr consumes `.rows` when it constructs local grouping keys. Alias
   # only outer keys; payload and list-column names never enter that metadata.
   outer_cols <- c(group_cols, set_col, unname(identity_cols))
