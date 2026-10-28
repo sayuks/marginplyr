@@ -543,7 +543,7 @@ nest_cell_expr <- function(cell_cols, kind) {
 # semantics, which may aggregate payload columns outside the cells. Bare data
 # frames retain their summary shape; lazy inputs retain backend translation.
 nest_fold_source <- function(data) {
-  if (!is.data.frame(data) || identical(class(data), "data.frame")) {
+  if (!is.data.frame(data) || length(class(data)) == 1L) {
     return(data)
   }
   dplyr::as_tibble(data, .name_repair = "minimal")
