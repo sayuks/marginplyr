@@ -1,0 +1,9 @@
+PASS upstream tidyr::nest() and dplyr::nest_by() controls
+PASS tibble with the same geometry payload
+Temporary rename control: sf_column = 2 ; actual columns = g, geometry
+FAIL nest_with_margins no grouping : internal error: can't find sf column
+FAIL nest_with_margins .by = g : internal error: can't find sf column
+FAIL nest_by_with_margins no grouping : internal error: can't find sf column
+FAIL nest_by_with_margins .by = g : internal error: can't find sf column
+Error: Confirmed sf nesting failures: nest_with_margins no grouping; nest_with_margins .by = g; nest_by_with_margins no grouping; nest_by_with_margins .by = g
+Execution halted
