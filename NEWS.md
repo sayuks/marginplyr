@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Margin operations isolate immutable dtplyr inputs at execution, including
+  row-preserving filters and cached steps. Nesting also accepts `.SDall` and
+  `.ROW` columns (#959).
+
 * Filtered dtplyr inputs retain `.SD` columns in typed Grouping selections
   and both nesting verbs, preserving column names and cell values (#947).
 

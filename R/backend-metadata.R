@@ -208,7 +208,7 @@ dtplyr_metadata_safe_step <- function(step) {
     return(identical(step[["vars"]], step[["parent"]][["vars"]]))
   }
   if (inherits(step, "dtplyr_step_call")) {
-    return(step[["fun"]] %in% c("setnames", "setcolorder", "setorder"))
+    return(step[["fun"]] %in% c("copy", "setnames", "setcolorder", "setorder"))
   }
   if (inherits(step, "dtplyr_step_subset")) {
     return(!is.null(dtplyr_metadata_subset_columns(step)))

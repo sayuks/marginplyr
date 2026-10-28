@@ -78,11 +78,10 @@ margin_column_pronoun <- function(name) {
   rlang::call2("[[", rlang::sym(".data"), name)
 }
 
-# Evaluate a generated expression while its input columns cannot be mistaken
-# for R dot arguments or data.table special variables. `read` names the columns
-# the expression reads; `transform` receives their temporary names and returns
-# a result. `reserved` keeps its output names out of the alias set. Lazy inputs
-# retain lazy renaming and leave the caller's source untouched.
+# Evaluate a generated expression under names safe for R dot arguments and
+# data.table special variables. `read` names source and output columns.
+# `transform` receives their temporary names and returns a result; `reserved`
+# keeps its output names out of the alias set.
 margin_safe_column_reads <- function(.data, read, transform,
                                      reserved = character()) {
   if (is.data.frame(.data)) {
@@ -92,21 +91,22 @@ margin_safe_column_reads <- function(.data, read, transform,
     return(transform(.data, function(name) name))
   }
   special <- intersect(
-    read,
-    intersect(c(".N", ".I", ".SD", ".GRP", ".NGRP", ".BY"),
-              margin_col_names(.data))
+    read, c(".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY", ".ROW")
   )
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))
   }
+  data_vars <- get_col_names(.data, dplyr::everything())
   aliases <- new_margin_internal_names(
     length(special),
-    used_names = c(get_col_names(.data, dplyr::everything()), reserved),
+    used_names = c(data_vars, reserved),
     prefix = "..marginplyr_dtplyr_column_"
   )
   names(aliases) <- special
+  # An omitted summary dimension can be an output target absent from the input.
+  present <- intersect(special, data_vars)
   renamed <- dplyr::rename(
-    .data, !!!rlang::set_names(rlang::syms(special), unname(aliases))
+    .data, !!!rlang::set_names(rlang::syms(present), unname(aliases[present]))
   )
   safe_name <- function(name) {
     if (name %in% special) unname(aliases[[name]]) else name
