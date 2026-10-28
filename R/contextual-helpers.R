@@ -124,10 +124,18 @@ static_spelling_rules <- function() {
         input = ".data",
         names = c(
           "mutate", "transmute", "summarise", "summarize", "reframe",
-          "filter", "arrange", "group_by", "rowwise", "distinct",
+          "filter", "arrange", "group_by", "distinct",
           "select", "rename", "rename_with", "relocate", "slice",
           "slice_head", "slice_tail", "slice_min", "slice_max", "slice_sample"
         )
+      )
+    },
+    dplyr_rowwise_mask = function() {
+      list(
+        namespaces = "dplyr",
+        contextual = FALSE,
+        input = "data",
+        names = "rowwise"
       )
     },
     dplyr_count_mask = function() {
@@ -183,7 +191,9 @@ independent_mask_call_parts <- function(expr) {
 
 # The registry rule for a statically named independent data-mask operation.
 independent_mask_rule <- function(expr) {
-  for (family in c("margin_mask", "dplyr_mask", "dplyr_count_mask")) {
+  for (family in c(
+    "margin_mask", "dplyr_mask", "dplyr_rowwise_mask", "dplyr_count_mask"
+  )) {
     if (!is.null(static_spelling_name(expr, family))) {
       return(static_spelling_rule(family))
     }
