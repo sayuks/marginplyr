@@ -69,6 +69,10 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
       .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
     )
     data_vars <- as.character(dplyr::tbl_vars(.data))
+    if (".env" %in% data_vars) {
+      # The generated rename projection renders before result-level quoting.
+      .data <- sql_env_output_query(.data)
+    }
   }
   input_sql <- dbplyr::sql_render(.data)
   if (enclose) {
