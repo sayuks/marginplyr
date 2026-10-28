@@ -1,0 +1,133 @@
+REFUSED complex fixed NULL none local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex fixed NULL last local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex fixed NULL first local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex fixed Total none local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex fixed Total last local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex fixed Total first local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex dimension NULL none local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex dimension NULL last local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex dimension NULL first local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex dimension Total none local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex dimension Total last local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED complex dimension Total first local: OK dtplyr: unsupported column type found in x or y: [complex]
+REFUSED raw fixed NULL none local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw fixed NULL last local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw fixed NULL first local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw fixed Total none local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw fixed Total last local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw fixed Total first local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw dimension NULL none local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping.
+REFUSED raw dimension NULL last local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping.
+REFUSED raw dimension NULL first local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping.
+REFUSED raw dimension Total none local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw dimension Total last local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED raw dimension Total first local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED list fixed NULL none local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED list fixed NULL last local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED list fixed NULL first local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED list fixed Total none local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED list fixed Total last local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED list fixed Total first local: OK dtplyr: Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+REFUSED list dimension NULL none local: OK dtplyr: Invalid input
+REFUSED list dimension NULL last local: OK dtplyr: Invalid input
+REFUSED list dimension NULL first local: OK dtplyr: Invalid input
+REFUSED list dimension Total none local: OK dtplyr: Invalid input
+REFUSED list dimension Total last local: OK dtplyr: Invalid input
+REFUSED list dimension Total first local: OK dtplyr: Invalid input
+REFUSED matrix fixed NULL none local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED matrix fixed NULL last local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED matrix fixed NULL first local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED matrix fixed Total none local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED matrix fixed Total last local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED matrix fixed Total first local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED matrix dimension NULL none local: OK dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED matrix dimension NULL last local: OK dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED matrix dimension NULL first local: OK dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED matrix dimension Total none local: A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns. dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED matrix dimension Total last local: A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns. dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED matrix dimension Total first local: A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns. dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED packed fixed NULL none local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED packed fixed NULL last local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED packed fixed NULL first local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED packed fixed Total none local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED packed fixed Total last local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED packed fixed Total first local: OK dtplyr: ℹ In argument: `all_of(if (role == "fixed") "f" else character())`.
+Caused by error in `all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `f` doesn't exist.
+REFUSED packed dimension NULL none local: OK dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED packed dimension NULL last local: OK dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED packed dimension NULL first local: OK dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED packed dimension Total none local: A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns. dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED packed dimension Total last local: A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns. dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+REFUSED packed dimension Total first local: A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns. dtplyr: Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+PASS 156 REFUSED 60 FAIL 0

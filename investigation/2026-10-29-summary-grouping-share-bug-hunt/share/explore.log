@@ -1,0 +1,260 @@
+
+READ 1 old
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 2 .data$old
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 3 .data[[key]]
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 4 get("old")
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 5 get0("old")
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 6 mget("old")[[1L]]
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 7 eval(quote(old))
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 8 evalq(old)
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 9 eval.parent(quote(old))
+     g s  old derived
+1    a 1 0.25       7
+2    b 3 0.75       7
+3 <NA> 4 1.00       7
+
+READ 10 eval.parent(substitute(old))
+     g s  old derived
+1    a 1 0.25       7
+2    b 3 0.75       7
+3 <NA> 4 1.00       7
+
+READ 11 get("old", inherits = FALSE)
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 12 .Internal(get("old", environment(), "any", TRUE))
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 13 do.call(identity, list(old))
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 14 do.call("get", list("old"))
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 15 base::with(environment(), old)
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 16 (function() old)()
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 17 (function(old = old) old)()
+ERROR rlang_error ℹ In argument: `derived = sum((function(old = old) old)())`.
+ℹ In group 1: `g = "a"`.
+Caused by error:
+! promise already under evaluation: recursive default argument reference or earlier problems?
+
+READ 18 {     a <- 1     old }
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 19 .Primitive("get")("old")
+ERROR rlang_error ℹ In argument: `derived = sum(.Primitive("get")("old"))`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `.Primitive()`:
+! no such primitive function
+
+READ 20 identity(get)("old")
+     g s  old derived
+1    a 1 0.25     100
+2    b 3 0.75     300
+3 <NA> 4 1.00     400
+
+READ 21 .subset2(as.list(environment()), "old")
+     g s  old derived
+1    a 1 0.25       0
+2    b 3 0.75       0
+3 <NA> 4 1.00       0
+
+READ 22 base::get("old", mode = "numeric")
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 23 .data[[paste0("o", "ld")]]
+ERROR marginplyr_error Ordinary summaries cannot use an earlier Total share (`old`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+
+READ 24 .env$old
+     g s  old derived
+1    a 1 0.25       7
+2    b 3 0.75       7
+3 <NA> 4 1.00       7
+
+SOURCE SIZES AND TYPES
+parent local 1L : double 1,1,1
+parent dtplyr 1L : double 1,1,1
+parent local 1 : double 1,1,1
+parent dtplyr 1 : double 1,1,1
+parent local NA_real_ : double NA,NA,1
+parent dtplyr NA_real_ : double NA,NA,1
+parent local NaN : double NA,NA,1
+parent dtplyr NaN : double NA,NA,1
+parent local -0 : double NA,NA,1
+parent dtplyr -0 : double NA,NA,1
+parent local Inf : double NaN,NaN,1
+parent dtplyr Inf : double NaN,NaN,1
+parent local -Inf : double NaN,NaN,1
+parent dtplyr -Inf : double NaN,NaN,1
+parent local setNames(1, "v") : double 1,1,1
+parent dtplyr setNames(1, "v") : double 1,1,1
+parent local structure(1, foo = "bar") : double 1,1,1
+parent dtplyr structure(1, foo = "bar") : double 1,1,1
+parent local structure(1, class = "numeric") : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type numeric.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr structure(1, class = "numeric") : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type numeric.
+ℹ Convert it explicitly in the ordinary summary.
+parent local as.raw(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type raw.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr as.raw(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type raw.
+ℹ Convert it explicitly in the ordinary summary.
+parent local as.Date("2020-01-01") : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type Date.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr as.Date("2020-01-01") : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type Date.
+ℹ Convert it explicitly in the ordinary summary.
+parent local list(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type list.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr list(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type list.
+ℹ Convert it explicitly in the ordinary summary.
+parent local integer() : marginplyr_share_cardinality_error Parent share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Parent share for each one.
+parent dtplyr integer() : marginplyr_share_cardinality_error Parent share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Parent share for each one.
+parent local c(1, 2) : marginplyr_share_cardinality_error Parent share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Parent share for each one.
+parent dtplyr c(1, 2) : marginplyr_share_cardinality_error Parent share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Parent share for each one.
+parent local matrix(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type matrix/array.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr matrix(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type matrix/array.
+ℹ Convert it explicitly in the ordinary summary.
+parent local tibble(x = 1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type tbl_df/tbl/data.frame.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr tibble(x = 1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type tbl_df/tbl/data.frame.
+ℹ Convert it explicitly in the ordinary summary.
+parent local expression(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type expression.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr expression(1) : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type expression.
+ℹ Convert it explicitly in the ordinary summary.
+parent local factor("1") : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type factor.
+ℹ Convert it explicitly in the ordinary summary.
+parent dtplyr factor("1") : marginplyr_error Parent share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type factor.
+ℹ Convert it explicitly in the ordinary summary.
+total local 1L : double 1,1,1
+total dtplyr 1L : double 1,1,1
+total local 1 : double 1,1,1
+total dtplyr 1 : double 1,1,1
+total local NA_real_ : double NA,NA,1
+total dtplyr NA_real_ : double NA,NA,1
+total local NaN : double NA,NA,1
+total dtplyr NaN : double NA,NA,1
+total local -0 : double NA,NA,1
+total dtplyr -0 : double NA,NA,1
+total local Inf : double NaN,NaN,1
+total dtplyr Inf : double NaN,NaN,1
+total local -Inf : double NaN,NaN,1
+total dtplyr -Inf : double NaN,NaN,1
+total local setNames(1, "v") : double 1,1,1
+total dtplyr setNames(1, "v") : double 1,1,1
+total local structure(1, foo = "bar") : double 1,1,1
+total dtplyr structure(1, foo = "bar") : double 1,1,1
+total local structure(1, class = "numeric") : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type numeric.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr structure(1, class = "numeric") : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type numeric.
+ℹ Convert it explicitly in the ordinary summary.
+total local as.raw(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type raw.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr as.raw(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type raw.
+ℹ Convert it explicitly in the ordinary summary.
+total local as.Date("2020-01-01") : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type Date.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr as.Date("2020-01-01") : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type Date.
+ℹ Convert it explicitly in the ordinary summary.
+total local list(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type list.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr list(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type list.
+ℹ Convert it explicitly in the ordinary summary.
+total local integer() : marginplyr_share_cardinality_error Total share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Total share for each one.
+total dtplyr integer() : marginplyr_share_cardinality_error Total share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Total share for each one.
+total local c(1, 2) : marginplyr_share_cardinality_error Total share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Total share for each one.
+total dtplyr c(1, 2) : marginplyr_share_cardinality_error Total share `p` requires source summary `s` to return exactly one value per grouping row.
+ℹ Define `s` as one scalar summary; for multiple statistics, create separate named summaries and a Total share for each one.
+total local matrix(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type matrix/array.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr matrix(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type matrix/array.
+ℹ Convert it explicitly in the ordinary summary.
+total local tibble(x = 1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type tbl_df/tbl/data.frame.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr tibble(x = 1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type tbl_df/tbl/data.frame.
+ℹ Convert it explicitly in the ordinary summary.
+total local expression(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type expression.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr expression(1) : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type expression.
+ℹ Convert it explicitly in the ordinary summary.
+total local factor("1") : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type factor.
+ℹ Convert it explicitly in the ordinary summary.
+total dtplyr factor("1") : marginplyr_error Total share `p` requires source summary `s` to be a plain integer or double scalar.
+ℹ Detected type factor.
+ℹ Convert it explicitly in the ordinary summary.

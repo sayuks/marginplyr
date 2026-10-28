@@ -1,0 +1,189 @@
+FAIL sqlite ..0 output none FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..0 output none TRUE ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..0 output last FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..0 output last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..0 output first FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..0 output first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..0 identifier none FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..0 identifier none TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..0 identifier last FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..0 identifier last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..0 identifier first FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..0 identifier first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..00 output none FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..00 output none TRUE ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..00 output last FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..00 output last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..00 output first FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..00 output first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..00 identifier none FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..00 identifier none TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..00 identifier last FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..00 identifier last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..00 identifier first FALSE indexing '...' with non-positive index 0
+FAIL sqlite ..00 identifier first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0
+FAIL sqlite ..01 output none FALSE '...' used in an incorrect context
+FAIL sqlite ..01 output none TRUE ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 output last FALSE '...' used in an incorrect context
+FAIL sqlite ..01 output last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 output first FALSE '...' used in an incorrect context
+FAIL sqlite ..01 output first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 identifier none FALSE ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 identifier none TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 identifier last FALSE ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 identifier last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 identifier first FALSE ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..01 identifier first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+FAIL sqlite ..-1 output none FALSE indexing '...' with non-positive index -1
+FAIL sqlite ..-1 output none TRUE ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index -1
+FAIL sqlite ..-1 output last FALSE indexing '...' with non-positive index -1
+FAIL sqlite ..-1 output last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index -1
+FAIL sqlite ..-1 output first FALSE indexing '...' with non-positive index -1
+FAIL sqlite ..-1 output first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index -1
+FAIL sqlite ..-1 identifier none FALSE indexing '...' with non-positive index -1
+FAIL sqlite ..-1 identifier none TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index -1
+FAIL sqlite ..-1 identifier last FALSE indexing '...' with non-positive index -1
+FAIL sqlite ..-1 identifier last TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index -1
+FAIL sqlite ..-1 identifier first FALSE indexing '...' with non-positive index -1
+FAIL sqlite ..-1 identifier first TRUE ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index -1
+PASS duckdb ..0 output none FALSE
+PASS duckdb ..0 output none TRUE
+FAIL duckdb ..0 output last FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..0 output last TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..0 output first FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..0 output first TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..0 identifier none FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..0 identifier none TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..0 identifier last FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..0 identifier last TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..0 identifier first FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..0 identifier first TRUE indexing '...' with non-positive index 0
+PASS duckdb ..00 output none FALSE
+PASS duckdb ..00 output none TRUE
+FAIL duckdb ..00 output last FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..00 output last TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..00 output first FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..00 output first TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..00 identifier none FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..00 identifier none TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..00 identifier last FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..00 identifier last TRUE indexing '...' with non-positive index 0
+FAIL duckdb ..00 identifier first FALSE indexing '...' with non-positive index 0
+FAIL duckdb ..00 identifier first TRUE indexing '...' with non-positive index 0
+PASS duckdb ..01 output none FALSE
+PASS duckdb ..01 output none TRUE
+FAIL duckdb ..01 output last FALSE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 output last TRUE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 output first FALSE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 output first TRUE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 identifier none FALSE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 identifier none TRUE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 identifier last FALSE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 identifier last TRUE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 identifier first FALSE ..1 used in an incorrect context, no ... to look in
+FAIL duckdb ..01 identifier first TRUE ..1 used in an incorrect context, no ... to look in
+PASS duckdb ..-1 output none FALSE
+PASS duckdb ..-1 output none TRUE
+FAIL duckdb ..-1 output last FALSE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 output last TRUE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 output first FALSE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 output first TRUE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 identifier none FALSE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 identifier none TRUE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 identifier last FALSE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 identifier last TRUE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 identifier first FALSE indexing '...' with non-positive index -1
+FAIL duckdb ..-1 identifier first TRUE indexing '...' with non-positive index -1
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+CHECKS 96 FAIL 88

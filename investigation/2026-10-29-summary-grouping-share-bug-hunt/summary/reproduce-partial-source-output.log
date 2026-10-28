@@ -1,0 +1,102 @@
+BACKEND dtplyr OUTPUT .
+DPLYR
+# A tibble: 1 × 1
+      .
+  <dbl>
+1     1
+MARGIN
+attempt to replicate non-vector
+BACKEND sqlite OUTPUT .
+DPLYR
+# A tibble: 1 × 1
+      .
+  <dbl>
+1     1
+MARGIN
+ℹ In argument: `.data`
+Caused by error in `dplyr::summarize()`:
+! `data` must be a lazy data frame
+BACKEND duckdb_native OUTPUT .
+DPLYR
+# A tibble: 1 × 1
+      .
+  <dbl>
+1     1
+MARGIN
+# A tibble: 1 × 1
+      .
+  <dbl>
+1     1
+BACKEND duckdb_portable OUTPUT .
+ℹ In argument: `.data`
+Caused by error in `dplyr::summarize()`:
+! `data` must be a lazy data frame
+BACKEND dtplyr OUTPUT .da
+DPLYR
+# A tibble: 1 × 1
+    .da
+  <dbl>
+1     1
+MARGIN
+attempt to replicate non-vector
+BACKEND sqlite OUTPUT .da
+DPLYR
+# A tibble: 1 × 1
+    .da
+  <dbl>
+1     1
+MARGIN
+ℹ In argument: `.data`
+Caused by error in `dplyr::summarize()`:
+! `data` must be a lazy data frame
+BACKEND duckdb_native OUTPUT .da
+DPLYR
+# A tibble: 1 × 1
+    .da
+  <dbl>
+1     1
+MARGIN
+# A tibble: 1 × 1
+    .da
+  <dbl>
+1     1
+BACKEND duckdb_portable OUTPUT .da
+ℹ In argument: `.data`
+Caused by error in `dplyr::summarize()`:
+! `data` must be a lazy data frame
+BACKEND dtplyr OUTPUT .dat
+DPLYR
+# A tibble: 1 × 1
+   .dat
+  <dbl>
+1     1
+MARGIN
+attempt to replicate non-vector
+BACKEND sqlite OUTPUT .dat
+DPLYR
+# A tibble: 1 × 1
+   .dat
+  <dbl>
+1     1
+MARGIN
+ℹ In argument: `.data`
+Caused by error in `dplyr::summarize()`:
+! `data` must be a lazy data frame
+BACKEND duckdb_native OUTPUT .dat
+DPLYR
+# A tibble: 1 × 1
+   .dat
+  <dbl>
+1     1
+MARGIN
+# A tibble: 1 × 1
+   .dat
+  <dbl>
+1     1
+BACKEND duckdb_portable OUTPUT .dat
+ℹ In argument: `.data`
+Caused by error in `dplyr::summarize()`:
+! `data` must be a lazy data frame
+FAILED DESIRED-BEHAVIOUR CHECKS 9
+Error: BUG: early injection lets output names partially capture a backend input.
+Execution halted

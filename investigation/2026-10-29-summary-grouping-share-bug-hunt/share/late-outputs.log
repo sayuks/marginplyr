@@ -1,0 +1,64 @@
+
+FORM 1 before TRUE late(x)
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 1 before FALSE late(x)
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 2 before TRUE tibble(s = 100 * sum(x))
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 2 before FALSE tibble(s = 100 * sum(x))
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 3 before TRUE late_p(x)
+marginplyr_error Total-share output name `p` conflicts with an ordinary summary.
+
+FORM 3 before FALSE late_p(x)
+marginplyr_error Total-share output name `p` conflicts with an ordinary summary.
+
+FORM 4 before TRUE tibble(p = 100 * sum(x))
+marginplyr_error Total-share output name `p` conflicts with an ordinary summary.
+
+FORM 4 before FALSE tibble(p = 100 * sum(x))
+marginplyr_error Total-share output name `p` conflicts with an ordinary summary.
+
+FORM 5 before TRUE late_g(x)
+marginplyr_error Summary results cannot overwrite grouping column:
+ℹ `g`.
+
+FORM 5 before FALSE late_g(x)
+marginplyr_error Summary results cannot overwrite grouping column:
+ℹ `g`.
+
+FORM 6 before TRUE late_set(x)
+marginplyr_error `.id` (`set`) conflicts with a summary output.
+
+FORM 6 before FALSE late_set(x)
+marginplyr_error `.id` (`set`) conflicts with a summary output.
+
+FORM 7 before TRUE across(x, ~tibble(s = 100 * sum(.x)), .unpack = "{inner}")
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 7 before FALSE across(x, ~tibble(s = 100 * sum(.x)), .unpack = "{inner}")
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 8 before TRUE across(x, sum, .names = paste0("", "s"))
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 8 before FALSE across(x, sum, .names = paste0("", "s"))
+marginplyr_error Contextual share requires source summary `s` to be defined exactly once.
+ℹ Use one uniquely named ordinary summary.
+
+FORM 9 before TRUE across(x, sum, .names = paste0("", "p"))
+marginplyr_error Total-share output name `p` conflicts with an ordinary summary.
+
+FORM 9 before FALSE across(x, sum, .names = paste0("", "p"))
+marginplyr_error Total-share output name `p` conflicts with an ordinary summary.

@@ -1,0 +1,17 @@
+DPLYR NAMED INPUT CONTROL
+# A tibble: 1 × 2
+  g     width
+  <chr> <int>
+1 a         1
+MARGIN POSITIONAL INPUT CONTROL
+# A tibble: 1 × 2
+  g     width
+  <chr> <int>
+1 a         1
+MARGIN NAMED INPUT
+# A tibble: 1 × 2
+  g     width
+  <chr> <int>
+1 a         2
+Error: BUG: naming rowwise's data input changes a Margin summary value.
+Execution halted

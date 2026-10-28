@@ -1,0 +1,3 @@
+OBSERVED: marginplyr_error Total share `share` refers to unknown preceding ordinary summary `s`.
+Error: A named scalar across source with one parenthesized formula must remain eligible for Total shares.
+Execution halted

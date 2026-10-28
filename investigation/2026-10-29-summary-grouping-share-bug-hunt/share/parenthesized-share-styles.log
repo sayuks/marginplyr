@@ -1,0 +1,40 @@
+~sum(.x) share_of_total direct
+      g s share
+1     a 1  0.25
+2     b 3  0.75
+3 Total 4  1.00
+~sum(.x) share_of_total across
+      g s share
+1     a 1  0.25
+2     b 3  0.75
+3 Total 4  1.00
+~sum(.x) share_of_parent direct
+      g s share
+1     a 1  0.25
+2     b 3  0.75
+3 Total 4  1.00
+~sum(.x) share_of_parent across
+      g s share
+1     a 1  0.25
+2     b 3  0.75
+3 Total 4  1.00
+(~sum(.x)) share_of_total direct
+marginplyr_error Total share `share` refers to unknown preceding ordinary summary `s`.
+(~sum(.x)) share_of_total across
+marginplyr_share_source_unknown_error `across()` refers to unknown summary `s` for `share_of_total()`.
+ℹ Select only eligible preceding ordinary summaries by name.
+(~sum(.x)) share_of_parent direct
+marginplyr_error Parent share `share` refers to unknown preceding ordinary summary `s`.
+(~sum(.x)) share_of_parent across
+marginplyr_share_source_unknown_error `across()` refers to unknown summary `s` for `share_of_parent()`.
+ℹ Select only eligible preceding ordinary summaries by name.
+((~sum(.x))) share_of_total direct
+marginplyr_error Total share `share` refers to unknown preceding ordinary summary `s`.
+((~sum(.x))) share_of_total across
+marginplyr_share_source_unknown_error `across()` refers to unknown summary `s` for `share_of_total()`.
+ℹ Select only eligible preceding ordinary summaries by name.
+((~sum(.x))) share_of_parent direct
+marginplyr_error Parent share `share` refers to unknown preceding ordinary summary `s`.
+((~sum(.x))) share_of_parent across
+marginplyr_share_source_unknown_error `across()` refers to unknown summary `s` for `share_of_parent()`.
+ℹ Select only eligible preceding ordinary summaries by name.

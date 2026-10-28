@@ -1,0 +1,96 @@
+KIND struct
+Ordinary grouping rows: 2
+Native row counts / ids: 1,1,2 / 1,1,2
+Explicit typed-NULL UNION rows: 3
+Schema proxy: list data.frame dim= 0x1
+DESIRED BEHAVIOR FAILED: ℹ In argument: `g = <df[,1]>`
+Caused by error in `partial_eval()`:
+! Unknown input type: list
+KIND array
+Ordinary grouping rows: 2
+Native row counts / ids: 2,1,1 / 2,1,1
+Explicit typed-NULL UNION rows: 3
+Schema proxy: integer matrix/array dim= 0x2
+Portable omitted-value SQL:
+ SELECT g, "set", n
+FROM (
+  SELECT *, 1 AS "set"
+  FROM (
+    SELECT "..marginplyr_key_1" AS g, COUNT(*) AS n
+    FROM (
+      SELECT *, g AS "..marginplyr_key_1"
+      FROM inp
+    ) AS q01
+    GROUP BY "..marginplyr_key_1"
+  ) AS q01
+
+  UNION ALL
+
+  SELECT
+    CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN NOT ("..marginplyr_placeholder_1" >= 0) THEN g END AS g,
+    n,
+    "set"
+  FROM (
+    SELECT *, 2 AS "set"
+    FROM (
+      SELECT (NULL, NULL) AS g, *
+      FROM (
+        SELECT COUNT(*) AS n, COUNT(*) AS "..marginplyr_placeholder_1"
+        FROM (
+          SELECT *, g AS "..marginplyr_key_1"
+          FROM inp
+        ) AS q01
+      ) AS q01
+    ) AS q01
+  ) AS q01
+) AS q01
+DESIRED BEHAVIOR FAILED: Failed to collect lazy table.
+Caused by error in `duckdb_result()`:
+! Invalid Error: Conversion Error: Unimplemented type for cast (STRUCT("NULL", "NULL") -> INTEGER[2]) when casting from source column g
+
+LINE 16:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
+             ^
+ℹ Context: rapi_execute
+ℹ Error type: INVALID
+KIND scalar
+Ordinary grouping rows: 2
+Native row counts / ids: 1,2,1 / 1,2,1
+Explicit typed-NULL UNION rows: 3
+Schema proxy: integer integer dim=
+Portable omitted-value SQL:
+ SELECT g, "set", n
+FROM (
+  SELECT *, 1 AS "set"
+  FROM (
+    SELECT "..marginplyr_key_1" AS g, COUNT(*) AS n
+    FROM (
+      SELECT *, g AS "..marginplyr_key_1"
+      FROM inp
+    ) AS q01
+    GROUP BY "..marginplyr_key_1"
+  ) AS q01
+
+  UNION ALL
+
+  SELECT
+    CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN NOT ("..marginplyr_placeholder_1" >= 0) THEN g END AS g,
+    n,
+    "set"
+  FROM (
+    SELECT *, 2 AS "set"
+    FROM (
+      SELECT NULL AS g, *
+      FROM (
+        SELECT COUNT(*) AS n, COUNT(*) AS "..marginplyr_placeholder_1"
+        FROM (
+          SELECT *, g AS "..marginplyr_key_1"
+          FROM inp
+        ) AS q01
+      ) AS q01
+    ) AS q01
+  ) AS q01
+) AS q01
+Portable rows: 3
+Failed accepted dimension types: struct,array
+Error: length(failed) == 0L is not TRUE
+Execution halted
