@@ -98,3 +98,53 @@ test_that("empty sf nesting keeps each verb's source-cell row count", {
   expect_identical(result$data[[1L]]$g, source$g)
   expect_identical(result$data[[1L]]$geometry, source$geometry)
 })
+
+test_that("empty sf rollups nest with the same cardinality as their columns", {
+  skip_if_suggest_absent("sf")
+  source <- sf::st_as_sf(
+    data.frame(g = c("a", "b"), x = 1:2, y = 3:4),
+    coords = c("x", "y")
+  )[integer(), ]
+  before <- serialize(source, NULL)
+  columns <- dplyr::as_tibble(source)
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    for (keep in c(FALSE, TRUE)) {
+      for (sort in c("none", "first", "last")) {
+        control <- verb(
+          columns, .grouping = rollup(g), .keep = keep, .sort = sort
+        )
+        result <- verb(
+          source, .grouping = rollup(g), .keep = keep, .sort = sort
+        )
+        expect_identical(names(result), c("g", "data"))
+        expect_identical(nrow(result), 0L)
+        expect_identical(nrow(result), nrow(control))
+        expect_identical(result$g, control$g)
+        expect_length(result$data, 0L)
+        expect_length(result$data, length(control$data))
+        expect_identical(serialize(source, NULL), before)
+      }
+    }
+  }
+})
+
+test_that("sf label checks reject observed collisions before aggregation", {
+  skip_if_suggest_absent("sf")
+  source <- sf::st_as_sf(
+    data.frame(g = c("Total", "b"), x = 1:2, y = 3:4),
+    coords = c("x", "y")
+  )
+  before <- serialize(source, NULL)
+
+  for (verb in list(
+    summarize_with_margins, expand_with_margins,
+    nest_with_margins, nest_by_with_margins
+  )) {
+    expect_error(
+      verb(source, .grouping = rollup(g)),
+      "already present", class = "marginplyr_error"
+    )
+    expect_identical(serialize(source, NULL), before)
+  }
+})

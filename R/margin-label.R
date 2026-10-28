@@ -322,6 +322,9 @@ check_observed_label_collision <- function(data,
     return(invisible(NULL))
   }
 
+  # Collision counts concern the selected columns alone; subclass summaries
+  # may also aggregate unrelated payload columns, including empty geometries.
+  data <- margin_column_source(data)
   data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
   query <- margin_safe_column_reads(
     data, read_cols, function(source, safe_name) {
