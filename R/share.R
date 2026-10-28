@@ -3020,7 +3020,8 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
       result, c(keys, sources, set_id_name),
       function(data, safe_name) {
         data <- dplyr::group_by(
-          data, !!!rlang::syms(vapply(keys, safe_name, character(1)))
+          data, !!!rlang::syms(vapply(keys, safe_name, character(1),
+                                      USE.NAMES = FALSE))
         )
         denominators <- lapply(sources, function(source) {
           value <- margin_column_pronoun(safe_name(source))
