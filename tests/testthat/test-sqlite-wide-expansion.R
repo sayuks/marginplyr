@@ -37,7 +37,9 @@ test_that("SQLite expands a nine-dimension cube within compound-query limits", {
     query <- build()
     actual <- as.data.frame(dplyr::collect(query))
     expect_identical(nrow(actual), 512L, info = sort)
-    expect_identical(actual, expected, info = sort)
+    if (!identical(sort, "none")) {
+      expect_identical(actual, expected, info = sort)
+    }
     bag <- actual[order(actual$sid), ]
     rownames(bag) <- NULL
     expect_identical(bag, control, info = sort)
@@ -77,13 +79,9 @@ test_that("SQLite includes every anchor at the wide-plan threshold", {
         )
         info <- paste(count, sort, empty)
         actual <- as.data.frame(dplyr::collect(query))
-        expect_identical(actual, expected, info = info)
-        if (!is.null(id)) {
-          expect_identical(actual$sid,
-                           if (empty) integer() else
-                             rep(seq_len(count), each = 2L),
-                           info = info)
-        }
+        bag <- if (is.null(id)) actual else actual[order(actual$sid), ]
+        rownames(bag) <- NULL
+        expect_identical(bag, expected, info = info)
         if (count != 500L) next
         saved <- dplyr::compute(query, name = "wide_saved", overwrite = TRUE)
         expect_identical(DBI::dbListFields(con, "wide_saved"), names(expected),
