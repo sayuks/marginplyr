@@ -11,12 +11,13 @@ expect_typed_subscript_keys <- function(as_source) {
     region = c("east", "west"), amount = c(1, 1), segment = c("x", "y")
   )
   source <- as_source(data)
-  .data <- plain_map <- names(data)
-  calls <- 0L
-  first_numeric <- function() {
-    calls <<- calls + 1L
+  rlang::env_bind(rlang::current_env(),
+                  .data = names(data), plain_map = names(data))
+  calls <- rlang::env(n = 0L)
+  rlang::env_bind(rlang::current_env(), first_numeric = function() {
+    calls$n <- calls$n + 1L
     which(vapply(tidyselect::peek_data(), is.numeric, logical(1)))[[1L]]
-  }
+  })
   for (head in ordinary_subscript_heads("[[")) {
     for (operand in c(".data", "plain_map")) {
       selection <- rlang::call2(head, rlang::sym(operand),
@@ -24,22 +25,24 @@ expect_typed_subscript_keys <- function(as_source) {
       for (expr in list(selection, rlang::call2("(", selection))) {
         expected <- names(tidyselect::eval_select(expr, data))
         expect_identical(expected, "amount")
-        calls <- 0L
+        calls$n <- 0L
         expect_identical(
           inspect_grouping(source, .by = !!expr, .format = "list")$fixed,
           list(expected)
         )
-        expect_identical(calls, 1L)
+        expect_identical(calls$n, 1L)
         control <- expand_with_margins(
           source, .by = tidyselect::all_of(expected),
-          .grouping = rollup(segment), .margin_label = NULL, .id = "sid"
-        )
-        calls <- 0L
-        result <- expand_with_margins(
-          source, .by = !!expr, .grouping = rollup(segment),
+          .grouping = rollup(tidyselect::all_of("segment")),
           .margin_label = NULL, .id = "sid"
         )
-        expect_identical(calls, 1L)
+        calls$n <- 0L
+        result <- expand_with_margins(
+          source, .by = !!expr,
+          .grouping = rollup(tidyselect::all_of("segment")),
+          .margin_label = NULL, .id = "sid"
+        )
+        expect_identical(calls$n, 1L)
         expect_identical(dplyr::collect(result), dplyr::collect(control))
       }
     }
@@ -57,15 +60,16 @@ test_that("ordinary .data subscripts select typed fixed keys on dtplyr", {
 
 # A promise must first be forced in the typed selection context. In particular,
 # the integer names proxy has no character column for the second predicate.
-expect_typed_subscript_dimensions <- function(as_source) {
+expect_typed_subscript_dims <- function(as_source) {
   data <- tibble::tibble(
     region = c("east", "west"), amount = c(1, 1), segment = c("x", "y")
   )
   source <- as_source(data)
-  .data <- plain_map <- names(data)
-  calls <- 0L
+  rlang::env_bind(rlang::current_env(),
+                  .data = names(data), plain_map = names(data))
+  calls <- rlang::env(n = 0L)
   first_matching <- function() {
-    calls <<- calls + 1L
+    calls$n <- calls$n + 1L
     which(vapply(tidyselect::peek_data(), predicate, logical(1)))[[1L]]
   }
   direct <- function(selection, chosen = first_matching()) {
@@ -90,10 +94,10 @@ expect_typed_subscript_dimensions <- function(as_source) {
           for (constructor in c(
             "grouping_set", "grouping_sets", "rollup", "cube", "grouping_spec"
           )) {
-            calls <- 0L
+            calls$n <- 0L
             expect_identical(inspect(expr, constructor),
                              inspect(control, constructor))
-            expect_identical(calls, 1L)
+            expect_identical(calls$n, 1L)
           }
         }
       }
@@ -102,12 +106,12 @@ expect_typed_subscript_dimensions <- function(as_source) {
 }
 
 test_that("ordinary subscripts retain typed wrapper dimensions locally", {
-  expect_typed_subscript_dimensions(identity)
+  expect_typed_subscript_dims(identity)
 })
 
 test_that("ordinary subscripts retain typed wrapper dimensions on dtplyr", {
   skip_if_suggest_absent("dtplyr")
-  expect_typed_subscript_dimensions(dtplyr::lazy_dt)
+  expect_typed_subscript_dims(dtplyr::lazy_dt)
 })
 
 test_that("ordinary dollar heads force lexical .data against typed data", {
@@ -131,7 +135,9 @@ test_that("bare dynamic .data subscripts keep tidyselect's early refusal", {
     which(vapply(tidyselect::peek_data(), is.numeric, logical(1)))[[1L]]
   }
   # A forwarded quosure retains the written subscript through tidy capture.
-  selection <- rlang::new_quosure(quote(.data[[first_numeric()]]), environment())
+  selection <- rlang::new_quosure(
+    quote(.data[[first_numeric()]]), environment()
+  )
   direct <- expect_error(tidyselect::eval_select(selection, data),
                          "constant", class = "rlang_error")
   local_mocked_bindings(grouping_selection_proxy = function(...) {
