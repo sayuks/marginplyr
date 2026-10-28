@@ -35,22 +35,26 @@ test_that("sf rollup cells retain original keys and geometry in Margin order", {
   before <- serialize(source, NULL)
 
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
-    result <- verb(
-      source, .grouping = rollup(g), .keep = TRUE,
-      .id = "set", .sort = "last"
-    )
-    expect_identical(names(result), c("g", "set", "data"))
-    expect_identical(result$g, c("a", "b", "Total"))
-    expect_identical(result$set, c(1L, 1L, 2L))
-    expect_identical(vapply(result$data, nrow, integer(1)), c(1L, 1L, 2L))
-    for (i in seq_along(result$data)) {
-      cell <- result$data[[i]]
-      rows <- list(2L, 1L, 1:2)[[i]]
-      expect_identical(names(cell), c("g", "geometry"))
-      expect_identical(cell$g, source$g[rows])
-      expect_identical(cell$geometry, source$geometry[rows])
+    for (id in c("set", "..1")) {
+      key <- if (id == "set") "data" else "..2"
+      result <- verb(
+        source, .grouping = rollup(g), .keep = TRUE,
+        .id = id, .key = key, .sort = "last"
+      )
+      cells <- result[[key]]
+      expect_identical(names(result), c("g", id, key))
+      expect_identical(result$g, c("a", "b", "Total"))
+      expect_identical(result[[id]], c(1L, 1L, 2L))
+      expect_identical(vapply(cells, nrow, integer(1)), c(1L, 1L, 2L))
+      for (i in seq_along(cells)) {
+        cell <- cells[[i]]
+        rows <- list(2L, 1L, 1:2)[[i]]
+        expect_identical(names(cell), c("g", "geometry"))
+        expect_identical(cell$g, source$g[rows])
+        expect_identical(cell$geometry, source$geometry[rows])
+      }
+      expect_identical(serialize(source, NULL), before)
     }
-    expect_identical(serialize(source, NULL), before)
   }
 })
 
@@ -62,15 +66,17 @@ test_that("Margin-column placement keeps retained sf metadata valid", {
   )
   source <- dplyr::relocate(source, geometry)
   before <- serialize(source, NULL)
-  result <- expand_with_margins(source, .by = g, .id = "set")
+  for (id in c("set", "..1")) {
+    result <- expand_with_margins(source, .by = g, .id = id)
 
-  expect_identical(names(result), c("g", "set", "geometry"))
-  expect_identical(result$geometry, source$geometry)
-  if (inherits(result, "sf")) {
-    expect_identical(sf::st_geometry(result), source$geometry)
-    expect_named(sf::st_agr(result), c("g", "set"))
+    expect_identical(names(result), c("g", id, "geometry"))
+    expect_identical(result$geometry, source$geometry)
+    if (inherits(result, "sf")) {
+      expect_identical(sf::st_geometry(result), source$geometry)
+      expect_named(sf::st_agr(result), c("g", id))
+    }
+    expect_identical(serialize(source, NULL), before)
   }
-  expect_identical(serialize(source, NULL), before)
 })
 
 test_that("empty sf nesting keeps each verb's source-cell row count", {

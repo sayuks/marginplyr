@@ -153,7 +153,7 @@ nest_by_with_margins <- function(.data,
       utils::head(dplyr::ungroup(.data), n = 0L)
     )
     result <- dplyr::summarize(
-      nest_fold_source(empty_data),
+      margin_column_source(empty_data),
       "{.key}" := list(
         !!nest_cell_expr(
           rlang::set_names(colnames(empty_data)),
