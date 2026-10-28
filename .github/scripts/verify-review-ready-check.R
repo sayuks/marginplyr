@@ -3,6 +3,7 @@
 
 source(".github/scripts/cran-note-policy.R")
 source("tools/dependency-requirements.R")
+source("tools/required-test-suggests.R")
 source("tools/review-ready-check-lib.R")
 
 expect_identical <- function(actual, expected, label) {
@@ -86,7 +87,7 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("covr", "lintr", "pkgload", "rcmdcheck", "spelling", "testthat", "yaml"),
+  c("lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
   "the declared review packages"
 )
 expect_error(
@@ -144,8 +145,7 @@ prerequisites <- list(
 steps <- review_ready_source_steps(prerequisites)
 expect_identical(
   names(steps),
-  c("Package spelling", "jarl", "package-aware lintr",
-    "Strict line coverage"),
+  c("Package spelling", "jarl", "package-aware lintr"),
   "the fixed source-step order"
 )
 expect_true(
@@ -161,11 +161,6 @@ expect_identical(
   steps[["package-aware lintr"]]$env,
   "LINTR_ERROR_ON_LINT=true",
   "the lint failure setting"
-)
-expect_identical(
-  steps[["Strict line coverage"]]$args,
-  "tools/coverage-check.R",
-  "the shared strict coverage gate"
 )
 expect_true(
   grepl("pkgload::load_all", steps[["package-aware lintr"]]$args[[2L]], fixed = TRUE),
@@ -240,14 +235,42 @@ expect_identical(
   FALSE,
   "a timed-out R CMD check"
 )
+fixture_suggests <- c("stats", "utils")
+fixture_check_env <- review_ready_rcmdcheck_env(fixture_suggests)
 expect_identical(
-  review_ready_rcmdcheck_env(),
+  fixture_check_env,
   c(
     `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
-    `_R_CHECK_SYSTEM_CLOCK_` = "false"
+    `_R_CHECK_SYSTEM_CLOCK_` = "false",
+    NOT_CRAN = "true",
+    MARGINPLYR_REQUIRED_SUGGESTS = "stats,utils"
   ),
-  "the named offline settings"
+  "the offline settings, snapshots, and required test Suggests"
 )
+
+# Real guard and version constraints, using only packages supplied with R.
+suggest_fixture <- tempfile("review-ready-suggests-")
+dir.create(file.path(suggest_fixture, "tests", "testthat"), recursive = TRUE)
+dir.create(file.path(suggest_fixture, "inst", "suggests"), recursive = TRUE)
+on.exit(unlink(suggest_fixture, recursive = TRUE), add = TRUE)
+expect_true(file.copy("inst/suggests/guard.R",
+  file.path(suggest_fixture, "inst", "suggests", "guard.R")), "the fixture guard")
+suite_path <- file.path(suggest_fixture, "tests", "testthat", "helper-optional-backends.R")
+writeLines("optional_suggest_spec <- function() list(stats = NULL, utils = NULL)", suite_path)
+writeLines("Suggests: stats (>= 1.0.0), utils", file.path(suggest_fixture, "DESCRIPTION"))
+expect_identical(required_test_suggests(suggest_fixture), fixture_suggests,
+  "the required Suggests derive from the suite table")
+writeLines("Suggests: stats (>= 9999.0.0), utils", file.path(suggest_fixture, "DESCRIPTION"))
+expect_error(required_test_suggests(suggest_fixture), "marginplyr requires >= 9999.0.0",
+  "an installed but unsuitable Suggest")
+writeLines("optional_suggest_spec <- function() list(marginplyrmissingfixture = NULL)",
+  suite_path)
+writeLines("Suggests: marginplyrmissingfixture", file.path(suggest_fixture, "DESCRIPTION"))
+expect_error(required_test_suggests(suggest_fixture), "{marginplyrmissingfixture} is not installed",
+  "an absent required Suggest")
+writeLines("optional_suggest_spec <- function() list()", suite_path)
+expect_error(required_test_suggests(suggest_fixture), "No optional Suggests are registered",
+  "an empty suite table")
 
 expect_identical(
   review_ready_test_package_candidates("."),
@@ -317,8 +340,10 @@ expect_true(
   "the complete CRAN-style check"
 )
 expect_true(
-  grepl("env = review_ready_rcmdcheck_env()", library_source, fixed = TRUE),
-  "the applied offline settings"
+  grepl("review_ready_rcmdcheck_env(required_test_suggests(source_root))",
+    library_source, fixed = TRUE) &&
+    grepl("env = check_env", library_source, fixed = TRUE),
+  "the check environment derives from the archived suite"
 )
 expect_true(
   grepl(
@@ -343,8 +368,15 @@ dir.create(fixture_package)
 writeLines(c(
   "Package: fixture",
   "Version: 0.0.1",
+  "Suggests: stats (>= 1.0.0), utils",
   "Config/marginplyr/cran-status: unpublished"
 ), file.path(fixture_package, "DESCRIPTION"))
+dir.create(file.path(fixture_package, "tests", "testthat"), recursive = TRUE)
+dir.create(file.path(fixture_package, "inst", "suggests"), recursive = TRUE)
+writeLines("optional_suggest_spec <- function() list(stats = NULL, utils = NULL)",
+  file.path(fixture_package, "tests", "testthat", "helper-optional-backends.R"))
+expect_true(file.copy("inst/suggests/guard.R",
+  file.path(fixture_package, "inst", "suggests", "guard.R")), "the archived fixture guard")
 fixture_tarball <- file.path(diagnostic_fixture, "fixture.tar.gz")
 local({
   previous <- setwd(diagnostic_fixture)
@@ -378,7 +410,7 @@ failed_checker <- function(path, ..., check_dir) {
 failure_output <- capture.output(expect_error(
   run_review_ready_rcmdcheck(
     fixture_tarball, check_workspace, clean_identity,
-    checker = failed_checker, diagnostic_root = diagnostic_root
+    checker = failed_checker, diagnostic_root = diagnostic_root, env = fixture_check_env
   ),
   "The source-tarball R CMD check did not pass.",
   "a simulated child-process failure"
@@ -426,7 +458,7 @@ dir.create(exception_workspace)
 exception_output <- capture.output(expect_error(
   run_review_ready_rcmdcheck(
     fixture_tarball, exception_workspace, clean_identity,
-    checker = throwing_checker, diagnostic_root = diagnostic_root
+    checker = throwing_checker, diagnostic_root = diagnostic_root, env = fixture_check_env
   ),
   "check crashed before returning a result",
   "an exception before the check returns"
@@ -445,7 +477,7 @@ expect_true(
 )
 
 # External commands are simulated to reach the CLI's cleanup/error boundary
-# without running coverage or installing a package in this focused verifier.
+# without installing a package in this focused verifier.
 observed_workspace <- NULL
 fixture_runner <- function(command, args, directory, ...) {
   if (identical(command, "git")) {
@@ -453,7 +485,7 @@ fixture_runner <- function(command, args, directory, ...) {
     observed_workspace <<- dirname(archive)
     previous <- setwd(fixture_package)
     on.exit(setwd(previous))
-    utils::tar(archive, "DESCRIPTION")
+    utils::tar(archive, c("DESCRIPTION", "tests", "inst"))
   } else if (identical(args[1:2], c("CMD", "build"))) {
     file.copy(fixture_tarball, directory)
   }
@@ -466,7 +498,10 @@ run_fixture_cli <- function(checker) {
   )
 }
 success_output <- capture.output({
-  success_status <- run_fixture_cli(function(...) empty_result)
+  success_status <- run_fixture_cli(function(..., env) {
+    expect_identical(env, fixture_check_env, "the CLI passes the complete test environment")
+    empty_result
+  })
 })
 expect_identical(success_status, 0L, "the successful CLI status")
 expect_true(!dir.exists(observed_workspace), "successful workspace cleanup")
@@ -489,6 +524,7 @@ child_script <- file.path(diagnostic_fixture, "failed-cli.R")
 writeLines(c(
   'source(".github/scripts/cran-note-policy.R")',
   'source("tools/dependency-requirements.R")',
+  'source("tools/required-test-suggests.R")',
   'source("tools/review-ready-check-lib.R")'
 ), child_script)
 dump(c(
@@ -638,7 +674,7 @@ local({
       run_review_ready_rcmdcheck(
         fixture$tarball, fixture$workspace, clean_identity,
         diagnostic_root = fixture$diagnostics, checker = fixture$checker,
-        system = "Darwin", retry_identity = fixture$identity, ...
+        env = fixture_check_env, system = "Darwin", retry_identity = fixture$identity, ...
       )
     }
     fixture
@@ -707,7 +743,7 @@ local({
     expect_identical(call$args, "--as-cran", "every attempt is a complete CRAN-style check")
     expect_identical(call$build_args, NULL, "no tarball rebuild on retry")
     expect_identical(call$error_on, "never", "returned failure diagnostics")
-    expect_identical(call$env, review_ready_rcmdcheck_env(), "unchanged check environment")
+    expect_identical(call$env, fixture_check_env, "unchanged check environment")
   }
   expect_identical(recovered$calls[[1L]]$repos, recovered$calls[[2L]]$repos,
     "unchanged offline repositories")

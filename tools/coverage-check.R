@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# One line-coverage verdict for local review and CI. An optional output path
+# One line-coverage verdict for CI and explicit local measurements. An output path
 # writes the same measured result as Cobertura after the verdict is calculated.
 
 args <- commandArgs(trailingOnly = TRUE)

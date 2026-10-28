@@ -195,11 +195,6 @@ review_ready_source_steps <- function(prerequisites) {
         )
       ),
       env = "LINTR_ERROR_ON_LINT=true"
-    ),
-    `Strict line coverage` = list(
-      command = prerequisites$rscript,
-      args = "tools/coverage-check.R",
-      env = character()
     )
   )
 }
@@ -312,11 +307,14 @@ review_ready_check_outcome <- function(result, cran_status) {
 
 # Names the environment entries because rcmdcheck applies names as variable
 # keys. Remote incoming checks and the external clock belong to the release
-# flow; the local future-file-timestamp comparison remains enabled here.
-review_ready_rcmdcheck_env <- function() {
+# flow. The caller supplies the validated suite Suggests; NOT_CRAN enables
+# snapshot comparisons within the tarball's single test-suite run.
+review_ready_rcmdcheck_env <- function(required_suggests) {
   c(
     `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
-    `_R_CHECK_SYSTEM_CLOCK_` = "false"
+    `_R_CHECK_SYSTEM_CLOCK_` = "false",
+    NOT_CRAN = "true",
+    MARGINPLYR_REQUIRED_SUGGESTS = paste(required_suggests, collapse = ",")
   )
 }
 
@@ -608,7 +606,7 @@ review_ready_native_crash <- function(result, tool_identity, system) {
 }
 
 # Runs one complete check in a fresh directory and captures its terminal state.
-review_ready_check_attempt <- function(tarball, workspace, checker, repositories) {
+review_ready_check_attempt <- function(tarball, workspace, checker, repositories, env) {
   attempt <- tempfile("check-attempt-", tmpdir = workspace)
   dir.create(attempt)
   started <- Sys.time()
@@ -623,7 +621,7 @@ review_ready_check_attempt <- function(tarball, workspace, checker, repositories
       build_args = NULL,
       check_dir = file.path(attempt, "check"),
       error_on = "never",
-      env = review_ready_rcmdcheck_env(),
+      env = env,
       repos = repositories
     ), message = function(cnd) {
       cat(conditionMessage(cnd), file = console)
@@ -689,7 +687,7 @@ record_review_ready_retry <- function(bundle, identity, state, second = NULL,
 # Preserves every failed attempt; only the supported native crash can consume
 # the single retry authorized by design/agents/local-checks.md.
 run_review_ready_rcmdcheck <- function(
-  tarball, workspace, identity, diagnostic_root,
+  tarball, workspace, identity, diagnostic_root, env,
   checker = rcmdcheck::rcmdcheck,
   system = Sys.info()[["sysname"]],
   retry_identity = review_ready_retry_identity,
@@ -702,7 +700,7 @@ run_review_ready_rcmdcheck <- function(
   first_failure <- NULL
   for (number in 1:2) {
     cat("R CMD check attempt ", number, ".\n", sep = "")
-    attempt <- review_ready_check_attempt(tarball, workspace, checker, repositories)
+    attempt <- review_ready_check_attempt(tarball, workspace, checker, repositories, env)
     bundle <- NULL
     if (!is.null(attempt$error)) {
       bundle <- tryCatch({
@@ -776,6 +774,8 @@ run_review_ready_check <- function(
   cat("Review-ready commit: ", identity$sha, "\n", sep = "")
   cat("Disposable source: ", source_root, "\n", sep = "")
   verify_review_ready_test_packages(source_root)
+  cat("\n==> Required test Suggests\n")
+  check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root))
   steps <- review_ready_source_steps(prerequisites)
   for (label in names(steps)) {
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)
@@ -787,7 +787,7 @@ run_review_ready_check <- function(
     runner = runner
   )
   outcome <- run_review_ready_rcmdcheck(tarball, workspace, identity,
-    checker = checker, diagnostic_root = diagnostic_root, system = system,
+    checker = checker, diagnostic_root = diagnostic_root, env = check_env, system = system,
     retry_identity = retry_identity, preserver = preserver)
 
   verdict <- if (outcome$retried) "passed-after-retry" else "passed"

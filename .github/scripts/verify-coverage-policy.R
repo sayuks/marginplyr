@@ -41,7 +41,7 @@ expect_rejected(coverage_verify_policy(fixture), "Codecov ignore")
 
 gate <- paste(deparse(body(coverage_check)), collapse = "\n")
 required <- c("coverage_verify_policy(root)", "coverage_verify_runtime()",
-  "coverage_required_suggests(root)", "covr::package_coverage(",
+  "required_test_suggests(root)", "covr::package_coverage(",
   "covr::tally_coverage(cov, by = \"line\")", "lines$value == 0L")
 for (part in required) {
   if (!grepl(part, gate, fixed = TRUE)) {
