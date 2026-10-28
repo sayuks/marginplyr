@@ -1,4 +1,6 @@
-# Shared, strict line-coverage check for the review-ready archive and CI.
+# Strict line-coverage check for CI and explicit local measurements.
+
+source("tools/required-test-suggests.R")
 
 # Refuses every repository-level route that could shrink covr's denominator.
 coverage_verify_policy <- function(root = ".") {
@@ -58,30 +60,6 @@ coverage_verify_runtime <- function() {
   invisible(TRUE)
 }
 
-# Reads the test suite's one optional-Suggest table and checks every declared
-# version using the same guard the tests use before asking covr to run them.
-coverage_required_suggests <- function(root = ".") {
-  suite <- new.env(parent = globalenv())
-  sys.source(file.path(root, "tests/testthat/helper-optional-backends.R"),
-    envir = suite)
-  guard <- new.env(parent = globalenv())
-  sys.source(file.path(root, "inst/suggests/guard.R"), envir = guard)
-  packages <- names(suite$optional_suggest_spec())
-  if (length(packages) == 0L) {
-    stop("No optional Suggests are registered for coverage.", call. = FALSE)
-  }
-  suggests <- read.dcf(file.path(root, "DESCRIPTION"), fields = "Suggests")[1L, 1L]
-  status <- lapply(packages, guard$marginplyr_suggest_status,
-    suggests = suggests)
-  missing <- vapply(status, function(item) !isTRUE(item$available), logical(1))
-  if (any(missing)) {
-    stop("Coverage requires usable optional Suggests: ",
-      paste(vapply(status[missing], `[[`, character(1), "reason"),
-        collapse = "; "), call. = FALSE)
-  }
-  packages
-}
-
 # Runs tests against one instrumented package and returns a verdict without
 # rounding. The Cobertura file, when requested, is written even on a miss so
 # Codecov can show the uncovered lines for a failed CI run.
@@ -91,7 +69,7 @@ coverage_check <- function(cobertura = NULL, root = ".") {
     stop("Coverage requires covr.", call. = FALSE)
   }
   coverage_verify_runtime()
-  packages <- coverage_required_suggests(root)
+  packages <- required_test_suggests(root)
   previous <- Sys.getenv("MARGINPLYR_REQUIRED_SUGGESTS", unset = NA_character_)
   on.exit(if (is.na(previous)) {
     Sys.unsetenv("MARGINPLYR_REQUIRED_SUGGESTS")

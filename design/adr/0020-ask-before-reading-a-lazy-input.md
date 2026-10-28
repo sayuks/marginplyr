@@ -248,8 +248,8 @@ for that force alone, so an execution entry point nested in the argument remains
 visible. Positive controls cover both shapes (#303).
 
 Snapshots run only where `NOT_CRAN` is set: the `structure` and `backend` jobs,
-and the local and CI coverage runs (ADR 0030). A plain CRAN check does not
-execute this gate.
+the local Review-ready check, and the CI coverage run (ADR 0030). A plain CRAN
+check does not execute this gate.
 
 ## Related decisions
 

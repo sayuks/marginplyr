@@ -51,17 +51,18 @@ The command takes no options. It runs, in order:
 
 1. a test-source dependency scan that refuses every package candidate absent
    from `DESCRIPTION`;
-2. package spelling, reporting unknown words and their locations only when it
+2. a presence and version check for every optional Suggest registered by the
+   test suite;
+3. package spelling, reporting unknown words and their locations only when it
    finds them;
-3. `jarl check .`;
-4. package-aware lintr after `pkgload::load_all()`;
-5. strict test line coverage through `tools/coverage-check.R`, which runs the
-   full testthat suite with snapshot expectations enabled and requires every
-   measured R source line and every optional Suggest used by the suite; and
+4. `jarl check .`;
+5. package-aware lintr after `pkgload::load_all()`; and
 6. a source-tarball `R CMD check --as-cran` against disposable empty local
-   CRAN and Bioconductor indexes, with remote incoming checks and
-   external-clock verification disabled. The local future-file-timestamp
-   comparison remains enabled.
+   CRAN and Bioconductor indexes. It sets `NOT_CRAN=true` to run snapshot
+   expectations and `MARGINPLYR_REQUIRED_SUGGESTS` to require every registered
+   optional Suggest, so the full suite runs once without coverage measurement.
+   Remote incoming checks and external-clock verification are disabled; the
+   local future-file-timestamp comparison remains enabled.
 
 ### Observing one invocation
 
@@ -111,8 +112,7 @@ Record the exact identity and outcome in the pull request:
   - package spelling: passed
   - jarl: passed
   - package-aware lintr: passed
-  - strict test line coverage and snapshots: <covered/measured lines, covr version>
-  - source-tarball R CMD check: <errors/warnings/notes and NOTE dispositions>
+  - source-tarball R CMD check, including snapshots: <errors/warnings/notes and NOTE dispositions>
 ```
 
 When the native-crash retry is used, record `passed-after-retry` or `failed`,
@@ -179,9 +179,10 @@ caches, or switch installed tools for the retry.
 
 The retry runs the complete `R CMD check --as-cran`, including tests and
 vignettes, on that same tarball in a fresh check directory. Preserve separate
-logs and outcomes for both attempts. The already completed spelling, lint,
-coverage, snapshots, and build stages are not repeated. There is no third
-attempt; any retry failure, timeout, or exception fails the invocation.
+logs and outcomes for both attempts. The already completed spelling, lint, and
+build stages are not repeated; snapshots run again within the retried check.
+There is no third attempt; any retry failure, timeout, or exception fails the
+invocation.
 
 A successful retry yields the explicit overall result `passed-after-retry`,
 while the first attempt remains failed. The final attempt must satisfy the
@@ -193,11 +194,10 @@ that the crash was prevented or its cause resolved.
 ## Roles outside the boundary
 
 Focused tests are the tight feedback loop while changing a module. They do not
-replace the full suite in the coverage step. That suite does not replace the
-source-tarball check: CRAN semantics skip snapshot expectations, while the
-tarball check alone sees package metadata and installed-package boundaries.
-Neither test run replaces jarl or lintr. The line-coverage policy is recorded in
-[ADR 0030](../adr/0030-require-complete-test-line-coverage.md); the coverage
+replace the source-tarball check, which sees the full suite, snapshots, package
+metadata, and installed-package boundaries. That check does not replace jarl
+or lintr. CI owns line-coverage measurement under
+[ADR 0030](../adr/0030-require-complete-test-line-coverage.md); its coverage
 command rejects source, covr, and Codecov exclusions and reports each uncovered
 file and line without rounding its verdict.
 
