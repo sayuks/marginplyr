@@ -32,6 +32,17 @@ combine_margin_branches <- function(branches) {
   union_margin_branches(branches)
 }
 
+# Isolate each dtplyr Margin branch when it executes, even when a row filter
+# returns its source by reference. Preparation has already refused Mutable
+# steps (ADR 0029); building this step reads no rows (ADR 0020).
+dtplyr_margin_input <- function(.data, backend) {
+  if (!identical(backend$kind, "dtplyr")) {
+    return(.data)
+  }
+  step_call <- utils::getFromNamespace("step_call", "dtplyr")
+  step_call(.data, "copy")
+}
+
 # Preserve a prepared SQLite input as one relation before anchors and branches
 # reuse it. Compound operands cannot carry an outer LIMIT or ORDER BY. Keep
 # those clauses inside the rendered input, and retain its window-order metadata.
