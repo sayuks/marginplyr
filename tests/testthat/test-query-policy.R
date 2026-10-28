@@ -1076,3 +1076,74 @@ test_that("ordering numeric dictionary fixed keys reads no source rows", {
     }
   }
 })
+
+test_that("DuckDB structured missing labels keep the zero-row read budget", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection(array = "matrix")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  for (expr in c("struct_pack(x := v)", "CAST([v, v + 1] AS INTEGER[2])")) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT", expr, "AS g FROM (VALUES (1), (2)) t(v)"
+    )))
+    # Backend instrumentation observes construction reads, per ADR 0020.
+    metadata <- count_entry_point_invocations(
+      dplyr::collect(utils::head(source, n = 0L))
+    )
+    expect_gt(metadata, 0L)
+    for (label in list(NULL, NA_character_)) {
+      expect_identical(count_entry_point_invocations({
+        query <- summarize_with_margins(
+          source, rows = dplyr::n(), .grouping = rollup(g),
+          .margin_label = label, .id = "sid", .duplicates = "keep"
+        )
+        dbplyr::sql_render(query)
+      }), metadata)
+      expect_identical(count_entry_point_invocations({
+        query <- expand_with_margins(
+          source, .grouping = rollup(g), .margin_label = label,
+          .id = "sid", .sort = "first"
+        )
+        dbplyr::sql_render(query)
+      }), metadata)
+    }
+  }
+})
+
+test_that("Arrow STRUCT missing labels construct without reading input", {
+  skip_if_suggest_absent("arrow")
+  type <- arrow::struct(x = arrow::int16(), y = arrow::utf8())
+  table <- arrow::Table$create(
+    g = arrow::Array$create(data.frame(x = 1L, y = "a"), type = type)
+  )
+  dataset <- arrow::InMemoryDataset$create(table)
+  inputs <- list(
+    table, arrow::as_record_batch(table), dataset,
+    dplyr::select(table, dplyr::everything()),
+    dplyr::select(dataset, dplyr::everything())
+  )
+  # Backend instrumentation observes both the read bound (ADR 0020) and
+  # the input schema snapshot (ADR 0002). The output also carries `sid`,
+  # so its sorting schema read is distinguishable from the input's `g` alone.
+  expect_gt(count_entry_point_invocations(dplyr::collect(table)), 0L)
+  schema_reads <- 0L
+  infer_schema <- getFromNamespace("infer_schema", "arrow")
+  testthat::local_mocked_bindings(
+    infer_schema = function(x) {
+      if (identical(names(x), "g")) {
+        schema_reads <<- schema_reads + 1L
+      }
+      infer_schema(x)
+    },
+    .package = "arrow"
+  )
+  for (source in inputs) {
+    for (label in list(NULL, NA_character_)) {
+      schema_reads <- 0L
+      expect_identical(count_entry_point_invocations(expand_with_margins(
+        source, .grouping = rollup(g), .margin_label = label,
+        .id = "sid", .sort = "last"
+      )), 0L)
+      expect_identical(schema_reads, 1L)
+    }
+  }
+})
