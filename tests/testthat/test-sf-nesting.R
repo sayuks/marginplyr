@@ -36,13 +36,12 @@ test_that("sf rollup cells retain original keys and geometry in Margin order", {
 
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
     for (id in c("set", "..1")) {
-      key <- if (id == "set") "data" else "..2"
       result <- verb(
         source, .grouping = rollup(g), .keep = TRUE,
-        .id = id, .key = key, .sort = "last"
+        .id = id, .sort = "last"
       )
-      cells <- result[[key]]
-      expect_identical(names(result), c("g", id, key))
+      cells <- result$data
+      expect_identical(names(result), c("g", id, "data"))
       expect_identical(result$g, c("a", "b", "Total"))
       expect_identical(result[[id]], c(1L, 1L, 2L))
       expect_identical(vapply(cells, nrow, integer(1)), c(1L, 1L, 2L))
