@@ -539,6 +539,16 @@ nest_cell_expr <- function(cell_cols, kind) {
   }
 }
 
+# Give the nesting fold ordinary local columns rather than subclass summary
+# semantics, which may aggregate payload columns outside the cells. Bare data
+# frames retain their summary shape; lazy inputs retain backend translation.
+nest_fold_source <- function(data) {
+  if (!is.data.frame(data) || identical(class(data), "data.frame")) {
+    return(data)
+  }
+  dplyr::as_tibble(data, .name_repair = "minimal")
+}
+
 # Fold expanded rows into cells by public keys, set identifier, and original
 # typed dimension keys. dtplyr uses safe aliases during the fold, then restores
 # public names; private identity columns are removed from the result.
@@ -550,6 +560,7 @@ nest_expanded_margins <- function(.data,
                                   .key,
                                   kind,
                                   drop_set_col = TRUE) {
+  .data <- nest_fold_source(.data)
   # dplyr consumes `.rows` when it constructs local grouping keys. Alias
   # only outer keys; payload and list-column names never enter that metadata.
   outer_cols <- c(group_cols, set_col, unname(identity_cols))
