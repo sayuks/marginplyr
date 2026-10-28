@@ -45,8 +45,17 @@ with_margin_column_aliases <- function(data, read, transform,
   rlang::set_names(result, renamed)
 }
 
+# Prepare local subclasses for operations on columns through dplyr's tibble
+# conversion. Bare data frames and lazy inputs retain their existing shape.
+margin_column_source <- function(data) {
+  if (!is.data.frame(data) || length(class(data)) == 1L) {
+    return(data)
+  }
+  dplyr::as_tibble(data, .name_repair = "minimal")
+}
+
 # Move known Margin columns to the front of an ungrouped result. Selection
-# validates dot-dot output names, so local inputs use temporary output aliases
+# validates dot-dot output names, so local inputs with those use output aliases
 # and Arrow and dtplyr use relocation when such names occur.
 reorder_margin_columns <- function(data, leading) {
   if (inherits(data, c("arrow_dplyr_query", "dtplyr_step")) &&
@@ -54,9 +63,13 @@ reorder_margin_columns <- function(data, leading) {
     # Arrow's relocate method captures its selection before tidy evaluation.
     return(do.call(dplyr::relocate, list(data, leading)))
   }
-  if (!is.data.frame(data)) {
+  if (!is.data.frame(data) ||
+        !any(margin_dot_dot_names(margin_col_names(data)))) {
     return(dplyr::select(data, dplyr::all_of(leading), dplyr::everything()))
   }
+  # An alias round-trip must not leave retained subclass metadata naming the
+  # aliases after the ordinary column names have been restored.
+  data <- margin_column_source(data)
   columns <- unique(c(leading, margin_col_names(data)))
   aliases <- stats::setNames(columns, seq_along(columns))
   result <- dplyr::select(data, dplyr::all_of(aliases))
