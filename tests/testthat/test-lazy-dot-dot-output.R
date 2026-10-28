@@ -72,3 +72,17 @@ test_that("dtplyr retains dot-dot summary names for data-frame conversion", {
   skip_if_suggest_absent("dtplyr")
   expect_lazy_dot_dot_outputs(dtplyr::lazy_dt, as.data.frame)
 })
+
+test_that("dtplyr omitted .ROW keys preserve dot-dot summary outputs", {
+  skip_if_suggest_absent("dtplyr")
+  input <- data.frame(.ROW = c("b", "a"), value = c(1L, 2L))
+  for (name in c("...", "..1", "..42")) {
+    run <- function(data) {
+      summarize_with_margins(
+        data, !!name := sum(value), .grouping = rollup(.ROW),
+        .margin_label = NULL, .id = "set", .sort = "last"
+      )
+    }
+    expect_identical(as.data.frame(run(dtplyr::lazy_dt(input))), run(input))
+  }
+})

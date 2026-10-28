@@ -96,7 +96,7 @@ margin_safe_column_reads <- function(.data, read, transform,
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))
   }
-  data_vars <- get_col_names(.data, dplyr::everything())
+  data_vars <- margin_col_names(.data)
   aliases <- new_margin_internal_names(
     length(special),
     used_names = c(data_vars, reserved),
@@ -105,16 +105,20 @@ margin_safe_column_reads <- function(.data, read, transform,
   names(aliases) <- special
   # An omitted summary dimension can be an output target absent from the input.
   present <- intersect(special, data_vars)
-  renamed <- dplyr::rename(
-    .data, !!!rlang::set_names(rlang::syms(present), unname(aliases[present]))
+  # `step_setnames()` preserves dot-dot outputs that tidyselect refuses.
+  rename_columns <- utils::getFromNamespace("step_setnames", "dtplyr")
+  renamed <- rename_columns(
+    .data, present, unname(aliases[present]),
+    in_place = TRUE, rename_groups = TRUE
   )
   safe_name <- function(name) {
     if (name %in% special) unname(aliases[[name]]) else name
   }
   result <- transform(renamed, safe_name)
-  retained <- aliases[aliases %in% get_col_names(result, dplyr::everything())]
-  dplyr::rename(
-    result, !!!rlang::set_names(rlang::syms(unname(retained)), names(retained))
+  retained <- aliases[aliases %in% margin_col_names(result)]
+  rename_columns(
+    result, unname(retained), names(retained),
+    in_place = TRUE, rename_groups = TRUE
   )
 }
 
