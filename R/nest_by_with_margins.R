@@ -143,7 +143,12 @@ nest_by_with_margins <- function(.data,
 
   .id <- unname(.id)
   .key <- unname(.key)
-  result <- dplyr::collect(result)
+  # dtplyr's collect() does not forward name repair to its tibble conversion.
+  result <- if (inherits(result, "dtplyr_step")) {
+    dplyr::as_tibble(result, .name_repair = "minimal")
+  } else {
+    dplyr::collect(result)
+  }
   empty_outer_names <- c(.id, .key)
   if (
     nrow(result) == 0L &&
@@ -170,7 +175,7 @@ nest_by_with_margins <- function(.data,
     }
   }
   group_cols <- setdiff(colnames(result), .key)
-  with_margin_column_aliases(result, group_cols, function(data, safe_name) {
+  with_margin_column_aliases(result, names(result), function(data, safe_name) {
     columns <- vapply(group_cols, safe_name, character(1), USE.NAMES = FALSE)
     dplyr::rowwise(data, dplyr::all_of(columns))
   })

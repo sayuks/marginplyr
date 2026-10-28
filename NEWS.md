@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Both nesting Margin verbs preserve list-column names such as `...` and `..1`
+  across grouping sets, identifiers, and Margin ordering (#950).
+
 * Margin operations isolate immutable dtplyr inputs at execution, including
   row-preserving filters and cached steps. Nesting also accepts `.SDall` and
   `.ROW` columns (#959).
