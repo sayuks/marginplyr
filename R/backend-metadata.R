@@ -345,7 +345,7 @@ postgres_margin_prototypes <- function(.data, dimensions) {
     dplyr::select(.data, dplyr::all_of(dimensions)), FALSE
   )
   # dbplyr reads a generated bare `.env` reference as its lexical pronoun.
-  empty_sql <- dbplyr::sql_render(sql_env_output_query(empty))
+  empty_sql <- dbplyr::sql_render(sql_quote_generated_columns(empty))
   stats::setNames(lapply(dimensions, function(column) {
     dbplyr::build_sql(
       "(SELECT ", dbplyr::ident(column), " FROM (", empty_sql,

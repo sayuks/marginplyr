@@ -92,11 +92,13 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
 
   public_query <- ordered
   # A dropped source .env can remain in an intermediate projection.
-  if (".env" %in% c(operation$data_vars, public_columns)) {
-    ordered <- sql_env_output_query(ordered)
-    typed_union <- sql_env_output_query(typed_union)
-    public_anchor <- sql_env_output_query(public_anchor)
-    public_query <- sql_env_output_query(public_query)
+  if (any(sql_name_needs_quoting(
+    c(operation$data_vars, public_columns)
+  ))) {
+    ordered <- sql_quote_generated_columns(ordered)
+    typed_union <- sql_quote_generated_columns(typed_union)
+    public_anchor <- sql_quote_generated_columns(public_anchor)
+    public_query <- sql_quote_generated_columns(public_query)
   }
   boolean_columns <- sqlite_boolean_columns(unique(c(
     operation$data_vars, public_columns

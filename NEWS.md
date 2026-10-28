@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* Portable summaries retain dynamic output names `.`, `.da`, and `.dat`
+  without matching the backend `.data` argument (#970).
+
+* SQL summaries preserve accepted dot-dot output and Grouping set identifier
+  names through Margin ordering, collection, and materialization (#971).
+
 * Both nesting Margin verbs preserve list-column names such as `...` and `..1`
   across grouping sets, identifiers, and Margin ordering (#950).
 

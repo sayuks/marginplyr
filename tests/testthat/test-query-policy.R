@@ -1076,3 +1076,51 @@ test_that("ordering numeric dictionary fixed keys reads no source rows", {
     }
   }
 })
+
+check_special_sql_reads <- function(source, portable = FALSE) {
+  build <- function(special) {
+    for (sort in c("none", "first", "last")) {
+      for (plan in list(NULL, rollup(tidyselect::all_of("g")))) {
+        for (role in c("output", "identifier")) {
+          for (name in c(".", ".da", ".dat", "..0", "..00", "..01", "..-1")) {
+            output <- if (special && role == "output") name else "amount"
+            id <- if (role == "identifier") {
+              if (special) name else "sid"
+            } else {
+              if (portable) "sid" else NULL
+            }
+            query <- summarize_with_margins(
+              source, !!output := sum(.data$v, na.rm = TRUE), .grouping = plan,
+              .id = id, .sort = sort,
+              .duplicates = if (portable) "keep" else "drop"
+            )
+            dbplyr::sql_render(query)
+          }
+        }
+      }
+    }
+  }
+  control <- count_entry_point_invocations(build(FALSE))
+  if (inherits(dbplyr::remote_con(source), "SQLiteConnection")) {
+    expect_identical(control, 0L)
+  }
+  # DuckDB retains only its ordinary zero-row metadata read (ADR 0020).
+  expect_identical(count_entry_point_invocations(build(TRUE)), control)
+}
+
+test_that("SQLite special summary outputs add no construction read", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(g = "a", v = 1))
+  check_special_sql_reads(source)
+})
+
+test_that("DuckDB special summary outputs add no construction read", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(g = "a", v = 1))
+  check_special_sql_reads(source)
+  check_special_sql_reads(source, portable = TRUE)
+})
