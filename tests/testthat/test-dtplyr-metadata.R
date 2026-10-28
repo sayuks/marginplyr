@@ -377,7 +377,7 @@ test_that("derived .SD typed selections agree with collected Grouping plans", {
   }
 })
 
-test_that(".SD metadata skips predicates and leaves Mutable sources unchanged", {
+test_that(".SD inspection skips predicates and protects Mutable sources", {
   skip_if_suggest_absent("dtplyr")
   predicate <- function(x) stop("row predicate evaluated")
   # data.table is imported by dtplyr; `.SD` is admitted after construction.
