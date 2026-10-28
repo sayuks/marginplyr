@@ -4537,7 +4537,8 @@ test_that("a formula a capture carries keeps its class and environment", {
   expect_identical(result$applied, result$units + 100)
 })
 
-# An omitted pick input has no selection or statically known output names.
+# Execution refuses an omitted pick input, so no public result exposes the
+# planner's output-name claim. Check the static reader directly here.
 test_that("empty pick input stays distinct from explicit selections", {
   expect_null(parse_pick_selection(quote(dplyr::pick())))
   expect_identical(
