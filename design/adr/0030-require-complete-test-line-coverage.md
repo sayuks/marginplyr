@@ -12,10 +12,8 @@ job and Codecov report for the exact candidate SHA.
 The local source-tarball `R CMD check --as-cran` sets `NOT_CRAN=true` and
 requires every optional Suggest registered by the test suite. It runs the full
 suite, including snapshot expectations, once alongside package metadata,
-examples, and vignettes. This removes instrumentation and the second full-suite
-run from the local wait. Filtering a complete coverage result to changed lines
-would retain that work; selecting a subset of tests would require a separate
-test-selection policy. CRAN-emulating CI jobs retain their existing environment.
+examples, and vignettes ([#941](https://github.com/sayuks/marginplyr/issues/941)).
+CRAN-emulating CI jobs retain their existing environment.
 
 A reachable branch gets a test asserting its behavior or diagnostic; a
 meaningful internal backstop gets an abnormal-state test; a branch with no
