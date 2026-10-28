@@ -255,9 +255,9 @@ test_that("dtplyr nesting reads locked internal names as payload columns", {
   }
 })
 
-test_that("dtplyr locked names retain nesting roles and original cells", {
+test_that("dtplyr special names retain nesting roles and original cells", {
   skip_if_suggest_absent("dtplyr")
-  for (column in c(".SDall", ".xSD", ".iSD")) {
+  for (column in c(".SDall", ".xSD", ".iSD", ".ROW")) {
     for (size in c(0L, 1L, 3L)) {
       for (role in c("payload", "fixed", "dimension", "id", "key")) {
         input <- tibble::tibble(
@@ -360,5 +360,60 @@ test_that("dtplyr locked nesting names retain the collection boundary", {
       )
       expect_identical(dplyr::collect(source), input)
     }
+  }
+})
+
+test_that("dtplyr .ROW nesting retains typed keys and deferred reads", {
+  skip_if_suggest_absent("dtplyr")
+  for (role in c("dimension", "id")) {
+    input <- tibble::tibble(
+      g = as.Date(c("2026-10-28", NA_character_, "2026-10-28")),
+      value = c(1L, 2L, 1L),
+      ..marginplyr_dtplyr_column_1 = c(3L, 4L, 3L),
+      ..marginplyr_dtplyr_column_1_ = c(5L, 6L, 5L)
+    )
+    dimension <- if (role == "dimension") ".ROW" else "g"
+    names(input)[1L] <- dimension
+    # dtplyr imports data.table; no second optional-backend guard is needed.
+    table <- data.table::as.data.table(input)
+    before <- data.table::copy(table)
+    seen <- integer()
+    probe <- function(x) {
+      seen <<- c(seen, length(x))
+      x > 0L
+    }
+    source <- dtplyr::lazy_dt(table, immutable = TRUE) |>
+      dplyr::filter(probe(value))
+    for (keep in c(FALSE, TRUE)) {
+      for (sort in c("none", "first")) {
+        for (verb in list(nest_with_margins, nest_by_with_margins)) {
+          run <- function(data) {
+            verb(
+              data, .grouping = rollup(dplyr::all_of(dimension)),
+              .id = if (role == "id") ".ROW" else "set",
+              .keep = keep, .margin_label = NULL, .sort = sort,
+              .key = "..marginplyr_dtplyr_column_1__"
+            )
+          }
+          seen <- integer()
+          actual <- run(source)
+          if (identical(verb, nest_with_margins)) {
+            expect_s3_class(actual, "dtplyr_step")
+            expect_identical(seen, integer())
+            actual <- dplyr::collect(actual)
+          } else {
+            expect_s3_class(actual, "rowwise_df")
+          }
+          expect_true(any(seen > 0L))
+          expected <- run(input)
+          expect_identical(names(actual), names(expected))
+          expect_special_nesting_rows(
+            actual, expected, sort, "..marginplyr_dtplyr_column_1__"
+          )
+          expect_identical(table, before)
+        }
+      }
+    }
+    expect_identical(dplyr::collect(source), input)
   }
 })

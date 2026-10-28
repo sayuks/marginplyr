@@ -460,6 +460,13 @@ add_grouping_set_id <- function(result,
   if (is.null(set_id_name)) {
     return(result)
   }
+  public_name <- set_id_name
+  if (inherits(result, "dtplyr_step") && identical(set_id_name, ".ROW")) {
+    # data.table reserves `.ROW :=` for row deletion, including new columns.
+    set_id_name <- new_margin_internal_names(
+      1L, margin_col_names(result), prefix = "..marginplyr_dtplyr_column_"
+    )
+  }
   set_id <- as.integer(set_id)
   value <- if (count_branch_rows) {
     rlang::expr(rep(!!set_id, dplyr::n()))
@@ -471,10 +478,14 @@ add_grouping_set_id <- function(result,
   # would number every row from its own values instead of the branch's
   # grouping-set id. The `{set_id_name}` glue is evaluated in this environment
   # rather than the mask, so only the value needs injecting.
-  dplyr::mutate(
+  result <- dplyr::mutate(
     result,
     "{set_id_name}" := !!value
   )
+  if (!identical(set_id_name, public_name)) {
+    result <- dplyr::rename(result, !!public_name := !!rlang::sym(set_id_name))
+  }
+  result
 }
 
 # This is the one function in the package that evaluates the caller's own
