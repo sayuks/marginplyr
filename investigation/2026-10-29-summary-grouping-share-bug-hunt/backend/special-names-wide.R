@@ -4,7 +4,7 @@ pkgload::load_all(root, quiet = TRUE)
 suppressPackageStartupMessages(library(dplyr))
 cons <- list(sqlite = DBI::dbConnect(RSQLite::SQLite(), ':memory:'), duckdb = DBI::dbConnect(duckdb::duckdb(shared_home=FALSE)))
 ns <- c('.SDall','.xSD','.iSD','.ROW','.NATURAL','.Last.updated','.SDcols','key','check.names','.EACHI','T','F','NA_integer_','NA_real_','NA_character_','NA_complex_','..0','..00','..01','..-1','...0','a\rb','a\tb','a\\b','a\'b','?','*','.','(x)','x::y','x$y','x[[1]]','é','e\u0301','ß','ẞ','K','Ｋ','\u200b','\u2028',' a ','..marginplyr_parent_original_1','..MARGINPLYR_SET_ID_1')
-normalize <- function(z) { z <- as.data.frame(z); for (k in names(z)) if (is.integer(z[[k]])) z[[k]] <- as.double(z[[k]]); z <- z[vctrs::vec_order(z), , drop=FALSE]; rownames(z) <- NULL; z }
+normalize <- function(z) { z <- as.data.frame(z); for (k in names(z)) { if (is.integer(z[[k]])) { z[[k]] <- as.double(z[[k]]) } }; z <- z[vctrs::vec_order(z), , drop=FALSE]; rownames(z) <- NULL; z }
 failures <- list(); checks <- 0L; upstream <- 0L
 for (i in seq_along(ns)) for (role in c('fixed','dimension','output','identifier')) {
   n <- ns[[i]]; dat <- data.frame(p=c('p','p','q'),g=c('a','b','a'),x=c(1,3,7))

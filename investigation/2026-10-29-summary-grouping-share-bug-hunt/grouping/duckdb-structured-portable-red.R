@@ -25,7 +25,7 @@ for (kind in names(fixtures)) {
  direct <- DBI::dbGetQuery(con,control_sql)
  cat('Explicit typed-NULL UNION rows:',nrow(direct),'\n')
  stopifnot(nrow(direct)==3L,identical(sort(as.numeric(direct$n)),c(1,1,2)))
- proxy <- marginplyr:::grouping_selection_proxy(source)
+ proxy <- getFromNamespace("grouping_selection_proxy", "marginplyr")(source)
  cat('Schema proxy:',typeof(proxy$g),paste(class(proxy$g),collapse='/'),'dim=',paste(dim(proxy$g),collapse='x'),'\n')
  query <- tryCatch(summarize_with_margins(source,n=n(),.grouping=rollup(g),.margin_label=NULL,.id='set',.duplicates='keep'),error=identity)
  if (!inherits(query,'error')) {

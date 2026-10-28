@@ -54,7 +54,7 @@ LINE 16:     CASE WHEN ("..marginplyr_placeholder_1" >= 0) THEN g WHEN...
 ℹ Error type: INVALID
 KIND scalar
 Ordinary grouping rows: 2
-Native row counts / ids: 1,1,2 / 1,1,2
+Native row counts / ids: 1,2,1 / 1,2,1
 Explicit typed-NULL UNION rows: 3
 Schema proxy: integer integer dim=
 Portable omitted-value SQL:

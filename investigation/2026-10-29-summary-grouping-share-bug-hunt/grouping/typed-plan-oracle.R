@@ -14,7 +14,7 @@ choices <- list(quote(a), quote(c(a, ch)), quote(c(ch, -a)), quote(c(a:b, ch)), 
 leaf <- function(actual, nonempty = FALSE) {
  repeat {
   e <- choices[[sample.int(length(choices), 1)]]
-  if (runif(1) < .3) for (i in seq_len(sample(1:3,1))) e <- rlang::call2("(",e)
+  if (runif(1) < 0.3) { for (i in seq_len(sample(1:3,1))) { e <- rlang::call2("(",e) } }
   cols <- tryCatch(names(tidyselect::eval_select(e, actual, env=globalenv())),error=identity)
   if (!inherits(cols,"error") && (!nonempty || length(cols))) break
  }
@@ -31,7 +31,7 @@ node <- function(actual, depth=0L) {
  if(kind %in% c("rollup","cube")) {
   children <- lapply(seq_len(count),function(i) {
    x<-leaf(actual,TRUE)
-   if(runif(1)<.5) { x$expr<-rlang::call2("grouping_set",x$expr) } else if(length(x$unit)>1) {
+   if(runif(1)<0.5) { x$expr<-rlang::call2("grouping_set",x$expr) } else if(length(x$unit)>1) {
     # Each ordinary selected column is a separate dimension.
     x$unit<-as.list(x$unit)
    }
@@ -48,7 +48,7 @@ node <- function(actual, depth=0L) {
    sets<-lapply(indices,function(ix)unique(unlist(units[ix],use.names=FALSE)))
   }
  } else {
-  children<-lapply(seq_len(count),function(i)if(runif(1)<.35)leaf(actual) else node(actual,depth+1L))
+  children<-lapply(seq_len(count),function(i)if(runif(1)<0.35)leaf(actual) else node(actual,depth+1L))
   if(kind=="grouping_sets") sets<-unlist(lapply(children,`[[`,"sets"),recursive=FALSE) else {
    sets<-list(character())
    for(child in children) sets<-unlist(lapply(sets,function(l)lapply(child$sets,function(r)unique(c(l,r)))),recursive=FALSE)

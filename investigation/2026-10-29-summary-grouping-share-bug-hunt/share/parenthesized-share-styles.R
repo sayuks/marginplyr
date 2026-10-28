@@ -1,7 +1,9 @@
 args <- commandArgs(trailingOnly = TRUE)
 devtools::load_all(if (length(args)) args[[1L]] else getwd(), quiet = TRUE)
 data <- data.frame(g = c("a", "b"), x = c(1, 3))
-for (fn in alist(~sum(.x), (~sum(.x)), ((~sum(.x))))) {
+bare <- quote(~sum(.x))
+wrapped <- rlang::call2("(", bare)
+for (fn in list(bare, wrapped, rlang::call2("(", wrapped))) {
   for (helper in c("share_of_total", "share_of_parent")) {
     for (style in c("direct", "across")) {
       share <- if (style == "direct") {
