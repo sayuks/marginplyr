@@ -1,0 +1,8 @@
+copy actual: character,character,integer,double proxy:character,character,integer,double levels: NULL,NULL,c("v", "w"),NULL
+copyfactor actual: character,integer,integer,double proxy:character,integer,integer,double levels: NULL,c("v", "w"),c("v", "w"),NULL
+copydate actual: character,double,integer,double proxy:character,double,integer,double levels: NULL,NULL,c("v", "w"),NULL
+copynum actual: integer,integer,integer,double proxy:integer,integer,integer,double levels: NULL,NULL,c("v", "w"),NULL
+arith actual: character,double,integer,double proxy:character,double,integer,double levels: NULL,NULL,c("v", "w"),NULL
+newvec actual: character,integer,integer,double,integer proxy:Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.

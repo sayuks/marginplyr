@@ -1,0 +1,8 @@
+quote PASS
+substitute PASS
+qualified_bquote_share PASS
+qualified_bquote_grouping PASS
+qualified_expr_share PASS
+qualified_quo_share PASS
+qualified_bquote_substitution PASS
+bare bquote: documented refusal; discarded candidate

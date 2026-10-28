@@ -1,0 +1,7 @@
+with_binding : marginplyr_error Total share `share` cannot use source summary `value` because it depends on earlier summary alias `previous`. ℹ Combine the calculation into one ordinary summary expression.
+explicit_base_with : marginplyr_error Total share `share` cannot use source summary `value` because it depends on earlier summary alias `previous`. ℹ Combine the calculation into one ordinary summary expression.
+local_binding : PASS 0.5,0.833333333333333,1
+lambda_binding : PASS 0.5,0.833333333333333,1
+qualified_bquote : PASS 0.4,0.8,1
+substitute : PASS 0.4,0.8,1
+external_environment : marginplyr_error Total share `share` cannot use source summary `value` because it depends on earlier summary alias `previous`. ℹ Combine the calculation into one ordinary summary expression.

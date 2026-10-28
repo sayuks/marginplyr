@@ -1,0 +1,37 @@
+FAIL source ..1 dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL source ..1 sqlite vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL source ..1 duck vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL source ... dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL source ... sqlite vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL source ... duck vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL output ..1 dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL output ..1 sqlite vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL output ..1 duck vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL output ... dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL output ... sqlite vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL output ... duck vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL fixed .N dt vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".N" at locations 1 and 7.
+FAIL fixed .SD dt vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".SD" at locations 1 and 7.
+FAIL fixed .I dt vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".I" at locations 1 and 7.
+FAIL fixed .GRP dt vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".GRP" at locations 1 and 7.
+FAIL fixed .BY dt vctrs_error_names_must_be_unique Names must be unique. ✖ These names are duplicated:   * ".BY" at locations 1 and 7.
+FAIL fixed ..1 local vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL fixed ..1 dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL fixed ..1 sqlite tibble_error_column_names_cannot_be_dot_dot Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL fixed ..1 duck tibble_error_column_names_cannot_be_dot_dot Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL fixed ... local vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL fixed ... dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL fixed ... sqlite tibble_error_column_names_cannot_be_dot_dot Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL fixed ... duck tibble_error_column_names_cannot_be_dot_dot Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL dim ..1 local vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL dim ..1 dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL dim ..1 sqlite tibble_error_column_names_cannot_be_dot_dot Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL dim ..1 duck tibble_error_column_names_cannot_be_dot_dot Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+FAIL dim ... local vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL dim ... dt vctrs_error_names_cannot_be_dot_dot Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL dim ... sqlite tibble_error_column_names_cannot_be_dot_dot Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+FAIL dim ... duck tibble_error_column_names_cannot_be_dot_dot Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.

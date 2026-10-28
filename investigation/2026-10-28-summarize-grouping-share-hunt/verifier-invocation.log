@@ -1,0 +1,21 @@
+## Verifier invocation
+
+15 verifier(s) under `.github/scripts`, against 8 workflow(s).
+
+- **verify-agent-network-policy.R** — step in `lint.yaml`
+- **verify-backend.R** — step in `release-matrix.yaml`
+- **verify-build-exclusions.R** — step in `release-matrix.yaml`
+- **verify-codex-config.R** — step in `lint.yaml`
+- **verify-context-budget.R** — step in `lint.yaml`
+- **verify-coverage-policy.R** — step in `test-coverage.yaml`
+- **verify-cran-preflight.R** — step in `lint.yaml`
+- **verify-cran-release.R** — step in `lint.yaml`
+- **verify-depends-only.R** — step in `release-matrix.yaml`
+- **verify-doc-references.R** — step in `lint.yaml`
+- **verify-library-isolation.R** — sourced by `check-tarball.R`
+- **verify-review-ready-check.R** — step in `lint.yaml`
+- **verify-site.R** — step in `altdoc.yaml`
+- **verify-suite-coverage.R** — step in `release-matrix.yaml`
+- **verify-verifier-invocation.R** — sourced by `check-tarball.R`
+
+Verified: all 15 verifier(s) under .github/scripts are named by a workflow step or sourced by a script that is.
