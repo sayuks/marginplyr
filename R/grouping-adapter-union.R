@@ -182,11 +182,24 @@ check_branch_columns <- function(branches) {
 # exhausts the C stack.
 #
 # Re-associating is safe because `UNION ALL` concatenates, so the row sequence
-# is the same however the pairs are bracketed. dbplyr flattens a union of
-# unions into one query, so the rendered SQL is a single `UNION ALL` over every
-# branch either way, with no subquery per pair.
+# is the same however the pairs are bracketed. SQLite compounds retain SELECT
+# boundaries so each compound has two terms, including any zero-row anchors.
+# Other SQL backends let dbplyr flatten unions into one compound query.
 union_margin_branches <- function(branches) {
+  sqlite <- inherits(branches[[1L]], "tbl_sql") &&
+    inherits(dbplyr::remote_con(branches[[1L]]), "SQLiteConnection")
   while (length(branches) > 1L) {
+    if (sqlite) {
+      branches <- lapply(branches, function(branch) {
+        if (inherits(branch$lazy_query, "lazy_union_query")) {
+          # A SELECT boundary prevents dbplyr flattening this compound operand.
+          # Keep it lazy so anchors and branches consume no source rows.
+          dplyr::filter(branch, TRUE)
+        } else {
+          branch
+        }
+      })
+    }
     n <- length(branches)
     pairs <- lapply(
       seq_len(n %/% 2L),
