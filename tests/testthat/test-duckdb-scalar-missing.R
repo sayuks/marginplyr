@@ -126,3 +126,58 @@ test_that("DuckDB scalar expansion keeps empty schemas and repeated rows", {
     }
   }
 })
+
+test_that("DuckDB preserves untyped and typed NULL keys in direct results", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  # An untyped NULL stays NULL on DuckDB 2.0 and is INTEGER on older engines.
+  # Compare with the input's SQL type rather than assigning either to the verb.
+  for (value in c("NULL", "NULL::INTEGER", "NULL::VARCHAR", "NULL::DATE",
+                  "NULL::DECIMAL(12,3)")) {
+    for (empty in c(FALSE, TRUE)) {
+      source <- dplyr::tbl(con, dbplyr::sql(paste(
+        "SELECT", value, "AS g, 7 AS value",
+        if (empty) "WHERE FALSE" else ""
+      )))
+      input <- dplyr::collect(source)
+      source_type <- duckdb_scalar_column_type(source)
+      queries <- list(
+        summary = summarize_with_margins(
+          source, total = sum(value, na.rm = TRUE),
+          .grouping = rollup(g), .margin_label = NULL, .id = "sid"
+        ),
+        expansion = expand_with_margins(
+          source, .grouping = rollup(g), .margin_label = NULL, .id = "sid"
+        )
+      )
+      for (verb in names(queries)) {
+        query <- queries[[verb]]
+        rows <- if (empty) as.integer(verb == "summary") else 2L
+        ids <- if (empty) {
+          if (verb == "summary") 2L else integer()
+        } else {
+          1:2
+        }
+        expected <- input$g[rep(NA_integer_, rows)]
+        stored <- dplyr::compute(query)
+        for (result in list(query, stored)) {
+          expect_identical(duckdb_scalar_column_type(result), source_type)
+          result <- dplyr::collect(dplyr::arrange(result, .data$sid))
+          expect_identical(nrow(result), rows)
+          expect_identical(result$g, expected)
+          expect_identical(result$sid, ids)
+          if (verb == "summary") {
+            expect_equal(result$total, if (empty) NA_real_ else c(7, 7))
+          } else {
+            expect_identical(result$value, if (empty) integer() else c(7L, 7L))
+          }
+        }
+        zero <- dplyr::collect(query, n = 0)
+        expect_identical(zero$g, input$g[integer()])
+        expect_identical(zero$sid, integer())
+      }
+    }
+  }
+})
